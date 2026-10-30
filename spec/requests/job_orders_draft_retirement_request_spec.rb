@@ -7,7 +7,7 @@ require "rails_helper"
 # JobOrder#transition! / #enter_status!, whose destination rule decides what
 # happens to the draft, inside the same locked transaction:
 #   COMPLETED            kept (/pay serves it while current)
-#   PAID, PICKED_UP      kept only if Shopify reports it COMPLETED (paid through
+#   PAID, PICKED_UP      (also PAID -> PICKED_UP) kept only if Shopify reports it COMPLETED (paid through
 #                        it); an open draft (paid in store) is deleted
 #   everything else      deleted
 # A delete Shopify refuses refuses the status change; nothing is committed.
@@ -124,16 +124,26 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       expect(order.reload.shopify_draft_order_id).to eq(draft_id)
     end
 
-    # Round 2 review 4: PAID -> PICKED_UP is money-taken to money-taken; the move into PAID already decided the
-    # draft, so pick-up never calls Shopify (no HTTP under the row lock), even while Shopify is down.
-    it "records a pick-up without calling Shopify, even when Shopify is down" do
+    # Round 3 review 1: an order marked PAID before drafts were voided on PAID can still hold an OPEN, payable
+    # draft, so the move into PICKED_UP does the same check as the move into PAID.
+    it "deletes an open draft left on a PAID order when it is picked up" do
+      order, = order_with_draft!(:paid)
+      session_login!(staff)
+      patch job_order_picked_up_path(order), params: { picked_up: "true" }
+
+      expect(status_names(order).last).to eq("Picked-Up")
+      expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
+      expect(order.reload.shopify_draft_order_id).to be_nil
+    end
+
+    it "refuses the pick-up when Shopify cannot be asked about the draft (fail closed)" do
       order, = order_with_draft!(:paid)
       shopify.status = 502
       session_login!(staff)
       patch job_order_picked_up_path(order), params: { picked_up: "true" }
 
-      expect(status_names(order).last).to eq("Picked-Up")
-      expect(shopify.calls).to be_empty
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change_draft_order_failed"))
+      expect(status_names(order).last).to eq("Paid (Waiting for Pick-Up)")
       expect(order.reload.shopify_draft_order_id).to eq(draft_id)
     end
 
@@ -167,6 +177,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       patch job_order_picked_up_path(order), params: { picked_up: "true" }
 
       expect(status_names(order).last).to eq("Picked-Up")
+      expect(shopify_ops).to eq(["getDraftOrder"])
       expect(order.reload.shopify_draft_order_id).to eq(draft_id)
     end
   end

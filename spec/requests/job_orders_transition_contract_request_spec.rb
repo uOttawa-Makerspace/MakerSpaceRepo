@@ -136,9 +136,99 @@ RSpec.describe "Job order transition failure contract", type: :request do
 
       expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
       expect(flash[:notice]).to be_nil
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.zero_order_not_marked_paid",
-                                         reason: I18n.t("job_orders.alerts.status_change_draft_order_failed")))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.zero_order_not_marked_paid.draft_not_voidable"))
+      expect(flash[:alert]).to include("is Completed").and include("could not be marked Paid")
+      expect(flash[:alert]).not_to match(/nothing was changed/i)
       expect(ActionMailer::Base.deliveries).to be_empty
+    end
+  end
+
+  # Round 3 review 2, 4, 5: the failure contract is closed (every refusal is a result), the one exception report
+  # lives in transition!, and a refusal undoes everything it did, also inside a caller's transaction.
+  describe "refusals made from an exception" do
+    def reload_free(order) = JobOrder.find(order.id)
+
+    it "reports the Shopify error behind a draft refusal once, with the order and the statuses" do
+      order = quoted_order!(:completed)
+      order.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/9001")
+      shopify.status = 502
+      expect(Rails.error).to receive(:report)
+        .with(an_instance_of(JobOrder::StaleDraftOrderError),
+              handled: true, context: { job_order_id: order.id, from: ["Completed (Waiting for Payment)"],
+                                        to: "Paid (Waiting for Pick-Up)" }).once
+      allow(Rails.logger).to receive(:error)
+
+      result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::PAID, actor: staff)
+
+      expect(result.reason).to eq(:draft_not_voidable)
+      expect(result.error.message).to include("Shopify did not answer")
+      expect(Rails.logger).to have_received(:error).with(/draft_not_voidable.*StaleDraftOrderError: .*Shopify did not answer/)
+    end
+
+    it "the order deleted between lookup and lock is a refusal, not a RecordNotFound" do
+      order = make_job_order!(owner: owner, status_key: :being_processed)
+      JobOrderStatus.where(job_order_id: order.id).delete_all
+      JobOrder.where(id: order.id).delete_all
+
+      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+
+      expect(result.reason).to eq(:order_missing)
+      expect(result.message_key).to eq("job_orders.alerts.status_change_order_missing")
+    end
+
+    it "a lock wait timeout is a refusal with a retry message" do
+      order = quoted_order!(:being_processed)
+      allow(order).to receive(:lock!).and_raise(ActiveRecord::LockWaitTimeout)
+
+      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+
+      expect(result.reason).to eq(:busy)
+      expect(result.message_key).to eq("job_orders.alerts.status_change_busy")
+      expect(status_names(order)).to eq(["Currently being Processed"])
+    end
+
+    it "a deadlock is the same refusal" do
+      order = quoted_order!(:being_processed)
+      allow(order).to receive(:lock!).and_raise(ActiveRecord::Deadlocked)
+
+      expect(order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff).reason).to eq(:busy)
+    end
+
+    it "a status row the database rejects (NOT NULL) is an invalid-row refusal" do
+      order = quoted_order!(:being_processed)
+      allow_any_instance_of(JobOrderStatus).to receive(:save!).and_raise(ActiveRecord::NotNullViolation)
+
+      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+
+      expect(result.reason).to eq(:invalid_status_row)
+    end
+
+    it "has en and fr messages for every refusal message key" do
+      %i[wrong_state link_spent draft_not_voidable invalid_status_row order_missing busy].each do |reason|
+        result = JobOrder::TransitionResult.refused(reason)
+        %i[en fr].each do |locale|
+          expect(I18n.t(result.message_key, locale: locale, raise: true)).to be_present
+          expect(I18n.t(result.zero_order_message_key, locale: locale, raise: true)).to be_present
+        end
+      end
+    end
+
+    it "a refused transition inside a caller's transaction leaves no status row and keeps the draft id" do
+      order = quoted_order!(:completed)
+      draft = "gid://shopify/DraftOrder/9001"
+      order.update_column(:shopify_draft_order_id, draft)
+      shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete" }]
+      result = nil
+
+      ActiveRecord::Base.transaction do
+        result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::DECLINED, actor: staff)
+        # the caller does NOT raise Rollback: the outer transaction commits
+      end
+
+      expect(result.reason).to eq(:draft_not_voidable)
+      expect(status_names(order)).to eq(["Completed (Waiting for Payment)"])
+      expect(reload_free(order).shopify_draft_order_id).to eq(draft)
+      expect(order.shopify_draft_order_id).to eq(draft) # and the record in memory agrees
     end
   end
 end

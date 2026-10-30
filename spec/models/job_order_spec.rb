@@ -339,6 +339,27 @@ RSpec.describe JobOrder, type: :model do
         expect(order.shopify_draft_order_line_items.map { |l| l[:title] }).to include("Task #1 Wax")
       end
 
+      # Round 3 review 6: ONE snapshot per request, so the total, the fingerprint and the draft lines cannot disagree
+      it "loads the tasks once for the total, the fingerprint and the draft lines" do
+        option = JobOption.create!(name: "Polish", fee: 1)
+        quote = quoted_task!("Task #1", price: 10, service_price: 0, service_quantity: 0).job_task_quote
+        quote.job_task_quote_options.create!(job_option: option, price: 3)
+        order.reload
+
+        task_loads = 0
+        counter = lambda do |*, payload|
+          task_loads += 1 if payload[:sql].match?(/\ASELECT\b.*FROM "job_tasks"/m)
+        end
+        ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
+          order.total_price
+          order.quote_fingerprint
+          order.shopify_draft_order_line_items
+          order.total_price
+        end
+
+        expect(task_loads).to eq(1)
+      end
+
       it "does not fingerprint display titles: renaming a task or an option leaves it unchanged" do
         option = JobOption.create!(name: "Polish", fee: 1)
         quote = quoted_task!("Task #1", price: 10, service_price: 0, service_quantity: 0).job_task_quote

@@ -374,7 +374,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
         else
           # the order is Completed but not Paid: say so, and no "updated" notice that would suggest otherwise
           flash.delete(:notice)
-          flash[:alert] = t("job_orders.alerts.zero_order_not_marked_paid", reason: t(paid.message_key))
+          flash[:alert] = t(paid.zero_order_message_key)
         end
       elsif params[:send_email].present? && params[:send_email] == "true"
         JobOrderMailer.send_job_completed(
@@ -566,18 +566,15 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     actor: @user,
     approval_token: nil
   )
-    # which branch was asked for, decided from the param alone (an unseeded status constant is nil, and must reach
+    # which status was asked for, decided from the param alone (an unseeded status constant is nil, and must reach
     # transition! as an invalid status row, not look like a missing param)
-    branch = if param == "true" then :true_status
-             elsif param == "false" && need_false_status then :false_status
-             end
-    result = if branch.nil?
-               JobOrder::TransitionResult.refused(:wrong_state)
-             else
-               @job_order.transition!(from: current_status, to: branch == :true_status ? true_status : false_status,
+    asked = param == "true" || (param == "false" && need_false_status)
+    result = if asked
+               @job_order.transition!(from: current_status, to: param == "true" ? true_status : false_status,
                                       actor: actor, approval_token: approval_token)
+             else
+               JobOrder::TransitionResult.refused(:wrong_state)
              end
-    error = !result.ok?
 
     if result.ok?
       flash[:notice] = t(
@@ -589,7 +586,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     end
 
     if redirect_link.nil?
-      !error
+      result.ok?
     else
       respond_to do |format|
         format.html { redirect_to redirect_link }
