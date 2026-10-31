@@ -366,7 +366,7 @@ RSpec.describe "SAML IdP", type: :request do
       end
 
       it "refuses an INACTIVE account" do
-        user.update!(active: false)
+        User.where(id: user.id).update_all(active: false)
         post_auth(submit: "sign_in", username: user.username, password: password)
         expect(c18_saml_response_xml).to be_nil
         expect(response.body).to include("Your account is inactive.")

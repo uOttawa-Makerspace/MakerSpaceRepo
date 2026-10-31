@@ -253,7 +253,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       login!(user)
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("true")
-      user.update_columns(active: false)
+      User.unscoped.where(id: user.id).update_all(active: false)
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
@@ -345,7 +345,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
 
     it "an existing JWT of a deactivated user is rejected as well" do
       tok = user.token
-      user.update_columns(active: false)
+      User.unscoped.where(id: user.id).update_all(active: false)
       get check_signed_in_path, headers: { "Authorization" => "Bearer #{tok}" }
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
@@ -485,7 +485,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
 
     it "rejects a JWT of an inactive user" do
       tok = user.token
-      user.update_columns(active: false)
+      User.unscoped.where(id: user.id).update_all(active: false)
       expect(jwt_signed_in?(tok)).to be(false)
     end
 
