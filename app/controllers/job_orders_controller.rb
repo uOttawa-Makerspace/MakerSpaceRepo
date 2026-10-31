@@ -395,7 +395,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.latest_statu
         return redirect_to job_order_path(@job_order.id)
       end
       @payment_link = link.value
-      if @job_order.reload.latest_status&.job_status == JobStatus::COMPLETED
+      @job_order.job_order_statuses.reload # the status may have changed under checkout_link
+      if @job_order.latest_status&.job_status == JobStatus::COMPLETED
         render "job_orders/pay"
       else
         # checkout_link found the invoice out of date and sent the order back to staff (or an owner change did)
