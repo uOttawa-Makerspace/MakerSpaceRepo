@@ -385,7 +385,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.latest_statu
       # expired, tampered, deleted-order, already-retired or pre-D-J11 links
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
       redirect_to job_orders_path
-    elsif JobStatus::COMPLETED == @job_order.latest_status.job_status
+    elsif JobStatus::COMPLETED == @job_order.latest_status&.job_status # no status: not payable, as below
       link = @job_order.checkout_link # a refusal is already reported; the page says the link is unavailable
       if link.reason == :order_missing
         flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
@@ -395,8 +395,11 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.latest_statu
         return redirect_to job_order_path(@job_order.id)
       end
       @payment_link = link.value
-      @job_order.job_order_statuses.reset # the status may have changed under checkout_link: latest_status reads it again, one row
-      if @job_order.latest_status&.job_status == JobStatus::COMPLETED
+      # The status may have changed under checkout_link (maybe on another connection): read it again, one row, past
+      # the query cache (reset does not clear it, and the same SQL ran earlier in this request).
+      @job_order.job_order_statuses.reset
+      final_status = JobOrder.uncached { @job_order.latest_status }
+      if final_status&.job_status == JobStatus::COMPLETED
         render "job_orders/pay"
       else
         # checkout_link found the invoice out of date and sent the order back to staff (or an owner change did)

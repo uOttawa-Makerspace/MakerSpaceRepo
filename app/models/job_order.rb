@@ -17,9 +17,11 @@ class JobOrder < ApplicationRecord
 
   after_save :set_filename
 
-  # Orders whose latest status (the one rule, LATEST_STATUS_ID_SQL) exists and is not Draft.
+  # Orders whose latest status (the one rule, LATEST_STATUS_ID_SQL) exists and is not Draft. An order without a
+  # status is NULL <> id: excluded. With Draft unseeded (nil) the id is 0, which no status has: nothing is excluded
+  # beyond the orders without a status.
   scope :without_drafts,
-        -> { where("#{LATEST_STATUS_ID_SQL} <> ?", JobStatus::DRAFT.id) } # an order without a status is NULL <> id: excluded
+        -> { where("#{LATEST_STATUS_ID_SQL} <> COALESCE(?, 0)", JobStatus::DRAFT&.id) }
 
   scope :not_deleted, -> { where(is_deleted: false) }
 

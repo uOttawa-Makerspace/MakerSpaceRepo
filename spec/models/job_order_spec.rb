@@ -131,6 +131,17 @@ RSpec.describe JobOrder, type: :model do
 
     before { seed_job_statuses! }
 
+    it "excludes nothing but status-less orders when Draft is unseeded, and does not raise" do
+      stub_const("JobStatus::DRAFT", nil)
+      with_status = create(:job_order, user: create(:user, :regular_user))
+      with_status.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: with_status.user)
+      without_status = create(:job_order)
+
+      expect(JobOrder.without_drafts.to_sql.scan("SELECT s.job_status_id").size).to eq(1)
+      expect(JobOrder.without_drafts).to include(with_status)
+      expect(JobOrder.without_drafts).not_to include(without_status)
+    end
+
     it "includes orders whose LATEST status row is not Draft" do
       submitted = create(:job_order, user: create(:user, :regular_user))
       travel(5.minutes) do

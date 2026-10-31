@@ -54,6 +54,38 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
       expect(order.shopify_draft_order_fingerprint).to be_present
     end
 
+    it "re-reads the status past the query cache: a change committed meanwhile by another connection is seen" do
+      order, = quoted_order!(:completed)
+      pay_creates_draft!(order)
+      staff_id = JobStatus::STAFF_APPROVAL.id
+      allow_any_instance_of(JobOrder).to receive(:checkout_link).and_wrap_original do |m, *args|
+        link = m.call(*args)
+        # a write that does not go through the adapter, as another connection's commit would not: the query cache
+        # still holds the row the first read of this request saw
+        JobOrderStatus.connection.raw_connection.exec(
+          "INSERT INTO job_order_statuses (job_order_id, job_status_id, user_id, created_at, updated_at) " \
+          "VALUES (#{order.id}, #{staff_id}, #{owner.id}, now(), now())"
+        )
+        link
+      end
+
+      pay!(order)
+
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_quote_changed"))
+    end
+
+    it "treats an order without any status as not payable instead of raising" do
+      order, = quoted_order!(:completed)
+      token = order.pay_token
+      JobOrderStatus.where(job_order_id: order.id).delete_all
+
+      get pay_job_orders_path, params: { token: token }
+
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
+    end
+
     it "stores a fingerprint with the draft and serves that draft while the line items match" do
       order, = quoted_order!(:completed)
       pay!(order)
