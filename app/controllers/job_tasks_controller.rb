@@ -212,12 +212,9 @@ class JobTasksController < SessionsController
 
   # Draft -> Waiting for Staff Approval through the locked transition (JobOrder#transition!): the status is decided
   # under the order's row lock, so a double submit writes one status row and, the mail going out only after the
-  # commit and only when this request made the transition, sends one mail. A refusal (the order already left Draft,
-  # a busy row ...) changes and sends nothing, and says why.
+  # commit and only when this request made the transition, sends one mail. A refusal changes and sends nothing (the lock alone
+  # decides; there is no earlier check).
   def submit_for_approval
-    # a cheap early exit before the task queries (a fresh read, no write): the lock below still decides
-    return unless @job_order.current_status == JobStatus.draft
-
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       task.job_type.blank? ||
         (task.job_type.job_service_groups.any? && task.job_service.blank?)
@@ -225,8 +222,11 @@ class JobTasksController < SessionsController
     return if @tasks_missing_information.any?
 
     submitted = @job_order.transition!(from: JobStatus.draft, to: JobStatus.staff_approval, actor: current_user)
+    # :wrong_state is the order no longer being a Draft (another request already submitted it): a no-op, nothing to
+    # say or send; the task update itself succeeded. Any other refusal is said, with the messages of
+    # JobOrdersController#update_status.
     unless submitted.ok?
-      flash[:alert] = t(submitted.message_key) # the same refusal messages as JobOrdersController#update_status
+      flash[:alert] = t(submitted.message_key) unless submitted.reason == :wrong_state
       return
     end
 

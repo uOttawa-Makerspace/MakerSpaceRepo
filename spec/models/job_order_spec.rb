@@ -203,11 +203,7 @@ RSpec.describe JobOrder, type: :model do
       expect(JobOrder.editable_status?(JobStatus.completed)).to be(false)
     end
 
-    # an order without a status row is real data: no predicate looks a status up for it
-    it "are false for no status, even when the status rows they compare with are absent" do
-      JobStatus.delete_all
-      JobStatus.reset_lookup_cache!
-
+    it "are false for no status (an order without a status row is real data)" do
       expect(JobOrder.editable_status?(nil)).to be(false)
       expect(JobOrder.money_taken_status?(nil)).to be(false)
       expect(JobOrder.quoted_status?(nil)).to be(false)

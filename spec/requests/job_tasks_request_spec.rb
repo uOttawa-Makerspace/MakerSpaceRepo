@@ -458,6 +458,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
 
         expect(status_names(order)).to eq(["Draft", "Waiting for Staff Approval"])
         expect(ActionMailer::Base.deliveries.size).to eq(1)
+        expect(flash[:alert]).to be_nil # the second request is a quiet no-op
       end
 
       it "sends nothing when the order left Draft on another connection after this request loaded it" do
@@ -478,7 +479,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         expect(status_names(order)).to eq(["Draft", "Waiting for Staff Approval"])
         expect(ActionMailer::Base.deliveries).to be_empty
         expect(flash[:notice]).to be_nil
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating")) # :wrong_state, said so
+        expect(flash[:alert]).to be_nil # :wrong_state: already submitted, a no-op
       end
 
       it "says why, sends no mail and adds no row when the transition is refused (busy)" do

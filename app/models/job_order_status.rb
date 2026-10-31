@@ -1,8 +1,6 @@
 class JobOrderStatus < ApplicationRecord
   belongs_to :job_order, optional: true
-  # inverse_of: false: JobStatus.draft etc. are shared (memoized, readonly) records; with has_many_inversing, a status
-  # row built with one would be appended to that record's job_order_statuses target for the life of the process.
-  belongs_to :job_status, optional: true, inverse_of: false
+  belongs_to :job_status, optional: true
   belongs_to :user, optional: true
 
   validates :job_status_id, presence: true

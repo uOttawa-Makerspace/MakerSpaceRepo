@@ -488,11 +488,9 @@ RSpec.describe "Job order locked operations", type: :request do
       end
     end
 
-    it "soft-deleting an order without a status settles as :unpaid even when Paid is not seeded" do
+    it "soft-deleting an order without a status settles as :unpaid" do
       order = quoted_order!(:completed, draft: true)
       JobOrderStatus.where(job_order_id: order.id).delete_all
-      JobStatus.where(name: "Paid (Waiting for Pick-Up)").delete_all
-      JobStatus.reset_lookup_cache!
 
       expect(JobOrder.draft_settlement(nil, JobOrder::DELETED)).to eq(:unpaid)
       result = JobOrder.find(order.id).soft_delete!(actor: admin)

@@ -1,5 +1,4 @@
 class JobStatus < ApplicationRecord
-  has_many :job_order_statuses, dependent: :destroy
   validates :name, presence: true, uniqueness: true
 
   # The one table of the statuses the job order workflow depends on: key -> row name.
@@ -16,6 +15,15 @@ class JobStatus < ApplicationRecord
     declined: "Declined"
   }.freeze
 
+  # POLICY: the ten STATUS_NAMES rows are required reference data (the migrations ship them, production has them). A
+  # missing row is a deploy misconfiguration, so ANY path may raise JobStatus::Missing, and that is fail closed. The
+  # nil-status guards elsewhere (JobOrder.money_taken_status? ...) exist because "an order has no status row" is real
+  # data, not to avoid lookups.
+  #
+  # JobStatus has no association to the rows that use it (JobOrderStatus belongs_to :job_status; nothing reads the
+  # other direction). Deleting a status that rows still use is refused by the foreign key
+  # (job_order_statuses.job_status_id), not cascaded.
+  #
   # A workflow status row that does not exist. Lookups fail closed: they raise this and never return nil, so a
   # comparison against a missing status can not come out true ("no status" == "no such status").
   class Missing < StandardError
@@ -32,20 +40,19 @@ class JobStatus < ApplicationRecord
 
     # The workflow status for `key` (a STATUS_NAMES key; KeyError for any other). Raises JobStatus::Missing when the
     # row does not exist (nothing is memoized then).
-    # Design: ONE instance per key and process, built once from the row's raw attributes, marked readonly! (a
-    # workflow status row is reference data: save / update raise ActiveRecord::ReadOnlyRecord) and returned by every
-    # lookup, so a lookup costs neither a query nor an allocation after the first. It is safe to share because
-    # nothing writes to it: JobOrderStatus#job_status is inverse_of: false, so building a status row with it never
-    # appends to this record's job_order_statuses target (has_many_inversing would otherwise leak every row ever
-    # created). Equality is by id.
+    # Design: ONE record per key and process, loaded once, then readonly (save / update raise ReadOnlyRecord) and
+    # frozen after every attribute was read (so every type cast is done), with no associations: it is immutable, so
+    # every lookup returns the same shared object, with no query and no allocation after the first. Equality is by id.
+    # The map is captured in a local: a concurrent reset_lookup_cache! swaps the ivar, never the map in use, and
+    # compute_if_absent returns the record it stored (never nil).
     def fetch(key)
       name = STATUS_NAMES.fetch(key)
-      @lookup_cache[key] || begin
+      map = @lookup_cache
+      map.compute_if_absent(key) do
         row = find_by(name: name) or raise Missing.new(key, name)
-        # A Concurrent::Map is safe to use from any thread; two threads missing at once each build an equal record
-        # and the first stored one wins.
-        @lookup_cache.put_if_absent(key, instantiate(row.attributes_before_type_cast).tap(&:readonly!)) ||
-          @lookup_cache[key]
+        row.readonly!
+        row.attributes
+        row.freeze
       end
     end
 

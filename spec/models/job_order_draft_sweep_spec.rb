@@ -233,6 +233,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
   describe "Completed not seeded" do
     it "aborts the run once, at one defined point, reported as a run-level abort (nothing deleted)" do
       order = order_with_draft!(stored: "gid://shopify/DraftOrder/2")
+      order.job_order_statuses.delete_all # the foreign key keeps a status that rows still use
       JobStatus.where(name: "Completed (Waiting for Payment)").destroy_all
       JobStatus.reset_lookup_cache!
       report = sweep(draft_node("gid://shopify/DraftOrder/1", order))

@@ -3,8 +3,18 @@ require "open3"
 
 RSpec.describe JobStatus, type: :model do
   describe "Association" do
-    context "has_many" do
-      it { should have_many(:job_order_statuses) }
+    # reference data: no association to the rows that use it; the foreign key refuses deleting a used status
+    it "has no job_order_statuses association" do
+      expect(JobStatus.reflect_on_all_associations).to be_empty
+      expect(JobStatus.new).not_to respond_to(:job_order_statuses)
+    end
+
+    it "cannot be deleted while a job order status row uses it (foreign key)" do
+      status = create(:job_status, name: "Draft")
+      order = create(:job_order)
+      order.job_order_statuses.create!(job_status: status, user: order.user)
+
+      expect { JobStatus.where(id: status.id).delete_all }.to raise_error(ActiveRecord::InvalidForeignKey)
     end
   end
 
@@ -54,27 +64,28 @@ RSpec.describe JobStatus, type: :model do
       expect { JobStatus.draft }.to raise_error(JobStatus::Missing)
     end
 
-    it "returns the same readonly record on every lookup" do
+    it "returns the same frozen, readonly record on every lookup" do
       row = create(:job_status, name: "Draft")
       first = JobStatus.draft
 
       expect(JobStatus.draft).to equal(first)
       expect(JobStatus.fetch(:draft)).to equal(first)
       expect(first).to eq(row)
-      expect(first).to be_persisted.and be_readonly
+      expect(first).to be_persisted.and be_readonly.and be_frozen
       expect { first.save }.to raise_error(ActiveRecord::ReadOnlyRecord)
-      expect { first.update(name_fr: "Brouillon") }.to raise_error(ActiveRecord::ReadOnlyRecord)
+      expect { first.update(name_fr: "Brouillon") }.to raise_error(FrozenError)
       expect(row.reload.name_fr).to be_nil
     end
 
-    it "collects nothing from the status rows created with it (no inverse on JobOrderStatus#job_status)" do
-      create(:job_status, name: "Draft")
-      order = create(:job_order)
-      3.times { order.job_order_statuses.create!(job_status: JobStatus.draft, user: order.user) }
+    it "never returns nil when the cache is reset between the miss and the store" do
+      row = create(:job_status, name: "Draft")
+      allow(JobStatus).to receive(:find_by).and_wrap_original do |original, *args, **kwargs|
+        JobStatus.reset_lookup_cache! # another thread resetting while this one loads
+        original.call(*args, **kwargs)
+      end
 
-      expect(JobOrderStatus.reflect_on_association(:job_status).options[:inverse_of]).to be(false)
-      expect(JobStatus.draft.association(:job_order_statuses)).not_to be_loaded
-      expect(JobStatus.draft.association(:job_order_statuses).target).to be_empty
+      expect(JobStatus.draft).to eq(row)
+      expect(JobStatus.draft).not_to be_nil
     end
 
     it ".fetch raises KeyError for a key that is not a workflow status" do
