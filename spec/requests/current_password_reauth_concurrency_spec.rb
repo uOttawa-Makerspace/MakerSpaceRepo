@@ -14,7 +14,6 @@ RSpec.describe "Current-password exhaustion under concurrency", type: :request d
 
   after do
     ApiRefreshToken.where(user_id: user.id).delete_all
-    RateLimitCounter.delete_all # the logins above counted against the IP limit too
     User.unscoped.where(id: user.id).delete_all
   end
 

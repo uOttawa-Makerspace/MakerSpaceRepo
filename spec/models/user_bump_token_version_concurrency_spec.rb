@@ -11,7 +11,6 @@ RSpec.describe User, "#bump_token_version! compare-and-set under concurrency" do
   let!(:user) { create(:user, :regular_user) }
 
   after do
-    RateLimitCounter.where("key LIKE ?", "reauth/#{user.id}/%").delete_all
     ApiRefreshToken.where(user_id: user.id).delete_all
     User.unscoped.where(id: user.id).delete_all
   end
