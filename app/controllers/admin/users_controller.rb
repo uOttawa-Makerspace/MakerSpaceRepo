@@ -3,6 +3,10 @@
 class Admin::UsersController < AdminAreaController
   before_action :load_user, only: %i[show edit update]
   before_action :require_admin, only: %i[delete_user restore_user toggle_lock_user set_role manage_roles]
+  # delete_user re-checks the admin's own password: counted in the same budget as change_password and
+  # change_email (ReauthThrottle), so it is not a password-guessing oracle for a hijacked admin session.
+  include ReauthThrottle
+  before_action :limit_reauth_attempts, only: :delete_user, if: :current_password_submitted?
 
   layout "admin_area"
 
@@ -82,10 +86,11 @@ class Admin::UsersController < AdminAreaController
   end
 
   def delete_user
-    unless @user.admin? && @user.pword == params[:password]
+    unless @user.admin? && @user.authenticate_password(submitted_current_password)
       redirect_to user_path(User.find(params[:id]).username), alert: "Invalid password!"
       return
     end
+    RateLimitCounter.reset(@user.reauth_attempts_key)
 
     delete_user = User.find(params[:id])
     begin
@@ -169,6 +174,12 @@ class Admin::UsersController < AdminAreaController
   end
 
   private
+
+  # The password the admin re-typed to delete an account (counted by ReauthThrottle).
+  def submitted_current_password
+    params[:password].to_s
+  end
+
 
   # ============================================
   # Authorization

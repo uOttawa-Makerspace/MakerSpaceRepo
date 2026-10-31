@@ -5,7 +5,8 @@
 default: &default
   store_options:
     # Entries older than this are expired, whatever their own expires_in. Longest
-    # real lifetime here is an hour (rate limits); fragments are 10 minutes.
+    # real lifetime here is a day (the email-domain verdict); fragments are minutes to an hour.
+    # (Rate limits are not here: they count in rate_limit_counters, see RateLimitCounter.)
     max_age: <%= 7.days.to_i %>
     # The table is capped; the oldest entries go first.
     max_size: <%= 256.megabytes %>

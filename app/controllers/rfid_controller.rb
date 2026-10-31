@@ -120,11 +120,17 @@ class RfidController < SessionsController
 
   private
 
-  # The caller's MAC as a normalized string, or nil (never a hash/array param).
+  # The caller's MAC as a normalized string, or nil (never a hash/array param, and never anything
+  # that is not a MAC: the value goes into a rate-limit key, so an unvalidated one would let a sender
+  # create counter rows of unbounded number and length). A malformed MAC is treated as no MAC at all:
+  # no reader matches it, it is counted against the caller's IP only, and nothing stores it.
+  TAP_MAC_FORMAT = /\A[0-9a-f]{2}(:[0-9a-f]{2}){5}\z/
+
   def tap_mac_address
     return @tap_mac_address if defined?(@tap_mac_address)
 
-    @tap_mac_address = PiReader.normalize_mac(params[:mac_address])
+    mac = PiReader.normalize_mac(params[:mac_address])
+    @tap_mac_address = mac if mac&.match?(TAP_MAC_FORMAT)
   end
 
   def tap_without_session?

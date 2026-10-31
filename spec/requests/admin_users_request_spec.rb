@@ -360,6 +360,33 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(target.reload.deleted).to be(false)
     end
 
+    # The admin's re-typed password is counted in the same budget as change_password / change_email (ReauthThrottle):
+    # five wrong guesses are answered normally, the sixth ends every credential without checking the password.
+    it "counts wrong passwords in the re-authentication budget and signs the admin out once it is exhausted" do
+      before = admin.reload.token_version
+      ReauthThrottle::REAUTH_MAX_ATTEMPTS.times do
+        delete delete_user_admin_users_path, params: { id: target.id, password: "wrong" }
+        expect(flash[:alert]).to eq("Invalid password!")
+      end
+      expect(RateLimitCounter.find_by!(key: "reauth/#{admin.id}/#{before}").count).to eq(ReauthThrottle::REAUTH_MAX_ATTEMPTS)
+
+      expect_any_instance_of(User).not_to receive(:authenticate_password)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq(ReauthThrottle::REAUTH_LIMIT_ALERT)
+      expect(admin.reload.token_version).to eq(before + 1)
+      expect(target.reload.deleted).to be(false)
+    end
+
+    it "clears the count after a correct password" do
+      key = "reauth/#{admin.id}/#{admin.reload.token_version}"
+      2.times { delete delete_user_admin_users_path, params: { id: target.id, password: "wrong" } }
+      expect(RateLimitCounter.find_by!(key: key).count).to eq(2)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      expect(RateLimitCounter.exists?(key)).to be(false)
+    end
+
     it "soft-deletes: flags user and repositories, removes lab sessions and certifications" do
       repo = create(:repository)
       repo.users << target

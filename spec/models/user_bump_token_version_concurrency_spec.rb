@@ -74,6 +74,25 @@ RSpec.describe User, "#bump_token_version! compare-and-set under concurrency" do
     expect { loaded.bump_token_version! }.to raise_error(ActiveRecord::RecordNotFound)
   end
 
+  # change_active! shares bump_token_version!'s missing-row error, but a no-match with the row present is a
+  # no-op that syncs the instance to the database instead of failing.
+  it "change_active! raises the same RecordNotFound when the row is gone" do
+    loaded = User.find(user.id)
+    User.unscoped.where(id: user.id).delete_all
+    expect { loaded.send(:change_active!, false) }.to raise_error(ActiveRecord::RecordNotFound, /no longer exists/)
+  end
+
+  it "change_active! returns false, bumping nothing, and syncs the instance when the row already has the value" do
+    loaded = User.find(user.id)
+    in_other_connection { User.find(user.id).send(:change_active!, false) }
+    version = User.unscoped.find(user.id).token_version
+
+    expect(loaded.send(:change_active!, false)).to be(false)
+    expect(loaded.active).to be(false)
+    expect(loaded.token_version).to eq(version)
+    expect(User.unscoped.find(user.id).token_version).to eq(version)
+  end
+
   it "admin_lock! on a soft-deleted user succeeds and bumps" do
     in_other_connection { User.find(user.id).soft_delete! }
     version = User.unscoped.find(user.id).token_version

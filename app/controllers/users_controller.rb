@@ -24,21 +24,9 @@ class UsersController < SessionsController
                   unlock_account
                 ]
 
-  # Re-authentication (the current password on change_password / change_email) is
-  # throttled per signed-in user and per credential generation (token_version), one
-  # budget for both actions. Every submitted current password is counted ATOMICALLY
-  # (RateLimitCounter) BEFORE it is verified, so parallel guesses cannot all slip
-  # under the limit; a correct one clears the count. A blank one is a validation
-  # error, not a guess, and is not counted. Going over ends every credential of the
-  # user (cookie session, JWT, refresh tokens: token_version bump) without running
-  # bcrypt: a hijacked session is killed, the account is not, and signing in again
-  # starts a fresh budget (a new token_version is a new key). It never touches the
-  # login lockout (auth_attempts/locked).
-  REAUTH_MAX_ATTEMPTS = 5
-  REAUTH_WINDOW = 15.minutes
-  REAUTH_LIMIT_ALERT =
-    'Too many incorrect current-password attempts. You have been signed out for your security; ' \
-    'please sign in again to continue.'
+  # Re-authentication (the current password on change_password / change_email) is throttled
+  # per signed-in user, one budget shared with every other re-check (see ReauthThrottle).
+  include ReauthThrottle
   before_action :limit_reauth_attempts, only: %i[change_password change_email], if: :current_password_submitted?
 
   LINK_EXPIRED_ALERT =
@@ -513,10 +501,6 @@ class UsersController < SessionsController
     (action_name == 'change_password' ? params.dig(:user, :old_password) : params[:current_password]).to_s
   end
 
-  def current_password_submitted?
-    submitted_current_password.present?
-  end
-
   # nil when the submitted current password is right (which clears the attempt
   # count); the alert otherwise. The attempt was counted by limit_reauth_attempts.
   def current_password_alert
@@ -528,19 +512,6 @@ class UsersController < SessionsController
     else
       'Incorrect current password.'
     end
-  end
-
-  # Counts the attempt and, when it is over the limit, ends every credential of the
-  # user (User#count_reauth_attempt!: one transaction, fail closed: if anything raises
-  # the attempt is not counted, nothing is bumped, and the error propagates BEFORE any
-  # password is checked). Over the limit the request is signed out whether or not it
-  # was the one that bumped (a racing request, or a vanished account, just signs out).
-  def limit_reauth_attempts
-    count = @user.count_reauth_attempt!(max: REAUTH_MAX_ATTEMPTS, window: REAUTH_WINDOW)
-    return if count <= REAUTH_MAX_ATTEMPTS
-
-    sign_out
-    redirect_to login_path, alert: REAUTH_LIMIT_ALERT
   end
 
   # A live email-change token whose user is the signed-in user; sets the alert

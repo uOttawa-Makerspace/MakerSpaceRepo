@@ -573,7 +573,7 @@ class User < ApplicationRecord
     unless written
       return false if from_version
 
-      raise ActiveRecord::RecordNotFound, "#{self.class.name} #{id} no longer exists"
+      raise_missing_row!
     end
 
     apply_bumped_row(written, values)
@@ -1058,13 +1058,17 @@ class User < ApplicationRecord
   # Sets `active` to `target` and bumps token_version in ONE UPDATE, only when the
   # column differs (IS DISTINCT FROM). Returns true when it changed, false when it
   # already had that value (nothing bumped, nothing revoked).
+  #
+  # Unlike bump_token_version!(from_version:), which returns false and leaves the
+  # instance alone when its compare-and-set matches nothing, a no-match here has TWO
+  # possible causes (the row already has the target, or it is gone) and the caller is
+  # handed an instance that must tell the truth about `active`, so it reads the row
+  # back; only the missing-row error is shared (raise_missing_row!).
   def change_active!(target)
     written = write_and_bump_token_version({ active: target }, extra_where: ["active IS DISTINCT FROM ?", target])
     unless written
-      # Nothing changed: the row already has the target (or is gone). Sync the instance
-      # from the database so it tells the truth (written from the database state, not assigned).
       current = self.class.uncached { self.class.unscoped.where(id: id).pick(:active, :token_version) }
-      raise ActiveRecord::RecordNotFound, "#{self.class.name} #{id} no longer exists" unless current
+      raise_missing_row! unless current
 
       @attributes.write_from_database("active", current[0])
       @attributes.write_from_database("token_version", current[1])
@@ -1073,6 +1077,10 @@ class User < ApplicationRecord
 
     apply_bumped_row(written, { active: target })
     true
+  end
+
+  def raise_missing_row!
+    raise ActiveRecord::RecordNotFound, "#{self.class.name} #{id} no longer exists"
   end
 
   def translate_faculty

@@ -50,4 +50,38 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
     expect(returned.sort).to eq((2..81).to_a)
     expect(described_class.find(key).count).to eq(81)
   end
+
+  # prune! picks its candidates in a subquery, then deletes them. A concurrent increment that restarts a candidate's
+  # window after that snapshot (here: an open transaction holding the row, committed once prune! is blocked on it)
+  # must keep its row: deleting it would hand an attacker a fresh budget mid-window.
+  it "prune! does not delete a counter whose window a concurrent increment restarted after the candidates were picked" do
+    described_class.increment(key, 4, expires_in: 1.minute)
+    described_class.where(key: key).update_all(expires_at: 1.minute.ago)
+
+    holder_ready = Queue.new
+    release = Queue.new
+    holder = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do |conn|
+        conn.transaction do
+          conn.execute("UPDATE rate_limit_counters SET count = 1, expires_at = now() + interval '1 hour' WHERE key = #{conn.quote(key)}")
+          holder_ready << true
+          release.pop
+        end
+      end
+    end
+    holder_ready.pop
+
+    pruner = Thread.new { ActiveRecord::Base.connection_pool.with_connection { described_class.prune! } }
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 10
+    until described_class.connection.select_value("SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE 'DELETE FROM \"rate_limit_counters\"%'").to_i.positive?
+      raise "prune! never blocked on the row lock" if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+
+      sleep 0.01
+    end
+    release << true
+    holder.join
+
+    expect(pruner.value).to eq(0)
+    expect(described_class.find(key).count).to eq(1)
+  end
 end

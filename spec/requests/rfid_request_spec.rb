@@ -519,6 +519,17 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(body).to eq(error: "Too many requests")
     end
 
+    it "never puts an overlong or garbage mac into a counter key (unbounded keys), and refuses the tap" do
+      ["a" * 5_000, "zz:zz:zz:zz:zz:zz", "aa:bb:cc:dd:ee", "aa:bb:cc:dd:ee:ff:00", "'; DROP TABLE users;--"].each do |bad|
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: bad }, as: :json
+        expect(response).to have_http_status(:unauthorized)
+      end
+      expect(counts.keys).not_to be_empty
+      expect(counts.keys.grep(/mac:/)).to be_empty
+      expect(counts.keys.map(&:length).max).to be < 100
+      expect(LabSession.count).to eq(0)
+    end
+
     it "counts per reader, not globally" do
       60.times { tap_card }
       other = create(:pi_reader, space: space)

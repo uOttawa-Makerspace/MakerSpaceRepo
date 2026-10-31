@@ -33,11 +33,14 @@ class RateLimitCounter < ApplicationRecord
   end
 
   # Deletes the rows whose window has ended, PRUNE_BATCH at a time. Returns the
-  # number deleted.
+  # number deleted. Every DELETE re-checks expiry on the row itself: the subquery only
+  # picks candidates from a snapshot, and an increment that restarted a candidate's
+  # window after that snapshot must not lose its (live) counter, or an attacker's
+  # budget would reset mid-window.
   def self.prune!(now: Time.current)
     total = 0
     loop do
-      deleted = where(key: where(expires_at: ...now).limit(PRUNE_BATCH).select(:key)).delete_all
+      deleted = where(key: where(expires_at: ...now).limit(PRUNE_BATCH).select(:key)).where(expires_at: ...now).delete_all
       total += deleted
       return total if deleted < PRUNE_BATCH
     end
