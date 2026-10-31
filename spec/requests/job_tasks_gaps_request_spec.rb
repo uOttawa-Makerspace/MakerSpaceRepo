@@ -202,7 +202,7 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(task.reload.job_service).to eq(foreign_service)
     end
 
-    it "does not stop the owner from changing the task once the order left Draft (see job_orders_security_request_spec D-J35)" do
+    it "does not stop the owner from changing the task once the order left Draft (D-J35; not yet quoted, so no re-quote)" do
       sent = order_with_task!(status_key: :staff_approval)
       session_login!(owner)
       patch job_order_job_task_path(sent, sent.job_tasks.first),

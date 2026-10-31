@@ -5,27 +5,26 @@ class JobTasksController < SessionsController
   before_action :authorize_order!, only: [:edit]
   before_action :authorize_order_owner!, except: [:edit]
 
+  # create, update and destroy are the customer-side writers of the order's tasks, options, files and services.
+  # Each runs its writes inside JobOrder#apply_owner_change! (JOB-01): row lock, the status rule, and a quoted
+  # order goes back to staff with its invoice voided.
   def destroy
-    @job_task.destroy
+    outcome = apply_change { @job_task.destroy! }
+    return unless outcome
+
     respond_to do |format|
-      format.html { redirect_to job_order_path(@job_order), notice: 'Task was successfully deleted.' }
+      format.html do
+        flash[:notice] = 'Task was successfully deleted.' unless outcome == :sent_back
+        redirect_to job_order_path(@job_order)
+      end
       format.json { head :no_content }
     end
   end
 
   def create
-    highest_numbered_task = @job_order.job_tasks.maximum("CAST(SUBSTRING(title FROM 'Task ([0-9]+)') AS INTEGER)") || 0
-    total_tasks_count = @job_order.job_tasks.count
-    next_task_number = [highest_numbered_task, total_tasks_count].max + 1
+    return unless apply_change { @job_task = create_next_task! }
 
-    @job_task = @job_order.job_tasks.create!(
-      title: "Task ##{next_task_number}"
-    )
-    
     redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1)
-  rescue ActiveRecord::RecordInvalid => e
-    flash[:alert] = "Failed to create task: #{e.message}"
-    redirect_to job_order_path(@job_order)
   end
 
   def edit
@@ -59,36 +58,90 @@ class JobTasksController < SessionsController
   end
 
   def update
-    if params[:comments].present?
-      @job_order.chat_messages.create(
-        message: params[:comments],
-        sender: current_user
-      )
+    return unless apply_change { apply_task_update! }
+
+    # The wizard's comments are posted to the order chat once the change has committed. They change neither the bill
+    # nor the work, so they never send a quoted order back to staff.
+    @job_order.chat_messages.create(message: params[:comments], sender: current_user) if params[:comments].present?
+
+    # Don't do default next step behaviour for oddball cases
+    return redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1) if params[:add_another] == "true"
+    return redirect_to job_order_path(@job_order) if params[:save_draft].present? && params[:save_draft] == "true"
+
+    if @job_task.job_type&.name == "Design Services"
+      submit_for_approval
+      return redirect_to job_order_path(@job_order)
     end
 
-    # Handle custom service if selected
-    if params[:job_task] && params[:job_task][:job_service_id] == "custom"
-      service_group_id = nil
-      custom_service_name = nil
-
-      params.each do |key, value|
-        next unless key.start_with?('job_service_name_') && value.present?
-        service_group_id = key.split('_').last.to_i
-        custom_service_name = value
-        break
-      end
-
-      if service_group_id && custom_service_name.present?
-        custom_service = @job_order.job_services.find_or_initialize_by(
-          user_created: true,
-          job_service_group_id: service_group_id
-        )
-        custom_service.name = custom_service_name
-        custom_service.save!
-
-        params[:job_task][:job_service_id] = custom_service.id.to_s
-      end
+    next_step = params[:step].to_i + 1
+    if next_step >= 5
+      submit_for_approval
+      redirect_to job_order_path(@job_order)
+    else
+      redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: next_step)
     end
+  end
+
+  private
+
+  # Runs the block through JobOrder#apply_owner_change!. Returns :applied or :sent_back (with the "sent back for a
+  # new quote" notice) when the change committed; otherwise nothing was committed: redirects with the reason and
+  # returns false. The refusal has already been reported and logged by the model.
+  def apply_change(&)
+    result = @job_order.apply_owner_change!(actor: current_user, &)
+    return refused_change(result) unless result.ok?
+    return :applied unless result.value
+
+    flash[:notice] = t("job_orders.alerts.order_sent_back_for_requote")
+    :sent_back
+  end
+
+  def refused_change(result)
+    case result.reason
+    when :change_invalid then invalid_change(result.error.message)
+    when :wrong_state then refuse_change(t("job_orders.alerts.paid_order_cannot_change"))
+    when :draft_not_voidable then refuse_change(t("job_orders.alerts.owner_change_draft_order_failed"))
+    when :invalid_status_row then refuse_change(t("job_orders.alerts.send_back_failed"))
+    when :order_missing then refuse_change(t("job_orders.alerts.owner_change_order_missing"), to: job_orders_path)
+    else refuse_change(t("job_orders.alerts.owner_change_busy")) # busy, deadlock: nothing was changed, retry
+    end
+  end
+
+  # The change's own writes did not validate: the task errors, back to the step (update) or the order page.
+  def invalid_change(message)
+    if action_name == "update"
+      flash[:alert] = message
+      redirect_back(fallback_location: edit_job_order_job_task_path(@job_order, @job_task, step: params[:step]))
+    elsif action_name == "create"
+      flash[:alert] = "Failed to create task: #{message}"
+      redirect_to job_order_path(@job_order)
+    else
+      refuse_change(message)
+    end
+    false
+  end
+
+  def refuse_change(message, to: job_order_path(@job_order))
+    respond_to do |format|
+      format.html do
+        flash[:alert] = message
+        redirect_to to
+      end
+      format.any { head :conflict }
+    end
+    false
+  end
+
+  def create_next_task!
+    highest_numbered_task = @job_order.job_tasks.maximum("CAST(SUBSTRING(title FROM 'Task ([0-9]+)') AS INTEGER)") || 0
+    next_task_number = [highest_numbered_task, @job_order.job_tasks.count].max + 1
+    @job_order.job_tasks.create!(title: "Task ##{next_task_number}")
+  end
+
+  # The wizard step's writes. Raises ActiveRecord::RecordInvalid (rolling the whole step back) when the task, an
+  # option or a custom service does not validate.
+  def apply_task_update!
+    use_custom_service! if params[:job_task] && params[:job_task][:job_service_id] == "custom"
 
     submitted_options = if job_task_params.present? && job_task_params[:job_task_options_attributes].present?
       Array(job_task_params[:job_task_options_attributes]).each_with_object({}) do |opt, hash|
@@ -103,7 +156,7 @@ class JobTasksController < SessionsController
     submitted_options.each do |job_option_id, attrs|
       @job_task.job_task_options
               .find_or_initialize_by(job_option_id: job_option_id)
-              .update(attrs.except(:_destroy, :id))
+              .update!(attrs.except(:_destroy, :id))
     end
 
     # Remove options that weren't submitted (if on that step of form)
@@ -116,41 +169,33 @@ class JobTasksController < SessionsController
       end
     end
 
-    # Handle rest
-    if job_task_params.present? && !@job_task.update(job_task_params.except(:job_task_options_attributes))
-        flash[:alert] = @job_task.errors.full_messages.to_sentence
-        return redirect_back(fallback_location: edit_job_order_job_task_path(@job_order, @job_task, 
-step: params[:step]))
-    end
-
-    # Don't do default next step behaviour for oddball cases
-    if params[:add_another].present? && params[:add_another] == "true" 
-      highest_numbered_task = @job_order.job_tasks.maximum("CAST(SUBSTRING(title FROM 'Task ([0-9]+)') AS INTEGER)") || 0
-      total_tasks_count = @job_order.job_tasks.count
-      next_task_number = [highest_numbered_task, total_tasks_count].max + 1
-
-      @job_task = @job_order.job_tasks.create!(
-        title: "Task ##{next_task_number}"
-      )
-      
-      return redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1)
-    end
-    return redirect_to job_order_path(@job_order) if params[:save_draft].present? && params[:save_draft] == "true" 
-    if @job_task.job_type&.name == "Design Services"
-      submit_for_approval
-      return redirect_to job_order_path(@job_order)
-    end  
-
-    next_step = params[:step].to_i + 1
-    if next_step >= 5
-      submit_for_approval
-      redirect_to job_order_path(@job_order)
-    else
-      redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: next_step)
-    end
+    @job_task.update!(job_task_params.except(:job_task_options_attributes)) if job_task_params.present?
+    @job_task = create_next_task! if params[:add_another] == "true"
   end
 
-  private
+  # Handle custom service if selected
+  def use_custom_service!
+    service_group_id = nil
+    custom_service_name = nil
+
+    params.each do |key, value|
+      next unless key.start_with?('job_service_name_') && value.present?
+      service_group_id = key.split('_').last.to_i
+      custom_service_name = value
+      break
+    end
+
+    return unless service_group_id && custom_service_name.present?
+
+    custom_service = @job_order.job_services.find_or_initialize_by(
+      user_created: true,
+      job_service_group_id: service_group_id
+    )
+    custom_service.name = custom_service_name
+    custom_service.save!
+
+    params[:job_task][:job_service_id] = custom_service.id.to_s
+  end
 
   def job_task_params
     params.require(:job_task).permit(
@@ -165,8 +210,14 @@ step: params[:step]))
     {}
   end
 
+  # Draft -> Waiting for Staff Approval through the locked transition (JobOrder#transition!): the status is decided
+  # under the order's row lock, so a double submit writes one status row and, the mail going out only after the
+  # commit and only when this request made the transition, sends one mail. A refusal changes and sends nothing. An
+  # early return on one status read (below) spares non-Draft orders the task scan and the lock; the lock decides.
   def submit_for_approval
-    return if @job_order.job_order_statuses.last&.job_status != JobStatus::DRAFT
+    # One status read, an optimisation only: a non-Draft order skips the task scan and the lock. The row lock in
+    # transition! still decides; a stale "Draft" read just reaches it and gets a quiet :wrong_state.
+    return unless @job_order.latest_status&.job_status_id == JobStatus.draft.id
 
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       task.job_type.blank? ||
@@ -174,10 +225,15 @@ step: params[:step]))
     end
     return if @tasks_missing_information.any?
 
-    @job_order.job_order_statuses.create!(
-      job_status: JobStatus::STAFF_APPROVAL,
-      user: current_user
-    )
+    submitted = @job_order.transition!(from: JobStatus.draft, to: JobStatus.staff_approval, actor: current_user)
+    # :wrong_state is the order no longer being a Draft (another request already submitted it): a no-op, nothing to
+    # say or send; the task update itself succeeded. Any other refusal is said, with the messages of
+    # JobOrdersController#update_status.
+    unless submitted.ok?
+      flash[:alert] = t(submitted.message_key) unless submitted.reason == :wrong_state
+      return
+    end
+
     JobOrderMailer.send_job_submitted(@job_order.id).deliver_now
     flash[:notice] = t("job_orders.alerts.job_order_submitted_for_approval")
   end

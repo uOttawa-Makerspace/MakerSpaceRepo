@@ -18,6 +18,21 @@ class JobOrderMailer < ApplicationMailer
     end
   end
 
+  # JOB-01: an order went back to "Waiting for Staff Approval" because its quote no longer describes it
+  # (JobOrder#apply_owner_change!, JobOrder#checkout_link). Same recipient and expedited handling as send_job_submitted.
+  def send_job_requote_needed(job_order_id, reason)
+    return unless JobOrder.exists?(id: job_order_id)
+    @job_order = JobOrder.find(job_order_id)
+    @reason = reason
+
+    subject = "Job Order ##{@job_order.id} needs a new quote"
+    if @job_order.expedited?
+      mail(to: "makerspace@uottawa.ca", subject: "EXPEDITED: #{subject}", Importance: "high", "X-Priority": "1")
+    else
+      mail(to: "makerspace@uottawa.ca", subject: subject)
+    end
+  end
+
   def send_job_quote(job_order_id, reminder = false)
     return unless JobOrder.exists?(id: job_order_id)
     @job_order = JobOrder.find(job_order_id)
@@ -28,7 +43,7 @@ class JobOrderMailer < ApplicationMailer
     approved_fr, approved_en =
       if @job_order
            .job_order_statuses
-           .where(job_status: JobStatus::USER_APPROVAL)
+           .where(job_status: JobStatus.user_approval)
            .count > 1
         %w[réapprouvée re-approved]
       else

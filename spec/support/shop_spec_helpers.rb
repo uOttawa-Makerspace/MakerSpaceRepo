@@ -20,7 +20,7 @@ module ShopSpecHelpers
   class FakeShopifyAdmin
     Response = Struct.new(:code, :body)
     attr_reader :calls
-    attr_accessor :delete_user_errors, :draft_missing, :delete_returns_nothing, :missing_ids, :invoice_url, :draft_id, :fully_paid, :user_errors, :metafields, :status
+    attr_accessor :draft_status, :delete_user_errors, :draft_missing, :delete_returns_nothing, :missing_ids, :invoice_url, :draft_id, :fully_paid, :user_errors, :metafields, :status, :draft_statuses, :draft_pages, :fixed_cursor, :lose_delete_race, :on_query
 
     def initialize
       @calls = []
@@ -34,18 +34,37 @@ module ShopSpecHelpers
       @draft_missing = false
       @delete_returns_nothing = false
       @missing_ids = []
+      @draft_status = "OPEN"
+      @draft_statuses = {} # draft gid => status, for the getDraftOrder answer (default @draft_status)
+      @draft_pages = [] # the draftOrders listing: one Array of { "id", "status", "tags" } nodes per page
+    end
+
+    # the ids passed to draftOrderDelete, in order
+    def deleted_ids
+      @calls.select { |c| c[:query].include?("draftOrderDelete") }.map { |c| c[:variables].dig(:input, :id) }
     end
 
     def query(query:, variables: nil)
       @calls << { query: query, variables: variables }
+      @on_query&.call(query, variables)
       return Response.new(@status, nil) unless @status == 200
 
-      if query.include?("NodeMetafields")
+      if query.include?("jobOrderOpenDrafts")
+        index = variables[:after].to_s.delete_prefix("page-").then { |i| i.empty? ? 0 : i.to_i }
+        more = @fixed_cursor ? true : index + 1 < @draft_pages.size
+        Response.new(200, { "data" => { "draftOrders" => {
+          "nodes" => @draft_pages[index] || [], "pageInfo" => { "hasNextPage" => more, "endCursor" => @fixed_cursor || "page-#{index + 1}" }
+        } } })
+      elsif query.include?("NodeMetafields")
         Response.new(200, { "data" => { "node" => { "metafields" => { "edges" => @metafields.map { |m| { "node" => m } } } } } })
       elsif query.include?("draftOrderCreate")
         Response.new(200, { "data" => { "draftOrderCreate" => {
           "draftOrder" => (@user_errors.empty? ? { "id" => @draft_id } : nil), "userErrors" => @user_errors
         } } })
+      elsif query.include?("draftOrderDelete") && @lose_delete_race
+        id = variables.dig(:input, :id)
+        @lose_delete_race == :paid ? @draft_statuses[id] = "COMPLETED" : @missing_ids << id
+        Response.new(200, { "data" => { "draftOrderDelete" => { "deletedId" => nil, "userErrors" => [{ "field" => "id", "message" => "not deletable" }] } } })
       elsif query.include?("draftOrderDelete")
         Response.new(200, { "data" => { "draftOrderDelete" => {
           "deletedId" => (@delete_user_errors.empty? && !@delete_returns_nothing ? @draft_id : nil), "userErrors" => @delete_user_errors
@@ -54,7 +73,8 @@ module ShopSpecHelpers
         Response.new(200, { "data" => { "draftOrder" => nil } })
       else
         Response.new(200, { "data" => { "draftOrder" => {
-          "id" => @draft_id, "invoiceUrl" => @invoice_url,
+          "id" => @draft_id, "invoiceUrl" => @invoice_url, "status" => @draft_statuses.fetch(variables[:id], @draft_status),
+          "tags" => @draft_pages.flatten.find { |n| n["id"] == variables[:id] }&.fetch("tags", nil) || [],
           "order" => { "id" => "gid://shopify/Order/1", "fullyPaid" => @fully_paid }
         } } })
       end

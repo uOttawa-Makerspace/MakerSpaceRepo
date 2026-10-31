@@ -143,13 +143,14 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(status_names(start)).to eq(["Waiting to be Processed"])
     end
 
-    # WART(D-J47): update_status calls .last.job_status on the status history
-    it "500s (NoMethodError) on a transition for an order with no status rows" do
+    # FIXED(D-J47): an order with no status rows is in no source state, so the
+    # transition is refused with the generic error (the status is read under the lock)
+    it "refuses a transition for an order with no status rows (no 500)" do
       session_login!(staff)
       statusless = create(:job_order, user: owner)
       patch job_order_start_processing_path(statusless), params: { start_processing: "true" }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(statusless.reload.job_order_statuses).to be_empty
     end
 
     it "marks a paid transition without sending any mail" do
@@ -329,15 +330,15 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(error_text).to include("NoMethodError")
     end
 
-    # WART(D-J40): flash (not flash.now) on a rendered page leaks into the next request
-    it "carries the missing-info alert over to the next request" do
+    # FIXED(D-J40): the missing-info alert is flash.now, shown on the page that computed it only
+    it "does not carry the missing-info alert over to the next request" do
       order = make_job_order!(owner: owner, status_key: :staff_approval)
       order.job_tasks.create!(title: "Task #1")
       session_login!(owner)
       get job_order_path(order)
-      expect(flash[:alert]).to start_with(I18n.t("job_orders.alerts.missing_info"))
-      get landing_job_orders_path
       expect(response.body).to include(I18n.t("job_orders.alerts.missing_info"))
+      get landing_job_orders_path
+      expect(response.body).not_to include(I18n.t("job_orders.alerts.missing_info"))
     end
   end
 
@@ -375,21 +376,22 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- destroy
 
   describe "DELETE /job_orders/:id (destroy) corners" do
-    it "lets staff soft-delete another user's order (and sends them to the client index)" do
+    it "lets an admin soft-delete another user's order (and sends them to the admin list)" do
       order = order_with_task!
-      session_login!(staff)
+      session_login!(admin)
       delete job_order_path(order)
-      expect(response).to redirect_to(job_orders_path)
+      expect(response).to redirect_to(admin_job_orders_path)
       expect(order.reload.is_deleted).to be(true)
     end
 
-    # WART(D-J44): an owner can soft-delete an order that is already being processed or paid
-    it "lets the owner delete an in-progress and a paid order" do
+    # D-J44, closed: the server enforces what the page offers (JobOrder.deletable_by?)
+    it "lets the owner delete an editable order, not one in progress or paid" do
       session_login!(owner)
-      [:being_processed, :paid].each do |status_key|
+      [[:draft, true], [:being_processed, false], [:paid, false]].each do |status_key, deleted|
         order = order_with_task!(status_key: status_key)
         delete job_order_path(order)
-        expect(order.reload.is_deleted).to be(true)
+        expect(order.reload.is_deleted).to be(deleted)
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.not_deletable")) unless deleted
       end
     end
 

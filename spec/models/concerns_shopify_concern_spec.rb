@@ -47,12 +47,14 @@ RSpec.describe ShopifyConcern do
     end
   end
 
-  describe ".start_shopify_session" do
+  describe "the Admin client builder" do
     it "activates a session for <shop_name>.myshopify.com from the env credentials" do
-      session = Membership.start_shopify_session
+      expect(Membership).not_to respond_to(:start_shopify_session)
+      expect(ShopifyAPI::Clients::Graphql::Admin).to receive(:new).with(session: instance_of(ShopifyAPI::Auth::Session)).and_call_original
+      ShopifyConcern::DraftOrders.client
+      session = ShopifyAPI::Context.active_session
       expect(session.shop).to eq("fake-shop.myshopify.com")
       expect(session.access_token == "shpat_test_fake").to be(true)
-      expect(ShopifyAPI::Context.active_session).to eq(session)
     end
   end
 

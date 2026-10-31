@@ -54,8 +54,8 @@ class JobOrderMailerPreview < ActionMailer::Preview
     JobOrder.create!(
       user: User.last || User.create!(email: 'user@example.com'),
       job_order_statuses: [
-        JobOrderStatus.new(job_status: JobStatus::USER_APPROVAL),
-        JobOrderStatus.new(job_status: JobStatus::USER_APPROVAL) # For testing re-approved scenario
+        JobOrderStatus.new(job_status: JobStatus.user_approval),
+        JobOrderStatus.new(job_status: JobStatus.user_approval) # For testing re-approved scenario
       ]
     )
   end

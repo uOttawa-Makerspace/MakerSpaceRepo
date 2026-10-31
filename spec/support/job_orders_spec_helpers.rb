@@ -2,15 +2,11 @@
 
 # Characterization helpers for the JobOrders subsystem (chunk 6).
 #
-# Why this exists: `JobStatus::DRAFT` (and every other JobStatus constant) is
-# resolved ONCE at boot (`JobStatus.find_by(name: "Draft")` in the class body)
-# while the TEST database ships empty. Without these reference rows the
-# controller's status machinery operates on nils, which is NOT how the app
-# behaves in any deployed environment (production tables hold rows created by
-# db/migrate/*.rb). Each example that exercises the status machine asks this
-# helper to create the exact migration-shipped rows and to point the boot-time
-# constants at them (same pattern already used for BookingStatus in
-# spec/controllers/subspace_bookings_controller_spec.rb).
+# Why this exists: JobStatus.draft (and every other JobStatus lookup) raises
+# JobStatus::Missing while the TEST database ships empty. Each example that
+# exercises the status machine asks this helper to create the exact
+# migration-shipped rows (production tables hold rows created by
+# db/migrate/*.rb) and to reset the per-process lookup memo.
 #
 # JobType / JobOrderMessage rows follow the shipped migrations too (they are
 # referenced by name in the views/controller but never resolved through a
@@ -18,46 +14,13 @@
 module JobOrderSpecHelpers
   include ActiveSupport::Testing::TimeHelpers
 
-  JOB_STATUS_NAMES = {
-    draft: "Draft",
-    staff_approval: "Waiting for Staff Approval",
-    user_approval: "Waiting for User Approval",
-    sent_reminder: "Sent a Quote Reminder",
-    waiting_processed: "Waiting to be Processed",
-    being_processed: "Currently being Processed",
-    completed: "Completed (Waiting for Payment)",
-    paid: "Paid (Waiting for Pick-Up)",
-    picked_up: "Picked-Up",
-    declined: "Declined"
-  }.freeze
+  JOB_STATUS_NAMES = JobStatus::STATUS_NAMES
 
-  # Constant name -> JOB_STATUS_NAMES key, mirroring db/migrate data + class.
-  JOB_STATUS_CONSTANTS = {
-    "JobStatus::DRAFT" => :draft,
-    "JobStatus::STAFF_APPROVAL" => :staff_approval,
-    "JobStatus::USER_APPROVAL" => :user_approval,
-    "JobStatus::SENT_REMINDER" => :sent_reminder,
-    "JobStatus::WAITING_PROCESSED" => :waiting_processed,
-    "JobStatus::BEING_PROCESSED" => :being_processed,
-    "JobStatus::COMPLETED" => :completed,
-    "JobStatus::PAID" => :paid,
-    "JobStatus::PICKED_UP" => :picked_up,
-    "JobStatus::DECLINED" => :declined
-  }.freeze
-
+  # Creates the status rows the migrations ship (the test database starts empty) and forgets the memoized
+  # JobStatus lookups, so JobStatus.draft etc. resolve to these rows.
   def seed_job_statuses!
-    rows = seed_rows_with_status_constants!
-    stub_job_status_constants!(rows)
-    rows
-  end
-
-  # Advanced the JobStatus boot-constants without creating rows (call when the
-  # example already created the rows it needs).
-  def stub_job_status_constants!(rows = nil)
-    rows ||= seed_rows_with_status_constants!
-    JOB_STATUS_CONSTANTS.each do |const_name, key|
-      stub_const(const_name, rows.fetch(key))
-    end
+    rows = seed_rows_with_status_lookups!
+    JobStatus.reset_lookup_cache!
     rows
   end
 
@@ -144,7 +107,7 @@ module JobOrderSpecHelpers
 
   private
 
-  def seed_rows_with_status_constants!
+  def seed_rows_with_status_lookups!
     JOB_STATUS_NAMES.each_with_object({}) do |(key, name), memo|
       memo[key] =
         JobStatus.find_by(name: name) ||

@@ -725,7 +725,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     it "uses the re-approved wording once the order has multiple USER_APPROVAL rows" do
       order = order_with_task!(owner: owner, status_key: :user_approval)
       advance_to!(order, :user_approval)
-      expect(order.job_order_statuses.where(job_status: JobStatus::USER_APPROVAL).count).to eq(2)
+      expect(order.job_order_statuses.where(job_status: JobStatus.user_approval).count).to eq(2)
 
       patch job_order_resend_quote_email_path(order)
       expect(ActionMailer::Base.deliveries.last.subject)
@@ -902,6 +902,49 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).not_to include("nav.navbar") # layout: false
     end
 
+    # JOB-01 review 7: JobOrderStatus#user is optional (rows from before its presence validation have none)
+    it "names a missing actor 'Unknown' instead of raising, on processing and sent-back rows", skip_bullet: true do
+      order = order_with_task!(owner: owner)
+      advance_to!(order, :being_processed)
+      sent_back = order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner, reason: "owner_change")
+      JobOrderStatus.where(id: [sent_back.id, order.job_order_statuses.find_by!(job_status: JobStatus.being_processed).id])
+                    .update_all(user_id: nil)
+      http_login!(staff)
+      get job_order_timeline_modal_path(order)
+
+      expect(response).to have_http_status(:ok)
+      text = Nokogiri::HTML(response.body).text.squish
+      expect(text).to include("Currently being Processed (By: Unknown)")
+      expect(text).to include("#{I18n.t('job_orders.status_reasons.owner_change')} (By: Unknown)")
+    end
+
+    # Round 2 review 9: no N+1 (runs with Bullet on): statuses and their JobStatus in one query, users only for the
+    # rows that name their actor, in one query
+    it "loads the history with a fixed number of queries, users only for rows that show them" do
+      order = order_with_task!(owner: owner)
+      %i[staff_approval user_approval waiting_processed being_processed completed].each { |k| advance_to!(order, k) }
+      order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner, reason: "owner_change")
+      http_login!(staff)
+      JobStatus::STATUS_NAMES.each_key { |key| JobStatus.public_send(key) } # the per-process lookups are warm in a running app
+      tables = Hash.new(0)
+      subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+        %w[job_order_statuses job_statuses users].each { |t| tables[t] += 1 if payload[:sql].match?(/FROM "#{t}"/) }
+      end
+      begin
+        get job_order_timeline_modal_path(order)
+      ensure
+        ActiveSupport::Notifications.unsubscribe(subscriber)
+      end
+
+      expect(response).to have_http_status(:ok)
+      text = Nokogiri::HTML(response.body).text.squish
+      expect(text).to include("Currently being Processed (By: #{owner.name})")
+      expect(text).to include("#{I18n.t('job_orders.status_reasons.owner_change')} (By: #{owner.name})")
+      expect(tables["job_order_statuses"]).to eq(1)
+      expect(tables["job_statuses"]).to eq(1)
+      expect(tables["users"]).to be <= 2 # the signed-in staff user, and the actors of the rows that show them
+    end
+
     it "is staff/admin only — the owner gets bounced to root" do
       order = order_with_task!(owner: owner)
       http_login!(owner)
@@ -951,6 +994,14 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         expect(response.body).to include("Approve the Quote")
         expect(response.body).to include("Deny the Quote")
         expect(response.body).to include("user_magic_approval_confirmation")
+      end
+
+      it "rejects a valid token for an order without any status instead of raising" do
+        JobOrderStatus.where(job_order_id: magic_order.id).delete_all
+        get user_magic_approval_job_orders_path, params: { token: token }
+        expect(response).to redirect_to(job_orders_path)
+        expect(flash[:alert])
+          .to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
       end
 
       it "rejects tampered tokens with the expired-flash redirect" do
@@ -1030,7 +1081,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "a link from before a re-quote is retired when the order gets a new approval round" do
         old = token
-        magic_order.job_order_statuses.create!(job_status: JobStatus::USER_APPROVAL, user: owner)
+        magic_order.job_order_statuses.create!(job_status: JobStatus.user_approval, user: owner)
         get user_magic_approval_job_orders_path, params: { token: old }
         expect(response).to redirect_to(job_orders_path)
         get user_magic_approval_job_orders_path, params: { token: magic_order.reload.approval_token }
@@ -1039,7 +1090,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "a reminder keeps the original link working" do
         old = token
-        magic_order.job_order_statuses.create!(job_status: JobStatus::SENT_REMINDER, user: owner)
+        magic_order.job_order_statuses.create!(job_status: JobStatus.sent_reminder, user: owner)
         get user_magic_approval_job_orders_path, params: { token: old }
         expect(response).to have_http_status(:ok)
       end

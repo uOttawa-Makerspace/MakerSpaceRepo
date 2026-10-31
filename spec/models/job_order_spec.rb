@@ -40,16 +40,131 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
+  describe "the latest status (the highest status row id)" do
+    before { seed_job_statuses! }
+
+    let(:owner) { create(:user, :regular_user) }
+    # COMPLETED, then DRAFT: the latest is DRAFT (the highest id), however created_at and the array order say otherwise
+    let(:order) do
+      create(:job_order, user: owner).tap do |o|
+        o.job_order_statuses.create!(job_status: JobStatus.completed, user: owner)
+        o.job_order_statuses.create!(job_status: JobStatus.draft, user: owner)
+        o.job_order_statuses.order(:id).first.update_columns(created_at: 1.day.from_now)
+      end
+    end
+
+    def preloaded_in_reverse(order)
+      JobOrder.includes(:job_order_statuses).find(order.id).tap do |o|
+        o.association(:job_order_statuses).target.reverse! # a preload in no particular order
+      end
+    end
+
+    it "is the same for every reader, whatever order a preload came in" do
+      loaded = preloaded_in_reverse(order)
+      highest = order.job_order_statuses.reorder(id: :desc).first
+
+      expect(loaded.job_order_statuses.map(&:id)).to eq([highest.id, highest.id - 1]) # not in id order
+      expect(loaded.latest_status).to eq(highest)
+      expect(loaded.latest_status.job_status_id).to eq(JobStatus.draft.id)
+      expect(loaded.latest_status.job_status_id).to eq(JobOrder.where(id: order.id).pick(Arel.sql(JobOrder::LATEST_STATUS_ID_SQL)))
+      expect(loaded.task_edits_offered_to?(owner)).to be(true)
+      expect(order.reload.latest_status).to eq(highest) # unloaded: one query, the same row
+    end
+
+    it "has no latest_status_id reader (the SQL is the batch rule, #latest_status the instance rule)" do
+      expect(order).not_to respond_to(:latest_status_id)
+    end
+
+    it "sorts a row built on a loaded association (no id yet) after the persisted ones, like .last, without raising" do
+      loaded = JobOrder.includes(:job_order_statuses).find(order.id)
+      built = loaded.job_order_statuses.build(job_status: JobStatus.staff_approval, user: owner)
+
+      expect(loaded.job_order_statuses).to be_loaded
+      expect { loaded.task_edits_offered_to?(owner) }.not_to raise_error
+      expect(loaded.latest_status).to equal(built)
+      expect(loaded.latest_status).to equal(loaded.job_order_statuses.last)
+      expect(loaded.task_edits_offered_to?(owner)).to be(true) # STAFF_APPROVAL
+      expect(loaded.job_order_statuses.build(job_status: JobStatus.completed, user: owner)).to equal(loaded.latest_status)
+    end
+
+    it "orders the association by id" do
+      expect(JobOrder.includes(:job_order_statuses).find(order.id).job_order_statuses.map(&:id)).to eq(order.job_order_statuses.pluck(:id).sort)
+    end
+
+    it "is what .without_drafts decides on, when created_at and id disagree or tie" do
+      expect(JobOrder.without_drafts).not_to include(order) # created_at says COMPLETED is latest, the id says DRAFT
+
+      tied = create(:job_order, user: owner)
+      now = Time.current.change(usec: 0)
+      tied.job_order_statuses.create!(job_status: JobStatus.completed, user: owner, created_at: now)
+      tied.job_order_statuses.create!(job_status: JobStatus.draft, user: owner, created_at: now)
+      expect(JobOrder.without_drafts).not_to include(tied)
+
+      moved_on = create(:job_order, user: owner)
+      moved_on.job_order_statuses.create!(job_status: JobStatus.draft, user: owner, created_at: now)
+      moved_on.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner, created_at: now)
+      expect(JobOrder.without_drafts).to include(moved_on)
+      expect(JobOrder.without_drafts.where(id: moved_on.id).to_a).to eq([moved_on]) # one row per order
+      expect(JobOrder.without_drafts).not_to include(create(:job_order, user: owner)) # no status at all
+    end
+
+    # The preload is deliberately never read by checkout_link (it reads #current_status), which Bullet reports as unused.
+    it "keeps checkout_link's fast path from serving a draft when the highest-id status is not COMPLETED", skip_bullet: true do
+      shopify = stub_shopify_admin!
+      loaded = preloaded_in_reverse(order) # COMPLETED is the LAST element of the array, DRAFT the highest id
+      allow(loaded).to receive(:draft_order_current?).and_return(true)
+
+      result = loaded.checkout_link
+
+      expect(shopify.calls).to be_empty
+      expect(result.value).to be_nil
+    end
+  end
+
   describe "scope .without_drafts" do
     before { seed_job_statuses! }
+
+    def order_in(*keys)
+      create(:job_order, user: create(:user, :regular_user)).tap do |order|
+        keys.each { |key| order.job_order_statuses.create!(job_status: JobStatus.public_send(key), user: order.user) }
+      end
+    end
+
+    it "excludes a Draft order and an order without any status, and includes every non-draft order" do
+      draft = order_in(:draft)
+      without_status = create(:job_order)
+      others = %i[staff_approval user_approval sent_reminder waiting_processed being_processed completed paid
+                  picked_up declined].map { |key| order_in(key) }
+
+      result = JobOrder.without_drafts
+      expect(result).not_to include(draft, without_status)
+      expect(result).to match_array(others)
+    end
+
+    it "is one query however many orders there are (no query per order)" do
+      3.times { order_in(:staff_approval) }
+      JobStatus.draft # memoized: not part of the scope's own cost
+      statements = []
+      counter = ->(*, payload) { statements << payload[:sql] unless %w[SCHEMA TRANSACTION].include?(payload[:name]) }
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { JobOrder.without_drafts.to_a }
+
+      expect(statements.size).to eq(1)
+    end
+
+    it "raises JobStatus::Missing, instead of excluding nothing, when Draft is not seeded" do
+      JobStatus.where(name: "Draft").destroy_all
+      JobStatus.reset_lookup_cache!
+
+      expect { JobOrder.without_drafts }.to raise_error(JobStatus::Missing, /Draft/)
+    end
 
     it "includes orders whose LATEST status row is not Draft" do
       submitted = create(:job_order, user: create(:user, :regular_user))
       travel(5.minutes) do
-        submitted.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: submitted.user)
+        submitted.job_order_statuses.create!(job_status: JobStatus.draft, user: submitted.user)
       end
       travel(6.minutes) do
-        submitted.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: submitted.user)
+        submitted.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: submitted.user)
       end
 
       expect(JobOrder.without_drafts).to include(submitted)
@@ -58,10 +173,10 @@ RSpec.describe JobOrder, type: :model do
     it "excludes orders whose latest status is Draft (decided by MAX(created_at), not by presence)" do
       draft_last = create(:job_order, user: create(:user, :regular_user))
       travel(5.minutes) do
-        draft_last.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: draft_last.user)
+        draft_last.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: draft_last.user)
       end
       travel(6.minutes) do
-        draft_last.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: draft_last.user)
+        draft_last.job_order_statuses.create!(job_status: JobStatus.draft, user: draft_last.user)
       end
 
       expect(JobOrder.without_drafts).not_to include(draft_last)
@@ -72,35 +187,26 @@ RSpec.describe JobOrder, type: :model do
     it "keeps soft-deleted orders (deletion is a separate composition)" do
       submitted = create(:job_order, user: create(:user, :regular_user), is_deleted: true)
       travel(5.minutes) do
-        submitted.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: submitted.user)
+        submitted.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: submitted.user)
       end
       expect(JobOrder.without_drafts).to include(submitted)
       expect(JobOrder.not_deleted.without_drafts).not_to include(submitted)
     end
   end
 
-  describe "#allow_edit?" do
+  describe ".editable_status? / .money_taken_status? / .quoted_status?" do
     before { seed_job_statuses! }
 
-    it "allows editing in Draft and Staff-Pending states" do
-      order = create(:job_order, user: create(:user, :regular_user))
-      order.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: order.user)
-      expect(order.allow_edit?).to be(true)
-
-      order.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: order.user)
-      expect(order.allow_edit?).to be(true)
+    it "allows editing in Draft and Staff-Pending states only" do
+      expect(JobOrder.editable_status?(JobStatus.draft)).to be(true)
+      expect(JobOrder.editable_status?(JobStatus.staff_approval)).to be(true)
+      expect(JobOrder.editable_status?(JobStatus.completed)).to be(false)
     end
 
-    it "locks editing once payment is waiting" do
-      order = create(:job_order, user: create(:user, :regular_user))
-      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: order.user)
-      expect(order.allow_edit?).to be(false)
-    end
-
-    # WART(D-J20): allow_edit? has no nil guard on the status history
-    it "crashes on an order with no status rows" do
-      order = create(:job_order, user: create(:user, :regular_user))
-      expect { order.allow_edit? }.to raise_error(NoMethodError)
+    it "are false for no status (an order without a status row is real data)" do
+      expect(JobOrder.editable_status?(nil)).to be(false)
+      expect(JobOrder.money_taken_status?(nil)).to be(false)
+      expect(JobOrder.quoted_status?(nil)).to be(false)
     end
   end
 
@@ -232,7 +338,8 @@ RSpec.describe JobOrder, type: :model do
     before { seed_job_types! }
 
     let!(:shopify) { stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/inv-1" } }
-    let(:order) { create(:job_order, user: create(:user, :regular_user)) }
+    # /pay only serves COMPLETED orders, and checkout_link re-checks that under the row lock (JOB-03)
+    let(:order) { make_job_order!(owner: create(:user, :regular_user), status_key: :completed) }
 
     def quoted_task!(title, price:, service_price:, service_quantity:)
       order.job_tasks.create!(title: title).tap do |task|
@@ -274,26 +381,99 @@ RSpec.describe JobOrder, type: :model do
       it "creates the draft order once, stores its id and returns the invoice url" do
         quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
 
-        expect(order.reload.checkout_link).to eq("https://pay.example/inv-1")
+        expect(order.reload.checkout_link.value).to eq("https://pay.example/inv-1")
         expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
         expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] })
           .to eq(%w[draftOrderCreate getDraftOrder])
         created = shopify.calls.first[:variables][:input]
-        expect(created[:tags]).to eq(["makerepo_test_job_order"])
+        expect(created[:tags]).to eq(["makerepo_test_job_order", "job_order:#{order.id}"])
         expect(created[:metafields]).to eq([{ namespace: "makerepo", key: "job_order_db_reference",
                                               value: order.id.to_s, type: "number_integer" }])
       end
 
-      # WART(D-J38): after the first visit the draft order is only fetched, never
-      # refreshed, so a later re-quote keeps the old Shopify line items.
-      it "only fetches the existing draft order on later calls (no refresh of the line items)" do
+      # FIXED(D-J38 / JOB-03): the draft remembers the line items it was built from. While they match it is only
+      # fetched; once they change it is never served again (the order goes back to staff, see
+      # spec/requests/job_orders_pay_fingerprint_request_spec.rb).
+      it "stores a fingerprint with the id, then only fetches the draft while the line items still match" do
         quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
         order.reload.checkout_link
+        expect(order.reload.shopify_draft_order_fingerprint)
+          .to eq(described_class.find(order.id).quote_fingerprint)
         shopify.calls.clear
+
+        expect(order.reload.checkout_link.value).to eq("https://pay.example/inv-1")
+        expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
+      end
+
+      it "does not serve the draft once the line items changed behind it" do
+        quoted_task!("Task #1", price: 20, service_price: 0, service_quantity: 0)
+        order.reload.checkout_link
         order.reload.job_tasks.first.job_task_quote.update!(price: 99)
 
-        order.reload.checkout_link
-        expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] }).to eq(%w[getDraftOrder])
+        expect(order.reload.checkout_link.value).to be_nil
+        expect(order.reload.shopify_draft_order_id).to be_nil
+        expect(order.job_order_statuses.last.reason).to eq("invoice_mismatch")
+      end
+
+      it "fingerprints amounts by value at 2 decimals: 29.99 and 29.990 match, 29.98 does not" do
+        quote = quoted_task!("Task #1", price: 29.99, service_price: 0, service_quantity: 0).job_task_quote
+        before = described_class.find(order.id).quote_fingerprint
+        quote.update!(price: BigDecimal("29.990"))
+        expect(described_class.find(order.id).quote_fingerprint).to eq(before)
+        quote.update!(price: 29.98)
+        expect(described_class.find(order.id).quote_fingerprint).not_to eq(before)
+        expect(described_class.money_string(nil)).to eq("0.00")
+      end
+
+      # Round 2 review 7: two plain includes-based snapshots, both dropped by reload
+      it "reload drops both quote snapshots (total, fingerprint and draft lines all re-read)" do
+        option = JobOption.create!(name: "Polish", fee: 1)
+        quote = quoted_task!("Task #1", price: 10, service_price: 0, service_quantity: 0).job_task_quote
+        quote.job_task_quote_options.create!(job_option: option, price: 3)
+        order.reload
+        fingerprint = order.quote_fingerprint
+        expect(order.total_price).to eq(13)
+        expect(order.shopify_draft_order_line_items.map { |l| l[:title] }).to include("Task #1 Polish")
+
+        JobTaskQuote.where(id: quote.id).update_all(price: 20)
+        JobOption.where(id: option.id).update_all(name: "Wax")
+        expect(order.total_price).to eq(13) # memoized within the request
+
+        order.reload
+        expect(order.total_price).to eq(23)
+        expect(order.quote_fingerprint).not_to eq(fingerprint)
+        expect(order.shopify_draft_order_line_items.map { |l| l[:title] }).to include("Task #1 Wax")
+      end
+
+      # Round 3 review 6: ONE snapshot per request, so the total, the fingerprint and the draft lines cannot disagree
+      it "loads the tasks once for the total, the fingerprint and the draft lines" do
+        option = JobOption.create!(name: "Polish", fee: 1)
+        quote = quoted_task!("Task #1", price: 10, service_price: 0, service_quantity: 0).job_task_quote
+        quote.job_task_quote_options.create!(job_option: option, price: 3)
+        order.reload
+
+        task_loads = 0
+        counter = lambda do |*, payload|
+          task_loads += 1 if payload[:sql].match?(/\ASELECT\b.*FROM "job_tasks"/m)
+        end
+        ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
+          order.total_price
+          order.quote_fingerprint
+          order.shopify_draft_order_line_items
+          order.total_price
+        end
+
+        expect(task_loads).to eq(1)
+      end
+
+      it "does not fingerprint display titles: renaming a task or an option leaves it unchanged" do
+        option = JobOption.create!(name: "Polish", fee: 1)
+        quote = quoted_task!("Task #1", price: 10, service_price: 0, service_quantity: 0).job_task_quote
+        quote.job_task_quote_options.create!(job_option: option, price: 3)
+        before = described_class.find(order.id).quote_fingerprint
+        option.update!(name: "Polish (premium)")
+        order.job_tasks.first.update!(title: "Renamed")
+        expect(described_class.find(order.id).quote_fingerprint).to eq(before)
       end
 
       it "raises a network error from the concern when Shopify answers with a non-200 while creating" do
@@ -308,14 +488,15 @@ RSpec.describe JobOrder, type: :model do
 
       it "checkout_link reports and returns nil instead of raising when creation fails" do
         shopify.status = 502
-        expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(handled: true))
-        expect(order.checkout_link).to be_nil
+        expect(Rails.error).to receive(:report).with(an_instance_of(JobOrder::StaleDraftOrderError), hash_including(handled: true))
+        expect(order.checkout_link.value).to be_nil
       end
 
       it "treats an empty (but non-null) draftOrder as found, not gone: no re-create" do
-        order.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/9001")
+        fingerprint = described_class.find(order.id).quote_fingerprint
+        order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001", shopify_draft_order_fingerprint: fingerprint)
         allow(shopify).to receive(:query).and_return(ShopSpecHelpers::FakeShopifyAdmin::Response.new(200, { "data" => { "draftOrder" => {} } }))
-        expect(order.checkout_link).to be_nil
+        expect(order.checkout_link.value).to be_nil
         expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
         expect(shopify).to have_received(:query).once
       end

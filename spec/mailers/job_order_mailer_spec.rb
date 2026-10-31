@@ -53,6 +53,33 @@ RSpec.describe JobOrderMailer, type: :mailer do
     end
   end
 
+  # JOB-01: the staff notification for an order sent back for a new quote
+  describe ".send_job_requote_needed" do
+    it "tells the makerspace mailbox which order needs a new quote and why" do
+      described_class.send_job_requote_needed(order.id, "owner_change").deliver_now
+      mail = delivered.last
+      expect(mail.to).to eq(["makerspace@uottawa.ca"])
+      expect(mail.subject).to eq("Job Order ##{order.id} needs a new quote")
+      expect(mail.header["Importance"]).to be_nil
+      text = Nokogiri::HTML(mail.body.decoded).text.squish
+      expect(text).to include(I18n.t("job_orders.status_reasons.owner_change", locale: :en))
+      expect(text).to include("previous payment link no longer works")
+    end
+
+    it "marks an EXPEDITED order with a subject prefix and high-priority headers" do
+      expedite!
+      described_class.send_job_requote_needed(order.id, "owner_change").deliver_now
+      mail = delivered.last
+      expect(mail.subject).to eq("EXPEDITED: Job Order ##{order.id} needs a new quote")
+      expect(mail.header["Importance"].to_s).to eq("high")
+    end
+
+    it "sends nothing for an unknown order" do
+      described_class.send_job_requote_needed(99_999_999, "owner_change").deliver_now
+      expect(delivered).to be_empty
+    end
+  end
+
   describe ".send_job_quote" do
     it "mails the customer with reply-to, bcc and an approval link that resolves to the order id" do
       described_class.send_job_quote(order.id).deliver_now
@@ -75,7 +102,7 @@ RSpec.describe JobOrderMailer, type: :mailer do
     end
 
     it "switches to the re-approved wording once the order has more than one USER_APPROVAL row" do
-      order.job_order_statuses.create!(job_status: JobStatus::USER_APPROVAL, user: staff)
+      order.job_order_statuses.create!(job_status: JobStatus.user_approval, user: staff)
       described_class.send_job_quote(order.id).deliver_now
       expect(delivered.last.subject).to eq(
         "Votre commande ##{order.id} a été réapprouvée // Your job order ##{order.id} has been re-approved"
