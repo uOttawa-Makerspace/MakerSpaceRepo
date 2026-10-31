@@ -6,7 +6,8 @@ class JobOrder < ApplicationRecord
   belongs_to :job_service_group, optional: true
   belongs_to :job_order_quote, dependent: :destroy, optional: true
   has_many :job_order_options, dependent: :destroy
-  has_many :job_order_statuses, dependent: :destroy
+  # Oldest first, by id: THE order of a job order's statuses (see #latest_status; the history views read it too).
+  has_many :job_order_statuses, -> { order(:id) }, dependent: :destroy
   has_and_belongs_to_many :job_services
   has_many :chat_messages, dependent: :destroy
   belongs_to :assigned_staff, class_name: "User", optional: true
@@ -16,14 +17,12 @@ class JobOrder < ApplicationRecord
 
   after_save :set_filename
 
+  # Orders whose latest status (the one rule, LATEST_STATUS_ID_SQL) exists and is not Draft.
   scope :without_drafts,
         -> {
-          joins(:job_order_statuses)
-            .where(
-              "job_order_statuses.created_at = (SELECT MAX(job_order_statuses.created_at) FROM job_order_statuses WHERE job_order_statuses.job_order_id = job_orders.id)"
-            )
-            .where.not(job_order_statuses: { job_status: JobStatus::DRAFT })
-            .group("job_orders.id")
+          latest = Arel.sql(LATEST_STATUS_ID_SQL)
+          with_status = where("#{latest} IS NOT NULL")
+          JobStatus::DRAFT ? with_status.where("#{latest} <> ?", JobStatus::DRAFT.id) : with_status
         }
 
   scope :not_deleted, -> { where(is_deleted: false) }
@@ -301,7 +300,7 @@ class JobOrder < ApplicationRecord
   end
 
   def allow_edit?
-    self.class.editable_status?(job_order_statuses.last&.job_status)
+    self.class.editable_status?(latest_status&.job_status)
   end
 
   # The statuses in which the owner may still change (and delete) the order: before it is quoted.
@@ -323,7 +322,7 @@ class JobOrder < ApplicationRecord
   # Whether the order page offers `user` the wizard's Edit / Delete task / Add task buttons: the owner while the
   # order is not yet quoted, an admin until it is paid (#apply_owner_change! refuses a paid order either way).
   def task_edits_offered_to?(user)
-    status = job_order_statuses.last&.job_status
+    status = latest_status&.job_status
     return !self.class.money_taken_status?(status) if user.admin?
 
     editable_by_owner?(user, status)
@@ -370,7 +369,7 @@ class JobOrder < ApplicationRecord
     # has not yet deleted the draft, so this one fetch can still serve the link. Accepted (security review): that
     # transaction deletes the draft fail closed, so the link is dead as soon as the transition commits and a
     # refused transition leaves the order, and so the link, as it was.
-    if job_order_statuses.last&.job_status == JobStatus::COMPLETED && draft_order_current?
+    if latest_status&.job_status == JobStatus::COMPLETED && draft_order_current?
       state, url = shopify_fail_closed { probe_draft_order }
       return TransitionResult.done(url) if state == :found
       return TransitionResult.done(nil) if state == :error
@@ -476,11 +475,18 @@ class JobOrder < ApplicationRecord
   end
 
   # THE definition of an order's latest status: the status row with the highest id. SQL, so a whole batch of orders
-  # (DraftSweep) and one order (#latest_status_id, which #locked_operation reads under the lock) read it the same way.
+  # (DraftSweep, .without_drafts, #locked_operation under the lock) and the ordered association (#latest_status) read
+  # it the same way.
   LATEST_STATUS_ID_SQL = "(SELECT s.job_status_id FROM job_order_statuses s WHERE s.job_order_id = job_orders.id " \
                          "ORDER BY s.id DESC LIMIT 1)"
 
-  def latest_status_id = self.class.where(id: id).pick(Arel.sql(LATEST_STATUS_ID_SQL))
+  # The latest status row of this order (nil without one): the highest id. Every reader of "the current status" goes
+  # through it. A loaded association (a preload) is read by id, whatever order it came in; an unloaded one is one
+  # query, its `.last` (the association is ordered by id).
+  def latest_status = job_order_statuses.loaded? ? job_order_statuses.max_by(&:id) : job_order_statuses.last
+
+  # Its JobStatus id (the same rule as LATEST_STATUS_ID_SQL).
+  def latest_status_id = latest_status&.job_status_id
 
   # The same rule on plain values (the sweep decides it for many orders from one query): `deleted` the is_deleted
   # flag, `stored_gid` the stored shopify_draft_order_id, `status_id` the latest JobStatus id.
@@ -511,8 +517,9 @@ class JobOrder < ApplicationRecord
   # :draft_not_voidable (Shopify or the marker said no), :busy, :deadlock. `may_delete: false` (the sweep has used up
   # its cap) keeps a backed draft as :kept but refuses to delete any other, :delete_cap, decided under the lock.
   def self.reconcile_orphan_draft!(order_id, gid, may_delete:)
-    result = find_by(id: order_id)&.reconcile_draft_under_lock!(gid, may_delete)
-    return result unless result.nil? || result.reason == :order_missing
+    # always the locked path: the lock reads the row, and a row that is gone refuses :order_missing
+    result = instantiate("id" => order_id).reconcile_draft_under_lock!(gid, may_delete: may_delete)
+    return result unless result.reason == :order_missing
 
     reconcile_draft_of_missing_order(gid, order_id, may_delete)
   end
@@ -527,7 +534,7 @@ class JobOrder < ApplicationRecord
   private_class_method :reconcile_draft_of_missing_order
 
   # The locked half of .reconcile_orphan_draft! (public only for it; the marker re-check is the guard).
-  def reconcile_draft_under_lock!(gid, may_delete)
+  def reconcile_draft_under_lock!(gid, may_delete:)
     locked_operation("reconcile_orphan_draft!", live_only: false, report: false) do |status|
       next TransitionResult.done(:kept) if backs_draft?(gid, status&.id)
       next TransitionResult.refused(:delete_cap) unless may_delete
@@ -664,7 +671,8 @@ class JobOrder < ApplicationRecord
       lock_row!
       next TransitionResult.refused(:order_missing) if live_only && is_deleted
 
-      status = JobStatus.find_by(id: latest_status_id)
+      # the status row, read under the lock in ONE query (the association is not used: it may be a stale preload)
+      status = JobStatus.find_by(id: self.class.unscoped.where(id: id).select(Arel.sql(LATEST_STATUS_ID_SQL)))
       yield status
     end
     result.with(status: status)

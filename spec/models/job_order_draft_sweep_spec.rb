@@ -77,8 +77,9 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
 
   it "keeps a draft whose order moved to COMPLETED (keeping its stored id) after the sweep decided it was an orphan" do
     order = order_with_draft!(:staff_approval, stored: "gid://shopify/DraftOrder/1")
-    allow(JobOrder).to receive(:find_by).and_wrap_original do |m, *args, **kw|
-      m.call(*args, **kw).tap { |o| o.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner) }
+    allow(JobOrder).to receive(:reconcile_orphan_draft!).and_wrap_original do |m, *args, **kw|
+      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner) # between the listing and the lock
+      m.call(*args, **kw)
     end
     report = sweep(draft_node("gid://shopify/DraftOrder/1", order))
 
@@ -458,6 +459,65 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       expect(report.unresolved_gids.size).to eq(100)
     end
 
+    describe "when something escapes the run" do
+      let(:gids) { Array.new(3) { |i| "gid://shopify/DraftOrder/#{i + 1}" } }
+
+      def nodes_for(order) = gids.map { |gid| draft_node(gid, order) }
+
+      def expect_aborted(report, klass, message, unexamined:)
+        expect(report.unresolved.first).to eq("aborted: #{klass}: #{message}")
+        expect(report.unresolved_gids).to match_array(unexamined)
+        expect(report).not_to be_ok
+        expect(reports.map { |r| r.first.class }).to eq([klass, described_class::Unresolved])
+      end
+
+      it "returns the report with the unlock's failure recorded, and the drafts it examined are not unresolved" do
+        order = order_with_draft!
+        allow_any_instance_of(ActiveRecord::ConnectionAdapters::PostgreSQLAdapter).to receive(:select_value).and_wrap_original do |original, sql, *args|
+          raise ActiveRecord::ConnectionFailed, "gone" if sql.to_s.include?("pg_advisory_unlock")
+
+          original.call(sql, *args)
+        end
+        report = sweep(*nodes_for(order))
+
+        expect_aborted(report, ActiveRecord::ConnectionFailed, "gone", unexamined: [])
+        expect(report.counts[:deleted]).to eq(3)
+      end
+
+      it "lists every draft when the kill-switch count raises" do
+        order = order_with_draft!
+        allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(RuntimeError, "count failed")
+        report = sweep(*nodes_for(order))
+
+        expect_aborted(report, RuntimeError, "count failed", unexamined: gids)
+        expect(report.unresolved).to include("3 draft(s) not examined, the run was aborted")
+        expect(shopify.deleted_ids).to be_empty
+      end
+
+      it "lists the drafts from the one being examined when the loop raises" do
+        order = order_with_draft!
+        calls = 0
+        allow_any_instance_of(described_class).to receive(:reconcile).and_wrap_original do |original, *args|
+          raise IOError, "mid-loop" if (calls += 1) == 2
+
+          original.call(*args)
+        end
+        report = sweep(*nodes_for(order))
+
+        expect_aborted(report, IOError, "mid-loop", unexamined: gids.drop(1))
+        expect(report.counts[:deleted]).to eq(1)
+      end
+
+      it "flushes the reports, then lets an Interrupt through" do
+        order = order_with_draft!
+        allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(Interrupt)
+        shopify.draft_pages = [nodes_for(order)]
+
+        expect { described_class.run }.to raise_error(Interrupt)
+        expect(reports.map { |r| r.first.class }).to eq([Interrupt, described_class::Unresolved])
+      end
+    end
+
     it "reports two different classes once each" do
       order = order_with_draft!
       errors = [ArgumentError.new("a"), KeyError.new("b"), ArgumentError.new("c")]
@@ -506,14 +566,16 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       end
       shopify.draft_pages = [[draft_node("gid://shopify/DraftOrder/1", order)]]
 
+      report = nil
       begin
-        expect { described_class.run }.to raise_error(ActiveRecord::ConnectionFailed, "connection gone")
+        expect { report = described_class.run }.not_to raise_error
       ensure
         RSpec::Mocks.space.proxy_for(ActiveRecord::Base.connection).reset rescue nil # rubocop:disable Style/RescueModifier
         ActiveRecord::Base.connection.exec_query("SELECT pg_advisory_unlock(#{described_class::LOCK_KEY})")
       end
 
-      expect(reports.map { |r| r.first.class }).to eq([ArgumentError, described_class::Unresolved])
+      expect(reports.map { |r| r.first.class }).to eq([ArgumentError, ActiveRecord::ConnectionFailed, described_class::Unresolved])
+      expect(report.unresolved.first).to eq("aborted: ActiveRecord::ConnectionFailed: connection gone")
     end
 
     describe "run-level lines" do

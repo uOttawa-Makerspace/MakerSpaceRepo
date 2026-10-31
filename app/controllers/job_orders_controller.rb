@@ -43,9 +43,9 @@ class JobOrdersController < SessionsController
     @archived_job_orders = []
     @drafts = []
     @user.job_orders.not_deleted.each do |jo|
-      next unless jo.job_order_statuses.last
+      next unless jo.latest_status
 
-      if jo.job_order_statuses.last.job_status == JobStatus::DRAFT
+      if jo.latest_status.job_status == JobStatus::DRAFT
         @drafts << jo
       else
         @job_orders << jo
@@ -75,7 +75,7 @@ class JobOrdersController < SessionsController
     end
 
     flash.now[:notice] = t("job_orders.alerts.action_required_scroll_to_timeline") if [JobStatus::USER_APPROVAL, 
-JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_statuses.last&.job_status) && @job_order.user_id == current_user.id
+JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.latest_status&.job_status) && @job_order.user_id == current_user.id
 
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       # job type is missing or job type has a service not chosen
@@ -123,7 +123,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     @job_order = JobOrder.from_approval_token(@token)
     if @job_order &&
          [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(
-           @job_order.job_order_statuses.last.job_status
+           @job_order.latest_status.job_status
          )
       render "job_orders/magic_approval"
     else
@@ -178,7 +178,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   # One query for the rows and their statuses, one for the users of the rows that name their actor
   # (JobOrderStatus#actor_shown?); no per-row lookups.
   def timeline_modal
-    @statuses = @job_order.job_order_statuses.includes(:job_status).order(created_at: :desc).to_a
+    @statuses = @job_order.job_order_statuses.includes(:job_status).reorder(id: :desc).to_a
     ActiveRecord::Associations::Preloader.new(records: @statuses.select(&:actor_shown?), associations: :user).call
     render layout: false
   end
@@ -230,7 +230,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     elsif !error
       flash[:notice] = t(
         "job_orders.alerts.updated_job_status_to_x",
-        status: @job_order.job_order_statuses.last.job_status.t_name
+        status: @job_order.latest_status.job_status.t_name
       )
     else
       flash[:alert] = t("job_orders.alerts.error_while_updating")
@@ -385,7 +385,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
       # expired, tampered, deleted-order, already-retired or pre-D-J11 links
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
       redirect_to job_orders_path
-    elsif JobStatus::COMPLETED == @job_order.job_order_statuses.last.job_status
+    elsif JobStatus::COMPLETED == @job_order.latest_status.job_status
       link = @job_order.checkout_link # a refusal is already reported; the page says the link is unavailable
       if link.reason == :order_missing
         flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
@@ -395,7 +395,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
         return redirect_to job_order_path(@job_order.id)
       end
       @payment_link = link.value
-      if @job_order.job_order_statuses.reload.last&.job_status == JobStatus::COMPLETED
+      if @job_order.reload.latest_status&.job_status == JobStatus::COMPLETED
         render "job_orders/pay"
       else
         # checkout_link found the invoice out of date and sent the order back to staff (or an owner change did)
@@ -571,7 +571,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     if result.ok?
       flash[:notice] = t(
         "job_orders.alerts.updated_job_status_to_x",
-        status: @job_order.job_order_statuses.last.job_status.t_name
+        status: @job_order.latest_status.job_status.t_name
       )
     else
       flash[:alert] = t(result.message_key)

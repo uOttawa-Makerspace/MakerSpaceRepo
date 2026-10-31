@@ -5,7 +5,7 @@
   <div class="card-body">
     <% completed_status_ids = jo.job_order_statuses.map(&:job_status_id) %>
     <% status_by_id = jo.job_order_statuses.index_by(&:job_status_id) %>
-    <% current_status = jo.job_order_statuses.last&.job_status %>
+    <% current_status = jo.latest_status&.job_status %>
     <% current_status_id = current_status&.id %>
 
     <% all_statuses = [

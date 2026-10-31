@@ -36,7 +36,10 @@
 # in the Report and told ONCE per run, with a stable message (so the error tracker groups it) and the gids and counts
 # in the context (at most REPORTED_LIMIT). The run-level lines (listing problems, the cap, the stop) come BEFORE the
 # per-draft lines, so the REPORTED_LIMIT cut never removes them. The reports are sent even when something escapes the
-# run (an unlock on a dead connection).
+# run (an unlock on a dead connection). Nothing escapes #run: an exception out of the run itself (the unlock, the
+# kill-switch count, the loop) is recorded as the run-level line "aborted: <class>: <message>", the drafts not
+# examined are listed as unresolved, the reports are sent and the Report is returned (so the job completes and the
+# rake exits 1 with the list). Only an Interrupt / SignalException propagates, after the same flush.
 # Run by `rake job_orders:sweep_orphan_drafts` and, regularly, by JobOrderDraftSweepJob (config/recurring.yml).
 class JobOrder
   class DraftSweep
@@ -82,17 +85,25 @@ class JobOrder
       @unresolved_gids = []
       @unmarked = Set.new
       @errors = {} # exception class => { error:, gid:, order_id:, count: }: reported once each, at the end of the run
-      @database_error = nil
       @capped = [] # orphans met after the run had deleted the cap
-      @not_examined = 0 # drafts left unexamined by a database stop
+      @drafts = [] # the listed [gid, order id] pairs
+      @done = 0 # the drafts before this index were examined
+      @stop = nil # why the run stopped early: the run-level line about the drafts left unexamined
+      @stopped_by = nil # the connection error that stopped the run (see #database_error?)
     end
 
     def run
       report = nil
+      aborted = nil
       begin
         report = with_sweep_lock { sweep }
+      rescue StandardError => e
+        aborted = e
+      rescue Exception => e # rubocop:disable Lint/RescueException -- Interrupt, SignalException ...: flushed in the ensure, then propagated
+        aborted = e
+        raise
       ensure
-        # whatever escaped (the unlock on a dead connection ...), what was collected is still told
+        report = abort_run(aborted) if aborted
         report ||= build_report
         report_errors
         report_once(report) unless report.ok?
@@ -115,24 +126,47 @@ class JobOrder
     end
 
     def sweep
-      drafts = list_payable_drafts
-      reconcile_all(drafts) unless over_cap?(drafts)
+      @drafts = list_payable_drafts
+      if over_cap?(@drafts)
+        @done = @drafts.size # nothing is examined on purpose: the kill switch's own line says so
+      else
+        reconcile_all
+      end
       build_report
     end
 
-    # Stops at a database error (the rest unresolved, not examined). The deletes are held to the cap: the up-front
+    # Something escaped the run: it is told as the first run-level line, the drafts not examined are unresolved, and
+    # the exception is reported (once per class, with the others).
+    def abort_run(error)
+      note_error(error, nil, nil)
+      @run_lines.unshift("aborted: #{error.class}: #{error.message}")
+      stop_before(@done, "the run was aborted")
+      build_report
+    end
+
+    # Stops at a lost connection (the rest unresolved, not examined). The deletes are held to the cap: the up-front
     # count (#over_cap?) is unlocked, so drafts that became orphans during the run are caught here.
-    def reconcile_all(drafts)
-      drafts.each_with_index do |(gid, order_id), index|
-        return leave_unresolved(drafts.drop(index)) if @database_error
+    def reconcile_all
+      @drafts.each_with_index do |(gid, order_id), index|
+        @done = index
+        if @stopped_by
+          stop_before(index, "a database error stopped the run (#{@stopped_by.class})")
+          return
+        end
 
         reconcile(gid, order_id)
       end
+      @done = @drafts.size
     end
 
-    def leave_unresolved(rest)
+    # The drafts from index `from` on were not examined: unresolved, with the reason as a run-level line.
+    def stop_before(from, reason)
+      rest = @drafts.drop(from)
+      @done = @drafts.size
+      return if rest.empty?
+
       @unresolved_gids.concat(rest.map(&:first))
-      @not_examined = rest.size
+      @stop = "#{rest.size} draft(s) not examined, #{reason}"
     end
 
     # The run-level lines, first in the report: the cap met during the run, then the database stop.
@@ -142,7 +176,7 @@ class JobOrder
         lines << "#{@capped.size} orphan draft(s) found during the run beyond the cap of #{@max_deletes}: NOT deleted" \
                  "#{override_hint(@max_deletes + @capped.size)}"
       end
-      lines << "#{@not_examined} draft(s) not examined, a database error stopped the run (#{@database_error.class})" if @not_examined.positive?
+      lines << @stop if @stop
       lines
     end
 
@@ -256,12 +290,17 @@ class JobOrder
       unresolve(gid, order_id, result.reason, result.error)
     rescue StandardError => e
       note_error(e, gid, order_id)
-      @database_error ||= e if database_error?(e)
+      @stopped_by ||= e if database_error?(e)
       unresolve(gid, order_id, :unexpected, e)
     end
 
-    # Only a lost connection will hit every draft the same way, so only it stops the run. A statement error (a
-    # cancelled query, a constraint violation ...) belongs to its draft.
+    # Only a lost connection will hit every draft the same way, so only it stops the run. A plain
+    # ActiveRecord::StatementInvalid (a cancelled query, a constraint violation ...) belongs to its draft and does not
+    # stop the run, because stopping would buy nothing: (1) each exception class is reported once per run, so a
+    # failure that hits every draft is still one report with its count, not one per draft; (2) every lock wait is
+    # bounded by lock_timeout (ApplicationRecord.own_transaction, SET LOCAL lock_timeout), so a draft that cannot be had fails fast and the run moves
+    # on to the next instead of hanging. Stopping on any StatementInvalid would leave the healthy drafts unexamined
+    # for one bad row.
     def database_error?(error) = error.is_a?(ActiveRecord::ConnectionNotEstablished) || error.is_a?(ActiveRecord::ConnectionFailed)
 
     # Logs the failure and keeps the first exception of its class for #report_errors (its class and backtrace, for the

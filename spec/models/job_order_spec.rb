@@ -40,6 +40,71 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
+  describe "the latest status (the highest status row id)" do
+    before { seed_job_statuses! }
+
+    let(:owner) { create(:user, :regular_user) }
+    # COMPLETED, then DRAFT: the latest is DRAFT (the highest id), however created_at and the array order say otherwise
+    let(:order) do
+      create(:job_order, user: owner).tap do |o|
+        o.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner)
+        o.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: owner)
+        o.job_order_statuses.order(:id).first.update_columns(created_at: 1.day.from_now)
+      end
+    end
+
+    def preloaded_in_reverse(order)
+      JobOrder.includes(:job_order_statuses).find(order.id).tap do |o|
+        o.association(:job_order_statuses).target.reverse! # a preload in no particular order
+      end
+    end
+
+    it "is the same for every reader, whatever order a preload came in" do
+      loaded = preloaded_in_reverse(order)
+      highest = order.job_order_statuses.reorder(id: :desc).first
+
+      expect(loaded.job_order_statuses.map(&:id)).to eq([highest.id, highest.id - 1]) # not in id order
+      expect(loaded.latest_status).to eq(highest)
+      expect(loaded.latest_status_id).to eq(JobStatus::DRAFT.id)
+      expect(loaded.latest_status_id).to eq(JobOrder.where(id: order.id).pick(Arel.sql(JobOrder::LATEST_STATUS_ID_SQL)))
+      expect(loaded.allow_edit?).to be(true)
+      expect(loaded.task_edits_offered_to?(owner)).to be(true)
+      expect(order.reload.latest_status).to eq(highest) # unloaded: one query, the same row
+    end
+
+    it "orders the association by id" do
+      expect(JobOrder.includes(:job_order_statuses).find(order.id).job_order_statuses.map(&:id)).to eq(order.job_order_statuses.pluck(:id).sort)
+    end
+
+    it "is what .without_drafts decides on, when created_at and id disagree or tie" do
+      expect(JobOrder.without_drafts).not_to include(order) # created_at says COMPLETED is latest, the id says DRAFT
+
+      tied = create(:job_order, user: owner)
+      now = Time.current.change(usec: 0)
+      tied.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner, created_at: now)
+      tied.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: owner, created_at: now)
+      expect(JobOrder.without_drafts).not_to include(tied)
+
+      moved_on = create(:job_order, user: owner)
+      moved_on.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: owner, created_at: now)
+      moved_on.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: owner, created_at: now)
+      expect(JobOrder.without_drafts).to include(moved_on)
+      expect(JobOrder.without_drafts.where(id: moved_on.id).to_a).to eq([moved_on]) # one row per order
+      expect(JobOrder.without_drafts).not_to include(create(:job_order, user: owner)) # no status at all
+    end
+
+    it "keeps checkout_link's fast path from serving a draft when the highest-id status is not COMPLETED" do
+      shopify = stub_shopify_admin!
+      loaded = preloaded_in_reverse(order) # COMPLETED is the LAST element of the array, DRAFT the highest id
+      allow(loaded).to receive(:draft_order_current?).and_return(true)
+
+      result = loaded.checkout_link
+
+      expect(shopify.calls).to be_empty
+      expect(result.value).to be_nil
+    end
+  end
+
   describe "scope .without_drafts" do
     before { seed_job_statuses! }
 

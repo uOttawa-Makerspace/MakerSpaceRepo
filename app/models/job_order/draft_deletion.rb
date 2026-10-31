@@ -2,7 +2,9 @@
 
 # The ONLY code that deletes a Shopify draft by gid for a job order, and the one rule for a delete Shopify refuses.
 # Private to JobOrder (JobOrder.private_constant): only JobOrder and JobOrder::DraftSweep, which both lexically sit
-# inside it, can name it. It does not check the draft's tags or its owner, so nothing outside JobOrder may reach it
+# inside it, can name it. #delete_unless_completed! checks the fetched draft's marker (this environment's operating
+# tag and exactly the given order's marker) unless the caller opts out with `marker: nil` (an order's own stored
+# draft, which may predate the marker); #delete itself checks nothing, so nothing outside JobOrder may reach it
 # (ShopifyConcern::DraftOrders.delete is the raw call under it; see the note there).
 class JobOrder
   module DraftDeletion

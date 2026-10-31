@@ -211,7 +211,7 @@ class JobTasksController < SessionsController
   end
 
   def submit_for_approval
-    return if @job_order.job_order_statuses.last&.job_status != JobStatus::DRAFT
+    return if @job_order.latest_status&.job_status != JobStatus::DRAFT
 
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       task.job_type.blank? ||
