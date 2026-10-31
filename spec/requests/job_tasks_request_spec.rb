@@ -449,6 +449,35 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         expect(ActionMailer::Base.deliveries.last.to).to eq(["makerspace@uottawa.ca"])
       end
 
+      it "writes one status row and sends one mail when the same order is submitted twice" do
+        order = order_with_task!
+        task = order.job_tasks.first
+        task.update!(job_type: JobType.find_by!(name: "3D Print"))
+
+        2.times { patch job_order_job_task_path(order, task), params: { step: "4" } }
+
+        expect(status_names(order)).to eq(["Draft", "Waiting for Staff Approval"])
+        expect(ActionMailer::Base.deliveries.size).to eq(1)
+      end
+
+      it "sends nothing when the order left Draft on another connection after this request loaded it" do
+        order = order_with_task!
+        task = order.job_tasks.first
+        task.update!(job_type: JobType.find_by!(name: "3D Print"))
+        allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args, &blk|
+          unless JobOrderStatus.exists?(job_order_id: order.id, job_status: JobStatus.staff_approval)
+            JobOrderStatus.create!(job_order_id: order.id, job_status: JobStatus.staff_approval, user: owner)
+          end
+          m.call(*args, &blk)
+        end
+
+        patch job_order_job_task_path(order, task), params: { step: "4" }
+
+        expect(status_names(order)).to eq(["Draft", "Waiting for Staff Approval"])
+        expect(ActionMailer::Base.deliveries).to be_empty
+        expect(flash[:notice]).to be_nil
+      end
+
       # N+1 pinned: see defects.md D-PERF04
       it "stays a Draft when ANOTHER task is still incomplete (submit silently skipped)", skip_bullet: true do
         order = order_with_task!

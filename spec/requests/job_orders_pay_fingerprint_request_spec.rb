@@ -17,6 +17,16 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
     ActionMailer::Base.deliveries.clear
   end
 
+  # The request with application errors raised to the example (Rails 8.1 otherwise renders them as a 500 debug page).
+  def get_raising_app_errors(*args, **kwargs)
+    env_config = Rails.application.env_config
+    previous = env_config["action_dispatch.show_exceptions"]
+    env_config["action_dispatch.show_exceptions"] = :none
+    get(*args, **kwargs)
+  ensure
+    env_config["action_dispatch.show_exceptions"] = previous
+  end
+
   def status_names(order)
     order.reload.job_order_statuses.order(:id).map { |s| s.job_status.name }
   end
@@ -93,12 +103,23 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
       JobStatus.where(name: "Completed (Waiting for Payment)").delete_all
       JobStatus.reset_lookup_cache!
 
-      get pay_job_orders_path, params: { token: token }
-
-      expect(response).to have_http_status(:internal_server_error) # fails closed: JobStatus::Missing, never the pay page
-      expect(response.body).to include("JobStatus::Missing")
-      expect(response.body).not_to include("old-invoice")
+      expect { get_raising_app_errors pay_job_orders_path, params: { token: token } }
+        .to raise_error(JobStatus::Missing, /Completed/) # fails closed, never the pay page
       expect(shopify_ops).to be_empty
+    end
+
+    it "reads the current status twice on a served draft (the guard, the final re-read), not once more for the fast path" do
+      order, = quoted_order!(:completed)
+      pay_creates_draft!(order)
+      reads = []
+      counter = lambda do |*, payload|
+        reads << payload[:sql] if payload[:sql].include?("SELECT s.job_status_id FROM job_order_statuses s")
+      end
+
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { pay!(order) }
+
+      expect(response).to have_http_status(:ok)
+      expect(reads.size).to eq(2)
     end
 
     describe "#checkout_link lock-free fast path" do

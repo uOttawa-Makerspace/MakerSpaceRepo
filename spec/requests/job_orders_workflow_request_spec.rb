@@ -371,11 +371,11 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(response.body).to include("Approve the Quote")
     end
 
-    it "raises (500 NoMethodError) for an order without any status rows" do
+    it "treats an order without any status rows as not approvable (expired-link redirect, no error)" do
       statusless = create(:job_order, user: owner)
       get user_magic_approval_job_orders_path, params: { token: magic_link_token_for(statusless) }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
     end
   end
 

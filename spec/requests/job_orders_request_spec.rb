@@ -996,6 +996,14 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         expect(response.body).to include("user_magic_approval_confirmation")
       end
 
+      it "rejects a valid token for an order without any status instead of raising" do
+        JobOrderStatus.where(job_order_id: magic_order.id).delete_all
+        get user_magic_approval_job_orders_path, params: { token: token }
+        expect(response).to redirect_to(job_orders_path)
+        expect(flash[:alert])
+          .to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
+      end
+
       it "rejects tampered tokens with the expired-flash redirect" do
         get user_magic_approval_job_orders_path,
             params: { token: token.sub(/.\z/, "X") }

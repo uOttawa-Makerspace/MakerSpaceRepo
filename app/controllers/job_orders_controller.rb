@@ -123,7 +123,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @job_order = JobOrder.from_approval_token(@token)
     if @job_order &&
          [JobStatus.user_approval, JobStatus.sent_reminder].include?(
-           @job_order.latest_status.job_status
+           @job_order.latest_status&.job_status # an order without a status is not approvable
          )
       render "job_orders/magic_approval"
     else
@@ -138,10 +138,10 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     if @job_order
       @status = if update_status(
            params[:approved],
-           [JobStatus.user_approval, JobStatus.sent_reminder],
-           JobStatus.waiting_processed,
+           %i[user_approval sent_reminder],
+           :waiting_processed,
            true,
-           JobStatus.declined,
+           :declined,
            nil,
            actor: @job_order.user,
            approval_token: @token
@@ -160,10 +160,10 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   def user_approval
     if update_status(
          params[:approved],
-         [JobStatus.user_approval, JobStatus.sent_reminder],
-         JobStatus.waiting_processed,
+         %i[user_approval sent_reminder],
+         :waiting_processed,
          true,
-         JobStatus.declined,
+         :declined,
          nil
        ) && params[:approved] == "true"
       JobOrderMailer.send_job_user_approval(@job_order.id).deliver_now
@@ -256,8 +256,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   def start_processing
     update_status(
       params[:start_processing],
-      JobStatus.waiting_processed,
-      JobStatus.being_processed,
+      :waiting_processed,
+      :being_processed,
       false
     )
   end
@@ -265,8 +265,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   def processed
     if update_status(
          params[:completed],
-         JobStatus.being_processed,
-         JobStatus.completed,
+         :being_processed,
+         :completed,
          false,
          nil,
          nil
@@ -297,14 +297,14 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   def paid
-    update_status(params[:paid], JobStatus.completed, JobStatus.paid, false)
+    update_status(params[:paid], :completed, :paid, false)
   end
 
   def picked_up
     update_status(
       params[:picked_up],
-      JobStatus.paid,
-      JobStatus.picked_up,
+      :paid,
+      :picked_up,
       false
     )
   end
@@ -385,8 +385,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       # expired, tampered, deleted-order, already-retired or pre-D-J11 links
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
       redirect_to job_orders_path
-    elsif @job_order.current_status == JobStatus.completed # no status (nil): not payable, as below
-      link = @job_order.checkout_link # a refusal is already reported; the page says the link is unavailable
+    elsif (status = @job_order.current_status) == JobStatus.completed # no status (nil): not payable, as below
+      link = @job_order.checkout_link(status) # the fresh read just made is the fast path's; a refusal is already reported; the page says the link is unavailable
       if link.reason == :order_missing
         flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
         return redirect_to job_orders_path
@@ -549,9 +549,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   # One status transition through JobOrder#transition! (row lock, source state and approve link checked under it).
+  # The statuses are given as JobStatus keys (one or several for `from`) and resolved only when the request asks for
+  # them: a missing row of a status this request does not use never matters.
   def update_status(
     param,
-    current_status,
+    from_keys,
     true_status,
     need_false_status,
     false_status = nil,
@@ -562,7 +564,9 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     # which status was asked for, decided from the param alone
     asked = param == "true" || (param == "false" && need_false_status)
     result = if asked
-               @job_order.transition!(from: current_status, to: param == "true" ? true_status : false_status,
+               to_key = param == "true" ? true_status : false_status
+               @job_order.transition!(from: Array.wrap(from_keys).map { |key| JobStatus.public_send(key) },
+                                      to: to_key && JobStatus.public_send(to_key),
                                       actor: actor, approval_token: approval_token)
              else
                JobOrder::TransitionResult.refused(:wrong_state)

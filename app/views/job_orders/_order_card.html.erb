@@ -19,7 +19,7 @@
       JobStatus.paid,
       JobStatus.picked_up,
       JobStatus.declined
-    ].compact.reverse %>
+    ].reverse %>
 
     <% filtered_statuses = all_statuses.reject do |status|
       [JobStatus.declined, JobStatus.sent_reminder].include?(status) && !completed_status_ids.include?(status.id)

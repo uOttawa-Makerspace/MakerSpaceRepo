@@ -132,6 +132,9 @@ class JobOrder
     end
 
     def sweep
+      # looked up once, first: a missing Completed row fails here, at one defined point, and #run reports it as a
+      # run-level abort (not once per draft)
+      @completed_id = JobStatus.completed.id
       @drafts = list_payable_drafts
       if over_cap?(@drafts)
         @done = @drafts.size # nothing is examined on purpose: the kill switch's own line says so
@@ -229,7 +232,7 @@ class JobOrder
       return false if drafts.size <= @max_deletes
 
       rows = backing_rows(drafts.map(&:last))
-      orphans = drafts.count { |gid, order_id| !(rows[order_id] && JobOrder.backs_draft?(gid, **rows[order_id])) }
+      orphans = drafts.count { |gid, order_id| !(rows[order_id] && JobOrder.backs_draft?(gid, completed_id: @completed_id, **rows[order_id])) }
       return false if orphans <= @max_deletes
 
       @run_lines << "#{orphans} orphan draft(s) found, more than the cap of #{@max_deletes}: NOTHING was deleted" \

@@ -210,19 +210,20 @@ class JobTasksController < SessionsController
     {}
   end
 
+  # Draft -> Waiting for Staff Approval through the locked transition (JobOrder#transition!): the status is decided
+  # under the order's row lock, so a double submit writes one status row and, the mail going out only after the
+  # commit and only when this request made the transition, sends one mail. A refusal (the order already left Draft,
+  # a busy row ...) changes and sends nothing.
   def submit_for_approval
-    return if @job_order.latest_status&.job_status != JobStatus.draft
-
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       task.job_type.blank? ||
         (task.job_type.job_service_groups.any? && task.job_service.blank?)
     end
     return if @tasks_missing_information.any?
 
-    @job_order.job_order_statuses.create!(
-      job_status: JobStatus.staff_approval,
-      user: current_user
-    )
+    submitted = @job_order.transition!(from: JobStatus.draft, to: JobStatus.staff_approval, actor: current_user)
+    return unless submitted.ok?
+
     JobOrderMailer.send_job_submitted(@job_order.id).deliver_now
     flash[:notice] = t("job_orders.alerts.job_order_submitted_for_approval")
   end

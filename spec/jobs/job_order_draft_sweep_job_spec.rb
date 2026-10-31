@@ -5,6 +5,9 @@ require "rails_helper"
 RSpec.describe JobOrderDraftSweepJob, type: :job do
 
   include ShopSpecHelpers
+  include JobOrderSpecHelpers
+
+  before { seed_job_statuses! }
 
   let!(:shopify) { stub_shopify_admin! }
 

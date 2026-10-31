@@ -51,6 +51,18 @@ RSpec.describe "Job order transition failure contract", type: :request do
 
     # The workflow statuses are never nil: a status row missing from the table fails closed (JobStatus::Missing, a 500) before
     # anything is written (production has all ten).
+    it "approving an order does not look up statuses the request does not use (Declined missing)" do
+      order = quoted_order!(:user_approval)
+      token = order.approval_token
+      JobStatus.where(name: "Declined").delete_all
+      JobStatus.reset_lookup_cache!
+
+      patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: "true" }
+
+      expect(response).to have_http_status(:ok)
+      expect(status_names(order)).to eq(["Waiting for User Approval", "Waiting to be Processed"])
+    end
+
     it "a missing destination status on a staff transition fails closed (JobStatus::Missing, a 500) and records nothing" do
       order = quoted_order!(:waiting_processed)
       JobStatus.where(name: "Currently being Processed").delete_all

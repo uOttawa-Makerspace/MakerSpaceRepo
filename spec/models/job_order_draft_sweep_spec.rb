@@ -230,6 +230,19 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
     end
   end
 
+  describe "Completed not seeded" do
+    it "aborts the run once, at one defined point, reported as a run-level abort (nothing deleted)" do
+      order = order_with_draft!(stored: "gid://shopify/DraftOrder/2")
+      JobStatus.where(name: "Completed (Waiting for Payment)").destroy_all
+      JobStatus.reset_lookup_cache!
+      report = sweep(draft_node("gid://shopify/DraftOrder/1", order))
+
+      expect(report.unresolved.first).to start_with("aborted: JobStatus::Missing: ")
+      expect(report).not_to be_ok
+      expect(shopify.deleted_ids).to be_empty
+    end
+  end
+
   describe "the listing is guarded" do
     it "stops when the cursor repeats, reports it as unresolved and still reconciles what it read" do
       order = order_with_draft!

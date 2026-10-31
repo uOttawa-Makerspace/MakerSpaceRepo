@@ -24,32 +24,37 @@ class JobStatus < ApplicationRecord
     end
   end
 
-  LOOKUP_MUTEX = Mutex.new
-  private_constant :LOOKUP_MUTEX
-
   class << self
-    # JobStatus.draft, .completed, ...: the row for STATUS_NAMES[key], read once per process after the first
-    # successful lookup. Raises JobStatus.missing when the row does not exist (nothing is memoized then).
+    # JobStatus.draft, .completed, ...: the row for STATUS_NAMES[key]. Raises JobStatus::Missing when the row does not
+    # exist (nothing is memoized then). Each call returns a NEW instance built from the memoized attributes (no
+    # query after the first lookup), never a shared record: with has_many_inversing on, a shared record would collect
+    # every JobOrderStatus created with it in its association target (a leak, mutated across threads). Equality is by
+    # id, so the instances compare equal.
     STATUS_NAMES.each_key do |key|
       define_method(key) { lookup_status(key) }
     end
 
     # Forgets the memoized rows. For tests and seeds that create, remove or rebuild the status rows.
     def reset_lookup_cache!
-      LOOKUP_MUTEX.synchronize { @lookup_cache = {} }
+      @lookup_cache = Concurrent::Map.new
     end
 
     private
 
+    # key -> the row's attributes (frozen). A Concurrent::Map is safe to read and write from any thread; two threads
+    # missing at once both look the row up and store the same attributes, which is harmless.
     def lookup_status(key)
-      cached = LOOKUP_MUTEX.synchronize { (@lookup_cache ||= {})[key] }
-      return cached if cached
-
-      name = STATUS_NAMES.fetch(key)
-      row = find_by(name: name) or raise Missing.new(key, name)
-      LOOKUP_MUTEX.synchronize { (@lookup_cache ||= {})[key] = row }
+      attributes = @lookup_cache[key]
+      unless attributes
+        name = STATUS_NAMES.fetch(key)
+        row = find_by(name: name) or raise Missing.new(key, name)
+        attributes = @lookup_cache[key] = row.attributes.freeze
+      end
+      instantiate(attributes)
     end
   end
+
+  reset_lookup_cache!
 
   def t_name
     I18n.locale == :fr ? name_fr : name
