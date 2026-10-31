@@ -114,7 +114,7 @@ RSpec.describe "/api/v1/session", type: :request do
     end
 
     it "403s an inactive account" do
-      user.update_columns(active: false)
+      User.unscoped.where(id: user.id).update_all(active: false)
       login
       expect(response).to have_http_status(:forbidden)
       expect(error["code"]).to eq("account_inactive")
@@ -273,7 +273,7 @@ RSpec.describe "/api/v1/session", type: :request do
     end
 
     it "401s for an account that became inactive or deleted" do
-      user.update_columns(active: false)
+      User.unscoped.where(id: user.id).update_all(active: false)
       refresh(first_refresh)
       expect(response).to have_http_status(:unauthorized)
     end

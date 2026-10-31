@@ -45,9 +45,9 @@ RSpec.describe "Tap box ActionCable channels" do
       end
 
       it "rejects a deactivated or soft-deleted user" do
-        user.update_columns(active: false)
+        User.unscoped.where(id: user.id).update_all(active: false)
         expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.to have_rejected_connection
-        user.update_columns(active: true, deleted: true)
+        User.unscoped.where(id: user.id).update_all(active: true, deleted: true)
         expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.to have_rejected_connection
       end
 
@@ -77,7 +77,7 @@ RSpec.describe "Tap box ActionCable channels" do
         user.update_columns(token_version: user.token_version + 1)
         expect { connect "/cable", headers: { "Authorization" => "Bearer #{old}" } }.to have_rejected_connection
         expect { connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" } }.not_to have_rejected_connection
-        user.update_columns(active: false)
+        User.unscoped.where(id: user.id).update_all(active: false)
         expect { connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" } }.to have_rejected_connection
       end
     end

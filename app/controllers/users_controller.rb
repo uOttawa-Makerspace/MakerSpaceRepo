@@ -319,8 +319,14 @@ class UsersController < SessionsController
           user.store_new_password!(params[:password], clear_timed_lock: true)
           true
         rescue ActiveRecord::StaleObjectError
-          # A concurrent bump (an expected race, not an error): the account changed
-          # under this request. The link is still valid.
+          # A concurrent bump (an expected race, not an error). If the password itself
+          # changed (a double submit), the token no longer resolves: the work is done.
+          # Otherwise the account changed for another reason and the link is still valid.
+          if User.find_by_token_for(:password_reset, params[:token]).nil?
+            flash[:alert] = 'Your password has already been changed. Please sign in.'
+            return redirect_to login_path
+          end
+
           flash[:alert] = 'Your account changed while resetting the password. Please use the link again.'
           return redirect_to reset_password_form_users_path(token: params[:token])
         rescue ActiveRecord::ActiveRecordError => e

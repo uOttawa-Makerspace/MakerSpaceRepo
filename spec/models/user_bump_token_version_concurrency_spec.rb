@@ -11,6 +11,7 @@ RSpec.describe User, "#bump_token_version! compare-and-set under concurrency" do
   let!(:user) { create(:user, :regular_user) }
 
   after do
+    RateLimitCounter.where("key LIKE ?", "reauth/#{user.id}/%").delete_all
     ApiRefreshToken.where(user_id: user.id).delete_all
     User.unscoped.where(id: user.id).delete_all
   end
@@ -150,5 +151,23 @@ RSpec.describe User, "#bump_token_version! compare-and-set under concurrency" do
     expect { loaded.store_new_password!("Brand-new-pw-123!") }.to raise_error(ActiveRecord::StaleObjectError)
     expect(loaded).not_to be_changed
     expect([loaded.password, loaded.token_version]).to eq([digest, version])
+  end
+
+  it "store_new_password! restores the instance when the bump itself raises" do
+    loaded = User.find(user.id)
+    allow(loaded).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "boom")
+
+    expect { loaded.store_new_password!("Brand-new-pw-123!") }.to raise_error(ActiveRecord::StatementInvalid)
+    expect(loaded).not_to be_changed
+    expect(loaded.authenticate_password("asa32A353#")).to be(true)
+  end
+
+  it "count_reauth_attempt! bumps from the stored token_version even when the in-memory one is dirty" do
+    loaded = User.find(user.id)
+    version = loaded.token_version
+    loaded.token_version = version + 7
+    counts = Array.new(3) { loaded.count_reauth_attempt!(max: 2, window: 15.minutes) }
+    expect(counts.last).to eq(3)
+    expect(User.find(user.id).token_version).to eq(version + 1)
   end
 end

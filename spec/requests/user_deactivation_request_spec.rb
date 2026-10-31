@@ -63,6 +63,7 @@ RSpec.describe "User#deactivate! / #reactivate!", type: :request do
 
   it "a deactivated admin no longer counts as a usable admin" do
     admin = create(:user, :admin)
+    create(:user, :admin)
     expect(User.usable_admins).to include(admin)
     admin.deactivate!
     expect(User.usable_admins).not_to include(admin)

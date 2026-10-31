@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
+  # `active` changes only through deactivate!/reactivate! (token_version bump, last-admin
+  # guard). Assigning it on a persisted user raises ActiveRecord::ReadonlyAttributeError
+  # (config.active_record.raise_on_assign_to_attr_readonly).
+  attr_readonly :active
   include BCrypt
   include ActiveModel::Serialization
   include UoengConcern
@@ -366,7 +370,7 @@ class User < ApplicationRecord
 
   GUARD_LOCK_MODE = "FOR NO KEY UPDATE"
 
-  # Runs the block (a demotion, admin lock or soft delete of `affected_ids`) only if
+  # Runs the block (a demotion, admin lock, soft delete or deactivation of `affected_ids`) only if
   # at least one usable admin remains outside them; otherwise raises LastAdminError
   # and the block never runs. Every such change must go through here.
   #
@@ -526,10 +530,14 @@ class User < ApplicationRecord
       assign_attributes(locked: false, auth_attempts: 0, locked_until: nil)
       columns += %i[locked auth_attempts locked_until]
     end
-    unless bump_token_version!(*columns, from_version: loaded_version)
-      restore_attributes(columns)
-      raise ActiveRecord::StaleObjectError.new(self, "store a new password for")
+    stored = false
+    begin
+      stored = bump_token_version!(*columns, from_version: loaded_version)
+    ensure
+      # Any failure (no row matched, or the UPDATE itself raised) leaves the instance as loaded.
+      restore_attributes(columns) unless stored
     end
+    raise ActiveRecord::StaleObjectError.new(self, "store a new password for") unless stored
 
     @pword = hashed
     @own_password_hash = hashed.to_s
@@ -544,9 +552,10 @@ class User < ApplicationRecord
   # updated_at), no validations or callbacks. That ONE UPDATE is the revocation: the
   # access JWTs, legacy JWTs, cookie sessions, websocket handshakes and /api/v1
   # refresh tokens (ApiRefreshToken#usable?) are all checked against token_version.
-  # After the real commit (also inside a caller's transaction) the refresh-token
-  # rows are marked revoked (bookkeeping, best effort: a failure is reported, never
-  # raised, and cannot undo the bump) and the websockets are closed.
+  # After the real commit (also inside a caller's transaction) the websockets are
+  # closed first (the access cut that matters), then the refresh-token rows are
+  # marked revoked (bookkeeping, best effort: a failure is reported, never raised,
+  # and cannot undo the bump).
   #
   # from_version: makes the bump conditional and idempotent (compare-and-set): the
   # UPDATE only matches while token_version still equals it, and when it matches no
@@ -559,46 +568,21 @@ class User < ApplicationRecord
   # soft-deleted or not, and only a missing row raises ActiveRecord::RecordNotFound
   # (never a silent no-op).
   def bump_token_version!(*columns, from_version: nil)
-    conn = self.class.connection
-    values = columns.index_with { |column| self[column] }.merge(updated_at: Time.current)
-    assignments = values.keys.map { |column| "#{conn.quote_column_name(column)} = ?" }
-    sql = self.class.sanitize_sql_array(
-      ["UPDATE #{conn.quote_table_name(self.class.table_name)} SET token_version = token_version + 1, " \
-       "#{assignments.join(', ')} WHERE id = ?#{' AND deleted = false AND token_version = ?' if from_version} " \
-       "RETURNING token_version",
-       *values.values, id, *from_version]
-    )
-    # select_value is a read API: never let the query cache answer this write.
-    # (Rails 8.1 already clears the cache on write SQL; this is belt and braces.)
-    new_version = self.class.uncached { conn.select_value(sql) }
-    unless new_version
+    values = columns.index_with { |column| self[column] }
+    written = write_and_bump_token_version(values, from_version: from_version)
+    unless written
       return false if from_version
 
       raise ActiveRecord::RecordNotFound, "#{self.class.name} #{id} no longer exists"
     end
 
-    self.token_version = new_version
-    self.updated_at = values[:updated_at]
-    clear_attribute_changes(columns + %i[token_version updated_at])
-    # After the real commit when called inside a caller's transaction (a rolled-back
-    # change must not drop connections, and a reconnect must see the new state).
-    # The sockets are closed first (the access cut that matters), then the refresh
-    # token rows are marked revoked (bookkeeping).
-    ActiveRecord.after_all_transactions_commit do
-      disconnect_cable!
-      begin
-        ApiRefreshToken.revoke_all_for!(id)
-      rescue StandardError => e
-        Rails.error.report(e, handled: true)
-      end
-    end
-    self
+    apply_bumped_row(written, values)
   end
 
   # The key of the re-authentication attempt counter: per user AND token_version, so
   # signing in again (or any bump) starts a fresh budget.
   def reauth_attempts_key
-    "reauth/#{id}/#{token_version}"
+    "reauth/#{id}/#{token_version_in_database}"
   end
 
   # Counts one failed/attempted re-authentication and, when that is over `max`, ends
@@ -615,7 +599,7 @@ class User < ApplicationRecord
   def count_reauth_attempt!(max:, window:)
     RateLimitCounter.transaction do
       count = RateLimitCounter.increment(reauth_attempts_key, 1, expires_in: window)
-      bump_token_version!(from_version: token_version) if count > max
+      bump_token_version!(from_version: token_version_in_database) if count > max
       count
     end
   end
@@ -784,16 +768,20 @@ class User < ApplicationRecord
   # Deactivation and reactivation both end every credential issued so far (cookie
   # sessions, access and legacy JWTs, websockets, /api/v1 refresh tokens): `active`
   # is set and token_version bumped in ONE UPDATE, so reactivating an account never
-  # revives what was issued before. These are the only ways to change `active`.
-  # Deactivating an admin removes a usable admin: wrap it in User.guarding_last_admin!.
+  # revives what was issued before. These are the only ways to change `active` (it is
+  # attr_readonly). Each returns whether it changed anything: the UPDATE only matches
+  # a row whose `active` differs, so a repeated call bumps and revokes nothing.
+  # deactivate! runs inside guarding_last_admin!, so deactivating the last usable
+  # admin raises LastAdminError and changes nothing (an already inactive account is a
+  # no-op, not a removal).
   def deactivate!
-    self.active = false
-    bump_token_version!(:active)
+    self.class.guarding_last_admin!([id], only_if: -> { self.class.unscoped.where(id: id).where("active IS NOT FALSE").exists? }) do
+      change_active!(false)
+    end
   end
 
   def reactivate!
-    self.active = true
-    bump_token_version!(:active)
+    change_active!(true)
   end
 
   # Demoted from staff/admin, soft-deleted or deactivated: such a connection must not
@@ -990,12 +978,79 @@ class User < ApplicationRecord
   # Private Methods
   # ============================================
 
+  # The ONE UPDATE behind every bump: token_version + 1 and `values` (column => value,
+  # not read from the instance, so attr_readonly columns can be written too) with
+  # updated_at. `extra_where` is an optional [sql, *binds] condition on the row as it
+  # was. Returns [new token_version, updated_at], or nil when no row matched.
+  def write_and_bump_token_version(values, from_version: nil, extra_where: nil)
+    conn = self.class.connection
+    values = values.merge(updated_at: Time.current)
+    assignments = values.keys.map { |column| "#{conn.quote_column_name(column)} = ?" }
+    where_sql = +"id = ?"
+    binds = [id]
+    if from_version
+      where_sql << " AND deleted = false AND token_version = ?"
+      binds << from_version
+    end
+    if extra_where
+      where_sql << " AND #{extra_where.first}"
+      binds.concat(extra_where.drop(1))
+    end
+    sql = self.class.sanitize_sql_array(
+      ["UPDATE #{conn.quote_table_name(self.class.table_name)} SET token_version = token_version + 1, " \
+       "#{assignments.join(', ')} WHERE #{where_sql} RETURNING token_version",
+       *values.values, *binds]
+    )
+    # select_value is a read API: never let the query cache answer this write.
+    # (Rails 8.1 already clears the cache on write SQL; this is belt and braces.)
+    new_version = self.class.uncached { conn.select_value(sql) }
+    new_version && [new_version, values[:updated_at]]
+  end
+
+  # Syncs the instance to the row the bump just wrote (clean, no pending change) and
+  # schedules the revocation side effects. `values` are the columns that were written.
+  def apply_bumped_row((new_version, updated_at), values)
+    # attributes written from the database state, not assigned: attr_readonly columns
+    # (active) cannot be assigned on a persisted record
+    values.each { |column, value| @attributes.write_from_database(column.to_s, value) }
+    @attributes.write_from_database("token_version", new_version)
+    @attributes.write_from_database("updated_at", updated_at)
+    # After the real commit when called inside a caller's transaction (a rolled-back
+    # change must not drop connections, and a reconnect must see the new state).
+    # The sockets are closed first (the access cut that matters), then the refresh
+    # token rows are marked revoked (bookkeeping).
+    ActiveRecord.after_all_transactions_commit do
+      disconnect_cable!
+      begin
+        ApiRefreshToken.revoke_all_for!(id)
+      rescue StandardError => e
+        Rails.error.report(e, handled: true)
+      end
+    end
+    self
+  end
+
+  # Sets `active` to `target` and bumps token_version in ONE UPDATE, only when the
+  # column differs (IS DISTINCT FROM). Returns true when it changed, false when it
+  # already had that value (nothing bumped, nothing revoked).
+  def change_active!(target)
+    written = write_and_bump_token_version({ active: target }, extra_where: ["active IS DISTINCT FROM ?", target])
+    unless written
+      raise ActiveRecord::RecordNotFound, "#{self.class.name} #{id} no longer exists" unless self.class.unscoped.exists?(id)
+
+      return false
+    end
+
+    apply_bumped_row(written, { active: target })
+    true
+  end
+
   def translate_faculty
     self.faculty = FACULTY_TRANSLATIONS[faculty] if FACULTY_TRANSLATIONS.key?(faculty)
   end
 
   def cable_access_lost?
     demoted = saved_change_to_role? && role_before_last_save.in?(%w[staff admin]) && !staff?
-    demoted || ((saved_change_to_deleted? || saved_change_to_active?) && !AuthEligibility.allowed?(self))
+    demoted || (saved_change_to_deleted? && !AuthEligibility.allowed?(self))
   end
 end

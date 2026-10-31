@@ -493,6 +493,21 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(flash[:notice]).to start_with("Your password has been updated")
     end
 
+    it "a double submit says the password was already changed (the link no longer resolves), not 'use the link again'" do
+      params = reset_params(user)
+      allow_any_instance_of(User).to receive(:store_new_password!).and_wrap_original do |m, *args, **opts|
+        # the first submit commits between this request's token lookup and its write
+        User.where(id: m.receiver.id).update_all(
+          ["password = ?, token_version = token_version + 1", BCrypt::Password.create("Other-passw0rd#y", cost: 4).to_s]
+        )
+        m.call(*args, **opts)
+      end
+      patch reset_password_confirmation_users_path, params: params
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq("Your password has already been changed. Please sign in.")
+      expect(deliveries).to be_empty
+    end
+
     it "a reset does not lift an admin lock: the new password is saved and the login is still refused" do
       # FIXED: only the timed brute-force lockout is cleared by a reset
       user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)

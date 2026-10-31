@@ -160,12 +160,16 @@ RSpec.describe "Cable disconnects on soft delete / deactivation", type: :request
     expect(disconnected).to eq([target])
   end
 
-  it "disconnects on deactivation, not on re-activation" do
+  it "disconnects on deactivation and on re-activation (each bumps token_version), not on a no-op" do
     user = create(:user, :regular_user)
-    user.update!(active: false)
+    user.deactivate!
     expect(disconnected).to eq([user])
-    user.update!(active: true)
+    user.deactivate!
     expect(disconnected).to eq([user])
+    user.reactivate!
+    expect(disconnected).to eq([user, user])
+    user.reactivate!
+    expect(disconnected).to eq([user, user])
   end
 
   it "disconnects on deleted=true, not on deleted=false" do
