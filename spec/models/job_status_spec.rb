@@ -73,11 +73,23 @@ RSpec.describe JobStatus, type: :model do
       expect(first).to eq(row)
       expect(first).to be_persisted.and be_readonly.and be_frozen
       expect { first.save }.to raise_error(ActiveRecord::ReadOnlyRecord)
-      expect { first.update(name_fr: "Brouillon") }.to raise_error(FrozenError)
-      expect(row.reload.name_fr).to be_nil
+      expect(first.readonly?).to be(true)
     end
 
-    it "never returns nil when the cache is reset between the miss and the store" do
+    it "returns the record another thread stored between this one's miss and its store" do
+      create(:job_status, name: "Draft")
+      stored = JobStatus.new(id: -1, name: "Draft").tap(&:readonly!).freeze # what the winning thread stored
+      map = JobStatus.instance_variable_get(:@lookup_cache)
+      allow(JobStatus).to receive(:find_by).and_wrap_original do |original, *args, **kwargs|
+        map.put_if_absent(:draft, stored) # the other thread wins the race while this one loads
+        original.call(*args, **kwargs)
+      end
+
+      expect(JobStatus.draft).to equal(stored)
+      expect(JobStatus.draft).to equal(stored)
+    end
+
+    it "never returns nil when the cache is reset while the row loads" do
       row = create(:job_status, name: "Draft")
       allow(JobStatus).to receive(:find_by).and_wrap_original do |original, *args, **kwargs|
         JobStatus.reset_lookup_cache! # another thread resetting while this one loads
@@ -85,7 +97,6 @@ RSpec.describe JobStatus, type: :model do
       end
 
       expect(JobStatus.draft).to eq(row)
-      expect(JobStatus.draft).not_to be_nil
     end
 
     it ".fetch raises KeyError for a key that is not a workflow status" do

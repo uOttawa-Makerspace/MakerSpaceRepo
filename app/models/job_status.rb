@@ -44,15 +44,18 @@ class JobStatus < ApplicationRecord
     # frozen after every attribute was read (so every type cast is done), with no associations: it is immutable, so
     # every lookup returns the same shared object, with no query and no allocation after the first. Equality is by id.
     # The map is captured in a local: a concurrent reset_lookup_cache! swaps the ivar, never the map in use, and
-    # compute_if_absent returns the record it stored (never nil).
+    # put_if_absent returns the record that is already there, or nil when it stored ours.
+    # The query runs outside the map (nothing is held while it runs); two threads missing at once both load the row
+    # and the first one stored wins, so every caller gets the same record.
     def fetch(key)
       name = STATUS_NAMES.fetch(key)
       map = @lookup_cache
-      map.compute_if_absent(key) do
+      map[key] || begin
         row = find_by(name: name) or raise Missing.new(key, name)
         row.readonly!
-        row.attributes
+        row.attributes # every type cast is done before the freeze
         row.freeze
+        map.put_if_absent(key, row) || row
       end
     end
 

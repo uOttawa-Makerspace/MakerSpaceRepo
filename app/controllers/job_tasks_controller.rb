@@ -215,6 +215,11 @@ class JobTasksController < SessionsController
   # commit and only when this request made the transition, sends one mail. A refusal changes and sends nothing (the lock alone
   # decides; there is no earlier check).
   def submit_for_approval
+    # An optimisation only (the order is already loaded: no extra query): a non-Draft order skips the task scan and
+    # the lock. The row lock in transition! still decides; a stale "Draft" read just reaches it and gets a quiet
+    # :wrong_state.
+    return unless @job_order.latest_status&.job_status == JobStatus.draft
+
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       task.job_type.blank? ||
         (task.job_type.job_service_groups.any? && task.job_service.blank?)

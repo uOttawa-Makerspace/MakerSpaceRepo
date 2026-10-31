@@ -449,6 +449,20 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         expect(ActionMailer::Base.deliveries.last.to).to eq(["makerspace@uottawa.ca"])
       end
 
+      it "does not take the submit lock or say anything for an order already past Draft (step 4 edit)" do
+        order = order_with_task!(status_key: :staff_approval)
+        task = order.job_tasks.first
+        task.update!(job_type: JobType.find_by!(name: "3D Print"))
+        expect_any_instance_of(JobOrder).not_to receive(:transition!)
+
+        patch job_order_job_task_path(order, task), params: { step: "4" }
+
+        expect(flash[:alert]).to be_nil
+        expect(flash[:notice]).to be_nil
+        expect(ActionMailer::Base.deliveries).to be_empty
+        expect(status_names(order)).to eq(["Waiting for Staff Approval"])
+      end
+
       it "writes one status row and sends one mail when the same order is submitted twice" do
         order = order_with_task!
         task = order.job_tasks.first
