@@ -10,7 +10,10 @@ RSpec.describe "Password reset race with a committed password change", type: :re
 
   let!(:user) { create(:user, :regular_user) }
 
-  after { User.unscoped.where(id: user.id).delete_all }
+  after do
+    User.unscoped.where(id: user.id).delete_all
+    RateLimitCounter.delete_all # the request counted against the IP limit (committed, not rolled back)
+  end
 
   it "re-checks the token uncached: the link no longer resolves, so the neutral message, not 'use the link again'" do
     params = { token: user.generate_token_for(:password_reset), password: "NewPassw0rd!x#9", password_confirmation: "NewPassw0rd!x#9" }
