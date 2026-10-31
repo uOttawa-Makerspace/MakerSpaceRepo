@@ -7,9 +7,9 @@
 # - no index of that name on the table: built.
 # - a VALID, plain index with the same columns in the same order and the same
 #   uniqueness: kept as is. Plain means btree, no where, include, expression,
-#   order, opclass or nulls_not_distinct, and every column on its default
-#   collation (checked on pg_index.indcollation, as IndexDefinition does not
-#   report COLLATE).
+#   order, opclass or nulls_not_distinct, and every key column uses its
+#   column's own collation (attcollation), i.e. no explicit COLLATE (checked on
+#   pg_index.indcollation, as IndexDefinition does not report COLLATE).
 # - a VALID index of that name that is anything else: raises
 #   IndexDefinitionMismatch.
 # - an INVALID index on the table: dropped concurrently, then rebuilt.
@@ -17,6 +17,10 @@
 #   `indexes(table)` lists under that name (a primary-key index, a sequence,
 #   another table's index...): raises IndexDefinitionMismatch (`IF NOT EXISTS`
 #   matches names schema-wide and would skip the build silently).
+#
+# Assumes a single-schema app: everything lives in `public` and search_path
+# has one schema (true of db/schema.rb and config/database.yml). With several
+# schemas, `indexes()` could pick a same-named table in another schema.
 #
 # For a migration that calls `disable_ddl_transaction!`, from `up`/`down` or a
 # `reversible` block; calling it while reverting raises ArgumentError.
@@ -40,10 +44,13 @@ module ConcurrentIndexBuilder
 
     if existing && !existing.valid?
       remove_index table, name: name, algorithm: :concurrently
-    elsif existing && !(plain_match?(existing, columns, unique) && default_collations?(table, name))
+    elsif existing && !plain_match?(existing, columns, unique)
       raise IndexDefinitionMismatch,
             "index #{name} on #{table} exists as #{describe(existing)}, " \
-            "not the requested #{'unique ' if unique}plain btree (#{columns.join(', ')}) on default collations"
+            "not the requested #{'unique ' if unique}plain btree (#{columns.join(', ')})"
+    elsif existing && !own_collations?(table, name)
+      raise IndexDefinitionMismatch,
+            "index #{name} on #{table} exists with a non-default column collation; collation differs from the requested plain btree (#{columns.join(', ')})"
     end
     add_index table, columns, name: name, unique: unique, algorithm: :concurrently, if_not_exists: true
   end
@@ -55,7 +62,8 @@ module ConcurrentIndexBuilder
   end
 
   def plain?(index)
-    (index.using || :btree).to_s == "btree" &&
+    index.columns.is_a?(Array) &&
+      (index.using || :btree).to_s == "btree" &&
       index.where.nil? &&
       index.include.blank? &&
       index.orders.blank? &&
@@ -63,8 +71,8 @@ module ConcurrentIndexBuilder
       !index.nulls_not_distinct
   end
 
-  # True when no column of the index uses a collation other than the column's own.
-  def default_collations?(table, name)
+  # True when every key column uses its column's own collation (no explicit COLLATE).
+  def own_collations?(table, name)
     connection.select_value(<<~SQL.squish)
       SELECT NOT EXISTS (
         SELECT 1
@@ -101,7 +109,8 @@ module ConcurrentIndexBuilder
   # index in indexes(table)).
   def raise_if_name_taken_by_other_relation(table, name)
     row = connection.select_one(<<~SQL.squish)
-      SELECT c.relkind, t.relname AS table_name
+      SELECT c.relkind, t.relname AS table_name,
+             (i.indrelid = #{connection.quote(connection.quote_table_name(table))}::regclass) AS on_table
       FROM pg_class c
       LEFT JOIN pg_index i ON i.indexrelid = c.oid
       LEFT JOIN pg_class t ON t.oid = i.indrelid
@@ -110,7 +119,12 @@ module ConcurrentIndexBuilder
     SQL
     return if row.nil?
 
+    if row["on_table"]
+      raise IndexDefinitionMismatch,
+            "#{name} is this table's primary-key/constraint index (hidden from indexes()), not a plain index that can be built or kept"
+    end
+
     raise IndexDefinitionMismatch,
-          "#{name} is already used by another relation (relkind #{row['relkind']}#{", on table #{row['table_name']}" if row['table_name']}), not an index on #{table}"
+          "#{name} is already used by another relation (relkind #{row['relkind']}#{", on table #{row['table_name']}" if row['table_name']})"
   end
 end

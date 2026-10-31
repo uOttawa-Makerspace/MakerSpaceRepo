@@ -54,7 +54,10 @@ module JourneyHelpers
     wait_until("application JS not ready") { page.evaluate_script("document.documentElement.dataset.appJsReady === 'true'") }
   end
 
-  # Every confirm in every journey waits for the app JS first.
+  # Every confirm waits for the app JS first. These methods override the ones
+  # the example group gets from Capybara::DSL, and this module is included in
+  # every `type: :system` spec, so the override covers all of them; a call made
+  # as `page.accept_confirm` would bypass it.
   def accept_confirm(*, **, &)
     wait_for_app_js
     super

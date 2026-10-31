@@ -137,7 +137,7 @@ RSpec.describe ConcurrentIndexBuilder do
 
   it "raises when the name is the table's primary-key index, which indexes() does not list" do
     expect { ActiveRecord::Migration.suppress_messages { builder.add_index_concurrently(:cib_scratch, :id, name: "cib_scratch_pkey") } }
-      .to mismatch(/relkind i/)
+      .to mismatch(/primary-key\/constraint index \(hidden from indexes\(\)\)/)
   end
 
   it "keeps a matching index when the table is given schema-qualified" do
@@ -149,10 +149,8 @@ RSpec.describe ConcurrentIndexBuilder do
   end
 
   it "raises for a column collation, which IndexDefinition does not report" do
-    default = conn.select_value("SELECT datcollate FROM pg_database WHERE datname = current_database()")
-    other = default == "C" ? "POSIX" : "C"
-    conn.execute(%(CREATE INDEX #{index} ON cib_scratch (txt COLLATE "#{other}")))
-    expect { build(:txt) }.to mismatch(/default collations/)
+    conn.execute(%(CREATE INDEX #{index} ON cib_scratch (txt COLLATE "C")))
+    expect { build(:txt) }.to mismatch(/collation differs/)
   end
 
   it "raises when the name is used by a sequence" do
