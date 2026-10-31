@@ -196,7 +196,8 @@ RSpec.describe "Job order security pins", type: :request do
     end
 
     # FIXED(D-J02): guests and strangers can no longer delete (and so cascade the
-    # quote). WART(D-J35) stays: the OWNER may still delete after submit/payment.
+    # quote). The OWNER may still delete after the quote (owner decision), which
+    # now sends the order back to staff (JOB-01); after payment it is refused.
     it "refuses a guest and a stranger on a COMPLETED, quoted order" do
       expect(order.reload.total_price).to eq(55)
 
@@ -209,7 +210,7 @@ RSpec.describe "Job order security pins", type: :request do
       expect(order.reload.total_price).to eq(55)
     end
 
-    it "still lets the owner delete from a COMPLETED order, cascading the quote (D-J35, intended)" do
+    it "lets the owner delete from a COMPLETED order, cascading the quote and sending it back to staff (JOB-01)" do
       session_login!(owner)
       expect do
         delete job_order_job_task_path(order, task)
@@ -219,6 +220,7 @@ RSpec.describe "Job order security pins", type: :request do
 
       expect(response).to redirect_to(job_order_path(order))
       expect(order.reload.total_price).to eq(5)
+      expect(order.job_order_statuses.last.job_status).to eq(JobStatus.staff_approval)
     end
 
     it "404s on a soft-deleted order (D-J48)" do
@@ -230,9 +232,11 @@ RSpec.describe "Job order security pins", type: :request do
     end
   end
 
-  describe "D-J35: the owner can still edit after submission" do
-    # WART(D-J35): allow_edit? is only consulted by views; update has no state guard
-    it "lets the owner change the job type of a task on a PAID order" do
+  # FIXED(D-J35 / JOB-01): once paid, the wizard refuses every change (the
+  # status is checked by JobOrder#apply_owner_change! under the row lock).
+  # Changes to a quoted order are covered in job_orders_owner_change_request_spec.
+  describe "D-J35: no owner change after payment" do
+    it "refuses to change the job type of a task on a PAID order" do
       order = order_with_task!(status_key: :paid)
       task = order.job_tasks.first
       session_login!(owner)
@@ -240,14 +244,16 @@ RSpec.describe "Job order security pins", type: :request do
       patch job_order_job_task_path(order, task),
             params: { step: "1", job_task: { job_type_id: JobType.find_by!(name: "Laser Cut").id } }
 
-      expect(task.reload.job_type.name).to eq("Laser Cut")
-      expect(order.reload.job_order_statuses.last.job_status).to eq(JobStatus::PAID)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.paid_order_cannot_change"))
+      expect(task.reload.job_type).to be_nil
+      expect(order.reload.job_order_statuses.last.job_status).to eq(JobStatus.paid)
     end
 
-    it "lets the owner create a new task on a PICKED_UP order" do
+    it "refuses to create a new task on a PICKED_UP order" do
       order = order_with_task!(status_key: :picked_up)
       session_login!(owner)
-      expect { post job_order_job_tasks_path(order) }.to change { order.job_tasks.count }.by(1)
+      expect { post job_order_job_tasks_path(order) }.not_to(change { order.job_tasks.count })
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.paid_order_cannot_change"))
     end
   end
 end

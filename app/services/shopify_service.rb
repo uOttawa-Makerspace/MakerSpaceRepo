@@ -10,7 +10,7 @@ class ShopifyService
   end
 
   def self.admin_client
-    ShopifyAPI::Clients::Graphql::Admin.new(session: start_shopify_session)
+    ShopifyConcern::DraftOrders.client # the one Admin client builder
   end
 
   def self.product(gid)

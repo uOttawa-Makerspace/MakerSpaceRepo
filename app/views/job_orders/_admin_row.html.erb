@@ -33,7 +33,7 @@
     <%= task.job_type&.name || "Unselected" %>
   <% end %>
 </td>
-<td><%= jo.job_order_statuses.last.job_status.name %></td>
+<td><%= jo.latest_status.job_status.name %></td>
 <td>
   <% if jo.assigned_staff.present? %>
     <%= link_to jo.assigned_staff.name, user_path(jo.assigned_staff.username) %>

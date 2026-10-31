@@ -91,34 +91,14 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(task.reload.job_task_quote.job_task_quote_options).to be_empty
     end
 
-    # WART(D-J42): missing price keys silently become 0.0
-    it "writes 0.0 for price, service quantity and service price when the keys are missing" do
-      session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "true", job_order: { staff_comments: "x" } }
-      quote = task.reload.job_task_quote
-      expect([quote.price, quote.service_quantity, quote.service_price]).to eq([0, 0, 0])
-      expect(status_names(order)).to end_with("Waiting for User Approval")
-    end
-
-    # WART(D-J42): a negative price raises RecordInvalid; nothing is saved (rollback) and no mail goes out
-    it "raises (422 RecordInvalid) for a negative price and rolls the whole quote back" do
-      session_login!(staff)
-      patch job_order_quote_path(order), params: quote_params(task, "job_task_quote_price_#{task.id}" => "-5")
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(task.reload.job_task_quote).to be_nil
-      expect(status_names(order)).to eq(["Waiting for Staff Approval"])
-      expect(deliveries).to be_empty
-    end
-
-    # WART(D-J42): `params[:job_order][:staff_comments]` raises when the job_order key is absent,
-    # inside the transaction, so the quote rows written before it are rolled back
-    it "raises (500 NoMethodError) and rolls back when the job_order param is absent" do
+    # Round 4 review 6: staff_comments is optional (strong params with a default), so an absent job_order key is
+    # no comment change, not a NoMethodError 500 that rolled the quote back.
+    it "quotes without a job_order param (no staff comment change), not a 500" do
       session_login!(staff)
       patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "10" }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
-      expect(task.reload.job_task_quote).to be_nil
-      expect(status_names(order)).to eq(["Waiting for Staff Approval"])
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(task.reload.job_task_quote.price).to eq(10)
+      expect(status_names(order).last).to eq("Waiting for User Approval")
     end
 
     it "does not overwrite existing staff_comments with a blank value" do
@@ -154,18 +134,20 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(status_names(order)).to end_with("Waiting for User Approval")
     end
 
-    # WART(D-J33): no state guard: a PAID or Draft order is re-quoted, reset to
-    # Waiting for User Approval and the customer is emailed.
-    it "re-quotes a PAID order back to Waiting for User Approval and emails the customer" do
+    # FIXED(D-J33 / JOB-04): a PAID order is never re-quoted (see
+    # job_orders_quote_paid_guard_request_spec). WART(D-J33) stays for Draft:
+    # a Draft order can still be quoted.
+    it "refuses to re-quote a PAID order: no status row, no customer email" do
       paid = order_with_task!(status_key: :paid)
       session_login!(staff)
       patch job_order_quote_path(paid), params: quote_params(paid.job_tasks.first)
 
-      expect(status_names(paid)).to eq(["Paid (Waiting for Pick-Up)", "Waiting for User Approval"])
-      expect(deliveries.last.to).to eq([owner.email])
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_refused_paid"))
+      expect(status_names(paid)).to eq(["Paid (Waiting for Pick-Up)"])
+      expect(deliveries).to be_empty
     end
 
-    it "re-quotes a Draft order as well" do
+    it "re-quotes a Draft order" do
       draft = order_with_task!(status_key: :draft)
       session_login!(staff)
       patch job_order_quote_path(draft), params: quote_params(draft.job_tasks.first)
@@ -311,21 +293,31 @@ RSpec.describe "JobOrders workflow", type: :request do
   # ------------------------------------------------------------- resend_quote_email
 
   describe "PATCH resend_quote_email" do
-    # WART(D-J34): no state guard; a Draft order gets a quote link and the
-    # reminder status makes that link usable for approval.
-    it "works on a Draft order: records the reminder, mails a link and the link then opens the approval page" do
+    # FIXED(D-J34): a reminder is only sent while the customer has a live quote
+    # (USER_APPROVAL / SENT_REMINDER); a Draft order gets no reminder row, no mail
+    # and its link does not open the approval page.
+    it "refuses a Draft order: no reminder row, no mail, no usable link" do
       draft = order_with_task!(status_key: :draft)
       session_login!(staff)
       patch job_order_resend_quote_email_path(draft)
 
-      expect(status_names(draft)).to eq(["Draft", "Sent a Quote Reminder"])
-      expect(deliveries.last.to).to eq([owner.email])
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(status_names(draft)).to eq(["Draft"])
+      expect(deliveries).to be_empty
 
       token = magic_link_token_for(draft)
       reset!
       get user_magic_approval_job_orders_path, params: { token: token }
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Approve the Quote")
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
+    end
+
+    it "sends the reminder while the order waits for the customer (control)" do
+      waiting = order_with_task!(status_key: :user_approval)
+      session_login!(staff)
+      patch job_order_resend_quote_email_path(waiting)
+
+      expect(status_names(waiting)).to eq(["Waiting for User Approval", "Sent a Quote Reminder"])
+      expect(deliveries.last.to).to eq([owner.email])
     end
   end
 
@@ -379,11 +371,11 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(response.body).to include("Approve the Quote")
     end
 
-    it "raises (500 NoMethodError) for an order without any status rows" do
+    it "treats an order without any status rows as not approvable (expired-link redirect, no error)" do
       statusless = create(:job_order, user: owner)
       get user_magic_approval_job_orders_path, params: { token: magic_link_token_for(statusless) }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
     end
   end
 

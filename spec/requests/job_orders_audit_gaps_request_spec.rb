@@ -157,12 +157,13 @@ RSpec.describe "JobOrders audit gaps", type: :request do
 
   # ------------------------------------------------ D-J38
 
-  # FIXED(D-J38): a re-quote that changes the price deletes the Shopify draft order
-  # (stale line items, payable old invoice) and clears the id, so the next GET /pay
-  # creates a fresh draft with the new total. Fail closed: if the old draft cannot be
-  # deleted (error, not configured, already paid/completed on Shopify, order PAID or
-  # later) the re-quote is refused and nothing changes. A first quote (no draft) is
-  # unchanged. The pay path does NOT compare draft totals (taxes make that unsafe).
+  # FIXED(D-J38): a re-quote deletes the Shopify draft order (its invoice is payable,
+  # and the customer approves the new quote first; JobOrder#enter_status!) and clears
+  # the id, so the next GET /pay creates a fresh draft with the new total. Fail closed: if the old draft cannot be
+  # deleted (error, not configured, already paid/completed on Shopify) the re-quote is
+  # refused and nothing changes. A PAID or later order is refused earlier, by the
+  # quote's own status rule (JOB-04). A first quote (no draft) is unchanged. The pay
+  # path does NOT compare draft totals (taxes make that unsafe).
   describe "Shopify payment link after a re-quote (D-J38)" do
     let!(:shopify) { stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/old-invoice" } }
 
@@ -180,7 +181,9 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       order = make_job_order!(owner: owner, status_key: status_key)
       task = order.job_tasks.create!(title: "Task #1")
       task.build_job_task_quote(price: 29.99, service_price: 0, service_quantity: 0).save!
-      order.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/9001")
+      # a draft this app created: the id with the fingerprint of the quote it was built from
+      order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001",
+                           shopify_draft_order_fingerprint: JobOrder.find(order.id).quote_fingerprint)
       [order, task]
     end
 
@@ -196,10 +199,10 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       requote!(order, task, 55)
       expect(status_names(order).last).to eq("Waiting for User Approval")
       expect(order.reload.total_price).to eq(BigDecimal("55"))
-      expect(shopify_ops).to eq(["draftOrderDelete"])
-      expect(shopify.calls.first[:variables]).to eq(input: { id: "gid://shopify/DraftOrder/9001" })
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
+      expect(shopify.calls.last[:variables]).to eq(input: { id: "gid://shopify/DraftOrder/9001" })
       expect(order.shopify_draft_order_id).to be_nil
-      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: staff)
+      order.job_order_statuses.create!(job_status: JobStatus.completed, user: staff)
 
       shopify.calls.clear
       shopify.draft_id = "gid://shopify/DraftOrder/9002"
@@ -215,12 +218,13 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(response.body).not_to include("old-invoice")
     end
 
-    it "does not touch Shopify when the re-quote leaves the price unchanged" do
+    # JOB-03 review 3: a re-quote always voids the draft, unchanged prices included
+    it "deletes the draft when the re-quote leaves the price unchanged too" do
       order, task = order_with_draft!
       requote!(order, task, 29.99)
       expect(status_names(order).last).to eq("Waiting for User Approval")
-      expect(shopify.calls).to be_empty
-      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
+      expect(order.reload.shopify_draft_order_id).to be_nil
     end
 
     it "replaces the draft when money moves between line items without changing the total" do
@@ -232,7 +236,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
                                                    "task_#{task.id}_service_price" => "1",
                                                    job_order: { staff_comments: "" } }
       expect(order.reload.total_price).to eq(BigDecimal("29.99"))
-      expect(shopify_ops).to eq(["draftOrderDelete"])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(order.shopify_draft_order_id).to be_nil
     end
 
@@ -244,17 +248,17 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(response).to redirect_to(job_order_path(order.id))
       expect(status_names(order).last).to eq("Waiting for User Approval")
       expect(order.reload.total_price).to eq(BigDecimal("55"))
-      expect(shopify_ops).to eq(["draftOrderDelete"])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
     end
 
-    it "leaves the draft alone when the quote is resubmitted unchanged (NULL parts columns, 29.99 vs 29.99)" do
+    it "re-quotes an unchanged quote with NULL parts columns (29.99 vs 29.990): the draft is voided, no 500" do
       order, task = order_with_draft!
       task.job_task_quote.update_columns(service_price: nil, service_quantity: nil)
       requote!(order, task, "29.990")
 
       expect(status_names(order).last).to eq("Waiting for User Approval")
-      expect(shopify.calls).to be_empty
-      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
+      expect(order.reload.shopify_draft_order_id).to be_nil
     end
 
     it "does not build draft line items when the order has no draft (first quote)" do
@@ -269,16 +273,16 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       order, task = order_with_draft!
       expect_any_instance_of(JobOrder).to receive(:lock!).at_least(:once).and_call_original
       requote!(order, task, 55)
-      expect(shopify_ops).to eq(["draftOrderDelete"])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
     end
 
     it "commits nothing and never touches Shopify when the save fails" do
       order, task = order_with_draft!
       statuses_before = status_names(order)
-      allow_any_instance_of(JobOrder).to receive(:save).and_return(false)
+      allow_any_instance_of(JobOrder).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
       requote!(order, task, 55)
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to start_with(I18n.t("job_orders.alerts.error_while_updating"))
       expect(shopify.calls).to be_empty
       expect(order.reload.total_price).to eq(BigDecimal("29.99"))
       expect(status_names(order)).to eq(statuses_before)
@@ -304,14 +308,14 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(response).to redirect_to(job_order_path(order.id))
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_saved_email_failed"))
 
-      expect(shopify_ops).to eq(["draftOrderDelete"])
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
       order.reload
       # committed, and the id of the (deleted) draft is not restored
       expect(status_names(order).last).to eq("Waiting for User Approval")
       expect(order.total_price).to eq(BigDecimal("55"))
       expect(order.shopify_draft_order_id).to be_nil
 
-      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: staff)
+      order.job_order_statuses.create!(job_status: JobStatus.completed, user: staff)
       shopify.calls.clear
       get pay_job_orders_path, params: { token: order.pay_token }
       expect(response).to have_http_status(:ok)
@@ -394,7 +398,9 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         expect(shopify_ops).to eq(["getDraftOrder"])
       end
 
-      it "decides gone from a fetch, re-checks once under the lock, creates one draft; the view reuses the link" do
+      # Round 2 review 5: the lock-free fast path fetches the (current) draft once; Shopify says it is gone, so the
+      # locked path re-checks once and creates one draft
+      it "falls back from the fast path to the lock on a gone draft, creates one draft; the view reuses the link" do
         order, = order_with_draft!
         shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
         shopify.draft_id = "gid://shopify/DraftOrder/9004"
@@ -407,9 +413,13 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       it "uses the draft another concurrent request already created instead of creating a second one" do
         order, = order_with_draft!
         shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
-        allow_any_instance_of(JobOrder).to receive(:with_lock).and_wrap_original do |m, *args, &blk|
-          # the other request replaces the dead id just before we take the lock
-          JobOrder.where(id: order.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/9777")
+        allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args, &blk|
+          # the other request replaces the dead id just before we take the lock (it stores the id together with
+          # the fingerprint of the items it built the draft from, as JobOrder#store_shopify_draft_order_id does)
+          JobOrder.where(id: order.id).update_all(
+            shopify_draft_order_id: "gid://shopify/DraftOrder/9777",
+            shopify_draft_order_fingerprint: JobOrder.find(order.id).quote_fingerprint
+          )
           m.call(*args, &blk)
         end
         get pay_job_orders_path, params: { token: order.pay_token }
@@ -436,6 +446,17 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
         expect(ActionMailer::Base.deliveries).to be_empty
       end
+
+      # the model reports and logs a refusal (JobOrder#refuse_from); the controller does not add a second line
+      it "logs the refusal once" do
+        order, task = order_with_draft!(status_key: status_key)
+        break_shopify
+        allow(Rails.logger).to receive(:error)
+        requote!(order, task, 55)
+
+        expect(Rails.logger).to have_received(:error).with(/refused/).once
+        expect(Rails.logger).not_to have_received(:error).with(/job_orders#quote\] re-quote/)
+      end
     end
 
     context "when Shopify answers non-200 on delete" do
@@ -450,28 +471,17 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       it_behaves_like "a refused re-quote"
     end
 
-    context "when the draft no longer exists on Shopify (delete returns no id, fetch says null)" do
-      it "proceeds, clears the dead id and commits the re-quote" do
+    context "when the draft no longer exists on Shopify (getDraftOrder says null)" do
+      it "proceeds, clears the dead id (delete found nothing, one fetch says gone) and commits the re-quote" do
         order, task = order_with_draft!
-        shopify.delete_returns_nothing = true
         shopify.draft_missing = true
+        shopify.delete_user_errors = [{ "field" => "id", "message" => "Draft order not found" }]
         requote!(order, task, 55)
         expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
 
         expect(status_names(order).last).to eq("Waiting for User Approval")
         expect(order.reload.total_price).to eq(BigDecimal("55"))
         expect(order.shopify_draft_order_id).to be_nil
-      end
-
-      it "proceeds when the delete reports a userError (not found) and the fetch confirms the draft is gone" do
-        order, task = order_with_draft!
-        shopify.delete_user_errors = [{ "field" => "id", "message" => "Draft order not found" }]
-        shopify.missing_ids = ["gid://shopify/DraftOrder/9001"]
-        requote!(order, task, 55)
-
-        expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
-        expect(status_names(order).last).to eq("Waiting for User Approval")
-        expect(order.reload.shopify_draft_order_id).to be_nil
       end
 
       it "refuses when the delete reports userErrors and the fetch finds the draft (completed/paid)" do
@@ -505,10 +515,21 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       it_behaves_like "a refused re-quote"
     end
 
+    # JOB-04: refused before any write, by the quote's own status rule (not the Shopify helper)
     context "when the order is already PAID" do
-      let(:status_key) { :paid }
-      def break_shopify = nil
-      it_behaves_like "a refused re-quote"
+      it "changes nothing, never touches Shopify and tells staff the order is paid" do
+        order, task = order_with_draft!(status_key: :paid)
+        statuses_before = status_names(order)
+        requote!(order, task, 55)
+
+        expect(response).to redirect_to(job_order_path(order.id))
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_refused_paid"))
+        expect(order.reload.total_price).to eq(BigDecimal("29.99"))
+        expect(status_names(order)).to eq(statuses_before)
+        expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(shopify.calls).to be_empty
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
     end
   end
 end

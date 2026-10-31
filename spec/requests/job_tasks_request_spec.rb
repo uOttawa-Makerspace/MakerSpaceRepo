@@ -449,6 +449,79 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         expect(ActionMailer::Base.deliveries.last.to).to eq(["makerspace@uottawa.ca"])
       end
 
+      it "does not take the submit lock or say anything for an order already past Draft (step 4 edit)" do
+        order = order_with_task!(status_key: :staff_approval)
+        task = order.job_tasks.first
+        task.update!(job_type: JobType.find_by!(name: "3D Print"))
+        expect_any_instance_of(JobOrder).not_to receive(:transition!)
+
+        patch job_order_job_task_path(order, task), params: { step: "4" }
+
+        expect(flash[:alert]).to be_nil
+        expect(flash[:notice]).to be_nil
+        expect(ActionMailer::Base.deliveries).to be_empty
+        expect(status_names(order)).to eq(["Waiting for Staff Approval"])
+      end
+
+      it "writes one status row and sends one mail when the same order is submitted twice" do
+        order = order_with_task!
+        task = order.job_tasks.first
+        task.update!(job_type: JobType.find_by!(name: "3D Print"))
+
+        2.times { patch job_order_job_task_path(order, task), params: { step: "4" } }
+
+        expect(status_names(order)).to eq(["Draft", "Waiting for Staff Approval"])
+        expect(ActionMailer::Base.deliveries.size).to eq(1)
+        expect(flash[:alert]).to be_nil # the second request is a quiet no-op
+      end
+
+      it "sends nothing when the order left Draft on another connection after this request loaded it" do
+        order = order_with_task!
+        task = order.job_tasks.first
+        task.update!(job_type: JobType.find_by!(name: "3D Print"))
+        locks = 0 # the first lock is the task update's (apply_owner_change!), the second the submit transition's
+        allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args, &blk|
+          locks += 1
+          if locks == 2
+            JobOrderStatus.create!(job_order_id: order.id, job_status: JobStatus.staff_approval, user: owner)
+          end
+          m.call(*args, &blk)
+        end
+        # the pre-check saw Draft (the lock-free read); the lock then finds the other connection's row
+        refusals = []
+        allow_any_instance_of(JobOrder).to receive(:transition!).and_wrap_original do |m, *args, **kwargs, &blk|
+          m.call(*args, **kwargs, &blk).tap { |result| refusals << result.reason }
+        end
+
+        patch job_order_job_task_path(order, task), params: { step: "4" }
+
+        expect(refusals).to eq([:wrong_state])
+        expect(status_names(order)).to eq(["Draft", "Waiting for Staff Approval"]) # only the other connection's row
+        expect(ActionMailer::Base.deliveries).to be_empty
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to be_nil # :wrong_state: already submitted, a no-op
+      end
+
+      it "says why, sends no mail and adds no row when the transition is refused (busy)" do
+        order = order_with_task!
+        task = order.job_tasks.first
+        task.update!(job_type: JobType.find_by!(name: "3D Print"))
+        locks = 0 # the first lock is the task update's, the second the submit transition's
+        allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args, &blk|
+          locks += 1
+          raise ActiveRecord::LockWaitTimeout if locks == 2
+
+          m.call(*args, &blk)
+        end
+
+        patch job_order_job_task_path(order, task), params: { step: "4" }
+
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.busy"))
+        expect(flash[:notice]).to be_nil
+        expect(ActionMailer::Base.deliveries).to be_empty
+        expect(status_names(order)).to eq(["Draft"])
+      end
+
       # N+1 pinned: see defects.md D-PERF04
       it "stays a Draft when ANOTHER task is still incomplete (submit silently skipped)", skip_bullet: true do
         order = order_with_task!
@@ -516,7 +589,8 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
   # ------------------------------------------------------------- DELETE destroy
 
   # FIXED(D-J02): destroy requires sign-in and owner/admin (staff: retro of A2). (No Draft-only
-  # state guard: owner edits/deletes after submit are INTENDED, D-J35.)
+  # state guard: owner edits/deletes after submit are INTENDED, D-J35; after the quote they send
+  # the order back to staff and after payment they are refused, JOB-01.)
   describe "DELETE /job_orders/:job_order_id/task/:id (destroy)" do
     it "lets the owner delete and redirects back to the order page with the flash" do
       order = order_with_task!
