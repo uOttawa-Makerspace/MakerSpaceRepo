@@ -78,7 +78,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
   it "keeps a draft whose order moved to COMPLETED (keeping its stored id) after the sweep decided it was an orphan" do
     order = order_with_draft!(:staff_approval, stored: "gid://shopify/DraftOrder/1")
     allow(JobOrder).to receive(:reconcile_orphan_draft!).and_wrap_original do |m, *args, **kw|
-      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner) # between the listing and the lock
+      order.job_order_statuses.create!(job_status: JobStatus.completed, user: owner) # between the listing and the lock
       m.call(*args, **kw)
     end
     report = sweep(draft_node("gid://shopify/DraftOrder/1", order))
@@ -220,10 +220,9 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
   end
 
   describe "an order without a status never keeps a draft" do
-    it "deletes the draft of a status-less order even when the JobStatus constants are nil (unseeded)" do
+    it "deletes the draft of a status-less order" do
       order = order_with_draft!(stored: "gid://shopify/DraftOrder/1")
       order.job_order_statuses.delete_all
-      stub_const("JobStatus::COMPLETED", nil)
       report = sweep(draft_node("gid://shopify/DraftOrder/1", order))
 
       expect(shopify.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
@@ -879,14 +878,14 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
 
     it "gives the same latest status to the batch query, the locked read and the instance, with the highest status row winning" do
       order = order_with_draft!(:staff_approval)
-      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner)
+      order.job_order_statuses.create!(job_status: JobStatus.completed, user: owner)
       order.job_order_statuses.first.update_columns(created_at: 1.day.from_now) # created_at must not decide
 
       batch = JobOrder.where(id: order.id).pick(Arel.sql(JobOrder::LATEST_STATUS_ID_SQL))
       # what #locked_operation hands its block: the status read under the row lock
       locked = JobOrder.find(order.id).send(:locked_operation, "probe") { |status| JobOrder::TransitionResult.done(status) }.value
       expect(locked&.id).to eq(batch)
-      expect(batch).to eq(JobStatus::COMPLETED.id)
+      expect(batch).to eq(JobStatus.completed.id)
       expect(order.latest_status.job_status_id).to eq(batch)
       expect(order.job_order_statuses.last.job_status_id).to eq(batch)
     end

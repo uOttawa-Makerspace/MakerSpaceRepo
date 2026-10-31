@@ -43,7 +43,7 @@ RSpec.describe "Job order locked operations", type: :request do
       order = quoted_order!(:paid, draft: true)
       shopify.status = 502
 
-      result = order.transition!(from: JobStatus::PAID, to: JobStatus::PICKED_UP, actor: staff)
+      result = order.transition!(from: JobStatus.paid, to: JobStatus.picked_up, actor: staff)
 
       expect(result).to be_ok
       expect(shopify.calls).to be_empty
@@ -53,7 +53,7 @@ RSpec.describe "Job order locked operations", type: :request do
     it "COMPLETED -> PICKED_UP (a path that does not exist today) still settles the draft: deleted, fail closed" do
       order = quoted_order!(:completed, draft: true)
 
-      result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::PICKED_UP, actor: staff)
+      result = order.transition!(from: JobStatus.completed, to: JobStatus.picked_up, actor: staff)
 
       expect(result).to be_ok
       expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete]) # a paid destination asks first
@@ -64,7 +64,7 @@ RSpec.describe "Job order locked operations", type: :request do
       order = quoted_order!(:completed, draft: true)
       shopify.status = 502
 
-      result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::PICKED_UP, actor: staff)
+      result = order.transition!(from: JobStatus.completed, to: JobStatus.picked_up, actor: staff)
 
       expect(result.reason).to eq(:draft_not_voidable)
       expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
@@ -75,7 +75,7 @@ RSpec.describe "Job order locked operations", type: :request do
 
   describe "an exception raised by the work is not relabelled as a lock failure" do
     def transition_with(order, &work)
-      order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff, &work)
+      order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff, &work)
     end
 
     {
@@ -131,7 +131,7 @@ RSpec.describe "Job order locked operations", type: :request do
   describe "Shopify calls under the lock" do
     it "a destination that is not paid deletes first: ONE call on the normal path" do
       order = quoted_order!(:completed, draft: true)
-      order.transition!(from: JobStatus::COMPLETED, to: JobStatus::DECLINED, actor: staff)
+      order.transition!(from: JobStatus.completed, to: JobStatus.declined, actor: staff)
 
       expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(order.reload.shopify_draft_order_id).to be_nil
@@ -140,7 +140,7 @@ RSpec.describe "Job order locked operations", type: :request do
     it "a paid destination asks first, and keeps a draft Shopify reports COMPLETED (one call)" do
       order = quoted_order!(:completed, draft: true)
       shopify.draft_status = "COMPLETED"
-      order.transition!(from: JobStatus::COMPLETED, to: JobStatus::PAID, actor: staff)
+      order.transition!(from: JobStatus.completed, to: JobStatus.paid, actor: staff)
 
       expect(shopify_ops).to eq(%w[getDraftOrder])
       expect(order.reload.shopify_draft_order_id).to eq(draft_id)
@@ -148,7 +148,7 @@ RSpec.describe "Job order locked operations", type: :request do
 
     it "a paid destination deletes an open draft (paid in store): fetch, then delete" do
       order = quoted_order!(:completed, draft: true)
-      order.transition!(from: JobStatus::COMPLETED, to: JobStatus::PAID, actor: staff)
+      order.transition!(from: JobStatus.completed, to: JobStatus.paid, actor: staff)
 
       expect(shopify_ops).to eq(%w[getDraftOrder draftOrderDelete])
     end
@@ -160,7 +160,7 @@ RSpec.describe "Job order locked operations", type: :request do
         order = quoted_order!(:completed, draft: true)
         shopify.draft_missing = true
 
-        result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::DECLINED, actor: staff)
+        result = order.transition!(from: JobStatus.completed, to: JobStatus.declined, actor: staff)
 
         expect(result).to be_ok
         expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
@@ -171,7 +171,7 @@ RSpec.describe "Job order locked operations", type: :request do
         order = quoted_order!(:completed, draft: true)
         shopify.draft_status = "COMPLETED"
 
-        result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::DECLINED, actor: staff)
+        result = order.transition!(from: JobStatus.completed, to: JobStatus.declined, actor: staff)
 
         expect(result.reason).to eq(:draft_not_voidable)
         expect(result.error.message).to include("already paid")
@@ -182,7 +182,7 @@ RSpec.describe "Job order locked operations", type: :request do
       it "still open on Shopify: refused with Shopify's reason" do
         order = quoted_order!(:completed, draft: true)
 
-        result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::DECLINED, actor: staff)
+        result = order.transition!(from: JobStatus.completed, to: JobStatus.declined, actor: staff)
 
         expect(result.reason).to eq(:draft_not_voidable)
         expect(result.error.message).to include("cannot delete")
@@ -194,7 +194,7 @@ RSpec.describe "Job order locked operations", type: :request do
           kw[:query].include?("getDraftOrder") ? raise("boom") : m.call(**kw)
         end
 
-        expect(order.transition!(from: JobStatus::COMPLETED, to: JobStatus::DECLINED, actor: staff).reason)
+        expect(order.transition!(from: JobStatus.completed, to: JobStatus.declined, actor: staff).reason)
           .to eq(:draft_not_voidable)
         expect(order.reload.shopify_draft_order_id).to eq(draft_id)
       end
@@ -206,10 +206,10 @@ RSpec.describe "Job order locked operations", type: :request do
   describe "a refused quote decides 'already paid' from the status read under the lock" do
     it "carries the status in the result" do
       order = quoted_order!(:paid)
-      result = order.transition!(from: JobOrder.quotable_statuses, to: JobStatus::USER_APPROVAL, actor: staff)
+      result = order.transition!(from: JobOrder.quotable_statuses, to: JobStatus.user_approval, actor: staff)
 
       expect(result.reason).to eq(:wrong_state)
-      expect(result.status).to eq(JobStatus::PAID)
+      expect(result.status).to eq(JobStatus.paid)
     end
 
     it "the controller does not read the statuses again after the transition" do
@@ -415,7 +415,7 @@ RSpec.describe "Job order locked operations", type: :request do
       [ActiveRecord::LockWaitTimeout, ActiveRecord::RecordNotFound].each do |error|
         order = quoted_order!(:being_processed)
         allow(order).to receive(:lock!).and_raise(error)
-        expect(order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)).not_to be_ok
+        expect(order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)).not_to be_ok
       end
     end
   end
@@ -539,19 +539,19 @@ RSpec.describe "Job order locked operations", type: :request do
     end
 
     it "settles by (status, destination): one rule for transitions, deletes and the rake" do
-      paid = [JobStatus::PAID, JobStatus::PICKED_UP]
-      unpaid = [JobStatus::DRAFT, JobStatus::STAFF_APPROVAL, JobStatus::USER_APPROVAL, JobStatus::BEING_PROCESSED]
+      paid = [JobStatus.paid, JobStatus.picked_up]
+      unpaid = [JobStatus.draft, JobStatus.staff_approval, JobStatus.user_approval, JobStatus.being_processed]
       paid.each do |from|
         expect(JobOrder.draft_settlement(from, JobOrder::DELETED)).to eq(:paid)
         expect(JobOrder.draft_settlement(nil, from)).to eq(:paid)
       end
       unpaid.each do |from|
         expect(JobOrder.draft_settlement(from, JobOrder::DELETED)).to eq(:unpaid)
-        expect(JobOrder.draft_settlement(from, JobStatus::PAID)).to eq(:paid)
-        expect(JobOrder.draft_settlement(from, JobStatus::DECLINED)).to eq(:unpaid)
+        expect(JobOrder.draft_settlement(from, JobStatus.paid)).to eq(:paid)
+        expect(JobOrder.draft_settlement(from, JobStatus.declined)).to eq(:unpaid)
       end
-      expect(JobOrder.draft_settlement(JobStatus::PAID, JobStatus::PICKED_UP)).to eq(:none)
-      expect(JobOrder.draft_settlement(JobStatus::BEING_PROCESSED, JobStatus::COMPLETED)).to eq(:none)
+      expect(JobOrder.draft_settlement(JobStatus.paid, JobStatus.picked_up)).to eq(:none)
+      expect(JobOrder.draft_settlement(JobStatus.being_processed, JobStatus.completed)).to eq(:none)
     end
   end
 
@@ -758,7 +758,7 @@ RSpec.describe "Job order locked operations", type: :request do
       order = quoted_order!(:being_processed)
       JobOrder.where(id: order.id).update_all(is_deleted: true)
 
-      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+      result = order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
 
       expect(result.reason).to eq(:order_missing)
       expect(status_names(order)).to eq(["Currently being Processed"])

@@ -17,7 +17,7 @@ RSpec.describe "Job order lists: status queries", type: :request do
 
   def status_selects
     sqls = []
-    callback = ->(*, payload) { sqls << payload[:sql] if payload[:sql].match?(/\ASELECT .*FROM "job_order_statuses"/m) }
+    callback = ->(*, payload) { sqls << payload[:sql] if payload[:sql].match?(/\ASELECT .*FROM "?job_order_statuses"?[ )]/m) }
     ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { yield }
     sqls
   end
@@ -25,7 +25,7 @@ RSpec.describe "Job order lists: status queries", type: :request do
   def orders!(count, owner:)
     Array.new(count) do
       make_job_order!(owner: owner, status_key: :staff_approval).tap do |o|
-        o.job_order_statuses.create!(job_status: JobStatus::USER_APPROVAL, user: owner)
+        o.job_order_statuses.create!(job_status: JobStatus.user_approval, user: owner)
       end
     end
   end

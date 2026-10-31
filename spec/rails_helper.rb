@@ -72,6 +72,10 @@ RSpec.configure do |config|
     end
   end
 
+  # The status rows live in a transaction that is rolled back after every example: never carry a memoized
+  # JobStatus row (JobStatus.draft ...) into the next one.
+  config.before(:each) { JobStatus.reset_lookup_cache! }
+
   config.before(:each) do
     allow(Event).to receive(:upsert_event).and_return(true)
     allow(Event).to receive(:delete_event).and_return(true)

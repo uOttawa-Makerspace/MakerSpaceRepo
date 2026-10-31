@@ -102,7 +102,7 @@ RSpec.describe JobOrderMailer, type: :mailer do
     end
 
     it "switches to the re-approved wording once the order has more than one USER_APPROVAL row" do
-      order.job_order_statuses.create!(job_status: JobStatus::USER_APPROVAL, user: staff)
+      order.job_order_statuses.create!(job_status: JobStatus.user_approval, user: staff)
       described_class.send_job_quote(order.id).deliver_now
       expect(delivered.last.subject).to eq(
         "Votre commande ##{order.id} a été réapprouvée // Your job order ##{order.id} has been re-approved"

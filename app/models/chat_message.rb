@@ -31,7 +31,7 @@ class ChatMessage < ApplicationRecord
   private
 
   def schedule_notification_email
-    return if recent_message_by_sender? || job_order.latest_status&.job_status == JobStatus::DRAFT
+    return if recent_message_by_sender? || job_order.latest_status&.job_status == JobStatus.draft
 
     recipients = job_order.chat_messages
                   .where.not(sender_id: sender_id)

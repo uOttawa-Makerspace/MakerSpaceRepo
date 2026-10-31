@@ -725,7 +725,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     it "uses the re-approved wording once the order has multiple USER_APPROVAL rows" do
       order = order_with_task!(owner: owner, status_key: :user_approval)
       advance_to!(order, :user_approval)
-      expect(order.job_order_statuses.where(job_status: JobStatus::USER_APPROVAL).count).to eq(2)
+      expect(order.job_order_statuses.where(job_status: JobStatus.user_approval).count).to eq(2)
 
       patch job_order_resend_quote_email_path(order)
       expect(ActionMailer::Base.deliveries.last.subject)
@@ -906,8 +906,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     it "names a missing actor 'Unknown' instead of raising, on processing and sent-back rows", skip_bullet: true do
       order = order_with_task!(owner: owner)
       advance_to!(order, :being_processed)
-      sent_back = order.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "owner_change")
-      JobOrderStatus.where(id: [sent_back.id, order.job_order_statuses.find_by!(job_status: JobStatus::BEING_PROCESSED).id])
+      sent_back = order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner, reason: "owner_change")
+      JobOrderStatus.where(id: [sent_back.id, order.job_order_statuses.find_by!(job_status: JobStatus.being_processed).id])
                     .update_all(user_id: nil)
       http_login!(staff)
       get job_order_timeline_modal_path(order)
@@ -923,8 +923,9 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     it "loads the history with a fixed number of queries, users only for rows that show them" do
       order = order_with_task!(owner: owner)
       %i[staff_approval user_approval waiting_processed being_processed completed].each { |k| advance_to!(order, k) }
-      order.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "owner_change")
+      order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner, reason: "owner_change")
       http_login!(staff)
+      JobStatus::STATUS_NAMES.each_key { |key| JobStatus.public_send(key) } # the per-process lookups are warm in a running app
       tables = Hash.new(0)
       subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
         %w[job_order_statuses job_statuses users].each { |t| tables[t] += 1 if payload[:sql].match?(/FROM "#{t}"/) }
@@ -1072,7 +1073,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "a link from before a re-quote is retired when the order gets a new approval round" do
         old = token
-        magic_order.job_order_statuses.create!(job_status: JobStatus::USER_APPROVAL, user: owner)
+        magic_order.job_order_statuses.create!(job_status: JobStatus.user_approval, user: owner)
         get user_magic_approval_job_orders_path, params: { token: old }
         expect(response).to redirect_to(job_orders_path)
         get user_magic_approval_job_orders_path, params: { token: magic_order.reload.approval_token }
@@ -1081,7 +1082,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "a reminder keeps the original link working" do
         old = token
-        magic_order.job_order_statuses.create!(job_status: JobStatus::SENT_REMINDER, user: owner)
+        magic_order.job_order_statuses.create!(job_status: JobStatus.sent_reminder, user: owner)
         get user_magic_approval_job_orders_path, params: { token: old }
         expect(response).to have_http_status(:ok)
       end

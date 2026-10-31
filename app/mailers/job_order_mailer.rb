@@ -43,7 +43,7 @@ class JobOrderMailer < ApplicationMailer
     approved_fr, approved_en =
       if @job_order
            .job_order_statuses
-           .where(job_status: JobStatus::USER_APPROVAL)
+           .where(job_status: JobStatus.user_approval)
            .count > 1
         %w[réapprouvée re-approved]
       else

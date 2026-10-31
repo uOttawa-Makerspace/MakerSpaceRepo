@@ -220,7 +220,7 @@ RSpec.describe "Job order security pins", type: :request do
 
       expect(response).to redirect_to(job_order_path(order))
       expect(order.reload.total_price).to eq(5)
-      expect(order.job_order_statuses.last.job_status).to eq(JobStatus::STAFF_APPROVAL)
+      expect(order.job_order_statuses.last.job_status).to eq(JobStatus.staff_approval)
     end
 
     it "404s on a soft-deleted order (D-J48)" do
@@ -246,7 +246,7 @@ RSpec.describe "Job order security pins", type: :request do
 
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.paid_order_cannot_change"))
       expect(task.reload.job_type).to be_nil
-      expect(order.reload.job_order_statuses.last.job_status).to eq(JobStatus::PAID)
+      expect(order.reload.job_order_statuses.last.job_status).to eq(JobStatus.paid)
     end
 
     it "refuses to create a new task on a PICKED_UP order" do

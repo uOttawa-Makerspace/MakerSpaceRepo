@@ -9,20 +9,20 @@
     <% current_status_id = current_status&.id %>
 
     <% all_statuses = [
-      JobStatus::DRAFT,
-      JobStatus::STAFF_APPROVAL,
-      JobStatus::USER_APPROVAL,
-      JobStatus::SENT_REMINDER,
-      JobStatus::WAITING_PROCESSED,
-      JobStatus::BEING_PROCESSED,
-      JobStatus::COMPLETED,
-      JobStatus::PAID,
-      JobStatus::PICKED_UP,
-      JobStatus::DECLINED
+      JobStatus.draft,
+      JobStatus.staff_approval,
+      JobStatus.user_approval,
+      JobStatus.sent_reminder,
+      JobStatus.waiting_processed,
+      JobStatus.being_processed,
+      JobStatus.completed,
+      JobStatus.paid,
+      JobStatus.picked_up,
+      JobStatus.declined
     ].compact.reverse %>
 
     <% filtered_statuses = all_statuses.reject do |status|
-      [JobStatus::DECLINED, JobStatus::SENT_REMINDER].include?(status) && !completed_status_ids.include?(status.id)
+      [JobStatus.declined, JobStatus.sent_reminder].include?(status) && !completed_status_ids.include?(status.id)
     end %>
 
     <% current_index = filtered_statuses.find_index(current_status) %>
@@ -33,7 +33,7 @@
         <% is_completed = completed_status_ids.include?(status.id) && index > current_index %>
         <% is_current = status == current_status %>
         <% is_future = index < current_index && !is_current %>
-        <% is_cancelled = current_status == JobStatus::DECLINED && index < current_index %>
+        <% is_cancelled = current_status == JobStatus.declined && index < current_index %>
 
         <li class="list-group-item <%= 'bg-body-secondary border-primary' if is_current %>" style="<%= is_completed || is_future ? 'opacity: 0.5;' : '' %>">
           <div class="d-flex justify-content-between align-items-start">
@@ -64,12 +64,12 @@ end %>
           </div>
 
           <%# Special UI for certain current statuses - shown inside the li if it's the current one %>
-          <% if is_current && [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(status) %>
+          <% if is_current && [JobStatus.user_approval, JobStatus.sent_reminder, JobStatus.completed].include?(status) %>
             <div class="alert alert-warning mt-3">
-              <p><b><%= t('job_orders.public_page.action_required', blank: status == JobStatus::COMPLETED ? t('job_orders.public_page.total_invoice') : t('job_orders.public_page.total_quote')) %> <%= number_to_currency(jo.total_price) %></b></p>
+              <p><b><%= t('job_orders.public_page.action_required', blank: status == JobStatus.completed ? t('job_orders.public_page.total_invoice') : t('job_orders.public_page.total_quote')) %> <%= number_to_currency(jo.total_price) %></b></p>
               <% if current_user.id == jo.user_id %>
                 <div class="d-flex justify-content-start flex-wrap">
-                  <% if status == JobStatus::COMPLETED %>
+                  <% if status == JobStatus.completed %>
                     <%= link_to t('job_orders.public_page.pay_online'), pay_job_orders_path(token: jo.pay_token), class: 'btn btn-primary me-2 mb-2' %>
                     <a href="https://en.wiki.makerepo.com/wiki/How_to_pay_for_an_Order" class="btn btn-primary mb-2"><%= t('job_orders.public_page.pay_in_store') %></a>
                   <% else %>

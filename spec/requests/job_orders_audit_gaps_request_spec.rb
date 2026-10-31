@@ -202,7 +202,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(shopify_ops).to eq(%w[draftOrderDelete])
       expect(shopify.calls.last[:variables]).to eq(input: { id: "gid://shopify/DraftOrder/9001" })
       expect(order.shopify_draft_order_id).to be_nil
-      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: staff)
+      order.job_order_statuses.create!(job_status: JobStatus.completed, user: staff)
 
       shopify.calls.clear
       shopify.draft_id = "gid://shopify/DraftOrder/9002"
@@ -315,7 +315,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(order.total_price).to eq(BigDecimal("55"))
       expect(order.shopify_draft_order_id).to be_nil
 
-      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: staff)
+      order.job_order_statuses.create!(job_status: JobStatus.completed, user: staff)
       shopify.calls.clear
       get pay_job_orders_path, params: { token: order.pay_token }
       expect(response).to have_http_status(:ok)

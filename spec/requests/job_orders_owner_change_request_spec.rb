@@ -249,12 +249,12 @@ RSpec.describe "Owner changes after the quote (JOB-01)", type: :request do
         expect(applied?(name, order)).to be(true)
         if sends_back
           expect(status_rows(order).last)
-            .to have_attributes(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "owner_change")
+            .to have_attributes(job_status: JobStatus.staff_approval, user: owner, reason: "owner_change")
           expect(shopify_ops).to eq(%w[draftOrderDelete])
           expect(order.reload.shopify_draft_order_id).to be_nil
           expect_requote_mail(order)
         else
-          expect(status_rows(order).last.job_status).to eq(JobStatus::COMPLETED)
+          expect(status_rows(order).last.job_status).to eq(JobStatus.completed)
           expect(shopify.calls).to be_empty
           expect(order.reload.shopify_draft_order_id).to be_present
           expect_no_requote_mail
@@ -282,7 +282,7 @@ RSpec.describe "Owner changes after the quote (JOB-01)", type: :request do
 
       expect(applied?("delete a task", order)).to be(true)
       expect(status_rows(order).last)
-        .to have_attributes(job_status: JobStatus::STAFF_APPROVAL, user: admin, reason: "owner_change")
+        .to have_attributes(job_status: JobStatus.staff_approval, user: admin, reason: "owner_change")
     end
   end
 
@@ -374,8 +374,8 @@ RSpec.describe "Owner changes after the quote (JOB-01)", type: :request do
       before_tasks = order.job_tasks.count
       allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args|
         # staff mark the order paid just before this request gets the lock
-        unless JobOrderStatus.exists?(job_order_id: order.id, job_status: JobStatus::PAID)
-          JobOrderStatus.create!(job_order_id: order.id, job_status: JobStatus::PAID, user: staff)
+        unless JobOrderStatus.exists?(job_order_id: order.id, job_status: JobStatus.paid)
+          JobOrderStatus.create!(job_order_id: order.id, job_status: JobStatus.paid, user: staff)
         end
         m.call(*args)
       end

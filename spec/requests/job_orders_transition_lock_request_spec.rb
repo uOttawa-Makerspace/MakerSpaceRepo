@@ -46,7 +46,7 @@ RSpec.describe "Job order status transitions under the row lock", type: :request
     it "refuses an emailed approval when a re-quote committed between the token check and the lock" do
       order, = quoted_order!(:user_approval)
       old_token = order.approval_token
-      before_lock { order.job_order_statuses.create!(job_status: JobStatus::USER_APPROVAL, user: staff) }
+      before_lock { order.job_order_statuses.create!(job_status: JobStatus.user_approval, user: staff) }
 
       patch user_magic_approval_confirmation_job_orders_path, params: { token: old_token, approved: "true" }
 
@@ -57,7 +57,7 @@ RSpec.describe "Job order status transitions under the row lock", type: :request
     it "refuses an emailed approval when an owner change committed between the token check and the lock" do
       order, = quoted_order!(:user_approval)
       token = order.approval_token
-      before_lock { order.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "owner_change") }
+      before_lock { order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner, reason: "owner_change") }
 
       patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: "true" }
 
@@ -67,7 +67,7 @@ RSpec.describe "Job order status transitions under the row lock", type: :request
     it "refuses a signed-in approval when an owner change committed just before the lock" do
       order, = quoted_order!(:user_approval)
       session_login!(owner)
-      before_lock { order.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "owner_change") }
+      before_lock { order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner, reason: "owner_change") }
 
       patch job_order_user_approval_path(order), params: { approved: "true" }
 

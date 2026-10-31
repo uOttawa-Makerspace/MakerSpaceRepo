@@ -18,10 +18,8 @@ class JobOrder < ApplicationRecord
   after_save :set_filename
 
   # Orders whose latest status (the one rule, LATEST_STATUS_ID_SQL) exists and is not Draft. An order without a
-  # status is NULL <> id: excluded. With Draft unseeded (nil) the id is 0, which no status has: nothing is excluded
-  # beyond the orders without a status.
-  scope :without_drafts,
-        -> { where("#{LATEST_STATUS_ID_SQL} <> COALESCE(?, 0)", JobStatus::DRAFT&.id) }
+  # status is NULL <> id: excluded. JobStatus.draft raises JobStatus::Missing when Draft is not seeded.
+  scope :without_drafts, -> { where("#{LATEST_STATUS_ID_SQL} <> ?", JobStatus.draft.id) }
 
   scope :not_deleted, -> { where(is_deleted: false) }
 
@@ -65,7 +63,7 @@ class JobOrder < ApplicationRecord
   #   :wrong_state         the order is not in one of `from` (or, for an owner change, money was taken)
   #   :link_spent          the emailed approve link was retired (re-quote / owner change) before the lock
   #   :draft_not_voidable  the Shopify draft could not be settled (StaleDraftOrderError; any Shopify error)
-  #   :invalid_status_row  the status row did not validate or could not be written (no actor, unseeded status)
+  #   :invalid_status_row  the status row did not validate or could not be written (no actor)
   #   :change_invalid      the caller's own writes did not validate; `error.message` holds the messages
   #   :order_missing       the order was deleted (hard, or soft) before the lock
   #   :busy                a lock wait in the operation timed out (the order's row or a row the work locks);
@@ -147,29 +145,29 @@ class JobOrder < ApplicationRecord
 
   # JOB-04: once money has been taken the quote is final. Nothing on the customer or quoting side may change the
   # order, re-quote it or decline it; changes after payment go through staff by hand.
-  # (A missing status never matches: the JobStatus constants are nil where the status rows are not seeded.)
+  # (A missing status (nil: an order without a status row) never matches.)
   def self.money_taken_status?(status)
-    !status.nil? && [JobStatus::PAID, JobStatus::PICKED_UP].include?(status)
+    !status.nil? && [JobStatus.paid, JobStatus.picked_up].include?(status)
   end
 
   # Every status a quote may be issued or declined from (all but the paid ones).
   def self.quotable_statuses
-    [JobStatus::DRAFT, JobStatus::STAFF_APPROVAL, JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER,
-     JobStatus::WAITING_PROCESSED, JobStatus::BEING_PROCESSED, JobStatus::COMPLETED, JobStatus::DECLINED]
+    [JobStatus.draft, JobStatus.staff_approval, JobStatus.user_approval, JobStatus.sent_reminder,
+     JobStatus.waiting_processed, JobStatus.being_processed, JobStatus.completed, JobStatus.declined]
   end
 
   # The approve link is bound to the latest quote boundary: the newest "Waiting for User Approval" row (a re-quote
   # retires older links) or "Waiting for Staff Approval" row (an order sent back for a new quote, JOB-01, retires
   # the link of the quote it replaced). A reminder moves neither, so it keeps the link.
   def approval_status_marker
-    job_order_statuses.where(job_status: [JobStatus::USER_APPROVAL, JobStatus::STAFF_APPROVAL]).maximum(:id)
+    job_order_statuses.where(job_status: [JobStatus.user_approval, JobStatus.staff_approval]).maximum(:id)
   end
 
   # Statuses in which the order carries a staff quote the customer may approve or pay.
   def self.quoted_status?(status)
     !status.nil? &&
-      [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER, JobStatus::WAITING_PROCESSED, JobStatus::BEING_PROCESSED,
-       JobStatus::COMPLETED].include?(status)
+      [JobStatus.user_approval, JobStatus.sent_reminder, JobStatus.waiting_processed, JobStatus.being_processed,
+       JobStatus.completed].include?(status)
   end
 
   # The caller's own writes did not validate (a task, an option, a custom service, a quote price) or a destroy was
@@ -205,7 +203,7 @@ class JobOrder < ApplicationRecord
       @quote_snapshot = nil # the block changed the rows the snapshot was loaded from
       next TransitionResult.done(false) if change_fingerprints == before
 
-      enter_status!(JobStatus::STAFF_APPROVAL, from: status, actor: actor, reason: "owner_change")
+      enter_status!(JobStatus.staff_approval, from: status, actor: actor, reason: "owner_change")
       TransitionResult.done(true)
     end
     JobOrderMailer.send_job_requote_needed(id, "owner_change").deliver_later if result.ok? && result.value
@@ -303,7 +301,7 @@ class JobOrder < ApplicationRecord
 
   # The statuses in which the owner may still change (and delete) the order: before it is quoted.
   def self.editable_status?(status)
-    !status.nil? && [JobStatus::DRAFT, JobStatus::STAFF_APPROVAL].include?(status)
+    !status.nil? && [JobStatus.draft, JobStatus.staff_approval].include?(status)
   end
 
   # Whether `user` is the order's owner and `status` is still one the owner may change (before it is quoted).
@@ -361,13 +359,14 @@ class JobOrder < ApplicationRecord
   # Returns a TransitionResult whose value is the invoice url or nil (see above); a refusal (Shopify unreachable,
   # busy row, order deleted, the send-back's status row not written) has already been reported by #refuse_from.
   def checkout_link
-    # Lock-free fast path: a COMPLETED order whose stored draft is current (read without a lock) is served by one
+    # Lock-free fast path (the status is read fresh, #current_status: the cached #latest_status could serve an
+    # invoice for a status that changed on another connection): a COMPLETED order whose stored draft is current (read without a lock) is served by one
     # fetch. A race with a change that voids the draft is safe: the void deletes it on Shopify, the fetch then finds
     # nothing and falls through to the locked path. The narrow window is a staff transition still in flight: it
     # has not yet deleted the draft, so this one fetch can still serve the link. Accepted (security review): that
     # transaction deletes the draft fail closed, so the link is dead as soon as the transition commits and a
     # refused transition leaves the order, and so the link, as it was.
-    if latest_status&.job_status == JobStatus::COMPLETED && draft_order_current?
+    if current_status == JobStatus.completed && draft_order_current?
       state, url = shopify_fail_closed { probe_draft_order }
       return TransitionResult.done(url) if state == :found
       return TransitionResult.done(nil) if state == :error
@@ -465,8 +464,8 @@ class JobOrder < ApplicationRecord
   def self.draft_paid?(draft) = draft["status"] == PAID_DRAFT_STATUS
 
   # Whether this order's stored Shopify draft `gid` is the invoice the database backs: the order is live, waiting for
-  # payment (COMPLETED) and its stored shopify_draft_order_id is this draft. A missing JobStatus (unseeded: the
-  # constants are nil) never matches. `status_id` is the latest status id: pass the one read under the row lock.
+  # payment (COMPLETED) and its stored shopify_draft_order_id is this draft. An order without a
+  # status (nil id) never matches (JobStatus.completed raises when its row is missing). `status_id` is the latest status id: pass the one read under the row lock.
   def backs_draft?(gid, status_id)
     self.class.backs_draft?(gid, deleted: is_deleted, stored_gid: shopify_draft_order_id, status_id: status_id)
   end
@@ -477,8 +476,15 @@ class JobOrder < ApplicationRecord
   LATEST_STATUS_ID_SQL = "(SELECT s.job_status_id FROM job_order_statuses s WHERE s.job_order_id = job_orders.id " \
                          "ORDER BY s.id DESC LIMIT 1)"
 
-  # The latest status row of this order (nil without one): the highest id. Every reader of "the current status" goes
-  # through it. A loaded association (a preload) is read by id, whatever order it came in; an unloaded one is one
+  # The order's CURRENT status as a JobStatus (nil without a status row), read now: one query on LATEST_STATUS_ID_SQL,
+  # never cached, no association involved. Use it for every decision (locks, guards, what to serve or charge). For
+  # display and lists use #latest_status, which honours preloads (but may be a stale preload or a cached read).
+  def current_status
+    self.class.uncached { JobStatus.find_by(id: self.class.unscoped.where(id: id).select(Arel.sql(LATEST_STATUS_ID_SQL))) }
+  end
+
+  # The latest status row of this order (nil without one): the highest id. The reader of "the status" for DISPLAY and
+  # lists (it uses preloaded rows, so no N+1); decisions use #current_status. A loaded association (a preload) is read by id, whatever order it came in; an unloaded one is one
   # query, its `.last` (the association is ordered by id). A row built but not saved (no id yet) is the newest, as
   # with `.last`: the last of those wins over the persisted rows.
   def latest_status
@@ -491,8 +497,7 @@ class JobOrder < ApplicationRecord
   # The same rule on plain values (the sweep decides it for many orders from one query): `deleted` the is_deleted
   # flag, `stored_gid` the stored shopify_draft_order_id, `status_id` the latest JobStatus id.
   def self.backs_draft?(gid, deleted:, stored_gid:, status_id:)
-    completed = JobStatus::COMPLETED
-    !deleted && !completed.nil? && status_id == completed.id && stored_gid == gid
+    !deleted && status_id == JobStatus.completed.id && stored_gid == gid
   end
 
   # JobOrder::DraftSweep's decision about the listed draft `gid` marked for order `order_id`, made AND carried out under
@@ -556,8 +561,8 @@ class JobOrder < ApplicationRecord
   #   anything else          any             :unpaid  (re-quoted, back to staff, approved, processing, declined,
   #                                                    reminded, or a delete of an unpaid order)
   def self.draft_settlement(from, destination)
-    return :none if destination == JobStatus::COMPLETED
-    return :none if from == JobStatus::PAID && destination != DELETED
+    return :none if destination == JobStatus.completed
+    return :none if from == JobStatus.paid && destination != DELETED
 
     money_taken_status?(destination == DELETED ? from : destination) ? :paid : :unpaid
   end
@@ -671,8 +676,8 @@ class JobOrder < ApplicationRecord
       lock_row!
       next TransitionResult.refused(:order_missing) if live_only && is_deleted
 
-      # the status row, read under the lock in ONE query (the association is not used: it may be a stale preload)
-      status = JobStatus.find_by(id: self.class.unscoped.where(id: id).select(Arel.sql(LATEST_STATUS_ID_SQL)))
+      # the status, read under the lock (#current_status: fresh, not the association, which may be a stale preload)
+      status = current_status
       yield status
     end
     result.with(status: status)
@@ -793,14 +798,14 @@ class JobOrder < ApplicationRecord
   # the transaction rolled back; the stored id is only ever cleared for a confirmed-gone or deleted draft, so a
   # transient error never loses it.
   def checkout_link_under_lock(latest)
-    return TransitionResult.done([nil, false]) if latest.nil? || latest != JobStatus::COMPLETED
+    return TransitionResult.done([nil, false]) unless latest == JobStatus.completed
 
     state, url = shopify_fail_closed { probe_draft_order }
     return TransitionResult.done([nil, false]) if state == :error
     return TransitionResult.done([url, false]) if state == :found && draft_order_current?
 
     if state == :found && shopify_draft_order_fingerprint.present?
-      enter_status!(JobStatus::STAFF_APPROVAL, from: latest, actor: user, reason: "invoice_mismatch")
+      enter_status!(JobStatus.staff_approval, from: latest, actor: user, reason: "invoice_mismatch")
       return TransitionResult.done([nil, true])
     end
 

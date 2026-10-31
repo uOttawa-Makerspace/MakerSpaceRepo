@@ -211,7 +211,7 @@ class JobTasksController < SessionsController
   end
 
   def submit_for_approval
-    return if @job_order.latest_status&.job_status != JobStatus::DRAFT
+    return if @job_order.latest_status&.job_status != JobStatus.draft
 
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       task.job_type.blank? ||
@@ -220,7 +220,7 @@ class JobTasksController < SessionsController
     return if @tasks_missing_information.any?
 
     @job_order.job_order_statuses.create!(
-      job_status: JobStatus::STAFF_APPROVAL,
+      job_status: JobStatus.staff_approval,
       user: current_user
     )
     JobOrderMailer.send_job_submitted(@job_order.id).deliver_now

@@ -57,7 +57,7 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
     it "re-reads the status past the query cache: a change committed meanwhile by another connection is seen" do
       order, = quoted_order!(:completed)
       pay_creates_draft!(order)
-      staff_id = JobStatus::STAFF_APPROVAL.id
+      staff_id = JobStatus.staff_approval.id
       allow_any_instance_of(JobOrder).to receive(:checkout_link).and_wrap_original do |m, *args|
         link = m.call(*args)
         # a write that does not go through the adapter, as another connection's commit would not: the query cache
@@ -84,6 +84,44 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
 
       expect(response).to redirect_to(job_order_path(order.id))
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
+    end
+
+    it "never renders the pay page for an order without a status, even with the Completed row absent" do
+      order, = quoted_order!(:completed)
+      token = order.pay_token
+      JobOrderStatus.where(job_order_id: order.id).delete_all
+      JobStatus.where(name: "Completed (Waiting for Payment)").delete_all
+      JobStatus.reset_lookup_cache!
+
+      get pay_job_orders_path, params: { token: token }
+
+      expect(response).to have_http_status(:internal_server_error) # fails closed: JobStatus::Missing, never the pay page
+      expect(response.body).to include("JobStatus::Missing")
+      expect(response.body).not_to include("old-invoice")
+      expect(shopify_ops).to be_empty
+    end
+
+    describe "#checkout_link lock-free fast path" do
+      it "sees a status committed on another connection while the query cache is on" do
+        order, = quoted_order!(:completed)
+        pay_creates_draft!(order)
+        staff_id = JobStatus.staff_approval.id
+        reader = JobOrder.find(order.id)
+        calls_before = shopify.calls.size
+
+        result = ActiveRecord::Base.cache do
+          reader.latest_status # primes the cache with the COMPLETED row
+          JobOrderStatus.connection.raw_connection.exec(
+            "INSERT INTO job_order_statuses (job_order_id, job_status_id, user_id, created_at, updated_at) " \
+            "VALUES (#{order.id}, #{staff_id}, #{owner.id}, now(), now())"
+          )
+          expect(reader.latest_status.job_status).to eq(JobStatus.completed) # the cached read is stale: display only
+          reader.checkout_link
+        end
+
+        expect(result.value).to be_nil
+        expect(shopify.calls.size).to eq(calls_before) # the fast path did not fetch the draft
+      end
     end
 
     it "stores a fingerprint with the draft and serves that draft while the line items match" do
@@ -114,7 +152,7 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
       order.reload
       expect(order.shopify_draft_order_id).to be_nil
       last = order.job_order_statuses.order(:id).last
-      expect(last).to have_attributes(job_status: JobStatus::STAFF_APPROVAL, user: owner, reason: "invoice_mismatch")
+      expect(last).to have_attributes(job_status: JobStatus.staff_approval, user: owner, reason: "invoice_mismatch")
       expect(requote_mails).to eq([order.id])
     end
 
@@ -232,7 +270,7 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
       allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args, &blk|
         # an owner change sends the order back to staff just before /pay locks it
         unless JobOrderStatus.exists?(job_order_id: order.id, reason: "owner_change")
-          JobOrderStatus.create!(job_order_id: order.id, job_status: JobStatus::STAFF_APPROVAL, user: owner,
+          JobOrderStatus.create!(job_order_id: order.id, job_status: JobStatus.staff_approval, user: owner,
                                  reason: "owner_change")
         end
         m.call(*args, &blk)

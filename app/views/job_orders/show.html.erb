@@ -14,11 +14,11 @@
       <h2 class="fw-bold"><%= t("job_orders.order.job_order") %> #<%= @job_order.id %></h2>
 
       <div class="d-flex gap-1">
-        <%= link_to "<i class='fa fa-download'></i> #{sanitize(t('job_orders.public_page.invoice'))}", job_order_invoice_path(job_order_id: @job_order.id), target: '_blank', class: 'btn btn-secondary', rel: 'noopener' if [JobStatus::COMPLETED,
-        JobStatus::PAID,
-        JobStatus::PICKED_UP].include?(@job_order.latest_status&.job_status) %>
+        <%= link_to "<i class='fa fa-download'></i> #{sanitize(t('job_orders.public_page.invoice'))}", job_order_invoice_path(job_order_id: @job_order.id), target: '_blank', class: 'btn btn-secondary', rel: 'noopener' if [JobStatus.completed,
+        JobStatus.paid,
+        JobStatus.picked_up].include?(@job_order.latest_status&.job_status) %>
         
-        <% if @job_order.latest_status&.job_status == JobStatus::DRAFT && !@tasks_missing_information.any? %>
+        <% if @job_order.latest_status&.job_status == JobStatus.draft && !@tasks_missing_information.any? %>
           <%= button_to 'Submit for Approval', job_order_job_task_path(@job_order, @job_order.job_tasks.first, step: 4), method: :post, format: :js, class: 'btn btn-outline-primary', data: { confirm: 'Are you sure you want to submit this job order for staff approval?' } %>
         <% end %>
 

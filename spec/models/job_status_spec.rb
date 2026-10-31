@@ -30,21 +30,38 @@ RSpec.describe JobStatus, type: :model do
     end
   end
 
-  # WART(D-J32): the constants are `JobStatus.find_by(name: ...)` evaluated in
-  # the class body, so a process booted against a database without the
-  # reference rows keeps nil for its whole lifetime. The suite stubs them per
-  # example (spec/support/job_orders_spec_helpers.rb); this boots a REAL process
-  # (the rows of this transactional example are uncommitted, as for any fresh
-  # database).
-  it "resolves its status constants once at boot: nil in a process booted without the rows" do
-    create(:job_status, name: "Draft")
-    out, status = Open3.capture2e(
-      { "RAILS_ENV" => "test" },
-      "bin/rails", "runner",
-      'puts "CONSTANTS=" + [JobStatus::DRAFT, JobStatus::PAID, JobStatus::DECLINED].map(&:inspect).join(",")',
-      chdir: Rails.root.to_s
-    )
-    expect(status).to be_success
-    expect(out.lines.grep(/\ACONSTANTS=/).last.strip).to eq("CONSTANTS=nil,nil,nil")
+  describe "workflow status lookups" do
+    JobStatus::STATUS_NAMES.each do |key, name|
+      describe ".#{key}" do
+        it "returns the #{name.inspect} row" do
+          row = create(:job_status, name: name)
+          expect(JobStatus.public_send(key)).to eq(row)
+        end
+
+        it "raises JobStatus::Missing, naming the status, when the row is absent" do
+          expect { JobStatus.public_send(key) }
+            .to raise_error(JobStatus::Missing, /#{Regexp.escape(name)}/)
+        end
+      end
+    end
+
+    it "memoizes after the first successful lookup and forgets on reset_lookup_cache!" do
+      row = create(:job_status, name: "Draft")
+      expect(JobStatus.draft).to equal(JobStatus.draft)
+
+      expect { JobStatus.where(id: row.id).delete_all }.not_to(change { JobStatus.draft })
+      JobStatus.reset_lookup_cache!
+      expect { JobStatus.draft }.to raise_error(JobStatus::Missing)
+    end
+
+    it "does not memoize a miss: the row created later is found" do
+      expect { JobStatus.paid }.to raise_error(JobStatus::Missing)
+      row = create(:job_status, name: "Paid (Waiting for Pick-Up)")
+      expect(JobStatus.paid).to eq(row)
+    end
+
+    it "defines no constants" do
+      expect(JobStatus.constants(false) - %i[STATUS_NAMES Missing LOOKUP_MUTEX]).to be_empty
+    end
   end
 end

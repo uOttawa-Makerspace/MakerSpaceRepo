@@ -47,8 +47,8 @@ RSpec.describe JobOrder, type: :model do
     # COMPLETED, then DRAFT: the latest is DRAFT (the highest id), however created_at and the array order say otherwise
     let(:order) do
       create(:job_order, user: owner).tap do |o|
-        o.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner)
-        o.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: owner)
+        o.job_order_statuses.create!(job_status: JobStatus.completed, user: owner)
+        o.job_order_statuses.create!(job_status: JobStatus.draft, user: owner)
         o.job_order_statuses.order(:id).first.update_columns(created_at: 1.day.from_now)
       end
     end
@@ -65,7 +65,7 @@ RSpec.describe JobOrder, type: :model do
 
       expect(loaded.job_order_statuses.map(&:id)).to eq([highest.id, highest.id - 1]) # not in id order
       expect(loaded.latest_status).to eq(highest)
-      expect(loaded.latest_status.job_status_id).to eq(JobStatus::DRAFT.id)
+      expect(loaded.latest_status.job_status_id).to eq(JobStatus.draft.id)
       expect(loaded.latest_status.job_status_id).to eq(JobOrder.where(id: order.id).pick(Arel.sql(JobOrder::LATEST_STATUS_ID_SQL)))
       expect(loaded.allow_edit?).to be(true)
       expect(loaded.task_edits_offered_to?(owner)).to be(true)
@@ -78,14 +78,14 @@ RSpec.describe JobOrder, type: :model do
 
     it "sorts a row built on a loaded association (no id yet) after the persisted ones, like .last, without raising" do
       loaded = JobOrder.includes(:job_order_statuses).find(order.id)
-      built = loaded.job_order_statuses.build(job_status: JobStatus::STAFF_APPROVAL, user: owner)
+      built = loaded.job_order_statuses.build(job_status: JobStatus.staff_approval, user: owner)
 
       expect(loaded.job_order_statuses).to be_loaded
       expect { loaded.allow_edit? }.not_to raise_error
       expect(loaded.latest_status).to equal(built)
       expect(loaded.latest_status).to equal(loaded.job_order_statuses.last)
       expect(loaded.allow_edit?).to be(true) # STAFF_APPROVAL
-      expect(loaded.job_order_statuses.build(job_status: JobStatus::COMPLETED, user: owner)).to equal(loaded.latest_status)
+      expect(loaded.job_order_statuses.build(job_status: JobStatus.completed, user: owner)).to equal(loaded.latest_status)
     end
 
     it "orders the association by id" do
@@ -97,19 +97,20 @@ RSpec.describe JobOrder, type: :model do
 
       tied = create(:job_order, user: owner)
       now = Time.current.change(usec: 0)
-      tied.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner, created_at: now)
-      tied.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: owner, created_at: now)
+      tied.job_order_statuses.create!(job_status: JobStatus.completed, user: owner, created_at: now)
+      tied.job_order_statuses.create!(job_status: JobStatus.draft, user: owner, created_at: now)
       expect(JobOrder.without_drafts).not_to include(tied)
 
       moved_on = create(:job_order, user: owner)
-      moved_on.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: owner, created_at: now)
-      moved_on.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: owner, created_at: now)
+      moved_on.job_order_statuses.create!(job_status: JobStatus.draft, user: owner, created_at: now)
+      moved_on.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner, created_at: now)
       expect(JobOrder.without_drafts).to include(moved_on)
       expect(JobOrder.without_drafts.where(id: moved_on.id).to_a).to eq([moved_on]) # one row per order
       expect(JobOrder.without_drafts).not_to include(create(:job_order, user: owner)) # no status at all
     end
 
-    it "keeps checkout_link's fast path from serving a draft when the highest-id status is not COMPLETED" do
+    # The preload is deliberately never read by checkout_link (it reads #current_status), which Bullet reports as unused.
+    it "keeps checkout_link's fast path from serving a draft when the highest-id status is not COMPLETED", skip_bullet: true do
       shopify = stub_shopify_admin!
       loaded = preloaded_in_reverse(order) # COMPLETED is the LAST element of the array, DRAFT the highest id
       allow(loaded).to receive(:draft_order_current?).and_return(true)
@@ -122,33 +123,49 @@ RSpec.describe JobOrder, type: :model do
   end
 
   describe "scope .without_drafts" do
-    it "is one correlated subquery comparison, and still excludes an order with no status" do
-      sql = JobOrder.without_drafts.to_sql
-      expect(sql.scan("SELECT s.job_status_id").size).to eq(1)
-      expect(sql).not_to include("IS NOT NULL")
-      expect(JobOrder.without_drafts.where(id: create(:job_order).id)).to be_empty
-    end
-
     before { seed_job_statuses! }
 
-    it "excludes nothing but status-less orders when Draft is unseeded, and does not raise" do
-      stub_const("JobStatus::DRAFT", nil)
-      with_status = create(:job_order, user: create(:user, :regular_user))
-      with_status.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: with_status.user)
-      without_status = create(:job_order)
+    def order_in(*keys)
+      create(:job_order, user: create(:user, :regular_user)).tap do |order|
+        keys.each { |key| order.job_order_statuses.create!(job_status: JobStatus.public_send(key), user: order.user) }
+      end
+    end
 
-      expect(JobOrder.without_drafts.to_sql.scan("SELECT s.job_status_id").size).to eq(1)
-      expect(JobOrder.without_drafts).to include(with_status)
-      expect(JobOrder.without_drafts).not_to include(without_status)
+    it "excludes a Draft order and an order without any status, and includes every non-draft order" do
+      draft = order_in(:draft)
+      without_status = create(:job_order)
+      others = %i[staff_approval user_approval sent_reminder waiting_processed being_processed completed paid
+                  picked_up declined].map { |key| order_in(key) }
+
+      result = JobOrder.without_drafts
+      expect(result).not_to include(draft, without_status)
+      expect(result).to match_array(others)
+    end
+
+    it "is one query however many orders there are (no query per order)" do
+      3.times { order_in(:staff_approval) }
+      JobStatus.draft # memoized: not part of the scope's own cost
+      statements = []
+      counter = ->(*, payload) { statements << payload[:sql] unless %w[SCHEMA TRANSACTION].include?(payload[:name]) }
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { JobOrder.without_drafts.to_a }
+
+      expect(statements.size).to eq(1)
+    end
+
+    it "raises JobStatus::Missing, instead of excluding nothing, when Draft is not seeded" do
+      JobStatus.where(name: "Draft").destroy_all
+      JobStatus.reset_lookup_cache!
+
+      expect { JobOrder.without_drafts }.to raise_error(JobStatus::Missing, /Draft/)
     end
 
     it "includes orders whose LATEST status row is not Draft" do
       submitted = create(:job_order, user: create(:user, :regular_user))
       travel(5.minutes) do
-        submitted.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: submitted.user)
+        submitted.job_order_statuses.create!(job_status: JobStatus.draft, user: submitted.user)
       end
       travel(6.minutes) do
-        submitted.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: submitted.user)
+        submitted.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: submitted.user)
       end
 
       expect(JobOrder.without_drafts).to include(submitted)
@@ -157,10 +174,10 @@ RSpec.describe JobOrder, type: :model do
     it "excludes orders whose latest status is Draft (decided by MAX(created_at), not by presence)" do
       draft_last = create(:job_order, user: create(:user, :regular_user))
       travel(5.minutes) do
-        draft_last.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: draft_last.user)
+        draft_last.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: draft_last.user)
       end
       travel(6.minutes) do
-        draft_last.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: draft_last.user)
+        draft_last.job_order_statuses.create!(job_status: JobStatus.draft, user: draft_last.user)
       end
 
       expect(JobOrder.without_drafts).not_to include(draft_last)
@@ -171,7 +188,7 @@ RSpec.describe JobOrder, type: :model do
     it "keeps soft-deleted orders (deletion is a separate composition)" do
       submitted = create(:job_order, user: create(:user, :regular_user), is_deleted: true)
       travel(5.minutes) do
-        submitted.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: submitted.user)
+        submitted.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: submitted.user)
       end
       expect(JobOrder.without_drafts).to include(submitted)
       expect(JobOrder.not_deleted.without_drafts).not_to include(submitted)
@@ -183,16 +200,16 @@ RSpec.describe JobOrder, type: :model do
 
     it "allows editing in Draft and Staff-Pending states" do
       order = create(:job_order, user: create(:user, :regular_user))
-      order.job_order_statuses.create!(job_status: JobStatus::DRAFT, user: order.user)
+      order.job_order_statuses.create!(job_status: JobStatus.draft, user: order.user)
       expect(order.allow_edit?).to be(true)
 
-      order.job_order_statuses.create!(job_status: JobStatus::STAFF_APPROVAL, user: order.user)
+      order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: order.user)
       expect(order.allow_edit?).to be(true)
     end
 
     it "locks editing once payment is waiting" do
       order = create(:job_order, user: create(:user, :regular_user))
-      order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: order.user)
+      order.job_order_statuses.create!(job_status: JobStatus.completed, user: order.user)
       expect(order.allow_edit?).to be(false)
     end
 

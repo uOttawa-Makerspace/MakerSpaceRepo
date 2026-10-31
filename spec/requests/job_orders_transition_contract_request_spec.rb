@@ -23,6 +23,12 @@ RSpec.describe "Job order transition failure contract", type: :request do
     order.reload.job_order_statuses.order(:id).map { |s| s.job_status&.name }
   end
 
+  # Rails turns the raised error into a 500 debug page in request specs (see spec/requests/job_orders_request_spec.rb).
+  def expect_missing_status!(name)
+    expect(response).to have_http_status(:internal_server_error)
+    expect(response.body).to include("JobStatus::Missing").and include(name)
+  end
+
   def quoted_order!(status_key, price: 29.99)
     order = make_job_order!(owner: owner, status_key: status_key)
     order.job_tasks.create!(title: "Task #1", job_type: JobType.find_by!(name: "3D Print"))
@@ -35,7 +41,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       order = quoted_order!(:waiting_processed)
       expect(Rails.error).to receive(:report).with(an_instance_of(JobOrder::StatusRowInvalid), hash_including(handled: true))
 
-      result = order.transition!(from: JobStatus::WAITING_PROCESSED, to: JobStatus::BEING_PROCESSED, actor: nil)
+      result = order.transition!(from: JobStatus.waiting_processed, to: JobStatus.being_processed, actor: nil)
 
       expect(result).not_to be_ok
       expect(result.reason).to eq(:invalid_status_row)
@@ -43,47 +49,57 @@ RSpec.describe "Job order transition failure contract", type: :request do
       expect(status_names(order)).to eq(["Waiting to be Processed"])
     end
 
-    it "unseeded destination status on a staff transition: a clear message, no 500" do
+    # The workflow statuses are never nil: a status row missing from the table fails closed (JobStatus::Missing, a 500) before
+    # anything is written (production has all ten).
+    it "a missing destination status on a staff transition fails closed (JobStatus::Missing, a 500) and records nothing" do
       order = quoted_order!(:waiting_processed)
-      stub_const("JobStatus::BEING_PROCESSED", nil)
+      JobStatus.where(name: "Currently being Processed").delete_all
+      JobStatus.reset_lookup_cache!
       session_login!(staff)
+
       patch job_order_start_processing_path(order), params: { start_processing: "true" }
 
-      expect(response).to redirect_to(job_order_path(order.id))
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.invalid_status_row"))
+      expect_missing_status!("Currently being Processed")
       expect(status_names(order)).to eq(["Waiting to be Processed"])
     end
 
-    it "unseeded destination status on the emailed approval: no 500, nothing recorded" do
+    it "a missing destination status on the emailed approval fails closed (JobStatus::Missing, a 500) and records nothing" do
       order = quoted_order!(:user_approval)
-      stub_const("JobStatus::WAITING_PROCESSED", nil)
-      patch user_magic_approval_confirmation_job_orders_path, params: { token: order.approval_token, approved: "true" }
+      token = order.approval_token
+      JobStatus.where(name: "Waiting to be Processed").delete_all
+      JobStatus.reset_lookup_cache!
 
-      expect(response).to have_http_status(:ok)
+      patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: "true" }
+
+      expect_missing_status!("Waiting to be Processed")
       expect(status_names(order)).to eq(["Waiting for User Approval"])
     end
 
-    it "unseeded status on a quote: the quote rolls back with a clear message" do
+    it "a missing status on a quote fails closed (JobStatus::Missing, a 500) and the quote is not saved" do
       order = quoted_order!(:staff_approval)
       task = order.job_tasks.first
-      stub_const("JobStatus::USER_APPROVAL", nil)
+      JobStatus.where(name: "Waiting for User Approval").delete_all
+      JobStatus.reset_lookup_cache!
       session_login!(staff)
+
       patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "77",
                                                    job_order: { staff_comments: "" } }
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.invalid_status_row"))
+      expect_missing_status!("Waiting for User Approval")
       expect(order.reload.total_price).to eq(BigDecimal("29.99"))
       expect(status_names(order)).to eq(["Waiting for Staff Approval"])
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "unseeded status on a decline: a clear message, no 500" do
+    it "a missing status on a decline fails closed (JobStatus::Missing, a 500) and records nothing" do
       order = quoted_order!(:staff_approval)
-      stub_const("JobStatus::DECLINED", nil)
+      JobStatus.where(name: "Declined").delete_all
+      JobStatus.reset_lookup_cache!
       session_login!(staff)
+
       patch job_order_quote_path(order), params: { approved: "false", job_order: { staff_comments: "" } }
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.invalid_status_row"))
+      expect_missing_status!("Declined")
       expect(status_names(order)).to eq(["Waiting for Staff Approval"])
     end
   end
@@ -124,7 +140,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       patch job_order_processed_path(order), params: { completed: "true" }
 
       expect(status_names(order).last(2)).to eq(["Completed (Waiting for Payment)", "Paid (Waiting for Pick-Up)"])
-      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.updated_job_status_to_x", status: JobStatus::PAID.t_name))
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.updated_job_status_to_x", status: JobStatus.paid.t_name))
     end
 
     it "alerts, and shows no success notice, when the $0 order could not be marked Paid" do
@@ -159,7 +175,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
                                                      reason: :draft_not_voidable)).once
       allow(Rails.logger).to receive(:error)
 
-      result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::PAID, actor: staff)
+      result = order.transition!(from: JobStatus.completed, to: JobStatus.paid, actor: staff)
 
       expect(result.reason).to eq(:draft_not_voidable)
       expect(result.error.message).to include("Shopify did not answer")
@@ -171,7 +187,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       JobOrderStatus.where(job_order_id: order.id).delete_all
       JobOrder.where(id: order.id).delete_all
 
-      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+      result = order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
 
       expect(result.reason).to eq(:order_missing)
       expect(result.message_key).to eq("job_orders.alerts.status_change.order_missing")
@@ -181,7 +197,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       order = quoted_order!(:being_processed)
       allow(order).to receive(:lock!).and_raise(ActiveRecord::LockWaitTimeout)
 
-      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+      result = order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
 
       expect(result.reason).to eq(:busy)
       expect(result.message_key).to eq("job_orders.alerts.status_change.busy")
@@ -197,7 +213,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
               handled: true, context: hash_including(job_order_id: order.id, where: "JobOrder#transition!")).once
 
       # raised from inside the work (the status row's insert), not from the row lock
-      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff) do
+      result = order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff) do
         raise ActiveRecord::Deadlocked
       end
 
@@ -210,7 +226,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       order = quoted_order!(:being_processed)
       allow_any_instance_of(JobOrderStatus).to receive(:save!).and_raise(ActiveRecord::NotNullViolation)
 
-      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+      result = order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
 
       expect(result.reason).to eq(:invalid_status_row)
     end
@@ -237,7 +253,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       allow(Rails.logger).to receive(:error)
       allow(Rails.logger).to receive(:info)
 
-      order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+      order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
 
       expect(Rails.logger).not_to have_received(:error)
       expect(Rails.logger).to have_received(:info).with(/order_missing/)
@@ -250,7 +266,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       allow(Rails.logger).to receive(:error)
       allow(Rails.logger).to receive(:info)
 
-      expect(order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff).reason).to eq(:busy)
+      expect(order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff).reason).to eq(:busy)
 
       expect(Rails.logger).not_to have_received(:error)
       expect(Rails.logger).to have_received(:info).with(/busy/)
@@ -261,7 +277,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
 
       expect do
         ActiveRecord::Base.transaction do
-          order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+          order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
         end
       end.to raise_error(ArgumentError, /must run as its own transaction/)
     end
@@ -274,7 +290,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
         m.call(*args)
       end
 
-      order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+      order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
 
       expect(seen).to eq(ApplicationRecord::LOCK_TIMEOUT)
     end
@@ -285,7 +301,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       order.update_column(:shopify_draft_order_id, draft)
       shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete" }]
 
-      result = order.transition!(from: JobStatus::COMPLETED, to: JobStatus::DECLINED, actor: staff) do
+      result = order.transition!(from: JobStatus.completed, to: JobStatus.declined, actor: staff) do
         order.job_quote_line_items.create!(description: "Rush", price: 5)
       end
 
@@ -299,7 +315,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
     it "the block's validation failure is a :change_invalid refusal with its messages, not an invalid-status-row one" do
       order = quoted_order!(:being_processed)
 
-      result = order.transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff) do
+      result = order.transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff) do
         order.job_quote_line_items.create!(description: "x", price: -1)
       end
 

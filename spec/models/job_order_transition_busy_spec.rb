@@ -39,7 +39,7 @@ RSpec.describe JobOrder, "transition! lock wait", type: :model do
     locked.pop
 
     started = Time.current
-    result = JobOrder.find(order.id).transition!(from: JobStatus::BEING_PROCESSED, to: JobStatus::COMPLETED, actor: staff)
+    result = JobOrder.find(order.id).transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
     waited = Time.current - started
     release << true
 

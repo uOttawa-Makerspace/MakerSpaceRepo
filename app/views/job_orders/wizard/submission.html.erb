@@ -19,7 +19,7 @@
         <%= hidden_field_tag :add_another, false, id: 'add-another-hidden' %>
         <%= button_tag t('job_orders.order.add_another_task', default: "Add Another Task"), type: 'submit', class: "btn btn-outline-primary mb-1", onclick: "document.getElementById('add-another-hidden').value = 'true';" %>
 
-        <% if @job_order.latest_status&.job_status == JobStatus::DRAFT %>
+        <% if @job_order.latest_status&.job_status == JobStatus.draft %>
           <%= hidden_field_tag :save_draft, false, id: 'save-draft' %>
           <%= button_tag t('job_orders.order.save_draft', default: "Save Draft"), type: 'submit', class: "btn btn-outline-primary mb-1", onclick: "document.getElementById('save-draft').value = 'true';" %>
         <% end %>

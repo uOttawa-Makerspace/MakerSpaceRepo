@@ -12,6 +12,6 @@ class JobOrderStatus < ApplicationRecord
 
   # Whether the staff timeline names who added this row: processing steps and rows with a reason.
   def actor_shown?
-    reason.present? || [JobStatus::BEING_PROCESSED, JobStatus::COMPLETED].include?(job_status)
+    reason.present? || [JobStatus.being_processed, JobStatus.completed].include?(job_status)
   end
 end
