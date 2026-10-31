@@ -212,13 +212,12 @@ class JobTasksController < SessionsController
 
   # Draft -> Waiting for Staff Approval through the locked transition (JobOrder#transition!): the status is decided
   # under the order's row lock, so a double submit writes one status row and, the mail going out only after the
-  # commit and only when this request made the transition, sends one mail. A refusal changes and sends nothing (the lock alone
-  # decides; there is no earlier check).
+  # commit and only when this request made the transition, sends one mail. A refusal changes and sends nothing. An
+  # early return on one status read (below) spares non-Draft orders the task scan and the lock; the lock decides.
   def submit_for_approval
-    # An optimisation only (the order is already loaded: no extra query): a non-Draft order skips the task scan and
-    # the lock. The row lock in transition! still decides; a stale "Draft" read just reaches it and gets a quiet
-    # :wrong_state.
-    return unless @job_order.latest_status&.job_status == JobStatus.draft
+    # One status read, an optimisation only: a non-Draft order skips the task scan and the lock. The row lock in
+    # transition! still decides; a stale "Draft" read just reaches it and gets a quiet :wrong_state.
+    return unless @job_order.latest_status&.job_status_id == JobStatus.draft.id
 
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       task.job_type.blank? ||

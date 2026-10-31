@@ -73,7 +73,8 @@ RSpec.describe JobStatus, type: :model do
       expect(first).to eq(row)
       expect(first).to be_persisted.and be_readonly.and be_frozen
       expect { first.save }.to raise_error(ActiveRecord::ReadOnlyRecord)
-      expect(first.readonly?).to be(true)
+      expect { first.name_fr = "Brouillon" }.to raise_error(FrozenError)
+      expect(row.reload.name_fr).to be_nil
     end
 
     it "returns the record another thread stored between this one's miss and its store" do

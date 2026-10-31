@@ -487,10 +487,16 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
           end
           m.call(*args, &blk)
         end
+        # the pre-check saw Draft (the lock-free read); the lock then finds the other connection's row
+        refusals = []
+        allow_any_instance_of(JobOrder).to receive(:transition!).and_wrap_original do |m, *args, **kwargs, &blk|
+          m.call(*args, **kwargs, &blk).tap { |result| refusals << result.reason }
+        end
 
         patch job_order_job_task_path(order, task), params: { step: "4" }
 
-        expect(status_names(order)).to eq(["Draft", "Waiting for Staff Approval"])
+        expect(refusals).to eq([:wrong_state])
+        expect(status_names(order)).to eq(["Draft", "Waiting for Staff Approval"]) # only the other connection's row
         expect(ActionMailer::Base.deliveries).to be_empty
         expect(flash[:notice]).to be_nil
         expect(flash[:alert]).to be_nil # :wrong_state: already submitted, a no-op
