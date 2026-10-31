@@ -43,6 +43,8 @@ class UsersController < SessionsController
 
   LINK_EXPIRED_ALERT =
     'This link has expired or has already been used. Please request a new one.'
+  RESET_LINK_INVALID_ALERT =
+    'Your reset link is no longer valid. Please sign in or request a new link.'
   EMAIL_CHANGE_OTHER_ACCOUNT_ALERT =
     'This link was requested by a different account. Please sign in as the account that requested the change.'
 
@@ -319,11 +321,12 @@ class UsersController < SessionsController
           user.store_new_password!(params[:password], clear_timed_lock: true)
           true
         rescue ActiveRecord::StaleObjectError
-          # A concurrent bump (an expected race, not an error). If the password itself
-          # changed (a double submit), the token no longer resolves: the work is done.
-          # Otherwise the account changed for another reason and the link is still valid.
-          if User.find_by_token_for(:password_reset, params[:token]).nil?
-            flash[:alert] = 'Your password has already been changed. Please sign in.'
+          # A concurrent bump (an expected race, not an error). Re-check UNCACHED: the
+          # request's query cache may hold the first lookup. A link that no longer resolves
+          # can mean a changed password, a soft-deleted account or an expiry, which must
+          # not be told apart to someone holding no valid token: one neutral message.
+          if User.uncached { User.find_by_token_for(:password_reset, params[:token]) }.nil?
+            flash[:alert] = RESET_LINK_INVALID_ALERT
             return redirect_to login_path
           end
 

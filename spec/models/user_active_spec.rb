@@ -49,6 +49,37 @@ RSpec.describe User, "#active" do
     end
   end
 
+  describe "no-op syncs the instance" do
+    it "deactivate! on a stale instance whose row is already inactive reports the stored active and token_version" do
+      stale = User.find(user.id)
+      User.where(id: user.id).update_all("active = false, token_version = token_version + 5")
+      expect(stale.active).to be(true)
+      expect(stale.deactivate!).to be(false)
+      expect(stale.active).to be(false)
+      expect(stale.token_version).to eq(User.find(user.id).token_version)
+      expect(stale).not_to be_changed
+    end
+
+    it "reactivate! on a stale instance whose row is already active reports the stored active" do
+      user.deactivate!
+      stale = User.find(user.id)
+      User.where(id: user.id).update_all("active = true, token_version = token_version + 1")
+      expect(stale.reactivate!).to be(false)
+      expect(stale.active).to be(true)
+      expect(stale.token_version).to eq(User.find(user.id).token_version)
+    end
+  end
+
+  describe "#deactivate! guard condition" do
+    it "does not refuse deactivating a locked admin even when no other usable admin remains" do
+      locked_admin = create(:user, :admin)
+      User.where(role: "admin").where.not(id: locked_admin.id).update_all(active: false)
+      User.where(id: locked_admin.id).update_all(locked: true, locked_until: 99.years.from_now)
+      expect(locked_admin.deactivate!).to be(true)
+      expect(User.find(locked_admin.id).active).to be(false)
+    end
+  end
+
   describe "#reactivate!" do
     it "is idempotent: returns false and bumps nothing when already active" do
       version = user.token_version

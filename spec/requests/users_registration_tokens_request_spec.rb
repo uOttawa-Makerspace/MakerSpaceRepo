@@ -493,7 +493,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(flash[:notice]).to start_with("Your password has been updated")
     end
 
-    it "a double submit says the password was already changed (the link no longer resolves), not 'use the link again'" do
+    it "a double submit gets the neutral invalid-link message (the link no longer resolves), not 'use the link again'" do
       params = reset_params(user)
       allow_any_instance_of(User).to receive(:store_new_password!).and_wrap_original do |m, *args, **opts|
         # the first submit commits between this request's token lookup and its write
@@ -504,8 +504,19 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       end
       patch reset_password_confirmation_users_path, params: params
       expect(response).to redirect_to(login_path)
-      expect(flash[:alert]).to eq("Your password has already been changed. Please sign in.")
+      expect(flash[:alert]).to eq("Your reset link is no longer valid. Please sign in or request a new link.")
       expect(deliveries).to be_empty
+    end
+
+    it "a link that stops resolving because the account was soft-deleted gets the same neutral message (no account state revealed)" do
+      params = reset_params(user)
+      allow_any_instance_of(User).to receive(:store_new_password!).and_wrap_original do |m, *args, **opts|
+        User.unscoped.where(id: m.receiver.id).update_all("deleted = true, token_version = token_version + 1")
+        m.call(*args, **opts)
+      end
+      patch reset_password_confirmation_users_path, params: params
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq("Your reset link is no longer valid. Please sign in or request a new link.")
     end
 
     it "a reset does not lift an admin lock: the new password is saved and the login is still refused" do

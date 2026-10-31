@@ -162,6 +162,18 @@ RSpec.describe User, "#bump_token_version! compare-and-set under concurrency" do
     expect(loaded.authenticate_password("asa32A353#")).to be(true)
   end
 
+  it "count_reauth_attempt! runs as its own transaction with bounded lock waits, and refuses a caller's transaction" do
+    seen = nil
+    allow(RateLimitCounter).to receive(:increment).and_wrap_original do |m, *args, **opts|
+      seen = RateLimitCounter.connection.select_value("SHOW lock_timeout")
+      m.call(*args, **opts)
+    end
+    User.find(user.id).count_reauth_attempt!(max: 5, window: 15.minutes)
+    expect(seen).to eq(ApplicationRecord::LOCK_TIMEOUT)
+    expect { User.transaction { User.find(user.id).count_reauth_attempt!(max: 5, window: 15.minutes) } }
+      .to raise_error(ArgumentError, /own transaction/)
+  end
+
   it "count_reauth_attempt! bumps from the stored token_version even when the in-memory one is dirty" do
     loaded = User.find(user.id)
     version = loaded.token_version

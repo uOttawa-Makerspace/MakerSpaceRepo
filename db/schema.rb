@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_30_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_30_140001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -194,13 +194,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_000003) do
   end
 
   create_table "coupon_codes", force: :cascade do |t|
-    t.integer "cc_cost"
+    t.integer "cc_cost", null: false
     t.string "code"
     t.datetime "created_at", null: false
     t.integer "dollar_cost"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["user_id"], name: "index_coupon_codes_on_user_id"
+    t.check_constraint "cc_cost >= 0", name: "coupon_codes_cc_cost_non_negative"
   end
 
   create_table "course_names", force: :cascade do |t|
@@ -288,7 +289,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_000003) do
     t.index ["created_by_id"], name: "index_events_on_created_by_id"
     t.index ["space_id", "draft"], name: "idx_events_on_space_and_draft"
     t.index ["space_id", "start_time", "end_time"], name: "idx_events_on_space_and_times"
-    t.index ["space_id"], name: "index_events_on_space_id"
     t.index ["training_id"], name: "index_events_on_training_id"
   end
 
@@ -316,18 +316,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_000003) do
     t.integer "training_session_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
-  end
-
-  create_table "external_contacts", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.boolean "deleted", default: false, null: false
-    t.string "email", null: false
-    t.string "first_name", null: false
-    t.string "last_name", null: false
-    t.string "phone"
-    t.datetime "updated_at", null: false
-    t.index ["deleted"], name: "index_external_contacts_on_deleted"
-    t.index ["email"], name: "index_external_contacts_on_email", unique: true
   end
 
   create_table "faqs", force: :cascade do |t|
@@ -1001,6 +989,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_000003) do
     t.integer "training_id"
     t.datetime "updated_at", precision: nil, null: false
     t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
+    t.check_constraint "cc >= 0", name: "proficient_projects_cc_non_negative"
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
@@ -1305,7 +1294,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_000003) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["space_id", "user_id"], name: "idx_staff_spaces_space_user"
-    t.index ["space_id"], name: "index_staff_spaces_on_space_id"
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
   end
 
@@ -1318,7 +1306,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_30_000003) do
     t.string "title"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
-    t.index ["user_id", "start_time", "end_time"], name: "idx_staff_unavail_user_times"
     t.index ["user_id"], name: "index_staff_unavailabilities_on_user_id"
   end
 

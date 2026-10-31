@@ -265,6 +265,227 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
 
   # ------------------------------------------------- update / remove item
 
+  # Order#change_items! (the cart-change lock). The threaded races of a cart change against a
+  # real concurrent checkout are in spec/requests/cc_wallet_race_spec.rb.
+  describe "cart changes refused by Order#change_items!" do
+    before { shop_log_in!(user) }
+
+    let(:closed_message) { "This cart was just checked out; it can no longer be changed." }
+    let(:busy_message) { "Your cart is being updated elsewhere; please try again." }
+
+    # The cart is checked out between the request loading it and the change taking the lock.
+    def close_cart_before_the_lock
+      completed = OrderStatus.find_by!(name: "Completed")
+      allow_any_instance_of(Order).to receive(:change_items!).and_wrap_original do |m, *args, &block|
+        m.receiver.update_column(:order_status_id, completed.id)
+        m.call(*args, &block)
+      end
+    end
+
+    def fail_the_lock_with(error_class)
+      allow_any_instance_of(Order).to receive(:change_items!).and_raise(error_class)
+    end
+
+    let!(:item) do
+      add_to_cart(pp_with_cc(10))
+      user.orders.last.order_items.first
+    end
+    let(:order) { item.order }
+    let(:other_project) { pp_with_cc(5) }
+
+    def item_rows = OrderItem.where(order_id: order.id).pluck(:proficient_project_id, :quantity)
+
+    it "create on a checked-out cart is refused: alert, nothing added" do
+      close_cart_before_the_lock
+      before = item_rows
+      add_to_cart(other_project)
+      expect(response).to redirect_to(carts_path)
+      expect(flash[:alert]).to eq(closed_message)
+      expect(item_rows).to eq(before)
+      expect(OrderItem.where(proficient_project_id: other_project.id)).to be_empty
+    end
+
+    it "update on a checked-out cart is refused: 409 with a JS body showing the message and the real cart; quantity unchanged" do
+      close_cart_before_the_lock
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(response.media_type).to eq("text/javascript")
+      expect(response.body).to include(closed_message)
+      expect(response.body).to include("shopping-cart")
+      expect(item.reload.quantity).to eq(1)
+    end
+
+    it "the refused XHR update answers from the checked-out order itself: its items as paid, not an empty cart" do
+      close_cart_before_the_lock
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(response.body).to include("This order was checked out with")
+      expect(response.body).to include(ERB::Util.html_escape(item.proficient_project.title))
+      expect(response.body).not_to include("There are no items in your shopping cart")
+    end
+
+    it "the checked-out answer never raises on a legacy row with a NULL unit_price or quantity" do
+      close_cart_before_the_lock
+      item.update_columns(unit_price: nil, quantity: nil, total_price: nil)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(response.body).to include("This order was checked out with")
+      expect(response.body).to include(ERB::Util.html_escape(item.proficient_project.title))
+    end
+
+    it "the checked-out answer shows the amounts stored at checkout, and the order's stored total" do
+      close_cart_before_the_lock
+      item.update_columns(quantity: 2, unit_price: 10, total_price: 20)
+      order.update_columns(subtotal: 20)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response.body).to include("&times; 2 (20 CC)")
+      expect(response.body).to include("Total charged: 20 CC")
+    end
+
+    it "a refused XHR update leaves session[:order_id] as the success path does, and the badge is drawn from the order in hand" do
+      patch order_item_path(item), params: { order_item: { quantity: 2 } }, xhr: true
+      expect(response).to have_http_status(:ok)
+      success_session_order = session[:order_id]
+      expect(success_session_order).to eq(order.id)
+
+      close_cart_before_the_lock
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(session[:order_id]).to eq(success_session_order)
+      # checked out: no open cart, so the badge is 0 (not the count of a swapped-in cart)
+      expect(response.body).to match(/cart-text.*fs-4\\?">0</)
+    end
+
+    it "a busy refusal keeps the cart's own badge count and session" do
+      add_to_cart(other_project)
+      fail_the_lock_with(ActiveRecord::LockWaitTimeout)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(session[:order_id]).to eq(order.id)
+      expect(response.body).to match(/cart-text.*fs-4\\?">2</)
+    end
+
+    it "the cart page prices through Order#priced_items (the one pricing), not its own copy" do
+      expect_any_instance_of(Order).to receive(:priced_items).at_least(:once).and_call_original
+      get carts_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Order Subtotal")
+    end
+
+    it "a refused non-XHR (HTML) update redirects to the cart with the alert; nothing changed" do
+      close_cart_before_the_lock
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }
+      expect(response).to redirect_to(carts_path)
+      expect(flash[:alert]).to eq(closed_message)
+      expect(item.reload.quantity).to eq(1)
+    end
+
+    it "a refused update in any other format answers a bare 409" do
+      fail_the_lock_with(ActiveRecord::LockWaitTimeout)
+      patch order_item_path(item, format: :json), params: { order_item: { quantity: 3 } }
+      expect(response).to have_http_status(:conflict)
+      expect(response.body).to be_blank
+      expect(item.reload.quantity).to eq(1)
+    end
+
+    it "destroy on a checked-out cart is refused: alert, the item stays" do
+      close_cart_before_the_lock
+      delete order_item_path(item)
+      expect(response).to redirect_to(carts_path)
+      expect(flash[:alert]).to eq(closed_message)
+      expect(OrderItem.exists?(item.id)).to be(true)
+    end
+
+    [ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked].each do |error_class|
+      it "a #{error_class.name.demodulize} on create, update and destroy is refused with the busy message (no 500), nothing written" do
+        fail_the_lock_with(error_class)
+        before = item_rows
+
+        add_to_cart(other_project)
+        expect(response).to redirect_to(carts_path)
+        expect(flash[:alert]).to eq(busy_message)
+
+        patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+        expect(response).to have_http_status(:conflict)
+        expect(response.body).to include(busy_message)
+
+        delete order_item_path(item)
+        expect(response).to redirect_to(carts_path)
+        expect(flash[:alert]).to eq(busy_message)
+
+        expect(item_rows).to eq(before)
+      end
+    end
+  end
+
+  describe "a cart change waiting on a lock held by a checkout (real second connection)" do
+    self.use_transactional_tests = false
+
+    let!(:buyer) { create(:user, :regular_user) }
+    let!(:project) { create(:proficient_project, cc: 10) }
+    let!(:other_project) { create(:proficient_project, cc: 5) }
+
+    after do
+      order_ids = Order.where(user_id: buyer.id).pluck(:id)
+      OrderItem.where(order_id: order_ids).delete_all
+      Order.where(id: order_ids).delete_all
+      projects = [project, other_project]
+      trainings = Training.where(id: projects.map(&:training_id))
+      skill_ids = trainings.pluck(:skill_id)
+      ProficientProject.where(id: projects.map(&:id)).delete_all
+      trainings.delete_all
+      Skill.where(id: skill_ids).delete_all
+      User.unscoped.where(id: buyer.id).delete_all
+    end
+
+    it "gives up after the lock timeout with the busy message; nothing added" do
+      stub_const("ApplicationRecord::LOCK_TIMEOUT", "200ms")
+      shop_log_in!(buyer)
+      add_to_cart(project)
+      cart = buyer.orders.last
+      locked = Queue.new
+      release = Queue.new
+      holder = Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do
+          Order.transaction do
+            Order.lock(Order::CART_LOCK_MODE).find(cart.id) # as checkout! holds it
+            locked << true
+            release.pop(timeout: 3)
+          end
+        end
+      end
+      locked.pop
+      started = Time.current
+      add_to_cart(other_project)
+      waited = Time.current - started
+      release << true
+      holder.join
+      expect(waited).to be < 2
+      expect(flash[:alert]).to eq("Your cart is being updated elsewhere; please try again.")
+      expect(cart.order_items.pluck(:proficient_project_id)).to eq([project.id])
+    end
+  end
+
+  describe "GET /carts with an item that can no longer be bought" do
+    before { shop_log_in!(user) }
+
+    it "shows the item as needing removal (not 0) and no total or Confirm button" do
+      add_to_cart(pp_with_cc(10))
+      add_to_cart(pp_with_cc(15))
+      user.orders.last.order_items.last.update_column(:quantity, 0)
+      get carts_path
+      expect(response.body).to include("No longer available: please remove this item")
+      expect(response.body).to include("Remove the items marked as no longer available to see your total and check out.")
+      expect(response.body).not_to include("Confirm order")
+    end
+
+    it "shows the same total the checkout charges when every item is valid" do
+      add_to_cart(pp_with_cc(10), quantity: 2)
+      get carts_path
+      expect(response.body).to include("Confirm order, the total is 20 CC")
+    end
+  end
+
   describe "PATCH /order_items/:id" do
     before { shop_log_in!(user) }
 
@@ -279,6 +500,20 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(item.unit_price).to eq(10)
       # the order's stored subtotal is only refreshed by Order#save, not by item updates
       expect(item.order.reload.subtotal).to eq(30)
+    end
+
+    it "refuses to swap the item's project (pay less): the project, price and charge stay the cheap one's" do
+      credit_cc!(user, 500)
+      cheap = pp_with_cc(10)
+      pricey = pp_with_cc(400)
+      add_to_cart(cheap)
+      item = user.orders.last.order_items.first
+      patch order_item_path(item), params: { order_item: { proficient_project_id: pricey.id, quantity: 1 } }, xhr: true
+      expect(item.reload.proficient_project_id).to eq(cheap.id)
+      post orders_path
+      order = user.orders.order(:id).last
+      expect(order.order_items.pluck(:proficient_project_id)).to eq([cheap.id])
+      expect(order.cc_moneys.pluck(:cc, :proficient_project_id)).to eq([[-10, cheap.id]])
     end
 
     it "keeps the old quantity when the new one is invalid" do
@@ -532,6 +767,35 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(deliveries.first.subject).to eq("Your proficient project kit order")
     end
 
+    it "sends the kit email after the checkout transaction commits" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10, has_project_kit: true))
+      baseline = ActiveRecord::Base.connection.open_transactions # the spec's fixture transaction
+      seen = nil
+      allow(MsrMailer).to receive(:send_kit_email).and_wrap_original do |original, *args|
+        seen = ActiveRecord::Base.connection.open_transactions
+        original.call(*args)
+      end
+      post orders_path
+      expect(seen).to eq(baseline)
+    end
+
+    it "a kit email that fails after the commit keeps the paid order and is reported (no 500)" do
+      credit_cc!(user, 50)
+      pp = pp_with_cc(10, has_project_kit: true)
+      add_to_cart(pp)
+      allow(MsrMailer).to receive(:send_kit_email).and_raise(Net::SMTPFatalError.new("550 user@example.com"))
+      allow(Rails.error).to receive(:report).and_call_original
+      post orders_path
+      expect(response).to redirect_to(orders_path)
+      expect(flash[:notice]).to eq("Your Order was successfully processed.")
+      expect(user.orders.last.order_status.name).to eq("Completed")
+      expect(user.reload.wallet).to eq(40)
+      expect(ProjectKit.where(user_id: user.id, proficient_project_id: pp.id).count).to eq(1)
+      expect(Rails.error).to have_received(:report)
+        .with(an_instance_of(Net::SMTPFatalError), hash_including(context: { user_id: user.id, proficient_project_id: pp.id }))
+    end
+
     it "no kit email for projects without a kit" do
       credit_cc!(user, 50)
       add_to_cart(pp_with_cc(10))
@@ -547,6 +811,103 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       post orders_path
       expect { post orders_path }.to change(CcMoney, :count).by(0)
       expect(user.reload.wallet).to eq(40)
+    end
+
+    it "an order neither in progress nor completed is an error: no success flash, nothing debited, cart session kept" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      order = user.orders.last
+      allow(Order).to receive(:checkout!).and_wrap_original do |original, _order, payer|
+        order.update_column(:order_status_id, OrderStatus.find_or_create_by!(name: "Cancelled").id)
+        original.call(order.reload, payer)
+      end
+      post orders_path
+      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:notice]).not_to eq("Your Order was successfully processed.")
+      expect(session[:order_id]).to eq(order.id)
+      expect(CcMoney.where(order_id: order.id)).to be_empty
+      expect(user.reload.wallet).to eq(50)
+    end
+
+    [ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, ActiveRecord::RecordNotFound,
+     ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked].each do |error_class|
+      it "a #{error_class.name.demodulize} from checkout answers 'Something went wrong', not a 500" do
+        credit_cc!(user, 50)
+        add_to_cart(pp_with_cc(10))
+        allow(Order).to receive(:checkout!).and_raise(error_class)
+        post orders_path
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to eq("Something went wrong")
+        expect(user.orders.last.order_status.name).to eq("In progress")
+      end
+    end
+
+    it "a legacy negative price snapshot in the cart rolls the checkout back: 'Something went wrong', nothing debited" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      add_to_cart(pp_with_cc(5))
+      order = user.orders.last
+      order.order_items.last.update_columns(unit_price: -5, total_price: -5)
+      post orders_path
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to eq("Something went wrong")
+      expect(order.reload.order_status.name).to eq("In progress")
+      expect(CcMoney.where(order_id: order.id)).to be_empty
+      expect(user.reload.wallet).to eq(50)
+    end
+
+    it "an item that can no longer be bought (fails validation) refuses the checkout with a message; nothing charged" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      add_to_cart(pp_with_cc(15))
+      order = user.orders.last
+      order.order_items.last.update_column(:quantity, 0) # invalid: the cart showed it at 0
+      post orders_path
+      expect(flash[:alert]).to eq("An item in your cart can no longer be bought; remove it and try again.")
+      expect(order.reload.order_status.name).to eq("In progress")
+      expect(CcMoney.where(order_id: order.id)).to be_empty
+      expect(session[:order_id]).to eq(order.id)
+    end
+
+    it "checkout! refuses an invalid item under the lock too (even past the pre-check)" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      order = user.orders.last
+      order.order_items.first.update_column(:quantity, 0)
+      expect(Order.checkout!(order, user).first).to eq(:invalid_items)
+      expect(order.reload.order_status.name).to eq("In progress")
+      expect(CcMoney.where(order_id: order.id)).to be_empty
+    end
+
+    it "the pre-check and the charge use one total (Order#subtotal of the open cart = the sum of item charges)" do
+      credit_cc!(user, 100)
+      add_to_cart(pp_with_cc(10), quantity: 2)
+      add_to_cart(pp_with_cc(15))
+      order = user.orders.last
+      expect(order.subtotal).to eq(35)
+      post orders_path
+      expect(order.reload.total).to eq(35)
+      expect(order.cc_moneys.sum(:cc)).to eq(-35)
+    end
+
+    it "checkout! builds the priced lines once under the lock: one item load, one validation per item" do
+      credit_cc!(user, 100)
+      add_to_cart(pp_with_cc(10))
+      add_to_cart(pp_with_cc(15))
+      order = user.orders.last
+      validations = 0
+      allow_any_instance_of(OrderItem).to receive(:valid?).and_wrap_original do |m, *args|
+        validations += 1
+        m.call(*args)
+      end
+      sqls = []
+      sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
+      expect(Order.checkout!(order, user).first).to eq(:completed)
+      ActiveSupport::Notifications.unsubscribe(sub)
+      expect(validations).to eq(2)
+      expect(sqls.count { |q| q.start_with?('SELECT "order_items".*') }).to eq(1)
+      expect(order.reload[:subtotal]).to eq(25)
+      expect(order.total).to eq(25)
     end
 
     it "lets staff and admin check out the same way" do
@@ -581,6 +942,33 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).to include(mine.order_items.first.proficient_project.title)
       expect(response.body).not_to include(pending.order_items.first.proficient_project.title)
       expect(response.body).not_to include(theirs.order_items.first.proficient_project.title)
+    end
+
+    it "a completed order shows what was charged even if an item is now invalid; no per-row queries" do
+      credit_cc!(user, 500)
+      paid = Array.new(3) do |i|
+        o = cart_for(user, 10 + i)
+        Order.checkout!(o, user)
+        o
+      end
+      paid.first.order_items.first.update_column(:quantity, 0) # now invalid
+      shop_log_in!(user)
+      count_for = lambda do |orders_shown|
+        Order.where(id: (paid - orders_shown).map(&:id)).update_all(user_id: other.id)
+        sqls = []
+        sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
+        get orders_path
+        ActiveSupport::Notifications.unsubscribe(sub)
+        Order.where(id: paid.map(&:id)).update_all(user_id: user.id)
+        sqls.size
+      end
+      count_for.call(paid) # warm-up (first-request caches)
+      one = count_for.call([paid.first])
+      expect(response.body).to include("<td><p>10.0</p></td>")
+      three = count_for.call(paid)
+      expect(three).to eq(one)
+      expect(response.body).to include("<td><p>10.0</p></td>")
+      expect(response.body).to include("<td><p>12.0</p></td>")
     end
 
     it "shows admins a second table with every order of every user and status" do

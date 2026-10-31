@@ -595,9 +595,10 @@ class User < ApplicationRecord
   #
   # Lock order: the counter row (the upsert), then the user row (the bump). No path
   # takes a users lock and then a rate_limit_counters row, and no token-row lock is
-  # taken inside. Keep it that way.
+  # taken inside. Keep it that way. Its own top-level transaction (own_transaction:
+  # it refuses to run inside a caller's), so every lock wait is bounded by LOCK_TIMEOUT.
   def count_reauth_attempt!(max:, window:)
-    RateLimitCounter.transaction do
+    RateLimitCounter.own_transaction("User#count_reauth_attempt!") do
       count = RateLimitCounter.increment(reauth_attempts_key, 1, expires_in: window)
       bump_token_version!(from_version: token_version_in_database) if count > max
       count
@@ -775,7 +776,11 @@ class User < ApplicationRecord
   # admin raises LastAdminError and changes nothing (an already inactive account is a
   # no-op, not a removal).
   def deactivate!
-    self.class.guarding_last_admin!([id], only_if: -> { self.class.unscoped.where(id: id).where("active IS NOT FALSE").exists? }) do
+    # Only a target that currently counts as a usable admin can be a removal (usable_admins
+    # includes active, so an already inactive target is a no-op, and a locked admin
+    # is not refused). One read, under the guard's locks. The no-op decision itself is the
+    # UPDATE's IS DISTINCT FROM in change_active!.
+    self.class.guarding_last_admin!([id], only_if: -> { self.class.unscoped.merge(self.class.usable_admins).where(id: id).exists? }) do
       change_active!(false)
     end
   end
@@ -925,8 +930,28 @@ class User < ApplicationRecord
     volunteer_hours.approved.sum(:total_time)
   end
 
+  # users.wallet is a CACHE of SUM(cc_moneys.cc). Written with update_columns, never a validated
+  # update: a user failing any validation (legacy data) used to keep a stale wallet forever.
+  # The sum is read under the user-row lock (the wallet lock every CC spend takes, same mode), so
+  # a refresh racing a spend cannot write back a sum read before that spend committed. As its own
+  # transaction its lock wait is bounded and, being only a cache refresh, a timeout skips it
+  # (logged); inside a caller's transaction it joins it and a timeout propagates.
+  # A guest (unsaved User.new) has nothing to cache.
+  # Returns true when the cache was written, false for a guest or a skipped refresh.
   def update_wallet
-    update(wallet: get_total_cc)
+    return false unless persisted?
+
+    own = !self.class.caller_transaction_open?
+    refresh = proc do
+      self.class.unscoped.where(id: id).lock(GUARD_LOCK_MODE).take
+      update_columns(wallet: CcMoney.uncached { cc_moneys.sum(:cc) })
+    end
+    own ? self.class.own_transaction("User#update_wallet", &refresh) : self.class.transaction(&refresh)
+  rescue ActiveRecord::LockWaitTimeout
+    raise unless own
+
+    Rails.logger.warn("[User#update_wallet] wallet cache refresh skipped (lock timeout): user id=#{id}")
+    false
   end
 
   # ============================================
@@ -1036,8 +1061,13 @@ class User < ApplicationRecord
   def change_active!(target)
     written = write_and_bump_token_version({ active: target }, extra_where: ["active IS DISTINCT FROM ?", target])
     unless written
-      raise ActiveRecord::RecordNotFound, "#{self.class.name} #{id} no longer exists" unless self.class.unscoped.exists?(id)
+      # Nothing changed: the row already has the target (or is gone). Sync the instance
+      # from the database so it tells the truth (written from the database state, not assigned).
+      current = self.class.uncached { self.class.unscoped.where(id: id).pick(:active, :token_version) }
+      raise ActiveRecord::RecordNotFound, "#{self.class.name} #{id} no longer exists" unless current
 
+      @attributes.write_from_database("active", current[0])
+      @attributes.write_from_database("token_version", current[1])
       return false
     end
 

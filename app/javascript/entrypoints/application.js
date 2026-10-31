@@ -204,3 +204,7 @@ window.dragndrop = function (event) {
 window.dragover = function (event) {
   event.preventDefault();
 };
+
+// Last statement of the entry: the confirm listeners above are registered.
+// Specs wait on this flag before any data-confirm click.
+document.documentElement.dataset.appJsReady = "true";
