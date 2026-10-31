@@ -54,24 +54,32 @@ RSpec.describe JobStatus, type: :model do
       expect { JobStatus.draft }.to raise_error(JobStatus::Missing)
     end
 
-    it "returns a new, equal instance per lookup and keeps nothing of the records created with it" do
+    it "returns the same readonly record on every lookup" do
       row = create(:job_status, name: "Draft")
       first = JobStatus.draft
-      second = JobStatus.draft
 
-      expect(first).not_to equal(second)
-      expect(first).to eq(second)
+      expect(JobStatus.draft).to equal(first)
+      expect(JobStatus.fetch(:draft)).to equal(first)
       expect(first).to eq(row)
-      expect(first).to be_persisted
-      expect(first.name).to eq("Draft")
+      expect(first).to be_persisted.and be_readonly
+      expect { first.save }.to raise_error(ActiveRecord::ReadOnlyRecord)
+      expect { first.update(name_fr: "Brouillon") }.to raise_error(ActiveRecord::ReadOnlyRecord)
+      expect(row.reload.name_fr).to be_nil
+    end
 
+    it "collects nothing from the status rows created with it (no inverse on JobOrderStatus#job_status)" do
+      create(:job_status, name: "Draft")
       order = create(:job_order)
-      # has_many_inversing: a status row built with a shared record would collect in that record's association target
       3.times { order.job_order_statuses.create!(job_status: JobStatus.draft, user: order.user) }
-      expect(JobStatus.draft.job_order_statuses.target).to be_empty
-      expect(first.job_order_statuses.target).to be_empty
-      memo = JobStatus.instance_variable_get(:@lookup_cache)
-      expect(memo[:draft]).to be_a(Hash).and be_frozen # attributes, not a record
+
+      expect(JobOrderStatus.reflect_on_association(:job_status).options[:inverse_of]).to be(false)
+      expect(JobStatus.draft.association(:job_order_statuses)).not_to be_loaded
+      expect(JobStatus.draft.association(:job_order_statuses).target).to be_empty
+    end
+
+    it ".fetch raises KeyError for a key that is not a workflow status" do
+      expect { JobStatus.fetch(:nope) }.to raise_error(KeyError)
+      expect { JobStatus.fetch("draft") }.to raise_error(KeyError)
     end
 
     it "does not memoize a miss: the row created later is found" do

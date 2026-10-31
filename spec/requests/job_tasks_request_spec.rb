@@ -464,8 +464,10 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         order = order_with_task!
         task = order.job_tasks.first
         task.update!(job_type: JobType.find_by!(name: "3D Print"))
+        locks = 0 # the first lock is the task update's (apply_owner_change!), the second the submit transition's
         allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args, &blk|
-          unless JobOrderStatus.exists?(job_order_id: order.id, job_status: JobStatus.staff_approval)
+          locks += 1
+          if locks == 2
             JobOrderStatus.create!(job_order_id: order.id, job_status: JobStatus.staff_approval, user: owner)
           end
           m.call(*args, &blk)
@@ -476,6 +478,27 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         expect(status_names(order)).to eq(["Draft", "Waiting for Staff Approval"])
         expect(ActionMailer::Base.deliveries).to be_empty
         expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating")) # :wrong_state, said so
+      end
+
+      it "says why, sends no mail and adds no row when the transition is refused (busy)" do
+        order = order_with_task!
+        task = order.job_tasks.first
+        task.update!(job_type: JobType.find_by!(name: "3D Print"))
+        locks = 0 # the first lock is the task update's, the second the submit transition's
+        allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args, &blk|
+          locks += 1
+          raise ActiveRecord::LockWaitTimeout if locks == 2
+
+          m.call(*args, &blk)
+        end
+
+        patch job_order_job_task_path(order, task), params: { step: "4" }
+
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.busy"))
+        expect(flash[:notice]).to be_nil
+        expect(ActionMailer::Base.deliveries).to be_empty
+        expect(status_names(order)).to eq(["Draft"])
       end
 
       # N+1 pinned: see defects.md D-PERF04

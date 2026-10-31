@@ -565,8 +565,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     asked = param == "true" || (param == "false" && need_false_status)
     result = if asked
                to_key = param == "true" ? true_status : false_status
-               @job_order.transition!(from: Array.wrap(from_keys).map { |key| JobStatus.public_send(key) },
-                                      to: to_key && JobStatus.public_send(to_key),
+               @job_order.transition!(from: Array.wrap(from_keys).map { |key| JobStatus.fetch(key) },
+                                      to: to_key && JobStatus.fetch(to_key),
                                       actor: actor, approval_token: approval_token)
              else
                JobOrder::TransitionResult.refused(:wrong_state)

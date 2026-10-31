@@ -835,7 +835,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
                               draft_node("gid://shopify/DraftOrder/2", order, tags: ["makerepo_production_job_order", "job_order:#{order.id}"]),
                               draft_node("gid://shopify/DraftOrder/3", order, tags: [])]]
       %w[1 2 3].each do |n|
-        result = JobOrder.reconcile_orphan_draft!(order.id, "gid://shopify/DraftOrder/#{n}", may_delete: true)
+        result = JobOrder.reconcile_orphan_draft!(order.id, "gid://shopify/DraftOrder/#{n}", may_delete: true, completed_id: JobStatus.completed.id)
         expect(result.reason).to eq(:draft_not_voidable)
       end
       expect(shopify.deleted_ids).to be_empty
@@ -845,7 +845,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       order = order_with_draft!
       shopify.draft_pages = [[draft_node("gid://shopify/DraftOrder/1", order)]]
 
-      expect(JobOrder.reconcile_orphan_draft!(order.id, "gid://shopify/DraftOrder/1", may_delete: true).value).to eq(:deleted)
+      expect(JobOrder.reconcile_orphan_draft!(order.id, "gid://shopify/DraftOrder/1", may_delete: true, completed_id: JobStatus.completed.id).value).to eq(:deleted)
     end
 
     describe "an order whose row is gone, through the one entry point" do
@@ -861,21 +861,21 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       end
 
       it "deletes a draft marked for it" do
-        result = JobOrder.reconcile_orphan_draft!(@order_id, gid, may_delete: true)
+        result = JobOrder.reconcile_orphan_draft!(@order_id, gid, may_delete: true, completed_id: JobStatus.completed.id)
 
         expect(result.value).to eq(:deleted)
         expect(shopify.deleted_ids).to eq([gid])
       end
 
       it "refuses a draft marked for another order" do
-        result = JobOrder.reconcile_orphan_draft!(@order_id + 1, gid, may_delete: true)
+        result = JobOrder.reconcile_orphan_draft!(@order_id + 1, gid, may_delete: true, completed_id: JobStatus.completed.id)
 
         expect(result.reason).to eq(:draft_not_voidable)
         expect(shopify.deleted_ids).to be_empty
       end
 
       it "refuses with :delete_cap, touching nothing, when it may not delete" do
-        result = JobOrder.reconcile_orphan_draft!(@order_id, gid, may_delete: false)
+        result = JobOrder.reconcile_orphan_draft!(@order_id, gid, may_delete: false, completed_id: JobStatus.completed.id)
 
         expect(result.reason).to eq(:delete_cap)
         expect(shopify.deleted_ids).to be_empty
@@ -884,7 +884,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       it "keeps a paid draft" do
         shopify.draft_statuses[gid] = "COMPLETED"
 
-        expect(JobOrder.reconcile_orphan_draft!(@order_id, gid, may_delete: true).value).to eq(:kept)
+        expect(JobOrder.reconcile_orphan_draft!(@order_id, gid, may_delete: true, completed_id: JobStatus.completed.id).value).to eq(:kept)
         expect(shopify.deleted_ids).to be_empty
       end
     end

@@ -67,7 +67,6 @@ RSpec.describe JobOrder, type: :model do
       expect(loaded.latest_status).to eq(highest)
       expect(loaded.latest_status.job_status_id).to eq(JobStatus.draft.id)
       expect(loaded.latest_status.job_status_id).to eq(JobOrder.where(id: order.id).pick(Arel.sql(JobOrder::LATEST_STATUS_ID_SQL)))
-      expect(loaded.allow_edit?).to be(true)
       expect(loaded.task_edits_offered_to?(owner)).to be(true)
       expect(order.reload.latest_status).to eq(highest) # unloaded: one query, the same row
     end
@@ -81,10 +80,10 @@ RSpec.describe JobOrder, type: :model do
       built = loaded.job_order_statuses.build(job_status: JobStatus.staff_approval, user: owner)
 
       expect(loaded.job_order_statuses).to be_loaded
-      expect { loaded.allow_edit? }.not_to raise_error
+      expect { loaded.task_edits_offered_to?(owner) }.not_to raise_error
       expect(loaded.latest_status).to equal(built)
       expect(loaded.latest_status).to equal(loaded.job_order_statuses.last)
-      expect(loaded.allow_edit?).to be(true) # STAFF_APPROVAL
+      expect(loaded.task_edits_offered_to?(owner)).to be(true) # STAFF_APPROVAL
       expect(loaded.job_order_statuses.build(job_status: JobStatus.completed, user: owner)).to equal(loaded.latest_status)
     end
 
@@ -195,28 +194,23 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
-  describe "#allow_edit?" do
+  describe ".editable_status? / .money_taken_status? / .quoted_status?" do
     before { seed_job_statuses! }
 
-    it "allows editing in Draft and Staff-Pending states" do
-      order = create(:job_order, user: create(:user, :regular_user))
-      order.job_order_statuses.create!(job_status: JobStatus.draft, user: order.user)
-      expect(order.allow_edit?).to be(true)
-
-      order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: order.user)
-      expect(order.allow_edit?).to be(true)
+    it "allows editing in Draft and Staff-Pending states only" do
+      expect(JobOrder.editable_status?(JobStatus.draft)).to be(true)
+      expect(JobOrder.editable_status?(JobStatus.staff_approval)).to be(true)
+      expect(JobOrder.editable_status?(JobStatus.completed)).to be(false)
     end
 
-    it "locks editing once payment is waiting" do
-      order = create(:job_order, user: create(:user, :regular_user))
-      order.job_order_statuses.create!(job_status: JobStatus.completed, user: order.user)
-      expect(order.allow_edit?).to be(false)
-    end
+    # an order without a status row is real data: no predicate looks a status up for it
+    it "are false for no status, even when the status rows they compare with are absent" do
+      JobStatus.delete_all
+      JobStatus.reset_lookup_cache!
 
-    # D-J20, closed: JobOrder.editable_status? (also the delete rule) treats a missing status as not editable
-    it "is false for an order with no status rows" do
-      order = create(:job_order, user: create(:user, :regular_user))
-      expect(order.allow_edit?).to be(false)
+      expect(JobOrder.editable_status?(nil)).to be(false)
+      expect(JobOrder.money_taken_status?(nil)).to be(false)
+      expect(JobOrder.quoted_status?(nil)).to be(false)
     end
   end
 

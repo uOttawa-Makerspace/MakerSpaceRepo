@@ -25,32 +25,33 @@ class JobStatus < ApplicationRecord
   end
 
   class << self
-    # JobStatus.draft, .completed, ...: the row for STATUS_NAMES[key]. Raises JobStatus::Missing when the row does not
-    # exist (nothing is memoized then). Each call returns a NEW instance built from the memoized attributes (no
-    # query after the first lookup), never a shared record: with has_many_inversing on, a shared record would collect
-    # every JobOrderStatus created with it in its association target (a leak, mutated across threads). Equality is by
-    # id, so the instances compare equal.
+    # JobStatus.draft, .completed, ...: the row for STATUS_NAMES[key], via .fetch.
     STATUS_NAMES.each_key do |key|
-      define_method(key) { lookup_status(key) }
+      define_method(key) { fetch(key) }
+    end
+
+    # The workflow status for `key` (a STATUS_NAMES key; KeyError for any other). Raises JobStatus::Missing when the
+    # row does not exist (nothing is memoized then).
+    # Design: ONE instance per key and process, built once from the row's raw attributes, marked readonly! (a
+    # workflow status row is reference data: save / update raise ActiveRecord::ReadOnlyRecord) and returned by every
+    # lookup, so a lookup costs neither a query nor an allocation after the first. It is safe to share because
+    # nothing writes to it: JobOrderStatus#job_status is inverse_of: false, so building a status row with it never
+    # appends to this record's job_order_statuses target (has_many_inversing would otherwise leak every row ever
+    # created). Equality is by id.
+    def fetch(key)
+      name = STATUS_NAMES.fetch(key)
+      @lookup_cache[key] || begin
+        row = find_by(name: name) or raise Missing.new(key, name)
+        # A Concurrent::Map is safe to use from any thread; two threads missing at once each build an equal record
+        # and the first stored one wins.
+        @lookup_cache.put_if_absent(key, instantiate(row.attributes_before_type_cast).tap(&:readonly!)) ||
+          @lookup_cache[key]
+      end
     end
 
     # Forgets the memoized rows. For tests and seeds that create, remove or rebuild the status rows.
     def reset_lookup_cache!
       @lookup_cache = Concurrent::Map.new
-    end
-
-    private
-
-    # key -> the row's attributes (frozen). A Concurrent::Map is safe to read and write from any thread; two threads
-    # missing at once both look the row up and store the same attributes, which is harmless.
-    def lookup_status(key)
-      attributes = @lookup_cache[key]
-      unless attributes
-        name = STATUS_NAMES.fetch(key)
-        row = find_by(name: name) or raise Missing.new(key, name)
-        attributes = @lookup_cache[key] = row.attributes.freeze
-      end
-      instantiate(attributes)
     end
   end
 

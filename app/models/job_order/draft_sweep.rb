@@ -134,12 +134,12 @@ class JobOrder
     def sweep
       # looked up once, first: a missing Completed row fails here, at one defined point, and #run reports it as a
       # run-level abort (not once per draft)
-      @completed_id = JobStatus.completed.id
+      completed_id = JobStatus.completed.id
       @drafts = list_payable_drafts
-      if over_cap?(@drafts)
+      if over_cap?(@drafts, completed_id)
         @done = @drafts.size # nothing is examined on purpose: the kill switch's own line says so
       else
-        reconcile_all
+        reconcile_all(completed_id)
       end
       build_report
     end
@@ -187,7 +187,7 @@ class JobOrder
 
     # Stops at a lost connection (the rest unresolved, not examined). The deletes are held to the cap: the up-front
     # count (#over_cap?) is unlocked, so drafts that became orphans during the run are caught here.
-    def reconcile_all
+    def reconcile_all(completed_id)
       @drafts.each_with_index do |(gid, order_id), index|
         @done = index
         if @stopped_by
@@ -195,7 +195,7 @@ class JobOrder
           return
         end
 
-        reconcile(gid, order_id)
+        reconcile(gid, order_id, completed_id)
       end
       @done = @drafts.size
     end
@@ -228,11 +228,11 @@ class JobOrder
     # is deleted. Read without a lock: it is a count, not a decision (the per-draft check under the lock decides
     # again, and #reconcile_all holds the deletes to the cap even if the count has gone stale). Up to the cap there is
     # nothing to count; over it, one query reads what JobOrder.backs_draft? needs for all the orders.
-    def over_cap?(drafts)
+    def over_cap?(drafts, completed_id)
       return false if drafts.size <= @max_deletes
 
       rows = backing_rows(drafts.map(&:last))
-      orphans = drafts.count { |gid, order_id| !(rows[order_id] && JobOrder.backs_draft?(gid, completed_id: @completed_id, **rows[order_id])) }
+      orphans = drafts.count { |gid, order_id| !(rows[order_id] && JobOrder.backs_draft?(gid, completed_id: completed_id, **rows[order_id])) }
       return false if orphans <= @max_deletes
 
       @run_lines << "#{orphans} orphan draft(s) found, more than the cap of #{@max_deletes}: NOTHING was deleted" \
@@ -321,9 +321,9 @@ class JobOrder
       nil
     end
 
-    def reconcile(gid, order_id)
+    def reconcile(gid, order_id, completed_id)
       may_delete = @counts[:deleted] < @max_deletes
-      result = JobOrder.reconcile_orphan_draft!(order_id, gid, may_delete: may_delete)
+      result = JobOrder.reconcile_orphan_draft!(order_id, gid, may_delete: may_delete, completed_id: completed_id)
       return count(result.value) if result.ok?
       return capped(gid) if result.reason == :delete_cap
 

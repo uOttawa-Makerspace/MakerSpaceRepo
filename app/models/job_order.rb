@@ -146,7 +146,11 @@ class JobOrder < ApplicationRecord
   # JOB-04: once money has been taken the quote is final. Nothing on the customer or quoting side may change the
   # order, re-quote it or decline it; changes after payment go through staff by hand.
   # (A missing status (nil: an order without a status row) never matches.)
+  # An order without a status row is real data and must not depend on whether unrelated status rows exist: the
+  # predicates return false for nil before looking any status up.
   def self.money_taken_status?(status)
+    return false if status.nil?
+
     [JobStatus.paid, JobStatus.picked_up].include?(status)
   end
 
@@ -165,6 +169,8 @@ class JobOrder < ApplicationRecord
 
   # Statuses in which the order carries a staff quote the customer may approve or pay.
   def self.quoted_status?(status)
+    return false if status.nil? # see .money_taken_status?
+
     [JobStatus.user_approval, JobStatus.sent_reminder, JobStatus.waiting_processed, JobStatus.being_processed,
      JobStatus.completed].include?(status)
   end
@@ -294,15 +300,10 @@ class JobOrder < ApplicationRecord
     
   end
 
-  # DISPLAY ONLY (nothing in app/ calls it, and no write is decided by it): it reads #latest_status, which may be a
-  # stale preload. A write decides under the row lock, by the status #locked_operation yields (#apply_owner_change!,
-  # #soft_delete!, #transition!), through the same .editable_status? rule.
-  def allow_edit?
-    self.class.editable_status?(latest_status&.job_status)
-  end
-
   # The statuses in which the owner may still change (and delete) the order: before it is quoted.
   def self.editable_status?(status)
+    return false if status.nil? # see .money_taken_status?
+
     [JobStatus.draft, JobStatus.staff_approval].include?(status)
   end
 
@@ -471,9 +472,9 @@ class JobOrder < ApplicationRecord
   # Whether this order's stored Shopify draft `gid` is the invoice the database backs: the order is live, waiting for
   # payment (COMPLETED) and its stored shopify_draft_order_id is this draft. An order without a
   # status (nil id) never matches (JobStatus.completed raises when its row is missing). `status_id` is the latest status id: pass the one read under the row lock.
-  def backs_draft?(gid, status_id)
+  def backs_draft?(gid, status_id, completed_id)
     self.class.backs_draft?(gid, deleted: is_deleted, stored_gid: shopify_draft_order_id, status_id: status_id,
-                                 completed_id: JobStatus.completed.id)
+                                 completed_id: completed_id)
   end
 
   # THE definition of an order's latest status: the status row with the highest id. SQL, so a whole batch of orders
@@ -502,7 +503,7 @@ class JobOrder < ApplicationRecord
 
   # The same rule on plain values (the sweep decides it for many orders from one query): `deleted` the is_deleted
   # flag, `stored_gid` the stored shopify_draft_order_id, `status_id` the latest JobStatus id.
-  # `completed_id` is JobStatus.completed.id, looked up by the caller once (a batch caller before its loop).
+  # `completed_id` is JobStatus.completed.id, looked up by the caller once (the sweep, before its loop).
   def self.backs_draft?(gid, deleted:, stored_gid:, status_id:, completed_id:)
     !deleted && status_id == completed_id && stored_gid == gid
   end
@@ -528,9 +529,9 @@ class JobOrder < ApplicationRecord
   # TransitionResult value: :kept (the database backs it, or it is paid), :deleted or :cleared; refused
   # :draft_not_voidable (Shopify or the marker said no), :busy, :deadlock. `may_delete: false` (the sweep has used up
   # its cap) keeps a backed draft as :kept but refuses to delete any other, :delete_cap, decided under the lock.
-  def self.reconcile_orphan_draft!(order_id, gid, may_delete:)
+  def self.reconcile_orphan_draft!(order_id, gid, may_delete:, completed_id:)
     # always the locked path: the lock reads the row, and a row that is gone refuses :order_missing
-    result = instantiate("id" => order_id).reconcile_draft_under_lock!(gid, may_delete: may_delete)
+    result = instantiate("id" => order_id).reconcile_draft_under_lock!(gid, may_delete: may_delete, completed_id: completed_id)
     return result unless result.reason == :order_missing
 
     reconcile_draft_of_missing_order(gid, order_id, may_delete)
@@ -546,9 +547,9 @@ class JobOrder < ApplicationRecord
   private_class_method :reconcile_draft_of_missing_order
 
   # The locked half of .reconcile_orphan_draft! (public only for it; the marker re-check is the guard).
-  def reconcile_draft_under_lock!(gid, may_delete:)
+  def reconcile_draft_under_lock!(gid, may_delete:, completed_id:)
     locked_operation("reconcile_orphan_draft!", live_only: false, report: false) do |status|
-      next TransitionResult.done(:kept) if backs_draft?(gid, status&.id)
+      next TransitionResult.done(:kept) if backs_draft?(gid, status&.id, completed_id)
       next TransitionResult.refused(:delete_cap) unless may_delete
 
       outcome = DraftDeletion.delete_unless_completed!(gid, marker: id)
@@ -569,7 +570,7 @@ class JobOrder < ApplicationRecord
   #                                                    reminded, or a delete of an unpaid order)
   def self.draft_settlement(from, destination)
     return :none if destination == JobStatus.completed
-    return :none if from == JobStatus.paid && destination != DELETED
+    return :none if !from.nil? && from == JobStatus.paid && destination != DELETED # no status: nothing to look up
 
     money_taken_status?(destination == DELETED ? from : destination) ? :paid : :unpaid
   end
