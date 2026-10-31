@@ -45,6 +45,29 @@ module JourneyHelpers
     page.document.synchronize { raise Capybara::ExpectationNotMet, message unless yield }
   end
 
+  # The application's JS entry is a deferred module script, so a click made
+  # right after the page appears can beat it; the data-confirm prompt (a
+  # window.confirm added by that script) is then never shown and the form
+  # submits unprompted, so the confirm modal never appears. The entry sets
+  # this flag as its last statement, after the confirm listeners exist.
+  def wait_for_app_js
+    wait_until("application JS not ready") { page.evaluate_script("document.documentElement.dataset.appJsReady === 'true'") }
+  end
+
+  # Every confirm waits for the app JS first. These methods override the ones
+  # the example group gets from Capybara::DSL, and this module is included in
+  # every `type: :system` spec, so the override covers all of them; a call made
+  # as `page.accept_confirm` would bypass it.
+  def accept_confirm(*, **, &)
+    wait_for_app_js
+    super
+  end
+
+  def dismiss_confirm(*, **, &)
+    wait_for_app_js
+    super
+  end
+
   # Wait until a Bootstrap modal has FINISHED opening, not just got `.show`.
   # Bootstrap adds `.show` (and aria-modal) at the START of the 300 ms fade, and
   # `shown.bs.modal` fires at its end; the only DOM-observable signal of the end
