@@ -65,11 +65,27 @@ RSpec.describe JobOrder, type: :model do
 
       expect(loaded.job_order_statuses.map(&:id)).to eq([highest.id, highest.id - 1]) # not in id order
       expect(loaded.latest_status).to eq(highest)
-      expect(loaded.latest_status_id).to eq(JobStatus::DRAFT.id)
-      expect(loaded.latest_status_id).to eq(JobOrder.where(id: order.id).pick(Arel.sql(JobOrder::LATEST_STATUS_ID_SQL)))
+      expect(loaded.latest_status.job_status_id).to eq(JobStatus::DRAFT.id)
+      expect(loaded.latest_status.job_status_id).to eq(JobOrder.where(id: order.id).pick(Arel.sql(JobOrder::LATEST_STATUS_ID_SQL)))
       expect(loaded.allow_edit?).to be(true)
       expect(loaded.task_edits_offered_to?(owner)).to be(true)
       expect(order.reload.latest_status).to eq(highest) # unloaded: one query, the same row
+    end
+
+    it "has no latest_status_id reader (the SQL is the batch rule, #latest_status the instance rule)" do
+      expect(order).not_to respond_to(:latest_status_id)
+    end
+
+    it "sorts a row built on a loaded association (no id yet) after the persisted ones, like .last, without raising" do
+      loaded = JobOrder.includes(:job_order_statuses).find(order.id)
+      built = loaded.job_order_statuses.build(job_status: JobStatus::STAFF_APPROVAL, user: owner)
+
+      expect(loaded.job_order_statuses).to be_loaded
+      expect { loaded.allow_edit? }.not_to raise_error
+      expect(loaded.latest_status).to equal(built)
+      expect(loaded.latest_status).to equal(loaded.job_order_statuses.last)
+      expect(loaded.allow_edit?).to be(true) # STAFF_APPROVAL
+      expect(loaded.job_order_statuses.build(job_status: JobStatus::COMPLETED, user: owner)).to equal(loaded.latest_status)
     end
 
     it "orders the association by id" do
@@ -106,6 +122,13 @@ RSpec.describe JobOrder, type: :model do
   end
 
   describe "scope .without_drafts" do
+    it "is one correlated subquery comparison, and still excludes an order with no status" do
+      sql = JobOrder.without_drafts.to_sql
+      expect(sql.scan("SELECT s.job_status_id").size).to eq(1)
+      expect(sql).not_to include("IS NOT NULL")
+      expect(JobOrder.without_drafts.where(id: create(:job_order).id)).to be_empty
+    end
+
     before { seed_job_statuses! }
 
     it "includes orders whose LATEST status row is not Draft" do

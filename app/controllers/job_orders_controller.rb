@@ -42,7 +42,7 @@ class JobOrdersController < SessionsController
     @job_orders = []
     @archived_job_orders = []
     @drafts = []
-    @user.job_orders.not_deleted.each do |jo|
+    @user.job_orders.not_deleted.includes(job_order_statuses: :job_status).each do |jo|
       next unless jo.latest_status
 
       if jo.latest_status.job_status == JobStatus::DRAFT
@@ -364,7 +364,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.latest_statu
     @statuses = JobStatus.where.not(name: "Draft")
     @job_types = JobType.all
 
-    @job_orders = JobOrder.all.not_deleted.without_drafts.includes(:job_services).order(created_at: :desc)
+    @job_orders = JobOrder.all.not_deleted.without_drafts.includes(:job_services, job_order_statuses: :job_status).order(created_at: :desc)
   end
 
   def settings
@@ -395,7 +395,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.latest_statu
         return redirect_to job_order_path(@job_order.id)
       end
       @payment_link = link.value
-      @job_order.job_order_statuses.reload # the status may have changed under checkout_link
+      @job_order.job_order_statuses.reset # the status may have changed under checkout_link: latest_status reads it again, one row
       if @job_order.latest_status&.job_status == JobStatus::COMPLETED
         render "job_orders/pay"
       else

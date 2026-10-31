@@ -39,7 +39,9 @@
 # run (an unlock on a dead connection). Nothing escapes #run: an exception out of the run itself (the unlock, the
 # kill-switch count, the loop) is recorded as the run-level line "aborted: <class>: <message>", the drafts not
 # examined are listed as unresolved, the reports are sent and the Report is returned (so the job completes and the
-# rake exits 1 with the list). Only an Interrupt / SignalException propagates, after the same flush.
+# rake exits 1 with the list). Only an Interrupt / SignalException (any non-StandardError) propagates, after the same flush, whatever else failed
+# meanwhile; it is logged at warn level and told in the summary, not reported as an error. A step of the flush that
+# raises is reported to Rails.error and the others still run.
 # Run by `rake job_orders:sweep_orphan_drafts` and, regularly, by JobOrderDraftSweepJob (config/recurring.yml).
 class JobOrder
   class DraftSweep
@@ -50,6 +52,9 @@ class JobOrder
     SUMMARY_MESSAGE = "job order draft sweep: unresolved drafts"
     LOCK_KEY = Zlib.crc32("JobOrder::DraftSweep")
     OUTCOMES = %i[kept deleted cleared unmarked].freeze
+
+    RUN_WHERE = "JobOrder::DraftSweep#run"
+    RECONCILE_WHERE = "JobOrder::DraftSweep#reconcile"
 
     class Unresolved < StandardError; end
 
@@ -84,11 +89,12 @@ class JobOrder
       @unresolved = [] # one line per unresolved draft
       @unresolved_gids = []
       @unmarked = Set.new
-      @errors = {} # exception class => { error:, gid:, order_id:, count: }: reported once each, at the end of the run
+      @errors = {} # [where, exception class] => { error:, gid:, order_id:, count: }: reported once each, at the end of the run
       @capped = [] # orphans met after the run had deleted the cap
       @drafts = [] # the listed [gid, order id] pairs
       @done = 0 # the drafts before this index were examined
       @stop = nil # why the run stopped early: the run-level line about the drafts left unexamined
+      @escaping = nil # the Interrupt / SignalException (or other non-StandardError) in flight: re-raised after the flush
       @stopped_by = nil # the connection error that stopped the run (see #database_error?)
     end
 
@@ -99,15 +105,12 @@ class JobOrder
         report = with_sweep_lock { sweep }
       rescue StandardError => e
         aborted = e
-      rescue Exception => e # rubocop:disable Lint/RescueException -- Interrupt, SignalException ...: flushed in the ensure, then propagated
-        aborted = e
-        raise
-      ensure
-        report = abort_run(aborted) if aborted
-        report ||= build_report
-        report_errors
-        report_once(report) unless report.ok?
+      rescue Exception => e # rubocop:disable Lint/RescueException -- Interrupt, SignalException ...: flushed below, then propagated
+        @escaping ||= e
       end
+      report = flush(report, aborted)
+      raise @escaping if @escaping # whatever else failed meanwhile (an unlock error replacing it, a report error)
+
       report
     end
 
@@ -119,6 +122,9 @@ class JobOrder
 
         begin
           yield
+        rescue SignalException => e
+          @escaping ||= e # kept here: an error raised by the unlock below would replace it in flight
+          raise
         ensure
           conn.select_value("SELECT pg_advisory_unlock(#{LOCK_KEY})")
         end
@@ -135,13 +141,45 @@ class JobOrder
       build_report
     end
 
-    # Something escaped the run: it is told as the first run-level line, the drafts not examined are unresolved, and
-    # the exception is reported (once per class, with the others).
+    # Something escaped the run: an error is told as the first run-level line, an Interrupt / SignalException (not an
+    # error: logged at warn level, in the summary only) before it; the drafts not examined are unresolved, the error
+    # is reported (once per class, with the others).
     def abort_run(error)
-      note_error(error, nil, nil)
-      @run_lines.unshift("aborted: #{error.class}: #{error.message}")
+      if error
+        note_error(error, nil, nil, where: RUN_WHERE)
+        @run_lines.unshift("aborted: #{error.class}: #{error.message}")
+      end
+      if @escaping
+        Rails.logger.warn("[JobOrder::DraftSweep] interrupted: #{@escaping.class}: #{@escaping.message}")
+        @run_lines.unshift("interrupted: #{@escaping.class}#{": #{@escaping.message}" if @escaping.message.present?}")
+      end
       stop_before(@done, "the run was aborted")
       build_report
+    end
+
+    # The end of the run, which never fails silently and never raises: each step that raises is reported (minimal
+    # context) and the next one still happens; a report is always returned.
+    def flush(report, error)
+      report = guarded("abort_run") { abort_run(error) } if error || @escaping
+      report ||= guarded("build_report") { build_report } || failed_report
+      guarded("report_errors") { report_errors }
+      guarded("report_once") { report_once(report) } unless report.ok?
+      report
+    end
+
+    def guarded(step)
+      yield
+    rescue StandardError => e
+      begin
+        Rails.error.report(e, handled: true, context: { where: RUN_WHERE, step: step })
+      rescue StandardError
+        nil # the flush has nowhere left to tell it
+      end
+      nil
+    end
+
+    def failed_report
+      Report.new(counts: OUTCOMES.index_with(0), unresolved: ["the run's report could not be built"], unresolved_gids: [], skipped: false)
     end
 
     # Stops at a lost connection (the rest unresolved, not examined). The deletes are held to the cap: the up-front
@@ -217,7 +255,7 @@ class JobOrder
                          context: { unresolved_count: report.unresolved.size, unresolved_total: report.unresolved_gids.size,
                                     unresolved_draft_order_ids: report.unresolved_gids.first(REPORTED_LIMIT),
                                     unresolved: report.unresolved.first(REPORTED_LIMIT), counts: report.counts,
-                                    where: "JobOrder::DraftSweep#run" })
+                                    where: RUN_WHERE })
     end
 
     def operating_tag = JobOrder.draft_order_operating_tag
@@ -305,17 +343,19 @@ class JobOrder
 
     # Logs the failure and keeps the first exception of its class for #report_errors (its class and backtrace, for the
     # tracker), counting the others.
-    def note_error(error, gid, order_id)
+    def note_error(error, gid, order_id, where: RECONCILE_WHERE)
       Rails.logger.error("[JobOrder::DraftSweep] #{gid}: #{error.class}: #{error.message}")
-      (@errors[error.class] ||= { error: error, gid: gid, order_id: order_id, count: 0 })[:count] += 1
+      (@errors[[where, error.class]] ||= { error: error, gid: gid, order_id: order_id, where: where, count: 0 })[:count] += 1
     end
 
     # Each exception class once per run, with how many drafts it hit.
     def report_errors
       @errors.each_value do |first|
-        Rails.error.report(first[:error], handled: true,
-                                          context: { draft_order_id: first[:gid], job_order_id: first[:order_id],
-                                                     occurrences: first[:count], where: "JobOrder::DraftSweep#reconcile" })
+        guarded("report_errors") do
+          Rails.error.report(first[:error], handled: true,
+                                            context: { draft_order_id: first[:gid], job_order_id: first[:order_id],
+                                                       occurrences: first[:count], where: first[:where] })
+        end
       end
     end
 

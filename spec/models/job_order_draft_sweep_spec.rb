@@ -514,13 +514,89 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
         expect(report.counts[:deleted]).to eq(1)
       end
 
-      it "flushes the reports, then lets an Interrupt through" do
+      it "flushes the summary, then lets an Interrupt through; the Interrupt is logged at warn level, not reported as an error" do
+        order = order_with_draft!
+        allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(Interrupt)
+        allow(Rails.logger).to receive(:warn)
+        shopify.draft_pages = [nodes_for(order)]
+
+        expect { described_class.run }.to raise_error(Interrupt)
+        expect(reports.map { |r| r.first.class }).to eq([described_class::Unresolved])
+        expect(reports.first.last[:context][:unresolved].first).to start_with("interrupted: Interrupt")
+        expect(Rails.logger).to have_received(:warn).with(/interrupted: Interrupt/)
+      end
+
+      def failing_unlock!
+        allow_any_instance_of(ActiveRecord::ConnectionAdapters::PostgreSQLAdapter).to receive(:select_value).and_wrap_original do |original, sql, *args|
+          raise ActiveRecord::ConnectionFailed, "gone" if sql.to_s.include?("pg_advisory_unlock")
+
+          original.call(sql, *args)
+        end
+      end
+
+      def release_lock!
+        RSpec::Mocks.space.proxy_for(ActiveRecord::Base.connection).reset rescue nil # rubocop:disable Style/RescueModifier
+        ActiveRecord::Base.connection.exec_query("SELECT pg_advisory_unlock(#{described_class::LOCK_KEY})")
+      end
+
+      [Interrupt, SignalException.new("TERM")].each do |signal|
+        it "re-raises #{signal.is_a?(Class) ? signal : signal.class} when the advisory unlock then raises a StandardError" do
+          order = order_with_draft!
+          allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(signal)
+          failing_unlock!
+          shopify.draft_pages = [nodes_for(order)]
+
+          begin
+            expect { described_class.run }.to raise_error(signal.is_a?(Class) ? signal : SignalException)
+          ensure
+            release_lock!
+          end
+          # the unlock's failure is an error and is reported; the signal is not
+          expect(reports.map { |r| r.first.class }).to eq([ActiveRecord::ConnectionFailed, described_class::Unresolved])
+          expect(reports.first.last[:context][:where]).to eq("JobOrder::DraftSweep#run")
+        end
+      end
+
+      it "labels a run-level abort #run, a per-draft error #reconcile" do
+        order = order_with_draft!
+        allow(JobOrder).to receive(:reconcile_orphan_draft!).and_raise(ArgumentError, "boom")
+        allow_any_instance_of(described_class).to receive(:over_cap?).and_return(false)
+        sweep(draft_node("gid://shopify/DraftOrder/1", order))
+        expect(reports.first.last[:context][:where]).to eq("JobOrder::DraftSweep#reconcile")
+
+        reports.clear
+        allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(RuntimeError, "count failed")
+        sweep(draft_node("gid://shopify/DraftOrder/1", order))
+        expect(reports.map { |r| [r.first.class, r.last[:context][:where]] })
+          .to eq([[RuntimeError, "JobOrder::DraftSweep#run"], [described_class::Unresolved, "JobOrder::DraftSweep#run"]])
+      end
+
+      it "counts one Rails.error.report for an Interrupt-only run (the summary), none for the signal itself" do
         order = order_with_draft!
         allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(Interrupt)
         shopify.draft_pages = [nodes_for(order)]
 
         expect { described_class.run }.to raise_error(Interrupt)
-        expect(reports.map { |r| r.first.class }).to eq([Interrupt, described_class::Unresolved])
+        expect(reports.size).to eq(1)
+      end
+
+      describe "the flush never fails silently" do
+        before { allow_any_instance_of(described_class).to receive(:over_cap?).and_raise(RuntimeError, "count failed") }
+
+        %i[abort_run build_report report_errors].each do |step|
+          it "reports a failing #{step} and still returns a report" do
+            order = order_with_draft!
+            allow_any_instance_of(described_class).to receive(step).and_raise(IOError, "#{step} failed")
+            shopify.draft_pages = [nodes_for(order)]
+
+            report = nil
+            expect { report = described_class.run }.not_to raise_error
+            expect(report).to be_a(described_class::Report)
+            io = reports.select { |r| r.first.is_a?(IOError) }
+            expect(io).not_to be_empty
+            expect(io.first.last[:context]).to include(where: "JobOrder::DraftSweep#run")
+          end
+        end
       end
     end
 
@@ -801,14 +877,17 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       end
     end
 
-    it "gives the same latest status to the batch query and to the instance, with the highest status row winning" do
+    it "gives the same latest status to the batch query, the locked read and the instance, with the highest status row winning" do
       order = order_with_draft!(:staff_approval)
       order.job_order_statuses.create!(job_status: JobStatus::COMPLETED, user: owner)
       order.job_order_statuses.first.update_columns(created_at: 1.day.from_now) # created_at must not decide
 
       batch = JobOrder.where(id: order.id).pick(Arel.sql(JobOrder::LATEST_STATUS_ID_SQL))
-      expect(order.latest_status_id).to eq(batch)
+      # what #locked_operation hands its block: the status read under the row lock
+      locked = JobOrder.find(order.id).send(:locked_operation, "probe") { |status| JobOrder::TransitionResult.done(status) }.value
+      expect(locked&.id).to eq(batch)
       expect(batch).to eq(JobStatus::COMPLETED.id)
+      expect(order.latest_status.job_status_id).to eq(batch)
       expect(order.job_order_statuses.last.job_status_id).to eq(batch)
     end
 

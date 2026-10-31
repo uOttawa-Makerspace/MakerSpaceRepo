@@ -19,11 +19,7 @@ class JobOrder < ApplicationRecord
 
   # Orders whose latest status (the one rule, LATEST_STATUS_ID_SQL) exists and is not Draft.
   scope :without_drafts,
-        -> {
-          latest = Arel.sql(LATEST_STATUS_ID_SQL)
-          with_status = where("#{latest} IS NOT NULL")
-          JobStatus::DRAFT ? with_status.where("#{latest} <> ?", JobStatus::DRAFT.id) : with_status
-        }
+        -> { where("#{LATEST_STATUS_ID_SQL} <> ?", JobStatus::DRAFT.id) } # an order without a status is NULL <> id: excluded
 
   scope :not_deleted, -> { where(is_deleted: false) }
 
@@ -468,9 +464,8 @@ class JobOrder < ApplicationRecord
 
   # Whether this order's stored Shopify draft `gid` is the invoice the database backs: the order is live, waiting for
   # payment (COMPLETED) and its stored shopify_draft_order_id is this draft. A missing JobStatus (unseeded: the
-  # constants are nil) never matches. `status_id` is the latest status id (#latest_status_id); pass the one read under
-  # the row lock.
-  def backs_draft?(gid, status_id = latest_status_id)
+  # constants are nil) never matches. `status_id` is the latest status id: pass the one read under the row lock.
+  def backs_draft?(gid, status_id)
     self.class.backs_draft?(gid, deleted: is_deleted, stored_gid: shopify_draft_order_id, status_id: status_id)
   end
 
@@ -482,11 +477,14 @@ class JobOrder < ApplicationRecord
 
   # The latest status row of this order (nil without one): the highest id. Every reader of "the current status" goes
   # through it. A loaded association (a preload) is read by id, whatever order it came in; an unloaded one is one
-  # query, its `.last` (the association is ordered by id).
-  def latest_status = job_order_statuses.loaded? ? job_order_statuses.max_by(&:id) : job_order_statuses.last
+  # query, its `.last` (the association is ordered by id). A row built but not saved (no id yet) is the newest, as
+  # with `.last`: the last of those wins over the persisted rows.
+  def latest_status
+    return job_order_statuses.last unless job_order_statuses.loaded?
 
-  # Its JobStatus id (the same rule as LATEST_STATUS_ID_SQL).
-  def latest_status_id = latest_status&.job_status_id
+    unsaved, saved = job_order_statuses.to_a.partition { |s| s.id.nil? }
+    unsaved.last || saved.max_by(&:id)
+  end
 
   # The same rule on plain values (the sweep decides it for many orders from one query): `deleted` the is_deleted
   # flag, `stored_gid` the stored shopify_draft_order_id, `status_id` the latest JobStatus id.
