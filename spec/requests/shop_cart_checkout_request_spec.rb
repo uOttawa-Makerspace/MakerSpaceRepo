@@ -426,6 +426,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
     let!(:other_project) { create(:proficient_project, cc: 5) }
 
     after do
+      RateLimitCounter.delete_all # the logins counted against the IP limit (committed, not rolled back)
       order_ids = Order.where(user_id: buyer.id).pluck(:id)
       OrderItem.where(order_id: order_ids).delete_all
       Order.where(id: order_ids).delete_all

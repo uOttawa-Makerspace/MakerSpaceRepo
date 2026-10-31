@@ -20,6 +20,7 @@ RSpec.describe "Coupon claim race (D-S33)", type: :request do
   let!(:user_b) { create(:user, :regular_user) }
 
   after do
+    RateLimitCounter.delete_all # the logins counted against the IP limit (committed, not rolled back)
     ids = [user_a.id, user_b.id]
     CcMoney.where(user_id: ids).delete_all
     CouponCode.where(dollar_cost: 5).delete_all

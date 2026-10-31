@@ -16,6 +16,7 @@ RSpec.describe "CC wallet races (D-S42)", type: :request do
   let!(:project_two) { create(:proficient_project, cc: 40) }
 
   after do
+    RateLimitCounter.delete_all # the logins counted against the IP limit (committed, not rolled back)
     order_ids = Order.where(user_id: user.id).pluck(:id)
     OrderItem.where(order_id: order_ids).delete_all
     CcMoney.where(user_id: user.id).delete_all
