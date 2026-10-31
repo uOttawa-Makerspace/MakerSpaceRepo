@@ -21,10 +21,12 @@ class RfidController < SessionsController
   # own bucket and cannot lock the real door out) or per staff user, plus a coarse
   # 600/min per-IP ceiling (readers may share one NAT egress IP).
   RATE_LIMITED = -> { render json: { error: "Too many requests" }, status: :too_many_requests }
-  rate_limit to: 60, within: 1.minute, only: :card_number, name: "tap",
-             by: -> { tap_rate_limit_key }, with: RATE_LIMITED
+  # The per-IP ceiling is declared (so runs) first: once an IP is over it the request is answered
+  # before the per-reader key is counted, so one IP cannot keep minting per-identifier counter rows.
   rate_limit to: 600, within: 1.minute, only: :card_number, name: "tap-ip",
              by: -> { request.remote_ip }, with: RATE_LIMITED
+  rate_limit to: 60, within: 1.minute, only: :card_number, name: "tap",
+             by: -> { tap_rate_limit_key }, with: RATE_LIMITED
 
   # Rejected taps (unknown MAC, 401) are counted per IP and capped much tighter,
   # to slow brute-forcing of a reader's MAC. Only rejections count, so a real
@@ -120,17 +122,19 @@ class RfidController < SessionsController
 
   private
 
-  # The caller's MAC as a normalized string, or nil (never a hash/array param, and never anything
-  # that is not a MAC: the value goes into a rate-limit key, so an unvalidated one would let a sender
-  # create counter rows of unbounded number and length). A malformed MAC is treated as no MAC at all:
-  # no reader matches it, it is counted against the caller's IP only, and nothing stores it.
-  TAP_MAC_FORMAT = /\A[0-9a-f]{2}(:[0-9a-f]{2}){5}\z/
+  # What the tap box sends as its identifier. Production readers send real MACs and also short,
+  # non-MAC identifiers, so there is no format gate: tap behaviour is unchanged for every identifier
+  # that is a string of 1..TAP_IDENTIFIER_MAX_LENGTH characters after normalization. Anything longer,
+  # or containing a control character, is treated as missing (as a hash/array param already is): no
+  # reader matches it, it is counted against the caller's IP only, and nothing stores it.
+  # (The rate-limit key digests it, so its length is fixed whatever the input.)
+  TAP_IDENTIFIER_MAX_LENGTH = 64
 
   def tap_mac_address
     return @tap_mac_address if defined?(@tap_mac_address)
 
     mac = PiReader.normalize_mac(params[:mac_address])
-    @tap_mac_address = mac if mac&.match?(TAP_MAC_FORMAT)
+    @tap_mac_address = mac if mac && mac.length <= TAP_IDENTIFIER_MAX_LENGTH && !mac.match?(/[[:cntrl:]]/)
   end
 
   def tap_without_session?
@@ -164,7 +168,7 @@ class RfidController < SessionsController
     if tap_staff?
       "staff:#{current_user.id}"
     elsif tap_mac_address
-      "mac:#{tap_mac_address}|ip:#{request.remote_ip}"
+      "mac:#{Digest::SHA256.hexdigest(tap_mac_address)[0, 32]}|ip:#{request.remote_ip}"
     else
       "ip:#{request.remote_ip}"
     end
