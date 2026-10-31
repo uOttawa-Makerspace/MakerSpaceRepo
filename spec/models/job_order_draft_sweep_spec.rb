@@ -478,7 +478,13 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
 
           original.call(sql, *args)
         end
-        report = sweep(*nodes_for(order))
+        report = nil
+        begin
+          report = sweep(*nodes_for(order))
+        ensure
+          RSpec::Mocks.space.proxy_for(ActiveRecord::Base.connection).reset rescue nil # rubocop:disable Style/RescueModifier
+          ActiveRecord::Base.connection.exec_query("SELECT pg_advisory_unlock(#{described_class::LOCK_KEY})") # the failed unlock left it held
+        end
 
         expect_aborted(report, ActiveRecord::ConnectionFailed, "gone", unexamined: [])
         expect(report.counts[:deleted]).to eq(3)
