@@ -26,14 +26,19 @@ RSpec.describe AddBatchesToSolidQueue do
 
   after { tables.each { |t| conn.drop_table(t, if_exists: true) } }
 
-  it "up, up again, down: builds the batch_id index once, then removes everything it added" do
+  it "up, up again: builds the batch_id index once and is safe to re-run" do
     run(:up)
     expect(job_indexes).to eq(%w[index_solid_queue_jobs_on_batch_id])
     expect(conn.table_exists?(:solid_queue_batches)).to be(true)
     expect { run(:up) }.not_to raise_error
-    run(:down)
-    expect(job_indexes).to be_empty
-    expect(conn.column_exists?(:solid_queue_jobs, :batch_id)).to be(false)
-    expect(conn.table_exists?(:solid_queue_batches)).to be(false)
+    expect(job_indexes).to eq(%w[index_solid_queue_jobs_on_batch_id])
+  end
+
+  it "down is irreversible and leaves everything in place" do
+    run(:up)
+    expect { run(:down) }.to raise_error(ActiveRecord::IrreversibleMigration, /queue_schema\.rb/)
+    expect(conn.table_exists?(:solid_queue_batches)).to be(true)
+    expect(conn.column_exists?(:solid_queue_jobs, :batch_id)).to be(true)
+    expect(job_indexes).to eq(%w[index_solid_queue_jobs_on_batch_id])
   end
 end

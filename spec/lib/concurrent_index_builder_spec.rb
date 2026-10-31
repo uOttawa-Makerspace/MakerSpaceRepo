@@ -135,6 +135,26 @@ RSpec.describe ConcurrentIndexBuilder do
     expect(found).to be_nil
   end
 
+  it "raises when the name is the table's primary-key index, which indexes() does not list" do
+    expect { ActiveRecord::Migration.suppress_messages { builder.add_index_concurrently(:cib_scratch, :id, name: "cib_scratch_pkey") } }
+      .to mismatch(/relkind i/)
+  end
+
+  it "keeps a matching index when the table is given schema-qualified" do
+    qualified = "public.cib_scratch"
+    ActiveRecord::Migration.suppress_messages { builder.add_index_concurrently(qualified, :val, name: index) }
+    before_oid = oid
+    ActiveRecord::Migration.suppress_messages { builder.add_index_concurrently(qualified, :val, name: index) }
+    expect(oid).to eq(before_oid)
+  end
+
+  it "raises for a column collation, which IndexDefinition does not report" do
+    default = conn.select_value("SELECT datcollate FROM pg_database WHERE datname = current_database()")
+    other = default == "C" ? "POSIX" : "C"
+    conn.execute(%(CREATE INDEX #{index} ON cib_scratch (txt COLLATE "#{other}")))
+    expect { build(:txt) }.to mismatch(/default collations/)
+  end
+
   it "raises when the name is used by a sequence" do
     conn.execute("CREATE SEQUENCE #{index}")
     expect { build }.to mismatch(/relkind S/)

@@ -45,16 +45,24 @@ module JourneyHelpers
     page.document.synchronize { raise Capybara::ExpectationNotMet, message unless yield }
   end
 
-  # Wait until the application's JS entry has run. It is a deferred module
-  # script, so a click made right after the page appears can beat it; the
-  # data-confirm prompt (a window.confirm added by that script) is then never
-  # shown and the form submits unprompted, so `accept_confirm` finds no modal.
-  # `window.Turbo` is set while the entry's imports evaluate, and its
-  # confirm/submit listeners are registered in the same synchronous run.
+  # The application's JS entry is a deferred module script, so a click made
+  # right after the page appears can beat it; the data-confirm prompt (a
+  # window.confirm added by that script) is then never shown and the form
+  # submits unprompted, so the confirm modal never appears. The entry sets
+  # this flag as its last statement, after the confirm listeners exist.
   def wait_for_app_js
-    page.document.synchronize do
-      raise Capybara::ExpectationNotMet, "application JS not loaded" unless page.evaluate_script("typeof window.Turbo !== 'undefined'")
-    end
+    wait_until("application JS not ready") { page.evaluate_script("document.documentElement.dataset.appJsReady === 'true'") }
+  end
+
+  # Every confirm in every journey waits for the app JS first.
+  def accept_confirm(*, **, &)
+    wait_for_app_js
+    super
+  end
+
+  def dismiss_confirm(*, **, &)
+    wait_for_app_js
+    super
   end
 
   # Wait until a Bootstrap modal has FINISHED opening, not just got `.show`.
