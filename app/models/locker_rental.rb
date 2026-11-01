@@ -107,8 +107,38 @@ class LockerRental < ApplicationRecord
   # Added this missing scope so the admin controller can exclude cancelled rentals
   scope :not_cancelled, -> { where.not(state: :cancelled) }
 
+  # Raised only to be reported (Rails.error.report): a locker was paid for by a deactivated account.
+  class PaidForDeactivatedRenter < StandardError; end
+
+  # Paid but not (or no longer) active and the renter is deactivated: staff must refund or cancel.
+  # Derived, not stored: it stays true until the rental is activated, cancelled or the renter reactivated.
+  # (A cancelled rental is resolved, so it does not count.)
+  scope :paid_but_renter_deactivated, lambda {
+    joins('INNER JOIN users renters ON renters.id = locker_rentals.rented_by_id')
+      .where.not(paid_at: nil)
+      .where.not(state: %i[active cancelled])
+      .where.not(renters: { deactivated_at: nil })
+  }
+
+  def paid_but_renter_deactivated?
+    paid_at.present? && !active? && !cancelled? && rented_by&.deactivated_at.present?
+  end
+
+  # The Shopify paid-order path. The payment is always recorded (paid_at, and owned_until as for an
+  # active rental), but a deactivated renter's rental is never activated: it stays as it is, is reported,
+  # and shows to staff (#paid_but_renter_deactivated?), who refund or cancel it.
   def auto_assign
     Rails.logger.debug "Auto assigning locker rental #{id}"
+    if rented_by&.deactivated_at
+      update!({ owned_until: (end_of_this_semester if owned_until.blank?), paid_at: Time.current }.compact)
+      Rails.error.report(
+        PaidForDeactivatedRenter.new("locker rental #{id} was paid but its renter (user #{rented_by_id}) is deactivated; not activated"),
+        handled: true, severity: :error,
+        context: { locker_rental_id: id, user_id: rented_by_id }
+      )
+      return
+    end
+
     update!(
       {
         state: (:active unless active?),

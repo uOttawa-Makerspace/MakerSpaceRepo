@@ -38,6 +38,9 @@
                                     <span class="text-danger"><i class="fa-solid fa-xmark"></i> Expired</span>
                                 <% end %>
                             <% end %>
+                            <% if current_user.staff? && rental.paid_but_renter_deactivated? %>
+                                <span class="badge text-bg-danger mt-1">Paid, renter deactivated: refund or cancel</span>
+                            <% end %>
                         </td>
                         <td>
                             <%= link_to rental.rented_by.username, user_path(rental.rented_by.username) %>

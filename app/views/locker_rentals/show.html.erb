@@ -16,6 +16,13 @@
     <% end %>
 </div>
 
+<% if current_user.staff? && @locker_rental.paid_but_renter_deactivated? %>
+    <div class="alert alert-danger" role="alert">
+        <strong>Paid, renter deactivated: refund or cancel.</strong>
+        This locker was paid for but its renter's account is deactivated, so it was not activated.
+    </div>
+<% end %>
+
 <%
 status_color = if @locker_rental.cancelled?
   'danger'

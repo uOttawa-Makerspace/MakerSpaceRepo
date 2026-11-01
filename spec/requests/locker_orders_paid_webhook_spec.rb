@@ -181,4 +181,73 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     end
   end
 
+
+  # Owner decision: a payment for a deactivated renter is always recorded, never activates the rental, and is
+  # left to staff (refund or cancel). The webhook still answers 200 and applies the order's other effects.
+  describe "a paid locker whose renter was deactivated" do
+    let(:cc_product_id) { 4_359_597_129_784 }
+    let(:member) { create(:user, :regular_user) }
+    let!(:tier) { create(:membership_tier, title_en: "1 Day Membership", title_fr: "Adhesion 1 jour", duration: 1) }
+    let!(:pending) { create(:membership, user: member, membership_tier: tier, status: "pending") }
+    let!(:rental) { create(:locker_rental, :await_payment, owned_until: nil) }
+    let(:full_payload) do
+      {
+        tags: [tag, Membership.draft_order_operating_tag],
+        line_items: [{ title: "1 Day Membership", quantity: 3, product_id: cc_product_id }],
+        customer: { email: member.email },
+        metafields: [
+          { namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s },
+          { namespace: "makerepo", key: "membership_db_reference", value: pending.id.to_s }
+        ]
+      }
+    end
+
+    before { rental.rented_by.deactivate! }
+
+    it "answers 200, records the payment, does not activate, flags the rental, reports it, and still applies the other effects" do
+      allow(Rails.error).to receive(:report).and_call_original
+      expect(Rails.error).to receive(:report).with(
+        an_instance_of(LockerRental::PaidForDeactivatedRenter),
+        hash_including(handled: true, context: { locker_rental_id: rental.id, user_id: rental.rented_by_id })
+      )
+
+      perform_enqueued_jobs { signed_orders_paid(full_payload) }
+
+      expect(response).to have_http_status(:ok)
+      rental.reload
+      expect(rental.state).to eq("await_payment")
+      expect(rental.paid_at).to be_present
+      expect(rental.owned_until.utc.iso8601).to eq(end_of_this_semester.utc.iso8601)
+      expect(rental.paid_but_renter_deactivated?).to be(true)
+      expect(LockerRental.paid_but_renter_deactivated).to contain_exactly(rental)
+      expect(ActionMailer::Base.deliveries).to be_empty # no "locker assigned" mail
+
+      expect(pending.reload.status).to eq("paid")
+      expect(member.cc_moneys.pluck(:cc)).to eq([30])
+    end
+
+    it "records the payment of a reviewing rental too, without raising and without activating it" do
+      reviewing = create(:locker_rental, :reviewing)
+      reviewing.rented_by.deactivate!
+      signed_orders_paid(payload(reviewing.id))
+      expect(response).to have_http_status(:ok)
+      expect(reviewing.reload).to have_attributes(state: "reviewing", paid_at: be_present)
+      expect(reviewing.paid_but_renter_deactivated?).to be(true)
+    end
+
+    it "stops being flagged once the renter is reactivated or staff cancel the rental" do
+      signed_orders_paid(payload(rental.id))
+      expect(rental.reload.paid_but_renter_deactivated?).to be(true)
+      rental.update!(state: :cancelled, decided_by: create(:user, :staff))
+      expect(rental.paid_but_renter_deactivated?).to be(false)
+      expect(LockerRental.paid_but_renter_deactivated).to be_empty
+    end
+
+    it "activates normally when the renter is not deactivated (unchanged behaviour)" do
+      other = create(:locker_rental, :await_payment)
+      signed_orders_paid(payload(other.id))
+      expect(other.reload.state).to eq("active")
+      expect(other.paid_but_renter_deactivated?).to be(false)
+    end
+  end
 end

@@ -433,6 +433,27 @@ RSpec.describe LockerRental, type: :model do
       expect(rental.update(state: :cancelled, decided_by: staff)).to be(true)
     end
 
+    it "auto_assign records the payment, does not activate, does not raise, and the rental is flagged for staff" do
+      rental = create(:locker_rental, :await_payment, rented_by: renter, owned_until: nil)
+      renter.deactivate!
+      rental = described_class.find(rental.id)
+
+      expect { rental.auto_assign }.not_to raise_error
+      rental.reload
+      expect(rental.state).to eq("await_payment")
+      expect(rental.paid_at).to be_present
+      expect(rental.owned_until).to be_present
+      expect(rental.paid_but_renter_deactivated?).to be(true)
+      expect(described_class.paid_but_renter_deactivated).to contain_exactly(rental)
+    end
+
+    it "is not flagged when unpaid, active, or the renter is not deactivated" do
+      expect(create(:locker_rental, :await_payment, rented_by: renter).paid_but_renter_deactivated?).to be(false)
+      expect(create(:locker_rental, :await_payment, paid_at: Time.current).paid_but_renter_deactivated?).to be(false)
+      renter.deactivate!
+      expect(create(:locker_rental, :await_payment, rented_by: create(:user), paid_at: Time.current)).not_to be_paid_but_renter_deactivated
+    end
+
     it "can still have an active rental ended while deactivated" do
       rental = create(:locker_rental, :active, rented_by: renter, locker: locker, owned_until: 1.week.from_now)
       renter.deactivate!

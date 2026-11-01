@@ -960,6 +960,34 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
   # ------------------------------------------------------- GET admin
 
+  describe "paid-but-renter-deactivated badge (staff)" do
+    let(:tenant) { create(:user) }
+    let!(:rental) { create(:locker_rental, rented_by: tenant, paid_at: Time.current) } # reviewing: its page makes no Shopify call
+
+    it "shows on the staff list and the rental page when the renter is deactivated, and not otherwise" do
+      log_in!(staff)
+      get admin_locker_rentals_path
+      expect(response.body).not_to include("Paid, renter deactivated")
+      get locker_rental_path(rental)
+      expect(response.body).not_to include("Paid, renter deactivated")
+
+      tenant.deactivate!
+      get admin_locker_rentals_path
+      expect(response.body).to include("Paid, renter deactivated: refund or cancel")
+      get locker_rental_path(rental)
+      expect(response.body).to include("Paid, renter deactivated: refund or cancel")
+    end
+
+    it "lets staff cancel it, which clears the badge" do
+      tenant.deactivate!
+      log_in!(staff)
+      patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
+      expect(rental.reload.state).to eq("cancelled")
+      get admin_locker_rentals_path
+      expect(response.body).not_to include("Paid, renter deactivated")
+    end
+  end
+
   describe "GET /locker_rentals/admin" do
     it "splits pending reviewing requests from dealt-with (await_payment/active) rentals for staff" do
       reviewing = create(:locker_rental, :reviewing)
