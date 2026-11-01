@@ -16,6 +16,7 @@ module Api
     # 422 validation_failed / parameter_missing, 423 account_locked, 429 rate_limited,
     # 500 internal_error (see json_internal_errors).
     class BaseController < ActionController::API
+      include RateLimitStore
       # Unhandled errors answer with a JSON 500 (and are reported) everywhere except
       # test, where they must stay visible to specs. A request spec turns it on with
       # `Api::V1::BaseController.json_internal_errors = true`. Declared first: the

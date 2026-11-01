@@ -67,7 +67,7 @@
           <h6 class="m-0 fw-bold">Change Email</h6>
         </div>
 
-        <%= form_tag change_email_users_path, method: :get do %>
+        <%= form_tag change_email_users_path, method: :post do %>
           <div class="mb-2">
             <%= label_tag :new_email, 'New Email Address', class: 'form-label small text-muted' %>
             <%= email_field_tag :new_email, '', { class: 'form-control form-control-sm', placeholder: 'name@example.com' } %>
@@ -76,6 +76,11 @@
           <div class="mb-3">
             <%= label_tag :confirm_new_email, 'Confirm Email', class: 'form-label small text-muted' %>
             <%= email_field_tag :confirm_new_email, '', { class: 'form-control form-control-sm', placeholder: 'name@example.com' } %>
+          </div>
+
+          <div class="mb-3">
+            <%= label_tag :current_password, 'Current Password', class: 'form-label small text-muted' %>
+            <%= password_field_tag :current_password, nil, { class: 'form-control form-control-sm', autocomplete: 'current-password', required: true } %>
           </div>
 
           <%= submit_tag 'Update Email', class: 'btn btn-outline-primary btn-sm w-100' %>

@@ -17,13 +17,11 @@ RSpec.describe "Google calendar webhook (gaps)", type: :request do
     expect(response).to have_http_status(:not_found)
   end
 
-  it "needs no session, token or CSRF token even with forgery protection on" do
-    original = ActionController::Base.allow_forgery_protection
-    ActionController::Base.allow_forgery_protection = true
-    expect { post "/google/calendar/webhook", headers: headers }.to have_enqueued_job(GoogleCalendarSyncJob)
+  it "needs no session, token or CSRF token (forgery protection is on in the test env)" do
+    expect(ActionController::Base.allow_forgery_protection).to be(true)
+    expect { post "/google/calendar/webhook", headers: headers, without_csrf_token: true }
+      .to have_enqueued_job(GoogleCalendarSyncJob)
     expect(response).to have_http_status(:ok)
-  ensure
-    ActionController::Base.allow_forgery_protection = original
   end
 
   it "enqueues for every non-sync state (exists, not_exists, anything else)" do

@@ -114,7 +114,7 @@ RSpec.describe "/api/v1/session", type: :request do
     end
 
     it "403s an inactive account" do
-      user.update_columns(active: false)
+      User.unscoped.where(id: user.id).update_all(active: false)
       login
       expect(response).to have_http_status(:forbidden)
       expect(error["code"]).to eq("account_inactive")
@@ -133,18 +133,16 @@ RSpec.describe "/api/v1/session", type: :request do
       expect(error["fields"]).to eq("password" => ["is required"])
     end
 
-    it "does not need or touch a CSRF token or cookies" do
-      ActionController::Base.allow_forgery_protection = true
+    it "does not need or touch a CSRF token or cookies (forgery protection is on in the test env)" do
+      expect(ActionController::Base.allow_forgery_protection).to be(true)
       login
       expect(response).to have_http_status(:created)
-    ensure
-      ActionController::Base.allow_forgery_protection = false
     end
 
     describe "rate limit" do
       let(:counts) { Hash.new(0) }
 
-      before { allow(Api::V1::SessionsController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 } }
+      before { allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 } }
 
       it "429s after 10 attempts in the shared password-sign-in budget" do
         10.times { api_post "/api/v1/session", { login: "nobody-here", password: "x" } }
@@ -275,7 +273,7 @@ RSpec.describe "/api/v1/session", type: :request do
     end
 
     it "401s for an account that became inactive or deleted" do
-      user.update_columns(active: false)
+      User.unscoped.where(id: user.id).update_all(active: false)
       refresh(first_refresh)
       expect(response).to have_http_status(:unauthorized)
     end

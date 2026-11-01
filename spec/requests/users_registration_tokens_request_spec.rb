@@ -145,7 +145,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(response).to redirect_to(root_path)
     end
 
-    it "still works with an expired cookie session (session_expiry skipped on create)" do
+    it "works for a guest (no session)" do
       post users_path, params: { user: registration_params }
       expect(response).to redirect_to(root_path)
     end
@@ -477,6 +477,48 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries).to be_empty
     end
 
+    it "a concurrent bump during the reset is an expected race: not reported, told to use the link again, link stays valid" do
+      allow_any_instance_of(User).to receive(:store_new_password!).and_wrap_original do |m, *args, **opts|
+        User.where(id: m.receiver.id).update_all("token_version = token_version + 1")
+        m.call(*args, **opts)
+      end
+      expect(Rails.error).not_to receive(:report)
+      params = reset_params(user)
+      patch reset_password_confirmation_users_path, params: params
+      expect(response).to redirect_to(reset_password_form_users_path(token: params[:token]))
+      expect(flash[:alert]).to eq("Your account changed while resetting the password. Please use the link again.")
+      expect(deliveries).to be_empty
+      allow_any_instance_of(User).to receive(:store_new_password!).and_call_original
+      patch reset_password_confirmation_users_path, params: params
+      expect(flash[:notice]).to start_with("Your password has been updated")
+    end
+
+    it "a double submit gets the neutral invalid-link message (the link no longer resolves), not 'use the link again'" do
+      params = reset_params(user)
+      allow_any_instance_of(User).to receive(:store_new_password!).and_wrap_original do |m, *args, **opts|
+        # the first submit commits between this request's token lookup and its write
+        User.where(id: m.receiver.id).update_all(
+          ["password = ?, token_version = token_version + 1", BCrypt::Password.create("Other-passw0rd#y", cost: 4).to_s]
+        )
+        m.call(*args, **opts)
+      end
+      patch reset_password_confirmation_users_path, params: params
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq("Your reset link is no longer valid. Please sign in or request a new link.")
+      expect(deliveries).to be_empty
+    end
+
+    it "a link that stops resolving because the account was soft-deleted gets the same neutral message (no account state revealed)" do
+      params = reset_params(user)
+      allow_any_instance_of(User).to receive(:store_new_password!).and_wrap_original do |m, *args, **opts|
+        User.unscoped.where(id: m.receiver.id).update_all("deleted = true, token_version = token_version + 1")
+        m.call(*args, **opts)
+      end
+      patch reset_password_confirmation_users_path, params: params
+      expect(response).to redirect_to(login_path)
+      expect(flash[:alert]).to eq("Your reset link is no longer valid. Please sign in or request a new link.")
+    end
+
     it "a reset does not lift an admin lock: the new password is saved and the login is still refused" do
       # FIXED: only the timed brute-force lockout is cleared by a reset
       user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)
@@ -535,17 +577,37 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
   end
 
-  describe "email change (GET /change_email, GET /confirm_edited_email)" do
+  # INF-02: both halves of the email change used to be GETs (no password,
+  # applied on a link click), so a cross-site navigation could mail a token for
+  # the victim's account to an attacker's address and then apply it. Now:
+  # POST /change_email needs the current password; the emailed link only shows a
+  # confirmation page (GET) that does nothing until the signed-in owner of the
+  # token submits it (POST); the token dies once the address changes.
+  describe "email change (POST /change_email, GET+POST /confirm_edited_email)" do
     let(:new_email) { "brand.new@example.com" }
+    let(:change_params) { { new_email: new_email, confirm_new_email: new_email, current_password: password } }
 
-    it "guest is redirected to login" do
-      get change_email_users_path, params: { new_email: new_email, confirm_new_email: new_email }
-      expect(response).to redirect_to(login_path(back_to: "/change_email?new_email=brand.new%40example.com&confirm_new_email=brand.new%40example.com"))
+    def confirm_form_token
+      Nokogiri::HTML(response.body).at_css("form[action='/confirm_edited_email'] input[name='token']")&.[]("value")
     end
 
-    it "sends a confirmation to the NEW address" do
+    it "a cross-site GET to /change_email does nothing: no token is mailed (it falls through to the profile catch-all, a 404)" do
       login!(user)
-      get change_email_users_path, params: { new_email: new_email, confirm_new_email: new_email }
+      get "/change_email", params: { new_email: new_email, confirm_new_email: new_email }
+      expect(response).to have_http_status(:not_found)
+      expect(deliveries).to be_empty
+      expect(user.reload.email).not_to eq(new_email)
+    end
+
+    it "guest is redirected to login" do
+      post change_email_users_path, params: change_params
+      expect(response.location).to start_with("http://www.example.com/login")
+      expect(deliveries).to be_empty
+    end
+
+    it "sends a confirmation to the NEW address when the current password is right" do
+      login!(user)
+      post change_email_users_path, params: change_params
       expect(response).to redirect_to(settings_admin_path)
       expect(flash[:notice]).to eq("A confirmation email has been sent to the new email")
       expect(deliveries.size).to eq(1)
@@ -554,9 +616,25 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(user.reload.email).not_to eq(new_email)
     end
 
+    it "is refused without the current password" do
+      login!(user)
+      post change_email_users_path, params: change_params.except(:current_password)
+      expect(response).to redirect_to(settings_admin_path)
+      expect(flash[:alert]).to eq("Please enter your current password.")
+      expect(deliveries).to be_empty
+    end
+
+    it "is refused with a wrong current password" do
+      login!(user)
+      post change_email_users_path, params: change_params.merge(current_password: "Wrong-passw0rd#")
+      expect(response).to redirect_to(settings_admin_path)
+      expect(flash[:alert]).to eq("Incorrect current password.")
+      expect(deliveries).to be_empty
+    end
+
     it "mismatch" do
       login!(user)
-      get change_email_users_path, params: { new_email: new_email, confirm_new_email: "x@y.z" }
+      post change_email_users_path, params: change_params.merge(confirm_new_email: "x@y.z")
       expect(flash[:alert]).to eq("This confirmation email isn't matching the new email")
       expect(deliveries).to be_empty
     end
@@ -564,27 +642,40 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     it "already used" do
       login!(user)
       other = create(:user, :regular_user)
-      get change_email_users_path, params: { new_email: other.email, confirm_new_email: other.email }
+      post change_email_users_path, params: change_params.merge(new_email: other.email, confirm_new_email: other.email)
       expect(flash[:alert]).to eq("This email is already used by a MakerRepo Account.")
+      expect(deliveries).to be_empty
     end
 
-    it "missing params" do
+    it "missing addresses" do
       login!(user)
-      get change_email_users_path
+      post change_email_users_path, params: { current_password: password }
       expect(flash[:alert]).to eq("There was a problem with the email, please try sending the email again.")
     end
 
-    it "confirm_edited_email requires a signed-in session (guest -> login)" do
+    it "the confirmation link requires a signed-in session (guest -> login)" do
       get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) }
       expect(response).to have_http_status(:found)
       expect(response.location).to start_with("http://www.example.com/login?back_to=")
       expect(user.reload.email).not_to eq(new_email)
     end
 
-    it "confirm_edited_email updates the address and notifies the OLD address" do
+    it "GET on the confirmation link only shows a confirmation page: nothing is applied or mailed" do
+      login!(user)
+      token = user.generate_email_change_token(new_email)
+      get confirm_edited_email_users_path, params: { token: token }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(ERB::Util.html_escape(new_email))
+      expect(confirm_form_token).to eq(token)
+      expect(Nokogiri::HTML(response.body).at_css("form[action='/confirm_edited_email']")["method"]).to eq("post")
+      expect(user.reload.email).not_to eq(new_email)
+      expect(deliveries).to be_empty
+    end
+
+    it "POST applies the change and notifies the OLD address" do
       old = user.email
       login!(user)
-      get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) }
+      post confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("The email has been updated to #{new_email} !")
       expect(user.reload.email).to eq(new_email)
@@ -595,18 +686,41 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "works end to end from the emailed link" do
       login!(user)
-      get change_email_users_path, params: { new_email: new_email, confirm_new_email: new_email }
+      post change_email_users_path, params: change_params
       token = CGI.unescape(deliveries.first.body.to_s[/confirm_edited_email\?token=([^"'&\s<]+)/, 1])
       get confirm_edited_email_users_path, params: { token: token }
+      post confirm_edited_email_users_path, params: { token: confirm_form_token }
       expect(user.reload.email).to eq(new_email)
     end
 
+    it "is single-use: the same token is refused once the address has changed" do
+      login!(user)
+      token = user.generate_email_change_token(new_email)
+      post confirm_edited_email_users_path, params: { token: token }
+      expect(user.reload.email).to eq(new_email)
+      deliveries.clear
+      user.update_columns(email: "changed.again@example.com")
+      post confirm_edited_email_users_path, params: { token: token }
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(user.reload.email).to eq("changed.again@example.com")
+      expect(deliveries).to be_empty
+    end
+
+    it "dies with a password change (the token is bound to the account's token_version)" do
+      token = user.generate_email_change_token(new_email)
+      user.store_new_password!("An0ther-passw0rd#x")
+      login!(user, pw: "An0ther-passw0rd#x")
+      post confirm_edited_email_users_path, params: { token: token }
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(user.reload.email).not_to eq(new_email)
+    end
+
     it "expires after 24 hours" do
-      # FIXED(D-I12): email-change tokens are purpose-scoped and expire
       login!(user)
       token = user.generate_email_change_token(new_email)
       travel 25.hours do
-        get confirm_edited_email_users_path, params: { token: token }
+        login!(user)
+        post confirm_edited_email_users_path, params: { token: token }
         expect(flash[:alert]).to eq(expired_alert)
       end
       expect(user.reload.email).not_to eq(new_email)
@@ -616,27 +730,15 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       login!(user)
       token = user.generate_email_change_token(new_email)
       travel 23.hours do
-        get confirm_edited_email_users_path, params: { token: token }
+        post confirm_edited_email_users_path, params: { token: token }
       end
       expect(user.reload.email).to eq(new_email)
     end
 
-    it "cannot be replayed once the address has changed" do
-      # FIXED(D-I12): the token is bound to the address it was issued for
-      login!(user)
-      token = user.generate_email_change_token(new_email)
-      get confirm_edited_email_users_path, params: { token: token }
-      user.update_columns(email: "changed.again@example.com")
-      get confirm_edited_email_users_path, params: { token: token }
-      expect(flash[:alert]).to eq(expired_alert)
-      expect(user.reload.email).to eq("changed.again@example.com")
-    end
-
-    it "is not applied when a different account follows the link, and says so" do
-      # FIXED(D-I12): a signed-in bystander can no longer apply a link to the user inside the token
+    it "a POST from a different signed-in account is refused, and says so" do
       bystander = create(:user, :regular_user)
       login!(bystander)
-      get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) }
+      post confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) }
       expect(flash[:alert]).to eq(
         "This link was requested by a different account. Please sign in as the account that requested the change."
       )
@@ -645,27 +747,34 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries).to be_empty
     end
 
+    it "the confirmation page for a different signed-in account offers nothing to submit" do
+      bystander = create(:user, :regular_user)
+      login!(bystander)
+      get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to start_with("This link was requested by a different account.")
+    end
+
     it "legacy two-token links (user_token + email_token) are refused with the expired message" do
       login!(user)
-      get confirm_edited_email_users_path,
-          params: { user_token: verifier.generate(user.id),
-                    email_token: Rails.application.message_verifier(:email).generate(new_email) }
+      post confirm_edited_email_users_path,
+           params: { user_token: verifier.generate(user.id),
+                     email_token: Rails.application.message_verifier(:email).generate(new_email) }
       expect(flash[:alert]).to eq(expired_alert)
       expect(user.reload.email).not_to eq(new_email)
     end
 
     it "a token for another purpose does not change the email" do
       login!(user)
-      get confirm_edited_email_users_path, params: { token: user.generate_token_for(:password_reset) }
+      post confirm_edited_email_users_path, params: { token: user.generate_token_for(:password_reset) }
       expect(flash[:alert]).to eq(expired_alert)
     end
 
-    it "confirm_edited_email to an address taken in the meantime fails cleanly: error flash, no mail, no change" do
-      # FIXED(D-I13, confirm_edited_email part only): was a 500 on the PG unique index plus a success mail
+    it "to an address taken in the meantime fails cleanly: error flash, no mail, no change" do
       other = create(:user, :regular_user)
       original = user.email
       login!(user)
-      get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(other.email) }
+      post confirm_edited_email_users_path, params: { token: user.generate_email_change_token(other.email) }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to start_with("The email could not be updated")
       expect(flash[:notice]).to be_nil
@@ -675,7 +784,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "tampered token: generic alert and no change" do
       login!(user)
-      get confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) + "x" }
+      post confirm_edited_email_users_path, params: { token: user.generate_email_change_token(new_email) + "x" }
       expect(flash[:alert]).to eq(expired_alert)
       expect(user.reload.email).not_to eq(new_email)
     end

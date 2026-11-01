@@ -28,7 +28,6 @@ module PageCrawl
     [%r{\A/project_proposals/(un)?join_project_proposal\z}, "mutates"],
     [%r{\A/proficient_projects/(approve|revoke)_project\z}, "mutates: approves/revokes"],
     [%r{\A/proficient_projects/generate_acquired_badge\z}, "mutates: issues a badge"],
-    [%r{\A/project_kits/:project_kit_id/mark_delivered\z}, "mutates"],
     [%r{\A/order_items/:order_item_id/revoke\z}, "mutates: revokes an order item (GET alias of destroy)"],
     [%r{\A/remove_avatar\z}, "mutates: removes the avatar"],
     [%r{\A/unlock_account\z}, "mutates: unlocks an account (token)"],

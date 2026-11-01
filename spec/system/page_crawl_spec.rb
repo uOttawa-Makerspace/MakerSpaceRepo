@@ -20,7 +20,11 @@ RSpec.describe "Page crawl (browser, JS entrypoints)", type: :system, skip_bulle
 
   def js_pages(world)
     probe = ActionDispatch::Integration::Session.new(Rails.application)
-    probe.post login_authentication_path, params: { username_email: admin.username, password: PageCrawl::PASSWORD }
+    # Sign in through the login form, with its CSRF token (forgery protection is on).
+    probe.get login_path
+    token = Nokogiri::HTML(probe.response.body).at_css("meta[name='csrf-token']")["content"]
+    probe.post login_authentication_path,
+               params: { username_email: admin.username, password: PageCrawl::PASSWORD, authenticity_token: token }
     PageCrawl.routes.filter_map do |route|
       next if PageCrawl.skip_reason(route)
 

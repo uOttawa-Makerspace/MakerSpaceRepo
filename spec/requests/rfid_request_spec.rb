@@ -407,7 +407,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "writes nothing once the tight per-IP rejected-tap limit is hit" do
       counts = Hash.new(0)
-      allow(RfidController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
       11.times { |i| tap_card_with(mac: "de:ad:be:ef:00:%02x" % i) }
       expect(response).to have_http_status(:too_many_requests)
       expect(trace_rows.count).to eq(10)
@@ -509,7 +509,7 @@ RSpec.describe "RFID endpoints", type: :request do
     let(:counts) { Hash.new(0) }
 
     before do
-      allow(RfidController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
     end
 
     it "allows 60 taps a minute per reader mac, then answers 429 and taps nothing" do
@@ -517,6 +517,59 @@ RSpec.describe "RFID endpoints", type: :request do
       expect { tap_card }.not_to change { [TapBoxLog.count, LabSession.count] }
       expect(response).to have_http_status(:too_many_requests)
       expect(body).to eq(error: "Too many requests")
+    end
+
+    # Production readers send real MACs and short non-MAC identifiers: no format gate, only bounds.
+    it "still taps and matches a reader registered with a 4-character identifier" do
+      short = create(:pi_reader, space: space, pi_mac_address: "ab12")
+      tap_card_with(mac: "AB12")
+      expect(response).to have_http_status(:ok)
+      expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
+      expect(counts.keys.grep(/mac:/).map(&:length).max).to be < 100
+      expect(short.reload.pi_mac_address).to eq("ab12")
+    end
+
+    it "still matches a MAC whose stored row has a trailing newline" do
+      pi_reader.update_column(:pi_mac_address, "#{pi_reader.pi_mac_address}\n")
+      tap_card_with(mac: pi_reader.pi_mac_address.strip)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "writes no key longer than about 100 characters for a 5000-character identifier, and matches no reader" do
+      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: "a" * 5_000 }, as: :json
+      expect(response).to have_http_status(:unauthorized)
+      expect(counts.keys).not_to be_empty
+      expect(counts.keys.grep(/mac:/)).to be_empty
+      expect(counts.keys.map(&:length).max).to be < 100
+      expect(LabSession.count).to eq(0)
+    end
+
+    it "treats an identifier with a control character as missing (ip key, rejected path, nothing stored)" do
+      ["aa:bb:\u0000cc", "aa\tbb:cc:dd:ee:ff", "ab\u001b12"].each do |bad|
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: bad }, as: :json
+        expect(response).to have_http_status(:unauthorized)
+      end
+      expect(counts.keys.grep(/mac:/)).to be_empty
+      expect(LabSession.count).to eq(0)
+    end
+
+    it "uses a fixed-length digest of the identifier in the per-reader key" do
+      tap_card
+      key = counts.keys.find { |k| k.include?("rfid:tap:mac:") }
+      expect(key).to eq("rate-limit:rfid:tap:mac:#{Digest::SHA256.hexdigest(pi_reader.pi_mac_address)[0, 32]}|ip:127.0.0.1")
+    end
+
+    # The per-reader limit runs before the per-IP one and its 429 halts the chain: a reader looping past
+    # 60/min does not consume the ceiling shared by every reader behind the same NAT egress IP.
+    it "does not count a reader's taps beyond its own 60/min against the shared per-IP ceiling" do
+      65.times { tap_card }
+      expect(response).to have_http_status(:too_many_requests)
+      expect(counts["rate-limit:rfid:tap-ip:127.0.0.1"]).to eq(60)
+
+      other = create(:pi_reader, space: space)
+      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: other.pi_mac_address }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(counts["rate-limit:rfid:tap-ip:127.0.0.1"]).to eq(61)
     end
 
     it "counts per reader, not globally" do

@@ -108,7 +108,7 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     let(:counts) { Hash.new(0) }
 
     before do
-      allow(HelpController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
     end
 
     def send!(as_headers = headers)

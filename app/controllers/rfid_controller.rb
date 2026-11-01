@@ -6,6 +6,13 @@ class RfidController < SessionsController
   # tap's params under :rfid and a tap without an rfid key made params[:rfid] a hash.
   wrap_parameters false
 
+  # The tap boxes (frozen firmware) send no CSRF token and no session cookie; they are
+  # authenticated by a registered reader's MAC (tap_reader). A tap that comes with a
+  # cookie session (the React app's staff path) is authenticated by that cookie, so
+  # it stays CSRF-checked (or goes through the legacy JSON exemption).
+  # One condition, not `only:` + `if:`: a skip with both is applied when EITHER holds.
+  skip_forgery_protection if: :tap_without_session?
+
   before_action :signed_in, only: %i[get_unset_rfids]
   before_action :grant_access, only: %i[get_unset_rfids]
 
@@ -14,6 +21,11 @@ class RfidController < SessionsController
   # own bucket and cannot lock the real door out) or per staff user, plus a coarse
   # 600/min per-IP ceiling (readers may share one NAT egress IP).
   RATE_LIMITED = -> { render json: { error: "Too many requests" }, status: :too_many_requests }
+  # The per-reader limit runs FIRST: its 429 halts the chain, so a reader looping past 60/min does not
+  # also count against the shared per-IP ceiling (readers behind one NAT egress IP would otherwise lose
+  # the ceiling to one misbehaving reader). The per-reader counter rows this creates are bounded: each key
+  # digests the identifier (fixed length) and lives a minute, and prune! runs every 5 minutes, so one IP
+  # leaves at most (its request rate x the prune interval) rows of fixed length.
   rate_limit to: 60, within: 1.minute, only: :card_number, name: "tap",
              by: -> { tap_rate_limit_key }, with: RATE_LIMITED
   rate_limit to: 600, within: 1.minute, only: :card_number, name: "tap-ip",
@@ -113,11 +125,18 @@ class RfidController < SessionsController
 
   private
 
-  # The caller's MAC as a normalized string, or nil (never a hash/array param).
+  # What the tap box sends as its identifier, bounded by PiReader.tap_identifier (the rule registration
+  # uses too): anything longer than 64 characters or with a control character is treated as missing, as a
+  # hash/array param already is: no reader matches it, it is counted against the caller's IP only, and
+  # nothing stores it. (The rate-limit key digests it, so its length is fixed whatever the input.)
   def tap_mac_address
     return @tap_mac_address if defined?(@tap_mac_address)
 
-    @tap_mac_address = PiReader.normalize_mac(params[:mac_address])
+    @tap_mac_address = PiReader.tap_identifier(params[:mac_address])
+  end
+
+  def tap_without_session?
+    action_name == "card_number" && session_user.nil?
   end
 
   def tap_reader
@@ -139,15 +158,15 @@ class RfidController < SessionsController
   end
 
   def rejected_taps_exceeded?
-    count = self.class.cache_store.increment("rate-limit:rfid:rejected:#{request.remote_ip}", 1, expires_in: 1.minute)
-    count.present? && count > REJECTED_TAPS_PER_MINUTE
+    count = RateLimitCounter.increment("rate-limit:rfid:rejected:#{request.remote_ip}", 1, expires_in: 1.minute)
+    count > REJECTED_TAPS_PER_MINUTE
   end
 
   def tap_rate_limit_key
     if tap_staff?
       "staff:#{current_user.id}"
     elsif tap_mac_address
-      "mac:#{tap_mac_address}|ip:#{request.remote_ip}"
+      "mac:#{Digest::SHA256.hexdigest(tap_mac_address)[0, 32]}|ip:#{request.remote_ip}"
     else
       "ip:#{request.remote_ip}"
     end

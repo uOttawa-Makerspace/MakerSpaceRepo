@@ -251,7 +251,7 @@ RSpec.describe "/api/v1/users", type: :request do
     describe "rate limit" do
       let(:counts) { Hash.new(0) }
 
-      before { allow(Api::V1::UsersController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 } }
+      before { allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 } }
 
       it "429s the 61st search in a minute, per user" do
         60.times { api_get "/api/v1/users", as: staff, params: { query: "zz" } }
@@ -443,7 +443,7 @@ RSpec.describe "/api/v1/users", type: :request do
 
   it "refuses a deactivated caller" do
     token = auth(staff)
-    staff.update_column(:active, false)
+    User.unscoped.where(id: staff.id).update_all(active: false)
     get "/api/v1/users/#{target.username}", headers: json_headers.merge(token)
     expect(response).to have_http_status(:unauthorized)
   end

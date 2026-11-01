@@ -161,7 +161,7 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
     let(:counts) { Hash.new(0) }
 
     before do
-      allow(Api::V1::SupportRequestsController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
     end
 
     it "allows 5 a minute per IP, then 429 with nothing created" do
@@ -183,7 +183,7 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
     end
 
     it "limits 20 an hour per IP" do
-      allow(Api::V1::SupportRequestsController.cache_store).to receive(:increment) do |key, *|
+      allow(RateLimitCounter).to receive(:increment) do |key, *|
         counts[key] += 1
         key.include?("ip-minute") || key.include?("user-minute") ? 1 : counts[key]
       end

@@ -3,8 +3,6 @@
 class SessionsController < ApplicationController
   include ActionView::Helpers::DateHelper
 
-  before_action :session_expiry, except: [:login_authentication]
-  before_action :update_activity_time
   before_action :current_user, only: [:login]
   before_action :authorized_repo_ids
   # Password-guess budget shared with SamlIdpController (same limit, window and
@@ -134,15 +132,6 @@ class SessionsController < ApplicationController
     end
   end
 
-  def session_expiry
-    get_session_time_left
-    sign_out if @session_time_left <= 0
-  end
-
-  def update_activity_time
-    session[:expires_at] = 72.hours.from_now
-  end
-
   def authorized_repo_ids
     session[:authorized_repo_ids] ||= []
   end
@@ -170,9 +159,5 @@ class SessionsController < ApplicationController
     return if repository.nil? || !repository.private? || repository_unlocked?(repository)
 
     redirect_to password_entry_repository_path(repository.user_username, repository.id)
-  end
-
-  def get_session_time_left
-    @session_time_left = SessionAuthenticator.seconds_left(session)
   end
 end

@@ -11,6 +11,11 @@ module MakerSpaceRepo
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.2
 
+    # Assigning an attr_readonly attribute on a persisted record raises
+    # ActiveRecord::ReadonlyAttributeError instead of being silently dropped on save
+    # (User#active, OrderItem#proficient_project_id, WalkInSafetySheet#supervisor_names and #supervisor_contacts).
+    config.active_record.raise_on_assign_to_attr_readonly = true
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

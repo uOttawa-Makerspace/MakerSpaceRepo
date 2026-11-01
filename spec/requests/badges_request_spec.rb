@@ -142,18 +142,25 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
     end
   end
 
-  describe "GET /development_programs/join_development_program" do
+  describe "POST /development_programs/join_development_program" do
+    it "a GET (e.g. a cross-site link) does not join: there is no GET route" do
+      user = log_in!(create(:user, :regular_user))
+      get "/development_programs/join_development_program"
+      expect(response).to have_http_status(:not_found)
+      expect(user.programs.count).to eq(0)
+    end
+
     it "joins the program and redirects with a notice" do
       user = log_in!(create(:user, :regular_user))
-      expect { get join_development_program_development_programs_path }.to change { user.programs.count }.by(1)
+      expect { post join_development_program_development_programs_path }.to change { user.programs.count }.by(1)
       expect(response).to redirect_to(development_programs_path)
       expect(flash[:notice]).to eq("You've joined the Development Program")
     end
 
     it "joining twice is a no-op with the already-joined alert" do
       user = log_in!(create(:user, :regular_user))
-      get join_development_program_development_programs_path
-      expect { get join_development_program_development_programs_path }.not_to change(Program, :count)
+      post join_development_program_development_programs_path
+      expect { post join_development_program_development_programs_path }.not_to change(Program, :count)
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq("You already joined the Program. You can already access it!")
       expect(user.dev_program?).to be(true)

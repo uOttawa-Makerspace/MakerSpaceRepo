@@ -5,7 +5,7 @@ require Rails.root.join("lib/jwt_authenticator")
 module ApplicationHelper
   # Keys that are not about who is signed in and must survive the session
   # reset done on sign-in (sign-out keeps only the locale).
-  SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale expires_at authorized_repo_ids selected_dates order_id].freeze
+  SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale authorized_repo_ids selected_dates order_id].freeze
 
   # Every login path (HTML, JSON, SAML) goes through here, so the refusals live
   # here: a lock still in effect (checked BEFORE the password so a locked account
@@ -22,6 +22,7 @@ module ApplicationHelper
       kept.each { |key, value| session[key] = value }
       session[:user_id] = user.id
       session[:token_version] = user.token_version
+      SessionAuthenticator.start(session) # a new session gets a full idle window
       reset_auth_memo # a user memoized earlier in this request (set_last_seen_at) is stale now
     end
     user
@@ -45,10 +46,13 @@ module ApplicationHelper
     @user ||= User.new
   end
 
-  # The cookie-session user, or nil. A session whose stored token_version no
-  # longer matches the user's (password changed/reset elsewhere; a session
-  # without the key is version 0), or whose user was deactivated (D-I03), is
-  # ended like an expired session.
+  # The cookie-session user, or nil. A session that is idle-expired (72h), whose
+  # stored token_version no longer matches the user's (password changed/reset
+  # elsewhere; a session without the key is version 0), or whose user was
+  # deactivated (D-I03) is ended (SessionAuthenticator.valid_for?). A valid
+  # session's idle window is extended here, whatever the controller, but only by
+  # real user activity (user_activity?): background polling must not keep an
+  # abandoned tab signed in forever.
   def session_user
     return @session_user if defined?(@session_user)
 
@@ -57,11 +61,62 @@ module ApplicationHelper
 
     user = User.find_by(id: session[:user_id])
     if SessionAuthenticator.valid_for?(session, user)
+      SessionAuthenticator.touch(session) if user_activity?
       @session_user = user
     else
       sign_out
     end
     @session_user
+  end
+
+  # A person using the app: opening a page or submitting something (any non-GET
+  # request). Not a background poll. The browser says which a GET is: Sec-Fetch-Mode
+  # is "navigate" for a page navigation and "cors"/"same-origin" for fetch() and
+  # XHR, whatever Accept or X-Requested-With the script sends. Turbo Drive visits
+  # are fetches too, so they are recognised by Turbo's own headers (not a frame
+  # load, which is a partial page). A speculative load (prefetch/prerender) counts: it
+  # happens while the person types an address or hovers a link, and activating it
+  # sends no new request. A client that sends no Sec-Fetch-Mode (old browsers)
+  # falls back to: not an XHR and answered with HTML.
+  def user_activity?
+    return true unless request.get? || request.head?
+
+    mode = request.headers["Sec-Fetch-Mode"]
+    return mode == "navigate" || turbo_visit? if mode.present?
+
+    !request.xhr? && request.format.html?
+  end
+
+  def turbo_visit?
+    request.headers["X-Turbo-Request-Id"].present? &&
+      request.headers["Turbo-Frame"].blank?
+  end
+
+  ROLE_FLAGS = %i[admin? staff? volunteer? dev_program?].freeze
+
+  # One of the current user's role flags, read at most once per request and only if
+  # asked for (volunteer? and dev_program? are queries). The per-user caches (the
+  # home page fragments, the announcements bar) key on them, so a promotion,
+  # demotion or program join changes what is rendered at once, not after the
+  # fragment's expiry.
+  def role_flag(name)
+    @role_flags ||= {}
+    return @role_flags[name] if @role_flags.key?(name)
+
+    @role_flags[name] = current_user.public_send(name)
+  end
+
+  # [admin?, staff?, volunteer?, dev_program?] of the current user.
+  def current_role_flags
+    ROLE_FLAGS.map { |name| role_flag(name) }
+  end
+
+  def current_user_volunteer?
+    role_flag(:volunteer?)
+  end
+
+  def current_user_dev_program?
+    role_flag(:dev_program?)
   end
 
   def signed_in?
@@ -102,7 +157,7 @@ module ApplicationHelper
   # Forget who was resolved earlier in this request (cookie user, current user,
   # Bearer user) so the next call looks again. Used when the session changes.
   def reset_auth_memo
-    %i[@session_user @user @jwt_user].each do |ivar|
+    %i[@session_user @user @jwt_user @role_flags].each do |ivar|
       remove_instance_variable(ivar) if instance_variable_defined?(ivar)
     end
   end

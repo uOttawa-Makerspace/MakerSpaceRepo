@@ -79,11 +79,33 @@ RSpec.describe "Login back_to for guests", type: :request do
       expect(response).to redirect_to("/carts")
     end
 
-    ["https://evil.com", "//evil.com", "/\\evil.com", "///evil.com"].each do |bad|
+    it "follows a same-site path with a query" do
+      login_with("/carts?tab=1&q=a%5Cb")
+      expect(response).to redirect_to("/carts?tab=1&q=a%5Cb")
+    end
+
+    ["https://evil.com", "//evil.com", "/\\evil.com", "///evil.com", "\\evil.com", "\\/evil.com", "/\t/evil.com", " //evil.com"].each do |bad|
       it "lands on root for #{bad}" do
         login_with(bad)
         expect(response).to redirect_to(root_path)
       end
+    end
+  end
+
+  describe "unsafe_redirect_path? (the one rule behind back_to and the stale-form referer)" do
+    let(:controller) { ApplicationController.new }
+
+    ["//evil.com", "\\evil.com", "/\\evil.com", "/a\\b", "/a\\b?x=1", "/a#x\x01", "\\/evil.com", "\\\\evil.com", "/\t/evil.com", "\t//evil.com",
+     " //evil.com", "\n\\\\evil.com", "/\r\n/evil.com", "\x00//evil.com"].each do |bad|
+      it("refuses #{bad.inspect}") { expect(controller.send(:unsafe_redirect_path?, bad)).to be(true) }
+    end
+
+    ["/carts", "/", "/a//b", "/search?q=//x", "/carts?tab=1&q=a%5Cb", "/search?q=a\\b", "/a/b?x=\\", "/a#f\\g", ""].each do |ok|
+      it("allows #{ok.inspect}") { expect(controller.send(:unsafe_redirect_path?, ok)).to be(false) }
+    end
+
+    it "does not raise on invalid UTF-8" do
+      expect(controller.send(:unsafe_redirect_path?, "/\xFF//x".dup.force_encoding("UTF-8"))).to be(false)
     end
   end
 

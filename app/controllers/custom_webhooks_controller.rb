@@ -4,6 +4,10 @@ require Rails.root.join("lib/report_throttle")
 
 # Shopify webhooks
 class CustomWebhooksController < ApplicationController
+  # Shopify sends no CSRF token and no session cookie; the caller is authenticated by
+  # the X-Shopify-Hmac-Sha256 signature below (ShopifyApp::WebhookVerification, which
+  # also skips the check, but only outside development, so the skip is stated here).
+  skip_forgery_protection
   # Webhook verification is on in every environment, test included, so specs sign their
   # payloads and can detect its removal. Only development is exempt (decided once, at load
   # time) so unsigned webhooks can be replayed locally (e.g. with curl) without the secret.

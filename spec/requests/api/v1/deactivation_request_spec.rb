@@ -14,10 +14,10 @@ RSpec.describe "/api/v1 refresh tokens and deactivation", type: :request do
     token = ApiRefreshToken.issue!(user)
     other = ApiRefreshToken.issue!(create(:user))
 
-    user.update!(active: false)
+    user.deactivate!
     expect(ApiRefreshToken.where(user_id: user.id).where(revoked_at: nil)).to be_empty
 
-    user.update!(active: true)
+    user.reactivate!
     refresh(token.raw_token)
     expect(response).to have_http_status(:unauthorized)
     expect(other.reload.revoked_at).to be_nil

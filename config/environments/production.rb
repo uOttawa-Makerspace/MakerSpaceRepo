@@ -50,6 +50,12 @@ Rails.application.configure do
     config.logger = ActiveSupport::TaggedLogging.new(logger)
   end
 
+  # Rails.cache is Solid Cache (the solid_cache_entries table in the primary
+  # database; config/cache.yml): fragments and other cached values shared by every
+  # worker. Not for counting: rate limits use RateLimitCounter (an atomic upsert),
+  # because Solid Cache's increment cannot serialize a key that has no row yet.
+  config.cache_store = :solid_cache_store
+
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 end

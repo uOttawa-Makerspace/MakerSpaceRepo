@@ -42,9 +42,9 @@ RSpec.describe CredentialAuthenticator do
   end
 
   it "refuses inactive and unconfirmed accounts after a correct password" do
-    user.update_columns(active: false)
+    User.unscoped.where(id: user.id).update_all(active: false)
     expect(described_class.call(user.username, password).refusal).to eq(:inactive)
-    user.update_columns(active: true, confirmed: false)
+    User.unscoped.where(id: user.id).update_all(active: true, confirmed: false)
     expect(described_class.call(user.username, password).refusal).to eq(:unconfirmed)
   end
 

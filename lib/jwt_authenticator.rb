@@ -99,24 +99,44 @@ module ApiAccessToken
   end
 end
 
-# The matching rule for cookie sessions: the session's stored token_version
-# (absent = 0, a session from before the column existed) must equal the user's,
-# and the user must be eligible (AuthEligibility). Used by
-# ApplicationHelper#session_user and DirectUploadAuthentication (which also
-# applies the idle expiry).
+# The one rule for "is this cookie session still valid?": not idle-expired
+# (the 72h sliding window), the session's stored token_version (absent = 0, a
+# session from before the column existed) equal to the user's, and the user
+# eligible (AuthEligibility). Every place that resolves a session user goes
+# through valid_for?: ApplicationHelper#session_user (every controller, SAML
+# included), ApplicationCable::Connection and DirectUploadAuthentication. So no
+# controller can skip the idle expiry (INF-04). session_user also extends the
+# window of a valid session (touch), so activity on any controller counts.
 module SessionAuthenticator
+  IDLE_TIMEOUT = 72.hours
+  # The window is rewritten at most this often, not on every request (each
+  # rewrite is a session write, i.e. a new cookie).
+  TOUCH_INTERVAL = 5.minutes
+
   module_function
 
   def valid_for?(session, user)
+    return false if expired?(session)
+
     AuthEligibility.allowed?(user) && session.fetch(:token_version, 0) == user.token_version
   end
 
-  # The 72h sliding idle window (session[:expires_at] is refreshed by
-  # SessionsController#update_activity_time). A session without the key has a
-  # full window. Shared by SessionsController#session_expiry and the
-  # direct-upload module, which has no such before_action.
+  # Starts a full idle window (sign-in).
+  def start(session)
+    session[:expires_at] = IDLE_TIMEOUT.from_now
+  end
+
+  # Extends the window of a session already found valid (ApplicationHelper#
+  # session_user; never called for an expired one), at most every TOUCH_INTERVAL.
+  def touch(session)
+    return if session[:expires_at] && seconds_left(session) > (IDLE_TIMEOUT - TOUCH_INTERVAL).to_i
+
+    start(session)
+  end
+
+  # A session without the key has a full window.
   def seconds_left(session)
-    expire_time = session[:expires_at] || 72.hours.from_now
+    expire_time = session[:expires_at] || IDLE_TIMEOUT.from_now
     (expire_time.to_time - Time.zone.now).to_i
   end
 

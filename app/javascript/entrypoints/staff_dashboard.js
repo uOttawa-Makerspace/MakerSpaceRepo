@@ -50,13 +50,12 @@ async function refreshCapacity() {
   const el = document.querySelector(".max_capacity_alert");
   if (!el) return;
 
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
   try {
+    // A GET: no CSRF token (tokens go on non-GET requests only, src/csrf.js).
     const response = await fetch("/staff_dashboard/refresh_capacity", {
       headers: {
         "X-Requested-With": "XMLHttpRequest",
         Accept: "text/html",
-        "X-CSRF-Token": csrfToken || "",
       },
     });
     if (response.ok) {
@@ -125,28 +124,6 @@ function userTapIn(user) {
 document.addEventListener("turbo:load", () => {
   setupModal();
   refreshCapacity();
-
-  const signinForm = document.getElementById("sign_in_user_fastsearch");
-  if (signinForm) {
-    signinForm.onsubmit = () => {
-      const selectVal = document.getElementById("user_dashboard_select")?.value;
-      const targetInput = document.getElementById(
-        "sign_in_user_fastsearch_username",
-      );
-      if (targetInput && selectVal) targetInput.value = selectVal;
-    };
-  }
-
-  const searchForm = document.getElementById("search_user_fastsearch");
-  if (searchForm) {
-    searchForm.onsubmit = () => {
-      const selectVal = document.getElementById("user_dashboard_select")?.value;
-      const targetInput = document.getElementById(
-        "search_user_fastsearch_username",
-      );
-      if (targetInput && selectVal) targetInput.value = selectVal;
-    };
-  }
 
   const excelInput = document.querySelector(".form-control-input-excel");
   if (excelInput) {

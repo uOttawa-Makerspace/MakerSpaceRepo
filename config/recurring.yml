@@ -22,6 +22,10 @@ production: &production
     command: "ApiRefreshToken.prune!"
     schedule: every day at 3:30am
 
+  prune_rate_limit_counters:
+    command: "RateLimitCounter.prune!"
+    schedule: every 5 minutes
+
   # Reclaims Shopify drafts no job order points at (orphans of a rollback after a Shopify create).
   # Same code as `rake job_orders:sweep_orphan_drafts` (JobOrder::DraftSweep).
   job_order_draft_sweep:

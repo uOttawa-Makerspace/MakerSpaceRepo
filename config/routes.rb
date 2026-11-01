@@ -57,7 +57,7 @@ Rails.application.routes.draw do
 
   resources :videos, only: %i[index new create destroy]
   resources :project_kits, only: %i[index new create destroy] do
-    get :mark_delivered
+    patch :mark_delivered
     collection { get :populate_kit_users }
   end
 
@@ -559,7 +559,7 @@ Rails.application.routes.draw do
 
   resources :development_programs, only: [:index] do
     collection do
-      get :join_development_program
+      post :join_development_program
       get :skills
       get :all_badges
     end
@@ -574,7 +574,6 @@ Rails.application.routes.draw do
   resources :proficient_projects do
     get :proficient_project_modal
     collection do
-      get :join_development_program
       get :requests
       put :complete_project
       post :approve_project
@@ -694,7 +693,11 @@ Rails.application.routes.draw do
   resources :users, path: "/", param: :username, except: %i[edit destroy] do
     collection do
       get :resend_confirmation
+      # INF-02: the emailed link (GET) only shows a confirmation page; the
+      # change is applied by its POST, and requesting one needs a POST with
+      # the current password.
       get :confirm_edited_email
+      post :confirm_edited_email, action: :apply_edited_email
       get :reset_password_form
       patch :reset_password_confirmation
       get :confirm
@@ -703,7 +706,7 @@ Rails.application.routes.draw do
       delete :remove_avatar
       post :flag
       post :unflag
-      get :change_email
+      post :change_email
       put :remove_flag
       get :unlock_account
       get :search, path: "/users/search"

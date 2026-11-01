@@ -9,6 +9,11 @@ RSpec.describe User, "#admin_lock! / #admin_unlock!" do
     expect(user.locked_until).to be > 90.years.from_now
   end
 
+  it "raises when the row is gone, never a silent no-op (the unconditional bump)" do
+    User.unscoped.where(id: user.id).delete_all
+    expect { user.admin_lock! }.to raise_error(ActiveRecord::RecordNotFound)
+  end
+
   it "keeps a concurrent token_version bump (e.g. a password reset between the load and the lock)" do
     stale = User.find(user.id) # loaded at version 0
     User.where(id: user.id).update_all("token_version = token_version + 1") # concurrent reset

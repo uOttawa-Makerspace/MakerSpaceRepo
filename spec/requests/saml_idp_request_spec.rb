@@ -10,12 +10,11 @@ require "rails_helper"
 #
 # Gate facts (verified in the controller, not assumed):
 #  * SamlIdpController < ApplicationController (NOT SessionsController): no
-#    session_expiry/activity hooks.
+#    activity hook; the idle expiry applies through session_user (INF-04).
 #  * `enforce_saml_request` halts on the gem's validity verdict (D-R13): 400
 #    for a missing/garbage request, 403 for an unknown issuer / foreign ACS.
-#  * `protect_from_forgery with: :exception` is declared here, unlike the
-#    app-wide (ineffective, D-B26) declaration, so CSRF is enforced for
-#    POST /saml/auth when forgery protection is enabled.
+#  * `protect_from_forgery with: :exception` is re-declared here, so CSRF is
+#    enforced for POST /saml/auth without the app-wide legacy JSON exemption.
 RSpec.describe "SAML IdP", type: :request do
   include Chunk18Helpers
   include SamlAuthnRequestHelper
@@ -367,7 +366,7 @@ RSpec.describe "SAML IdP", type: :request do
       end
 
       it "refuses an INACTIVE account" do
-        user.update!(active: false)
+        User.where(id: user.id).update_all(active: false)
         post_auth(submit: "sign_in", username: user.username, password: password)
         expect(c18_saml_response_xml).to be_nil
         expect(response.body).to include("Your account is inactive.")
@@ -378,7 +377,7 @@ RSpec.describe "SAML IdP", type: :request do
     context "rate limit (D-R14)" do
       let(:counts) { Hash.new(0) }
 
-      before { allow(SamlIdpController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 } }
+      before { allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 } }
 
       it "allows 10 password submissions, then refuses even the correct password with 429 and no assertion" do
         10.times do
@@ -907,18 +906,11 @@ RSpec.describe "SAML IdP", type: :request do
     end
 
     context "CSRF" do
-      around do |example|
-        original = ActionController::Base.allow_forgery_protection
-        ActionController::Base.allow_forgery_protection = true
-        example.run
-      ensure
-        ActionController::Base.allow_forgery_protection = original
-      end
-
-      it "rejects a POST without an authenticity token (this controller enforces CSRF, unlike the app-wide declaration)" do
+      it "rejects a POST without an authenticity token" do
         c18_sign_in(:regular)
-        post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }
-        expect(response).to have_http_status(:unprocessable_content)
+        post "/saml/auth", params: { SAMLRequest: authn_request, submit: "current_user" }, without_csrf_token: true
+        expect(response).to have_http_status(:see_other)
+        expect(flash[:alert]).to eq("Your session changed; please try again.")
         expect(c18_saml_response_xml).to be_nil
       end
     end

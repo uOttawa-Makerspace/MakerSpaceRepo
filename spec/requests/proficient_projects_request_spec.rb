@@ -572,12 +572,19 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(response.body).to eq("No badges will be acquired")
     end
 
-    it "join_development_program creates a Program row once, then alerts" do
+    it "has no join_development_program route of its own (joining is POST /development_programs/join_development_program)" do
       user = content_sign_in_as(:regular)
-      expect { get join_development_program_proficient_projects_path }.to change { user.programs.count }.by(1)
+      get "/proficient_projects/join_development_program"
+      expect(response).to have_http_status(:not_found)
+      expect(user.programs.count).to eq(0)
+    end
+
+    it "join_development_program (POST, development_programs) creates a Program row once, then alerts" do
+      user = content_sign_in_as(:regular)
+      expect { post join_development_program_development_programs_path }.to change { user.programs.count }.by(1)
       expect(response).to redirect_to(development_programs_path)
       expect(flash[:notice]).to eq("You've joined the Development Program")
-      expect { get join_development_program_proficient_projects_path }.not_to change(Program, :count)
+      expect { post join_development_program_development_programs_path }.not_to change(Program, :count)
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq("You already joined the Program. You can already access it!")
     end

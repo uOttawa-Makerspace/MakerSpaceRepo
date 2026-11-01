@@ -261,7 +261,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       let(:counts) { Hash.new(0) }
 
       before do
-        allow(RepositoriesController.cache_store).to receive(:increment) { |key, *| counts[key] += 1 }
+        allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
       end
 
       def guess(r = secret, password: "wrong")
