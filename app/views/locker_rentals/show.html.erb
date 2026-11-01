@@ -22,8 +22,8 @@
 <% if held_payments.any? %>
     <div class="alert alert-danger" role="alert">
         <strong><%= t('lockers.held_payments.alert_title') %></strong>
-        <% held_payments.map(&:hold_reason).uniq.each do |reason| %>
-            <div><%= t("lockers.held_payments.reasons.#{reason}") %></div>
+        <% held_payments.map { |payment| held_payment_instruction(payment, @locker_rental) }.uniq.each do |text| %>
+            <div><%= text %></div>
         <% end %>
     </div>
 <% end %>
@@ -307,7 +307,7 @@ end
                                         <td>
                                             <%= t("lockers.held_payments.statuses.#{payment.status}") %>
                                             <% if payment.held? %>
-                                                <div class="small text-muted"><%= t('lockers.held_payments.reason') %>: <%= t("lockers.held_payments.reasons.#{payment.hold_reason}") %></div>
+                                                <div class="small text-muted"><%= t('lockers.held_payments.reason') %>: <%= held_payment_instruction(payment, @locker_rental) %></div>
                                             <% elsif payment.hold_reason %>
                                                 <div class="small text-muted"><%= t('lockers.held_payments.was_held', reason: t("lockers.held_payments.past_reasons.#{payment.hold_reason}")) %></div>
                                             <% end %>

@@ -69,6 +69,18 @@ RSpec.describe LockerPayment, type: :model do
     end
   end
 
+  describe ".money" do
+    it "parses Shopify strings and rejects malformed, negative and out-of-range values" do
+      expect(described_class.money("12.345")).to eq(BigDecimal("12.35"))
+      expect(described_class.money(nil)).to be_nil
+      expect(described_class.money("")).to be_nil
+      ["abc", "NaN", "Infinity", "-1", "100000000", "1e30"].each do |bad|
+        expect { described_class.money(bad) }.to raise_error(ArgumentError), bad
+      end
+      expect(described_class.money("99999999.99")).to eq(BigDecimal("99999999.99"))
+    end
+  end
+
   describe "#resolve!" do
     it "marks a held payment refunded / dismissed with who, when and the note, keeping the hold reason" do
       %w[refunded dismissed].each do |resolution|
@@ -79,6 +91,19 @@ RSpec.describe LockerPayment, type: :model do
         )
         expect(payment.resolved_at).to be_present
       end
+    end
+
+    it "coerces the note to a string and truncates it" do
+      [["x" * 900, "x" * 500], [["a", "b"], '["a", "b"]'], [{ "k" => "v" }, { "k" => "v" }.to_s], ["  ", nil]].each do |input, expected|
+        payment = create(:locker_payment, :held)
+        payment.resolve!("dismissed", by: staff, note: input)
+        expect(payment.reload.resolution_note).to eq(expected)
+      end
+    end
+
+    it "accepts already_paid as a hold reason (database CHECK included)" do
+      expect(create(:locker_payment, :held, hold_reason: "already_paid")).to be_held
+      expect { insert_row(status: "held", hold_reason: "already_paid", resolved_at: nil) }.not_to raise_error
     end
 
     it "cannot resolve an already resolved or applied payment, nor with an unknown resolution" do

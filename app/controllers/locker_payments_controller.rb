@@ -12,15 +12,22 @@ class LockerPaymentsController < SessionsController
     rental = LockerRental.find(params[:locker_rental_id])
     payment = rental.locker_payments.find(params[:id])
 
-    case params[:resolution].to_s
-    when *LockerPayment::RESOLUTIONS
-      if payment.resolve!(params[:resolution], by: current_user, note: params[:resolution_note])
-        redirect_to rental, notice: t("lockers.held_payments.resolved_#{payment.status}")
+    # Under the rental lock, like the assignment that settles payments: resolving and settling are serialised.
+    outcome = LockerRental.transaction do
+      rental.lock!
+      if LockerPayment::RESOLUTIONS.exclude?(params[:resolution].to_s)
+        :invalid
+      elsif payment.resolve!(params[:resolution], by: current_user, note: params[:resolution_note])
+        :resolved
       else
-        redirect_to rental, alert: t('lockers.held_payments.already_resolved')
+        :already_resolved
       end
-    else
-      redirect_to rental, alert: t('lockers.held_payments.invalid_resolution')
+    end
+
+    case outcome
+    when :resolved then redirect_to rental, notice: t("lockers.held_payments.resolved_#{payment.status}")
+    when :already_resolved then redirect_to rental, alert: t('lockers.held_payments.already_resolved')
+    else redirect_to rental, alert: t('lockers.held_payments.invalid_resolution')
     end
   end
 

@@ -710,6 +710,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_01_000002) do
     t.string "currency"
     t.string "hold_reason"
     t.bigint "locker_rental_id", null: false
+    t.decimal "order_total", precision: 10, scale: 2
     t.datetime "paid_at", null: false
     t.string "resolution_note"
     t.datetime "resolved_at"
@@ -722,7 +723,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_01_000002) do
     t.index ["resolved_by_id"], name: "index_locker_payments_on_resolved_by_id"
     t.index ["shopify_order_id"], name: "index_locker_payments_on_shopify_order_id", unique: true
     t.check_constraint "(status::text = 'held'::text) = (resolved_at IS NULL)", name: "locker_payments_resolved_unless_held_check"
-    t.check_constraint "hold_reason IS NULL OR (hold_reason::text = ANY (ARRAY['renter_ineligible'::character varying, 'rental_cancelled'::character varying, 'not_activatable'::character varying]::text[]))", name: "locker_payments_hold_reason_check"
+    t.check_constraint "hold_reason IS NULL OR (hold_reason::text = ANY (ARRAY['renter_ineligible'::character varying, 'rental_cancelled'::character varying, 'not_activatable'::character varying, 'already_paid'::character varying]::text[]))", name: "locker_payments_hold_reason_check"
     t.check_constraint "status::text <> 'held'::text OR hold_reason IS NOT NULL", name: "locker_payments_held_has_reason_check"
     t.check_constraint "status::text = ANY (ARRAY['applied'::character varying, 'held'::character varying, 'refunded'::character varying, 'dismissed'::character varying]::text[])", name: "locker_payments_status_check"
   end

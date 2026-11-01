@@ -12,8 +12,25 @@ class LockerPayment < ApplicationRecord
        { applied: "applied", held: "held", refunded: "refunded", dismissed: "dismissed" },
        validate: true
   enum :hold_reason,
-       { renter_ineligible: "renter_ineligible", rental_cancelled: "rental_cancelled", not_activatable: "not_activatable" },
+       { renter_ineligible: "renter_ineligible", rental_cancelled: "rental_cancelled", not_activatable: "not_activatable",
+         # a second payment for a rental that is already active and paid: a duplicate charge, to refund
+         already_paid: "already_paid" },
        validate: { allow_nil: true }
+
+  NOTE_MAX_LENGTH = 500
+  MONEY_MAX = BigDecimal("99999999.99") # precision 10, scale 2
+
+  # A Shopify money string/number as a BigDecimal with 2 decimals; nil when blank. Raises ArgumentError for
+  # anything malformed, negative or out of range for the column, so the caller can store nil and report it.
+  def self.money(value)
+    return nil if value.blank?
+
+    amount = BigDecimal(value.to_s.strip, exception: false)
+    raise ArgumentError, "malformed amount" if amount.nil? || !amount.finite?
+    raise ArgumentError, "amount out of range" if amount.negative? || amount.round(2) > MONEY_MAX
+
+    amount.round(2)
+  end
 
   # What staff may resolve a held payment as.
   RESOLUTIONS = %w[refunded dismissed].freeze
@@ -44,7 +61,7 @@ class LockerPayment < ApplicationRecord
 
     now = Time.current
     changed = self.class.held.where(id: id).update_all(
-      status: resolution.to_s, resolved_at: now, resolved_by_id: by.id, resolution_note: note.presence, updated_at: now
+      status: resolution.to_s, resolved_at: now, resolved_by_id: by.id, resolution_note: note.to_s.strip.first(NOTE_MAX_LENGTH).presence, updated_at: now
     )
     reload if changed == 1
     changed == 1

@@ -186,9 +186,16 @@ class LockerRentalsController < SessionsController
       end
     when :saved
       @locker_rental.notify_after_commit
+      # Committed; only now the Shopify call (no transaction, no row lock held)
+      draft_synced = @locker_rental.sync_shopify_draft_order_after_commit
       respond_to do |format|
         format.html do
-          flash[:notice] = 'Locker rental updated'
+          if draft_synced
+            flash[:notice] = 'Locker rental updated'
+          else
+            flash[:alert] = 'Locker rental cancelled, but its Shopify checkout could not be removed. ' \
+                            'A payment made on it will appear under "Paid, needs a decision". The error was reported.'
+          end
           redirect_back fallback_location: :locker_rentals
         end
         format.json { head :no_content }
@@ -317,7 +324,7 @@ class LockerRentalsController < SessionsController
   def unknown_renter_username?
     username = params.dig(:locker_rental, :rented_by_username)
     current_user.staff? && username.present? && params.dig(:locker_rental, :rented_by_id).blank? &&
-      !User.exists?(username: username.to_s)
+      !User.unscoped.exists?(username: username.to_s)
   end
 
   def locker_rental_params
@@ -355,7 +362,7 @@ class LockerRentalsController < SessionsController
       # FIXME replace that search with a different one, return ID instead
       # If username is given (since search can do that)
       rented_by_user =
-        User.find_by(username: params.dig(:locker_rental, :rented_by_username))
+        User.unscoped.find_by(username: params.dig(:locker_rental, :rented_by_username))
       if rented_by_user
         # then convert to user id
         admin_params.reverse_merge!(rented_by_id: rented_by_user.id)

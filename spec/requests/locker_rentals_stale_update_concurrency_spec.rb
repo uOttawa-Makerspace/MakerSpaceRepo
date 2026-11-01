@@ -103,4 +103,55 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
     expect(assigned.size).to eq(1)
     expect(rental.reload).to be_active
   end
+
+  it "calls Shopify to remove the draft only after the cancellation committed: no transaction (no row lock) is open" do
+    rental.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9")
+    open_during_call = []
+    allow(ShopifyConcern::DraftOrders).to receive(:delete) do |*|
+      open_during_call << ActiveRecord::Base.connection.transaction_open?
+      # and the cancellation is already visible to another connection
+      open_during_call << Thread.new { ActiveRecord::Base.connection_pool.with_connection { LockerRental.find(rental.id).cancelled? } }.value
+      true
+    end
+    log_in!
+    patch locker_rental_path(rental), params: { expected_state: "await_payment", locker_rental: { state: "cancelled" } }
+
+    expect(open_during_call).to eq([false, true])
+    expect(rental.reload).to be_cancelled
+    expect(rental.shopify_draft_order_id).to be_nil
+  end
+
+  it "resolving a payment waits for a settlement holding the rental lock (one lock serialises resolve and settle)" do
+    held = create(:locker_payment, :held, locker_rental: LockerRental.find(rental.id), shopify_order_id: "ser-1")
+    paused = Queue.new
+    resume = Queue.new
+    finished_at = nil
+    released_at = nil
+    settler = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        LockerRental.transaction do
+          LockerRental.find(rental.id).lock!
+          paused << true
+          resume.pop
+          released_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        end
+      end
+    end
+    paused.pop
+    releaser = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        deadline = Time.current + 3
+        Thread.pass until blocked_backends.positive? || Time.current > deadline
+        resume << true
+      end
+    end
+    log_in!
+    patch locker_rental_locker_payment_path(rental, held), params: { resolution: "dismissed" }
+    finished_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    releaser.join
+    settler.join
+
+    expect(held.reload.status).to eq("dismissed")
+    expect(finished_at).to be >= released_at # the request did not run until the lock holder committed
+  end
 end

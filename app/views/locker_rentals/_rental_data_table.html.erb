@@ -52,7 +52,7 @@
                                 <span class="badge text-bg-danger mt-1"><%= t('lockers.held_payments.badge') %></span>
                                 <% if local_assigns[:show_hold_reasons] %>
                                     <% rental.locker_payments.select(&:held?).each do |payment| %>
-                                        <div class="small text-muted mt-1"><%= t("lockers.held_payments.reasons.#{payment.hold_reason}") %></div>
+                                        <div class="small text-muted mt-1"><%= held_payment_instruction(payment, rental) %></div>
                                     <% end %>
                                 <% end %>
                             <% end %>

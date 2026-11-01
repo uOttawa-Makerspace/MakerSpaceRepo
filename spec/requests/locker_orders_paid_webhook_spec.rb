@@ -66,10 +66,11 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
 
   it "is replay-safe: a second delivery of the same order is a no-op (one payment row, no mail, paid_at kept, no report)" do
     rental = create(:locker_rental, :await_payment)
-    perform_enqueued_jobs { signed_orders_paid(payload(rental.id, processed_at: "2026-10-20T12:00:00Z", total_price: "25.00", currency: "CAD")) }
+    perform_enqueued_jobs { signed_orders_paid(payload(rental.id, processed_at: "2026-10-20T12:00:00Z", total_price: "25.00", currency: "CAD", line_items: [{ title: "TEST locker on #{Rails.env} environment.", price: "20.00", quantity: 1 }, { title: "1 Day Membership", price: "5.00", quantity: 1 }])) }
     expect(ActionMailer::Base.deliveries.size).to eq(1)
-    expect(LockerPayment.where(locker_rental: rental).pluck(:shopify_order_id, :status, :amount, :currency))
-      .to eq([["820982911946154508", "applied", BigDecimal("25.0"), "CAD"]])
+    # the LOCKER line (20.00), not the order total (25.00, which includes a membership)
+    expect(LockerPayment.where(locker_rental: rental).pluck(:shopify_order_id, :status, :amount, :order_total, :currency))
+      .to eq([["820982911946154508", "applied", BigDecimal("20.0"), BigDecimal("25.0"), "CAD"]])
 
     ActionMailer::Base.deliveries.clear
     first_paid = rental.reload.paid_at
@@ -90,6 +91,43 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     signed_orders_paid(payload(rental.id, id: 1))
     signed_orders_paid(payload(rental.id, id: 2))
     expect(rental.locker_payments.pluck(:shopify_order_id)).to contain_exactly("1", "2")
+  end
+
+  it "a second order paying an already active, already paid rental is held as already_paid (refund the duplicate)" do
+    rental = create(:locker_rental, :await_payment)
+    perform_enqueued_jobs { signed_orders_paid(payload(rental.id, id: 1)) }
+    expect(ActionMailer::Base.deliveries.size).to eq(1)
+    ActionMailer::Base.deliveries.clear
+    reports = []
+    allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+    perform_enqueued_jobs { signed_orders_paid(payload(rental.id, id: 2)) }
+    expect(response).to have_http_status(:ok)
+    expect(rental.locker_payments.order(:id).pluck(:status, :hold_reason)).to eq([["applied", nil], %w[held already_paid]])
+    expect(reports.size).to eq(1)
+    expect(ActionMailer::Base.deliveries).to be_empty # no second "assigned" mail
+  end
+
+  describe "amounts" do
+    let(:title) { "TEST locker on #{Rails.env} environment." }
+
+    it "stores nil locker amount (and the order total apart) when the locker line cannot be identified" do
+      rental = create(:locker_rental, :await_payment)
+      signed_orders_paid(payload(rental.id, total_price: "42.00", line_items: [{ title: "Something else", price: "42.00", quantity: 1 }]))
+      expect(rental.locker_payments.sole).to have_attributes(amount: nil, order_total: BigDecimal("42.0"))
+    end
+
+    it "a malformed or out-of-range amount does not fail the webhook: nil is stored and it is reported (ids only)" do
+      rental = create(:locker_rental, :await_payment)
+      reports = []
+      allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+      signed_orders_paid(payload(rental.id, total_price: "9" * 30, line_items: [{ title: title, price: "oops", quantity: 1 }]))
+      expect(response).to have_http_status(:ok)
+      payment = rental.locker_payments.sole
+      expect(payment).to be_applied
+      expect(payment).to have_attributes(amount: nil, order_total: nil)
+      expect(reports.map { |e, _| e.class }).to eq([CustomWebhooksController::MalformedPaymentAmount] * 2)
+      expect(reports.map { |_, o| o[:context] }.uniq).to eq([{ locker_rental_id: rental.id, shopify_order_id: payload(rental.id)[:id].to_s }])
+    end
   end
 
   it "takes the order id from admin_graphql_api_id when the payload has no id (numeric tail, same key as id)" do

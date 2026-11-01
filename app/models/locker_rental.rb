@@ -22,11 +22,12 @@ class LockerRental < ApplicationRecord
 
   before_validation :set_cancellation_date, if: :cancelled?
 
+  # Nor is the Shopify draft order synced from a callback (an HTTP call inside the caller's transaction, holding
+  # the rental row lock): the cancelling path calls #sync_shopify_draft_order_after_commit after the commit.
   # The state-change and move mails are NOT sent from a callback: a callback runs inside the caller's
   # transaction (the Shopify webhook's, the staff update's), and Active Job here enqueues immediately
   # (enqueue_after_transaction_commit is false), so a rollback would still send the mail. The code paths
   # that change state call #notify_after_commit explicitly, which delivers after the outermost commit.
-  after_save :sync_shopify_draft_order
 
   # Virtual attribute to handle the 'Indefinite' checkbox from the forms
   attr_accessor :indefinite
@@ -145,20 +146,23 @@ class LockerRental < ApplicationRecord
   # and reports nothing. Returns the LockerPayment (applied or held), or nil for a duplicate.
   #   applied: the rental becomes active if it is not (owned_until defaulted, activation mail)
   #   held (reason recorded, rental untouched, reported once): rental cancelled, renter not eligible
-  #     (deactivated / soft-deleted / missing), or the rental cannot be activated (not_activatable)
+  #     (deactivated / soft-deleted / missing), the rental cannot be activated (not_activatable), or it is
+  #     already active and paid (already_paid: a duplicate)
   # Serialised per rental by the row lock, so two simultaneous deliveries cannot both apply.
-  def record_payment(shopify_order_id:, paid_at: Time.current, amount: nil, currency: nil)
+  def record_payment(shopify_order_id:, paid_at: Time.current, amount: nil, currency: nil, order_total: nil)
     payment = nil
     transaction do
       lock!
       status, reason =
         if cancelled? then ['held', 'rental_cancelled']
         elsif !renter_eligible? then ['held', 'renter_ineligible']
+        # already active and already paid for: this one is a duplicate charge (a renewal goes through await_payment)
+        elsif active? && locker_payments.applied.exists? then ['held', 'already_paid']
         else ['applied', nil]
         end
       inserted = LockerPayment.insert(
         { locker_rental_id: id, shopify_order_id: shopify_order_id.to_s, paid_at: paid_at, amount: amount,
-          currency: currency, status: status, hold_reason: reason,
+          currency: currency, order_total: order_total, status: status, hold_reason: reason,
           resolved_at: (Time.current if status == 'applied') },
         unique_by: :shopify_order_id, returning: %w[id]
       )
@@ -186,10 +190,43 @@ class LockerRental < ApplicationRecord
   # duplicate, and must stay visible so staff refund it. Call inside the transaction of the assigning save.
   # Returns the number of payments applied (0 or 1).
   def settle_held_payments!(by: nil)
-    oldest = locker_payments.held.where(hold_reason: SETTLEABLE_HOLD_REASONS).order(:paid_at, :id).first
-    return 0 unless oldest
+    # Oldest first; one lost to a concurrent refund/dismiss (mark_applied! is a conditional UPDATE) is skipped
+    # and the next curable one is tried. At most one is ever applied.
+    locker_payments.held.where(hold_reason: SETTLEABLE_HOLD_REASONS).order(:paid_at, :id).each do |payment|
+      return 1 if payment.mark_applied!(by: by)
+    end
+    0
+  end
 
-    oldest.mark_applied!(by: by) ? 1 : 0
+  # The amount of this rental's own LOCKER line in a paid order's line_items (price x quantity - discount), or
+  # nil when it cannot be told reliably (no line matches). Never the order total, which may include a
+  # membership or CC money. The line is recognised the way the draft order was built (see
+  # #shopify_draft_order_line_items): in production by its variant, elsewhere by its title.
+  # Raises ArgumentError for a malformed amount (the webhook stores nil and reports it).
+  def locker_line_amount(line_items)
+    return nil unless line_items.is_a?(Array)
+
+    lines = line_items.select { |line| line.is_a?(Hash) && locker_line_item?(line) }
+    return nil if lines.empty?
+
+    total = lines.sum do |line|
+      quantity = line['quantity'].presence ? Integer(line['quantity'].to_s) : 1
+      (LockerPayment.money(line['price']) || 0) * quantity - (LockerPayment.money(line['total_discount']) || 0)
+    end
+    LockerPayment.money(total)
+  rescue TypeError
+    raise ArgumentError, 'malformed line item'
+  end
+
+  def locker_line_item?(line)
+    built = locker ? shopify_draft_order_line_items.first : nil
+    return false unless built
+
+    if built[:variantId]
+      line['variant_id'].to_s == built[:variantId].to_s.split('/').last
+    else
+      line['title'].to_s == built[:title]
+    end
   end
 
   # Expired if a locker is active (not cancelled or unpaid) and time has passed owned_until
@@ -267,14 +304,19 @@ class LockerRental < ApplicationRecord
     end
   end
 
-  def sync_shopify_draft_order
-    return unless saved_change_to_state?
-    case state.to_sym
-    when :cancelled
-      # When a locker is cancelled, cancel draft_order too. Fail closed: a Shopify failure raises out of
-      # this after_save and rolls the cancellation back, so "cancelled" never coexists with a payable invoice.
-      destroy_shopify_draft_order
-    end
+  # After a save that cancelled this rental, deletes its Shopify draft order so that a cancelled rental never keeps a
+  # payable invoice. Call it AFTER the transaction has committed (no row lock is held during the HTTP call; the
+  # controller does). The cancellation is already committed, so a Shopify failure cannot undo it: it is reported
+  # and returns false (the draft id is kept), and a payment that still arrives is recorded as held
+  # (rental_cancelled) for staff to refund. Returns true when there was nothing to do or the draft was removed.
+  def sync_shopify_draft_order_after_commit
+    return true unless saved_change_to_state? && cancelled?
+
+    destroy_shopify_draft_order
+    true
+  rescue StandardError => e
+    Rails.error.report(e, handled: true, severity: :error, context: { locker_rental_id: id, step: 'delete_shopify_draft_order' })
+    false
   end
 
   # Fetch checkout link from shopify .Returns nil if API call fails or checkout
@@ -309,8 +351,10 @@ class LockerRental < ApplicationRecord
   end
 
   # Display-only "latest applied payment" (GREATEST), written only when a payment becomes applied.
+  # One UPDATE with GREATEST in SQL (never the in-memory value, which may be stale).
   def stamp_paid_at(time)
-    update_columns(paid_at: [paid_at, time].compact.max)
+    self.class.where(id: id).update_all(['paid_at = GREATEST(paid_at, ?)', time])
+    @attributes.write_from_database('paid_at', self.class.where(id: id).pick(:paid_at))
   end
 
   private

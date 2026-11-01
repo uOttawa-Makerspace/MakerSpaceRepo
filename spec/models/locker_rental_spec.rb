@@ -272,6 +272,48 @@ RSpec.describe LockerRental, type: :model do
       end
     end
 
+    describe "a second payment on an already active, already paid rental" do
+      it "is held as already_paid (a duplicate charge), reported, and does not touch the rental" do
+        rental = create(:locker_rental, :await_payment)
+        pay(rental, id: "first", paid_at: Time.utc(2026, 10, 1))
+        active = described_class.find(rental.id)
+        expect(active).to be_active
+
+        reports = []
+        allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+        duplicate = pay(active, id: "second", paid_at: Time.utc(2026, 10, 2))
+
+        expect(duplicate).to have_attributes(status: "held", hold_reason: "already_paid", resolved_at: nil)
+        expect(reports.size).to eq(1)
+        expect(reports.first.last[:context]).to include(hold_reason: "already_paid")
+        expect(rental.reload.paid_at).to eq(Time.utc(2026, 10, 1)) # only an applied payment moves it
+        expect(described_class.with_held_payment).to contain_exactly(rental)
+      end
+
+      it "is not a duplicate for a renewal: the rental goes through await_payment, so its payment is applied" do
+        rental = create(:locker_rental, :await_payment)
+        pay(rental, id: "term-1")
+        renewing = described_class.find(rental.id)
+        renewing.update!(state: :await_payment, owned_until: 5.months.from_now)
+        expect(pay(described_class.find(rental.id), id: "term-2")).to be_applied
+        expect(rental.reload).to be_active
+      end
+
+      it "is never applied by settle_held_payments!" do
+        rental = create(:locker_rental, :active)
+        create(:locker_payment, locker_rental: rental)
+        duplicate = pay(rental, id: "dup")
+        expect(duplicate.hold_reason).to eq("already_paid")
+        expect(rental.settle_held_payments!(by: create(:user, :staff))).to eq(0)
+        expect(duplicate.reload).to be_held
+      end
+
+      it "an active rental with no applied payment yet (staff-assigned) still applies its first payment" do
+        rental = create(:locker_rental, :active)
+        expect(pay(rental)).to be_applied
+      end
+    end
+
     it "holds a payment for an ACTIVE rental of an ineligible renter without touching the state" do
       rental = create(:locker_rental, :active)
       rental.rented_by.deactivate!
@@ -297,14 +339,14 @@ RSpec.describe LockerRental, type: :model do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "keeps the latest paid_at (GREATEST) across payments, whatever the arrival order" do
+    it "keeps the latest paid_at (one SQL GREATEST update, never the in-memory value)" do
       rental = create(:locker_rental, :active)
       pay(rental, id: "a", paid_at: Time.utc(2026, 10, 20))
-      pay(described_class.find(rental.id), id: "b", paid_at: Time.utc(2026, 9, 1))
-      expect(rental.reload.paid_at).to eq(Time.utc(2026, 10, 20))
-      pay(described_class.find(rental.id), id: "c", paid_at: Time.utc(2026, 11, 1))
+      stale = described_class.find(rental.id) # holds the old in-memory paid_at
+      described_class.find(rental.id).stamp_paid_at(Time.utc(2026, 11, 1))
+      stale.stamp_paid_at(Time.utc(2026, 9, 1)) # an older value, from a stale instance, must not win
       expect(rental.reload.paid_at).to eq(Time.utc(2026, 11, 1))
-      expect(rental.locker_payments.count).to eq(3)
+      expect(stale.paid_at).to eq(Time.utc(2026, 11, 1))
     end
 
     it "reports each new held payment exactly once, with ids only, after commit" do
@@ -365,6 +407,58 @@ RSpec.describe LockerRental, type: :model do
 
       expect(described_class.with_held_payment).to contain_exactly(held_twice, cancelled)
       expect(none.locker_payments).to be_empty
+    end
+  end
+
+  describe "#locker_line_amount" do
+    let(:rental) { create(:locker_rental, :await_payment) }
+    let(:title) { "TEST locker on #{Rails.env} environment." }
+
+    it "is the locker line only (price x quantity - discount), never the order's other lines" do
+      lines = [{ "title" => title, "price" => "20.00", "quantity" => 2, "total_discount" => "5.00" },
+               { "title" => "1 Day Membership", "price" => "7.00", "quantity" => 1 }]
+      expect(rental.locker_line_amount(lines)).to eq(BigDecimal("35.00"))
+    end
+
+    it "is nil when no line is recognisably the locker, or there are no lines" do
+      expect(rental.locker_line_amount([{ "title" => "1 Day Membership", "price" => "7.00", "quantity" => 1 }])).to be_nil
+      expect(rental.locker_line_amount(nil)).to be_nil
+      expect(rental.locker_line_amount("nope")).to be_nil
+      expect(rental.locker_line_amount([])).to be_nil
+    end
+
+    it "raises ArgumentError for a malformed or out-of-range figure" do
+      expect { rental.locker_line_amount([{ "title" => title, "price" => "abc", "quantity" => 1 }]) }.to raise_error(ArgumentError)
+      expect { rental.locker_line_amount([{ "title" => title, "price" => "1e12", "quantity" => 1 }]) }.to raise_error(ArgumentError)
+      expect { rental.locker_line_amount([{ "title" => title, "price" => "5", "quantity" => "x" }]) }.to raise_error(ArgumentError)
+    end
+
+    it "recognises the production line by its variant" do
+      allow(Rails.env).to receive(:production?).and_return(true)
+      rental.locker.locker_size.update_columns(shopify_gid: "gid://shopify/ProductVariant/4455")
+      lines = [{ "variant_id" => 4455, "price" => "30.00", "quantity" => 1 }, { "variant_id" => 9, "price" => "3.00", "quantity" => 1 }]
+      expect(rental.locker_line_amount(lines)).to eq(BigDecimal("30.00"))
+    end
+  end
+
+  describe "#settle_held_payments! when a concurrent refund wins" do
+    it "tries the next curable payment and still applies at most one" do
+      rental = create(:locker_rental, :active)
+      staff = create(:user, :staff)
+      first = create(:locker_payment, :held, locker_rental: rental, paid_at: Time.utc(2026, 10, 1))
+      second = create(:locker_payment, :held, locker_rental: rental, paid_at: Time.utc(2026, 10, 2))
+      third = create(:locker_payment, :held, locker_rental: rental, paid_at: Time.utc(2026, 10, 3))
+      raced = false
+      allow_any_instance_of(LockerPayment).to receive(:mark_applied!).and_wrap_original do |original, *args, **kw|
+        unless raced
+          raced = true
+          LockerPayment.where(id: first.id).update_all(status: "refunded", resolved_at: Time.current) # another connection
+        end
+        original.call(*args, **kw)
+      end
+
+      expect(rental.settle_held_payments!(by: staff)).to eq(1)
+      expect([first, second, third].map { |p| p.reload.status }).to eq(%w[refunded applied held])
     end
   end
 
@@ -539,44 +633,52 @@ RSpec.describe LockerRental, type: :model do
     end
   end
 
-  describe "Shopify draft order sync on cancel" do
-    it "destroys the draft order only when state changes to cancelled" do
+  describe "Shopify draft order sync on cancel (explicit, after commit; no callback)" do
+    it "saving alone never calls Shopify; the explicit sync destroys the draft only after a save that cancelled" do
       rental = create(:locker_rental, :await_payment)
-      expect_any_instance_of(LockerRental).to receive(:destroy_shopify_draft_order).once
+      expect(rental).to receive(:destroy_shopify_draft_order).once
       rental.update!(notes: "x")
+      expect(rental.sync_shopify_draft_order_after_commit).to be(true) # nothing cancelled: nothing to do
       rental.update!(state: :cancelled)
+      expect(rental.sync_shopify_draft_order_after_commit).to be(true)
     end
 
-    # Fail closed (master behaviour): if the cancel committed while the draft order survived, the customer
-    # could still pay the old invoice and the payment would be recorded against the cancelled locker (held for staff).
+    # The cancellation is committed before Shopify is called (no HTTP under the row lock), so a Shopify failure
+    # cannot undo it: it is reported, the draft id is kept, and a payment that still arrives is held for staff.
     describe "when the draft order cannot be deleted" do
       let(:draft_id) { "gid://shopify/DraftOrder/1" }
       let(:rental) { create(:locker_rental, :await_payment).tap { |r| r.update_column(:shopify_draft_order_id, draft_id) } }
 
-      def expect_not_cancelled(error_class)
-        expect { rental.update!(state: :cancelled) }.to raise_error(error_class)
-        expect(rental.reload).to be_await_payment
+      def expect_cancelled_but_reported
+        rental.update!(state: :cancelled)
+        reports = []
+        allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+        expect(rental.sync_shopify_draft_order_after_commit).to be(false)
+        expect(reports.size).to eq(1)
+        expect(reports.first.last[:context]).to include(locker_rental_id: rental.id)
+        expect(rental.reload).to be_cancelled
         expect(rental.shopify_draft_order_id).to eq(draft_id)
+        expect(rental.record_payment(shopify_order_id: "late")).to be_held # and a late payment is not lost
       end
 
-      it "raises and does not cancel when the Shopify API answers 500" do
+      it "reports and keeps the draft id when the Shopify API answers 500" do
         stub_request(:post, shopify_graphql_url).to_return(status: 500, body: "boom")
-        expect_not_cancelled(ShopifyAPI::Errors::HttpResponseError)
+        expect_cancelled_but_reported
       end
 
-      it "raises and does not cancel on a transport error" do
+      it "reports on a transport error" do
         stub_request(:post, shopify_graphql_url).to_raise(Net::OpenTimeout)
-        expect_not_cancelled(Net::OpenTimeout)
+        expect_cancelled_but_reported
       end
 
-      it "raises and does not cancel on a non-200 success status" do
+      it "reports on a non-200 success status" do
         stub_request(:post, shopify_graphql_url).to_return(status: 202, body: "{}", headers: ShopifyHttpHelpers::JSON_HEADERS)
-        expect_not_cancelled(StandardError)
+        expect_cancelled_but_reported
       end
 
-      it "raises NotConfigured and does not cancel with incomplete Shopify config" do
+      it "reports NotConfigured with incomplete Shopify config" do
         allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
-        expect_not_cancelled(ShopifyContext::NotConfigured)
+        expect_cancelled_but_reported
       end
 
       it "cancels without touching Shopify when there is no draft order id" do
@@ -584,6 +686,7 @@ RSpec.describe LockerRental, type: :model do
         expect(blank.shopify_draft_order_id).to be_blank
         expect(ShopifyAPI::Clients::Graphql::Admin).not_to receive(:new)
         blank.update!(state: :cancelled)
+        expect(blank.sync_shopify_draft_order_after_commit).to be(true)
         expect(blank.reload).to be_cancelled
       end
     end
