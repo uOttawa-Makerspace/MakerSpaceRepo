@@ -109,12 +109,15 @@ class LockerRental < ApplicationRecord
   # it) or waits for this transaction (the validations run inside save's transaction, and the webhook's),
   # instead of interleaving. (The foreign-key check takes only FOR KEY SHARE, which does not conflict.)
   # pick, not exists?, so the lock clause is certainly emitted.
-  def renter_eligible?
+  # lock: false is for read-only callers outside a transaction (mail, the expiry task): same rule, no row lock.
+  def renter_eligible?(lock: true)
     # A renter not saved yet (a built record) has no row to read or lock; judge its attributes.
     return !rented_by.deleted? && rented_by.deactivated_at.nil? if rented_by_id.blank? && rented_by&.new_record?
     return false if rented_by_id.blank?
 
-    User.eligible_renters.where(id: rented_by_id).lock('FOR SHARE').pick(:id).present?
+    renters = User.eligible_renters.where(id: rented_by_id)
+    renters = renters.lock('FOR SHARE') if lock
+    renters.pick(:id).present?
   end
 
   # If rented by a GNG student, make sure details are given

@@ -60,6 +60,15 @@ class CustomWebhooksController < ApplicationController
       locker_branch = false
     end
 
+    # A locker-tagged paid order that names no locker rental at all: nothing to apply, and not to be lost
+    # silently either (staff reconcile it from the report). Still 200.
+    if locker_branch && locker_ref.blank?
+      Rails.error.report(
+        LockerOrderWithoutReference.new("paid locker order #{order_id(order_hook)} carries no locker_db_reference"),
+        handled: true, severity: :error, context: { shopify_order_id: order_id(order_hook) }
+      )
+    end
+
     # handle lockers
     process_locker_hook(locker_ref, order_hook) if locker_branch
 
@@ -89,6 +98,7 @@ class CustomWebhooksController < ApplicationController
 
   # Raised only to be reported (Rails.error.report).
   class LockerOrderWithoutId < StandardError; end
+  class LockerOrderWithoutReference < StandardError; end
   class UnknownLockerRental < StandardError; end
 
   private

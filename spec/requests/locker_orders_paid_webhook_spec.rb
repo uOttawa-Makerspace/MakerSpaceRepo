@@ -157,9 +157,24 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     end
     expect(ActionMailer::Base.deliveries).to be_empty
     expect(LockerPayment.count).to eq(0)
-    expect(reports.size).to eq(1) # only the unknown id; a missing metafield has nothing to report
-    expect(reports.first.first).to be_a(CustomWebhooksController::UnknownLockerRental)
+    expect(reports.map { |e, _| e.class }).to eq([CustomWebhooksController::UnknownLockerRental, CustomWebhooksController::LockerOrderWithoutReference])
     expect(reports.first.last).to include(handled: true, context: { locker_rental_id: "999999999", shopify_order_id: "4242" })
+  end
+
+  it "reports a locker-tagged paid order that names no locker rental (order id only) and still answers 200" do
+    reports = []
+    allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+    signed_orders_paid({ id: 777, tags: [tag] })
+    expect(response).to have_http_status(:ok)
+    expect(reports.size).to eq(1)
+    expect(reports.first.first).to be_a(CustomWebhooksController::LockerOrderWithoutReference)
+    expect(reports.first.last).to include(handled: true, context: { shopify_order_id: "777" })
+  end
+
+  it "does not report an order that is not locker-tagged" do
+    expect(Rails.error).not_to receive(:report)
+    signed_orders_paid({ id: 778, tags: ["something_else"] })
+    expect(response).to have_http_status(:ok)
   end
 
   it "falls back to the Shopify draft-order metafields (stubbed) when the payload has none" do

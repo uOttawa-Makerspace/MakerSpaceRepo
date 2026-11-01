@@ -2,6 +2,9 @@ class Locker < ApplicationRecord
   # Rental history (and its payments) is never deleted: a locker that ever had a rental cannot be destroyed
   # (mark it not available instead).
   has_many :locker_rentals, dependent: :restrict_with_error
+  # A locker someone asked for is history too (preferred_locker_id): it cannot be deleted either.
+  has_many :preferred_locker_rentals, class_name: 'LockerRental', foreign_key: :preferred_locker_id,
+           dependent: :restrict_with_error, inverse_of: :preferred_locker
   belongs_to :locker_size
 
   # Enum to handle the filter split between staff, design class students (gng), and other (general)

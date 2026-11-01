@@ -306,8 +306,10 @@ end
                                         <td><%= payment.paid_at.to_fs(:long) %></td>
                                         <td>
                                             <%= t("lockers.held_payments.statuses.#{payment.status}") %>
-                                            <% if payment.hold_reason %>
+                                            <% if payment.held? %>
                                                 <div class="small text-muted"><%= t('lockers.held_payments.reason') %>: <%= t("lockers.held_payments.reasons.#{payment.hold_reason}") %></div>
+                                            <% elsif payment.hold_reason %>
+                                                <div class="small text-muted"><%= t('lockers.held_payments.was_held', reason: t("lockers.held_payments.past_reasons.#{payment.hold_reason}")) %></div>
                                             <% end %>
                                             <% if payment.resolved_at && !payment.applied? %>
                                                 <div class="small text-muted"><%= t('lockers.held_payments.resolved_at') %>: <%= payment.resolved_at.to_fs(:long) %><%= " - #{payment.resolution_note}" if payment.resolution_note.present? %></div>
@@ -315,9 +317,6 @@ end
                                             <% if payment.held? %>
                                                 <%= form_with url: locker_rental_locker_payment_path(@locker_rental, payment), method: :patch, class: 'mt-1' do %>
                                                     <%= text_field_tag :resolution_note, nil, placeholder: t('lockers.held_payments.note_placeholder'), class: 'form-control form-control-sm mb-1' %>
-                                                    <% if @locker_rental.active? && LockerRental::SETTLEABLE_HOLD_REASONS.include?(payment.hold_reason) %>
-                                                        <%= button_tag t('lockers.held_payments.mark_applied'), name: 'resolution', value: 'applied', class: 'btn btn-sm btn-outline-success', data: { confirm: t('lockers.held_payments.confirm_applied') } %>
-                                                    <% end %>
                                                     <%= button_tag t('lockers.held_payments.mark_refunded'), name: 'resolution', value: 'refunded', class: 'btn btn-sm btn-outline-primary', data: { confirm: t('lockers.held_payments.confirm_refunded') } %>
                                                     <%= button_tag t('lockers.held_payments.dismiss'), name: 'resolution', value: 'dismissed', class: 'btn btn-sm btn-outline-secondary', data: { confirm: t('lockers.held_payments.confirm_dismissed') } %>
                                                 <% end %>

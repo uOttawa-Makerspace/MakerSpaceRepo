@@ -18,7 +18,7 @@ namespace :lockers do
       # No notice to a soft-deleted or deactivated renter (the mailer would drop it anyway), and the row is
       # skipped as a whole: notified_of_cancellation_at and contacted_for_clearance are NOT set, because
       # they claim that the renter was told, so staff still see the rental as one to chase by hand.
-      unless rental.renter_eligible?
+      unless rental.renter_eligible?(lock: false)
         puts "Skipped Locker Rental ##{rental.id}: renter is deactivated or deleted, not notified"
         next
       end

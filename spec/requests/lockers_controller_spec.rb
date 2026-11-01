@@ -155,6 +155,24 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(flash[:notice]).to eq("Selected lockers deleted")
     end
 
+    it "DELETE destroy refuses a locker that someone listed as preferred (preferred_locker_id) and deletes nothing" do
+      locker = create(:locker)
+      request = create(:locker_rental, :reviewing, preferred_locker: locker)
+      expect { delete locker_path(locker) }.not_to change { [Locker.count, LockerRental.count] }
+      expect(flash[:alert]).to include("rental history")
+      expect(Locker.exists?(locker.id)).to be true
+      expect(request.reload.preferred_locker_id).to eq(locker.id)
+    end
+
+    it "PATCH bulk_edit bulk_delete does not raise on a locker with no specifier when reporting the refused ones", skip_bullet: true do
+      used = create(:locker_rental, :active).locker
+      nameless = create(:locker_rental, :active).locker
+      nameless.update_columns(specifier: nil)
+      patch bulk_edit_lockers_path, params: { id: [used.id, nameless.id], bulk_delete: "1" }
+      expect(response).to redirect_to(lockers_path(anchor: "lockerInventory"))
+      expect(flash[:alert]).to include(used.specifier).and include("##{nameless.id}")
+    end
+
     it "PATCH bulk_edit bulk_delete refuses, and reports, the lockers with rental history and deletes the others", skip_bullet: true do
       free = create(:locker)
       used = create(:locker_rental, :active).locker

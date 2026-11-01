@@ -152,7 +152,8 @@ class LockerRentalsController < SessionsController
         # We check this if the state is changing to active OR if it's already active (Move Locker)
         if @locker_rental.indefinite == '1'
           @locker_rental.owned_until = nil
-        elsif (@locker_rental.state_changed?(to: :active) || @locker_rental.active?) && @locker_rental.owned_until.blank?
+        elsif (@locker_rental.state_changed?(to: :active) || (current_user.staff? && @locker_rental.active?)) &&
+              @locker_rental.owned_until.blank?
           @locker_rental.owned_until = end_of_this_semester
         end
 
@@ -177,7 +178,7 @@ class LockerRentalsController < SessionsController
       flash[:alert] = if @locker_rental.state_was == 'active' && @locker_rental.cancelled?
                         'Please contact administration for cancelling a locker'
                       else
-                        'You can only cancel a locker request that is not active yet'
+                        'You can only cancel a pending request'
                       end
       respond_to do |format|
         format.html { render :show, status: :unprocessable_content }

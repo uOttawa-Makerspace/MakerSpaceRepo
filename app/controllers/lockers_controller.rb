@@ -106,11 +106,11 @@ class LockersController < AdminAreaController
       # Delete button was clicked
       # A locker with any rental history is refused, one by one, and reported; the others are deleted.
       refused = []
-      Locker.where(id: params[:id]).find_each { |locker| refused << locker.specifier unless locker.destroy }
+      Locker.where(id: params[:id]).find_each { |locker| refused << (locker.specifier.presence || "##{locker.id}") unless locker.destroy }
       if refused.empty?
         flash[:notice] = 'Selected lockers deleted'
       else
-        flash[:alert] = "Not deleted, they have rental history (mark them not available instead): #{refused.sort.to_sentence}"
+        flash[:alert] = "Not deleted, they have rental history (mark them not available instead): #{refused.sort_by(&:to_s).to_sentence}"
       end
     else
       # Update button was clicked

@@ -62,7 +62,7 @@ class LockerMailer < ApplicationMailer
   # when the job runs, so a mail queued before the deactivation is dropped too). Returning without calling
   # mail makes the delivery a no-op. Mail to staff (locker_requested) is not the renter's.
   def renter_mail(**headers)
-    return unless User.eligible_renters.exists?(id: @locker_rental.rented_by_id)
+    return unless @locker_rental.renter_eligible?(lock: false)
 
     mail(to: @user.email, **headers)
   end
