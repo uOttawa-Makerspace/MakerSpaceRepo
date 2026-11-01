@@ -34,3 +34,18 @@ RSpec.describe "Proficient project description rendering", type: :view do
     expect(html).to match(%r{<img [^>]*src="https://example.com/i.png"})
   end
 end
+
+# Regression guard for the page that already sanitised before the preview did.
+RSpec.describe "Proficient project show page", type: :request do
+  include ContentSpecHelpers
+
+  it "keeps sanitising the description and keeps its formatting" do
+    project = create(:proficient_project,
+                     description: '<strong>bold</strong><script>alert(1)</script><a href="javascript:x()">l</a>')
+    content_sign_in_as(:admin)
+    get proficient_project_path(project)
+    expect(response.body).to include("<strong>bold</strong>")
+    expect(response.body).not_to include("<script>alert")
+    expect(response.body).not_to include("javascript:x")
+  end
+end
