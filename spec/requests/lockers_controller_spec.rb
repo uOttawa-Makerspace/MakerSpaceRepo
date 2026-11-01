@@ -105,13 +105,22 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(locker.reload.specifier).to eq("D-1")
     end
 
-    it "DELETE destroy removes the locker and its rentals" do
-      rental = create(:locker_rental, :active)
-      locker = rental.locker
+    it "DELETE destroy removes a locker that never had a rental" do
+      locker = create(:locker)
       expect { delete locker_path(locker) }.to change(Locker, :count).by(-1)
       expect(response).to redirect_to(lockers_path)
       expect(flash[:notice]).to eq("Locker removed")
-      expect(LockerRental.exists?(rental.id)).to be false
+    end
+
+    it "DELETE destroy refuses a locker with rental history (even a cancelled one, or one with payments): nothing is deleted" do
+      rental = create(:locker_rental, :active)
+      create(:locker_payment, locker_rental: rental)
+      cancelled = create(:locker_rental, :active).tap { |r| r.update!(state: :cancelled) }
+      [rental, cancelled].each do |r|
+        expect { delete locker_path(r.locker) }.not_to change { [Locker.count, LockerRental.count, LockerPayment.count] }
+        expect(response).to redirect_to(locker_path(r.locker))
+        expect(flash[:alert]).to include("rental history").and include("was not deleted")
+      end
     end
 
     it "POST create_multiple builds the range and rejects end <= start" do
@@ -144,6 +153,35 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
               params: { id: [a.id], bulk_delete: "1", locker: { notes: "x" } }
       end.to change(Locker, :count).by(-1)
       expect(flash[:notice]).to eq("Selected lockers deleted")
+    end
+
+    it "DELETE destroy refuses a locker that someone listed as preferred (preferred_locker_id) and deletes nothing" do
+      locker = create(:locker)
+      request = create(:locker_rental, :reviewing, preferred_locker: locker)
+      expect { delete locker_path(locker) }.not_to change { [Locker.count, LockerRental.count] }
+      expect(flash[:alert]).to include("rental history")
+      expect(Locker.exists?(locker.id)).to be true
+      expect(request.reload.preferred_locker_id).to eq(locker.id)
+    end
+
+    it "PATCH bulk_edit bulk_delete does not raise on a locker with no specifier when reporting the refused ones", skip_bullet: true do
+      used = create(:locker_rental, :active).locker
+      nameless = create(:locker_rental, :active).locker
+      nameless.update_columns(specifier: nil)
+      patch bulk_edit_lockers_path, params: { id: [used.id, nameless.id], bulk_delete: "1" }
+      expect(response).to redirect_to(lockers_path(anchor: "lockerInventory"))
+      expect(flash[:alert]).to include(used.specifier).and include("##{nameless.id}")
+    end
+
+    it "PATCH bulk_edit bulk_delete refuses, and reports, the lockers with rental history and deletes the others", skip_bullet: true do
+      free = create(:locker)
+      used = create(:locker_rental, :active).locker
+      patch bulk_edit_lockers_path, params: { id: [free.id, used.id], bulk_delete: "1" }
+      expect(Locker.exists?(free.id)).to be false
+      expect(Locker.exists?(used.id)).to be true
+      expect(LockerRental.where(locker_id: used.id)).to exist
+      expect(flash[:alert]).to include(used.specifier)
+      expect(flash[:notice]).to be_nil
     end
 
     it "PUT price stores the product gid; PUT enabled toggles the sitewide switch" do

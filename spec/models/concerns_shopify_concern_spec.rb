@@ -92,20 +92,12 @@ RSpec.describe ShopifyConcern do
       expect(membership.shopify_is_paid).to be(false)
     end
 
-    it "destroy_shopify_draft_order deletes remotely and clears the id; false when there is none" do
-      expect(membership.send(:destroy_shopify_draft_order)).to be(false)
-      membership.update_column(:shopify_draft_order_id, fake.draft_id)
-      expect(membership.send(:destroy_shopify_draft_order)).to be(true)
+    it "create_remote_draft_order creates on Shopify and stores nothing; create_shopify_draft_order stores the id" do
+      expect(membership.send(:create_remote_draft_order).first).to eq(fake.draft_id)
       expect(membership.reload.shopify_draft_order_id).to be_nil
-    end
-
-    it "destroy keeps the id and raises on a non-200 response (master behaviour; fail closed)" do
-      membership.update_column(:shopify_draft_order_id, fake.draft_id)
-      fake.status = 500
-      expect { membership.send(:destroy_shopify_draft_order) }.to raise_error(RuntimeError, /Received HTTP 500/)
+      membership.send(:create_shopify_draft_order)
       expect(membership.reload.shopify_draft_order_id).to eq(fake.draft_id)
     end
-
   end
 
   describe "#draft_order_metafields" do

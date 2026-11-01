@@ -7,7 +7,7 @@ module ApplicationCable
     # D-EQ30: identify the user and reject everyone else. The rules are the
     # app's shared ones (lib/jwt_authenticator.rb), not reimplemented here:
     # - cookie session (browsers send it on the websocket handshake): not idle
-    #   expired, user eligible (present, not deleted, active) and
+    #   expired, user eligible (present, not deleted, not deactivated) and
     #   session[:token_version] == user.token_version (SessionAuthenticator);
     # - Bearer JWT (Authorization header, or a `token` query param for clients
     #   that cannot set headers; note URLs get logged): JwtAuthenticator.

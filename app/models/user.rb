@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
-  # `active` changes only through deactivate!/reactivate! (token_version bump, last-admin
-  # guard). Assigning it on a persisted user raises ActiveRecord::ReadonlyAttributeError
-  # (config.active_record.raise_on_assign_to_attr_readonly).
-  attr_readonly :active
+  # `deactivated_at` (NULL = not deactivated) changes only through deactivate!/reactivate!
+  # (token_version bump, last-admin guard). Assigning it on a persisted user raises
+  # ActiveRecord::ReadonlyAttributeError (config.active_record.raise_on_assign_to_attr_readonly).
+  # The legacy `active` column is read-only history (the 2021-22 dormancy snapshot, kept
+  # for reporting): it is not the deactivation state and nothing writes it, so it is
+  # readonly too.
+  attr_readonly :deactivated_at, :active
   include BCrypt
   include ActiveModel::Serialization
   include UoengConcern
@@ -301,7 +304,16 @@ class User < ApplicationRecord
     )
   }
   
+  # `active` is the legacy 2021-22 dormancy snapshot, not the deactivation state (deactivated_at).
   scope :active, -> { where(active: true) }
+  # Everyone who can sign in as far as deactivation goes (legacy `active` is irrelevant).
+  scope :not_deactivated, -> { where(deactivated_at: nil) }
+
+  # Users who may hold a locker: not soft-deleted, not deactivated. Unscoped from the default scope so
+  # that a soft-deleted user is a row we see and refuse (deleted = false is explicit), not a missing one.
+  def self.eligible_renters
+    unscoped.where(deleted: false, deactivated_at: nil)
+  end
   scope :unknown_identity, -> { where(identity: 'unknown') }
   
   scope :created_at_month, ->(month) { 
@@ -364,7 +376,7 @@ class User < ApplicationRecord
   # attempts) cannot sign in (CredentialAuthenticator), so does not count.
   # A deactivated admin (User#deactivate!) cannot either.
   scope :usable_admins, -> {
-    where(role: "admin").where("users.active IS NOT FALSE")
+    where(role: "admin").where(deactivated_at: nil)
                         .where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
   }
 
@@ -767,31 +779,32 @@ class User < ApplicationRecord
   end
 
   # Deactivation and reactivation both end every credential issued so far (cookie
-  # sessions, access and legacy JWTs, websockets, /api/v1 refresh tokens): `active`
-  # is set and token_version bumped in ONE UPDATE, so reactivating an account never
-  # revives what was issued before. These are the only ways to change `active` (it is
-  # attr_readonly). Each returns whether it changed anything: the UPDATE only matches
-  # a row whose `active` differs, so a repeated call bumps and revokes nothing.
+  # sessions, access and legacy JWTs, websockets, /api/v1 refresh tokens): `deactivated_at`
+  # is set (or cleared) and token_version bumped in ONE UPDATE, so reactivating an account
+  # never revives what was issued before. These are the only ways to change
+  # `deactivated_at` (it is attr_readonly). Each returns whether it changed anything: the
+  # UPDATE only matches a row whose state differs, so a repeated call bumps and revokes
+  # nothing.
   # deactivate! runs inside guarding_last_admin!, so deactivating the last usable
-  # admin raises LastAdminError and changes nothing (an already inactive account is a
+  # admin raises LastAdminError and changes nothing (an already deactivated account is a
   # no-op, not a removal).
   def deactivate!
     # Only a target that currently counts as a usable admin can be a removal (usable_admins
-    # includes active, so an already inactive target is a no-op, and a locked admin
-    # is not refused). One read, under the guard's locks. The no-op decision itself is the
-    # UPDATE's IS DISTINCT FROM in change_active!.
+    # requires deactivated_at IS NULL, so an already deactivated target is a no-op, and a
+    # locked admin is not refused). One read, under the guard's locks. The no-op decision itself is the
+    # UPDATE's state condition in change_deactivation!.
     self.class.guarding_last_admin!([id], only_if: -> { self.class.unscoped.merge(self.class.usable_admins).where(id: id).exists? }) do
-      change_active!(false)
+      change_deactivation!(true)
     end
   end
 
   def reactivate!
-    change_active!(true)
+    change_deactivation!(false)
   end
 
   # Demoted from staff/admin, soft-deleted or deactivated: such a connection must not
   # keep receiving broadcasts (StaffDashboardChannel authorizes at subscribe time
-  # only; the handshake already refuses deleted/inactive users on reconnect).
+  # only; the handshake already refuses deleted/deactivated users on reconnect).
   after_update_commit :disconnect_cable!, if: :cable_access_lost?
   # A block, not the method symbol: Rails de-duplicates commit callbacks by method name.
   after_destroy_commit { disconnect_cable! }
@@ -1007,9 +1020,9 @@ class User < ApplicationRecord
   # not read from the instance, so attr_readonly columns can be written too) with
   # updated_at. `extra_where` is an optional [sql, *binds] condition on the row as it
   # was. Returns [new token_version, updated_at], or nil when no row matched.
-  def write_and_bump_token_version(values, from_version: nil, extra_where: nil)
+  def write_and_bump_token_version(values, from_version: nil, extra_where: nil, stamp: Time.current)
     conn = self.class.connection
-    values = values.merge(updated_at: Time.current)
+    values = values.merge(updated_at: stamp)
     assignments = values.keys.map { |column| "#{conn.quote_column_name(column)} = ?" }
     where_sql = +"id = ?"
     binds = [id]
@@ -1036,7 +1049,7 @@ class User < ApplicationRecord
   # schedules the revocation side effects. `values` are the columns that were written.
   def apply_bumped_row((new_version, updated_at), values)
     # attributes written from the database state, not assigned: attr_readonly columns
-    # (active) cannot be assigned on a persisted record
+    # (deactivated_at) cannot be assigned on a persisted record
     values.each { |column, value| @attributes.write_from_database(column.to_s, value) }
     @attributes.write_from_database("token_version", new_version)
     @attributes.write_from_database("updated_at", updated_at)
@@ -1055,27 +1068,32 @@ class User < ApplicationRecord
     self
   end
 
-  # Sets `active` to `target` and bumps token_version in ONE UPDATE, only when the
-  # column differs (IS DISTINCT FROM). Returns true when it changed, false when it
-  # already had that value (nothing bumped, nothing revoked).
+  # Deactivates (deactivated_at = now) or reactivates (NULL) and bumps token_version
+  # in ONE UPDATE, only when the account is not already in that state (deactivating an
+  # already deactivated row keeps its original time). Returns true when it changed, false
+  # when it already was (nothing bumped, nothing revoked).
   #
   # Unlike bump_token_version!(from_version:), which returns false and leaves the
   # instance alone when its compare-and-set matches nothing, a no-match here has TWO
-  # possible causes (the row already has the target, or it is gone) and the caller is
-  # handed an instance that must tell the truth about `active`, so it reads the row
-  # back; only the missing-row error is shared (raise_missing_row!).
-  def change_active!(target)
-    written = write_and_bump_token_version({ active: target }, extra_where: ["active IS DISTINCT FROM ?", target])
+  # possible causes (the row already is in that state, or it is gone) and the caller is
+  # handed an instance that must tell the truth about `deactivated_at`, so it reads the
+  # row back; only the missing-row error is shared (raise_missing_row!).
+  def change_deactivation!(deactivate)
+    # ONE captured time: deactivated_at and updated_at are the same instant.
+    stamp = Time.current
+    value = deactivate ? stamp : nil
+    differs = deactivate ? "deactivated_at IS NULL" : "deactivated_at IS NOT NULL"
+    written = write_and_bump_token_version({ deactivated_at: value }, extra_where: [differs], stamp: stamp)
     unless written
-      current = self.class.uncached { self.class.unscoped.where(id: id).pick(:active, :token_version) }
+      current = self.class.uncached { self.class.unscoped.where(id: id).pick(:deactivated_at, :token_version) }
       raise_missing_row! unless current
 
-      @attributes.write_from_database("active", current[0])
+      @attributes.write_from_database("deactivated_at", current[0])
       @attributes.write_from_database("token_version", current[1])
       return false
     end
 
-    apply_bumped_row(written, { active: target })
+    apply_bumped_row(written, { deactivated_at: value })
     true
   end
 

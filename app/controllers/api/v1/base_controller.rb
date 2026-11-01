@@ -8,7 +8,7 @@ module Api
     # flash, no CSRF protection (those modules are not included), and the session
     # is switched off below, so a response can never carry a Set-Cookie header.
     # Auth is `Authorization: Bearer <access JWT>` only (ApiAccessToken ->
-    # AuthEligibility: deleted, inactive and stale-version users are refused). The
+    # AuthEligibility: deleted, deactivated (deactivated_at) and stale-version users are refused). The
     # session is never read or written.
     #
     # Errors are always `{error: {code:, message:, fields?:}}` with a real status:

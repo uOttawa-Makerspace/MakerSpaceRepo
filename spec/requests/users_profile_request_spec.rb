@@ -104,8 +104,8 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(json["user"]["username"]).to eq(user.username)
     end
 
-    it "inactive (active: false) users still have a visible profile" do
-      u = create(:user, :regular_user, active: false)
+    it "deactivated users still have a visible profile" do
+      u = create(:user, :regular_user, deactivated_at: Time.current)
       get user_path(u.username)
       expect(response).to have_http_status(:ok)
     end
@@ -640,7 +640,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
 
     it "inactive users do appear" do
-      create(:user, :regular_user, name: "Inactive Ian", username: "inactiveian", active: false)
+      create(:user, :regular_user, name: "Inactive Ian", username: "inactiveian", deactivated_at: Time.current)
       login!(staff)
       get search_users_path, params: { search: "inactiveian" }, as: :json
       expect(json["users"].map { |u| u["username"] }).to include("inactiveian")

@@ -26,4 +26,12 @@ module LockerRentalsHelper
       concat locker_rental.state.humanize
     end
   end
+
+  # What staff should do about a HELD payment, chosen by the rental's state: "assign the locker" cannot settle a
+  # payment on a rental that is already active, so those get the refund/dismiss wording.
+  def held_payment_instruction(payment, rental)
+    key = payment.hold_reason
+    key = "#{key}_active" if rental.active? && LockerRental::SETTLEABLE_HOLD_REASONS.include?(key)
+    t("lockers.held_payments.reasons.#{key}")
+  end
 end

@@ -197,6 +197,7 @@ en:
         how_heard_about_us: "How did you hear about us?"
         accept_waiver_html: "By checking this box, <strong>I ACCEPT AND FULLY ASSUME</strong> all such (health and safety) risks, dangers and hazards which may be associated with my participation."
   sessions:
+    account_deactivated: "This account has been deactivated. Please contact %{support_email}."
     login:
       sign_in: "Sign In"
       username_or_email: "Username or Email Address"
@@ -231,6 +232,16 @@ en:
               too_long: "Maximum of %{count} characters."
             read_and_accepted_waiver_form:
               inclusion: "You must accept the terms of the waiver."
+        locker_rental:
+          attributes:
+            rented_by:
+              deactivated: "is deactivated"
+              deleted: "is deleted"
+        locker:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This locker has rental history and cannot be deleted. Mark it as not available instead."
         sub_space_booking:
           attributes:
             start_time:

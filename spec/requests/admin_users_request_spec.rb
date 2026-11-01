@@ -142,7 +142,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
 
     # N+1 pinned: see defects.md D-PERF09
     it "index includes inactive users", skip_bullet: true do
-      idle = create(:user, :regular_user, active: false)
+      idle = create(:user, :regular_user, deactivated_at: Time.current)
       get admin_users_path
       expect(response.body).to include(idle.username)
     end

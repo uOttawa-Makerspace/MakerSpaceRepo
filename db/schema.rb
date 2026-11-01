@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_31_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_01_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -702,6 +702,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_31_000003) do
     t.string "name"
     t.datetime "updated_at", null: false
     t.string "value"
+  end
+
+  create_table "locker_payments", force: :cascade do |t|
+    t.decimal "amount", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.string "currency"
+    t.string "hold_reason"
+    t.bigint "locker_rental_id", null: false
+    t.decimal "order_total", precision: 10, scale: 2
+    t.datetime "paid_at", null: false
+    t.string "resolution_note"
+    t.datetime "resolved_at"
+    t.bigint "resolved_by_id"
+    t.string "shopify_order_id", null: false
+    t.string "status", null: false
+    t.datetime "updated_at", null: false
+    t.index ["locker_rental_id"], name: "index_locker_payments_held_on_locker_rental_id", where: "((status)::text = 'held'::text)"
+    t.index ["locker_rental_id"], name: "index_locker_payments_on_locker_rental_id"
+    t.index ["resolved_by_id"], name: "index_locker_payments_on_resolved_by_id"
+    t.index ["shopify_order_id"], name: "index_locker_payments_on_shopify_order_id", unique: true
+    t.check_constraint "(status::text = 'held'::text) = (resolved_at IS NULL)", name: "locker_payments_resolved_unless_held_check"
+    t.check_constraint "hold_reason IS NULL OR (hold_reason::text = ANY (ARRAY['renter_ineligible'::character varying, 'rental_cancelled'::character varying, 'not_activatable'::character varying, 'already_paid'::character varying]::text[]))", name: "locker_payments_hold_reason_check"
+    t.check_constraint "status::text <> 'held'::text OR hold_reason IS NOT NULL", name: "locker_payments_held_has_reason_check"
+    t.check_constraint "status::text = ANY (ARRAY['applied'::character varying, 'held'::character varying, 'refunded'::character varying, 'dismissed'::character varying]::text[])", name: "locker_payments_status_check"
   end
 
   create_table "locker_rentals", force: :cascade do |t|
@@ -1485,6 +1509,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_31_000003) do
     t.boolean "booking_approval", default: false
     t.boolean "confirmed", default: false
     t.datetime "created_at", precision: nil, null: false
+    t.datetime "deactivated_at"
     t.boolean "deleted", default: false, null: false
     t.text "description"
     t.citext "email"
@@ -1651,6 +1676,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_31_000003) do
   add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
+  add_foreign_key "locker_payments", "locker_rentals"
+  add_foreign_key "locker_payments", "users", column: "resolved_by_id"
   add_foreign_key "locker_rentals", "lockers"
   add_foreign_key "locker_rentals", "users", column: "decided_by_id"
   add_foreign_key "locker_rentals", "users", column: "rented_by_id"

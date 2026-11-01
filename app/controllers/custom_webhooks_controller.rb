@@ -47,8 +47,30 @@ class CustomWebhooksController < ApplicationController
       return head :service_unavailable
     end
 
+    # A paid locker order must carry the Shopify order id (it is the idempotency key of the payment record).
+    # Shopify always sends it, so a missing one is a bug on our side or theirs: skip ONLY the locker branch
+    # (never answer an error for the whole order, which would be retried forever and block the membership
+    # and CC branches), and report it with ids only so staff can reconcile the rental by hand.
+    locker_branch = LockerRental.draft_order_processable?(order_hook["tags"])
+    if locker_branch && locker_ref.present? && order_id(order_hook).blank?
+      Rails.error.report(
+        LockerOrderWithoutId.new("paid locker order without an order id; locker branch skipped (rental #{locker_ref})"),
+        handled: true, severity: :error, context: { locker_rental_id: locker_ref }
+      )
+      locker_branch = false
+    end
+
+    # A locker-tagged paid order that names no locker rental at all: nothing to apply, and not to be lost
+    # silently either (staff reconcile it from the report). Still 200.
+    if locker_branch && locker_ref.blank?
+      Rails.error.report(
+        LockerOrderWithoutReference.new("paid locker order #{order_id(order_hook)} carries no locker_db_reference"),
+        handled: true, severity: :error, context: { shopify_order_id: order_id(order_hook) }
+      )
+    end
+
     # handle lockers
-    process_locker_hook(locker_ref) if LockerRental.draft_order_processable?(order_hook["tags"])
+    process_locker_hook(locker_ref, order_hook) if locker_branch
 
     # handle memberships
     process_membership_hook(order_hook, membership_ref) if Membership.draft_order_processable?(order_hook["tags"])
@@ -73,6 +95,11 @@ class CustomWebhooksController < ApplicationController
 
     head :ok
   end
+
+  # Raised only to be reported (Rails.error.report).
+  class LockerOrderWithoutId < StandardError; end
+  class LockerOrderWithoutReference < StandardError; end
+  class UnknownLockerRental < StandardError; end
 
   private
 
@@ -140,10 +167,51 @@ class CustomWebhooksController < ApplicationController
     metafield_value(order_hook, draft_order_gid_from_hook(order_hook), "membership_db_reference")
   end
 
-  def process_locker_hook(locker_id)
+  # The Shopify order id: the payload's numeric "id", else the numeric tail of its admin_graphql_api_id
+  # ("gid://shopify/Order/123"), so both spellings of one order are the same idempotency key.
+  def order_id(order_hook)
+    order_hook["id"].presence&.to_s || order_hook["admin_graphql_api_id"].presence&.to_s&.split("/")&.last
+  end
+
+  def process_locker_hook(locker_id, order_hook)
     return unless locker_id.present?
 
-    LockerRental.find_by(id: locker_id)&.auto_assign
+    rental = LockerRental.find_by(id: locker_id)
+    unless rental
+      # Answer 200 (a retry cannot fix it) but never silently: a paid order points at a rental that is gone.
+      Rails.error.report(
+        UnknownLockerRental.new("paid locker order #{order_id(order_hook)} references unknown locker rental #{locker_id}"),
+        handled: true, severity: :error,
+        context: { locker_rental_id: locker_id.to_s, shopify_order_id: order_id(order_hook) }
+      )
+      return
+    end
+
+    # amount = the locker line only (nil when it cannot be told); order_total = the whole order. A malformed
+    # or out-of-range figure is stored as nil and never fails the webhook; record_payment reports it (ids only)
+    # after its commit, and only when the payment row is really new, so a replayed delivery does not report it again.
+    problems = []
+    rental.record_payment(
+      shopify_order_id: order_id(order_hook),
+      paid_at: parse_time(order_hook["processed_at"]) || Time.current,
+      amount: safe_money(problems, "locker line amount") { rental.locker_line_amount(order_hook["line_items"]) },
+      order_total: safe_money(problems, "order total") { LockerPayment.money(order_hook["total_price"]) },
+      currency: order_hook["currency"].presence&.to_s&.first(8),
+      malformed_amounts: problems
+    )
+  end
+
+  def safe_money(problems, what)
+    yield
+  rescue ArgumentError
+    problems << what
+    nil
+  end
+
+  def parse_time(value)
+    Time.zone.parse(value.to_s) if value.present?
+  rescue ArgumentError
+    nil
   end
 
   def process_membership_hook(order_hook, membership_id)

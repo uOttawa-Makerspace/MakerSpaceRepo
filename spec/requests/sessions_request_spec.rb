@@ -222,29 +222,29 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(response.body).to eq("Account not confirmed")
     end
 
-    it "inactive (active: false) users cannot sign in (html: login re-rendered with an alert, no session)" do
-      # FIXED(D-I03): active:false refuses sign-in with the locked/unconfirmed refusal shape
-      u = create(:user, :regular_user, active: false)
+    it "deactivated users cannot sign in (html: login re-rendered with an alert, no session)" do
+      # FIXED(D-I03): a deactivated user (deactivated_at) is refused sign-in with the locked/unconfirmed refusal shape
+      u = create(:user, :regular_user, deactivated_at: Time.current)
       login!(u)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("login")
-      expect(flash[:alert]).to start_with("Your account is inactive.")
+      expect(flash[:alert]).to start_with("This account has been deactivated. Please contact uottawa.makerepo@gmail.com.")
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
 
     it "inactive users: json login is refused with an error and support email, and no token" do
-      u = create(:user, :regular_user, active: false)
+      u = create(:user, :regular_user, deactivated_at: Time.current)
       post login_authentication_path, params: { username_email: u.username, password: password }, as: :json
       expect(response).to have_http_status(:unprocessable_content)
       body = JSON.parse(response.body)
-      expect(body["error"]).to start_with("Your account is inactive.")
+      expect(body["error"]).to start_with("This account has been deactivated. Please contact uottawa.makerepo@gmail.com.")
       expect(body["support_email"]).to eq("uottawa.makerepo@gmail.com")
       expect(body).not_to have_key("token")
     end
 
     it "a wrong password for an inactive user is still just 'Incorrect password.' (no status leak)" do
-      u = create(:user, :regular_user, active: false)
+      u = create(:user, :regular_user, deactivated_at: Time.current)
       login!(u, pw: "wrong")
       expect(flash[:alert]).to eq("Incorrect password.")
     end
@@ -253,7 +253,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       login!(user)
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("true")
-      User.unscoped.where(id: user.id).update_all(active: false)
+      User.unscoped.where(id: user.id).update_all(deactivated_at: Time.current)
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
@@ -345,7 +345,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
 
     it "an existing JWT of a deactivated user is rejected as well" do
       tok = user.token
-      User.unscoped.where(id: user.id).update_all(active: false)
+      User.unscoped.where(id: user.id).update_all(deactivated_at: Time.current)
       get check_signed_in_path, headers: { "Authorization" => "Bearer #{tok}" }
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
@@ -485,7 +485,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
 
     it "rejects a JWT of an inactive user" do
       tok = user.token
-      User.unscoped.where(id: user.id).update_all(active: false)
+      User.unscoped.where(id: user.id).update_all(deactivated_at: Time.current)
       expect(jwt_signed_in?(tok)).to be(false)
     end
 

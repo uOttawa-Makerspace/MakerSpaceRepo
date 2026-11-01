@@ -180,7 +180,7 @@ class SamlIdpController < ApplicationController
     when :unconfirmed
       "Please confirm your account before logging in. You can resend the confirmation email from the MakerRepo login page."
     when :inactive
-      "Your account is inactive. Please contact an administrator at #{support}."
+      I18n.t("sessions.account_deactivated", support_email: support)
     else
       "Invalid username/password"
     end

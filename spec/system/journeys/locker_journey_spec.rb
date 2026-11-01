@@ -79,7 +79,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     # Shopify tells the app the draft order was paid.
     ActionMailer::Base.deliveries.clear
     res = post_json_to_app(orders_paid_custom_webhooks_path,
-                           { tags: [LockerRental.draft_order_operating_tag],
+                           { id: 820_982_911_946_154_508, tags: [LockerRental.draft_order_operating_tag],
                              metafields: [{ namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s }] },
                            shopify_signed: true)
     expect(res.code).to eq("200")
