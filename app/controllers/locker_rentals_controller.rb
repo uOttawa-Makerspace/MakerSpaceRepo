@@ -164,6 +164,7 @@ class LockerRentalsController < SessionsController
           if current_user.staff? && @locker_rental.saved_change_to_state? && @locker_rental.active?
             @locker_rental.settle_held_payments!(by: current_user)
           end
+          @locker_rental.close_previous_term_draft!
           outcome = :saved
         else
           outcome = :invalid
@@ -232,6 +233,7 @@ class LockerRentalsController < SessionsController
           owned_until: end_of_this_semester
         )
         outcome = @locker_rental.save ? :saved : :invalid
+        @locker_rental.close_previous_term_draft! if outcome == :saved
       else
         outcome = :not_renewable
       end

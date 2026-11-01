@@ -21,10 +21,14 @@ module ShopifyConcern
 
     # Shopify's DraftOrderStatus: COMPLETED is paid (the draft became an order).
     PAID_STATUS = "COMPLETED"
+    # OPEN and INVOICE_SENT drafts are unpaid and payable (the invoice link works). The only statuses a link is served for.
+    PAYABLE_STATUSES = %w[OPEN INVOICE_SENT].freeze
 
     module_function
 
     def paid?(draft) = draft["status"] == PAID_STATUS
+
+    def payable?(draft) = PAYABLE_STATUSES.include?(draft["status"])
 
     # [:found | :gone, draft]; Shopify not answering raises Unanswered.
     def fetch_or_raise(gid)

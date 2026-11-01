@@ -63,6 +63,8 @@ en:
     time_remaining: "%{time} remaining"
 
     payment_description: Your locker has been approved! Complete payment to finalize the assignment.
+    payment_processing: Payment received, it is being processed.
+    checkout_unavailable: Checkout is temporarily unavailable, try again shortly.
 
     reviewing_description: This request hasn't been reviewed yet. You'll be notified once a decision is made.
 
@@ -181,6 +183,8 @@ fr:
     time_remaining: "%{time} restants"
 
     payment_description: Votre casier est approuvé. Effectuez le paiement pour finaliser l'attribution.
+    payment_processing: Paiement reçu, il est en cours de traitement.
+    checkout_unavailable: Le paiement est temporairement indisponible, réessayez sous peu.
 
     reviewing_description: Cette demande n'a pas encore été examinée. Vous serez informé dès qu'une décision aura été prise.
 

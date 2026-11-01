@@ -465,7 +465,7 @@ class JobOrder < ApplicationRecord
 
   # Shopify's DraftOrderStatus: OPEN and INVOICE_SENT drafts are unpaid and payable (the invoice link works);
   # COMPLETED is paid (it became an order). Every place that decides whether a draft is paid or payable asks here.
-  PAYABLE_DRAFT_STATUSES = %w[OPEN INVOICE_SENT].freeze
+  PAYABLE_DRAFT_STATUSES = ShopifyConcern::DraftRemoval::PAYABLE_STATUSES
   PAID_DRAFT_STATUS = ShopifyConcern::DraftRemoval::PAID_STATUS
 
   def self.draft_paid?(draft) = ShopifyConcern::DraftRemoval.paid?(draft)

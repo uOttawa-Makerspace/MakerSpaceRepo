@@ -273,8 +273,15 @@ end
                         <p class="mb-3">
                             <%= t('lockers.payment_description') %>
                         </p>
-                        <%= link_to @locker_rental.checkout_link, class: 'btn btn-info w-100' do %>
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Proceed to Checkout
+                        <% checkout_url = @locker_rental.checkout_link %>
+                        <% if checkout_url.present? %>
+                            <%= link_to checkout_url, class: 'btn btn-info w-100' do %>
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Proceed to Checkout
+                            <% end %>
+                        <% elsif @locker_rental.checkout_state == :processing %>
+                            <div class="alert alert-info mb-0" id="locker-payment-processing"><%= t('lockers.payment_processing') %></div>
+                        <% else %>
+                            <div class="alert alert-warning mb-0" id="locker-checkout-unavailable"><%= t('lockers.checkout_unavailable') %></div>
                         <% end %>
                     </div>
                 </div>

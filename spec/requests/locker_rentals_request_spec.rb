@@ -629,6 +629,32 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       end
     end
 
+    describe "for an await_payment rental whose checkout gives no link" do
+      let(:rental) { create(:locker_rental, :await_payment, rented_by: owner) }
+
+      before { log_in!(owner) }
+
+      it "says checkout is temporarily unavailable, never an empty link" do
+        allow_any_instance_of(LockerRental).to receive(:checkout_link).and_return(nil)
+        get locker_rental_path(rental)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Checkout is temporarily unavailable, try again shortly.")
+        expect(response.body).not_to include("Proceed to Checkout")
+      end
+
+      it "says the payment is being processed when a paid (COMPLETED) draft is stored, in English and French, and creates no draft" do
+        rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/paid")
+        fake = stub_shopify_admin!
+        fake.draft_statuses["gid://shopify/DraftOrder/paid"] = "COMPLETED"
+        get locker_rental_path(rental)
+        expect(response.body).to include("Payment received, it is being processed.")
+        get locker_rental_path(rental, locale: "fr")
+        expect(response.body).to include("Paiement reçu, il est en cours de traitement.")
+        expect(fake.calls.map { |c| c[:query] }.grep(/draftOrderCreate|draftOrderDelete/)).to be_empty
+        expect(rental.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/paid")
+      end
+    end
+
     describe "broken edges pinned as-is" do
       it "has no edit route (D-L10): 404" do
         rental = reviewing_rental!
@@ -1047,6 +1073,31 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(rental.reload.state).to eq("await_payment")
       expect(rental.reload.owned_until.to_date).to eq(end_of_this_semester.to_date)
       expect(rental.reload.decided_by).to eq(owner)
+    end
+
+    it "forgets last term's paid draft id (never deleting it), so the new term gets a fresh draft" do
+      rental = create(:locker_rental, :active, rented_by: owner, owned_until: 1.week.ago)
+      rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/last-term")
+      fake = stub_shopify_admin!
+      fake.draft_statuses["gid://shopify/DraftOrder/last-term"] = "COMPLETED"
+      log_in!(owner)
+
+      patch renew_locker_rental_path(rental)
+
+      expect(rental.reload.state).to eq("await_payment")
+      expect(rental.shopify_draft_order_id).to be_nil
+      expect(fake.deleted_ids).to be_empty
+    end
+
+    it "staff moving an active rental back to await_payment starts a new term the same way" do
+      rental = create(:locker_rental, :active, rented_by: owner)
+      rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/last-term")
+      log_in!(staff)
+
+      patch locker_rental_path(rental), params: { locker_rental: { state: "await_payment" } }
+
+      expect(rental.reload.state).to eq("await_payment")
+      expect(rental.shopify_draft_order_id).to be_nil
     end
 
     it "refuses renewal of a NOT expired rental with the alert redirect" do
