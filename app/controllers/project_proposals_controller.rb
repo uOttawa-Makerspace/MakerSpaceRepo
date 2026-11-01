@@ -528,7 +528,7 @@ class ProjectProposalsController < SessionsController
   # Linked repositories the viewer may see: every public one, plus private ones
   # that pass the private-repository gate (repository_unlocked?: admin, staff,
   # owner/member, or a password entered this session). Same predicate as the
-  # repository page, so the two cannot drift (D-C57).
+  # repository page, so the two cannot drift.
   def viewable_linked_repositories
     linked = @project_proposal.repositories
     unlocked_private_ids =

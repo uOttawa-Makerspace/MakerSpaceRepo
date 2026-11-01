@@ -30,7 +30,7 @@ RSpec.describe StaffUnavailability, type: :model do
     expect(build_one(recurrence_rule: nil)).to be_valid
   end
 
-  it "refuses an unparseable or sub-daily rule (D-SP28)" do
+  it "refuses an unparseable or sub-daily rule" do
     expect(build_one(recurrence_rule: "garbage")).not_to be_valid
     record = build_one(recurrence_rule: "RRULE:FREQ=MINUTELY")
     expect(record).not_to be_valid

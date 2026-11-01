@@ -121,7 +121,7 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.reload).to have_attributes(status: "held", additional_info: "n")
     end
 
-    # FIXED(D-EQ26): create/update cannot set a holder without an approved key request.
+    # create/update cannot set a holder without an approved key request.
     describe "setting user_id directly" do
       let(:holder_attrs) { { user_id: holder.id, supervisor_id: supervisor.id, status: "held" } }
 
@@ -193,13 +193,13 @@ RSpec.describe "Admin keys", type: :request do
   describe "assignment, deposit and return chain" do
     before do
       sign_in_as(:admin)
-      # D-EQ26: assignment requires the holder's key request to be approved
+      # assignment requires the holder's key request to be approved
       unless RSpec.current_example.metadata[:no_request]
         create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
       end
     end
 
-    # N+1 pinned: see defects D-PERF-EQ04
+    # N+1 pinned
     it "renders the assign page flagging staff without an approved request form", skip_bullet: true, no_request: true do
       create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
       get admin_key_assign_path(key)
@@ -235,7 +235,7 @@ RSpec.describe "Admin keys", type: :request do
       expect(flash[:alert]).to eq("Something went wrong while trying to assign the key")
     end
 
-    # WART(D-EQ24): assign_key updates the key to held before saving the transaction (no DB transaction), so a failed KeyTransaction save leaves a held key without a transaction
+    # assign_key updates the key to held before saving the transaction (no DB transaction), so a failed KeyTransaction save leaves a held key without a transaction
     it "leaves the key held when the transaction fails to save" do
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id } }
       expect(flash[:alert]).to eq("Something went wrong while trying to assign the key")
@@ -243,7 +243,7 @@ RSpec.describe "Admin keys", type: :request do
       expect(KeyTransaction.where(key: key)).to be_empty
     end
 
-    # Midday Eastern, so the server's UTC date and Date.current agree (see D-EQ32 for the evening case).
+    # Midday Eastern, so the server's UTC date and Date.current agree.
     it "revokes a held key: back to inventory, return date set and zero deposit marked returned" do
       travel_to(Time.zone.now.change(hour: 12))
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
@@ -254,7 +254,7 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.get_latest_key_transaction).to have_attributes(return_date: Date.current, deposit_return_date: Date.current)
     end
 
-    # WART(D-EQ32): revoke stamps return_date with Date.today (server/UTC date), so after 20:00 Eastern the key is returned "tomorrow"
+    # revoke stamps return_date with Date.today (server/UTC date), so after 20:00 Eastern the key is returned "tomorrow"
     it "stamps the UTC date as the return date when revoked in the Eastern evening" do
       travel_to(Time.zone.now.change(hour: 21))
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
@@ -282,7 +282,7 @@ RSpec.describe "Admin keys", type: :request do
       expect(flash[:alert]).to eq("Something went wrong while trying to revoke the key")
     end
 
-    # WART(D-EQ25): assign_key does User.find(params[:key][:user_id]) so a missing/unknown user is a RecordNotFound (404) instead of a flash alert
+    # assign_key does User.find(params[:key][:user_id]) so a missing/unknown user is a RecordNotFound (404) instead of a flash alert
     it "404s assigning to an unknown user" do
       patch admin_key_assign_key_path(key), params: { key: { user_id: 0 }, deposit_amount: 1 }
       expect(response).to have_http_status(:not_found)
@@ -321,7 +321,7 @@ RSpec.describe "Admin keys", type: :request do
       expect(flash[:alert]).to eq("The key request id was not found.")
     end
 
-    # FIXED(D-EQ26): assign_key requires the holder's key request to be approved
+    # assign_key requires the holder's key request to be approved
     it "refuses to assign a key to a holder whose request is not approved" do
       kr.update_columns(status: KeyRequest.statuses[:in_progress])
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }

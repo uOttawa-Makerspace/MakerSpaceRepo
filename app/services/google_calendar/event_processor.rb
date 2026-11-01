@@ -34,7 +34,7 @@ module GoogleCalendar
       )
 
       # A mirror of an event that already exists in Google, so the past-date
-      # rule for bookings made in the app does not apply (D-B18).
+      # rule for bookings made in the app does not apply.
       booking.allow_past_start = true
       booking.save
 

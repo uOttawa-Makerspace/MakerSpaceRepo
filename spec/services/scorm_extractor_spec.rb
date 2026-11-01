@@ -84,7 +84,7 @@ RSpec.describe ScormExtractor do
     expect(ActiveStorage::Blob.where("key LIKE ?", "#{first_prefix}/%").count).to eq(0)
   end
 
-  # WART(D-T33): a zip without imsmanifest.xml returns nil silently: the module is left in 'processing' forever, its old files purged
+  # a zip without imsmanifest.xml returns nil silently: the module is left in 'processing' forever, its old files purged
   it "leaves the module stuck in processing (and returns nil) when there is no manifest" do
     lm = module_with("index.html" => "x")
     expect(ScormExtractor.extract(lm)).to be_nil

@@ -143,7 +143,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(status_names(start)).to eq(["Waiting to be Processed"])
     end
 
-    # FIXED(D-J47): an order with no status rows is in no source state, so the
+    # an order with no status rows is in no source state, so the
     # transition is refused with the generic error (the status is read under the lock)
     it "refuses a transition for an order with no status rows (no 500)" do
       session_login!(staff)
@@ -160,7 +160,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # WART(D-J15): the js format renders admin_row -> _assign_staff with a nil @staff
+    # the js format renders admin_row -> _assign_staff with a nil @staff
     it "answers format.js on a transition with the same 500 (ActionView::Template::Error)" do
       session_login!(staff)
       start = order_with_task!(status_key: :waiting_processed)
@@ -244,7 +244,7 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- index
 
   describe "GET /job_orders (index) corners" do
-    # N+1 pinned: see defects.md D-PERF01
+    # N+1 pinned
     it "lists only the viewer's own, non-deleted orders and skips orders without status rows", skip_bullet: true do
       mine = order_with_task!(status_key: :staff_approval)
       deleted = order_with_task!(status_key: :staff_approval)
@@ -296,7 +296,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(flash[:notice]).to be_nil
     end
 
-    it "renders for staff and admin viewers (allowed by the D-J06 gate) without marking messages read" do
+    it "renders for staff and admin viewers (allowed by the gate) without marking messages read" do
       order = order_with_task!(status_key: :staff_approval)
       order.job_tasks.first.update!(job_type: JobType.find_by!(name: "3D Print"))
       ChatMessage.create!(job_order: order, sender: staff, message: "internal note")
@@ -309,7 +309,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(order.chat_messages.first.reload.is_read).to be(false)
     end
 
-    # WART(D-J51): staff see the quote modal on show, which calls
+    # staff see the quote modal on show, which calls
     # `task.job_type.name` for every task; a task without a job type crashes it.
     it "500s (NoMethodError) for staff when a task has no job type" do
       order = order_with_task!(status_key: :staff_approval)
@@ -320,7 +320,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response.body).to include("app/views/job_orders/_quote_modal.html.erb")
     end
 
-    # WART(D-J46): show dereferences the "processed" JobOrderMessage unconditionally
+    # show dereferences the "processed" JobOrderMessage unconditionally
     it "raises (500, NoMethodError) when the processed JobOrderMessage row is missing" do
       JobOrderMessage.where(name: "processed").delete_all
       order = order_with_task!(status_key: :staff_approval)
@@ -330,7 +330,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(error_text).to include("NoMethodError")
     end
 
-    # FIXED(D-J40): the missing-info alert is flash.now, shown on the page that computed it only
+    # the missing-info alert is flash.now, shown on the page that computed it only
     it "does not carry the missing-info alert over to the next request" do
       order = make_job_order!(owner: owner, status_key: :staff_approval)
       order.job_tasks.create!(title: "Task #1")
@@ -357,7 +357,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response.body).to include(I18n.t("job_orders.new.title"))
     end
 
-    # FIXED(D-J39): create no longer permits staff-only fields
+    # create does not permit staff-only fields
     it "ignores staff_comments sent by a customer on their own new order" do
       post job_orders_path,
            params: { job_order: { staff_comments: "customer wrote this as staff", user_comments: "mine" }, redirect_step: "1" }
@@ -384,7 +384,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(order.reload.is_deleted).to be(true)
     end
 
-    # D-J44, closed: the server enforces what the page offers (JobOrder.deletable_by?)
+    # the server enforces what the page offers (JobOrder.deletable_by?)
     it "lets the owner delete an editable order, not one in progress or paid" do
       session_login!(owner)
       [[:draft, true], [:being_processed, false], [:paid, false]].each do |status_key, deleted|
@@ -404,7 +404,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
     end
 
-    # WART(D-J36): the has_many :job_order_options dependent: :destroy has no model;
+    # the has_many :job_order_options dependent: :destroy has no model;
     # destroy is a soft delete here, so the controller never trips over it.
     it "keeps the row (soft delete) and its tasks" do
       order = order_with_task!
@@ -420,7 +420,7 @@ RSpec.describe "JobOrders gaps", type: :request do
   describe "PATCH assign_staff corners" do
     let!(:order) { order_with_task!(status_key: :staff_approval) }
 
-    it "lets an admin assign a non-staff user (no role check on the target)" do
+    it "lets an admin assign a non-staff user" do
       session_login!(admin)
       perform_enqueued_jobs { patch job_order_assign_staff_path(order), params: { staff_id: other.id } }
 
@@ -444,7 +444,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response).to redirect_to(admin_job_orders_url)
     end
 
-    # WART(D-J08): the else branch dereferences the (nil) assigned staff
+    # the else branch dereferences the (nil) assigned staff
     it "500s (NoMethodError) when staff assigns someone else, and assigns nothing" do
       session_login!(staff)
       patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
@@ -469,7 +469,7 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- admin / settings / invoice / timeline
 
   describe "admin, settings, invoice and timeline corners" do
-    # N+1 pinned: see defects.md D-PERF02
+    # N+1 pinned
     it "renders the admin list for the admin role, newest first, hiding drafts and deleted orders", skip_bullet: true do
       older = order_with_task!(status_key: :staff_approval)
       newer = nil
@@ -531,7 +531,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(text).to include("Total: CAD $25.50")
     end
 
-    # WART(D-J52): the parts line is only printed when the task has a job service,
+    # the parts line is only printed when the task has a job service,
     # but the total always includes service_price * service_quantity, so the
     # printed lines can fail to add up to the printed total.
     it "omits the parts line for a task without a service although the total includes it" do
@@ -554,7 +554,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response).to redirect_to(new_job_orders_path)
     end
 
-    # N+1 pinned: see defects.md D-PERF03
+    # N+1 pinned
     it "shows the status history with a timestamp to the admin role, naming the actor only for processing steps", skip_bullet: true do
       order = order_with_task!
       advance_to!(order, :staff_approval, by: owner)

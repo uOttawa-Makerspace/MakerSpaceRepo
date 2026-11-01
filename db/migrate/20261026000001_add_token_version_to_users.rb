@@ -1,4 +1,4 @@
-# D-I01: JWTs carry the user's token_version as `ver`; bumping it (password
+# JWTs carry the user's token_version as `ver`; bumping it (password
 # change/reset, admin lock) revokes every token and cookie session issued
 # before. Additive and reversible; tokens minted before this deploy carry no
 # `ver` and count as version 0.

@@ -134,8 +134,8 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(status_names(order)).to end_with("Waiting for User Approval")
     end
 
-    # FIXED(D-J33 / JOB-04): a PAID order is never re-quoted (see
-    # job_orders_quote_paid_guard_request_spec). WART(D-J33) stays for Draft:
+    # a PAID order is never re-quoted (see
+    # job_orders_quote_paid_guard_request_spec). stays for Draft:
     # a Draft order can still be quoted.
     it "refuses to re-quote a PAID order: no status row, no customer email" do
       paid = order_with_task!(status_key: :paid)
@@ -187,7 +187,7 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.updated_successfully"))
     end
 
-    # FIXED(D-J39): `user_id` is no longer permitted on the staff comments update
+    # `user_id` is not permitted on the staff comments update
     it "does not let staff reassign the order's owner via a mass-assigned user_id" do
       session_login!(staff)
       original_owner = order.user_id
@@ -240,7 +240,6 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(order.job_order_statuses.last.user).to eq(admin)
     end
 
-    # WART(D-J15)
     it "answers format.js with the 500 (ActionView::Template::Error)" do
       patch job_order_processed_path(order), params: { completed: "true" },
                                              headers: { "ACCEPT" => "text/javascript" }
@@ -248,7 +247,7 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(error_text).to include("ActionView::Template::Error")
     end
 
-    # WART(D-J45): a zero-price order is auto-paid and ONLY the payment_succeeded
+    # a zero-price order is auto-paid and ONLY the payment_succeeded
     # mail goes out; the staff-authored completion message is dropped.
     it "drops the completion message when a zero-price order is auto-paid" do
       task.build_job_task_quote(price: 0, service_price: 0, service_quantity: 0).save!
@@ -293,7 +292,7 @@ RSpec.describe "JobOrders workflow", type: :request do
   # ------------------------------------------------------------- resend_quote_email
 
   describe "PATCH resend_quote_email" do
-    # FIXED(D-J34): a reminder is only sent while the customer has a live quote
+    # a reminder is only sent while the customer has a live quote
     # (USER_APPROVAL / SENT_REMINDER); a Draft order gets no reminder row, no mail
     # and its link does not open the approval page.
     it "refuses a Draft order: no reminder row, no mail, no usable link" do
@@ -363,7 +362,7 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(response).to redirect_to(job_orders_path)
     end
 
-    # INTENDED(D-J09/D-J11): the page opens for any viewer holding the (expiring, owner-bound) token, signed in or not
+    # the page opens for any viewer holding the (expiring, owner-bound) token, signed in or not
     it "renders for a signed-in user who is not the owner" do
       session_login!(other)
       get user_magic_approval_job_orders_path, params: { token: magic_link_token_for(order) }
@@ -401,7 +400,7 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(status_names(order)).to eq(["Waiting for User Approval"])
     end
 
-    # FIXED(D-J10): the token lookup returns only a live order, so a link for a
+    # the token lookup returns only a live order, so a link for a
     # soft-deleted order gets the invalid-link flash instead of a nil crash
     it "redirects with the accept/deny error flash for a soft-deleted order" do
       minted = token
@@ -420,7 +419,7 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
     end
 
-    # FIXED(D-J09): the recorded actor is always the order's owner, never the visitor
+    # the recorded actor is always the order's owner, never the visitor
     it "lets a signed-in non-owner approve and records the order owner as the actor, without any staff mail" do
       session_login!(other)
       patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: "true" }

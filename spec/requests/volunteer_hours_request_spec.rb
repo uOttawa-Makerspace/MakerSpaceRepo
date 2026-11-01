@@ -7,7 +7,7 @@ require "rails_helper"
 #
 # Gates: grant_access (all actions); `edit` adds owner-or-staff; the two staff
 # pages and `update_approval` add staff-only. `edit`, `update` and `destroy` add
-# owner-or-staff (owners only while the hour is unprocessed on update) (D-V01..D-V03).
+# owner-or-staff (owners only while the hour is unprocessed on update).
 RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   let(:task) { create(:volunteer_task, title: "booth") }
   let(:owner) { create(:user, :volunteer_with_volunteer_program) }
@@ -72,7 +72,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_hours (index)" do
-    # N+1 pinned: see defects D-PERF-V01 (view calls vh.volunteer_task per row)
+    # N+1 pinned (view calls vh.volunteer_task per row)
     it "lists only the signed-in user's hours and totals approved ones", skip_bullet: true do
       make_hour(approval: true, total_time: 2)
       make_hour(approval: true, total_time: 1.5)
@@ -85,7 +85,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response.body).not_to include("100.0 Hours")
     end
 
-    # WART(D-V09): an hour whose volunteer_task_id points at nothing (accepted on create) 500s the owner's index
+    # an hour whose volunteer_task_id points at nothing (accepted on create) 500s the owner's index
     it "500s when one of the user's hours references a missing task" do
       VolunteerHour.create!(user: owner, volunteer_task_id: 999_999, total_time: 1)
       vol_login!(owner)
@@ -96,7 +96,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_hours/new" do
-    # WART(D-V10): route exists but there is no action/template (only a partial)
+    # route exists but there is no action/template (only a partial)
     it "is a 404 for a volunteer" do
       vol_login!(owner)
       get new_volunteer_hour_path
@@ -118,7 +118,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(hour.approval).to be_nil
     end
 
-    # FIXED(D-V01): `approval` is only permitted for staff, so a volunteer cannot submit pre-approved hours
+    # `approval` is only permitted for staff, so a volunteer cannot submit pre-approved hours
     it "ignores approval: true from the volunteer submitting their own new hour" do
       post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(approval: true) }
       expect(VolunteerHour.last.approval).to be_nil
@@ -131,7 +131,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(VolunteerHour.last.approval).to be(true)
     end
 
-    # WART(D-V04): no range validation: negative and far-future hours are stored
+    # no range validation: negative and far-future hours are stored
     it "accepts negative total_time and a far-future date_of_task" do
       post volunteer_hours_path,
            params: { volunteer_hour: { volunteer_task_id: task.id, date_of_task: "2999-01-01", total_time: -5 } }
@@ -147,14 +147,14 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(VolunteerHour.last.total_time).to eq(1.24)
     end
 
-    # WART(D-V05): non-numeric total_time silently becomes 0
+    # non-numeric total_time silently becomes 0
     it "stores 0 for a non-numeric total_time" do
       post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, total_time: "abc" } }
       expect(response).to redirect_to(volunteer_hours_path)
       expect(VolunteerHour.last.total_time).to eq(0)
     end
 
-    # WART(D-V06): over-range total_time raises ActiveRecord::RangeError (500) instead of a validation message
+    # over-range total_time raises ActiveRecord::RangeError (500) instead of a validation message
     it "500s for a total_time beyond decimal(9,2)" do
       expect do
         post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, total_time: 99_999_999_999 } }
@@ -163,7 +163,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(vol_error_text).to include("ActiveRecord::RangeError")
     end
 
-    # WART(D-V07): missing volunteer_task_id hits the NOT NULL constraint (500)
+    # missing volunteer_task_id hits the NOT NULL constraint (500)
     it "500s without a volunteer_task_id" do
       expect { post volunteer_hours_path, params: { volunteer_hour: { total_time: 1 } } }
         .not_to change(VolunteerHour, :count)
@@ -171,7 +171,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(vol_error_text).to include("ActiveRecord::NotNullViolation")
     end
 
-    # WART(D-V08): the task is never checked to exist, so an orphan hour is stored (and later breaks the index, D-V09)
+    # the task is never checked to exist, so an orphan hour is stored (and later breaks the index)
     it "stores an hour for a nonexistent task id" do
       expect do
         post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: 999_999, total_time: 1 } }
@@ -239,7 +239,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   describe "PATCH /volunteer_hours/:id (update)" do
-    # FIXED(D-V02): only the owner (while unprocessed) or staff may update an hour
+    # only the owner (while unprocessed) or staff may update an hour
     it "refuses another volunteer changing someone else's hour" do
       hour = make_hour(approval: false, total_time: 1)
       vol_login!(other_volunteer)
@@ -293,7 +293,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(hour.reload.total_time).to eq(4)
     end
 
-    # WART(D-V11): redirect is chosen by users.role, so a program member whose role is regular_user is sent to the staff-only page
+    # redirect is chosen by users.role, so a program member whose role is regular_user is sent to the staff-only page
     it "sends a program member with role regular_user to the staff page, which then bounces them" do
       member = create(:user, :regular_user)
       Program.create!(user: member, program_type: Program::VOLUNTEER)
@@ -330,7 +330,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(flash[:notice]).to eq("Volunteer Hour Deleted")
     end
 
-    # FIXED(D-V03): only the owner or staff may delete an hour
+    # only the owner or staff may delete an hour
     it "refuses a different volunteer deleting someone else's unprocessed hour" do
       hour = make_hour
       vol_login!(other_volunteer)
@@ -362,7 +362,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   describe "PUT /volunteer_hours/update_approval" do
-    # FIXED(D-V01): update_approval is staff/admin only
+    # update_approval is staff/admin only
     it "refuses a volunteer approving their own hour" do
       hour = make_hour(total_time: 8)
       vol_login!(owner)

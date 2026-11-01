@@ -4,7 +4,7 @@ class ApplicationController < ActionController::Base
   include RateLimitStore
   rescue_from ActionController::ParameterMissing, with: :parameter_missing
 
-  # CSRF (INF-01): every non-GET request must carry the session's token (Rails
+  # CSRF: every non-GET request must carry the session's token (Rails
   # helpers and Turbo add it; fetch() calls use src/csrf.js). A GET answered
   # with JavaScript is only served to same-origin XHR (the cross-origin JS guard
   # that comes with this check).
@@ -75,7 +75,7 @@ class ApplicationController < ActionController::Base
   end
 
   # A refused CSRF check is usually a stale tab (signed in or out elsewhere, idle
-  # expiry, a new session after sign-in), sometimes a forged form: either way
+  # expiry, a new session after sign-in), sometimes a form without a valid token: either way
   # nothing ran. A browser form (HTML, Turbo) is sent back where it came from, or
   # to sign in; XHR, JSON, JS and any other format get a 422 with the message.
   # Only the class is logged, never the submitted token or params.
@@ -109,9 +109,8 @@ class ApplicationController < ActionController::Base
     login_path(back_to: referer&.request_uri)
   end
 
-  # A path that must not be redirected to: browsers read a backslash as a slash and
-  # drop tabs, newlines and leading spaces, so "\\evil.com", "/\\evil.com" and
-  # "/\t/evil.com" all name a host, as does "//evil.com". Rather than imitate the
+  # A path that must stay on this host: browsers read a backslash as a slash and
+  # drop tabs, newlines and leading spaces, so such paths can name another host. Rather than imitate the
   # browser's URL parser, refuse any C0 control character or DEL anywhere, and a
   # backslash or a leading "//" (after spaces) in the PATH part, before the first
   # "?" or "#". A backslash in a query or fragment names no host (browsers send it
@@ -124,8 +123,7 @@ class ApplicationController < ActionController::Base
   end
 
   # The referring page as a URI when it is on this host, else nil. Its request_uri
-  # is redirected to, so a protocol-relative path is refused:
-  # http://this.host//evil.example would otherwise send the visitor to evil.example.
+  # is redirected to, so a protocol-relative path is refused.
   # (URI.parse happens to reject a backslash in the path, but accepts one in the
   # query; the redirect does not rely on that, unsafe_redirect_path? is the rule.)
   def same_host_referer

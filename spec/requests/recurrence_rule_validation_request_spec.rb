@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# D-SP28: the server refuses sub-daily (and unparseable) recurrence rules for
+# the server refuses sub-daily (and unparseable) recurrence rules for
 # events and staff unavailabilities, and still accepts every rule the forms build.
 RSpec.describe "Recurrence rule validation", type: :request do
   include SpacesSpecHelpers
@@ -69,7 +69,7 @@ RSpec.describe "Recurrence rule validation", type: :request do
       expect(event.reload.recurrence_rule).to eq(RRV_FORM_RULES[4])
     end
 
-    context "a series stored with a sub-daily rule before D-SP28" do
+    context "a series stored with a sub-daily rule stored before validation existed" do
       let!(:legacy) do
         create(:event, space: space, title: "Legacy", start_time: Time.utc(2027, 3, 1, 15), end_time: Time.utc(2027, 3, 1, 16))
           .tap { |e| e.update_column(:recurrence_rule, RRV_MINUTELY) }
@@ -135,7 +135,7 @@ RSpec.describe "Recurrence rule validation", type: :request do
       expect(record.reload.recurrence_rule).to eq(RRV_FORM_RULES[2])
     end
 
-    context "a series stored with a sub-daily rule before D-SP28" do
+    context "a series stored with a sub-daily rule stored before validation existed" do
       let!(:legacy) do
         create(:staff_unavailability, user: staff, start_time: Time.utc(2027, 3, 1, 15), end_time: Time.utc(2027, 3, 1, 16))
           .tap { |r| r.update_column(:recurrence_rule, RRV_MINUTELY) }

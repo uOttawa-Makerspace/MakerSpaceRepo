@@ -49,7 +49,7 @@ RSpec.describe "Admin pi readers", type: :request do
     expect(flash[:alert]).to match(/pi_reader_params/)
   end
 
-  # D-EQ03: readers no longer self-register on their first tap, so admins register them here
+  # readers do not self-register on their first tap, so admins register them here
   describe "POST /admin/pi_readers (register a reader)" do
     let(:create_params) { { pi_reader_params: { pi_mac_address: "aa:bb:cc:00:11:22", space_id: space.id, pi_location: "Door" } } }
 

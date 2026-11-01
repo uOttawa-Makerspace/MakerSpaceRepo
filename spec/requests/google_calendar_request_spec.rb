@@ -53,8 +53,8 @@ RSpec.describe "Google calendar webhook", type: :request do
     expect(response.status).to eq(200)
   end
 
-  # WART(D-B41): the webhook never checks channel expiry (nor the channel
-  # token), so an expired channel row is accepted and enqueues a sync.
+  # the webhook does not check channel expiry (nor a channel
+  # token): an expired channel row is accepted and enqueues a sync.
   it "accepts an EXPIRED channel pair and enqueues the sync job anyway" do
     GoogleCalendarChannel.create!(
       channel_id: "chan-old", resource_id: "res-old",

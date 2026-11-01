@@ -137,7 +137,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         credit_cc!(user, 100)
         taken = create(:coupon_code, :claimed, user: other, dollar_cost: 5, cc_cost: 10)
         expect { post discount_codes_path, params: { dollar_cost: 5, cc_cost: 10 } }.not_to change(CcMoney, :count)
-        # Fixed (was WART D-S09, a 500): redirect back to the offers with the alert
+        # redirect back to the offers with the alert
         expect(response).to redirect_to(new_discount_code_path)
         expect(flash[:alert]).to eq("Can not find coupon for $5 off")
         expect(taken.reload.user_id).to eq(other.id)
@@ -145,7 +145,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
 
       it "answers the 'Can not find coupon' alert and redirects to the offers on an unknown dollar value" do
         credit_cc!(user, 100)
-        # Fixed (was WART D-S09): the filter now returns after its redirect instead of dereferencing nil (a 500)
+        # the filter returns after its redirect
         expect { post discount_codes_path, params: { dollar_cost: 777, cc_cost: 40 } }.not_to change(CcMoney, :count)
         expect(response).to redirect_to(new_discount_code_path)
         expect(flash[:alert]).to eq("Can not find coupon for $777 off")
@@ -307,7 +307,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(CouponCode.find_by!(code: "NEW-2").user_id).to be_nil
       end
 
-      it "refuses a coupon without a price (fixed D-S10: a blank, free coupon used to be created)" do
+      it "refuses a coupon without a price" do
         expect { post coupon_codes_path, params: { coupon_code: { code: "" } } }.not_to change(CouponCode, :count)
         expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
@@ -351,7 +351,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
 
       it "deletes a coupon, even one a user already paid for" do
         claimed = create(:coupon_code, :claimed, user: other)
-        # WART(D-S11): deleting a claimed coupon silently destroys what the user spent cc on, with no refund
+        # deleting a claimed coupon silently destroys what the user spent cc on, with no refund
         expect { delete coupon_code_path(claimed) }.to change(CouponCode, :count).by(-1)
         expect(response).to redirect_to(coupon_codes_path)
         expect(flash[:notice]).to eq("Coupon code was successfully deleted.")
@@ -376,7 +376,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         get cc_moneys_path
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("What Are CC Points?")
-        # WART(D-S17): current_user is a blank User.new for guests, so the wallet card renders "0 CCs" and a Redeem button for visitors who are not signed in
+        # current_user is a blank User.new for guests, so the wallet card renders "0 CCs" and a Redeem button for visitors who are not signed in
         expect(response.body).to include("Your CC Balance")
         expect(response.body).to match(/0\s*<small/)
       end
@@ -443,7 +443,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         stale = verifier.generate(999_999_999)
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: stale }
-        # FIXED(D-S14): a missing row gets the same alert as an invalid token instead of a NoMethodError 500
+        # a missing row gets the same alert as an invalid token instead of a NoMethodError 500
         expect(response).to redirect_to(cc_moneys_path)
         expect(flash[:alert]).to start_with("Something went wrong.")
       end
@@ -476,7 +476,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "lets a signed-in user credit the points to ANY account by typing its email" do
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: token, user: { email: other.email } }
-        # INTENDED(D-S15): crediting the typed email is deliberate (guest purchasers credit their account by email); no behavior change. FIXED(D-S15, GET half): redeem is POST only; the mailed link opens link_cc_to_user (a GET confirm page with the POST form)
+        # crediting the typed email is deliberate (guest purchasers credit their account by email); no behavior change. redeem is POST only; the mailed link opens link_cc_to_user (a GET confirm page with the POST form)
         expect(flash[:notice]).to eq("The CC Money has been added to #{other.name}")
         expect(unlinked.reload.user_id).to eq(other.id)
       end
@@ -493,7 +493,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: token, user: { email: "nobody@example.com" } }
         expect(response).to redirect_to(cc_moneys_path)
-        # INTENDED(D-S16): keep the existing alert for an unknown email (user decision: crediting a typed email is intended); no behavior change
+        # keep the existing alert for an unknown email (user decision: crediting a typed email is intended); no behavior change
         expect(flash[:alert]).to eq("The CC Money has already been added to an account")
         expect(unlinked.reload.linked).to be(false)
       end
@@ -502,7 +502,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         stale = verifier.generate(999_999_999)
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: stale, user: { email: user.email } }
-        # FIXED(D-S14): same alert as an invalid token instead of a NoMethodError 500
+        # same alert as an invalid token instead of a NoMethodError 500
         expect(response).to redirect_to(cc_moneys_path)
         expect(flash[:alert]).to start_with("Something went wrong.")
         expect(user.cc_moneys.sum(:cc)).to eq(0)
@@ -510,7 +510,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
 
       it "tampered or garbage token gets the generic alert (no 500) and missing user param is a 302 to root" do
         shop_log_in!(user)
-        # FIXED: redeem used verifier.verify (InvalidSignature 500); verified returns nil, handled like a missing row
+        # redeem used verifier.verify (InvalidSignature 500); verified returns nil, handled like a missing row
         post redeem_cc_moneys_path, params: { token: "bad", user: { email: user.email } }
         expect(response).to redirect_to(cc_moneys_path)
         expect(flash[:alert]).to start_with("Something went wrong.")

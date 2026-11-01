@@ -14,8 +14,8 @@ require "rails_helper"
 #     back to the values they were written with (creation is UTC-normalized,
 #     readback is evaluated as UTC then re-zoned)
 #   - update_color only flashes (no render/redirect) → the response collapses
-#     to 204 No Content even when data changed (wart)
-#   - ics_to_json route was removed (D-B13) → 404
+#     to 204 No Content even when data changed
+#   - ics_to_json route was removed → 404
 
 RSpec.describe "Admin calendar contract", type: :request do
   before do
@@ -55,7 +55,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(flash[:alert]).to eq("You are not assigned to any spaces.")
   end
 
-  # WART(D-B14): index falls back with `@user.space_id || Space.first.id` — if
+  # index falls back with `@user.space_id || Space.first.id` — if
   # the DB contains NO spaces at all, Space.first is nil and `.id` raises — 500.
   it "index 500s when no spaces exist at all" do
     log_in!(admin) # nothing else creates a space in this example
@@ -99,7 +99,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       )
     end
 
-    # WART(D-B53): StaffSpace#before_create :create_color OVERWRITES any color
+    # StaffSpace#before_create :create_color OVERWRITES any color
     # passed to create! — generate_color picks the first global palette
     # entry not yet taken in the space, so a brand-new StaffSpace always
     # gets "#e6194b" (palette x 22 colors) regardless of what we assign.
@@ -116,7 +116,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(staff_entry.keys)
         .to eq(%w[id name color unavailabilities])
       expect(staff_entry["id"]).to eq(staff.id)
-      # not the "#3788d8" the helper assigned — see WART(D-B53) note above
+      # not the "#3788d8" the helper assigned — see note above
       expect(staff_entry["color"]).to eq("#e6194b")
 
       event = staff_entry["unavailabilities"].first
@@ -131,7 +131,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       )
     end
 
-    # D-SP29 follow-up: allDay means local midnight to the next local midnight;
+    # allDay means local midnight to the next local midnight;
     # a 24h span from 09:00 is no longer flagged (it used to be).
     it "allDay goes true for local midnight to the next midnight, not for any 24h span" do
       staff_space!
@@ -173,7 +173,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(body.first["name"]).to eq(staff.name)
     end
 
-    # N+1 pinned: see defects.md D-PERF14
+    # N+1 pinned
     it "orders staff by name descending", skip_bullet: true do
       s1 = StaffSpace.create!(space: space, color: "#111111",
                               user: create(:user, :staff, name: "Zeta"))
@@ -194,7 +194,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     end
   end
 
-  # D-B13: the dead ics_to_json route was removed; the path now falls to the
+  # the dead ics_to_json route was removed; the path now falls to the
   # resource's show route, which has no action → 404.
   it "ics_to_json 404s (no route, no action)" do
     log_in!(admin)
@@ -202,7 +202,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(response.status).to eq(404)
   end
 
-  # WART(D-B12): update_color only ever assigns flash — no render, no redirect,
+  # update_color only ever assigns flash — no render, no redirect,
   # and no template exists for the action — so both the success path (which
   # also mutated data) and the failure path fall through to an empty
   # render-less response that surfaces as 204 No Content. Verified live.
@@ -214,7 +214,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     post update_color_admin_calendar_index_path,
          params: { user_id: admin.id, color: "#ff0000" }
     expect(response.status).to eq(204)
-    expect(row.reload.color).to eq("#ff0000") # data changed via 204 (wart)
+    expect(row.reload.color).to eq("#ff0000") # data changed via 204
 
     post update_color_admin_calendar_index_path, params: {}
     expect(response.status).to eq(204) # alert branch is ALSO flash-only

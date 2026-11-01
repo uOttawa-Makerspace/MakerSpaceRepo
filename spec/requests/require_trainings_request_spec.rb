@@ -39,7 +39,7 @@ RSpec.describe "Require trainings", type: :request do
         expect(response).to redirect_to(root_path)
       end
 
-      # WART(D-T34): a failed create sets a notice but never renders or redirects (204 empty response)
+      # a failed create sets a notice but never renders or redirects (204 empty response)
       it "answers 204 with a 'Something went wrong' notice when the training is missing" do
         expect { post require_trainings_path, params: { require_training: { volunteer_task_id: task.id, training_id: "" } } }
           .not_to change(RequireTraining, :count)

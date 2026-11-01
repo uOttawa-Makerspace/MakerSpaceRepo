@@ -4,7 +4,7 @@ require "rails_helper"
 
 # Real second connections, deterministic interleaving (see
 # training_session_certify_concurrency_spec). rfids.card_number has no unique
-# index (D-I46), so Rfid.link_to_user! serialises on an advisory lock.
+# index, so Rfid.link_to_user! serialises on an advisory lock.
 RSpec.describe Rfid, ".link_to_user! under concurrency", type: :model do
   self.use_transactional_tests = false
 

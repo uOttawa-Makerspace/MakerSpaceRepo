@@ -116,7 +116,7 @@ RSpec.describe "Key certifications", type: :request do
       expect(key_cert.reload.pdf_file_3).to be_attached
     end
 
-    # WART(D-T40): file_number is interpolated into `send("pdf_file_#{n}")`; an out-of-range number raises NoMethodError (500) instead of a message
+    # file_number is interpolated into `send("pdf_file_#{n}")`; an out-of-range number raises NoMethodError (500) instead of a message
     it "answers 500 for an out-of-range file number" do
       log_in!(owner)
       delete destroy_pdf_key_certification_path(key_cert, file_number: 99)

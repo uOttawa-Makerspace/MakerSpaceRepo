@@ -7,7 +7,7 @@ require "rails_helper"
 #
 # Gate: AdminAreaController (before_action :current_user, :ensure_admin). Guests
 # get current_user = User.new and are bounced like regular users and staff. The
-# dumps contain PII (name, email, student id) and are admin-only: no severity-1.
+# dumps contain PII (name, email, student id) and are admin-only.
 RSpec.describe "Admin CDEL reports", type: :request do
   include Chunk18Helpers
 
@@ -114,14 +114,14 @@ RSpec.describe "Admin CDEL reports", type: :request do
     end
 
     it "a range report excludes records made on the end date itself" do
-      # WART(D-R09): the end date is a Date (midnight), so rows created later on the 'To' day fall outside the dump
+      # the end date is a Date (midnight), so rows created later on the 'To' day fall outside the dump
       create(:user, :student, email: "lastday@example.test", created_at: Time.utc(2026, 3, 31, 12))
       get admin_cdel_reports_generate_path, params: range.merge(new_users: "x")
       expect(csv_rows.map { |r| r[2] }).not_to include("lastday@example.test")
     end
 
     it "range with a missing or unparseable date is a 500" do
-      # WART(D-R10): params[:start_date].to_date is not guarded, so a missing date (nil) or garbage raises instead of a 400/flash
+      # params[:start_date].to_date is not guarded, so a missing date (nil) or garbage raises instead of a 400/flash
       get admin_cdel_reports_generate_path, params: { date_format: "range", end_date: "2026-03-31", visitors: "x" }
       expect(response).to have_http_status(:internal_server_error)
       get admin_cdel_reports_generate_path, params: range.merge(start_date: "garbage", visitors: "x")
@@ -129,7 +129,7 @@ RSpec.describe "Admin CDEL reports", type: :request do
     end
 
     it "no date_format or an unknown semester term: visitors/certifications dump EVERYTHING (nil..nil), new_users is a 500" do
-      # WART(D-R11): start_date/end_date return nil for a missing date_format or unknown term; visitors/certifications silently become unbounded dumps named 'dump--.csv', new_users raises on nil.to_date
+      # start_date/end_date return nil for a missing date_format or unknown term; visitors/certifications silently become unbounded dumps named 'dump--.csv', new_users raises on nil.to_date
       get admin_cdel_reports_generate_path, params: { visitors: "x" }
       expect(response).to have_http_status(:ok)
       expect(response.headers["Content-Disposition"]).to include("CEED_visitors_dump--.csv")

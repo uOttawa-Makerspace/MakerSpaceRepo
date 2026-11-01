@@ -4,7 +4,6 @@ require "rails_helper"
 
 # Characterization spec for SessionsController (chunk 9 "Identity").
 # Pins login failure, lockout, expiry and last_seen_at as they behave today.
-# Defects are PINNED, not fixed.
 #
 # Environment notes:
 # * Auth is a custom cookie session (no Devise); expiry is driven with time travel.
@@ -99,7 +98,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
 
     it "never includes the password hash or access token in the json user payload" do
-      # FIXED(D-I02): User#serializable_hash excludes password and access_token
+      # User#serializable_hash excludes password and access_token
       post login_authentication_path,
            params: { username_email: user.username, password: password },
            as: :json
@@ -141,7 +140,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
 
     it "locks the account on the 5th failure and emails an unlock link, but that request 500s" do
-      # WART(D-I06): the lockout-triggering (5th) failed login raises (`format.html?` / `sanitize` undefined in the respond_to block) -> 500 instead of the locked message
+      # the lockout-triggering (5th) failed login raises (`format.html?` / `sanitize` undefined in the respond_to block) -> 500 instead of the locked message
       perform_enqueued_jobs do
         4.times { login!(user, pw: "wrong") }
         login!(user, pw: "wrong")
@@ -197,7 +196,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
 
   describe "a failed login while already signed in" do
     it "500s: the error re-render swaps @user for a blank User under a signed-in navbar" do
-      # WART(D-I25): a failed login POST from a still-signed-in browser re-renders :login with @user = User.new, so the navbar's signed-in links raise (500)
+      # a failed login POST from a still-signed-in browser re-renders :login with @user = User.new, so the navbar's signed-in links raise (500)
       login!(create(:user, :regular_user))
       post login_authentication_path, params: { username_email: "nobody", password: "x" }
       expect(response).to have_http_status(:internal_server_error)
@@ -223,7 +222,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
 
     it "deactivated users cannot sign in (html: login re-rendered with an alert, no session)" do
-      # FIXED(D-I03): a deactivated user (deactivated_at) is refused sign-in with the locked/unconfirmed refusal shape
+      # a deactivated user (deactivated_at) is refused sign-in with the locked/unconfirmed refusal shape
       u = create(:user, :regular_user, deactivated_at: Time.current)
       login!(u)
       expect(response).to have_http_status(:ok)
@@ -259,7 +258,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
 
     it "a cookie session of a user who gets ADMIN-locked mid-session is ended, and stays dead after unlocking" do
-      # FIXED(D-I01): an admin lock bumps token_version, so sessions end for good
+      # an admin lock bumps token_version, so sessions end for good
       login!(user)
       admin_toggle_lock!(user)
       expect(user.reload.locked).to be(true)
@@ -293,7 +292,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
 
     it "a lock without an end (locked_until nil) refuses the login instead of raising, html and json" do
-      # FIXED: login_authentication compared nil < now (a 500) for this valid admin-lock state
+      # login_authentication compared nil < now (a 500) for this valid admin-lock state
       user.update_columns(locked: true, locked_until: nil)
       login!(user)
       expect(response).to have_http_status(:unprocessable_content)
@@ -358,7 +357,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
 
     it "a session of a user who is soft-deleted afterwards is ended cleanly on the next request" do
-      # FIXED(D-I04): the session user is looked up with find_by and a missing/deleted user signs the session out
+      # the session user is looked up with find_by and a missing/deleted user signs the session out
       login!(user)
       user.update_columns(deleted: true)
       get settings_profile_path
@@ -417,7 +416,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
 
     it "a JWT survives a plain logout (logout ends only that session)" do
-      # INTENDED(D-I01): plain logout does not bump token_version; only password change/reset revoke tokens
+      # plain logout does not bump token_version; only password change/reset revoke tokens
       tok = user.token
       login!(user)
       get logout_path
@@ -429,7 +428,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
 
     it "a JWT is revoked by a password change" do
-      # FIXED(D-I01): the token carries ver; a password change bumps token_version
+      # the token carries ver; a password change bumps token_version
       tok = user.token
       user.pword = "SomethingElse1!x"
       user.save!
@@ -551,7 +550,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
   end
 
-  describe "cookie sessions and token_version (D-I01)" do
+  describe "cookie sessions and token_version" do
     let(:new_pw) { "NewPassw0rd!x#9" }
 
     def attacker
@@ -572,7 +571,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
 
     it "a session opened before a password change is rejected afterwards and cannot mint a JWT" do
-      # FIXED(D-I01): cookie sessions are checked against token_version too
+      # cookie sessions are checked against token_version too
       expect(attacker_signed_in?).to be(true)
       login!(user)
       patch change_password_user_path(user.username),
@@ -629,14 +628,14 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)).to eq("logout" => "true")
     end
 
-    # INTENDED(D-I05): GET /logout is kept for MakerRepoApp (frontend-api-inventory.md row 3) until it ships POST logout
+    # GET /logout is kept for MakerRepoApp (frontend-api-inventory.md row 3) until it ships POST logout
     it "is still routable as a GET" do
       expect(Rails.application.routes.recognize_path("/logout", method: :get)[:action]).to eq("logout")
     end
   end
 
   describe "POST and DELETE /logout" do
-    # FIXED(D-I05): the site's own UI logs out with DELETE; POST works too
+    # the site's own UI logs out with DELETE; POST works too
     %i[post delete].each do |verb|
       it "#{verb.to_s.upcase} clears the session and redirects to root" do
         login!(user)
@@ -695,8 +694,8 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
     end
 
     it "an expired staff cookie sent with a non-staff user's Bearer JWT is that non-staff user, not staff" do
-      # An expired session used to stay memoized as current_user for the request that expired it
-      # (set_last_seen_at ran first) while signed_in? passed on the Bearer token of ANY valid user.
+      # An expired session is not memoized as current_user for the request that expired it,
+      # so signed_in? follows the Bearer token of the valid user.
       create(:space)
       staff = create(:user, :staff)
       login!(staff)

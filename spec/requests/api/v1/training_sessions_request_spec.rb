@@ -121,7 +121,7 @@ RSpec.describe "/api/v1 training sessions", type: :request do
       expect(response).to have_http_status(:forbidden)
     end
 
-    it "lets staff create a session with themselves as instructor (the legacy non-admin bug)" do
+    it "lets staff create a session with themselves as instructor" do
       expect { api_post "/api/v1/training_sessions", payload.merge(instructor_id: staff.id), as: staff }
         .to change(TrainingSession, :count).by(1)
       expect(response).to have_http_status(:created)

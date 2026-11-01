@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# D-B55: the booking specs book fixed 2027 dates. Bookings that start in the
-# past are rejected (D-B18), so those specs would break once the real clock
+# the booking specs book fixed 2027 dates. Bookings that start in the
+# past are rejected, so those specs would break once the real clock
 # passes their dates. Tag an example group `:booking_clock` to run each of its
 # examples at BookingClock::NOW, a fixed Eastern midday well before every fixed
 # date those specs use (midday, so the UTC date is the same as the local one).

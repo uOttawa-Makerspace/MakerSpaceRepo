@@ -118,7 +118,7 @@ RSpec.describe LockerRental, type: :model do
     end
 
     it "raises when READING a non-nil specifier (normalizes with: :squish is a Symbol)" do
-      # WART(D-L01): `normalizes :specifier, with: :squish`
+      # `normalizes :specifier, with: :squish`
       # hands Rails a Symbol, not a callable; assignment succeeds but reading
       # the attribute raises. The column is unused in practice (always nil).
       rental = LockerRental.new(specifier: "  a   b ")
@@ -872,7 +872,7 @@ RSpec.describe LockerRental, type: :model do
 
   describe ".get_assigned_lockers" do
     it "groups active rentals by locker_type_id" do
-      # WART(D-L02): the query plucks :locker_type_id and
+      # the query plucks :locker_type_id and
       # :locker_specifier, columns that no longer exist on locker_rentals
       # (they were replaced by locker_id/specifier), so it raises.
       create(:locker_rental, :active)

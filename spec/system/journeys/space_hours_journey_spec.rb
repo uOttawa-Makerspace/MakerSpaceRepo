@@ -4,7 +4,7 @@ require "rails_helper"
 
 # End-to-end spaces journey: an admin edits a space's contact info (including
 # its opening-hours block) and the public contact page shows the new details.
-# The opening hours themselves are no longer rendered publicly (D-E2E07).
+# The opening hours themselves are no longer rendered publicly.
 RSpec.describe "Journey: space contact info and hours", type: :system, skip_bullet: true do
   let!(:admin) { create(:user, :admin) }
   let!(:space) { create(:space, name: "Hours Space") }
@@ -48,7 +48,7 @@ RSpec.describe "Journey: space contact info and hours", type: :system, skip_bull
     expect(page).to have_text("613-555-0123")
     expect(page).to have_text("hours@example.com")
     expect(page).to have_no_text("1 Old Road")
-    # WART(D-E2E07): the saved opening hours / table header are not shown on
+    # the saved opening hours / table header are not shown on
     # any public page (the hours page is calendar-driven; the form is deprecated).
     expect(page).to have_no_text("Weekday hours")
     visit hours_path

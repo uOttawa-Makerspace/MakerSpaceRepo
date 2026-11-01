@@ -198,7 +198,7 @@ RSpec.describe LearningModule, type: :model do
     it "orders by level with the ordered_by_level scope (stored values are capitalised, so the CASE falls to ELSE 0)" do
       create(:learning_module, level: "Advanced", title: "Adv one")
       create(:learning_module, level: "Beginner", title: "Beg one")
-      # WART(D-T39): the CASE compares against lowercase enum keys but the column stores 'Beginner'/'Advanced', so the scope does not sort by level
+      # the CASE compares against lowercase enum keys but the column stores 'Beginner'/'Advanced', so the scope does not sort by level
       raw = LearningModule.connection.select_values("SELECT level FROM learning_modules")
       expect(raw).to match_array(%w[Advanced Beginner])
       cases = LearningModule.connection.select_values(

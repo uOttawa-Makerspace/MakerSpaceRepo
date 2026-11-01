@@ -686,7 +686,7 @@ RSpec.describe User, type: :model do
     end
 
     it "email format is checked on create only, and the format check is lenient" do
-      # WART(D-I29): the `email: true` validator accepts addresses without an @ (e.g. "not-an-email") and no email rule runs on update
+      # the `email: true` validator accepts addresses without an @ (e.g. "not-an-email") and no email rule runs on update
       expect(build(:user, email: "not-an-email")).to be_valid
       expect(build(:user, email: "")).not_to be_valid
       u = create(:user)
@@ -715,7 +715,7 @@ RSpec.describe User, type: :model do
       expect(build(:user, **base, student_id: "123456")).not_to be_valid
       expect(build(:user, **base, student_id: "12345678901234")).not_to be_valid
       expect(build(:user, **base, student_id: "12345a789")).not_to be_valid
-      # WART(D-I30): student_id has allow_blank: true alongside presence: true, so the presence rule is dead and students can omit it
+      # student_id has allow_blank: true alongside presence: true, so the presence rule is dead and students can omit it
       expect(build(:user, **base, student_id: "")).to be_valid
       expect(build(:user, identity: "community_member", student_id: "abc")).to be_valid
     end
@@ -964,7 +964,7 @@ RSpec.describe User, type: :model do
     end
 
     it "locks a legacy-invalid row (old username, stale gender) after MAX_AUTH_ATTEMPTS failures" do
-      # FIXED: the lock was written with a validated update that silently failed for such rows
+      # the lock was written with a validated update that silently failed for such rows
       legacy = create(:user, :regular_user)
       legacy.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
       expect(legacy.reload).not_to be_valid

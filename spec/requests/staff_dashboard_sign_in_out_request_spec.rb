@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # The staff dashboard's sign in / sign out / search / change_space endpoints as the
-# React app (MakerRepoApp, rows 6, 19, 20, 21 of doc/refactor/frontend-api-inventory.md)
+# React app (MakerRepoApp, rows 6, 19, 20, 21 of the frontend API inventory)
 # calls them: PUT add_users?added_users=:username, PUT remove_users?dropped_users[]=:username,
 # GET search?query=, PUT change_space?space_id=. Plus the not-signed-in / unknown-user edges.
 RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
@@ -123,7 +123,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
     end
 
     it "a user who is not signed in anywhere is a 500 (NoMethodError on nil)" do
-      # WART(D-STAFF-SIGNOUT-NIL-NEW): `LabSession.active_for_user(user).last.sign_out` has no nil
+      # `LabSession.active_for_user(user).last.sign_out` has no nil
       # check, so the dashboard's X button for a user whose session expired or was ended in another tab
       # (stale table) gets a 500 instead of {status: "ok"}; the other usernames in the same request
       # are not processed either.
@@ -133,7 +133,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
     end
 
     it "a user whose only session already ended is also a 500" do
-      # WART(D-STAFF-SIGNOUT-NIL-NEW): same nil dereference.
+      # same nil dereference.
       ended = create(:lab_session, user: visitor, space: space, sign_in_time: 3.hours.ago, sign_out_time: 1.hour.ago)
       ended_at = ended.reload.sign_out_time
       expect do
@@ -153,7 +153,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
     end
   end
 
-  # WART(D-PERF-NEW2): under CI=1 Bullet raises on the JSON search (`.includes(lab_sessions: :space)`
+  # under CI=1 Bullet raises on the JSON search (`.includes(lab_sessions: :space)`
   # is eager-loaded but `as_json` never reads it: unused eager loading). Pinned with skip_bullet.
   describe "GET /staff_dashboard/search", skip_bullet: true do
     it "answers an array of users carrying name, username and email" do
@@ -198,7 +198,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
     end
 
     it "an unknown space_id is a 500 (nil.id)" do
-      # WART(D-STAFF-SIGNOUT-NIL-NEW): `new_space.id` is read before the `new_space.present?` check, so an
+      # `new_space.id` is read before the `new_space.present?` check, so an
       # unknown space_id raises instead of answering {status: "error"}.
       put "/staff_dashboard/change_space", params: { space_id: 0 }, as: :json
       expect(response).to have_http_status(:internal_server_error)

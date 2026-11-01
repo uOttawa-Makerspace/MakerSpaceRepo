@@ -22,7 +22,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
 
   describe "access matrix" do
     it "sends guests to / (ensure_admin runs before signed_in; no login redirect)" do
-      # WART(D-L06): unlike LockerRentals, guests are not
+      # unlike LockerRentals, guests are not
       # sent to the login page here.
       get lockers_path
       expect(response).to redirect_to("/")
@@ -139,7 +139,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(flash[:alert]).to eq("Range end must be larger than range start")
     end
 
-    # N+1 pinned: see defects.md D-PERF07
+    # N+1 pinned
     it "PATCH bulk_edit updates or deletes the selected ids", skip_bullet: true do
       a = create(:locker)
       b = create(:locker)
@@ -208,7 +208,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
     end
 
     it "POST create with invalid data silently creates nothing and still redirects" do
-      # WART(D-L07): result of LockerSize.create/update is ignored (silent failure)
+      # result of LockerSize.create/update is ignored (silent failure)
       expect do
         post locker_sizes_path, params: { locker_size: { size: "", shopify_gid: "" } }
       end.not_to change(LockerSize, :count)
@@ -230,14 +230,14 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(response).to redirect_to(lockers_path)
     end
 
-    it "has no show route (D-L08)" do
+    it "has no show route" do
       get "/locker_sizes/#{create(:locker_size).id}"
       expect(response).to have_http_status(:not_found)
     end
   end
 
   describe "models" do
-    # N+1 pinned: see defects.md D-PERF08
+    # N+1 pinned
     it "Locker.available excludes lockers with an active rental and filters by audience", skip_bullet: true do
       free = create(:locker, audience: "gng")
       taken = create(:locker_rental, :active).locker

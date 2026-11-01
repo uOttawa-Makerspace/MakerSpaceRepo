@@ -2,17 +2,15 @@
 
 require "rails_helper"
 
-# D-S33: two concurrent POST /discount_codes, on real second connections (see
+# two concurrent POST /discount_codes, on real second connections (see
 # rfid_link_concurrency_spec for the pattern). Thread 1 pauses inside its claim, at the
 # CC debit (CcMoney.debit!), after it has picked its coupon. Thread 2 then runs
 # its whole request; the main thread waits until thread 2 either finished or is blocked on a
 # row lock, then lets thread 1 go on.
 #
-# Fixed (was WART D-S33): the claim was find unclaimed -> debit -> assign with no lock, so
-# thread 2 completed a claim of the same coupon and thread 1 then debited too and overwrote
-# the owner (two debits, one coupon), and a user's two claims could overdraw the wallet.
-# Now CouponCode.claim! locks the user row then the coupon row in one transaction.
-RSpec.describe "Coupon claim race (D-S33)", type: :request do
+# A coupon is claimed once and a user's claims cannot overdraw the wallet:
+# CouponCode.claim! locks the user row then the coupon row in one transaction.
+RSpec.describe "Coupon claim race", type: :request do
   self.use_transactional_tests = false
 
   let(:password) { "asa32A353#" }

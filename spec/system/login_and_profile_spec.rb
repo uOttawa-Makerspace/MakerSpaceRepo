@@ -46,7 +46,7 @@ RSpec.describe "Login and profile", type: :system do
     expect(user.reload.name).to eq("Pat Example")
   end
 
-  # INF-02: the settings form POSTs with the current password; the emailed link
+  # the settings form POSTs with the current password; the emailed link
   # opens a confirmation page whose button POSTs the token.
   it "changes the email: settings form with the current password, then the emailed link's confirm page" do
     log_in_as(user)

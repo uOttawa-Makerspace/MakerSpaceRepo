@@ -6,10 +6,8 @@ require "rails_helper"
 #
 # Pins the CURRENT observable behavior of the wizard/step machinery so a later
 # refactor can prove no change. Notable current behaviors pinned here:
-# * The controller has NO `signed_in` / `grant_access` gate at all — guests can
-#   create AND destroy tasks on any order; `update` only checks that
-#   `current_user` is the order owner or an admin.
-# * `edit` renders any step for anyone (ownership is not checked).
+# * Gates: create, update and destroy need sign-in and the order owner or an admin;
+#   `edit` needs sign-in and owner, staff or admin.
 # * The route is verb-bespoke: POST /job_orders/:job_order_id/task (create),
 #   GET/PATCH/PUT/DELETE /job_orders/:job_order_id/task/:id.
 # * Rails 8.1 test env maps app errors to a 500 (debug page) and
@@ -57,7 +55,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(response).to redirect_to(wizard_path_for(order, task, 1))
     end
 
-    # WART(D-J18): the numbering SQL uses the Postgres regexp "Task ([0-9]+)"
+    # the numbering SQL uses the Postgres regexp "Task ([0-9]+)"
     # against titles that actually are "Task #N" — the "#" never matches, so
     # SUBSTRING returns NULL and the "highest existing number" is always 0.
     # Numbering is therefore purely count-based (max(count) + 1): with a gapped
@@ -80,7 +78,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(order.reload.job_tasks.last.title).to eq("Task #1")
     end
 
-    # FIXED(D-J01): create now requires sign-in and owner/admin (staff: retro of A2).
+    # create now requires sign-in and owner/admin.
     it "redirects a GUEST to login and creates no task" do
       order = order_with_task!
       expect do
@@ -198,7 +196,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # FIXED(D-J03): edit requires sign-in and owner/staff/admin.
+    # edit requires sign-in and owner/staff/admin.
     it "refuses a non-owner regular user (no_permission redirect)" do
       order = order_with_task!
       session_login!(other)
@@ -269,7 +267,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       patch job_order_job_task_path(order, task),
             params: { step: "1", job_task: { job_type_id: JobType.find_by!(name: "3D Print").id } }
 
-      # FIXED(D-J03): the shared gate now bounces strangers before the action
+      # the shared gate now bounces strangers before the action
       expect(response).to redirect_to(new_job_orders_path)
       expect(flash[:alert])
         .to eq(I18n.t("job_orders.alerts.no_permission"))
@@ -522,7 +520,7 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         expect(status_names(order)).to eq(["Draft"])
       end
 
-      # N+1 pinned: see defects.md D-PERF04
+      # N+1 pinned
       it "stays a Draft when ANOTHER task is still incomplete (submit silently skipped)", skip_bullet: true do
         order = order_with_task!
         order.job_tasks.create!(title: "Task #2")
@@ -588,9 +586,9 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
 
   # ------------------------------------------------------------- DELETE destroy
 
-  # FIXED(D-J02): destroy requires sign-in and owner/admin (staff: retro of A2). (No Draft-only
-  # state guard: owner edits/deletes after submit are INTENDED, D-J35; after the quote they send
-  # the order back to staff and after payment they are refused, JOB-01.)
+  # destroy requires sign-in and owner/admin. (No Draft-only
+  # state guard: owner edits/deletes after submit are intended; after the quote they send
+  # the order back to staff and after payment they are refused.)
   describe "DELETE /job_orders/:job_order_id/task/:id (destroy)" do
     it "lets the owner delete and redirects back to the order page with the flash" do
       order = order_with_task!

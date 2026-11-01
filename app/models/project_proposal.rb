@@ -26,7 +26,7 @@ class ProjectProposal < ApplicationRecord
 
   has_many_attached :project_files
 
-  # D-C37: project files are checked by sniffed content type and size in the model
+  # project files are checked by sniffed content type and size in the model
   # (an invalid file makes the record invalid, so `attach` returns false and nothing is stored;
   # callers that attach one file at a time must check the result - see a9-notes).
   MAX_PROJECT_FILE_SIZE = 100.megabytes

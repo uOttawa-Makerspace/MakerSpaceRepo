@@ -55,7 +55,7 @@ RSpec.describe "Admin drop-off locations", type: :request do
       expect(DropOffLocation.last.name).to eq("Lab door")
     end
 
-    # WART(D-SP10): DropOffLocation has no validations: a blank/missing name is saved, so the "Input is invalid" branch is unreachable.
+    # DropOffLocation has no validations: a blank/missing name is saved, so the "Input is invalid" branch is unreachable.
     it "saves a blank name" do
       expect { post admin_drop_off_locations_path, params: { name: "" } }.to change(DropOffLocation, :count).by(1)
       expect(flash[:notice]).to eq("Drop-off Location added successfully!")
@@ -69,7 +69,7 @@ RSpec.describe "Admin drop-off locations", type: :request do
       expect(location.reload.name).to eq("Dock 2")
     end
 
-    # WART(D-SP11): update reads params[:drop_off_location][:name] unguarded: no nested param is a NoMethodError 500.
+    # update reads params[:drop_off_location][:name] unguarded: no nested param is a NoMethodError 500.
     it "update 500s when the nested param is missing" do
       patch admin_drop_off_location_path(location)
       expect(response).to have_http_status(:internal_server_error)

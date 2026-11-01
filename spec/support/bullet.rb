@@ -7,7 +7,7 @@ if defined?(Bullet) && Bullet.enable?
       if example.metadata[:skip_bullet] || example.metadata[:bullet] == false
         # Bullet::Rack still instruments (and raises for) every request while
         # Bullet is enabled, so skipping Bullet.profile is not enough: switch
-        # it off for the example. Used for pinned N+1s (see defects.md D-PERFnn).
+        # it off for the example. Used for pinned N+1s.
         begin
           Bullet.enable = false
           example.run

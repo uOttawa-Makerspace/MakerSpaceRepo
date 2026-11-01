@@ -35,7 +35,7 @@ class RateLimitCounter < ApplicationRecord
   # Deletes the rows whose window has ended, PRUNE_BATCH at a time (oldest first). Returns the
   # number deleted. Candidates are picked first; the DELETE then re-checks expiry on the rows
   # themselves, because an increment may restart a candidate's window after it was picked and must not
-  # lose its (live) counter, or an attacker's budget would reset mid-window. A batch can therefore
+  # lose its (live) counter, or its budget would reset mid-window. A batch can therefore
   # delete fewer rows than it picked, even none (all revived), so the loop ends only when no expired
   # candidate is left. It terminates: `now` is fixed, a revived row leaves the candidate set, and a
   # deleted one is gone, so every pass shrinks the expired set.

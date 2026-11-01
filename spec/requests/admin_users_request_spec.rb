@@ -5,7 +5,7 @@ require "rails_helper"
 # Characterization spec for Admin::UsersController: the admin-only user
 # management matrix (guest / regular / volunteer / staff / admin), role
 # changes, soft delete + restore, lock toggle, rename, search and listing.
-# Chunk 9 "Identity". Defects are PINNED, not fixed.
+# Chunk 9 "Identity".
 #
 # Every action sits behind AdminAreaController#ensure_admin, which redirects
 # any non-admin (guests included) to "/" with no flash; there are no
@@ -104,7 +104,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "listing (admin)" do
     before { login!(admin) }
 
-    # N+1 pinned: see defects.md D-PERF09
+    # N+1 pinned
     it "index defaults to newest users", skip_bullet: true do
       get admin_users_path
       expect(response).to have_http_status(:ok)
@@ -128,7 +128,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("Invalid parameters!")
     end
 
-    # N+1 pinned: see defects.md D-PERF09
+    # N+1 pinned
     it "index: accepts whitelisted sort", skip_bullet: true do
       get admin_users_path(sort: "username", direction: "asc")
       expect(response).to have_http_status(:ok)
@@ -140,7 +140,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response.body).not_to include(gone.username)
     end
 
-    # N+1 pinned: see defects.md D-PERF09
+    # N+1 pinned
     it "index includes inactive users", skip_bullet: true do
       idle = create(:user, :regular_user, deactivated_at: Time.current)
       get admin_users_path
@@ -154,7 +154,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "search with at least one hit 500s: the view calls kaminari's total_pages on a pagy result" do
-      # WART(D-I23): Admin::Users#search view calls `total_pages` (Kaminari API) but the controller paginates with Pagy, so every search that returns at least one user raises (500)
+      # Admin::Users#search view calls `total_pages` (Kaminari API) but the controller paginates with Pagy, so every search that returns at least one user raises (500)
       get search_admin_users_path(q: target.username, filter: "Username")
       expect(response).to have_http_status(:internal_server_error)
     end
@@ -208,7 +208,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "keeps existing certifications when none are re-sent" do
-      # FIXED(D-I20): certifications are only replaced when the param is sent and the save succeeds
+      # certifications are only replaced when the param is sent and the save succeeds
       create(:certification, :basic_training, user_id: target.id)
       patch admin_user_path(target), params: { user: { gender: "Female" } }
       expect(target.certifications.reload.count).to eq(1)
@@ -223,7 +223,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "a re-sent certifications list raises (Certification has no `name`) but rolls back, keeping the old ones" do
-      # WART(D-NEW-A13-1): create_certifications calls Certification.create(name:), a column that does not exist, so sending `certifications` always 500s; the destroy_all is now rolled back with it
+      # create_certifications calls Certification.create(name:), a column that does not exist, so sending `certifications` always 500s; the destroy_all is now rolled back with it
       create(:certification, :basic_training, user_id: target.id)
       patch admin_user_path(target), params: { user: { gender: "Male" }, certifications: %w[A B] }
       expect(response).to have_http_status(:internal_server_error)
@@ -246,7 +246,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "PATCH /admin/users/set_role" do
     before { login!(admin) }
 
-    # N+1 pinned: see defects.md D-PERF10
+    # N+1 pinned
     it "changes roles for several users, redirecting back (html)", skip_bullet: true do
       other = create(:user, :regular_user)
       patch set_role_admin_users_path,
@@ -276,7 +276,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "blocks demoting the last admin (HTML: redirect + alert)" do
-      # FIXED(D-I21): set_role refuses a change that would leave no admin
+      # set_role refuses a change that would leave no admin
       patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq("You cannot remove the last admin.")
@@ -293,7 +293,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "does not count a locked admin as remaining (the only usable admin cannot demote themselves)" do
-      # FIXED(D-I21): the guard counts only admins who can sign in
+      # the guard counts only admins who can sign in
       create(:user, :admin, locked: true, locked_until: 99.years.from_now)
       patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
       expect(flash[:alert]).to eq("You cannot remove the last admin.")
@@ -301,7 +301,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "counts an admin with NULL locked as remaining" do
-      # FIXED(D-I21): `locked` is nullable; an expired lockout is cleared at next login
+      # `locked` is nullable; an expired lockout is cleared at next login
       create(:user, :admin).update_columns(locked: nil)
       patch set_role_admin_users_path, params: { role: "regular_user", user_ids: [admin.id] }
       expect(admin.reload.role).to eq("regular_user")
@@ -434,7 +434,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "refuses to delete the last admin (even themselves)" do
-      # FIXED(D-I22): the last admin cannot be soft-deleted
+      # the last admin cannot be soft-deleted
       delete delete_user_admin_users_path, params: { id: admin.id, password: password }
       expect(response).to redirect_to(user_path(admin.username))
       expect(flash[:alert]).to eq("You cannot remove the last admin.")
@@ -442,7 +442,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "does not count a locked admin as remaining when deleting" do
-      # FIXED(D-I22): the guard counts only admins who can sign in
+      # the guard counts only admins who can sign in
       create(:user, :admin, locked: true, locked_until: 99.years.from_now)
       delete delete_user_admin_users_path, params: { id: admin.id, password: password }
       expect(flash[:alert]).to eq("You cannot remove the last admin.")
@@ -456,7 +456,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "ends the lingering session of the deleted user on its next request" do
-      # FIXED(D-I04): was a 404 for the lingering session; session_user now signs it out
+      # was a 404 for the lingering session; session_user now signs it out
       other_session = open_session
       other_session.post login_authentication_path, params: { username_email: target.username, password: password }
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
@@ -478,7 +478,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "does not actually restore the user's repositories (update_all runs under Repository's default scope)" do
-      # WART(D-I24): restore_user's `user.repositories.update_all(deleted: false)` goes through Repository's default scope (deleted: false), so soft-deleted repos stay deleted after a restore
+      # restore_user's `user.repositories.update_all(deleted: false)` goes through Repository's default scope (deleted: false), so soft-deleted repos stay deleted after a restore
       repo = create(:repository)
       repo.users << target
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
@@ -547,7 +547,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     before { login!(admin) }
 
     it "bumps the target's token_version when locking, not when unlocking" do
-      # FIXED(D-I01): an admin lock permanently ends existing sessions and JWTs
+      # an admin lock permanently ends existing sessions and JWTs
       expect { put toggle_lock_user_admin_users_path, params: { id: target.id } }
         .to change { target.reload.token_version }.by(1)
       expect { put toggle_lock_user_admin_users_path, params: { id: target.id } }
@@ -559,7 +559,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     before { login!(admin) }
 
     it "locks (token_version bumped, sessions and JWTs dead) and unlocks without validating the row" do
-      # FIXED: the lock was written with save!, which raised (500) for a row invalid for an unrelated legacy reason
+      # the lock was written with save!, which raised (500) for a row invalid for an unrelated legacy reason
       target.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
       expect(target.reload).not_to be_valid
       token = target.token
@@ -592,7 +592,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "PUT /admin/users/toggle_lock_user last-admin guard" do
     before { login!(admin) }
 
-    # FIXED(D-I21/D-I22): locking cannot remove the last usable admin
+    # locking cannot remove the last usable admin
     it "refuses to lock the only usable admin" do
       put toggle_lock_user_admin_users_path, params: { id: admin.id }
       expect(response).to redirect_to(user_path(admin.username))

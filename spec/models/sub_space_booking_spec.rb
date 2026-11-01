@@ -4,8 +4,8 @@ require "rails_helper"
 
 # Characterization spec for the SubSpaceBooking model.
 # Pins the exact validation surface: presence checks, the time order, and the
-# past-date rule (D-B18: a booking may not be created or moved to start in the
-# past). There is NO overlap rule (overlap is intended, D-B18); probes through
+# past-date rule (a booking may not be created or moved to start in the
+# past). There is NO overlap rule (overlap is intended); probes through
 # controller flows pinned those consequences separately.
 
 RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
@@ -33,7 +33,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       )
     end
 
-    # WART(D-B21): the error lands on :expiration_date
+    # the error lands on :expiration_date
     it "rejects start >= end under the Expiration date message" do
       b = described_class.new(
         sub_space: create(:sub_space),
@@ -46,7 +46,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         .to eq(["Expiration date Start Time needs to be before end time"])
     end
 
-    # D-B18 (overlap half, intended per user 2026-10-25): no overlap validation
+    # no overlap validation
     it "allows two overlapping bookings (no overlap validation)" do
       subspace = create(:sub_space)
       existing = create(:sub_space_booking, sub_space: subspace,
@@ -64,9 +64,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         .to eq([existing.name, "Over"])
     end
 
-    # FIXED(D-B18, past-date half; user 2026-10-25). Flips the pin "past-dated
-    # bookings are valid (no past-date rule)", which expected this to be valid.
-    describe "past-date rule (D-B18)" do
+    describe "past-date rule" do
       let(:room) { create(:sub_space) }
 
       def fresh(start_time, end_time = start_time + 1.hour)
@@ -117,10 +115,8 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         expect(future.errors.of_kind?(:start_time, :in_the_past)).to be(true)
       end
 
-      # D-B18 follow-up (coordinator decision): a booking in progress may move
-      # its END, if the start stays put and the new end is after now. This
-      # flips the earlier pin "refuses to move only the end of a booking that
-      # already started".
+      # a booking in progress may move
+      # its END, if the start stays put and the new end is after now.
       describe "a booking already in progress" do
         def in_progress
           described_class.find(create(:sub_space_booking, sub_space: room,
@@ -237,7 +233,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       end
     end
 
-    # WART(D-B17): has_one :sub_space_booking_status (dependent: :destroy) deletes
+    # has_one :sub_space_booking_status (dependent: :destroy) deletes
     # the STATUS row first, while sub_space_bookings.
     # sub_space_booking_status_id still references it — PG 23503 raises and
     # the booking SURVIVES, destroy is effectively a no-op. This is why the

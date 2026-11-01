@@ -17,8 +17,7 @@ class DiscountCodesController < DevelopmentProgramsController
   end
 
   # The before_actions are only early, friendly refusals; CouponCode.claim! re-decides both
-  # (coupon still unclaimed, enough CC) under locks, so a lost race neither charges nor assigns
-  # (D-S33).
+  # (coupon still unclaimed, enough CC) under locks, so a lost race neither charges nor assigns.
   def create
     outcome, = CouponCode.claim!(current_user, params[:dollar_cost], params[:cc_cost])
     case outcome
@@ -51,7 +50,7 @@ class DiscountCodesController < DevelopmentProgramsController
       end
     return if @price_rule # an unclaimed coupon, so never one already claimed
 
-    # D-S09: return after the redirect (the filter used to go on and dereference nil: a 500)
+    # return after the redirect
     flash[:alert] = "Can not find coupon for $#{params[:dollar_cost]} off"
     redirect_to new_discount_code_path
   end

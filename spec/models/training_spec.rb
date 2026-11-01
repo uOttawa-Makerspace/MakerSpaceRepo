@@ -72,7 +72,7 @@ RSpec.describe Training, type: :model do
       expect(t.localized_name).to eq("Laseur")
     end
 
-    # WART(D-T22): tokenize_info_* calls `collect(&:strip)` without using the result, so tokens keep their padding
+    # tokenize_info_* calls `collect(&:strip)` without using the result, so tokens keep their padding
     it "tokenizes the skill lists on commas WITHOUT stripping (collect result discarded)" do
       t = build(:training, list_of_skills_en: "a, b,c", list_of_skills_fr: ", x, y")
       expect(t.tokenize_info_en).to eq(["a", " b", "c"])

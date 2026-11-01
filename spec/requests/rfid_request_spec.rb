@@ -28,7 +28,7 @@ RSpec.describe "RFID endpoints", type: :request do
   end
 
   describe "POST /rfid/card_number as a Pi reader (no credentials, registered mac only)" do
-    # FIXED(D-EQ01): a registered reader mac is the only credential a guest can present
+    # a guest taps with a registered reader mac
     it "signs the card owner in for a registered reader" do
       expect { tap_card }.to change { LabSession.where(user: owner, space: space).active.count }.from(0).to(1)
       expect(response).to have_http_status(:ok)
@@ -66,7 +66,7 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(TapBoxLog.where(event_type: TapBoxLog::SIGN_OUT).last.mac_address).to eq(pi_reader.pi_mac_address)
     end
 
-    # FIXED(D-EQ01): a guest without a registered mac cannot tap, whatever the card or space_id
+    # a guest without a registered mac cannot tap, whatever the card or space_id
     it "answers 401 and changes nothing for an unknown mac, even with a known card" do
       expect {
         post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: "aa:bb:cc:dd:ee:ff", space_id: space.id }, as: :json
@@ -96,7 +96,7 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
     end
 
-    # FIXED(D-EQ03): an unknown mac no longer creates a PiReader, a temporary Rfid or TapBoxLog rows
+    # an unknown mac does not create a PiReader, a temporary Rfid or TapBoxLog rows
     it "creates no PiReader, Rfid or TapBoxLog rows for an unknown mac with a new card" do
       expect {
         post rfid_card_number_path, params: { rfid: "BRANDNEW1", mac_address: "aa:bb:cc:dd:ee:ff" }, as: :json
@@ -104,7 +104,7 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(response).to have_http_status(:unauthorized)
     end
 
-    # FIXED(A10 review item 7): legacy self-registered PiReader rows (no space) are not registered
+    # legacy self-registered PiReader rows (no space) are not registered
     it "answers 401 for a legacy space-less reader row, like an unknown mac, and traces it" do
       legacy = create(:pi_reader, space: nil)
       expect {
@@ -131,7 +131,7 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
     end
 
-    # FIXED(D-EQ02): the response carries only `success`, no membership/safety-sheet state of the card owner
+    # the response carries only `success`, no membership/safety-sheet state of the card owner
     it "returns only the success string, for sign in and sign out" do
       tap_card
       expect(body).to eq(success: "RFID sign in")
@@ -290,7 +290,7 @@ RSpec.describe "RFID endpoints", type: :request do
       )
     end
 
-    # FIXED(D-EQ05): a missing "Faculty membership" tier is logged to TapBoxLog, the job does not raise and the staff modal is still broadcast
+    # a missing "Faculty membership" tier is logged to TapBoxLog, the job does not raise and the staff modal is still broadcast
     it "logs a card_tap_job_failure but still broadcasts the modal when the Faculty membership tier is missing" do
       expect {
         expect { perform_enqueued_jobs { tap_card } }.to have_broadcasted_to("space_event_#{space.id}").with(
@@ -326,7 +326,7 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(temp.reload.mac_address).to eq(pi_reader.pi_mac_address)
     end
 
-    # FIXED(D-EQ04): parameter wrapping is off for RfidController, so a JSON tap without an rfid key is a clean 422
+    # parameter wrapping is off for RfidController, so a JSON tap without an rfid key is a clean 422
     it "answers 422 for a JSON tap with no rfid key, creating nothing" do
       expect {
         post rfid_card_number_path, params: { mac_address: pi_reader.pi_mac_address }, as: :json
@@ -364,7 +364,7 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("no_space")
     end
 
-    # FIXED(D-EQ03): an unknown reader mac is rejected and is not registered
+    # an unknown reader mac is rejected and is not registered
     it "does not register an unknown reader mac" do
       expect {
         post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: "de:ad:be:ef:00:01" }, as: :json
@@ -505,7 +505,7 @@ RSpec.describe "RFID endpoints", type: :request do
   end
 
   # test env uses :null_store (never counts), so back the limiter's store with a counter
-  describe "rate limit (D-EQ03)" do
+  describe "rate limit" do
     let(:counts) { Hash.new(0) }
 
     before do

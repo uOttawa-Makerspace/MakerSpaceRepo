@@ -2,7 +2,7 @@ class HelpController < SessionsController
   include TurnstileHelper
   before_action :current_user
 
-  # send_email opens a public GitHub issue per call and has no captcha (React app)
+  # send_email opens a GitHub issue per call; the React app sends no captcha, so it is rate limited
   rate_limit to: 5, within: 1.hour, only: :send_email,
              by: -> { current_user.id.presence || request.remote_ip },
              with: -> { render json: { error: 'Too many requests' }, status: :too_many_requests }

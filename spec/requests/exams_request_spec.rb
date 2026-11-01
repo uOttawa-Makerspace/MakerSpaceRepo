@@ -7,9 +7,9 @@ require "rails_helper"
 # ExamsController < SessionsController: #index and #show are open to a guest
 # (index lists nothing; show is gated by `grant_access`: owner or staff/admin).
 # finish_exam (POST) is owner-only, create_from_training / create_for_single_user
-# (POST) are for the session's trainer or an admin, destroy is admin-only
-# (FIXED D-T07, D-T15, D-T16). Graded or expired exams reject answers and
-# finishing (FIXED D-T08, D-T09, D-T10).
+# (POST) are for the session's trainer or an admin, destroy is admin-only.
+# Graded or expired exams reject answers and
+# finishing.
 # ExamResponsesController only lets the exam's owner answer.
 #
 # Pass rule: score = round(correct_responses * 100.0 / exam_questions) >= 68
@@ -52,7 +52,7 @@ RSpec.describe "Exams", type: :request do
       expect(response.body).not_to include("Start Exam")
     end
 
-    # N+1 pinned: see defects.md D-PERF18
+    # N+1 pinned
     it "lists only the signed-in user's own exams with Start/Resume links", skip_bullet: true do
       mine = new_exam
       resumed = new_exam(status: Exam::STATUS[:incomplete])
@@ -65,8 +65,8 @@ RSpec.describe "Exams", type: :request do
       expect(response.body.scan("Resume Exam").size).to eq(1)
     end
 
-    # FIXED(retro of A5): an expired exam cannot be started or resumed, so it says Expired
-    # N+1 pinned: see defects.md D-PERF18
+    # an expired exam cannot be started or resumed, so it says Expired
+    # N+1 pinned
     it "shows Expired instead of Start/Resume for expired ungraded exams, and keeps graded ones as they are", skip_bullet: true do
       new_exam.update!(expired_at: 1.hour.ago)
       new_exam(status: Exam::STATUS[:incomplete]).update!(expired_at: 1.hour.ago)
@@ -119,7 +119,7 @@ RSpec.describe "Exams", type: :request do
       expect(flash[:alert]).to eq("You cannot access this area.")
     end
 
-    # N+1 pinned: see defects.md D-PERF17
+    # N+1 pinned
     it "renders the questions to the owner and flips the status to incomplete", skip_bullet: true do
       log_in!(student)
       get exam_path(exam)
@@ -132,7 +132,7 @@ RSpec.describe "Exams", type: :request do
       expect(response.body).to match(/<form[^>]*method="post"[^>]*action="#{Regexp.escape(finish_exam_exams_path(exam_id: exam.id))}"/)
     end
 
-    # N+1 pinned: see defects.md D-PERF17
+    # N+1 pinned
     it "never marks which answer is correct in the page (no answer leakage)", skip_bullet: true do
       log_in!(student)
       get exam_path(exam)
@@ -141,7 +141,7 @@ RSpec.describe "Exams", type: :request do
       expect(main).to include("Question 1").and include("Question 3")
     end
 
-    # N+1 pinned: see defects.md D-PERF17
+    # N+1 pinned
     it "shows the owner's earlier answer as checked", skip_bullet: true do
       log_in!(student)
       chosen = answer!(exam, fixture[:questions].first, correct: false)
@@ -150,8 +150,8 @@ RSpec.describe "Exams", type: :request do
     end
 
     %i[staff admin].each do |role|
-      # FIXED(D-T11): only the owner's first visit starts the exam; staff/admin just look at it
-      # N+1 pinned: see defects.md D-PERF17
+      # only the owner's first visit starts the exam; staff/admin just look at it
+      # N+1 pinned
       it "lets #{role} open the student's exam without starting it", skip_bullet: true do
         sign_in_as(role)
         get exam_path(exam)
@@ -160,16 +160,16 @@ RSpec.describe "Exams", type: :request do
       end
     end
 
-    # FIXED(retro of A5): the Finish button is for the owner only; staff reviewers can still
+    # the Finish button is for the owner only; staff reviewers can still
     # look at an exam that expired, read-only
-    # N+1 pinned: see defects.md D-PERF17
+    # N+1 pinned
     it "shows the Finish button to the owner only", skip_bullet: true do
       log_in!(student)
       get exam_path(exam)
       expect(response.body).to include("Finish Exam")
     end
 
-    # N+1 pinned: see defects.md D-PERF17
+    # N+1 pinned
     it "leaves the owner's answer radios enabled", skip_bullet: true do
       log_in!(student)
       get exam_path(exam)
@@ -179,7 +179,7 @@ RSpec.describe "Exams", type: :request do
     end
 
     %i[staff admin].each do |role|
-      # N+1 pinned: see defects.md D-PERF17
+      # N+1 pinned
       it "shows #{role} the student's exam without a Finish button", skip_bullet: true do
         sign_in_as(role)
         get exam_path(exam)
@@ -187,7 +187,7 @@ RSpec.describe "Exams", type: :request do
         expect(response.body).not_to include("Finish Exam")
       end
 
-      # N+1 pinned: see defects.md D-PERF17
+      # N+1 pinned
       it "lets #{role} read an expired ungraded exam without changing it", skip_bullet: true do
         exam.update!(expired_at: 1.minute.ago)
         sign_in_as(role)
@@ -197,8 +197,8 @@ RSpec.describe "Exams", type: :request do
         expect(exam.reload.status).to eq("not started")
       end
 
-      # FIXED(retro round 2): the answer inputs are read-only for a reviewer
-      # N+1 pinned: see defects.md D-PERF17
+      # the answer inputs are read-only for a reviewer
+      # N+1 pinned
       it "renders the answer radios disabled for #{role}, with and without a saved answer", skip_bullet: true do
         ExamResponse.create!(exam_question: exam.exam_questions.first,
                              answer: fixture[:questions].first[:correct], correct: true)
@@ -218,7 +218,7 @@ RSpec.describe "Exams", type: :request do
       end
     end
 
-    # FIXED(D-T10): expiry is enforced on show
+    # expiry is enforced on show
     it "redirects the owner to the exam list when the exam has expired, without starting it" do
       exam.update!(expired_at: 1.minute.ago)
       log_in!(student)
@@ -238,7 +238,7 @@ RSpec.describe "Exams", type: :request do
       end
     end
 
-    # N+1 pinned: see defects.md D-PERF17
+    # N+1 pinned
     it "lets the owner resume an incomplete exam", skip_bullet: true do
       exam.update!(status: Exam::STATUS[:incomplete])
       log_in!(student)
@@ -322,7 +322,7 @@ RSpec.describe "Exams", type: :request do
       expect(response).to have_http_status(:internal_server_error)
     end
 
-    # WART(D-T12): the response is saved BEFORE the format check, so an HTML post stores the answer and then 500s (UnknownFormat)
+    # the response is saved BEFORE the format check, so an HTML post stores the answer and then 500s (UnknownFormat)
     it "stores the answer and then fails with UnknownFormat for a non-JS request" do
       log_in!(student)
       expect { post_answer(entry[:correct], format: :html) }.to change(ExamResponse, :count).by(1)
@@ -330,7 +330,7 @@ RSpec.describe "Exams", type: :request do
       expect(error_text).to include("ActionController::UnknownFormat")
     end
 
-    # FIXED(D-T09): answers are rejected (403) once the exam is graded
+    # answers are rejected (403) once the exam is graded
     %w[passed failed].each do |status|
       it "rejects and does not rewrite answers on a #{status} exam" do
         log_in!(student)
@@ -342,7 +342,7 @@ RSpec.describe "Exams", type: :request do
       end
     end
 
-    # FIXED(D-T10): answers are rejected (403) once the exam has expired
+    # answers are rejected (403) once the exam has expired
     it "rejects answers on an expired exam" do
       log_in!(student)
       exam.update!(expired_at: 1.minute.ago)
@@ -491,7 +491,7 @@ RSpec.describe "Exams", type: :request do
       expect(deliveries.map(&:to).flatten).to eq([student.email])
     end
 
-    # FIXED(D-T07): finish_exam is a POST that needs the exam's owner
+    # finish_exam is a POST that needs the exam's owner
     it "makes a guest sign in and finalizes nothing" do
       exam = new_exam
       get logout_path
@@ -533,7 +533,7 @@ RSpec.describe "Exams", type: :request do
       expect(deliveries.map(&:to).flatten).to eq([student.email])
     end
 
-    # FIXED(D-T08): a graded exam cannot be finished again, so no second certification and no pass-by-rewriting
+    # a graded exam cannot be finished again, so no second certification and no pass-by-rewriting
     it "rejects finishing a passed exam again: no second certification" do
       exam = new_exam
       log_in!(student)
@@ -557,7 +557,7 @@ RSpec.describe "Exams", type: :request do
       expect(ExamResponse.where(exam_question: exam.exam_questions).pluck(:correct).uniq).to eq([false])
     end
 
-    # FIXED(D-T10): an expired exam can no longer be finished, graded or certified
+    # an expired exam can no longer be finished, graded or certified
     it "rejects finishing an exam that expired a year ago" do
       exam = new_exam
       log_in!(student)
@@ -569,7 +569,7 @@ RSpec.describe "Exams", type: :request do
       expect(exam.reload.status).to eq("not started")
     end
 
-    # FIXED(retro of A5): a double-submit passes only_open_exam in both requests;
+    # a double-submit passes only_open_exam in both requests;
     # the grading re-checks inside a row lock, so only the first one grades.
     context "when a concurrent request has already graded the exam" do
       before do
@@ -610,7 +610,7 @@ RSpec.describe "Exams", type: :request do
       expect(exam.reload.status).to eq("failed")
     end
 
-    # FIXED(D-T13): an exam with no questions is refused, not graded: failing it would issue a retake
+    # an exam with no questions is refused, not graded: failing it would issue a retake
     it "refuses to finish an exam without questions and leaves it ungraded, with no retake or email" do
       exam = new_exam(questions: [])
       expect { perform_enqueued_jobs { finish(exam) } }.not_to change(Exam, :count)
@@ -660,7 +660,7 @@ RSpec.describe "Exams", type: :request do
       expect(Exam.find_by!(user: student).questions).not_to include(other_level)
     end
 
-    # WART(D-T14): a session whose training has no questions at its level crashes (RangeError in random_records)
+    # a session whose training has no questions at its level crashes (RangeError in random_records)
     # AFTER the first user's exam row was saved: an empty exam is left behind, nobody is emailed, later users are skipped
     it "answers 500 (RangeError) when the training has no questions at that level, leaving an empty exam behind" do
       empty = build_exam_fixture(question_count: 0)
@@ -684,7 +684,7 @@ RSpec.describe "Exams", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # FIXED(D-T15): only the session's trainer or an admin may issue exams; a guest must sign in
+    # only the session's trainer or an admin may issue exams; a guest must sign in
     it "makes a guest sign in and issues nothing" do
       get logout_path
       expect { perform_enqueued_jobs { create_from_training } }.not_to change(Exam, :count)
@@ -734,13 +734,12 @@ RSpec.describe "Exams", type: :request do
       expect(Exam.last.exam_questions.count).to eq($n_exams_question)
     end
 
-    # INTENDED: any user may be sent a session's exam (user decision 2026-10-26, e.g. walk-ins)
+    # any user may be sent a session's exam (user decision 2026-10-26, e.g. walk-ins)
     it "does not require the user to be enrolled in the session" do
       stranger = create(:user, :regular_user)
       expect { create_for_single_user(stranger) }.to change { Exam.where(user: stranger).count }.by(1)
     end
 
-    # FIXED(D-T15)
     it "makes a guest sign in and issues nothing" do
       get logout_path
       expect { create_for_single_user(student) }.not_to change(Exam, :count)
@@ -774,7 +773,7 @@ RSpec.describe "Exams", type: :request do
   describe "DELETE /exams/:id" do
     let!(:exam) { new_exam }
 
-    # FIXED(D-T16): destroy is admin-only (a guest must sign in)
+    # destroy is admin-only (a guest must sign in)
     it "makes a guest sign in and deletes nothing" do
       expect { delete exam_path(exam) }.not_to change(Exam, :count)
       expect(response).to redirect_to(login_path)

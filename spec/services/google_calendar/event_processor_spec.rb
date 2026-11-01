@@ -46,7 +46,7 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       expect(booking.sub_space_booking_status_id).to eq(booking.sub_space_booking_status.id)
     end
 
-    # D-B18: the past-date rule is for bookings made in the app. A full sync
+    # the past-date rule is for bookings made in the app. A full sync
     # lists past events too, and the mirror keeps them.
     it "mirrors an event that is already in the past" do
       described_class.process(c18_gcal_event(start_at: 1.week.ago.utc, end_at: 1.week.ago.utc + 1.hour))
@@ -61,7 +61,7 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
     end
 
     it "falls back to the hard-coded avend029@uottawa.ca user when the creator has no account" do
-      # WART(D-R24): events from unknown creators are attributed to a hard-coded personal address (avend029@uottawa.ca); if that user does not exist the booking has no owner
+      # events from unknown creators are attributed to a hard-coded personal address (avend029@uottawa.ca); if that user does not exist the booking has no owner
       fallback = create(:user, :regular_user, email: "avend029@uottawa.ca")
       described_class.process(c18_gcal_event(creator_email: "stranger@example.test"))
       expect(booking_for("evt-1").user).to eq(fallback)
@@ -96,7 +96,7 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
     end
 
     it "silently drops an all-day event (date, no date_time): nothing saved and no error" do
-      # WART(D-R25): all-day events carry start.date, not start.date_time; start_time is nil so the save fails validation and the event is silently skipped 
+      # all-day events carry start.date, not start.date_time; start_time is nil so the save fails validation and the event is silently skipped 
       all_day = c18_gcal_event(id: "allday")
       all_day.start = Google::Apis::CalendarV3::EventDateTime.new(date: "2027-04-05")
       all_day.end = Google::Apis::CalendarV3::EventDateTime.new(date: "2027-04-06")
@@ -111,12 +111,12 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
     end
 
     it "raises NoMethodError for an event with no creator" do
-      # part of WART(D-B40): event.creator.email has no nil guard, one such event aborts the whole sync batch
+      # part of event.creator.email has no nil guard, one such event aborts the whole sync batch
       expect { described_class.process(c18_gcal_event(creator_email: nil)) }.to raise_error(NoMethodError)
     end
 
     it "raises RecordNotFound when the SubSpace row for a valid location does not exist" do
-      # part of WART(D-B40): find_by! aborts the batch if STM 124/126 was renamed or deleted
+      # part of find_by! aborts the batch if STM 124/126 was renamed or deleted
       stm126.destroy
       expect { described_class.process(c18_gcal_event(location: "STM 126")) }.to raise_error(ActiveRecord::RecordNotFound)
     end

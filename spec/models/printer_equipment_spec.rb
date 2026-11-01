@@ -41,7 +41,7 @@ RSpec.describe Printer, type: :model do
   end
 
   describe "#model_and_number" do
-    # WART(D-EQ27): model_and_number raises NoMethodError for a printer without a printer type (the association is optional)
+    # model_and_number raises NoMethodError for a printer without a printer type (the association is optional)
     it "raises for an orphan printer" do
       expect { Printer.new(number: "3").model_and_number }.to raise_error(NoMethodError)
     end
@@ -54,7 +54,7 @@ RSpec.describe Printer, type: :model do
       expect { printer.destroy }.to change(PrinterSession, :count).by(-1)
     end
 
-    # WART(D-EQ29): printer_issues has no dependent option, so destroying a printer that ever had an issue raises InvalidForeignKey
+    # printer_issues has no dependent option, so destroying a printer that ever had an issue raises InvalidForeignKey
     it "cannot be destroyed once it has printer issues" do
       printer = create(:printer, :UM2P_01)
       create(:printer_issue, printer: printer)

@@ -80,7 +80,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(user.orders.count).to eq(0)
     end
 
-    # N+1 pinned: see defects.md D-PERF05, D-PERF06
+    # N+1 pinned
     it "shows the items of the user's trailing in-progress order (no session order id)", skip_bullet: true do
       order = cart_for(user, 10, 20)
       shop_log_in!(user)
@@ -158,7 +158,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       pp = pp_with_cc(10)
       expect { add_to_cart(pp, quantity: 0) }.not_to change(OrderItem, :count)
       expect(response).to redirect_to(carts_path)
-      # WART(D-S01): the invalid-quantity save is silently dropped yet the flash says it was added
+      # the invalid-quantity save is silently dropped yet the flash says it was added
       expect(flash[:notice]).to eq("Successfully added item to cart")
     end
 
@@ -168,7 +168,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
     end
 
     it "answers 500 when the order_item param is missing entirely" do
-      # WART(D-S06): params[:order_item][:proficient_project_id] is dereferenced unguarded, so a bad POST is a 500 (NoMethodError), not a 400
+      # params[:order_item][:proficient_project_id] is dereferenced unguarded, so a bad POST is a 500 (NoMethodError), not a 400
       post order_items_path, params: {}
       expect(response).to have_http_status(:internal_server_error)
       expect(OrderItem.count).to eq(0)
@@ -192,7 +192,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       end
     end
 
-    # FIXED(D-S08): sign_out clears session[:order_id] and current_order ignores a session order owned by someone else
+    # sign_out clears session[:order_id] and current_order ignores a session order owned by someone else
     it "does not hand the previous user's cart to whoever logs in next on the same browser session" do
       add_to_cart(pp_with_cc(10))
       first_order = user.orders.last
@@ -224,7 +224,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(staff.orders.last.order_items.count).to eq(1)
     end
 
-    # FIXED(D-S08 follow-up): a session order is only the live cart while it is In progress and owned by current_user
+    # a session order is only the live cart while it is In progress and owned by current_user
     it "does not serve a Completed session order as the cart (no second checkout of it)" do
       credit_cc!(user, 100)
       add_to_cart(pp_with_cc(10))
@@ -244,7 +244,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).not_to include(title)
     end
 
-    # FIXED: a session order id that no longer resolves falls back to the user's own cart instead of a 404
+    # a session order id that no longer resolves falls back to the user's own cart instead of a 404
     it "falls back to the user's cart when the session order was deleted" do
       add_to_cart(pp_with_cc(10))
       Order.where(user: user).destroy_all
@@ -544,7 +544,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
   describe "DELETE /order_items/:id and POST /order_items/:order_item_id/revoke" do
     before { shop_log_in!(user) }
 
-    # FIXED(D-S07): #destroy reads params[:id], which is what the cart's remove button DELETEs
+    # #destroy reads params[:id], which is what the cart's remove button DELETEs
     it "DELETE /order_items/:id (what the cart's remove button sends) removes the item from the cart" do
       add_to_cart(pp_with_cc(10))
       item = user.orders.last.order_items.first
@@ -553,8 +553,8 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(flash[:notice]).to eq("Successfully removed item from cart")
     end
 
-    # FIXED(D-S02): the GET /order_items/:id/revoke alias of #destroy is gone; a bare GET changes nothing
-    it "no longer deletes a cart row on GET /order_items/:id/revoke" do
+    # the GET /order_items/:id/revoke alias of #destroy is gone; a bare GET changes nothing
+    it "does not delete a cart row on GET /order_items/:id/revoke" do
       add_to_cart(pp_with_cc(10))
       item = user.orders.last.order_items.first
       expect { get "/order_items/#{item.id}/revoke" }.not_to change(OrderItem, :count)
@@ -569,7 +569,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # FIXED(D-S02): OrderItemsController#revoke is routed (POST) and admin only
+    # OrderItemsController#revoke is routed (POST) and admin only
     it "routes POST /order_items/:order_item_id/revoke to #revoke" do
       expect(Rails.application.routes.routes.map { |r| r.defaults.slice(:controller, :action) })
         .to include({ controller: "order_items", action: "revoke" })
@@ -599,7 +599,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
   describe "order item modals" do
     let(:item) { cart_for(other, 10).order_items.first }
 
-    # FIXED(D-S03): the three modals are staff/admin only (403 fragment for signed-in non-staff, including the item's owner); guests still go to login
+    # the three modals are staff/admin only (403 fragment for signed-in non-staff, including the item's owner); guests still go to login
     it "renders the info modal for staff and admin" do
       [staff, admin].each do |u|
         get logout_path
@@ -660,7 +660,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
   describe "POST /orders (checkout math)" do
     before { shop_log_in!(user) }
 
-    # N+1 pinned: see defects.md D-PERF06
+    # N+1 pinned
     it "debits the wallet: one negative cc_money per item, order Completed, total = subtotal", skip_bullet: true do
       credit_cc!(user, 100)
       add_to_cart(pp_with_cc(10), quantity: 2)
@@ -742,7 +742,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
     it "checks out an empty cart: creates a Completed order of total 0 and no debit" do
       expect { post orders_path }.to change(Order, :count).by(1).and change(CcMoney, :count).by(0)
       expect(response).to redirect_to(orders_path)
-      # WART(D-S04): an empty cart can be "purchased", creating a Completed zero-value order
+      # an empty cart can be "purchased", creating a Completed zero-value order
       order = user.orders.last
       expect(order.order_status.name).to eq("Completed")
       expect(order.total).to eq(0)
@@ -1016,7 +1016,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response).to redirect_to(orders_path)
       expect(flash[:notice]).to eq("The order was deleted and the CC points returned to the user.")
       expect(other.cc_moneys.sum(:cc)).to eq(0)
-      # WART(D-S05): the cached users.wallet is not refreshed on refund, it stays debited until the next update_wallet
+      # the cached users.wallet is not refreshed on refund, it stays debited until the next update_wallet
       expect(other.reload.wallet).to eq(-10)
     end
 

@@ -76,7 +76,7 @@ RSpec.describe "Printer issues", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    # WART(D-EQ17): show for an unknown id uses find_by and renders the template with a nil @issue (500) instead of 404
+    # show for an unknown id uses find_by and renders the template with a nil @issue (500) instead of 404
     it "500s showing an unknown issue" do
       get printer_issue_path(0)
       expect(response).to have_http_status(:internal_server_error)
@@ -106,7 +106,7 @@ RSpec.describe "Printer issues", type: :request do
         expect(mail.to).to eq(["maint@example.com"])
         expect(mail.subject).to eq("New Printer Issue: Bed issue: warped")
         # M72/M73: the body carries the printer name, summary and description.
-        # Plain text only, so this holds whether or not the view escapes (D-EQ38).
+        # Plain text only, so this holds whether or not the view escapes.
         body = mail.body.encoded
         expect(body).to include(printer.name)
         expect(body).to include("Bed issue: warped")
@@ -114,7 +114,7 @@ RSpec.describe "Printer issues", type: :request do
         expect(body).to include("/printer_issues/#{PrinterIssue.last.id}")
       end
 
-      # WART(D-EQ22): the failed-create branch calls `sanitize`, which the controller does not include, so any validation failure is a NoMethodError (500) and the user never sees the error
+      # the failed-create branch calls `sanitize`, which the controller does not include, so any validation failure is a NoMethodError (500) and the user never sees the error
       it "500s on a blank summary and persists nothing" do
         expect { post printer_issues_path, params: { printer_issue: { printer_id: printer.id, summary: "" } } }.not_to change(PrinterIssue, :count)
         expect(response).to have_http_status(:internal_server_error)
@@ -150,14 +150,14 @@ RSpec.describe "Printer issues", type: :request do
         expect(issue.reload.active).to be false
       end
 
-      # WART(D-EQ18): a failed update redirects to the list and then redirects again, raising DoubleRenderError (500); the issue is unchanged
+      # a failed update redirects to the list and then redirects again, raising DoubleRenderError (500); the issue is unchanged
       it "500s with a double redirect when the update is invalid" do
         patch printer_issue_path(issue), params: { printer_issue: { summary: "" } }
         expect(response).to have_http_status(:internal_server_error)
         expect(issue.reload.summary).to include("Nozzle clogged")
       end
 
-      # FIXED(D-EQ19): update ignores printer_id (create still takes it)
+      # update ignores printer_id (create still takes it)
       it "cannot re-point the issue at a different printer" do
         other = create(:printer, :UM3_01)
         patch printer_issue_path(issue), params: { printer_issue: { printer_id: other.id, description: "still editable" } }
@@ -166,7 +166,7 @@ RSpec.describe "Printer issues", type: :request do
       end
     end
 
-    # FIXED(D-API03): the React app's POST /printer_issues/:id/resolve now exists and deactivates the issue
+    # the React app's POST /printer_issues/:id/resolve now exists and deactivates the issue
     describe "POST resolve" do
       it "marks the issue inactive and returns 200 with no body" do
         post resolve_printer_issue_path(issue), as: :json
@@ -182,7 +182,7 @@ RSpec.describe "Printer issues", type: :request do
     end
 
     describe "DELETE destroy" do
-      # WART(D-EQ20): staff DELETE silently redirects to the list without a flash; only admins delete
+      # staff DELETE silently redirects to the list without a flash; only admins delete
       it "silently ignores staff" do
         expect { delete printer_issue_path(issue) }.not_to change(PrinterIssue, :count)
         expect(response).to redirect_to(printer_issues_path)
@@ -215,7 +215,7 @@ RSpec.describe "Printer issues", type: :request do
       expect(response).to have_http_status(:see_other)
     end
 
-    # WART(D-EQ21): destroy uses find_by(...).destroy; an unknown id raises NoMethodError (500)
+    # destroy uses find_by(...).destroy; an unknown id raises NoMethodError (500)
     it "500s destroying an unknown issue" do
       delete printer_issue_path(0)
       expect(response).to have_http_status(:internal_server_error)

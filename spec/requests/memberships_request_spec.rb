@@ -30,7 +30,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
 
     it "500s on a fresh install with no tiers at all" do
       MembershipTier.delete_all
-      # WART(D-S22): the landing page dereferences the looked-up tiers without a nil guard, so it is a 500 until at least two tiers exist
+      # the landing page dereferences the looked-up tiers without a nil guard, so it is a 500 until at least two tiers exist
       get memberships_path
       expect(response).to have_http_status(:internal_server_error)
     end
@@ -132,7 +132,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
 
       it "when Shopify fails: destroys the pending row, then 500s while re-rendering :index" do
         admin_client.user_errors = [{ "message" => "boom" }]
-        # WART(D-S23): the failure path does `render :index` but only #index sets @membership_day/@membership_sem, so the intended "Error creating membership" alert page is a 500
+        # the failure path does `render :index` but only #index sets @membership_day/@membership_sem, so the intended "Error creating membership" alert page is a 500
         expect { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
           .not_to change(Membership, :count)
         expect(response).to have_http_status(:internal_server_error)
@@ -140,7 +140,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
 
       it "a faculty tier 500s and leaves an orphan pending membership" do
         faculty = create(:membership_tier, title_en: "Faculty Membership", duration: 365)
-        # WART(D-S18): Membership#checkout_link calls `flash` (a controller method) for the faculty guard; this recurses until SystemStackError, which `rescue StandardError` does not catch, so the user gets a 500 and the pending row is never cleaned up
+        # Membership#checkout_link calls `flash` (a controller method) for the faculty guard; this recurses until SystemStackError, which `rescue StandardError` does not catch, so the user gets a 500 and the pending row is never cleaned up
         expect { post memberships_path, params: { membership: { membership_tier_id: faculty.id } } }
           .to change(Membership, :count).by(1)
         expect(response).to have_http_status(:internal_server_error)
@@ -151,7 +151,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
 
       it "refuses hidden tiers (no row, no Shopify call)" do
         hidden = create(:membership_tier, title_en: "Hidden Tier", hidden: true, duration: 30)
-        # FIXED(D-S19): purchase rejects MembershipTier#hidden tiers (Custom/Faculty are hidden)
+        # purchase rejects MembershipTier#hidden tiers (Custom/Faculty are hidden)
         expect { post memberships_path, params: { membership: { membership_tier_id: hidden.id } } }
           .not_to change(Membership, :count)
         expect(response).to redirect_to(memberships_path)
@@ -159,7 +159,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(admin_client.calls).to be_empty
       end
 
-      it "unknown tier id: no row, and the error page is the same 500 as D-S23" do
+      it "unknown tier id: no row, and the error page is the same 500 as the other membership error paths" do
         expect { post memberships_path, params: { membership: { membership_tier_id: 999_999 } } }
           .not_to change(Membership, :count)
         expect(response).to have_http_status(:internal_server_error)
@@ -175,7 +175,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         create(:membership, user: user, membership_tier: tier, status: "paid", end_date: 3.years.from_now)
         expect { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
           .not_to change(Membership, :count)
-        # WART(D-S20): the cutoff branch sets flash.now and returns with no render/redirect, so the browser gets an empty 204 and no visible message
+        # the cutoff branch sets flash.now and returns with no render/redirect, so the browser gets an empty 204 and no visible message
         expect(response).to have_http_status(:no_content)
         expect(response.body).to be_blank
         expect(admin_client.calls).to be_empty
@@ -266,7 +266,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
       expect(membership.reload.status).to eq("paid")
     end
 
-    # FIXED(D-S21): revoke is admin-only, with the same head :unauthorized denial as admin_create_membership
+    # revoke is admin-only, with the same head :unauthorized denial as admin_create_membership
     it "401s a regular user (even a non-owner) and leaves the membership alone" do
       shop_log_in!(user)
       patch revoke_membership_path(membership)

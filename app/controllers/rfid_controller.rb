@@ -2,7 +2,7 @@
 include ActionView::Helpers::DateHelper
 
 class RfidController < SessionsController
-  # D-EQ04: the controller is named "rfid", so ParamsWrapper would nest a JSON
+  # the controller is named "rfid", so ParamsWrapper would nest a JSON
   # tap's params under :rfid and a tap without an rfid key made params[:rfid] a hash.
   wrap_parameters false
 
@@ -16,9 +16,9 @@ class RfidController < SessionsController
   before_action :signed_in, only: %i[get_unset_rfids]
   before_action :grant_access, only: %i[get_unset_rfids]
 
-  # D-EQ03: 60 taps/min per reader (mac AND source IP: a real reader taps from a
-  # fixed IP, so someone replaying a known MAC from elsewhere only exhausts their
-  # own bucket and cannot lock the real door out) or per staff user, plus a coarse
+  # 60 taps/min per reader (mac AND source IP: a real reader taps from a
+  # fixed IP, so a request for the same MAC from another address
+  # has its own bucket and does not use up the reader's) or per staff user, plus a coarse
   # 600/min per-IP ceiling (readers may share one NAT egress IP).
   RATE_LIMITED = -> { render json: { error: "Too many requests" }, status: :too_many_requests }
   # The per-reader limit runs FIRST: its 429 halts the chain, so a reader looping past 60/min does not
@@ -70,7 +70,7 @@ class RfidController < SessionsController
     staff = tap_staff?
     mac_address = tap_mac
 
-    # D-EQ01/D-EQ03: no staff auth and no registered reader -> no PiReader, Rfid,
+    # no staff auth and no registered reader -> no PiReader, Rfid,
     # LabSession or broadcast; only the bounded unregistered-reader trace is
     # logged (one row per MAC per hour, not broadcast).
     # A reader with no space (e.g. legacy rows the old self-registration created
@@ -173,7 +173,7 @@ class RfidController < SessionsController
   end
 
   # Pi firmware and the React app read only `success`; nothing about the card
-  # owner is returned (D-EQ02).
+  # owner is returned.
   def user_response_payload(success_message)
     { success: success_message }
   end

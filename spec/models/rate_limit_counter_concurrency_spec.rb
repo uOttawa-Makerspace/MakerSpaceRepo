@@ -53,7 +53,7 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
 
   # prune! picks its candidates in a subquery, then deletes them. A concurrent increment that restarts a candidate's
   # window after that snapshot (here: an open transaction holding the row, committed once prune! is blocked on it)
-  # must keep its row: deleting it would hand an attacker a fresh budget mid-window.
+  # must keep its row: deleting it would reset its budget mid-window.
   it "prune! does not delete a counter whose window a concurrent increment restarted after the candidates were picked" do
     described_class.increment(key, 4, expires_in: 1.minute)
     described_class.where(key: key).update_all(expires_at: 1.minute.ago)

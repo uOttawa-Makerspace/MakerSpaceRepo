@@ -2,9 +2,8 @@
 
 require "rails_helper"
 
-# FIXED(D-API01): the React app's Help form calls `PUT /send_email` (JSON, Bearer
-# token). It used to fall through to `PUT /:username` -> users#update and overwrite
-# the caller's own name/email without sending any mail.
+# the React app's Help form calls `PUT /send_email` (JSON, Bearer
+# token) and sends the mail; it does not update the caller's own name/email.
 RSpec.describe "PUT /send_email (React Help form)", type: :request do
   let(:user) { create(:user, :regular_user, name: "Original Name", email: "original@example.com") }
   let(:headers) { { "Authorization" => "Bearer #{user.token}" } }
@@ -45,7 +44,7 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     expect(user.email).to eq("original@example.com")
   end
 
-  # FIXED(D-API01/D-NEW-A13-3): the confirmation goes to the account email, never the posted one.
+  # the confirmation goes to the account email, never the posted one.
   it "ignores the posted email and name for addressing (no mail relay)" do
     expect do
       perform_enqueued_jobs do
@@ -61,7 +60,7 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     expect(mail.to + (mail.cc || [])).not_to include("victim@example.com")
   end
 
-  # FIXED(D-API01/D-NEW-A13-3): same persistence path as HelpController#create.
+  # same persistence path as HelpController#create.
   it "creates the Help record and attempts the GitHub issue" do
     expect_any_instance_of(GithubIssuesService).to receive(:create_issue)
       .with(hash_including(reporter: "Original Name", title: "Printer will not start"))
@@ -74,7 +73,7 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
     expect(Help.last.gh_issue_number).to eq("77")
   end
 
-  # FIXED(D-API01): GithubIssuesService#create_issue returns `false` on an Octokit error
+  # GithubIssuesService#create_issue returns `false` on an Octokit error
   it "returns 422 JSON errors and sends no email when the GitHub API call fails (create_issue => false)" do
     allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
 

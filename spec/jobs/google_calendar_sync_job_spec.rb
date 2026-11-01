@@ -109,7 +109,7 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
 
   describe "pagination" do
     it "fetches only the first page: events on later pages are never processed and no sync token is saved" do
-      # WART(D-B39): the job ignores nextPageToken (one list_events call, no loop), so with more than one page of events the rest are skipped, and because only the LAST page carries nextSyncToken the stored token is never advanced
+      # the job ignores nextPageToken (one list_events call, no loop), so with more than one page of events the rest are skipped, and because only the LAST page carries nextSyncToken the stored token is never advanced
       chan = channel(sync_token: "OLD")
       stub_events([c18_gcal_event(id: "page-1")], next_page_token: "PAGE2")
       described_class.perform_now
@@ -135,7 +135,7 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
     end
 
     it "retries forever on any 4xx: it only stops here because the stub finally answers 200" do
-      # WART(D-B39): `rescue Google::Apis::ClientError ... retry` has no attempt cap, no backoff and no distinction between a recoverable 410 and a permanent 400/401/403/404; a persistent client error spins the worker (and the Google quota) indefinitely
+      # `rescue Google::Apis::ClientError ... retry` has no attempt cap, no backoff and no distinction between a recoverable 410 and a permanent 400/401/403/404; a persistent client error spins the worker (and the Google quota) indefinitely
       channel(sync_token: "S")
       calls = 0
       stub_request(:get, EVENTS_URL).with(query: hash_including({})).to_return do |_request|
@@ -159,7 +159,7 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
 
   describe "bad events (EventProcessor failures)" do
     it "one event that raises aborts the rest of the batch and the sync token is not saved" do
-      # WART(D-B40): EventProcessor.process is called without rescue per event, so a single event that raises (here: no creator) skips every later event in the page and the next sync token is never stored, so the same page is refetched and fails the same way forever
+      # EventProcessor.process is called without rescue per event, so a single event that raises (here: no creator) skips every later event in the page and the next sync token is never stored, so the same page is refetched and fails the same way forever
       chan = channel(sync_token: "OLD")
       events = [c18_gcal_event(id: "good-1"),
                 c18_gcal_event(id: "bad", creator_email: nil),

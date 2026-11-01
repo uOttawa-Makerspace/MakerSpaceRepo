@@ -134,7 +134,7 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(JSON.parse(response.body)).to eq("created" => false)
       end
 
-      # FIXED(D-API05, D-T35): a non-admin who sends user_id (the React app always does) creates the session as themselves
+      # a non-admin who sends user_id (the React app always does) creates the session as themselves
       it "ignores user_id for staff: the session is created with the current staff member as instructor" do
         other = create(:user, :staff)
         expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: other.id) }
@@ -158,7 +158,7 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(response.body).to include(student.name)
       end
 
-      # FIXED(retro of A5): certify_user returns an existing certification of another
+      # certify_user returns an existing certification of another
       # session, so the Training's Cert. column looks at the training, not this session.
       it "shows the training in Training's Cert. when the student holds it from another session" do
         record.users << student
@@ -177,7 +177,7 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(response.body).not_to include("<td>#{ERB::Util.html_escape(training.name)}</td>")
       end
 
-      # FIXED(retro of A5): finishing an expired exam is blocked (D-T10) and nothing grades
+      # finishing an expired exam is blocked and nothing grades
       # it, so staff must be able to resend it or the trainee is locked out.
       describe "Resend Exam" do
         let(:resend_path) do
@@ -292,7 +292,7 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(flash[:notice]).to eq("Training Session Completed Successfully (1 duplicates skipped)")
       end
 
-      # FIXED(retro round 2): the repeat check also sees project-granted certifications (no session)
+      # the repeat check also sees project-granted certifications (no session)
       it "skips a user who already holds that training and level from a proficient project" do
         project = create(:proficient_project, training: training)
         granted = create(:certification, user: student, training_session: nil, training: nil, level: "Beginner")
@@ -352,7 +352,7 @@ RSpec.describe "Staff training sessions", type: :request do
     end
 
     describe "DELETE revoke_certification" do
-      # FIXED(D-T36): the certification is looked up through the URL's session, so another session's certification is a 404
+      # the certification is looked up through the URL's session, so another session's certification is a 404
       it "does not delete a certification that belongs to another trainer's session" do
         foreign_session = create(:training_session, user: create(:user, :staff))
         cert = create(:certification, user: student, training_session: foreign_session, training: foreign_session.training)
@@ -388,7 +388,7 @@ RSpec.describe "Staff training sessions", type: :request do
     end
 
     describe "GET training_report" do
-      # D-T37: the action serves only .xlsx (the dead format.html branch was removed); any other format is a 406
+      # the action serves only .xlsx (the dead format.html branch was removed); any other format is a 406
       it "answers 406 for the html report (xlsx only)" do
         get training_report_staff_training_session_path(record)
         expect(response).to have_http_status(:not_acceptable)

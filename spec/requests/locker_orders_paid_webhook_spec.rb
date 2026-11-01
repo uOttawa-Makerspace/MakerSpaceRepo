@@ -5,7 +5,7 @@ require "rails_helper"
 # Characterization of the Shopify `orders_paid` webhook locker path
 # (CustomWebhooksController#process_locker_hook -> LockerRental#record_payment).
 # Every POST is signed with the test secret (see spec/support/shopify_webhook_helpers.rb);
-# unsigned/forged ones are rejected, see the HMAC examples below. No network: payloads carry the metafield inline; the Shopify
+# unsigned or wrongly signed ones are rejected, see the HMAC examples below. No network: payloads carry the metafield inline; the Shopify
 # fallback lookup (`draft_order_metafields`) is stubbed.
 RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
   include ActiveSupport::Testing::TimeHelpers
@@ -47,7 +47,7 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     expect(rental.state).to eq("active")
     expect(rental.owned_until.utc.iso8601(6)).to eq("2026-12-31T23:59:59.999999Z")
     expect(rental.paid_at).to eq(freeze)
-    # WART(D-L03): the webhook activation does not set decided_by
+    # the webhook activation does not set decided_by
     expect(rental.decided_by).to be_present # factory's, untouched
 
     expect(ActionMailer::Base.deliveries.size).to eq(1)

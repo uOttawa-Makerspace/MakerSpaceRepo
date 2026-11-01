@@ -6,7 +6,7 @@ require "rails_helper"
 # is no connection authentication at all.
 RSpec.describe "Tap box ActionCable channels" do
   describe ApplicationCable::Connection, type: :channel do
-    # FIXED(D-EQ30): the connection identifies the user from the session cookie and rejects everyone else
+    # the connection identifies the user from the session cookie and rejects everyone else
     it "identifies the session's user" do
       user = create(:user, :staff)
       connect "/cable", session: { user_id: user.id }
@@ -90,7 +90,7 @@ RSpec.describe "Tap box ActionCable channels" do
   end
 
   describe StaffDashboardChannel, type: :channel do
-    # FIXED(D-EQ31): only staff/admin may stream "space_event_<space_id>" (tapped users' name, email, certifications)
+    # only staff/admin may stream "space_event_<space_id>" (tapped users' name, email, certifications)
     %i[staff admin].each do |role|
       it "streams space_event_<id> to a #{role}" do
         stub_connection current_user: create(:user, role)
@@ -141,7 +141,7 @@ RSpec.describe "Tap box ActionCable channels" do
       expect(subscription).to be_rejected
     end
 
-    # FIXED(D-EQ08): with a real (authenticated) connection the console channel confirms for staff
+    # with a real (authenticated) connection the console channel confirms for staff
     it "confirms for the staff user the real connection identifies" do
       staff = create(:user, :staff)
       stub_connection current_user: staff

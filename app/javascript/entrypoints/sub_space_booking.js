@@ -439,7 +439,7 @@ document.addEventListener("turbo:load", function () {
   }
 
   // Uses the imported Toast: the global `bootstrap` the error path below
-  // relies on is not defined on this page (D-JS02 / D-E2E04, not fixed here).
+  // relies on is not defined on this page.
   function showToast(title, text) {
     const toastEl = document.getElementById("booking_toast");
     if (!toastEl) return;

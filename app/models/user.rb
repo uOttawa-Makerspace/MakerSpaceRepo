@@ -171,7 +171,7 @@ class User < ApplicationRecord
               if: -> { avatar.attached? }
             }
 
-  # D-I17: also check what the bytes are (no filename/declared-type fallback) and cap the size
+  # also check what the bytes are (no filename/declared-type fallback) and cap the size
   validates_sniffed_upload :avatar,
                            allow: ALLOWED_AVATAR_TYPES,
                            max_size: -> { MAX_AVATAR_SIZE },
@@ -208,8 +208,7 @@ class User < ApplicationRecord
 
   # The strength rules (nobspw) are for a PLAINTEXT password. The column holds a
   # bcrypt hash, which can contain a word of the name/email by chance, so the
-  # rules must not run on it (they used to, on every update of the user, making
-  # unrelated saves such as the brute-force lock fail silently).
+  # rules must not run on it (they would fail unrelated saves such as the brute-force lock).
   PASSWORD_STRENGTH_OPTIONS = { name: :username, email: :email }.freeze
   validates :password,
             password: PASSWORD_STRENGTH_OPTIONS,
@@ -275,13 +274,13 @@ class User < ApplicationRecord
 
   EMAIL_CHANGE_VERIFIER = -> { Rails.application.message_verifier(:email_change) }
 
-  # D-I10/D-I11: purpose-scoped, expiring reset token that dies with the
+  # purpose-scoped, expiring reset token that dies with the
   # password it was issued for (the digest changes on every reset).
   generates_token_for :password_reset, expires_in: 2.hours do
     password&.last(10)
   end
 
-  # D-I11: confirmation (3 days, dies once confirmed) and unlock (1 hour, dies
+  # confirmation (3 days, dies once confirmed) and unlock (1 hour, dies
   # once the lock is cleared) links are purpose-scoped as well.
   generates_token_for :email_confirmation, expires_in: 3.days do
     confirmed
@@ -688,7 +687,7 @@ class User < ApplicationRecord
     )
   end
 
-  # D-I12/INF-02: bound to this user, the target address, the current address
+  # bound to this user, the target address, the current address
   # (so it is single-use: it dies once the address changes) and the
   # token_version (so a password change/reset or an admin lock ends a pending
   # change too); purpose-scoped, valid for 24 hours.
@@ -944,7 +943,7 @@ class User < ApplicationRecord
   end
 
   # users.wallet is a CACHE of SUM(cc_moneys.cc). Written with update_columns, never a validated
-  # update: a user failing any validation (legacy data) used to keep a stale wallet forever.
+  # update: a user failing any validation (legacy data) still gets a fresh wallet.
   # The sum is read under the user-row lock (the wallet lock every CC spend takes, same mode), so
   # a refresh racing a spend cannot write back a sum read before that spend committed. As its own
   # transaction its lock wait is bounded and, being only a cache refresh, a timeout skips it

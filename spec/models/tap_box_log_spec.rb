@@ -22,7 +22,7 @@ RSpec.describe TapBoxLog, type: :model do
       expect(log.details).to eq("a" => 1)
     end
 
-    # WART(D-EQ28): log! swallows every failure (returns the logger result, never raises), so an invalid event type silently drops the log row
+    # log! swallows every failure (returns the logger result, never raises), so an invalid event type silently drops the log row
     it "swallows validation errors and writes nothing" do
       allow(Rails.logger).to receive(:error)
       expect { TapBoxLog.log!(event_type: "bogus", message: "x") }.not_to change(TapBoxLog, :count)
@@ -92,7 +92,7 @@ RSpec.describe TapBoxLog, type: :model do
       expect(TapBoxLog.log_new_unknown_card(card_number: "C", space: space, mac_address: "m").event_type).to eq("warning")
       expect(TapBoxLog.log_invalid_rfid(card_number: nil, mac_address: "m", errors: ["bad"]).event_type).to eq("error")
       expect(TapBoxLog.log_no_space_resolved(card_number: "C", mac_address: "m").event_type).to eq("error")
-      expect(TapBoxLog).not_to respond_to(:log_new_pi_reader) # readers no longer self-register (D-EQ03)
+      expect(TapBoxLog).not_to respond_to(:log_new_pi_reader) # readers do not self-register
       expect(TapBoxLog.log_membership_check_queued(user: user, card_number: "C", space: space, mac_address: "m").event_type).to eq("info")
       expect(TapBoxLog.log_card_recognized(user: user, card_number: "C", space: space, mac_address: "m", elapsed_ms: 1.5).details).to include("user_email" => user.email, "resolve_time_ms" => 1.5)
     end

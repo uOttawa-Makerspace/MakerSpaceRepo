@@ -30,8 +30,7 @@ RSpec.describe RepoFile, type: :model do
     end
   end
 
-  # Regression from A9 (D-C06): the proficient-project allow-list held the
-  # extensions ".doc"/".docx" instead of MIME types, so no real Word file matched.
+  # The proficient-project allow-list holds MIME types, so a real Word file matches.
   describe "Word documents in a proficient project" do
     require "zip"
 

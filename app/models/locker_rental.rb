@@ -78,7 +78,7 @@ class LockerRental < ApplicationRecord
   validates :locker, presence: true, if: :reserves_locker?
 
   # Active rentals require an owned_until date unless explicitly marked as indefinite.
-  # This restores safety while allowing the virtual attribute to bypass it when necessary.
+  # The virtual attribute `indefinite` lifts the requirement.
   validates :owned_until, presence: true, if: -> { active? && indefinite != '1' }
 
   # If state ever changes from request, record who did it

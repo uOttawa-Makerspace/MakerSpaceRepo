@@ -23,7 +23,7 @@ RSpec.describe "Locker rental request", type: :system do
     expect(page).to have_css("h1", text: I18n.t("lockers.new_request.header"))
     expect(page).to have_text("Current lockers available are")
     expect(page).to have_select("locker_rental_requested_as", with_options: ["General request"])
-    # WART(D-L05): the requested_as select starts with no
+    # the requested_as select starts with no
     # selected option (required), so the browser blocks submit until chosen.
     select "General request", from: "locker_rental_requested_as"
     fill_in "locker_rental_notes", with: "Close to the makerspace please"

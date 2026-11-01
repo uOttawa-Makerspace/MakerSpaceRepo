@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# FIXED(D-API08): sign_out_all_users was a state-changing GET (reachable by a
+# sign_out_all_users was a state-changing GET (reachable by a
 # crafted link); it is POST only. Neither frontend app calls it (inventory).
 RSpec.describe "Staff dashboard sign_out_all_users", type: :request do
   let!(:space) { create(:space) }

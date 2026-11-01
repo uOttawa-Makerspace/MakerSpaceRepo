@@ -40,7 +40,7 @@ RSpec.describe ApplicationHelper do
   let!(:second) { create(:user, :regular_user) }
 
   it "current_user and signed_in? reflect a user signed in after another was memoized in the same request" do
-    # FIXED: sign_in clears the memoized session user / current user
+    # sign_in clears the memoized session user / current user
     host.session[:user_id] = first.id
     expect(host.signed_in?).to be(true)
     expect(host.current_user).to eq(first)

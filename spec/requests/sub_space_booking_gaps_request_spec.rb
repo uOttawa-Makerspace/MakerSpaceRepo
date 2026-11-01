@@ -59,7 +59,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     booking
   end
 
-  # A blocking row at the given Toronto wall times (D-B06: the overlap check
+  # A blocking row at the given Toronto wall times (the overlap check
   # compares zoned instants).
   def blocking_row(target, start_wall, end_wall)
     row = create(:sub_space_booking, sub_space: target, user: user, name: "Block",
@@ -104,7 +104,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(SubSpaceBooking.exists?(name: "Fresh")).to be(true)
     end
 
-    # FIXED(retro round 2, D-NEW-RETRO-1): the quota window is the week of the new
+    # the quota window is the week of the new
     # booking, not the current calendar week.
     it "books next week while this week is full, and still refuses this week" do
       travel_to(Time.zone.local(2027, 4, 7, 8, 0)) do
@@ -129,7 +129,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
 
     # Same fixture as the pinned "backwards weekly quota" rejection in
-    # sub_space_booking_request_spec.rb (D-B05), but for an admin: no quota.
+    # sub_space_booking_request_spec.rb, but for an admin: no quota.
     it "lets an admin skip the weekly quota that rejects a regular user" do
       travel_to(Time.zone.local(2027, 3, 10, 12, 0)) do
         log_in!(admin)
@@ -153,7 +153,6 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
     # Round 3: an HTML create has no template for the implicit render (the
     # coordinator reports a 500 in a browser), so it redirects to the room's calendar with the notice.
-    # Flips the pin "answers an HTML-format create with an empty 204 as well".
     it "redirects an HTML-format create to the room's calendar with the notice" do
       create_booking(subspace, as: :html)
       expect(response).to redirect_to(
@@ -199,7 +198,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(mail.to).to match_array(managed.space_managers.map(&:email))
     end
 
-    # WART(D-B34): the mail text says "made in <room> by <booking NAME>", not the user
+    # the mail text says "made in <room> by <booking NAME>", not the user
     it "names the booking title (not the user) in the needs-approval mail body" do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true,
@@ -232,9 +231,9 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(ActionMailer::Base.deliveries.last.to).to eq([admin.email])
     end
 
-    # WART(D-B33): with no space managers the needs-approval mail is silently
+    # with no space managers the needs-approval mail is silently
     # skipped, so a Pending booking waits with nobody notified.
-    # WART(D-B35): mails are sent with deliver_now inside the request, so an SMTP
+    # mails are sent with deliver_now inside the request, so an SMTP
     # failure turns into a 500 AFTER the booking and its status were saved.
     it "answers 500 when delivery fails, but the booking is already saved" do
       managed = create(:space, :with_space_managers)
@@ -285,7 +284,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       SubSpaceBooking.where(name: name).order(:start_time).map { |b| raw_wall(b)[0..9] }
     end
 
-    # WART(D-B29): the loop books `start + recurrence` while `start < recurring_end`,
+    # the loop books `start + recurrence` while `start < recurring_end`,
     # so a series ending mid-period overshoots recurring_end by one occurrence.
     it "books one occurrence PAST recurring_end when the end falls mid-period" do
       post_series(name: "Over", end_on: "2027-02-16")
@@ -293,8 +292,8 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(walls_of("Over")).to eq(%w[2027-02-03 2027-02-10 2027-02-17])
     end
 
-    # FIXED(D-B29, cap half): a series may span at most 365 days (with
-    # weekly the densest, at most 54 occurrences). Flips the pin "has no cap".
+    # a series may span at most 365 days (with
+    # weekly the densest, at most 54 occurrences).
     # A full year is still allowed (with the overshoot, 54 weekly occurrences).
     it "allows a series of exactly a year, and refuses one day more with a 422 (en and fr)" do
       post_series(name: "Year", end_on: "2028-02-03")
@@ -342,7 +341,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(SubSpaceBooking.find_by!(name: "FormString").recurring_booking_id).to be_nil
     end
 
-    # WART(D-B30): when the FIRST occurrence conflicts, the series carries on
+    # when the FIRST occurrence conflicts, the series carries on
     # and books the rest. The 422 now says so: how many were booked and the
     # dates that were not, and no success notice is set.
     it "still creates the later occurrences when the first one conflicts (422 with a partial series)" do
@@ -410,7 +409,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
   describe "POST create boundaries (touching intervals, duration cap, weekly quota)" do
     before { log_in!(user) }
 
-    # D-B54: the overlap is exact on half-open intervals [start, end): back-to-back
+    # the overlap is exact on half-open intervals [start, end): back-to-back
     # bookings are fine, any positive overlap (even one minute) is refused.
     it "accepts bookings that touch a blocking booking at either end and rejects a real overlap" do
       blocking_row(subspace, "2027-03-03 09:00", "2027-03-03 12:00")
@@ -529,7 +528,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(booking.reload.name).not_to eq("Moved")
     end
 
-    # FIXED(D-B28): update ignores :blocking and :sub_space_id from non-admins
+    # update ignores :blocking and :sub_space_id from non-admins
     # and re-applies the room's maximum booking duration.
     it "ignores blocking and sub_space_id from the owner of a pending booking" do
       other = create(:sub_space, space: space)
@@ -567,7 +566,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(capped_booking.reload.name).not_to eq("Stretched")
     end
 
-    # FIXED(D-B28, retro of A3): the cap is computed from the values the model
+    # the cap is computed from the values the model
     # stores, so an offset in the param can no longer hide the real duration.
     it "measures the duration cap on the stored times, not on the offset-stripped wall clock" do
       capped = create(:sub_space, space: space, maximum_booking_duration: 1)
@@ -583,7 +582,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(capped_booking.reload.name).not_to eq("Sneaky")
     end
 
-    # FIXED(retro round 3): the duration cap, like the weekly quota, only applies when the times move
+    # the duration cap, like the weekly quota, only applies when the times move
     it "lets the owner rename a booking longer than a since-lowered duration cap, but not move it" do
       capped = create(:sub_space, space: space, maximum_booking_duration: 1)
       long = pending_booking(user, sub_space: capped,
@@ -618,7 +617,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
     describe "weekly quota" do
       # Wednesday 2027-04-07, 08:00 Toronto (12:00 UTC, the same date): early
-      # enough that the 10:00-14:00 moves below do not start in the past (D-B18).
+      # enough that the 10:00-14:00 moves below do not start in the past.
       let(:wednesday) { Time.zone.local(2027, 4, 7, 8, 0) }
       let(:capped) { create(:sub_space, space: space, maximum_booking_hours_per_week: 3) }
 
@@ -671,7 +670,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
         end
       end
 
-      # FIXED(retro round 2): the quota is only re-checked when the times move
+      # the quota is only re-checked when the times move
       it "lets the owner rename a booking whose week is already over quota, but not move it" do
         travel_to(wednesday) do
           log_in!(user)
@@ -692,7 +691,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
         end
       end
 
-      # FIXED(retro round 2, D-NEW-RETRO-1): the week is the one containing the booking
+      # the week is the one containing the booking
       it "counts the week of the booking, so moving it to an empty next week is fine" do
         travel_to(wednesday) do
           log_in!(user)
@@ -742,9 +741,8 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
 
     # The overlap check now uses the booking's own (zoned) times instead of
-    # re-parsing the raw params (D-B06), so an update without start_time or
-    # end_time keeps the stored times. Flips the pin "raises (500) when
-    # start_time or end_time is missing".
+    # re-parsing the raw params, so an update without start_time or
+    # end_time keeps the stored times.
     it "keeps the stored times when start_time and end_time are missing" do
       start_before = booking.start_time
       patch update_path_for(booking), params: { sub_space_booking: { name: "NoTimes" } }
@@ -810,7 +808,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(ActionMailer::Base.deliveries.last.to).to eq([supervisor.email])
     end
 
-    # FIXED(D-B51): the supervisor must be staff or admin; otherwise nothing is
+    # the supervisor must be staff or admin; otherwise nothing is
     # saved or mailed.
     it "rejects a regular user picked as supervisor: no request saved, no mail" do
       random_user = create(:user, :regular_user)
@@ -893,7 +891,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(uba.approved).to be(true)
     end
 
-    # WART(D-B37): no surrounding transaction. The default scope orders newest
+    # no surrounding transaction. The default scope orders newest
     # first, so the newer request is approved (and committed) before the older
     # one's invalid user aborts the loop.
     it "keeps the earlier approvals when a later one raises RecordInvalid (partial commit)" do
@@ -915,7 +913,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(older.reload.approved).to be(false)
     end
 
-    # WART(D-B38): the request is destroyed BEFORE user.save!; a failing save
+    # the request is destroyed BEFORE user.save!; a failing save
     # leaves the request deleted behind an unhandled RecordInvalid (422).
     it "deny_access deletes the request even when saving the user then raises RecordInvalid" do
       applicant = create(:user, :regular_user, booking_approval: true)
@@ -948,7 +946,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(mail.subject).to eq("Booking approved")
     end
 
-    # WART(D-B31): no state guard: re-approving re-sends the mail and moves approved_by
+    # no state guard: re-approving re-sends the mail and moves approved_by
     it "re-approving an approved booking sends the mail again and overwrites approved_by" do
       booking = pending_booking(booker, approved_by_id: booker.id, approved_at: Time.utc(2027, 1, 1))
       booking.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
@@ -1021,7 +1019,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(body.index("NewerMine")).to be < body.index("OlderMine")
     end
 
-    # N+1 pinned: @supervisors reads smj.user per join row (see defects.md D-PERF15)
+    # N+1 pinned: @supervisors reads smj.user per join row
     it "offers the supervisor select with every space manager once, sorted by name", skip_bullet: true do
       create(:space, :with_space_managers) # 2 managers
       shared = create(:user, :admin, name: "Zed Manager")
@@ -1037,7 +1035,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(options.size).to eq(SpaceManagerJoin.all.map(&:user_id).uniq.size)
     end
 
-    # Unused eager load pinned: see defects.md D-PERF16
+    # Unused eager load pinned
     it "partitions the admin panel into current and past lists by end time", skip_bullet: true do
       travel_to(Time.zone.local(2027, 6, 15, 12, 0)) do
         log_in!(admin)
@@ -1103,7 +1101,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(feed(admin).first["title"]).to eq("AdminOwn - D")
     end
 
-    # WART(D-B36): SubSpaceBookingStatus.find(nil) raises RecordNotFound (404)
+    # SubSpaceBookingStatus.find(nil) raises RecordNotFound (404)
     # and takes the whole room feed down
     it "answers 404 for the whole room when one booking has no status id" do
       feed_booking(name: "Fine", description: "D")

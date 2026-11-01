@@ -112,7 +112,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     end
 
     bookings = SubSpaceBooking.where(name: "Club night").order(:start_time)
-    # WART(D-E2E03): the series loop books one occurrence AFTER the chosen
+    # the series loop books one occurrence AFTER the chosen
     # recurring end date (day+21 for an end of day+15).
     expect(bookings.count).to eq(4)
     expect(bookings.map(&:recurring_booking_id).uniq.size).to eq(1)
@@ -133,8 +133,8 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     expect(approved.map(&:to)).to eq([[user.email]] * 4)
   end
 
-  it "rejects a booking that overlaps a blocking booking (server 422; the UI shows no toast, D-E2E04)" do
-    # The overlap check compares the zoned instants the model stores (D-B06),
+  it "rejects a booking that overlaps a blocking booking (server 422; the UI shows no toast)" do
+    # The overlap check compares the zoned instants the model stores,
     # so a block stored at 09:00-12:00 Toronto catches the 10:00 UI booking.
     blocker = create(:sub_space_booking, sub_space: subspace, user: admin, name: "Maintenance",
                                          description: "closed", blocking: true,
@@ -148,8 +148,8 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
       fill_booking_modal(name: "Sneaky", description: "overlap")
       click_button "bookSave"
       # The server answers 422 "TimeSlot This time slot is already booked." but
-      # WART(D-E2E04): the page JS calls the global `bootstrap.Toast`, which is
-      # not defined (D-JS02), inside a promise whose .catch swallows the error:
+      # the page JS calls the global `bootstrap.Toast`, which is
+      # not defined, inside a promise whose .catch swallows the error:
       # no toast, and the modal stays open with the Book button re-enabled.
       expect(page).to have_css("#bookSave:not([disabled])")
       expect(page).to have_css("#bookModal.show", visible: :all)
@@ -160,10 +160,9 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     expect(SubSpaceBooking.where(sub_space: subspace)).to contain_exactly(blocker)
   end
 
-  # FIXED(D-B06). Flips the pin "a blocking booking made through the UI does
-  # not stop an overlapping UI booking": both rows are compared as the zoned
+  # Both rows are compared as the zoned
   # instants they are stored as, so the second booking is refused.
-  it "a blocking booking made through the UI stops an overlapping UI booking (D-B06)" do
+  it "a blocking booking made through the UI stops an overlapping UI booking" do
     as_actor(:admin) do
       log_in_as(admin)
       open_booking_modal(day)
@@ -182,7 +181,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
       open_booking_modal(day)
       fill_booking_modal(name: "Sneaky", description: "overlap")
       click_button "bookSave"
-      # 422 TimeSlot; the modal stays open (no toast, D-E2E04 above).
+      # 422 TimeSlot; the modal stays open (no toast).
       expect(page).to have_css("#bookSave:not([disabled])")
       expect(page).to have_css("#bookModal.show", visible: :all)
     end

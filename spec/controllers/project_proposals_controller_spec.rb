@@ -18,7 +18,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
       let!(:declined_pp) { create(:project_proposal, :not_approved, title: "Gamma Declined Project") }
       let!(:revision_pp) { create(:project_proposal, approved: nil, linked_project_proposal: approved_pp, title: "Revision of Alpha Project") }
 
-      # Non-admins only see approved proposals plus their own (D-C33)
+      # Non-admins only see approved proposals plus their own
       before { session[:user_id] = admin.id }
 
       it "should return all proposals when no status filter is selected" do

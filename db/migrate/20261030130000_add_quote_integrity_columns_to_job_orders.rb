@@ -1,4 +1,4 @@
-# JOB-01 / JOB-03: two nullable columns, no backfill, no default, no index.
+# two nullable columns, no backfill, no default, no index.
 #
 # job_orders.shopify_draft_order_fingerprint
 #   JobOrder#quote_fingerprint of the quote the stored Shopify draft order was

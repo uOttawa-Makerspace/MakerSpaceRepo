@@ -21,7 +21,7 @@ class Video < ApplicationRecord
               if: -> { video.attached? }
             }
 
-  # D-C45: the bytes themselves must be a video (no filename or declared-type
+  # the bytes themselves must be a video (no filename or declared-type
   # fallback); Marcel reports AVI as video/x-msvideo.
   SNIFFED_VIDEO_TYPES = %w[video/mp4 video/quicktime video/x-msvideo].freeze
   MAX_VIDEO_SIZE = 1.gigabyte

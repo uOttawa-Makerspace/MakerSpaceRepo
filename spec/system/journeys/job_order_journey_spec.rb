@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end job order journey through the real UI: the user walks the wizard
 # (file upload + option), staff quote it, the user approves from the magic link
 # in the delivered mail, staff process / mark paid / mark picked up, and both
-# sides chat. Pins current behavior (D-J19: the landing page's "Start
+# sides chat. Pins current behavior (the landing page's "Start
 # Production" button creates a typeless task, so the wizard's step 1 asks for
 # the job type).
 RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
@@ -30,7 +30,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
     click_button "Start Production"
     expect(page).to have_current_path(%r{\A/job_orders/\d+/task/\d+/edit\z}, ignore_query: true)
 
-    # step 1: job type (the landing button's JS is broken, D-J19/D-JS01)
+    # step 1: job type (the landing button's JS is broken)
     expect(page).to have_content("Job Type (required)*")
     select "3D Print", from: "job_type_select"
     expect(page).to have_css("#job_type_#{JobType.find_by!(name: '3D Print').id}_description", text: /3D Printed/i)
@@ -100,7 +100,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
     magic_path = link_path_in_mail(quote_mail, %r{/job_orders/user_magic_approval})
 
     # the user follows the link from the mail in their signed-in browser (a
-    # signed-out browser cannot approve, see the D-J09 example below)
+    # signed-out browser cannot approve, see the example below)
     as_actor(:user) do
       visit magic_path
       expect(page).to have_content("Thank You for ordering a Job Order!")
@@ -122,7 +122,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       end
       expect(page).to have_content("Completed (Waiting for Payment)")
       expect(page).to have_content("Price: $15.00") # 12.50 base fee + 2.50 option
-      # WART(D-E2E05): the Invoice button label shows its icon markup as text
+      # the Invoice button label shows its icon markup as text
       expect(page).to have_link("<i class='fa fa-download'></i> Invoice")
       accept_confirm { click_button "Mark as Paid" }
       expect(page).to have_content("Paid (Waiting for Pick-Up)")
@@ -134,7 +134,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
        "Currently being Processed", "Completed (Waiting for Payment)", "Paid (Waiting for Pick-Up)", "Picked-Up"]
     )
 
-    # chat, both directions (signed-in users only: a guest POST poisons the page, D-J25)
+    # chat, both directions (signed-in users only: a guest POST poisons the page)
     as_actor(:user) do
       visit job_order_path(order)
       expect(page).to have_content("Quote is ready")
@@ -164,7 +164,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
     )
   end
 
-  it "following the quote magic link while signed out approves, attributed to the owner (D-J09)" do
+  it "following the quote magic link while signed out approves, attributed to the owner" do
     order = make_job_order!(owner: user, status_key: :user_approval, staff: staff)
     task = order.job_tasks.create!(title: "Task #1", job_type: JobType.find_by!(name: "3D Print"))
     ActionMailer::Base.deliveries.clear
@@ -174,7 +174,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       visit path
       expect(page).to have_content("Thank You for ordering a Job Order!")
       accept_confirm { click_button "Approve the Quote" }
-      # FIXED(D-J09): the status row is attributed to the order owner and persists
+      # the status row is attributed to the order owner and persists
       expect(page).to have_content("Thank You for Approving/Denying the Job Order!")
     end
     last_status = order.reload.job_order_statuses.last

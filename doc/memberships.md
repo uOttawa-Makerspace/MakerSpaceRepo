@@ -12,7 +12,7 @@ Membership status is displayed on user profiles and staff dashboards.
 
 ## uOEngineering queries
 
-We managed to trick admin to give us access to protected data, yippee. Rule is
+We were given access to protected data. Rule is
 to **never display student name and student ID together.** Don't display emails
 anyways since that would invite spam crawlers.
 

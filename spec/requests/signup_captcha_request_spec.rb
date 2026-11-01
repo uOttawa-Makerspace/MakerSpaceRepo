@@ -69,7 +69,7 @@ RSpec.describe "Signup captcha (Turnstile siteverify)", type: :request do
   end
 
   it "does not create the account when the siteverify call itself errors, but the error escapes (a 500 in production)" do
-    # WART(D-TURNSTILE-NEW): only the JSON parse is inside verify_turnstile's rescue; a
+    # only the JSON parse is inside verify_turnstile's rescue; a
     # connection error or timeout from Excon.post propagates, so a Cloudflare outage
     # turns signup (and the help form, password-reset and project-proposal captchas)
     # into a 500 instead of the "Captcha error, try again." refusal.

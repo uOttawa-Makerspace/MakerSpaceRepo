@@ -8,7 +8,7 @@ require "rails_helper"
 # Locker activation lives in locker_orders_paid_webhook_spec.rb.
 #
 # * ShopifyApp::WebhookVerification is active in the test env: every `hook` POST is
-#   signed with the test secret (spec/support/shopify_webhook_helpers.rb); forged or
+#   signed with the test secret (spec/support/shopify_webhook_helpers.rb); wrongly signed or
 #   unsigned POSTs are rejected with 401 (HMAC examples below).
 # * The Shopify metafield fallback (`draft_order_metafields`) is stubbed; no
 #   network.
@@ -78,8 +78,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     end
 
     it "rejects a request with no signature header and changes no membership, CC money or locker" do
-      # Fixed (was WART D-S34-nil-header): the gem's secure_compare(nil, ..) used to raise (500);
-      # CustomWebhooksController#require_hmac_header! now answers 401 before the gem runs.
+      # CustomWebhooksController#require_hmac_header! answers 401 before the gem runs.
       expect { unsigned_orders_paid(forged) }.not_to change { money_state }
       expect_rejected
       expect(pending.status).to eq("pending")
@@ -349,11 +348,11 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       expect(Membership.count).to eq(1)
     end
 
-    it "RE-PAYS a membership an admin revoked in the meantime when the webhook is replayed" do
+    it "marks a membership an admin revoked in the meantime paid again when the webhook is replayed" do
       hook(membership_payload(pending.id))
       pending.update!(status: "revoked")
       hook(membership_payload(pending.id))
-      # WART(D-S25): a replayed/late orders_paid flips a revoked membership back to paid; there is no state guard on the transition
+      # a replayed or late orders_paid sets a revoked membership back to paid
       expect(pending.reload.status).to eq("paid")
     end
 
@@ -399,11 +398,11 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
         expect { hook(payload.except(:customer)) }.not_to change(Membership, :count)
       end
 
-      it "DUPLICATES (and stacks) the membership on every replay" do
+      it "creates another membership on every replay, stacked after the previous one" do
         hook(payload)
         first_end = user.memberships.where(status: "paid").order(:id).last.end_date
         hook(payload)
-        # WART(D-S26): the email-fallback path has no idempotency key; each delivery creates another paid membership that stacks after the previous one
+        # on the email-fallback path each delivery creates another paid membership that stacks after the previous one
         paid = user.memberships.where(status: "paid").order(:id).to_a
         expect(paid.size).to eq(2) # the pending fixture row is untouched; two NEW paid rows
         expect(paid.last.start_date).to be_within(1.second).of(first_end)
@@ -415,8 +414,8 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
   # ------------------------------------------------------------- job orders
 
   describe "job order path" do
-    # Chunk 20a: automatic job-order payment recording was removed (it never recorded a payment,
-    # D-S27). Staff set "Paid" by hand; the payment-link draft orders are still created.
+    # Chunk 20a: automatic job-order payment recording was removed (it never recorded a payment).
+    # Staff set "Paid" by hand; the payment-link draft orders are still created.
     it "ignores a paid job-order draft order: 200 and no status is recorded" do
       job_order = create(:job_order, user: user)
       seed_job_statuses! if respond_to?(:seed_job_statuses!)
@@ -490,12 +489,12 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     it "credits the user again on every replay of the same order" do
       hook(cc_payload(email: user.email, quantity: 2))
       hook(cc_payload(email: user.email, quantity: 2))
-      # WART(D-S30): replayed orders_paid double-credits cc points (no order-id dedupe); each retry of a Shopify delivery mints more points
+      # each delivery of orders_paid credits cc points, so a replay credits again
       expect(user.cc_moneys.pluck(:cc)).to eq([20, 20])
       expect(user.reload.get_total_cc).to eq(40)
     end
 
-    it "an unknown-buyer replay sends a second claim email and mints a second claimable row" do
+    it "an unknown-buyer replay sends a second claim email and creates a second claimable row" do
       perform_enqueued_jobs do
         hook(cc_payload(email: "buyer@example.com"))
         hook(cc_payload(email: "buyer@example.com"))

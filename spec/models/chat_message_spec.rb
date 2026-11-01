@@ -48,7 +48,7 @@ RSpec.describe ChatMessage, type: :model do
       expect(described_class.unread(owner)).to be_empty
     end
 
-    # FIXED(D-J05): a message needs a sender, including the unsaved guest User.new
+    # a message needs a sender, including the unsaved guest User.new
     it "is invalid without a sender" do
       expect(described_class.new(job_order: order, sender: User.new, message: "guest")).not_to be_valid
       expect(described_class.new(job_order: order, message: "nobody")).not_to be_valid

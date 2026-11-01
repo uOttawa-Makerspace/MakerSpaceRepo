@@ -300,7 +300,7 @@ RSpec.describe "Current-password re-authentication", type: :request do
     end
 
     it "signing in again starts a fresh budget" do
-      6.times { change_password!("wrong-password") } # a hijacked cookie session is killed
+      6.times { change_password!("wrong-password") } # the cookie session is ended
       log_in!
       5.times { change_password!("wrong-password") }
       expect(signed_in?).to be(true)

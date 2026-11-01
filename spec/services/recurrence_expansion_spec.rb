@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# RecurrenceExpansion across the America/Toronto DST changes (D-SP29). A
+# RecurrenceExpansion across the America/Toronto DST changes. A
 # DAILY/WEEKLY/MONTHLY/YEARLY rule repeats a wall-clock time:
 #   spring-forward 2027-03-14: 02:30 does not exist and moves forward to 03:30 EDT;
 #   fall-back 2026-11-01: 01:30 happens twice and is listed once, at the first
@@ -93,7 +93,7 @@ RSpec.describe RecurrenceExpansion do
     end
   end
 
-  describe "cost of a COUNT rule (D-SP28 bound)" do
+  describe "cost of a COUNT rule (bounded)" do
     # IceCube calls ValidatedRule#next_time once per candidate occurrence.
     def rule_steps
       steps = 0

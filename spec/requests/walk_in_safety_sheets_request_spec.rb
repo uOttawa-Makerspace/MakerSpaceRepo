@@ -37,7 +37,7 @@ RSpec.describe "Walk-in safety sheets", type: :request do
     expect(sheet.reload.emergency_contact_name).not_to eq("x")
   end
 
-  # D-P04: the new action/route (always 406, no template) was removed; /new now falls to show,
+  # the new action/route (always 406, no template) was removed; /new now falls to show,
   # which renders the form.
   it "renders the form on /new for a signed-in user (served by show)" do
     sign_in_as(:regular)
@@ -162,7 +162,7 @@ RSpec.describe "Walk-in safety sheets", type: :request do
       expect(sheet.reload.emergency_contact_name).to eq("New Person")
     end
 
-    # FIXED(D-P23): update permits only the contact fields, so a signed sheet cannot be re-pointed or flipped to minor
+    # update permits only the contact fields, so a signed sheet cannot be re-pointed or flipped to minor
     it "ignores space_id, is_minor and signature changes on a signed sheet" do
       other = create(:space)
       log_in!(owner)

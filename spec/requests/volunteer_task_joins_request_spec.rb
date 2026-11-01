@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Chunk 13: VolunteerTaskJoinsController. It inherits only SessionsController:
-# `create` has NO sign-in or role gate; `remove` needs sign-in plus owner or staff (D-V15).
+# `create` has NO sign-in or role gate; `remove` needs sign-in plus owner or staff.
 RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
   let(:task) { create(:volunteer_task, title: "open house", joins: 1) }
   let(:volunteer) { create(:user, :volunteer_with_volunteer_program) }
@@ -69,7 +69,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect { join!(join_params) }.to change(VolunteerTaskJoin, :count).by(1)
     end
 
-    # WART(D-V12): no uniqueness on (user, task): the same volunteer joins repeatedly when capacity allows
+    # no uniqueness on (user, task): the same volunteer joins repeatedly when capacity allows
     it "allows the same volunteer to join twice on a multi-seat task, with two rounds of email" do
       big = create(:volunteer_task, joins: 3)
       vol_login!(volunteer)
@@ -77,7 +77,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(vol_deliveries.size).to eq(4)
     end
 
-    # INTENDED(D-V13): volunteer enrolment/joining is open by design (an external form covers approval); capacity only counts user_type "Volunteer" (users.role), so a program member whose role is regular_user is stored as "Regular_user" and never consumes a seat
+    # volunteer enrolment/joining is open by design (an external form covers approval); capacity only counts user_type "Volunteer" (users.role), so a program member whose role is regular_user is stored as "Regular_user" and never consumes a seat
     it "stores a program member with role regular_user as Regular_user, leaving the seat free for others" do
       member = create(:user, :regular_user)
       Program.create!(user: member, program_type: Program::VOLUNTEER)
@@ -99,7 +99,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("This task is already full")
     end
 
-    # INTENDED(D-V14): open by design (an external form covers approval): a plain regular user (no program) joins any task
+    # open by design (an external form covers approval): a plain regular user (no program) joins any task
     it "lets a regular user with no program join" do
       user = create(:user, :regular_user)
       vol_login!(user)
@@ -113,7 +113,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(VolunteerTaskJoin.last.user_id).to eq(volunteer.id)
     end
 
-    it "lets staff join another user, bypassing capacity" do
+    it "lets staff join another user, regardless of capacity" do
       create(:volunteer_task_join, :active, volunteer_task: task)
       staff = create(:user, :staff)
       vol_login!(staff)
@@ -184,7 +184,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(task.volunteer_task_joins.pluck(:user_id)).to eq([other_volunteer.id])
     end
 
-    # FIXED(D-V15): remove needs sign-in, and the target must be the caller or the caller must be staff
+    # remove needs sign-in, and the target must be the caller or the caller must be staff
     it "refuses another volunteer removing someone else" do
       vol_login!(other_volunteer)
       expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)

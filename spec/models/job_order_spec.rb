@@ -182,7 +182,7 @@ RSpec.describe JobOrder, type: :model do
       expect(JobOrder.without_drafts).not_to include(draft_last)
     end
 
-    # WART(D-J22): without_drafts does not filter deleted rows — callers must compose
+    # without_drafts does not filter deleted rows — callers must compose
     # `.not_deleted` themselves (as JobOrdersController#admin does).
     it "keeps soft-deleted orders (deletion is a separate composition)" do
       submitted = create(:job_order, user: create(:user, :regular_user), is_deleted: true)
@@ -263,7 +263,7 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
-  # WART(D-J36): the has_many :job_order_options association has no model
+  # the has_many :job_order_options association has no model
   describe "job_order_options association" do
     it "has no backing model class" do
       expect { create(:job_order).job_order_options.to_a }
@@ -310,7 +310,7 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
-  # WART(D-J36): `has_many :job_order_options, dependent: :destroy` points at a
+  # `has_many :job_order_options, dependent: :destroy` points at a
   # model that does not exist, so a real destroy (of an order, or of a user who
   # owns one) raises NameError while the controller only ever soft-deletes.
   describe "destroy" do
@@ -338,7 +338,7 @@ RSpec.describe JobOrder, type: :model do
     before { seed_job_types! }
 
     let!(:shopify) { stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/inv-1" } }
-    # /pay only serves COMPLETED orders, and checkout_link re-checks that under the row lock (JOB-03)
+    # /pay only serves COMPLETED orders, and checkout_link re-checks that under the row lock
     let(:order) { make_job_order!(owner: create(:user, :regular_user), status_key: :completed) }
 
     def quoted_task!(title, price:, service_price:, service_quantity:)
@@ -369,7 +369,7 @@ RSpec.describe JobOrder, type: :model do
         expect(order.send(:shopify_draft_order_line_items).map { |l| l[:title] }).to eq(["Line Items Total"])
       end
 
-      # FIXED(D-J49, with the D-J38 follow-up): nil service_price / quantity count as 0 (no parts line).
+      # nil service_price / quantity count as 0 (no parts line).
       it "treats a nil service_price as 0 (no parts fee line) instead of raising" do
         order.job_tasks.create!(title: "Task #1").build_job_task_quote(price: 10).save!
         titles = order.reload.shopify_draft_order_line_items.map { |l| l[:title] }
@@ -391,7 +391,7 @@ RSpec.describe JobOrder, type: :model do
                                               value: order.id.to_s, type: "number_integer" }])
       end
 
-      # FIXED(D-J38 / JOB-03): the draft remembers the line items it was built from. While they match it is only
+      # the draft remembers the line items it was built from. While they match it is only
       # fetched; once they change it is never served again (the order goes back to staff, see
       # spec/requests/job_orders_pay_fingerprint_request_spec.rb).
       it "stores a fingerprint with the id, then only fetches the draft while the line items still match" do

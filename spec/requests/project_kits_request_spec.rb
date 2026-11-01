@@ -97,12 +97,12 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
           end.to change(ProjectKit, :count).by(3)
         end
 
-        it "500s on a nonexistent project id: validation passes on presence, the FK constraint raises (D-C51)" do
+        it "500s on a nonexistent project id: validation passes on presence, the FK constraint raises" do
           ActionMailer::Base.deliveries.clear
           expect do
             post project_kits_path, params: { project_kit: { user_id: recipient.id, proficient_project_id: 0 } }
           end.not_to change(ProjectKit, :count)
-          # WART(D-C51): ProjectKit validates presence, not existence, of the project; the DB FK error surfaces as a 500
+          # ProjectKit validates presence, not existence, of the project; the DB FK error surfaces as a 500
           expect(response).to have_http_status(:internal_server_error)
           expect(ActionMailer::Base.deliveries).to be_empty
         end
@@ -132,15 +132,15 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
   end
 
   describe "GET populate_kit_users" do
-    it "answers any signed-in user with the full user JSON including the password hash (D-C47 -> D-I02, severity 1)" do
+    it "lists the matching users, with their email, for any signed-in user" do
       target = create(:user, :regular_user, name: "Kitty Searchable")
       content_sign_in_as(:regular)
       get populate_kit_users_project_kits_path, params: { search: "kitty search" }
       expect(response).to have_http_status(:ok)
       users = response.parsed_body["users"]
       expect(users.map { |u| u["id"] }).to eq([target.id])
-      # FIXED(D-C47, password part): User#serializable_hash excludes password/access_token (D-I02).
-      # The missing staff gate and the email exposure remain pinned until the content authz slice.
+      # User#serializable_hash excludes password/access_token.
+      # The matching users are listed with their email.
       expect(users.first).not_to have_key("password")
       expect(users.first).not_to have_key("access_token")
       expect(users.first["email"]).to eq(target.email)

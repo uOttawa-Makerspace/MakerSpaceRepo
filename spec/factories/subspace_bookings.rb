@@ -12,7 +12,7 @@ FactoryBot.define do
     # INSERT may start in the past (and the default "now" start may be a minute
     # old by the time it saves). The bypass covers only that insert: built
     # records, and later saves of a created one, are checked by the past-date
-    # rule (D-B18) like any other booking.
+    # rule like any other booking.
     to_create do |booking|
       booking.allow_past_start = true
       booking.save!

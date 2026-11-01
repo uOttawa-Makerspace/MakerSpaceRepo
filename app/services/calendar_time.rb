@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Wall-clock helpers for the FullCalendar JSON feeds (D-SP29).
+# Wall-clock helpers for the FullCalendar JSON feeds.
 module CalendarTime
   module_function
 

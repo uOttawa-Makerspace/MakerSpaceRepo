@@ -38,7 +38,7 @@ RSpec.describe "Repository zip download", type: :request do
     expect(flash[:alert]).to eq("This repository has no files to download.")
   end
 
-  # N+1 pinned: see defects D-PERF-C01
+  # N+1 pinned
   it "serves a zip of every file to a guest for a public repository", skip_bullet: true do
     add_file("a.txt", content: "AAA")
     add_file("b.txt", content: "BBB")
@@ -49,7 +49,7 @@ RSpec.describe "Repository zip download", type: :request do
     expect(zip_entries).to eq("a.txt" => "AAA", "b.txt" => "BBB")
   end
 
-  # N+1 pinned: see defects D-PERF-C01
+  # N+1 pinned
   it "prefixes the index to a duplicate file name", skip_bullet: true do
     add_file("same.txt", content: "one")
     add_file("same.txt", content: "two")
@@ -66,7 +66,7 @@ RSpec.describe "Repository zip download", type: :request do
     expect(names.first).to end_with("evil.txt")
   end
 
-  it "zips a legacy non-allow-listed file that predates the type validation (D-C06 now blocks new ones)" do
+  it "zips a legacy non-allow-listed file that predates the type validation (the type validation now blocks new ones)" do
     legacy = RepoFile.new(repository: repo, file: content_named_upload("run.exe", content: "MZ", type: "application/x-msdownload"))
     legacy.save!(validate: false)
     download
@@ -114,7 +114,7 @@ RSpec.describe "Repository zip download", type: :request do
     expect(File.exist?(repo.zip_path)).to be(false)
   end
 
-  # N+1 pinned: see defects D-PERF-C01
+  # N+1 pinned
   it "skips missing blobs but zips the rest", skip_bullet: true do
     gone = add_file("gone.txt")
     add_file("kept.txt", content: "K")

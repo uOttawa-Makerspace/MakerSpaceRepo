@@ -139,7 +139,7 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
   describe "runaway recurrence rules" do
     let(:wide) { { start: t0.iso8601, end: (t0 + 100.days).iso8601 } }
 
-    # D-SP28: the model refuses these rules now; insert them as legacy rows exist
+    # the model refuses these rules now; insert them as legacy rows exist
     def stored_shift(rule, attrs = {})
       shift(attrs).tap { |e| e.update_column(:recurrence_rule, rule) }
     end

@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Spec-audit gap closers for job orders (audit mutations M21, M44, M45, M52,
-# M53 and D-J38). Every example here is killed by the mutation named in its
+# M53 and the draft-order re-quote). Every example here is killed by the mutation named in its
 # comment; see the commit message for the mutation results.
 RSpec.describe "JobOrders audit gaps", type: :request do
   let(:owner) { create(:user, :regular_user) }
@@ -61,7 +61,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
   # ------------------------------------------------ status skipping (M21)
 
   # Each action is only valid from ONE status; from every other status it must
-  # record nothing and flash the generic update error (WART(D-J16): no reason
+  # record nothing and flash the generic update error (no reason
   # is given). Table-driven over all ten statuses.
   describe "status transitions refuse every wrong source state" do
     actions = {
@@ -155,16 +155,16 @@ RSpec.describe "JobOrders audit gaps", type: :request do
     end
   end
 
-  # ------------------------------------------------ D-J38
+  # ------------------------------------------------ draft re-quote
 
-  # FIXED(D-J38): a re-quote deletes the Shopify draft order (its invoice is payable,
+  # a re-quote deletes the Shopify draft order (its invoice is payable,
   # and the customer approves the new quote first; JobOrder#enter_status!) and clears
   # the id, so the next GET /pay creates a fresh draft with the new total. Fail closed: if the old draft cannot be
   # deleted (error, not configured, already paid/completed on Shopify) the re-quote is
   # refused and nothing changes. A PAID or later order is refused earlier, by the
-  # quote's own status rule (JOB-04). A first quote (no draft) is unchanged. The pay
+  # quote's own status rule. A first quote (no draft) is unchanged. The pay
   # path does NOT compare draft totals (taxes make that unsafe).
-  describe "Shopify payment link after a re-quote (D-J38)" do
+  describe "Shopify payment link after a re-quote" do
     let!(:shopify) { stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/old-invoice" } }
 
     def shopify_ops
@@ -218,7 +218,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       expect(response.body).not_to include("old-invoice")
     end
 
-    # JOB-03 review 3: a re-quote always voids the draft, unchanged prices included
+    # a re-quote always voids the draft, unchanged prices included
     it "deletes the draft when the re-quote leaves the price unchanged too" do
       order, task = order_with_draft!
       requote!(order, task, 29.99)
@@ -515,7 +515,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       it_behaves_like "a refused re-quote"
     end
 
-    # JOB-04: refused before any write, by the quote's own status rule (not the Shopify helper)
+    # refused before any write, by the quote's own status rule (not the Shopify helper)
     context "when the order is already PAID" do
       it "changes nothing, never touches Shopify and tells staff the order is paid" do
         order, task = order_with_draft!(status_key: :paid)

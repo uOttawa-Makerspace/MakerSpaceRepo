@@ -3,8 +3,7 @@
 module Api
   module V1
     # One row of GET /api/v1/spaces/:id/presence. Explicit allowlist (never
-    # as_json/serializable_hash: the legacy dashboard leaked access_token and
-    # student_id that way). The flags are computed in bulk by the controller.
+    # as_json/serializable_hash: access_token and student_id are not exposed). The flags are computed in bulk by the controller.
     module PresenceUserSerializer
       module_function
 

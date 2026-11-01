@@ -38,9 +38,9 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(response.body).to include("Original Thing")
     end
 
-    it "500s when the username does not own the id (set_repository returns nil) (D-C21)" do
+    it "500s when the username does not own the id (set_repository returns nil)" do
       content_login!(maker)
-      # WART(D-C21): find_by returns nil and the action dereferences it; should be a 404
+      # find_by returns nil and the action dereferences it; should be a 404
       get makes_new_path("somebody-else", original.id)
       expect(response).to have_http_status(:internal_server_error)
     end
@@ -78,10 +78,10 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(original.makes).to eq([made])
     end
 
-    it "adds the maker to the make's members so they can edit and delete it (D-C22)" do
+    it "adds the maker to the make's members so they can edit and delete it" do
       content_login!(maker)
       post makes_create_path(owner.username, original.id), params: make_params
-      # FIXED(D-C22): the maker is added to repository.users on create (consistent with D-C07)
+      # the maker is added to repository.users on create
       made = Repository.find_by(title: "My Make")
       expect(made.users).to eq([maker])
       expect(made.users).not_to include(owner)
@@ -96,7 +96,7 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       made = Repository.find_by(title: "My Make")
       expect(maker.reload.reputation).to eq(15)
       expect { delete repository_path(maker.username, made.slug) }.to change(Repository, :count).by(-1)
-      # FIXED(review): make_id rows decrement 15, not the 25 a normal repository awards
+      # make_id rows decrement 15, not the 25 a normal repository awards
       expect(maker.reload.reputation).to eq(0)
       expect(owner.reload.reputation).to eq(0)
     end
@@ -119,12 +119,12 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(made.equipments.pluck(:name)).to eq(["Cutter"])
     end
 
-    it "500s when no photos_attributes are sent (nested attributes got nil) (D-C24)" do
+    it "500s when no photos_attributes are sent (nested attributes got nil)" do
       content_login!(maker)
       params = { original.title => { title: "No Photo", description: "x" } }
       expect { post makes_create_path(owner.username, original.id), params: params }
         .not_to change(Repository, :count)
-      # WART(D-C24): photos_attributes = nil raises ArgumentError instead of a validation error
+      # photos_attributes = nil raises ArgumentError instead of a validation error
       expect(response).to have_http_status(:internal_server_error)
     end
 
@@ -151,7 +151,7 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(flash[:alert]).to include("Original Thing")
     end
 
-    context "on a private original (D-C23)" do
+    context "on a private original" do
       let!(:secret) { create(:repository, :private, owner: owner, title: "Hush", users: [owner]) }
       let(:secret_params) do
         { secret.title => { title: "Leak", description: "d", photos_attributes: { "0" => { image: content_png_upload } } } }
@@ -160,7 +160,7 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       it "refuses new and create without the password" do
         content_login!(maker)
         get makes_new_path(owner.username, secret.id)
-        # FIXED(D-C23): makes run the shared private-repository gate
+        # makes run the shared private-repository gate
         expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
         expect { post makes_create_path(owner.username, secret.id), params: secret_params }
           .not_to change(Repository, :count)

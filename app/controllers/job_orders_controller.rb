@@ -192,7 +192,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     if params[:approved] == "true"
       # ACCEPT JOB. The prices and the new status are one transition: its own transaction, row lock first
       # (concurrent re-quotes serialize; the status is read under the lock, and a paid order is refused there,
-      # JOB-04), the new quote's draft rule voiding any live Shopify draft (fail closed: if it cannot be deleted
+      # the new quote's draft rule voiding any live Shopify draft (fail closed: if it cannot be deleted
       # nothing is written: no price, status or email). A refusal is reported by the model, once.
       result = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus.user_approval,
                                       actor: @user) { apply_quote_params! }
@@ -211,7 +211,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
         mail_failed = true
       end
     elsif params[:approved] == "false"
-      # DECLINE JOB. JOB-04: never once paid (transition! reads the status under the row lock).
+      # DECLINE JOB. Never once paid (transition! reads the status under the row lock).
       declined = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus.declined, actor: @user)
 
       if declined.ok?
@@ -271,7 +271,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
          nil,
          nil
        ) && params[:completed] == "true"
-      # Bypass Payment if order is 0$ (through the same transition rule as any other payment)
+      # Skip payment if the order is $0 (through the same transition rule as any other payment)
       if @job_order.total_price.zero?
         paid = @job_order.transition!(from: JobStatus.completed, to: JobStatus.paid, actor: @user)
         if paid.ok?
@@ -382,7 +382,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @token = params[:token]
     @job_order = JobOrder.from_pay_token(@token)
     if @job_order.nil?
-      # expired, tampered, deleted-order, already-retired or pre-D-J11 links
+      # expired, invalid, deleted-order, already-retired or legacy links
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
       redirect_to job_orders_path
     elsif (status = @job_order.current_status) == JobStatus.completed # no status (nil): not payable, as below
@@ -534,7 +534,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @job_order.chat_messages.create(message: params[:user_comments], sender: current_user)
   end
 
-  # The flash for a refused quote / decline. A paid order says so (JOB-04), decided from the status the operation read
+  # The flash for a refused quote / decline. A paid order says so, decided from the status the operation read
   # under its lock (result.status), not from a re-read after the commit; invalid input says what was wrong.
   def refusal_alert(result, requote: false)
     case result.reason

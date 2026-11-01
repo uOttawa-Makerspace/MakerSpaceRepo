@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# JOB-01 (owner decision 2026-10-30): a change through the task wizard
+# a change through the task wizard
 # (JobTasksController create / update / destroy) to an order that has already
 # been quoted, which changes what is billed or made, sends the order back to
 # staff for a new quote and voids the existing invoice (see also
@@ -15,7 +15,7 @@ require "rails_helper"
 #                                the commit
 #   PAID, PICKED_UP              refused, nothing changes
 #   DECLINED                     applied, status unchanged (as before)
-RSpec.describe "Owner changes after the quote (JOB-01)", type: :request do
+RSpec.describe "Owner changes after the quote", type: :request do
   let(:owner) { create(:user, :regular_user) }
   let(:staff) { create(:user, :staff) }
   let(:admin) { create(:user, :admin) }

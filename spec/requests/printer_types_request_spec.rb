@@ -46,7 +46,7 @@ RSpec.describe "Printer types", type: :request do
   describe "as admin" do
     before { sign_in_as(:admin) }
 
-    # N+1 pinned: see defects D-PERF-EQ03
+    # N+1 pinned
     it "lists types ordered case-insensitively", skip_bullet: true do
       create(:printer_type, name: "apple", short_form: "A")
       get printer_types_path
@@ -96,7 +96,7 @@ RSpec.describe "Printer types", type: :request do
       expect(type.reload.name).to eq("Ultimaker 2+")
     end
 
-    # WART(D-EQ16): destroying a printer type cascades (dependent: :destroy) to its printers and their sessions without confirmation or guard
+    # destroying a printer type cascades (dependent: :destroy) to its printers and their sessions without confirmation or guard
     it "destroys a type together with its printers and their sessions" do
       printer = create(:printer, printer_type: type, number: "1")
       create(:printer_session, printer: printer)

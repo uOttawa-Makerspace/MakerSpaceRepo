@@ -6,7 +6,7 @@ class JobTasksController < SessionsController
   before_action :authorize_order_owner!, except: [:edit]
 
   # create, update and destroy are the customer-side writers of the order's tasks, options, files and services.
-  # Each runs its writes inside JobOrder#apply_owner_change! (JOB-01): row lock, the status rule, and a quoted
+  # Each runs its writes inside JobOrder#apply_owner_change!: row lock, the status rule, and a quoted
   # order goes back to staff with its invoice voided.
   def destroy
     outcome = apply_change { @job_task.destroy! }

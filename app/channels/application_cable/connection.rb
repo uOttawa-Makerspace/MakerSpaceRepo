@@ -4,7 +4,7 @@ module ApplicationCable
   class Connection < ActionCable::Connection::Base
     identified_by :current_user
 
-    # D-EQ30: identify the user and reject everyone else. The rules are the
+    # identify the user and reject everyone else. The rules are the
     # app's shared ones (lib/jwt_authenticator.rb), not reimplemented here:
     # - cookie session (browsers send it on the websocket handshake): not idle
     #   expired, user eligible (present, not deleted, not deactivated) and

@@ -6,7 +6,7 @@ require "rails_helper"
 #   index, show         staff or volunteer-program member (`volunteer_access`)
 #   new/create/edit/update/destroy   staff or admin only (`grant_access`)
 #   my_tasks                         NO gate (guests included)
-#   complete_task (POST)             sign-in + staff or the task's creator (D-V23)
+#   complete_task (POST)             sign-in + staff or the task's creator
 RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   let(:space) { create(:space) }
   let(:staff) { create(:user, :staff) }
@@ -146,7 +146,7 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
         .to eq([[other_staff.id, "Admin", true], [volunteer.id, "Volunteer", true]])
     end
 
-    # WART(D-V20): no validation on numbers/status/title: negative cc/hours, zero seats, blank title and arbitrary status are stored
+    # no validation on numbers/status/title: negative cc/hours, zero seats, blank title and arbitrary status are stored
     it "stores negative cc/hours, zero seats, an empty title and a bogus status" do
       post volunteer_tasks_path, params: task_params(title: "", cc: -50, hours: -3, joins: 0, status: "bogus")
       expect(response).to redirect_to(volunteer_tasks_path)
@@ -204,7 +204,7 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(task.reload.title).to eq("x")
     end
 
-    # WART(D-V21): removing the creating staff member when nobody else is joined redirects twice (DoubleRenderError 500); the update itself IS applied
+    # removing the creating staff member when nobody else is joined redirects twice (DoubleRenderError 500); the update itself IS applied
     it "500s with DoubleRenderError when removing the task creator with no other join" do
       task.update!(user_id: staff.id)
       create(:volunteer_task_join, :first, volunteer_task: task, user: staff, user_type: "Staff")
@@ -248,7 +248,7 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
         .to eq([0, 0, 0, 0, 0])
     end
 
-    # WART(D-V22): deleting a task destroys approved hours and CC money already awarded, and the wallet is not recomputed
+    # deleting a task destroys approved hours and CC money already awarded, and the wallet is not recomputed
     it "wipes awarded hours and leaves a stale wallet" do
       awardee = create(:user, :volunteer_with_volunteer_program)
       create(:volunteer_hour, :approved1, user: awardee, volunteer_task: task)
@@ -268,8 +268,8 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "POST /volunteer_tasks/complete_task" do
-    # FIXED(D-V23): POST only, and only staff/admin or the task's creator may complete a task
-    it "is no longer reachable by GET" do
+    # POST only, and only staff/admin or the task's creator may complete a task
+    it "is not reachable by GET" do
       vol_login!(staff)
       get "/volunteer_tasks/complete_task", params: { id: task.id }
       expect(task.reload.status).to eq("open")

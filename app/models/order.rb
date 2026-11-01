@@ -91,7 +91,7 @@ class Order < ApplicationRecord
     end
   end
 
-  # Cart checkout (OrdersController#create; D-S42). Its own top-level transaction
+  # Cart checkout (OrdersController#create). Its own top-level transaction
   # (own_transaction, lock waits bounded): completes `order` for `user` and debits one CcMoney row per item through
   # CcMoney.debit_all! (one balance check for the order total, one wallet refresh). Lock order
   # (house rule): the wallet (user row) first, then the
@@ -105,7 +105,7 @@ class Order < ApplicationRecord
   # Raises CcMoney::InsufficientBalance (or CcMoney::InvalidAmount for a negative price
   # snapshot) with everything rolled back. Kit mails are NOT sent here: the caller sends them
   # after the commit, for the returned kit_project_ids. A new (unsaved) order is the empty-cart
-  # case (D-S04): nothing to lock, it is saved as a Completed zero-value order as before.
+  # case: nothing to lock, it is saved as a Completed zero-value order as before.
   def self.checkout!(order, user)
     own_transaction("Order.checkout!") do
       payer = CcMoney.lock_wallet!(user) # the user row first (house lock order)

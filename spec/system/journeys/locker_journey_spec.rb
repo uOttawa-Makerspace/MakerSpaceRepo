@@ -128,7 +128,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
       staff_opens_request(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
         select "JA-1", from: "locker_rental_locker_id"
-        # WART(D-E2E02): the "Indefinite" box starts checked for a request with
+        # the "Indefinite" box starts checked for a request with
         # no end date, so a plain "Assign Now" makes an indefinite rental.
         expect(page).to have_checked_field("Indefinite")
         uncheck_and_confirm "Indefinite"
@@ -205,7 +205,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     expect(rental.owned_until).to be_nil
 
     as_actor(:user) do
-      # WART(D-E2E01): index.html.erb calls owned_until.to_date on an active
+      # index.html.erb calls owned_until.to_date on an active
       # rental with no end date: the whole page 500s for the renter.
       visit locker_rentals_path
       expect(page).to have_no_css("nav.navbar")

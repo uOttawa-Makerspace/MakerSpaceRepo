@@ -61,8 +61,8 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect { get repo_path }.not_to change { repo.reload.attributes }
     end
 
-    it "finds the repository by id, slug and title, and ignores the username segment (D-C01)" do
-      # WART(D-C01): :user_username is never checked against the repository owner, so /anybody/<id> serves any repository
+    it "finds the repository by id, slug and title, and ignores the username segment" do
+      # the :user_username segment is not matched against the repository owner
       get repository_path("anybody-at-all", repo.id)
       expect(response).to have_http_status(:ok)
       get repository_path("anybody-at-all", repo.slug)
@@ -79,7 +79,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_sign_in_as(:admin)
       get repo_path
       expect(forms.call(nil)).to eq(%w[link_to_pp add_member remove_member])
-      # FIXED(review): staff cannot use the member forms (check_ownership), so they are no longer rendered
+      # staff cannot use the member forms (check_ownership), so they are no longer rendered
       content_sign_in_as(:staff)
       get repo_path
       expect(forms.call(nil)).to eq(%w[link_to_pp])
@@ -113,7 +113,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
         get repo_path(secret)
         expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
         follow_redirect!
-        # FIXED(D-C16): the guest lands on the password page, not /login
+        # the guest lands on the password page, not /login
         expect(response).to have_http_status(:ok)
       end
 
@@ -137,16 +137,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
         end
       end
 
-      it "lets a collaborator (in users, not the owner) in without the password (D-C02)" do
+      it "lets a collaborator (in users, not the owner) in without the password" do
         collaborator = create(:user, :regular_user)
         secret.users << collaborator
         content_login!(collaborator)
         get repo_path(secret)
-        # FIXED(D-C02): members of repository.users are authorized like the owner
+        # members of repository.users are authorized like the owner
         expect(response).to have_http_status(:ok)
       end
 
-      it "lets the owner in by user_id even when not in users (D-C02)" do
+      it "lets the owner in by user_id even when not in users" do
         secret.users.clear
         content_login!(owner)
         get repo_path(secret)
@@ -160,9 +160,9 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
 
     before { secret.update_columns(password: BCrypt::Password.create("open-sesame")) }
 
-    it "a guest can open the password page and enter the password (D-C16)" do
+    it "a guest can open the password page and enter the password" do
       get password_entry_repository_path(owner.username, secret.id)
-      # FIXED(D-C16): password_entry / pass_authenticate no longer require a login
+      # password_entry / pass_authenticate do not require a login
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("This project is private")
       expect(response.body).not_to include("Secret")
@@ -212,12 +212,12 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(repository_path(owner.username, repo.id))
     end
 
-    it "a correct password redirects to the slug URL, which is then accepted (D-C03)" do
+    it "a correct password redirects to the slug URL, which is then accepted" do
       post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
       expect(response).to redirect_to(repo_path(secret))
       expect(flash[:notice]).to eq("Success")
       follow_redirect!
-      # FIXED(D-C03): the session stores the repository id, so the slug URL is recognised
+      # the session stores the repository id, so the slug URL is recognised
       expect(response).to have_http_status(:ok)
     end
 
@@ -227,13 +227,13 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "authorization is remembered per repository: id, slug and title all pass, other repositories stay locked (D-C03)" do
+    it "authorization is remembered per repository: id, slug and title all pass, other repositories stay locked" do
       other = create(:repository, :private, owner: owner, title: "Other Secret", users: [owner])
       post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
       get repository_path(owner.username, secret.id)
       expect(response).to have_http_status(:ok)
       get repository_path(owner.username, secret.title)
-      # FIXED(D-C03): whitelist is by repository id, normalised across id/slug/title
+      # whitelist is by repository id, normalised across id/slug/title
       expect(response).to have_http_status(:ok)
       get repo_path(secret)
       expect(response).to have_http_status(:ok)
@@ -241,7 +241,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(password_entry_repository_path(owner.username, other.id))
     end
 
-    it "pass_authenticate posted to the slug URL also unlocks (D-C03)" do
+    it "pass_authenticate posted to the slug URL also unlocks" do
       post pass_authenticate_repository_path(owner.username, secret.slug), params: { password: "open-sesame" }
       expect(flash[:notice]).to eq("Success")
       get repository_path(owner.username, secret.id)
@@ -257,7 +257,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
     end
 
     # test env uses :null_store (never counts), so back the limiter's store with a counter
-    context "rate limit (D-C04)" do
+    context "rate limit" do
       let(:counts) { Hash.new(0) }
 
       before do
@@ -274,7 +274,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
           expect(flash[:alert]).to eq("Incorrect password. Try again!")
         end
         guess(password: "open-sesame")
-        # FIXED(D-C04): pass_authenticate is rate limited (10 per 10 minutes) per repository and user/IP
+        # pass_authenticate is rate limited (10 per 10 minutes) per repository and user/IP
         expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
         expect(flash[:alert]).to eq("Too many attempts. Please try again later.")
         get repo_path(secret)
@@ -305,9 +305,9 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       end
     end
 
-    it "pass_authenticate on a public repository redirects to show instead of raising (D-C05)" do
+    it "pass_authenticate on a public repository redirects to show instead of raising" do
       post pass_authenticate_repository_path(owner.username, repo.id), params: { password: "x" }
-      # FIXED(D-C05): a public repository has no password to check; go to show
+      # a public repository has no password to check; go to show
       expect(response).to redirect_to(repo_path)
     end
   end
@@ -403,8 +403,8 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    # FIXED(D-C06): RepoFile validates the sniffed content type and size for every repository file
-    it "refuses an executable as a repo_file on a repository, even with a friendly name or declared type (D-C06)" do
+    # RepoFile validates the sniffed content type and size for every repository file
+    it "refuses an executable as a repo_file on a repository, even with a friendly name or declared type" do
       content_login!(stranger)
       exe = "MZ" + ("\x00" * 200)
       [["evil.exe", "application/x-msdownload"], ["design.stl", "model/stl"], ["notes.txt", "text/plain"]].each do |name, type|
@@ -496,15 +496,15 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(repo_path)
     end
 
-    it "lets the repository owner edit when the owner is not in repository.users (D-C07)" do
+    it "lets the repository owner edit when the owner is not in repository.users" do
       orphan = create(:repository, owner: owner, title: "Orphan") # factory: users empty
       content_login!(owner)
       get edit_repository_path(owner.username, orphan.slug)
-      # FIXED(D-C07): owner is user_id OR a member of the habtm `users`
+      # owner is user_id OR a member of the habtm `users`
       expect(response).to have_http_status(:ok)
     end
 
-    it "lets a collaborator (in users, not the owner) edit, and still bounces a stranger from an orphan repo (D-C07)" do
+    it "lets a collaborator (in users, not the owner) edit, and still bounces a stranger from an orphan repo" do
       collaborator = create(:user, :regular_user)
       repo.users << collaborator
       content_login!(collaborator)
@@ -568,13 +568,13 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.equipments).to be_empty
     end
 
-    it "destroys categories and equipment BEFORE validating: an invalid update still wipes them (D-C08)" do
+    it "destroys categories and equipment BEFORE validating: an invalid update still wipes them" do
       Category.create!(name: "Old", repository_id: repo.id)
       content_login!(owner)
       patch repository_path(owner.username, repo.slug), params: { repository: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
       expect(flash[:alert]).to eq("Unable to apply the changes.")
-      # WART(D-C08): update_destroys categories/equipments before the update is validated
+      # update_destroys categories/equipments before the update is validated
       expect(repo.reload.categories).to be_empty
       expect(repo.title).to eq("Laser Lamp")
     end
@@ -592,7 +592,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       repo.users << collab
       content_login!(collab)
       patch repository_path(owner.username, repo.slug), params: { repository: { user_id: collab.id } }
-      # FIXED(D-C09): :user_id removed from repository_params; transfer_owner is the only way
+      # :user_id removed from repository_params; transfer_owner is the only way
       expect(repo.reload.user_id).to eq(owner.id)
     end
 
@@ -643,7 +643,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
         .to change(Comment, :count).by(-1).and change(Like, :count).by(-1).and change(Photo, :count).by(-1)
     end
 
-    it "lets the owner delete a repository whose users list does not include them (D-C07)" do
+    it "lets the owner delete a repository whose users list does not include them" do
       orphan = create(:repository, owner: owner, title: "Orphan")
       content_login!(owner)
       expect { delete repository_path(owner.username, orphan.slug) }.to change(Repository, :count).by(-1)
@@ -677,23 +677,23 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(owner.reload.reputation).to eq(0)
     end
 
-    it "lets the owner like their own repository (reputation farming possible) (D-C10)" do
+    it "lets the owner like their own repository" do
       content_login!(owner)
       post add_like_repository_path(owner.username, repo.slug)
-      # WART(D-C10): no self-like guard; likes on your own repo give you +5 reputation
+      # likes on your own repo give you +5 reputation
       expect(repo.reload.like).to eq(1)
       expect(owner.reload.reputation).to eq(5)
     end
 
-    it "refuses to like a private repository without its password (D-C11)" do
+    it "refuses to like a private repository without its password" do
       secret = create(:repository, :private, owner: owner, title: "Sec", users: [owner])
       content_login!(stranger)
       expect { post add_like_repository_path(owner.username, secret.slug) }.not_to change(Like, :count)
-      # FIXED(D-C11): add_like runs the shared private-repository gate
+      # add_like runs the shared private-repository gate
       expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
     end
 
-    it "lets the owner, a collaborator and a user who entered the password like a private repository (D-C11)" do
+    it "lets the owner, a collaborator and a user who entered the password like a private repository" do
       secret = create(:repository, :private, owner: owner, title: "Sec", users: [owner])
       secret.update_columns(password: BCrypt::Password.create("open-sesame"))
       collaborator = create(:user, :regular_user)
@@ -721,17 +721,17 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.reload.users).to eq([owner])
     end
 
-    it "refuses a signed-in stranger adding a member to someone else's repository (D-C12)" do
+    it "refuses a signed-in stranger adding a member to someone else's repository" do
       content_login!(stranger)
       patch add_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: repo.id, owner_username: newbie.username } }
-      # FIXED(D-C12): add_member runs check_ownership (owner, member or admin)
+      # add_member runs check_ownership (owner, member or admin)
       expect(repo.reload.users).to eq([owner])
       expect(flash[:alert]).to eq("You are not allowed to perform this action!")
       expect(response).to redirect_to(repo_path)
     end
 
-    it "lets the owner (even when not in users), a collaborator and admin add a member (D-C12)" do
+    it "lets the owner (even when not in users), a collaborator and admin add a member" do
       orphan = create(:repository, owner: owner, title: "Orphan")
       content_login!(owner)
       patch add_member_repositories_path(owner.username),
@@ -751,7 +751,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(orphan.reload.users).to include(third)
     end
 
-    it "refuses staff adding a member (staff are not repository owners) (D-C12)" do
+    it "refuses staff adding a member (staff are not repository owners)" do
       content_sign_in_as(:staff)
       patch add_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: repo.id, owner_username: newbie.username } }
@@ -768,17 +768,17 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("This user is already a member of your repository.")
     end
 
-    it "refuses a signed-in stranger removing a member from someone else's repository (D-C13)" do
+    it "refuses a signed-in stranger removing a member from someone else's repository" do
       repo.users << newbie
       content_login!(stranger)
       patch remove_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: repo.id, owner_id: newbie.id } }
-      # FIXED(D-C13): remove_member runs check_ownership
+      # remove_member runs check_ownership
       expect(repo.reload.users).to contain_exactly(owner, newbie)
       expect(flash[:alert]).to eq("You are not allowed to perform this action!")
     end
 
-    it "lets the owner and admin remove a member (D-C13)" do
+    it "lets the owner and admin remove a member" do
       repo.users << newbie
       content_login!(owner)
       patch remove_member_repositories_path(owner.username),
@@ -833,17 +833,17 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.reload.user_id).to eq(newbie.id)
     end
 
-    it "refuses a signed-in stranger linking someone else's repository to a project proposal (D-C14)" do
+    it "refuses a signed-in stranger linking someone else's repository to a project proposal" do
       pp = create(:project_proposal, :approved)
       content_login!(stranger)
       patch link_to_pp_repositories_path(owner.username),
             params: { repo: { repository_id: repo.id, project_proposal_id: pp.id } }
-      # FIXED(D-C14): link_to_pp is limited to members, staff (as the show page form) and admin
+      # link_to_pp is limited to members, staff (as the show page form) and admin
       expect(repo.reload.project_proposal_id).to be_nil
       expect(flash[:alert]).to eq("You are not allowed to perform this action!")
     end
 
-    it "lets the owner, staff and admin link an approved proposal (D-C14)" do
+    it "lets the owner, staff and admin link an approved proposal" do
       pp = create(:project_proposal, :approved)
       content_login!(owner)
       patch link_to_pp_repositories_path(owner.username),
@@ -859,7 +859,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       end
     end
 
-    it "refuses to link a proposal that is not approved (D-C14)" do
+    it "refuses to link a proposal that is not approved" do
       pending_pp = create(:project_proposal)
       content_login!(owner)
       patch link_to_pp_repositories_path(owner.username),
@@ -903,8 +903,8 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
     # the search term is a token Faker names cannot produce
     let!(:zelda) { create(:user, :regular_user, name: "Zeldaxqzv Searchable") }
 
-    it "routes to repositories#populate_users instead of the show catch-all (D-C15)" do
-      # FIXED(D-C15): declared above resources :repositories path '/:user_username'
+    it "routes to repositories#populate_users instead of the show catch-all" do
+      # declared above resources :repositories path '/:user_username'
       expect(Rails.application.routes.recognize_path("/repositories/populate_users"))
         .to include(controller: "repositories", action: "populate_users")
     end

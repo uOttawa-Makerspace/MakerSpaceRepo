@@ -10,7 +10,7 @@ RSpec.describe "confirmed_users:remind" do
     ActionMailer::Base.deliveries.clear
   end
 
-  it "mails unconfirmed users a confirmation link that the confirm action accepts (D-I11)" do
+  it "mails unconfirmed users a confirmation link that the confirm action accepts" do
     unconfirmed = create(:user, :regular_user_not_confirmed)
     create(:user, :regular_user)
 

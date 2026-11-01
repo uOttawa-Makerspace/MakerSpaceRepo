@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# JOB-03 follow-up: the draft fingerprint is canonical. It is built from stable
+# the draft fingerprint is canonical. It is built from stable
 # keys and amounts only (task id, component, 2-decimal amount), sorted, so the
 # order rows come back from the database in, and display titles (task titles,
 # option names), cannot change it. The quote is loaded once per request (one

@@ -145,7 +145,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
     end
   end
 
-  describe "the $0 bypass in processed" do
+  describe "the $0 path in processed" do
     it "marks a $0 order Paid and says so" do
       order = quoted_order!(:being_processed, price: 0)
       session_login!(staff)

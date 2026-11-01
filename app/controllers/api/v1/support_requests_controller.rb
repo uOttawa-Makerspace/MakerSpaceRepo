@@ -6,8 +6,8 @@ module Api
     # Same persistence and mail path as HelpController: a Help record (which opens the GitHub
     # issue, text defanged) and MsrMailer.issue_email (signed in: to the account, bcc the MakerRepo
     # team) or MsrMailer.issue_email_to_team (anonymous: team only, reporter in Reply-To).
-    # No Turnstile (the React app cannot render it): the rate limits below are the abuse
-    # control. A signed-in caller's name and email always come from the account.
+    # No Turnstile (the React app cannot render it): the rate limits below are the
+    # protection. A signed-in caller's name and email always come from the account.
     # Contract: doc/api/v1/support_requests.md.
     class SupportRequestsController < BaseController
       MAX = { name: 200, email: 254, subject: 200, comments: 5000, app_version: 50 }.freeze

@@ -6,7 +6,7 @@ module Api
     # the legacy device endpoint (POST /rfid/card_number with a registered MAC).
     class RfidTapsController < BaseController
       before_action :require_staff!
-      # The SAME budgets as RfidController#card_number (D-EQ03), counted under the
+      # The SAME budgets as RfidController#card_number, counted under the
       # same cache keys (scope "rfid", names "tap" / "tap-ip"; keep in step with
       # RfidController): 60 taps/min per staff user and 600/min per IP, shared with
       # the legacy staff tap so a user cannot get 60 on each. After the auth filter,

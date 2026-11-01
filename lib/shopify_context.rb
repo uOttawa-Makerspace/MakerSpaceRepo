@@ -5,7 +5,7 @@
 # The Shopify Admin client builds /admin/api/<version>/graphql.json from the Context, so a
 # process that never ran Context.setup posts to /admin/api//graphql.json. Production's master
 # set it up on every start_shopify_session; 3358306d0 dropped that and left only a
-# ShopifyService call that staff lockers pages happened to trigger (D-S36).
+# ShopifyService call that staff lockers pages happened to trigger.
 #
 # Called at boot (config/initializers/shopify_api.rb) AND before every Shopify session
 # (via start_session!: ShopifyConcern, ShopifyService, ShopifyCartConcern; the homepage calls ensure_setup!), so a failed boot setup heals on the

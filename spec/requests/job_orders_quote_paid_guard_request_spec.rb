@@ -2,9 +2,9 @@
 
 require "rails_helper"
 
-# JOB-04: a PAID / PICKED_UP order can never be re-quoted or declined, whether
+# a PAID / PICKED_UP order can never be re-quoted or declined, whether
 # or not it has a Shopify draft and whether or not the prices change.
-RSpec.describe "Quoting a paid job order (JOB-04)", type: :request do
+RSpec.describe "Quoting a paid job order", type: :request do
   let(:owner) { create(:user, :regular_user) }
   let(:staff) { create(:user, :staff) }
   let!(:shopify) { stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/old-invoice" } }
@@ -33,9 +33,9 @@ RSpec.describe "Quoting a paid job order (JOB-04)", type: :request do
                                                  job_order: job_order }
   end
 
-  # ------------------------------------------------------------------ JOB-04
+  # ------------------------------------------------------------------ order rules
 
-  describe "re-quoting or declining a paid order (JOB-04)" do
+  describe "re-quoting or declining a paid order" do
     {
       "PAID, no draft, new price" => [:paid, false, 55, "true"],
       "PAID, draft, same price" => [:paid, true, 29.99, "true"],

@@ -4,12 +4,11 @@ require "rails_helper"
 
 # Chunk 16: ProjectProposalsController (HTTP contract).
 #
-# The controller has NO signed_in / ownership / admin before_action. The only
-# gates are inline: show (approved, or admin, or the owner), destroy
-# (`return unless admin?`), and params[:season/:year] (admin only). Guests get
+# Gates: show (approved, or admin, or the owner), destroy (`return unless admin?`),
+# params[:season/:year] (admin only); edit, update and revisions need sign-in and
+# ownership or admin; approve and decline are admin-only. Guests get
 # current_user = User.new (never nil), so the `current_user.nil?` captcha branch
-# in #create is dead code. Many "admin" actions are therefore open to anyone:
-# see the severity-1 D-C rows.
+# in #create does not run.
 RSpec.describe "Project proposals (HTTP contract)", type: :request do
   include ContentSpecHelpers
 
@@ -27,17 +26,17 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "GET index" do
-    it "shows only approved proposals to a guest (D-C33)" do
+    it "shows only approved proposals to a guest" do
       get project_proposals_path
       expect(response).to have_http_status(:ok)
-      # FIXED(D-C33): pending and declined proposals are no longer listed publicly
+      # pending and declined proposals are not listed publicly
       expect(response.body).to include("Approved One")
       expect(response.body).not_to include("Pending One", "Declined One")
       get project_proposals_path, params: { status: %w[0 nil] }
       expect(response.body).not_to include("Pending One", "Declined One")
     end
 
-    it "shows a regular user approved proposals plus their own, but not other users' pending ones (D-C33)" do
+    it "shows a regular user approved proposals plus their own, but not other users' pending ones" do
       content_login!(other)
       get project_proposals_path
       expect(response.body).to include("Approved One")
@@ -50,7 +49,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response.body).not_to include("Approved One")
     end
 
-    it "shows staff only approved proposals and admins everything (D-C33)" do
+    it "shows staff only approved proposals and admins everything" do
       content_sign_in_as(:staff)
       get project_proposals_path
       expect(response.body).to include("Approved One")
@@ -169,7 +168,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
   end
 
-  describe "GET show: linked repositories (D-C57)" do
+  describe "GET show: linked repositories" do
     let(:repo_owner) { create(:user, :regular_user) }
     let!(:public_repo) do
       create(:repository, owner: repo_owner, title: "Open Linked Repo", project_proposal_id: approved.id)
@@ -237,14 +236,14 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "sends a guest to the login page instead of rendering edit (D-C34)" do
+    it "sends a guest to the login page instead of rendering edit" do
       get edit_project_proposal_path(pending.slug)
-      # FIXED(D-C34): edit requires sign-in, then ownership or admin
+      # edit requires sign-in, then ownership or admin
       expect(response).to redirect_to(login_path(back_to: edit_project_proposal_path(pending.slug)))
       expect(response.body).not_to include(pending.email)
     end
 
-    it "refuses edit to a stranger and to staff (D-C34)" do
+    it "refuses edit to a stranger and to staff" do
       [create(:user, :regular_user), create(:user, :staff)].each do |user|
         content_login!(user)
         get edit_project_proposal_path(pending.slug)
@@ -253,7 +252,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       end
     end
 
-    it "renders edit for the owner and for an admin (D-C34)" do
+    it "renders edit for the owner and for an admin" do
       content_login!(owner)
       get edit_project_proposal_path(pending.slug)
       expect(response).to have_http_status(:ok)
@@ -265,9 +264,9 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "POST create" do
-    it "lets a guest create a proposal with no captcha check: the nil? guard never fires (D-C35)" do
+    it "lets a guest create a proposal (the captcha check runs only for a nil current_user)" do
       expect { post project_proposals_path, params: proposal_params }.to change(ProjectProposal, :count).by(1)
-      # WART(D-C35): `current_user.nil? && !verify_turnstile` is dead (current_user is User.new); anonymous spam is unthrottled
+      # `current_user.nil? && !verify_turnstile` does not run (current_user is User.new)
       pp = ProjectProposal.find_by(title: "New Idea")
       expect(pp.user_id).to be_nil
       expect(pp.approved).to be_nil
@@ -286,34 +285,34 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(mail.subject).to eq("New Project Proposal")
     end
 
-    it "ignores spoofed approved/admin_id/user_id: a guest cannot self-approve (D-C36)" do
+    it "ignores submitted approved/admin_id/user_id: a guest cannot self-approve" do
       post project_proposals_path, params: proposal_params(approved: "approved", admin_id: owner.id, user_id: other.id)
       pp = ProjectProposal.find_by(title: "New Idea")
-      # FIXED(D-C36): :approved/:admin_id/:user_id are no longer permitted; only approve/decline set review fields
+      # :approved/:admin_id/:user_id are not permitted; only approve/decline set review fields
       expect(pp.approved).to be_nil
       expect(pp.admin_id).to be_nil
       expect(pp.user_id).to be_nil
     end
 
-    it "a signed-in user cannot self-approve or spoof the owner on create (D-C36)" do
+    it "a signed-in user cannot self-approve or set the owner on create" do
       content_login!(owner)
       post project_proposals_path, params: proposal_params(approved: "approved", admin_id: owner.id, user_id: other.id)
       expect(ProjectProposal.find_by(title: "New Idea")).to have_attributes(approved: nil, admin_id: nil, user_id: owner.id)
     end
 
-    it "cannot link a new proposal to someone else's as its 'revision' (D-C42)" do
+    it "cannot link a new proposal to someone else's as its 'revision'" do
       content_login!(other)
       post project_proposals_path, params: proposal_params(linked_project_proposal_id: pending.id)
       expect(ProjectProposal.find_by(title: "New Idea").linked_project_proposal_id).to be_nil
     end
 
-    it "an admin cannot set review fields through create either (D-C36)" do
+    it "an admin cannot set review fields through create either" do
       content_sign_in_as(:admin)
       post project_proposals_path, params: proposal_params(approved: "approved", admin_id: owner.id)
       expect(ProjectProposal.find_by(title: "New Idea")).to have_attributes(approved: nil, admin_id: nil)
     end
 
-    it "ignores approved sent as the numeric string '1' instead of 500ing (D-C36)" do
+    it "ignores approved sent as the numeric string '1' instead of 500ing" do
       expect { post project_proposals_path, params: proposal_params(approved: 1) }.to change(ProjectProposal, :count).by(1)
       expect(ProjectProposal.find_by(title: "New Idea").approved).to be_nil
     end
@@ -351,8 +350,8 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(ProjectProposal.find_by(title: "New Idea").categories.pluck(:name)).to match_array(%w[a b c d e])
     end
 
-    # FIXED(D-C37): ProjectProposal validates project_files (sniffed type + size) in the model
-    it "attaches up to 5 images and any number of allowed files, but not an executable (D-C37)" do
+    # ProjectProposal validates project_files (sniffed type + size) in the model
+    it "attaches up to 5 images and any number of allowed files, but not an executable" do
       files = [content_pdf_upload, content_named_upload("run.exe", type: "application/x-msdownload"),
                content_named_upload("a.stl", content: "solid x\nfacet normal 0 0 0\n", type: "model/stl")]
       imgs = Array.new(6) { content_png_upload }
@@ -466,14 +465,14 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(flash[:alert]).to include("run.exe")
     end
 
-    it "does not let a guest rewrite a proposal (D-C38)" do
+    it "does not let a guest rewrite a proposal" do
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
-      # FIXED(D-C38): update requires sign-in, then ownership or admin
+      # update requires sign-in, then ownership or admin
       expect(response).to redirect_to(login_path)
       expect(pending.reload.title).to eq("Pending One")
     end
 
-    it "does not let a stranger or staff rewrite a proposal (D-C38)" do
+    it "does not let a stranger or staff rewrite a proposal" do
       [create(:user, :regular_user), create(:user, :staff)].each do |user|
         content_login!(user)
         patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
@@ -485,7 +484,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       end
     end
 
-    it "lets the owner and an admin edit (D-C38)" do
+    it "lets the owner and an admin edit" do
       content_login!(owner)
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Owner Edit" } }
       expect(response).to redirect_to(project_proposal_path(pending.reload.slug))
@@ -529,20 +528,20 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(flash[:notice]).to eq("Project proposal was successfully updated.")
     end
 
-    it "the owner cannot reassign user_id or set review fields through mass assignment (D-C36)" do
+    it "the owner cannot reassign user_id or set review fields through mass assignment" do
       content_login!(owner)
       patch project_proposal_path(pending.slug),
             params: { project_proposal: { user_id: other.id, approved: "approved", admin_id: owner.id } }
       expect(pending.reload).to have_attributes(user_id: owner.id, approved: nil, admin_id: nil)
     end
 
-    it "the owner cannot re-link their proposal to someone else's (D-C42)" do
+    it "the owner cannot re-link their proposal to someone else's" do
       content_login!(owner)
       patch project_proposal_path(pending.slug), params: { project_proposal: { linked_project_proposal_id: approved.id } }
       expect(pending.reload.linked_project_proposal_id).to be_nil
     end
 
-    it "an admin cannot mass-assign review fields on update either (D-C36)" do
+    it "an admin cannot mass-assign review fields on update either" do
       content_sign_in_as(:admin)
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Edited", approved: "approved", user_id: other.id } }
       expect(pending.reload).to have_attributes(title: "Edited", approved: nil, user_id: owner.id)
@@ -557,12 +556,12 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(pending.slug))
     end
 
-    it "wipes categories even when the update is invalid (D-C39)" do
+    it "wipes categories even when the update is invalid" do
       content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: pending.id)
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
-      # WART(D-C39): categories.destroy_all runs before validation
+      # categories.destroy_all runs before validation
       expect(pending.reload.categories).to be_empty
     end
 
@@ -588,11 +587,11 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "DELETE destroy" do
-    it "does nothing for guests, owners and staff (action returns without rendering: 204) (D-C40)" do
+    it "does nothing for guests, owners and staff (action returns without rendering: 204)" do
       [nil, owner, create(:user, :staff)].each do |user|
         content_login!(user) if user
         expect { delete project_proposal_path(pending.slug) }.not_to change(ProjectProposal, :count)
-        # WART(D-C40): `return unless admin?` renders nothing, so a refused delete answers 204 instead of a redirect/alert
+        # `return unless admin?` renders nothing, so a refused delete answers 204 instead of a redirect/alert
         expect(response).to have_http_status(:no_content)
       end
     end
@@ -619,9 +618,9 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "POST approve / decline" do
-    it "sends a guest to login and changes nothing (D-C41)" do
+    it "sends a guest to login and changes nothing" do
       post approve_project_proposals_path, params: { id: pending.id }
-      # FIXED(D-C41): approve/decline are admin-only
+      # approve/decline are admin-only
       expect(response).to redirect_to(login_path)
       post decline_project_proposals_path, params: { id: approved.id }
       expect(response).to redirect_to(login_path)
@@ -629,7 +628,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(approved.reload.approved).to eq("approved")
     end
 
-    it "refuses regular users, the proposal owner and staff (D-C41)" do
+    it "refuses regular users, the proposal owner and staff" do
       [other, owner, create(:user, :staff)].each do |user|
         content_login!(user)
         post approve_project_proposals_path, params: { id: pending.id }
@@ -642,7 +641,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(approved.reload.approved).to eq("approved")
     end
 
-    it "records the admin as reviewer on approve and decline, and sends no email (D-C41)" do
+    it "records the admin as reviewer on approve and decline, and sends no email" do
       admin = content_sign_in_as(:admin)
       ActionMailer::Base.deliveries.clear
       post approve_project_proposals_path, params: { id: pending.id }
@@ -670,14 +669,14 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "POST create_revision" do
-    it "sends a guest to login and clones nothing (D-C42)" do
+    it "sends a guest to login and clones nothing" do
       expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: pending.id } }
         .not_to change(ProjectProposal, :count)
-      # FIXED(D-C42): create_revision requires sign-in and ownership of the original (or admin)
+      # create_revision requires sign-in and ownership of the original (or admin)
       expect(response).to redirect_to(login_path)
     end
 
-    it "refuses a stranger and staff, for pending and approved originals alike (D-C42)" do
+    it "refuses a stranger and staff, for pending and approved originals alike" do
       [other, create(:user, :staff)].each do |user|
         content_login!(user)
         [pending, approved].each do |pp|
@@ -689,7 +688,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       end
     end
 
-    it "lets the owner revise their pending proposal and an admin revise any (D-C42)" do
+    it "lets the owner revise their pending proposal and an admin revise any" do
       content_login!(owner)
       expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: pending.id } }
         .to change(ProjectProposal, :count).by(1)
@@ -738,14 +737,14 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "join / unjoin" do
-    it "sends a guest to login and stores no join (D-C43)" do
+    it "sends a guest to login and stores no join" do
       expect { post join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
         .not_to change(ProjectJoin, :count)
-      # FIXED(D-C43): join requires sign-in and an approved proposal
+      # join requires sign-in and an approved proposal
       expect(response).to redirect_to(login_path)
     end
 
-    # FIXED(join/unjoin GET): neither changes state on a GET any more
+    # neither changes state on a GET any more
     it "neither joins nor unjoins on a plain GET" do
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
       content_login!(owner)
@@ -765,7 +764,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You already joined this project or something went wrong.")
     end
 
-    it "cannot join a pending or declined proposal (D-C43)" do
+    it "cannot join a pending or declined proposal" do
       content_login!(other)
       [pending, declined].each do |pp|
         expect { post join_project_proposal_project_proposals_path, params: { project_proposal_id: pp.id } }
@@ -775,26 +774,26 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       end
     end
 
-    it "does not let a guest remove a join (D-C44)" do
+    it "does not let a guest remove a join" do
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
       delete unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
       expect(response.location).to start_with(login_url)
       expect(ProjectJoin.exists?(join.id)).to be(true)
     end
 
-    it "does not let a stranger or staff remove someone else's join (D-C44)" do
+    it "does not let a stranger or staff remove someone else's join" do
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
       [other, create(:user, :staff)].each do |user|
         content_login!(user)
         delete unjoin_project_proposal_project_proposals_path,
             params: { project_proposal_id: approved.id, project_join_id: join.id }
-        # FIXED(D-C44): only the join's own user (or an admin) can remove it
+        # only the join's own user (or an admin) can remove it
         expect(ProjectJoin.exists?(join.id)).to be(true)
         expect(flash[:alert]).to eq("You can only leave a project you joined yourself.")
       end
     end
 
-    it "does not remove a join through a different proposal's URL (D-C44)" do
+    it "does not remove a join through a different proposal's URL" do
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
       other_approved = create(:project_proposal, :approved)
       content_login!(owner)
@@ -804,7 +803,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(ProjectJoin.exists?(join.id)).to be(true)
     end
 
-    it "lets users remove their own join, and an admin remove any (D-C44)" do
+    it "lets users remove their own join, and an admin remove any" do
       join = ProjectJoin.create!(project_proposal_id: approved.id, user_id: owner.id)
       content_login!(owner)
       delete unjoin_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id, project_join_id: join.id }
@@ -851,7 +850,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
   end
 
-  describe "JSON contact details (D-C58)" do
+  describe "JSON contact details" do
     let(:public_keys) do
       %w[id user_id admin_id approved title description youtube_link created_at updated_at area client_type url]
     end

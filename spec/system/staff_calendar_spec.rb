@@ -36,7 +36,7 @@ RSpec.describe "Staff calendar", type: :system do
     visit staff_my_calendar_index_path
   end
 
-  # N+1 pinned: see defects D-PERF-SP01 (the JSON feed reads event_assignments per event)
+  # N+1 pinned (the JSON feed reads event_assignments per event)
   it "renders the Sunday-to-Saturday week with that week's non-draft events", js: true, skip_bullet: true do
     log_in_as(staff)
     show_week_of_march_14
@@ -61,7 +61,7 @@ RSpec.describe "Staff calendar", type: :system do
     expect(link["data-turbo"]).to eq("false")
   end
 
-  # N+1 pinned: see defects D-PERF-SP01 (the page's JSON feed 500s under CI Bullet)
+  # N+1 pinned (the page's JSON feed 500s under CI Bullet)
   it "shows the space picker, view switchers and toggle buttons", js: true, skip_bullet: true do
     log_in_as(staff)
     show_week_of_march_14

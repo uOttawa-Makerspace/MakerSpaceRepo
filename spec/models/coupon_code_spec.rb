@@ -22,7 +22,7 @@ RSpec.describe CouponCode, type: :model do
     end.to raise_error(ActiveRecord::NotNullViolation)
   end
 
-  it "requires a price (fixed D-S10: a blank coupon used to be valid); a blank code is still accepted" do
+  it "requires a price; a blank code is still accepted" do
     expect(CouponCode.new(cc_cost: 0, code: "")).to be_valid
   end
 

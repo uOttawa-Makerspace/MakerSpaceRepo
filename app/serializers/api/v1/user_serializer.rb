@@ -3,7 +3,7 @@
 module Api
   module V1
     # Explicit allowlist of what a client may see of the signed-in user. Never
-    # as_json/serializable_hash: a new column must not leak by default.
+    # as_json/serializable_hash: a new column is not exposed by default.
     module UserSerializer
       module_function
 

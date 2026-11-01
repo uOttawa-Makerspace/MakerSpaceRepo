@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# JOB-03 review 3: a live Shopify draft is a payable invoice, and the customer
+# a live Shopify draft is a payable invoice, and the customer
 # may already hold its URL. Every status change goes through
 # JobOrder#transition! / #enter_status!, whose destination rule decides what
 # happens to the draft, inside the same locked transaction:

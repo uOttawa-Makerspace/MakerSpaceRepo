@@ -74,7 +74,7 @@ RSpec.describe "Printers", type: :request do
   describe "admin: index, add_printer, remove_printer" do
     before { sign_in_as(:admin) }
 
-    # N+1 pinned: see defects D-PERF-EQ01
+    # N+1 pinned
     it "renders index with printer models labelled with short forms", skip_bullet: true do
       get printers_path
       expect(response).to have_http_status(:ok)
@@ -107,7 +107,7 @@ RSpec.describe "Printers", type: :request do
       expect(flash[:notice]).to eq("Printer removed successfully!")
     end
 
-    it "500s removing a printer that has printer issues (FK violation, see D-EQ29)" do
+    it "500s removing a printer that has printer issues (FK violation)" do
       create(:printer_issue, printer: um2p)
       expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.not_to change(Printer, :count)
       expect(response).to have_http_status(:internal_server_error)
@@ -118,13 +118,13 @@ RSpec.describe "Printers", type: :request do
       expect(flash[:alert]).to eq("Please select a Printer.")
     end
 
-    # WART(D-EQ09): remove_printer reports success for an unknown id (destroy_all on an empty relation)
+    # remove_printer reports success for an unknown id (destroy_all on an empty relation)
     it "reports success even for an unknown printer id" do
       post remove_printer_printers_path, params: { remove_printer: 0 }
       expect(flash[:notice]).to eq("Printer removed successfully!")
     end
 
-    # WART(D-EQ10): remove_printer with no remove_printer param (nil != "") runs destroy_all on where(id: nil), a silent no-op reported as success
+    # remove_printer with no remove_printer param (nil != "") runs destroy_all on where(id: nil), a silent no-op reported as success
     it "treats a missing remove_printer param as a successful removal" do
       expect { post remove_printer_printers_path }.not_to change(Printer, :count)
       expect(flash[:notice]).to eq("Printer removed successfully!")
@@ -154,7 +154,7 @@ RSpec.describe "Printers", type: :request do
       expect(um2p.reload.number).to eq("01")
     end
 
-    # WART(D-EQ11): update uses find_by(...).update so an unknown printer id raises NoMethodError (500) instead of 404
+    # update uses find_by(...).update so an unknown printer id raises NoMethodError (500) instead of 404
     it "500s for an unknown printer id" do
       sign_in_as(:staff)
       patch printer_path(0), params: { printer: { maintenance: true } }
@@ -165,7 +165,7 @@ RSpec.describe "Printers", type: :request do
   describe "staff pages" do
     before { sign_in_as(:staff) }
 
-    # N+1 pinned: see defects D-PERF-EQ02
+    # N+1 pinned
     it "renders staff_printers and staff_printers_updates", skip_bullet: true do
       get staff_printers_printers_path
       expect(response).to have_http_status(:ok)
@@ -184,7 +184,7 @@ RSpec.describe "Printers", type: :request do
       expect(row["printers"]).to eq([{ "id" => um2p.id, "number" => "01", "maintenance" => false, "has_issues" => true }])
     end
 
-    # WART(D-EQ12): last_user_assigned_to_printer raises NoMethodError (500) as soon as any printer has no session
+    # last_user_assigned_to_printer raises NoMethodError (500) as soon as any printer has no session
     it "500s when a printer has never had a session" do
       get last_user_assigned_to_printer_printers_path
       expect(response).to have_http_status(:internal_server_error)
@@ -212,7 +212,7 @@ RSpec.describe "Printers", type: :request do
       patch link_printer_to_user_printers_path(format: format), params: { printer: { printer_id: um2p.id, user_id: user_id } }
     end
 
-    # WART(D-EQ15): link_printer_to_user renders the FlashHash as JSON, which serialises as an array of [key, message] pairs rather than an object
+    # link_printer_to_user renders the FlashHash as JSON, which serialises as an array of [key, message] pairs rather than an object
     it "creates an in_use session and replies 200 JSON" do
       expect { link(user.id) }.to change(PrinterSession, :count).by(1)
       expect(response).to have_http_status(:ok)
@@ -245,7 +245,7 @@ RSpec.describe "Printers", type: :request do
       expect(response).to redirect_to(staff_printers_printers_path)
     end
 
-    # WART(D-EQ13): clearing a printer that never had a session raises NoMethodError (500) because last_session is nil
+    # clearing a printer that never had a session raises NoMethodError (500) because last_session is nil
     it "500s when clearing a printer that has no session" do
       link("clear")
       expect(response).to have_http_status(:internal_server_error)
@@ -303,7 +303,7 @@ RSpec.describe "Printers", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # WART(D-EQ14): with an unrecognised sent_from nothing is rendered or redirected (implicit missing template, 204/500)
+    # with an unrecognised sent_from nothing is rendered or redirected (implicit missing template, 204/500)
     it "has no response branch for an unknown sent_from" do
       send_msg(from: "other")
       expect(response.status).to be_in([204, 500])

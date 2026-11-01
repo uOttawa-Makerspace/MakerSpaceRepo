@@ -16,7 +16,7 @@ class CardTapJob < ApplicationJob
         space: space
       )
     rescue ActiveRecord::RecordNotFound => e
-      # D-EQ05: the "Faculty membership" tier is missing. Log it, but the tap is
+      # the "Faculty membership" tier is missing. Log it, but the tap is
       # already persisted, so staff still get their modal.
       TapBoxLog.log_card_tap_job_failure(
         user: rfid.user,

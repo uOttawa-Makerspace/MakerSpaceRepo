@@ -49,7 +49,7 @@ RSpec.describe ExamQuestion, type: :model do
       expect { ExamQuestion.create_exam_questions(exam.id, training.id, 3, "Beginner") }.to change { exam.exam_questions.count }.by(1)
     end
 
-    # WART(D-T14): quick_random_records raises RangeError on an empty pool
+    # quick_random_records raises RangeError on an empty pool
     it "raises RangeError when the training has no question at that level" do
       expect { ExamQuestion.create_exam_questions(exam.id, training.id, 3, "Beginner") }.to raise_error(RangeError)
     end

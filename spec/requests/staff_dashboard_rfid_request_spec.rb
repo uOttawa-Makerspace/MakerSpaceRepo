@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # PUT /staff_dashboard/link_rfid and /unlink_rfid (rows 10 and 11 of
-# doc/refactor/frontend-api-inventory.md: the React app sends JSON
+# the frontend API inventory: the React app sends JSON
 # {card_number, user_id} / {card_number} and ignores the body; the HTML profile
 # page uses the redirect + flash).
 RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
@@ -72,7 +72,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
     end
 
     it "an unknown card_number is a 500 (NoMethodError on nil), nothing is written" do
-      # WART(D-STAFF-RFID-NIL-NEW): Rfid.find_by returns nil and `rfid.user_id=` is called on it,
+      # Rfid.find_by returns nil and `rfid.user_id=` is called on it,
       # so the React app gets an HTML 500 instead of {status: "error"}.
       staff
       expect { put staff_dashboard_link_rfid_path, params: { card_number: "no-such-card", user_id: owner.id }, as: :json }
@@ -82,7 +82,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
     end
 
     it "an unknown user_id is a 500 (foreign key violation), the card stays unlinked" do
-      # WART(D-STAFF-RFID-NIL-NEW): no existence check on user_id; rfid.save hits the FK constraint.
+      # no existence check on user_id; rfid.save hits the FK constraint.
       staff
       put staff_dashboard_link_rfid_path, params: { card_number: unlinked.card_number, user_id: 99_999_999 }, as: :json
       expect(response).to have_http_status(:internal_server_error)
@@ -108,7 +108,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
     end
 
     it "points the card's mac_address at the first reader of the space the STAFF MEMBER last signed in to, not the card owner's space" do
-      # WART(D-RFID-UNLINK-NEW): the source of the new mac is @user.location, i.e. the signed-in
+      # the source of the new mac is @user.location, i.e. the signed-in
       # STAFF member's last lab session's space (User#location), not the card owner's. The
       # owner here was last in space B, yet the card is re-homed to space A's first reader.
       sign_in_session(owner, space_b, sign_out_in: 1.hour)
@@ -143,7 +143,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
     end
 
     it "re-homes the card by the staff member's last SESSION, which can differ from the space whose unset list the staff member sees" do
-      # WART(D-RFID-UNLINK-NEW): get_unset_rfids lists by @user.space (the assigned space) while
+      # get_unset_rfids lists by @user.space (the assigned space) while
       # unlink_rfid re-homes by @user.location (last lab session). Staff assigned to B who last
       # signed in at A unlinks a card, and it does not appear in staff B's unset list.
       staff.update!(space: space_b)
@@ -180,7 +180,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
     end
 
     it "an unknown card_number is a 500 (NoMethodError on nil)" do
-      # WART(D-STAFF-RFID-NIL-NEW): same nil dereference as link_rfid.
+      # same nil dereference as link_rfid.
       staff
       put staff_dashboard_unlink_rfid_path, params: { card_number: "no-such-card" }, as: :json
       expect(response).to have_http_status(:internal_server_error)

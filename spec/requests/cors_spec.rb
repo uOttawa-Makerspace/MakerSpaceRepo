@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# FIXED(G01 / CORS): origins are exact strings or fully anchored regexps. The
+# origins are exact strings or fully anchored regexps. The
 # credentialed allow-list (lib/cors_origins.rb) is per environment: the staff app
 # and Design Day everywhere, the Pages previews on staging only, localhost:5173 in
 # development/test only (spec/lib/cors_origins_spec.rb covers each environment).

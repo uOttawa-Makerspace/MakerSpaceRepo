@@ -105,7 +105,7 @@ end
 # eligible (AuthEligibility). Every place that resolves a session user goes
 # through valid_for?: ApplicationHelper#session_user (every controller, SAML
 # included), ApplicationCable::Connection and DirectUploadAuthentication. So no
-# controller can skip the idle expiry (INF-04). session_user also extends the
+# controller can skip the idle expiry. session_user also extends the
 # window of a valid session (touch), so activity on any controller counts.
 module SessionAuthenticator
   IDLE_TIMEOUT = 72.hours
