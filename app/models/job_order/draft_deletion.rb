@@ -23,7 +23,12 @@ class JobOrder
 
     # [:found | :gone, draft]; Shopify not answering raises (fail closed).
     def fetch_or_raise(gid)
-      ShopifyConcern::DraftRemoval.fetch_or_raise(gid)
+      unanswered_is_stale { ShopifyConcern::DraftRemoval.fetch_or_raise(gid) }
+    end
+
+    # The one place the shared rule's "Shopify did not answer" becomes the fail-closed StaleDraftOrderError.
+    def unanswered_is_stale
+      yield
     rescue ShopifyConcern::DraftRemoval::Unanswered => e
       JobOrder.stale_draft!(e.message)
     end
@@ -34,11 +39,7 @@ class JobOrder
     # raises (the caller is mid-transition and must not go on). Anything else raises StaleDraftOrderError with
     # Shopify's userErrors.
     def delete(gid, paid:)
-      result = begin
-        ShopifyConcern::DraftRemoval.call(gid)
-      rescue ShopifyConcern::DraftRemoval::Unanswered => e
-        JobOrder.stale_draft!(e.message)
-      end
+      result = unanswered_is_stale { ShopifyConcern::DraftRemoval.call(gid) }
 
       case result.outcome
       when :deleted then :deleted

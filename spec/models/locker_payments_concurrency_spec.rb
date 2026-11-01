@@ -174,6 +174,51 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
       expect(fake.deleted_ids).to eq([fake.draft_id]) # the draft that was created is removed again
     end
 
+    it "a failure after the Shopify create and before the id is stored (lock timeout) removes the new draft, then re-raises" do
+      candidate = LockerRental.find(rental.id)
+      allow(candidate).to receive(:lock!).and_raise(ActiveRecord::LockWaitTimeout)
+
+      expect { candidate.checkout_link }.to raise_error(ActiveRecord::LockWaitTimeout)
+
+      expect(fake.deleted_ids).to eq([fake.draft_id])
+      expect(LockerRental.find(rental.id).shopify_draft_order_id).to be_nil
+    end
+
+    context "with a stored draft id" do
+      let(:old_id) { "gid://shopify/DraftOrder/old" }
+
+      before { LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: old_id) }
+
+      it "a draft Shopify says is gone is forgotten and a new one is created" do
+        fake.missing_ids << old_id
+        fake.draft_id = "gid://shopify/DraftOrder/new"
+        expect(LockerRental.find(rental.id).checkout_link).to eq(fake.invoice_url)
+        expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq("gid://shopify/DraftOrder/new")
+      end
+
+      it "a COMPLETED (paid) draft is not served: its id is forgotten, a new draft is created, the paid one is never deleted" do
+        fake.draft_statuses[old_id] = "COMPLETED"
+        fake.draft_id = "gid://shopify/DraftOrder/new"
+        expect(LockerRental.find(rental.id).checkout_link).to eq(fake.invoice_url)
+        expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq("gid://shopify/DraftOrder/new")
+        expect(fake.deleted_ids).not_to include(old_id)
+      end
+
+      it "an unanswered fetch gives no link and keeps the id" do
+        fake.status = 500
+        expect(LockerRental.find(rental.id).checkout_link).to be_nil
+        expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq(old_id)
+      end
+
+      it "a gone draft on a rental cancelled meanwhile is forgotten and no new draft is left" do
+        fake.missing_ids << old_id
+        during_shopify_create { LockerRental.find(rental.id).update!(state: :cancelled) }
+        expect(LockerRental.find(rental.id).checkout_link).to be_nil
+        expect(LockerRental.find(rental.id).shopify_draft_order_id).to be_nil
+        expect(fake.deleted_ids).to eq([fake.draft_id])
+      end
+    end
+
     it "without a race the draft is stored and served, and nothing is deleted" do
       expect(LockerRental.find(rental.id).checkout_link).to eq(fake.invoice_url)
       expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq(fake.draft_id)

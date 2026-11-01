@@ -355,8 +355,16 @@ class LockerRental < ApplicationRecord
   # removed again, after the lock is released.
   def checkout_link
     return nil unless await_payment?
-    return shopify_draft_order['invoiceUrl'] if shopify_draft_order_id.present?
 
+    if shopify_draft_order_id.present?
+      state, draft = fetch_shopify_draft_order_result
+      return nil if state == :error # Shopify did not answer: no link now, the stored id is untouched
+      return draft['invoiceUrl'] if state == :found && !ShopifyConcern::DraftRemoval.paid?(draft)
+
+      # Gone, or COMPLETED (paid for an earlier term; the rental is awaiting payment again): not an invoice to
+      # serve. Forget the id (never delete a completed draft) and create a new one under the same recheck rules.
+      forget_draft_order_id(shopify_draft_order_id)
+    end
     create_checkout_draft
   end
 
@@ -403,12 +411,19 @@ class LockerRental < ApplicationRecord
     new_id, _line_items = create_remote_draft_order # Shopify, no lock
 
     kept = false
-    transaction do
-      lock! # reloads: the state and the draft id are read now
-      if await_payment? && shopify_draft_order_id.blank?
-        update_column(:shopify_draft_order_id, new_id)
-        kept = true
+    begin
+      transaction do
+        lock! # reloads: the state and the draft id are read now
+        if await_payment? && shopify_draft_order_id.blank?
+          update_column(:shopify_draft_order_id, new_id)
+          kept = true
+        end
       end
+    rescue StandardError
+      # Nothing stored the id (lock timeout, deadlock, lost connection): the new draft would be an orphan payable
+      # invoice. (If the COMMIT itself failed, the id is not stored either.)
+      discard_unused_draft(new_id)
+      raise
     end
     return fetch_shopify_draft_order&.dig('invoiceUrl') if kept
 
