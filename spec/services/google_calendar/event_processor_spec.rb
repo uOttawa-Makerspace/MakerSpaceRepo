@@ -111,12 +111,12 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
     end
 
     it "raises NoMethodError for an event with no creator" do
-      # part of event.creator.email has no nil guard, one such event aborts the whole sync batch
+      # event.creator.email has no nil guard, so one such event aborts the whole sync batch
       expect { described_class.process(c18_gcal_event(creator_email: nil)) }.to raise_error(NoMethodError)
     end
 
     it "raises RecordNotFound when the SubSpace row for a valid location does not exist" do
-      # part of find_by! aborts the batch if STM 124/126 was renamed or deleted
+      # find_by! aborts the batch if STM 124/126 was renamed or deleted
       stm126.destroy
       expect { described_class.process(c18_gcal_event(location: "STM 126")) }.to raise_error(ActiveRecord::RecordNotFound)
     end

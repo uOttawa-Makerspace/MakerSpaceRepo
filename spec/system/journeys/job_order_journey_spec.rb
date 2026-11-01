@@ -134,7 +134,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
        "Currently being Processed", "Completed (Waiting for Payment)", "Paid (Waiting for Pick-Up)", "Picked-Up"]
     )
 
-    # chat, both directions (signed-in users only: a guest POST poisons the page)
+    # chat, both directions (posting needs a signed-in user)
     as_actor(:user) do
       visit job_order_path(order)
       expect(page).to have_content("Quote is ready")

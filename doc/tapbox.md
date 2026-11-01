@@ -95,7 +95,8 @@ previous sessions and create a new session in the new space.
 ## Access notes
 
 - A tap box identifies itself by its registered MAC address (the firmware cannot
-  send a secret). Taps are rate limited per reader and per source address, and
-  every tap is recorded in `TapBoxLog`.
+  send a secret). Taps are rate limited per reader and per source address.
+  Accepted taps are recorded in `TapBoxLog`, and an unregistered reader is
+  logged at most once per hour.
 - ActionCable (staff dashboard modals, tap box console) identifies the user from
   the session cookie and rejects everyone else; `space_event_<id>` is staff only.

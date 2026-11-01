@@ -511,7 +511,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(walls).to eq(["2027-02-03", "2027-02-10"])
     end
 
-    # PARTLY the series renders once, so two
+    # the series renders once, so two
     # conflicts answer 422 with the first failure instead of a 500
     # DoubleRenderError.
     # the series is still not all-or-nothing: the first booking stays.

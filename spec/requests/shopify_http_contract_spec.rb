@@ -67,7 +67,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       expect(fetch[:body]["variables"]).to eq("id" => draft_id)
     end
 
-    it "when Shopify answers userErrors over HTTP: the pending row is destroyed and the page 500s " do
+    it "when Shopify answers userErrors over HTTP: the pending row is destroyed and the page 500s" do
       stub_shopify_graphql("mutation draftOrderCreate", { "draftOrderCreate" => { "draftOrder" => nil,
                            "userErrors" => [{ "field" => ["input"], "message" => "boom" }] } })
       shop_log_in!(user)

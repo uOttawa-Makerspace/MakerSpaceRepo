@@ -135,8 +135,8 @@ RSpec.describe "JobOrders workflow", type: :request do
     end
 
     # a PAID order is never re-quoted (see
-    # job_orders_quote_paid_guard_request_spec). stays for Draft:
-    # a Draft order can still be quoted.
+    # job_orders_quote_paid_guard_request_spec); a Draft order can still be
+    # quoted.
     it "refuses to re-quote a PAID order: no status row, no customer email" do
       paid = order_with_task!(status_key: :paid)
       session_login!(staff)
