@@ -10,7 +10,7 @@ module ApplicationHelper
   # Every login path (HTML, JSON, SAML) goes through here, so the refusals live
   # here: a lock still in effect (checked BEFORE the password so a locked account
   # cannot be probed or have its lock rewritten by failed attempts), a
-  # deactivated account (D-I03) and an unconfirmed one. The caller words the
+  # deactivated account and an unconfirmed one. The caller words the
   # refusal from @sign_in_refusal (:locked, :inactive, :unconfirmed).
   def sign_in(username_email, password)
     result = CredentialAuthenticator.call(username_email, password)
@@ -49,7 +49,7 @@ module ApplicationHelper
   # The cookie-session user, or nil. A session that is idle-expired (72h), whose
   # stored token_version no longer matches the user's (password changed/reset
   # elsewhere; a session without the key is version 0), or whose user was
-  # deactivated (D-I03) is ended (SessionAuthenticator.valid_for?). A valid
+  # deactivated is ended (SessionAuthenticator.valid_for?). A valid
   # session's idle window is extended here, whatever the controller, but only by
   # real user activity (user_activity?): background polling must not keep an
   # abandoned tab signed in forever.

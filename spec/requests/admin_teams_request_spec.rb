@@ -110,7 +110,7 @@ RSpec.describe "Admin teams", type: :request do
         expect(team.reload.name).to eq("Alpha")
       end
 
-      # WART(D-SP08): update without a (valid member) captain param renames the team, demotes the captain, then 500s: team left captain-less.
+      # update without a (valid member) captain param renames the team, demotes the captain, then 500s: team left captain-less.
       it "500s after demoting the captain when captain is missing or not a member" do
         patch admin_team_path(team), params: { team: { name: "Alpha4" } }
         expect(response).to have_http_status(:internal_server_error)
@@ -136,7 +136,7 @@ RSpec.describe "Admin teams", type: :request do
         expect(flash[:alert]).to eq("Something went wrong while trying to add the user.")
       end
 
-      # WART(D-SP09): an unknown role value raises ArgumentError from the enum: 500 instead of a flash.
+      # an unknown role value raises ArgumentError from the enum: 500 instead of a flash.
       it "add_member 500s for an unknown role" do
         patch add_member_admin_team_path(team, member_id: member.id), params: { role: "boss" }
         expect(response).to have_http_status(:internal_server_error)

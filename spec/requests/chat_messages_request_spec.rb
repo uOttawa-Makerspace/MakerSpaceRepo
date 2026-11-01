@@ -33,7 +33,7 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
 
   # ------------------------------------------------------------- GET index
 
-  # FIXED(D-J04): index requires sign-in plus owner/staff/admin of the order.
+  # index requires sign-in plus owner/staff/admin of the order.
   describe "GET /chat_messages (index)" do
     it "redirects a GUEST to login and renders nothing" do
       order = active_order!
@@ -134,7 +134,7 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
       expect(response.body).to be_blank
     end
 
-    # FIXED(D-J05): a guest can no longer post; nothing is stored (no NULL-sender
+    # a guest cannot post; nothing is stored (no NULL-sender
     # row), the request is redirected to login.
     it "redirects GUESTS to login and stores nothing" do
       order = active_order!
@@ -178,7 +178,7 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
       expect(flash[:error]).to start_with("Failed to send message")
     end
 
-    # FIXED(retro of A2): an unknown or deleted order used to get a 204 and a sticky flash error
+    # an unknown or deleted order gets a 404 and no flash
     it "404s without a flash or a message for an unknown or soft-deleted order" do
       deleted = active_order!
       deleted.update!(is_deleted: true)

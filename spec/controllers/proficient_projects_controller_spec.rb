@@ -397,7 +397,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         end.to change(Certification, :count).by(1)
       end
 
-      it "creates its own Certification and leaves an existing training certification alone (D-C29)" do
+      it "creates its own Certification and leaves an existing training certification alone" do
         existing = create(:certification, user: OrderItem.last.order.user, training: @proficient_project.training,
 level: @proficient_project.level)
         expect do
@@ -435,7 +435,7 @@ level: @proficient_project.level)
       end
 
       it "should set the oi as Revoked" do
-        session[:user_id] = create(:user, :staff).id # revoke_project is staff-only (D-C30)
+        session[:user_id] = create(:user, :staff).id # revoke_project is staff-only
         post :revoke_project,
             format: "js",
             params: {
@@ -452,7 +452,7 @@ level: @proficient_project.level)
       end
 
       it "should NOT set the oi as Revoked" do
-        session[:user_id] = create(:user, :staff).id # revoke_project is staff-only (D-C30)
+        session[:user_id] = create(:user, :staff).id # revoke_project is staff-only
         post :revoke_project, format: "js"
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.order(updated_at: :desc).first.status).to eq(

@@ -67,7 +67,7 @@ RSpec.describe "Admin::ContactInfos (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "has no show route (D-I26): 404" do
+    it "has no show route: 404" do
       get "/admin/contact_infos/#{info.id}"
       expect(response).to have_http_status(:not_found)
     end
@@ -100,7 +100,7 @@ RSpec.describe "Admin::ContactInfos (HTTP contract)", type: :request do
     end
 
     it "create without the contact_info param 500s (nil[] on the missing hash)" do
-      # WART(D-I27): create dereferences params[:contact_info][...] before strong params, so a missing hash is a 500, not the app's ParameterMissing redirect
+      # create dereferences params[:contact_info][...] before strong params, so a missing hash is a 500, not the app's ParameterMissing redirect
       expect { post admin_contact_infos_path, params: {} }.not_to change(ContactInfo, :count)
       expect(response).to have_http_status(:internal_server_error)
     end

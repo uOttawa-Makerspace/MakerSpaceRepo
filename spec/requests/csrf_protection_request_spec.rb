@@ -2,11 +2,9 @@
 
 require "rails_helper"
 
-# INF-01/IDN-07: ApplicationController used to declare
-# `protect_from_forgery with: :null_session, only: proc { ... }`. `only:` takes
-# action names, the proc became a string that never matched, and the
-# declaration replaced the framework's default one, so verify_authenticity_token
-# never ran anywhere (and the cross-origin JavaScript guard was off too).
+# ApplicationController declares `protect_from_forgery with: :exception`, so
+# verify_authenticity_token runs on every non-GET request (and the cross-origin
+# JavaScript guard is on too).
 #
 # The contract pinned here:
 # - every non-GET HTML/JS/form request needs the session's token (422 without);
@@ -42,7 +40,7 @@ RSpec.describe "CSRF protection", type: :request do
 
   let(:stale_form_message) { "Your session changed; please try again." }
 
-  # A refused HTML form (a stale tab, or a forged form) is sent back with a flash,
+  # A refused HTML form (a stale tab, or a form without a valid token) is sent back with a flash,
   # not a bare 422 page.
   # 303, not 302: fetch() keeps PATCH/PUT/DELETE across a 302 and would replay the refused write.
   def expect_stale_form_redirect(target)
@@ -342,7 +340,7 @@ RSpec.describe "CSRF protection", type: :request do
         expect(LabSession.where(user: user).count).to eq(1)
       end
 
-      it "a registered reader's form-encoded tap works too (no cookie session, nothing to forge)" do
+      it "a registered reader's form-encoded tap works too (no cookie session)" do
         post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: pi_reader.pi_mac_address },
                                     without_csrf_token: true
         expect(response).to have_http_status(:ok)

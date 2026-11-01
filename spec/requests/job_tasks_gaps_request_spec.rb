@@ -63,7 +63,7 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(response).to redirect_to(wizard(order, task, 3))
     end
 
-    # WART(D-J41): the review (and the code's find_or_initialize_by) suggest ONE
+    # the review (and the code's find_or_initialize_by) suggest ONE
     # custom service per (order, group) shared and renamed across tasks. In fact
     # the HABTM join is never persisted, so the lookup never finds the earlier
     # service: every submit creates a NEW user_created service, tasks keep their
@@ -80,7 +80,7 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(second.reload.job_service.name).to eq("Second name again")
     end
 
-    # WART(D-J41): without a name the literal "custom" reaches the FK column
+    # without a name the literal "custom" reaches the FK column
     it "500s (InvalidForeignKey) when 'custom' is posted without any name (the marker is cast to service id 0)" do
       expect { patch_custom(task, "") }.not_to change(JobService, :count)
       expect(response).to have_http_status(:internal_server_error)
@@ -158,7 +158,7 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(task.reload.job_type).to eq(print_type)
     end
 
-    # FIXED(retro of A2): update uses the same owner-or-admin gate and denial as create/destroy
+    # update uses the same owner-or-admin gate and denial as create/destroy
     it "bounces a staff member who is neither owner nor admin with the shared no_permission redirect" do
       session_login!(staff)
       patch job_order_job_task_path(order, task), params: { step: "1", job_task: { job_type_id: print_type.id } }
@@ -192,7 +192,7 @@ RSpec.describe "JobTasks gaps", type: :request do
       end.not_to change(ChatMessage, :count)
     end
 
-    it "accepts a job_service_id that belongs to another order's group (no ownership check)" do
+    it "accepts a job_service_id that belongs to another order's group" do
       foreign_group = create(:job_service_group, job_type: JobType.find_by!(name: "Laser Cut"))
       foreign_service = create(:job_service, job_service_group: foreign_group)
       task.update!(job_type: print_type)
@@ -202,7 +202,7 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(task.reload.job_service).to eq(foreign_service)
     end
 
-    it "does not stop the owner from changing the task once the order left Draft (D-J35; not yet quoted, so no re-quote)" do
+    it "does not stop the owner from changing the task once the order left Draft (not yet quoted, so no re-quote)" do
       sent = order_with_task!(status_key: :staff_approval)
       session_login!(owner)
       patch job_order_job_task_path(sent, sent.job_tasks.first),
@@ -214,7 +214,7 @@ RSpec.describe "JobTasks gaps", type: :request do
   # ------------------------------------------------------------- create / destroy corners
 
   describe "create and destroy corners" do
-    # FIXED(retro of A2): no staff UI adds or deletes tasks (the order page shows those buttons
+    # no staff UI adds or deletes tasks (the order page shows those buttons
     # to the owner and admins only), so create/destroy follow update: owner or admin.
     it "lets an admin create a task on someone else's order but refuses staff" do
       order = order_with_task!
@@ -245,7 +245,7 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(response.body).to include("Are you sure you want to delete this task?")
     end
 
-    # WART(D-J18): numbering falls back to the row count, so deleting an early
+    # numbering falls back to the row count, so deleting an early
     # task makes the next one reuse an existing title.
     it "produces a duplicate 'Task #2' title after deleting Task #1 from [#1, #2]" do
       order = order_with_task!
@@ -268,7 +268,7 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect { delete job_order_job_task_path(order, order.job_tasks.first) }.to change(JobTask, :count).by(-1)
     end
 
-    # FIXED(D-J48): task routes scope to not_deleted, so soft-deleted orders 404
+    # task routes scope to not_deleted, so soft-deleted orders 404
     it "404s create and edit on a soft-deleted order" do
       order = order_with_task!
       order.update!(is_deleted: true)

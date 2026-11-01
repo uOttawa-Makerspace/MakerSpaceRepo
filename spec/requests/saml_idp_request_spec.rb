@@ -10,8 +10,8 @@ require "rails_helper"
 #
 # Gate facts (verified in the controller, not assumed):
 #  * SamlIdpController < ApplicationController (NOT SessionsController): no
-#    activity hook; the idle expiry applies through session_user (INF-04).
-#  * `enforce_saml_request` halts on the gem's validity verdict (D-R13): 400
+#    activity hook; the idle expiry applies through session_user.
+#  * `enforce_saml_request` halts on the gem's validity verdict: 400
 #    for a missing/garbage request, 403 for an unknown issuer / foreign ACS.
 #  * `protect_from_forgery with: :exception` is re-declared here, so CSRF is
 #    enforced for POST /saml/auth without the app-wide legacy JSON exemption.
@@ -79,7 +79,7 @@ RSpec.describe "SAML IdP", type: :request do
       expect(doc.xpath("//IDPSSODescriptor/Attribute/@FriendlyName").map(&:value)).to include("groups", "is_admin", "role")
     end
 
-    it "advertises the entityID, the SSO endpoints and named attributes (D-R16)" do
+    it "advertises the entityID, the SSO endpoints and named attributes" do
       get "/saml/metadata", headers: { "Host" => "idp.example.test" }
       doc = Nokogiri::XML(response.body)
       doc.remove_namespaces!
@@ -173,7 +173,7 @@ RSpec.describe "SAML IdP", type: :request do
       end
     end
 
-    it "is a 404 (logged), not a 500, when no metadata file exists (D-R17)" do
+    it "is a 404 (logged), not a 500, when no metadata file exists" do
       with_files do
         expect(Rails.logger).to receive(:error).with(/SAML wiki metadata not found/)
         get "/saml/wiki_metadata"
@@ -199,7 +199,7 @@ RSpec.describe "SAML IdP", type: :request do
       expect(response.body).to include('value="current_user"', 'value="logout"', user.username, ERB::Util.html_escape(user.name))
     end
 
-    it "answers 400 for a missing or garbage SAMLRequest (D-R13)" do
+    it "answers 400 for a missing or garbage SAMLRequest" do
       get "/saml/auth"
       expect(response).to have_http_status(:bad_request)
       get "/saml/auth", params: { SAMLRequest: "abc" }
@@ -242,7 +242,7 @@ RSpec.describe "SAML IdP", type: :request do
       SamlIdp.config.service_provider.finder = original
     end
 
-    it "answers 403 for an unknown issuer and for an ACS host the SP is not registered for (D-R13)" do
+    it "answers 403 for an unknown issuer and for an ACS host the SP is not registered for" do
       get "/saml/auth", params: { SAMLRequest: authn_request(issuer: "evil.example.com", acs: "https://evil.example.com/acs") }
       expect(response).to have_http_status(:forbidden)
       get "/saml/auth", params: { SAMLRequest: authn_request(issuer: "rooms.makerepo.com", acs: "https://evil.example.com/steal") }
@@ -311,7 +311,7 @@ RSpec.describe "SAML IdP", type: :request do
       end
 
       it "refuses a LOCKED account even with the right password" do
-        # FIXED(D-R14): sign_in checks the lock for every login path
+        # sign_in checks the lock for every login path
         user.update!(locked: true, locked_until: 1.hour.from_now)
         post_auth(submit: "sign_in", username: user.username, password: password)
         expect(c18_saml_response_xml).to be_nil
@@ -335,7 +335,6 @@ RSpec.describe "SAML IdP", type: :request do
       end
 
       it "stops evaluating guesses once the account is locked: attempts stop counting and the lock is not rewritten" do
-        # FIXED(D-R14)
         (User::MAX_AUTH_ATTEMPTS + 2).times { post_auth(submit: "sign_in", username: user.username, password: "bad") }
         user.reload
         expect(user).to be_locked
@@ -357,7 +356,6 @@ RSpec.describe "SAML IdP", type: :request do
       end
 
       it "refuses an UNCONFIRMED account like the HTML login does" do
-        # FIXED(D-R15)
         user.update!(confirmed: false)
         post_auth(submit: "sign_in", username: user.username, password: password)
         expect(c18_saml_response_xml).to be_nil
@@ -374,7 +372,7 @@ RSpec.describe "SAML IdP", type: :request do
     end
 
     # test env uses :null_store (never counts), so back the limiter's store with a counter
-    context "rate limit (D-R14)" do
+    context "rate limit" do
       let(:counts) { Hash.new(0) }
 
       before { allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 } }
@@ -451,7 +449,7 @@ RSpec.describe "SAML IdP", type: :request do
       expect(response.body).to include("Invalid request")
     end
 
-    it "answers 400 (not a 500) for a missing or garbage SAMLRequest, even signed in (D-R18)" do
+    it "answers 400 (not a 500) for a missing or garbage SAMLRequest, even signed in" do
       c18_sign_in(:regular)
       post "/saml/auth", params: { submit: "current_user" }
       expect(response).to have_http_status(:bad_request)
@@ -694,7 +692,7 @@ RSpec.describe "SAML IdP", type: :request do
           end
         end
 
-        it "treats attacker-supplied Signature bytes that raise in OpenSSL as an invalid signature, not an SP misconfiguration" do
+        it "treats Signature bytes that raise in OpenSSL as an invalid signature, not an SP misconfiguration" do
           c18_with_signing_sps(cert_pem: cert.to_pem) do
             allow_any_instance_of(OpenSSL::PKey::RSA).to receive(:verify).and_raise(OpenSSL::PKey::PKeyError, "bad signature bytes")
             expect(Rails.error).not_to receive(:report)
@@ -778,7 +776,7 @@ RSpec.describe "SAML IdP", type: :request do
       end
     end
 
-    context "SECURITY: blank Signature / SigAlg must not skip the gem's signature checks" do
+    context "blank Signature / SigAlg do not skip the gem's signature checks" do
       it "refuses a LogoutRequest with an empty Signature= (400), without signing the user out" do
         c18_with_signing_sps do
           user = c18_sign_in(:regular)
@@ -819,7 +817,7 @@ RSpec.describe "SAML IdP", type: :request do
       end
     end
 
-    context "SECURITY: SAML request validation gates issuance (D-R13)" do
+    context "SAML request validation gates issuance" do
       it "refuses an UNKNOWN issuer with 403 and issues no assertion" do
         c18_sign_in(:regular)
         evil = authn_request(issuer: "evil.example.com", acs: "https://evil.example.com/acs")

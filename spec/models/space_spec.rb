@@ -197,7 +197,7 @@ RSpec.describe Space, type: :model do
         )
       end
 
-      # WART(D-SP20): parse_ics_calendar hands back RRULE as a String but weekly_open_hours reads it as a hash: any recurring event raises TypeError.
+      # parse_ics_calendar hands back RRULE as a String but weekly_open_hours reads it as a hash: any recurring event raises TypeError.
       it "raises TypeError when the feed contains a recurring event" do
         open_calendar!
         stub_ics(url, body: ics_document(uid: "r", summary: "Rec", start: Time.utc(2027, 3, 1, 14), end: Time.utc(2027, 3, 1, 22), rrule: "FREQ=WEEKLY;BYDAY=MO"))

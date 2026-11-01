@@ -6,19 +6,18 @@ require "rails_helper"
 # spec/support/page_crawl.rb for what is excluded) is visited as guest,
 # regular user, staff and admin against a seeded "world" and must not answer
 # 500. Routes that currently 500 are pinned in KNOWN_500 (route + role ->
-# defect id); an entry that stops failing, or a new 500, fails the example so
+# reason); an entry that stops failing, or a new 500, fails the example so
 # the table is always exact. Routes the world cannot fill are skipped and
 # listed (set CRAWL_REPORT=1 to dump coverage to tmp/page_crawl_report.json).
 RSpec.describe "Page crawl (request level)", type: :request, skip_bullet: true do
-  # route (path spec) => { role => defect id }; reasons live in
-  # doc/refactor/defects.md or doc/refactor/chunks/e2e-defects.md
+  # route (path spec) => { role => short reason }
   ALL = PageCrawl::ROLES
   KNOWN_500 = {
-    "/memberships" => ALL.index_with { "D-S22" }, # no day-pass membership tier row in the world
-    "/printers/last_user_assigned_to_printer" => %i[staff admin].index_with { "D-CRAWL05" },
-    "/staff/my_calendar" => %i[staff admin].index_with { "D-CRAWL06" },
-    "/staff_dashboard/refresh_tables" => %i[staff admin].index_with { "D-CRAWL07" },
-    "/admin/uni_programs/current_programs" => { admin: "D-CRAWL09" }
+    "/memberships" => ALL.index_with { "no_tier_row" }, # no day-pass membership tier row in the world
+    "/printers/last_user_assigned_to_printer" => %i[staff admin].index_with { "printer_without_session" },
+    "/staff/my_calendar" => %i[staff admin].index_with { "my_calendar_500" },
+    "/staff_dashboard/refresh_tables" => %i[staff admin].index_with { "refresh_tables_500" },
+    "/admin/uni_programs/current_programs" => { admin: "current_programs_500" }
   }.freeze
 
   PERSONAS = {

@@ -72,7 +72,7 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
   end
 
   describe "GET /badges/:id (show)" do
-    # WART(D-T27): the badge page is public and keyed by the sequential certification id: anyone can enumerate earners' names and trainings
+    # the badge page is public and keyed by the sequential certification id
     it "renders for a guest with the earner's name and the training" do
       get badge_path(cert)
       expect(response).to have_http_status(:ok)
@@ -138,7 +138,7 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(response).to have_http_status(:ok)
     end
 
-    # WART(D-T29): skills.html.erb:41 calls Training#training_level, a column that does not exist: the page is a 500 for anyone holding a certification
+    # skills.html.erb:41 calls Training#training_level, a column that does not exist: the page is a 500 for anyone holding a certification
     it "answers 500 (NoMethodError training_level) for a user who holds a certification" do
       log_in!(earner)
       get skills_development_programs_path

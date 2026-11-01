@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# FIXED(D-I05 follow-up / N3): a guest bounced to login only gets a back_to for
+# a guest bounced to login only gets a back_to for
 # requests that can be replayed as a GET. POST/PATCH/DELETE targets (POST-only
 # actions) would 404 after login, so they fall back to a same-host referer.
 RSpec.describe "Login back_to for guests", type: :request do

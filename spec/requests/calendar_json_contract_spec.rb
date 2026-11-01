@@ -119,7 +119,7 @@ RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
       .to include("title" => "Space Blocked", "color" => "#ABABABFF")
   end
 
-  # N+1 pinned: see defects.md D-PERF13
+  # N+1 pinned
   it "row order: ASC by id for rows fetched with find_each (NOT start order)", skip_bullet: true do
     b1 = approved_booking(name: "First", description: "Brief",
                           start_time: DateTime.parse("2027-04-02 10:00"),
@@ -130,7 +130,7 @@ RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
     body = JSON.parse(fetch)
     expect(body.map { |e| e["start"] })
       .to eq(["2027-04-02T06:00:00.000-04:00", "2027-04-01T05:00:00.000-04:00"])
-    # WART(D-B09): no ORDER clause on find_each — the feed comes back in
+    # no ORDER clause on find_each — the feed comes back in
     # insertion (id) order, not sorted by start_time.
     expect(body.map { |e| e["id"] })
       .to eq(["booking_#{b1.id}_#{subspace.id}", "booking_#{b2.id}_#{subspace.id}"])

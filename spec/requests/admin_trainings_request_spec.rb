@@ -49,7 +49,7 @@ RSpec.describe "Admin training area", type: :request do
     context "as admin" do
       before { log_in!(admin) }
 
-      # N+1 pinned: see defects.md D-PERF20
+      # N+1 pinned
       it "lists the trainings ordered by English name", skip_bullet: true do
         create(:training, name_en: "AAA Training", name_fr: "AAA FR")
         get admin_trainings_path
@@ -79,7 +79,7 @@ RSpec.describe "Admin training area", type: :request do
           t = Training.find_by!(name_en: "Laser Cutting")
           expect(t).to have_attributes(name_fr: "Découpe laser", skill_id: skill.id, has_badge: true)
           expect(t.spaces).to eq([space])
-          # WART(D-T22): EN skills are joined with "," but FR skills with ", " and the blank select option is kept
+          # EN skills are joined with "," but FR skills with ", " and the blank select option is kept
           expect(t.list_of_skills_en).to eq(",Design,Safety")
           expect(t.list_of_skills_fr).to eq(", Conception, Sécurité")
         end
@@ -107,14 +107,14 @@ RSpec.describe "Admin training area", type: :request do
           expect(t.list_of_skills_fr).to be_nil
         end
 
-        # WART(D-T23): list_of_skills_* must be an array; a plain string (API client) is a 500 (String#join)
+        # list_of_skills_* must be an array; a plain string (API client) is a 500 (String#join)
         it "answers 500 when list_of_skills_en is a string" do
           expect { post admin_trainings_path, params: training_params(list_of_skills_en: "Design,Safety") }
             .not_to change(Training, :count)
           expect(response).to have_http_status(:internal_server_error)
         end
 
-        # WART(D-T30): training_params permits :training_level but the column does not exist: sending it is a 500
+        # training_params permits :training_level but the column does not exist: sending it is a 500
         it "answers 500 (UnknownAttributeError) when training_level is submitted" do
           expect { post admin_trainings_path, params: training_params(training_level: "Beginner") }
             .not_to change(Training, :count)
@@ -182,7 +182,7 @@ RSpec.describe "Admin training area", type: :request do
         end
       end
 
-      # D-T24: the skill_search / add_skill / skills routes were removed; the paths now fall to
+      # the skill_search / add_skill / skills routes were removed; the paths now fall to
       # the resource's show route, which the controller does not implement.
       %w[skill_search add_skill skills].each do |name|
         it "/admin/trainings/#{name} answers 404 (no route of its own)" do
@@ -241,7 +241,7 @@ RSpec.describe "Admin training area", type: :request do
           expect(listed_ids).to eq([session_record.id])
         end
 
-        # N+1 pinned: see defects.md D-PERF21
+        # N+1 pinned
         it "widens the window with date_range=1_year", skip_bullet: true do
           old = create(:training_session, user: trainer)
           old.update_columns(created_at: 40.days.ago)
@@ -318,7 +318,7 @@ RSpec.describe "Admin training area", type: :request do
         end
       end
 
-      # D-T26: only index, update and destroy are routed; the nested "index" route that
+      # only index, update and destroy are routed; the nested "index" route that
       # shadowed /new and /:id was removed.
       it "has no new/edit/create/show routes (404)" do
         get "/admin/training_sessions/new"
@@ -361,7 +361,7 @@ RSpec.describe "Admin training area", type: :request do
     context "as admin" do
       before { log_in!(admin) }
 
-      # N+1 pinned: see defects.md D-PERF22
+      # N+1 pinned
       it "shows a certification with its earner", skip_bullet: true do
         get admin_certification_path(cert)
         expect(response).to have_http_status(:ok)
@@ -426,7 +426,7 @@ RSpec.describe "Admin training area", type: :request do
           expect(flash[:notice]).to eq("Certification deleted. This action can't be undone")
         end
 
-        # WART(D-T25): deleting a demoted certification leaves the user flagged with the demotion message
+        # deleting a demoted certification leaves the user flagged with the demotion message
         it "leaves the user flag behind when a demoted certification is deleted" do
           patch admin_certification_path(cert), params: { certification: { active: "false", demotion_reason: "Unsafe" } }
           delete admin_certification_path(cert)

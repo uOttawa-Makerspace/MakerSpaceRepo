@@ -5,7 +5,7 @@ require "rails_helper"
 # Characterization spec for the signed-in side of UsersController: profile
 # show/update, avatar, password change, flags, programs, search, likes, and the
 # soft-delete / inactive visibility rules (`default_scope { where(deleted: false) }`).
-# Chunk 9 "Identity". Defects are PINNED, not fixed.
+# Chunk 9 "Identity".
 
 RSpec.describe "Users profile (HTTP contract)", type: :request do
   let(:password) { "asa32A353#" }
@@ -96,7 +96,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
 
     it "json never exposes the password hash or access token in the staff profile view" do
-      # FIXED(D-I02): User#serializable_hash excludes password and access_token
+      # User#serializable_hash excludes password and access_token
       login!(staff)
       get user_path(user.username), as: :json
       expect(json["user"]).not_to have_key("password")
@@ -151,7 +151,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(repos.call).to eq([repo])
     end
 
-    it "staff (non-admin) sees another user's private repos (D-C60)" do
+    it "staff (non-admin) sees another user's private repos" do
       repo = create(:repository, :private)
       repo.users << user
       login!(staff)
@@ -207,7 +207,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
 
     it "ignores :email on profile update (the confirm-by-email flow is the only way)" do
-      # FIXED(D-I15): :email removed from the profile update params
+      # :email removed from the profile update params
       login!(user)
       original = user.email
       patch user_path(user.username), params: { user: { email: "swapped@example.com", name: "Still Works" } }
@@ -218,7 +218,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
 
     it "ignores :password on profile update so the hash column is never clobbered" do
-      # FIXED(D-I16): :password/:password_confirmation removed from the profile update params
+      # :password/:password_confirmation removed from the profile update params
       login!(user)
       patch user_path(user.username),
             params: { user: { password: "NewPassw0rd!x#9", password_confirmation: "NewPassw0rd!x#9" } }
@@ -266,8 +266,8 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.reload.avatar).not_to be_attached
     end
 
-    # FIXED(D-I17): the avatar is validated by sniffed content (not the declared type, not the filename) and size
-    it "refuses non-image bytes labelled image/png (D-I17)" do
+    # the avatar is validated by sniffed content (not the declared type, not the filename) and size
+    it "refuses non-image bytes labelled image/png" do
       login!(user)
       fake = Rack::Test::UploadedFile.new("spec/support/assets/test.stl", "image/png")
       patch user_path(user.username), params: { user: { avatar: fake } }
@@ -292,7 +292,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.reload.avatar).to be_attached
     end
 
-    # FIXED(D-I18): remove_avatar is DELETE; a GET no longer purges the avatar
+    # remove_avatar is DELETE; a GET does not purge the avatar
     it "DELETE /remove_avatar purges the avatar" do
       login!(user)
       patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
@@ -301,7 +301,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.reload.avatar).not_to be_attached
     end
 
-    it "GET /remove_avatar no longer removes the avatar" do
+    it "GET /remove_avatar does not remove the avatar" do
       login!(user)
       patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
       get "/remove_avatar"
@@ -347,7 +347,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
 
     it "a failed save keeps the old password, the session version and sends no mail" do
-      # FIXED: the result of the hashing save was ignored (session got N+1 while the DB stayed at N, success mail sent)
+      # the result of the hashing save was ignored (session got N+1 while the DB stayed at N, success mail sent)
       login!(user)
       allow_any_instance_of(User).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "boom")
       expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), handled: true)
@@ -365,7 +365,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
 
     it "works for a legacy user whose row fails an unrelated validation (old username, stale gender)" do
-      # FIXED: only the password columns are written, so unrelated legacy-invalid fields cannot block the change
+      # only the password columns are written, so unrelated legacy-invalid fields cannot block the change
       user.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
       expect(user.reload).not_to be_valid
       login!(user.reload, pw: password)
@@ -394,7 +394,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
 
     it "succeeds even when the bcrypt hash happens to contain the username" do
-      # FIXED: the hashing save re-ran the nobspw validator on the hash and failed at random
+      # the hashing save re-ran the nobspw validator on the hash and failed at random
       u = create(:user, :regular_user, username: "hunterxsmith")
       login!(u)
       forced = "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19)
@@ -416,7 +416,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(deliveries.first.subject).to eq("MakerRepo | Your password has been changed")
     end
 
-    # FIXED(D-I15): change_password only takes the password fields.
+    # change_password only takes the password fields.
     it "ignores email and username posted alongside the password" do
       login!(user)
       original = user.slice(:email, :username, :name)
@@ -428,7 +428,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.slice(:email, :username, :name)).to eq(original)
     end
 
-    # FIXED: update({}) used to succeed and `pword = password` re-hashed the stored bcrypt hash
+    # update({}) does not re-hash the stored bcrypt hash
     it "blank or missing new password: re-renders (200), password still works, no email" do
       login!(user)
       [{}, { password: "", password_confirmation: "" }].each do |extra|
@@ -503,7 +503,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
 
     it "a regular user cannot remove a flag message" do
-      # FIXED(D-I19): #remove_flag requires staff/admin like flag/unflag
+      # #remove_flag requires staff/admin like flag/unflag
       user.update_columns(flagged: true, flag_message: "; bad")
       login!(other)
       put remove_flag_users_path, params: { repo_user_id: user.id, flag_msg: "bad" }
@@ -573,7 +573,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
-  # FIXED(D-API02): the React app sends PATCH /change_programs with JSON; the route now accepts PATCH and answers JSON.
+  # the React app sends PATCH /change_programs with JSON; the route now accepts PATCH and answers JSON.
   describe "PATCH /change_programs (JSON, React app)" do
     let(:body) { { user_id: user.id, dev_program: true, volunteer: false } }
 
@@ -672,7 +672,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
-  describe "makes tab privacy (D-C59)" do
+  describe "makes tab privacy" do
     let!(:original) { create(:repository, user_id: other.id, title: "Original Thing", share_type: "public") }
     let!(:public_make) do
       create(:repository, owner: user, users: [user], title: "Public Make", share_type: "public", make_id: original.id)

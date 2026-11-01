@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# D-SP29: calendar JSON endpoints across the two America/Toronto DST changes,
+# calendar JSON endpoints across the two America/Toronto DST changes,
 # with the clock frozen in the week of each change:
 #   spring-forward Sun 2027-03-14 02:00 EST -> 03:00 EDT (02:xx does not exist)
 #   fall-back      Sun 2026-11-01 02:00 EDT -> 01:00 EST (01:xx happens twice)
@@ -112,7 +112,7 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
         expect(rows_for(ev).map { |r| r["id"] }.uniq.size).to eq(3)
       end
 
-      # One event per example: the feed's per-event N+1 (D-PERF-SP01) makes Bullet raise in CI mode for two.
+      # One event per example: the feed's per-event N+1 makes Bullet raise in CI mode for two.
       it "renders a recurring event whose occurrence ends on the day after" do
         ev = create(:event, space: space, recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=2",
                             start_time: local(2026, 10, 26, 0), end_time: local(2026, 10, 26, 1, 30))

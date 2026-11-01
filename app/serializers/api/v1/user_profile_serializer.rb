@@ -3,7 +3,7 @@
 module Api
   module V1
     # GET /api/v1/users/:username. Explicit allowlist (never as_json): no password,
-    # access_token, student_id, wallet, etc. A new column cannot leak by default.
+    # access_token, student_id, wallet, etc. A new column is not exposed by default.
     module UserProfileSerializer
       module_function
 

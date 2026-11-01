@@ -57,14 +57,14 @@ RSpec.describe "Admin time periods", type: :request do
       expect(flash[:alert]).to match(/time_period/)
     end
 
-    # WART(D-SP06): TimePeriod has no validations: blank dates (and end before start) are accepted.
+    # TimePeriod has no validations: blank dates (and end before start) are accepted.
     it "accepts blank dates and an inverted range" do
       post admin_time_periods_path, params: { time_period: { name: "", start_date: "2028-05-01", end_date: "2028-01-01" } }
       expect(response).to redirect_to(admin_time_periods_path)
       expect(TimePeriod.find_by(name: "")).to have_attributes(start_date: Date.new(2028, 5, 1), end_date: Date.new(2028, 1, 1))
     end
 
-    # WART(D-SP07): one time period with nil dates makes the whole index page 500 (strftime on nil).
+    # one time period with nil dates makes the whole index page 500 (strftime on nil).
     it "index 500s once a period without dates exists" do
       post admin_time_periods_path, params: { time_period: { name: "Broken", start_date: "", end_date: "" } }
       expect(response).to redirect_to(admin_time_periods_path)

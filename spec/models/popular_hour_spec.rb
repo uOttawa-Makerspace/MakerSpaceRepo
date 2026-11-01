@@ -53,7 +53,7 @@ RSpec.describe PopularHour, type: :model do
   end
 
   describe ".popular_hours_per_period" do
-    # WART(D-P05): the hour/weekday buckets use extract(... from created_at) on the UTC column, so a 10:15 local (Toronto) visit is counted in the 14:00/15:00 UTC bucket
+    # the hour/weekday buckets use extract(... from created_at) on the UTC column, so a 10:15 local (Toronto) visit is counted in the 14:00/15:00 UTC bucket
     it "returns a 7x24 grid per space of average visits per matching weekday in the period (UTC buckets)" do
       space = create(:space)
       # 2027-03-01 is a Monday; a two-week window has 2 Mondays.

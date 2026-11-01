@@ -176,7 +176,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
   private
 
   # The React app always sends user_id. Only an admin may pick another instructor;
-  # for everyone else the instructor is the current staff user (D-API05).
+  # for everyone else the instructor is the current staff user.
   def default_params
     instructor_id =
       @user.admin? && params[:user_id].present? ? params[:user_id] : current_user.id

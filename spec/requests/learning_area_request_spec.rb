@@ -102,7 +102,7 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # WART(D-T41): a module without a training makes the show page crash (500)
+    # a module without a training makes the show page crash (500)
     it "crashes with a 500 (nil.localized_name) when the module has no training" do
       orphan = create(:learning_module, training: nil, title: "Orphan")
       sign_in_as(:regular)
@@ -136,7 +136,7 @@ RSpec.describe "Learning area", type: :request do
     end
   end
 
-  # D-T42: the open_modal route was removed; the path now falls to show with an unknown id.
+  # the open_modal route was removed; the path now falls to show with an unknown id.
   describe "GET /learning_area/open_modal" do
     it "answers 404 for a signed-in admin" do
       sign_in_as(:admin)
@@ -269,8 +269,8 @@ RSpec.describe "Learning area", type: :request do
       expect(flash[:alert]).to include("learning_module")
     end
 
-    # WART(D-T43): failed saves use flash[] not flash.now[], so the alert leaks onto the NEXT page
-    it "leaks the failure alert to the next request" do
+    # failed saves use flash[] not flash.now[], so the alert shows on the NEXT page
+    it "shows the failure alert on the next request" do
       post learning_area_index_path, params: valid_params(title: "")
       get learning_area_index_path
       expect(response.body).to include("Something went wrong")
@@ -376,7 +376,7 @@ RSpec.describe "Learning area", type: :request do
       expect(JSON.parse(response.body)).to eq("status" => "ok")
     end
 
-    # FIXED(D-T01): reorder is now behind only_admin_access
+    # reorder is now behind only_admin_access
     %i[regular staff].each do |role|
       it "does not let a #{role} reorder the modules (admin only)" do
         before_orders = orders
@@ -394,7 +394,7 @@ RSpec.describe "Learning area", type: :request do
       expect(flash[:alert]).to eq("Unable to re-order the learning modules. Please try again later...")
     end
 
-    # WART(D-T44): an unknown id in data aborts the loop half-way, leaving a partial reorder
+    # an unknown id in data aborts the loop half-way, leaving a partial reorder
     it "answers 404 on an unknown id after already reordering earlier entries" do
       sign_in_as(:admin)
       sorted = orders.values.sort
@@ -487,7 +487,7 @@ RSpec.describe "Learning area", type: :request do
       expect(response.location).to start_with("http://www.example.com/login")
     end
 
-    # WART(D-T02): `send_blob_stream blob, type: ...` is not a valid keyword in Rails 8.1, so EVERY
+    # `send_blob_stream blob, type: ...` is not a valid keyword in Rails 8.1, so EVERY
     # existing asset request is a 500 and no extracted SCORM content can ever load
     it "crashes with a 500 (ArgumentError: unknown keyword :type) for an extracted file" do
       sign_in_as(:regular)
@@ -613,7 +613,7 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # WART(D-T04): the track row is created before the params are validated, so a rejected commit still leaves an empty track
+    # the track row is created before the params are validated, so a rejected commit still leaves an empty track
     it "answers 400 (BadRequest) when suspend_data exceeds 64,000 characters but still leaves an empty track" do
       log_in!(user)
       expect { commit(learning_module.id, state.merge("cmi.suspend_data" => "x" * 64_001)) }
@@ -629,8 +629,8 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    # WART(D-T03): the learner reports their own completion; nothing server-side verifies it
-    it "lets any signed-in user mark any module completed with a hand-made payload" do
+    # the learner reports their own completion
+    it "records the completion a signed-in user reports for a module" do
       log_in!(user)
       commit(learning_module.id, { "cmi.completion_status" => "completed" })
       expect(user.learning_module_tracks.find_by(learning_module: learning_module)).to be_completed

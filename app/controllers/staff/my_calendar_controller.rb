@@ -53,7 +53,7 @@ class Staff::MyCalendarController < StaffAreaController
     expanded_events = []
     
     begin
-      # Bounded (D-SP28): rules stored before validation existed (e.g. MINUTELY)
+      # Bounded: rules stored before validation existed (e.g. MINUTELY)
       # must not pin a worker. Same caps as the /api/v1 shifts serializer.
       found = RecurrenceExpansion.occurrences(
         event.recurrence_rule, event.start_time, start_date, end_date,
@@ -74,7 +74,7 @@ class Staff::MyCalendarController < StaffAreaController
       end
 
     rescue => e
-      # Report it (event id only, D-SP29 follow-up), then fall back: return the
+      # Report it (event id only), then fall back: return the
       # original event if within date range
       Rails.error.report(e, handled: true, context: { event_id: event.id })
       if event.start_time >= start_date && event.end_time <= end_date

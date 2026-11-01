@@ -16,7 +16,7 @@ RSpec.describe "Search and explore", type: :request do
   end
 
   describe "GET /explore" do
-    # N+1 pinned: see defects D-PERF-P01
+    # N+1 pinned
     it "lists public repositories newest first and never private ones", skip_bullet: true do
       get explore_path
       expect(response).to have_http_status(:ok)
@@ -43,12 +43,12 @@ RSpec.describe "Search and explore", type: :request do
       Category.create!(repository_id: pub_robot.id, name: "Wearable")
       get explore_path(category: "wearable")
       expect(repos).to eq([pub_robot])
-      # WART(D-P20): an unrecognised category slug resolves to a nil name, which matches repositories that have NO category at all
+      # an unrecognised category slug resolves to a nil name, which matches repositories that have NO category at all
       get explore_path(category: "nonsense")
       expect(repos).to eq([pub_laser])
     end
 
-    # N+1 pinned: see defects D-PERF-P01
+    # N+1 pinned
     it "sorts by most_likes and ignores a hostile sort value", skip_bullet: true do
       pub_laser.update_columns(like: 5)
       get explore_path(sort: "most_likes")
@@ -110,7 +110,7 @@ RSpec.describe "Search and explore", type: :request do
       expect(response.body).to include("&lt;script&gt;alert(1)&lt;/script&gt;")
     end
 
-    # WART(D-P21): a NUL byte, or an array/hash q param, reaches the SQL layer unvalidated and answers 500
+    # a NUL byte, or an array/hash q param, answers 500
     it "answers 500 for a NUL byte, array or hash q param" do
       get search_path(q: "\u0000x")
       expect(response).to have_http_status(:internal_server_error)
@@ -143,7 +143,7 @@ RSpec.describe "Search and explore", type: :request do
   end
 
   describe "GET /category/:slug and /equipment/:slug" do
-    # FIXED(D-P22): both pages go through Repository.public_repos, like explore and search
+    # both pages go through Repository.public_repos, like explore and search
     it "lists only public repos filed under a legacy category, never private ones", skip_bullet: true do
       pub_robot.update_columns(category: "Mobile")
       private_laser.update_columns(category: "Mobile")
@@ -173,7 +173,7 @@ RSpec.describe "Search and explore", type: :request do
       expect(repos).to be_empty
     end
 
-    # N+1 pinned: see defects D-PERF-P01
+    # N+1 pinned
     it "lists only public repos using a given equipment name", skip_bullet: true do
       Equipment.create!(repository_id: pub_robot.id, name: "3d printer")
       Equipment.create!(repository_id: private_laser.id, name: "3d printer")

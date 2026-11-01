@@ -2,7 +2,7 @@
 
 require "ice_cube"
 
-# Bounded expansion of a stored iCalendar recurrence rule (D-SP28). Shared by the
+# Bounded expansion of a stored iCalendar recurrence rule. Shared by the
 # legacy staff calendar and the /api/v1 shifts serializer so that a rule stored
 # before validation existed (e.g. FREQ=MINUTELY, 144k occurrences per 100 days)
 # can never pin a worker: occurrences are enumerated lazily and stop at `limit`.
@@ -32,7 +32,7 @@ module RecurrenceExpansion
   # Occurrences starting in from..to, at most `limit`. Raises what IceCube raises
   # for a rule it cannot parse.
   #
-  # DST (D-SP29), for a wall-clock rule on a zoned start time: IceCube already
+  # DST, for a wall-clock rule on a zoned start time: IceCube already
   # moves a nonexistent local time forward (02:30 on a spring-forward day becomes
   # 03:30 daylight time), but on a fall-back day it yields a time in the repeated
   # hour twice (01:30 daylight AND 01:30 standard) and counts both against COUNT.

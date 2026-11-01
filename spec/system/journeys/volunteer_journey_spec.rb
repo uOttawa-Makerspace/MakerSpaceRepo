@@ -54,7 +54,7 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
     updated = deliver_mail.find { |m| m.subject == "Your request was updated: Stocktake" }
     expect(updated.to).to eq([volunteer.email])
 
-    # WART(D-E2E06): VolunteerHour.create_volunteer_hour_from_approval leaves
+    # VolunteerHour.create_volunteer_hour_from_approval leaves
     # date_of_task NULL, and volunteer_hours/index.html.erb:42 calls strftime on
     # it, so the volunteer's hours page 500s once any task approval exists.
     as_actor(:volunteer, allow_console: [%r{/volunteer_hours - Failed to load resource: .* 500}]) do

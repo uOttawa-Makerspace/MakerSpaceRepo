@@ -46,7 +46,7 @@ RSpec.describe "Staff xlsx reports", type: :request do
     end
 
     it "serves only xlsx: the .html variant is a 406 even for staff" do
-      # D-R12: both report actions serve only .xlsx (the dead format.html branch was removed), so the html request answers 406
+      # both report actions serve only .xlsx (the dead format.html branch was removed), so the html request answers 406
       c18_sign_in(:staff)
       get "/staff_dashboard/present_users_report"
       expect(response).to have_http_status(:not_acceptable)
@@ -90,7 +90,7 @@ RSpec.describe "Staff xlsx reports", type: :request do
       expect(rows).to include(["Trainee Tom", "tom@example.test"], %w[Course ENG9])
     end
 
-    it "the .html variant is also a 406 (see D-R12 above)" do
+    it "the .html variant is also a 406" do
       c18_sign_in(:admin)
       get "/staff/training_sessions/#{training_session.id}/training_report"
       expect(response).to have_http_status(:not_acceptable)

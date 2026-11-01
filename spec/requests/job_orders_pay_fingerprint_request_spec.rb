@@ -2,10 +2,10 @@
 
 require "rails_helper"
 
-# JOB-03: /pay never serves a Shopify draft whose line items no longer match the
+# /pay never serves a Shopify draft whose line items no longer match the
 # order (a fingerprint is stored with the draft id). A legacy draft (stored
 # before fingerprints existed) is replaced once from the current line items.
-RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
+RSpec.describe "Job order pay link fingerprint", type: :request do
   let(:owner) { create(:user, :regular_user) }
   let(:staff) { create(:user, :staff) }
   let!(:shopify) { stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/old-invoice" } }
@@ -48,9 +48,9 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
     [order.reload, task]
   end
 
-  # ------------------------------------------------------------------ JOB-03
+  # ------------------------------------------------------------------ order rules
 
-  describe "GET /pay against the stored invoice fingerprint (JOB-03)" do
+  describe "GET /pay against the stored invoice fingerprint" do
     def pay!(order)
       get pay_job_orders_path, params: { token: order.pay_token }
     end
@@ -160,7 +160,7 @@ RSpec.describe "Job order pay link fingerprint (JOB-03)", type: :request do
     it "never serves a draft whose line items changed; the order goes back to staff and the draft is voided" do
       order, task = quoted_order!(:completed)
       pay_creates_draft!(order)
-      # a price change that bypassed the quote (console, a path not yet routed through the rule)
+      # a price change made outside the quote rule (console, a path not yet routed through the rule)
       task.job_task_quote.update_column(:price, 5)
       shopify.calls.clear
 

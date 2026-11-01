@@ -191,7 +191,7 @@ RSpec.describe "Admin spaces", type: :request do
         expect(flash[:alert]).to eq("Something went wrong.")
       end
 
-      # WART(D-SP02): a non-numeric limit is silently stored as 0 (to_i) rather than rejected.
+      # a non-numeric limit is silently stored as 0 (to_i) rather than rejected.
       it "stores a non-numeric max_hours as 0" do
         patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id), params: { max_hours: "abc" }
         expect(room.reload.maximum_booking_duration).to eq(0)
@@ -208,8 +208,8 @@ RSpec.describe "Admin spaces", type: :request do
         expect(SubSpaceBookingStatus.exists?(status_id)).to be(false)
       end
 
-      # WART(D-B50): delete_sub_space raises (404) for a booking with a nil status id and deletes nothing.
-      it "delete_sub_space 404s and keeps the room when a booking has no status (D-B50)" do
+      # delete_sub_space raises (404) for a booking with a nil status id and deletes nothing.
+      it "delete_sub_space 404s and keeps the room when a booking has no status" do
         booking = create(:sub_space_booking, sub_space: room)
         booking.update_column(:sub_space_booking_status_id, nil)
         delete admin_space_delete_sub_space_path(space_id: space.id, id: room.id)
@@ -227,7 +227,7 @@ RSpec.describe "Admin spaces", type: :request do
         expect(space.reload.name).to eq("Gamma")
       end
 
-      # WART(D-SP03): update_name with an invalid (blank/duplicate) name renders nothing: 204, no flash.
+      # update_name with an invalid (blank/duplicate) name renders nothing: 204, no flash.
       it "update_name answers 204 with no flash on a blank or duplicate name" do
         create(:space, name: "Taken")
         [ "", "Taken" ].each do |bad|
@@ -238,7 +238,7 @@ RSpec.describe "Admin spaces", type: :request do
         end
       end
 
-      # WART(D-SP04): update_max_capacity computes nil-for-zero then ignores it; "0" is stored as 0, not "no limit".
+      # update_max_capacity computes nil-for-zero then ignores it; "0" is stored as 0, not "no limit".
       it "update_max_capacity stores the raw value (0 is not turned into nil)" do
         post update_max_capacity_admin_spaces_path, params: { space_id: space.id, max_capacity: "12" }
         expect(response).to redirect_to(root_path)

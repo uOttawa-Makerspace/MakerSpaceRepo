@@ -38,7 +38,7 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       mail = delivered.last
       expect(mail.to).to match_array(managed_space.space_managers.map(&:email))
       expect(mail.subject).to eq("Booking needs approval")
-      # WART(D-B34): the text names the BOOKING title, not the booker
+      # the text names the BOOKING title, not the booker
       expect(mail.body.encoded).to include(
         "A booking has been made in Laser Room by Robot Club for Weekly build on " \
         "March 03, 2027 10:00 to March 03, 2027 11:30. " \
@@ -52,7 +52,7 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(delivered.size).to eq(1)
     end
 
-    # WART(D-B33): no managers means no mail and no warning
+    # no managers means no mail and no warning
     it "sends nothing when the space has no managers" do
       lonely = create(:sub_space, space: create(:space), approval_required: true)
       lonely_booking = create(:sub_space_booking, sub_space: lonely, user: booker)

@@ -39,6 +39,6 @@ Same path as the web Help form (`HelpController#create`): a `Help` record is sav
 | 429    | `rate_limited`        | Over the limits below                                                    |
 | 503    | `service_unavailable` | The GitHub issue could not be opened; nothing saved or sent. Retry later |
 
-## Abuse control
+## Rate limits
 
 No Turnstile on this endpoint (the React app cannot render it). The controls are rate limits, each counted separately: 5 per minute and 20 per hour per client IP, and, per signed-in user, 5 per minute and 20 per hour. A 429 carries the standard error body.

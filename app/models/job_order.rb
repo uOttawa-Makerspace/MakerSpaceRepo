@@ -23,7 +23,7 @@ class JobOrder < ApplicationRecord
 
   scope :not_deleted, -> { where(is_deleted: false) }
 
-  # D-J11: emailed approve / pay links. Purpose-scoped (generates_token_for),
+  # emailed approve / pay links. Purpose-scoped (generates_token_for),
   # bound to the order and its owner, valid for 14 days. The approval link is
   # also bound to the latest "Waiting for User Approval" status row: a re-quote
   # retires older links, a reminder does not, and once the order moves on the
@@ -76,7 +76,7 @@ class JobOrder < ApplicationRecord
   # operation returns (the invoice url, whether the order was sent back, the draft outcome).
   # `error` is the exception behind a refusal made from one (reported and logged once, by JobOrder#refuse_from).
   class TransitionResult < Data.define(:reason, :error, :status, :value)
-    # The reasons that have their own message (job_orders.alerts.status_change.<reason>, and for the $0 bypass
+    # The reasons that have their own message (job_orders.alerts.status_change.<reason>, and for the $0 path
     # job_orders.alerts.zero_order_not_marked_paid.<reason>). Every other reason falls back to a generic one.
     REASONS_WITH_MESSAGE = %i[draft_not_voidable invalid_status_row order_missing busy].freeze
     # A deadlock is shown as the same "try again" as a busy row.
@@ -89,7 +89,7 @@ class JobOrder < ApplicationRecord
     def self.refused(reason, error = nil) = new(reason: reason, error: error, status: nil, value: nil)
     def ok? = reason.nil?
 
-    # The $0 bypass in #processed: the order was already moved to Completed, so "nothing was changed" would be
+    # The $0 path in #processed: the order was already moved to Completed, so "nothing was changed" would be
     # false. Its own messages say the order is Completed and why it could not be marked Paid.
     def zero_order_message_key
       message_key("job_orders.alerts.zero_order_not_marked_paid",
@@ -121,7 +121,7 @@ class JobOrder < ApplicationRecord
   # (.draft_settlement): an unpaid order's draft is deleted, a paid one's COMPLETED draft (the payment record) is kept.
   DELETED = :deleted
 
-  # JOB-02: one status transition, with one failure contract: it always returns a TransitionResult, and every
+  # one status transition, with one failure contract: it always returns a TransitionResult, and every
   # refusal is a result, never an exception, with nothing committed (#locked_operation). The caller never wraps it
   # in a transaction. The latest status is read under the row lock, so a transition cannot interleave with a
   # re-quote or an owner change. `approval_token` (an emailed approve link) is re-checked under the lock as well.
@@ -143,7 +143,7 @@ class JobOrder < ApplicationRecord
     end
   end
 
-  # JOB-04: once money has been taken the quote is final. Nothing on the customer or quoting side may change the
+  # once money has been taken the quote is final. Nothing on the customer or quoting side may change the
   # order, re-quote it or decline it; changes after payment go through staff by hand.
   # (A missing status (nil: an order without a status row) never matches: that is real data, so the predicates say
   # false for nil explicitly. A missing status ROW still raises JobStatus::Missing, see the policy in JobStatus.)
@@ -160,7 +160,7 @@ class JobOrder < ApplicationRecord
   end
 
   # The approve link is bound to the latest quote boundary: the newest "Waiting for User Approval" row (a re-quote
-  # retires older links) or "Waiting for Staff Approval" row (an order sent back for a new quote, JOB-01, retires
+  # retires older links) or "Waiting for Staff Approval" row (an order sent back for a new quote, retires
   # the link of the quote it replaced). A reminder moves neither, so it keeps the link.
   def approval_status_marker
     job_order_statuses.where(job_status: [JobStatus.user_approval, JobStatus.staff_approval]).maximum(:id)
@@ -183,7 +183,7 @@ class JobOrder < ApplicationRecord
     end
   end
 
-  # JOB-01 (owner decision 2026-10-30): the one way the order's tasks, task options, files, services and wizard
+  # the one way the order's tasks, task options, files, services and wizard
   # comments are changed from the customer side (JobTasksController; an admin using the same wizard goes through it
   # too). The block makes the change. Under the row lock (#locked_operation, the one lock of #transition! and
   # #checkout_link too), by the status read under that lock:
@@ -346,10 +346,10 @@ class JobOrder < ApplicationRecord
   # Invoice URL of the Shopify draft order, creating (or re-creating) the draft when needed. Returns nil when no
   # link can be served right now: Shopify cannot be reached (non-200 / error payload; the stored id is then left
   # untouched), the order is no longer COMPLETED, or the order was just sent back to staff (below).
-  # D-J38: a stored id that Shopify says no longer exists (200, `draftOrder: null`) is dropped and a fresh draft
+  # a stored id that Shopify says no longer exists (200, `draftOrder: null`) is dropped and a fresh draft
   # is created. Kept in JobOrder (not the shared concern) so locker rentals/memberships keep their behaviour: a
   # cancelled locker must never self-heal into a fresh payable invoice.
-  # JOB-03: a stored draft is served only while it is current (#draft_order_current?). Otherwise:
+  # a stored draft is served only while it is current (#draft_order_current?). Otherwise:
   # - legacy draft (stored before fingerprints existed, fingerprint NULL): nothing says whether it is stale, so it
   #   is replaced once by a draft built from the current line items, which are the ones the pay page shows. The
   #   delete fails closed: if Shopify will not delete it (e.g. already paid there) nothing is served.
@@ -388,7 +388,7 @@ class JobOrder < ApplicationRecord
     refuse_from(e, :draft_not_voidable, "checkout_link")
   end
 
-  # JOB-03, the one staleness rule: the stored draft is current only when its fingerprint equals the fingerprint
+  # The one staleness rule: the stored draft is current only when its fingerprint equals the fingerprint
   # of the order's quote now. A draft without a fingerprint (legacy) is never current.
   def draft_order_current?
     shopify_draft_order_fingerprint.present? && shopify_draft_order_fingerprint == quote_fingerprint
@@ -772,7 +772,7 @@ class JobOrder < ApplicationRecord
     [self.class.draft_order_operating_tag, self.class.draft_marker_tag(id)]
   end
 
-  # JOB-03: the draft id and the fingerprint of the quote it was created from are written in one UPDATE. The line
+  # the draft id and the fingerprint of the quote it was created from are written in one UPDATE. The line
   # items the concern sent were built from the same #quote_snapshot as #quote_fingerprint.
   def store_shopify_draft_order_id(new_id, _line_items)
     update_columns(shopify_draft_order_id: new_id, shopify_draft_order_fingerprint: quote_fingerprint)

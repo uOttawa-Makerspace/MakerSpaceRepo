@@ -15,7 +15,7 @@ require "rails_helper"
 #    model string/DateTime-cast rounds by the TEST DB's default (UTC), while
 #    the controller creates bookings with raw string params. Values are
 #    pinned via raw SQL (::text) to avoid TZ re-normalization.
-#  - Known warts are PINNED, not fixed (see doc/architecture.md §5.3.1 plan).
+#  - Current behaviour is pinned as it is (see doc/architecture.md §5.3.1 plan).
 
 RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :request do
   before do
@@ -74,7 +74,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     end
 
     it "bounces guests on the admin-ish endpoints (users)" do
-      # FIXED(D-B01): the user_account gate now tests signed_in? (guests are a
+      # the user_account gate now tests signed_in? (guests are a
       # blank User.new, never nil), so guests are sent to login before the
       # staff gate is reached.
       get users_sub_space_booking_index_path
@@ -90,7 +90,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     end
 
     it "lets an unapproved user VIEW the index page but not create" do
-      # WART(D-B25): user_approved only gates #create — an unapproved user sees the
+      # user_approved only gates #create — an unapproved user sees the
       # index with the "Request Booking Access" panel instead of the tabs.
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
@@ -191,7 +191,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       )
     end
 
-    # WART(D-B21): the time-order error is attached to :expiration_date
+    # the time-order error is attached to :expiration_date
     it "rejects end_time <= start_time" do
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {
@@ -244,7 +244,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         .to eq(capped.id)
     end
 
-    # WART(D-B05) (sub_space_booking_controller.rb:391): the weekly quota
+    # (sub_space_booking_controller.rb:391): the weekly quota
     # computes `existing_total - new_duration` (total_duration starts at
     # `- duration` and the new booking is included in the user_bookings
     # window), so the cap only bites when existing > cap + new.
@@ -280,7 +280,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
 
     it "stores string params shifted to the Eastern DST offset in UTC" do
       # Controller create parses the string in the app zone (March →
-      # EST = -05:00 → UTC 15:00). FIXED(D-B06): the overlap check uses
+      # EST = -05:00 → UTC 15:00). the overlap check uses
       # those same zoned instants. Factory rows with offset-0 DateTimes store the
       # literal. Probe5/probe6 verified both directions (Mar: +5, Jul: +4).
       json_create
@@ -290,7 +290,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
 
     context "blocking" do
       it "rejects a non-admin JSON-boolean blocking request with a 403 JSON error and books nothing" do
-        # FIXED(D-B03): the permission check casts the param (boolean or
+        # the permission check casts the param (boolean or
         # string) and returns, so no row is created. Retro of A3: a JSON
         # request now gets the endpoint's JSON error shape, not a 302.
         json_create(blocking: true)
@@ -302,8 +302,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       end
 
       it "rejects a non-admin blocking request sent as the string 'true' (or '1') and books nothing" do
-        # FIXED(D-B27): same root as D-B03; HTML form strings used to skip
-        # the permission check entirely.
+        # HTML form strings go through the same permission check.
         %w[true 1].each do |value|
           json_create(blocking: value)
           expect(response.status).to eq(403)
@@ -349,7 +348,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       end
 
       it "lets an admin send blocking as the string 'true' over an existing block without a conflict" do
-        # INTENDED(D-B04): admin blocks skip the overlap check (user decision
+        # admin blocks skip the overlap check (user decision
         # 2026-10-25, admins may block over existing bookings without warning).
         create(:sub_space_booking, sub_space: subspace, user: user,
                                    start_time: DateTime.parse("2027-03-03 09:00"),
@@ -362,7 +361,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       end
 
       it "skips the overlap check for an admin JSON boolean true or '1' alike" do
-        # INTENDED(D-B04) + retro of A3: book() casts blocking the same way
+        # book() casts blocking the same way
         # create does, so every truthy spelling skips the check.
         create(:sub_space_booking, sub_space: subspace, user: user,
                                    start_time: DateTime.parse("2027-03-03 09:00"),
@@ -377,7 +376,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       end
 
       it "books nothing and reports TimeSlot when a blocking row overlaps" do
-        # FIXED(D-B06): the overlap check compares the zoned instants the model
+        # the overlap check compares the zoned instants the model
         # stores, so a block at 09:00-12:00 Toronto catches a 10:00 booking.
         set_booking_status!(
           create(:sub_space_booking, sub_space: subspace, user: user,
@@ -395,8 +394,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         expect(SubSpaceBooking.exists?(name: "Taker")).to be(true)
       end
 
-      # FIXED(D-B06). Flips the pin "misses overlaps between two
-      # controller-created bookings": both are now compared as the zoned
+      # Both bookings are compared as the zoned
       # instants they are stored as, so they collide.
       it "catches an overlap between two controller-created bookings" do
         admin = create(:user, :admin, booking_approval: true)
@@ -458,7 +456,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         .to eq(3)
     end
 
-    # WART(D-B08): each occurrence advances from the previous one, so the day drifts
+    # each occurrence advances from the previous one, so the day drifts
     it "monthly series clamps day-of-month (Jan 31 → Feb 28 ...) and drifts" do
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {
@@ -488,7 +486,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(SubSpaceBooking.where(name: "OneOnly").count).to eq(1)
     end
 
-    # D-B30 kept (partial series); the 422 now also says what was booked.
+    # a partial series is kept; the 422 now also says what was booked.
     it "broken mid-series conflicts leave 422 + partial series, with booked and failed" do
       set_booking_status!(
         create(:sub_space_booking, sub_space: subspace, user: user,
@@ -513,11 +511,10 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(walls).to eq(["2027-02-03", "2027-02-10"])
     end
 
-    # PARTLY FIXED(D-B07, D-B18 follow-up): the series renders once, so two
+    # the series renders once, so two
     # conflicts answer 422 with the first failure instead of a 500
-    # DoubleRenderError. Flips the pin "two mid-series conflicts explode with
-    # 500 (DoubleRenderError) leaving the first booking".
-    # WART(D-B07): the series is still not all-or-nothing: the first booking stays.
+    # DoubleRenderError.
+    # the series is still not all-or-nothing: the first booking stays.
     it "two mid-series conflicts answer one 422, leaving the first booking" do
       set_booking_status!(
         create(:sub_space_booking, sub_space: subspace, user: user,
@@ -577,7 +574,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     end
 
     it "renders the exact event shape with EDT millisecond+zone timestamps" do
-      # WART(D-B06) round-trip: factory rows with offset-0 DateTimes store the
+      # round-trip: factory rows with offset-0 DateTimes store the
       # literal wall (10:00/11:00); the readback evaluates that wall as UTC
       # and re-formats it in the app's Eastern zone, so the feed shows
       # 06:00/07:00-04:00, NOT the values a user entered into the form.
@@ -652,7 +649,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(events.first["title"]).to eq("Space Blocked")
       # blocking titles keep the blocking color even for the viewer
       expect(events.first["color"]).to eq("#ABABABFF")
-      # WART(D-B10) (controller:195): (!admin || owner!=viewer) is TRUE for admins
+      # (controller:195): (!admin || owner!=viewer) is TRUE for admins
       # viewing someone else's block, so they also only see "Space Blocked".
       expect(feed(user: admin_viewer).first["title"]).to eq("Space Blocked")
     end
@@ -700,7 +697,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(response.body).to include("bookingEdit")
     end
 
-    # WART(D-B11): owners are bounced from editing their own APPROVED bookings
+    # owners are bounced from editing their own APPROVED bookings
     it "redirects owners away from editing their own APPROVED booking" do
       log_in!(owner)
       booking = owned_booking(status: @approved_status)
@@ -774,7 +771,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         .to eq("Pending") # stays pending when updated
     end
 
-    # WART(D-B11): the same bounce applies to PATCH update
+    # the same bounce applies to PATCH update
     it "bounces an owner updating their own APPROVED booking with a permission alert" do
       log_in!(owner)
       booking = owned_booking(status: @approved_status)
@@ -916,7 +913,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(booking.reload.public).to be(false)
     end
 
-    # FIXED(D-B01): bulk_approve_decline is staff/admin only (a regular
+    # bulk_approve_decline is staff/admin only (a regular
     # approved user is bounced; guest/staff paths: roles_request_spec).
     it "a regular signed-in user cannot bulk_approve_decline" do
       nobody = create(:user, :regular_user, booking_approval: true)
@@ -1031,8 +1028,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     let(:space) { create(:space) }
 
     it "users JSON is admin/staff only and omits password and access_token" do
-      # FIXED(D-B02): `render json: User.all` now goes through User#serializable_hash,
-      # which excludes password and access_token (D-I02).
+      # `render json: User.all` now goes through User#serializable_hash,
+      # which excludes password and access_token.
       log_in!(create(:user, :regular_user, booking_approval: true))
       get users_sub_space_booking_index_path
       expect(response).to redirect_to(root_path)
@@ -1094,7 +1091,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     end
 
     it "request_access identity 'JMTS' without a JMTS Space 500s" do
-      # WART(D-B16): `Space.find_by(name: "JMTS").space_managers` — nil receiver.
+      # `Space.find_by(name: "JMTS").space_managers` — nil receiver.
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
       put request_access_sub_space_booking_index_path,
@@ -1119,7 +1116,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       put request_access_sub_space_booking_index_path,
           params: { comments: "hey", identity: "Staff" }
       expect(response.status).to eq(404)
-      # WART(D-B15): the UBA row is saved BEFORE the supervisor lookup 404s, so the
+      # the UBA row is saved BEFORE the supervisor lookup 404s, so the
       # request exists (staff_id nil) but no notification email went out.
       uba = UserBookingApproval.find_by(user: user)
       expect(uba.identity).to eq("Staff")

@@ -93,7 +93,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
   end
 
   describe "GET /questions/:id (show)" do
-    # N+1 pinned: see defects.md D-PERF19
+    # N+1 pinned
     it "renders the question and marks the correct answer to the admin", skip_bullet: true do
       log_in!(admin)
       get question_path(question)
@@ -123,7 +123,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(q.trainings).to eq([training])
     end
 
-    # WART(D-T17): the first answer is forced to correct even when the admin marked another one: the question ends up with two correct answers
+    # the first answer is forced to correct even when the admin marked another one: the question ends up with two correct answers
     it "forces the FIRST answer correct and keeps the other submitted flags (so two can be correct)" do
       post questions_path, params: valid_params
       answers = Question.order(:id).last.answers.order(:id)
@@ -149,7 +149,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(Question.order(:id).last.images.map { |i| i.filename.to_s }).to eq(["test.png"])
     end
 
-    # WART(D-T18): create uses save! so a validation failure (non-image upload) raises RecordInvalid (no friendly form error) instead of a form error
+    # create uses save! so a validation failure (non-image upload) raises RecordInvalid (no friendly form error) instead of a form error
     it "answers 422 with the RecordInvalid debug page (no form) for a non-image upload and creates nothing" do
       stl = fixture_file_upload(Rails.root.join("spec/support/assets/test.stl"), "application/octet-stream")
       expect { post questions_path, params: valid_params(images: [stl]) }.not_to change(Question, :count)
@@ -161,7 +161,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
   describe "GET /questions/:id/edit" do
     before { log_in!(admin) }
 
-    # N+1 pinned: see defects.md D-PERF19
+    # N+1 pinned
     it "lists the answers with the correct one first", skip_bullet: true do
       get edit_question_path(question)
       expect(response).to have_http_status(:ok)
@@ -200,7 +200,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(flash[:notice]).to eq("Answer added. Please update its content!")
     end
 
-    # FIXED(D-T19): GET /questions/:id/edit?remove_answer=ID no longer destroys anything (removal is DELETE /questions/:id/answers/:answer_id)
+    # GET /questions/:id/edit?remove_answer=ID does not destroy anything (removal is DELETE /questions/:id/answers/:answer_id)
     it "does not destroy the answer named by remove_answer on a plain GET", skip_bullet: true do
       victim = question.answers.where(correct: false).first
       expect { get edit_question_path(question, remove_answer: victim.id) }.not_to change(Answer, :count)
@@ -212,7 +212,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
   describe "DELETE /questions/:id/answers/:answer_id (remove_answer)" do
     before { log_in!(admin) }
 
-    # FIXED(D-T19): removal is a DELETE scoped to the question's own answers
+    # removal is a DELETE scoped to the question's own answers
     it "destroys the question's own answer and redirects to the edit form with a notice" do
       victim = question.answers.where(correct: false).first
       expect { delete remove_answer_question_path(question, answer_id: victim.id) }.to change(Answer, :count).by(-1)
@@ -275,7 +275,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(flash[:notice]).to eq("Question Deleted")
     end
 
-    # WART(D-T20): Question has no dependent handling for exam_questions: deleting a question used in an exam leaves dangling exam_questions
+    # Question has no dependent handling for exam_questions: deleting a question used in an exam leaves dangling exam_questions
     it "leaves the exam_questions of a used question behind" do
       exam = create(:exam)
       eq = ExamQuestion.create!(exam: exam, question: question)
@@ -297,7 +297,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(question.reload.images).not_to be_attached
     end
 
-    # FIXED(D-T21): the attachment is looked up among the question's own images, so a foreign attachment is a 404 and is kept
+    # the attachment is looked up among the question's own images, so a foreign attachment is a 404 and is kept
     it "does not purge an attachment that belongs to another record (a user avatar): 404" do
       user = create(:user, :regular_user_with_avatar)
       attachment = user.avatar.attachment

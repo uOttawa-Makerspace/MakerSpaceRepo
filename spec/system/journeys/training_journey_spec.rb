@@ -66,7 +66,7 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
     end
   end
 
-  # FIXED(retro of A5): data-confirm is a no-op under Turbo; the buttons use turbo_confirm
+  # data-confirm is a no-op under Turbo; the buttons use turbo_confirm
   it "does nothing when the confirmation is dismissed (Send Exams, Certify, Finish Exam)" do
     as_actor(:staff) do
       log_in_as(staff)

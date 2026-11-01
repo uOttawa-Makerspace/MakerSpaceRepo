@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# JOB-01 review 4, 5, 6, 8: a wizard write on a quoted order sends it back to
+# a wizard write on a quoted order sends it back to
 # staff only when it changed what is billed (quote fingerprint) or what is made
 # (work fingerprint). Its own validation failures are task errors and roll the
 # whole step back. A send-back that cannot be written is a reported "could not

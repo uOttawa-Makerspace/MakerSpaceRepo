@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Chunk 11 gap-closer for ChatMessagesController: the notification recipient
-# rules (D-J28, D-J29), rendering corners and HTML escaping, all by delivered
+# rules, rendering corners and HTML escaping, all by delivered
 # mail outcome.
 
 RSpec.describe "ChatMessages gaps", type: :request do
@@ -31,7 +31,7 @@ RSpec.describe "ChatMessages gaps", type: :request do
   end
 
   describe "notification recipients" do
-    # WART(D-J28): recipients are only the OTHER users who already posted on the
+    # recipients are only the OTHER users who already posted on the
     # order (plus hard-coded ids). Staff writing FIRST reaches nobody, so the
     # customer is never told about the first staff message.
     it "delivers nothing when staff posts the first message of an order thread" do
@@ -65,7 +65,7 @@ RSpec.describe "ChatMessages gaps", type: :request do
       expect(deliveries.last.subject).to eq("MakerRepo - Nouveau message // New message")
     end
 
-    # WART(D-J29): the user ids 25 and 1607 are hard-coded notification
+    # the user ids 25 and 1607 are hard-coded notification
     # recipients; in any environment where those ids exist they are mailed on
     # every thread, even if they never took part.
     it "always includes the users with the hard-coded ids 25 and 1607" do
@@ -88,7 +88,7 @@ RSpec.describe "ChatMessages gaps", type: :request do
     end
   end
 
-  # WART(D-J43): `respond_to:` (typo for reply_to:) becomes a custom header, no
+  # `respond_to:` (typo for reply_to:) becomes a custom header, no
   # Reply-To is set, and every recipient is exposed in one To line.
   describe "ChatMessageMailer headers" do
     it "has no reply-to, a respond_to header carrying the sender and all recipients in To" do
@@ -112,7 +112,7 @@ RSpec.describe "ChatMessages gaps", type: :request do
       expect(response.body.strip).to eq("")
     end
 
-    # FIXED(D-J48): the thread lookup is scoped to not_deleted
+    # the thread lookup is scoped to not_deleted
     it "404s the thread of a soft-deleted order" do
       order = active_order!
       ChatMessage.create!(job_order: order, sender: staff, message: "from the grave")

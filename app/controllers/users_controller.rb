@@ -103,7 +103,7 @@ class UsersController < SessionsController
 
   # GET, the link in the confirmation email: shows what would change and a button
   # that POSTs the token to apply_edited_email. A GET never changes anything, so
-  # a cross-site navigation to the link cannot apply it (INF-02).
+  # a cross-site navigation to the link cannot apply it.
   def confirm_edited_email
     user, @new_email = User.email_change_from_token(params[:token])
     return redirect_to(root_path) unless email_change_token_for_current_user?(user)
@@ -255,8 +255,8 @@ class UsersController < SessionsController
   end
 
   # POST only, and it needs the account's current password (the same check as
-  # change_password, throttled by limit_reauth_attempts): the token it mails lets
-  # whoever reads the new address take the account over (INF-02).
+  # change_password, throttled by limit_reauth_attempts): the token it mails confirms the
+  # change of address.
   def change_email
     if (alert = current_password_alert)
       redirect_to settings_admin_path, alert: alert
@@ -300,7 +300,7 @@ class UsersController < SessionsController
     elsif params[:password] != params[:password_confirmation]
       flash[:alert] = 'Your password and password confirmation do not match.'
     elsif (problems = user.plaintext_password_problems(params[:password])).any?
-      # D-I14 for this action: the strength rules now see the plain password
+      # the strength rules see the plain password
       flash[:alert] = "Your password was not changed: #{problems.to_sentence}."
       return redirect_to reset_password_form_users_path(token: params[:token])
     else
@@ -375,7 +375,7 @@ class UsersController < SessionsController
   end
 
   # Private repositories/makes on a profile are visible only to the profile
-  # owner, staff and admins (D-C59, D-C60; staff? includes admin).
+  # owner, staff and admins (staff? includes admin).
   def sees_private_repos?(repo_user)
     @user == repo_user || (@user && @user.staff?)
   end

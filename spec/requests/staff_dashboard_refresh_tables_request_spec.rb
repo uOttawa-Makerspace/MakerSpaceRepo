@@ -8,9 +8,9 @@ require "rails_helper"
 # that the staff dashboard's tap-in modal reads). The latest sign-in is the
 # first of Space#signed_in_users, which is ordered by sign_out_time DESC.
 #
-# WART(D-PERF-NEW1): under CI=1 Bullet raises on this endpoint with 2+ signed-in users: the
+# under CI=1 Bullet raises on this endpoint with 2+ signed-in users: the
 # signed_in partial calls `user.walk_in_safety_sheets.any?` per row (N+1; Bullet asks for
-# `.includes(:walk_in_safety_sheets)`). Pinned with skip_bullet, as for the other D-PERF items.
+# `.includes(:walk_in_safety_sheets)`). Pinned with skip_bullet, as for the other pinned N+1s.
 RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: true do
   include StaffDashboardSpecHelpers
 
@@ -110,11 +110,11 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
     expect(response.body).to be_empty
   end
 
-  # WART(D-EQ37): the token is `signed_in_user_ids.join("")`, with no separator, so different
+  # the token is `signed_in_user_ids.join("")`, with no separator, so different
   # signed-in sets can produce the same token (ids [9_000_001, 7_777_777] and [90_000_017, 777_777]
   # are both "90000017777777"). The client holding the first set's token gets a 304 for the second set and
   # keeps showing stale people. A separator-joined token would not collide.
-  it "WART(D-EQ37): answers 304 for a different signed-in set whose ids concatenate to the same token" do
+  it "answers 304 for a different signed-in set whose ids concatenate to the same token" do
     third_space = create(:space)
     staff.update!(space: third_space)
     # explicit ids far above any users_id_seq value (the sequence is not rolled back between examples)
@@ -172,7 +172,7 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
     before { LabSession.where(space: space).update_all(sign_out_time: 1.minute.ago) }
 
     it "is a 500 (NoMethodError on nil), the polled endpoint fails on an empty room" do
-      # WART(D-CRAWL07, broadened): not only "no space context". `@space.signed_in_users.first.memberships`
+      # not only "no space context". `@space.signed_in_users.first.memberships`
       # is called without a nil check, so ANY staff dashboard with zero signed-in users (an empty lab,
       # the normal state overnight) gets a 500 from this endpoint instead of empty tables.
       refresh

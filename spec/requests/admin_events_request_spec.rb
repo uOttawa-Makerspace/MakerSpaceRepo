@@ -116,7 +116,7 @@ RSpec.describe "Admin events contract", type: :request do
 
       log_in!(admin)
 
-      # WART(D-B46): the no-:id publish branch parses view_start_date/
+      # the no-:id publish branch parses view_start_date/
       # view_end_date BEFORE the space guard — date params must be present or
       # the request 500s before the "Space ID is required." flash can even
       # fire (pinned in admin_events_gaps_request_spec.rb).
@@ -217,7 +217,7 @@ RSpec.describe "Admin events contract", type: :request do
     expect(event.description).to eq("New description")
     expect(event.start_time).to eq(Time.utc(2027, 4, 1, 10, 0))
     expect(event.end_time).to eq(Time.utc(2027, 4, 1, 11, 0))
-    # WART(D-B43): a non-recurring update overwrites created_by_id with the editor
+    # a non-recurring update overwrites created_by_id with the editor
     expect(event.created_by_id).to eq(admin.id)
   end
 

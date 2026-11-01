@@ -6,7 +6,7 @@ require "open3"
 # Characterization for BookingStatus: plain lookup table w/ a unique name.
 # NOTE BookingStatus::PENDING/APPROVED/DECLINED are constants resolved at
 # boot (nil on an empty test DB) — the suite stubs them per example, which
-# is itself documentation of the wart (no rake task seeds them in test).
+# is itself documentation of this (no rake task seeds them in test).
 
 RSpec.describe BookingStatus, type: :model do
   before do
@@ -18,7 +18,7 @@ RSpec.describe BookingStatus, type: :model do
     stub_const("BookingStatus::DECLINED", @declined)
   end
 
-  # WART(D-B22): the constants are `BookingStatus.find_by(...)` evaluated in the
+  # the constants are `BookingStatus.find_by(...)` evaluated in the
   # class body. A process booted against a database without the reference rows
   # (fresh deploy, assets:precompile) keeps nil for its whole lifetime. The
   # other examples stub the constants, so this boots a REAL process: the rows
@@ -45,7 +45,7 @@ RSpec.describe BookingStatus, type: :model do
     expect(blank).not_to be_valid
   end
 
-  # WART(D-B23): dependent: :destroy deletes every linked status row
+  # dependent: :destroy deletes every linked status row
   it "destroying a status nukes its linking rows (dependent: :destroy)" do
     booking = create(:sub_space_booking)
     link = SubSpaceBookingStatus.create!(

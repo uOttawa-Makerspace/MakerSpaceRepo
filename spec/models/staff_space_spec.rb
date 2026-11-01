@@ -11,8 +11,8 @@ RSpec.describe StaffSpace, type: :model do
   describe "colour assignment" do
     let(:space) { create(:space) }
 
-    # WART(D-B53): before_create overwrites any colour passed in with the first free palette entry.
-    it "overwrites a colour passed on create with the first free palette entry (D-B53)" do
+    # before_create overwrites any colour passed in with the first free palette entry.
+    it "overwrites a colour passed on create with the first free palette entry" do
       first = create(:staff_space, space: space, color: "#123456")
       expect(first.color).to eq("#e6194b")
     end

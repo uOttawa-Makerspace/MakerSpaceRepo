@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# D-B18, past-date half (user decision 2026-10-25): bookings may not be created
+# Past-date rule (user decision 2026-10-25): bookings may not be created
 # or moved to start in the past, for every role, admins and admin blocks
 # included. An edit that leaves an already-past booking's times alone stays
 # allowed, approving or declining a past pending booking keeps working, and a
@@ -83,7 +83,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(SubSpaceBooking.where(name: %w[Now Tomorrow]).count).to eq(2)
     end
 
-    # Admin blocks over existing bookings are intended (D-B04/B18), but
+    # Admin blocks over existing bookings are intended, but
     # "admins included" covers blocks: a past-dated block is refused too.
     it "refuses a past-dated admin block" do
       log_in!(admin)
@@ -148,7 +148,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
     end
 
     # 11-17, 11-24 and 12-01 10:00 are past at 12:00 on 12-01; 12-08 and
-    # 12-15 are not (the series overshoot of D-B29 still applies).
+    # 12-15 are not (the series overshoot still applies).
     it "creates only the future occurrences of a series that straddles now, in one group" do
       log_in!(user)
       post_series(start_on: "2026-11-17", end_on: "2026-12-15")
@@ -193,7 +193,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(walls_of("Edge")).to eq(["2026-12-01 12:00", "2026-12-08 12:00", "2026-12-15 12:00"])
     end
 
-    # D-B30 kept: a failed occurrence does not stop the series and the answer is
+    # a failed occurrence does not stop the series and the answer is
     # 422. Changed: the mail now goes out for the first occurrence actually
     # booked (before, a failed first attempt meant no mail at all).
     it "mails for the first booked occurrence when an earlier one conflicts" do
@@ -268,7 +268,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(booking.reload.name).to eq("Existing")
     end
 
-    # Coordinator decision (D-B18 follow-up): a booking in progress may change
+    # Coordinator decision: a booking in progress may change
     # its end only, to an end after now.
     describe "a booking in progress (11:00-13:00, now 12:00)" do
       let(:running) { booking_of(user, start_time: "2026-12-01 11:00", end_time: "2026-12-01 13:00") }
@@ -303,8 +303,8 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       end
     end
 
-    # D-B18 follow-up (coordinator): a booking that has already ended can't have
-    # its times changed. Flips the pin "lets a past booking move to the future".
+    # a booking that has already ended can't have
+    # its times changed.
     it "refuses moving an ended booking, even to the future, or giving it a new end" do
       log_in!(user)
       booking = booking_of(user, start_time: "2026-11-20 10:00", end_time: "2026-11-20 11:00")
@@ -414,7 +414,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
                                  start_time: Time.zone.parse(from), end_time: Time.zone.parse(to))
     end
 
-    # D-B06 / DST: the overlap check uses the zoned instants, so a series that
+    # DST: the overlap check uses the zoned instants, so a series that
     # crosses the 2026-11-01 fall-back is checked against blocks at the right
     # hour on both sides of the change.
     it "checks a series across the November DST change against blocks at their real hour" do
@@ -458,7 +458,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
     end
 
     # Round 3: each end is its start plus the first occurrence's duration, so
-    # a month-end clamp cannot put an end before its start. The D-B08 start
+    # a month-end clamp cannot put an end before its start. The start
     # drift (each start advances the previous one) is kept.
     it "keeps every monthly occurrence's duration around month-end (22:00 Jan 30 to 01:00 Jan 31)" do
       log_in!(user)

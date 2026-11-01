@@ -17,7 +17,7 @@ class TapBoxLog < ApplicationRecord
 
   scope :recent, -> { order(created_at: :desc).limit(500) }
 
-  # The unregistered-reader trace is attacker-triggerable (even bounded), so it is
+  # The unregistered-reader trace can be triggered by anyone (even bounded), so it is
   # never pushed live to the staff console; it stays in the console's history.
   after_create_commit :broadcast_log, unless: :unknown_reader_trace?
 

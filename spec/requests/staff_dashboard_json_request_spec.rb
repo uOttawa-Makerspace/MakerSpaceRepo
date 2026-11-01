@@ -17,8 +17,8 @@ RSpec.describe "Staff dashboard JSON", type: :request do
 
     expect(response).to have_http_status(:ok)
     entry = response.parsed_body["space_users"].find { |u| u["id"] == visitor.id }
-    # FIXED(D-I02): the dashboard built its user hash from `attributes.except("password")`,
-    # bypassing User#serializable_hash and still sending access_token.
+    # the dashboard's user hash comes from User#serializable_hash, which leaves out
+    # the password and access_token.
     expect(entry).not_to have_key("password")
     expect(entry).not_to have_key("access_token")
     expect(entry).to include("username" => visitor.username, "name" => visitor.name, "email" => visitor.email)

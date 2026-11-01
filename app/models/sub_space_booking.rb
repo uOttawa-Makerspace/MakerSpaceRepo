@@ -12,12 +12,12 @@ class SubSpaceBooking < ApplicationRecord
   validate :end_time_after_start_time
   validate :times_not_in_past
 
-  # D-B18: the Google Calendar sync mirrors events that already exist in Google,
+  # the Google Calendar sync mirrors events that already exist in Google,
   # past ones included (a full sync lists every event). Only that mirror sets
   # this; a booking made in the app may never start in the past.
   attr_accessor :allow_past_start
 
-  # D-B18: the instant "now" means for this record's past-date check. The
+  # the instant "now" means for this record's past-date check. The
   # booking controller sets it once per request, so a whole recurring series is
   # judged against one clock read; otherwise it is read at validation.
   attr_writer :reference_time
@@ -26,7 +26,7 @@ class SubSpaceBooking < ApplicationRecord
     @reference_time || Time.current
   end
 
-  # D-B18: the one past-date rule, for every role (admins and admin blocks
+  # the one past-date rule, for every role (admins and admin blocks
   # included). A booking may not start before now; the current minute counts
   # as now, since the booking form picks whole minutes.
   def self.start_in_past?(start_time, now = Time.current)
@@ -41,7 +41,7 @@ class SubSpaceBooking < ApplicationRecord
                              attribute: human_attribute_name(:start_time), message: message)
   end
 
-  # D-B54: the one overlap rule. Exact half-open intersection of [start, end):
+  # the one overlap rule. Exact half-open intersection of [start, end):
   # back-to-back bookings do not overlap, any positive overlap does. Every
   # conflict check goes through here so the paths cannot diverge.
   scope :overlapping,
@@ -116,7 +116,7 @@ class SubSpaceBooking < ApplicationRecord
     { id: "blocking_booking", name: "Blocking Bookings", color: "#ABABABFF" }
   ]
 
-  # The past-date rule (D-B18) applies only while the times are being set. It
+  # The past-date rule applies only while the times are being set. It
   # compares at minute precision, like the form: resubmitting "09:00" for a
   # stored 09:00:30 (a Google-mirrored row) is not a move.
   # - A new booking, or an edit that moves the start: the start may not be in

@@ -23,7 +23,7 @@ class OrdersController < DevelopmentProgramsController
 
   # The before_action check_wallet is only an early, friendly refusal: Order.checkout! re-decides
   # under the wallet lock (CcMoney.debit_all!), so two checkouts, or a checkout racing a coupon claim,
-  # cannot overdraw the wallet (D-S42).
+  # cannot overdraw the wallet.
   def create
     outcome, order, kit_project_ids = Order.checkout!(current_order, current_user)
     if outcome == :invalid_items
@@ -65,8 +65,7 @@ class OrdersController < DevelopmentProgramsController
 
   private
 
-  # After the commit: an SMTP failure cannot undo a completed, paid order (it used to raise mid-loop,
-  # a 500 with the order half-debited). Reported; the error class only is logged.
+  # After the commit: an SMTP failure cannot undo a completed, paid order. Reported; the error class only is logged.
   def send_kit_emails(user, kit_project_ids)
     kit_project_ids.each do |project_id|
       MsrMailer.send_kit_email(user, project_id).deliver_now

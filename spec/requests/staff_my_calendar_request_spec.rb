@@ -56,7 +56,7 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.body).to include(%(value="#{space.id}"))
     end
 
-    # WART(D-SP16): index calls @spaces.first.id: staff with no StaffSpace (and no space_id) get a 500.
+    # index calls @spaces.first.id: staff with no StaffSpace (and no space_id) get a 500.
     it "500s for staff assigned to no space" do
       sign_in_as(:staff)
       get staff_my_calendar_index_path
@@ -69,7 +69,7 @@ RSpec.describe "Staff my calendar", type: :request do
 
     let!(:staff) { sign_in_as(:staff) }
 
-    it "does not scope the feed to the staff member's spaces: any staff can read any space" do
+    it "serves the feed of any space to staff, not only the staff member's spaces" do
       other_space = create(:space)
       create(:event, space: other_space, title: "Elsewhere", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
       get "/staff/my_calendar/json/#{other_space.id}", params: window
@@ -112,7 +112,7 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body).to eq([])
     end
 
-    # N+1 pinned: see defects D-PERF-SP01 (format_event reads event_assignments per event; Bullet raises in CI mode)
+    # N+1 pinned (format_event reads event_assignments per event; Bullet raises in CI mode)
     it "defaults the window to now-3 months .. now+3 months", skip_bullet: true do
       create(:event, space: space, title: "Soon", start_time: Time.zone.local(2027, 4, 1, 9), end_time: Time.zone.local(2027, 4, 1, 10))
       create(:event, space: space, title: "Far", start_time: Time.zone.local(2027, 9, 1, 9), end_time: Time.zone.local(2027, 9, 1, 10))
@@ -131,7 +131,7 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body.map { |e| e["id"] }).to eq(["event-#{a.id}"])
     end
 
-    # N+1 pinned: see defects D-PERF-SP01 (assignment.user and StaffSpace.find_by per assignment)
+    # N+1 pinned (assignment.user and StaffSpace.find_by per assignment)
     it "colours assigned events by StaffSpace colour and flags the current user", skip_bullet: true do
       mate = create(:user, :staff)
       create(:staff_space, user: staff, space: space).update_column(:color, "#111111")
@@ -144,7 +144,7 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(props["background"]).to eq("linear-gradient(to right, #111111 0.0%, #111111 50.0%, #222222 50.0%, #222222 100.0%);")
     end
 
-    # WART(D-SP17): an unparseable start/end param parses to nil; with any single event in the space the nil comparison 500s (empty space: 200 []).
+    # an unparseable start/end param parses to nil; with any single event in the space the nil comparison 500s (empty space: 200 []).
     it "500s for an unparseable start param once the space has a single event" do
       get feed, params: { start: "garbage" }
       expect(response.parsed_body).to eq([])
@@ -154,19 +154,19 @@ RSpec.describe "Staff my calendar", type: :request do
     end
 
     it "falls back to the raw event when the recurrence rule is malformed (inside the window only)" do
-      # D-SP28: the model now refuses an unparseable rule, so store it the way legacy rows exist
+      # the model now refuses an unparseable rule, so store it the way legacy rows exist
       bad = create(:event, space: space, title: "Bad", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
       bad.update_column(:recurrence_rule, "NOT A RULE")
       allow(Rails.error).to receive(:report).and_call_original
       get feed, params: window
       expect(response.parsed_body.map { |e| e["title"] }).to eq(["Bad"])
-      # D-SP29 follow-up: the fallback is reported (event id only), not silent
+      # the fallback is reported (event id only), not silent
       expect(Rails.error).to have_received(:report)
         .with(kind_of(StandardError), handled: true, context: { event_id: bad.id }).once
     end
   end
 
-  # D-SP28: rules stored before validation existed must not pin a worker.
+  # rules stored before validation existed must not pin a worker.
   describe "a stored sub-daily recurrence rule" do
     before { sign_in_as(:staff) }
 

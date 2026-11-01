@@ -114,7 +114,7 @@ RSpec.describe Event, type: :model do
       expect(described_class).not_to have_received(:upsert_event)
     end
 
-    # WART(D-B48): only Google ClientErrors are rescued inside delete_event; with
+    # only Google ClientErrors are rescued inside delete_event; with
     # the (stubbed) delete raising anything else the local destroy is aborted.
     it "keeps the local row when deleting the Google copy raises a non-client error" do
       event = create(:event, space: space, created_by: creator, google_event_id: "abc123")

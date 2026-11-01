@@ -128,7 +128,7 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(Event).not_to have_received(:upsert_event)
     end
 
-    # WART(D-B46): Time.parse(nil) raises TypeError before any validation
+    # Time.parse(nil) raises TypeError before any validation
     it "answers 500 (TypeError) when the utc_* params are missing" do
       post admin_events_path, params: { event: event_attrs.except(:utc_start_time, :utc_end_time) }
       expect(response).to have_http_status(:internal_server_error)
@@ -176,7 +176,7 @@ RSpec.describe "Admin events gaps", type: :request do
     it "pushes a published event to Google Calendar after updating" do
       event = create(:event, space: space)
       patch admin_event_path(event), params: { event: event_attrs }
-      # WART(D-B45): the before_save callback AND the controller both upsert
+      # the before_save callback AND the controller both upsert
       expect(Event).to have_received(:upsert_event).with(event).at_least(:twice)
     end
 
@@ -184,7 +184,7 @@ RSpec.describe "Admin events gaps", type: :request do
       # The time of day of the rewritten DTSTART comes from the DTSTART line of
       # the POSTED rule (the calendar UI sends it in sync with utc_start_time).
       it "moves the whole series to the new time of day, keeps the series date and the rule, and wrongly flashes 'Unavailability'" do
-        # WART(D-B43): the success flash says "Unavailability updated"; the scope
+        # the success flash says "Unavailability updated"; the scope
         # also leaves created_by_id and space_id alone.
         patch admin_event_path(series),
               params: { update_scope: "all",
@@ -243,7 +243,7 @@ RSpec.describe "Admin events gaps", type: :request do
         expect(series.reload.event_assignments).to be_empty
       end
 
-      # WART(D-B44): the master already carries the EXDATE when Event.create! raises
+      # the master already carries the EXDATE when Event.create! raises
       it "leaves the master modified and answers 422 (unhandled RecordInvalid) when the replacement is invalid" do
         patch admin_event_path(series),
               params: { update_scope: "this",
@@ -356,14 +356,13 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(event.reload.draft).to be(true)
     end
 
-    # WART(D-B46): Time.parse(nil) raises before the space guard
+    # Time.parse(nil) raises before the space guard
     it "answers 500 for a batch publish without view dates" do
       patch publish_admin_events_path, params: { space_id: space.id }
       expect(response).to have_http_status(:internal_server_error)
       expect(response.body).to include("TypeError")
     end
 
-    # WART(D-B46)
     it "answers 500 for delete_drafts without view dates" do
       delete delete_drafts_admin_events_path, params: { space_id: space.id }
       expect(response).to have_http_status(:internal_server_error)

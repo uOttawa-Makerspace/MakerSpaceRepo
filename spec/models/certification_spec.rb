@@ -173,7 +173,7 @@ RSpec.describe Certification, type: :model do
       expect(Certification.new(user: user, level: "Advanced")).to be_valid
     end
 
-    # FIXED(D-T08): certify_user no longer adds a second active certification for the same user + training + level
+    # certify_user no longer adds a second active certification for the same user + training + level
     it "certify_user creates one active certification per user, training and level, without checking exam results" do
       expect { 2.times { Certification.certify_user(ts.id, user.id, "Beginner") } }.to change(Certification, :count).by(1)
     end
@@ -184,7 +184,7 @@ RSpec.describe Certification, type: :model do
       expect(Certification.certify_user(other_session.id, user.id, "Beginner")).to eq(first)
     end
 
-    # FIXED(retro of A5): the repeat check also sees certifications without a training session
+    # the repeat check also sees certifications without a training session
     it "certify_user returns the certification a proficient project already granted for that training and level" do
       project = create(:proficient_project, training: training)
       granted = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")

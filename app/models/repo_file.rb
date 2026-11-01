@@ -30,7 +30,7 @@ class RepoFile < ApplicationRecord
               allow: [ALLOWED_CONTENT_TYPES],
               if: -> { file.attached? and proficient_project_id.present? }
             }
-  # D-C06: every RepoFile is checked by sniffed content type and size, not only
+  # every RepoFile is checked by sniffed content type and size, not only
   # those of proficient projects (which keep their narrower list).
   MAX_FILE_SIZE = 200.megabytes
 

@@ -39,7 +39,7 @@ RSpec.describe "Staff proficient project sessions", type: :request do
     expect(response).to have_http_status(:not_found)
   end
 
-  # D-SP18: the dead certify_participant route was removed.
+  # the dead certify_participant route was removed.
   it "answers 404 on the removed certify_participant path" do
     sign_in_as(:staff)
     post "/staff/proficient_project_sessions/#{pps.id}/certify_participant"

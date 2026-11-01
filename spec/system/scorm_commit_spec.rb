@@ -11,7 +11,7 @@ require "rails_helper"
 # then it is a synchronous XHR, so the final state is stored in full instead of
 # being silently lost. A failed commit tells the SCO its API's own error code.
 # js_errors: :allow because the iframe's own content is a 500 today (the pinned,
-# separate WART D-T02 in learning_area_request_spec: send_blob_stream with :type);
+# separate pinned example in learning_area_request_spec: send_blob_stream with :type);
 # the commits under test go from the parent page's SCORM API.
 RSpec.describe "SCORM commits", type: :system, js_errors: :allow do
   let(:user) { create(:user, :volunteer_with_dev_program) }

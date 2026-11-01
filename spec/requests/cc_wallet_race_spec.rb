@@ -2,12 +2,12 @@
 
 require "rails_helper"
 
-# D-S42: every CC spend (cart checkout, coupon claim) goes through CcMoney.debit!, which takes the
+# every CC spend (cart checkout, coupon claim) goes through CcMoney.debit!, which takes the
 # wallet lock (the user row) and re-reads the balance under it. Real second connections, same
 # pattern as coupon_claim_race_spec: thread 1 pauses inside its checkout at the first item's
 # price (OrderItem#total_price, read right before the debit), thread 2 runs its whole request,
 # the main thread waits until thread 2 finished or is blocked on a lock, then thread 1 goes on.
-RSpec.describe "CC wallet races (D-S42)", type: :request do
+RSpec.describe "CC wallet races", type: :request do
   self.use_transactional_tests = false
 
   let(:password) { "asa32A353#" }

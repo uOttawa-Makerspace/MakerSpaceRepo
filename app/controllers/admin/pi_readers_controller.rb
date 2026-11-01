@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Admin::PiReadersController < AdminAreaController
-  # Readers no longer register themselves on their first tap (D-EQ03); an admin
+  # Readers do not register themselves on their first tap; an admin
   # registers the reader's MAC address here.
   def create
     attrs = pi_reader_create_params

@@ -89,7 +89,7 @@ RSpec.describe "Admin settings", type: :request do
       expect(CategoryOption.count).to eq(1)
     end
 
-    # WART(D-P18): add_* read params[:x][:name] without a guard, so a request missing the wrapper param is a 500 NoMethodError instead of a clean alert
+    # add_* read params[:x][:name] without a guard, so a request missing the wrapper param is a 500 NoMethodError instead of a clean alert
     it "answers 500 when the wrapper param is missing" do
       post add_category_admin_settings_path
       expect(response).to have_http_status(:internal_server_error)
@@ -111,7 +111,7 @@ RSpec.describe "Admin settings", type: :request do
       expect { instance_exec(&all_calls[:remove_equipment]) }.to change(EquipmentOption, :count).by(-1)
     end
 
-    # WART(D-P19): remove_* with the select left unset (param absent, not "") skips the guard and reports success while deleting nothing
+    # remove_* with the select left unset (param absent, not "") skips the guard and reports success while deleting nothing
     it "claims success when no option id was submitted" do
       expect { post remove_category_admin_settings_path }.not_to change(CategoryOption, :count)
       expect(flash[:notice]).to eq("Category removed successfully!")

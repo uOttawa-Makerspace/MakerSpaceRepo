@@ -114,7 +114,7 @@ RSpec.describe "Kiosks", type: :request do
       expect(flash[:alert]).to eq("User not found")
     end
 
-    # FIXED(D-EQ06): sign_email returns after `head :unprocessable_content` for an unknown space (no DoubleRenderError)
+    # sign_email returns after `head :unprocessable_content` for an unknown space (no DoubleRenderError)
     it "answers 422 and creates nothing for an unknown space" do
       expect { post kiosk_sign_email_path(0), params: { visitor: visitor.username, entering: "true" } }.not_to change(LabSession, :count)
       expect(response).to have_http_status(:unprocessable_content)
@@ -126,7 +126,7 @@ RSpec.describe "Kiosks", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    # WART(D-EQ07): kiosk sign-in needs no password or token for the visitor: any staff session can sign any user (even admins) into a space by username
+    # kiosk sign-in is done by a staff session: it signs the user named by username into a space
     it "signs an admin in by username without any credential check" do
       admin = create(:user, :admin)
       post kiosk_sign_email_path(space.id), params: { visitor: admin.username, entering: "true" }

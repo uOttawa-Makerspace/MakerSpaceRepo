@@ -98,8 +98,8 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("Something went wrong. Try again.")
     end
 
-    # FIXED(D-C45): the bytes must sniff as a video; the declared type and filename no longer decide
-    it "refuses bytes that are not a video even when declared video/mp4 and named .mp4 (D-C45)" do
+    # the bytes must sniff as a video; the declared type and filename no longer decide
+    it "refuses bytes that are not a video even when declared video/mp4 and named .mp4" do
       blob = direct_blob(filename: "malware.mp4", content_type: "video/mp4", content: "plain text bytes" * 1000)
       expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
       expect(response).to redirect_to(new_video_path)
@@ -128,10 +128,10 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(response).to redirect_to(new_video_path)
     end
 
-    it "creates a video with no project and no learning module (no presence validation) (D-C49)" do
+    it "creates a video with no project and no learning module (no presence validation)" do
       blob = direct_blob(filename: "clip.mp4", content_type: "video/mp4")
       expect { post videos_path, params: { video: { video: [blob.signed_id] } } }.to change(Video, :count).by(1)
-      # WART(D-C49): orphan videos are valid; they never appear in index (inner joins)
+      # orphan videos are valid; they never appear in index (inner joins)
       expect(Video.last.proficient_project_id).to be_nil
       get videos_path
       expect(response).to have_http_status(:ok)
@@ -167,7 +167,7 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(other.reload.video).to be_attached
     end
 
-    it "has no download route: 404 (D-C50, route removed)" do
+    it "has no download route: 404 (route removed)" do
       video = create(:video, :with_video, proficient_project: project)
       get "/videos/#{video.id}/download/1sec.mp4"
       expect(response).to have_http_status(:not_found)
@@ -180,8 +180,8 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
                 checksum: OpenSSL::Digest::MD5.base64digest("abcd") } }
     end
 
-    # FIXED(D-C46): the stock controller now requires a signed-in user (session or JWT)
-    it "refuses a GUEST: 401 and no blob row is created (D-C46, severity 1)" do
+    # the stock controller now requires a signed-in user (session or JWT)
+    it "refuses a GUEST: 401 and no blob row is created" do
       expect { post rails_direct_uploads_path, params: payload, as: :json }.not_to change(ActiveStorage::Blob, :count)
       expect(response).to have_http_status(:unauthorized)
     end
@@ -218,7 +218,7 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unauthorized)
     end
 
-    describe "revoked or deactivated callers (D-I01, D-I03)" do
+    describe "revoked or deactivated callers" do
       let(:member) { create(:user, :volunteer_with_dev_program) }
 
       def bearer_for(user, **claims)

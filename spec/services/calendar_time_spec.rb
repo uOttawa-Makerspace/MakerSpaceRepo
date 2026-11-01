@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# FullCalendar's allDay flag (D-SP29 follow-up): the span starts at a local
+# FullCalendar's allDay flag: the span starts at a local
 # midnight and ends at the next local midnight, in the app zone. That day is
 # 23h on spring-forward (2027-03-14) and 25h on fall-back (2026-11-01).
 RSpec.describe CalendarTime do

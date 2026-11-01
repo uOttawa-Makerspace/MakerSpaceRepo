@@ -39,7 +39,7 @@ RSpec.describe Photo, type: :model do
       end
     end
 
-    # WART: ActiveStorage sniffs a real .ico as image/vnd.microsoft.icon, which is NOT
+    # ActiveStorage sniffs a real .ico as image/vnd.microsoft.icon, which is NOT
     # in the allow-list, so a real icon upload is refused; only a blob already typed
     # image/x-icon (identify: false) passes.
     it "accepts a blob typed image/x-icon and refuses a sniffed .ico" do

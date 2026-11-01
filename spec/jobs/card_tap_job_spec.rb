@@ -41,7 +41,6 @@ RSpec.describe CardTapJob, type: :job do
     expect(TapBoxLog.where(event_type: "error").last).to have_attributes(user_id: user.id, space_id: space.id, card_number: rfid.card_number)
   end
 
-  # FIXED(D-EQ05)
   it "logs an error row but still broadcasts the modal when the Faculty membership tier is missing" do
     MembershipTier.where(title_en: "Faculty membership").destroy_all
     expect { described_class.perform_now(rfid, space.id) }

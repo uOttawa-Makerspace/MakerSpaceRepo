@@ -21,7 +21,7 @@ RSpec.describe "StaffSpaces", type: :request do
       expect(response).to redirect_to(login_path)
     end
 
-    it "sends a regular user to root with an alert (no privilege escalation)" do
+    it "sends a regular user to root with an alert" do
       sign_in_as(:regular)
       expect { post bulk_add_users_staff_spaces_path, params: params }.not_to change { state }
       expect(response).to redirect_to(root_path)
@@ -70,7 +70,7 @@ RSpec.describe "StaffSpaces", type: :request do
     end
   end
 
-  # FIXED(D-SP12): only admins may promote users to staff / attach them to spaces
+  # only admins may promote users to staff / attach them to spaces
   it "refuses a plain staff user (no promotion, no StaffSpace)" do
     sign_in_as(:staff)
     expect { post bulk_add_users_staff_spaces_path, params: params }.not_to change { state }

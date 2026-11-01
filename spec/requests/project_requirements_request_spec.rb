@@ -50,15 +50,15 @@ RSpec.describe "Project requirements (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("Something went wrong. Try again.")
     end
 
-    it "allows a project to require itself and circular requirements (no guard) (D-C48)" do
+    it "allows a project to require itself and circular requirements (no guard)" do
       expect { add(required: project.id) }.to change(ProjectRequirement, :count).by(1)
-      # WART(D-C48): no self/cycle validation (the show page only hides them from its picker)
+      # no self/cycle validation (the show page only hides them from its picker)
       add(id: prereq.id, required: project.id)
       add(id: project.id, required: prereq.id)
       expect(ProjectRequirement.count).to eq(3)
     end
 
-    it "persists a blank prerequisite id (nil required_project) (D-C48)" do
+    it "persists a blank prerequisite id (nil required_project)" do
       expect { add(required: "") }.to change(ProjectRequirement, :count).by(1)
       expect(ProjectRequirement.last.required_project_id).to be_nil
     end

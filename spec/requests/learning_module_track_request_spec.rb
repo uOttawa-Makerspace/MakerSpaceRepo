@@ -1,7 +1,7 @@
 require "rails_helper"
 
 # Chunk 12 characterization of LearningModuleTrackController (start / completed
-# are POSTs (were state-changing GETs, D-T06), no ownership concept: a track always belongs
+# are POSTs (were state-changing GETs), no ownership concept: a track always belongs
 # to current_user). Inherits DevelopmentProgramsController#grant_access, which is
 # only `signed_in` (guests go to /login?back_to=...).
 
@@ -89,7 +89,7 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(LearningModuleTrack.last.status).to eq("completed")
     end
 
-    # WART(D-T05): start/completed assume the module exists; an unknown id is a 500 (nil.learning_module_tracks)
+    # start/completed assume the module exists; an unknown id is a 500 (nil.learning_module_tracks)
     it "answers 500 for an unknown module id" do
       expect { post start_learning_module_track_index_path(learning_module_id: 0) }
         .not_to change(LearningModuleTrack, :count)
@@ -123,14 +123,14 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(other.reload.status).to eq("in_progress")
     end
 
-    # WART(D-T05): completing a module never started (no track) is a 500 (nil.update)
+    # completing a module never started (no track) is a 500 (nil.update)
     it "answers 500 when the user never started the module" do
       post completed_learning_module_track_index_path(learning_module_id: learning_module.id)
       expect(response).to have_http_status(:internal_server_error)
       expect(LearningModuleTrack.count).to eq(0)
     end
 
-    # FIXED(D-T06): completion is a POST; a link, prefetch or image tag (GET) no longer completes a module. (Whether completion should be verified stays open: see a14-notes.)
+    # completion is a POST; a link, prefetch or image tag (GET) does not complete a module.
     it "completes with a POST" do
       create(:learning_module_track, user: signed, learning_module: learning_module)
       post completed_learning_module_track_index_path(learning_module_id: learning_module.id)
@@ -146,7 +146,7 @@ RSpec.describe "Learning module tracks", type: :request do
   end
 
   describe "GET /learning_module_track/start" do
-    # FIXED(D-T06, same root cause as completion): start is a POST too
+    # start is a POST too
     it "does not start a module on a GET (no route), creating nothing" do
       sign_in_as(:regular)
       expect { get "/learning_module_track/start", params: { learning_module_id: learning_module.id } }

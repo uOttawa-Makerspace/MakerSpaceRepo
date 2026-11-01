@@ -24,10 +24,10 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(Repository.unscoped.where(deleted: true).count).to eq(1)
     end
 
-    it "a comment's repository association resolves to nil once the repository is soft-deleted (D-C52)" do
+    it "a comment's repository association resolves to nil once the repository is soft-deleted" do
       comment = create(:comment, repository: repo)
       repo.update_columns(deleted: true)
-      # WART(D-C52): belongs_to goes through the default scope; code that derefs comment.repository (CommentsController#destroy) breaks
+      # belongs_to goes through the default scope; code that derefs comment.repository (CommentsController#destroy) breaks
       expect(comment.reload.repository).to be_nil
       expect(Comment.count).to eq(1)
     end
@@ -71,13 +71,13 @@ RSpec.describe "Content models (part 1 characterization)" do
         expect(r.errors[:photos]).to include("Must have between 1 and 5 photos")
       end
 
-      it "allows up to 10 photos although the message says 5 (D-C53)" do
+      it "allows up to 10 photos although the message says 5" do
         r = build(:repository, owner: owner, title: "Many")
         9.times { r.photos.build(image: FilesTestHelper.png) }
         expect(r).to be_valid
         r.photos.build(image: FilesTestHelper.png)
         r.photos.build(image: FilesTestHelper.png)
-        # WART(D-C53): limit is 10, message and comment say 5
+        # limit is 10, message and comment say 5
         expect(r).not_to be_valid
       end
 
@@ -180,8 +180,8 @@ RSpec.describe "Content models (part 1 characterization)" do
   end
 
   describe RepoFile do
-    # FIXED(D-C06): the sniffed type and size are validated for every RepoFile; proficient projects keep the narrower list
-    it "refuses an executable whatever it is attached to (proficient project, repository, proposal) (D-C06)" do
+    # the sniffed type and size are validated for every RepoFile; proficient projects keep the narrower list
+    it "refuses an executable whatever it is attached to (proficient project, repository, proposal)" do
       pp = create(:proficient_project)
       exe = -> { content_named_upload("run.exe", type: "application/x-msdownload") }
       expect(RepoFile.new(file: exe.call, proficient_project: pp)).not_to be_valid
@@ -216,8 +216,8 @@ RSpec.describe "Content models (part 1 characterization)" do
   end
 
   describe Photo do
-    # FIXED(D-C54): the content-type validation runs on every save, not only on create
-    it "validates the content type whenever the image is changed: swapping in a non-image on update is refused (D-C54)" do
+    # the content-type validation runs on every save, not only on create
+    it "validates the content type whenever the image is changed: swapping in a non-image on update is refused" do
       photo = create(:photo, :in_repository)
       photo.image.attach(FilesTestHelper.stl)
       expect(photo).not_to be_valid
@@ -322,7 +322,7 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(create(:proficient_project, title: "hELLO WORLD").title).to eq("Hello world")
     end
 
-    it "title uniqueness is case-sensitive on the raw value, run before capitalize (D-C25)" do
+    it "title uniqueness is case-sensitive on the raw value, run before capitalize" do
       create(:proficient_project, title: "Widget")
       expect(build(:proficient_project, title: "widget")).to be_valid
       expect(build(:proficient_project, title: "Widget")).not_to be_valid

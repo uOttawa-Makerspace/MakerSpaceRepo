@@ -13,7 +13,7 @@ require "rails_helper"
 # Gate (AdminAreaController): before_action :current_user, :ensure_admin. Guests
 # get current_user = User.new, so they hit ensure_admin and are redirected to "/"
 # exactly like regular users and staff. Reports contain PII (names, emails) but
-# only admins can reach them (no severity-1 finding here).
+# only admins can reach them.
 #
 # Report types dispatched by #index / accepted by #generate (10):
 #   visitors trainings certifications new_users training_attendees new_projects
@@ -87,7 +87,7 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     XLSX_TYPES.each do |type|
-      # N+1 pinned: see defects D-PERF-R01 (certifications/trainings/training_attendees load associations they never use)
+      # N+1 pinned (certifications/trainings/training_attendees load associations they never use)
       pinned = %w[certifications trainings training_attendees].include?(type)
       it "renders the #{type} report for a date range", skip_bullet: pinned do
         get admin_report_generator_index_path, params: range.merge(report_type: type)
@@ -96,7 +96,7 @@ RSpec.describe "Admin report generator", type: :request do
       end
     end
 
-    # N+1 pinned: see defects D-PERF-R01
+    # N+1 pinned
     it "renders every dispatched report type without dates (all time), except frequent_visitors", skip_bullet: true do
       (REPORT_TYPES - %w[frequent_visitors]).each do |type|
         get admin_report_generator_index_path, params: { report_type: type }
@@ -128,7 +128,7 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     it "frequent_visitors without dates is a 500" do
-      # WART(D-R04): frequent_visitors calls params[:start_date].to_datetime with no presence check, so choosing it without a date range raises NoMethodError
+      # frequent_visitors calls params[:start_date].to_datetime with no presence check, so choosing it without a date range raises NoMethodError
       get admin_report_generator_index_path, params: { report_type: "frequent_visitors" }
       expect(response).to have_http_status(:internal_server_error)
     end
@@ -155,7 +155,7 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     it "popular_hours WITH dates shows 'Invalid report type specified' instead of the per-period report" do
-      # WART(D-R05): the controller rewrites params[:report_type] to 'popular_hours_per_period', which the index view's allow-list does not contain, so the per-period report (its partial exists) is never rendered
+      # the controller rewrites params[:report_type] to 'popular_hours_per_period', which the index view's allow-list does not contain, so the per-period report (its partial exists) is never rendered
       get admin_report_generator_index_path, params: range.merge(report_type: "popular_hours")
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Invalid report type specified")
@@ -164,7 +164,7 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     it "an unparseable date string reaches SQL and is a 500" do
-      # WART(D-R02): dates are never parsed or validated for the html report; "abc" reaches the SQL range and Postgres rejects it
+      # dates are never parsed or validated for the html report; "abc" reaches the SQL range and Postgres rejects it
       get admin_report_generator_index_path,
           params: { start_date: "abc", end_date: "def", report_type: "certifications" }
       expect(response).to have_http_status(:internal_server_error)
@@ -262,7 +262,7 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     it "date_range with an unparseable or missing date is a 500 instead of the intended message" do
-      # WART(D-R01): `rescue ParseError` names a constant that does not exist (Date::Error is what Date.parse raises), so the rescue itself raises NameError and bad/missing dates 500 instead of "Failed to parse start date"
+      # `rescue ParseError` names a constant that does not exist (Date::Error is what Date.parse raises), so the rescue itself raises NameError and bad/missing dates 500 instead of "Failed to parse start date"
       post admin_report_generator_generate_path,
            params: { range_type: "date_range", from_date: "garbage", to_date: "2026-03-01", type: "visitors" }
       expect(response).to have_http_status(:internal_server_error)
@@ -274,7 +274,7 @@ RSpec.describe "Admin report generator", type: :request do
       expect(response).to have_http_status(:internal_server_error)
     end
 
-    # N+1 pinned: see defects D-PERF-R01
+    # N+1 pinned
     it "the redirected index chain renders the chosen report end to end", skip_bullet: true do
       post admin_report_generator_generate_path,
            params: { range_type: "date_range", from_date: "2026-03-01", to_date: "2026-03-31", type: "trainings" }
@@ -314,7 +314,7 @@ RSpec.describe "Admin report generator", type: :request do
       )
     end
 
-    # WART(D-R26): the default range ends at DateTime.now (server/UTC), so after 20:00 Eastern "today" is tomorrow's date
+    # the default range ends at DateTime.now (server/UTC), so after 20:00 Eastern "today" is tomorrow's date
     it "ends the default range on the UTC date in the Eastern evening" do
       travel_to(Time.zone.now.change(hour: 21))
       fetch_xlsx("kit_purchased")
@@ -336,7 +336,7 @@ RSpec.describe "Admin report generator", type: :request do
       expect(rows.size).to eq(6)
     end
 
-    # N+1 pinned: see defects D-PERF-R02 (kit report loads proficient_project and user per kit)
+    # N+1 pinned (kit report loads proficient_project and user per kit)
     it "kit_purchased: a delivered kit says Delivered", skip_bullet: true do
       create(:project_kit, :"delivered", user: world[:visitor], created_at: march_10)
       fetch_xlsx("kit_purchased", range)
@@ -384,7 +384,7 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     it "the end date is exclusive of its own day (midnight cut-off)" do
-      # WART(D-R03): end_date is parsed with Date.parse(..).to_datetime, i.e. 00:00, without end_of_day, so records made on the 'To' date are left out of the xlsx while the html report (end_of_day) includes them
+      # end_date is parsed with Date.parse(..).to_datetime, i.e. 00:00, without end_of_day, so records made on the 'To' date are left out of the xlsx while the html report (end_of_day) includes them
       create(:project_kit, user: world[:visitor], created_at: Time.utc(2026, 3, 31, 12), proficient_project: create(:proficient_project, title: "Last Day Kit"))
       fetch_xlsx("kit_purchased", range)
       titles = c18_xlsx_sheets(response.body).fetch("Report")[5..].map(&:first)
@@ -392,7 +392,7 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     it "popular_hours and frequent_visitors have no spreadsheet (400) although the index offers them" do
-      # WART(D-R06): the index lists popular_hours and frequent_visitors as report types but generate_spreadsheet has no branch for them; the 400 is a bare text body
+      # the index lists popular_hours and frequent_visitors as report types but generate_spreadsheet has no branch for them; the 400 is a bare text body
       %w[popular_hours frequent_visitors].each do |type|
         fetch_ok = get admin_report_generator_generate_spreadsheet_path, params: { type: type }
         expect(response).to have_http_status(:bad_request)
@@ -410,7 +410,7 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     it "an unparseable start or end date is a 500" do
-      # WART(D-R02): Date.parse is not rescued in generate_spreadsheet, so a bad date raises instead of a 400
+      # Date.parse is not rescued in generate_spreadsheet, so a bad date raises instead of a 400
       get admin_report_generator_generate_spreadsheet_path, params: { type: "visitors", start_date: "garbage" }
       expect(response).to have_http_status(:internal_server_error)
       get admin_report_generator_generate_spreadsheet_path, params: { type: "visitors", end_date: "garbage" }
@@ -424,7 +424,7 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     it "has no cap on the date range: a 36-year visits_by_hour report is generated, one row per day" do
-      # WART(D-R07): no maximum span, so one request can make the server build a workbook with a row per day for any range (the unbounded range is also unrestricted for admins only)
+      # no maximum span: a workbook gets a row per day for any range (admins only)
       fetch_xlsx("visits_by_hour", start_date: "1990-01-01", end_date: "2026-01-01")
       rows = c18_xlsx_sheets(response.body).fetch("Sheet1")
       expect(rows[5..].size).to eq((Date.new(2026, 1, 1) - Date.new(1990, 1, 1)).to_i + 1)

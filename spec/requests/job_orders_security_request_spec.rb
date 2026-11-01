@@ -2,20 +2,11 @@
 
 require "rails_helper"
 
-# Chunk 11: the severity-1 job-order defects whose DAMAGE (not just the missing
-# gate) was unpinned in chunk 6.
-#
-#   D-J25  a guest chat POST stores a NULL-sender row that then bricks the chat
-#          thread AND the order page for everybody
-#   D-J26  the wizard step-2 page leaks upload filenames, signed ids and download
-#          links to guests
-#   D-J02 / D-J35  a guest task delete cascades to the quote and changes the
-#          order total
-#   D-J05  any signed-in user can post into someone else's order
-#
-# These pin CURRENT behavior; Stage 2b flips them.
+# Job-order access and integrity rules: a chat message needs a sender and order
+# access, the wizard shows uploads only to those who may use them, a task delete
+# recalculates the order total, and nothing changes once an order is paid.
 
-RSpec.describe "Job order security pins", type: :request do
+RSpec.describe "Job order access rules", type: :request do
   let(:owner) { create(:user, :regular_user) }
   let(:staff) { create(:user, :staff) }
   let(:other) { create(:user, :regular_user) }
@@ -38,15 +29,15 @@ RSpec.describe "Job order security pins", type: :request do
     end
   end
 
-  describe "D-J25: a NULL-sender chat row can no longer poison the order" do
+  describe "a chat row without a sender does not break the order page" do
     let(:order) { order_with_task! }
 
-    # A legacy row, as it could exist before the fix / data migration.
+    # A legacy row, as it exists in data created before a sender was required.
     let!(:legacy) do
       ChatMessage.new(job_order: order, sender_id: nil, message: "hello from nowhere").tap { |m| m.save!(validate: false) }
     end
 
-    # FIXED(D-J25): the partial is nil-safe ("Unknown"), so a stray row never 500s
+    # the partial is nil-safe ("Unknown"), so a stray row never 500s
     it "renders the chat thread with an Unknown sender for owners and staff" do
       [owner, staff].each do |viewer|
         session_login!(viewer)
@@ -58,7 +49,7 @@ RSpec.describe "Job order security pins", type: :request do
     end
 
     it "renders the order page for the owner and for staff" do
-      # (a task without a job type breaks the staff quote modal: separate, unfixed defect)
+      # (the staff quote modal needs the task to have a job type)
       order.job_tasks.first.update!(job_type: JobType.find_by!(name: "3D Print"))
       [owner, staff].each do |viewer|
         session_login!(viewer)
@@ -89,8 +80,8 @@ RSpec.describe "Job order security pins", type: :request do
     end
   end
 
-  describe "D-J05: chat writes need order access" do
-    # FIXED(D-J05): signed-in strangers are forbidden; owner/staff/admin may post
+  describe "chat writes need order access" do
+    # signed-in strangers are forbidden; owner/staff/admin may post
     it "forbids a signed-in non-participant" do
       order = order_with_task!
       session_login!(other)
@@ -113,14 +104,14 @@ RSpec.describe "Job order security pins", type: :request do
       expect(response).to have_http_status(:no_content)
       expect(draft.chat_messages.pluck(:message)).to eq(["anyone home?"])
 
-      # FIXED(retro of A2): a deleted order answers 404, with no sticky flash
+      # a deleted order answers 404, with no sticky flash
       post chat_messages_path, params: { chat_message: { message: "anyone home?", job_order_id: deleted.id } }
       expect(response).to have_http_status(:not_found)
       expect(flash[:error]).to be_nil
       expect(deleted.chat_messages).to be_empty
     end
 
-    # FIXED(retro of A2): 404 instead of 204 plus a sticky flash
+    # 404 instead of 204 plus a sticky flash
     it "answers 404 without a flash for a missing or unknown job_order_id" do
       session_login!(other)
       post chat_messages_path, params: { chat_message: { message: "orphan" } }
@@ -134,7 +125,7 @@ RSpec.describe "Job order security pins", type: :request do
     end
   end
 
-  describe "D-J26: the wizard no longer leaks uploads" do
+  describe "the wizard shows uploads only to those who may use them" do
     let(:order) { order_with_task!(status_key: :draft) }
     let(:task) { order.job_tasks.first }
 
@@ -143,7 +134,7 @@ RSpec.describe "Job order security pins", type: :request do
       task.user_files.attach(FilesTestHelper.stl)
     end
 
-    # FIXED(D-J26): the edit gate (D-J03) blocks guests/strangers, and only the
+    # the edit gate blocks guests/strangers, and only the
     # owner/admin (who can submit the form) get the signed-id checkbox.
     it "shows a guest nothing (redirect to login)" do
       get edit_job_order_job_task_path(order, task, step: 2)
@@ -184,7 +175,7 @@ RSpec.describe "Job order security pins", type: :request do
     end
   end
 
-  describe "D-J02 / D-J35: a task delete cascades to the money" do
+  describe "a task delete recalculates the order total" do
     let(:order) { order_with_task!(status_key: :completed) }
     let(:task) { order.job_tasks.first }
 
@@ -195,9 +186,9 @@ RSpec.describe "Job order security pins", type: :request do
       order.job_quote_line_items.create!(description: "Rush", price: 5)
     end
 
-    # FIXED(D-J02): guests and strangers can no longer delete (and so cascade the
+    # guests and strangers cannot delete a task (and so its
     # quote). The OWNER may still delete after the quote (owner decision), which
-    # now sends the order back to staff (JOB-01); after payment it is refused.
+    # now sends the order back to staff; after payment it is refused.
     it "refuses a guest and a stranger on a COMPLETED, quoted order" do
       expect(order.reload.total_price).to eq(55)
 
@@ -210,7 +201,7 @@ RSpec.describe "Job order security pins", type: :request do
       expect(order.reload.total_price).to eq(55)
     end
 
-    it "lets the owner delete from a COMPLETED order, cascading the quote and sending it back to staff (JOB-01)" do
+    it "lets the owner delete from a COMPLETED order, cascading the quote and sending it back to staff" do
       session_login!(owner)
       expect do
         delete job_order_job_task_path(order, task)
@@ -223,7 +214,7 @@ RSpec.describe "Job order security pins", type: :request do
       expect(order.job_order_statuses.last.job_status).to eq(JobStatus.staff_approval)
     end
 
-    it "404s on a soft-deleted order (D-J48)" do
+    it "404s on a soft-deleted order" do
       order.update!(is_deleted: true)
       session_login!(owner)
       delete job_order_job_task_path(order, task)
@@ -232,10 +223,10 @@ RSpec.describe "Job order security pins", type: :request do
     end
   end
 
-  # FIXED(D-J35 / JOB-01): once paid, the wizard refuses every change (the
+  # once paid, the wizard refuses every change (the
   # status is checked by JobOrder#apply_owner_change! under the row lock).
   # Changes to a quoted order are covered in job_orders_owner_change_request_spec.
-  describe "D-J35: no owner change after payment" do
+  describe "no owner change after payment" do
     it "refuses to change the job type of a task on a PAID order" do
       order = order_with_task!(status_key: :paid)
       task = order.job_tasks.first

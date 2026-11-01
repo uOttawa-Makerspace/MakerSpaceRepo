@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# D-SP28: recurrence_rule is blank or an RRULE with FREQ DAILY/WEEKLY/MONTHLY/YEARLY.
+# recurrence_rule is blank or an RRULE with FREQ DAILY/WEEKLY/MONTHLY/YEARLY.
 RSpec.describe RecurrenceRuleValidator do
   let(:model) do
     Class.new do
@@ -76,7 +76,7 @@ RSpec.describe RecurrenceRuleValidator do
     end
   end
 
-  it "rejects the first-FREQ bypass with the message for the sub-daily frequency actually applied" do
+  it "rejects a rule whose first FREQ is allowed but a later one is sub-daily, with the sub-daily message" do
     expect(errors_for("DTSTART:20270301T150000Z\nRRULE:FREQ=DAILY;FREQ=MINUTELY")).not_to be_empty
   end
 

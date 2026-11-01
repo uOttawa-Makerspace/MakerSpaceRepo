@@ -10,7 +10,7 @@ require "rails_helper"
 #   Admin::AnnouncementsController < AdminAreaController   ensure_admin
 #   FaqsController            index public; everything else ensure_admin -> redirect "/"
 #   HelpController, GettingStartedController, TemplateController: public
-#   QuickAccessLinksController: check_user (admin only, see WARTs)
+#   QuickAccessLinksController: check_user (admin only)
 #   SettingsController: signed_in only (any role)
 # Guests get current_user = User.new (never nil).
 RSpec.describe "Content pages (part 2)", type: :request do
@@ -83,8 +83,8 @@ RSpec.describe "Content pages (part 2)", type: :request do
       }.to change(Announcement.all_users, :count).by(1)
     end
 
-    # WART(D-P07): staff may re-target a volunteer announcement to any audience on update; only the stored goal is checked, not the submitted one
-    it "lets staff escalate a volunteer announcement to 'all' (every visitor) via update" do
+    # staff may re-target a volunteer announcement to any audience on update
+    it "lets staff re-target a volunteer announcement to 'all' (every visitor) via update" do
       sign_in_as(:staff)
       patch announcement_path(volunteer_ann), params: { announcement: { public_goal: "all" } }
       expect(response).to redirect_to(announcements_path)
@@ -100,7 +100,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect { delete announcement_path(admin_ann) }.not_to change(Announcement, :count)
     end
 
-    # WART(D-P08): staff can open the show/edit pages of ANY announcement (even admin-only) because set_announcement has no audience check; only update/destroy are guarded
+    # staff can open the show and edit pages of any announcement; update and destroy are guarded
     it "lets staff read and open the edit form of an admin-only announcement" do
       sign_in_as(:staff)
       get announcement_path(admin_ann)
@@ -156,7 +156,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       end
     end
 
-    # N+1 pinned: see defects D-PERF-P02
+    # N+1 pinned
     it "lists all announcements for an admin", skip_bullet: true do
       create(:announcement, :volunteer, user: admin, description: "Vol news")
       sign_in_as(:admin)
@@ -179,7 +179,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(Announcement.last).to have_attributes(user_id: admin.id, public_goal: "all", active: true, end_date: Date.new(2030, 1, 1))
     end
 
-    # WART(D-P09): public_goal is not validated, so an admin can save an audience nothing ever displays (e.g. "regular_user", a typo, or even blank)
+    # public_goal is not validated, so an admin can save an audience nothing ever displays (e.g. "regular_user", a typo, or even blank)
     it "accepts a typo'd or blank public_goal" do
       sign_in_as(:admin)
       expect {
@@ -275,7 +275,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).not_to include("Staff-only news")
     end
 
-    # WART(D-P10): 'regular_user' announcements are never displayed to anyone (the partial only checks that one exists, then renders the 'all' ones a second time)
+    # 'regular_user' announcements are never displayed to anyone (the partial only checks that one exists, then renders the 'all' ones a second time)
     it "never shows regular_user announcements and renders 'all' twice for signed-in users when one exists" do
       ann!("regular_user", "Regular-only news")
       ann!("all", "Everyone news")
@@ -327,7 +327,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
         expect(response).to have_http_status(:no_content)
       end
 
-      # WART(D-P11): no uniqueness on (user, announcement), so repeated dismisses pile up duplicate rows
+      # no uniqueness on (user, announcement), so repeated dismisses pile up duplicate rows
       it "creates a duplicate row on a repeated dismiss" do
         user = sign_in_as(:regular)
         2.times { put dismiss_announcements_path(announcement_id: news.id) }
@@ -407,7 +407,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response).to redirect_to(faqs_path)
     end
 
-    # WART(D-P12): the failed-create flash says "Created FAQ successfully"
+    # the failed-create flash says "Created FAQ successfully"
     it "rejects an invalid create with 422 but a success-sounding alert" do
       sign_in_as(:admin)
       expect { post faqs_path, params: { faq: { title_en: "only title" } } }.not_to change(Faq, :count)
@@ -480,10 +480,10 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(mail.body.encoded).to include(comments)
     end
 
-    # WART(D-P13): any guest can make the app email arbitrary text to any address (recipient, subject and body are all form fields); only the captcha stands in the way
-    it "emails an arbitrary third-party recipient with attacker-chosen content" do
+    # the help form sends the submitted recipient, subject and body
+    it "emails the submitted recipient with the submitted content" do
       deliveries.clear
-      victim = { help: params[:help].merge(email: "victim@example.test", subject: "Your account is compromised, click here", comments: "http://evil.example.test") }
+      victim = { help: params[:help].merge(email: "victim@example.test", subject: "Booking does not work", comments: "http://evil.example.test") }
       perform_enqueued_jobs { post help_path, params: victim }
       expect(deliveries.last.to).to eq(["victim@example.test"])
       expect(deliveries.last.body.encoded).to include("http://evil.example.test")
@@ -549,7 +549,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
   describe "QuickAccessLinksController (admin only)" do
     let(:admin) { create(:user, :admin) }
 
-    # WART(D-P14): check_user redirects twice in one filter chain (guest/regular + :id), which raises DoubleRenderError (500) instead of a clean redirect
+    # check_user redirects twice in one filter chain (guest/regular + :id), which raises DoubleRenderError (500) instead of a clean redirect
     it "redirects a guest or regular user without an id (create)" do
       post quick_access_links_create_path, params: { name: "Home", path: "/" }
       expect(response).to redirect_to(root_path)
@@ -630,7 +630,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       login_redirect?("/settings/admin")
     end
 
-    # WART(D-P15): /settings/admin is open to every signed-in role (it is the user's own password page, but the name and the Admin::* family suggest an admin gate)
+    # /settings/admin is the signed-in user's own password page, whatever the role
     it "serves both pages to any signed-in role, not just admins" do
       %i[regular staff admin].each do |role|
         sign_in_as(role)
@@ -660,7 +660,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).to include("No changelog available.")
     end
 
-    # WART(D-P16): changelog markdown is rendered without filter_html and marked html_safe, so raw HTML in CHANGELOG.md (written by the release tooling from PR titles) reaches visitors unescaped
+    # the changelog markdown is rendered as HTML (CHANGELOG.md is written by the release tooling from PR titles)
     it "passes raw HTML in the markdown through unescaped" do
       allow(File).to receive(:read).and_call_original
       allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# v1\n\n<script>window.x=1</script>\n")
@@ -684,7 +684,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).not_to include("<html")
     end
 
-    # D-P17 / D-CRAWL01: the comment fragment called the removed vote_path helper (always 500); route and view removed.
+    # the comment fragment called the removed vote_path helper (always 500); route and view removed.
     it "has no comment fragment route (404)" do
       get "/template/comment"
       expect(response).to have_http_status(:not_found)

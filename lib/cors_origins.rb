@@ -2,11 +2,10 @@
 
 # Origins allowed to call this app from a browser with CORS
 # (config/initializers/cors.rb), per environment. Every origin is an exact string
-# (scheme included) or a fully anchored regexp (\A...\z), so look-alikes such as
-# app.makerepo.com.attacker.io cannot match.
+# (scheme included) or a fully anchored regexp (\A...\z), so look-alike hosts
+# do not match.
 #
-# app_origins is used for the credentialed catch-all (cookie session; with the
-# legacy JSON CSRF exemption an allowed origin can act as the signed-in user) and
+# app_origins is used for the credentialed catch-all (cookie session) and
 # for /api (Bearer tokens). So it is as narrow as each environment allows:
 # - production: the staff app (MakerRepoApp) only;
 # - staging: plus its Cloudflare Pages previews (previews point to staging);

@@ -1,5 +1,4 @@
-# Guests could POST chat messages (D-J05) which were stored with a NULL sender
-# and then crashed the order page (D-J25). Attribute those rows to the job
+# A chat message needs a sender. Rows stored without one are attributed to the job
 # order's owner. Idempotent: only touches rows that still have a NULL sender.
 class AttributeNullSenderChatMessagesToOrderOwner < ActiveRecord::Migration[8.1]
   def up

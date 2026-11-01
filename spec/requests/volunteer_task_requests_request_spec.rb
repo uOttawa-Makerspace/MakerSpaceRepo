@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Chunk 13: VolunteerTaskRequestsController. No role gate except update_approval
-# (sign-in + staff, D-V19); the listing scope differs for staff. Approval creates CC money and an approved
+# (sign-in + staff); the listing scope differs for staff. Approval creates CC money and an approved
 # VolunteerHour and emails the requester.
 RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
   let(:task) { create(:volunteer_task, title: "tour guide", cc: 12, hours: 3.5) }
@@ -117,7 +117,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect(mail.subject).to eq("New Request for task: Tour guide")
     end
 
-    # FIXED(D-V16, uniqueness part): no second open/approved request per user and task. The status part was dropped: assigned volunteers may still submit after staff mark the task completed
+    # no second open/approved request per user and task. The status part was dropped: assigned volunteers may still submit after staff mark the task completed
     it "refuses a duplicate pending request and sends no second email" do
       assign!(volunteer)
       vol_login!(volunteer)
@@ -133,7 +133,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect { request! }.not_to change(VolunteerTaskRequest, :count)
     end
 
-    # FIXED(rejection keeps the join): the real flow, using the original join after a staff rejection
+    # the real flow, using the original join after a staff rejection
     it "accepts a new request after a staff rejection, on the original join" do
       join = assign!(volunteer)
       vol_login!(volunteer)
@@ -167,7 +167,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
     end
 
-    # INTENDED(D-V14, role part of D-V16): requests stay open to any signed-in user (enrolment is open by design)
+    # requests stay open to any signed-in user (enrolment is open by design)
     it "lets a regular user (no program) request a task" do
       user = create(:user, :regular_user)
       assign!(user)
@@ -175,7 +175,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
     end
 
-    # FIXED(create_request assignment): only a user with an active join on the task may file the request
+    # only a user with an active join on the task may file the request
     it "refuses a user who never joined the task and creates nothing" do
       vol_login!(volunteer)
       expect { request! }.not_to change { [VolunteerTaskRequest.count, vol_deliveries.size] }
@@ -206,7 +206,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
     end
 
-    # FIXED(D-V17): a guest is sent to login and nothing is persisted
+    # a guest is sent to login and nothing is persisted
     it "redirects a guest to login without storing an orphan request" do
       expect { request! }.not_to change(VolunteerTaskRequest, :count)
       expect(response).to redirect_to(login_path)
@@ -258,7 +258,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(vol_deliveries.map(&:subject)).to eq(["Your request was updated: Tour guide"])
       end
 
-      # FIXED(D-V18): approving an already-approved request is a no-op (no second award, no second email)
+      # approving an already-approved request is a no-op (no second award, no second email)
       it "awards CC money and hours only once when approved twice" do
         approve!("true")
         expect { approve!("true") }.not_to change { [CcMoney.count, VolunteerHour.count, vol_deliveries.size] }
@@ -268,7 +268,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(vol_deliveries.size).to eq(1)
       end
 
-      # FIXED(D-V29): the award is paid at most once per user and task, whatever the approval history
+      # the award is paid at most once per user and task, whatever the approval history
       it "pays only once for approve -> reject -> approve" do
         approve!("true")
         approve!("false")
@@ -305,7 +305,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       end
     end
 
-    # FIXED(D-V19): update_approval requires sign-in and staff/admin
+    # update_approval requires sign-in and staff/admin
     {
       "the requesting volunteer" => ->(ex) { ex.volunteer },
       "another volunteer" => ->(ex) { ex.other_volunteer },

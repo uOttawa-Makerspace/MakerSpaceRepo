@@ -47,8 +47,8 @@ RSpec.describe "Static pages", type: :request do
         expect(workshops.map { |w| w["name"] }).to eq((1..5).map { |i| "Workshop #{i}" })
       end
 
-      # WART(D-P06): workshop link/picture from the third-party API are echoed into href and style unvalidated, so a javascript: link (compromised or malicious feed) is rendered as a clickable href
-      it "renders a javascript: workshop link verbatim in the href" do
+      # the workshop link and picture from the third-party API are rendered as given
+      it "renders the workshop link verbatim in the href" do
         stub_simpli(status: 200, body: { events: [{ "name" => "Evil", "startTime" => future_ms(2), "link" => "javascript:alert(1)" }] }.to_json)
         get root_path
         expect(response.body).to include('href="javascript:alert(1)"')
@@ -396,7 +396,7 @@ RSpec.describe "Static pages", type: :request do
       expect(JSON.parse(response.body)).to eq([])
     end
 
-    # WART(D-P03): hours.json includes :opening_hour but ContactInfo only has_many :opening_hours, so the JSON endpoint 500s as soon as one contact info is listed
+    # hours.json includes :opening_hour but ContactInfo only has_many :opening_hours, so the JSON endpoint 500s as soon as one contact info is listed
     it "answers 500 (NoMethodError opening_hour) once a show_hours contact info exists" do
       create(:contact_info, name: "Hours Lab", show_hours: true)
       get hours_path(format: :json)
@@ -432,10 +432,10 @@ RSpec.describe "Static pages", type: :request do
     # Happy path: what production serves to the homepage / hours FullCalendar
     # (app/javascript/entrypoints/fullcalendar_setup_homepage.js). Time is frozen
     # because parse_ics_calendar drops NON-recurring events (and modified instances)
-    # that ended > 2 months ago; recurring series are never dropped (WART D-SP27).
+    # that ended > 2 months ago; recurring series are never dropped.
     # Date#to_time inside safe_to_time uses the PROCESS time zone, so the examples
     # pin TZ explicitly. Most pin UTC process-zone behaviour; the production host's
-    # TZ is UNVERIFIED (Capistrano-deployed host, staging Docker sets none), see D-SP24.
+    # TZ is UNVERIFIED (Capistrano-deployed host, staging Docker sets none).
     # One example also pins America/Toronto so both host configurations are characterized.
     describe "happy path with a Google-style ICS feed" do
       let(:feed_url) { "https://calendar.example.test/feed.ics" }
@@ -475,7 +475,7 @@ RSpec.describe "Static pages", type: :request do
 
         it "returns one event source keyed by the MD5 of the feed URL, carrying the stored color and 5 events" do
           expect(sources.size).to eq(1)
-          # WART: the source has only id/color/events. There is NO source-level "name"; the JS reads the
+          # the source has only id/color/events. There is NO source-level "name"; the JS reads the
           # name from events[0].extendedProps.name, so a source with zero events gets no filter checkbox.
           expect(source.keys).to eq(%w[id color events])
           expect(source["id"]).to eq(source_id)
@@ -501,7 +501,7 @@ RSpec.describe "Static pages", type: :request do
           )
         end
 
-        # WART: DTSTART;VALUE=DATE:20261030 (a single all-day Oct 30) is emitted as a timed
+        # DTSTART;VALUE=DATE:20261030 (a single all-day Oct 30) is emitted as a timed
         # window 2026-10-29T20:00 -> 2026-10-30T20:00. Date#to_time is midnight in the PROCESS zone
         # (UTC here), then converted to Toronto (-4h), so it lands on the previous evening.
         # The calendar expects "2026-10-30" / "2026-10-31" (or midnight Toronto). With allDay: true
@@ -543,7 +543,7 @@ RSpec.describe "Static pages", type: :request do
             "display" => "auto",
             "start" => "2026-10-26T09:00:00",
             "end" => "2026-10-26T17:00:00",
-            # WART (D-SP20 sibling): rrule is a newline-joined STRING (DTSTART/RRULE/EXDATE lines), not an
+            # rrule is a newline-joined STRING (DTSTART/RRULE/EXDATE lines), not an
             # object; it relies on @fullcalendar/rrule parsing it. DTSTART/EXDATE are Toronto wall-clock with
             # no TZID/Z while UNTIL stays UTC ("Z"), so the two are in different frames of reference.
             "rrule" => "DTSTART:20261026T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20261221T235959Z\n" \
@@ -601,7 +601,7 @@ RSpec.describe "Static pages", type: :request do
           # and still EXDATEs the overridden slot.
           expect(source["events"].map { |e| e["title"] }).not_to include("Spring Hours (late start)")
           expect(source["events"].map { |e| e["id"] }.select { |id| id.start_with?("old-series-1@google.com_") }).to eq([])
-          # WART(D-SP27): a series whose UNTIL ended four months ago is still emitted (rrule, EXDATEs), so the
+          # a series whose UNTIL ended four months ago is still emitted (rrule, EXDATEs), so the
           # payload grows as feeds age. A fix that drops ended series should flip this expectation.
           parent = event_named(source, "old-series-1@google.com")
           expect(parent["rrule"]).to eq(
@@ -737,7 +737,7 @@ RSpec.describe "Static pages", type: :request do
       expect(response).to redirect_to(root_path)
     end
 
-    # FIXED(D-P02): reporting is a POST; a plain GET (link, image tag, prefetch) no longer emails the support inbox
+    # reporting is a POST; a plain GET (link, image tag, prefetch) does not email the support inbox
     it "does not send the email, on a plain GET" do
       sign_in_as(:regular)
       deliveries.clear

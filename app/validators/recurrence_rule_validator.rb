@@ -2,7 +2,7 @@
 
 require "ice_cube"
 
-# D-SP28: a recurrence_rule is blank or an RRULE whose FREQ is DAILY, WEEKLY,
+# a recurrence_rule is blank or an RRULE whose FREQ is DAILY, WEEKLY,
 # MONTHLY or YEARLY. Sub-daily rules (SECONDLY/MINUTELY/HOURLY) are refused
 # because the calendars expand them on every load.
 #

@@ -13,7 +13,7 @@ RSpec.describe SniffedUploadValidation do
   let(:evil) { stored_blob("evil.exe", "MZ" + ("\x00" * 200)) }
   let(:fine) { stored_blob("ok.txt", "hello") }
 
-  # D-C37 bypass: a rejected direct-upload blob comes back as a persisted Blob on the next attach
+  # a rejected direct-upload blob comes back as a persisted Blob on the next attach
   it "never stores a rejected direct-upload blob when a second attach follows" do
     expect(proposal.project_files.attach(evil.signed_id)).to be_falsey
     proposal.project_files.attach(fine.signed_id)

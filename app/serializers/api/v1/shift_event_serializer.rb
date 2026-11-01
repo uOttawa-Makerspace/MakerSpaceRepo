@@ -14,7 +14,7 @@ module Api
     # in the legacy; no email or other user column is sent.
     module ShiftEventSerializer
       DEFAULT_COLOR = "#3788d8"
-      # A recurrence rule is admin-entered and unvalidated (FREQ=MINUTELY gives
+      # A recurrence rule is admin-entered (FREQ=MINUTELY gives
       # 144k occurrences in 100 days), so the work is bounded: occurrences are
       # enumerated lazily and enumeration stops at these caps.
       MAX_OCCURRENCES_PER_EVENT = 500

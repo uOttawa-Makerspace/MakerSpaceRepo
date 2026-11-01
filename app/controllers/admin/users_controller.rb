@@ -4,7 +4,7 @@ class Admin::UsersController < AdminAreaController
   before_action :load_user, only: %i[show edit update]
   before_action :require_admin, only: %i[delete_user restore_user toggle_lock_user set_role manage_roles]
   # delete_user re-checks the admin's own password: counted in the same budget as change_password and
-  # change_email (ReauthThrottle), so it is not a password-guessing oracle for a hijacked admin session.
+  # change_email (ReauthThrottle), so re-entered passwords share one attempt limit.
   include ReauthThrottle
   before_action :limit_reauth_attempts, only: :delete_user, if: :current_password_submitted?
 

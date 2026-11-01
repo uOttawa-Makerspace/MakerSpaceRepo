@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# INF-04: the 72-hour idle window is part of "is this cookie session valid?"
+# the 72-hour idle window is part of "is this cookie session valid?"
 # (SessionAuthenticator.valid_for?), so it is enforced wherever the session user
 # is resolved (ApplicationHelper#session_user, the cable connection, direct
 # uploads). No controller can skip it. session_user also extends the window of a
@@ -35,7 +35,7 @@ RSpec.describe "Cookie session idle expiry", type: :request do
     end
   end
 
-  it "an idle-expired session is not revived by /help (a page that used to skip the expiry check)" do
+  it "an idle-expired session is not revived by /help" do
     log_in!
     travel 73.hours do
       get help_path

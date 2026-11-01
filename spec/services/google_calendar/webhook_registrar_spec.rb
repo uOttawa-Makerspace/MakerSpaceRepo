@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Chunk 18 (carried over from chunk 11): GoogleCalendar::WebhookRegistrar and
-# RenewGoogleCalendarWebhooksJob (D-B42). Google is stubbed at the HTTP boundary
+# RenewGoogleCalendarWebhooksJob. Google is stubbed at the HTTP boundary
 # (events.watch); the service-account authorizer is replaced by a request signer.
 RSpec.describe GoogleCalendar::WebhookRegistrar do
   include Chunk18GoogleHelpers
@@ -41,21 +41,21 @@ RSpec.describe GoogleCalendar::WebhookRegistrar do
     end
 
     it "registers the production URL only when Rails.env is production, staging for every other env" do
-      # WART(D-B42): the webhook address is hard-coded to makerepo.com / staging.makerepo.com by Rails.env, so dev/test/review environments register with the STAGING host (stealing its pushes) and there is no configurable base URL
+      # the webhook address depends on Rails.env (makerepo.com in production, staging.makerepo.com otherwise); there is no configurable base URL
       expect(described_class.webhook_url).to eq("https://staging.makerepo.com/google/calendar/webhook")
       allow(Rails.env).to receive(:production?).and_return(true)
       expect(described_class.webhook_url).to eq("https://makerepo.com/google/calendar/webhook")
     end
 
-    it "sends no verification token, so the receiving webhook has nothing to check besides the ids" do
-      # WART(D-B42): the channel is created without a `token`, and GoogleCalendarController#webhook only checks channel_id/resource_id headers (see D-B41)
+    it "sends no verification token (the receiving webhook checks the channel and resource ids)" do
+      # the channel is created without a `token`; GoogleCalendarController#webhook checks the channel_id and resource_id headers
       stub_watch
       described_class.register!
       expect(a_request(:post, WATCH_URL).with { |req| JSON.parse(req.body).key?("token") }).not_to have_been_made
     end
 
     it "adds a row on every call and never prunes older channels (the weekly cron calls register!, nothing schedules the renew job)" do
-      # WART(D-B42): config/schedule.rb runs register! every Sunday and RenewGoogleCalendarWebhooksJob is not referenced by the schedule, so expired/duplicate channel rows accumulate and every one stays "valid" for the webhook (D-B41)
+      # config/schedule.rb runs register! every Sunday and RenewGoogleCalendarWebhooksJob is not referenced by the schedule, so expired/duplicate channel rows accumulate and every one stays "valid" for the webhook
       stub_watch(id: "week-1")
       described_class.register!
       stub_watch(id: "week-2")
@@ -97,7 +97,7 @@ RSpec.describe GoogleCalendar::WebhookRegistrar do
     end
 
     it "loses the sync token on renewal, so the next sync is a full listing" do
-      # WART(D-B42): the new channel starts with sync_token nil and the old row (which held the token) is destroyed, so every renewal forces the next GoogleCalendarSyncJob to re-list and re-process the whole calendar
+      # the new channel starts with sync_token nil and the old row (which held the token) is destroyed, so every renewal forces the next GoogleCalendarSyncJob to re-list and re-process the whole calendar
       channel("soon", 1.day.from_now, sync_token: "TOKEN")
       stub_watch(id: "renewed")
       described_class.perform_now
@@ -105,7 +105,7 @@ RSpec.describe GoogleCalendar::WebhookRegistrar do
     end
 
     it "never tells Google to stop the old channel (no channels.stop call)" do
-      # WART(D-B42): the old channel is only deleted locally; Google keeps pushing to it until its own expiry, and those pushes hit the webhook as unknown channels (401)
+      # the old channel is only deleted locally; Google keeps pushing to it until its own expiry, and those pushes hit the webhook as unknown channels (401)
       channel("soon", 1.day.from_now)
       stub_watch(id: "renewed")
       described_class.perform_now

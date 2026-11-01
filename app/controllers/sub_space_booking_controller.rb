@@ -71,7 +71,7 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    # A missing supervisor still 404s further down (D-B15, other slice)
+    # A missing supervisor still 404s further down
     supervisor = User.find_by(id: params[:supervisor]) if params[:identity] == "Staff"
     if supervisor && !supervisor.staff?
       flash[:alert] = "Please choose a staff member as your supervisor."
@@ -218,13 +218,13 @@ class SubSpaceBookingController < SessionsController
   def create
     attrs = sub_space_booking_params # a body without sub_space_booking is a 400
     recurring = params[:sub_space_booking][:recurring] == true
-    # D-B18: one clock read for the whole request. Every occurrence is judged
+    # one clock read for the whole request. Every occurrence is judged
     # past or not once, against this instant, and its save validates against
     # the same instant, so the two can never disagree.
     now = Time.current
 
     # Permission first: a non-admin asking to block gets the forbidden answer,
-    # whatever else is wrong with the request (D-B18 follow-up).
+    # whatever else is wrong with the request.
     if ActiveModel::Type::Boolean.new.cast(attrs[:blocking]) &&
          !current_user.admin?
       message = "You do not have permission to block a space."
@@ -305,7 +305,7 @@ class SubSpaceBookingController < SessionsController
 
     # Check the overlap and the limits against the values the model will store
     # (zoned, the user's own offsets included), not against a re-parsed copy of
-    # the raw params (D-B06). A blank start/end is not sent on (the stored
+    # the raw params. A blank start/end is not sent on (the stored
     # times stay); an unparseable one leaves the time nil, and the model's
     # presence check answers it.
     @sub_space_booking.assign_attributes(sub_space_booking_update_params)
@@ -397,7 +397,7 @@ class SubSpaceBookingController < SessionsController
     
     # 2. Stamp the approval with update_columns, so a row that no longer passes
     # some validation can still be approved. It writes only the approval
-    # columns, never the times, so the past-date rule (D-B18: it checks only
+    # columns, never the times, so the past-date rule (it checks only
     # saves that set or move the times) allows approving a past pending booking.
     sub_space_booking.update_columns(
       approved_at: DateTime.now,
@@ -525,7 +525,7 @@ class SubSpaceBookingController < SessionsController
   private
 
   # A booking for one occurrence, owned by the current user, whose past-date
-  # check uses the request's single clock read (D-B18).
+  # check uses the request's single clock read.
   def new_occurrence(attrs, now)
     booking = SubSpaceBooking.new(attrs)
     booking.user_id = current_user.id
@@ -534,7 +534,7 @@ class SubSpaceBookingController < SessionsController
   end
 
   # A series may span at most 365 days from its first start to recurring_end
-  # (D-B29 cap; nothing in the UI or the code limited it before). With weekly
+  # (a cap on the series length). With weekly
   # as the densest frequency that is at most 54 occurrences.
   SERIES_MAX_DAYS = 365
 
@@ -550,9 +550,9 @@ class SubSpaceBookingController < SessionsController
   # Every start derives from the first occurrence's zoned start and advances in
   # Time.zone, so it keeps the first one's Toronto wall clock, across DST too.
   # Each start advances the previous one (so a monthly series drifts after a
-  # clamped day, D-B08, kept), and the loop runs while the previous start is
+  # clamped day, kept), and the loop runs while the previous start is
   # before recurring_end, so a series ending mid-period overshoots it by one
-  # occurrence (D-B29). Each end is its start plus the first occurrence's
+  # occurrence. Each end is its start plus the first occurrence's
   # duration, so a clamped month can never put an end before its start.
   def series_occurrences(first, end_date)
     recurrence =
@@ -572,7 +572,7 @@ class SubSpaceBookingController < SessionsController
 
   # Books every occurrence that does not start in the past, all in one
   # RecurringBooking group, and renders once at the end. A failed occurrence
-  # does not stop the rest (D-B30). The mail goes out for the first occurrence
+  # does not stop the rest. The mail goes out for the first occurrence
   # actually booked.
   def book_series(attrs, occurrences, now)
     recurring_booking = RecurringBooking.new
@@ -611,8 +611,8 @@ class SubSpaceBookingController < SessionsController
 
     sub_space = booking.sub_space
 
-    # D-B06: the zoned instants the model stores, compared with the stored UTC
-    # instants of the blocks (D-B54 half-open overlap).
+    # the zoned instants the model stores, compared with the stored UTC
+    # instants of the blocks (half-open overlap).
     if !booking.blocking &&
         SubSpaceBooking
           .where(sub_space_id: sub_space.id)
@@ -716,7 +716,7 @@ class SubSpaceBookingController < SessionsController
     end
   end
 
-  # D-B30 keeps a partial series, so the answer says what happened: 422 (not
+  # A partial series is kept, so the answer says what happened: 422 (not
   # every occurrence was booked) with the first failure's errors, as before,
   # plus how many were booked and the dates that were not. No success notice.
   def render_series_failure(failures, booked)

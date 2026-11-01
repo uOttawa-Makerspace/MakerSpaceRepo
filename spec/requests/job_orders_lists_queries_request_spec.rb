@@ -43,11 +43,11 @@ RSpec.describe "Job order lists: status queries", type: :request do
     expect(many.size).to eq(few.size)
   end
 
-  it "reads the statuses of the owner's orders in a constant number of queries on index", skip_bullet: true do # other N+1s on these lists are pinned (D-PERF01)
+  it "reads the statuses of the owner's orders in a constant number of queries on index", skip_bullet: true do # other N+1s on these lists are pinned
     expect_flat(job_orders_path, owner)
   end
 
-  it "reads the statuses of all orders in a constant number of queries on admin", skip_bullet: true do # other N+1s on these lists are pinned (D-PERF01)
+  it "reads the statuses of all orders in a constant number of queries on admin", skip_bullet: true do # other N+1s on these lists are pinned
     expect_flat(admin_job_orders_path, admin)
   end
 

@@ -53,7 +53,7 @@ RSpec.describe JobOrderMailer, type: :mailer do
     end
   end
 
-  # JOB-01: the staff notification for an order sent back for a new quote
+  # the staff notification for an order sent back for a new quote
   describe ".send_job_requote_needed" do
     it "tells the makerspace mailbox which order needs a new quote and why" do
       described_class.send_job_requote_needed(order.id, "owner_change").deliver_now
@@ -203,7 +203,7 @@ RSpec.describe JobOrderMailer, type: :mailer do
       expect(delivered.last.bcc).to eq(["uottawa.makerepo@gmail.com"])
     end
 
-    # WART(D-J31): the "View Order" button of the pickup mail links to the pay page,
+    # the "View Order" button of the pickup mail links to the pay page,
     # which renders a 500 for orders that are already PAID.
     it "payment_succeeded links the order's pay page (a link that 500s once the order is PAID)" do
       described_class.payment_succeeded(order.id).deliver_now

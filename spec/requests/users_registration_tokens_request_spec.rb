@@ -67,7 +67,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "json: success is answered with status 422 (!) and a plain string" do
-      # WART(D-I07): JSON registration success responds 422 unprocessable_content
+      # JSON registration success responds 422 unprocessable_content
       post users_path, params: { user: registration_params }, as: :json
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to eq(
@@ -139,7 +139,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "works for a signed-in user too (no guest check on create)" do
-      # WART(D-I08): UsersController#create has no signed-in guard, unlike #new which redirects
+      # UsersController#create has no signed-in guard, unlike #new which redirects
       login!(user)
       expect { post users_path, params: { user: registration_params } }.to change(User, :count).by(1)
       expect(response).to redirect_to(root_path)
@@ -175,8 +175,8 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries.first.subject).to eq("Makerepo | Please confirm your email")
     end
 
-    it "tells the caller whether an email is registered (account enumeration)" do
-      # WART(D-I09): resend_confirmation reveals whether an email has an account, unlike reset_password which is uniform
+    it "tells the caller whether an email is registered" do
+      # resend_confirmation answers differently for a registered email; reset_password answers uniformly
       get resend_confirmation_users_path, params: { user: { email: "nobody@example.com" } }
       expect(flash[:alert]).to eq("No users with that email were found. Please select a valid email.")
       expect(deliveries).to be_empty
@@ -196,7 +196,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "without the user param 500s (nil[:email])" do
-      # WART(D-I28): resend_confirmation reads params[:user][:email] unguarded, so a missing user param is a 500 instead of the ParameterMissing redirect
+      # resend_confirmation reads params[:user][:email] unguarded, so a missing user param is a 500 instead of the ParameterMissing redirect
       get resend_confirmation_users_path
       expect(response).to have_http_status(:internal_server_error)
     end
@@ -219,7 +219,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "the token expires after 3 days" do
-      # FIXED(D-I11): confirmation tokens are purpose-scoped and expire (3 days)
+      # confirmation tokens are purpose-scoped and expire (3 days)
       token = confirm_token
       travel 73.hours do
         get confirm_users_path, params: { token: token }
@@ -237,7 +237,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "cannot be replayed: the second use is refused and sends no second welcome email" do
-      # FIXED(D-I11): the token is bound to the confirmed flag
+      # the token is bound to the confirmed flag
       token = confirm_token
       2.times { get confirm_users_path, params: { token: token } }
       expect(deliveries.map(&:subject)).to eq(["Welcome to MakerRepo"])
@@ -340,7 +340,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "a garbage, missing or legacy-format link redirects to the forgot-password page with the expired message" do
-      # FIXED(D-I11): the form validates the token on GET; previously mailed links (user_token + expiry_date_token) are dead
+      # the form validates the token on GET; previously mailed links (user_token + expiry_date_token) are dead
       [{ token: "garbage" }, {}, { user_token: verifier.generate(user.id), expiry_date_token: verifier.generate(1.day.from_now) }].each do |params|
         get reset_password_form_users_path, params: params
         expect(response).to redirect_to(forgot_password_path)
@@ -382,7 +382,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "a link older than 2 hours is expired: alert, password unchanged" do
-      # FIXED(D-I11): reset tokens expire after 2 hours (was a separate 24h timestamp)
+      # reset tokens expire after 2 hours (was a separate 24h timestamp)
       params = reset_params(user)
       travel 121.minutes do
         patch reset_password_confirmation_users_path, params: params
@@ -407,7 +407,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "the same link cannot be reused after a successful reset" do
-      # FIXED(D-I10): the token is bound to the password digest, so it dies once the password changes
+      # the token is bound to the password digest, so it dies once the password changes
       p = reset_params(user)
       patch reset_password_confirmation_users_path, params: p
       expect(flash[:notice]).to start_with("Your password has been updated")
@@ -425,7 +425,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "an old confirmation-email token (same :user verifier, no purpose) cannot reset a password" do
-      # FIXED(D-I11): reset tokens are purpose-scoped and bound to the user; a confirmation token plus any timestamp no longer works
+      # reset tokens are purpose-scoped and bound to the user; a confirmation token plus any timestamp no longer works
       patch reset_password_confirmation_users_path,
             params: { token: verifier.generate(user.id), user_token: verifier.generate(user.id),
                       expiry_date_token: verifier.generate(1.day.from_now),
@@ -441,7 +441,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(other.reload.authenticate_password(password)).to be(false)
     end
 
-    it "a reset revokes JWTs issued before it (D-I01)" do
+    it "a reset revokes JWTs issued before it" do
       tok = user.token
       patch reset_password_confirmation_users_path, params: reset_params(user)
       get check_signed_in_path, headers: { "Authorization" => "Bearer #{tok}" }
@@ -460,7 +460,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "works for a legacy user whose row fails an unrelated validation" do
-      # FIXED: only the password columns are written
+      # only the password columns are written
       user.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
       expect(user.reload).not_to be_valid
       patch reset_password_confirmation_users_path, params: reset_params(user)
@@ -520,7 +520,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "a reset does not lift an admin lock: the new password is saved and the login is still refused" do
-      # FIXED: only the timed brute-force lockout is cleared by a reset
+      # only the timed brute-force lockout is cleared by a reset
       user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)
       patch reset_password_confirmation_users_path, params: reset_params(user)
       expect(flash[:notice]).to start_with("Your password has been updated")
@@ -547,7 +547,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "refuses a weak new password and leaves the link usable" do
-      # FIXED(D-I14, reset action): the strength rules run on the plain password
+      # the strength rules run on the plain password
       p = reset_params(user, pw: "abc")
       patch reset_password_confirmation_users_path, params: p
       expect(response).to redirect_to(reset_password_form_users_path(token: p[:token]))
@@ -558,7 +558,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "succeeds even when the bcrypt hash happens to contain the username (strength rules are not re-run on the hash)" do
-      # FIXED: the hashing save re-ran the nobspw validator on the hash and raised (save!) for such a hash
+      # the hashing save re-ran the nobspw validator on the hash and raised (save!) for such a hash
       u = create(:user, :regular_user, username: "hunterxsmith")
       forced = "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19)
       allow(BCrypt::Password).to receive(:create).and_return(BCrypt::Password.new(forced))
@@ -577,10 +577,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
   end
 
-  # INF-02: both halves of the email change used to be GETs (no password,
-  # applied on a link click), so a cross-site navigation could mail a token for
-  # the victim's account to an attacker's address and then apply it. Now:
-  # POST /change_email needs the current password; the emailed link only shows a
+  # The email change: POST /change_email needs the current password; the emailed link only shows a
   # confirmation page (GET) that does nothing until the signed-in owner of the
   # token submits it (POST); the token dies once the address changes.
   describe "email change (POST /change_email, GET+POST /confirm_edited_email)" do
@@ -807,7 +804,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "is single-use: the link is refused once the account is unlocked" do
-      # FIXED(D-I11): was silent on an already-unlocked account; the token is bound to the lock
+      # was silent on an already-unlocked account; the token is bound to the lock
       token = unlock_token
       get unlock_account_users_path, params: { token: token }
       get unlock_account_users_path, params: { token: token }
@@ -815,7 +812,6 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "expires after 1 hour" do
-      # FIXED(D-I11)
       token = unlock_token
       travel 61.minutes do
         get unlock_account_users_path, params: { token: token }

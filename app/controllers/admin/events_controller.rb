@@ -263,7 +263,7 @@ class Admin::EventsController < AdminAreaController
       redirect_back(fallback_location: admin_calendar_index_path, alert: "Invalid delete scope: #{scope}")
     end
   rescue ActiveRecord::RecordInvalid => e
-    # A series stored before D-SP28 with a sub-daily rule no longer validates.
+    # A series stored with a sub-daily rule no longer validates.
     redirect_back(fallback_location: admin_calendar_index_path, alert: "Failed to update event: #{e.record.errors.full_messages.to_sentence}")
   end
 

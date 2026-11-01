@@ -271,7 +271,7 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
         expect(JSON.parse(response.body).length).to eq(3)
 
         booking_ids = SubSpaceBooking.pluck(:id)
-        # FIXED(D-B01): a regular user cannot bulk approve; staff can
+        # a regular user cannot bulk approve; staff can
         statuses_before =
           SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.sub_space_booking_status.booking_status_id }
         %w[approve decline].each do |bulk_status|

@@ -4,8 +4,7 @@ require "rails_helper"
 
 # Chunk 11 gap-closer for SubSpaceBookingController: the guest / regular /
 # staff / admin role matrix for every action the first characterization pass
-# left unpinned, the severity-1 security pins (D-B01, D-B02, D-B26) and the
-# CSRF probe.
+# left untested, and the CSRF probe.
 #
 # The controller's gates (sub_space_booking_controller.rb:3-17):
 #   user_account          every action (guests are redirected to the login page)
@@ -14,7 +13,7 @@ require "rails_helper"
 #   user_admin            publish
 #   user_booking_belongs  delete, edit, update   (owner OR admin; staff is NOT enough)
 #   inline owner/admin    delete_remaining_recurring
-#   NO gate at all        bulk_approve_decline
+#   user_admin_or_staff   bulk_approve_decline
 # `current_user` never returns nil (it falls back to User.new), so a guest
 # always reaches the role gates, never `user_account`.
 
@@ -71,7 +70,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   let(:staff_only_alert) { "You must be an admin or staff to view this page." }
   let(:owner_alert) { "You must be the owner of this booking or an admin to delete it." }
 
-  # Guests are redirected to the login page by the user_account gate (D-B01);
+  # Guests are redirected to the login page by the user_account gate;
   # signed-in users without the role are bounced to root with the gate's alert.
   def expect_bounced(role, alert)
     if role == :guest
@@ -170,7 +169,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
         end
 
         it "decline flips the booking to Declined and leaves approved_at / approved_by untouched" do
-          # WART(D-B32): decline neither clears an earlier approval nor mails the booker
+          # decline neither clears an earlier approval nor mails the booker
           booking = pending_booking(approved_at: Time.utc(2027, 1, 1, 9), approved_by_id: owner.id)
           sign_in_as(role)
           perform_enqueued_jobs do
@@ -327,7 +326,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
       expect(booking.reload.name).to eq("Changed")
     end
 
-    it "lets an admin edit and update an APPROVED booking (owners cannot, see D-B11)" do
+    it "lets an admin edit and update an APPROVED booking (owners cannot)" do
       approved = pending_booking
       approved.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
       sign_in_as(:admin)
@@ -364,7 +363,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   describe "bookings without an owner" do
-    # FIXED(D-B52 guest case, closed as a side effect of D-B01): the user_account
+    # the user_account
     # gate now redirects guests to login before `nil == nil` in the owner gate
     # can pass them.
     it "bounces a guest on update and delete of a booking whose user_id is NULL" do
@@ -427,10 +426,10 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
     end
   end
 
-  # ------------------------------------------------- severity-1 security pins
+  # ------------------------------------------------- bulk_approve_decline
 
   describe "bulk_approve_decline gate" do
-    # FIXED(D-B01): bulk_approve_decline is behind user_admin_or_staff and the
+    # bulk_approve_decline is behind user_admin_or_staff and the
     # user_account gate now really redirects guests to login.
     it "bounces a guest to login and changes nothing (no status change, no mail)" do
       b1 = pending_booking
@@ -501,8 +500,8 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   describe "users JSON" do
-    # FIXED(D-B02): `render json: User.all` goes through User#serializable_hash,
-    # so staff/admin get every column except password and access_token (D-I02).
+    # `render json: User.all` goes through User#serializable_hash,
+    # so staff/admin get every column except password and access_token.
     it "exposes every user column except the password hash and access_token to staff" do
       subject_user = create(:user, :regular_user, access_token: "ghp_secret_token_value")
       sign_in_as(:staff)
@@ -529,9 +528,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   describe "CSRF" do
-    # FIXED(D-B26/D-J27, INF-01): the app-wide declaration used `only: proc`,
-    # which never matched an action, so no request was ever CSRF-checked.
-    # Forgery protection now runs (and is on in the test env).
+    # Forgery protection runs on every non-GET request (and is on in the test env).
     it "refuses a token-less cross-site POST on an HTML form action, creating nothing" do
       user = create(:user, :regular_user, booking_approval: true)
       log_in!(user)
@@ -541,7 +538,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
              params: { sub_space_booking: { sub_space_id: subspace.id,
                                             start_time: "2027-03-03 10:00",
                                             end_time: "2027-03-03 11:00",
-                                            name: "ForgedByAttacker",
+                                            name: "NoTokenBooking",
                                             description: "no csrf token sent" } },
              headers: { "Origin" => "https://evil.example",
                         "Referer" => "https://evil.example/forged-form.html" },

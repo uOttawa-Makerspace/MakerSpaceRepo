@@ -127,7 +127,7 @@ RSpec.describe User::UoengConcern, type: :model do
     end
 
     it "a transient API failure revokes an existing faculty membership" do
-      # WART(D-I31): API timeouts/bad JSON are treated as 'not engineering', so a flaky upstream revokes a paying engineer's faculty membership
+      # API timeouts/bad JSON are treated as 'not engineering', so a flaky upstream revokes a paying engineer's faculty membership
       m = create(:membership, user: eng, membership_tier: tier, status: "paid", end_date: 1.month.from_now)
       allow(Excon).to receive(:get).and_raise(Excon::Error::Timeout)
       eng.validate_uoeng_membership

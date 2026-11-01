@@ -6,7 +6,7 @@
 # verified, so parallel guesses cannot all slip under the limit; a correct one clears the
 # count. A blank one is a validation error, not a guess, and is not counted. Going over ends
 # every credential of the user (cookie session, JWT, refresh tokens: token_version bump)
-# without running bcrypt: a hijacked session is killed, the account is not, and signing in
+# without running bcrypt: the session is ended, the account is not locked, and signing in
 # again starts a fresh budget (a new token_version is a new key). It never touches the login
 # lockout (auth_attempts/locked).
 #

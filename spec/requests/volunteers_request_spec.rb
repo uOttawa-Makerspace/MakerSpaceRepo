@@ -117,7 +117,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       expect(response.body).not_to include(r.email)
     end
 
-    # FIXED(D-V24): emails is staff/admin only (grant_access_list), so self-enrolment no longer exposes it
+    # emails is staff/admin only (grant_access_list), so self-enrolment does not expose it
     it "stays closed to a regular user who self-enrols through join_volunteer_program, and to volunteers" do
       create(:user, :volunteer_with_volunteer_program)
       user = create(:user, :regular_user)
@@ -143,9 +143,9 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       expect(body["users"].map { |u| u["id"] }).to eq([match.id])
     end
 
-    # FIXED(D-V25, password part): User#serializable_hash excludes password/access_token (D-I02).
-    # Email/student_id exposure to any volunteer remains pinned until the volunteers authz slice.
-    it "exposes the user record without the password hash to a plain volunteer" do
+    # User#serializable_hash excludes password/access_token.
+    # The matching users are listed with email and student_id.
+    it "lists the user record without the password hash for a plain volunteer" do
       target = create(:user, :volunteer_with_volunteer_program, name: "Target Person")
       vol_login!(create(:user, :volunteer_with_volunteer_program))
       get populate_users_volunteers_path(search: "target")
@@ -193,7 +193,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       end
     end
 
-    # INTENDED(D-V26): enrolment stays open and instant by design (an external form covers approval). FIXED(D-V26 GET half): the verb is POST only
+    # enrolment stays open and instant by design (an external form covers approval). the verb is POST only
     it "gives instant access to the volunteer area" do
       vol_login!(create(:user, :regular_user))
       post join_volunteer_program_volunteers_path
@@ -353,7 +353,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
         expect(response).to have_http_status(:not_found)
       end
 
-      # FIXED(D-V27): POST only (the GET route is gone), and the target must be a volunteer-program member
+      # POST only (the GET route is gone), and the target must be a volunteer-program member
       it "refuses to book a shift for a non-volunteer user" do
         expect(ShadowingHour).not_to receive(:create_event)
         regular = create(:user, :regular_user)
@@ -369,7 +369,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
           .not_to change(ShadowingHour, :count)
       end
 
-      it "is no longer routable by GET" do
+      it "is not routable by GET" do
         expect(ShadowingHour).not_to receive(:create_event)
         expect { get "/volunteers/create_event", params: params }.not_to change(ShadowingHour, :count)
         expect(response).to have_http_status(:not_found)
@@ -382,7 +382,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
         expect(response).to redirect_to(root_path)
       end
 
-      # WART(D-V28): the calendar event is created BEFORE the space row is looked up; a missing Space row 500s and leaves an orphan Google event
+      # the calendar event is created BEFORE the space row is looked up; a missing Space row 500s and leaves an orphan Google event
       it "500s after calling Google when no Space matches the name" do
         Space.where("LOWER(name) = 'makerspace'").destroy_all
         expect(ShadowingHour).to receive(:create_event).and_return(event)

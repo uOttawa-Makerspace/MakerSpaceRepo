@@ -5,7 +5,7 @@ require "rails_helper"
 # Chunk 16: CommentsController (repository comments + up/down votes).
 #
 # Gates: `signed_in` on every action; create/vote also run the private-repository
-# password gate (no self-vote guard); destroy is author-or-admin only.
+# password gate; destroy is author-or-admin only.
 RSpec.describe "Comments (HTTP contract)", type: :request do
   include ContentSpecHelpers
 
@@ -65,13 +65,13 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(response.body).not_to include("<script>alert(1)</script>")
     end
 
-    context "on a private repository (D-C17)" do
+    context "on a private repository" do
       let!(:secret) { create(:repository, :private, owner: owner, title: "Hush", users: [owner]) }
 
       it "refuses a signed-in user who has not entered the password" do
         content_login!(author)
         expect { post_comment("peek", repository: secret) }.not_to change(Comment, :count)
-        # FIXED(D-C17): create runs the shared private-repository gate
+        # create runs the shared private-repository gate
         expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
       end
 
@@ -140,9 +140,9 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect { delete comments_destroy_path(comment.id) }.to change(Comment, :count).by(-1)
     end
 
-    it "500s for an unknown comment (the redirect dereferences nil) (D-C18)" do
+    it "500s for an unknown comment (the redirect dereferences nil)" do
       content_login!(author)
-      # WART(D-C18): destroy of a missing comment flashes then calls comment.repository on nil
+      # destroy of a missing comment flashes then calls comment.repository on nil
       delete comments_destroy_path(0)
       expect(response).to have_http_status(:internal_server_error)
     end
@@ -207,25 +207,24 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(Upvote.last.downvote).to be(false)
     end
 
-    it "lets the author vote on their own comment and farm reputation (D-C19)" do
+    it "lets the author vote on their own comment" do
       content_login!(author)
       vote(comment)
-      # WART(D-C19): no self-vote guard
       expect(comment.reload.upvote).to eq(1)
       expect(author.reload.reputation).to eq(2)
     end
 
-    it "404s for a comment_id from a different repository than the :id segment (D-C20)" do
+    it "404s for a comment_id from a different repository than the :id segment" do
       other = create(:repository, owner: owner, title: "Other", users: [owner])
       content_login!(voter)
-      # FIXED(D-C20): the comment is looked up through the repository in the URL
+      # the comment is looked up through the repository in the URL
       expect { post comments_vote_path(other.id), params: { comment_id: comment.id } }
         .not_to change(Upvote, :count)
       expect(response).to have_http_status(:not_found)
       expect(comment.reload.upvote).to eq(0)
     end
 
-    it "refuses to vote on a private repository's comment without the password (D-C20)" do
+    it "refuses to vote on a private repository's comment without the password" do
       secret = create(:repository, :private, owner: owner, title: "Hush", users: [owner])
       secret_comment = create(:comment, repository: secret, user: author, username: author.username)
       content_login!(voter)
@@ -245,7 +244,7 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
   end
 
   describe "comments on the repository page" do
-    # N+1 pinned: see defects D-PERF-C02
+    # N+1 pinned
     it "orders by score by default and by recency with comment_filter=newest; 5 per page", skip_bullet: true do
       low = create(:comment, repository: repo, user: author, content: "LOWCOMMENT", upvote: 0, created_at: 1.day.ago)
       high = create(:comment, repository: repo, user: author, content: "HIGHCOMMENT", upvote: 9, created_at: 2.days.ago)

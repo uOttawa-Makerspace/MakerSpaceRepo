@@ -241,7 +241,7 @@ Rails.application.routes.draw do
   # SESSION
   namespace :sessions, path: "/", as: nil do
     post "login_authentication"
-    # INTENDED: GET /logout is kept for MakerRepoApp until it ships POST logout
+    # GET /logout is kept for MakerRepoApp until it ships POST logout
     # (frontend-api-inventory.md row 3). The site's own UI uses DELETE.
     get "logout"
     match "logout", via: %i[post delete], as: :perform_logout
@@ -696,7 +696,7 @@ Rails.application.routes.draw do
   resources :users, path: "/", param: :username, except: %i[edit destroy] do
     collection do
       get :resend_confirmation
-      # INF-02: the emailed link (GET) only shows a confirmation page; the
+      # the emailed link (GET) only shows a confirmation page; the
       # change is applied by its POST, and requesting one needs a POST with
       # the current password.
       get :confirm_edited_email
@@ -719,7 +719,7 @@ Rails.application.routes.draw do
     patch "change_password", on: :member
   end
 
-  # Must come before the /:user_username catch-all below (D-C15)
+  # Must come before the /:user_username catch-all below
   get "/repositories/populate_users", to: "repositories#populate_users"
 
   # REPOSITORY RESOURCES

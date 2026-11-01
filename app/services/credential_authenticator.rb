@@ -5,7 +5,7 @@
 # refused BEFORE the password is looked at (so a locked account cannot be probed
 # or have its lock rewritten by failed attempts; a lapsed timed lockout is
 # cleared), then the password is checked with the failed-attempt bookkeeping
-# (User.authenticate), then a deactivated account (D-I03) and an unconfirmed one
+# (User.authenticate), then a deactivated account and an unconfirmed one
 # are refused. No session or token work happens here; callers do their own.
 #
 # Result#user is the authenticated User or nil; Result#refusal is nil (bad

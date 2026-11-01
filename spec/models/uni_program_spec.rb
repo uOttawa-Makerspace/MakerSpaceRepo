@@ -31,7 +31,7 @@ RSpec.describe UniProgram, type: :model do
     end
 
     it "raises NoMethodError when no faculty-less row exists" do
-      # WART: find_by returns nil and `.program` is called on it unguarded.
+      # find_by returns nil and `.program` is called on it unguarded.
       create(:uni_program, faculty: "Engineering", program: "CS")
 
       expect { UniProgram.no_program }.to raise_error(NoMethodError)
@@ -73,7 +73,7 @@ RSpec.describe UniProgram, type: :model do
     end
 
     it "collapses a program listed twice (e.g. Bachelor's and PhD) within a faculty" do
-      # WART: the table holds one row per level, so the same program repeats;
+      # the table holds one row per level, so the same program repeats;
       # the model dedupes with uniq here but not in the default scope itself.
       create(:uni_program, faculty: "Science", program: "Physics", level: "Bachelor's")
       create(:uni_program, faculty: "Science", program: "Physics", level: "PhD")

@@ -145,9 +145,9 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
       end
 
-      it "the uniqueness check is on the raw title but the stored title is capitalized: 'cool widget' duplicates are not caught (D-C25)" do
+      it "the uniqueness check is on the raw title but the stored title is capitalized: 'cool widget' duplicates are not caught" do
         post proficient_projects_path, params: project_params(title: "cool widget")
-        # WART(D-C25): uniqueness runs before capitalize_title; "Cool widget" and "cool widget" both validate then collide in value
+        # uniqueness runs before capitalize_title; "Cool widget" and "cool widget" both validate then collide in value
         expect(ProficientProject.where(title: "Cool widget").count).to eq(2)
       end
 
@@ -191,7 +191,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(pp.id).not_to eq(999_999)
       end
 
-      it "ignores the retired :proficient key (the column is gone and the key is no longer permitted) (D-C32)" do
+      it "ignores the retired :proficient key (the column is gone and the key is no longer permitted)" do
         expect { post proficient_projects_path, params: project_params(proficient: true) }
           .to change(ProficientProject, :count).by(1)
       end
@@ -223,20 +223,20 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(Photo.exists?(photo.id)).to be(false)
       end
 
-      it "ignores files / deletefiles / deletevideos: update_files and update_videos are never called (D-C26)" do
+      it "ignores files / deletefiles / deletevideos: update_files and update_videos are never called" do
         rf = create(:repo_file, proficient_project: project)
         patch proficient_project_path(project),
               params: project_params.merge(files: [content_pdf_upload], deletefiles: [rf.file.filename.to_s])
-        # WART(D-C26): update only calls update_photos; file add/delete helpers are dead code
+        # update only calls update_photos; file add/delete helpers are dead code
         expect(project.reload.repo_files.map(&:id)).to eq([rf.id])
       end
 
-      it "does not replace training requirements: destroy on the collection proxy is a no-op, so they accumulate (D-C27)" do
+      it "does not replace training requirements: destroy on the collection proxy is a no-op, so they accumulate" do
         t2 = create(:training)
         create(:training_requirement, :"3d_printing", proficient_project: project)
         patch proficient_project_path(project),
               params: project_params.merge(training_requirements_id: [t2.id], training_requirements_level: ["Advanced"])
-        # WART(D-C27): `training_requirements.destroy` (no args) removes nothing, then new ones are appended
+        # `training_requirements.destroy` (no args) removes nothing, then new ones are appended
         expect(project.reload.training_requirements.count).to eq(2)
       end
     end
@@ -318,12 +318,12 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     end
 
     ["Awarded", "Revoked", "Waiting for approval"].each do |status|
-      it "does not resubmit a #{status} item: status, comments and emails stay as they were (D-C28)" do
+      it "does not resubmit a #{status} item: status, comments and emails stay as they were" do
         oi = order_item_for(buyer, status: status)
         content_login!(buyer)
         ActionMailer::Base.deliveries.clear
         put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "again" } }
-        # FIXED(D-C28): only an In progress item can be submitted
+        # only an In progress item can be submitted
         expect(oi.reload.status).to eq(status)
         expect(oi.user_comments).not_to eq("again")
         expect(flash[:alert]).to eq("This project can only be submitted while it is in progress.")
@@ -332,7 +332,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       end
     end
 
-    it "does not submit an item whose order is not paid (unpaid cart) (D-C28)" do
+    it "does not submit an item whose order is not paid (unpaid cart)" do
       cart = create(:order, user_id: buyer.id)
       expect(cart.order_status.name).not_to eq("Completed")
       oi = create(:order_item, order: cart, proficient_project: project, status: "In progress")
@@ -344,7 +344,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "submits the paid item, not an unpaid cart item for the same project (D-C28)" do
+    it "submits the paid item, not an unpaid cart item for the same project" do
       cart_item = create(:order_item, order: create(:order, user_id: buyer.id), proficient_project: project, status: "In progress")
       paid = order_item_for(buyer)
       content_login!(buyer)
@@ -353,7 +353,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(cart_item.reload.status).to eq("In progress")
     end
 
-    it "submits the In progress item when the user also holds an older Awarded one (D-C28)" do
+    it "submits the In progress item when the user also holds an older Awarded one" do
       awarded = order_item_for(buyer, status: "Awarded")
       current = order_item_for(buyer, status: "In progress")
       content_login!(buyer)
@@ -379,7 +379,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
   end
 
   describe "approve_project / revoke_project via GET" do
-    # FIXED(approve/revoke GET): both are POST only; a GET (link, prefetch, image tag) changes nothing
+    # both are POST only; a GET (link, prefetch, image tag) changes nothing
     it "neither approves nor revokes on a plain GET" do
       oi = order_item_for(buyer)
       oi.update!(status: "Waiting for approval")
@@ -429,7 +429,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(flash[:error]).to eq("An error has occurred, please try again later.")
     end
 
-    it "a missing or stale oi_id redirects staff to the queue with the error flash instead of 500ing (D-C29)" do
+    it "a missing or stale oi_id redirects staff to the queue with the error flash instead of 500ing" do
       content_sign_in_as(:staff)
       post approve_project_proficient_projects_path, params: { order_item: { admin_comments: "x" } }
       expect(response).to redirect_to(requests_proficient_projects_path)
@@ -438,11 +438,11 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(flash[:error]).to eq("An error has occurred, please try again later.")
     end
 
-    it "approving the same item twice creates one session and one certification (D-C29)" do
+    it "approving the same item twice creates one session and one certification" do
       content_sign_in_as(:admin)
       ActionMailer::Base.deliveries.clear
       2.times { post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } } }
-      # FIXED(D-C29): approval is guarded on 'Waiting for approval', so a replay is refused
+      # approval is guarded on 'Waiting for approval', so a replay is refused
       expect(ProficientProjectSession.where(proficient_project_id: project.id).count).to eq(1)
       expect(Certification.where(user_id: buyer.id).count).to eq(1)
       expect(flash[:error]).to eq("An error has occurred, please try again later.")
@@ -450,7 +450,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     end
 
     ["In progress", "Awarded", "Revoked"].each do |status|
-      it "does not approve a #{status} item (D-C29)" do
+      it "does not approve a #{status} item" do
         item = order_item_for(buyer, status: status)
         content_sign_in_as(:staff)
         ActionMailer::Base.deliveries.clear
@@ -463,7 +463,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       end
     end
 
-    it "does not award, certify or email when the session fails to save (D-C29)" do
+    it "does not award, certify or email when the session fails to save" do
       content_sign_in_as(:admin)
       ActionMailer::Base.deliveries.clear
       allow(ProficientProjectSession).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(ProficientProjectSession.new))
@@ -476,7 +476,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "gives each approval its own certification, so deleting one project never destroys another's (D-C29)" do
+    it "gives each approval its own certification, so deleting one project never destroys another's" do
       other_project = create(:proficient_project, training: training, level: project.level, title: "Second widget")
       second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
       content_sign_in_as(:admin)
@@ -494,12 +494,12 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
   describe "POST revoke_project" do
     let!(:oi) { order_item_for(buyer, status: "Waiting for approval") }
 
-    it "refuses a regular user and the item's own buyer, changing and emailing nothing (D-C30)" do
+    it "refuses a regular user and the item's own buyer, changing and emailing nothing" do
       [create(:user, :regular_user), buyer].each do |user|
         content_login!(user)
         ActionMailer::Base.deliveries.clear
         post revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "gotcha" } }
-        # FIXED(D-C30): revoke_project is in only_staff_access
+        # revoke_project is in only_staff_access
         expect(response).to redirect_to(development_programs_path)
         expect(flash[:alert]).to eq("Only staff members can access this area.")
         expect(oi.reload.status).to eq("Waiting for approval")
@@ -528,7 +528,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     end
 
     ["In progress", "Awarded", "Revoked"].each do |status|
-      it "does not revoke a #{status} item or re-send the email (D-C30)" do
+      it "does not revoke a #{status} item or re-send the email" do
         item = order_item_for(buyer, status: status)
         content_sign_in_as(:staff)
         ActionMailer::Base.deliveries.clear
@@ -556,10 +556,10 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
   end
 
   describe "modal + badge helpers" do
-    it "proficient_project_modal renders without a layout for any signed-in user, even without an order (D-C31)" do
+    it "proficient_project_modal renders without a layout for any signed-in user, even without an order" do
       content_sign_in_as(:regular)
       get proficient_project_proficient_project_modal_path(project)
-      # INTENDED(D-C31): storefront preview for unbought projects (user decision 2026-10-26)
+      # storefront preview for unbought projects (user decision 2026-10-26)
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("<html")
     end

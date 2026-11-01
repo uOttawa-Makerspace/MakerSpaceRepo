@@ -67,12 +67,12 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       expect(fetch[:body]["variables"]).to eq("id" => draft_id)
     end
 
-    it "when Shopify answers userErrors over HTTP: the pending row is destroyed and the page 500s (WART D-S23)" do
+    it "when Shopify answers userErrors over HTTP: the pending row is destroyed and the page 500s" do
       stub_shopify_graphql("mutation draftOrderCreate", { "draftOrderCreate" => { "draftOrder" => nil,
                            "userErrors" => [{ "field" => ["input"], "message" => "boom" }] } })
       shop_log_in!(user)
       post memberships_path, params: { membership: { membership_tier_id: tier.id } }
-      # WART(D-S23): the failure path renders :index without its ivars, so the intended alert page is a 500
+      # the failure path renders :index without its ivars, so the intended alert page is a 500
       expect(response).to have_http_status(:internal_server_error)
       expect(response.location).to be_nil
       expect(Membership.count).to eq(0)
@@ -214,7 +214,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
   end
 
   describe "in a fresh process (nothing but the boot initializer ran Context.setup)" do
-    # Regression for D-S36-new: ShopifyConcern::DraftOrders.client never calls
+    # ShopifyConcern::DraftOrders.client never calls
     # Context.setup, so the API version comes from config/initializers/shopify_api.rb.
     # Simulated by blanking the Context, then re-running the initializer.
     let(:context_ivars) { %i[@api_key @api_secret_key @api_version @host] }

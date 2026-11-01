@@ -6,7 +6,7 @@ require "rails_helper"
 #
 # Pins the CURRENT observable behavior of the 587-line god controller so a
 # later refactor can prove no change. Everything below reflects the app as it
-# runs today (Rails 8.1, devcontainer); warts are pinned, not fixed.
+# runs today (Rails 8.1, devcontainer); behaviour is pinned as it is.
 #
 # Notes on the environment:
 # * The test database has no reference data, while JobStatus resolves its
@@ -114,7 +114,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).not_to include(I18n.t("job_orders.public_page.admin_page"))
     end
 
-    # N+1 pinned: see defects.md D-PERF01
+    # N+1 pinned
     it "splits draft orders (partly created) from submitted ones", skip_bullet: true do
       draft = order_with_task!(owner: owner, status_key: :draft)
       empty_draft = make_job_order!(owner: owner, status_key: :draft)
@@ -177,7 +177,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(order.chat_messages.first.reload.is_read).to be(false)
     end
 
-    # FIXED(D-J06): show is limited to the owner, staff and admin
+    # show is limited to the owner, staff and admin
     it "refuses another regular user (no_permission redirect, no owner email)" do
       order = order_with_task!(owner: owner)
       http_login!(other)
@@ -219,7 +219,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         .to eq("#{I18n.t('job_orders.alerts.missing_info')} Task #1")
     end
 
-    # WART(D-J13): the Submit-for-Approval button_to resolves
+    # the Submit-for-Approval button_to resolves
     # job_order_job_task_path with @job_order.job_tasks.first == nil →
     # UrlGenerationError → 500.
     it "renders 500 (UrlGenerationError) for a DRAFT order with no tasks" do
@@ -231,7 +231,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).to include("UrlGenerationError")
     end
 
-    # WART(D-J14): @message is dereferenced BEFORE the nil check, so the
+    # @message is dereferenced BEFORE the nil check, so the
     # "job order not found" flash/redirect branch is dead code.
     it "renders 500 (NoMethodError) for a missing or deleted order" do
       order = order_with_task!(owner: owner)
@@ -403,7 +403,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
     end
 
-    # WART(D-J15): format.js renders admin_row but points at _assign_staff,
+    # format.js renders admin_row but points at _assign_staff,
     # which dereferences @staff (nil outside the admin page) → Template::Error
     # → 500.
     it "responds 500 (ActionView::Template::Error, HTML debug page) to format.js on row actions" do
@@ -638,7 +638,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
         end
 
-        # WART(D-J16): applying #{action} to a Draft flashes the generic update
+        # applying #{action} to a Draft flashes the generic update
         # error; no guard rail explains WHY the transition was refused.
         it "errors from an unexpected current status" do
           order = order_with_task!(owner: owner, status_key: :draft)
@@ -763,7 +763,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(flash[:notice]).to eq("#{admin.name} has been assigned to this job order.")
     end
 
-    # FIXED(D-J07): assign_staff goes through grant_access (staff/admin only)
+    # assign_staff goes through grant_access (staff/admin only)
     it "refuses a regular user self-assigning (staff_id == own id)" do
       order = order_with_task!(owner: owner)
       http_login!(other)
@@ -793,7 +793,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # WART(D-J08): the else-flash dereferences @job_order.assigned_staff.name
+    # the else-flash dereferences @job_order.assigned_staff.name
     # with no assigned staff → NoMethodError → 500 instead of a friendly flash.
     it "renders 500 (NoMethodError) when a non-admin staff member tries to assign someone else" do
       order = order_with_task!(owner: owner)
@@ -804,7 +804,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(order.reload.assigned_staff).to be_nil
     end
 
-    # WART(D-J08): an unknown job order takes the same else branch,
+    # an unknown job order takes the same else branch,
     # @job_order is nil. (The route's key is job_order_id.)
     it "renders 500 (NoMethodError) for an unknown job order id" do
       http_login!(staff)
@@ -818,7 +818,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   # ------------------------------------------------------- admin / settings
 
   describe "GET /job_orders/admin" do
-    # N+1 pinned: see defects.md D-PERF02
+    # N+1 pinned
     it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)", skip_bullet: true do
       draft = make_job_order!(owner: owner, status_key: :draft)
       listed = order_with_task!(owner: owner, status_key: :staff_approval)
@@ -890,7 +890,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   # ------------------------------------------------------- timeline modal
 
   describe "GET /job_orders/:id/timeline_modal" do
-    # N+1 pinned: see defects.md D-PERF03
+    # N+1 pinned
     it "renders the status history (layout: false) newest-first for staff", skip_bullet: true do
       order = order_with_task!(owner: owner)
       advance_to!(order, :staff_approval)
@@ -902,7 +902,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).not_to include("nav.navbar") # layout: false
     end
 
-    # JOB-01 review 7: JobOrderStatus#user is optional (rows from before its presence validation have none)
+    # JobOrderStatus#user is optional (rows from before its presence validation have none)
     it "names a missing actor 'Unknown' instead of raising, on processing and sent-back rows", skip_bullet: true do
       order = order_with_task!(owner: owner)
       advance_to!(order, :being_processed)
@@ -955,7 +955,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
   # ------------------------------------------------------- removed dead routes
 
-  # D-J17 / D-CRAWL04: these routes pointed at missing templates or actions and
+  # these routes pointed at missing templates or actions and
   # were removed. Every verb now answers 404 for every role.
   describe "removed dead routes" do
     {
@@ -1029,7 +1029,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           .to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
       end
 
-      # FIXED(D-J11): approval links expire after 14 days. The order and token
+      # approval links expire after 14 days. The order and token
       # are minted NOW, before any time travel.
       it "accepts a token for 14 days and refuses it afterwards" do
         minted = token
@@ -1053,7 +1053,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         expect(status_names(magic_order)).to eq(["Waiting for User Approval"])
       end
 
-      it "refuses a pay token (separate purpose) and a pre-D-J11 legacy token" do
+      it "refuses a pay token (separate purpose) and a legacy token" do
         [magic_pay_token_for(magic_order),
          Rails.application.message_verifier(:job_order_id).generate(magic_order.id)].each do |bad|
           get user_magic_approval_job_orders_path, params: { token: bad }
@@ -1123,7 +1123,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           expect(status_names(magic_order))
             .to eq(["Waiting for User Approval", "Waiting to be Processed"])
           expect(magic_order.job_order_statuses.last.user).to eq(owner)
-          # WART(D-J37): the magic-link path notifies nobody
+          # the magic-link path notifies nobody
           expect(ActionMailer::Base.deliveries).to be_empty
         end
 
@@ -1152,7 +1152,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         end
       end
 
-      # FIXED(D-J09): the status row is attributed to the order's owner, so a
+      # the status row is attributed to the order's owner, so a
       # guest following the emailed link can approve or deny without signing in.
       it "lets an anonymous visitor approve: the status is persisted and attributed to the order owner" do
         patch user_magic_approval_confirmation_job_orders_path,
@@ -1209,9 +1209,9 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).to include("Proceed to the payment page")
       expect(response.body).to include("https://pay.example/inv")
       expect(response.body).to include("Total Quote:")
-      # WART(D-J38): the draft order is created on a GET and only fetched later
+      # the draft order is created on a GET and only fetched later
       expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
-      # FIXED(D-J50): the view reuses the controller's @payment_link, so a visit
+      # the view reuses the controller's @payment_link, so a visit
       # is just create + the fetch inside create (no redundant second fetch).
       expect(shopify.calls.map { |c| c[:query][/\b(draftOrderCreate|getDraftOrder)\b/] })
         .to eq(%w[draftOrderCreate getDraftOrder])
@@ -1222,7 +1222,6 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         .to eq(amount: BigDecimal("29.99"), currencyCode: "CAD")
     end
 
-    # FIXED(D-J12, as a side effect of the token lookup now returning the order):
     # a valid token on a non-COMPLETED order used to 500 on a nil @job_order; it
     # now redirects to the order page (login for a guest) with the pay flash.
     it "redirects with the pay flash for a valid token on a non-COMPLETED order" do
@@ -1242,7 +1241,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
     end
 
-    # FIXED(D-J11): an unparsable, expired or pre-D-J11 token gets the "invalid or
+    # an unparsable, expired or legacy token gets the "invalid or
     # has expired" redirect instead of the nil @job_order crash. (A valid token
     # on a non-COMPLETED order is covered below.)
     it "redirects with the expired flash for an invalid token" do
@@ -1253,7 +1252,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(shopify.calls).to be_empty
     end
 
-    it "redirects with the expired flash for a legacy (pre-D-J11) token and for an approval token" do
+    it "redirects with the expired flash for a legacy token and for an approval token" do
       order = order_with_task!(owner: owner, status_key: :completed)
       [Rails.application.message_verifier(:job_order_id).generate(order.id), magic_link_token_for(order)].each do |bad|
         get pay_job_orders_path, params: { token: bad }
@@ -1263,7 +1262,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(shopify.calls).to be_empty
     end
 
-    # FIXED(D-J11): pay links expire after 14 days. Order and token are created
+    # pay links expire after 14 days. Order and token are created
     # BEFORE the clock moves.
     it "works for 14 days and is refused afterwards" do
       order = order_with_task!(owner: owner, status_key: :completed)

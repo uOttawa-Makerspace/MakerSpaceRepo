@@ -8,7 +8,7 @@ require "rails_helper"
 # Pins the CURRENT observable behavior of the request contract so a later
 # refactor (LockerRentals::Request / Approve / Renew / Cancel / Expire use
 # cases) can prove no change. Everything below reflects the app as it runs
-# today (Rails 8.1, devcontainer); warts are PINNED, not fixed.
+# today (Rails 8.1, devcontainer); behaviour is pinned as it is.
 #
 # Environment notes:
 # * Authentication is the custom session, driven with a real login POST
@@ -17,7 +17,7 @@ require "rails_helper"
 #   requests; each example resets the two locker keys so behavior starts from
 #   the "fresh install" default (lockers_enabled => false).
 # * SHOPIFY IS NETWORK-REACHABLE FROM TESTS (config/credentials.yml.enc ships a
-#   :test shopify config — see wart ledger). Every example that can reach a
+#   :test shopify config). Every example that can reach a
 #   Shopify edge stubs exactly the seam the code itself uses:
 #   `LockerRental#checkout_link` (invoice-URL boundary used by the
 #   await_payment show view).
@@ -119,7 +119,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
   describe "GET /locker_rentals (index)" do
     before { log_in!(owner) }
 
-    # N+1 pinned: see defects.md D-PERF11
+    # N+1 pinned
     it "renders the CEED-lockers page with active rental cards AND the full history table", skip_bullet: true do
       active = create(:locker_rental, :active, rented_by: owner)
       cancelled = create(:locker_rental, rented_by: owner)
@@ -306,8 +306,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
           .to eq("New locker rentals are not currently accepted.")
       end
 
-      it "renders :new with 422 and the parked-error listing once one request already waits (the form is replaced by the blocked notice) — wart" do
-        # WART(D-L15): 422 re-render shows blocked notice plus error list
+      it "renders :new with 422 and the parked-error listing once one request already waits (the form is replaced by the blocked notice)" do
+        # 422 re-render shows blocked notice plus error list
         reviewing_rental! # one-request-per-user rule trips the 2nd POST
 
         log_in!(owner)
@@ -514,8 +514,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(response.body).to include("has already been taken")
       end
 
-      it "ignores the disabled switch for staff entirely (|| short-circuit pins the wart)" do
-        # WART(D-L13): staff bypass the sitewide lockers-disabled switch
+      it "ignores the disabled switch for staff entirely (|| short-circuit)" do
+        # the sitewide lockers-disabled switch does not apply to staff
         LockerOption.lockers_enabled = false
         expect do
           post locker_rentals_path,
@@ -577,8 +577,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include("Locker Inventory")
     end
 
-    it "denies strangers with a plain redirect to the index (no flash set — wart)" do
-      # WART(D-L14): stranger denial sets no flash
+    it "denies strangers with a plain redirect to the index (no flash set)" do
+      # stranger denial sets no flash
       rental = reviewing_rental!
       log_in!(other)
 
@@ -675,8 +675,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       end
     end
 
-    describe "broken edges pinned as-is" do
-      it "has no edit route (D-L10): 404" do
+    describe "edges pinned as they are" do
+      it "has no edit route: 404" do
         rental = reviewing_rental!
         log_in!(owner)
         get "/locker_rentals/#{rental.id}/edit"
@@ -685,7 +685,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(LockerRental.exists?(rental.id)).to be(true)
       end
 
-      it "has no destroy route (D-L11): DELETE answers 404 and nothing is destroyed" do
+      it "has no destroy route: DELETE answers 404 and nothing is destroyed" do
         rental = reviewing_rental!
         log_in!(admin)
         delete "/locker_rentals/#{rental.id}"
@@ -927,8 +927,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         end
       end
 
-      it "accepts only :state for owners (notes edits silently dropped — wart)" do
-        # WART(D-L09): owner notes edits are silently dropped
+      it "accepts only :state for owners (notes edits silently dropped)" do
+        # owner notes edits are silently dropped
         rental = reviewing_rental!(tenant: owner)
         log_in!(owner)
 
@@ -967,8 +967,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       end
     end
 
-    describe "replay/regression warts pinned" do
-      it "lets staff re-activate a cancelled rental (no guard anywhere — the only blocker is the hidden UI buttons)" do
+    describe "replay and re-activation behaviour pinned" do
+      it "lets staff re-activate a cancelled rental (the action buttons are hidden in the UI)" do
         rental = create(:locker_rental, :active)
         rental.update!(decided_by: staff, state: :cancelled)
         log_in!(staff)
@@ -1493,7 +1493,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(flash[:alert]).to be_nil
     end
 
-    # N+1 pinned: see defects.md D-PERF12
+    # N+1 pinned
     it "serves JSON with pending/active keys (no eager-serialized association payloads)", skip_bullet: true do
       tenant = create(:locker_rental, :reviewing)
       awaiting = create(:locker_rental, :await_payment)
@@ -1547,8 +1547,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response).to redirect_to(locker_rentals_path)
     end
 
-    it "renders an empty table for staff when nothing is expired (the 'no expired' paragraph can never render — wart)" do
-      # WART(D-L12): the "no expired" paragraph can never render
+    it "renders an empty table for staff when nothing is expired (the 'no expired' paragraph can never render)" do
+      # the "no expired" paragraph can never render
       log_in!(staff)
       get expired_locker_rentals_path
       expect(response).to have_http_status(:ok)

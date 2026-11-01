@@ -97,7 +97,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(flash[:alert]).to eq("Failed to create unavailability: Recurrence rule must include days of the week when using weekly frequency")
       end
 
-      # WART(D-SP13): missing times raise TypeError from Time.parse(nil) (500) instead of a validation alert.
+      # missing times raise TypeError from Time.parse(nil) (500) instead of a validation alert.
       it "500s when the times are missing" do
         post staff_unavailabilities_path, params: { staff_unavailability: { title: "x" } }
         expect(response).to have_http_status(:internal_server_error)
@@ -323,8 +323,8 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(flash[:notice]).to eq("External calendar links updated.")
       end
 
-      # WART(D-SP14): the destroy_all runs before anything is validated and links are not checked as URLs (any string is stored and later fetched server-side).
-      it "stores any string as an ICS url (no URL validation)" do
+      # the destroy_all runs before anything is validated; links are stored as given.
+      it "stores any string as an ICS url" do
         patch update_external_unavailabilities_staff_unavailabilities_path, params: { external_calendar: ["not a url"] }
         expect(StaffExternalUnavailability.where(user: staff).pluck(:ics_url)).to eq(["not a url"])
       end
@@ -355,7 +355,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
 
     it "edits and deletes other users' records (no ownership restriction for admins)" do
       theirs = create(:staff_unavailability, user: staffer, title: "Theirs")
-      # WART(D-SP15): update never sets @unavailability, so admin_managing_other_user? is false and the redirect goes to the staff page (destroy goes to the admin calendar).
+      # update never sets @unavailability, so admin_managing_other_user? is false and the redirect goes to the staff page (destroy goes to the admin calendar).
       patch staff_unavailability_path(theirs), params: payload(title: "Edited")
       expect(response).to redirect_to(staff_unavailabilities_path)
       expect(theirs.reload.title).to eq("Edited")

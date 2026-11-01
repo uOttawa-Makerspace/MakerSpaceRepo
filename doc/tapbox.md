@@ -92,11 +92,11 @@ in or out of a space. Users can tap into a space to sign in, and tap out at the
 same space to sign out. They can tap into a different space to sign out of
 previous sessions and create a new session in the new space.
 
-## Security notes
+## Access notes
 
-- The only credential a tap box has is its MAC address (the firmware cannot
-  send a secret). Anyone who learns a registered MAC can tap known card numbers
-  from anywhere; the rate limits, the audit trail in `TapBoxLog` and (not yet
-  done) a source-IP allowlist are the mitigations.
+- A tap box identifies itself by its registered MAC address (the firmware cannot
+  send a secret). Taps are rate limited per reader and per source address.
+  Accepted taps are recorded in `TapBoxLog`, and an unregistered reader is
+  logged at most once per hour.
 - ActionCable (staff dashboard modals, tap box console) identifies the user from
   the session cookie and rejects everyone else; `space_event_<id>` is staff only.

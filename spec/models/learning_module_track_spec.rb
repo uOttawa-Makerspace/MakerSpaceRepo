@@ -46,7 +46,7 @@ RSpec.describe LearningModuleTrack, type: :model do
       expect(track.reload).to be_in_progress
     end
 
-    # WART(D-T38): there is no way back: a later non-completed SCORM state does not reopen a completed track, and nothing prevents setting status directly
+    # there is no way back: a later non-completed SCORM state does not reopen a completed track, and nothing prevents setting status directly
     it "does not reopen a completed track when the SCORM state later says incomplete" do
       track.update!(status: "Completed")
       track.update!(scorm_state: { "cmi.completion_status" => "incomplete" })
