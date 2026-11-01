@@ -308,6 +308,12 @@ class User < ApplicationRecord
   scope :active, -> { where(active: true) }
   # Everyone who can sign in as far as deactivation goes (legacy `active` is irrelevant).
   scope :not_deactivated, -> { where(deactivated_at: nil) }
+
+  # Users who may hold a locker: not soft-deleted, not deactivated. Unscoped from the default scope so
+  # that a soft-deleted user is a row we see and refuse (deleted = false is explicit), not a missing one.
+  def self.eligible_renters
+    unscoped.where(deleted: false, deactivated_at: nil)
+  end
   scope :unknown_identity, -> { where(identity: 'unknown') }
   
   scope :created_at_month, ->(month) { 

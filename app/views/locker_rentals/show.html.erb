@@ -16,10 +16,15 @@
     <% end %>
 </div>
 
-<% if current_user.staff? && @locker_rental.paid_but_renter_deactivated? %>
+<% payments = current_user.staff? ? @locker_rental.locker_payments.order(:paid_at, :id).to_a : [] %>
+<% held_payments = payments.select(&:held?) %>
+<%# The alert is driven by the same scope as the badge in the lists %>
+<% if current_user.staff? && LockerRental.with_held_payment.exists?(@locker_rental.id) %>
     <div class="alert alert-danger" role="alert">
-        <strong>Paid, renter deactivated: refund or cancel.</strong>
-        This locker was paid for but its renter's account is deactivated, so it was not activated.
+        <strong><%= t('lockers.held_payments.alert_title') %></strong>
+        <% held_payments.map(&:hold_reason).uniq.each do |reason| %>
+            <div><%= t("lockers.held_payments.reasons.#{reason}") %></div>
+        <% end %>
     </div>
 <% end %>
 
@@ -274,6 +279,58 @@ end
                     </div>
                 </div>
             <% end %>
+        <% end %>
+
+        <!-- Payment history (staff) -->
+        <% if current_user.staff? %>
+            <div class="card shadow-sm mb-4" id="locker-payments">
+                <div class="card-header bg-body-tertiary">
+                    <h5 class="card-title mb-0"><i class="fa-solid fa-credit-card text-muted me-2"></i><%= t('lockers.held_payments.history') %></h5>
+                </div>
+                <% if payments.any? %>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0 align-middle">
+                            <thead>
+                                <tr>
+                                    <th><%= t('lockers.held_payments.order') %></th>
+                                    <th><%= t('lockers.held_payments.amount') %></th>
+                                    <th><%= t('lockers.held_payments.paid_at') %></th>
+                                    <th><%= t('lockers.held_payments.status') %></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% payments.each do |payment| %>
+                                    <tr>
+                                        <td><%= payment.shopify_order_id %></td>
+                                        <td><%= payment.amount ? "#{number_with_precision(payment.amount, precision: 2)} #{payment.currency}".strip : '' %></td>
+                                        <td><%= payment.paid_at.to_fs(:long) %></td>
+                                        <td>
+                                            <%= t("lockers.held_payments.statuses.#{payment.status}") %>
+                                            <% if payment.hold_reason %>
+                                                <div class="small text-muted"><%= t("lockers.held_payments.reasons.#{payment.hold_reason}") if payment.held? %></div>
+                                            <% end %>
+                                            <% if payment.resolved_at && !payment.applied? %>
+                                                <div class="small text-muted"><%= payment.resolved_at.to_fs(:long) %><%= " - #{payment.resolution_note}" if payment.resolution_note.present? %></div>
+                                            <% end %>
+                                            <% if payment.held? %>
+                                                <%= form_with url: locker_rental_locker_payment_path(@locker_rental, payment), method: :patch, class: 'mt-1' do %>
+                                                    <%= text_field_tag :resolution_note, nil, placeholder: t('lockers.held_payments.note_placeholder'), class: 'form-control form-control-sm mb-1' %>
+                                                    <%= button_tag t('lockers.held_payments.mark_refunded'), name: 'resolution', value: 'refunded', class: 'btn btn-sm btn-outline-primary', data: { confirm: t('lockers.held_payments.confirm_refunded') } %>
+                                                    <%= button_tag t('lockers.held_payments.dismiss'), name: 'resolution', value: 'dismissed', class: 'btn btn-sm btn-outline-secondary', data: { confirm: t('lockers.held_payments.confirm_dismissed') } %>
+                                                <% end %>
+                                            <% end %>
+                                        </td>
+                                    </tr>
+                                <% end %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% elsif @locker_rental.paid_at %>
+                    <div class="card-body"><%= t('lockers.held_payments.legacy_paid') %> <%= @locker_rental.paid_at.to_fs(:long) %></div>
+                <% else %>
+                    <div class="card-body text-muted fst-italic"><%= t('lockers.unpaid') %></div>
+                <% end %>
+            </div>
         <% end %>
 
         <!-- 2. Staff Internal Rental Notes -->

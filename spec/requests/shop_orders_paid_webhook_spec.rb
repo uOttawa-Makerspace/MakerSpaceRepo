@@ -57,6 +57,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     let!(:rental) { create(:locker_rental, :await_payment) }
     let(:forged) do
       {
+        id: 820_982_911_946_154_508,
         tags: [membership_tag, LockerRental.draft_order_operating_tag],
         line_items: [{ title: "1 Day Membership", quantity: 3, product_id: cc_product_id }],
         customer: { email: user.email },
@@ -269,6 +270,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     let!(:rental) { create(:locker_rental, :await_payment) }
     let(:payload) do
       { # the locker reference is inline; the membership one needs the Shopify lookup, which cannot run
+        id: 820_982_911_946_154_508,
         tags: [membership_tag, LockerRental.draft_order_operating_tag],
         draft_order_id: 42,
         line_items: [{ title: "1 Day Membership", quantity: 3, product_id: cc_product_id }],

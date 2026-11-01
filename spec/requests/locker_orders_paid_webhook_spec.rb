@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Characterization of the Shopify `orders_paid` webhook locker path
-# (CustomWebhooksController#process_locker_hook -> LockerRental#auto_assign).
+# (CustomWebhooksController#process_locker_hook -> LockerRental#record_payment).
 # Every POST is signed with the test secret (see spec/support/shopify_webhook_helpers.rb);
 # unsigned/forged ones are rejected, see the HMAC examples below. No network: payloads carry the metafield inline; the Shopify
 # fallback lookup (`draft_order_metafields`) is stubbed.
@@ -13,13 +13,16 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
 
   let(:tag) { LockerRental.draft_order_operating_tag }
 
-  def payload(rental_id, tags: [tag])
+  # Shopify sends the numeric order "id" on every orders/paid delivery (it is the idempotency key of the
+  # payment record). UNCONFIRMED against a real staging payload: confirm before shipping.
+  def payload(rental_id, tags: [tag], id: 820_982_911_946_154_508, **extra)
     {
+      id: id,
       tags: tags,
       metafields: [
         { namespace: "makerepo", key: "locker_db_reference", value: rental_id.to_s }
       ]
-    }
+    }.merge(extra)
   end
 
   before do
@@ -61,20 +64,47 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     expect(rental.state).to eq("active")
   end
 
-  it "is replay-safe for the state/mail: a second delivery only re-stamps paid_at and sends nothing" do
+  it "is replay-safe: a second delivery of the same order is a no-op (one payment row, no mail, paid_at kept, no report)" do
     rental = create(:locker_rental, :await_payment)
-    perform_enqueued_jobs { signed_orders_paid(payload(rental.id)) }
+    perform_enqueued_jobs { signed_orders_paid(payload(rental.id, processed_at: "2026-10-20T12:00:00Z", total_price: "25.00", currency: "CAD")) }
     expect(ActionMailer::Base.deliveries.size).to eq(1)
+    expect(LockerPayment.where(locker_rental: rental).pluck(:shopify_order_id, :status, :amount, :currency))
+      .to eq([["820982911946154508", "applied", BigDecimal("25.0"), "CAD"]])
 
     ActionMailer::Base.deliveries.clear
     first_paid = rental.reload.paid_at
+    expect(first_paid).to eq(Time.utc(2026, 10, 20, 12))
+    expect(Rails.error).not_to receive(:report)
     travel_to(1.hour.from_now) do
-      perform_enqueued_jobs { signed_orders_paid(payload(rental.id)) }
+      perform_enqueued_jobs { signed_orders_paid(payload(rental.id, processed_at: "2026-10-20T13:00:00Z")) }
     end
     expect(response).to have_http_status(:ok)
     expect(ActionMailer::Base.deliveries).to be_empty
     expect(rental.reload.state).to eq("active")
-    expect(rental.paid_at).to be > first_paid
+    expect(rental.paid_at).to eq(first_paid)
+    expect(LockerPayment.count).to eq(1)
+  end
+
+  it "records a different order for the same rental as a second payment row" do
+    rental = create(:locker_rental, :await_payment)
+    signed_orders_paid(payload(rental.id, id: 1))
+    signed_orders_paid(payload(rental.id, id: 2))
+    expect(rental.locker_payments.pluck(:shopify_order_id)).to contain_exactly("1", "2")
+  end
+
+  it "takes the order id from admin_graphql_api_id when the payload has no id (numeric tail, same key as id)" do
+    rental = create(:locker_rental, :await_payment)
+    signed_orders_paid(payload(rental.id, id: nil, admin_graphql_api_id: "gid://shopify/Order/555"))
+    signed_orders_paid(payload(rental.id, id: 555))
+    expect(rental.locker_payments.pluck(:shopify_order_id)).to eq(["555"])
+  end
+
+  it "answers 422 and applies nothing when a locker order carries no order id" do
+    rental = create(:locker_rental, :await_payment)
+    signed_orders_paid(payload(rental.id, id: nil))
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(rental.reload.state).to eq("await_payment")
+    expect(LockerPayment.count).to eq(0)
   end
 
   it "ignores other tags (production tag in test env): nothing changes, no mail" do
@@ -111,14 +141,27 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     expect(ActionMailer::Base.deliveries.size).to eq(1)
   end
 
-  it "answers 422 when the rental cannot be activated, e.g. a reviewing rental with no locker" do
+  it "answers 200 and holds the payment (not_activatable) when the rental cannot be activated, e.g. a reviewing rental with no locker" do
     rental = create(:locker_rental, :reviewing)
-    signed_orders_paid(payload(rental.id))
-    # WART(D-L04): auto_assign uses update!, so validation
-    # failure surfaces as a 422 (RecordInvalid rescued by the app) rather than a 200.
-    expect(response).to have_http_status(:unprocessable_content)
+    expect(Rails.error).to receive(:report).once.with(an_instance_of(LockerPayment::Held), hash_including(handled: true))
+    perform_enqueued_jobs { signed_orders_paid(payload(rental.id)) }
+    expect(response).to have_http_status(:ok)
     expect(rental.reload.state).to eq("reviewing")
+    expect(rental.locker_payments.pluck(:status, :hold_reason)).to eq([%w[held not_activatable]])
+    expect(LockerRental.with_held_payment).to contain_exactly(rental)
+    expect(ActionMailer::Base.deliveries).to be_empty
   end
+
+  it "holds the payment of a cancelled rental and leaves it cancelled" do
+    rental = create(:locker_rental, :await_payment)
+    rental.update!(state: :cancelled)
+    perform_enqueued_jobs { signed_orders_paid(payload(rental.id)) }
+    expect(response).to have_http_status(:ok)
+    expect(rental.reload).to be_cancelled
+    expect(rental.locker_payments.pluck(:status, :hold_reason)).to eq([%w[held rental_cancelled]])
+    expect(ActionMailer::Base.deliveries).to be_empty
+  end
+
   # Real Shopify payloads carry a numeric draft_order_id and no inline metafields;
   # the controller queries Shopify for them. Only the HTTP endpoint is stubbed:
   # draft_order_metafields and the GraphQL client run for real.
@@ -168,7 +211,7 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
         { "namespace" => "makerepo", "key" => "membership_db_reference", "value" => bystander.id.to_s },
         { "namespace" => "makerepo", "key" => "locker_db_reference", "value" => rental.id.to_s }
       ))
-      signed_orders_paid({ tags: [tag], draft_order_id: 5 })
+      signed_orders_paid({ id: 7, tags: [tag], draft_order_id: 5 })
       expect(rental.reload.state).to eq("active")
       expect(bystander.reload.state).to eq("await_payment")
     end
@@ -182,72 +225,100 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
   end
 
 
-  # Owner decision: a payment for a deactivated renter is always recorded, never activates the rental, and is
-  # left to staff (refund or cancel). The webhook still answers 200 and applies the order's other effects.
-  describe "a paid locker whose renter was deactivated" do
+  # A payment for a renter who is not eligible (deactivated, soft-deleted, or both) is recorded as HELD: the
+  # rental is never activated, one report is made, staff decide (refund / dismiss / assign). The webhook
+  # answers 200 and still applies the order's other effects.
+  describe "a paid locker whose renter is not eligible" do
     let(:cc_product_id) { 4_359_597_129_784 }
     let(:member) { create(:user, :regular_user) }
     let!(:tier) { create(:membership_tier, title_en: "1 Day Membership", title_fr: "Adhesion 1 jour", duration: 1) }
     let!(:pending) { create(:membership, user: member, membership_tier: tier, status: "pending") }
     let!(:rental) { create(:locker_rental, :await_payment, owned_until: nil) }
     let(:full_payload) do
-      {
-        tags: [tag, Membership.draft_order_operating_tag],
+      payload(rental.id, tags: [tag, Membership.draft_order_operating_tag]).merge(
         line_items: [{ title: "1 Day Membership", quantity: 3, product_id: cc_product_id }],
         customer: { email: member.email },
         metafields: [
           { namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s },
           { namespace: "makerepo", key: "membership_db_reference", value: pending.id.to_s }
         ]
-      }
-    end
-
-    before { rental.rented_by.deactivate! }
-
-    it "answers 200, records the payment, does not activate, flags the rental, reports it, and still applies the other effects" do
-      allow(Rails.error).to receive(:report).and_call_original
-      expect(Rails.error).to receive(:report).with(
-        an_instance_of(LockerRental::PaidForDeactivatedRenter),
-        hash_including(handled: true, context: { locker_rental_id: rental.id, user_id: rental.rented_by_id })
       )
-
-      perform_enqueued_jobs { signed_orders_paid(full_payload) }
-
-      expect(response).to have_http_status(:ok)
-      rental.reload
-      expect(rental.state).to eq("await_payment")
-      expect(rental.paid_at).to be_present
-      expect(rental.owned_until.utc.iso8601).to eq(end_of_this_semester.utc.iso8601)
-      expect(rental.paid_but_renter_deactivated?).to be(true)
-      expect(LockerRental.paid_but_renter_deactivated).to contain_exactly(rental)
-      expect(ActionMailer::Base.deliveries).to be_empty # no "locker assigned" mail
-
-      expect(pending.reload.status).to eq("paid")
-      expect(member.cc_moneys.pluck(:cc)).to eq([30])
     end
 
-    it "records the payment of a reviewing rental too, without raising and without activating it" do
+    {
+      "deactivated" => ->(u) { u.deactivate! },
+      "soft-deleted" => ->(u) { u.update_columns(deleted: true) },
+      "deactivated and soft-deleted" => ->(u) { u.deactivate!; u.update_columns(deleted: true) }
+    }.each do |label, change|
+      it "(#{label}) answers 200, holds the payment, does not activate, reports once, and still applies the other effects" do
+        change.call(rental.rented_by)
+        reports = []
+        allow(Rails.error).to receive(:report).and_call_original
+        allow(Rails.error).to receive(:report).with(an_instance_of(LockerPayment::Held), anything) { |e, **o| reports << [e, o] }
+
+        perform_enqueued_jobs { signed_orders_paid(full_payload) }
+
+        expect(response).to have_http_status(:ok)
+        rental.reload
+        expect(rental.state).to eq("await_payment")
+        expect(rental.paid_at).to be_present
+        payment = rental.locker_payments.sole
+        expect(payment).to have_attributes(status: "held", hold_reason: "renter_ineligible", resolved_at: nil)
+        expect(LockerRental.with_held_payment).to contain_exactly(rental)
+        expect(ActionMailer::Base.deliveries).to be_empty # no "locker assigned" mail
+
+        expect(reports.size).to eq(1)
+        expect(reports.first.last[:context]).to eq(
+          locker_payment_id: payment.id, locker_rental_id: rental.id, user_id: rental.rented_by_id, hold_reason: "renter_ineligible"
+        )
+
+        expect(pending.reload.status).to eq("paid")
+        expect(member.cc_moneys.pluck(:cc)).to eq([30])
+
+        # replay: still one row, still one report
+        perform_enqueued_jobs { signed_orders_paid(payload(rental.id)) }
+        expect(response).to have_http_status(:ok)
+        expect(rental.locker_payments.count).to eq(1)
+        expect(reports.size).to eq(1)
+      end
+    end
+
+    it "holds a payment for an already ACTIVE rental of a deactivated renter (state untouched, badge on the list)" do
+      active = create(:locker_rental, :active)
+      active.rented_by.deactivate!
+      signed_orders_paid(payload(active.id))
+      expect(response).to have_http_status(:ok)
+      expect(active.reload).to be_active
+      expect(active.locker_payments.sole).to be_held
+      expect(LockerRental.with_held_payment).to contain_exactly(active)
+    end
+
+    it "holds a reviewing rental's payment too, without raising and without activating it" do
       reviewing = create(:locker_rental, :reviewing)
       reviewing.rented_by.deactivate!
       signed_orders_paid(payload(reviewing.id))
       expect(response).to have_http_status(:ok)
       expect(reviewing.reload).to have_attributes(state: "reviewing", paid_at: be_present)
-      expect(reviewing.paid_but_renter_deactivated?).to be(true)
+      expect(reviewing.locker_payments.sole).to be_held
     end
 
-    it "stops being flagged once the renter is reactivated or staff cancel the rental" do
+    it "stays held when the renter is reactivated or staff cancel the rental: only staff resolve it" do
+      change = rental.rented_by
+      change.deactivate!
       signed_orders_paid(payload(rental.id))
-      expect(rental.reload.paid_but_renter_deactivated?).to be(true)
-      rental.update!(state: :cancelled, decided_by: create(:user, :staff))
-      expect(rental.paid_but_renter_deactivated?).to be(false)
-      expect(LockerRental.paid_but_renter_deactivated).to be_empty
+      change.reactivate!
+      expect(LockerRental.with_held_payment).to contain_exactly(rental)
+      rental.reload.update!(state: :cancelled, decided_by: create(:user, :staff))
+      expect(LockerRental.with_held_payment).to contain_exactly(rental)
+      expect(rental.locker_payments.sole).to be_held
     end
 
-    it "activates normally when the renter is not deactivated (unchanged behaviour)" do
+    it "activates normally when the renter is eligible (unchanged behaviour)" do
       other = create(:locker_rental, :await_payment)
       signed_orders_paid(payload(other.id))
       expect(other.reload.state).to eq("active")
-      expect(other.paid_but_renter_deactivated?).to be(false)
+      expect(other.locker_payments.sole).to be_applied
+      expect(LockerRental.with_held_payment).to be_empty
     end
   end
 end

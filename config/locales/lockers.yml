@@ -75,6 +75,39 @@ en:
         End this locker rental. User will be notified by email.
         If given a grace period, they will be informed that they have one week to clear the locker.
 
+    held_payments:
+      title: "Paid, needs a decision"
+      intro: "Shopify reported these locker payments, but they could not be applied to the rental. Mark each one refunded (after refunding it in Shopify), dismiss it, or assign the rental."
+      badge: "Paid, needs a decision"
+      alert_title: "Paid, needs a decision."
+      none: "No payments need a decision."
+      reasons:
+        renter_ineligible: "The renter's account is deactivated or deleted. Refund the payment, or reactivate the account and assign the locker."
+        rental_cancelled: "The rental was cancelled before this payment arrived. Refund the payment."
+        not_activatable: "The rental could not be activated (for example it has no locker). Fix the rental and assign it, or refund the payment."
+      history: "Payments"
+      legacy_paid: "Paid (legacy)"
+      order: "Shopify order"
+      amount: "Amount"
+      paid_at: "Paid at"
+      status: "Status"
+      reason: "Why held"
+      resolved_at: "Resolved"
+      statuses:
+        applied: "Applied"
+        held: "Needs a decision"
+        refunded: "Refunded"
+        dismissed: "Dismissed"
+      mark_refunded: "Mark refunded"
+      dismiss: "Dismiss"
+      note_placeholder: "Note (optional)"
+      confirm_refunded: "Mark this payment as refunded? Refund it in Shopify first."
+      confirm_dismissed: "Dismiss this payment without a refund?"
+      resolved_refunded: "Payment marked refunded."
+      resolved_dismissed: "Payment dismissed."
+      already_resolved: "This payment was already resolved."
+      invalid_resolution: "Unknown resolution."
+
     new_request:
       header: New locker request
       description_html: |
@@ -152,6 +185,39 @@ fr:
         Le casier sera disponible pour une nouvelle affectation.
       end_rental_description: |
         Terminer cette location de casier. L'utilisateur sera notifié de l'annulation. Si donné une période de grâce, l'utilisateur sera informé qu'il a une semaine pour vider le casier.
+
+    held_payments:
+      title: "Payé, décision requise"
+      intro: "Shopify a signalé ces paiements de casiers, mais ils n'ont pas pu être appliqués à la location. Marquez chacun comme remboursé (après l'avoir remboursé dans Shopify), écartez-le, ou assignez la location."
+      badge: "Payé, décision requise"
+      alert_title: "Payé, décision requise."
+      none: "Aucun paiement ne requiert de décision."
+      reasons:
+        renter_ineligible: "Le compte du locataire est désactivé ou supprimé. Remboursez le paiement, ou réactivez le compte et assignez le casier."
+        rental_cancelled: "La location a été annulée avant l'arrivée de ce paiement. Remboursez le paiement."
+        not_activatable: "La location n'a pas pu être activée (par exemple, elle n'a pas de casier). Corrigez la location et assignez-la, ou remboursez le paiement."
+      history: "Paiements"
+      legacy_paid: "Payé (ancien)"
+      order: "Commande Shopify"
+      amount: "Montant"
+      paid_at: "Payé le"
+      status: "État"
+      reason: "Raison de la retenue"
+      resolved_at: "Résolu le"
+      statuses:
+        applied: "Appliqué"
+        held: "Décision requise"
+        refunded: "Remboursé"
+        dismissed: "Écarté"
+      mark_refunded: "Marquer remboursé"
+      dismiss: "Écarter"
+      note_placeholder: "Note (facultatif)"
+      confirm_refunded: "Marquer ce paiement comme remboursé? Remboursez-le d'abord dans Shopify."
+      confirm_dismissed: "Écarter ce paiement sans remboursement?"
+      resolved_refunded: "Paiement marqué comme remboursé."
+      resolved_dismissed: "Paiement écarté."
+      already_resolved: "Ce paiement a déjà été résolu."
+      invalid_resolution: "Résolution inconnue."
 
     new_request:
       header: Nouvelle demande de casier

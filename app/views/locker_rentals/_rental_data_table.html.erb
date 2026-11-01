@@ -1,3 +1,5 @@
+<%# Badge for rentals with a held payment (LockerRental.with_held_payment), staff only: one query for the table %>
+<% held_ids = current_user.staff? ? LockerRental.with_held_payment.where(id: locker_rentals.map(&:id)).pluck(:id).to_set : Set.new %>
 <div class="table-responsive">
     <table class="table table-striped table-sm" data-datatable>
         <% if local_assigns[:header_title] %>
@@ -38,8 +40,13 @@
                                     <span class="text-danger"><i class="fa-solid fa-xmark"></i> Expired</span>
                                 <% end %>
                             <% end %>
-                            <% if current_user.staff? && rental.paid_but_renter_deactivated? %>
-                                <span class="badge text-bg-danger mt-1">Paid, renter deactivated: refund or cancel</span>
+                            <% if held_ids.include?(rental.id) %>
+                                <span class="badge text-bg-danger mt-1"><%= t('lockers.held_payments.badge') %></span>
+                                <% if local_assigns[:show_hold_reasons] %>
+                                    <% rental.locker_payments.select(&:held?).each do |payment| %>
+                                        <div class="small text-muted mt-1"><%= t("lockers.held_payments.reasons.#{payment.hold_reason}") %></div>
+                                    <% end %>
+                                <% end %>
                             <% end %>
                         </td>
                         <td>

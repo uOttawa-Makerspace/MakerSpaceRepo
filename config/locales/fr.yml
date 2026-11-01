@@ -221,6 +221,7 @@ fr:
           attributes:
             rented_by:
               deactivated: "est désactivé"
+              deleted: "est supprimé"
         sub_space_booking:
           attributes:
             start_time:

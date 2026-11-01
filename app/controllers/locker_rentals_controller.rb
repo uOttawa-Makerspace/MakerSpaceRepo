@@ -21,6 +21,9 @@ class LockerRentalsController < SessionsController
     # Requirement: Split between requests that have been dealt with vs requests that have not been looked at
     @pending_requests = base_rentals.reviewing
     @active_rentals = base_rentals.where(state: %i[await_payment active])
+    # Paid, but the payment could not be applied: staff must decide. Includes cancelled rentals (their payment
+    # is still unresolved). The same scope drives the badge in the tables below.
+    @held_rentals = LockerRental.with_held_payment.includes(:locker, :rented_by, :locker_payments).order(created_at: :desc)
 
     respond_to do |format|
       format.json { render json: { pending: @pending_requests, active: @active_rentals } }
@@ -101,6 +104,7 @@ class LockerRentalsController < SessionsController
     end
 
     if @locker_rental.save
+      @locker_rental.notify_after_commit
       redirect_back fallback_location: :new_locker_rental,
                     notice: ('Locker assigned' if @locker_rental.active?)
     else
@@ -154,7 +158,17 @@ class LockerRentalsController < SessionsController
       return
     end
 
-    if @locker_rental.save
+    # Assigning the rental active also settles its held payments, in the same transaction as the save.
+    saved = LockerRental.transaction do
+      ok = @locker_rental.save
+      if ok && current_user.staff? && @locker_rental.saved_change_to_state? && @locker_rental.active?
+        @locker_rental.settle_held_payments!(by: current_user)
+      end
+      ok
+    end
+
+    if saved
+      @locker_rental.notify_after_commit
       respond_to do |format|
         format.html do
           flash[:notice] = 'Locker rental updated'
@@ -193,6 +207,7 @@ class LockerRentalsController < SessionsController
     )
 
     if @locker_rental.save
+      @locker_rental.notify_after_commit
       redirect_to @locker_rental,
                   notice: 'Locker renewal started. Please complete checkout to renew your locker.'
     else
@@ -243,10 +258,13 @@ class LockerRentalsController < SessionsController
 
   RENTER_NOT_FOUND = 'User not found'
 
-  # A staff request that names a renter by username that matches no user.
+  # A staff request that names a renter by username that matches no user, and names no renter by id. When an
+  # id is sent it wins and the username is only the display text of the search box. A deleted or deactivated
+  # user found by id (or by username) fails the rental's eligibility validation instead.
   def unknown_renter_username?
     username = params.dig(:locker_rental, :rented_by_username)
-    current_user.staff? && username.present? && !User.exists?(username: username.to_s)
+    current_user.staff? && username.present? && params.dig(:locker_rental, :rented_by_id).blank? &&
+      !User.exists?(username: username.to_s)
   end
 
   def locker_rental_params

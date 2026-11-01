@@ -11,16 +11,21 @@ class LockerRental < ApplicationRecord
   # Associated when assigned
   belongs_to :locker, optional: true
   belongs_to :preferred_locker, class_name: 'Locker', optional: true
-  belongs_to :rented_by, class_name: 'User'
+  # Unscoped from User's default scope (deleted = false) so a soft-deleted renter still loads: staff can
+  # still cancel such a rental and see who it belonged to. Whether a renter may HOLD a locker is the
+  # explicit renter_eligible? rule below, never an accident of the association returning nil.
+  belongs_to :rented_by, -> { unscope(where: :deleted) }, class_name: 'User'
+  # Never deleted with the rental: a payment is a financial record.
+  has_many :locker_payments
   belongs_to :decided_by, class_name: 'User', optional: true
   belongs_to :course_name, optional: true
 
   before_validation :set_cancellation_date, if: :cancelled?
 
-  # Notify of state change
-  after_save :send_email_notification
-  # Notify of active locker move
-  after_save :send_move_notification
+  # The state-change and move mails are NOT sent from a callback: a callback runs inside the caller's
+  # transaction (the Shopify webhook's, the staff update's), and Active Job here enqueues immediately
+  # (enqueue_after_transaction_commit is false), so a rollback would still send the mail. The code paths
+  # that change state call #notify_after_commit explicitly, which delivers after the outermost commit.
   after_save :sync_shopify_draft_order
 
   # Virtual attribute to handle the 'Indefinite' checkbox from the forms
@@ -85,12 +90,31 @@ class LockerRental < ApplicationRecord
   # Locker rental always has an owner
   validates :rented_by, presence: true
 
-  # A deactivated account (users.deactivated_at) cannot be given a locker: not when the rental is created, and
-  # not when an existing one (e.g. a reviewing request of a user deactivated since) is activated or sent to
-  # payment. Other changes (cancelling, ending, notes) stay possible so staff can clean up.
-  validate :rented_by_not_deactivated, if: -> { new_record? || (state_changed? && (active? || await_payment?)) }
-  def rented_by_not_deactivated
-    errors.add(:rented_by, :deactivated) if rented_by&.deactivated_at
+  # Only an eligible renter (row exists, not soft-deleted, not deactivated) can be given a locker: not when
+  # the rental is created, not when it is reassigned (rented_by_id changes), and not when an existing one
+  # (e.g. a reviewing request of a user deactivated since) is activated or sent to payment. Other changes
+  # (cancelling, ending, notes) stay possible so staff can clean up.
+  validate :rented_by_eligible, if: -> {
+    new_record? || rented_by_id_changed? || (state_changed? && (active? || await_payment?))
+  }
+  def rented_by_eligible
+    return if rented_by.nil? # the presence validation reports a missing renter
+    return if renter_eligible?
+
+    errors.add(:rented_by, rented_by.deleted? ? :deleted : :deactivated)
+  end
+
+  # The one eligibility rule. The renter row is read FOR SHARE: it conflicts with the FOR NO KEY UPDATE
+  # that User#deactivate! (and soft delete) take, so a deactivation either commits first (and this sees
+  # it) or waits for this transaction (the validations run inside save's transaction, and the webhook's),
+  # instead of interleaving. (The foreign-key check takes only FOR KEY SHARE, which does not conflict.)
+  # pick, not exists?, so the lock clause is certainly emitted.
+  def renter_eligible?
+    # A renter not saved yet (a built record) has no row to read or lock; judge its attributes.
+    return !rented_by.deleted? && rented_by.deactivated_at.nil? if rented_by_id.blank? && rented_by&.new_record?
+    return false if rented_by_id.blank?
+
+    User.eligible_renters.where(id: rented_by_id).lock('FOR SHARE').pick(:id).present?
   end
 
   # If rented by a GNG student, make sure details are given
@@ -107,44 +131,55 @@ class LockerRental < ApplicationRecord
   # Added this missing scope so the admin controller can exclude cancelled rentals
   scope :not_cancelled, -> { where.not(state: :cancelled) }
 
-  # Raised only to be reported (Rails.error.report): a locker was paid for by a deactivated account.
-  class PaidForDeactivatedRenter < StandardError; end
-
-  # Paid but not (or no longer) active and the renter is deactivated: staff must refund or cancel.
-  # Derived, not stored: it stays true until the rental is activated, cancelled or the renter reactivated.
-  # (A cancelled rental is resolved, so it does not count.)
-  scope :paid_but_renter_deactivated, lambda {
-    joins('INNER JOIN users renters ON renters.id = locker_rentals.rented_by_id')
-      .where.not(paid_at: nil)
-      .where.not(state: %i[active cancelled])
-      .where.not(renters: { deactivated_at: nil })
+  # Rentals with at least one payment staff still have to decide on (LockerPayment status held). The single
+  # rule behind the staff list section, the badge in the tables and the alert on the rental page.
+  scope :with_held_payment, lambda {
+    where(LockerPayment.held.where('locker_payments.locker_rental_id = locker_rentals.id').arel.exists)
   }
 
-  def paid_but_renter_deactivated?
-    paid_at.present? && !active? && !cancelled? && rented_by&.deactivated_at.present?
+  # Records one Shopify order that paid this rental, in one transaction, and applies it when it can be.
+  # Idempotent on the order id (INSERT ... ON CONFLICT DO NOTHING): a retry returns nil and changes, mails
+  # and reports nothing. Returns the LockerPayment (applied or held), or nil for a duplicate.
+  #   applied: the rental becomes active if it is not (owned_until defaulted, activation mail)
+  #   held (reason recorded, rental untouched, reported once): rental cancelled, renter not eligible
+  #     (deactivated / soft-deleted / missing), or the rental cannot be activated (not_activatable)
+  # Serialised per rental by the row lock, so two simultaneous deliveries cannot both apply.
+  def record_payment(shopify_order_id:, paid_at: Time.current, amount: nil, currency: nil)
+    payment = nil
+    transaction do
+      lock!
+      status, reason =
+        if cancelled? then ['held', 'rental_cancelled']
+        elsif !renter_eligible? then ['held', 'renter_ineligible']
+        else ['applied', nil]
+        end
+      inserted = LockerPayment.insert(
+        { locker_rental_id: id, shopify_order_id: shopify_order_id.to_s, paid_at: paid_at, amount: amount,
+          currency: currency, status: status, hold_reason: reason,
+          resolved_at: (Time.current if status == 'applied') },
+        unique_by: :shopify_order_id, returning: %w[id]
+      )
+      if inserted.rows.any?
+        payment = LockerPayment.find(inserted.rows.first.first)
+        if status == 'applied' && !active?
+          payment = activate_for_payment(payment)
+          notify_after_commit if payment.applied?
+        end
+        # Display-only "latest payment"; nothing reads it for logic.
+        update_columns(paid_at: [self.paid_at, paid_at].compact.max)
+        report_held_payment(payment) if payment.held?
+      end
+    end
+    payment
   end
 
-  # The Shopify paid-order path. The payment is always recorded (paid_at, and owned_until as for an
-  # active rental), but a deactivated renter's rental is never activated: it stays as it is, is reported,
-  # and shows to staff (#paid_but_renter_deactivated?), who refund or cancel it.
-  def auto_assign
-    Rails.logger.debug "Auto assigning locker rental #{id}"
-    if rented_by&.deactivated_at
-      update!({ owned_until: (end_of_this_semester if owned_until.blank?), paid_at: Time.current }.compact)
-      Rails.error.report(
-        PaidForDeactivatedRenter.new("locker rental #{id} was paid but its renter (user #{rented_by_id}) is deactivated; not activated"),
-        handled: true, severity: :error,
-        context: { locker_rental_id: id, user_id: rented_by_id }
-      )
-      return
-    end
-
-    update!(
-      {
-        state: (:active unless active?),
-        owned_until: (end_of_this_semester if owned_until.blank?),
-        paid_at: Time.current
-      }.compact
+  # Staff assigned this rental active: its held payments for a renter who was not eligible, or a rental that
+  # could not be activated, are now applied. (A payment held because the rental was cancelled stays held:
+  # that money is refunded or dismissed, never applied.) Call inside the transaction of the assigning save.
+  def settle_held_payments!(by: nil)
+    now = Time.current
+    locker_payments.held.where(hold_reason: %w[renter_ineligible not_activatable]).update_all(
+      status: 'applied', resolved_at: now, resolved_by_id: by&.id, updated_at: now
     )
   end
 
@@ -186,36 +221,41 @@ class LockerRental < ApplicationRecord
     self.cancelled_at = DateTime.now
   end
 
-  # Send emails when state changes
-  def send_email_notification
-    return unless saved_change_to_state?
-    case state.to_sym
-    when :await_payment
-      LockerMailer.with(locker_rental: self).locker_checkout.deliver_later
-    when :active
-      LockerMailer.with(locker_rental: self).locker_assigned.deliver_later
-    when :cancelled
-      LockerMailer.with(locker_rental: self).locker_cancelled.deliver_later
-    when :reviewing
-      LockerMailer.with(locker_rental: self).locker_requested.deliver_later
-    else
-      raise "Unknown state #{state.to_sym}"
-    end
+  # Mails for the LAST save of this record (a state change, or a move of an active rental), delivered after
+  # the outermost transaction commits, or at once when none is open; dropped if it rolls back. Call it right
+  # after the save that changed the state, from the code path that made the change (the webhook payment,
+  # the staff create/update, renew). Nothing is sent by saving alone.
+  def notify_after_commit
+    mails = notification_mails
+    return if mails.empty?
+
+    ActiveRecord.after_all_transactions_commit { mails.each(&:deliver_later) }
   end
 
-  def send_move_notification
-    # Send move only if rental is active
-    return unless active? && !saved_change_to_state
-    return unless saved_change_to_locker_id? || saved_change_to_owned_until?
-
-    LockerMailer
-      .with(
-        locker_rental: self,
-        moved_locker: Locker.find_by(id: saved_change_to_locker_id&.first),
-        moved_date: saved_change_to_owned_until
-      )
-      .locker_moved
-      .deliver_later
+  # Per transition (unchanged from when this was an after_save): the mail for the new state, or the
+  # moved mail for a locker/date change of an already active rental. Built (not sent) from the
+  # saved changes, so they are captured before another save overwrites them.
+  def notification_mails
+    mailer = LockerMailer.with(locker_rental: self)
+    if saved_change_to_state?
+      case state.to_sym
+      when :await_payment then [mailer.locker_checkout]
+      when :active then [mailer.locker_assigned]
+      when :cancelled then [mailer.locker_cancelled]
+      when :reviewing then [mailer.locker_requested]
+      else raise "Unknown state #{state.to_sym}"
+      end
+    elsif active? && (saved_change_to_locker_id? || saved_change_to_owned_until?)
+      [
+        LockerMailer.with(
+          locker_rental: self,
+          moved_locker: Locker.find_by(id: saved_change_to_locker_id&.first),
+          moved_date: saved_change_to_owned_until
+        ).locker_moved
+      ]
+    else
+      []
+    end
   end
 
   def sync_shopify_draft_order
@@ -260,6 +300,33 @@ class LockerRental < ApplicationRecord
   end
 
   private
+
+  # Activates the rental for an applied payment inside a savepoint. A rental that cannot be made valid
+  # (reviewing with no locker, ...) must not fail the webhook (Shopify would retry forever): the payment
+  # is held as not_activatable and staff decide.
+  def activate_for_payment(payment)
+    transaction(requires_new: true) do
+      update!(state: :active, owned_until: owned_until.presence || end_of_this_semester)
+    end
+    payment
+  rescue ActiveRecord::RecordInvalid
+    reload
+    payment.update!(status: 'held', hold_reason: 'not_activatable', resolved_at: nil)
+    payment
+  end
+
+  # One report per held payment, after the outermost commit, ids only (no email, no name).
+  def report_held_payment(payment)
+    ActiveRecord.after_all_transactions_commit do
+      Rails.error.report(
+        LockerPayment::Held.new(
+          "locker payment #{payment.id} (rental #{id}, user #{rented_by_id}) is held: #{payment.hold_reason}"
+        ),
+        handled: true, severity: :error,
+        context: { locker_payment_id: payment.id, locker_rental_id: id, user_id: rented_by_id, hold_reason: payment.hold_reason }
+      )
+    end
+  end
 
   # Definitions for the shopify concern
 

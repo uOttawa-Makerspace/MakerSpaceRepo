@@ -47,8 +47,15 @@ class CustomWebhooksController < ApplicationController
       return head :service_unavailable
     end
 
+    # A paid locker order must carry the Shopify order id (it is the idempotency key of the payment record).
+    # Shopify always sends it, so a missing one is never legitimate: refuse before anything is applied.
+    if locker_ref.present? && order_id(order_hook).blank?
+      Rails.logger.warn("[orders_paid] locker order without an order id, answering 422 (locker rental #{locker_ref})")
+      return head :unprocessable_content
+    end
+
     # handle lockers
-    process_locker_hook(locker_ref) if LockerRental.draft_order_processable?(order_hook["tags"])
+    process_locker_hook(locker_ref, order_hook) if LockerRental.draft_order_processable?(order_hook["tags"])
 
     # handle memberships
     process_membership_hook(order_hook, membership_ref) if Membership.draft_order_processable?(order_hook["tags"])
@@ -140,10 +147,27 @@ class CustomWebhooksController < ApplicationController
     metafield_value(order_hook, draft_order_gid_from_hook(order_hook), "membership_db_reference")
   end
 
-  def process_locker_hook(locker_id)
+  # The Shopify order id: the payload's numeric "id", else the numeric tail of its admin_graphql_api_id
+  # ("gid://shopify/Order/123"), so both spellings of one order are the same idempotency key.
+  def order_id(order_hook)
+    order_hook["id"].presence&.to_s || order_hook["admin_graphql_api_id"].presence&.to_s&.split("/")&.last
+  end
+
+  def process_locker_hook(locker_id, order_hook)
     return unless locker_id.present?
 
-    LockerRental.find_by(id: locker_id)&.auto_assign
+    LockerRental.find_by(id: locker_id)&.record_payment(
+      shopify_order_id: order_id(order_hook),
+      paid_at: parse_time(order_hook["processed_at"]) || Time.current,
+      amount: order_hook["total_price"].presence,
+      currency: order_hook["currency"].presence
+    )
+  end
+
+  def parse_time(value)
+    Time.zone.parse(value.to_s) if value.present?
+  rescue ArgumentError
+    nil
   end
 
   def process_membership_hook(order_hook, membership_id)

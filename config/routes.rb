@@ -167,6 +167,9 @@ Rails.application.routes.draw do
       patch :toggle_contacted
     end
 
+    # Staff resolve a held payment (refunded / dismissed)
+    resources :locker_payments, only: :update
+
     collection do
       get :admin
       get :assign_locker
