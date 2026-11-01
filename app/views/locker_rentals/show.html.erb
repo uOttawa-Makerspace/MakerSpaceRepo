@@ -280,6 +280,10 @@ end
                             <% end %>
                         <% elsif @locker_rental.checkout_state == :processing %>
                             <div class="alert alert-info mb-0" id="locker-payment-processing"><%= t('lockers.payment_processing') %></div>
+                        <% elsif current_user.staff? && @locker_rental.checkout_state == :ineligible %>
+                            <div class="alert alert-warning mb-0" id="locker-checkout-ineligible"><%= t('lockers.checkout_ineligible') %></div>
+                        <% elsif current_user.staff? && @locker_rental.checkout_state == :unexpected_status %>
+                            <div class="alert alert-warning mb-0" id="locker-checkout-unexpected-status"><%= t('lockers.checkout_unexpected_status') %></div>
                         <% else %>
                             <div class="alert alert-warning mb-0" id="locker-checkout-unavailable"><%= t('lockers.checkout_unavailable') %></div>
                         <% end %>

@@ -164,7 +164,6 @@ class LockerRentalsController < SessionsController
           if current_user.staff? && @locker_rental.saved_change_to_state? && @locker_rental.active?
             @locker_rental.settle_held_payments!(by: current_user)
           end
-          @locker_rental.close_previous_term_draft!
           outcome = :saved
         else
           outcome = :invalid
@@ -233,7 +232,6 @@ class LockerRentalsController < SessionsController
           owned_until: end_of_this_semester
         )
         outcome = @locker_rental.save ? :saved : :invalid
-        @locker_rental.close_previous_term_draft! if outcome == :saved
       else
         outcome = :not_renewable
       end
@@ -244,6 +242,8 @@ class LockerRentalsController < SessionsController
       redirect_to @locker_rental, alert: 'This locker rental is not renewable.'
     when :saved
       @locker_rental.notify_after_commit
+      # Committed; only now the Shopify call: last term's draft is settled so it cannot be paid a second time
+      @locker_rental.sync_shopify_draft_order_after_commit
       redirect_to @locker_rental,
                   notice: 'Locker renewal started. Please complete checkout to renew your locker.'
     else

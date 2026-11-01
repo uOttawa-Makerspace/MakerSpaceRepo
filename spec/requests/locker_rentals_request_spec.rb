@@ -642,6 +642,26 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(response.body).not_to include("Proceed to Checkout")
       end
 
+      it "tells staff that the renter's account is deactivated (no link)" do
+        rental # created while the renter is still eligible
+        owner.deactivate!
+        log_in!(staff)
+        get locker_rental_path(rental)
+        expect(response.body).not_to include("Proceed to Checkout")
+        expect(response.body).to include("The renter&#39;s account is deactivated or deleted.")
+        get locker_rental_path(rental, locale: "fr")
+        expect(response.body).to include("Le compte du locataire est désactivé ou supprimé.")
+      end
+
+      it "tells staff the draft has an unexpected status" do
+        rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/weird")
+        stub_shopify_admin!.draft_statuses["gid://shopify/DraftOrder/weird"] = "WEIRD"
+        allow(Rails.error).to receive(:report)
+        log_in!(staff)
+        get locker_rental_path(rental)
+        expect(response.body).to include("Checkout unavailable, the draft has an unexpected status.")
+      end
+
       it "says the payment is being processed when a paid (COMPLETED) draft is stored, in English and French, and creates no draft" do
         rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/paid")
         fake = stub_shopify_admin!
@@ -1075,29 +1095,71 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(rental.reload.decided_by).to eq(owner)
     end
 
-    it "forgets last term's paid draft id (never deleting it), so the new term gets a fresh draft" do
-      rental = create(:locker_rental, :active, rented_by: owner, owned_until: 1.week.ago)
-      rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/last-term")
-      fake = stub_shopify_admin!
-      fake.draft_statuses["gid://shopify/DraftOrder/last-term"] = "COMPLETED"
-      log_in!(owner)
+    describe "last term's draft when a rental enters await_payment again (one rule, after commit)" do
+      let(:old_id) { "gid://shopify/DraftOrder/last-term" }
+      let!(:fake) { stub_shopify_admin!.tap { |f| f.draft_id = old_id } }
 
-      patch renew_locker_rental_path(rental)
+      def renewable
+        create(:locker_rental, :active, rented_by: owner, owned_until: 1.week.ago).tap { |r| r.update_column(:shopify_draft_order_id, old_id) }
+      end
 
-      expect(rental.reload.state).to eq("await_payment")
-      expect(rental.shopify_draft_order_id).to be_nil
-      expect(fake.deleted_ids).to be_empty
-    end
+      it "a COMPLETED (paid) draft is forgotten and never deleted: the new term gets a fresh draft" do
+        rental = renewable
+        fake.draft_statuses[old_id] = "COMPLETED"
+        fake.delete_user_errors = [{ "message" => "paid" }] # Shopify refuses to delete a completed draft
+        log_in!(owner)
+        patch renew_locker_rental_path(rental)
+        expect(rental.reload.state).to eq("await_payment")
+        expect(rental.shopify_draft_order_id).to be_nil
+      end
 
-    it "staff moving an active rental back to await_payment starts a new term the same way" do
-      rental = create(:locker_rental, :active, rented_by: owner)
-      rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/last-term")
-      log_in!(staff)
+      it "an OPEN draft from last term is deleted on renew (it could be paid a second time)" do
+        rental = renewable
+        log_in!(owner)
+        patch renew_locker_rental_path(rental)
+        expect(fake.deleted_ids).to eq([old_id])
+        expect(rental.reload.shopify_draft_order_id).to be_nil
+      end
 
-      patch locker_rental_path(rental), params: { locker_rental: { state: "await_payment" } }
+      it "a gone draft is forgotten" do
+        rental = renewable
+        fake.delete_user_errors = [{ "message" => "gone" }]
+        fake.missing_ids << old_id
+        log_in!(owner)
+        patch renew_locker_rental_path(rental)
+        expect(rental.reload.shopify_draft_order_id).to be_nil
+      end
 
-      expect(rental.reload.state).to eq("await_payment")
-      expect(rental.shopify_draft_order_id).to be_nil
+      it "an open draft Shopify refuses to delete is reported and its id kept" do
+        rental = renewable
+        fake.delete_user_errors = [{ "message" => "locked" }]
+        reports = []
+        allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+        log_in!(owner)
+        patch renew_locker_rental_path(rental)
+        expect(rental.reload.state).to eq("await_payment")
+        expect(rental.shopify_draft_order_id).to eq(old_id)
+        expect(reports.map { |e, _| e }).to contain_exactly(be_a(LockerRental::DraftOrderNotDeleted))
+      end
+
+      it "staff moving an ACTIVE rental back to await_payment is handled the same way" do
+        rental = create(:locker_rental, :active, rented_by: owner).tap { |r| r.update_column(:shopify_draft_order_id, old_id) }
+        log_in!(staff)
+        patch locker_rental_path(rental), params: { locker_rental: { state: "await_payment" } }
+        expect(rental.reload.state).to eq("await_payment")
+        expect(fake.deleted_ids).to eq([old_id])
+        expect(rental.shopify_draft_order_id).to be_nil
+      end
+
+      it "staff moving a CANCELLED rental back to await_payment is handled the same way (open draft deleted, id forgotten)" do
+        rental = create(:locker_rental, :await_payment, rented_by: owner)
+        rental.update_columns(state: "cancelled", cancelled_at: Time.current, shopify_draft_order_id: old_id)
+        log_in!(staff)
+        patch locker_rental_path(rental), params: { locker_rental: { state: "await_payment" } }
+        expect(rental.reload.state).to eq("await_payment")
+        expect(fake.deleted_ids).to eq([old_id])
+        expect(rental.shopify_draft_order_id).to be_nil
+      end
     end
 
     it "refuses renewal of a NOT expired rental with the alert redirect" do

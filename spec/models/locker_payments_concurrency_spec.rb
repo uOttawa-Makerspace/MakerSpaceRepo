@@ -190,8 +190,22 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
 
     it "creates no draft for a deleted or deactivated renter (checked before the create)" do
       renter.deactivate!
-      expect(LockerRental.find(rental.id).checkout_link).to be_nil
+      candidate = LockerRental.find(rental.id)
+      expect(candidate.checkout_link).to be_nil
+      expect(candidate.checkout_state).to eq(:ineligible)
       expect(fake.calls).to be_empty
+    end
+
+    it "the winner's draft already COMPLETED when the loser serves: processing, no link" do
+      winner = "gid://shopify/DraftOrder/winner"
+      during_shopify_create do
+        LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: winner)
+        fake.draft_statuses[winner] = "COMPLETED"
+      end
+      candidate = LockerRental.find(rental.id)
+      expect(candidate.checkout_link).to be_nil
+      expect(candidate.checkout_state).to eq(:processing)
+      expect(fake.deleted_ids).to eq([fake.draft_id]) # only the loser's own unused draft
     end
 
     it "a renter deactivated while the draft is being created: the recheck under the lock refuses to store it, and it is removed" do
@@ -231,6 +245,17 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
         expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq(old_id)
       end
 
+      it "an unknown status is reported at most once per draft per day" do
+        allow(Rails).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new)
+        fake.draft_statuses[old_id] = "WEIRD"
+        reports = []
+        allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+        candidate = LockerRental.find(rental.id)
+        2.times { expect(candidate.checkout_link).to be_nil }
+        expect(candidate.checkout_state).to eq(:unexpected_status)
+        expect(reports.size).to eq(1)
+      end
+
       it "an INVOICE_SENT draft is served" do
         fake.draft_statuses[old_id] = "INVOICE_SENT"
         expect(LockerRental.find(rental.id).checkout_link).to eq(fake.invoice_url)
@@ -239,18 +264,19 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
       it "renewal: last term's paid draft id is forgotten (never deleted) and the new term gets a fresh draft" do
         LockerRental.where(id: rental.id).update_all(state: "active", owned_until: 1.day.ago)
         fake.draft_statuses[old_id] = "COMPLETED"
+        fake.delete_user_errors = [{ "message" => "paid" }] # Shopify refuses to delete a completed draft
         fake.draft_id = "gid://shopify/DraftOrder/new"
         renewing = LockerRental.find(rental.id)
         renewing.transaction do
           renewing.lock!
           renewing.update!(state: :await_payment, owned_until: 5.months.from_now)
-          renewing.close_previous_term_draft!
         end
+        renewing.sync_shopify_draft_order_after_commit
         expect(LockerRental.find(rental.id).shopify_draft_order_id).to be_nil
 
         expect(LockerRental.find(rental.id).checkout_link).to eq(fake.invoice_url)
         expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq("gid://shopify/DraftOrder/new")
-        expect(fake.deleted_ids).to be_empty
+        expect(fake.deleted_ids - [old_id]).to be_empty # Shopify was asked about the old one only (and refused)
       end
 
       it "an unanswered fetch gives no link and keeps the id" do

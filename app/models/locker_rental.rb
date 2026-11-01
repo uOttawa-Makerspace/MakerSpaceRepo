@@ -309,26 +309,30 @@ class LockerRental < ApplicationRecord
     end
   end
 
-  # EVERY code path that cancels a rental must call this after its transaction has committed, or a cancelled
-  # rental keeps a payable Shopify invoice (a late payment would then only be caught as a held payment).
-  # Current callers: LockerRentalsController#update (the only place a rental is cancelled: staff end/cancel and
-  # the renter cancelling a pending request).
+  # EVERY code path that cancels a rental, or puts one back into await_payment (renewal, staff moving an active or
+  # cancelled rental back), must call this after its transaction has committed, or the rental keeps a payable Shopify
+  # invoice (a late payment would then only be caught as a held payment, a second charge for the renter).
+  # Current callers: LockerRentalsController#update and #renew.
   #
-  # After a save that cancelled this rental, takes its Shopify draft order away by the one shared rule
-  # (ShopifyConcern::DraftRemoval, the same classification JobOrder uses). Call it AFTER the transaction has
-  # committed (no row lock is held during the HTTP call). The cancellation is already committed, so a Shopify
-  # failure cannot undo it. What the stored id becomes follows the outcome, as for a job order:
+  # THE rule for the stored draft when the state changes, after a save that did it: the draft is classified by the one
+  # shared rule (ShopifyConcern::DraftRemoval, the same classification JobOrder uses). Call it AFTER the transaction has
+  # committed (no row lock is held during the HTTP call). The state change is already committed, so a Shopify failure
+  # cannot undo it. What the stored id becomes follows the outcome:
   #   deleted / gone  the id is forgotten (nothing left to remove)
-  #   completed       the draft is PAID (it became an order, the payment record): nothing to remove, the id is kept,
-  #                   no report, no alert (ending a paid rental is not a failure)
+  #   completed       the draft is PAID (it became an order, the payment record), never deleted, no report. Ending a
+  #                   rental keeps the id (the record of the payment); a rental that starts a NEW term forgets it, so the
+  #                   new term gets its own draft
   #   still open      a payable invoice that could not be deleted: reported, id kept, false returned; a payment that
-  #                   still arrives is recorded as held (rental_cancelled) for staff to refund
+  #                   still arrives is recorded as held for staff to refund
   # An exception (HTTP, timeout, configuration, no answer) is the same failure. Returns true when there was nothing
   # to do or nothing is left to remove.
   class DraftOrderNotDeleted < StandardError; end
 
   def sync_shopify_draft_order_after_commit
-    return true unless saved_change_to_state? && cancelled?
+    return true unless saved_change_to_state?
+
+    new_term = await_payment? && %w[active cancelled].include?(state_before_last_save)
+    return true unless cancelled? || new_term
 
     gid = shopify_draft_order_id
     return true if gid.blank?
@@ -336,14 +340,14 @@ class LockerRental < ApplicationRecord
     result = ShopifyConcern::DraftRemoval.call(gid)
     case result.outcome
     when :deleted, :gone then forget_draft_order_id(gid)
-    when :completed then nil
+    when :completed then forget_draft_order_id(gid) if new_term
     else
       raise DraftOrderNotDeleted,
             "Shopify did not delete the open draft order #{gid}: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
     end
     true
   rescue StandardError => e
-    Rails.error.report(e, handled: true, severity: :error, context: { locker_rental_id: id, step: 'delete_shopify_draft_order' })
+    report_checkout_failure(e, 'delete_shopify_draft_order')
     false
   end
 
@@ -356,54 +360,32 @@ class LockerRental < ApplicationRecord
   def checkout_link
     @checkout_state = :unavailable
     return nil unless await_payment?
-    return nil unless renter_eligible?(lock: false) # never a draft for a deleted or deactivated renter
+
+    unless renter_eligible?(lock: false) # never a draft for a deleted or deactivated renter
+      @checkout_state = :ineligible
+      return nil
+    end
 
     if shopify_draft_order_id.present?
-      state, draft = fetch_shopify_draft_order_result
-      return nil if state == :error # Shopify did not answer: no link now, the stored id is untouched
+      link = served_link
+      return link unless link == :gone
 
-      if state == :found
-        if ShopifyConcern::DraftRemoval.payable?(draft)
-          @checkout_state = :link
-          return draft['invoiceUrl']
-        end
-        if ShopifyConcern::DraftRemoval.paid?(draft)
-          # COMPLETED on a rental awaiting payment: the payment was received and is being processed (webhook lag, or
-          # a held payment). Never a second invoice, never delete it. (A renewal forgets last term's id when it
-          # starts: #close_previous_term_draft!)
-          @checkout_state = :processing
-          return nil
-        end
-        report_checkout_failure(UnknownDraftStatus.new("draft order #{shopify_draft_order_id} has status #{draft['status'].inspect}"), 'serve_draft')
-        return nil
-      end
-      forget_draft_order_id(shopify_draft_order_id) # gone
+      forget_draft_order_id(shopify_draft_order_id)
     end
-    url = create_checkout_draft
-    @checkout_state = :link if url.present?
-    url
+    create_checkout_draft
   rescue StandardError => e
     # Never into the page: reported, and the page says checkout is unavailable.
-    report_checkout_failure(e, 'checkout_link')
     @checkout_state = :unavailable
+    report_checkout_failure(e, 'checkout_link')
     nil
   end
 
   class UnknownDraftStatus < StandardError; end
 
-  # :link, :processing (a paid draft awaits the payment record) or :unavailable, as of the last #checkout_link.
+  # Why the last #checkout_link gave what it gave: :link, :processing (a paid draft awaits the payment record),
+  # :ineligible (the renter is deactivated or deleted), :unexpected_status (the stored draft has a status that is
+  # neither payable nor paid; staff must clear it) or :unavailable.
   attr_reader :checkout_state
-
-  # A rental that has just gone active -> await_payment (renewal, or staff moving it back) starts a new term: last
-  # term's paid draft id must not stay, or the new term would be shown "payment received". Forgets it with a
-  # conditional UPDATE; the paid draft is never deleted. Call in the transaction of the save that changed the state,
-  # under the row lock.
-  def close_previous_term_draft!
-    return unless saved_change_to_state? && await_payment? && state_before_last_save == 'active'
-    return if shopify_draft_order_id.blank?
-
-    forget_draft_order_id(shopify_draft_order_id)
-  end
 
   # For the view
   def state_icon
@@ -443,6 +425,39 @@ class LockerRental < ApplicationRecord
 
   private
 
+  # THE place a link is served from: fetch the stored draft, classify it, serve it only when payable. The url, nil
+  # (no link; #checkout_state says why) or :gone (Shopify no longer has it).
+  #   payable (OPEN, INVOICE_SENT)  the invoice url
+  #   COMPLETED                     the payment was received and is being processed (webhook lag, or a held payment):
+  #                                 no link, never a second invoice, never deleted
+  #   any other status              no link; reported once per draft per day so staff can clear it
+  def served_link
+    state, draft = fetch_shopify_draft_order_result
+    return nil if state == :error # Shopify did not answer: no link now, the stored id is untouched
+    return :gone unless state == :found
+
+    if ShopifyConcern::DraftRemoval.payable?(draft)
+      @checkout_state = :link
+      draft['invoiceUrl']
+    elsif ShopifyConcern::DraftRemoval.paid?(draft)
+      @checkout_state = :processing
+      nil
+    else
+      @checkout_state = :unexpected_status
+      report_unknown_draft_status(draft)
+      nil
+    end
+  end
+
+  def report_unknown_draft_status(draft)
+    first = Rails.cache.write("locker_unknown_draft_status:#{shopify_draft_order_id}", true, expires_in: 1.day, unless_exist: true)
+    return unless first
+
+    report_checkout_failure(
+      UnknownDraftStatus.new("draft order #{shopify_draft_order_id} has status #{draft['status'].inspect}"), 'serve_draft'
+    )
+  end
+
   def create_checkout_draft
     ensure_can_use_draft_order
     new_id, _line_items = create_remote_draft_order # Shopify, no lock
@@ -462,26 +477,28 @@ class LockerRental < ApplicationRecord
       discard_unused_draft(new_id)
       raise
     end
-    return fetch_shopify_draft_order&.dig('invoiceUrl') if kept
+    discard_unused_draft(new_id) unless kept
+    # Kept: this draft is the invoice. Lost the race: another request stored its draft, which is. Either way the link
+    # goes through the same fetch -> classify -> payable path.
+    return nil unless shopify_draft_order_id.present? && await_payment? && renter_eligible?(lock: false)
 
-    discard_unused_draft(new_id)
-    # Another request stored its draft first: that one is the invoice.
-    await_payment? && shopify_draft_order_id.present? ? fetch_shopify_draft_order&.dig('invoiceUrl') : nil
+    link = served_link
+    link == :gone ? nil : link
   end
 
-  # The draft created for a checkout that lost the race. The lock is released; the shared rule decides what the
-  # outcome means, and only a draft that is still open and could not be deleted is a failure.
   def report_checkout_failure(error, step)
     Rails.error.report(error, handled: true, severity: :error, context: { locker_rental_id: id, step: step })
   end
 
+  # The draft created for a checkout that lost the race. The lock is released; the shared rule decides what the
+  # outcome means, and only a draft that is still open and could not be deleted is a failure.
   def discard_unused_draft(gid)
     result = ShopifyConcern::DraftRemoval.call(gid)
     return unless result.outcome == :open
 
     raise DraftOrderNotDeleted, "Shopify did not delete the unused draft order #{gid}: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
   rescue StandardError => e
-    Rails.error.report(e, handled: true, severity: :error, context: { locker_rental_id: id, step: 'delete_unused_shopify_draft_order' })
+    report_checkout_failure(e, 'delete_unused_shopify_draft_order')
   end
 
   # Forgets the stored draft id, only if it is still `gid` (a conditional UPDATE, never over a newer draft).

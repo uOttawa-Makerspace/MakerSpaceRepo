@@ -65,6 +65,8 @@ en:
     payment_description: Your locker has been approved! Complete payment to finalize the assignment.
     payment_processing: Payment received, it is being processed.
     checkout_unavailable: Checkout is temporarily unavailable, try again shortly.
+    checkout_ineligible: The renter's account is deactivated or deleted.
+    checkout_unexpected_status: Checkout unavailable, the draft has an unexpected status.
 
     reviewing_description: This request hasn't been reviewed yet. You'll be notified once a decision is made.
 
@@ -185,6 +187,8 @@ fr:
     payment_description: Votre casier est approuvé. Effectuez le paiement pour finaliser l'attribution.
     payment_processing: Paiement reçu, il est en cours de traitement.
     checkout_unavailable: Le paiement est temporairement indisponible, réessayez sous peu.
+    checkout_ineligible: Le compte du locataire est désactivé ou supprimé.
+    checkout_unexpected_status: Paiement indisponible, le brouillon a un statut inattendu.
 
     reviewing_description: Cette demande n'a pas encore été examinée. Vous serez informé dès qu'une décision aura été prise.
 
