@@ -56,8 +56,9 @@ RSpec.describe "Job order quote fingerprint", type: :request do
     pay!(order)
     expect(order.reload.shopify_draft_order_id).to be_present
 
-    # Changing an indexed column and back writes new row versions with new index entries (not a HOT update), so
-    # these rows now come back last from a read without ORDER BY, by seq scan and by index scan alike.
+    # Changing an indexed column and back writes new row versions, which may change the order rows come back in
+    # (Postgres does not guarantee one, so this spec does not assert it: that the fingerprint ignores load order is
+    # proven deterministically in spec/models/job_order_spec.rb).
     other = create(:job_order, user: owner)
     other_task = other.job_tasks.create!(title: "Other")
     other_quote = other_task.build_job_task_quote(price: 1).tap(&:save!)
@@ -66,7 +67,6 @@ RSpec.describe "Job order quote fingerprint", type: :request do
     rewrite_row!(first_task.job_task_quote, :job_task_id, other_task.id)
     rewrite_row!(first_task.job_task_quote.job_task_quote_options.min_by(&:id), :job_task_quote_id, other_quote.id)
     rewrite_row!(order.job_quote_line_items.min_by(&:id), :job_order_id, other.id)
-    expect(order.job_tasks.reload.map(&:id)).not_to eq(order.job_tasks.map(&:id).sort) # the reorder took effect
     shopify.calls.clear
 
     pay!(order)

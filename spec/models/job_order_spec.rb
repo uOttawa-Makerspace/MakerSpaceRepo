@@ -476,6 +476,58 @@ RSpec.describe JobOrder, type: :model do
         expect(described_class.find(order.id).quote_fingerprint).to eq(before)
       end
 
+      # The fingerprint reads, per task: id, the quote's price, service_price x service_quantity and each quote
+      # option's job_option_id and price; plus each line item's id and price. It sorts them, so the order the
+      # associations are loaded in is not part of it. Load order is forced here (not left to Postgres, which does
+      # not guarantee one): the same rows are handed over in reversed order at every level.
+      describe "#quote_fingerprint load order" do
+        let(:options) { [JobOption.create!(name: "Polish", fee: 1), JobOption.create!(name: "Sand", fee: 1)] }
+
+        before do
+          3.times do |i|
+            quote = quoted_task!("Task ##{i + 1}", price: 10 + i, service_price: 2, service_quantity: 3).job_task_quote
+            options.each_with_index { |o, j| quote.job_task_quote_options.create!(job_option: o, price: j + 1) }
+          end
+          order.job_quote_line_items.create!(description: "Rush", price: 2.5)
+          order.job_quote_line_items.create!(description: "Setup", price: 1.25)
+        end
+
+        def snapshot_for(order_id, reverse:)
+          fresh = described_class.find(order_id)
+          tasks = fresh.job_tasks.includes(job_task_quote: :job_task_quote_options).reorder(:id).to_a
+          items = fresh.job_quote_line_items.reorder(:id).to_a
+          if reverse
+            tasks.reverse!
+            items.reverse!
+            tasks.each do |task|
+              assoc = task.job_task_quote.association(:job_task_quote_options)
+              assoc.target = assoc.target.reverse
+              assoc.loaded!
+            end
+          end
+          [fresh, described_class::QuoteSnapshot.new(tasks: tasks, line_items: items)]
+        end
+
+        it "is the same for tasks, quote options and line items loaded in reversed order" do
+          fresh, forward = snapshot_for(order.id, reverse: false)
+          _, backward = snapshot_for(order.id, reverse: true)
+          expect(backward.tasks.map(&:id)).to eq(forward.tasks.map(&:id).reverse)
+          expect(backward.line_items.map(&:id)).to eq(forward.line_items.map(&:id).reverse)
+          expect(backward.tasks.first.job_task_quote.job_task_quote_options.map(&:id))
+            .to eq(forward.tasks.last.job_task_quote.job_task_quote_options.map(&:id).reverse)
+
+          expect(fresh.quote_fingerprint(backward)).to eq(fresh.quote_fingerprint(forward))
+        end
+
+        it "changes when one amount changes (so the comparison above is not vacuous)" do
+          fresh, forward = snapshot_for(order.id, reverse: false)
+          before = fresh.quote_fingerprint(forward)
+          order.job_quote_line_items.first.update!(price: 9.99)
+          fresh, changed = snapshot_for(order.id, reverse: true)
+          expect(fresh.quote_fingerprint(changed)).not_to eq(before)
+        end
+      end
+
       it "raises a network error from the concern when Shopify answers with a non-200 while creating" do
         shopify.status = 502
         expect { order.send(:shopify_draft_order) }.to raise_error(RuntimeError, /Network error: Received HTTP 502/)
