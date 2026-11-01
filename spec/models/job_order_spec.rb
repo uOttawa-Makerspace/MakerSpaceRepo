@@ -519,6 +519,16 @@ RSpec.describe JobOrder, type: :model do
           expect(fresh.quote_fingerprint(backward)).to eq(fresh.quote_fingerprint(forward))
         end
 
+        it "is the same for two quote options on one task with the same job_option_id and different prices, in either order" do
+          quote = order.job_tasks.first.job_task_quote
+          quote.job_task_quote_options.create!(job_option: options.first, price: 7)
+          quote.job_task_quote_options.create!(job_option: options.first, price: 4)
+
+          fresh, forward = snapshot_for(order.id, reverse: false)
+          _, backward = snapshot_for(order.id, reverse: true)
+          expect(fresh.quote_fingerprint(backward)).to eq(fresh.quote_fingerprint(forward))
+        end
+
         it "changes when one amount changes (so the comparison above is not vacuous)" do
           fresh, forward = snapshot_for(order.id, reverse: false)
           before = fresh.quote_fingerprint(forward)

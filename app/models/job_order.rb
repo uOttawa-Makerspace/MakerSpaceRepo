@@ -399,12 +399,14 @@ class JobOrder < ApplicationRecord
   #   parts fee     [task id, "parts", price x quantity]       (only when both are positive, as on the draft)
   #   option fee    [task id, "option:<job_option id>", amount]
   #   line item     [0, "line_item:<job_quote_line_item id>", amount]
-  # amounts as 2-decimal strings, sorted by (task id, component). Display titles (task titles, option names) are
+  # amounts as 2-decimal strings, the triples sorted as a whole (task id, component, amount): a total order, so
+  # two components that tie on (task id, component), e.g. two quote options on one task with the same job_option_id
+  # (no unique index prevents it), are interchangeable and load order cannot change the digest. Display titles (task titles, option names) are
   # not part of it, so renaming a JobOption does not change it, and row order from the database does not matter.
   def quote_fingerprint(snapshot = quote_snapshot)
     components = quote_lines(snapshot).map { |line| [*line[:key], self.class.money_string(line[:amount])] }
     components += snapshot.line_items.map { |li| [0, "line_item:#{li.id}", self.class.money_string(li.price)] }
-    Digest::SHA256.hexdigest(components.sort_by { |task_id, kind, _| [task_id, kind] }.to_json)
+    Digest::SHA256.hexdigest(components.sort.to_json)
   end
 
   def self.money_string(amount)

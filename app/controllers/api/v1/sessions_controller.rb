@@ -25,7 +25,7 @@ module Api
         when :inactive
           # :inactive and the error code account_inactive are the external contract; both mean
           # deactivated (users.deactivated_at).
-          render_error(:account_inactive, I18n.t("sessions.account_deactivated"),
+          render_error(:account_inactive, I18n.t("sessions.account_deactivated", support_email: SUPPORT_EMAIL),
                        status: :forbidden, support_email: SUPPORT_EMAIL)
         when :unconfirmed
           render_error(:account_unconfirmed, "Please confirm your account before logging in.", status: :forbidden)

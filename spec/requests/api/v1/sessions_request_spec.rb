@@ -118,6 +118,7 @@ RSpec.describe "/api/v1/session", type: :request do
       login
       expect(response).to have_http_status(:forbidden)
       expect(error["code"]).to eq("account_inactive")
+      expect(error["message"]).to eq("This account has been deactivated. Please contact #{SessionsController::SUPPORT_EMAIL}.")
       expect(error["support_email"]).to be_present
     end
 

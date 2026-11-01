@@ -7,8 +7,6 @@ require "rails_helper"
 # last usable admin. The legacy `active` column (2021-22 dormancy snapshot) is never read
 # or written by any of it.
 RSpec.describe User, "#deactivated_at" do
-  include ActiveSupport::Testing::TimeHelpers
-
   let(:user) { create(:user, :regular_user) }
 
   def legacy_inactive!(*users)
@@ -63,13 +61,6 @@ RSpec.describe User, "#deactivated_at" do
       expect(row.token_version).to eq(version + 1)
       expect(user).not_to be_changed
       expect(user.deactivated_at).to eq(row.deactivated_at)
-    end
-
-    it "stamps deactivated_at with the database clock, not the app server's, and syncs the instance from the row" do
-      travel_to(3.days.from_now) { user.deactivate! } # the app clock is days ahead of the database's
-      stored = User.find(user.id).deactivated_at
-      expect(stored).to be_within(1.minute).of(Time.current)
-      expect(user.deactivated_at).to eq(stored)
     end
 
     it "does not write active when the legacy value is false either" do

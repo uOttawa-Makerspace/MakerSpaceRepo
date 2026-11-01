@@ -64,7 +64,7 @@ class SessionsController < ApplicationController
         @user = User.new
         # :inactive is the refusal's name in the CredentialAuthenticator contract (kept, with the API
         # code account_inactive); it means deactivated (users.deactivated_at).
-        inactive_message = I18n.t("sessions.account_deactivated")
+        inactive_message = I18n.t("sessions.account_deactivated", support_email: SUPPORT_EMAIL)
         format.html do
           flash.now[:alert] = inactive_message
           render :login

@@ -228,7 +228,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       login!(u)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("login")
-      expect(flash[:alert]).to start_with("This account has been deactivated.")
+      expect(flash[:alert]).to start_with("This account has been deactivated. Please contact uottawa.makerepo@gmail.com.")
       get check_signed_in_path
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
@@ -238,7 +238,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       post login_authentication_path, params: { username_email: u.username, password: password }, as: :json
       expect(response).to have_http_status(:unprocessable_content)
       body = JSON.parse(response.body)
-      expect(body["error"]).to start_with("This account has been deactivated.")
+      expect(body["error"]).to start_with("This account has been deactivated. Please contact uottawa.makerepo@gmail.com.")
       expect(body["support_email"]).to eq("uottawa.makerepo@gmail.com")
       expect(body).not_to have_key("token")
     end

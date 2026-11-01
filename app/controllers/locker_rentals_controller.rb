@@ -260,6 +260,11 @@ class LockerRentalsController < SessionsController
         # then convert to user id
         admin_params.reverse_merge!(rented_by_id: rented_by_user.id)
       end
+      # A missing or deactivated renter is refused the same way (nil fails `validates :rented_by, presence`):
+      # a locker is never assigned to an account that cannot sign in.
+      if admin_params[:rented_by_id].present? && !User.not_deactivated.exists?(admin_params[:rented_by_id])
+        admin_params[:rented_by_id] = nil
+      end
 
       admin_params
     elsif params[:id]

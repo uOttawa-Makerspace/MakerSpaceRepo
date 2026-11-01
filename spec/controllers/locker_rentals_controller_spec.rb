@@ -107,6 +107,26 @@ RSpec.describe LockerRentalsController, type: :controller do
     before(:each) { @locker = create(:locker) }
 
     context 'assigning to users' do
+      it 'refuses a deactivated user named by id or by username: no rental is created' do
+        gone = create :user
+        gone.deactivate!
+        [{ rented_by_id: gone.id }, { rented_by_username: gone.username }].each do |who|
+          expect do
+            post :create,
+                 params: {
+                   locker_rental:
+                     attributes_for(
+                       :locker_rental,
+                       locker_id: @locker.id,
+                       locker_specifier: '1',
+                       state: :active,
+                       owned_until: end_of_this_semester
+                     ).except(:rented_by_id).merge(who)
+                 }
+          end.not_to change(LockerRental, :count)
+        end
+      end
+
       it 'should allow manual assignment' do
         target_user = create :user
         expect do

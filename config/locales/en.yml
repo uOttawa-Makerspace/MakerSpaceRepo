@@ -197,7 +197,7 @@ en:
         how_heard_about_us: "How did you hear about us?"
         accept_waiver_html: "By checking this box, <strong>I ACCEPT AND FULLY ASSUME</strong> all such (health and safety) risks, dangers and hazards which may be associated with my participation."
   sessions:
-    account_deactivated: "This account has been deactivated. Please contact the makerspace staff."
+    account_deactivated: "This account has been deactivated. Please contact %{support_email}."
     login:
       sign_in: "Sign In"
       username_or_email: "Username or Email Address"
