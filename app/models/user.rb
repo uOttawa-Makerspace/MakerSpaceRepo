@@ -4,8 +4,10 @@ class User < ApplicationRecord
   # `deactivated_at` (NULL = not deactivated) changes only through deactivate!/reactivate!
   # (token_version bump, last-admin guard). Assigning it on a persisted user raises
   # ActiveRecord::ReadonlyAttributeError (config.active_record.raise_on_assign_to_attr_readonly).
-  # The legacy `active` column is not the deactivation state and nothing writes it.
-  attr_readonly :deactivated_at
+  # The legacy `active` column is read-only history (the 2021-22 dormancy snapshot, kept
+  # for reporting): it is not the deactivation state and nothing writes it, so it is
+  # readonly too.
+  attr_readonly :deactivated_at, :active
   include BCrypt
   include ActiveModel::Serialization
   include UoengConcern
@@ -304,6 +306,8 @@ class User < ApplicationRecord
   
   # `active` is the legacy 2021-22 dormancy snapshot, not the deactivation state (deactivated_at).
   scope :active, -> { where(active: true) }
+  # Everyone who can sign in as far as deactivation goes (legacy `active` is irrelevant).
+  scope :not_deactivated, -> { where(deactivated_at: nil) }
   scope :unknown_identity, -> { where(identity: 'unknown') }
   
   scope :created_at_month, ->(month) { 
@@ -371,6 +375,9 @@ class User < ApplicationRecord
   }
 
   GUARD_LOCK_MODE = "FOR NO KEY UPDATE"
+
+  # Stamps a column with the database's clock inside write_and_bump_token_version's UPDATE.
+  DATABASE_NOW = Arel.sql("CURRENT_TIMESTAMP").freeze
 
   # Runs the block (a demotion, admin lock, soft delete or deactivation of `affected_ids`) only if
   # at least one usable admin remains outside them; otherwise raises LastAdminError
@@ -784,7 +791,7 @@ class User < ApplicationRecord
     # locked admin is not refused). One read, under the guard's locks. The no-op decision itself is the
     # UPDATE's state condition in change_deactivation!.
     self.class.guarding_last_admin!([id], only_if: -> { self.class.unscoped.merge(self.class.usable_admins).where(id: id).exists? }) do
-      change_deactivation!(Time.current)
+      change_deactivation!(DATABASE_NOW)
     end
   end
 
@@ -1009,11 +1016,18 @@ class User < ApplicationRecord
   # The ONE UPDATE behind every bump: token_version + 1 and `values` (column => value,
   # not read from the instance, so attr_readonly columns can be written too) with
   # updated_at. `extra_where` is an optional [sql, *binds] condition on the row as it
-  # was. Returns [new token_version, updated_at], or nil when no row matched.
+  # was. A value of DATABASE_NOW is stamped by the database's clock inside the UPDATE (not the
+  # app server's) and read back with RETURNING. Returns [new token_version, updated_at,
+  # {column => value the database wrote for its DATABASE_NOW columns}], or nil when no row matched.
   def write_and_bump_token_version(values, from_version: nil, extra_where: nil)
     conn = self.class.connection
     values = values.merge(updated_at: Time.current)
-    assignments = values.keys.map { |column| "#{conn.quote_column_name(column)} = ?" }
+    db_clock_columns = values.select { |_, value| value.equal?(DATABASE_NOW) }.keys
+    bound = values.reject { |column, _| db_clock_columns.include?(column) }
+    assignments = values.keys.map do |column|
+      "#{conn.quote_column_name(column)} = #{db_clock_columns.include?(column) ? DATABASE_NOW : '?'}"
+    end
+    returning = ["token_version", *db_clock_columns.map { |column| conn.quote_column_name(column) }].join(", ")
     where_sql = +"id = ?"
     binds = [id]
     if from_version
@@ -1026,21 +1040,25 @@ class User < ApplicationRecord
     end
     sql = self.class.sanitize_sql_array(
       ["UPDATE #{conn.quote_table_name(self.class.table_name)} SET token_version = token_version + 1, " \
-       "#{assignments.join(', ')} WHERE #{where_sql} RETURNING token_version",
-       *values.values, *binds]
+       "#{assignments.join(', ')} WHERE #{where_sql} RETURNING #{returning}",
+       *bound.values, *binds]
     )
-    # select_value is a read API: never let the query cache answer this write.
+    # select_all is a read API: never let the query cache answer this write.
     # (Rails 8.1 already clears the cache on write SQL; this is belt and braces.)
-    new_version = self.class.uncached { conn.select_value(sql) }
-    new_version && [new_version, values[:updated_at]]
+    row = self.class.uncached { conn.select_all(sql).cast_values.first }
+    return nil unless row
+
+    new_version, *clock_values = row
+    [new_version, values[:updated_at], db_clock_columns.zip(clock_values).to_h]
   end
 
   # Syncs the instance to the row the bump just wrote (clean, no pending change) and
-  # schedules the revocation side effects. `values` are the columns that were written.
-  def apply_bumped_row((new_version, updated_at), values)
+  # schedules the revocation side effects. `values` are the columns that were written;
+  # the ones the database stamped come back in `db_written`.
+  def apply_bumped_row((new_version, updated_at, db_written), values)
     # attributes written from the database state, not assigned: attr_readonly columns
     # (deactivated_at) cannot be assigned on a persisted record
-    values.each { |column, value| @attributes.write_from_database(column.to_s, value) }
+    values.merge(db_written || {}).each { |column, value| @attributes.write_from_database(column.to_s, value) }
     @attributes.write_from_database("token_version", new_version)
     @attributes.write_from_database("updated_at", updated_at)
     # After the real commit when called inside a caller's transaction (a rolled-back
@@ -1058,7 +1076,7 @@ class User < ApplicationRecord
     self
   end
 
-  # Sets `deactivated_at` to `value` (a time, or nil to reactivate) and bumps token_version
+  # Sets `deactivated_at` to `value` (DATABASE_NOW, stamped by the database clock, or nil to reactivate) and bumps token_version
   # in ONE UPDATE, only when the account is not already in that state (deactivating an
   # already deactivated row keeps its original time). Returns true when it changed, false
   # when it already was (nothing bumped, nothing revoked).

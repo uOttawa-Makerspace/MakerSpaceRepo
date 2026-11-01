@@ -1036,6 +1036,18 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include('value="active"', 'value="staff"')
     end
 
+    it "lists users who are not deactivated (including legacy active = false) and not deactivated ones" do
+      legacy = create(:user, :regular_user, username: "legacydormant")
+      User.where(id: legacy.id).update_all(active: false)
+      gone = create(:user, :regular_user, username: "deactivatedone")
+      gone.deactivate!
+      log_in!(staff)
+      get assign_locker_locker_rentals_path
+
+      expect(response.body).to include("legacydormant")
+      expect(response.body).not_to include("deactivatedone")
+    end
+
     it "bounces regular users" do
       log_in!(owner)
       get assign_locker_locker_rentals_path

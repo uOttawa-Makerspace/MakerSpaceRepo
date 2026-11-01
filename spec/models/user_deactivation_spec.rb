@@ -7,6 +7,8 @@ require "rails_helper"
 # last usable admin. The legacy `active` column (2021-22 dormancy snapshot) is never read
 # or written by any of it.
 RSpec.describe User, "#deactivated_at" do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:user) { create(:user, :regular_user) }
 
   def legacy_inactive!(*users)
@@ -19,12 +21,28 @@ RSpec.describe User, "#deactivated_at" do
     expect(User.find(user.id).deactivated_at).to be_nil
   end
 
+  it "keeps the legacy active column readonly too: update(active:) raises and leaves it unchanged" do
+    expect { user.update(active: false) }.to raise_error(ActiveRecord::ReadonlyAttributeError)
+    expect(User.find(user.id).active).to be(true)
+  end
+
   it "can still be set when the user is built" do
     expect(build(:user, deactivated_at: Time.current).deactivated_at).to be_present
   end
 
   it "is NULL for a new user" do
     expect(user.deactivated_at).to be_nil
+  end
+
+  describe ".not_deactivated" do
+    it "includes legacy active = false users and excludes deactivated ones" do
+      legacy = create(:user, :regular_user)
+      legacy_inactive!(legacy)
+      gone = create(:user, :regular_user)
+      gone.deactivate!
+      ids = User.not_deactivated.where(id: [user.id, legacy.id, gone.id]).pluck(:id)
+      expect(ids).to contain_exactly(user.id, legacy.id)
+    end
   end
 
   describe "AuthEligibility" do
@@ -45,6 +63,13 @@ RSpec.describe User, "#deactivated_at" do
       expect(row.token_version).to eq(version + 1)
       expect(user).not_to be_changed
       expect(user.deactivated_at).to eq(row.deactivated_at)
+    end
+
+    it "stamps deactivated_at with the database clock, not the app server's, and syncs the instance from the row" do
+      travel_to(3.days.from_now) { user.deactivate! } # the app clock is days ahead of the database's
+      stored = User.find(user.id).deactivated_at
+      expect(stored).to be_within(1.minute).of(Time.current)
+      expect(user.deactivated_at).to eq(stored)
     end
 
     it "does not write active when the legacy value is false either" do

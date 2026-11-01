@@ -182,6 +182,7 @@ fr:
         how_heard_about_us: "Comment avez-vous entendu parler de nous?"
         accept_waiver_html: "En cochant cette case, <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation."
   sessions:
+    account_deactivated: "Ce compte a été désactivé. Veuillez communiquer avec le personnel du makerspace."
     login:
       sign_in: "Connexion"
       username_or_email: "Nom d'utilisateur ou adresse courriel"

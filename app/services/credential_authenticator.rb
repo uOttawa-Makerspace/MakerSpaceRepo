@@ -9,7 +9,8 @@
 # are refused. No session or token work happens here; callers do their own.
 #
 # Result#user is the authenticated User or nil; Result#refusal is nil (bad
-# credentials, or success), :locked, :inactive or :unconfirmed. Result#candidate is
+# credentials, or success), :locked, :inactive (deactivated: the name is a contract kept for the API
+# error code account_inactive) or :unconfirmed. Result#candidate is
 # the account the login named (nil if none), fresh after a failed attempt, so
 # callers can word the refusal (lock wait, attempts) without looking it up again.
 class CredentialAuthenticator

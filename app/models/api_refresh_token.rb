@@ -12,7 +12,7 @@ require Rails.root.join("lib/jwt_authenticator")
 # descending from one login (one device/session).
 #
 # A token is usable only if it is not revoked, not expired, carries the user's
-# CURRENT token_version, and the user is eligible (AuthEligibility). Presenting a
+# CURRENT token_version, and the user is eligible (AuthEligibility: not deleted, not deactivated (deactivated_at)). Presenting a
 # token that was already rotated (revoked WITH a successor) is treated as theft:
 # the whole family is revoked. A token revoked by logout has no successor, so
 # replaying it is just refused.
@@ -129,7 +129,7 @@ class ApiRefreshToken < ApplicationRecord
 
   # Revokes this token and issues its successor in the same family, under the
   # family lock. Returns the successor (raw value on #raw_token), or nil when this
-  # token is not usable (unknown state, expired, stale token_version, ineligible
+  # token is not usable (unknown state, expired, stale token_version, ineligible (deleted or deactivated: deactivated_at)
   # user, revoked by logout).
   #
   # The one place the replay rules live. A token that was already rotated

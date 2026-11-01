@@ -62,8 +62,9 @@ class SessionsController < ApplicationController
         end
       elsif @sign_in_refusal == :inactive
         @user = User.new
-        inactive_message =
-          "Your account is inactive. Please contact an administrator at #{SUPPORT_EMAIL}."
+        # :inactive is the refusal's name in the CredentialAuthenticator contract (kept, with the API
+        # code account_inactive); it means deactivated (users.deactivated_at).
+        inactive_message = I18n.t("sessions.account_deactivated")
         format.html do
           flash.now[:alert] = inactive_message
           render :login

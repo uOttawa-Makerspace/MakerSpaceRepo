@@ -369,7 +369,7 @@ RSpec.describe "SAML IdP", type: :request do
         User.where(id: user.id).update_all(deactivated_at: Time.current)
         post_auth(submit: "sign_in", username: user.username, password: password)
         expect(c18_saml_response_xml).to be_nil
-        expect(response.body).to include("Your account is inactive.")
+        expect(response.body).to include("This account has been deactivated.")
       end
     end
 
