@@ -23,8 +23,9 @@ class RfidController < SessionsController
   RATE_LIMITED = -> { render json: { error: "Too many requests" }, status: :too_many_requests }
   # The per-reader limit runs FIRST: its 429 halts the chain, so a reader looping past 60/min does not
   # also count against the shared per-IP ceiling (readers behind one NAT egress IP would otherwise lose
-  # the ceiling to one misbehaving reader). The per-reader counter rows this creates are bounded: the
-  # key digests the identifier (fixed length), lives a minute and is pruned (RateLimitCounter.prune!).
+  # the ceiling to one misbehaving reader). The per-reader counter rows this creates are bounded: each key
+  # digests the identifier (fixed length) and lives a minute, and prune! runs every 5 minutes, so one IP
+  # leaves at most (its request rate x the prune interval) rows of fixed length.
   rate_limit to: 60, within: 1.minute, only: :card_number, name: "tap",
              by: -> { tap_rate_limit_key }, with: RATE_LIMITED
   rate_limit to: 600, within: 1.minute, only: :card_number, name: "tap-ip",

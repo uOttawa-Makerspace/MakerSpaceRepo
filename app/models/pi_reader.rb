@@ -6,13 +6,15 @@ class PiReader < ApplicationRecord
   before_validation :normalize_mac_address, on: :create
   validates :pi_mac_address, presence: true, on: :create
   validate :mac_address_not_registered, on: :create
-  # Only when the identifier is being written: rows already stored (all within the bound) are never
-  # re-judged by an unrelated edit.
+  # Only when the identifier is being written. Rows already stored are never re-judged by an unrelated
+  # edit: the bound is NOT enforced on them (checked against the production dump of 2026-08-23: 0 rows
+  # outside it, so no data cleanup was needed).
   validate :identifier_within_bound, if: :will_save_change_to_pi_mac_address?
 
   # What a tap box may send as its identifier. Real MACs, and also the short non-MAC identifiers some
   # readers in use send, so there is no format: at most IDENTIFIER_MAX_LENGTH characters after
-  # normalization, and no control character. The one rule for registration (validation below) and for
+  # normalization, and no character of Unicode category C (control, format such as bidi overrides and
+  # zero-width characters, private use, unassigned, surrogates) or Z (spaces, NBSP included). The one rule for registration (validation below) and for
   # taps (RfidController), so a reader that can be registered can tap, and the identifier that goes into
   # a rate-limit key is bounded.
   IDENTIFIER_MAX_LENGTH = 64
@@ -24,10 +26,11 @@ class PiReader < ApplicationRecord
     raw.strip.downcase.tr("-", ":").presence
   end
 
-  # The normalized identifier, or nil when it is missing, not a string, too long or has a control character.
+  # The normalized identifier, or nil when it is missing, not a string, too long or has a space,
+  # control, format or other non-printing character.
   def self.tap_identifier(raw)
     id = normalize_mac(raw)
-    id if id && id.length <= IDENTIFIER_MAX_LENGTH && !id.match?(/[[:cntrl:]]/)
+    id if id && id.length <= IDENTIFIER_MAX_LENGTH && !id.match?(/[\p{C}\p{Z}]/)
   end
 
   # Case/separator-insensitive lookup that also matches rows registered before
@@ -53,7 +56,7 @@ class PiReader < ApplicationRecord
   def identifier_within_bound
     return if pi_mac_address.blank? || self.class.tap_identifier(pi_mac_address)
 
-    errors.add(:pi_mac_address, "must be at most #{IDENTIFIER_MAX_LENGTH} characters with no control characters")
+    errors.add(:pi_mac_address, "must be at most #{IDENTIFIER_MAX_LENGTH} characters with no spaces, control or invisible characters")
   end
 
   def mac_address_not_registered

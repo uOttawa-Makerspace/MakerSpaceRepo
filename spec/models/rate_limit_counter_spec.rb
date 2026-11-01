@@ -64,6 +64,8 @@ RSpec.describe RateLimitCounter do
     entry = YAML.safe_load(ERB.new(Rails.root.join("config/recurring.yml").read).result, aliases: true)
     %w[production staging].each do |env|
       expect(entry.dig(env, "prune_rate_limit_counters", "command")).to eq("RateLimitCounter.prune!")
+      # rows live a minute: an hourly prune would leave one IP's per-reader rows around for up to an hour
+      expect(entry.dig(env, "prune_rate_limit_counters", "schedule")).to eq("every 5 minutes")
     end
   end
 end

@@ -85,14 +85,15 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
     expect(described_class.find(key).count).to eq(1)
   end
 
-  # A batch whose picked rows include one restarted after the snapshot deletes fewer than PRUNE_BATCH rows
-  # while expired rows remain: the loop must go on until a batch deletes nothing.
-  it "prune! removes every expired row when a restarted row made the first batch short" do
+  # Every row of a batch can be restarted after it was picked (the batch deletes nothing): the loop must
+  # go on while expired candidates remain, not stop at the empty batch.
+  it "prune! removes every other expired row when a whole first batch was restarted" do
     stub_const("RateLimitCounter::PRUNE_BATCH", 2)
     base = 10.minutes.ago
-    # oldest first: the restarted row and one other make up the first batch, three more expire behind them
+    revived = [key, "#{key}:b"]
+    # oldest first: the two revived rows make up the first batch, three more expire behind them
     described_class.insert_all(
-      [key, "#{key}:b", "#{key}:c", "#{key}:d", "#{key}:e"].each_with_index.map do |k, i|
+      (revived + ["#{key}:c", "#{key}:d", "#{key}:e"]).each_with_index.map do |k, i|
         { key: k, count: 4, expires_at: base + i.seconds }
       end
     )
@@ -102,7 +103,7 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
     holder = Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do |conn|
         conn.transaction do
-          conn.execute("UPDATE rate_limit_counters SET count = 1, expires_at = now() + interval '1 hour' WHERE key = #{conn.quote(key)}")
+          conn.execute("UPDATE rate_limit_counters SET count = 1, expires_at = now() + interval '1 hour' WHERE key IN (#{revived.map { |k| conn.quote(k) }.join(', ')})")
           holder_ready << true
           release.pop
         end
@@ -120,7 +121,7 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
     release << true
     holder.join
 
-    expect(pruner.value).to eq(4)
-    expect(described_class.pluck(:key)).to eq([key])
+    expect(pruner.value).to eq(3)
+    expect(described_class.pluck(:key)).to match_array(revived)
   end
 end
