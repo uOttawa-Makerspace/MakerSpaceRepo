@@ -83,7 +83,7 @@ RSpec.describe Api::V1::BaseController, type: :controller do
     it "refuses soft-deleted and inactive users" do
       jwt, = ApiAccessToken.issue(user)
       bearer(jwt)
-      User.unscoped.where(id: user.id).update_all(active: false)
+      User.unscoped.where(id: user.id).update_all(deactivated_at: Time.current)
       get :index
       expect(response).to have_http_status(:unauthorized)
     end

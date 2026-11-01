@@ -142,10 +142,6 @@ class MsrMailerPreview < ActionMailer::Preview
     )
   end
 
-  def send_inactive_email
-    MsrMailer.send_inactive_email(User.first)
-  end
-
   def send_training_report
     MsrMailer.send_training_report(["admin@example.com"])
   end

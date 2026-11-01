@@ -45,10 +45,16 @@ RSpec.describe "Tap box ActionCable channels" do
       end
 
       it "rejects a deactivated or soft-deleted user" do
+        User.unscoped.where(id: user.id).update_all(deactivated_at: Time.current)
+        expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.to have_rejected_connection
+        User.unscoped.where(id: user.id).update_all(deactivated_at: nil, deleted: true)
+        expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.to have_rejected_connection
+      end
+
+      it "accepts a user whose legacy `active` is false but deactivated_at is NULL" do
         User.unscoped.where(id: user.id).update_all(active: false)
-        expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.to have_rejected_connection
-        User.unscoped.where(id: user.id).update_all(active: true, deleted: true)
-        expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.to have_rejected_connection
+        expect { connect "/cable", session: { user_id: user.id, token_version: user.token_version } }.not_to have_rejected_connection
+        expect { connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" } }.not_to have_rejected_connection
       end
 
       it "rejects an idle-expired session and accepts one inside the window" do
@@ -77,7 +83,7 @@ RSpec.describe "Tap box ActionCable channels" do
         user.update_columns(token_version: user.token_version + 1)
         expect { connect "/cable", headers: { "Authorization" => "Bearer #{old}" } }.to have_rejected_connection
         expect { connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" } }.not_to have_rejected_connection
-        User.unscoped.where(id: user.id).update_all(active: false)
+        User.unscoped.where(id: user.id).update_all(deactivated_at: Time.current)
         expect { connect "/cable", headers: { "Authorization" => "Bearer #{user.token}" } }.to have_rejected_connection
       end
     end

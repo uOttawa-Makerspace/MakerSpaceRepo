@@ -325,7 +325,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "sends to locked and inactive accounts too" do
-      u = create(:user, :regular_user, active: false, locked: true)
+      u = create(:user, :regular_user, deactivated_at: Time.current, locked: true)
       patch reset_password_path, params: { email: u.email }
       expect(deliveries.size).to eq(1)
     end

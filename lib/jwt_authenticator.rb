@@ -14,7 +14,7 @@ module AuthEligibility
   def allowed?(user)
     return false if user.nil? || user.deleted?
 
-    user.active != false
+    user.deactivated_at.nil?
   end
 end
 

@@ -443,7 +443,7 @@ RSpec.describe "/api/v1/users", type: :request do
 
   it "refuses a deactivated caller" do
     token = auth(staff)
-    User.unscoped.where(id: staff.id).update_all(active: false)
+    User.unscoped.where(id: staff.id).update_all(deactivated_at: Time.current)
     get "/api/v1/users/#{target.username}", headers: json_headers.merge(token)
     expect(response).to have_http_status(:unauthorized)
   end

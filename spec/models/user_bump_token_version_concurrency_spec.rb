@@ -74,21 +74,21 @@ RSpec.describe User, "#bump_token_version! compare-and-set under concurrency" do
     expect { loaded.bump_token_version! }.to raise_error(ActiveRecord::RecordNotFound)
   end
 
-  # change_active! shares bump_token_version!'s missing-row error, but a no-match with the row present is a
+  # change_deactivation! shares bump_token_version!'s missing-row error, but a no-match with the row present is a
   # no-op that syncs the instance to the database instead of failing.
-  it "change_active! raises the same RecordNotFound when the row is gone" do
+  it "change_deactivation! raises the same RecordNotFound when the row is gone" do
     loaded = User.find(user.id)
     User.unscoped.where(id: user.id).delete_all
-    expect { loaded.send(:change_active!, false) }.to raise_error(ActiveRecord::RecordNotFound, /no longer exists/)
+    expect { loaded.send(:change_deactivation!, Time.current) }.to raise_error(ActiveRecord::RecordNotFound, /no longer exists/)
   end
 
-  it "change_active! returns false, bumping nothing, and syncs the instance when the row already has the value" do
+  it "change_deactivation! returns false, bumping nothing, and syncs the instance when the row is already in that state" do
     loaded = User.find(user.id)
-    in_other_connection { User.find(user.id).send(:change_active!, false) }
+    in_other_connection { User.find(user.id).send(:change_deactivation!, Time.current) }
     version = User.unscoped.find(user.id).token_version
 
-    expect(loaded.send(:change_active!, false)).to be(false)
-    expect(loaded.active).to be(false)
+    expect(loaded.send(:change_deactivation!, Time.current)).to be(false)
+    expect(loaded.deactivated_at).to be_present
     expect(loaded.token_version).to eq(version)
     expect(User.unscoped.find(user.id).token_version).to eq(version)
   end

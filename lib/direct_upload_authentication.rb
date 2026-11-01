@@ -30,7 +30,7 @@ module DirectUploadAuthentication
   end
 
   # Same rules as ApplicationHelper#signed_in? (session user checked against
-  # token_version / active, or a Bearer JWT), through the shared lib/ validators.
+  # token_version / deactivated_at, or a Bearer JWT), through the shared lib/ validators.
   # The helper is deliberately not included: it is a reloadable app/ module and would be
   # pinned into this non-reloadable engine controller (see the initializer).
   def signed_in_user?

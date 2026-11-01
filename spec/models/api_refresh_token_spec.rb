@@ -71,9 +71,9 @@ RSpec.describe ApiRefreshToken, type: :model do
 
     it "refuses soft-deleted and inactive users" do
       token = described_class.issue!(user)
-      User.unscoped.where(id: user.id).update_all(active: false)
+      User.unscoped.where(id: user.id).update_all(deactivated_at: Time.current)
       expect(present(token.raw_token)).to be_nil
-      User.unscoped.where(id: user.id).update_all(active: true, deleted: true)
+      User.unscoped.where(id: user.id).update_all(deactivated_at: nil, deleted: true)
       expect(present(token.raw_token)).to be_nil
     end
 
@@ -211,7 +211,7 @@ RSpec.describe ApiRefreshToken, type: :model do
       first = described_class.issue!(user)
       stale = described_class.find(first.id)
       successor = first.rotate!
-      User.unscoped.where(id: user.id).update_all(active: false)
+      User.unscoped.where(id: user.id).update_all(deactivated_at: Time.current)
       expect(stale.rotate!).to be_nil
       expect(successor.reload.revoked_at).to be_present
     end
@@ -282,7 +282,7 @@ RSpec.describe ApiRefreshToken, type: :model do
     it "sees a deactivation that lands in between" do
       found = described_class.find_by_raw(token.raw_token)
       found.user
-      User.where(id: user.id).update_all(active: false)
+      User.where(id: user.id).update_all(deactivated_at: Time.current)
       expect(found.rotate!).to be_nil
     end
   end

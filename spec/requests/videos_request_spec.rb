@@ -255,7 +255,7 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
 
       it "refuses a JWT of an inactive user" do
         headers = bearer_for(member, ver: 0)
-        User.unscoped.where(id: member.id).update_all(active: false)
+        User.unscoped.where(id: member.id).update_all(deactivated_at: Time.current)
         upload!(headers)
         expect(response).to have_http_status(:unauthorized)
       end
@@ -320,7 +320,7 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
 
       it "refuses a cookie session of a user deactivated afterwards" do
         content_login!(member)
-        User.unscoped.where(id: member.id).update_all(active: false)
+        User.unscoped.where(id: member.id).update_all(deactivated_at: Time.current)
         upload!
         expect(response).to have_http_status(:unauthorized)
       end

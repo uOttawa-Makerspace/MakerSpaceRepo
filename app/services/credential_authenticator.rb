@@ -24,7 +24,7 @@ class CredentialAuthenticator
     end
 
     user = User.authenticate(login, password)
-    return Result.new(refusal: :inactive, candidate: user) if user&.active == false
+    return Result.new(refusal: :inactive, candidate: user) if user&.deactivated_at
     return Result.new(refusal: :unconfirmed, candidate: user) if user && !user.confirmed?
     return Result.new(user: user, candidate: user) if user
 
