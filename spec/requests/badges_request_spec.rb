@@ -79,9 +79,14 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(response.body).to include("Ada Earner").and include("Laser EN")
     end
 
-    it "uses the skill colour of the training's skill (1 green, 2 orange, other blue)" do
-      get badge_path(cert)
-      expect(response.body).to include("#3f7ed1")
+    # The colour is chosen by the skill id (1 green, 2 orange, other blue). The id is stubbed: a factory skill's id
+    # comes from a sequence that depends on what ran before, so it can legitimately be 1 or 2.
+    { 1 => "#488b2c", 2 => "#dc4720", 3 => "#3f7ed1", 99 => "#3f7ed1" }.each do |skill_id, colour|
+      it "uses the skill colour of the training's skill: skill #{skill_id} is #{colour}" do
+        allow_any_instance_of(Training).to receive(:skill_id).and_return(skill_id)
+        get badge_path(cert)
+        expect(response.body).to include(colour)
+      end
     end
 
     it "lists the training's skills tokens" do

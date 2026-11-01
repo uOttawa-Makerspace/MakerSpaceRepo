@@ -946,7 +946,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         log_in!(staff)
 
         # no draft order id: nothing to delete, no HTTP
-        expect_any_instance_of(LockerRental).not_to receive(:destroy_shopify_draft_order)
+        expect(ShopifyConcern::DraftRemoval).not_to receive(:call)
 
         patch locker_rental_path(rental),
               params: { locker_rental: { state: "cancelled" } }
@@ -978,7 +978,10 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         rental = create(:locker_rental, :active)
         rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/2")
         log_in!(staff)
-        allow(ShopifyConcern::DraftOrders).to receive(:delete).and_return(false)
+        stub_shopify_admin!.tap do |fake|
+          fake.draft_id = "gid://shopify/DraftOrder/2"
+          fake.delete_user_errors = [{ "message" => "locked" }] # refused, and the draft is still open
+        end
         allow(Rails.error).to receive(:report)
 
         patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
@@ -1018,7 +1021,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         rental = create(:locker_rental, :active)
         log_in!(staff)
 
-        expect_any_instance_of(LockerRental).not_to receive(:destroy_shopify_draft_order)
+        expect(ShopifyConcern::DraftRemoval).not_to receive(:call)
 
         patch locker_rental_path(rental),
               params: { locker_rental: { owned_until: 50.days.from_now } }
@@ -1583,7 +1586,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       log_in!(staff)
       ActionMailer::Base.deliveries.clear
       rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/6")
-      expect_any_instance_of(LockerRental).to receive(:destroy_shopify_draft_order).once.and_return(true)
+      expect(ShopifyConcern::DraftRemoval).to receive(:call).with("gid://shopify/DraftOrder/6").once
+        .and_return(ShopifyConcern::DraftRemoval::Result.new(:deleted, []))
       perform_enqueued_jobs do
         patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
       end

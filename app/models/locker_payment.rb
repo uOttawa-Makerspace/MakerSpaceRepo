@@ -37,6 +37,8 @@ class LockerPayment < ApplicationRecord
 
   # Raised only to be reported (Rails.error.report): a paid order was recorded but not applied.
   class Held < StandardError; end
+  # Raised only to be reported: a figure of a paid order was malformed or out of range and was stored as nil.
+  class MalformedPaymentAmount < StandardError; end
 
   # Held -> applied, as one conditional UPDATE, only by LockerRental#settle_held_payments! (assigning the rental
   # active). Staff cannot apply a payment by hand: on an active rental a held payment is a duplicate (refund it)

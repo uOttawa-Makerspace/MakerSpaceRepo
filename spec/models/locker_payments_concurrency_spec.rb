@@ -141,4 +141,53 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
     expect(LockerRental.find(rental.id)).to be_active
     expect(enqueued_jobs.count { |j| j["arguments"]&.first(2) == %w[LockerMailer locker_assigned] }).to eq(1)
   end
+
+  # The draft is created on Shopify with no lock held and stored only if, under the row lock, the rental is still
+  # awaiting payment with no draft. The Shopify create is the pause point: the other connection must be able to
+  # commit its change right then (it would block, and the join time out, if the checkout held the row lock).
+  describe "checkout draft creation racing a cancel" do
+    let!(:fake) { stub_shopify_admin! }
+
+    def during_shopify_create(&block)
+      fake.on_query = lambda do |query, _vars|
+        next unless query.include?("draftOrderCreate")
+
+        thread = in_thread(&block)
+        raise "the other connection was blocked: a lock was held across the Shopify call" unless thread.join(5)
+
+        raise thread.value if thread.value.is_a?(StandardError)
+      end
+    end
+
+    it "a cancel that commits during the Shopify create never leaves a payable draft on the cancelled rental" do
+      during_shopify_create do
+        cancelled = LockerRental.find(rental.id)
+        cancelled.update!(state: :cancelled)
+        cancelled.sync_shopify_draft_order_after_commit # sees no draft yet: nothing to delete
+      end
+
+      expect(LockerRental.find(rental.id).checkout_link).to be_nil
+
+      fresh = LockerRental.find(rental.id)
+      expect(fresh).to be_cancelled
+      expect(fresh.shopify_draft_order_id).to be_nil
+      expect(fake.deleted_ids).to eq([fake.draft_id]) # the draft that was created is removed again
+    end
+
+    it "without a race the draft is stored and served, and nothing is deleted" do
+      expect(LockerRental.find(rental.id).checkout_link).to eq(fake.invoice_url)
+      expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq(fake.draft_id)
+      expect(fake.deleted_ids).to be_empty
+    end
+
+    it "when another request stored its draft first, that one is served and this one's is removed" do
+      during_shopify_create do
+        LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/first")
+      end
+
+      expect(LockerRental.find(rental.id).checkout_link).to eq(fake.invoice_url)
+      expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq("gid://shopify/DraftOrder/first")
+      expect(fake.deleted_ids).to eq([fake.draft_id])
+    end
+  end
 end

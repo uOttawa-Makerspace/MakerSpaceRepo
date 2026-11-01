@@ -306,6 +306,15 @@ RSpec.describe LockerRental, type: :model do
         expect(legacy.reload.paid_at).to eq(Time.utc(2026, 5, 20))
       end
 
+      it "a legacy rental (paid_at, no payment rows) holds BOTH duplicate orders as already_paid: a held row does not switch it off" do
+        legacy = create(:locker_rental, :active)
+        legacy.update_columns(paid_at: Time.utc(2026, 5, 20))
+        first = pay(described_class.find(legacy.id), id: "dup-1")
+        second = pay(described_class.find(legacy.id), id: "dup-2")
+        expect([first, second]).to all(have_attributes(status: "held", hold_reason: "already_paid"))
+        expect(legacy.reload.paid_at).to eq(Time.utc(2026, 5, 20))
+      end
+
       it "a legacy paid_at no longer counts once the rental has payment rows (its own applied one decides)" do
         rental = create(:locker_rental, :await_payment)
         rental.update_columns(paid_at: Time.utc(2026, 5, 20)) # e.g. last term's value on a renewal
@@ -315,6 +324,7 @@ RSpec.describe LockerRental, type: :model do
       it "is never applied by settle_held_payments!" do
         rental = create(:locker_rental, :active)
         create(:locker_payment, locker_rental: rental)
+        rental.update_columns(paid_at: Time.utc(2026, 10, 1)) # an applied payment stamps paid_at
         duplicate = pay(rental, id: "dup")
         expect(duplicate.hold_reason).to eq("already_paid")
         expect(rental.settle_held_payments!(by: create(:user, :staff))).to eq(0)
@@ -433,6 +443,56 @@ RSpec.describe LockerRental, type: :model do
     end
   end
 
+  describe "#stamp_paid_at" do
+    it "clears the query cache: a cached read in the same request sees the new paid_at" do
+      rental = create(:locker_rental, :active)
+      time = Time.utc(2026, 10, 20, 12)
+      described_class.cache do
+        expect(described_class.find(rental.id).paid_at).to be_nil # cached now
+        rental.stamp_paid_at(time)
+        expect(rental.paid_at).to eq(time)
+        expect(described_class.find(rental.id).paid_at).to eq(time)
+      end
+    end
+  end
+
+  describe "malformed amounts reported by record_payment, after commit" do
+    let(:reports) { [] }
+
+    before { allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] } }
+
+    it "reports each malformed figure of a new payment once the commit is done, with ids only; a replay reports nothing" do
+      rental = create(:locker_rental, :await_payment)
+      payment = rental.record_payment(shopify_order_id: "m-1", malformed_amounts: ["order total"])
+      expect(payment).to be_applied
+      expect(reports.map { |e, _| e }).to all(be_a(LockerPayment::MalformedPaymentAmount))
+      expect(reports.size).to eq(1)
+      expect(reports.first.last).to include(context: { locker_rental_id: rental.id, shopify_order_id: "m-1" })
+
+      reports.clear
+      expect(described_class.find(rental.id).record_payment(shopify_order_id: "m-1", malformed_amounts: ["order total"])).to be_nil
+      expect(reports).to be_empty
+    end
+
+    it "is reported by record_payment itself, so a caller that dies right after the commit loses nothing" do
+      rental = create(:locker_rental, :await_payment)
+      expect do
+        rental.record_payment(shopify_order_id: "m-2", malformed_amounts: ["locker line amount"])
+        raise "process died after the commit"
+      end.to raise_error("process died after the commit")
+      expect(reports.size).to eq(1)
+    end
+
+    it "reports nothing when the payment's transaction rolls back" do
+      rental = create(:locker_rental, :await_payment)
+      described_class.transaction do
+        rental.record_payment(shopify_order_id: "m-3", malformed_amounts: ["order total"])
+        raise ActiveRecord::Rollback
+      end
+      expect(reports).to be_empty
+    end
+  end
+
   describe "#locker_line_amount" do
     let(:rental) { create(:locker_rental, :await_payment) }
     let(:title) { "TEST locker on #{Rails.env} environment." }
@@ -450,6 +510,10 @@ RSpec.describe LockerRental, type: :model do
       expect(rental.locker_line_amount([with_both.merge("discount_allocations" => [])])).to eq(BigDecimal("20.00"))
       expect(rental.locker_line_amount([with_both.except("discount_allocations")])).to eq(BigDecimal("15.00"))
       expect { rental.locker_line_amount([with_both.merge("discount_allocations" => [{ "amount" => "x" }])]) }.to raise_error(ArgumentError)
+      # an entry that is not a Hash, or has no amount, is malformed too (never silently counted as 0)
+      ["5.00", nil, 5, [], {}, { "amount" => nil }, { "amount" => "" }, { "code" => "X" }].each do |bad|
+        expect { rental.locker_line_amount([with_both.merge("discount_allocations" => [bad])]) }.to raise_error(ArgumentError), bad.inspect
+      end
     end
 
     it "builds the expected line once, whatever the number of lines" do
@@ -675,7 +739,8 @@ RSpec.describe LockerRental, type: :model do
     it "saving alone never calls Shopify; the explicit sync destroys the draft only after a save that cancelled" do
       rental = create(:locker_rental, :await_payment)
       rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/5")
-      expect(rental).to receive(:destroy_shopify_draft_order).once.and_return(true)
+      expect(ShopifyConcern::DraftRemoval).to receive(:call).with("gid://shopify/DraftOrder/5").once
+        .and_return(ShopifyConcern::DraftRemoval::Result.new(:deleted, []))
       rental.update!(notes: "x")
       expect(rental.sync_shopify_draft_order_after_commit).to be(true) # nothing cancelled: nothing to do
       rental.update!(state: :cancelled)
@@ -720,25 +785,66 @@ RSpec.describe LockerRental, type: :model do
         expect_cancelled_but_reported
       end
 
-      it "treats a 200 that did not confirm the delete (userErrors, no deletedId) exactly like a failure: id kept, reported, false" do
-        rental.update!(state: :cancelled)
-        allow(ShopifyConcern::DraftOrders).to receive(:delete) do |_gid, user_errors_out: nil|
-          user_errors_out&.push({ "message" => "Draft order is locked" })
-          false
+      # The shared rule (ShopifyConcern::DraftRemoval, the one JobOrder uses): a refused delete (200, userErrors, no
+      # deletedId) is classified by fetching the draft.
+      describe "when Shopify refuses the delete (200 with userErrors, no deletedId)" do
+        let!(:fake) do
+          stub_shopify_admin!.tap do |f|
+            f.draft_id = draft_id
+            f.delete_user_errors = [{ "field" => "id", "message" => "Draft order is locked" }]
+          end
         end
-        reports = []
-        allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+        let(:reports) { [] }
 
-        expect(rental.sync_shopify_draft_order_after_commit).to be(false)
-        expect(rental.reload.shopify_draft_order_id).to eq(draft_id)
-        expect(reports.size).to eq(1)
-        expect(reports.first.first).to be_a(LockerRental::DraftOrderNotDeleted)
-        expect(reports.first.first.message).to include("Draft order is locked")
+        before do
+          rental.update!(state: :cancelled)
+          allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+        end
+
+        it "a draft that is gone clears the id: success, no report" do
+          fake.missing_ids << draft_id
+          expect(rental.sync_shopify_draft_order_after_commit).to be(true)
+          expect(rental.shopify_draft_order_id).to be_nil
+          expect(rental.reload.shopify_draft_order_id).to be_nil
+          expect(reports).to be_empty
+        end
+
+        it "a completed (paid) draft is nothing to remove: success, id kept as the payment record, no report" do
+          fake.draft_statuses[draft_id] = "COMPLETED"
+          expect(rental.sync_shopify_draft_order_after_commit).to be(true)
+          expect(rental.reload.shopify_draft_order_id).to eq(draft_id)
+          expect(reports).to be_empty
+        end
+
+        it "ending a PAID rental whose completed draft Shopify will not delete is not a failure" do
+          paid = create(:locker_rental, :active).tap { |r| r.update_column(:shopify_draft_order_id, draft_id) }
+          paid.record_payment(shopify_order_id: "paid-1")
+          fake.draft_statuses[draft_id] = "COMPLETED"
+          paid.update!(state: :cancelled)
+          expect(paid.sync_shopify_draft_order_after_commit).to be(true)
+          expect(reports).to be_empty
+        end
+
+        it "a still-open draft is the only real failure: reported (with Shopify's message), id kept, false" do
+          expect(rental.sync_shopify_draft_order_after_commit).to be(false)
+          expect(rental.reload.shopify_draft_order_id).to eq(draft_id)
+          expect(reports.size).to eq(1)
+          expect(reports.first.first).to be_a(LockerRental::DraftOrderNotDeleted)
+          expect(reports.first.first.message).to include("Draft order is locked")
+          expect(reports.first.last[:context]).to include(locker_rental_id: rental.id)
+        end
+
+        it "reports (and keeps the id) when the check that follows the refusal gets no answer" do
+          fake.on_query = ->(query, _vars) { fake.status = 500 if query.include?("getDraftOrder") }
+          expect(rental.sync_shopify_draft_order_after_commit).to be(false)
+          expect(rental.reload.shopify_draft_order_id).to eq(draft_id)
+          expect(reports.size).to eq(1)
+        end
       end
 
-      it "forgets the id only on a confirmed delete" do
+      it "forgets the id on a confirmed delete" do
         rental.update!(state: :cancelled)
-        allow(ShopifyConcern::DraftOrders).to receive(:delete).and_return(true)
+        stub_shopify_admin!.draft_id = draft_id
         expect(rental.sync_shopify_draft_order_after_commit).to be(true)
         expect(rental.reload.shopify_draft_order_id).to be_nil
       end

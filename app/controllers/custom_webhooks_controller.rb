@@ -99,7 +99,6 @@ class CustomWebhooksController < ApplicationController
   # Raised only to be reported (Rails.error.report).
   class LockerOrderWithoutId < StandardError; end
   class LockerOrderWithoutReference < StandardError; end
-  class MalformedPaymentAmount < StandardError; end
   class UnknownLockerRental < StandardError; end
 
   private
@@ -189,24 +188,17 @@ class CustomWebhooksController < ApplicationController
     end
 
     # amount = the locker line only (nil when it cannot be told); order_total = the whole order. A malformed
-    # or out-of-range figure is stored as nil and never fails the webhook; it is reported (ids only) only when
-    # the payment row is really new, so a replayed delivery does not report it again.
+    # or out-of-range figure is stored as nil and never fails the webhook; record_payment reports it (ids only)
+    # after its commit, and only when the payment row is really new, so a replayed delivery does not report it again.
     problems = []
-    payment = rental.record_payment(
+    rental.record_payment(
       shopify_order_id: order_id(order_hook),
       paid_at: parse_time(order_hook["processed_at"]) || Time.current,
       amount: safe_money(problems, "locker line amount") { rental.locker_line_amount(order_hook["line_items"]) },
       order_total: safe_money(problems, "order total") { LockerPayment.money(order_hook["total_price"]) },
-      currency: order_hook["currency"].presence&.to_s&.first(8)
+      currency: order_hook["currency"].presence&.to_s&.first(8),
+      malformed_amounts: problems
     )
-    return unless payment
-
-    problems.each do |what|
-      Rails.error.report(
-        MalformedPaymentAmount.new("paid locker order #{order_id(order_hook)}: #{what} is malformed or out of range; stored as nil (rental #{rental.id})"),
-        handled: true, severity: :error, context: { locker_rental_id: rental.id, shopify_order_id: order_id(order_hook) }
-      )
-    end
   end
 
   def safe_money(problems, what)

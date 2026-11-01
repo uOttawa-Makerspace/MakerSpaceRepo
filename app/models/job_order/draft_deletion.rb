@@ -5,7 +5,7 @@
 # inside it, can name it. #delete_unless_completed! checks the fetched draft's marker (this environment's operating
 # tag and exactly the given order's marker) unless the caller opts out with `marker: nil` (an order's own stored
 # draft, which may predate the marker); #delete itself checks nothing, so nothing outside JobOrder may reach it
-# (ShopifyConcern::DraftOrders.delete is the raw call under it; see the note there).
+# (ShopifyConcern::DraftRemoval is the shared delete-and-classify rule under it, shared with LockerRental).
 class JobOrder
   module DraftDeletion
     module_function
@@ -23,29 +23,32 @@ class JobOrder
 
     # [:found | :gone, draft]; Shopify not answering raises (fail closed).
     def fetch_or_raise(gid)
-      state, draft = ShopifyConcern::DraftOrders.fetch_result(gid)
-      JobOrder.stale_draft!("Shopify did not answer the draft order check") if state == :error
-
-      [state, draft]
+      ShopifyConcern::DraftRemoval.fetch_or_raise(gid)
+    rescue ShopifyConcern::DraftRemoval::Unanswered => e
+      JobOrder.stale_draft!(e.message)
     end
 
     # Deletes the draft `gid` (one Shopify call) and returns :deleted. When Shopify deleted nothing it is asked why
-    # (THE refused-delete rule): the draft vanished (:cleared), or it is paid (COMPLETED), which `paid` decides:
-    # :keep returns :kept (the payment record is never deleted), :refuse raises (the caller is mid-transition and
-    # must not go on). Anything else raises StaleDraftOrderError with Shopify's userErrors.
+    # by the shared rule (ShopifyConcern::DraftRemoval, which classifies): the draft vanished (:cleared), or it is
+    # paid (COMPLETED), which `paid` decides: :keep returns :kept (the payment record is never deleted), :refuse
+    # raises (the caller is mid-transition and must not go on). Anything else raises StaleDraftOrderError with
+    # Shopify's userErrors.
     def delete(gid, paid:)
-      user_errors = []
-      return :deleted if ShopifyConcern::DraftOrders.delete(gid, user_errors_out: user_errors)
+      result = begin
+        ShopifyConcern::DraftRemoval.call(gid)
+      rescue ShopifyConcern::DraftRemoval::Unanswered => e
+        JobOrder.stale_draft!(e.message)
+      end
 
-      state, draft = fetch_or_raise(gid)
-      return :cleared if state == :gone
-
-      if JobOrder.draft_paid?(draft)
+      case result.outcome
+      when :deleted then :deleted
+      when :gone then :cleared
+      when :completed
         return :kept if paid == :keep
 
         JobOrder.stale_draft!("the draft order is already paid (COMPLETED)")
+      else JobOrder.not_deleted_by_shopify!(result.user_errors)
       end
-      JobOrder.not_deleted_by_shopify!(user_errors)
     end
 
     # The paid-settle rule for a draft `gid`, whoever (if anyone) points at it: [:cleared] Shopify no longer has it,

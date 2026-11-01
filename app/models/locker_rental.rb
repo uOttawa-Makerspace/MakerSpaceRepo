@@ -148,8 +148,10 @@ class LockerRental < ApplicationRecord
   #   held (reason recorded, rental untouched, reported once): rental cancelled, renter not eligible
   #     (deactivated / soft-deleted / missing), the rental cannot be activated (not_activatable), or it is
   #     already active and paid (already_paid: a duplicate)
+  # `malformed_amounts`: names of the figures the caller could not read (it stored nil for them); reported once,
+  # after the commit, only for a new payment row (a replay reports nothing), like a held payment.
   # Serialised per rental by the row lock, so two simultaneous deliveries cannot both apply.
-  def record_payment(shopify_order_id:, paid_at: Time.current, amount: nil, currency: nil, order_total: nil)
+  def record_payment(shopify_order_id:, paid_at: Time.current, amount: nil, currency: nil, order_total: nil, malformed_amounts: [])
     payment = nil
     transaction do
       lock!
@@ -157,7 +159,7 @@ class LockerRental < ApplicationRecord
         if cancelled? then ['held', 'rental_cancelled']
         elsif !renter_eligible? then ['held', 'renter_ineligible']
         # already active and already paid for: this one is a duplicate charge (a renewal goes through await_payment)
-        elsif active? && already_paid? then ['held', 'already_paid']
+        elsif already_paid? then ['held', 'already_paid']
         else ['applied', nil]
         end
       inserted = LockerPayment.insert(
@@ -176,6 +178,7 @@ class LockerRental < ApplicationRecord
         # ineligible renter) must not show the renter "Paid on".
         stamp_paid_at(paid_at) if payment.applied?
         report_held_payment(payment) if payment.held?
+        report_malformed_amounts(payment, malformed_amounts)
       end
     end
     payment
@@ -185,10 +188,11 @@ class LockerRental < ApplicationRecord
   # only ever refunded or dismissed.
   SETTLEABLE_HOLD_REASONS = %w[renter_ineligible not_activatable].freeze
 
-  # Already paid for: an applied payment row, or (legacy rentals paid before payments were recorded) a paid_at
-  # with no payment rows at all. paid_at is only ever written for an applied payment, so with no rows it is legacy.
+  # Already paid for: an active rental with a paid_at. paid_at is only ever written for an applied payment (or
+  # predates payment rows: legacy rentals), so it alone tells; a held payment never switches this off. A renewal
+  # passes through await_payment, where it is not active, so its payment is applied.
   def already_paid?
-    locker_payments.applied.exists? || (paid_at.present? && !locker_payments.exists?)
+    active? && paid_at.present?
   end
 
   # Staff assigned this rental active: ONE of its held payments (the oldest that this can cure) is now the
@@ -310,22 +314,32 @@ class LockerRental < ApplicationRecord
   # Current callers: LockerRentalsController#update (the only place a rental is cancelled: staff end/cancel and
   # the renter cancelling a pending request).
   #
-  # After a save that cancelled this rental, deletes its Shopify draft order. Call it AFTER the transaction has
+  # After a save that cancelled this rental, takes its Shopify draft order away by the one shared rule
+  # (ShopifyConcern::DraftRemoval, the same classification JobOrder uses). Call it AFTER the transaction has
   # committed (no row lock is held during the HTTP call). The cancellation is already committed, so a Shopify
-  # failure cannot undo it: an exception AND a response that did not confirm the delete (200 with userErrors and
-  # no deletedId) are treated alike. The draft id is kept, the failure is reported and false is returned; a
-  # payment that still arrives is recorded as held (rental_cancelled) for staff to refund.
-  # Returns true when there was nothing to do or the draft was confirmed deleted.
+  # failure cannot undo it. What the stored id becomes follows the outcome, as for a job order:
+  #   deleted / gone  the id is forgotten (nothing left to remove)
+  #   completed       the draft is PAID (it became an order, the payment record): nothing to remove, the id is kept,
+  #                   no report, no alert (ending a paid rental is not a failure)
+  #   still open      a payable invoice that could not be deleted: reported, id kept, false returned; a payment that
+  #                   still arrives is recorded as held (rental_cancelled) for staff to refund
+  # An exception (HTTP, timeout, configuration, no answer) is the same failure. Returns true when there was nothing
+  # to do or nothing is left to remove.
   class DraftOrderNotDeleted < StandardError; end
 
   def sync_shopify_draft_order_after_commit
     return true unless saved_change_to_state? && cancelled?
-    return true if shopify_draft_order_id.blank?
 
-    user_errors = []
-    unless destroy_shopify_draft_order(user_errors_out: user_errors)
+    gid = shopify_draft_order_id
+    return true if gid.blank?
+
+    result = ShopifyConcern::DraftRemoval.call(gid)
+    case result.outcome
+    when :deleted, :gone then forget_draft_order_id(gid)
+    when :completed then nil
+    else
       raise DraftOrderNotDeleted,
-            "Shopify did not confirm deleting draft order #{shopify_draft_order_id}: #{user_errors.map { |e| e['message'] }.join(', ')}"
+            "Shopify did not delete the open draft order #{gid}: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
     end
     true
   rescue StandardError => e
@@ -333,11 +347,17 @@ class LockerRental < ApplicationRecord
     false
   end
 
-  # Fetch checkout link from shopify .Returns nil if API call fails or checkout
-  # is not possible now.
+  # Fetch checkout link from shopify. Returns nil if API call fails or checkout is not possible now.
+  # A stored draft is just fetched. When there is none it is created on Shopify first, outside any lock (no HTTP
+  # call runs under the row lock), then stored only if, under the row lock, the rental is still awaiting payment
+  # and still has no draft: a cancel that committed meanwhile (its after-commit sync saw no id, so would never
+  # delete this draft) would otherwise leave a payable draft on a cancelled rental. A draft that is not kept is
+  # removed again, after the lock is released.
   def checkout_link
     return nil unless await_payment?
-    shopify_draft_order['invoiceUrl']
+    return shopify_draft_order['invoiceUrl'] if shopify_draft_order_id.present?
+
+    create_checkout_draft
   end
 
   # For the view
@@ -370,10 +390,49 @@ class LockerRental < ApplicationRecord
     sql = self.class.sanitize_sql_array(
       ['UPDATE locker_rentals SET paid_at = GREATEST(paid_at, ?) WHERE id = ? RETURNING paid_at', time, id]
     )
-    @attributes.write_from_database('paid_at', self.class.connection.select_value(sql))
+    # exec_query, not select_value: a write, so it clears the query cache (a cached read of this rental in the
+    # same request must see the new paid_at)
+    row = self.class.connection.exec_query(sql).first
+    @attributes.write_from_database('paid_at', row && row['paid_at'])
   end
 
   private
+
+  def create_checkout_draft
+    ensure_can_use_draft_order
+    new_id, _line_items = create_remote_draft_order # Shopify, no lock
+
+    kept = false
+    transaction do
+      lock! # reloads: the state and the draft id are read now
+      if await_payment? && shopify_draft_order_id.blank?
+        update_column(:shopify_draft_order_id, new_id)
+        kept = true
+      end
+    end
+    return fetch_shopify_draft_order&.dig('invoiceUrl') if kept
+
+    discard_unused_draft(new_id)
+    # Another request stored its draft first: that one is the invoice.
+    await_payment? && shopify_draft_order_id.present? ? fetch_shopify_draft_order&.dig('invoiceUrl') : nil
+  end
+
+  # The draft created for a checkout that lost the race. The lock is released; the shared rule decides what the
+  # outcome means, and only a draft that is still open and could not be deleted is a failure.
+  def discard_unused_draft(gid)
+    result = ShopifyConcern::DraftRemoval.call(gid)
+    return unless result.outcome == :open
+
+    raise DraftOrderNotDeleted, "Shopify did not delete the unused draft order #{gid}: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
+  rescue StandardError => e
+    Rails.error.report(e, handled: true, severity: :error, context: { locker_rental_id: id, step: 'delete_unused_shopify_draft_order' })
+  end
+
+  # Forgets the stored draft id, only if it is still `gid` (a conditional UPDATE, never over a newer draft).
+  def forget_draft_order_id(gid)
+    self.class.where(id: id, shopify_draft_order_id: gid).update_all(shopify_draft_order_id: nil)
+    @attributes.write_from_database('shopify_draft_order_id', nil) if shopify_draft_order_id == gid
+  end
 
   # A callable telling whether a payload line item is this rental's locker line, built once from the expected
   # variant (production) or title (elsewhere); nil when the rental has no locker (no draft can exist).
@@ -393,7 +452,12 @@ class LockerRental < ApplicationRecord
   def line_discount(line)
     allocations = line['discount_allocations']
     if allocations.is_a?(Array)
-      allocations.sum { |allocation| LockerPayment.money(allocation.is_a?(Hash) ? allocation['amount'] : nil) || 0 }
+      allocations.sum do |allocation|
+        # An entry that is not a Hash, or has no amount, is malformed: the whole locker amount becomes nil
+        raise ArgumentError, 'malformed discount allocation' unless allocation.is_a?(Hash) && allocation['amount'].present?
+
+        LockerPayment.money(allocation['amount'])
+      end
     else
       LockerPayment.money(line['total_discount']) || 0
     end
@@ -411,6 +475,23 @@ class LockerRental < ApplicationRecord
     reload
     payment.update!(status: 'held', hold_reason: 'not_activatable', resolved_at: nil)
     payment
+  end
+
+  # One report per malformed figure of a NEW payment, after the outermost commit, ids only.
+  def report_malformed_amounts(payment, whats)
+    whats = Array(whats).dup
+    return if whats.empty?
+
+    ActiveRecord.after_all_transactions_commit do
+      whats.each do |what|
+        Rails.error.report(
+          LockerPayment::MalformedPaymentAmount.new(
+            "paid locker order #{payment.shopify_order_id}: #{what} is malformed or out of range; stored as nil (rental #{id})"
+          ),
+          handled: true, severity: :error, context: { locker_rental_id: id, shopify_order_id: payment.shopify_order_id }
+        )
+      end
+    end
   end
 
   # One report per held payment, after the outermost commit, ids only (no email, no name).

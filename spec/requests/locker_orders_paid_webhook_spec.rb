@@ -125,7 +125,7 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
       payment = rental.locker_payments.sole
       expect(payment).to be_applied
       expect(payment).to have_attributes(amount: nil, order_total: nil)
-      expect(reports.map { |e, _| e.class }).to eq([CustomWebhooksController::MalformedPaymentAmount] * 2)
+      expect(reports.map { |e, _| e.class }).to eq([LockerPayment::MalformedPaymentAmount] * 2)
       # a replay of the same delivery must not report them again
       reports.clear
       signed_orders_paid(payload(rental.id, total_price: "9" * 30, line_items: [{ title: title, price: "oops", quantity: 1 }]))

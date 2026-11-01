@@ -53,8 +53,8 @@ module ShopifyConcern
     end
 
     # draftOrderDelete for the draft `gid`. It checks nothing about whose draft it is, so it stays out of the models'
-    # API. Its only callers: #destroy_shopify_draft_order below (a record's own stored id, after
-    # #ensure_can_use_draft_order: lockers, memberships) and JobOrder::DraftDeletion (job orders, the sweep).
+    # API. Its only caller is ShopifyConcern::DraftRemoval (the one delete-and-classify rule, used by
+    # JobOrder::DraftDeletion and LockerRental).
     # `user_errors_out`: optional Array that receives Shopify's userErrors.
     # True when Shopify reports it deleted the draft. Fail closed: anything but HTTP 200 raises.
     def self.delete(gid, user_errors_out: nil)
@@ -191,18 +191,6 @@ module ShopifyConcern
       end
     end
 
-    # `user_errors_out`: optional Array that receives Shopify's userErrors (the boolean contract is unchanged).
-    def destroy_shopify_draft_order(user_errors_out: nil)
-      ensure_can_use_draft_order
-      return false if shopify_draft_order_id.blank?
-
-      deleted = ShopifyConcern::DraftOrders.delete(shopify_draft_order_id, user_errors_out: user_errors_out)
-      # Only a confirmed delete (Shopify returned the deletedId) forgets the id: a 200 with userErrors and no
-      # deletedId left the draft alive, and clearing the id would lose the only handle to remove it.
-      update_column(:shopify_draft_order_id, nil) if deleted
-      deleted
-    end
-
     def fetch_shopify_draft_order
       fetch_shopify_draft_order_result.last
     end
@@ -215,6 +203,14 @@ module ShopifyConcern
     end
 
     def create_shopify_draft_order
+      new_id, line_items = create_remote_draft_order
+      store_shopify_draft_order_id(new_id, line_items)
+      fetch_shopify_draft_order
+    end
+
+    # Creates the draft on Shopify and returns [its gid, the line items sent]; stores nothing, so a caller that must
+    # decide under a lock whether to keep it (LockerRental#checkout_link) can do the Shopify call outside the lock.
+    def create_remote_draft_order
       create_draft_order = <<~QUERY
         mutation draftOrderCreate($input: DraftOrderInput!) {
           draftOrderCreate(input: $input) {
@@ -250,8 +246,7 @@ module ShopifyConcern
         raise "No draft order data received: #{resp.body}"
       end
 
-      store_shopify_draft_order_id(draft_order_data["id"], variables.dig(:input, :lineItems))
-      fetch_shopify_draft_order
+      [draft_order_data["id"], variables.dig(:input, :lineItems)]
     end
 
     # The tags of the draft: the environment's operating tag (what the paid webhook routes on). A model may add
