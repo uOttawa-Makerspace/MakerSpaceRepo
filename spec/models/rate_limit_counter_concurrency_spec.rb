@@ -84,4 +84,43 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
     expect(pruner.value).to eq(0)
     expect(described_class.find(key).count).to eq(1)
   end
+
+  # A batch whose picked rows include one restarted after the snapshot deletes fewer than PRUNE_BATCH rows
+  # while expired rows remain: the loop must go on until a batch deletes nothing.
+  it "prune! removes every expired row when a restarted row made the first batch short" do
+    stub_const("RateLimitCounter::PRUNE_BATCH", 2)
+    base = 10.minutes.ago
+    # oldest first: the restarted row and one other make up the first batch, three more expire behind them
+    described_class.insert_all(
+      [key, "#{key}:b", "#{key}:c", "#{key}:d", "#{key}:e"].each_with_index.map do |k, i|
+        { key: k, count: 4, expires_at: base + i.seconds }
+      end
+    )
+
+    holder_ready = Queue.new
+    release = Queue.new
+    holder = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do |conn|
+        conn.transaction do
+          conn.execute("UPDATE rate_limit_counters SET count = 1, expires_at = now() + interval '1 hour' WHERE key = #{conn.quote(key)}")
+          holder_ready << true
+          release.pop
+        end
+      end
+    end
+    holder_ready.pop
+
+    pruner = Thread.new { ActiveRecord::Base.connection_pool.with_connection { described_class.prune! } }
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 10
+    until described_class.connection.select_value("SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE 'DELETE FROM \"rate_limit_counters\"%'").to_i.positive?
+      raise "prune! never blocked on the row lock" if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+
+      sleep 0.01
+    end
+    release << true
+    holder.join
+
+    expect(pruner.value).to eq(4)
+    expect(described_class.pluck(:key)).to eq([key])
+  end
 end

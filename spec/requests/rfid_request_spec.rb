@@ -559,11 +559,17 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(key).to eq("rate-limit:rfid:tap:mac:#{Digest::SHA256.hexdigest(pi_reader.pi_mac_address)[0, 32]}|ip:127.0.0.1")
     end
 
-    it "creates no per-reader key once the source IP is over its ceiling" do
-      counts["rate-limit:rfid:tap-ip:127.0.0.1"] = 600
-      3.times { |i| post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: "id#{i}" }, as: :json }
+    # The per-reader limit runs before the per-IP one and its 429 halts the chain: a reader looping past
+    # 60/min does not consume the ceiling shared by every reader behind the same NAT egress IP.
+    it "does not count a reader's taps beyond its own 60/min against the shared per-IP ceiling" do
+      65.times { tap_card }
       expect(response).to have_http_status(:too_many_requests)
-      expect(counts.keys.grep(/mac:/)).to be_empty
+      expect(counts["rate-limit:rfid:tap-ip:127.0.0.1"]).to eq(60)
+
+      other = create(:pi_reader, space: space)
+      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: other.pi_mac_address }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(counts["rate-limit:rfid:tap-ip:127.0.0.1"]).to eq(61)
     end
 
     it "counts per reader, not globally" do

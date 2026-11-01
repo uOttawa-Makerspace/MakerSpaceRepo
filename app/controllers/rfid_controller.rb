@@ -21,12 +21,14 @@ class RfidController < SessionsController
   # own bucket and cannot lock the real door out) or per staff user, plus a coarse
   # 600/min per-IP ceiling (readers may share one NAT egress IP).
   RATE_LIMITED = -> { render json: { error: "Too many requests" }, status: :too_many_requests }
-  # The per-IP ceiling is declared (so runs) first: once an IP is over it the request is answered
-  # before the per-reader key is counted, so one IP cannot keep minting per-identifier counter rows.
-  rate_limit to: 600, within: 1.minute, only: :card_number, name: "tap-ip",
-             by: -> { request.remote_ip }, with: RATE_LIMITED
+  # The per-reader limit runs FIRST: its 429 halts the chain, so a reader looping past 60/min does not
+  # also count against the shared per-IP ceiling (readers behind one NAT egress IP would otherwise lose
+  # the ceiling to one misbehaving reader). The per-reader counter rows this creates are bounded: the
+  # key digests the identifier (fixed length), lives a minute and is pruned (RateLimitCounter.prune!).
   rate_limit to: 60, within: 1.minute, only: :card_number, name: "tap",
              by: -> { tap_rate_limit_key }, with: RATE_LIMITED
+  rate_limit to: 600, within: 1.minute, only: :card_number, name: "tap-ip",
+             by: -> { request.remote_ip }, with: RATE_LIMITED
 
   # Rejected taps (unknown MAC, 401) are counted per IP and capped much tighter,
   # to slow brute-forcing of a reader's MAC. Only rejections count, so a real
@@ -122,19 +124,14 @@ class RfidController < SessionsController
 
   private
 
-  # What the tap box sends as its identifier. Production readers send real MACs and also short,
-  # non-MAC identifiers, so there is no format gate: tap behaviour is unchanged for every identifier
-  # that is a string of 1..TAP_IDENTIFIER_MAX_LENGTH characters after normalization. Anything longer,
-  # or containing a control character, is treated as missing (as a hash/array param already is): no
-  # reader matches it, it is counted against the caller's IP only, and nothing stores it.
-  # (The rate-limit key digests it, so its length is fixed whatever the input.)
-  TAP_IDENTIFIER_MAX_LENGTH = 64
-
+  # What the tap box sends as its identifier, bounded by PiReader.tap_identifier (the rule registration
+  # uses too): anything longer than 64 characters or with a control character is treated as missing, as a
+  # hash/array param already is: no reader matches it, it is counted against the caller's IP only, and
+  # nothing stores it. (The rate-limit key digests it, so its length is fixed whatever the input.)
   def tap_mac_address
     return @tap_mac_address if defined?(@tap_mac_address)
 
-    mac = PiReader.normalize_mac(params[:mac_address])
-    @tap_mac_address = mac if mac && mac.length <= TAP_IDENTIFIER_MAX_LENGTH && !mac.match?(/[[:cntrl:]]/)
+    @tap_mac_address = PiReader.tap_identifier(params[:mac_address])
   end
 
   def tap_without_session?

@@ -6,12 +6,28 @@ class PiReader < ApplicationRecord
   before_validation :normalize_mac_address, on: :create
   validates :pi_mac_address, presence: true, on: :create
   validate :mac_address_not_registered, on: :create
+  # Only when the identifier is being written: rows already stored (all within the bound) are never
+  # re-judged by an unrelated edit.
+  validate :identifier_within_bound, if: :will_save_change_to_pi_mac_address?
+
+  # What a tap box may send as its identifier. Real MACs, and also the short non-MAC identifiers some
+  # readers in use send, so there is no format: at most IDENTIFIER_MAX_LENGTH characters after
+  # normalization, and no control character. The one rule for registration (validation below) and for
+  # taps (RfidController), so a reader that can be registered can tap, and the identifier that goes into
+  # a rate-limit key is bounded.
+  IDENTIFIER_MAX_LENGTH = 64
 
   # "AA-BB-CC-DD-EE-FF " and "aa:bb:cc:dd:ee:ff" are the same reader.
   def self.normalize_mac(raw)
     return nil unless raw.is_a?(String)
 
     raw.strip.downcase.tr("-", ":").presence
+  end
+
+  # The normalized identifier, or nil when it is missing, not a string, too long or has a control character.
+  def self.tap_identifier(raw)
+    id = normalize_mac(raw)
+    id if id && id.length <= IDENTIFIER_MAX_LENGTH && !id.match?(/[[:cntrl:]]/)
   end
 
   # Case/separator-insensitive lookup that also matches rows registered before
@@ -32,6 +48,12 @@ class PiReader < ApplicationRecord
 
   def normalize_mac_address
     self.pi_mac_address = self.class.normalize_mac(pi_mac_address) || pi_mac_address
+  end
+
+  def identifier_within_bound
+    return if pi_mac_address.blank? || self.class.tap_identifier(pi_mac_address)
+
+    errors.add(:pi_mac_address, "must be at most #{IDENTIFIER_MAX_LENGTH} characters with no control characters")
   end
 
   def mac_address_not_registered

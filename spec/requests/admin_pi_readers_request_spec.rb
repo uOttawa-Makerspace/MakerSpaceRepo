@@ -110,6 +110,25 @@ RSpec.describe "Admin pi readers", type: :request do
       expect(legacy.reload.space_id).to eq(space.id)
     end
 
+    it "refuses a 70-character identifier and one with a tab in the middle: alert, nothing created" do
+      sign_in_as(:admin)
+      expect do
+        post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: "a" * 70, space_id: space.id } }
+        expect(flash[:alert]).to match(/at most 64 characters/)
+        post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: "aa:bb\tcc", space_id: space.id } }
+        expect(flash[:alert]).to match(/at most 64 characters/)
+      end.not_to change(PiReader, :count)
+    end
+
+    it "still adopts a legacy row whose identifier is a bounded short one" do
+      sign_in_as(:admin)
+      legacy = create(:pi_reader, space: nil, pi_mac_address: "ab12")
+      legacy.update_column(:pi_mac_address, "ab12")
+      post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: "ab12", space_id: space.id } }
+      expect(flash[:notice]).to eq("Reader registered")
+      expect(legacy.reload.space_id).to eq(space.id)
+    end
+
     it "refuses a duplicate or blank mac address with an alert" do
       sign_in_as(:admin)
       existing = create(:pi_reader)
