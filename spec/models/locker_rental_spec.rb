@@ -233,8 +233,20 @@ RSpec.describe LockerRental, type: :model do
       expect { perform_enqueued_jobs { payment = pay(rental) } }.not_to raise_error
       expect(payment).to have_attributes(status: "held", hold_reason: "not_activatable", resolved_at: nil)
       expect(rental.reload.state).to eq("reviewing")
-      expect(rental.paid_at).to be_present
+      expect(rental.paid_at).to be_nil # only an applied payment moves the display-only paid_at
       expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "leaves paid_at alone for every held payment (cancelled rental, ineligible renter), so the renter never sees Paid on" do
+      cancelled = create(:locker_rental, :active)
+      cancelled.update!(state: :cancelled)
+      pay(cancelled, paid_at: Time.utc(2026, 10, 20))
+      expect(cancelled.reload.paid_at).to be_nil
+
+      active = create(:locker_rental, :active)
+      active.rented_by.deactivate!
+      pay(described_class.find(active.id), id: "x2", paid_at: Time.utc(2026, 10, 20))
+      expect(active.reload.paid_at).to be_nil
     end
 
     it "holds a payment for a cancelled rental (rental_cancelled) and leaves it cancelled" do
@@ -357,18 +369,24 @@ RSpec.describe LockerRental, type: :model do
   end
 
   describe "#settle_held_payments!" do
-    it "applies held payments of a renter / activation problem, but not a cancelled-rental payment" do
-      rental = create(:locker_rental, :active)
-      staff = create(:user, :staff)
-      a = create(:locker_payment, :held, locker_rental: rental, hold_reason: "renter_ineligible")
-      b = create(:locker_payment, :held, locker_rental: rental, hold_reason: "not_activatable")
-      c = create(:locker_payment, :held, locker_rental: rental, hold_reason: "rental_cancelled")
+    let(:rental) { create(:locker_rental, :active) }
+    let(:staff) { create(:user, :staff) }
 
-      expect(rental.settle_held_payments!(by: staff)).to eq(2)
-      expect([a, b, c].map { |p| p.reload.status }).to eq(%w[applied applied held])
-      expect(a.resolved_at).to be_present
-      expect(a.resolved_by).to eq(staff)
-      expect(a.hold_reason).to eq("renter_ineligible") # kept as history
+    it "applies at most ONE held payment, the oldest it can cure; the others stay held (duplicates stay visible)" do
+      newer = create(:locker_payment, :held, locker_rental: rental, hold_reason: "not_activatable", paid_at: Time.utc(2026, 10, 2))
+      older = create(:locker_payment, :held, locker_rental: rental, hold_reason: "renter_ineligible", paid_at: Time.utc(2026, 10, 1))
+      cancelled = create(:locker_payment, :held, locker_rental: rental, hold_reason: "rental_cancelled", paid_at: Time.utc(2026, 9, 1))
+
+      expect(rental.settle_held_payments!(by: staff)).to eq(1)
+      expect([older, newer, cancelled].map { |p| p.reload.status }).to eq(%w[applied held held])
+      expect(older.resolved_by).to eq(staff)
+      expect(older.hold_reason).to eq("renter_ineligible") # kept as history
+      expect(rental.reload.paid_at).to eq(Time.utc(2026, 10, 1)) # an applied payment moves the display value
+
+      expect(rental.settle_held_payments!(by: staff)).to eq(1) # a second assignment applies the next one, never both at once
+      expect(newer.reload).to be_applied
+      expect(cancelled.reload).to be_held
+      expect(rental.settle_held_payments!(by: staff)).to eq(0)
     end
   end
 

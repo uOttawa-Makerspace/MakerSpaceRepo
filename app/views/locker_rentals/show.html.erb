@@ -18,8 +18,8 @@
 
 <% payments = current_user.staff? ? @locker_rental.locker_payments.order(:paid_at, :id).to_a : [] %>
 <% held_payments = payments.select(&:held?) %>
-<%# The alert is driven by the same scope as the badge in the lists %>
-<% if current_user.staff? && LockerRental.with_held_payment.exists?(@locker_rental.id) %>
+<%# Same rule as LockerRental.with_held_payment (a held payment exists), read from the loaded payments %>
+<% if held_payments.any? %>
     <div class="alert alert-danger" role="alert">
         <strong><%= t('lockers.held_payments.alert_title') %></strong>
         <% held_payments.map(&:hold_reason).uniq.each do |reason| %>
@@ -307,14 +307,17 @@ end
                                         <td>
                                             <%= t("lockers.held_payments.statuses.#{payment.status}") %>
                                             <% if payment.hold_reason %>
-                                                <div class="small text-muted"><%= t("lockers.held_payments.reasons.#{payment.hold_reason}") if payment.held? %></div>
+                                                <div class="small text-muted"><%= t('lockers.held_payments.reason') %>: <%= t("lockers.held_payments.reasons.#{payment.hold_reason}") %></div>
                                             <% end %>
                                             <% if payment.resolved_at && !payment.applied? %>
-                                                <div class="small text-muted"><%= payment.resolved_at.to_fs(:long) %><%= " - #{payment.resolution_note}" if payment.resolution_note.present? %></div>
+                                                <div class="small text-muted"><%= t('lockers.held_payments.resolved_at') %>: <%= payment.resolved_at.to_fs(:long) %><%= " - #{payment.resolution_note}" if payment.resolution_note.present? %></div>
                                             <% end %>
                                             <% if payment.held? %>
                                                 <%= form_with url: locker_rental_locker_payment_path(@locker_rental, payment), method: :patch, class: 'mt-1' do %>
                                                     <%= text_field_tag :resolution_note, nil, placeholder: t('lockers.held_payments.note_placeholder'), class: 'form-control form-control-sm mb-1' %>
+                                                    <% if @locker_rental.active? && LockerRental::SETTLEABLE_HOLD_REASONS.include?(payment.hold_reason) %>
+                                                        <%= button_tag t('lockers.held_payments.mark_applied'), name: 'resolution', value: 'applied', class: 'btn btn-sm btn-outline-success', data: { confirm: t('lockers.held_payments.confirm_applied') } %>
+                                                    <% end %>
                                                     <%= button_tag t('lockers.held_payments.mark_refunded'), name: 'resolution', value: 'refunded', class: 'btn btn-sm btn-outline-primary', data: { confirm: t('lockers.held_payments.confirm_refunded') } %>
                                                     <%= button_tag t('lockers.held_payments.dismiss'), name: 'resolution', value: 'dismissed', class: 'btn btn-sm btn-outline-secondary', data: { confirm: t('lockers.held_payments.confirm_dismissed') } %>
                                                 <% end %>

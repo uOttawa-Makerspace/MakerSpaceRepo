@@ -48,14 +48,20 @@ class CustomWebhooksController < ApplicationController
     end
 
     # A paid locker order must carry the Shopify order id (it is the idempotency key of the payment record).
-    # Shopify always sends it, so a missing one is never legitimate: refuse before anything is applied.
-    if locker_ref.present? && order_id(order_hook).blank?
-      Rails.logger.warn("[orders_paid] locker order without an order id, answering 422 (locker rental #{locker_ref})")
-      return head :unprocessable_content
+    # Shopify always sends it, so a missing one is a bug on our side or theirs: skip ONLY the locker branch
+    # (never answer an error for the whole order, which would be retried forever and block the membership
+    # and CC branches), and report it with ids only so staff can reconcile the rental by hand.
+    locker_branch = LockerRental.draft_order_processable?(order_hook["tags"])
+    if locker_branch && locker_ref.present? && order_id(order_hook).blank?
+      Rails.error.report(
+        LockerOrderWithoutId.new("paid locker order without an order id; locker branch skipped (rental #{locker_ref})"),
+        handled: true, severity: :error, context: { locker_rental_id: locker_ref }
+      )
+      locker_branch = false
     end
 
     # handle lockers
-    process_locker_hook(locker_ref, order_hook) if LockerRental.draft_order_processable?(order_hook["tags"])
+    process_locker_hook(locker_ref, order_hook) if locker_branch
 
     # handle memberships
     process_membership_hook(order_hook, membership_ref) if Membership.draft_order_processable?(order_hook["tags"])
@@ -80,6 +86,10 @@ class CustomWebhooksController < ApplicationController
 
     head :ok
   end
+
+  # Raised only to be reported (Rails.error.report).
+  class LockerOrderWithoutId < StandardError; end
+  class UnknownLockerRental < StandardError; end
 
   private
 
@@ -156,7 +166,18 @@ class CustomWebhooksController < ApplicationController
   def process_locker_hook(locker_id, order_hook)
     return unless locker_id.present?
 
-    LockerRental.find_by(id: locker_id)&.record_payment(
+    rental = LockerRental.find_by(id: locker_id)
+    unless rental
+      # Answer 200 (a retry cannot fix it) but never silently: a paid order points at a rental that is gone.
+      Rails.error.report(
+        UnknownLockerRental.new("paid locker order #{order_id(order_hook)} references unknown locker rental #{locker_id}"),
+        handled: true, severity: :error,
+        context: { locker_rental_id: locker_id.to_s, shopify_order_id: order_id(order_hook) }
+      )
+      return
+    end
+
+    rental.record_payment(
       shopify_order_id: order_id(order_hook),
       paid_at: parse_time(order_hook["processed_at"]) || Time.current,
       amount: order_hook["total_price"].presence,

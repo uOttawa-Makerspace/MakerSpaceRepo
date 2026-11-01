@@ -165,22 +165,28 @@ class LockerRental < ApplicationRecord
           payment = activate_for_payment(payment)
           notify_after_commit if payment.applied?
         end
-        # Display-only "latest payment"; nothing reads it for logic.
-        update_columns(paid_at: [self.paid_at, paid_at].compact.max)
+        # Display-only "latest payment", moved only by an APPLIED payment: a held one (cancelled rental,
+        # ineligible renter) must not show the renter "Paid on".
+        stamp_paid_at(paid_at) if payment.applied?
         report_held_payment(payment) if payment.held?
       end
     end
     payment
   end
 
-  # Staff assigned this rental active: its held payments for a renter who was not eligible, or a rental that
-  # could not be activated, are now applied. (A payment held because the rental was cancelled stays held:
-  # that money is refunded or dismissed, never applied.) Call inside the transaction of the assigning save.
+  # Hold reasons that assigning (or reactivating) can cure; a payment held because the rental was cancelled is
+  # only ever refunded or dismissed.
+  SETTLEABLE_HOLD_REASONS = %w[renter_ineligible not_activatable].freeze
+
+  # Staff assigned this rental active: ONE of its held payments (the oldest that this can cure) is now the
+  # applied payment. Any other held payment stays held on purpose: a second charge for the same rental is a
+  # duplicate, and must stay visible so staff refund it. Call inside the transaction of the assigning save.
+  # Returns the number of payments applied (0 or 1).
   def settle_held_payments!(by: nil)
-    now = Time.current
-    locker_payments.held.where(hold_reason: %w[renter_ineligible not_activatable]).update_all(
-      status: 'applied', resolved_at: now, resolved_by_id: by&.id, updated_at: now
-    )
+    oldest = locker_payments.held.where(hold_reason: SETTLEABLE_HOLD_REASONS).order(:paid_at, :id).first
+    return 0 unless oldest
+
+    oldest.mark_applied!(by: by) ? 1 : 0
   end
 
   # Expired if a locker is active (not cancelled or unpaid) and time has passed owned_until
@@ -297,6 +303,11 @@ class LockerRental < ApplicationRecord
       .pluck(:locker_type_id, :locker_specifier)
       .group_by(&:shift)
       .transform_values(&:flatten)
+  end
+
+  # Display-only "latest applied payment" (GREATEST), written only when a payment becomes applied.
+  def stamp_paid_at(time)
+    update_columns(paid_at: [paid_at, time].compact.max)
   end
 
   private

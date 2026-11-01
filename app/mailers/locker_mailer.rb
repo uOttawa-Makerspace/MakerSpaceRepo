@@ -18,17 +18,13 @@ class LockerMailer < ApplicationMailer
   end
 
   def locker_assigned
-    mail(
-      to: @user.email,
-      subject:
+    renter_mail(subject:
         "Locker #{@locker_rental.locker.specifier} has been assigned for you"
     )
   end
 
   def locker_checkout
-    mail(
-      to: @user.email,
-      subject:
+    renter_mail(subject:
         "Your locker rental for locker #{@locker_rental.locker.specifier} is ready for checkout"
     )
   end
@@ -36,9 +32,7 @@ class LockerMailer < ApplicationMailer
   # Sent when a locker is cancelled or manually finished by staff
   def locker_cancelled
     # Sometimes requests are cancelled before they're assigned
-    mail(
-      to: @user.email,
-      subject:
+    renter_mail(subject:
         (
           if @locker_rental.locker
             "Your locker rental for locker #{@locker_rental.locker.specifier} has been cancelled"
@@ -51,18 +45,25 @@ class LockerMailer < ApplicationMailer
 
   # Sent automatically when the rental end date passes
   def rental_expired
-    mail(
-      to: @user.email,
-      subject: "Your locker rental for Locker #{@locker_rental.locker&.specifier} has expired - Please clear your locker"
+    renter_mail(subject: "Your locker rental for Locker #{@locker_rental.locker&.specifier} has expired - Please clear your locker"
     )
   end
 
   def locker_moved
     @moved_locker = params[:moved_locker]
     @moved_date = params[:moved_date]
-    mail(
-      to: @user.email,
-      subject: "Your locker rental for Locker #{@locker_rental.locker&.specifier} has been modified"
+    renter_mail(subject: "Your locker rental for Locker #{@locker_rental.locker&.specifier} has been modified"
       )
+  end
+
+  private
+
+  # Every mail to the renter goes through here: a soft-deleted or deactivated account gets nothing (checked
+  # when the job runs, so a mail queued before the deactivation is dropped too). Returning without calling
+  # mail makes the delivery a no-op. Mail to staff (locker_requested) is not the renter's.
+  def renter_mail(**headers)
+    return unless User.eligible_renters.exists?(id: @locker_rental.rented_by_id)
+
+    mail(to: @user.email, **headers)
   end
 end

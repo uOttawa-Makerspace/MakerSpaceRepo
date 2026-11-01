@@ -807,6 +807,62 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(rental.reload.state).to eq("active")
       end
 
+      # Security: the only state changes a renter may make are reviewing -> cancelled and await_payment -> cancelled
+      describe "a renter changing state on their own rental (self-activation)" do
+        before { allow_any_instance_of(LockerRental).to receive(:checkout_link).and_return(nil) }
+
+        %w[active await_payment reviewing cancelled].each do |target|
+          it "refuses #{target} on a reviewing rental unless it is the cancellation (nothing saved, no mail, not settled)" do
+            rental = reviewing_rental!(tenant: owner)
+            rental.update_columns(locker_id: create(:locker).id)
+            held = create(:locker_payment, :held, locker_rental: rental)
+            log_in!(owner)
+            ActionMailer::Base.deliveries.clear
+
+            perform_enqueued_jobs do
+              patch locker_rental_path(rental), params: { locker_rental: { state: target, locker_id: rental.locker_id } }
+            end
+
+            if target == "cancelled"
+              expect(rental.reload.state).to eq("cancelled")
+            elsif target == "reviewing"
+              expect(rental.reload.state).to eq("reviewing") # no change
+            else
+              expect(response).to have_http_status(:unprocessable_content)
+              expect(flash[:alert]).to eq("You can only cancel a locker request that is not active yet")
+              expect(rental.reload.state).to eq("reviewing")
+              expect(ActionMailer::Base.deliveries).to be_empty
+            end
+            expect(held.reload).to be_held
+          end
+        end
+
+        it "refuses a renter moving an await_payment rental to active, and lets them cancel it" do
+          rental = create(:locker_rental, :await_payment, rented_by: owner)
+          log_in!(owner)
+          patch locker_rental_path(rental), params: { locker_rental: { state: "active" } }
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(rental.reload.state).to eq("await_payment")
+
+          patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }, as: :json
+          expect(response).to have_http_status(:no_content)
+          expect(rental.reload.state).to eq("cancelled")
+        end
+
+        it "refuses a renter re-activating a cancelled rental, or changing an active one to anything else" do
+          cancelled = create(:locker_rental, :active, rented_by: owner).tap { |r| r.update!(state: :cancelled) }
+          log_in!(owner)
+          patch locker_rental_path(cancelled), params: { locker_rental: { state: "active" } }, as: :json
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(cancelled.reload.state).to eq("cancelled")
+
+          active = create(:locker_rental, :active, rented_by: owner)
+          patch locker_rental_path(active), params: { locker_rental: { state: "await_payment" } }, as: :json
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(active.reload.state).to eq("active")
+        end
+      end
+
       it "accepts only :state for owners (notes edits silently dropped — wart)" do
         # WART(D-L09): owner notes edits are silently dropped
         rental = reviewing_rental!(tenant: owner)
@@ -1057,6 +1113,26 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).not_to include(I18n.t("lockers.held_payments.alert_title"))
     end
 
+    it "does not show the renter Paid on for a cancelled rental whose payment was held" do
+      cancelled = create(:locker_rental, :active, rented_by: tenant).tap { |x| x.update!(state: :cancelled) }
+      cancelled.record_payment(shopify_order_id: "late-1")
+      log_in!(tenant)
+      get locker_rental_path(cancelled)
+      expect(response.body).not_to include(I18n.t("lockers.paid_on"))
+      expect(response.body).to include(I18n.t("lockers.unpaid"))
+    end
+
+    it "keeps showing the hold reason and resolution of a resolved payment as history" do
+      payment = hold!(rental)
+      payment.resolve!("refunded", by: staff, note: "done in Shopify")
+      log_in!(staff)
+      get locker_rental_path(rental)
+      expect(response.body).to include(I18n.t("lockers.held_payments.statuses.refunded"))
+      expect(response.body).to include(CGI.escapeHTML(I18n.t("lockers.held_payments.reasons.renter_ineligible")))
+      expect(response.body).to include("done in Shopify")
+      expect(response.body).not_to include(I18n.t("lockers.held_payments.alert_title"))
+    end
+
     it "shows 'Paid (legacy)' for a rental with a paid_at and no payment rows" do
       rental.update_columns(paid_at: Time.utc(2026, 5, 20))
       log_in!(staff)
@@ -1065,17 +1141,30 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
     end
 
     describe "assigning the rental active (Assign now)" do
-      it "settles its renter/activation holds as applied in the same update, but not a rental_cancelled hold" do
+      it "applies ONE held payment (the oldest curable) in the same update; the others, even a duplicate, stay held" do
         reviewing = create(:locker_rental, :reviewing)
-        a = hold!(reviewing)
-        b = hold!(reviewing, reason: "not_activatable")
-        c = hold!(reviewing, reason: "rental_cancelled")
+        newer = hold!(reviewing, reason: "not_activatable")
+        newer.update_columns(paid_at: 1.day.ago)
+        older = hold!(reviewing)
+        older.update_columns(paid_at: 2.days.ago)
+        cancelled = hold!(reviewing, reason: "rental_cancelled")
         locker = create(:locker)
         log_in!(staff)
-        patch locker_rental_path(reviewing), params: { locker_rental: { state: "active", locker_id: locker.id } }
+        patch locker_rental_path(reviewing), params: { expected_state: "reviewing", locker_rental: { state: "active", locker_id: locker.id } }
         expect(reviewing.reload.state).to eq("active")
-        expect([a, b, c].map { |x| x.reload.status }).to eq(%w[applied applied held])
-        expect(a.resolved_by).to eq(staff)
+        expect([older, newer, cancelled].map { |x| x.reload.status }).to eq(%w[applied held held])
+        expect(older.resolved_by).to eq(staff)
+        expect(reviewing.paid_at).to be_within(1.second).of(older.paid_at)
+      end
+
+      it "refuses an assignment made from a stale page (expected_state no longer matches): nothing changes" do
+        reviewing = create(:locker_rental, :await_payment)
+        payment = hold!(reviewing)
+        log_in!(staff)
+        patch locker_rental_path(reviewing), params: { expected_state: "reviewing", locker_rental: { state: "active" } }
+        expect(flash[:alert]).to include("changed while you had the page open")
+        expect(reviewing.reload.state).to eq("await_payment")
+        expect(payment.reload).to be_held
       end
 
       it "leaves the payment held when the assignment fails (renter still deactivated)" do
@@ -1117,9 +1206,9 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(payment.reload.status).to eq("dismissed")
     end
 
-    it "refuses any other resolution, including applied, and an already resolved payment" do
+    it "refuses an unknown resolution, and an already resolved payment" do
       log_in!(staff)
-      patch path, params: { resolution: "applied" }
+      patch path, params: { resolution: "bogus" }
       expect(payment.reload).to be_held
       patch path, params: { resolution: "refunded" }
       patch path, params: { resolution: "dismissed" }
@@ -1134,6 +1223,47 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(response).to have_http_status(:forbidden)
       end
       expect(payment.reload).to be_held
+    end
+
+    describe "resolution applied" do
+      before { log_in!(staff) }
+
+      it "applies a held payment of an ACTIVE rental whose renter is eligible, moving paid_at" do
+        patch path, params: { resolution: "applied", resolution_note: "reactivated" }
+        expect(flash[:notice]).to eq(I18n.t("lockers.held_payments.resolved_applied"))
+        expect(payment.reload).to have_attributes(status: "applied", resolved_by_id: staff.id, resolution_note: "reactivated")
+        expect(rental.reload.paid_at).to be_within(1.second).of(payment.paid_at)
+        expect(LockerRental.with_held_payment).to be_empty
+      end
+
+      it "is refused while the renter is deactivated or soft-deleted" do
+        rental.rented_by.deactivate!
+        patch path, params: { resolution: "applied" }
+        expect(flash[:alert]).to eq(I18n.t("lockers.held_payments.cannot_apply"))
+        expect(payment.reload).to be_held
+
+        rental.rented_by.reactivate!
+        rental.rented_by.update_columns(deleted: true)
+        patch path, params: { resolution: "applied" }
+        expect(payment.reload).to be_held
+      end
+
+      it "is refused when the rental is not active, and for a payment held because the rental was cancelled" do
+        awaiting = create(:locker_payment, :held, locker_rental: create(:locker_rental, :await_payment))
+        allow_any_instance_of(LockerRental).to receive(:checkout_link).and_return(nil)
+        patch locker_rental_locker_payment_path(awaiting.locker_rental, awaiting), params: { resolution: "applied" }
+        expect(awaiting.reload).to be_held
+
+        cancelled_hold = create(:locker_payment, :held, locker_rental: rental, hold_reason: "rental_cancelled")
+        patch locker_rental_locker_payment_path(rental, cancelled_hold), params: { resolution: "applied" }
+        expect(cancelled_hold.reload).to be_held
+      end
+
+      it "is refused for an already refunded payment" do
+        payment.resolve!("refunded", by: staff)
+        patch path, params: { resolution: "applied" }
+        expect(payment.reload.status).to eq("refunded")
+      end
     end
 
     it "does not find a payment through another rental" do

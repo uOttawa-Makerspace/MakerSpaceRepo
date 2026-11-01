@@ -237,6 +237,11 @@ en:
             rented_by:
               deactivated: "is deactivated"
               deleted: "is deleted"
+        locker:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This locker has rental history and cannot be deleted. Mark it as not available instead."
         sub_space_booking:
           attributes:
             start_time:

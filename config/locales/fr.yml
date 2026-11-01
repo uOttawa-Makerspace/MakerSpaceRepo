@@ -222,6 +222,11 @@ fr:
             rented_by:
               deactivated: "est désactivé"
               deleted: "est supprimé"
+        locker:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce casier a un historique de location et ne peut pas être supprimé. Marquez-le plutôt comme non disponible."
         sub_space_booking:
           attributes:
             start_time:

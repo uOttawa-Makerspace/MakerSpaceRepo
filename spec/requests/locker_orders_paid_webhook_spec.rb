@@ -99,12 +99,40 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     expect(rental.locker_payments.pluck(:shopify_order_id)).to eq(["555"])
   end
 
-  it "answers 422 and applies nothing when a locker order carries no order id" do
+  it "skips only the locker branch, reports it with ids only, and still answers 200 when a locker order carries no order id" do
     rental = create(:locker_rental, :await_payment)
-    signed_orders_paid(payload(rental.id, id: nil))
-    expect(response).to have_http_status(:unprocessable_content)
+    reports = []
+    allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+    perform_enqueued_jobs { signed_orders_paid(payload(rental.id, id: nil)) }
+    expect(response).to have_http_status(:ok)
     expect(rental.reload.state).to eq("await_payment")
     expect(LockerPayment.count).to eq(0)
+    expect(ActionMailer::Base.deliveries).to be_empty
+    expect(reports.size).to eq(1)
+    expect(reports.first.first).to be_a(CustomWebhooksController::LockerOrderWithoutId)
+    expect(reports.first.last).to include(handled: true, context: { locker_rental_id: rental.id.to_s })
+  end
+
+  it "applies the membership and CC branches of a mixed order whose locker branch has no order id" do
+    member = create(:user, :regular_user)
+    tier = create(:membership_tier, title_en: "1 Day Membership", title_fr: "Adhesion 1 jour", duration: 1)
+    pending = create(:membership, user: member, membership_tier: tier, status: "pending")
+    rental = create(:locker_rental, :await_payment)
+    allow(Rails.error).to receive(:report)
+    signed_orders_paid(
+      payload(rental.id, id: nil, tags: [tag, Membership.draft_order_operating_tag]).merge(
+        line_items: [{ title: "1 Day Membership", quantity: 2, product_id: 4_359_597_129_784 }],
+        customer: { email: member.email },
+        metafields: [
+          { namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s },
+          { namespace: "makerepo", key: "membership_db_reference", value: pending.id.to_s }
+        ]
+      )
+    )
+    expect(response).to have_http_status(:ok)
+    expect(rental.reload.state).to eq("await_payment")
+    expect(pending.reload.status).to eq("paid")
+    expect(member.cc_moneys.pluck(:cc)).to eq([20])
   end
 
   it "ignores other tags (production tag in test env): nothing changes, no mail" do
@@ -118,14 +146,20 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     expect(ActionMailer::Base.deliveries).to be_empty
   end
 
-  it "answers 200 and does nothing for an unknown rental id or missing metafield" do
+  it "answers 200 and does nothing for an unknown rental id or missing metafield, reporting the unknown id (ids only)" do
+    reports = []
+    allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
     perform_enqueued_jobs do
-      signed_orders_paid(payload(999_999_999))
+      signed_orders_paid(payload(999_999_999, id: 4242))
       expect(response).to have_http_status(:ok)
       signed_orders_paid({ tags: [tag] })
       expect(response).to have_http_status(:ok)
     end
     expect(ActionMailer::Base.deliveries).to be_empty
+    expect(LockerPayment.count).to eq(0)
+    expect(reports.size).to eq(1) # only the unknown id; a missing metafield has nothing to report
+    expect(reports.first.first).to be_a(CustomWebhooksController::UnknownLockerRental)
+    expect(reports.first.last).to include(handled: true, context: { locker_rental_id: "999999999", shopify_order_id: "4242" })
   end
 
   it "falls back to the Shopify draft-order metafields (stubbed) when the payload has none" do
@@ -261,7 +295,7 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
         expect(response).to have_http_status(:ok)
         rental.reload
         expect(rental.state).to eq("await_payment")
-        expect(rental.paid_at).to be_present
+        expect(rental.paid_at).to be_nil # a held payment never moves the display-only paid_at
         payment = rental.locker_payments.sole
         expect(payment).to have_attributes(status: "held", hold_reason: "renter_ineligible", resolved_at: nil)
         expect(LockerRental.with_held_payment).to contain_exactly(rental)
@@ -298,7 +332,7 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
       reviewing.rented_by.deactivate!
       signed_orders_paid(payload(reviewing.id))
       expect(response).to have_http_status(:ok)
-      expect(reviewing.reload).to have_attributes(state: "reviewing", paid_at: be_present)
+      expect(reviewing.reload).to have_attributes(state: "reviewing", paid_at: nil)
       expect(reviewing.locker_payments.sole).to be_held
     end
 

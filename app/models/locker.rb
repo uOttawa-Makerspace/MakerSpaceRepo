@@ -1,5 +1,7 @@
 class Locker < ApplicationRecord
-  has_many :locker_rentals, dependent: :destroy
+  # Rental history (and its payments) is never deleted: a locker that ever had a rental cannot be destroyed
+  # (mark it not available instead).
+  has_many :locker_rentals, dependent: :restrict_with_error
   belongs_to :locker_size
 
   # Enum to handle the filter split between staff, design class students (gng), and other (general)

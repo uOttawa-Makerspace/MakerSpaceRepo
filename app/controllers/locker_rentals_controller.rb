@@ -16,7 +16,7 @@ class LockerRentalsController < SessionsController
   end
 
   def admin
-    base_rentals = LockerRental.includes(:locker, :rented_by).order(created_at: :desc).not_cancelled
+    base_rentals = LockerRental.includes(:locker, :rented_by, :locker_payments).order(created_at: :desc).not_cancelled
     
     # Requirement: Split between requests that have been dealt with vs requests that have not been looked at
     @pending_requests = base_rentals.reviewing
@@ -134,40 +134,56 @@ class LockerRentalsController < SessionsController
       return
     end
 
-    # Assign new parameters but don't commit yet
-    @locker_rental.assign_attributes(locker_rental_params)
+    # Everything below runs on the row locked FOR UPDATE and reloaded: the guards, the save, the settlement of
+    # held payments and the mail all see the CURRENT state (a webhook payment may have activated or the other
+    # staff member cancelled it since this page was rendered), and a concurrent webhook waits for the commit.
+    outcome = nil
+    LockerRental.transaction do
+      @locker_rental.lock!
 
-    @locker_rental.decided_by = current_user
+      if stale_page?
+        outcome = :stale
+      else
+        # Assign new parameters but don't commit yet
+        @locker_rental.assign_attributes(locker_rental_params)
+        @locker_rental.decided_by = current_user
 
-    # Requirement: Ideally I would like to have an 'indefinite' option for the date
-    # We check this if the state is changing to active OR if it's already active (Move Locker)
-    if @locker_rental.indefinite == '1'
-      @locker_rental.owned_until = nil
-    elsif (@locker_rental.state_changed?(to: :active) || @locker_rental.active?) && @locker_rental.owned_until.blank?
-      @locker_rental.owned_until = end_of_this_semester
+        # Requirement: Ideally I would like to have an 'indefinite' option for the date
+        # We check this if the state is changing to active OR if it's already active (Move Locker)
+        if @locker_rental.indefinite == '1'
+          @locker_rental.owned_until = nil
+        elsif (@locker_rental.state_changed?(to: :active) || @locker_rental.active?) && @locker_rental.owned_until.blank?
+          @locker_rental.owned_until = end_of_this_semester
+        end
+
+        if renter_state_change_refused?
+          outcome = :state_refused
+        elsif @locker_rental.save
+          # Assigning the rental active also settles one held payment, in the same transaction as the save.
+          if current_user.staff? && @locker_rental.saved_change_to_state? && @locker_rental.active?
+            @locker_rental.settle_held_payments!(by: current_user)
+          end
+          outcome = :saved
+        else
+          outcome = :invalid
+        end
+      end
     end
 
-    # Only staff can cancel a paid locker
-    if @locker_rental.state_changed?(from: :active, to: :cancelled) &&
-         !current_user.staff?
-      flash[:alert] = 'Please contact administration for cancelling a locker'
+    case outcome
+    when :stale
+      stale_page_response
+    when :state_refused
+      flash[:alert] = if @locker_rental.state_was == 'active' && @locker_rental.cancelled?
+                        'Please contact administration for cancelling a locker'
+                      else
+                        'You can only cancel a locker request that is not active yet'
+                      end
       respond_to do |format|
         format.html { render :show, status: :unprocessable_content }
         format.json { render json: { error: 'Unauthorized' }, status: :unprocessable_entity }
       end
-      return
-    end
-
-    # Assigning the rental active also settles its held payments, in the same transaction as the save.
-    saved = LockerRental.transaction do
-      ok = @locker_rental.save
-      if ok && current_user.staff? && @locker_rental.saved_change_to_state? && @locker_rental.active?
-        @locker_rental.settle_held_payments!(by: current_user)
-      end
-      ok
-    end
-
-    if saved
+    when :saved
       @locker_rental.notify_after_commit
       respond_to do |format|
         format.html do
@@ -195,18 +211,26 @@ class LockerRentalsController < SessionsController
       return
     end
 
-    unless @locker_rental.renewable?
-      redirect_to @locker_rental, alert: 'This locker rental is not renewable.'
-      return
+    # Locked and reloaded first, so renewable? and the save see the current row.
+    outcome = nil
+    LockerRental.transaction do
+      @locker_rental.lock!
+      if @locker_rental.renewable?
+        @locker_rental.assign_attributes(
+          state: :await_payment,
+          decided_by: current_user,
+          owned_until: end_of_this_semester
+        )
+        outcome = @locker_rental.save ? :saved : :invalid
+      else
+        outcome = :not_renewable
+      end
     end
 
-    @locker_rental.assign_attributes(
-      state: :await_payment,
-      decided_by: current_user,
-      owned_until: end_of_this_semester
-    )
-
-    if @locker_rental.save
+    case outcome
+    when :not_renewable
+      redirect_to @locker_rental, alert: 'This locker rental is not renewable.'
+    when :saved
       @locker_rental.notify_after_commit
       redirect_to @locker_rental,
                   notice: 'Locker renewal started. Please complete checkout to renew your locker.'
@@ -257,6 +281,34 @@ class LockerRentalsController < SessionsController
   end
 
   RENTER_NOT_FOUND = 'User not found'
+
+  # The one rule for non-staff: the only state changes a renter may make on their own rental. Everything
+  # else (activating, sending to payment, reviewing, ending a paid rental) is staff's.
+  RENTER_STATE_CHANGES = [%w[reviewing cancelled], %w[await_payment cancelled]].freeze
+
+  def renter_state_change_refused?
+    !current_user.staff? && @locker_rental.state_changed? &&
+      RENTER_STATE_CHANGES.exclude?([@locker_rental.state_was, @locker_rental.state])
+  end
+
+  # The staff forms send the state the page was rendered with. If the locked row has moved on (a payment
+  # activated it, someone else cancelled it) the action is refused instead of applied on a stale view, so e.g.
+  # a cancel of "unpaid" can never land on a rental that has just been paid.
+  def stale_page?
+    params[:expected_state].present? && params[:expected_state] != @locker_rental.state
+  end
+
+  def stale_page_response
+    message = "This locker rental changed while you had the page open (it is now #{@locker_rental.state}). " \
+              'Reload it and review before acting.'
+    respond_to do |format|
+      format.html do
+        flash[:alert] = message
+        redirect_to @locker_rental
+      end
+      format.json { render json: { error: message }, status: :conflict }
+    end
+  end
 
   # A staff request that names a renter by username that matches no user, and names no renter by id. When an
   # id is sent it wins and the username is only the display text of the search box. A deleted or deactivated
