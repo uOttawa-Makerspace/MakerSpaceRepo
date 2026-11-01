@@ -19,7 +19,7 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
       log_in_as(staff)
       visit edit_volunteer_task_path(task)
       expect(page).to have_css("h1", text: "Edit Volunteer Task")
-      select volunteer.name, from: "volunteer_id"
+      tom_select volunteer.name, from: "volunteer_id"
       find("button[type=submit].btn-lg").click
       # wait for the PATCH to redirect off the edit form before asserting on its
       # outcome (a text wait alone can not tell "still submitting" from "failed")

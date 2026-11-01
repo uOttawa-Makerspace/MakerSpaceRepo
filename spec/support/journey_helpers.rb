@@ -105,6 +105,28 @@ module JourneyHelpers
     end
   end
 
+  # Pick an option in a <select> that the page's own entry script turns into a
+  # Tom Select widget. The script runs on turbo:load, after the page appears,
+  # and swapping in the widget moves the layout: choosing on the native select
+  # and clicking on races it (the click lands on whatever slid under it). Wait
+  # for the widget, then choose through it, the way a user does.
+  # The pick is confirmed on the hidden native select (what the form submits),
+  # and the dropdown must be closed before returning: it overlays the form.
+  def tom_select(option_text, from:)
+    native = find(:select, from, visible: :all)
+    wait_until("##{native[:id]} not yet a Tom Select") { native[:class].to_s.split.include?("tomselected") }
+    wrapper = native.find(:xpath, "following-sibling::div[contains(@class, 'ts-wrapper')][1]")
+    input = wrapper.find(".ts-control input")
+    input.click # the input, not the control: its centre can hold an existing item's "×"
+    wrapper.find(".ts-dropdown .option", text: option_text, exact_text: true).click
+    page.document.synchronize do
+      selected = native.all("option", visible: :all).select(&:selected?).map(&:text)
+      raise Capybara::ExpectationNotMet, "#{option_text.inspect} not selected in ##{native[:id]}" unless selected.include?(option_text)
+    end
+    input.send_keys(:escape)
+    expect(wrapper).to have_no_css(".ts-dropdown", visible: true)
+  end
+
   def app_url
     "http://#{page.server.host}:#{page.server.port}"
   end
