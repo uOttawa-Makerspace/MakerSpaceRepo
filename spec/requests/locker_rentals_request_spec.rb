@@ -384,6 +384,37 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(rental.owned_until.to_date).to eq(end_of_this_semester.to_date)
       end
 
+      context "when the renter was deactivated after requesting" do
+        let(:tenant) { create(:user) }
+        let!(:rental) { create(:locker_rental, rented_by: tenant) }
+        let(:locker) { create(:locker) }
+
+        before { tenant.deactivate! }
+
+        it "refuses activating or sending to payment (state-only PATCH), and leaves the rental reviewing" do
+          %w[active await_payment].each do |state|
+            patch locker_rental_path(rental), params: { locker_rental: { state: state, locker_id: locker.id } }
+            expect(flash[:alert]).to include("Rented by is deactivated")
+            expect(rental.reload.state).to eq("reviewing")
+          end
+          patch locker_rental_path(rental), params: { locker_rental: { state: "active" } }, as: :json
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(rental.reload.state).to eq("reviewing")
+        end
+
+        it "still lets staff cancel it" do
+          patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
+          expect(flash[:notice]).to eq("Locker rental updated")
+          expect(rental.reload.state).to eq("cancelled")
+        end
+
+        it "refuses a PATCH naming an unknown renter username" do
+          patch locker_rental_path(rental), params: { locker_rental: { rented_by_username: "nobody-here", notes: "x" } }
+          expect(flash[:alert]).to include("User not found")
+          expect(rental.reload.notes).not_to eq("x")
+        end
+      end
+
       it "honors an explicit owned_until and lets indefinite ('1') clear the date" do
         post locker_rentals_path,
              params: { locker_rental: {

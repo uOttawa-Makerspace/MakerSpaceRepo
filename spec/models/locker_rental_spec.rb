@@ -396,4 +396,48 @@ RSpec.describe LockerRental, type: :model do
       expect(rental.reload.owned_until.utc.iso8601(6)).to eq("2026-04-30T23:59:59.999999Z")
     end
   end
+
+  describe "a deactivated renter (users.deactivated_at)" do
+    let(:renter) { create(:user) }
+    let(:staff) { create(:user, :staff) }
+    let(:locker) { create(:locker) }
+
+    it "cannot be given a new rental" do
+      renter.deactivate!
+      rental = build(:locker_rental, rented_by: renter)
+      expect(rental).not_to be_valid
+      expect(rental.errors.full_messages).to include("Rented by is deactivated")
+    end
+
+    it "cannot have a reviewing rental activated or sent to payment after being deactivated" do
+      rental = create(:locker_rental, rented_by: renter)
+      renter.deactivate!
+      rental = described_class.find(rental.id)
+
+      rental.assign_attributes(state: :active, locker: locker, decided_by: staff, owned_until: 1.week.from_now)
+      expect(rental).not_to be_valid
+      expect(rental.errors[:rented_by]).to eq(["is deactivated"])
+
+      rental = described_class.find(rental.id)
+      rental.assign_attributes(state: :await_payment, locker: locker, decided_by: staff)
+      expect(rental).not_to be_valid
+      expect(rental.errors[:rented_by]).to eq(["is deactivated"])
+    end
+
+    it "can still be cancelled or edited (staff clean-up)" do
+      rental = create(:locker_rental, rented_by: renter)
+      renter.deactivate!
+      rental = described_class.find(rental.id)
+
+      expect(rental.update(notes: "called")).to be(true)
+      expect(rental.update(state: :cancelled, decided_by: staff)).to be(true)
+    end
+
+    it "can still have an active rental ended while deactivated" do
+      rental = create(:locker_rental, :active, rented_by: renter, locker: locker, owned_until: 1.week.from_now)
+      renter.deactivate!
+      rental = described_class.find(rental.id)
+      expect(rental.update(state: :cancelled, decided_by: staff)).to be(true)
+    end
+  end
 end

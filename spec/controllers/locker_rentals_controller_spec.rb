@@ -107,7 +107,7 @@ RSpec.describe LockerRentalsController, type: :controller do
     before(:each) { @locker = create(:locker) }
 
     context 'assigning to users' do
-      it 'refuses a deactivated user named by id or by username: no rental is created' do
+      it 'refuses a deactivated user named by id or by username with the deactivated message: no rental is created' do
         gone = create :user
         gone.deactivate!
         [{ rented_by_id: gone.id }, { rented_by_username: gone.username }].each do |who|
@@ -124,7 +124,27 @@ RSpec.describe LockerRentalsController, type: :controller do
                      ).except(:rented_by_id).merge(who)
                  }
           end.not_to change(LockerRental, :count)
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(controller.instance_variable_get(:@locker_rental).errors.full_messages).to include('Rented by is deactivated')
         end
+      end
+
+      it 'refuses an unknown rented_by_username instead of assigning to the staff member' do
+        expect do
+          post :create,
+               params: {
+                 locker_rental:
+                   attributes_for(
+                     :locker_rental,
+                     locker_id: @locker.id,
+                     locker_specifier: '1',
+                     state: :active,
+                     owned_until: end_of_this_semester
+                   ).except(:rented_by_id).merge(rented_by_username: 'nobody-here')
+               }
+        end.not_to change(LockerRental, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(controller.instance_variable_get(:@locker_rental).errors.full_messages).to include('User not found')
       end
 
       it 'should allow manual assignment' do

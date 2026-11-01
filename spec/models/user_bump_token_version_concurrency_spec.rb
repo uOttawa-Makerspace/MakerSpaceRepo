@@ -79,15 +79,15 @@ RSpec.describe User, "#bump_token_version! compare-and-set under concurrency" do
   it "change_deactivation! raises the same RecordNotFound when the row is gone" do
     loaded = User.find(user.id)
     User.unscoped.where(id: user.id).delete_all
-    expect { loaded.send(:change_deactivation!, Time.current) }.to raise_error(ActiveRecord::RecordNotFound, /no longer exists/)
+    expect { loaded.send(:change_deactivation!, true) }.to raise_error(ActiveRecord::RecordNotFound, /no longer exists/)
   end
 
   it "change_deactivation! returns false, bumping nothing, and syncs the instance when the row is already in that state" do
     loaded = User.find(user.id)
-    in_other_connection { User.find(user.id).send(:change_deactivation!, Time.current) }
+    in_other_connection { User.find(user.id).send(:change_deactivation!, true) }
     version = User.unscoped.find(user.id).token_version
 
-    expect(loaded.send(:change_deactivation!, Time.current)).to be(false)
+    expect(loaded.send(:change_deactivation!, true)).to be(false)
     expect(loaded.deactivated_at).to be_present
     expect(loaded.token_version).to eq(version)
     expect(User.unscoped.find(user.id).token_version).to eq(version)

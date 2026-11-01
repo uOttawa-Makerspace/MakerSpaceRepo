@@ -232,6 +232,10 @@ en:
               too_long: "Maximum of %{count} characters."
             read_and_accepted_waiver_form:
               inclusion: "You must accept the terms of the waiver."
+        locker_rental:
+          attributes:
+            rented_by:
+              deactivated: "is deactivated"
         sub_space_booking:
           attributes:
             start_time:

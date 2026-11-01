@@ -85,6 +85,14 @@ class LockerRental < ApplicationRecord
   # Locker rental always has an owner
   validates :rented_by, presence: true
 
+  # A deactivated account (users.deactivated_at) cannot be given a locker: not when the rental is created, and
+  # not when an existing one (e.g. a reviewing request of a user deactivated since) is activated or sent to
+  # payment. Other changes (cancelling, ending, notes) stay possible so staff can clean up.
+  validate :rented_by_not_deactivated, if: -> { new_record? || (state_changed? && (active? || await_payment?)) }
+  def rented_by_not_deactivated
+    errors.add(:rented_by, :deactivated) if rented_by&.deactivated_at
+  end
+
   # If rented by a GNG student, make sure details are given
   validates :course_name, presence: true, if: :requested_as_student?
   validates :section_name, presence: true, if: :requested_as_student?

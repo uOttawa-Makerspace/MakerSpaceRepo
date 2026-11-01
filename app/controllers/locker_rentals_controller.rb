@@ -73,6 +73,16 @@ class LockerRentalsController < SessionsController
       return
     end
 
+    # Staff named a renter who does not exist: refuse, never fall back to themself
+    # (the fallback below is only for a request that names no renter at all).
+    if unknown_renter_username?
+      @locker_rental = LockerRental.new
+      @locker_rental.errors.add(:base, RENTER_NOT_FOUND)
+      new_instance_attributes
+      render :new, status: :unprocessable_content
+      return
+    end
+
     # Force all new lockers to be assigned to the user submitting the request
     @locker_rental =
       LockerRental.new(
@@ -105,6 +115,17 @@ class LockerRentalsController < SessionsController
       respond_to do |format|
         format.html { redirect_to locker_rentals_path }
         format.json { head :forbidden }
+      end
+      return
+    end
+
+    if unknown_renter_username?
+      respond_to do |format|
+        format.html do
+          flash[:alert] = "Failed to update locker rental#{helpers.tag.br}#{RENTER_NOT_FOUND}".html_safe
+          redirect_back fallback_location: :locker_rentals
+        end
+        format.json { render json: { base: [RENTER_NOT_FOUND] }, status: :unprocessable_entity }
       end
       return
     end
@@ -220,6 +241,14 @@ class LockerRentalsController < SessionsController
     @locker_product_info = LockerOption.locker_product_info || { variants: {} }
   end
 
+  RENTER_NOT_FOUND = 'User not found'
+
+  # A staff request that names a renter by username that matches no user.
+  def unknown_renter_username?
+    username = params.dig(:locker_rental, :rented_by_username)
+    current_user.staff? && username.present? && !User.exists?(username: username.to_s)
+  end
+
   def locker_rental_params
     common_permitted = %i[
       preferred_locker_id
@@ -259,11 +288,6 @@ class LockerRentalsController < SessionsController
       if rented_by_user
         # then convert to user id
         admin_params.reverse_merge!(rented_by_id: rented_by_user.id)
-      end
-      # A missing or deactivated renter is refused the same way (nil fails `validates :rented_by, presence`):
-      # a locker is never assigned to an account that cannot sign in.
-      if admin_params[:rented_by_id].present? && !User.not_deactivated.exists?(admin_params[:rented_by_id])
-        admin_params[:rented_by_id] = nil
       end
 
       admin_params

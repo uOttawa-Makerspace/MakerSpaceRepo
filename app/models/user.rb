@@ -376,7 +376,6 @@ class User < ApplicationRecord
 
   GUARD_LOCK_MODE = "FOR NO KEY UPDATE"
 
-
   # Runs the block (a demotion, admin lock, soft delete or deactivation of `affected_ids`) only if
   # at least one usable admin remains outside them; otherwise raises LastAdminError
   # and the block never runs. Every such change must go through here.
@@ -789,12 +788,12 @@ class User < ApplicationRecord
     # locked admin is not refused). One read, under the guard's locks. The no-op decision itself is the
     # UPDATE's state condition in change_deactivation!.
     self.class.guarding_last_admin!([id], only_if: -> { self.class.unscoped.merge(self.class.usable_admins).where(id: id).exists? }) do
-      change_deactivation!(Time.current)
+      change_deactivation!(true)
     end
   end
 
   def reactivate!
-    change_deactivation!(nil)
+    change_deactivation!(false)
   end
 
   # Demoted from staff/admin, soft-deleted or deactivated: such a connection must not
@@ -1015,9 +1014,9 @@ class User < ApplicationRecord
   # not read from the instance, so attr_readonly columns can be written too) with
   # updated_at. `extra_where` is an optional [sql, *binds] condition on the row as it
   # was. Returns [new token_version, updated_at], or nil when no row matched.
-  def write_and_bump_token_version(values, from_version: nil, extra_where: nil)
+  def write_and_bump_token_version(values, from_version: nil, extra_where: nil, stamp: Time.current)
     conn = self.class.connection
-    values = values.merge(updated_at: Time.current)
+    values = values.merge(updated_at: stamp)
     assignments = values.keys.map { |column| "#{conn.quote_column_name(column)} = ?" }
     where_sql = +"id = ?"
     binds = [id]
@@ -1063,7 +1062,7 @@ class User < ApplicationRecord
     self
   end
 
-  # Sets `deactivated_at` to `value` (a time, or nil to reactivate) and bumps token_version
+  # Deactivates (deactivated_at = now) or reactivates (NULL) and bumps token_version
   # in ONE UPDATE, only when the account is not already in that state (deactivating an
   # already deactivated row keeps its original time). Returns true when it changed, false
   # when it already was (nothing bumped, nothing revoked).
@@ -1073,9 +1072,12 @@ class User < ApplicationRecord
   # possible causes (the row already is in that state, or it is gone) and the caller is
   # handed an instance that must tell the truth about `deactivated_at`, so it reads the
   # row back; only the missing-row error is shared (raise_missing_row!).
-  def change_deactivation!(value)
-    differs = value.nil? ? "deactivated_at IS NOT NULL" : "deactivated_at IS NULL"
-    written = write_and_bump_token_version({ deactivated_at: value }, extra_where: [differs])
+  def change_deactivation!(deactivate)
+    # ONE captured time: deactivated_at and updated_at are the same instant.
+    stamp = Time.current
+    value = deactivate ? stamp : nil
+    differs = deactivate ? "deactivated_at IS NULL" : "deactivated_at IS NOT NULL"
+    written = write_and_bump_token_version({ deactivated_at: value }, extra_where: [differs], stamp: stamp)
     unless written
       current = self.class.uncached { self.class.unscoped.where(id: id).pick(:deactivated_at, :token_version) }
       raise_missing_row! unless current
