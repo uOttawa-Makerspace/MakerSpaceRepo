@@ -197,7 +197,9 @@ module ShopifyConcern
       return false if shopify_draft_order_id.blank?
 
       deleted = ShopifyConcern::DraftOrders.delete(shopify_draft_order_id, user_errors_out: user_errors_out)
-      update_column(:shopify_draft_order_id, nil)
+      # Only a confirmed delete (Shopify returned the deletedId) forgets the id: a 200 with userErrors and no
+      # deletedId left the draft alive, and clearing the id would lose the only handle to remove it.
+      update_column(:shopify_draft_order_id, nil) if deleted
       deleted
     end
 

@@ -945,9 +945,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         rental = create(:locker_rental, :active, shopify_draft_order_id: nil)
         log_in!(staff)
 
-        # call_original preserves today's behavior: early return false, no HTTP
-        expect_any_instance_of(LockerRental).to receive(:destroy_shopify_draft_order)
-          .and_call_original
+        # no draft order id: nothing to delete, no HTTP
+        expect_any_instance_of(LockerRental).not_to receive(:destroy_shopify_draft_order)
 
         patch locker_rental_path(rental),
               params: { locker_rental: { state: "cancelled" } }
@@ -973,6 +972,46 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(rental.reload.state).to eq("cancelled")
         expect(rental.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/1")
         expect(Rails.error).to have_received(:report).once
+      end
+
+      it "tells staff when Shopify did not confirm the delete (200 with userErrors, no deletedId) and keeps the draft id" do
+        rental = create(:locker_rental, :active)
+        rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/2")
+        log_in!(staff)
+        allow(ShopifyConcern::DraftOrders).to receive(:delete).and_return(false)
+        allow(Rails.error).to receive(:report)
+
+        patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
+
+        expect(flash[:alert]).to include("Shopify checkout could not be removed")
+        expect(rental.reload).to be_cancelled
+        expect(rental.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/2")
+      end
+
+      context "when the renter cancels and the draft delete fails" do
+        let!(:pending) do
+          create(:locker_rental, :await_payment, rented_by: owner).tap { |r| r.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/3") }
+        end
+
+        before do
+          allow(ShopifyConcern::DraftOrders).to receive(:delete).and_raise("boom")
+          allow(Rails.error).to receive(:report)
+          log_in!(owner)
+        end
+
+        it "gives the renter a renter-appropriate message, not the staff one" do
+          patch locker_rental_path(pending), params: { locker_rental: { state: "cancelled" } }
+          expect(flash[:alert]).to eq("Your request was cancelled. If you still see a payment link, don't use it; staff have been notified.")
+          expect(flash[:alert]).not_to include("Paid, needs a decision")
+          expect(pending.reload).to be_cancelled
+        end
+
+        it "answers JSON 200 with a warning instead of 204" do
+          patch locker_rental_path(pending), params: { locker_rental: { state: "cancelled" } }, as: :json
+          expect(response).to have_http_status(:ok)
+          expect(response.parsed_body["warning"]).to include("don't use it")
+          expect(pending.reload).to be_cancelled
+        end
       end
 
       it "subscriber fires only on a saved state change (no mail/sync on unrelated updates)" do
@@ -1242,6 +1281,13 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(payment.reload).to have_attributes(status: "refunded", resolved_by_id: staff.id, resolution_note: "refunded in Shopify", hold_reason: "renter_ineligible")
       expect(payment.resolved_at).to be_present
       expect(LockerRental.with_held_payment).to be_empty
+    end
+
+    it "does not 500 on a NUL byte in the note" do
+      log_in!(staff)
+      patch path, params: { resolution: "dismissed", resolution_note: "bad\u0000note" }
+      expect(response).to redirect_to(locker_rental_path(rental))
+      expect(payment.reload).to have_attributes(status: "dismissed", resolution_note: "badnote")
     end
 
     it "lets staff dismiss it" do
@@ -1536,7 +1582,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       rental = create(:locker_rental, :await_payment, rented_by: owner)
       log_in!(staff)
       ActionMailer::Base.deliveries.clear
-      expect_any_instance_of(LockerRental).to receive(:destroy_shopify_draft_order).once
+      rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/6")
+      expect_any_instance_of(LockerRental).to receive(:destroy_shopify_draft_order).once.and_return(true)
       perform_enqueued_jobs do
         patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
       end

@@ -299,6 +299,19 @@ RSpec.describe LockerRental, type: :model do
         expect(rental.reload).to be_active
       end
 
+      it "treats a legacy paid rental (paid_at, no payment rows) as already paid: its next payment is a duplicate" do
+        legacy = create(:locker_rental, :active)
+        legacy.update_columns(paid_at: Time.utc(2026, 5, 20))
+        expect(pay(described_class.find(legacy.id), id: "after-legacy")).to have_attributes(status: "held", hold_reason: "already_paid")
+        expect(legacy.reload.paid_at).to eq(Time.utc(2026, 5, 20))
+      end
+
+      it "a legacy paid_at no longer counts once the rental has payment rows (its own applied one decides)" do
+        rental = create(:locker_rental, :await_payment)
+        rental.update_columns(paid_at: Time.utc(2026, 5, 20)) # e.g. last term's value on a renewal
+        expect(pay(described_class.find(rental.id), id: "renewal")).to be_applied
+      end
+
       it "is never applied by settle_held_payments!" do
         rental = create(:locker_rental, :active)
         create(:locker_payment, locker_rental: rental)
@@ -337,6 +350,16 @@ RSpec.describe LockerRental, type: :model do
       expect(LockerPayment.where(shopify_order_id: "5001").count).to eq(1)
       expect(rental.reload.paid_at).to eq(first)
       expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "stamps paid_at with ONE statement (UPDATE ... RETURNING), no extra read" do
+      rental = create(:locker_rental, :active)
+      statements = []
+      callback = ->(*, payload) { statements << payload[:sql] if payload[:sql].include?("locker_rentals") && payload[:name] != "SCHEMA" }
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { rental.stamp_paid_at(Time.utc(2026, 10, 1)) }
+      expect(statements.size).to eq(1)
+      expect(statements.first).to match(/GREATEST\(paid_at, .*RETURNING paid_at/)
+      expect(rental.paid_at).to eq(Time.utc(2026, 10, 1))
     end
 
     it "keeps the latest paid_at (one SQL GREATEST update, never the in-memory value)" do
@@ -418,6 +441,21 @@ RSpec.describe LockerRental, type: :model do
       lines = [{ "title" => title, "price" => "20.00", "quantity" => 2, "total_discount" => "5.00" },
                { "title" => "1 Day Membership", "price" => "7.00", "quantity" => 1 }]
       expect(rental.locker_line_amount(lines)).to eq(BigDecimal("35.00"))
+    end
+
+    it "subtracts discount_allocations (summed), and uses the legacy total_discount only when allocations are absent" do
+      allocations = [{ "amount" => "3.00", "discount_application_index" => 0 }, { "amount" => "2.00", "discount_application_index" => 1 }]
+      with_both = { "title" => title, "price" => "20.00", "quantity" => 1, "total_discount" => "5.00", "discount_allocations" => allocations }
+      expect(rental.locker_line_amount([with_both])).to eq(BigDecimal("15.00")) # not 10.00: the same discount twice
+      expect(rental.locker_line_amount([with_both.merge("discount_allocations" => [])])).to eq(BigDecimal("20.00"))
+      expect(rental.locker_line_amount([with_both.except("discount_allocations")])).to eq(BigDecimal("15.00"))
+      expect { rental.locker_line_amount([with_both.merge("discount_allocations" => [{ "amount" => "x" }])]) }.to raise_error(ArgumentError)
+    end
+
+    it "builds the expected line once, whatever the number of lines" do
+      lines = Array.new(5) { { "title" => "other", "price" => "1.00", "quantity" => 1 } } << { "title" => title, "price" => "9.00", "quantity" => 1 }
+      expect(rental).to receive(:shopify_draft_order_line_items).once.and_call_original
+      expect(rental.locker_line_amount(lines)).to eq(BigDecimal("9.00"))
     end
 
     it "is nil when no line is recognisably the locker, or there are no lines" do
@@ -636,7 +674,8 @@ RSpec.describe LockerRental, type: :model do
   describe "Shopify draft order sync on cancel (explicit, after commit; no callback)" do
     it "saving alone never calls Shopify; the explicit sync destroys the draft only after a save that cancelled" do
       rental = create(:locker_rental, :await_payment)
-      expect(rental).to receive(:destroy_shopify_draft_order).once
+      rental.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/5")
+      expect(rental).to receive(:destroy_shopify_draft_order).once.and_return(true)
       rental.update!(notes: "x")
       expect(rental.sync_shopify_draft_order_after_commit).to be(true) # nothing cancelled: nothing to do
       rental.update!(state: :cancelled)
@@ -679,6 +718,29 @@ RSpec.describe LockerRental, type: :model do
       it "reports NotConfigured with incomplete Shopify config" do
         allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify).and_return({})
         expect_cancelled_but_reported
+      end
+
+      it "treats a 200 that did not confirm the delete (userErrors, no deletedId) exactly like a failure: id kept, reported, false" do
+        rental.update!(state: :cancelled)
+        allow(ShopifyConcern::DraftOrders).to receive(:delete) do |_gid, user_errors_out: nil|
+          user_errors_out&.push({ "message" => "Draft order is locked" })
+          false
+        end
+        reports = []
+        allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+
+        expect(rental.sync_shopify_draft_order_after_commit).to be(false)
+        expect(rental.reload.shopify_draft_order_id).to eq(draft_id)
+        expect(reports.size).to eq(1)
+        expect(reports.first.first).to be_a(LockerRental::DraftOrderNotDeleted)
+        expect(reports.first.first.message).to include("Draft order is locked")
+      end
+
+      it "forgets the id only on a confirmed delete" do
+        rental.update!(state: :cancelled)
+        allow(ShopifyConcern::DraftOrders).to receive(:delete).and_return(true)
+        expect(rental.sync_shopify_draft_order_after_commit).to be(true)
+        expect(rental.reload.shopify_draft_order_id).to be_nil
       end
 
       it "cancels without touching Shopify when there is no draft order id" do

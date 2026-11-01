@@ -188,17 +188,19 @@ class LockerRentalsController < SessionsController
       @locker_rental.notify_after_commit
       # Committed; only now the Shopify call (no transaction, no row lock held)
       draft_synced = @locker_rental.sync_shopify_draft_order_after_commit
+      warning = draft_synced ? nil : draft_not_removed_message
       respond_to do |format|
         format.html do
-          if draft_synced
-            flash[:notice] = 'Locker rental updated'
+          if warning
+            flash[:alert] = warning
           else
-            flash[:alert] = 'Locker rental cancelled, but its Shopify checkout could not be removed. ' \
-                            'A payment made on it will appear under "Paid, needs a decision". The error was reported.'
+            flash[:notice] = 'Locker rental updated'
           end
           redirect_back fallback_location: :locker_rentals
         end
-        format.json { head :no_content }
+        # 204 normally; 200 with { warning: ... } when the rental was updated but its Shopify checkout could not
+        # be removed, so a JSON client can tell the difference.
+        format.json { warning ? render(json: { warning: warning }, status: :ok) : head(:no_content) }
       end
     else
       respond_to do |format|
@@ -289,6 +291,16 @@ class LockerRentalsController < SessionsController
   end
 
   RENTER_NOT_FOUND = 'User not found'
+
+  # The cancellation is committed but Shopify did not confirm the draft order delete (reported to staff).
+  def draft_not_removed_message
+    if current_user.staff?
+      'Locker rental cancelled, but its Shopify checkout could not be removed. ' \
+        'A payment made on it will appear under "Paid, needs a decision". The error was reported.'
+    else
+      "Your request was cancelled. If you still see a payment link, don't use it; staff have been notified."
+    end
+  end
 
   # The one rule for non-staff: the only state changes a renter may make on their own rental. Everything
   # else (activating, sending to payment, reviewing, ending a paid rental) is staff's.

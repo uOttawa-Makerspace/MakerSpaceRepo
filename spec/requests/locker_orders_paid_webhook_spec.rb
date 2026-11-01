@@ -126,6 +126,19 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
       expect(payment).to be_applied
       expect(payment).to have_attributes(amount: nil, order_total: nil)
       expect(reports.map { |e, _| e.class }).to eq([CustomWebhooksController::MalformedPaymentAmount] * 2)
+      # a replay of the same delivery must not report them again
+      reports.clear
+      signed_orders_paid(payload(rental.id, total_price: "9" * 30, line_items: [{ title: title, price: "oops", quantity: 1 }]))
+      expect(response).to have_http_status(:ok)
+      expect(reports).to be_empty
+      expect(rental.locker_payments.count).to eq(1)
+    end
+
+    it "reports the malformed figures with ids only" do
+      rental = create(:locker_rental, :await_payment)
+      reports = []
+      allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+      signed_orders_paid(payload(rental.id, total_price: "bad", line_items: [{ title: title, price: "oops", quantity: 1 }]))
       expect(reports.map { |_, o| o[:context] }.uniq).to eq([{ locker_rental_id: rental.id, shopify_order_id: payload(rental.id)[:id].to_s }])
     end
   end

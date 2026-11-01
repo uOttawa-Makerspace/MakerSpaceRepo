@@ -93,6 +93,12 @@ RSpec.describe LockerPayment, type: :model do
       end
     end
 
+    it "strips NUL bytes from the note instead of failing (PostgreSQL rejects them)" do
+      payment = create(:locker_payment, :held)
+      expect { payment.resolve!("dismissed", by: staff, note: "a\u0000b\u0000") }.not_to raise_error
+      expect(payment.reload.resolution_note).to eq("ab")
+    end
+
     it "coerces the note to a string and truncates it" do
       [["x" * 900, "x" * 500], [["a", "b"], '["a", "b"]'], [{ "k" => "v" }, { "k" => "v" }.to_s], ["  ", nil]].each do |input, expected|
         payment = create(:locker_payment, :held)

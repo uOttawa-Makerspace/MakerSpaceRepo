@@ -61,7 +61,7 @@ class LockerPayment < ApplicationRecord
 
     now = Time.current
     changed = self.class.held.where(id: id).update_all(
-      status: resolution.to_s, resolved_at: now, resolved_by_id: by.id, resolution_note: note.to_s.strip.first(NOTE_MAX_LENGTH).presence, updated_at: now
+      status: resolution.to_s, resolved_at: now, resolved_by_id: by.id, resolution_note: note.to_s.delete("\u0000").strip.first(NOTE_MAX_LENGTH).presence, updated_at: now
     )
     reload if changed == 1
     changed == 1
