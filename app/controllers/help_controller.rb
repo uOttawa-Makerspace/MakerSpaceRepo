@@ -2,10 +2,23 @@ class HelpController < SessionsController
   include TurnstileHelper
   before_action :current_user
 
+  HELP_FIELDS = %i[name email subject comments].freeze
+
   # send_email opens a GitHub issue per call; the React app sends no captcha, so it is rate limited
-  rate_limit to: 5, within: 1.hour, only: :send_email,
+  rate_limit to: 5, within: 1.hour, only: :send_email, name: 'send-email',
              by: -> { current_user.id.presence || request.remote_ip },
              with: -> { render json: { error: 'Too many requests' }, status: :too_many_requests }
+
+  # The web form never mails an address typed into it: guests' reports go to the team (the typed
+  # address is only the Reply-To), signed-in users also get a copy at their account address.
+  # It is rate limited per visitor.
+  rate_limit to: 5, within: 1.hour, only: :create, name: 'create',
+             by: -> { current_user.id.presence || request.remote_ip },
+             with: -> {
+               flash.now[:alert] = 'Too many requests, please try again later.'
+               @help = Help.new(help_fields)
+               render :show, status: :too_many_requests
+             }
 
   def show
     @help = Help.new
@@ -13,6 +26,7 @@ class HelpController < SessionsController
 
   def create
     @help = Help.new(help_params)
+    @help.defang_github_text = true # the GitHub issue is public
 
     unless verify_turnstile
       flash[:alert] = 'Captcha check failed, please try again.'
@@ -21,13 +35,15 @@ class HelpController < SessionsController
 
     if @help.save
       redirect_to help_path, notice: 'Your issue has been submitted.'
-      MsrMailer.issue_email(
-        @help.name,
-        @help.email,
-        @help.subject,
-        @help.comments.to_plain_text,
-        params[:share_email]
-      ).deliver_later
+      text = @help.comments.to_plain_text
+      if signed_in?
+        # Signed in: the copy goes to the account's own address (bcc the team), never the typed one
+        MsrMailer.issue_email(@help.name, current_user.email, @help.subject, text, params[:share_email],
+                              contact_email: @help.email, account: current_user).deliver_later
+      else
+        MsrMailer.issue_email_to_team(@help.name, @help.email, @help.subject, text,
+                                      via: 'the MakerRepo help page').deliver_later
+      end
     else
       flash[:alert] = 'An error occurred while receiving your issue.'
       render :show, status: :unprocessable_entity
@@ -50,6 +66,7 @@ class HelpController < SessionsController
 
     attrs = params.slice(:subject, :comments).permit(:subject, :comments)
     @help = Help.new(attrs.merge(name: current_user.name, email: current_user.email))
+    @help.defang_github_text = true # the GitHub issue is public
 
     if @help.save
       MsrMailer.issue_email(
@@ -69,6 +86,15 @@ class HelpController < SessionsController
   private
 
   def help_params
-    params.require(:help).permit(:name, :email, :subject, :comments)
+    permit_help(params.require(:help))
+  end
+
+  def permit_help(fields)
+    fields.permit(*HELP_FIELDS)
+  end
+
+  # The typed fields, for re-rendering the form (none when the request has no help param)
+  def help_fields
+    params[:help].is_a?(ActionController::Parameters) ? permit_help(params[:help]) : {}
   end
 end

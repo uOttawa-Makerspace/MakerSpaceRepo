@@ -17,9 +17,13 @@
 
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
     New issue reported by <b><%= @name %></b>:
+    <% if @account %>
+        <br />
+        <b>Account: </b> <%= @account.name %> (<%= @account.username %>, <%= @account.email %>)
+    <% end %>
     <% if @share_email %>
         <br />
-        <b>Contact email: </b> <%= @email %>
+        <b>Contact email: </b> <%= @contact_email %>
     <% end %>
     <br />
     Subject: <b><%= @subject %></b> <br>

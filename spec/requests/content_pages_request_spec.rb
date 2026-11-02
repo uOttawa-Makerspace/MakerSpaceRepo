@@ -497,7 +497,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "submits as a guest: persisted, redirected, and the issue email is delivered to the SUBMITTED address with a support bcc" do
+    it "submits as a guest: persisted, redirected, and the issue email goes to the support team, with the submitted address in Reply-To" do
       deliveries.clear
       expect {
         perform_enqueued_jobs { post help_path, params: params }
@@ -507,19 +507,153 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(Help.last.gh_issue_number.to_s).to eq("111")
       expect(deliveries.size).to eq(1)
       mail = deliveries.last
-      expect(mail.to).to eq(["pat@example.test"])
-      expect(mail.bcc).to eq(["uottawa.makerepo@gmail.com"])
+      expect(mail.to).to eq(["uottawa.makerepo@gmail.com"])
+      expect(mail.reply_to).to eq(["pat@example.test"])
       expect(mail.subject).to eq("Issue Report | Booking does not work")
       expect(mail.body.encoded).to include(comments)
     end
 
-    # the help form sends the submitted recipient, subject and body
-    it "emails the submitted recipient with the submitted content" do
+    # the submitted address is only the reporter's contact, never a recipient
+    it "never addresses the mail to the submitted address" do
       deliveries.clear
-      victim = { help: params[:help].merge(email: "victim@example.test", subject: "Booking does not work", comments: "http://evil.example.test") }
-      perform_enqueued_jobs { post help_path, params: victim }
-      expect(deliveries.last.to).to eq(["victim@example.test"])
-      expect(deliveries.last.body.encoded).to include("http://evil.example.test")
+      other = { help: params[:help].merge(email: "someone@example.test", comments: "See the attached notes") }
+      perform_enqueued_jobs { post help_path, params: other }
+      mail = deliveries.last
+      expect(mail.to).to eq(["uottawa.makerepo@gmail.com"])
+      expect(mail.cc).to be_blank
+      expect(mail.bcc).to be_blank
+      expect(mail.reply_to).to eq(["someone@example.test"])
+      expect(mail.body.encoded).to include("See the attached notes")
+    end
+
+    it "sends a signed-in user a copy at the account address, never the typed one" do
+      user = sign_in_as(:regular)
+      deliveries.clear
+      typed = { help: params[:help].merge(email: "typed@example.test") }
+      perform_enqueued_jobs { post help_path, params: typed }
+      expect(deliveries.size).to eq(1)
+      mail = deliveries.last
+      expect(mail.to).to eq([user.email])
+      expect(mail.bcc).to eq(["uottawa.makerepo@gmail.com"])
+      expect(mail.cc).to be_blank
+      expect(deliveries.flat_map { |m| Array(m.to) + Array(m.cc) + Array(m.bcc) }).not_to include("typed@example.test")
+    end
+
+    it "sends a guest no copy" do
+      deliveries.clear
+      perform_enqueued_jobs { post help_path, params: params }
+      expect(deliveries.flat_map { |m| Array(m.to) + Array(m.cc) + Array(m.bcc) }).not_to include("pat@example.test")
+    end
+
+    it "tells the team the typed contact details when a signed-in user shares them, and not otherwise" do
+      user = sign_in_as(:regular)
+      typed = { help: params[:help].merge(name: "Typed Name", email: "typed@example.test"), share_email: "1" }
+      deliveries.clear
+      perform_enqueued_jobs { post help_path, params: typed }
+      expect(deliveries.last.to).to eq([user.email])
+      expect(deliveries.last.body.encoded).to include("typed@example.test", "Typed Name")
+      deliveries.clear
+      perform_enqueued_jobs { post help_path, params: typed.except(:share_email) }
+      expect(deliveries.last.body.encoded).not_to include("typed@example.test")
+    end
+
+    it "words the team mail for a web-form guest as coming from the help page" do
+      deliveries.clear
+      perform_enqueued_jobs { post help_path, params: params }
+      expect(deliveries.last.body.encoded).to include("submitted through the MakerRepo help page")
+    end
+
+    it "defangs a guest's text in the public GitHub issue" do
+      posted = nil
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do |_svc, **kw|
+        posted = kw
+        { number: 9 }
+      end
+      guest = { help: params[:help].merge(subject: "See @someone and #123 now", comments: "ping @someone a&b") }
+      post help_path, params: guest
+      zwj = "\u200D"
+      expect(posted[:title]).to eq("See @#{zwj}someone and ##{zwj}123 now")
+      expect(posted[:body]).to eq("ping @#{zwj}someone a&amp;b")
+    end
+
+    it "defangs the public GitHub issue for a signed-in user too" do
+      posted = nil
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do |_svc, **kw|
+        posted = kw
+        { number: 9 }
+      end
+      sign_in_as(:regular)
+      post help_path, params: { help: params[:help].merge(subject: "See @someone and #123 now") }
+      expect(posted[:title]).to eq("See @\u200Dsomeone and #\u200D123 now")
+    end
+
+    it "defangs the public GitHub issue on the JSON endpoint" do
+      posted = nil
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do |_svc, **kw|
+        posted = kw
+        { number: 9 }
+      end
+      sign_in_as(:regular)
+      put "/send_email", params: { subject: "See @someone and #123 now", comments: "Help please" }.to_json,
+                         headers: { "Content-Type" => "application/json" }
+      expect(posted[:title]).to eq("See @\u200Dsomeone and #\u200D123 now")
+    end
+
+    it "shows the team the account as well as the typed name and contact details" do
+      user = sign_in_as(:regular)
+      deliveries.clear
+      perform_enqueued_jobs do
+        post help_path, params: { help: params[:help].merge(name: "Somebody Else", email: "typed@example.test"), share_email: "1" }
+      end
+      body = deliveries.last.body.encoded
+      expect(body).to include("Somebody Else", "typed@example.test", user.name, user.username, user.email)
+    end
+
+    it "keeps the typed fields when the form is shown again after the limit trips" do
+      counts = Hash.new(0)
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      5.times { post help_path, params: params }
+      post help_path, params: { help: params[:help].merge(subject: "My unsent subject line", comments: "My unsent text") }
+      expect(response).to have_http_status(:too_many_requests)
+      expect(response.body).to include("My unsent subject line", "My unsent text", "Pat Visitor")
+    end
+
+    it "still answers 429 with the form when the help param is empty and the limit has tripped" do
+      counts = Hash.new(0)
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      5.times { post help_path, params: params }
+      post help_path, params: { help: { name: "" } }
+      expect(response).to have_http_status(:too_many_requests)
+      expect(response.body).to include('name="help[subject]"', 'name="help[comments]"')
+      post help_path, params: { help: {} }, as: :json
+      expect(response).to have_http_status(:too_many_requests)
+      expect(response.body).to include('name="help[subject]"', 'name="help[comments]"')
+    end
+
+    it "counts the web form and the JSON endpoint separately" do
+      counts = Hash.new(0)
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      sign_in_as(:regular)
+      5.times do
+        put "/send_email", params: { subject: "Booking does not work", comments: "Help please" }.to_json,
+                           headers: { "Content-Type" => "application/json" }
+        expect(response).to have_http_status(:ok)
+      end
+      post help_path, params: params
+      expect(response).to redirect_to(help_path)
+    end
+
+    # test env uses :null_store (never counts), so back the limiter's store with a counter
+    it "allows 5 submissions an hour per visitor, then answers 429 and creates nothing" do
+      counts = Hash.new(0)
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      5.times { post help_path, params: params; expect(response).to redirect_to(help_path) }
+      deliveries.clear
+      expect {
+        perform_enqueued_jobs { post help_path, params: params }
+      }.not_to change(Help, :count)
+      expect(response).to have_http_status(:too_many_requests)
+      expect(deliveries).to be_empty
     end
 
     # M50: with Turnstile enabled (the seam is off in test) a failed verification
@@ -685,20 +819,65 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).not_to match(/^#changelog\s*$/)
     end
 
+    it "renders the file once per version and serves it from the cache after that" do
+      original = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      begin
+        allow(File).to receive(:read).and_call_original
+        get changelog_path
+        get changelog_path
+        expect(File).to have_received(:read).with(Rails.root.join("CHANGELOG.md")).once
+      ensure
+        Rails.cache = original
+      end
+    end
+
+    it "does not allow inline styles" do
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# v1\n\n<p style=\"color:red\">hi</p>\n")
+      get changelog_path
+      expect(response.body).to include("hi")
+      expect(response.body).not_to include("color:red")
+    end
+
+    it "does not turn a renderer error into the fallback" do
+      allow_any_instance_of(ChangelogController).to receive(:render_markdown).and_raise(Errno::ENOENT)
+      get changelog_path
+      expect(response).to have_http_status(:internal_server_error)
+    end
+
+    it "shows the fallback, and caches nothing, when the file disappears between the stat and the read" do
+      original = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      begin
+        allow(File).to receive(:read).and_call_original
+        allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_raise(Errno::ENOENT)
+        get changelog_path
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("No changelog available.")
+        allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# Real heading\n")
+        get changelog_path
+        expect(response.body).to include("Real heading")
+      ensure
+        Rails.cache = original
+      end
+    end
+
     it "shows a fallback when there is no changelog file" do
-      allow(File).to receive(:exist?).and_call_original
-      allow(File).to receive(:exist?).with(Rails.root.join("CHANGELOG.md")).and_return(false)
+      allow(File).to receive(:stat).and_call_original
+      allow(File).to receive(:stat).with(Rails.root.join("CHANGELOG.md")).and_raise(Errno::ENOENT)
       get changelog_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("No changelog available.")
     end
 
-    # the changelog markdown is rendered as HTML (CHANGELOG.md is written by the release tooling from PR titles)
-    it "passes raw HTML in the markdown through unescaped" do
+    it "renders the markdown through the sanitizer: allowed tags and http(s) links only, tables kept" do
+      markdown = +"# v1\n\n<script>window.x=1</script>\n\n[bad](javascript:alert(1)) [ok](https://example.test/x)\n\n| a | b |\n|---|---|\n| 1 | 2 |\n"
       allow(File).to receive(:read).and_call_original
-      allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# v1\n\n<script>window.x=1</script>\n")
+      allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(markdown)
       get changelog_path
-      expect(response.body).to include("<script>window.x=1</script>")
+      expect(response.body).not_to include("<script>window.x=1</script>", "javascript:")
+      expect(response.body).to include('href="https://example.test/x"', "<table>", "<td>1</td>")
     end
   end
 
