@@ -47,11 +47,20 @@ RSpec.describe "Static pages", type: :request do
         expect(workshops.map { |w| w["name"] }).to eq((1..5).map { |i| "Workshop #{i}" })
       end
 
-      # the workshop link and picture from the third-party API are rendered as given
-      it "renders the workshop link verbatim in the href" do
-        stub_simpli(status: 200, body: { events: [{ "name" => "Evil", "startTime" => future_ms(2), "link" => "javascript:alert(1)" }] }.to_json)
+      it "renders http(s) workshop links as links" do
+        stub_simpli(status: 200, body: { events: [{ "name" => "Fine", "startTime" => future_ms(2), "link" => "https://simpli.events/e/1" }] }.to_json)
         get root_path
-        expect(response.body).to include('href="javascript:alert(1)"')
+        expect(response.body).to include('href="https://simpli.events/e/1"')
+      end
+
+      it "renders a workshop without a link when the feed link is not http(s)" do
+        events = ["javascript:alert(1)", "data:text/html,x", "//evil.example.test/x", ""].each_with_index.map do |link, i|
+          { "name" => "Odd #{i}", "startTime" => future_ms(i + 1), "link" => link }
+        end
+        stub_simpli(status: 200, body: { events: events }.to_json)
+        get root_path
+        expect(response.body).to include("Odd 0", "Odd 3")
+        expect(response.body).not_to include("javascript:", "data:text", "//evil.example.test")
       end
 
       it "renders with no workshops when the API answers 500" do

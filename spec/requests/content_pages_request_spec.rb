@@ -677,12 +677,13 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).to include("No changelog available.")
     end
 
-    # the changelog markdown is rendered as HTML (CHANGELOG.md is written by the release tooling from PR titles)
-    it "passes raw HTML in the markdown through unescaped" do
+    it "renders the markdown through the sanitizer: allowed tags and http(s) links only, tables kept" do
+      markdown = +"# v1\n\n<script>window.x=1</script>\n\n[bad](javascript:alert(1)) [ok](https://example.test/x)\n\n| a | b |\n|---|---|\n| 1 | 2 |\n"
       allow(File).to receive(:read).and_call_original
-      allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# v1\n\n<script>window.x=1</script>\n")
+      allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(markdown)
       get changelog_path
-      expect(response.body).to include("<script>window.x=1</script>")
+      expect(response.body).not_to include("<script>window.x=1</script>", "javascript:")
+      expect(response.body).to include('href="https://example.test/x"', "<table>", "<td>1</td>")
     end
   end
 

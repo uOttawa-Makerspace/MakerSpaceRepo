@@ -119,6 +119,14 @@ module ApplicationHelper
     role_flag(:dev_program?)
   end
 
+  # The URL when it is an absolute http(s) link, else nil (for links that come from outside the app).
+  def http_url(value)
+    uri = URI.parse(value.to_s.strip)
+    value.to_s.strip if uri.is_a?(URI::HTTP) && uri.host.present?
+  rescue URI::InvalidURIError
+    nil
+  end
+
   def signed_in?
     session_user.present? || has_valid_jwt?
   end

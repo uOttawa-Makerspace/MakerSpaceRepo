@@ -103,7 +103,9 @@
                          rescue StandardError
                            Time.zone.now
                          end %>
-              <a class="d-flex workshop-card" href="<%= w['link'] %>" target="_blank" rel="noopener noreferrer">
+              <% link = http_url(w['link']) %>
+              <%= content_tag(link ? :a : :div, class: 'd-flex workshop-card',
+                              **(link ? { href: link, target: '_blank', rel: 'noopener noreferrer' } : {})) do %>
                 <div class="text-center workshop-date" style="background-image: url('<%= w['picture'] %>')">
                   <p style="font-size: 2rem;"><%= start.day %><br /> <span style="font-size: 1.5rem"><%= start.strftime '%b' %></span></p>
                 </div>
@@ -111,7 +113,7 @@
                   <p class="workshop-title"><%= w['name'] %></p>
                   <p class="workshop-date-side"><%= start.strftime '%a, %b %d, %l:%M %p' %></p>
                 </div>
-              </a>
+              <% end %>
             <% end %>
           </div>
         </div>
