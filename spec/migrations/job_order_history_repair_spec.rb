@@ -11,6 +11,8 @@ require "rails_helper"
 # Legacy rows (the old quote tables, the old join table, print orders) are inserted directly:
 # the models that wrote them are gone or no longer allow those shapes.
 RSpec.describe "job order history repairs" do
+  COPY_TIME = Time.utc(2025, 8, 11, 16, 2, 30)
+
   def table(name) = Class.new(ApplicationRecord) { self.table_name = name }
 
   def insert(name, attrs)
@@ -45,17 +47,19 @@ RSpec.describe "job order history repairs" do
   let(:service_b) { create(:job_service, job_service_group: group) }
 
   # An order as the multi-task migration left it: one "Main Task", its quote from the old quote's first service.
-  def legacy_order(services:, quote_services:, copied_quantity: nil, updated_at: nil)
+  def legacy_order(services:, quote_services:, copied_quantity: nil, updated_at: nil, task_service: :first)
     quote = insert("job_order_quotes", service_fee: 10)
     quote_services.each do |service, per_unit, quantity|
       insert("job_order_quote_services", job_order_quote_id: quote.id, job_service_id: service.id, per_unit: per_unit, quantity: quantity)
     end
     order = JobOrder.create!(user: user, job_type: job_type, job_order_quote_id: quote.id)
     services.each { |s| insert("job_orders_services", job_order_id: order.id, job_service_id: s.id) }
-    task = JobTask.create!(job_order: order, job_type: job_type, job_service: services.first, title: "Main Task")
+    task = JobTask.create!(job_order: order, job_type: job_type, job_service: (task_service == :first ? services.first : task_service), title: "Main Task")
     first = quote_services.first
     q = JobTaskQuote.create!(job_task: task, price: 10, service_price: first[1], service_quantity: copied_quantity || first[2].truncate)
-    q.update_columns(updated_at: updated_at) if updated_at
+    order.update_columns(created_at: COPY_TIME - 1.year, updated_at: COPY_TIME - 1.year)
+    task.update_columns(created_at: COPY_TIME, updated_at: COPY_TIME)
+    q.update_columns(created_at: COPY_TIME, updated_at: updated_at || COPY_TIME)
     [order, task, q]
   end
 
@@ -86,6 +90,30 @@ RSpec.describe "job order history repairs" do
       expect(q.reload.service_quantity).to eq(7)
     end
 
+    it "also repairs a copy that rounded the quantity" do
+      _order, _task, q = legacy_order(services: [service_a], quote_services: [[service_a, 0.53, 60.75]], copied_quantity: 61)
+      run(described_class)
+      expect(q.reload.service_quantity).to eq(60.75)
+    end
+
+    it "takes the lowest-id quote service when the quote lists the task's service twice" do
+      _order, _task, q = legacy_order(services: [service_a], quote_services: [[service_a, 0.53, 60.5], [service_a, 0.53, 9.5]])
+      run(described_class)
+      expect(q.reload.service_quantity).to eq(60.5)
+    end
+
+    it "repairs a task with no service from the quote's first service when the copy shape matches" do
+      _order, _task, q = legacy_order(services: [service_a], quote_services: [[service_a, 0.53, 60.5]], task_service: nil)
+      run(described_class)
+      expect(q.reload.service_quantity).to eq(60.5)
+    end
+
+    it "repairs a task whose service the quote does not list from the quote's first service" do
+      _order, _task, q = legacy_order(services: [service_a], quote_services: [[service_a, 0.53, 60.5]], task_service: service_b)
+      run(described_class)
+      expect(q.reload.service_quantity).to eq(60.5)
+    end
+
     it "is idempotent" do
       legacy_order(services: [service_a], quote_services: [[service_a, 0.53, 60.5]])
       run(described_class)
@@ -112,7 +140,9 @@ RSpec.describe "job order history repairs" do
       order = JobOrder.create!(user: user, job_type: job_type)
       insert("job_orders_services", job_order_id: order.id, job_service_id: service_a.id)
       insert("job_orders_services", job_order_id: order.id, job_service_id: service_b.id)
-      JobTask.create!(job_order: order, job_type: job_type, job_service: service_a, title: "Main Task")
+      main = JobTask.create!(job_order: order, job_type: job_type, job_service: service_a, title: "Main Task")
+      order.update_columns(created_at: COPY_TIME - 1.year)
+      main.update_columns(created_at: COPY_TIME)
       run(described_class)
       added = order.job_tasks.find_by!(job_service_id: service_b.id)
       expect(added.job_task_quote).to be_nil
@@ -122,6 +152,27 @@ RSpec.describe "job order history repairs" do
       legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
       run(described_class)
       expect { run(described_class) }.not_to(change { [JobTask.count, JobTaskQuote.count] })
+    end
+
+    it "adds one task and at most one quote when the service is listed twice" do
+      order, task, = legacy_order(services: [service_a, service_b, service_b],
+                                  quote_services: [[service_a, 2, 3], [service_b, 4, 2.5], [service_b, 9, 9]])
+      run(described_class)
+      added = order.job_tasks.where.not(id: task.id)
+      expect(added.count).to eq(1)
+      expect(JobTaskQuote.where(job_task_id: added.ids).pluck(:service_price)).to eq([4])
+    end
+
+    it "leaves an order that has more than its Main Task" do
+      order, = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+      JobTask.create!(job_order: order, job_type: job_type, title: "Task #2")
+      expect { run(described_class) }.not_to(change { JobTask.count })
+    end
+
+    it "leaves an order created after the multi-task migration" do
+      order, task, = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+      order.update_columns(created_at: task.created_at + 1.day)
+      expect { run(described_class) }.not_to(change { JobTask.count })
     end
   end
 
@@ -145,6 +196,14 @@ RSpec.describe "job order history repairs" do
       JobTaskOption.create!(job_task: other, job_option: option)
       old = insert("job_order_options", job_order_id: order.id, job_option_id: option.id)
       attach("JobOrderOption", old.id, "option_file", file)
+      run(described_class)
+      expect(ActiveStorage::Attachment.where(record_type: "JobTaskOption").count).to eq(0)
+    end
+
+    it "does not attach when two old files target the same task option" do
+      old = insert("job_order_options", job_order_id: order.id, job_option_id: option.id)
+      attach("JobOrderOption", old.id, "option_file", file)
+      attach("JobOrderOption", old.id, "option_file", blob("second.pdf"))
       run(described_class)
       expect(ActiveStorage::Attachment.where(record_type: "JobTaskOption").count).to eq(0)
     end
@@ -226,6 +285,46 @@ RSpec.describe "job order history repairs" do
       expect(JobTask.count).to eq(0)
       expect(attachments("PrintOrder", printed.id).count).to eq(3)
       expect(ActiveStorage::Attachment.where(record_type: "JobTask").count).to eq(0)
+    end
+
+    it "adds a blob that is both a final file and the PDF form once" do
+      attach("PrintOrder", printed.id, "pdf_form", final)
+      expect { run(described_class) }.not_to raise_error
+      task = JobOrder.find_by!(legacy_print_order_id: printed.id).job_tasks.sole
+      expect(attachments("JobTask", task.id).where(name: "staff_files", blob_id: final.id).count).to eq(1)
+    end
+
+    it "skips a print order whose user does not exist" do
+      ghost = print_order(user_id: 987_654_321)
+      run(described_class)
+      expect(JobOrder.where(legacy_print_order_id: ghost.id)).to be_empty
+      expect(JobOrder.where(legacy_print_order_id: printed.id)).to exist
+    end
+
+    it "stops on an unknown order_type and imports nothing" do
+      print_order(order_type: 2)
+      expect { ApplicationRecord.transaction(requires_new: true) { run(described_class) } }.to raise_error(ActiveRecord::StatementInvalid, /order_type/)
+      expect(JobOrder.where.not(legacy_print_order_id: nil)).to be_empty
+    end
+
+    it "down refuses, leaving every row, when an imported order has other data" do
+      run(described_class)
+      order = JobOrder.find_by!(legacy_print_order_id: printed.id)
+      order.job_quote_line_items.create!(description: "extra", price: 1)
+      expect { ApplicationRecord.transaction(requires_new: true) { ActiveRecord::Migration.suppress_messages { described_class.new.down } } }
+        .to raise_error(ActiveRecord::StatementInvalid, /changed after the import/)
+      expect(JobOrder.where.not(legacy_print_order_id: nil).count).to eq(1)
+      expect(order.job_tasks.count).to eq(1)
+      expect(attachments("JobTask", order.job_tasks.first.id).count).to eq(3)
+    end
+
+    it "down refuses when a file was added to an imported task" do
+      run(described_class)
+      task = JobOrder.find_by!(legacy_print_order_id: printed.id).job_tasks.sole
+      attach("JobTask", task.id, "user_files", blob("later.stl"))
+      expect { ApplicationRecord.transaction(requires_new: true) { ActiveRecord::Migration.suppress_messages { described_class.new.down } } }
+        .to raise_error(ActiveRecord::StatementInvalid, /changed after the import/)
+      expect(attachments("JobTask", task.id).count).to eq(4)
     end
 
     it "refuses to run when a required job type or status is missing" do
