@@ -512,6 +512,50 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(deliveries.flat_map { |m| Array(m.to) + Array(m.cc) + Array(m.bcc) }).not_to include("pat@example.test")
     end
 
+    it "tells the team the typed contact details when a signed-in user shares them, and not otherwise" do
+      user = sign_in_as(:regular)
+      typed = { help: params[:help].merge(name: "Typed Name", email: "typed@example.test"), share_email: "1" }
+      deliveries.clear
+      perform_enqueued_jobs { post help_path, params: typed }
+      expect(deliveries.last.to).to eq([user.email])
+      expect(deliveries.last.body.encoded).to include("typed@example.test", "Typed Name")
+      deliveries.clear
+      perform_enqueued_jobs { post help_path, params: typed.except(:share_email) }
+      expect(deliveries.last.body.encoded).not_to include("typed@example.test")
+    end
+
+    it "words the team mail for a web-form guest as coming from the help page" do
+      deliveries.clear
+      perform_enqueued_jobs { post help_path, params: params }
+      expect(deliveries.last.body.encoded).to include("submitted through the MakerRepo help page")
+    end
+
+    it "defangs a guest's text in the public GitHub issue" do
+      posted = nil
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do |_svc, **kw|
+        posted = kw
+        { number: 9 }
+      end
+      guest = { help: params[:help].merge(subject: "See @someone and #123 now", comments: "ping @someone a&b") }
+      post help_path, params: guest
+      zwj = "\u200D"
+      expect(posted[:title]).to eq("See @#{zwj}someone and ##{zwj}123 now")
+      expect(posted[:body]).to eq("ping @#{zwj}someone a&amp;b")
+    end
+
+    it "counts the web form and the JSON endpoint separately" do
+      counts = Hash.new(0)
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      sign_in_as(:regular)
+      5.times do
+        put "/send_email", params: { subject: "Booking does not work", comments: "Help please" }.to_json,
+                           headers: { "Content-Type" => "application/json" }
+        expect(response).to have_http_status(:ok)
+      end
+      post help_path, params: params
+      expect(response).to redirect_to(help_path)
+    end
+
     # test env uses :null_store (never counts), so back the limiter's store with a counter
     it "allows 5 submissions an hour per visitor, then answers 429 and creates nothing" do
       counts = Hash.new(0)
@@ -686,6 +730,27 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("<h1>")
       expect(response.body).not_to match(/^#changelog\s*$/)
+    end
+
+    it "renders the file once per version and serves it from the cache after that" do
+      original = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      begin
+        allow(File).to receive(:read).and_call_original
+        get changelog_path
+        get changelog_path
+        expect(File).to have_received(:read).with(Rails.root.join("CHANGELOG.md")).once
+      ensure
+        Rails.cache = original
+      end
+    end
+
+    it "does not allow inline styles" do
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# v1\n\n<p style=\"color:red\">hi</p>\n")
+      get changelog_path
+      expect(response.body).to include("hi")
+      expect(response.body).not_to include("color:red")
     end
 
     it "shows a fallback when there is no changelog file" do

@@ -72,16 +72,24 @@ class UsersController < SessionsController
     end
   end
 
-  # The answer is the same whether or not the email belongs to an account; only an
-  # account that is still unconfirmed is mailed.
+  # The answer is the same whether or not the email belongs to an account (and when the
+  # request is rate limited); only an account that is still unconfirmed is mailed.
+  RESEND_CONFIRMATION_NOTICE =
+    'If that email belongs to an account that still needs confirming, a confirmation email has been sent.'
+
+  rate_limit to: 10, within: 1.hour, only: :resend_confirmation, name: 'resend-ip',
+             by: -> { request.remote_ip }, with: -> { resend_confirmation_response }
+  rate_limit to: 3, within: 1.hour, only: :resend_confirmation, name: 'resend-email',
+             by: -> { resend_confirmation_email }, with: -> { resend_confirmation_response }
+
   def resend_confirmation
-    user = User.find_by(email: params[:user][:email].to_s.strip.downcase)
+    email = resend_confirmation_email
+    user = User.find_by(email: email) if email.present?
     if user && !user.confirmed?
       hash = user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(user, hash).deliver_later
     end
-    flash[:notice] = 'If that email belongs to an account that still needs confirming, a confirmation email has been sent.'
-    redirect_back(fallback_location: root_path)
+    resend_confirmation_response
   end
 
   def confirm
@@ -492,6 +500,16 @@ class UsersController < SessionsController
   end
 
   private
+
+  def resend_confirmation_email
+    fields = params[:user]
+    fields.is_a?(ActionController::Parameters) ? fields[:email].to_s.strip.downcase : ''
+  end
+
+  def resend_confirmation_response
+    flash[:notice] = RESEND_CONFIRMATION_NOTICE
+    redirect_back(fallback_location: root_path)
+  end
 
   # The current password the action was given (change_password nests it).
   def submitted_current_password

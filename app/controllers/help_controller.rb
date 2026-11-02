@@ -3,14 +3,14 @@ class HelpController < SessionsController
   before_action :current_user
 
   # send_email opens a GitHub issue per call; the React app sends no captcha, so it is rate limited
-  rate_limit to: 5, within: 1.hour, only: :send_email,
+  rate_limit to: 5, within: 1.hour, only: :send_email, name: 'send-email',
              by: -> { current_user.id.presence || request.remote_ip },
              with: -> { render json: { error: 'Too many requests' }, status: :too_many_requests }
 
   # The web form never mails an address typed into it: guests' reports go to the team (the typed
   # address is only the Reply-To), signed-in users also get a copy at their account address.
   # It is rate limited per visitor.
-  rate_limit to: 5, within: 1.hour, only: :create,
+  rate_limit to: 5, within: 1.hour, only: :create, name: 'create',
              by: -> { current_user.id.presence || request.remote_ip },
              with: -> {
                flash.now[:alert] = 'Too many requests, please try again later.'
@@ -24,6 +24,8 @@ class HelpController < SessionsController
 
   def create
     @help = Help.new(help_params)
+    # The GitHub issue is public: a guest's text is defanged as on the API path
+    @help.defang_github_text = !signed_in?
 
     unless verify_turnstile
       flash[:alert] = 'Captcha check failed, please try again.'
@@ -35,9 +37,11 @@ class HelpController < SessionsController
       text = @help.comments.to_plain_text
       if signed_in?
         # Signed in: the copy goes to the account's own address (bcc the team), never the typed one
-        MsrMailer.issue_email(current_user.name, current_user.email, @help.subject, text, params[:share_email]).deliver_later
+        MsrMailer.issue_email(@help.name, current_user.email, @help.subject, text, params[:share_email],
+                              contact_email: @help.email).deliver_later
       else
-        MsrMailer.issue_email_to_team(@help.name, @help.email, @help.subject, text).deliver_later
+        MsrMailer.issue_email_to_team(@help.name, @help.email, @help.subject, text,
+                                      via: 'the MakerRepo help page').deliver_later
       end
     else
       flash[:alert] = 'An error occurred while receiving your issue.'

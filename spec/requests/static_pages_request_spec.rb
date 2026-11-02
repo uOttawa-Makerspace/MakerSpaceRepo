@@ -53,6 +53,20 @@ RSpec.describe "Static pages", type: :request do
         expect(response.body).to include('href="https://simpli.events/e/1"')
       end
 
+      it "uses the feed picture as a background only when it is an http(s) URL" do
+        events = [
+          { "name" => "Pic", "startTime" => future_ms(1), "picture" => "https://img.example.test/a.png" },
+          { "name" => "Bad", "startTime" => future_ms(2), "picture" => "javascript:alert(1)" },
+          { "name" => "Quote", "startTime" => future_ms(3), "picture" => "https://img.example.test/a');color:red;('.png" }
+        ]
+        stub_simpli(status: 200, body: { events: events }.to_json)
+        get root_path
+        expect(response.body).to include("url('https://img.example.test/a.png')")
+        expect(response.body).not_to include("javascript:")
+        expect(response.body).not_to match(/url\('https:\/\/img\.example\.test\/a'\)/)
+        expect(response.body.scan("background-image").size).to eq(2)
+      end
+
       it "renders a workshop without a link when the feed link is not http(s)" do
         events = ["javascript:alert(1)", "data:text/html,x", "//evil.example.test/x", ""].each_with_index.map do |link, i|
           { "name" => "Odd #{i}", "startTime" => future_ms(i + 1), "link" => link }

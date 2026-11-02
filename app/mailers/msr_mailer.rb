@@ -350,9 +350,12 @@ class MsrMailer < ApplicationMailer
     mail(to: email, subject: "Please Sign The Release Agreement!")
   end
 
-  def issue_email(name, email, subject, comments, share_email, app_version = nil)
+  # contact_email: the address the reporter typed, shown to the team when they chose to share it
+  # (the mail itself always goes to +email+).
+  def issue_email(name, email, subject, comments, share_email, app_version = nil, contact_email: nil)
     @name = name
     @email = email
+    @contact_email = contact_email.presence || email
     @subject = subject
     @comments = comments
     @share_email = share_email
@@ -367,9 +370,10 @@ class MsrMailer < ApplicationMailer
 
   # Anonymous /api/v1 support requests: goes to the team only. The reporter's (unverified)
   # address is in Reply-To and the body, never To/Cc/Bcc, so this cannot relay mail to third parties.
-  def issue_email_to_team(name, email, subject, comments, app_version = nil)
+  def issue_email_to_team(name, email, subject, comments, app_version = nil, via: 'the MakerRepo app')
     @name = name
     @email = email
+    @via = via
     @subject = subject
     @comments = comments
     @app_version = app_version

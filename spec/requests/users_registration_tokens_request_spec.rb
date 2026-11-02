@@ -206,10 +206,40 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries).to be_empty
     end
 
-    it "without the user param 500s (nil[:email])" do
-      # resend_confirmation reads params[:user][:email] unguarded, so a missing user param is a 500 instead of the ParameterMissing redirect
+    it "gives the same answer when the user param is missing or not a hash" do
       get resend_confirmation_users_path
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq(notice)
+      get resend_confirmation_users_path, params: { user: "nobody@example.com" }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq(notice)
+      expect(deliveries).to be_empty
+    end
+
+    # test env uses :null_store (never counts), so back the limiter's store with a counter
+    context "rate limited" do
+      before do
+        counts = Hash.new(0)
+        allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      end
+
+      it "mails an address at most 3 times an hour and answers the same once limited" do
+        u = create(:user, :regular_user_not_confirmed)
+        4.times do
+          perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+          expect(response).to redirect_to(root_path)
+          expect(flash[:notice]).to eq(notice)
+        end
+        expect(deliveries.size).to eq(3)
+      end
+
+      it "limits a client IP across addresses" do
+        10.times { |i| get resend_confirmation_users_path, params: { user: { email: "n#{i}@example.test" } } }
+        u = create(:user, :regular_user_not_confirmed)
+        perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+        expect(flash[:notice]).to eq(notice)
+        expect(deliveries).to be_empty
+      end
     end
   end
 
