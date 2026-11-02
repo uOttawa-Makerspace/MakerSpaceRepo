@@ -1,7 +1,7 @@
 require "rails_helper"
 
 # Chunk 12: RequireTrainingsController (training prerequisites of volunteer
-# tasks). Inherits VolunteerTasksController#grant_access: staff or admin only,
+# tasks). Inherits VolunteerAreaAccess#staff_access via VolunteerTasksController: staff or admin only,
 # signed-in others are bounced to root with "You cannot access this area.";
 # guests are sent to login.
 
@@ -49,19 +49,26 @@ RSpec.describe "Require trainings", type: :request do
         expect(response).to redirect_to(volunteer_task_path(task))
       end
 
-      it "redirects back with a 'Something went wrong' notice when the training is missing" do
+      it "redirects back with a 'Something went wrong' alert when the training is missing" do
         invalid = { require_training: { volunteer_task_id: task.id, training_id: "" } }
         expect { post require_trainings_path, params: invalid, headers: back }
           .not_to change(RequireTraining, :count)
         expect(response).to redirect_to("/volunteer_tasks")
-        expect(flash[:notice]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq("Something went wrong")
       end
 
       it "falls back to the task page when a failed create has no referer" do
         invalid = { require_training: { volunteer_task_id: task.id, training_id: "" } }
         post require_trainings_path, params: invalid
         expect(response).to redirect_to(volunteer_task_path(task))
-        expect(flash[:notice]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq("Something went wrong")
+      end
+
+      it "falls back to the task list when the task does not exist and there is no referer" do
+        unknown = { require_training: { volunteer_task_id: 0, training_id: "" } }
+        expect { post require_trainings_path, params: unknown }.not_to change(RequireTraining, :count)
+        expect(response).to redirect_to(volunteer_tasks_path)
+        expect(flash[:alert]).to eq("Something went wrong")
       end
 
       it "allows the same training twice on a task (no uniqueness)" do

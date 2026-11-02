@@ -37,7 +37,7 @@ RSpec.describe RequireTrainingsController, type: :controller do
                  }
                }
         }.to change(RequireTraining, :count).by(0)
-        expect(flash[:notice]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq("Something went wrong")
         expect(response).to redirect_to volunteer_task_path(@task)
       end
 

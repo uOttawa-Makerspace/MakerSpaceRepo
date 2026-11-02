@@ -3,12 +3,11 @@
 class RequireTrainingsController < VolunteerTasksController
   def create
     require_training = RequireTraining.new(require_training_params)
-    flash[:notice] =
-      if require_training.save
-        "You've successfully added a required training for this volunteer task."
-      else
-        "Something went wrong"
-      end
+    if require_training.save
+      flash[:notice] = "You've successfully added a required training for this volunteer task."
+    else
+      flash[:alert] = "Something went wrong"
+    end
     redirect_back(fallback_location: task_page(require_training.volunteer_task_id))
   end
 
@@ -29,7 +28,7 @@ class RequireTrainingsController < VolunteerTasksController
   private
 
   def task_page(task_id)
-    task_id.present? ? volunteer_task_path(task_id) : volunteer_tasks_path
+    VolunteerTask.exists?(task_id) ? volunteer_task_path(task_id) : volunteer_tasks_path
   end
 
   def require_training_params

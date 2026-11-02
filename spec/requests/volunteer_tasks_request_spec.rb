@@ -4,7 +4,7 @@ require "rails_helper"
 
 # Chunk 13: VolunteerTasksController.
 #   index, show         staff or volunteer-program member (`volunteer_access`)
-#   new/create/edit/update/destroy   staff or admin only (`grant_access`)
+#   new/create/edit/update/destroy   staff or admin only (`VolunteerAreaAccess#staff_access`)
 #   my_tasks                         staff or volunteer-program member (`volunteer_access`)
 #   complete_task (POST)             sign-in + staff or the task's creator
 RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
