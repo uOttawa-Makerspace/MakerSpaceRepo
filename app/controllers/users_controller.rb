@@ -72,18 +72,15 @@ class UsersController < SessionsController
     end
   end
 
+  # The answer is the same whether or not the email belongs to an account; only an
+  # account that is still unconfirmed is mailed.
   def resend_confirmation
-    email = params[:user][:email]
-    user = User.find_by(email: email)
-    if user.present?
+    user = User.find_by(email: params[:user][:email].to_s.strip.downcase)
+    if user && !user.confirmed?
       hash = user.generate_token_for(:email_confirmation)
-      MsrMailer.confirmation_email(user, hash).deliver_now
-      flash[:notice] = 'A new confirmation email has been sent'
-    else
-      flash[
-        :alert
-      ] = 'No users with that email were found. Please select a valid email.'
+      MsrMailer.confirmation_email(user, hash).deliver_later
     end
+    flash[:notice] = 'If that email belongs to an account that still needs confirming, a confirmation email has been sent.'
     redirect_back(fallback_location: root_path)
   end
 

@@ -165,20 +165,30 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
   end
 
   describe "GET /resend_confirmation" do
+    let(:notice) { "If that email belongs to an account that still needs confirming, a confirmation email has been sent." }
+
     it "emails a fresh confirmation link to a known address" do
       u = create(:user, :regular_user_not_confirmed)
-      get resend_confirmation_users_path, params: { user: { email: u.email } }
+      perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
       expect(response).to redirect_to(root_path)
-      expect(flash[:notice]).to eq("A new confirmation email has been sent")
+      expect(flash[:notice]).to eq(notice)
       expect(deliveries.size).to eq(1)
       expect(deliveries.first.to).to eq([u.email])
       expect(deliveries.first.subject).to eq("Makerepo | Please confirm your email")
     end
 
-    it "tells the caller whether an email is registered" do
-      # resend_confirmation answers differently for a registered email; reset_password answers uniformly
+    it "answers the same for an unknown email and sends nothing" do
       get resend_confirmation_users_path, params: { user: { email: "nobody@example.com" } }
-      expect(flash[:alert]).to eq("No users with that email were found. Please select a valid email.")
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq(notice)
+      expect(flash[:alert]).to be_nil
+      expect(deliveries).to be_empty
+    end
+
+    it "does not mail an account that is already confirmed, and answers the same" do
+      u = create(:user, :regular_user)
+      perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+      expect(flash[:notice]).to eq(notice)
       expect(deliveries).to be_empty
     end
 
@@ -191,8 +201,9 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "does not send for soft-deleted users" do
       u = create(:user, :regular_user_not_confirmed, deleted: true)
-      get resend_confirmation_users_path, params: { user: { email: u.email } }
-      expect(flash[:alert]).to start_with("No users with that email")
+      perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+      expect(flash[:notice]).to eq(notice)
+      expect(deliveries).to be_empty
     end
 
     it "without the user param 500s (nil[:email])" do
