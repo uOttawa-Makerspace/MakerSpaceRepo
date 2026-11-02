@@ -812,7 +812,18 @@ RSpec.describe "Content pages (part 2)", type: :request do
 
   # ------------------------------------------------------------------
   describe "ChangelogController" do
+    # CHANGELOG.md is produced by the release pipeline and is not in the repository, so each
+    # example stands in a file for it; the missing-file example overrides this.
+    before do
+      allow(File).to receive(:stat).and_call_original
+      allow(File).to receive(:stat).with(Rails.root.join("CHANGELOG.md"))
+        .and_return(instance_double(File::Stat, mtime: Time.utc(2026, 11, 1), size: 64))
+    end
+
     it "renders CHANGELOG.md as HTML for guests, without the #changelog marker" do
+      path = Rails.root.join("CHANGELOG.md")
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with(path).and_return(+"# v1\n\n#changelog\n\n- A change\n")
       get changelog_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("<h1>")
@@ -824,6 +835,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       Rails.cache = ActiveSupport::Cache::MemoryStore.new
       begin
         allow(File).to receive(:read).and_call_original
+        allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# v1\n")
         get changelog_path
         get changelog_path
         expect(File).to have_received(:read).with(Rails.root.join("CHANGELOG.md")).once
@@ -841,6 +853,8 @@ RSpec.describe "Content pages (part 2)", type: :request do
     end
 
     it "does not turn a renderer error into the fallback" do
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# v1\n")
       allow_any_instance_of(ChangelogController).to receive(:render_markdown).and_raise(Errno::ENOENT)
       get changelog_path
       expect(response).to have_http_status(:internal_server_error)
