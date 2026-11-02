@@ -73,24 +73,20 @@ module ConcurrentIndexBuilder
 
   # True when every key column uses its column's own collation (no explicit COLLATE).
   def own_collations?(table, name)
-    connection.select_value(<<~SQL.squish)
+    connection.select_value(<<~SQL.squish, "SCHEMA", [connection.quote_table_name(table), name])
       SELECT NOT EXISTS (
         SELECT 1
         FROM pg_index i
         CROSS JOIN LATERAL unnest(i.indkey::int2[], i.indcollation::oid[]) AS k(attnum, coll)
         JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = k.attnum
-        WHERE i.indexrelid = (#{index_oid_sql(table, name)})
+        WHERE i.indexrelid = (
+          SELECT c.oid FROM pg_class c
+          WHERE c.relname = $2
+            AND c.relnamespace = (SELECT relnamespace FROM pg_class WHERE oid = $1::regclass)
+        )
           AND k.coll <> a.attcollation
       )
     SQL
-  end
-
-  def index_oid_sql(table, name)
-    "SELECT c.oid FROM pg_class c WHERE c.relname = #{connection.quote(name)} AND c.relnamespace = #{table_namespace_sql(table)}"
-  end
-
-  def table_namespace_sql(table)
-    "(SELECT relnamespace FROM pg_class WHERE oid = #{connection.quote(connection.quote_table_name(table))}::regclass)"
   end
 
   def describe(index)
@@ -108,14 +104,14 @@ module ConcurrentIndexBuilder
   # Any relation of that name in the table's schema (the caller found no such
   # index in indexes(table)).
   def raise_if_name_taken_by_other_relation(table, name)
-    row = connection.select_one(<<~SQL.squish)
+    row = connection.select_one(<<~SQL.squish, "SCHEMA", [connection.quote_table_name(table), name])
       SELECT c.relkind, t.relname AS table_name,
-             (i.indrelid = #{connection.quote(connection.quote_table_name(table))}::regclass) AS on_table
+             (i.indrelid = $1::regclass) AS on_table
       FROM pg_class c
       LEFT JOIN pg_index i ON i.indexrelid = c.oid
       LEFT JOIN pg_class t ON t.oid = i.indrelid
-      WHERE c.relname = #{connection.quote(name)}
-        AND c.relnamespace = #{table_namespace_sql(table)}
+      WHERE c.relname = $2
+        AND c.relnamespace = (SELECT relnamespace FROM pg_class WHERE oid = $1::regclass)
     SQL
     return if row.nil?
 
