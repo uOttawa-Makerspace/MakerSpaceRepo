@@ -1,10 +1,5 @@
 class ScormExtractor
   MANIFEST_FILE = 'imsmanifest.xml'
-  # Operating system metadata that zipped folders carry, matched per path segment
-  JUNK_SEGMENTS = ['__MACOSX', '.DS_Store', "Icon\r"].freeze
-  # Control characters (C0, DEL, C1) and the bidirectional overrides
-  UNSAFE_CHARACTERS = /[[:cntrl:]\u202A-\u202E\u2066-\u2069]/
-
   # How often a running extraction refreshes the status time, so that
   # LearningModule#scorm_stalled? means "no progress for the bound".
   HEARTBEAT_EVERY = 30.seconds
@@ -104,27 +99,6 @@ class ScormExtractor
     )
   end
 
-  # Archives made with `zip -r p.zip ./` name every entry "./name"
-  def clean_name(name)
-    name.dup.force_encoding(Encoding::UTF_8).sub(%r{\A(\./)+}, '')
-  end
-
-  def junk?(name)
-    name.split('/').any? { |segment| JUNK_SEGMENTS.include?(segment) || segment.start_with?('._') }
-  end
-
-  # A relative path made only of ordinary segments. (rubyzip has already turned
-  # backslashes into slashes.)
-  def plain_path?(name)
-    name.valid_encoding? && !name.start_with?('/') && !name.match?(UNSAFE_CHARACTERS) &&
-      name.split('/').none? { |segment| segment == '..' }
-  end
-
-  # The entry name, safe to show to staff
-  def display_name(name)
-    name.scrub('?').gsub(UNSAFE_CHARACTERS, '?').truncate(120)
-  end
-
   # Files this run uploaded but never attached
   def discard_uploaded
     @uploaded.each do |blob|
@@ -143,25 +117,33 @@ class ScormExtractor
 
     @learning_module.scorm_package.blob.open do |tmp|
       Zip::File.open(tmp.path) do |zip|
-        files =
-          zip.entries.reject(&:directory?).map { |entry| [entry, clean_name(entry.name)] }.reject { |_, name| junk?(name) }
+        paths = zip.entries.reject(&:directory?).map { |entry| PackagePath.new(entry) }.reject(&:non_content?)
 
-        # Check every path before uploading anything: a package with a path
-        # that could leave its folder is rejected whole rather than half used
-        if (_, bad = files.find { |_, name| !plain_path?(name) })
-          raise InvalidPackage, %(the package contains a file path that is not allowed: "#{display_name(bad)}")
+        # Everything is checked before anything is uploaded: a package with a
+        # path that could leave its folder, or two files with one final path,
+        # is rejected whole rather than half used
+        if (unsafe = paths.find(&:unsafe?))
+          raise InvalidPackage, %(the package contains a file path that is not allowed: "#{unsafe.display}")
         end
 
-        manifest_entry, manifest_name = files.find { |_, name| name == MANIFEST_FILE }
-        manifest_entry, manifest_name = files.find { |_, name| name.end_with?("/#{MANIFEST_FILE}") } unless manifest_entry
-        raise InvalidPackage, "no #{MANIFEST_FILE} found" unless manifest_entry
+        manifests = paths.select { |path| path.segments.last == MANIFEST_FILE }
+        raise InvalidPackage, "no #{MANIFEST_FILE} found" if manifests.empty?
 
-        root_dir = (manifest_name == MANIFEST_FILE ? nil : File.dirname(manifest_name))
+        shallowest = manifests.map { |path| path.segments.size }.min
+        top = manifests.select { |path| path.segments.size == shallowest }
+        raise InvalidPackage, "more than one #{MANIFEST_FILE} at the top level" if top.size > 1
 
-        files.each do |entry, name|
+        manifest_entry = top.first.entry
+        root_segments = top.first.segments[0...-1]
+
+        files = paths.map { |path| [path.entry, path.rooted(root_segments).join('/')] }
+        if (duplicate = files.group_by(&:last).find { |_, same| same.size > 1 })
+          raise InvalidPackage, %(duplicate file path: "#{duplicate.first.truncate(120)}")
+        end
+
+        files.each do |entry, normalized_name|
           heartbeat
 
-          normalized_name = root_dir ? name.delete_prefix("#{root_dir}/") : name
           ext = File.extname(normalized_name)
           content_type = Rack::Mime.mime_type(ext, 'application/octet-stream')
 

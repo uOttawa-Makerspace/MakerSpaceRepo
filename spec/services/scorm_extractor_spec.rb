@@ -181,12 +181,16 @@ RSpec.describe ScormExtractor do
       lm.reload
     end
 
-    def base_files
-      { "imsmanifest.xml" => format(MANIFEST, href: "index.html"), "index.html" => "1" }
+    def manifest(href = "index.html")
+      format(MANIFEST, href: href)
     end
 
-    def keys(lm)
-      lm.scorm_package_files.blobs.pluck(:key)
+    def base_files
+      { "imsmanifest.xml" => manifest, "index.html" => "1" }
+    end
+
+    def stored_paths(lm)
+      lm.scorm_package_files.blobs.pluck(:key).map { |k| k.delete_prefix("#{lm.scorm_prefix}/") }
     end
 
     [
@@ -197,7 +201,10 @@ RSpec.describe ScormExtractor do
       ["sub/\u007Fevil.html", "sub/?evil.html"],
       ["sub/\u0085evil.html", "sub/?evil.html"],
       ["sub/\u202Eevil.html", "sub/?evil.html"],
-      ["sub/\u2066evil.html", "sub/?evil.html"]
+      ["sub/\u200Fevil.html", "sub/?evil.html"],
+      ["sub/\u2028evil.html", "sub/?evil.html"],
+      ["sub/\u200Bevil.html", "sub/?evil.html"],
+      ["sub/\uFEFFevil.html", "sub/?evil.html"]
     ].each do |name, shown|
       it "fails the extraction, naming the entry, uploading nothing, for #{name.inspect}" do
         lm = module_with_raw_names(base_files.merge(name => "x"))
@@ -216,22 +223,76 @@ RSpec.describe ScormExtractor do
       expect(lm.scorm_error).to start_with('the package contains a file path that is not allowed: "../aaa')
     end
 
-    it "ignores operating system metadata anywhere in the package instead of failing on it" do
-      junk = ["__MACOSX/._index.html", "sub/__MACOSX/x", ".DS_Store", "sub/.DS_Store", "Icon\r", "sub/Icon\r", "sub/._b.css"]
+    it "skips dotfiles, dot-directories and operating system metadata anywhere, without failing the package" do
+      junk = ["__MACOSX/._index.html", "sub/__MACOSX/x", ".DS_Store", "sub/.DS_Store", "Icon\r", "sub/Icon\r",
+              "sub/._b.css", ".git/config", ".env", ".htaccess", "sub/.hidden/y.js", "../.DS_Store"]
       lm = module_with_raw_names(base_files.merge(junk.to_h { |n| [n, "junk"] }).merge("sub/b.css" => "x"))
       ScormExtractor.extract(lm)
       expect(lm.reload.scorm_status).to eq("ready")
-      expect(keys(lm).map { |k| k.delete_prefix("#{lm.scorm_prefix}/") }).to match_array(%w[imsmanifest.xml index.html sub/b.css])
+      expect(stored_paths(lm)).to match_array(%w[imsmanifest.xml index.html sub/b.css])
+    end
+
+    it "reads a name that is not UTF-8 as IBM437 instead of rejecting the package" do
+      lm = module_with_raw_names(base_files.merge("caf\x82.html".b => "x"))
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("ready")
+      expect(stored_paths(lm)).to include("caf\u00E9.html")
+    end
+
+    {
+      "a//b.html" => "a/b.html",
+      "a/./b.html" => "a/b.html",
+      "./a/b.html" => "a/b.html"
+    }.each do |name, stored|
+      it "stores #{name.inspect} as #{stored.inspect}" do
+        lm = module_with_raw_names(base_files.merge(name => "x"))
+        ScormExtractor.extract(lm)
+        expect(lm.reload.scorm_status).to eq("ready")
+        expect(stored_paths(lm)).to match_array(%W[imsmanifest.xml index.html #{stored}])
+      end
     end
 
     it "extracts an archive whose entries all start with ./" do
-      lm = module_with_raw_names("./imsmanifest.xml" => format(MANIFEST, href: "index.html"), "./index.html" => "1",
-                                 "./sub/b.css" => "x")
+      lm = module_with_raw_names("./imsmanifest.xml" => manifest, "./index.html" => "1", "./sub/b.css" => "x")
       ScormExtractor.extract(lm)
       lm.reload
       expect(lm.scorm_status).to eq("ready")
       expect(lm.scorm_entry_point).to eq("index.html")
-      expect(keys(lm).map { |k| k.delete_prefix("#{lm.scorm_prefix}/") }).to match_array(%w[imsmanifest.xml index.html sub/b.css])
+      expect(stored_paths(lm)).to match_array(%w[imsmanifest.xml index.html sub/b.css])
+    end
+
+    it "uses the manifest with the fewest path segments" do
+      lm = module_with_raw_names(base_files.merge("sub/imsmanifest.xml" => manifest("deep.html"), "sub/deep.html" => "2"))
+      ScormExtractor.extract(lm)
+      lm.reload
+      expect(lm.scorm_status).to eq("ready")
+      expect(lm.scorm_entry_point).to eq("index.html")
+      expect(stored_paths(lm)).to include("sub/imsmanifest.xml", "sub/deep.html")
+    end
+
+    it "fails when two manifests share the shallowest level" do
+      lm = module_with_raw_names("a/imsmanifest.xml" => manifest, "a/index.html" => "1",
+                                 "b/imsmanifest.xml" => manifest, "b/index.html" => "2")
+      expect(ActiveStorage::Blob).not_to receive(:create_and_upload!)
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("failed")
+      expect(lm.scorm_error).to eq("more than one imsmanifest.xml at the top level")
+    end
+
+    it "fails when ./a.html and a.html are both present" do
+      lm = module_with_raw_names(base_files.merge("./a.html" => "1", "a.html" => "2"))
+      expect(ActiveStorage::Blob).not_to receive(:create_and_upload!)
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("failed")
+      expect(lm.scorm_error).to eq('duplicate file path: "a.html"')
+    end
+
+    it "fails when a file outside the root directory collides with one inside it" do
+      lm = module_with_raw_names("pkg/imsmanifest.xml" => manifest, "pkg/x.js" => "1", "x.js" => "2")
+      expect(ActiveStorage::Blob).not_to receive(:create_and_upload!)
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("failed")
+      expect(lm.scorm_error).to eq('duplicate file path: "x.js"')
     end
 
     it "extracts nested relative paths" do

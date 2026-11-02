@@ -74,12 +74,13 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(track.scorm_state).to be_nil
     end
 
-    it "does not create a second track when started twice and flashes the error alert" do
+    it "reuses the existing track when started twice" do
       post start_learning_module_track_index_path(learning_module_id: learning_module.id)
       expect { post start_learning_module_track_index_path(learning_module_id: learning_module.id) }
         .not_to change(LearningModuleTrack, :count)
       expect(response).to redirect_to(learning_area_path(learning_module.id))
-      expect(flash[:alert]).to start_with("An error has occurred while starting the learning module")
+      expect(flash[:alert]).to be_nil
+      expect(flash[:notice]).to eq("You have successfully started the learning module !")
     end
 
     it "does not reset a Completed track when started again" do

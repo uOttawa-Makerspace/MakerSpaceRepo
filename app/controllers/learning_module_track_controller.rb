@@ -12,9 +12,8 @@ class LearningModuleTrackController < DevelopmentProgramsController
       return redirect_to learning_area_index_path
     end
 
-    learning_module_track = learning_module.learning_module_tracks.new
-    learning_module_track.user = current_user
-    if learning_module_track.save
+    learning_module_track = learning_module.learning_module_tracks.find_or_create_by(user: current_user)
+    if learning_module_track.persisted?
       flash[:notice] = "You have successfully started the learning module !"
     else
       flash[
