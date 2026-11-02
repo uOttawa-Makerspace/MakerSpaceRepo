@@ -152,6 +152,7 @@ fr:
         grad: "un étudiant diplômé de uOttawa"
         international_grad: "un étudiant international diplômé de uOttawa"
         faculty_member: "un membre de la faculté de uOttawa"
+        staff_member: "un membre du personnel à uOttawa"
         community_member: "un membre de la communauté, hors de uOttawa"
         faculty: "Faculté"
         arts: "Arts"
