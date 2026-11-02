@@ -7,7 +7,7 @@ RSpec.describe User, "wallet", type: :model do
   let(:user) { create(:user, :regular_user) }
 
   it "has a column default of 0 (the factory seeds 1000)" do
-    expect(User.columns_hash["wallet"].default).to eq(0)
+    expect(User.column_defaults["wallet"]).to eq(0)
   end
 
   it "#update_wallet overwrites the cache with the cc_moneys sum (positive and negative rows)" do

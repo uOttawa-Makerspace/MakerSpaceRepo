@@ -68,12 +68,12 @@ RSpec.describe "Shopify orders_fulfilled webhook (cash lockers)", type: :request
     membership = create(:membership, user: user, status: :pending)
 
     expect do
-      signed_orders_fulfilled(
+      signed_orders_fulfilled({
         id: order_id, financial_status: "pending", tags: [Membership.draft_order_operating_tag],
         customer: { email: user.email },
         line_items: [{ product_id: 4_359_597_129_784, quantity: 2, title: membership.membership_tier.title_en }],
         metafields: [{ namespace: "makerepo", key: "membership_db_reference", value: membership.id.to_s }]
-      )
+      })
     end.not_to change(CcMoney, :count)
 
     expect(response).to have_http_status(:ok)
