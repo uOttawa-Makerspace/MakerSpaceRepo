@@ -100,12 +100,28 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect { delete announcement_path(admin_ann) }.not_to change(Announcement, :count)
     end
 
-    # staff can open the show and edit pages of any announcement; update and destroy are guarded
-    it "lets staff read and open the edit form of an admin-only announcement" do
+    it "keeps an admin-only announcement's show and edit pages from staff" do
       sign_in_as(:staff)
       get announcement_path(admin_ann)
+      expect(response).to redirect_to(new_announcement_path)
+      expect(response.body).not_to include("Admins only news")
+      get edit_announcement_path(admin_ann)
+      expect(response).to redirect_to(new_announcement_path)
+    end
+
+    it "lets staff read and open the edit form of a volunteer announcement" do
+      sign_in_as(:staff)
+      get announcement_path(volunteer_ann)
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Admins only news")
+      expect(response.body).to include("Vol news")
+      get edit_announcement_path(volunteer_ann)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "lets an admin read and open the edit form of an admin-only announcement" do
+      sign_in_as(:admin)
+      get announcement_path(admin_ann)
+      expect(response).to have_http_status(:ok)
       get edit_announcement_path(admin_ann)
       expect(response).to have_http_status(:ok)
     end

@@ -3,7 +3,7 @@
 class AnnouncementsController < StaffAreaController
   layout "staff_area"
   before_action :set_announcement, only: %i[show edit]
-  before_action :check_announcement, only: %i[create update destroy]
+  before_action :check_announcement, only: %i[show edit create update destroy]
 
   def index
     @announcements =
