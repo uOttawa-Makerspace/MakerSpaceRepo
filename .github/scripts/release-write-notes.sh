@@ -5,6 +5,7 @@
 #      NOTES      notes built for this release (may be empty)
 #      VERSION    the release's version on master, empty on staging
 #      TARGET_REF refs/heads/master or refs/heads/staging
+#      NOTES_ONLY true: write release-notes.md only (no releases fetch, no CHANGELOG.md)
 # The notes come from PR titles, so they reach this script through the environment only.
 set -euo pipefail
 
@@ -17,6 +18,10 @@ if [ "$has_notes" = true ]; then
   printf '%s\n' "$NOTES" > release-notes.md
 else
   printf 'No notable changes.\n' > release-notes.md
+fi
+
+if [ "${NOTES_ONLY:-false}" = true ]; then
+  exit 0
 fi
 
 releases=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=10")

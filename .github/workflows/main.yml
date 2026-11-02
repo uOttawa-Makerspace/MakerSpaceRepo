@@ -526,9 +526,6 @@ jobs:
     if: ${{ !cancelled() && needs.deploy-production.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    concurrency:
-      group: publish-release
-      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write

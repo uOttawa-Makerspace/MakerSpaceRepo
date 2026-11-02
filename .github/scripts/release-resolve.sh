@@ -26,9 +26,15 @@ pick_head() {
 if [ "$TARGET_REF" = "refs/heads/master" ]; then
   shipped=""
   # The PRs associated with the commit; the API can lag behind the push, so retry briefly.
+  err_file="$RUNNER_TEMP/gh-error.txt"
   for attempt in 1 2 3 4 5; do
-    if prs=$(gh api "repos/$repo/commits/$TARGET_SHA/pulls"); then
+    if prs=$(gh api "repos/$repo/commits/$TARGET_SHA/pulls" 2> "$err_file"); then
       shipped=$(pick_head <<< "$prs")
+    elif grep -qE 'HTTP 4[0-9][0-9]' "$err_file"; then
+      # an unknown commit or a permission problem will not fix itself
+      cat "$err_file" >&2
+      echo "::error::Could not list the pull requests of $TARGET_SHA."
+      exit 1
     else
       echo "::warning::Could not list the pull requests of $TARGET_SHA (attempt $attempt of 5)"
     fi
