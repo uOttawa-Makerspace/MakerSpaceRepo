@@ -17,12 +17,12 @@ namespace :job_orders do
         counts[result.value] += 1
       else
         unresolved << id
-        warn "job order ##{id} not resolved (#{result.reason}): #{result.error&.message}"
+        $stderr.puts "job order ##{id} not resolved (#{result.reason}): #{result.error&.message}"
       end
     rescue StandardError => e
       Rails.error.report(e, handled: true, context: { job_order_id: id, where: "job_orders:retire_stale_drafts" })
       unresolved << id
-      warn "job order ##{id} not resolved (unexpected): #{e.class}: #{e.message}"
+      $stderr.puts "job order ##{id} not resolved (unexpected): #{e.class}: #{e.message}"
     end
     %i[kept deleted cleared skipped].each { |outcome| puts "#{outcome}: #{counts[outcome]}" }
     puts "unresolved: #{unresolved.size}#{" (#{unresolved.join(', ')})" if unresolved.any?}"
@@ -45,7 +45,7 @@ namespace :job_orders do
     # More orphans than the cap (JobOrder::DraftSweep::MAX_DELETES) delete NOTHING and exit 1: check the database, then CONFIRM_MAX_DELETES=<n>.
     cap = ENV["CONFIRM_MAX_DELETES"]
     if cap && !cap.match?(/\A\d+\z/)
-      warn "CONFIRM_MAX_DELETES must be a whole number (the default cap is #{JobOrder::DraftSweep::MAX_DELETES})"
+      $stderr.puts "CONFIRM_MAX_DELETES must be a whole number (the default cap is #{JobOrder::DraftSweep::MAX_DELETES})"
       exit(64) # EX_USAGE: not 1 (unresolved) or 2 (skipped), the sweep did not run
     end
     report = cap ? JobOrder::DraftSweep.run(max_deletes: cap.to_i) : JobOrder::DraftSweep.run
@@ -54,7 +54,7 @@ namespace :job_orders do
       exit(2) # a skipped run did not sweep: not a success
     end
     report.counts.each { |outcome, n| puts "#{outcome}: #{n}" }
-    report.unresolved.each { |line| warn "not resolved: #{line}" }
+    report.unresolved.each { |line| $stderr.puts "not resolved: #{line}" }
     puts "unresolved: #{report.unresolved.size}"
     exit(1) unless report.ok?
   end
