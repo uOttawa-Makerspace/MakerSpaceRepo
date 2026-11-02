@@ -89,12 +89,11 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(LearningModuleTrack.last.status).to eq("completed")
     end
 
-    # start/completed assume the module exists; an unknown id is a 500 (nil.learning_module_tracks)
-    it "answers 500 for an unknown module id" do
+    it "refuses with an alert, recording nothing, for an unknown module id" do
       expect { post start_learning_module_track_index_path(learning_module_id: 0) }
         .not_to change(LearningModuleTrack, :count)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to redirect_to(learning_area_index_path)
+      expect(flash[:alert]).to be_present
     end
   end
 

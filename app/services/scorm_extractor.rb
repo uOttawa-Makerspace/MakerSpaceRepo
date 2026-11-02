@@ -1,6 +1,9 @@
 class ScormExtractor
   MANIFEST_FILE = 'imsmanifest.xml'
-  JUNK_PREFIXES = %w[__MACOSX .].freeze
+  # Operating system metadata that zipped folders carry, matched per path segment
+  JUNK_SEGMENTS = ['__MACOSX', '.DS_Store', "Icon\r"].freeze
+  # Control characters (C0, DEL, C1) and the bidirectional overrides
+  UNSAFE_CHARACTERS = /[[:cntrl:]\u202A-\u202E\u2066-\u2069]/
 
   # How often a running extraction refreshes the status time, so that
   # LearningModule#scorm_stalled? means "no progress for the bound".
@@ -101,9 +104,25 @@ class ScormExtractor
     )
   end
 
-  # A relative path made only of ordinary segments
+  # Archives made with `zip -r p.zip ./` name every entry "./name"
+  def clean_name(name)
+    name.dup.force_encoding(Encoding::UTF_8).sub(%r{\A(\./)+}, '')
+  end
+
+  def junk?(name)
+    name.split('/').any? { |segment| JUNK_SEGMENTS.include?(segment) || segment.start_with?('._') }
+  end
+
+  # A relative path made only of ordinary segments. (rubyzip has already turned
+  # backslashes into slashes.)
   def plain_path?(name)
-    !name.start_with?('/') && !name.match?(/[\\\x00-\x1f]/) && name.split('/').none? { |segment| segment == '..' }
+    name.valid_encoding? && !name.start_with?('/') && !name.match?(UNSAFE_CHARACTERS) &&
+      name.split('/').none? { |segment| segment == '..' }
+  end
+
+  # The entry name, safe to show to staff
+  def display_name(name)
+    name.scrub('?').gsub(UNSAFE_CHARACTERS, '?').truncate(120)
   end
 
   # Files this run uploaded but never attached
@@ -124,26 +143,25 @@ class ScormExtractor
 
     @learning_module.scorm_package.blob.open do |tmp|
       Zip::File.open(tmp.path) do |zip|
-        manifest_entry = zip.find_entry(MANIFEST_FILE)
-        manifest_entry ||= zip.entries.find { |e| e.name.end_with?("/#{MANIFEST_FILE}") }
-        raise InvalidPackage, "no #{MANIFEST_FILE} found" unless manifest_entry
-
-        root_dir = (manifest_entry.name == MANIFEST_FILE ? nil : File.dirname(manifest_entry.name))
+        files =
+          zip.entries.reject(&:directory?).map { |entry| [entry, clean_name(entry.name)] }.reject { |_, name| junk?(name) }
 
         # Check every path before uploading anything: a package with a path
         # that could leave its folder is rejected whole rather than half used
-        zip.each do |entry|
-          next if entry.directory?
-          raise InvalidPackage, 'the package contains a file path that is not allowed' unless plain_path?(entry.name)
+        if (_, bad = files.find { |_, name| !plain_path?(name) })
+          raise InvalidPackage, %(the package contains a file path that is not allowed: "#{display_name(bad)}")
         end
 
-        zip.each do |entry|
-          next if entry.directory?
-          next if JUNK_PREFIXES.any? { |p| entry.name.start_with?(p) }
+        manifest_entry, manifest_name = files.find { |_, name| name == MANIFEST_FILE }
+        manifest_entry, manifest_name = files.find { |_, name| name.end_with?("/#{MANIFEST_FILE}") } unless manifest_entry
+        raise InvalidPackage, "no #{MANIFEST_FILE} found" unless manifest_entry
 
+        root_dir = (manifest_name == MANIFEST_FILE ? nil : File.dirname(manifest_name))
+
+        files.each do |entry, name|
           heartbeat
 
-          normalized_name = root_dir ? entry.name.delete_prefix("#{root_dir}/") : entry.name
+          normalized_name = root_dir ? name.delete_prefix("#{root_dir}/") : name
           ext = File.extname(normalized_name)
           content_type = Rack::Mime.mime_type(ext, 'application/octet-stream')
 

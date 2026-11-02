@@ -162,36 +162,84 @@ RSpec.describe ScormExtractor do
     end
   end
 
-  describe "unsafe file paths" do
-    # Zip::OutputStream refuses to write such names, so write a same-length
-    # placeholder and rename it in the archive bytes. (Backslashes cannot reach
-    # the extractor: rubyzip reads them back as "/".)
-    def module_with_entry_named(name)
-      placeholder = "x" * (name.bytesize - "evil.html".bytesize) + "evil.html"
-      io = zip_io("imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1", placeholder => "x")
+  describe "file paths in the package" do
+    # Zip::OutputStream refuses (or alters) some names, so each entry is written
+    # under a same-length placeholder and renamed in the archive bytes.
+    # (Backslashes cannot reach the extractor: rubyzip reads them back as "/".)
+    def module_with_raw_names(entries)
+      renames = {}
+      safe = entries.each_with_index.to_h do |(name, body), i|
+        placeholder = "k#{i}".ljust(name.bytesize, "k")
+        renames[placeholder.b] = name.b
+        [placeholder, body]
+      end
+      bytes = zip_io(safe).string.b
+      renames.each { |from, to| bytes.gsub!(from, to) }
       lm = create(:learning_module)
-      lm.scorm_package.attach(io: StringIO.new(io.string.gsub(placeholder, name)), filename: "pkg.zip",
-                              content_type: "application/zip")
+      lm.scorm_package.attach(io: StringIO.new(bytes), filename: "pkg.zip", content_type: "application/zip")
       lm.save!
       lm.reload
     end
 
-    ["../evil.html", "/evil.html", "sub/../../evil.html", "sub/\u0001evil.html"].each do |name|
-      it "fails the extraction with a reason, uploading nothing, for the entry #{name.inspect}" do
-        lm = module_with_entry_named(name)
+    def base_files
+      { "imsmanifest.xml" => format(MANIFEST, href: "index.html"), "index.html" => "1" }
+    end
+
+    def keys(lm)
+      lm.scorm_package_files.blobs.pluck(:key)
+    end
+
+    [
+      ["../evil.html", "../evil.html"],
+      ["/evil.html", "/evil.html"],
+      ["sub/../../evil.html", "sub/../../evil.html"],
+      ["sub/\u0001evil.html", "sub/?evil.html"],
+      ["sub/\u007Fevil.html", "sub/?evil.html"],
+      ["sub/\u0085evil.html", "sub/?evil.html"],
+      ["sub/\u202Eevil.html", "sub/?evil.html"],
+      ["sub/\u2066evil.html", "sub/?evil.html"]
+    ].each do |name, shown|
+      it "fails the extraction, naming the entry, uploading nothing, for #{name.inspect}" do
+        lm = module_with_raw_names(base_files.merge(name => "x"))
+        expect(ActiveStorage::Blob).not_to receive(:create_and_upload!)
         ScormExtractor.extract(lm)
         lm.reload
         expect(lm.scorm_status).to eq("failed")
-        expect(lm.scorm_error).to eq("the package contains a file path that is not allowed")
-        expect(ActiveStorage::Blob.where("key LIKE ?", "%evil%")).to be_empty
-        expect(ActiveStorage::Blob.where("key LIKE ?", "scorm/learning_modules/test_#{lm.id}_%")).to be_empty
+        expect(lm.scorm_error).to eq(%(the package contains a file path that is not allowed: "#{shown}"))
       end
     end
 
-    it "still extracts nested relative paths" do
-      lm = module_with("imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1", "sub/dir/b.css" => "x")
+    it "shortens a very long offending name in the reason" do
+      lm = module_with_raw_names(base_files.merge("../#{"a" * 400}" => "x"))
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_error.length).to be <= 255
+      expect(lm.scorm_error).to start_with('the package contains a file path that is not allowed: "../aaa')
+    end
+
+    it "ignores operating system metadata anywhere in the package instead of failing on it" do
+      junk = ["__MACOSX/._index.html", "sub/__MACOSX/x", ".DS_Store", "sub/.DS_Store", "Icon\r", "sub/Icon\r", "sub/._b.css"]
+      lm = module_with_raw_names(base_files.merge(junk.to_h { |n| [n, "junk"] }).merge("sub/b.css" => "x"))
       ScormExtractor.extract(lm)
       expect(lm.reload.scorm_status).to eq("ready")
+      expect(keys(lm).map { |k| k.delete_prefix("#{lm.scorm_prefix}/") }).to match_array(%w[imsmanifest.xml index.html sub/b.css])
+    end
+
+    it "extracts an archive whose entries all start with ./" do
+      lm = module_with_raw_names("./imsmanifest.xml" => format(MANIFEST, href: "index.html"), "./index.html" => "1",
+                                 "./sub/b.css" => "x")
+      ScormExtractor.extract(lm)
+      lm.reload
+      expect(lm.scorm_status).to eq("ready")
+      expect(lm.scorm_entry_point).to eq("index.html")
+      expect(keys(lm).map { |k| k.delete_prefix("#{lm.scorm_prefix}/") }).to match_array(%w[imsmanifest.xml index.html sub/b.css])
+    end
+
+    it "extracts nested relative paths" do
+      lm = module_with("imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1", "sub/dir/b.css" => "x")
+      ScormExtractor.extract(lm)
+      lm.reload
+      expect(lm.scorm_status).to eq("ready")
+      expect(lm.scorm_package_files.blobs.find_by(key: "#{lm.scorm_prefix}/sub/dir/b.css")).to be_present
     end
   end
 
