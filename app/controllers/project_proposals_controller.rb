@@ -10,6 +10,13 @@ class ProjectProposalsController < SessionsController
   before_action :require_owner_or_admin, only: %i[edit update]
   helper_method :owner_or_admin?
 
+  # Guests may propose a project (behind the captcha), so creation is limited per visitor
+  rate_limit to: 10, within: 1.hour, only: :create,
+             by: -> { current_user.id.presence || request.remote_ip },
+             with: -> {
+               redirect_to project_proposals_path, alert: 'Too many requests, please try again later.'
+             }
+
   # GET /project_proposals
   def index
     scope =
@@ -141,7 +148,7 @@ class ProjectProposalsController < SessionsController
     @project_proposal.user_id = current_user&.id
 
     respond_to do |format|
-      if current_user.nil? && !verify_turnstile
+      if !signed_in? && !verify_turnstile
         flash[:alert] = 'Captcha error, please try again'
         format.html { render :new, status: :unprocessable_content }
       elsif @project_proposal.save
