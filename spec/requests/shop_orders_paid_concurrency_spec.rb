@@ -23,7 +23,7 @@ RSpec.describe "Shopify orders_paid webhook under concurrency", type: :request d
 
   after do
     CcMoney.where(user_id: user.id).delete_all
-    ShopifyOrder.where(provider_ref: order_id.to_s).delete_all
+    ProcessedOrder.where(provider_ref: order_id.to_s).delete_all
     User.unscoped.where(id: user.id).delete_all
   end
 
@@ -75,7 +75,7 @@ RSpec.describe "Shopify orders_paid webhook under concurrency", type: :request d
 
     expect([first.value, second.value]).to eq([200, 200])
     expect(user.cc_moneys.pluck(:cc)).to eq([20])
-    expect(ShopifyOrder.where(provider_ref: order_id.to_s).count).to eq(1)
+    expect(ProcessedOrder.where(provider_ref: order_id.to_s).count).to eq(1)
   end
 
   it "lets the second delivery apply the order when the first one fails after its claim" do
@@ -101,6 +101,6 @@ RSpec.describe "Shopify orders_paid webhook under concurrency", type: :request d
     expect(first.value).to eq(500)
     expect(second.value).to eq(200)
     expect(user.cc_moneys.pluck(:cc)).to eq([20])
-    expect(ShopifyOrder.where(provider_ref: order_id.to_s).count).to eq(1)
+    expect(ProcessedOrder.where(provider_ref: order_id.to_s).count).to eq(1)
   end
 end

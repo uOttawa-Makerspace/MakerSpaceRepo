@@ -33,7 +33,7 @@ class CustomWebhooksController < ApplicationController
   # NotConfigured in phase 1 answers 503 with nothing applied, so Shopify retries once the config is fixed.
   # Shopify may deliver an order more than once. The locker branch is idempotent by itself (locker_payments,
   # keyed by the order id); the membership and CC branches are applied once per order through the
-  # shopify_orders ledger, claimed in the same transaction as their writes (see apply_shop_order), so a
+  # processed_orders record, claimed in the same transaction as their writes (see apply_shop_order), so a
   # failure inside phase 2 is a 500 whose retry applies them in full.
   def orders_paid
     order_hook = webhook_params.to_h
@@ -237,7 +237,7 @@ class CustomWebhooksController < ApplicationController
   end
 
   # The membership and CC branches of a paid order, applied once per Shopify order. The order is claimed in
-  # the shopify_orders ledger inside the same transaction as the writes: a repeated delivery finds the claim
+  # processed_orders inside the same transaction as the writes: a repeated delivery finds the claim
   # and applies nothing, and a failure rolls the claim back with the writes so Shopify's retry applies them.
   # The CC claim mail is queued for after that transaction commits, so a rolled-back claim sends none.
   # An order without an id cannot be claimed, so neither branch is applied (the locker branch is not affected);
@@ -258,8 +258,8 @@ class CustomWebhooksController < ApplicationController
       return
     end
 
-    ShopifyOrder.transaction do
-      next unless ShopifyOrder.claim!(ref, topic: "orders/paid", name: order_hook["name"])
+    ProcessedOrder.transaction do
+      next unless ProcessedOrder.claim!(provider: "shopify", ref: ref, topic: "orders/paid", name: order_hook["name"])
 
       process_membership_hook(order_hook, membership_ref) if membership
       order_hook["line_items"].each { |item| increment_cc_money(item, customer_email) } if cc_money

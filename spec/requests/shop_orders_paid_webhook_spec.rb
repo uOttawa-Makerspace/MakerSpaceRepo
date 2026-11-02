@@ -369,7 +369,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       expect do
         hook(membership_payload(pending.id, id: nil, customer: { email: user.email },
                                             line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }]))
-      end.not_to change { [pending.reload.status, Membership.count, CcMoney.count, ShopifyOrder.count] }
+      end.not_to change { [pending.reload.status, Membership.count, CcMoney.count, ProcessedOrder.count] }
       expect(response).to have_http_status(:ok)
       expect(reports.map(&:first)).to contain_exactly(an_instance_of(CustomWebhooksController::OrderWithoutId))
       expect(reports.first.last[:context]).to eq(membership_id: pending.id.to_s)
@@ -537,7 +537,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       perform_enqueued_jobs { hook(payload) }
       expect(response).to have_http_status(:internal_server_error)
       expect(deliveries).to be_empty
-      expect(ShopifyOrder.where(provider_ref: "7104")).to be_empty
+      expect(ProcessedOrder.where(provider_ref: "7104")).to be_empty
 
       allow(CcMoney).to receive(:create).and_call_original
       perform_enqueued_jobs { hook(payload) }
@@ -553,7 +553,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       hook(payload)
       expect(response).to have_http_status(:internal_server_error)
       expect(pending.reload.status).to eq("pending")
-      expect(ShopifyOrder.count).to eq(0)
+      expect(ProcessedOrder.count).to eq(0)
 
       allow(CcMoney).to receive(:create).and_call_original
       hook(payload)
@@ -568,7 +568,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     hook(order)
     hook(order)
     hook(order.merge(id: nil, admin_graphql_api_id: "gid://shopify/Order/7201"))
-    expect(ShopifyOrder.all.map { |o| [o.provider, o.provider_ref, o.topic, o.order_name] })
+    expect(ProcessedOrder.all.map { |o| [o.provider, o.provider_ref, o.topic, o.order_name] })
       .to eq([["shopify", "7201", "orders/paid", "#1042"]])
   end
 
