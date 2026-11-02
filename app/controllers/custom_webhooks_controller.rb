@@ -49,8 +49,7 @@ class CustomWebhooksController < ApplicationController
     end
 
     begin
-      plan.locker_ref = locker_reference(plan.hook) if plan.locker?
-      plan.membership_ref = membership_reference(plan.hook) if plan.membership?
+      resolve_references(plan)
     rescue ShopifyContext::NotConfigured, ShopifyConcern::MetafieldLookupFailed => e
       Rails.logger.warn("[orders_paid] Shopify lookup unavailable, answering 503 (Shopify will retry): #{e.class}")
       return head :service_unavailable
@@ -87,7 +86,7 @@ class CustomWebhooksController < ApplicationController
                            LockerRental.draft_order_processable?(order_hook["tags"])
 
     begin
-      locker_ref = locker_reference(order_hook)
+      locker_ref = metafield_values(order_hook, [LOCKER_KEY])[LOCKER_KEY]
     rescue ShopifyContext::NotConfigured, ShopifyConcern::MetafieldLookupFailed => e
       Rails.logger.warn("[orders_fulfilled] Shopify lookup unavailable, answering 503 (Shopify will retry): #{e.class}")
       return head :service_unavailable
@@ -107,6 +106,15 @@ class CustomWebhooksController < ApplicationController
   class UnknownMembership < StandardError; end
   class UnresolvedMembershipOrder < StandardError; end
   class UnresolvedCcOrder < StandardError; end
+  # Shopify refused a metafield lookup for good (an access or invalid-id error): reported, the order goes on.
+  class MetafieldLookupRejected < StandardError; end
+  # What a branch raises is permanent unless it is one of these: they roll back the whole order and answer
+  # 500, so Shopify retries it.
+  TRANSIENT_ERRORS = [
+    ActiveRecord::ConnectionNotEstablished, ActiveRecord::ConnectionFailed, ActiveRecord::LockWaitTimeout,
+    ActiveRecord::QueryCanceled, ActiveRecord::StatementTimeout, ActiveRecord::Deadlocked,
+    ActiveRecord::SerializationFailure, ShopifyConcern::MetafieldLookupFailed, ShopifyContext::NotConfigured
+  ].freeze
   # A membership or CC branch whose write was refused by validation: permanent, the other branches still apply.
   class BranchRejected < StandardError; end
 
@@ -171,24 +179,44 @@ class CustomWebhooksController < ApplicationController
     end
   end
 
-  def metafield_value(order_hook, gid, key)
-    field = order_hook['metafields']&.find do |m|
-      m['namespace'] == 'makerepo' && m['key'] == key
+  LOCKER_KEY = "locker_db_reference"
+  MEMBERSHIP_KEY = "membership_db_reference"
+
+  # The values of the makerepo metafields `keys` of an order: from the payload when it carries them, else from
+  # ONE Shopify lookup of the draft order shared by all the keys (the only part that reaches Shopify; it can
+  # raise ShopifyContext::NotConfigured or ShopifyConcern::MetafieldLookupFailed, both retried). A lookup
+  # Shopify refuses for good yields no values and is reported, so the order proceeds as "no reference".
+  def metafield_values(order_hook, keys)
+    remote = :unfetched
+    keys.index_with do |key|
+      field = order_hook["metafields"]&.find { |m| m["namespace"] == "makerepo" && m["key"] == key }
+      if field.nil?
+        remote = fetch_remote_metafields(order_hook) if remote == :unfetched
+        field = remote&.find { |f| f["key"] == key }
+      end
+      field&.[]("value").presence
     end
-    field ||= draft_order_metafields(gid)&.find { |f| f["key"] == key }
-    field&.[]("value").presence
   end
 
-  # Phase 1 (may raise NotConfigured): the DB id the locker branch will act on, or nil.
-  def locker_reference(order_hook)
-    metafield_value(order_hook, draft_order_gid_from_hook(order_hook), "locker_db_reference")
+  def fetch_remote_metafields(order_hook)
+    draft_order_metafields(draft_order_gid_from_hook(order_hook))
+  rescue ShopifyConcern::MetafieldLookupRejected => e
+    report_problem(
+      MetafieldLookupRejected.new("metafield lookup for order #{order_id(order_hook)} rejected (#{e.codes.join(', ')})"),
+      context: { shopify_order_id: order_id(order_hook), codes: e.codes }
+    )
+    nil
   end
 
-  # Phase 1 (may raise NotConfigured): the membership id, or nil. No line items: nothing to do, no lookup.
-  def membership_reference(order_hook)
-    return unless order_hook["line_items"].present?
-
-    metafield_value(order_hook, draft_order_gid_from_hook(order_hook), "membership_db_reference")
+  # Phase 1: the locker and membership references the plan needs (a membership order without line items has
+  # nothing to look up).
+  def resolve_references(plan)
+    keys = []
+    keys << LOCKER_KEY if plan.locker?
+    keys << MEMBERSHIP_KEY if plan.membership? && plan.hook["line_items"].present?
+    values = metafield_values(plan.hook, keys)
+    plan.locker_ref = values[LOCKER_KEY]
+    plan.membership_ref = values[MEMBERSHIP_KEY]
   end
 
   # The Shopify order id: the payload's numeric "id", else the numeric tail of its admin_graphql_api_id
@@ -290,31 +318,38 @@ class CustomWebhooksController < ApplicationController
     ApplicationRecord.own_transaction("orders_locker") { apply_locker_order(order_hook, locker_ref, paid_at: paid_at) }
   end
 
-  # Claims the order and applies all its branches (locker, membership, CC credit) in one transaction with the
-  # lock waits bounded (own_transaction), so a concurrent delivery of the same order waits on the claim for at
-  # most the bound, then finds it applied; a timeout or any failed write rolls everything back, answers 500, and
-  # Shopify retries. The CC claim mail is queued for after the commit, so a rolled-back claim sends none.
+  # Claims the order and applies its branches (locker, membership, CC credit) in one transaction with the lock
+  # waits bounded (own_transaction), so a concurrent delivery of the same order waits on the claim for at most
+  # the bound, then finds it applied. Each branch runs in its own savepoint (apply_branch):
+  #   * a transient failure (TRANSIENT_ERRORS: connection loss, lock timeout, query cancel, deadlock,
+  #     serialization failure, a Shopify lookup error) rolls back the whole transaction, claim included, and
+  #     answers 500, so Shopify retries;
+  #   * any other error in a branch is permanent: that branch's writes roll back alone, it is reported, and the
+  #     other branches and the claim commit.
+  # The CC claim mail and every report go out after the commit, so a rolled-back attempt sends neither.
   def apply_claimed_order(plan)
     hook = plan.hook
     ApplicationRecord.own_transaction("orders_paid") do
       next unless ProcessedOrder.claim!(provider: SHOP_PROVIDER, ref: plan.id, topic: "orders/paid", name: hook["name"])
 
-      apply_locker_order(hook, plan.locker_ref) if plan.locker?
+      apply_branch(plan, "locker") { apply_locker_order(hook, plan.locker_ref) } if plan.locker?
       apply_branch(plan, "membership") { apply_membership(plan) } if plan.membership?
       apply_branch(plan, "cc") { apply_cc_money(plan) } if plan.cc_items.any?
     end
   end
 
-  # One branch in its own savepoint: a refused write (validation) is permanent, so the branch's partial writes
-  # roll back alone, the problem is reported, and the other branches and the claim go on. Any other failure
-  # propagates and rolls everything back.
+  # One branch in its own savepoint. Anything but a transient error is permanent: the branch rolls back alone
+  # and is reported with the order id, branch and error (class, and the message unless it may carry SQL values).
   def apply_branch(plan, branch)
     ProcessedOrder.transaction(requires_new: true) { yield }
-  rescue ActiveRecord::RecordInvalid => e
-    messages = e.record&.errors&.full_messages.to_a.to_sentence
+  rescue *TRANSIENT_ERRORS
+    raise
+  rescue StandardError => e
+    detail = e.is_a?(ActiveRecord::RecordInvalid) ? e.record&.errors&.full_messages.to_a.to_sentence : e.message
+    detail = "" if e.is_a?(ActiveRecord::StatementInvalid)
     report_problem(
-      BranchRejected.new("#{branch} branch of order #{plan.id} rejected: #{messages}"),
-      context: { shopify_order_id: plan.id, branch: branch }
+      BranchRejected.new("#{branch} branch of order #{plan.id} rejected: #{e.class} #{detail}".strip),
+      context: { shopify_order_id: plan.id, branch: branch, error_class: e.class.name }
     )
   end
 
@@ -352,9 +387,9 @@ class CustomWebhooksController < ApplicationController
     apply_membership_by_email(plan)
   end
 
-  # Fallback when the order carries no membership reference: the customer's email names the user and each line
-  # item's title the tier (checkout sells one membership per line, quantity 1). A pending membership the user
-  # already has for that tier is the one that was paid for, so it is marked paid rather than duplicated.
+  # Fallback when the order carries no membership reference: the customer's email names the user (users.email is
+  # case-insensitive) and each line item's title the tier (checkout sells one membership per line, quantity 1).
+  # Each matched tier line is a new membership with the current dates.
   def apply_membership_by_email(plan)
     if plan.email.blank?
       report_unresolved(plan, UnresolvedMembershipOrder, "membership", "has no membership reference and no customer email")
@@ -374,12 +409,7 @@ class CustomWebhooksController < ApplicationController
       tier = MembershipTier.where("LOWER(title_en) = ? OR LOWER(title_fr) = ?", title.downcase, title.downcase).first
       next unless tier
 
-      pending = user.memberships.pending.where(membership_tier: tier).order(:id).first
-      if pending
-        pending.update!(status: :paid)
-      else
-        Membership.create!(user: user, membership_tier: tier, status: :paid)
-      end
+      Membership.create!(user: user, membership_tier: tier, status: :paid)
       applied += 1
     end
     return if applied.positive?

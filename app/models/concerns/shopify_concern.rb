@@ -7,6 +7,25 @@ module ShopifyConcern
   # THROTTLED or INTERNAL_SERVER_ERROR). Transient: the lookup is retried later, never read as "no metafields".
   class MetafieldLookupFailed < StandardError; end
 
+  # Shopify refused the metafield lookup in a way a retry cannot change (an access or invalid-id error): the
+  # caller treats the order as having no metafields and reports it. `codes` are Shopify's error codes only.
+  class MetafieldLookupRejected < StandardError
+    attr_reader :codes
+
+    def initialize(codes)
+      @codes = codes
+      super("metafield lookup rejected (#{codes.join(', ')})")
+    end
+  end
+
+  # Raised by the HTTP layer or the network under a lookup; all of them are transient.
+  LOOKUP_NETWORK_ERRORS = [
+    ShopifyAPI::Errors::HttpResponseError, ShopifyAPI::Errors::MaxHttpRetriesExceededError, JSON::ParserError,
+    Net::OpenTimeout, Net::ReadTimeout, Net::WriteTimeout, Timeout::Error, EOFError, SocketError,
+    Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::EHOSTUNREACH, Errno::ETIMEDOUT, OpenSSL::SSL::SSLError
+  ].freeze
+  TRANSIENT_GRAPHQL_CODES = %w[THROTTLED INTERNAL_SERVER_ERROR].freeze
+
   # The gid-level Shopify calls (a draft order id, no record). Deliberately not class methods of the models that
   # include the concern: they skip #ensure_can_use_draft_order, so lockers and memberships must not gain them.
   # Used by the concern's instance methods and by JobOrder (its draft rule, JobOrder::DraftSweep).
@@ -164,10 +183,24 @@ module ShopifyConcern
         }
       QUERY
 
-      resp = shopify_admin_client.query(query: query, variables: { ownerId: gid })
+      begin
+        resp = shopify_admin_client.query(query: query, variables: { ownerId: gid })
+      rescue *ShopifyConcern::LOOKUP_NETWORK_ERRORS => e
+        raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (#{e.class})"
+      end
       body = resp.body
-      if resp.code != 200 || (body.is_a?(Hash) && body["errors"].present?)
+      errors = body.is_a?(Hash) ? Array.wrap(body["errors"]) : []
+      if resp.code != 200
         raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (HTTP #{resp.code})"
+      end
+
+      if errors.present?
+        codes = errors.filter_map { |e| e.is_a?(Hash) ? e.dig("extensions", "code").presence : nil }.uniq
+        if codes.empty? || (codes & ShopifyConcern::TRANSIENT_GRAPHQL_CODES).any?
+          raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (#{codes.join(', ').presence || 'GraphQL error'})"
+        end
+
+        raise ShopifyConcern::MetafieldLookupRejected, codes
       end
 
       body&.dig("data", "node", "metafields", "edges")&.map { |n| n["node"] } || []

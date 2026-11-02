@@ -104,7 +104,7 @@ RSpec.describe "Shopify orders_fulfilled webhook (cash lockers)", type: :request
   it "answers 503 when Shopify is not configured, so Shopify retries" do
     rental = create(:locker_rental, :await_payment)
     allow_any_instance_of(CustomWebhooksController)
-      .to receive(:locker_reference).and_raise(ShopifyContext::NotConfigured)
+      .to receive(:metafield_values).and_raise(ShopifyContext::NotConfigured)
 
     signed_orders_fulfilled(payload(rental.id))
 

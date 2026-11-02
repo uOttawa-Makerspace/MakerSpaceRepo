@@ -533,7 +533,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
 
     it "sends no claim email for a claim that rolled back, and the retry sends it" do
       payload = cc_payload(email: "buyer@example.com").merge(id: 7104)
-      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::LockWaitTimeout, "boom")
       perform_enqueued_jobs { hook(payload) }
       expect(response).to have_http_status(:internal_server_error)
       expect(deliveries).to be_empty
@@ -549,7 +549,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       pending = create(:membership, user: user, membership_tier: tier, status: "pending")
       payload = membership_payload(pending.id, id: 7105, customer: { email: user.email },
                                                line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }])
-      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::LockWaitTimeout, "boom")
       hook(payload)
       expect(response).to have_http_status(:internal_server_error)
       expect(pending.reload.status).to eq("pending")
@@ -583,7 +583,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     it "rolls back a failed membership update and leaves no claim, so the retry applies it" do
       pending = create(:membership, user: user, membership_tier: tier, status: "pending")
       payload = membership_payload(pending.id, id: 7301)
-      allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "boom")
       hook(payload)
       expect(response).to have_http_status(:internal_server_error)
       expect(ProcessedOrder.count).to eq(0)
@@ -595,7 +595,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     end
 
     it "rolls back a failed CC credit and leaves no claim" do
-      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::LockWaitTimeout, "boom")
       hook(cc_payload(email: user.email).merge(id: 7302))
       expect(response).to have_http_status(:internal_server_error)
       expect(ProcessedOrder.count).to eq(0)
@@ -636,7 +636,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
           { namespace: "makerepo", key: "membership_db_reference", value: pending.id.to_s }
         ]
       )
-      allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "boom")
       hook(payload)
       expect(response).to have_http_status(:internal_server_error)
       expect([rental.reload.state, LockerPayment.count, ProcessedOrder.count]).to eq(["await_payment", 0, 0])
@@ -679,7 +679,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
         .to eq(["pending", [10], 1])
       error, opts = reports.find { |e, _| e.is_a?(CustomWebhooksController::BranchRejected) }
       expect(error.message).to include("membership", "7312")
-      expect(opts[:context]).to eq(shopify_order_id: "7312", branch: "membership")
+      expect(opts[:context]).to include(shopify_order_id: "7312", branch: "membership")
 
       hook(payload)
       expect(user.cc_moneys.pluck(:cc)).to eq([10])
@@ -715,7 +715,7 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     end
 
     it "sends no report for an attempt that rolls back after a membership problem" do
-      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::LockWaitTimeout, "boom")
       hook(membership_payload(0, id: 7316, customer: { email: user.email },
                                  line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }]))
       expect(response).to have_http_status(:internal_server_error)
@@ -723,18 +723,135 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       expect(ProcessedOrder.count).to eq(0)
     end
 
-    it "marks the user's pending membership for the tier paid in the email fallback, without a duplicate" do
+    it "creates a fresh membership in the email fallback even when the user has a pending one" do
       pending = create(:membership, user: user, membership_tier: tier, status: "pending")
-      hook(tags: [membership_tag], id: 7317, customer: { email: user.email },
+      hook(tags: [membership_tag], id: 7317, customer: { email: user.email.upcase },
            line_items: [{ title: "1 Day Membership", quantity: 1 }])
-      expect([pending.reload.status, user.memberships.count]).to eq(["paid", 1])
+      expect(pending.reload.status).to eq("pending")
+      expect(user.memberships.paid.count).to eq(1)
+      expect(user.memberships.count).to eq(2)
+    end
+
+    it "treats any other error in a branch as permanent: reported, rolled back alone, the claim commits" do
+      pending = create(:membership, user: user, membership_tier: tier, status: "pending")
+      allow_any_instance_of(Membership).to receive(:update!).and_raise(NoMethodError, "undefined thing")
+      hook(membership_payload(pending.id, id: 7318, customer: { email: user.email },
+                                          line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }]))
+      expect(response).to have_http_status(:ok)
+      expect([pending.reload.status, user.cc_moneys.pluck(:cc), ProcessedOrder.where(provider_ref: "7318").count])
+        .to eq(["pending", [10], 1])
+      error, opts = reports.find { |e, _| e.is_a?(CustomWebhooksController::BranchRejected) }
+      expect(error.message).to include("membership", "7318", "NoMethodError")
+      expect(opts[:context]).to include(shopify_order_id: "7318", branch: "membership")
+    end
+
+    it "treats an error in the locker branch of a claimed order as permanent too" do
+      rental = create(:locker_rental, :await_payment)
+      pending = create(:membership, user: user, membership_tier: tier, status: "pending")
+      allow_any_instance_of(LockerRental).to receive(:record_payment).and_raise(ArgumentError, "bad")
+      hook(membership_payload(pending.id, id: 7319).merge(
+             tags: [LockerRental.draft_order_operating_tag, membership_tag],
+             metafields: [
+               { namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s },
+               { namespace: "makerepo", key: "membership_db_reference", value: pending.id.to_s }
+             ]
+           ))
+      expect(response).to have_http_status(:ok)
+      expect([rental.reload.state, pending.reload.status, ProcessedOrder.count]).to eq(["await_payment", "paid", 1])
+      expect(reports.map { |e, _| e.class }).to eq([CustomWebhooksController::BranchRejected])
+    end
+
+    [ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked, ActiveRecord::SerializationFailure,
+     ActiveRecord::QueryCanceled, ActiveRecord::ConnectionNotEstablished, ActiveRecord::ConnectionFailed].each do |klass|
+      it "rolls everything back and answers 500 for a transient #{klass.name.demodulize}" do
+        pending = create(:membership, user: user, membership_tier: tier, status: "pending")
+        allow(CcMoney).to receive(:create!).and_raise(klass, "transient")
+        hook(membership_payload(pending.id, id: 7320, customer: { email: user.email },
+                                            line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }]))
+        expect(response).to have_http_status(:internal_server_error)
+        expect([pending.reload.status, ProcessedOrder.count]).to eq(["pending", 0])
+        expect(reports).to be_empty
+      end
+    end
+
+    describe "the metafield lookup" do
+      let(:membership_order) do
+        { tags: [membership_tag], line_items: [{ title: "1 Day Membership", quantity: 1 }], draft_order_id: 99,
+          customer: { email: user.email } }
+      end
+
+      before do
+        allow_any_instance_of(CustomWebhooksController).to receive(:draft_order_metafields).and_call_original
+      end
+
+      def lookup_answers(client)
+        allow_any_instance_of(CustomWebhooksController).to receive(:shopify_admin_client).and_return(client)
+      end
+
+      def http_response(code) = ShopifyAPI::Clients::HttpResponse.new(code: code, headers: {}, body: "")
+
+      def graphql_error(code) = double(code: 200, body: { "errors" => [{ "extensions" => { "code" => code } }] })
+
+      {
+        "a raised HttpResponseError" => -> { ShopifyAPI::Errors::HttpResponseError.new(response: ShopifyAPI::Clients::HttpResponse.new(code: 503, headers: {}, body: "")) },
+        "a raised MaxHttpRetriesExceededError" => -> { ShopifyAPI::Errors::MaxHttpRetriesExceededError.new(response: ShopifyAPI::Clients::HttpResponse.new(code: 429, headers: {}, body: "")) },
+        "a read timeout" => -> { Net::ReadTimeout.new },
+        "an open timeout" => -> { Net::OpenTimeout.new },
+        "a refused connection" => -> { Errno::ECONNREFUSED.new }
+      }.each do |name, build|
+        it "answers 503 and applies nothing for #{name}" do
+          client = double
+          allow(client).to receive(:query) { raise build.call }
+          lookup_answers(client)
+          hook(membership_order.merge(id: 7330))
+          expect(response).to have_http_status(:service_unavailable)
+          expect([ProcessedOrder.count, Membership.count]).to eq([0, 0])
+        end
+      end
+
+      %w[THROTTLED INTERNAL_SERVER_ERROR].each do |code|
+        it "answers 503 for a 200 answer carrying #{code}" do
+          lookup_answers(double(query: graphql_error(code)))
+          hook(membership_order.merge(id: 7331))
+          expect(response).to have_http_status(:service_unavailable)
+          expect(ProcessedOrder.count).to eq(0)
+        end
+      end
+
+      [429, 500, 502, 503].each do |code|
+        it "answers 503 for an HTTP #{code} answer" do
+          lookup_answers(double(query: double(code: code, body: {})))
+          hook(membership_order.merge(id: 7332))
+          expect(response).to have_http_status(:service_unavailable)
+          expect(ProcessedOrder.count).to eq(0)
+        end
+      end
+
+      it "reports any other GraphQL error and goes on as an order with no reference" do
+        lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
+        hook(membership_order.merge(id: 7333))
+        expect(response).to have_http_status(:ok)
+        expect(ProcessedOrder.where(provider_ref: "7333").count).to eq(1)
+        expect(user.memberships.paid.count).to eq(1) # the email fallback ran
+        error, opts = reports.find { |e, _| e.is_a?(CustomWebhooksController::MetafieldLookupRejected) }
+        expect(error.message).to include("7333", "ACCESS_DENIED")
+        expect(opts[:context]).to eq(shopify_order_id: "7333", codes: ["ACCESS_DENIED"])
+      end
+
+      it "looks the draft order up once for a locker and membership order with no metafields in the payload" do
+        client = double
+        expect(client).to receive(:query).once.and_return(double(code: 200, body: { "data" => { "node" => nil } }))
+        lookup_answers(client)
+        hook(membership_order.merge(id: 7334, tags: [LockerRental.draft_order_operating_tag, membership_tag]))
+        expect(response).to have_http_status(:ok)
+      end
     end
 
     it "queues the claim mail only once the claim has committed" do
       calls = 0
       allow(CcMoney).to receive(:create!).and_wrap_original do |original, *args|
         calls += 1
-        raise ActiveRecord::StatementInvalid, "boom" if calls == 2
+        raise ActiveRecord::LockWaitTimeout, "boom" if calls == 2
 
         original.call(*args)
       end

@@ -87,7 +87,7 @@ RSpec.describe "Shopify orders_paid webhook under concurrency", type: :request d
       if failed_once.make_true
         first_in << true
         resume.pop
-        raise ActiveRecord::StatementInvalid, "boom"
+        raise ActiveRecord::LockWaitTimeout, "boom"
       end
       original.call(*args)
     end
