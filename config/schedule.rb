@@ -88,9 +88,6 @@ every :day, at: "2am" do
   rake "active_volunteers:check_volunteers_status"
 end
 
-every :day, at: "2:30am" do
-  rake "printers:clear_printers"
-end
 
 # FIXME: Disabled regular email reminders because many are bouncing
 # every :day, at: "11:59pm" do
