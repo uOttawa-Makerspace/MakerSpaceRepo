@@ -2,7 +2,8 @@ require "rails_helper"
 
 # Chunk 12: RequireTrainingsController (training prerequisites of volunteer
 # tasks). Inherits VolunteerTasksController#grant_access: staff or admin only,
-# others are bounced to root with "You cannot access this area." (guests too).
+# signed-in others are bounced to root with "You cannot access this area.";
+# guests are sent to login.
 
 RSpec.describe "Require trainings", type: :request do
   let(:task) { create(:volunteer_task) }
@@ -10,7 +11,16 @@ RSpec.describe "Require trainings", type: :request do
   let(:params) { { require_training: { volunteer_task_id: task.id, training_id: training.id } } }
   let(:back) { { "HTTP_REFERER" => "http://www.example.com/volunteer_tasks" } }
 
-  %i[guest regular volunteer].each do |role|
+  it "sends a guest to login on create and remove and changes nothing" do
+    existing = RequireTraining.create!(volunteer_task: task, training: training)
+    expect { post require_trainings_path, params: params }.not_to change(RequireTraining, :count)
+    expect(response.location).to include("/login")
+    expect { post remove_trainings_require_trainings_path, params: params }.not_to change(RequireTraining, :count)
+    expect(response.location).to include("/login")
+    expect(RequireTraining.exists?(existing.id)).to be(true)
+  end
+
+  %i[regular volunteer].each do |role|
     it "bounces a #{role} on create and remove and changes nothing" do
       existing = RequireTraining.create!(volunteer_task: task, training: training)
       sign_in_as(role)
