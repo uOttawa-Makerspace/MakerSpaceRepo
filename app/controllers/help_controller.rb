@@ -2,6 +2,8 @@ class HelpController < SessionsController
   include TurnstileHelper
   before_action :current_user
 
+  HELP_FIELDS = %i[name email subject comments].freeze
+
   # send_email opens a GitHub issue per call; the React app sends no captcha, so it is rate limited
   rate_limit to: 5, within: 1.hour, only: :send_email, name: 'send-email',
              by: -> { current_user.id.presence || request.remote_ip },
@@ -84,11 +86,11 @@ class HelpController < SessionsController
   private
 
   def help_params
-    params.require(:help).permit(:name, :email, :subject, :comments)
+    params.require(:help).permit(*HELP_FIELDS)
   end
 
   # The typed fields, for re-rendering the form (none when the request has no help param)
   def help_fields
-    params[:help].is_a?(ActionController::Parameters) ? help_params : {}
+    params[:help].is_a?(ActionController::Parameters) ? params[:help].permit(*HELP_FIELDS) : {}
   end
 end

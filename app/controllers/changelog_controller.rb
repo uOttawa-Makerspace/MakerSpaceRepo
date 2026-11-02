@@ -7,19 +7,31 @@ class ChangelogController < ApplicationController
   CACHE_VERSION = 1
 
   def index
-    changelog_path = Rails.root.join("CHANGELOG.md")
-    stat = File.stat(changelog_path)
-
-    # Rendered and sanitized once per file version, not on every request
-    html = Rails.cache.fetch(["changelog", CACHE_VERSION, stat.mtime.to_f, stat.size], expires_in: 1.day) do
-      render_markdown(File.read(changelog_path))
-    end
-    @changelog_html = html.html_safe # sanitized in render_markdown
-  rescue Errno::ENOENT
-    @changelog_html = "<p>No changelog available.</p>".html_safe
+    html = changelog_html
+    @changelog_html = html ? html.html_safe : "<p>No changelog available.</p>".html_safe # html is sanitized
   end
 
   private
+
+  # The rendered, sanitized changelog, or nil when the file is missing. Rendered once per file
+  # version, not on every request.
+  def changelog_html
+    path = Rails.root.join("CHANGELOG.md")
+    stat = begin
+      File.stat(path)
+    rescue Errno::ENOENT
+      return nil
+    end
+
+    Rails.cache.fetch(["changelog", CACHE_VERSION, stat.mtime.to_f, stat.size], expires_in: 1.day) do
+      raw = begin
+        File.read(path)
+      rescue Errno::ENOENT
+        return nil
+      end
+      render_markdown(raw)
+    end
+  end
 
   def render_markdown(raw_markdown)
     # Strip the #changelog marker the builder inserts

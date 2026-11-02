@@ -585,6 +585,14 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).to include("My unsent subject line", "My unsent text", "Pat Visitor")
     end
 
+    it "still answers 429 with the form when the help param is empty and the limit has tripped" do
+      counts = Hash.new(0)
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      5.times { post help_path, params: params }
+      post help_path, params: { help: {} }, as: :json
+      expect(response).to have_http_status(:too_many_requests)
+    end
+
     it "counts the web form and the JSON endpoint separately" do
       counts = Hash.new(0)
       allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
@@ -793,6 +801,12 @@ RSpec.describe "Content pages (part 2)", type: :request do
       get changelog_path
       expect(response.body).to include("hi")
       expect(response.body).not_to include("color:red")
+    end
+
+    it "does not turn a renderer error into the fallback" do
+      allow_any_instance_of(ChangelogController).to receive(:render_markdown).and_raise(Errno::ENOENT)
+      get changelog_path
+      expect(response).to have_http_status(:internal_server_error)
     end
 
     it "shows a fallback when there is no changelog file" do
