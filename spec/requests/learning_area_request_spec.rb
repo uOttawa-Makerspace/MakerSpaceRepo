@@ -636,6 +636,22 @@ RSpec.describe "Learning area", type: :request do
         expect(response.headers).not_to have_key("Content-Disposition")
       end
 
+      it "answers 304 without reading storage when the client already has the file" do
+        checksum = site.scorm_package_files.blobs.find_by(key: "#{site.scorm_prefix}/index.html").checksum
+        expect_any_instance_of(ActiveStorage::Blob).not_to receive(:download_chunk)
+        get scorm_asset_learning_area_path(site, path: "index.html"), headers: { "If-None-Match" => %("#{checksum}") }
+        expect(response).to have_http_status(:not_modified)
+        expect(response.body).to eq("")
+        expect(response.headers["ETag"]).to eq(%("#{checksum}"))
+        expect(response.headers["Cache-Control"]).to include("private")
+      end
+
+      it "sends the file when the validator does not match" do
+        get scorm_asset_learning_area_path(site, path: "index.html"), headers: { "If-None-Match" => %("other") }
+        expect(response).to have_http_status(:ok)
+        expect(response.headers["ETag"]).to be_present
+      end
+
       it "sends no-store with a 404 for an unknown path" do
         get scorm_asset_learning_area_path(site, path: "nope.html")
         expect(response).to have_http_status(:not_found)

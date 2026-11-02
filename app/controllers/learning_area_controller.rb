@@ -189,25 +189,32 @@ class LearningAreaController < DevelopmentProgramsController
   # disposition and byte ranges (RFC 9110) are handled here. The response is a
   # plain body with an exact Content-Length, not a live stream.
   def stream_scorm_blob(blob, content_type)
+    # A cached copy is confirmed before anything is read from storage
+    if request.etag_matches?(scorm_etag(blob))
+      set_scorm_validators(blob)
+      return head :not_modified
+    end
+
     size = blob.byte_size
     range = scorm_byte_range(request.headers['Range'], size)
     if range == :unsatisfiable
       return scorm_refusal(:range_not_satisfiable, 'Content-Range' => "bytes */#{size}")
     end
 
+    # A whole file is read in 1 MB ranged slices too: media players ask for
+    # ranges anyway, so one code path serves both.
     sent = range || (size.positive? ? 0..(size - 1) : nil)
     body = []
     # HEAD reads nothing from storage, so a missing file still answers 200 there
     if sent && !request.head?
       begin
-        first = blob.download_chunk(sent.begin..[sent.end, sent.begin + ScormAssetBody::SLICE - 1].min)
+        body = ScormAssetBody.open(blob, sent)
       rescue ActiveStorage::FileNotFoundError
         return scorm_refusal(:not_found)
       rescue StandardError => e
         Rails.error.report(e, handled: true, context: { blob_id: blob.id })
         return scorm_refusal(:internal_server_error)
       end
-      body = ScormAssetBody.new(blob, sent, first)
     end
 
     set_scorm_headers(blob, content_type, sent, range)
@@ -220,12 +227,21 @@ class LearningAreaController < DevelopmentProgramsController
       ActionDispatch::Http::ContentDisposition.format(disposition: 'inline', filename: blob.filename.sanitized)
     response.headers['Accept-Ranges'] = 'bytes'
     response.headers['Content-Length'] = (sent ? sent.size : 0).to_s
-    # A validator of our own keeps Rack::ETag from reading the body to make one
-    response.headers['ETag'] = %("#{blob.checksum}")
+    set_scorm_validators(blob)
     if range
       response.headers['Content-Range'] = "bytes #{range.begin}-#{range.end}/#{blob.byte_size}"
       self.status = :partial_content
     end
+  end
+
+  # A validator of our own keeps Rack::ETag from reading the body to make one
+  def scorm_etag(blob)
+    %("#{blob.checksum}")
+  end
+
+  # The route needs a signed-in user, so shared caches must not keep it
+  def set_scorm_validators(blob)
+    response.headers['ETag'] = scorm_etag(blob)
     expires_in 1.year, public: false
   end
 
