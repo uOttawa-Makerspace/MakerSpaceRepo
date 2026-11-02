@@ -170,58 +170,52 @@ jobs:
   # ==========================================
   # RELEASE NOTES (after tests and security pass)
   # ==========================================
-  # master: tags the release and publishes it as a GitHub Release.
-  # Both branches: write CHANGELOG.md from the latest releases (plus, on staging, what is merged
-  # but not yet released) and hand it to the image builds, so the /changelog page always matches
-  # the code in the image. Nothing is committed back to the repository.
+  # staging -> master releases are squash-merged, so master holds one commit per release while
+  # staging keeps every PR merge. Notes are therefore built on staging's history: a release is
+  # tagged on the staging commit it shipped (the release PR's head), and the notes run from the
+  # previous release's tag to that commit. This job only writes the notes and CHANGELOG.md for the
+  # image; publish-release tags and publishes after the production deploy succeeds.
   changelog:
     needs: [test, security]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write
+      contents: read
       pull-requests: read
     env:
       GH_TOKEN: ${{ github.token }}
+    outputs:
+      version: ${{ steps.target.outputs.version }}
+      shipped: ${{ steps.target.outputs.shipped }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          fetch-depth: 0
-
-      # Release tags sit on master commits that staging does not contain, so take the newest
-      # release tag by date rather than the nearest reachable one.
-      - name: Find the previous release
-        id: previous
+      - name: Find the previous release and what this push ships
+        id: target
         run: |
-          git fetch --tags --force
-          tag=$(git tag --list 'v*' --sort=-creatordate | head -1)
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-
-      - name: Tag the release
-        id: release
-        if: github.ref == 'refs/heads/master'
-        run: |
-          # a re-run of the same commit reuses its tag
-          tag=$(git tag --points-at HEAD --list 'v*' | head -1)
-          if [ -z "$tag" ]; then
-            tag="v$(date -u +'%Y.%m.%d-%H%M%S')"
-            git tag "$tag"
-            git push origin "$tag"
+          previous=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --exclude-drafts --json tagName --jq '.[0].tagName // ""')
+          shipped="$GITHUB_SHA"
+          if [ "$GITHUB_REF" = "refs/heads/master" ]; then
+            # the release PR's head, i.e. the staging commit this squash commit was made from
+            head=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
+                     --jq '[.[] | select(.base.ref == "master" and .merged_at != null)][0].head.sha // ""')
+            [ -n "$head" ] && shipped="$head"
           fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          {
+            echo "previous=$previous"
+            echo "shipped=$shipped"
+            echo "version=v$(date -u +'%Y.%m.%d-%H%M%S')"
+          } >> "$GITHUB_OUTPUT"
 
       # Release notes never block a deploy: on failure the image gets the published releases only
       - name: Build the notes
         id: notes
+        if: steps.target.outputs.previous != ''
         continue-on-error: true
-        if: steps.previous.outputs.tag != '' && steps.previous.outputs.tag != steps.release.outputs.tag
         uses: mikepenz/release-changelog-builder-action@32e3c96f29a6532607f638797455e9e98cfc703d # v4.2.2
         with:
-          fromTag: ${{ steps.previous.outputs.tag }}
-          toTag: ${{ steps.release.outputs.tag || github.sha }}
+          fromTag: ${{ steps.target.outputs.previous }}
+          toTag: ${{ steps.target.outputs.shipped }}
           configurationJson: |
             {
               "categories": [
@@ -230,50 +224,49 @@ jobs:
                 { "title": "## 🧪 Tests", "labels": ["test"] },
                 { "title": "## 📦 Other Changes", "labels": [] }
               ],
+              "ignore_labels": ["release"],
               "template": "#{{CHANGELOG}}\n\n**Full Changelog**: #{{RELEASE_DIFF}}",
               "pr_template": "- #{{TITLE}} (##{{NUMBER}}) by @#{{AUTHOR}}"
             }
-
-      - name: Publish the GitHub Release
-        continue-on-error: true
-        if: steps.release.outputs.tag != '' && steps.notes.outcome == 'success'
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
-        with:
-          tag_name: ${{ steps.release.outputs.tag }}
-          body: ${{ steps.notes.outputs.changelog }}
-          generate_release_notes: false
 
       # The notes hold PR titles, so they reach the shell through the environment, never
       # through ${{ }} interpolation inside the script.
       - name: Write CHANGELOG.md
         env:
-          UNRELEASED: ${{ github.ref == 'refs/heads/staging' && steps.notes.outputs.changelog || '' }}
+          NOTES: ${{ steps.notes.outputs.changelog }}
+          VERSION: ${{ steps.target.outputs.version }}
         run: |
+          set -o pipefail
+          printf '%s\n' "$NOTES" > release-notes.md
           {
-            if [ -n "$UNRELEASED" ]; then
-              printf '# Unreleased (on staging)\n\n%s\n\n' "$UNRELEASED"
+            if [ -n "$NOTES" ]; then
+              if [ "$GITHUB_REF" = "refs/heads/master" ]; then
+                printf '# %s (%s)\n\n%s\n\n' "$VERSION" "$(date -u +%Y-%m-%d)" "$NOTES"
+              else
+                printf '# Unreleased (on staging)\n\n%s\n\n' "$NOTES"
+              fi
             fi
-            for tag in $(gh release list --limit 10 --json tagName --jq '.[].tagName'); do
-              gh release view "$tag" --json tagName,publishedAt,body \
-                --jq '"# \(.tagName) (\(.publishedAt[0:10]))\n\n\(.body)\n"'
-            done
+            gh api "repos/$GITHUB_REPOSITORY/releases?per_page=10" \
+              --jq '.[] | select(.draft | not) | "# \(.tag_name) (\(.published_at[0:10]))\n\n\(.body)\n"'
           } > CHANGELOG.md
-          test -s CHANGELOG.md || printf '# Changelog\n\nNo releases yet.\n' > CHANGELOG.md
 
-      - name: Upload CHANGELOG.md
+      - name: Upload the notes
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: changelog
-          path: CHANGELOG.md
+          path: |
+            CHANGELOG.md
+            release-notes.md
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 14
 
   # ==========================================
   # STAGE 2: PARALLEL NATIVE DOCKER BUILDS
   # ==========================================
   build-staging-images:
     needs: [test, security, changelog]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    # the changelog job only adds CHANGELOG.md; its failure must not stop a build
+    if: always() && needs.test.result == 'success' && needs.security.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/staging'
     name: Build (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -293,6 +286,7 @@ jobs:
 
       # The release notes for this commit, read by the /changelog page
       - name: Download CHANGELOG.md
+        continue-on-error: true
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: changelog
@@ -340,7 +334,8 @@ jobs:
 
   build-production-images:
     needs: [test, security, changelog]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # the changelog job only adds CHANGELOG.md; its failure must not stop a build
+    if: always() && needs.test.result == 'success' && needs.security.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     name: Build Production (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -360,6 +355,7 @@ jobs:
 
       # The release notes for this commit, read by the /changelog page
       - name: Download CHANGELOG.md
+        continue-on-error: true
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: changelog
@@ -407,6 +403,7 @@ jobs:
   # ==========================================
   deploy-staging:
     needs: [test, security, build-staging-images]
+    if: always() && needs.build-staging-images.result == 'success'
     runs-on: ubuntu-latest
 
     steps:
@@ -472,7 +469,7 @@ jobs:
   # ==========================================
   deploy-production:
     needs: [test, security, build-production-images]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: always() && needs.build-production-images.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:
@@ -530,3 +527,56 @@ jobs:
             docker compose --env-file .env.production -f docker-compose.production.yml up -d --remove-orphans
             docker image prune -f
           EOF
+
+  # ==========================================
+  # STAGE 4: PUBLISH THE RELEASE (after production is live)
+  # ==========================================
+  # Tags the shipped staging commit, publishes the GitHub Release with the notes the image was
+  # built with, and opens a master -> staging sync PR. The sync carries no file changes (the squash
+  # commit has staging's content) but makes the squash commit an ancestor of staging, so the next
+  # release PR only shows new work. Re-running this job is safe: existing tags, releases and sync
+  # PRs are reused.
+  publish-release:
+    needs: [changelog, deploy-production]
+    if: always() && needs.deploy-production.result == 'success' && needs.changelog.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      # A PR opened with the built-in token runs no workflows. If staging requires status checks,
+      # add a RELEASE_BOT_TOKEN secret (fine-grained, contents + pull requests write) so they run.
+      GH_TOKEN: ${{ secrets.RELEASE_BOT_TOKEN || github.token }}
+      VERSION: ${{ needs.changelog.outputs.version }}
+      SHIPPED: ${{ needs.changelog.outputs.shipped }}
+
+    steps:
+      - name: Download the notes
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: changelog
+
+      - name: Tag and publish
+        run: |
+          if ! gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$VERSION" --silent 2>/dev/null; then
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$VERSION" -f sha="$SHIPPED" --silent
+          fi
+          if ! gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" --json tagName --silent 2>/dev/null; then
+            [ -s release-notes.md ] || printf 'Release of %s.\n' "$SHIPPED" > release-notes.md
+            gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --verify-tag \
+              --title "$VERSION" --notes-file release-notes.md
+          fi
+
+      - name: Open the master -> staging sync PR
+        run: |
+          existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --base staging --head master --state open --json number --jq '.[0].number // ""')
+          if [ -z "$existing" ]; then
+            gh pr create --repo "$GITHUB_REPOSITORY" --base staging --head master \
+              --title "Sync master into staging after $VERSION" \
+              --body "Brings the release squash commit into staging's history, so the next release PR only shows new work. No file changes are expected. Merge with **Create a merge commit**." \
+              --label release
+            existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --base staging --head master --state open --json number --jq '.[0].number')
+          fi
+          # auto-merge needs "Allow auto-merge" in the repo settings; otherwise the PR waits for a click
+          gh pr merge "$existing" --repo "$GITHUB_REPOSITORY" --merge --auto || echo "Auto-merge not available; merge PR #$existing by hand."
