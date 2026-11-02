@@ -129,4 +129,59 @@ RSpec.describe "Shopify orders_paid webhook under concurrency", type: :request d
     expect([first.value, second.value]).to eq([200, 500])
     expect(user.cc_moneys.pluck(:cc)).to eq([20])
   end
+
+  describe "locker orders without a claim" do
+    let!(:rental) { create(:locker_rental, :await_payment) }
+    let(:locker_payload) do
+      { id: order_id, tags: [LockerRental.draft_order_operating_tag], financial_status: "pending",
+        metafields: [{ namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s }] }
+    end
+
+    after do
+      LockerPayment.where(locker_rental_id: rental.id).delete_all
+      LockerRental.where(id: rental.id).delete_all
+      locker = Locker.find_by(id: rental.locker_id)
+      decider = User.unscoped.where(id: rental.decided_by_id).pluck(:id)
+      locker&.destroy
+      locker&.locker_size&.destroy
+      User.unscoped.where(id: [rental.rented_by_id, *decider]).delete_all
+    end
+
+    # The rental row is held by another transaction; the delivery must give up after the lock bound.
+    def with_rental_locked
+      held = Queue.new
+      release = Queue.new
+      holder = in_thread do
+        LockerRental.transaction do
+          LockerRental.lock.find(rental.id)
+          held << true
+          release.pop
+        end
+      end
+      held.pop
+      yield
+    ensure
+      release << true
+      holder&.join
+    end
+
+    it "answers 500 on orders_paid when the rental row stays locked past the bound" do
+      stub_const("ApplicationRecord::LOCK_TIMEOUT", "300ms")
+      body = locker_payload.to_json
+      with_rental_locked do
+        expect(deliver(body)).to eq(500)
+      end
+      expect(LockerPayment.where(locker_rental_id: rental.id)).to be_empty
+    end
+
+    it "answers 500 on orders_fulfilled when the rental row stays locked past the bound" do
+      stub_const("ApplicationRecord::LOCK_TIMEOUT", "300ms")
+      body = locker_payload.to_json
+      with_rental_locked do
+        session = ActionDispatch::Integration::Session.new(Rails.application)
+        session.post orders_fulfilled_custom_webhooks_path, params: body, headers: shopify_webhook_headers(body)
+        expect(session.response.status).to eq(500)
+      end
+    end
+  end
 end

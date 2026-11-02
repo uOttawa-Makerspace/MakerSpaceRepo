@@ -656,6 +656,80 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       expect(pending.reload.status).to eq("pending")
     end
 
+    it "answers 503 and applies nothing when Shopify throttles the metafield lookup" do
+      allow_any_instance_of(CustomWebhooksController).to receive(:draft_order_metafields).and_call_original
+      throttled = double(code: 200, body: { "errors" => [{ "message" => "Throttled", "extensions" => { "code" => "THROTTLED" } }] })
+      allow_any_instance_of(CustomWebhooksController).to receive(:shopify_admin_client)
+        .and_return(double(query: throttled))
+      pending = create(:membership, user: user, membership_tier: tier, status: "pending")
+      hook(tags: [membership_tag], line_items: [{ title: "1 Day Membership", quantity: 1 }],
+           draft_order_id: 99, id: 7311)
+      expect(response).to have_http_status(:service_unavailable)
+      expect([pending.reload.status, ProcessedOrder.count]).to eq(["pending", 0])
+    end
+
+    it "applies the other branches and commits the claim when one branch is refused by validation" do
+      pending = create(:membership, user: user, membership_tier: tier, status: "pending")
+      allow_any_instance_of(Membership).to receive(:update!) { |m| raise ActiveRecord::RecordInvalid, m }
+      payload = membership_payload(pending.id, id: 7312, customer: { email: user.email },
+                                               line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }])
+      hook(payload)
+      expect(response).to have_http_status(:ok)
+      expect([pending.reload.status, user.cc_moneys.pluck(:cc), ProcessedOrder.where(provider_ref: "7312").count])
+        .to eq(["pending", [10], 1])
+      error, opts = reports.find { |e, _| e.is_a?(CustomWebhooksController::BranchRejected) }
+      expect(error.message).to include("membership", "7312")
+      expect(opts[:context]).to eq(shopify_order_id: "7312", branch: "membership")
+
+      hook(payload)
+      expect(user.cc_moneys.pluck(:cc)).to eq([10])
+    end
+
+    it "rolls back a refused CC branch alone and queues no mail for it" do
+      allow(CcMoney).to receive(:create!).and_wrap_original do |original, *args|
+        record = CcMoney.new
+        raise ActiveRecord::RecordInvalid, record if CcMoney.where(linked: false).exists?
+
+        original.call(*args)
+      end
+      payload = { customer: { email: "buyer@example.com" }, id: 7313,
+                  line_items: [{ product_id: cc_product_id, quantity: 1 }, { product_id: cc_product_id, quantity: 1 }] }
+      expect { hook(payload) }.not_to have_enqueued_mail
+      expect(response).to have_http_status(:ok)
+      expect([CcMoney.count, ProcessedOrder.where(provider_ref: "7313").count]).to eq([0, 1])
+      expect(reports.map { |e, _| e.class }).to include(CustomWebhooksController::BranchRejected)
+    end
+
+    it "reports and claims an order with the CC product and no customer email" do
+      hook(line_items: [{ product_id: cc_product_id, quantity: 1 }], id: 7314)
+      expect(response).to have_http_status(:ok)
+      expect(ProcessedOrder.where(provider_ref: "7314").count).to eq(1)
+      expect(reports.map { |e, _| e.class }).to eq([CustomWebhooksController::UnresolvedCcOrder])
+    end
+
+    it "reports and claims a membership order with no line items" do
+      hook(tags: [membership_tag], id: 7315)
+      expect(response).to have_http_status(:ok)
+      expect(ProcessedOrder.where(provider_ref: "7315").count).to eq(1)
+      expect(reports.map { |e, _| e.class }).to eq([CustomWebhooksController::UnresolvedMembershipOrder])
+    end
+
+    it "sends no report for an attempt that rolls back after a membership problem" do
+      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      hook(membership_payload(0, id: 7316, customer: { email: user.email },
+                                 line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }]))
+      expect(response).to have_http_status(:internal_server_error)
+      expect(reports).to be_empty
+      expect(ProcessedOrder.count).to eq(0)
+    end
+
+    it "marks the user's pending membership for the tier paid in the email fallback, without a duplicate" do
+      pending = create(:membership, user: user, membership_tier: tier, status: "pending")
+      hook(tags: [membership_tag], id: 7317, customer: { email: user.email },
+           line_items: [{ title: "1 Day Membership", quantity: 1 }])
+      expect([pending.reload.status, user.memberships.count]).to eq(["paid", 1])
+    end
+
     it "queues the claim mail only once the claim has committed" do
       calls = 0
       allow(CcMoney).to receive(:create!).and_wrap_original do |original, *args|

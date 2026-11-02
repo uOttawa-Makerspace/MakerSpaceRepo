@@ -3,6 +3,10 @@
 module ShopifyConcern
   extend ActiveSupport::Concern
 
+  # Shopify answered a metafield lookup with an error (a non-200 status, or GraphQL `errors` at any status, e.g.
+  # THROTTLED or INTERNAL_SERVER_ERROR). Transient: the lookup is retried later, never read as "no metafields".
+  class MetafieldLookupFailed < StandardError; end
+
   # The gid-level Shopify calls (a draft order id, no record). Deliberately not class methods of the models that
   # include the concern: they skip #ensure_can_use_draft_order, so lockers and memberships must not gain them.
   # Used by the concern's instance methods and by JobOrder (its draft rule, JobOrder::DraftSweep).
@@ -161,8 +165,12 @@ module ShopifyConcern
       QUERY
 
       resp = shopify_admin_client.query(query: query, variables: { ownerId: gid })
+      body = resp.body
+      if resp.code != 200 || (body.is_a?(Hash) && body["errors"].present?)
+        raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (HTTP #{resp.code})"
+      end
 
-      resp.body&.dig("data", "node", "metafields", "edges")&.map { |n| n["node"] } || []
+      body&.dig("data", "node", "metafields", "edges")&.map { |n| n["node"] } || []
     end
 
     def shopify_admin_client
