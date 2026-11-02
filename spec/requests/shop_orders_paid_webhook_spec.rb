@@ -21,8 +21,9 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
   let(:user) { create(:user, :regular_user) }
   let!(:tier) { create(:membership_tier, title_en: "1 Day Membership", title_fr: "Adhesion 1 jour", duration: 1) }
 
+  # Each call is a distinct Shopify order unless it names an id (a replay passes the same one).
   def hook(path_params = {})
-    signed_orders_paid(path_params)
+    signed_orders_paid({ id: SecureRandom.random_number(10**15) }.merge(path_params))
   end
 
   def membership_payload(membership_id, **extra)
@@ -343,17 +344,35 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     end
 
     it "is replay-safe when a metafield id is given (second POST changes nothing)" do
-      hook(membership_payload(pending.id))
-      expect { hook(membership_payload(pending.id)) }.not_to change { pending.reload.attributes }
+      hook(membership_payload(pending.id, id: 7001))
+      expect { hook(membership_payload(pending.id, id: 7001)) }.not_to change { pending.reload.attributes }
       expect(Membership.count).to eq(1)
     end
 
-    it "marks a membership an admin revoked in the meantime paid again when the webhook is replayed" do
-      hook(membership_payload(pending.id))
+    it "leaves a membership an admin revoked in the meantime revoked when the order is delivered again" do
+      hook(membership_payload(pending.id, id: 7002))
       pending.update!(status: "revoked")
-      hook(membership_payload(pending.id))
-      # a replayed or late orders_paid sets a revoked membership back to paid
-      expect(pending.reload.status).to eq("paid")
+      hook(membership_payload(pending.id, id: 7002))
+      expect(pending.reload.status).to eq("revoked")
+    end
+
+    it "accepts the admin_graphql_api_id spelling of an order already applied by its numeric id" do
+      hook(membership_payload(pending.id, id: 7003))
+      pending.update!(status: "revoked")
+      hook(membership_payload(pending.id, id: nil, admin_graphql_api_id: "gid://shopify/Order/7003"))
+      expect(pending.reload.status).to eq("revoked")
+    end
+
+    it "applies nothing to memberships or CC money for an order without an id, and reports it (ids only)" do
+      reports = []
+      allow(Rails.error).to receive(:report) { |e, **opts| reports << [e, opts] }
+      expect do
+        hook(membership_payload(pending.id, id: nil, customer: { email: user.email },
+                                            line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }]))
+      end.not_to change { [pending.reload.status, Membership.count, CcMoney.count, ShopifyOrder.count] }
+      expect(response).to have_http_status(:ok)
+      expect(reports.map(&:first)).to contain_exactly(an_instance_of(CustomWebhooksController::OrderWithoutId))
+      expect(reports.first.last[:context]).to eq(membership_id: pending.id.to_s)
     end
 
     it "unknown membership id: 200, nothing created (and no email fallback)" do
@@ -398,15 +417,19 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
         expect { hook(payload.except(:customer)) }.not_to change(Membership, :count)
       end
 
-      it "creates another membership on every replay, stacked after the previous one" do
-        hook(payload)
+      it "creates one membership however often the same order is delivered" do
+        hook(payload.merge(id: 7004))
+        expect { 2.times { hook(payload.merge(id: 7004)) } }.not_to change(Membership, :count)
+        expect(user.memberships.where(status: "paid").count).to eq(1)
+      end
+
+      it "stacks the memberships of two different orders" do
+        hook(payload.merge(id: 7004))
         first_end = user.memberships.where(status: "paid").order(:id).last.end_date
-        hook(payload)
-        # on the email-fallback path each delivery creates another paid membership that stacks after the previous one
+        hook(payload.merge(id: 7005))
         paid = user.memberships.where(status: "paid").order(:id).to_a
-        expect(paid.size).to eq(2) # the pending fixture row is untouched; two NEW paid rows
+        expect(paid.size).to eq(2)
         expect(paid.last.start_date).to be_within(1.second).of(first_end)
-        expect(paid.last.end_date).to be_within(1.second).of(first_end + 1.day)
       end
     end
   end
@@ -486,22 +509,67 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       expect(user.cc_moneys.pluck(:cc)).to eq([20])
     end
 
-    it "credits the user again on every replay of the same order" do
-      hook(cc_payload(email: user.email, quantity: 2))
-      hook(cc_payload(email: user.email, quantity: 2))
-      # each delivery of orders_paid credits cc points, so a replay credits again
-      expect(user.cc_moneys.pluck(:cc)).to eq([20, 20])
-      expect(user.reload.get_total_cc).to eq(40)
+    it "credits a replayed order once" do
+      hook(cc_payload(email: user.email, quantity: 2).merge(id: 7101))
+      hook(cc_payload(email: user.email, quantity: 2).merge(id: 7101))
+      expect(user.cc_moneys.pluck(:cc)).to eq([20])
+      expect(user.reload.get_total_cc).to eq(20)
     end
 
-    it "an unknown-buyer replay sends a second claim email and creates a second claimable row" do
-      perform_enqueued_jobs do
-        hook(cc_payload(email: "buyer@example.com"))
-        hook(cc_payload(email: "buyer@example.com"))
-      end
-      expect(CcMoney.where(linked: false).count).to eq(2)
-      expect(deliveries.size).to eq(2)
+    it "credits two different orders separately" do
+      hook(cc_payload(email: user.email, quantity: 2).merge(id: 7101))
+      hook(cc_payload(email: user.email, quantity: 2).merge(id: 7102))
+      expect(user.cc_moneys.pluck(:cc)).to eq([20, 20])
     end
+
+    it "an unknown-buyer replay creates one claimable row and sends one claim email" do
+      perform_enqueued_jobs do
+        hook(cc_payload(email: "buyer@example.com").merge(id: 7103))
+        hook(cc_payload(email: "buyer@example.com").merge(id: 7103))
+      end
+      expect(CcMoney.where(linked: false).count).to eq(1)
+      expect(deliveries.size).to eq(1)
+    end
+
+    it "sends no claim email for a claim that rolled back, and the retry sends it" do
+      payload = cc_payload(email: "buyer@example.com").merge(id: 7104)
+      allow(CcMoney).to receive(:create).and_raise(ActiveRecord::StatementInvalid, "boom")
+      perform_enqueued_jobs { hook(payload) }
+      expect(response).to have_http_status(:internal_server_error)
+      expect(deliveries).to be_empty
+      expect(ShopifyOrder.where(provider_ref: "7104")).to be_empty
+
+      allow(CcMoney).to receive(:create).and_call_original
+      perform_enqueued_jobs { hook(payload) }
+      expect(CcMoney.where(linked: false).count).to eq(1)
+      expect(deliveries.size).to eq(1)
+    end
+
+    it "a failure after the claim leaves the order unclaimed so the retry applies it" do
+      pending = create(:membership, user: user, membership_tier: tier, status: "pending")
+      payload = membership_payload(pending.id, id: 7105, customer: { email: user.email },
+                                               line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }])
+      allow(CcMoney).to receive(:create).and_raise(ActiveRecord::StatementInvalid, "boom")
+      hook(payload)
+      expect(response).to have_http_status(:internal_server_error)
+      expect(pending.reload.status).to eq("pending")
+      expect(ShopifyOrder.count).to eq(0)
+
+      allow(CcMoney).to receive(:create).and_call_original
+      hook(payload)
+      expect([pending.reload.status, user.cc_moneys.pluck(:cc)]).to eq(["paid", [10]])
+    end
+  end
+
+  # ---------------------------------------------------- orders ledger
+
+  it "records each applied order once in the ledger (provider, order id, topic, name)" do
+    order = { id: 7201, name: "#1042", customer: { email: user.email }, line_items: [{ product_id: 1, quantity: 1 }] }
+    hook(order)
+    hook(order)
+    hook(order.merge(id: nil, admin_graphql_api_id: "gid://shopify/Order/7201"))
+    expect(ShopifyOrder.all.map { |o| [o.provider, o.provider_ref, o.topic, o.order_name] })
+      .to eq([["shopify", "7201", "orders/paid", "#1042"]])
   end
 
   # ---------------------------------------------------- combined payloads

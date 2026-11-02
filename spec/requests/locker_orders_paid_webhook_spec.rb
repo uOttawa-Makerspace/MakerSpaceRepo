@@ -164,12 +164,13 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     expect(reports.first.last).to include(handled: true, context: { locker_rental_id: rental.id.to_s })
   end
 
-  it "applies the membership and CC branches of a mixed order whose locker branch has no order id" do
+  it "applies none of the branches of a mixed order that carries no order id, and reports each skipped branch" do
     member = create(:user, :regular_user)
     tier = create(:membership_tier, title_en: "1 Day Membership", title_fr: "Adhesion 1 jour", duration: 1)
     pending = create(:membership, user: member, membership_tier: tier, status: "pending")
     rental = create(:locker_rental, :await_payment)
-    allow(Rails.error).to receive(:report)
+    reports = []
+    allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
     signed_orders_paid(
       payload(rental.id, id: nil, tags: [tag, Membership.draft_order_operating_tag]).merge(
         line_items: [{ title: "1 Day Membership", quantity: 2, product_id: 4_359_597_129_784 }],
@@ -182,8 +183,11 @@ RSpec.describe "Shopify orders_paid webhook (locker path)", type: :request do
     )
     expect(response).to have_http_status(:ok)
     expect(rental.reload.state).to eq("await_payment")
-    expect(pending.reload.status).to eq("paid")
-    expect(member.cc_moneys.pluck(:cc)).to eq([20])
+    expect(pending.reload.status).to eq("pending")
+    expect(member.cc_moneys).to be_empty
+    expect(reports.map { |error, _| error.class }).to eq(
+      [CustomWebhooksController::LockerOrderWithoutId, CustomWebhooksController::OrderWithoutId]
+    )
   end
 
   it "ignores other tags (production tag in test env): nothing changes, no mail" do

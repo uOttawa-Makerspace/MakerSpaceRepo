@@ -47,6 +47,7 @@ RSpec.describe CustomWebhooksController, type: :controller do
         user = create(:user, :regular_user)
         
         signed_controller_orders_paid({
+          id: 9101,
           customer: { email: user.email },
           line_items: [{ product_id: 4_359_597_129_784, quantity: 2 }]
         })
@@ -55,9 +56,11 @@ RSpec.describe CustomWebhooksController, type: :controller do
 
       it "should send email after not signed_in purchase" do
         signed_controller_orders_paid({
+          id: 9102,
           customer: { email: "guest@example.com" }, # Static email, no Faker
           line_items: [{ product_id: 4_359_597_129_784, quantity: 2 }]
         })
+        perform_enqueued_jobs
         expect(CcMoney.last.linked).to be_falsey
         expect(CcMoney.last.cc).to eq(20)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
