@@ -2,7 +2,7 @@ class ProjectKitsController < DevelopmentProgramsController
   before_action :current_user
   before_action :signed_in
   before_action :with_development_header
-  before_action :staff_admin_access, only: %i[new create destroy mark_delivered]
+  before_action :staff_admin_access, only: %i[new create destroy mark_delivered populate_kit_users]
 
   def index
     @pagy, @kits = pagy(current_user.project_kits.order("delivered ASC"), limit: 20)
@@ -48,9 +48,9 @@ class ProjectKitsController < DevelopmentProgramsController
 
   def populate_kit_users
     json_data =
-      User.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map(
-        &:as_json
-      )
+      User
+        .where("LOWER(name) like LOWER(?)", "%#{params[:search]}%")
+        .select(:id, :name, :username)
     render json: { users: json_data }
   end
 

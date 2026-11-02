@@ -17,7 +17,7 @@ class VolunteersController < SessionsController
                   }
 
   before_action :grant_access_list,
-                only: %i[emails volunteer_list create_event delete_event new_event]
+                only: %i[emails populate_users volunteer_list create_event delete_event new_event]
 
   def index
     @user = current_user
@@ -109,7 +109,7 @@ class VolunteersController < SessionsController
         .all
         .volunteers
         .where('LOWER(name) like LOWER(?)', "%#{params[:search]}%")
-        .map(&:as_json)
+        .select(:id, :name, :username)
     render json: { users: json_data }
   end
 

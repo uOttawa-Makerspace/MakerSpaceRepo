@@ -111,7 +111,8 @@ RSpec.describe ProjectKitsController, type: :controller do
     context "populate_kit_users" do
       it "should get the users that has been searched" do
         user = create(:user, :volunteer_with_dev_program)
-        session[:user_id] = user.id
+        staff = create(:user, :staff)
+        session[:user_id] = staff.id
         session[:expires_at] = Time.zone.now + 10_000
         get :populate_kit_users, params: { search: user.name }
         expect(JSON.parse(response.body)["users"][0]["id"]).to eq(user.id)

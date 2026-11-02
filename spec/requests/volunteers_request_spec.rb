@@ -6,9 +6,9 @@ require "rails_helper"
 #   index                       open to everyone (guests too)
 #   join_volunteer_program      signed in
 #   transcript                  inline sign-in check; own transcript, or any user for staff
-#   emails, my_stats, calendar, populate_users, shadowing_shifts
+#   my_stats, calendar, shadowing_shifts
 #                               volunteer-program member, staff or admin (`grant_access`)
-#   volunteer_list, new_event, create_event, delete_event
+#   emails, populate_users, volunteer_list, new_event, create_event, delete_event
 #                               staff/admin only (`grant_access_list`)
 # Google Calendar is never reached: ShadowingHour.create_event/delete_event are stubbed.
 RSpec.describe "Volunteers (HTTP contract)", type: :request do
@@ -44,7 +44,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
 
   describe "volunteer-area gate (grant_access)" do
     { my_stats: :my_stats_volunteers_path, calendar: :calendar_volunteers_path,
-      populate_users: :populate_users_volunteers_path, shadowing_shifts: :shadowing_shifts_volunteers_path }.each do |action, helper|
+      shadowing_shifts: :shadowing_shifts_volunteers_path }.each do |action, helper|
       %i[guest regular role_only].each do |role|
         it "#{role}: #{action} redirects to root with an alert" do
           vol_sign_in_as(role)
@@ -65,7 +65,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
   end
 
   describe "staff-only gate (grant_access_list)" do
-    { emails: :emails_volunteers_path, volunteer_list: :volunteer_list_volunteers_path, new_event: :new_event_volunteers_path,
+    { emails: :emails_volunteers_path, populate_users: :populate_users_volunteers_path, volunteer_list: :volunteer_list_volunteers_path, new_event: :new_event_volunteers_path,
       create_event: :create_event_volunteers_path, delete_event: :delete_event_volunteers_path }.each do |action, helper|
       %i[guest regular role_only volunteer inactive].each do |role|
         it "#{role}: #{action} redirects to root with an alert" do
@@ -134,7 +134,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       match = create(:user, :volunteer_with_volunteer_program, name: "Marta Query")
       create(:user, :volunteer_with_volunteer_program, name: "Someone Else")
       create(:user, :regular_user, name: "Marta Regular")
-      vol_login!(create(:user, :volunteer_with_volunteer_program))
+      vol_login!(create(:user, :staff))
       get populate_users_volunteers_path(search: "mARTA")
       expect(response).to have_http_status(:ok)
       expect(response.media_type).to eq("application/json")
@@ -143,17 +143,20 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       expect(body["users"].map { |u| u["id"] }).to eq([match.id])
     end
 
-    # User#serializable_hash excludes password/access_token.
-    # The matching users are listed with email and student_id.
-    it "lists the user record without the password hash for a plain volunteer" do
+    it "returns only the id, name and username of each match" do
       target = create(:user, :volunteer_with_volunteer_program, name: "Target Person")
-      vol_login!(create(:user, :volunteer_with_volunteer_program))
+      vol_login!(create(:user, :staff))
       get populate_users_volunteers_path(search: "target")
       row = JSON.parse(response.body)["users"].first
-      expect(row).to include("email" => target.email, "username" => target.username, "role" => "volunteer")
-      expect(row).to have_key("student_id")
-      expect(row).not_to have_key("password")
-      expect(row).not_to have_key("access_token")
+      expect(row).to eq("id" => target.id, "name" => "Target Person", "username" => target.username)
+    end
+
+    it "is staff-only: a plain volunteer is sent away without a listing" do
+      create(:user, :volunteer_with_volunteer_program, name: "Target Person")
+      vol_login!(create(:user, :volunteer_with_volunteer_program))
+      get populate_users_volunteers_path(search: "target")
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
     end
 
     it "returns every volunteer when search is blank" do
