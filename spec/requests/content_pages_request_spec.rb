@@ -589,8 +589,12 @@ RSpec.describe "Content pages (part 2)", type: :request do
       counts = Hash.new(0)
       allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
       5.times { post help_path, params: params }
+      post help_path, params: { help: { name: "" } }
+      expect(response).to have_http_status(:too_many_requests)
+      expect(response.body).to include('name="help[subject]"', 'name="help[comments]"')
       post help_path, params: { help: {} }, as: :json
       expect(response).to have_http_status(:too_many_requests)
+      expect(response.body).to include('name="help[subject]"', 'name="help[comments]"')
     end
 
     it "counts the web form and the JSON endpoint separately" do
@@ -807,6 +811,23 @@ RSpec.describe "Content pages (part 2)", type: :request do
       allow_any_instance_of(ChangelogController).to receive(:render_markdown).and_raise(Errno::ENOENT)
       get changelog_path
       expect(response).to have_http_status(:internal_server_error)
+    end
+
+    it "shows the fallback, and caches nothing, when the file disappears between the stat and the read" do
+      original = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      begin
+        allow(File).to receive(:read).and_call_original
+        allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_raise(Errno::ENOENT)
+        get changelog_path
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("No changelog available.")
+        allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# Real heading\n")
+        get changelog_path
+        expect(response.body).to include("Real heading")
+      ensure
+        Rails.cache = original
+      end
     end
 
     it "shows a fallback when there is no changelog file" do

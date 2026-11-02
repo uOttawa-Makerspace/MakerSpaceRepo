@@ -86,11 +86,15 @@ class HelpController < SessionsController
   private
 
   def help_params
-    params.require(:help).permit(*HELP_FIELDS)
+    permit_help(params.require(:help))
+  end
+
+  def permit_help(fields)
+    fields.permit(*HELP_FIELDS)
   end
 
   # The typed fields, for re-rendering the form (none when the request has no help param)
   def help_fields
-    params[:help].is_a?(ActionController::Parameters) ? params[:help].permit(*HELP_FIELDS) : {}
+    params[:help].is_a?(ActionController::Parameters) ? permit_help(params[:help]) : {}
   end
 end
