@@ -646,6 +646,11 @@ RSpec.describe "Content pages (part 2)", type: :request do
   # ------------------------------------------------------------------
   describe "ChangelogController" do
     it "renders CHANGELOG.md as HTML for guests, without the #changelog marker" do
+      path = Rails.root.join("CHANGELOG.md")
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(path).and_return(true)
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with(path).and_return(+"# v1\n\n#changelog\n\n- A change\n")
       get changelog_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("<h1>")
@@ -662,6 +667,8 @@ RSpec.describe "Content pages (part 2)", type: :request do
 
     # the changelog markdown is rendered as HTML (CHANGELOG.md is written by the release tooling from PR titles)
     it "passes raw HTML in the markdown through unescaped" do
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(Rails.root.join("CHANGELOG.md")).and_return(true)
       allow(File).to receive(:read).and_call_original
       allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# v1\n\n<script>window.x=1</script>\n")
       get changelog_path

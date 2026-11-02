@@ -71,3 +71,6 @@ node_modules
 *.dump
 *.bak
 *.sql
+# Release notes written by CI for the image (never tracked)
+/CHANGELOG.md
+/release-notes.md
