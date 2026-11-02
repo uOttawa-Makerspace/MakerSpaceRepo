@@ -22,7 +22,14 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "index and show gate" do
-    %i[guest regular role_only].each do |role|
+    it "guest: index and show redirect to login" do
+      get volunteer_tasks_path
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks"))
+      get volunteer_task_path(task)
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks/#{task.id}"))
+    end
+
+    %i[regular role_only].each do |role|
       it "#{role}: index and show redirect to root with an alert" do
         vol_sign_in_as(role)
         get volunteer_tasks_path
@@ -331,7 +338,12 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_tasks/my_tasks" do
-    %i[guest regular role_only].each do |role|
+    it "guest: redirects to login" do
+      get my_tasks_volunteer_tasks_path
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks/my_tasks"))
+    end
+
+    %i[regular role_only].each do |role|
       it "#{role}: redirects to root with an alert" do
         vol_sign_in_as(role)
         get my_tasks_volunteer_tasks_path

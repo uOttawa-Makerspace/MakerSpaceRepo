@@ -83,12 +83,27 @@ RSpec.describe "Content pages (part 2)", type: :request do
       }.to change(Announcement.all_users, :count).by(1)
     end
 
-    # staff may re-target a volunteer announcement to any audience on update
-    it "lets staff re-target a volunteer announcement to 'all' (every visitor) via update" do
+    %w[all admin staff regular_user].each do |goal|
+      it "stops staff re-targeting a volunteer announcement to '#{goal}' via update" do
+        sign_in_as(:staff)
+        patch announcement_path(volunteer_ann), params: { announcement: { public_goal: goal } }
+        expect(response).to redirect_to(new_announcement_path)
+        expect(flash[:alert]).to eq("Please select another public goal")
+        expect(volunteer_ann.reload.public_goal).to eq("volunteer")
+      end
+    end
+
+    it "lets staff edit a volunteer announcement while keeping its audience" do
       sign_in_as(:staff)
+      patch announcement_path(volunteer_ann), params: { announcement: { description: "Edited", public_goal: "volunteer" } }
+      expect(response).to redirect_to(announcements_path)
+      expect(volunteer_ann.reload.description).to eq("Edited")
+    end
+
+    it "lets an admin re-target an announcement to any audience" do
+      sign_in_as(:admin)
       patch announcement_path(volunteer_ann), params: { announcement: { public_goal: "all" } }
       expect(response).to redirect_to(announcements_path)
-      expect(flash[:notice]).to eq("Announcement updated")
       expect(volunteer_ann.reload.public_goal).to eq("all")
     end
 
@@ -103,10 +118,11 @@ RSpec.describe "Content pages (part 2)", type: :request do
     it "keeps an admin-only announcement's show and edit pages from staff" do
       sign_in_as(:staff)
       get announcement_path(admin_ann)
-      expect(response).to redirect_to(new_announcement_path)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
       expect(response.body).not_to include("Admins only news")
       get edit_announcement_path(admin_ann)
-      expect(response).to redirect_to(new_announcement_path)
+      expect(response).to redirect_to(root_path)
     end
 
     it "lets staff read and open the edit form of a volunteer announcement" do

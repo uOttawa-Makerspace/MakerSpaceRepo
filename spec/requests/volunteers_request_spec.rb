@@ -45,7 +45,12 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
   describe "volunteer-area gate (grant_access)" do
     { my_stats: :my_stats_volunteers_path, calendar: :calendar_volunteers_path,
       shadowing_shifts: :shadowing_shifts_volunteers_path }.each do |action, helper|
-      %i[guest regular role_only].each do |role|
+      it "guest: #{action} redirects to login" do
+        get send(helper)
+        expect(response).to redirect_to(login_path(back_to: send(helper)))
+      end
+
+      %i[regular role_only].each do |role|
         it "#{role}: #{action} redirects to root with an alert" do
           vol_sign_in_as(role)
           get send(helper)
@@ -67,7 +72,13 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
   describe "staff-only gate (grant_access_list)" do
     { emails: :emails_volunteers_path, populate_users: :populate_users_volunteers_path, volunteer_list: :volunteer_list_volunteers_path, new_event: :new_event_volunteers_path,
       create_event: :create_event_volunteers_path, delete_event: :delete_event_volunteers_path }.each do |action, helper|
-      %i[guest regular role_only volunteer inactive].each do |role|
+      it "guest: #{action} redirects to login" do
+        verb = { create_event: :post, delete_event: :delete }.fetch(action, :get)
+        send(verb, send(helper))
+        expect(response.location).to include("/login")
+      end
+
+      %i[regular role_only volunteer inactive].each do |role|
         it "#{role}: #{action} redirects to root with an alert" do
           vol_sign_in_as(role)
           send(%i[create_event delete_event].include?(action) ? { create_event: :post, delete_event: :delete }[action] : :get, send(helper))
@@ -159,11 +170,27 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You cannot access this area.")
     end
 
-    it "returns every volunteer when search is blank" do
-      create_list(:user, 2, :volunteer_with_volunteer_program)
+    it "returns nothing for a blank or too-short search" do
+      create(:user, :volunteer_with_volunteer_program, name: "Marta Query")
       vol_login!(create(:user, :staff))
-      get populate_users_volunteers_path
-      expect(JSON.parse(response.body)["users"].size).to eq(2)
+      ["", "ma", "%", "__"].each do |term|
+        get populate_users_volunteers_path(search: term)
+        expect(JSON.parse(response.body)["users"]).to eq([]), term.inspect
+      end
+    end
+
+    it "treats wildcard characters in the search literally" do
+      create(:user, :volunteer_with_volunteer_program, name: "Marta Query")
+      vol_login!(create(:user, :staff))
+      get populate_users_volunteers_path(search: "%%%")
+      expect(JSON.parse(response.body)["users"]).to eq([])
+    end
+
+    it "caps the number of results" do
+      create_list(:user, 35, :volunteer_with_volunteer_program, name: "Capped Person")
+      vol_login!(create(:user, :staff))
+      get populate_users_volunteers_path(search: "capped")
+      expect(JSON.parse(response.body)["users"].size).to eq(30)
     end
   end
 

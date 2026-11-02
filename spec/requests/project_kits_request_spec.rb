@@ -141,6 +141,17 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
       expect(users).to eq([{ "id" => target.id, "name" => "Kitty Searchable", "username" => target.username }])
     end
 
+    it "returns nothing for a too-short or wildcard search, and caps the results" do
+      create_list(:user, 35, :regular_user, name: "Capped Person")
+      content_sign_in_as(:staff)
+      ["", "ca", "%%", "%%%"].each do |term|
+        get populate_kit_users_project_kits_path, params: { search: term }
+        expect(response.parsed_body["users"]).to eq([]), term.inspect
+      end
+      get populate_kit_users_project_kits_path, params: { search: "capped" }
+      expect(response.parsed_body["users"].size).to eq(30)
+    end
+
     it "sends a non-staff user away without a listing" do
       create(:user, :regular_user, name: "Kitty Searchable")
       content_sign_in_as(:regular)

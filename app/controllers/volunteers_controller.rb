@@ -4,11 +4,13 @@ require 'googleauth'
 require 'google/apis/calendar_v3'
 
 class VolunteersController < SessionsController
+  include VolunteerAreaAccess
+
   before_action :no_container, only: :index
   before_action :with_volunteer_header, except: :index
   before_action :current_user
   before_action :signed_in, only: :join_volunteer_program
-  before_action :grant_access,
+  before_action :volunteer_access,
                 except: %i[join_volunteer_program transcript],
                 unless:
                   lambda {
@@ -105,11 +107,7 @@ class VolunteersController < SessionsController
 
   def populate_users
     json_data =
-      User
-        .all
-        .volunteers
-        .where('LOWER(name) like LOWER(?)', "%#{params[:search]}%")
-        .select(:id, :name, :username)
+      User.volunteers.directory_search(params[:search]).select(:id, :name, :username)
     render json: { users: json_data }
   end
 
@@ -206,13 +204,6 @@ class VolunteersController < SessionsController
   end
 
   private
-
-  def grant_access
-    unless current_user.volunteer? || current_user.admin? || current_user.staff?
-      redirect_to root_path
-      flash[:alert] = 'You cannot access this area.'
-    end
-  end
 
   def grant_access_list
     unless current_user.admin? || current_user.staff?

@@ -48,9 +48,7 @@ class ProjectKitsController < DevelopmentProgramsController
 
   def populate_kit_users
     json_data =
-      User
-        .where("LOWER(name) like LOWER(?)", "%#{params[:search]}%")
-        .select(:id, :name, :username)
+      User.directory_search(params[:search]).select(:id, :name, :username)
     render json: { users: json_data }
   end
 
