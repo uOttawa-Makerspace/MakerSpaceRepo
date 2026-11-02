@@ -110,13 +110,17 @@ class LearningModule < ApplicationRecord
     )
   end
 
+  # The status column defaults to pending, so it only means something for a
+  # module that has a package.
   def scorm_stalled?
-    (scorm_pending? || scorm_processing?) &&
+    scorm_package.attached? && (scorm_pending? || scorm_processing?) &&
       (scorm_status_changed_at.nil? || scorm_status_changed_at < SCORM_STALL_AFTER.ago)
   end
 
   # Why the package is not usable, for people who manage the module.
   def scorm_problem
+    return unless scorm_package.attached?
+
     if scorm_failed?
       scorm_error.presence || 'The package could not be processed.'
     elsif scorm_stalled?

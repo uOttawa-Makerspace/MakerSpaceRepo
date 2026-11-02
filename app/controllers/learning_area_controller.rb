@@ -113,15 +113,13 @@ class LearningAreaController < DevelopmentProgramsController
     blob = @learning_module.scorm_package_files.blobs.find_by(key: key)
     return head :not_found unless blob
 
-    # ActiveStorage's send_blob_stream / proxying automatically handles HTTP Byte-Range (206) requests for video/audio
     ext = File.extname(path.presence || blob.filename.to_s)
     content_type = Rack::Mime.mime_type(ext, blob.content_type || 'application/octet-stream')
 
     # Instruct Cloudflare and the browser to cache this asset at the edge for 1 year
     expires_in 1.year, public: true
 
-    # Use send_blob_stream for both local and cloud storage (handles HTTP 206 range requests automatically)
-    send_blob_stream blob, type: content_type, disposition: :inline
+    stream_scorm_blob blob, content_type
   end
 
   def retry_scorm
@@ -175,6 +173,33 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   private
+
+  # ActiveStorage's send_blob_stream serves html, scripts and styles as a
+  # download, which package content must not be, so the type and inline
+  # disposition are set here. Byte ranges (video, audio) answer 206.
+  def stream_scorm_blob(blob, content_type)
+    response.headers['Accept-Ranges'] = 'bytes'
+
+    if request.headers['Range'].present?
+      ranges = Rack::Utils.get_byte_ranges(request.headers['Range'], blob.byte_size)
+      range = ranges.first if ranges&.length == 1
+      unless range && range.size <= ActiveStorage.streaming_chunk_max_size
+        return head :range_not_satisfiable
+      end
+
+      response.headers['Content-Range'] = "bytes #{range.begin}-#{range.end}/#{blob.byte_size}"
+      send_data blob.download_chunk(range),
+                type: content_type,
+                disposition: :inline,
+                filename: blob.filename.sanitized,
+                status: :partial_content
+    else
+      response.headers['Content-Length'] = blob.byte_size.to_s
+      send_stream(filename: blob.filename.sanitized, disposition: :inline, type: content_type) do |stream|
+        blob.download { |chunk| stream.write chunk }
+      end
+    end
+  end
 
   def only_admin_access
     return if current_user.admin?

@@ -485,8 +485,8 @@ RSpec.describe "Learning area", type: :request do
       lm.update_columns(scorm_prefix: prefix, scorm_status: LearningModule.scorm_statuses[:ready])
       sign_in_as(:regular)
       get scorm_asset_learning_area_path(lm, path: "cafe\u0301.html")
-      # the lookup finds the blob (not a 404); sending it hits the keyword error pinned below
-      expect(response).not_to have_http_status(:not_found)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("<p>hi</p>")
     end
   end
 
@@ -502,19 +502,53 @@ RSpec.describe "Learning area", type: :request do
       expect(response.location).to start_with("http://www.example.com/login")
     end
 
-    # `send_blob_stream blob, type: ...` is not a valid keyword in Rails 8.1, so EVERY
-    # existing asset request is a 500 and no extracted SCORM content can ever load
-    it "crashes with a 500 (ArgumentError: unknown keyword :type) for an extracted file" do
-      sign_in_as(:regular)
-      get scorm_asset_learning_area_path(scorm, path: "index.html")
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("ArgumentError").and include("unknown keyword: :type")
-    end
+    context "with extracted html, script, style and binary files" do
+      let!(:site) do
+        files = {
+          "imsmanifest.xml" => '<manifest><resources><resource href="index.html"/></resources></manifest>',
+          "index.html" => "<html><body>hi</body></html>", "app.js" => "var a = 1;", "style.css" => "a { color: red }",
+          "data.bin" => "0123456789"
+        }
+        io = StringIO.new
+        Zip::OutputStream.write_buffer(io) { |z| files.each { |n, body| z.put_next_entry(n); z.write(body) } }
+        io.rewind
+        lm = create(:learning_module, training: training, title: "Served site")
+        lm.scorm_package.attach(io: io, filename: "site.zip", content_type: "application/zip")
+        lm.save!
+        ScormExtractor.extract(lm.reload)
+        lm.reload
+      end
 
-    it "crashes the same way for the manifest" do
-      sign_in_as(:regular)
-      get scorm_asset_learning_area_path(scorm, path: "imsmanifest.xml")
-      expect(response).to have_http_status(:internal_server_error)
+      before { sign_in_as(:regular) }
+
+      {
+        "index.html" => ["text/html", "<html><body>hi</body></html>"],
+        "app.js" => ["text/javascript", "var a = 1;"],
+        "style.css" => ["text/css", "a { color: red }"]
+      }.each do |path, (type, body)|
+        it "serves #{path} inline as #{type} with the file's bytes and a public one-year cache" do
+          get scorm_asset_learning_area_path(site, path: path)
+          expect(response).to have_http_status(:ok)
+          expect(response.media_type).to eq(type)
+          expect(response.body).to eq(body)
+          expect(response.headers["Content-Disposition"]).to start_with("inline")
+          expect(response.headers["Accept-Ranges"]).to eq("bytes")
+          expect(response.headers["Cache-Control"]).to include("public").and include("max-age=#{1.year.to_i}")
+        end
+      end
+
+      it "serves a byte range with 206 and the matching slice" do
+        get scorm_asset_learning_area_path(site, path: "data.bin"), headers: { "Range" => "bytes=2-5" }
+        expect(response).to have_http_status(:partial_content)
+        expect(response.body).to eq("2345")
+        expect(response.headers["Content-Range"]).to eq("bytes 2-5/10")
+        expect(response.headers["Content-Length"]).to eq("4")
+      end
+
+      it "answers 416 for a range outside the file" do
+        get scorm_asset_learning_area_path(site, path: "data.bin"), headers: { "Range" => "bytes=50-60" }
+        expect(response).to have_http_status(:range_not_satisfiable)
+      end
     end
 
     it "answers 404 for a path that was not extracted" do
@@ -728,6 +762,48 @@ RSpec.describe "Learning area", type: :request do
       expect(response.body).not_to include("SCORM package is processing")
       expect(response.body).to include("did not finish")
       expect(response.body).to include(retry_scorm_learning_area_path(stalled))
+    end
+
+    # the status column defaults to pending, so a module with no package carries a meaningless one
+    [nil, 1.year.ago].each do |changed_at|
+      context "for a module with no SCORM package, pending since #{changed_at.inspect}" do
+        let!(:plain) do
+          create(:learning_module, training: training, title: "Plain module").tap do |lm|
+            lm.update_columns(scorm_status: LearningModule.scorm_statuses[:pending], scorm_status_changed_at: changed_at)
+          end
+        end
+
+        it "shows no stall, no retry and no polling, to a learner or an admin" do
+          [:regular, :admin].each do |role|
+            sign_in_as(role)
+            get learning_area_path(plain)
+            expect(response).to have_http_status(:ok)
+            expect(response.body).not_to include("Turbo.visit")
+            expect(response.body).not_to include("SCORM package is processing")
+            expect(response.body).not_to include("not available yet")
+            expect(response.body).not_to include("SCORM Extraction")
+            expect(response.body).not_to include(retry_scorm_learning_area_path(plain))
+          end
+        end
+
+        it "shows no extraction state on the edit page" do
+          sign_in_as(:admin)
+          get edit_learning_area_path(plain)
+          expect(response.body).not_to include("SCORM Extraction")
+          expect(response.body).not_to include("SCORM package status")
+          expect(response.body).not_to include(retry_scorm_learning_area_path(plain))
+        end
+
+        it "does not retry, stall or track" do
+          expect(plain).not_to be_scorm_stalled
+          expect(plain.scorm_problem).to be_nil
+          expect(plain).not_to be_scorm_retryable
+          expect(plain).not_to be_scorm_trackable
+          sign_in_as(:admin)
+          expect { post retry_scorm_learning_area_path(plain) }.not_to have_enqueued_job(ExtractScormJob)
+          expect(plain.reload.scorm_status).to eq("pending")
+        end
+      end
     end
 
     it "tells a learner only that the module is not available yet, with no reason or retry" do

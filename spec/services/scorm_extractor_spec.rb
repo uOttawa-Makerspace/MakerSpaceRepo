@@ -435,7 +435,8 @@ RSpec.describe ScormExtractor do
 
   describe "LearningModule#scorm_stalled?" do
     it "is true for pending or processing states older than the bound, or with no recorded time" do
-      lm = build(:learning_module, scorm_status: :pending, scorm_status_changed_at: nil)
+      lm = create(:learning_module, :with_scorm_object)
+      lm.assign_attributes(scorm_status: :pending, scorm_status_changed_at: nil)
       expect(lm).to be_scorm_stalled
       lm.scorm_status_changed_at = 1.minute.ago
       expect(lm).not_to be_scorm_stalled
