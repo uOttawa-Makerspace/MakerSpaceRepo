@@ -259,8 +259,9 @@ jobs:
             echo "previous=$previous"
           } >> "$GITHUB_OUTPUT"
 
-      # Staging release PRs (head staging) and master -> staging sync PRs (head master) are not
-      # changes; they are excluded by branch, and the release label is ignored as well.
+      # Release PRs (staging -> master) and sync PRs (master -> staging) are not changes. Only PRs
+      # merged into staging are listed (base_branches, a regex), which drops the release PRs, and
+      # sync PRs carry the release label, which ignore_labels drops.
       - name: Build the notes
         id: notes
         if: steps.target.outputs.previous != '' && steps.target.outputs.shipped != ''
@@ -278,7 +279,7 @@ jobs:
                 { "title": "## 📦 Other Changes", "labels": [] }
               ],
               "ignore_labels": ["release"],
-              "exclude_merge_branches": ["staging", "master"],
+              "base_branches": ["^staging$"],
               "template": "#{{CHANGELOG}}\n\n**Full Changelog**: #{{RELEASE_DIFF}}",
               "pr_template": "- #{{TITLE}} (##{{NUMBER}}) by @#{{AUTHOR}}"
             }
@@ -668,7 +669,7 @@ jobs:
               --title "$VERSION" --notes-file release-notes.md
           fi
 
-      # The sync PR is created without a label, so it does not depend on a label existing.
+      # Sync PRs carry the release label (created here if missing) so the notes ignore them.
       - name: Open the master -> staging sync PR
         if: ${{ !cancelled() }}
         run: |
@@ -678,14 +679,18 @@ jobs:
             echo "staging already contains master; nothing to sync."
             exit 0
           fi
+          gh label create release --repo "$GITHUB_REPOSITORY" --force --color 0E8A16 \
+            --description "Release and sync pull requests"
           existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --base staging --head master --state open --json number --jq '.[0].number // ""')
           if [ -z "$existing" ]; then
             gh pr create --repo "$GITHUB_REPOSITORY" --base staging --head master \
               --title "Sync master into staging" \
-              --body "Brings the release squash commit into staging's history, so the next release PR only shows new work. No file changes are expected. Merge with **Create a merge commit**."
+              --body "Brings the release squash commit into staging's history, so the next release PR only shows new work. No file changes are expected. Merge with **Create a merge commit**." \
+              --label release
             existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --base staging --head master --state open --json number --jq '.[0].number')
           else
             echo "Reusing open sync PR #$existing."
+            gh pr edit "$existing" --repo "$GITHUB_REPOSITORY" --add-label release
           fi
           # auto-merge needs "Allow auto-merge" in the repo settings; otherwise the PR waits for a click
           if ! gh pr merge "$existing" --repo "$GITHUB_REPOSITORY" --merge --auto; then
