@@ -63,15 +63,17 @@ class User < ApplicationRecord
   LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
   LAST_ADMIN_LOCK_MESSAGE = "You cannot lock the last admin."
 
-  IDENTITIES = %w[
-    grad
+  ACCOUNT_IDENTITIES = %w[
     undergrad
-    international_grad
     international_undergrad
+    grad
+    international_grad
     faculty_member
+    staff_member
     community_member
-    unknown
   ].freeze
+
+  IDENTITIES = (ACCOUNT_IDENTITIES + %w[unknown]).freeze
 
   STUDENT_IDENTITIES = %w[
     grad
@@ -80,13 +82,7 @@ class User < ApplicationRecord
     international_undergrad
   ].freeze
 
-  INTERNAL_IDENTITIES = %w[
-    faculty_member
-    grad
-    undergrad
-    international_grad
-    international_undergrad
-  ].freeze
+  INTERNAL_IDENTITIES = (%w[faculty_member staff_member] + STUDENT_IDENTITIES).freeze
 
   ALLOWED_AVATAR_TYPES = %w[image/jpeg image/png image/webp image/gif].freeze
   MAX_AVATAR_SIZE = 5.megabytes

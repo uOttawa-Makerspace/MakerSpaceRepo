@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class Admin::UsersController < AdminAreaController
-  before_action :load_user, only: %i[show edit update]
-  before_action :require_admin, only: %i[delete_user restore_user toggle_lock_user set_role manage_roles]
+  before_action :load_user, only: %i[show edit update change_email]
+  before_action :require_admin, only: %i[update change_email rename_user delete_repository delete_user restore_user toggle_lock_user set_role manage_roles]
   # delete_user re-checks the admin's own password: counted in the same budget as change_password and
   # change_email (ReauthThrottle), so re-entered passwords share one attempt limit.
   include ReauthThrottle
@@ -58,25 +58,57 @@ class Admin::UsersController < AdminAreaController
   def show
     @all_sessions = @edit_admin_user.lab_sessions.order(sign_in_time: :desc)
     calculate_average_session_time
-    @certifications = @edit_admin_user.certifications.order(Arel.sql("lower(name) ASC"))
+    @certifications = @edit_admin_user.certifications
   end
 
   def edit
     @rfids = Rfid.recent_unset
-    @certifications = @edit_admin_user.certifications.order(Arel.sql("lower(name) ASC"))
   end
 
   def update
-    # Handle RFID assignment separately
-    assign_rfid_if_present
-    
-    if @edit_admin_user.update(user_params)
-      create_certifications
-      redirect_to edit_admin_user_path(@edit_admin_user), notice: "User information updated!"
+    saved = User.transaction do
+      # Handle RFID assignment separately
+      assign_rfid_if_present
+
+      if @edit_admin_user.update(user_params)
+        true
+      else
+        raise ActiveRecord::Rollback # Undo rfid change if user update fails
+      end
+    end
+
+    if saved
+      redirect_to edit_admin_user_path(@edit_admin_user), notice: "User information updated"
     else
       @rfids = Rfid.recent_unset
-      @certifications = @edit_admin_user.certifications.order(Arel.sql("lower(name) ASC"))
-      render :edit
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def change_email
+    new_email = params[:new_email].to_s.strip.downcase
+    confirm_new_email = params[:confirm_new_email].to_s.strip.downcase
+
+    if new_email.blank? || confirm_new_email.blank?
+      redirect_to edit_admin_user_path(@edit_admin_user),
+                  alert: "There was a problem with the email, please try sending the email again."
+    elsif new_email != confirm_new_email
+      redirect_to edit_admin_user_path(@edit_admin_user),
+                  alert: "This confirmation email isn't matching the new email"
+    elsif User.unscoped.where("LOWER(email) = ?", new_email)
+              .where.not(id: @edit_admin_user.id).exists?
+      redirect_to edit_admin_user_path(@edit_admin_user),
+                  alert: "This email is already used by a MakerRepo Account."
+    else
+      # The same link as the user's own change: it only works for that user, signed in, within 24 hours.
+      MsrMailer.email_confirmation_email(
+        new_email,
+        @edit_admin_user,
+        @edit_admin_user.generate_email_change_token(new_email)
+      ).deliver_now
+
+      redirect_to edit_admin_user_path(@edit_admin_user),
+                  notice: "A confirmation email has been sent to the new email"
     end
   end
 
@@ -215,6 +247,7 @@ class Admin::UsersController < AdminAreaController
     [column, direction]
   end
 
+
   def valid_role_update_params?
     params[:role].present? && 
       params[:user_ids].is_a?(Array) && 
@@ -228,7 +261,7 @@ class Admin::UsersController < AdminAreaController
   # SECURITY FIX: Removed :role from permitted params
   # Role changes should only happen through set_role action with proper authorization
   def user_params
-    params.require(:user).permit(:gender, :faculty, :use)
+    params.require(:user).permit(:name, :username, :gender, :student_id, :faculty, :year_of_study, :use)
   end
 
   # ============================================
@@ -348,24 +381,13 @@ class Admin::UsersController < AdminAreaController
     rfid = Rfid.find_by(id: params[:user][:rfid])
     return unless rfid
     
+    #Do nothing if the RFID is already the users
+    return if @edit_admin_user.rfid&.id == rfid.id
+
     @edit_admin_user.rfid&.destroy!
     rfid.update!(user: @edit_admin_user)
   end
 
-  # ============================================
-  # Certifications
-  # ============================================
-
-  def create_certifications
-    return unless params["certifications"].present?
-
-    Certification.transaction do
-      @edit_admin_user.certifications.destroy_all
-      params["certifications"].first(5).each do |cert_name|
-        Certification.create(name: cert_name, user_id: @edit_admin_user.id)
-      end
-    end
-  end
 
   # ============================================
   # User Management

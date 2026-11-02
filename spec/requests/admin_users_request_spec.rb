@@ -196,50 +196,82 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "PATCH /admin/users/:id (update)" do
     before { login!(admin) }
 
-    it "updates the permitted profile fields only (gender, faculty, use)" do
+    it "updates the permitted profile fields; role and email are not set here" do
       patch admin_user_path(target),
-            params: { user: { gender: "Female", role: "admin", name: "Hacked", email: "x@y.z" } }
+            params: { user: { gender: "Female", name: "New Name", role: "admin", email: "x@y.z" } }
       expect(response).to redirect_to(edit_admin_user_path(target))
-      expect(flash[:notice]).to eq("User information updated!")
+      expect(flash[:notice]).to eq("User information updated")
       target.reload
       expect(target.gender).to eq("Female")
+      expect(target.name).to eq("New Name")
       expect(target.role).to eq("regular_user")
-      expect(target.name).not_to eq("Hacked")
+      expect(target.email).not_to eq("x@y.z")
     end
 
-    it "keeps existing certifications when none are re-sent" do
-      # certifications are only replaced when the param is sent and the save succeeds
-      create(:certification, :basic_training, user_id: target.id)
-      patch admin_user_path(target), params: { user: { gender: "Female" } }
-      expect(target.certifications.reload.count).to eq(1)
-    end
-
-    it "a validation failure keeps certifications and re-renders edit (200)" do
-      create(:certification, :basic_training, user_id: target.id)
-      patch admin_user_path(target), params: { user: { gender: "Bogus" }, certifications: %w[A] }
-      expect(response).to have_http_status(:ok)
-      expect(target.reload.gender).to eq("Male")
-      expect(target.certifications.reload.count).to eq(1)
-    end
-
-    it "a re-sent certifications list raises (Certification has no `name`) but rolls back, keeping the old ones" do
-      # create_certifications calls Certification.create(name:), a column that does not exist, so sending `certifications` always 500s; the destroy_all is now rolled back with it
+    it "no longer edits certifications (a sent list is ignored)" do
       create(:certification, :basic_training, user_id: target.id)
       patch admin_user_path(target), params: { user: { gender: "Male" }, certifications: %w[A B] }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(edit_admin_user_path(target))
       expect(target.certifications.reload.count).to eq(1)
     end
 
-    it "re-creates up to five named certifications" do
-      patch admin_user_path(target),
-            params: { user: { gender: "Male" }, certifications: %w[A B C D E F] }
-      expect(target.certifications.reload.count).to be <= 5
+    it "a validation failure re-renders edit (422) and undoes the RFID assignment" do
+      rfid = Rfid.create!(card_number: "card#{SecureRandom.hex(3)}")
+      patch admin_user_path(target), params: { user: { gender: "Bogus", rfid: rfid.id } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(target.reload.gender).to eq("Male")
+      expect(rfid.reload.user_id).to be_nil
+    end
+
+    it "is admin only: staff are refused and nothing changes" do
+      login!(staff)
+      patch admin_user_path(target), params: { user: { name: "Staff Edit" } }
+      expect(target.reload.name).not_to eq("Staff Edit")
     end
 
     it "assigns an unset RFID card" do
       rfid = Rfid.create!(card_number: "card#{SecureRandom.hex(3)}")
       patch admin_user_path(target), params: { user: { gender: "Male", rfid: rfid.id } }
       expect(rfid.reload.user_id).to eq(target.id)
+    end
+  end
+
+  describe "PATCH /admin/users/:id/change_email" do
+    before do
+      login!(admin)
+      ActionMailer::Base.deliveries.clear
+    end
+
+    it "mails the user's own confirmation link to the new address, without changing the email yet" do
+      old = target.email
+      patch change_email_admin_user_path(target), params: { new_email: "New.Address@example.com", confirm_new_email: "new.address@example.com" }
+      expect(response).to redirect_to(edit_admin_user_path(target))
+      expect(flash[:notice]).to eq("A confirmation email has been sent to the new email")
+      expect(target.reload.email).to eq(old)
+      mail = ActionMailer::Base.deliveries.last
+      expect(mail.to).to eq(["new.address@example.com"])
+      body = (mail.html_part || mail).body.decoded
+      token = body[/token=([^"&<\s]+)/, 1]
+      expect(User.email_change_from_token(CGI.unescape(token.to_s))).to eq([target, "new.address@example.com"])
+    end
+
+    it "refuses an address another account uses" do
+      other = create(:user, :regular_user)
+      patch change_email_admin_user_path(target), params: { new_email: other.email.upcase, confirm_new_email: other.email }
+      expect(flash[:alert]).to eq("This email is already used by a MakerRepo Account.")
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "refuses a confirmation that does not match" do
+      patch change_email_admin_user_path(target), params: { new_email: "a@example.com", confirm_new_email: "b@example.com" }
+      expect(flash[:alert]).to eq("This confirmation email isn't matching the new email")
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "is admin only" do
+      login!(staff)
+      patch change_email_admin_user_path(target), params: { new_email: "a@example.com", confirm_new_email: "a@example.com" }
+      expect(ActionMailer::Base.deliveries).to be_empty
     end
   end
 

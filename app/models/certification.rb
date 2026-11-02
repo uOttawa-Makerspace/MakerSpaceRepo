@@ -160,7 +160,7 @@ class Certification < ApplicationRecord
   end
 
   def name
-    I18n.locale == :fr ? name_fr : name_en
+    I18n.locale == :fr ? get_name_fr : get_name_en
   end
 
   def get_name_en

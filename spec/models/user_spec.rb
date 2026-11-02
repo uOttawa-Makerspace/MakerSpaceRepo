@@ -155,6 +155,7 @@ RSpec.describe User, type: :model do
                  "grad",
                  "undergrad",
                  "faculty_member",
+                 "staff_member",
                  "community_member",
                  "unknown"
                ).for(:identity)

@@ -47,30 +47,8 @@ class CustomWebhooksController < ApplicationController
       return head :service_unavailable
     end
 
-    # A paid locker order must carry the Shopify order id (it is the idempotency key of the payment record).
-    # Shopify always sends it, so a missing one is a bug on our side or theirs: skip ONLY the locker branch
-    # (never answer an error for the whole order, which would be retried forever and block the membership
-    # and CC branches), and report it with ids only so staff can reconcile the rental by hand.
-    locker_branch = LockerRental.draft_order_processable?(order_hook["tags"])
-    if locker_branch && locker_ref.present? && order_id(order_hook).blank?
-      Rails.error.report(
-        LockerOrderWithoutId.new("paid locker order without an order id; locker branch skipped (rental #{locker_ref})"),
-        handled: true, severity: :error, context: { locker_rental_id: locker_ref }
-      )
-      locker_branch = false
-    end
-
-    # A locker-tagged paid order that names no locker rental at all: nothing to apply, and not to be lost
-    # silently either (staff reconcile it from the report). Still 200.
-    if locker_branch && locker_ref.blank?
-      Rails.error.report(
-        LockerOrderWithoutReference.new("paid locker order #{order_id(order_hook)} carries no locker_db_reference"),
-        handled: true, severity: :error, context: { shopify_order_id: order_id(order_hook) }
-      )
-    end
-
     # handle lockers
-    process_locker_hook(locker_ref, order_hook) if locker_branch
+    apply_locker_order(order_hook, locker_ref) if LockerRental.draft_order_processable?(order_hook["tags"])
 
     # handle memberships
     process_membership_hook(order_hook, membership_ref) if Membership.draft_order_processable?(order_hook["tags"])
@@ -93,6 +71,27 @@ class CustomWebhooksController < ApplicationController
       end
     end
 
+    head :ok
+  end
+
+  # Cash locker payments. Staff fulfil a cash order in Shopify without marking it paid, so the fulfillment
+  # is the payment event. Only the locker branch runs, and only while Shopify still shows the payment as
+  # pending: a paid order is handled by orders_paid, and a refunded, voided or partly paid one is not a
+  # cash payment. The locker payment record is keyed by the Shopify order id, so an orders_paid for the
+  # same order later applies nothing a second time. Memberships and CC Money paid in cash stay with staff.
+  def orders_fulfilled
+    order_hook = webhook_params.to_h
+    return head :ok unless order_hook["financial_status"] == "pending" &&
+                           LockerRental.draft_order_processable?(order_hook["tags"])
+
+    begin
+      locker_ref = locker_reference(order_hook)
+    rescue ShopifyContext::NotConfigured => e
+      Rails.logger.warn("[orders_fulfilled] Shopify not configured, answering 503 (Shopify will retry): #{e.class}")
+      return head :service_unavailable
+    end
+
+    apply_locker_order(order_hook, locker_ref)
     head :ok
   end
 
@@ -171,6 +170,33 @@ class CustomWebhooksController < ApplicationController
   # ("gid://shopify/Order/123"), so both spellings of one order are the same idempotency key.
   def order_id(order_hook)
     order_hook["id"].presence&.to_s || order_hook["admin_graphql_api_id"].presence&.to_s&.split("/")&.last
+  end
+
+  # The locker branch of a paid (orders_paid) or cash (orders_fulfilled) order.
+  def apply_locker_order(order_hook, locker_ref)
+    # A locker-tagged order that names no locker rental at all: nothing to apply, and not to be lost
+    # silently either (staff reconcile it from the report). Still 200.
+    if locker_ref.blank?
+      Rails.error.report(
+        LockerOrderWithoutReference.new("paid locker order #{order_id(order_hook)} carries no locker_db_reference"),
+        handled: true, severity: :error, context: { shopify_order_id: order_id(order_hook) }
+      )
+      return
+    end
+
+    # A locker order must carry the Shopify order id (it is the idempotency key of the payment record).
+    # Shopify always sends it, so a missing one is a bug on our side or theirs: skip ONLY the locker branch
+    # (never answer an error for the whole order, which would be retried forever and block the membership
+    # and CC branches), and report it with ids only so staff can reconcile the rental by hand.
+    if order_id(order_hook).blank?
+      Rails.error.report(
+        LockerOrderWithoutId.new("paid locker order without an order id; locker branch skipped (rental #{locker_ref})"),
+        handled: true, severity: :error, context: { locker_rental_id: locker_ref }
+      )
+      return
+    end
+
+    process_locker_hook(locker_ref, order_hook)
   end
 
   def process_locker_hook(locker_id, order_hook)

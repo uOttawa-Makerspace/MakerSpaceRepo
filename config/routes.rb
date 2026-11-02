@@ -52,6 +52,7 @@ Rails.application.routes.draw do
   resources :custom_webhooks do
     collection do
       post :orders_paid
+      post :orders_fulfilled
     end
   end
 
@@ -325,6 +326,9 @@ Rails.application.routes.draw do
         get "manage_roles"
         patch :rename_user
         #   patch "mass_update_roles", to: "users#mass_update_roles"
+      end
+      member do
+        patch :change_email
       end
       # member do
       #   get "fetch_spaces"
