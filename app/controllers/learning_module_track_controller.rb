@@ -21,7 +21,10 @@ class LearningModuleTrackController < DevelopmentProgramsController
 
   def completed
     learning_module = LearningModule.find_by(id: params[:learning_module_id])
-    if learning_module
+    # A SCORM package reports its own completion
+    if learning_module.scorm_package.attached?
+      flash[:alert] = "This learning module records its own completion."
+    elsif learning_module
          .learning_module_tracks
          .where(user: current_user)
          .first

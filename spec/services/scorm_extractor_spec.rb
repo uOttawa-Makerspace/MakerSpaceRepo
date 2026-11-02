@@ -84,14 +84,17 @@ RSpec.describe ScormExtractor do
     expect(ActiveStorage::Blob.where("key LIKE ?", "#{first_prefix}/%").count).to eq(0)
   end
 
-  # a zip without imsmanifest.xml returns nil silently: the module is left in 'processing' forever, its old files purged
-  it "leaves the module stuck in processing (and returns nil) when there is no manifest" do
-    lm = module_with("index.html" => "x")
-    expect(ScormExtractor.extract(lm)).to be_nil
+  it "marks the module failed with a readable reason when there is no manifest, keeping the previous files" do
+    lm = module_with("imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1")
+    ScormExtractor.extract(lm)
+    lm.scorm_package.attach(io: zip_io("index.html" => "x"), filename: "other.zip", content_type: "application/zip")
+    lm.save!
+    ScormExtractor.extract(lm)
     lm.reload
-    expect(lm.scorm_status).to eq("processing")
-    expect(lm.scorm_package_files).not_to be_attached
+    expect(lm.scorm_status).to eq("failed")
+    expect(lm.scorm_error).to eq("no imsmanifest.xml found")
     expect(lm.scorm_ready?).to be(false)
+    expect(lm.scorm_package_files).to be_attached
   end
 
   it "marks the module failed and re-raises when the file is not a zip" do
@@ -100,6 +103,7 @@ RSpec.describe ScormExtractor do
     lm.save!
     expect { ScormExtractor.extract(lm) }.to raise_error(Zip::Error)
     expect(lm.reload.scorm_status).to eq("failed")
+    expect(lm.scorm_error).to eq("the file is not a valid zip archive")
   end
 
   it "marks the module failed and re-raises when the manifest is not parseable as a resource list but zip is fine (still ready: Nokogiri is lenient)" do
@@ -107,6 +111,56 @@ RSpec.describe ScormExtractor do
     ScormExtractor.extract(lm)
     expect(lm.reload.scorm_status).to eq("ready")
     expect(lm.scorm_entry_point).to be_nil
+  end
+
+  describe "claiming an extraction" do
+    let(:files) { { "imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1" } }
+
+    it "does nothing while another extraction is processing within the time bound" do
+      lm = module_with(files)
+      lm.update_columns(scorm_status: LearningModule.scorm_statuses[:processing], scorm_status_changed_at: 1.minute.ago)
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("processing")
+      expect(lm.scorm_package_files).not_to be_attached
+    end
+
+    it "takes over an extraction that has been processing past the time bound" do
+      lm = module_with(files)
+      lm.update_columns(scorm_status: LearningModule.scorm_statuses[:processing], scorm_status_changed_at: 1.hour.ago)
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("ready")
+    end
+
+    it "does not publish its result when a retry took over meanwhile" do
+      lm = module_with(files)
+      allow(ActiveStorage::Blob).to receive(:create_and_upload!).and_wrap_original do |m, **args|
+        LearningModule.where(id: lm.id).update_all(scorm_status_changed_at: 1.second.from_now)
+        m.call(**args)
+      end
+      ScormExtractor.extract(lm)
+      lm.reload
+      expect(lm.scorm_status).to eq("processing")
+      expect(lm.scorm_package_files).not_to be_attached
+    end
+  end
+
+  describe "LearningModule#scorm_stalled?" do
+    it "is true for pending or processing states older than the bound, or with no recorded time" do
+      lm = build(:learning_module, scorm_status: :pending, scorm_status_changed_at: nil)
+      expect(lm).to be_scorm_stalled
+      lm.scorm_status_changed_at = 1.minute.ago
+      expect(lm).not_to be_scorm_stalled
+      lm.scorm_status = :processing
+      lm.scorm_status_changed_at = (LearningModule::SCORM_STALL_AFTER + 1.minute).ago
+      expect(lm).to be_scorm_stalled
+      lm.scorm_status = :ready
+      expect(lm).not_to be_scorm_stalled
+    end
+
+    it "starts the clock when a package is uploaded" do
+      lm = module_with("imsmanifest.xml" => "<m/>")
+      expect(lm.scorm_status_changed_at).to be_within(1.minute).of(Time.current)
+    end
   end
 
   describe "ExtractScormJob" do

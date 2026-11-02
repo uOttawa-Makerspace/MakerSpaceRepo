@@ -42,7 +42,11 @@ class LearningModule < ApplicationRecord
       new_blob.is_a?(ActiveStorage::Attached::Changes::DeleteOne)
 
     # Reset status to pending immediately when a new zip is uploaded
-    self.scorm_status = :pending if @scorm_package_changed
+    if @scorm_package_changed
+      self.scorm_status = :pending
+      self.scorm_status_changed_at = Time.current
+      self.scorm_error = nil
+    end
   end
 
   # If scorm package changes, update extraction or purge File is available only
@@ -64,6 +68,10 @@ class LearningModule < ApplicationRecord
   enum :scorm_status,
        { pending: 0, processing: 1, ready: 2, failed: 3 },
        prefix: :scorm
+
+  # A pending/processing extraction older than this has not finished (the job
+  # never ran, or its worker died) and is treated as stalled.
+  SCORM_STALL_AFTER = 15.minutes
 
   has_many :learning_module_tracks, dependent: :destroy
 
@@ -100,6 +108,38 @@ class LearningModule < ApplicationRecord
       path: relative_path,
       host: Rails.application.credentials.host
     )
+  end
+
+  def scorm_stalled?
+    (scorm_pending? || scorm_processing?) &&
+      (scorm_status_changed_at.nil? || scorm_status_changed_at < SCORM_STALL_AFTER.ago)
+  end
+
+  # Why the package is not usable, for people who manage the module.
+  def scorm_problem
+    if scorm_failed?
+      scorm_error.presence || 'The package could not be processed.'
+    elsif scorm_stalled?
+      'Extraction did not finish. The background worker may not be running.'
+    end
+  end
+
+  def scorm_retryable?
+    scorm_package.attached? && (scorm_failed? || scorm_stalled?)
+  end
+
+  # Starts a fresh extraction. A run that is still going on from before is
+  # superseded: the extractor only publishes if its claim is still current.
+  def retry_scorm_extraction
+    return false unless scorm_retryable?
+
+    update_columns(
+      scorm_status: self.class.scorm_statuses[:pending],
+      scorm_status_changed_at: Time.current,
+      scorm_error: nil
+    )
+    ExtractScormJob.perform_later(id)
+    true
   end
 
   def tracks_for_user(user)

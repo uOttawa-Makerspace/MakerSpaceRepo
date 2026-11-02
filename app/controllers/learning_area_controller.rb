@@ -1,6 +1,6 @@
 class LearningAreaController < DevelopmentProgramsController
   include ActiveStorage::Streaming
-  before_action :only_admin_access, only: %i[new create edit update destroy reorder]
+  before_action :only_admin_access, only: %i[new create edit update destroy reorder retry_scorm]
   before_action :set_learning_module,
                 only: %i[
                   show
@@ -10,6 +10,7 @@ class LearningAreaController < DevelopmentProgramsController
                   scorm_launch
                   serve_scorm_asset
                   scorm_commit
+                  retry_scorm
                 ]
 
   before_action :form_training_data, only: %i[new edit create update]
@@ -118,7 +119,26 @@ class LearningAreaController < DevelopmentProgramsController
     send_blob_stream blob, type: content_type, disposition: :inline
   end
 
+  def retry_scorm
+    if @learning_module.retry_scorm_extraction
+      notice = 'SCORM extraction has been queued again.'
+    else
+      alert = 'SCORM extraction is not retryable right now.'
+    end
+    redirect_to edit_learning_area_path(@learning_module.id), notice:, alert:
+  end
+
   def scorm_commit
+    # Progress is only reported by the module's own package once it is running
+    unless @learning_module.scorm_ready?
+      return(
+        render json: {
+                 error: 'SCORM package not ready'
+               },
+               status: :unprocessable_entity
+      )
+    end
+
     current_user
       .learning_module_tracks
       .find_or_create_by!(learning_module_id: params[:id])
