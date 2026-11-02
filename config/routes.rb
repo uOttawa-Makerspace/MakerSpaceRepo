@@ -308,6 +308,9 @@ Rails.application.routes.draw do
         patch :rename_user
         #   patch "mass_update_roles", to: "users#mass_update_roles"
       end
+      member do
+        patch :change_email
+      end
       # member do
       #   get "fetch_spaces"
       #   patch "update_spaces"

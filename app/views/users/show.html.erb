@@ -78,7 +78,12 @@
                                 <% end %>
                             <% end %>
                         <% end %>
-                        <%= link_to "<i class=\"fa-solid fa-gear\"></i> #{t('.edit_profile')}".html_safe, settings_profile_path, class: 'btn btn-secondary' if @repo_user.eql?(@user) %>
+                            <!--Edit other users profile if on their section-->
+                            <% if @repo_user.eql?(@user) %>
+                                <%= link_to "<i class=\"fa-solid fa-gear\"></i> #{t('.edit_profile')}".html_safe, settings_profile_path, class: 'btn btn-secondary' %>
+                            <% elsif current_user.admin? %>
+                                <%= link_to "<i class=\"fa-solid fa-gear\"></i> #{t('.edit_profile')}".html_safe, edit_admin_user_path(@repo_user), class: 'btn btn-secondary' %>
+                            <% end %>                        
 
                         <% if @user.staff? %>
                             <%= render 'users/flag' %>

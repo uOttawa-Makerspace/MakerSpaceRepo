@@ -211,7 +211,7 @@ RSpec.describe UsersController, type: :controller do
         )
       end
 
-      it "should create the user with avatar" do
+      it "should not create the user with a username that is too long" do
         user_params =
           FactoryBot.attributes_for(
             :user,
@@ -336,7 +336,7 @@ RSpec.describe UsersController, type: :controller do
                 }
               }
         @newpass = User.find(User.last.id).password
-        expect(@oldpass).not_to be(@newpass)
+        expect(@newpass).not_to be(@oldpass)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(response).to redirect_to settings_admin_path
         expect(flash[:notice]).to eq(
@@ -372,7 +372,7 @@ RSpec.describe UsersController, type: :controller do
               }
         @newpass = User.find(User.last.id).password
         expect(ActionMailer::Base.deliveries.count).to eq(0)
-        expect(@oldpass).not_to be(@newpass)
+        expect(@newpass).to eq(@oldpass)
         expect(response).to have_http_status(:success)
       end
     end
