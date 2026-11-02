@@ -1,5 +1,7 @@
 class LearningAreaController < DevelopmentProgramsController
-  include ActiveStorage::Streaming
+  # Package scripts are static files loaded by <script> tags, not dynamic
+  # responses; the cross-origin JavaScript check would answer them 422.
+  skip_after_action :verify_same_origin_request, only: :serve_scorm_asset, raise: false
   before_action :only_admin_access, only: %i[new create edit update destroy reorder retry_scorm]
   before_action :set_learning_module,
                 only: %i[
@@ -13,9 +15,8 @@ class LearningAreaController < DevelopmentProgramsController
                   retry_scorm
                 ]
 
-  # A byte-range answer covers at most this much, read from storage in slices
+  # A byte-range answer covers at most this much
   SCORM_RANGE_WINDOW = 5.megabytes
-  SCORM_RANGE_SLICE = 1.megabyte
 
   before_action :form_training_data, only: %i[new edit create update]
   before_action :with_development_header
@@ -120,9 +121,6 @@ class LearningAreaController < DevelopmentProgramsController
     ext = File.extname(path.presence || blob.filename.to_s)
     content_type = Rack::Mime.mime_type(ext, blob.content_type || 'application/octet-stream')
 
-    # The route needs a signed-in user, so shared caches must not keep it
-    expires_in 1.year, public: false
-
     stream_scorm_blob blob, content_type
   end
 
@@ -178,51 +176,57 @@ class LearningAreaController < DevelopmentProgramsController
 
   private
 
-  def scorm_refusal(status)
+  # A minimal answer: no success headers are set before the content is known
+  # to be readable, so there is nothing to clear.
+  def scorm_refusal(status, headers = {})
+    headers.each { |name, value| response.headers[name] = value }
     response.cache_control.replace(no_store: true)
     head status
   end
 
   # ActiveStorage's send_blob_stream serves html, scripts and styles as a
   # download, which package content must not be, so the type, inline
-  # disposition and byte ranges (RFC 9110) are handled here.
+  # disposition and byte ranges (RFC 9110) are handled here. The response is a
+  # plain body with an exact Content-Length, not a live stream.
   def stream_scorm_blob(blob, content_type)
     size = blob.byte_size
     range = scorm_byte_range(request.headers['Range'], size)
     if range == :unsatisfiable
-      response.headers['Content-Range'] = "bytes */#{size}"
-      return scorm_refusal(:range_not_satisfiable)
-    end
-    return scorm_refusal(:not_found) unless request.head? || blob.service.exist?(blob.key)
-
-    response.headers['Accept-Ranges'] = 'bytes'
-    if range
-      response.headers['Content-Range'] = "bytes #{range.begin}-#{range.end}/#{size}"
-      response.status = :partial_content
+      return scorm_refusal(:range_not_satisfiable, 'Content-Range' => "bytes */#{size}")
     end
 
-    if request.head?
-      response.headers['Content-Length'] = (range ? range.size : size).to_s
-      response.headers['Content-Disposition'] =
-        ActionDispatch::Http::ContentDisposition.format(disposition: 'inline', filename: blob.filename.sanitized)
-      return head response.status, content_type: content_type
-    end
-
-    send_stream(filename: blob.filename.sanitized, disposition: :inline, type: content_type) do |stream|
-      if range
-        range.step(SCORM_RANGE_SLICE) do |from|
-          stream.write blob.download_chunk(from..[from + SCORM_RANGE_SLICE - 1, range.end].min)
-        end
-      else
-        blob.download { |chunk| stream.write chunk }
+    sent = range || (size.positive? ? 0..(size - 1) : nil)
+    body = []
+    # HEAD reads nothing from storage, so a missing file still answers 200 there
+    if sent && !request.head?
+      begin
+        first = blob.download_chunk(sent.begin..[sent.end, sent.begin + ScormAssetBody::SLICE - 1].min)
+      rescue ActiveStorage::FileNotFoundError
+        return scorm_refusal(:not_found)
+      rescue StandardError => e
+        Rails.error.report(e, handled: true, context: { blob_id: blob.id })
+        return scorm_refusal(:internal_server_error)
       end
-    rescue ActiveStorage::FileNotFoundError
-      scorm_refusal(:not_found)
-    rescue StandardError => e
-      # Once bytes are on the wire all that is left is to log and close the stream
-      Rails.logger.error "SCORM asset stream failed for blob #{blob.key}: #{e.message}"
-      head :internal_server_error unless response.committed?
+      body = ScormAssetBody.new(blob, sent, first)
     end
+
+    set_scorm_headers(blob, content_type, sent, range)
+    self.response_body = body
+  end
+
+  def set_scorm_headers(blob, content_type, sent, range)
+    response.headers['Content-Type'] = content_type
+    response.headers['Content-Disposition'] =
+      ActionDispatch::Http::ContentDisposition.format(disposition: 'inline', filename: blob.filename.sanitized)
+    response.headers['Accept-Ranges'] = 'bytes'
+    response.headers['Content-Length'] = (sent ? sent.size : 0).to_s
+    # A validator of our own keeps Rack::ETag from reading the body to make one
+    response.headers['ETag'] = %("#{blob.checksum}")
+    if range
+      response.headers['Content-Range'] = "bytes #{range.begin}-#{range.end}/#{blob.byte_size}"
+      self.status = :partial_content
+    end
+    expires_in 1.year, public: false
   end
 
   # The single satisfiable range to send (clamped to the window), :unsatisfiable,

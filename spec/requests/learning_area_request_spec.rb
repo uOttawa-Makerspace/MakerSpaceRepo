@@ -535,6 +535,7 @@ RSpec.describe "Learning area", type: :request do
           expect(response.headers["Accept-Ranges"]).to eq("bytes")
           expect(response.headers["Cache-Control"]).to include("private").and include("max-age=#{1.year.to_i}")
           expect(response.headers["Cache-Control"]).not_to include("public")
+          expect(response.headers["Content-Length"]).to eq(body.bytesize.to_s)
         end
       end
 
@@ -547,6 +548,7 @@ RSpec.describe "Learning area", type: :request do
         expect(response).to have_http_status(:partial_content)
         expect(response.body).to eq("2345")
         expect(response.headers["Content-Range"]).to eq("bytes 2-5/10")
+        expect(response.headers["Content-Length"]).to eq("4")
       end
 
       it "serves an open-ended range to the end of a small file" do
@@ -570,6 +572,7 @@ RSpec.describe "Learning area", type: :request do
         expect(response).to have_http_status(:partial_content)
         expect(response.headers["Content-Range"]).to eq("bytes 0-5242879/314572800")
         expect(response.body.bytesize).to eq(5_242_880)
+        expect(response.headers["Content-Length"]).to eq("5242880")
         expect(sizes.max).to be <= 1_048_576
         expect(sizes.size).to eq(5)
       end
@@ -612,21 +615,25 @@ RSpec.describe "Learning area", type: :request do
         expect(response.headers["Content-Length"]).to eq("28")
       end
 
-      it "answers 404 with no-store when the stored file is gone" do
+      it "answers 404 with no-store and none of the success headers when the stored file is gone" do
         blob = site.scorm_package_files.blobs.find_by(key: "#{site.scorm_prefix}/data.bin")
         blob.service.delete(blob.key)
-        get scorm_asset_learning_area_path(site, path: "data.bin")
+        get scorm_asset_learning_area_path(site, path: "data.bin"), headers: { "Range" => "bytes=2-5" }
         expect(response).to have_http_status(:not_found)
         expect(response.headers["Cache-Control"]).to eq("no-store")
+        %w[Content-Disposition Content-Range Accept-Ranges ETag].each do |name|
+          expect(response.headers).not_to have_key(name)
+        end
+        expect(response.headers["Content-Length"].to_i).to eq(response.body.bytesize)
+        expect(response.media_type).not_to eq("application/octet-stream")
       end
 
-      it "logs a storage failure while streaming and answers an empty 500 rather than raising" do
-        allow_any_instance_of(ActiveStorage::Blob).to receive(:download).and_raise("storage down")
-        allow(Rails.logger).to receive(:error)
+      it "answers 500 with no-store when the first slice cannot be read" do
+        allow_any_instance_of(ActiveStorage::Blob).to receive(:download_chunk).and_raise("storage down")
         get scorm_asset_learning_area_path(site, path: "index.html")
-        expect(Rails.logger).to have_received(:error).with(/SCORM asset stream failed.*storage down/)
         expect(response).to have_http_status(:internal_server_error)
-        expect(response.body).to eq("")
+        expect(response.headers["Cache-Control"]).to eq("no-store")
+        expect(response.headers).not_to have_key("Content-Disposition")
       end
 
       it "sends no-store with a 404 for an unknown path" do
