@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-# Chunk 13: VolunteerTaskRequestsController. No role gate except update_approval
-# (sign-in + staff); the listing scope differs for staff. Approval creates CC money and an approved
+# Chunk 13: VolunteerTaskRequestsController. The listings need staff or volunteer-program
+# membership, create_request the same plus an active join, update_approval staff; the listing scope differs for staff. Approval creates CC money and an approved
 # VolunteerHour and emails the requester.
 RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
   let(:task) { create(:volunteer_task, title: "tour guide", cc: 12, hours: 3.5) }
@@ -17,8 +17,22 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_task_requests (index)" do
-    %i[guest regular volunteer staff admin].each do |role|
-      it "#{role}: renders (no role gate)" do
+    it "guest: redirects to login" do
+      get volunteer_task_requests_path
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_task_requests"))
+    end
+
+    %i[regular role_only].each do |role|
+      it "#{role}: redirects to root with an alert" do
+        vol_sign_in_as(role)
+        get volunteer_task_requests_path
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+      end
+    end
+
+    %i[volunteer staff admin].each do |role|
+      it "#{role}: renders" do
         vol_sign_in_as(role)
         get volunteer_task_requests_path
         expect(response).to have_http_status(:ok)
@@ -78,11 +92,19 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect(ivar(:@processed_volunteer_task_requests)).to be_empty
     end
 
-    it "renders for a guest with empty results (no gate)" do
+    it "sends a guest to login from both partials" do
       get search_pending_volunteer_task_requests_path
-      expect(response).to have_http_status(:ok)
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_task_requests/search_pending"))
       get search_processed_volunteer_task_requests_path
-      expect(response).to have_http_status(:ok)
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_task_requests/search_processed"))
+    end
+
+    it "sends a regular user away from both partials" do
+      vol_sign_in_as(:regular)
+      get search_pending_volunteer_task_requests_path
+      expect(response).to redirect_to(root_path)
+      get search_processed_volunteer_task_requests_path
+      expect(response).to redirect_to(root_path)
     end
   end
 
@@ -167,12 +189,13 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
     end
 
-    # requests stay open to any signed-in user (enrolment is open by design)
-    it "lets a regular user (no program) request a task" do
+    it "refuses a user without volunteer access even with an active join" do
       user = create(:user, :regular_user)
       assign!(user)
       vol_login!(user)
-      expect { request! }.to change(VolunteerTaskRequest, :count).by(1)
+      expect { request! }.not_to change(VolunteerTaskRequest, :count)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
     end
 
     # only a user with an active join on the task may file the request

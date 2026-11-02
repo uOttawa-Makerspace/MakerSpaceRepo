@@ -21,7 +21,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   ALLOWED = %i[volunteer inactive staff admin].freeze
-  DENIED = %i[guest regular role_only].freeze
+  DENIED = %i[regular role_only].freeze
 
   describe "grant_access matrix" do
     DENIED.each do |role|
@@ -45,6 +45,22 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
         expect(response).to redirect_to(root_path)
         delete volunteer_hour_path(hour)
         expect(response).to redirect_to(root_path)
+        expect(hour.reload.approval).to be_nil
+        expect(VolunteerHour.exists?(hour.id)).to be(true)
+      end
+    end
+
+    describe "guest" do
+      it "is sent to login and nothing is persisted or changed" do
+        hour = make_hour
+        get volunteer_hours_path
+        expect(response.location).to include("/login")
+        expect { post volunteer_hours_path, params: hour_params }.not_to change(VolunteerHour, :count)
+        expect(response.location).to include("/login")
+        put update_approval_volunteer_hours_path(id: hour.id, approval: true)
+        expect(response.location).to include("/login")
+        delete volunteer_hour_path(hour)
+        expect(response.location).to include("/login")
         expect(hour.reload.approval).to be_nil
         expect(VolunteerHour.exists?(hour.id)).to be(true)
       end
@@ -420,7 +436,12 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       end
     end
 
-    %i[guest regular role_only].each do |role|
+    it "guest: staff pages redirect to login" do
+      get volunteer_hour_requests_volunteer_hours_path
+      expect(response.location).to include("/login")
+    end
+
+    %i[regular role_only].each do |role|
       it "#{role}: staff pages redirect to root (grant_access runs first)" do
         vol_sign_in_as(role)
         get volunteer_hour_requests_volunteer_hours_path

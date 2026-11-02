@@ -83,12 +83,27 @@ RSpec.describe "Content pages (part 2)", type: :request do
       }.to change(Announcement.all_users, :count).by(1)
     end
 
-    # staff may re-target a volunteer announcement to any audience on update
-    it "lets staff re-target a volunteer announcement to 'all' (every visitor) via update" do
+    %w[all admin staff regular_user].each do |goal|
+      it "stops staff re-targeting a volunteer announcement to '#{goal}' via update" do
+        sign_in_as(:staff)
+        patch announcement_path(volunteer_ann), params: { announcement: { public_goal: goal } }
+        expect(response).to redirect_to(new_announcement_path)
+        expect(flash[:alert]).to eq("Please select another public goal")
+        expect(volunteer_ann.reload.public_goal).to eq("volunteer")
+      end
+    end
+
+    it "lets staff edit a volunteer announcement while keeping its audience" do
       sign_in_as(:staff)
+      patch announcement_path(volunteer_ann), params: { announcement: { description: "Edited", public_goal: "volunteer" } }
+      expect(response).to redirect_to(announcements_path)
+      expect(volunteer_ann.reload.description).to eq("Edited")
+    end
+
+    it "lets an admin re-target an announcement to any audience" do
+      sign_in_as(:admin)
       patch announcement_path(volunteer_ann), params: { announcement: { public_goal: "all" } }
       expect(response).to redirect_to(announcements_path)
-      expect(flash[:notice]).to eq("Announcement updated")
       expect(volunteer_ann.reload.public_goal).to eq("all")
     end
 
@@ -100,12 +115,29 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect { delete announcement_path(admin_ann) }.not_to change(Announcement, :count)
     end
 
-    # staff can open the show and edit pages of any announcement; update and destroy are guarded
-    it "lets staff read and open the edit form of an admin-only announcement" do
+    it "keeps an admin-only announcement's show and edit pages from staff" do
       sign_in_as(:staff)
       get announcement_path(admin_ann)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
+      expect(response.body).not_to include("Admins only news")
+      get edit_announcement_path(admin_ann)
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "lets staff read and open the edit form of a volunteer announcement" do
+      sign_in_as(:staff)
+      get announcement_path(volunteer_ann)
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Admins only news")
+      expect(response.body).to include("Vol news")
+      get edit_announcement_path(volunteer_ann)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "lets an admin read and open the edit form of an admin-only announcement" do
+      sign_in_as(:admin)
+      get announcement_path(admin_ann)
+      expect(response).to have_http_status(:ok)
       get edit_announcement_path(admin_ann)
       expect(response).to have_http_status(:ok)
     end
@@ -312,11 +344,12 @@ RSpec.describe "Content pages (part 2)", type: :request do
         expect(other).to be_present
       end
 
-      it "is not guarded: a guest request answers 204 but persists nothing" do
-        expect {
-          put dismiss_announcements_path(announcement_id: news.id)
-        }.not_to change(AnnouncementDismiss, :count)
+      it "answers a guest with 204 without looking anything up or inserting" do
+        expect(AnnouncementDismiss).not_to receive(:create)
+        expect(AnnouncementDismiss).not_to receive(:new)
+        put dismiss_announcements_path(announcement_id: news.id)
         expect(response).to have_http_status(:no_content)
+        expect(AnnouncementDismiss.count).to eq(0)
       end
 
       it "silently ignores an unknown announcement id" do

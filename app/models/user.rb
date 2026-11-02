@@ -338,6 +338,14 @@ class User < ApplicationRecord
     ).limit(30)
   }
 
+  # Name/username lookup for staff pickers: too-short terms match nothing, so a
+  # blank or wildcard-only search never lists everyone.
+  DIRECTORY_SEARCH_MIN_LENGTH = 3
+  scope :directory_search, ->(query) {
+    query = query.to_s.strip
+    query.length < DIRECTORY_SEARCH_MIN_LENGTH ? none : search(query)
+  }
+
   scope :fuzzy_search, ->(query) {
     where(
       'LOWER(UNACCENT(name)) % LOWER(UNACCENT(:query)) OR LOWER(UNACCENT(username)) % LOWER(UNACCENT(:query))',

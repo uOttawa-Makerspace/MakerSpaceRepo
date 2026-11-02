@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Chunk 13: VolunteerTaskJoinsController. It inherits only SessionsController:
-# `create` has NO sign-in or role gate; `remove` needs sign-in plus owner or staff.
+# `create` needs sign-in plus staff or volunteer-program membership; `remove` needs sign-in plus owner or staff.
 RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
   let(:task) { create(:volunteer_task, title: "open house", joins: 1) }
   let(:volunteer) { create(:user, :volunteer_with_volunteer_program) }
@@ -77,7 +77,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(vol_deliveries.size).to eq(4)
     end
 
-    # volunteer enrolment/joining is open by design (an external form covers approval); capacity only counts user_type "Volunteer" (users.role), so a program member whose role is regular_user is stored as "Regular_user" and never consumes a seat
+    # capacity only counts user_type "Volunteer" (users.role), so a program member whose role is regular_user is stored as "Regular_user" and never consumes a seat
     it "stores a program member with role regular_user as Regular_user, leaving the seat free for others" do
       member = create(:user, :regular_user)
       Program.create!(user: member, program_type: Program::VOLUNTEER)
@@ -99,12 +99,12 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("This task is already full")
     end
 
-    # open by design (an external form covers approval): a plain regular user (no program) joins any task
-    it "lets a regular user with no program join" do
-      user = create(:user, :regular_user)
-      vol_login!(user)
-      expect { join!(join_params) }.to change(VolunteerTaskJoin, :count).by(1)
-      expect(VolunteerTaskJoin.last.user_id).to eq(user.id)
+    it "refuses a regular user with no volunteer program" do
+      vol_login!(create(:user, :regular_user))
+      expect { join!(join_params) }.not_to change(VolunteerTaskJoin, :count)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
+      expect(vol_deliveries).to be_empty
     end
 
     it "ignores a user_id param from a non-staff user" do
@@ -148,17 +148,16 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(flash[:alert]).to match(/param is missing/)
     end
 
-    it "guest on a task with free capacity: 500 (current_user.id is nil), nothing persisted" do
+    it "redirects a guest to login, nothing persisted" do
       expect { join!(join_params) }.not_to change(VolunteerTaskJoin, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(login_path)
       expect(vol_deliveries).to be_empty
     end
 
-    it "guest on a full task gets the 'already full' flash and a redirect" do
+    it "redirects a guest to login even when the task is full" do
       create(:volunteer_task_join, :active, volunteer_task: task)
       join!(join_params)
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to eq("This task is already full")
+      expect(response).to redirect_to(login_path)
     end
   end
 
