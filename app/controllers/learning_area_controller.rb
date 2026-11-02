@@ -129,8 +129,8 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def scorm_commit
-    # Progress is only reported by the module's own package once it is running
-    unless @learning_module.scorm_ready?
+    # Progress is only reported by the module's own package once it has been extracted
+    unless @learning_module.scorm_trackable?
       return(
         render json: {
                  error: 'SCORM package not ready'

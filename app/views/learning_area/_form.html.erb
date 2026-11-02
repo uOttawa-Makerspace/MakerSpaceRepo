@@ -134,13 +134,6 @@
     </fieldset>
 
     <fieldset id="scorm-section" class="mb-3" style="display: none;">
-        <% if @learning_module.persisted? && @learning_module.scorm_package.attached? %>
-            <% if @learning_module.scorm_failed? || @learning_module.scorm_stalled? %>
-                <%= render 'scorm_problem', learning_module: @learning_module %>
-            <% else %>
-                <p class="mb-2">Package status: <strong><%= @learning_module.scorm_status.humanize %></strong></p>
-            <% end %>
-        <% end %>
         <%# Retain existing attachment when no new file is chosen %>
         <% if @learning_module.scorm_package.attached? %>
             <% if @learning_module.scorm_package.persisted? %>

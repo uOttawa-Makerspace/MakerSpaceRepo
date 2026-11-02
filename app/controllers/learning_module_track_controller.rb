@@ -21,6 +21,11 @@ class LearningModuleTrackController < DevelopmentProgramsController
 
   def completed
     learning_module = LearningModule.find_by(id: params[:learning_module_id])
+    if learning_module.nil?
+      flash[:alert] = "That learning module could not be found."
+      return redirect_to learning_area_index_path
+    end
+
     # A SCORM package reports its own completion
     if learning_module.scorm_package.attached?
       flash[:alert] = "This learning module records its own completion."

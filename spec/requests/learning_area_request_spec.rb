@@ -523,7 +523,11 @@ RSpec.describe "Learning area", type: :request do
 
   describe "POST /learning_area/:id/scorm_commit" do
     let(:user) { create(:user, :regular_user) }
-    let(:learning_module) { create(:learning_module, training: training, title: "Ready package", scorm_status: :ready) }
+    let(:learning_module) do
+      create(:learning_module, :with_scorm_object, training: training, title: "Ready package").tap do |lm|
+        lm.update_columns(scorm_status: LearningModule.scorm_statuses[:ready], scorm_prefix: "scorm/learning_modules/test_#{lm.id}_x")
+      end
+    end
     let(:state) { { "cmi.completion_status" => "incomplete", "cmi.location" => "slide-3", "cmi.suspend_data" => "abc" } }
 
     def commit(id, body = state)
@@ -645,12 +649,31 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    it "refuses a commit while the package is still processing" do
-      processing = create(:learning_module, training: training, title: "Still processing", scorm_status: :processing)
+    it "keeps accepting a learner's progress while a re-extraction of an already extracted package runs" do
+      learning_module.update_columns(scorm_status: LearningModule.scorm_statuses[:processing])
+      log_in!(user)
+      commit(learning_module.id, { "cmi.completion_status" => "completed" })
+      expect(response).to have_http_status(:ok)
+      expect(user.learning_module_tracks.find_by(learning_module: learning_module)).to be_completed
+    end
+
+    it "refuses a commit for a package that has never been extracted" do
+      processing = create(:learning_module, :with_scorm_object, training: training, title: "Still processing")
+      processing.update_columns(scorm_status: LearningModule.scorm_statuses[:processing])
       log_in!(user)
       expect { commit(processing.id, { "cmi.completion_status" => "completed" }) }
         .not_to change(LearningModuleTrack, :count)
       expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+
+  describe "POST /learning_module_track/completed for an unknown module" do
+    it "refuses cleanly and records nothing" do
+      sign_in_as(:regular)
+      expect { post completed_learning_module_track_index_path(learning_module_id: 0) }
+        .not_to change(LearningModuleTrack, :count)
+      expect(response).to redirect_to(learning_area_index_path)
+      expect(flash[:alert]).to be_present
     end
   end
 
@@ -683,7 +706,7 @@ RSpec.describe "Learning area", type: :request do
       expect(response.body).to include("Turbo.visit")
     end
 
-    it "stops polling and offers staff a retry once the extraction has stalled" do
+    it "stops polling and offers staff the reason and a retry once the extraction has stalled" do
       sign_in_as(:admin)
       get learning_area_path(stalled)
       expect(response.body).not_to include("Turbo.visit")
@@ -692,25 +715,35 @@ RSpec.describe "Learning area", type: :request do
       expect(response.body).to include(retry_scorm_learning_area_path(stalled))
     end
 
-    it "does not offer the retry to a learner" do
+    it "tells a learner only that the module is not available yet, with no reason or retry" do
+      failed = packaged("Failed one", :failed, scorm_error: "extraction error (RuntimeError)")
       sign_in_as(:regular)
-      get learning_area_path(stalled)
-      expect(response.body).to include("did not finish")
-      expect(response.body).not_to include(retry_scorm_learning_area_path(stalled))
+      [stalled, failed].each do |lm|
+        get learning_area_path(lm)
+        expect(response.body).to include("not available yet")
+        expect(response.body).not_to include("did not finish")
+        expect(response.body).not_to include("extraction error")
+        expect(response.body).not_to include(retry_scorm_learning_area_path(lm))
+      end
     end
 
-    it "shows the stored reason of a failed extraction" do
+    it "shows staff the stored reason of a failed extraction" do
       failed = packaged("Failed one", :failed, scorm_error: "no imsmanifest.xml found")
-      sign_in_as(:regular)
+      sign_in_as(:staff)
       get learning_area_path(failed)
       expect(response.body).to include("no imsmanifest.xml found")
     end
 
-    it "shows the state and a retry on the edit page" do
+    it "shows the state on the edit page with a retry form of its own, outside the edit form" do
       sign_in_as(:admin)
       get edit_learning_area_path(stalled)
       expect(response.body).to include("did not finish")
-      expect(response.body).to include(retry_scorm_learning_area_path(stalled))
+      doc = Nokogiri::HTML5(response.body)
+      retry_form = doc.at_css(%(form[action="#{retry_scorm_learning_area_path(stalled)}"]))
+      expect(retry_form).to be_present
+      expect(retry_form.ancestors("form")).to be_empty
+      expect(retry_form.at_css("button, input[type=submit]")).to be_present
+      expect(doc.css(%(form[action="#{learning_area_path(stalled)}"])).first.at_css("form")).to be_nil
     end
 
     it "queues a fresh extraction when staff retry a stalled package" do

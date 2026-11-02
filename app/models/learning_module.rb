@@ -124,6 +124,12 @@ class LearningModule < ApplicationRecord
     end
   end
 
+  # Learner progress is accepted for a package that has been extracted, also
+  # while a later upload is being re-extracted.
+  def scorm_trackable?
+    scorm_package.attached? && scorm_prefix.present?
+  end
+
   def scorm_retryable?
     scorm_package.attached? && (scorm_failed? || scorm_stalled?)
   end

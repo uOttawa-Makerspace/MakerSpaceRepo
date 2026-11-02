@@ -77,6 +77,7 @@ RSpec.describe ScormExtractor do
     lm = module_with("imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1")
     ScormExtractor.extract(lm)
     first_prefix = lm.reload.scorm_prefix
+    lm.update_columns(scorm_status: LearningModule.scorm_statuses[:pending])
     ScormExtractor.extract(lm)
     lm.reload
     expect(lm.scorm_prefix).not_to eq(first_prefix)
@@ -97,11 +98,11 @@ RSpec.describe ScormExtractor do
     expect(lm.scorm_package_files).to be_attached
   end
 
-  it "marks the module failed and re-raises when the file is not a zip" do
+  it "marks the module failed with the reason, without raising, when the file is not a zip" do
     lm = create(:learning_module)
     lm.scorm_package.attach(io: StringIO.new("not a zip"), filename: "bad.zip", content_type: "application/zip")
     lm.save!
-    expect { ScormExtractor.extract(lm) }.to raise_error(Zip::Error)
+    expect { ScormExtractor.extract(lm) }.not_to raise_error
     expect(lm.reload.scorm_status).to eq("failed")
     expect(lm.scorm_error).to eq("the file is not a valid zip archive")
   end
@@ -115,6 +116,23 @@ RSpec.describe ScormExtractor do
 
   describe "claiming an extraction" do
     let(:files) { { "imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1" } }
+
+    it "leaves a ready module ready when a duplicate run arrives" do
+      lm = module_with(files)
+      ScormExtractor.extract(lm)
+      prefix = lm.reload.scorm_prefix
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("ready")
+      expect(lm.scorm_prefix).to eq(prefix)
+    end
+
+    it "leaves a failed module and its reason alone until a new attempt starts" do
+      lm = module_with("index.html" => "x")
+      ScormExtractor.extract(lm)
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("failed")
+      expect(lm.scorm_error).to eq("no imsmanifest.xml found")
+    end
 
     it "does nothing while another extraction is processing within the time bound" do
       lm = module_with(files)
@@ -144,6 +162,61 @@ RSpec.describe ScormExtractor do
     end
   end
 
+  describe "progress and cleanup" do
+    let(:files) { { "imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1", "b.html" => "2" } }
+
+    def upload_keys(lm)
+      ActiveStorage::Blob.where("key LIKE ?", "scorm/learning_modules/test_#{lm.id}_%").pluck(:key)
+    end
+
+    it "refreshes the status time while it keeps making progress" do
+      stub_const("ScormExtractor::HEARTBEAT_EVERY", 0.seconds)
+      lm = module_with(files)
+      seen = []
+      allow(ActiveStorage::Blob).to receive(:create_and_upload!).and_wrap_original do |m, **args|
+        sleep 0.01
+        seen << LearningModule.find(lm.id).scorm_status_changed_at
+        m.call(**args)
+      end
+      ScormExtractor.extract(lm)
+      expect(seen.uniq.size).to be > 1
+      expect(lm.reload.scorm_status).to eq("ready")
+    end
+
+    it "removes the files it uploaded when it fails, and records an unexpected error without hiding it" do
+      lm = module_with(files)
+      allow(Nokogiri).to receive(:XML).and_raise("boom")
+      expect { ScormExtractor.extract(lm) }.to raise_error("boom")
+      lm.reload
+      expect(lm.scorm_status).to eq("failed")
+      expect(lm.scorm_error).to eq("extraction error (RuntimeError)")
+      expect(upload_keys(lm)).to be_empty
+    end
+
+    it "removes the files it uploaded when a newer run took over" do
+      lm = module_with(files)
+      allow(ActiveStorage::Blob).to receive(:create_and_upload!).and_wrap_original do |m, **args|
+        LearningModule.where(id: lm.id).update_all(scorm_status_changed_at: 1.second.from_now)
+        m.call(**args)
+      end
+      ScormExtractor.extract(lm)
+      expect(upload_keys(lm)).to be_empty
+    end
+
+    it "keeps the previous files when the swap cannot be saved" do
+      lm = module_with(files)
+      ScormExtractor.extract(lm)
+      old_keys = upload_keys(lm.reload)
+      lm.update_columns(scorm_status: LearningModule.scorm_statuses[:pending])
+      allow_any_instance_of(LearningModule).to receive(:update!).and_raise("db down")
+      expect { ScormExtractor.extract(lm) }.to raise_error("db down")
+      lm.reload
+      expect(lm.scorm_status).to eq("failed")
+      expect(lm.scorm_package_files.blobs.pluck(:key)).to match_array(old_keys)
+      expect(upload_keys(lm)).to match_array(old_keys)
+    end
+  end
+
   describe "LearningModule#scorm_stalled?" do
     it "is true for pending or processing states older than the bound, or with no recorded time" do
       lm = build(:learning_module, scorm_status: :pending, scorm_status_changed_at: nil)
@@ -168,6 +241,13 @@ RSpec.describe ScormExtractor do
       lm = module_with("imsmanifest.xml" => format(MANIFEST, href: "j.html"), "j.html" => "1")
       ExtractScormJob.perform_now(lm.id)
       expect(lm.reload.scorm_status).to eq("ready")
+    end
+
+    it "records an invalid package without raising, and a repeated run keeps the reason" do
+      lm = module_with("index.html" => "x")
+      2.times { expect { ExtractScormJob.perform_now(lm.id) }.not_to raise_error }
+      expect(lm.reload.scorm_status).to eq("failed")
+      expect(lm.scorm_error).to eq("no imsmanifest.xml found")
     end
 
     it "raises RecordNotFound for a deleted module" do
