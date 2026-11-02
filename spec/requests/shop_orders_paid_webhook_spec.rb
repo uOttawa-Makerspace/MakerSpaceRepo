@@ -34,6 +34,10 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
     }.merge(extra)
   end
 
+  def cc_payload(email:, quantity: 2, product_id: cc_product_id)
+    { customer: { email: email }, line_items: [{ product_id: product_id, quantity: quantity }] }
+  end
+
   before do
     block_external_http!
     ActionMailer::Base.deliveries.clear
@@ -457,10 +461,6 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
   # ------------------------------------------------------------- cc money
 
   describe "cc money credit" do
-    def cc_payload(email:, quantity: 2, product_id: cc_product_id)
-      { customer: { email: email }, line_items: [{ product_id: product_id, quantity: quantity }] }
-    end
-
     it "credits 10 cc per unit to a known user (by exact email)" do
       expect { hook(cc_payload(email: user.email, quantity: 3)) }.to change { user.cc_moneys.count }.by(1)
       row = user.cc_moneys.last
@@ -533,13 +533,13 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
 
     it "sends no claim email for a claim that rolled back, and the retry sends it" do
       payload = cc_payload(email: "buyer@example.com").merge(id: 7104)
-      allow(CcMoney).to receive(:create).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "boom")
       perform_enqueued_jobs { hook(payload) }
       expect(response).to have_http_status(:internal_server_error)
       expect(deliveries).to be_empty
       expect(ProcessedOrder.where(provider_ref: "7104")).to be_empty
 
-      allow(CcMoney).to receive(:create).and_call_original
+      allow(CcMoney).to receive(:create!).and_call_original
       perform_enqueued_jobs { hook(payload) }
       expect(CcMoney.where(linked: false).count).to eq(1)
       expect(deliveries.size).to eq(1)
@@ -549,13 +549,13 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
       pending = create(:membership, user: user, membership_tier: tier, status: "pending")
       payload = membership_payload(pending.id, id: 7105, customer: { email: user.email },
                                                line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }])
-      allow(CcMoney).to receive(:create).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "boom")
       hook(payload)
       expect(response).to have_http_status(:internal_server_error)
       expect(pending.reload.status).to eq("pending")
       expect(ProcessedOrder.count).to eq(0)
 
-      allow(CcMoney).to receive(:create).and_call_original
+      allow(CcMoney).to receive(:create!).and_call_original
       hook(payload)
       expect([pending.reload.status, user.cc_moneys.pluck(:cc)]).to eq(["paid", [10]])
     end
@@ -564,12 +564,115 @@ RSpec.describe "Shopify orders_paid webhook (shop paths)", type: :request do
   # ---------------------------------------------------- orders ledger
 
   it "records each applied order once in the ledger (provider, order id, topic, name)" do
-    order = { id: 7201, name: "#1042", customer: { email: user.email }, line_items: [{ product_id: 1, quantity: 1 }] }
+    order = { id: 7201, name: "#1042", customer: { email: user.email }, line_items: [{ product_id: cc_product_id, quantity: 1 }] }
     hook(order)
     hook(order)
     hook(order.merge(id: nil, admin_graphql_api_id: "gid://shopify/Order/7201"))
     expect(ProcessedOrder.all.map { |o| [o.provider, o.provider_ref, o.topic, o.order_name] })
       .to eq([["shopify", "7201", "orders/paid", "#1042"]])
+  end
+
+  # ---------------------------------------------------- claim contract
+  # A claimed order is an applied order, and every branch either applies or is reported.
+
+  describe "the claim contract" do
+    let(:reports) { [] }
+
+    before { allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] } }
+
+    it "rolls back a failed membership update and leaves no claim, so the retry applies it" do
+      pending = create(:membership, user: user, membership_tier: tier, status: "pending")
+      payload = membership_payload(pending.id, id: 7301)
+      allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      hook(payload)
+      expect(response).to have_http_status(:internal_server_error)
+      expect(ProcessedOrder.count).to eq(0)
+      expect(pending.reload.status).to eq("pending")
+
+      allow_any_instance_of(Membership).to receive(:update!).and_call_original
+      hook(payload)
+      expect([response.status, pending.reload.status, ProcessedOrder.count]).to eq([200, "paid", 1])
+    end
+
+    it "rolls back a failed CC credit and leaves no claim" do
+      allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      hook(cc_payload(email: user.email).merge(id: 7302))
+      expect(response).to have_http_status(:internal_server_error)
+      expect(ProcessedOrder.count).to eq(0)
+      expect(CcMoney.where(user_id: user.id)).to be_empty
+    end
+
+    it "reports a membership reference that names no membership, and claims the order" do
+      hook(membership_payload(0, id: 7303))
+      expect(response).to have_http_status(:ok)
+      expect(ProcessedOrder.where(provider_ref: "7303").count).to eq(1)
+      error, opts = reports.find { |e, _| e.is_a?(CustomWebhooksController::UnknownMembership) }
+      expect(error.message).to include("7303")
+      expect(opts).to include(handled: true, context: { shopify_order_id: "7303" })
+    end
+
+    it "reports a membership order with no reference whose customer is not a user, and claims it" do
+      hook(membership_payload("", id: 7304, customer: { email: "nobody@example.com" }))
+      expect(response).to have_http_status(:ok)
+      expect(ProcessedOrder.where(provider_ref: "7304").count).to eq(1)
+      expect(reports.map { |e, _| e.class }).to include(CustomWebhooksController::UnresolvedMembershipOrder)
+    end
+
+    it "makes no claim for a merch-only order, a job-order or a locker-only order" do
+      hook(customer: { email: user.email }, line_items: [{ product_id: 1, quantity: 1 }], id: 7305)
+      hook(tags: [job_order_tag], customer: { email: user.email }, line_items: [{ product_id: 1, quantity: 1 }], id: 7306)
+      hook(tags: [LockerRental.draft_order_operating_tag], customer: { email: user.email },
+           line_items: [{ product_id: 1, quantity: 1 }], id: 7307)
+      expect(ProcessedOrder.count).to eq(0)
+    end
+
+    it "applies a locker plus membership order atomically" do
+      rental = create(:locker_rental, :await_payment)
+      pending = create(:membership, user: user, membership_tier: tier, status: "pending")
+      payload = membership_payload(pending.id, id: 7308).merge(
+        tags: [LockerRental.draft_order_operating_tag, membership_tag],
+        metafields: [
+          { namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s },
+          { namespace: "makerepo", key: "membership_db_reference", value: pending.id.to_s }
+        ]
+      )
+      allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      hook(payload)
+      expect(response).to have_http_status(:internal_server_error)
+      expect([rental.reload.state, LockerPayment.count, ProcessedOrder.count]).to eq(["await_payment", 0, 0])
+
+      allow_any_instance_of(Membership).to receive(:update!).and_call_original
+      hook(payload)
+      expect([response.status, rental.reload.state, LockerPayment.count, pending.reload.status, ProcessedOrder.count])
+        .to eq([200, "active", 1, "paid", 1])
+    end
+
+    it "answers an already claimed order without any Shopify lookup" do
+      ProcessedOrder.claim!(provider: "shopify", ref: 7309, topic: "orders/paid")
+      expect_any_instance_of(CustomWebhooksController).not_to receive(:draft_order_metafields)
+      pending = create(:membership, user: user, membership_tier: tier, status: "pending")
+      hook(tags: [membership_tag], line_items: [{ title: "1 Day Membership", quantity: 1 }], id: 7309)
+      expect(response).to have_http_status(:ok)
+      expect(pending.reload.status).to eq("pending")
+    end
+
+    it "queues the claim mail only once the claim has committed" do
+      calls = 0
+      allow(CcMoney).to receive(:create!).and_wrap_original do |original, *args|
+        calls += 1
+        raise ActiveRecord::StatementInvalid, "boom" if calls == 2
+
+        original.call(*args)
+      end
+      payload = { customer: { email: "buyer@example.com" }, id: 7310,
+                  line_items: [{ product_id: cc_product_id, quantity: 1 }, { product_id: cc_product_id, quantity: 1 }] }
+      expect { hook(payload) }.not_to have_enqueued_mail
+      expect(response).to have_http_status(:internal_server_error)
+
+      calls = 2 # the retry's writes all succeed
+      expect { hook(payload) }.to have_enqueued_mail(MsrMailer, :send_cc_money_email).twice
+      expect(response).to have_http_status(:ok)
+    end
   end
 
   # ---------------------------------------------------- combined payloads

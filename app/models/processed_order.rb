@@ -3,6 +3,8 @@
 # One payment-provider order the site has applied (see CreateProcessedOrders). The row is the claim:
 # a delivery that inserts it applies the order, one that finds it already there applies nothing. Never updated
 # or deleted.
+# The unique key (provider, provider_ref) means one row per provider order, whatever the webhook topic:
+# `topic` records which delivery applied it (e.g. "orders/paid"), it is not part of the key.
 class ProcessedOrder < ApplicationRecord
   # Claims the order with INSERT ... ON CONFLICT DO NOTHING. True when this call inserted the row; false when
   # the order was already claimed. Meant to run inside the transaction that applies the order: a concurrent

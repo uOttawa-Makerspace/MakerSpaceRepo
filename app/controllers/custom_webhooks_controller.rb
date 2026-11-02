@@ -25,35 +25,44 @@ class CustomWebhooksController < ApplicationController
   end
   include ShopifyConcern
 
-  # Two phases, so the money branches (locker activation, membership paid, CC credit) apply all
-  # together or not at all with respect to Shopify trouble:
+  # The money branches (locker activation, membership paid, CC credit) apply all together or not at all:
   #   1. resolve every draft-order metafield reference. This is the only part that can reach Shopify,
   #      and so the only part that can raise ShopifyContext::NotConfigured; nothing is written yet.
-  #   2. apply the branches (plain DB writes, plus the CC mail).
+  #   2. apply the branches in ONE transaction (apply_claimed_order), together with the order's claim in
+  #      processed_orders.
   # NotConfigured in phase 1 answers 503 with nothing applied, so Shopify retries once the config is fixed.
-  # Shopify may deliver an order more than once. The locker branch is idempotent by itself (locker_payments,
-  # keyed by the order id); the membership and CC branches are applied once per order through the
-  # processed_orders record, claimed in the same transaction as their writes (see apply_shop_order), so a
-  # failure inside phase 2 is a 500 whose retry applies them in full.
+  # A claimed order is an applied order, and every branch either applies or is reported: a write that fails
+  # raises, which rolls the claim back and answers 500 so Shopify retries; a problem no retry can fix (the
+  # order names a membership or locker rental that does not exist) is reported with the order id and the
+  # claim is committed, so it is neither retried forever nor lost.
+  # An order with a membership or CC branch is applied once per Shopify order (the claim, whose unique key
+  # also covers a repeated delivery). A locker-only order has no claim: locker_payments, keyed by the
+  # order id, is its ledger (shared with orders_fulfilled).
   def orders_paid
     order_hook = webhook_params.to_h
+    tags = order_hook["tags"]
+    claimable = claimable_order?(order_hook)
+    ref = order_id(order_hook)
+
+    # An order that was already claimed is applied: answer before any Shopify lookup.
+    if claimable && ref.present? && ProcessedOrder.exists?(provider: SHOP_PROVIDER, provider_ref: ref.to_s)
+      Rails.logger.info("[orders_paid] order #{ref} already applied, nothing to do")
+      return head :ok
+    end
 
     locker_ref = nil
     membership_ref = nil
     begin
-      locker_ref = locker_reference(order_hook) if LockerRental.draft_order_processable?(order_hook["tags"])
-      membership_ref = membership_reference(order_hook) if Membership.draft_order_processable?(order_hook["tags"])
+      locker_ref = locker_reference(order_hook) if LockerRental.draft_order_processable?(tags)
+      membership_ref = membership_reference(order_hook) if Membership.draft_order_processable?(tags)
     rescue ShopifyContext::NotConfigured => e
       Rails.logger.warn("[orders_paid] Shopify not configured, answering 503 (Shopify will retry): #{e.class}")
       return head :service_unavailable
     end
 
-    # handle lockers
-    apply_locker_order(order_hook, locker_ref) if LockerRental.draft_order_processable?(order_hook["tags"])
-
     # Job-order payment is recorded by staff, not automatically. Leave a trace so a
     # paid job-order draft order can be reconciled by hand.
-    if JobOrder.draft_order_processable?(order_hook["tags"])
+    if JobOrder.draft_order_processable?(tags)
       Rails.logger.info(
         "[orders_paid] paid job-order draft order ignored (no automatic payment recording): " \
         "order id=#{order_hook['id'].inspect} name=#{order_hook['name'].inspect} " \
@@ -61,8 +70,12 @@ class CustomWebhooksController < ApplicationController
       )
     end
 
-    # memberships and CC Money credit, once per order
-    apply_shop_order(order_hook, membership_ref)
+    if claimable && ref.present?
+      apply_claimed_order(order_hook, ref, locker_ref, membership_ref)
+    else
+      apply_locker_order(order_hook, locker_ref) if LockerRental.draft_order_processable?(tags)
+      report_order_without_id(order_hook, membership_ref) if claimable
+    end
 
     head :ok
   end
@@ -95,6 +108,11 @@ class CustomWebhooksController < ApplicationController
   class LockerOrderWithoutReference < StandardError; end
   class UnknownLockerRental < StandardError; end
   class OrderWithoutId < StandardError; end
+  class UnknownMembership < StandardError; end
+  class UnresolvedMembershipOrder < StandardError; end
+
+  SHOP_PROVIDER = "shopify"
+  CC_PRODUCT_ID = 4_359_597_129_784
 
   private
 
@@ -236,54 +254,82 @@ class CustomWebhooksController < ApplicationController
     nil
   end
 
-  # The membership and CC branches of a paid order, applied once per Shopify order. The order is claimed in
-  # processed_orders inside the same transaction as the writes: a repeated delivery finds the claim
-  # and applies nothing, and a failure rolls the claim back with the writes so Shopify's retry applies them.
-  # The CC claim mail is queued for after that transaction commits, so a rolled-back claim sends none.
-  # An order without an id cannot be claimed, so neither branch is applied (the locker branch is not affected);
-  # it is reported with ids only and staff reconcile it by hand. Shopify always sends the id.
-  def apply_shop_order(order_hook, membership_ref)
-    customer_email = order_hook.dig("customer", "email")
-    membership = Membership.draft_order_processable?(order_hook["tags"]) && order_hook["line_items"].present?
-    cc_money = order_hook["line_items"].present? && customer_email.present?
-    return unless membership || cc_money
+  # The order has something to claim: a membership order (membership tag and line items) or a CC order (a line
+  # item of the CC product and a customer email). Plain merch, job-order and locker-only orders have none.
+  def claimable_order?(order_hook)
+    (Membership.draft_order_processable?(order_hook["tags"]) && order_hook["line_items"].present?) ||
+      cc_items(order_hook).any?
+  end
 
-    ref = order_id(order_hook)
-    if ref.blank?
-      Rails.error.report(
-        OrderWithoutId.new("paid order without an order id; membership and CC money branches skipped"),
-        handled: true, severity: :error,
-        context: { membership_id: membership_ref, draft_order_id: order_hook["draft_order_id"] }.compact
-      )
-      return
-    end
+  def cc_items(order_hook)
+    return [] if order_hook.dig("customer", "email").blank?
 
-    ProcessedOrder.transaction do
-      next unless ProcessedOrder.claim!(provider: "shopify", ref: ref, topic: "orders/paid", name: order_hook["name"])
+    Array.wrap(order_hook["line_items"]).select { |item| item.is_a?(Hash) && item["product_id"].to_i == CC_PRODUCT_ID }
+  end
 
-      process_membership_hook(order_hook, membership_ref) if membership
-      order_hook["line_items"].each { |item| increment_cc_money(item, customer_email) } if cc_money
+  # Claims the order and applies all its branches (locker, membership, CC credit) in one transaction with the
+  # lock waits bounded (own_transaction), so a concurrent delivery of the same order waits on the claim for at
+  # most the bound, then finds it applied; a timeout or any failed write rolls everything back, answers 500, and
+  # Shopify retries. The CC claim mail is queued for after the commit, so a rolled-back claim sends none.
+  def apply_claimed_order(order_hook, ref, locker_ref, membership_ref)
+    ProcessedOrder.own_transaction("orders_paid") do
+      next unless ProcessedOrder.claim!(provider: SHOP_PROVIDER, ref: ref, topic: "orders/paid", name: order_hook["name"])
+
+      apply_locker_order(order_hook, locker_ref) if LockerRental.draft_order_processable?(order_hook["tags"])
+      if Membership.draft_order_processable?(order_hook["tags"]) && order_hook["line_items"].present?
+        process_membership_hook(order_hook, membership_ref)
+      end
+      cc_items(order_hook).each { |item| increment_cc_money(item, order_hook.dig("customer", "email")) }
     end
   end
 
-  def process_membership_hook(order_hook, membership_id)
-    return unless order_hook["line_items"].present?
+  # An order without an id cannot be claimed, so neither branch is applied (the locker branch is not affected);
+  # it is reported with ids only and staff reconcile it by hand. Shopify always sends the id.
+  def report_order_without_id(order_hook, membership_ref)
+    Rails.error.report(
+      OrderWithoutId.new("paid order without an order id; membership and CC money branches skipped"),
+      handled: true, severity: :error,
+      context: { membership_id: membership_ref, draft_order_id: order_hook["draft_order_id"] }.compact
+    )
+  end
 
+  # A membership order whose target cannot be found, which no retry can fix: reported with the order id and
+  # left to staff. The claim still commits.
+  def report_unresolved_membership(order_hook, error_class, message)
+    Rails.error.report(
+      error_class.new("membership order #{order_id(order_hook)} #{message}"),
+      handled: true, severity: :error, context: { shopify_order_id: order_id(order_hook) }
+    )
+  end
+
+  def process_membership_hook(order_hook, membership_id)
     if membership_id.present?
-      Membership.find_by(id: membership_id)&.update(status: :paid)
+      membership = Membership.find_by(id: membership_id)
+      if membership
+        membership.update!(status: :paid)
+      else
+        report_unresolved_membership(order_hook, UnknownMembership, "references unknown membership #{membership_id}")
+      end
       return
     end
 
     # fallback if not found
     customer_email = order_hook.dig("customer", "email")
-    return unless customer_email.present?
+    if customer_email.blank?
+      report_unresolved_membership(order_hook, UnresolvedMembershipOrder, "has no membership reference and no customer email")
+      return
+    end
 
     Rails.logger.info "Membership metafield ID not found in DB, fallback to email: #{customer_email}"
     user = User.find_by(email: customer_email)
-    return unless user
+    unless user
+      report_unresolved_membership(order_hook, UnresolvedMembershipOrder, "has no membership reference and its customer is not a user")
+      return
+    end
 
-    order_hook["line_items"].each do |item|
-      title = item["title"].to_s.strip
+    created = 0
+    Array.wrap(order_hook["line_items"]).each do |item|
+      title = item.is_a?(Hash) ? item["title"].to_s.strip : ""
 
       membership_tier = MembershipTier.where(
         "LOWER(title_en) = ? OR LOWER(title_fr) = ?",
@@ -292,27 +338,24 @@ class CustomWebhooksController < ApplicationController
 
       next unless membership_tier
 
-      Membership.create!(
-        user: user,
-        membership_tier: membership_tier,
-        status: :paid
-      )
+      Membership.create!(user: user, membership_tier: membership_tier, status: :paid)
+      created += 1
     end
+    report_unresolved_membership(order_hook, UnresolvedMembershipOrder, "has no membership reference and no line item names a tier") if created.zero?
   end
-  
-  def increment_cc_money(product_params, email)
-    return unless email.present?
-    return unless product_params["product_id"].to_i == 4_359_597_129_784
 
+  # Runs inside the claim transaction, for a CC product line item of an order with a customer email.
+  def increment_cc_money(product_params, email)
     cc = 10 * product_params["quantity"].to_i
     user = User.find_by(email: email)
 
     if user.present?
-      CcMoney.create(user_id: user.id, cc: cc)
+      CcMoney.create!(user_id: user.id, cc: cc)
     else
-      new_cc = CcMoney.create(cc: cc, linked: false)
+      new_cc = CcMoney.create!(cc: cc, linked: false)
       hash = Rails.application.message_verifier(:cc).generate(new_cc.id)
-      # after the claim's transaction commits (nothing is sent for a rolled-back one)
+      # Active Job here enqueues at once (enqueue_after_transaction_commit is false), so the mail is queued
+      # after the claim's transaction commits; nothing is sent for a rolled-back one.
       ActiveRecord.after_all_transactions_commit { MsrMailer.send_cc_money_email(email, cc, hash).deliver_later }
     end
   end

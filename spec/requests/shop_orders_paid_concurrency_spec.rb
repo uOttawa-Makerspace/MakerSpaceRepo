@@ -59,7 +59,7 @@ RSpec.describe "Shopify orders_paid webhook under concurrency", type: :request d
     first_in = Queue.new
     resume = Queue.new
     paused_once = Concurrent::AtomicBoolean.new(false)
-    allow(CcMoney).to receive(:create).and_wrap_original do |original, *args|
+    allow(CcMoney).to receive(:create!).and_wrap_original do |original, *args|
       if paused_once.make_true
         first_in << true # the first delivery holds its claim, uncommitted
         resume.pop
@@ -83,7 +83,7 @@ RSpec.describe "Shopify orders_paid webhook under concurrency", type: :request d
     first_in = Queue.new
     resume = Queue.new
     failed_once = Concurrent::AtomicBoolean.new(false)
-    allow(CcMoney).to receive(:create).and_wrap_original do |original, *args|
+    allow(CcMoney).to receive(:create!).and_wrap_original do |original, *args|
       if failed_once.make_true
         first_in << true
         resume.pop
@@ -102,5 +102,31 @@ RSpec.describe "Shopify orders_paid webhook under concurrency", type: :request d
     expect(second.value).to eq(200)
     expect(user.cc_moneys.pluck(:cc)).to eq([20])
     expect(ProcessedOrder.where(provider_ref: order_id.to_s).count).to eq(1)
+  end
+
+  it "answers 500 to a delivery that waits longer than the lock bound on the first one's claim" do
+    stub_const("ApplicationRecord::LOCK_TIMEOUT", "300ms")
+    body = payload.to_json
+    first_in = Queue.new
+    resume = Queue.new
+    paused_once = Concurrent::AtomicBoolean.new(false)
+    allow(CcMoney).to receive(:create!).and_wrap_original do |original, *args|
+      if paused_once.make_true
+        first_in << true
+        resume.pop
+      end
+      original.call(*args)
+    end
+
+    first = in_thread { deliver(body) }
+    first_in.pop
+    second = in_thread { deliver(body) }
+    wait_until_blocked_on_lock(resume)
+    finished = second.join(5)
+    resume << true
+
+    expect(finished).not_to be_nil
+    expect([first.value, second.value]).to eq([200, 500])
+    expect(user.cc_moneys.pluck(:cc)).to eq([20])
   end
 end
