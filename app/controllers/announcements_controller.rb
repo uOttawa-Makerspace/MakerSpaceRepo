@@ -2,7 +2,6 @@
 
 class AnnouncementsController < StaffAreaController
   layout "staff_area"
-  before_action :signed_in, only: :dismiss
   before_action :set_announcement, only: %i[show edit update destroy]
   before_action :build_announcement, only: :create
   before_action :ensure_announcement_access, only: %i[show edit]

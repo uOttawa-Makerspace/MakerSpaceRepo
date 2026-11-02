@@ -344,12 +344,11 @@ RSpec.describe "Content pages (part 2)", type: :request do
         expect(other).to be_present
       end
 
-      it "sends a guest to login and persists nothing" do
+      it "answers a guest with 204 and persists nothing" do
         expect {
           put dismiss_announcements_path(announcement_id: news.id)
         }.not_to change(AnnouncementDismiss, :count)
-        expect(response).to have_http_status(:found)
-        expect(response.location).to include("/login")
+        expect(response).to have_http_status(:no_content)
       end
 
       it "silently ignores an unknown announcement id" do
