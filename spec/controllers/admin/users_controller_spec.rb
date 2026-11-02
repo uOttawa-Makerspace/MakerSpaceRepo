@@ -8,12 +8,12 @@ RSpec.describe Admin::UsersController, type: :controller do
     @space = create(:space)
   end
 
-  describe "GET /users/:id/change_email" do
+  describe "PATCH /admin/users/:id/change_email" do
     context "logged in as admin" do
       let(:target_user) {create(:user, :regular_user)}
 
         it "sends a confirmation email for the user" do
-          get :change_email,
+          patch :change_email,
               params: {
                 id: target_user.id,
                 new_email: "new-address@example.com",
@@ -29,7 +29,7 @@ RSpec.describe Admin::UsersController, type: :controller do
         it "rejects an email already used by another account" do
           existing_user = create(:user, :regular_user)
 
-          get :change_email,
+          patch :change_email,
               params: {
                 id: target_user.id,
                 new_email: existing_user.email,
@@ -42,7 +42,7 @@ RSpec.describe Admin::UsersController, type: :controller do
         end
 
         it "rejects confirmation emails that do not match" do
-          get :change_email,
+          patch :change_email,
               params: {
                 id: target_user.id,
                 new_email: "new-address@example.com",

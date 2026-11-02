@@ -33,6 +33,15 @@ RSpec.describe "Shopify orders_fulfilled webhook (cash lockers)", type: :request
       .to eq([[order_id.to_s, "applied"]])
   end
 
+  it "dates the payment at the fulfilment (when the cash was taken), not at the order's creation" do
+    rental = create(:locker_rental, :await_payment)
+
+    signed_orders_fulfilled(payload(rental.id, processed_at: "2026-10-01T12:00:00Z",
+                                               fulfillments: [{ created_at: "2026-10-20T15:30:00Z" }]))
+
+    expect(LockerPayment.find_by!(locker_rental: rental).paid_at).to eq(Time.utc(2026, 10, 20, 15, 30))
+  end
+
   %w[paid refunded voided partially_paid partially_refunded authorized].each do |status|
     it "applies nothing for a #{status} order (200)" do
       rental = create(:locker_rental, :await_payment)

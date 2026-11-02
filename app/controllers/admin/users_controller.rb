@@ -80,14 +80,16 @@ class Admin::UsersController < AdminAreaController
     if saved
       redirect_to edit_admin_user_path(@edit_admin_user), notice: "User information updated"
     else
+      # the rollback restored the card rows, not the loaded association
+      @edit_admin_user.association(:rfid).reset
       @rfids = Rfid.recent_unset
       render :edit, status: :unprocessable_entity
     end
   end
 
   def change_email
-    new_email = params[:new_email].to_s.strip.downcase
-    confirm_new_email = params[:confirm_new_email].to_s.strip.downcase
+    new_email = User.normalize_value_for(:email, params[:new_email].to_s)
+    confirm_new_email = User.normalize_value_for(:email, params[:confirm_new_email].to_s)
 
     if new_email.blank? || confirm_new_email.blank?
       redirect_to edit_admin_user_path(@edit_admin_user),
@@ -95,8 +97,8 @@ class Admin::UsersController < AdminAreaController
     elsif new_email != confirm_new_email
       redirect_to edit_admin_user_path(@edit_admin_user),
                   alert: "This confirmation email isn't matching the new email"
-    elsif User.unscoped.where("LOWER(email) = ?", new_email)
-              .where.not(id: @edit_admin_user.id).exists?
+    # LOWER(email) matches legacy mixed-case rows and uses index_users_on_lowercase_email
+    elsif User.unscoped.where("LOWER(email) = ?", new_email).where.not(id: @edit_admin_user.id).exists?
       redirect_to edit_admin_user_path(@edit_admin_user),
                   alert: "This email is already used by a MakerRepo Account."
     else

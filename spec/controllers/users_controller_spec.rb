@@ -324,7 +324,7 @@ RSpec.describe UsersController, type: :controller do
                 }
               }
         @newpass = User.find(User.last.id).password
-        expect(@newpass).not_to be(@oldpass)
+        expect(@newpass).not_to eq(@oldpass)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(response).to redirect_to settings_admin_path
         expect(flash[:notice]).to eq(

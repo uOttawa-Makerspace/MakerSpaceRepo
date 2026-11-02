@@ -29,16 +29,21 @@
     <%= f.text_field :gender, class: 'profile-text' %>
 
     <%= f.label :student_id, t('users.new.form.student_id'), class: 'form-label' %>
-    <%= f.text_field :student_id, { class: 'form-control', inputmode: 'numeric', autocomplete: 'off', minlength: '9', maxlength: '9', pattern: '[0-9]{9}', title: '9 digit number' } %>
+    <%# No browser pattern: stored ids come in many lengths, and the model decides which are valid %>
+    <%= f.text_field :student_id, { class: 'form-control', inputmode: 'numeric', autocomplete: 'off' } %>
     <br>
     <%= f.label :faculty, t('users.new.form.faculty'), class: 'form-label' %>
-    <%= f.select :faculty, [
+    <% faculty_options = [
           [t('users.new.form.arts'), 'Arts'],
           [t('users.new.form.law'), 'Law'], [t('users.new.form.education'), 'Education'],
           [t('users.new.form.engineering'), 'Engineering'], [t('users.new.form.health_sciences'), 'Health Sciences'],
           [t('users.new.form.medicine'), 'Medicine'], [t('users.new.form.science'), 'Science'],
           [t('users.new.form.social_sciences'), 'Social Sciences'], [t('users.new.form.telfer'), 'Telfer School of Management']
-        ], { prompt: t('users.new.form.choose.faculty') }, { class: 'form-select profile-select' } %>
+        ] %>
+    <%# Keep a stored faculty that is not one of the options, so saving another field does not blank it %>
+    <% current_faculty = @edit_admin_user.faculty_in_database %>
+    <% faculty_options.unshift([current_faculty, current_faculty]) if current_faculty.present? && faculty_options.none? { |_, value| value == current_faculty } %>
+    <%= f.select :faculty, faculty_options, { prompt: t('users.new.form.choose.faculty') }, { class: 'form-select profile-select' } %>
     <%= f.label :year_of_study, t('users.new.form.year_of_study'), class: 'form-label' %>
     <%= f.select :year_of_study, (1..10).to_a.map { |n| [n, n] }, { prompt: t('users.new.form.choose.default') }, class: 'form-select profile-select' %>
 

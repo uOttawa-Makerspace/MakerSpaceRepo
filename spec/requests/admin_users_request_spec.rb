@@ -187,6 +187,17 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "edit keeps stored values the form's options do not list (legacy faculty, long student id)" do
+      target.update_columns(faculty: "Common Law", student_id: "1234567890123")
+      get edit_admin_user_path(target)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("select[name='user[faculty]'] option[selected]")&.[]("value")).to eq("Common Law")
+      student_id = page.at_css("input[name='user[student_id]']")
+      expect(student_id["value"]).to eq("1234567890123")
+      expect(student_id["pattern"]).to be_nil
+      expect(student_id["maxlength"]).to be_nil
+    end
+
     it "manage_roles renders" do
       get manage_roles_admin_users_path
       expect(response).to have_http_status(:ok)
