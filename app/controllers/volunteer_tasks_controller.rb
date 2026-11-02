@@ -4,7 +4,7 @@ class VolunteerTasksController < SessionsController
   include VolunteerTasksHelper
   include VolunteerAreaAccess
   before_action -> { @with_volunteer_header = true }
-  before_action :grant_access, except: %i[show index my_tasks complete_task]
+  before_action :staff_access, except: %i[show index my_tasks complete_task]
   before_action :volunteer_access, only: %i[show index my_tasks]
   before_action :signed_in, only: :complete_task
   before_action :task_owner_or_staff, only: :complete_task
@@ -155,15 +155,6 @@ class VolunteerTasksController < SessionsController
   end
 
   private
-
-  def grant_access
-    return signed_in unless signed_in?
-
-    unless current_user.staff?
-      flash[:alert] = "You cannot access this area."
-      redirect_to root_path
-    end
-  end
 
   def task_owner_or_staff
     task = VolunteerTask.find(params[:id])

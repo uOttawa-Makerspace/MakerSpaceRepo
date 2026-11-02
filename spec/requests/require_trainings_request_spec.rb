@@ -44,16 +44,23 @@ RSpec.describe "Require trainings", type: :request do
         expect(task.require_trainings.map(&:training)).to eq([training])
       end
 
-      it "falls back to the root when there is no referer" do
+      it "falls back to the task page when there is no referer" do
         post require_trainings_path, params: params
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(volunteer_task_path(task))
       end
 
-      # a failed create sets a notice but never renders or redirects (204 empty response)
-      it "answers 204 with a 'Something went wrong' notice when the training is missing" do
-        expect { post require_trainings_path, params: { require_training: { volunteer_task_id: task.id, training_id: "" } } }
+      it "redirects back with a 'Something went wrong' notice when the training is missing" do
+        invalid = { require_training: { volunteer_task_id: task.id, training_id: "" } }
+        expect { post require_trainings_path, params: invalid, headers: back }
           .not_to change(RequireTraining, :count)
-        expect(response).to have_http_status(:no_content)
+        expect(response).to redirect_to("/volunteer_tasks")
+        expect(flash[:notice]).to eq("Something went wrong")
+      end
+
+      it "falls back to the task page when a failed create has no referer" do
+        invalid = { require_training: { volunteer_task_id: task.id, training_id: "" } }
+        post require_trainings_path, params: invalid
+        expect(response).to redirect_to(volunteer_task_path(task))
         expect(flash[:notice]).to eq("Something went wrong")
       end
 

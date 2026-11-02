@@ -38,7 +38,7 @@ RSpec.describe RequireTrainingsController, type: :controller do
                }
         }.to change(RequireTraining, :count).by(0)
         expect(flash[:notice]).to eq("Something went wrong")
-        expect(response).to have_http_status(:success)
+        expect(response).to redirect_to volunteer_task_path(@task)
       end
 
       it "should create the requirement (not admin)" do

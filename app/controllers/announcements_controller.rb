@@ -20,6 +20,8 @@ class AnnouncementsController < StaffAreaController
   end
 
   def dismiss
+    return head(:no_content) unless signed_in?
+
     AnnouncementDismiss.create(
       announcement_id: params[:announcement_id],
       user_id: current_user.id

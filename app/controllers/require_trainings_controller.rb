@@ -3,14 +3,13 @@
 class RequireTrainingsController < VolunteerTasksController
   def create
     require_training = RequireTraining.new(require_training_params)
-    if require_training.save
-      redirect_back(fallback_location: root_path)
-      flash[
-        :notice
-      ] = "You've successfully added a required training for this volunteer task."
-    else
-      flash[:notice] = "Something went wrong"
-    end
+    flash[:notice] =
+      if require_training.save
+        "You've successfully added a required training for this volunteer task."
+      else
+        "Something went wrong"
+      end
+    redirect_back(fallback_location: task_page(require_training.volunteer_task_id))
   end
 
   def remove_trainings
@@ -18,7 +17,7 @@ class RequireTrainingsController < VolunteerTasksController
       volunteer_task_id: require_training_params[:volunteer_task_id],
       training_id: require_training_params[:training_id]
     )
-    if require_training && current_user.staff?
+    if require_training
       require_training.destroy
       flash[:notice] = "You've successfully deleted this required training"
     else
@@ -28,6 +27,10 @@ class RequireTrainingsController < VolunteerTasksController
   end
 
   private
+
+  def task_page(task_id)
+    task_id.present? ? volunteer_task_path(task_id) : volunteer_tasks_path
+  end
 
   def require_training_params
     params.require(:require_training).permit(:volunteer_task_id, :training_id)
