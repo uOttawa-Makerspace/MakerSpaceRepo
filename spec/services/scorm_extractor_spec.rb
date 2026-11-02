@@ -181,6 +181,29 @@ RSpec.describe ScormExtractor do
       lm.reload
     end
 
+    def module_from_bytes(bytes)
+      lm = create(:learning_module)
+      lm.scorm_package.attach(io: StringIO.new(bytes), filename: "pkg.zip", content_type: "application/zip")
+      lm.save!
+      lm.reload
+    end
+
+    # An Info-ZIP Unicode Path extra field: version, CRC32 of the header name, UTF-8 name
+    def unicode_path_field(header_name, utf8_name, crc: Zlib.crc32(header_name))
+      data = [1, crc].pack("CV") + utf8_name.b
+      [0x7075, data.bytesize].pack("vv") + data
+    end
+
+    def zip_with_extra(header_name, extra)
+      io = StringIO.new
+      Zip::OutputStream.write_buffer(io) do |z|
+        z.put_next_entry("imsmanifest.xml"); z.write(manifest)
+        z.put_next_entry("index.html"); z.write("1")
+        z.put_next_entry(header_name, nil, extra); z.write("x")
+      end
+      io.string
+    end
+
     def manifest(href = "index.html")
       format(MANIFEST, href: href)
     end
@@ -204,6 +227,7 @@ RSpec.describe ScormExtractor do
       ["sub/\u200Fevil.html", "sub/?evil.html"],
       ["sub/\u2028evil.html", "sub/?evil.html"],
       ["sub/\u200Bevil.html", "sub/?evil.html"],
+      ["../.DS_Store", "../.DS_Store"],
       ["sub/\uFEFFevil.html", "sub/?evil.html"]
     ].each do |name, shown|
       it "fails the extraction, naming the entry, uploading nothing, for #{name.inspect}" do
@@ -225,7 +249,7 @@ RSpec.describe ScormExtractor do
 
     it "skips dotfiles, dot-directories and operating system metadata anywhere, without failing the package" do
       junk = ["__MACOSX/._index.html", "sub/__MACOSX/x", ".DS_Store", "sub/.DS_Store", "Icon\r", "sub/Icon\r",
-              "sub/._b.css", ".git/config", ".env", ".htaccess", "sub/.hidden/y.js", "../.DS_Store"]
+              "sub/._b.css", ".git/config", ".env", ".htaccess", "sub/.hidden/y.js"]
       lm = module_with_raw_names(base_files.merge(junk.to_h { |n| [n, "junk"] }).merge("sub/b.css" => "x"))
       ScormExtractor.extract(lm)
       expect(lm.reload.scorm_status).to eq("ready")
@@ -252,6 +276,56 @@ RSpec.describe ScormExtractor do
       end
     end
 
+    it "reads a name flagged as UTF-8 but invalid as IBM437 too" do
+      bytes = zip_io(base_files.merge("caf\u00E9.html" => "x")).string.b.gsub("caf\xC3\xA9.html".b, "caf\x82k.html".b)
+      lm = module_from_bytes(bytes)
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("ready")
+      expect(stored_paths(lm)).to include("caf\u00E9k.html")
+    end
+
+    it "uses the Unicode Path extra field when its CRC matches the header name" do
+      lm = module_from_bytes(zip_with_extra("legacy.html", unicode_path_field("legacy.html", "\u00FCn\u00EF.html")))
+      ScormExtractor.extract(lm)
+      expect(stored_paths(lm.reload)).to include("\u00FCn\u00EF.html")
+      expect(stored_paths(lm)).not_to include("legacy.html")
+    end
+
+    it "ignores a Unicode Path extra field whose CRC does not match the header name" do
+      lm = module_from_bytes(zip_with_extra("legacy.html", unicode_path_field("legacy.html", "\u00FCn\u00EF.html", crc: 1)))
+      ScormExtractor.extract(lm)
+      expect(stored_paths(lm.reload)).to include("legacy.html")
+    end
+
+    it "stores names in NFC" do
+      lm = module_with_raw_names(base_files.merge("cafe\u0301.html" => "x"))
+      ScormExtractor.extract(lm)
+      expect(stored_paths(lm.reload)).to include("caf\u00E9.html")
+    end
+
+    it "keeps zero-width joiners and non-joiners, which some scripts and emoji need" do
+      lm = module_with_raw_names(base_files.merge("sub/\u0645\u200C\u06A9.css" => "x", "sub/\u{1F468}\u200D\u{1F4BB}.css" => "x"))
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("ready")
+      expect(stored_paths(lm)).to include("sub/\u0645\u200C\u06A9.css", "sub/\u{1F468}\u200D\u{1F4BB}.css")
+    end
+
+    it "fails when the entry point is a file that was skipped" do
+      lm = module_with_raw_names("imsmanifest.xml" => manifest("content/.player/index.html"),
+                                 "content/.player/index.html" => "x")
+      expect(ActiveStorage::Blob).not_to receive(:create_and_upload!)
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("failed")
+      expect(lm.scorm_error).to eq('the package needs a file that was skipped: "content/.player/index.html"')
+    end
+
+    it "fails when a file the manifest lists was skipped, even with a query and encoding in the link" do
+      xml = %(<manifest><resources><resource href="index.html"><file href="%2Eenv?x=1#top"/></resource></resources></manifest>)
+      lm = module_with_raw_names("imsmanifest.xml" => xml, "index.html" => "1", ".env" => "secret")
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_error).to eq('the package needs a file that was skipped: ".env"')
+    end
+
     it "extracts an archive whose entries all start with ./" do
       lm = module_with_raw_names("./imsmanifest.xml" => manifest, "./index.html" => "1", "./sub/b.css" => "x")
       ScormExtractor.extract(lm)
@@ -276,7 +350,7 @@ RSpec.describe ScormExtractor do
       expect(ActiveStorage::Blob).not_to receive(:create_and_upload!)
       ScormExtractor.extract(lm)
       expect(lm.reload.scorm_status).to eq("failed")
-      expect(lm.scorm_error).to eq("more than one imsmanifest.xml at the top level")
+      expect(lm.scorm_error).to eq("more than one imsmanifest.xml at the same folder level")
     end
 
     it "fails when ./a.html and a.html are both present" do
@@ -327,7 +401,7 @@ RSpec.describe ScormExtractor do
 
     it "removes the files it uploaded when it fails, and records an unexpected error without hiding it" do
       lm = module_with(files)
-      allow(Nokogiri).to receive(:XML).and_raise("boom")
+      allow_any_instance_of(LearningModule).to receive(:update!).and_raise("boom")
       expect { ScormExtractor.extract(lm) }.to raise_error("boom")
       lm.reload
       expect(lm.scorm_status).to eq("failed")

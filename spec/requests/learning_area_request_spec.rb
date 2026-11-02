@@ -475,6 +475,21 @@ RSpec.describe "Learning area", type: :request do
     end
   end
 
+  describe "GET /learning_area/:id/scorm_assets/*path with a decomposed name" do
+    it "finds a file stored under the composed form of the name" do
+      lm = create(:learning_module, :with_scorm_object, training: training, title: "Accents")
+      prefix = "scorm/learning_modules/test_#{lm.id}_x"
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("<p>hi</p>"), filename: "caf\u00E9.html",
+                                                    content_type: "text/html", key: "#{prefix}/caf\u00E9.html")
+      lm.scorm_package_files.attach(blob)
+      lm.update_columns(scorm_prefix: prefix, scorm_status: LearningModule.scorm_statuses[:ready])
+      sign_in_as(:regular)
+      get scorm_asset_learning_area_path(lm, path: "cafe\u0301.html")
+      # the lookup finds the blob (not a 404); sending it hits the keyword error pinned below
+      expect(response).not_to have_http_status(:not_found)
+    end
+  end
+
   describe "GET /learning_area/:id/scorm_assets/*path" do
     let!(:scorm) do
       create(:learning_module, :with_scorm_object, training: training, title: "Scorm module").tap do |lm|

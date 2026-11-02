@@ -103,13 +103,18 @@ class LearningAreaController < DevelopmentProgramsController
   def serve_scorm_asset
     return head :not_found unless @learning_module.scorm_ready?
 
-    # Reconstruct blob key from request path and stored prefix
-    key = "#{@learning_module.scorm_prefix}/#{params[:path]}"
+    # Reconstruct blob key from request path and stored prefix. Stored names
+    # are NFC, so a link written in another normalization form still finds them.
+    path = params[:path].to_s
+    return head :not_found unless path.valid_encoding?
+
+    path = path.unicode_normalize(:nfc)
+    key = "#{@learning_module.scorm_prefix}/#{path}"
     blob = @learning_module.scorm_package_files.blobs.find_by(key: key)
     return head :not_found unless blob
 
     # ActiveStorage's send_blob_stream / proxying automatically handles HTTP Byte-Range (206) requests for video/audio
-    ext = File.extname(params[:path] || blob.filename.to_s)
+    ext = File.extname(path.presence || blob.filename.to_s)
     content_type = Rack::Mime.mime_type(ext, blob.content_type || 'application/octet-stream')
 
     # Instruct Cloudflare and the browser to cache this asset at the edge for 1 year

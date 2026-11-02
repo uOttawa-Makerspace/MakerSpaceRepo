@@ -99,6 +99,15 @@ class ScormExtractor
     )
   end
 
+  # A manifest link as a stored path: without query or fragment, decoded, NFC
+  def href_path(href)
+    path = href.split(/[?#]/, 2).first.to_s
+    path = CGI.unescapeURIComponent(path) if path.valid_encoding?
+    path.unicode_normalize(:nfc).split('/').reject { |segment| segment.empty? || segment == '.' }.join('/')
+  rescue ArgumentError, Encoding::UndefinedConversionError
+    path.to_s
+  end
+
   # Files this run uploaded but never attached
   def discard_uploaded
     @uploaded.each do |blob|
@@ -117,24 +126,36 @@ class ScormExtractor
 
     @learning_module.scorm_package.blob.open do |tmp|
       Zip::File.open(tmp.path) do |zip|
-        paths = zip.entries.reject(&:directory?).map { |entry| PackagePath.new(entry) }.reject(&:non_content?)
+        all_paths = zip.entries.reject(&:directory?).map { |entry| PackagePath.new(entry) }
 
         # Everything is checked before anything is uploaded: a package with a
-        # path that could leave its folder, or two files with one final path,
-        # is rejected whole rather than half used
-        if (unsafe = paths.find(&:unsafe?))
+        # path that could leave its folder, a file the package needs that is
+        # not content, or two files with one final path is rejected whole
+        # rather than half used
+        if (unsafe = all_paths.find(&:unsafe?))
           raise InvalidPackage, %(the package contains a file path that is not allowed: "#{unsafe.display}")
         end
+
+        paths, skipped = all_paths.partition { |path| !path.non_content? }
 
         manifests = paths.select { |path| path.segments.last == MANIFEST_FILE }
         raise InvalidPackage, "no #{MANIFEST_FILE} found" if manifests.empty?
 
         shallowest = manifests.map { |path| path.segments.size }.min
         top = manifests.select { |path| path.segments.size == shallowest }
-        raise InvalidPackage, "more than one #{MANIFEST_FILE} at the top level" if top.size > 1
+        raise InvalidPackage, "more than one #{MANIFEST_FILE} at the same folder level" if top.size > 1
 
         manifest_entry = top.first.entry
         root_segments = top.first.segments[0...-1]
+
+        xml = Nokogiri.XML(manifest_entry.get_input_stream.read)
+        scorm_entry_point = xml.xpath("//*[local-name()='resource'][@href]").first&.[]('href')
+
+        skipped_paths = skipped.map { |path| path.rooted(root_segments).join('/') }
+        needed = [scorm_entry_point, *xml.xpath("//*[local-name()='file'][@href]").map { |node| node['href'] }].compact
+        if (missing = needed.map { |href| href_path(href) }.find { |path| skipped_paths.include?(path) })
+          raise InvalidPackage, %(the package needs a file that was skipped: "#{missing.truncate(120)}")
+        end
 
         files = paths.map { |path| [path.entry, path.rooted(root_segments).join('/')] }
         if (duplicate = files.group_by(&:last).find { |_, same| same.size > 1 })
@@ -154,9 +175,6 @@ class ScormExtractor
             key: "#{prefix}/#{normalized_name}"
           )
         end
-
-        xml = Nokogiri.XML(manifest_entry.get_input_stream.read)
-        scorm_entry_point = xml.xpath("//*[local-name()='resource'][@href]").first&.[]('href')
 
         # Swap the attachments in only while this run still holds the claim.
         # The previous files are deleted after the commit, so a failure here
