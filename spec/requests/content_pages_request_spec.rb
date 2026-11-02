@@ -464,7 +464,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "submits as a guest: persisted, redirected, and the issue email is delivered to the SUBMITTED address with a support bcc" do
+    it "submits as a guest: persisted, redirected, and the issue email goes to the support team, with the submitted address in Reply-To" do
       deliveries.clear
       expect {
         perform_enqueued_jobs { post help_path, params: params }
@@ -474,19 +474,36 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(Help.last.gh_issue_number.to_s).to eq("111")
       expect(deliveries.size).to eq(1)
       mail = deliveries.last
-      expect(mail.to).to eq(["pat@example.test"])
-      expect(mail.bcc).to eq(["uottawa.makerepo@gmail.com"])
+      expect(mail.to).to eq(["uottawa.makerepo@gmail.com"])
+      expect(mail.reply_to).to eq(["pat@example.test"])
       expect(mail.subject).to eq("Issue Report | Booking does not work")
       expect(mail.body.encoded).to include(comments)
     end
 
-    # the help form sends the submitted recipient, subject and body
-    it "emails the submitted recipient with the submitted content" do
+    # the submitted address is only the reporter's contact, never a recipient
+    it "never addresses the mail to the submitted address" do
       deliveries.clear
-      victim = { help: params[:help].merge(email: "victim@example.test", subject: "Booking does not work", comments: "http://evil.example.test") }
-      perform_enqueued_jobs { post help_path, params: victim }
-      expect(deliveries.last.to).to eq(["victim@example.test"])
-      expect(deliveries.last.body.encoded).to include("http://evil.example.test")
+      other = { help: params[:help].merge(email: "someone@example.test", comments: "See the attached notes") }
+      perform_enqueued_jobs { post help_path, params: other }
+      mail = deliveries.last
+      expect(mail.to).to eq(["uottawa.makerepo@gmail.com"])
+      expect(mail.cc).to be_blank
+      expect(mail.bcc).to be_blank
+      expect(mail.reply_to).to eq(["someone@example.test"])
+      expect(mail.body.encoded).to include("See the attached notes")
+    end
+
+    # test env uses :null_store (never counts), so back the limiter's store with a counter
+    it "allows 5 submissions an hour per visitor, then answers 429 and creates nothing" do
+      counts = Hash.new(0)
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      5.times { post help_path, params: params; expect(response).to redirect_to(help_path) }
+      deliveries.clear
+      expect {
+        perform_enqueued_jobs { post help_path, params: params }
+      }.not_to change(Help, :count)
+      expect(response).to have_http_status(:too_many_requests)
+      expect(deliveries).to be_empty
     end
 
     # M50: with Turnstile enabled (the seam is off in test) a failed verification
