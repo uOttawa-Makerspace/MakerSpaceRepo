@@ -14,7 +14,7 @@ class HelpController < SessionsController
              by: -> { current_user.id.presence || request.remote_ip },
              with: -> {
                flash.now[:alert] = 'Too many requests, please try again later.'
-               @help = Help.new
+               @help = Help.new(help_fields)
                render :show, status: :too_many_requests
              }
 
@@ -24,8 +24,7 @@ class HelpController < SessionsController
 
   def create
     @help = Help.new(help_params)
-    # The GitHub issue is public: a guest's text is defanged as on the API path
-    @help.defang_github_text = !signed_in?
+    @help.defang_github_text = true # the GitHub issue is public
 
     unless verify_turnstile
       flash[:alert] = 'Captcha check failed, please try again.'
@@ -38,7 +37,7 @@ class HelpController < SessionsController
       if signed_in?
         # Signed in: the copy goes to the account's own address (bcc the team), never the typed one
         MsrMailer.issue_email(@help.name, current_user.email, @help.subject, text, params[:share_email],
-                              contact_email: @help.email).deliver_later
+                              contact_email: @help.email, account: current_user).deliver_later
       else
         MsrMailer.issue_email_to_team(@help.name, @help.email, @help.subject, text,
                                       via: 'the MakerRepo help page').deliver_later
@@ -65,6 +64,7 @@ class HelpController < SessionsController
 
     attrs = params.slice(:subject, :comments).permit(:subject, :comments)
     @help = Help.new(attrs.merge(name: current_user.name, email: current_user.email))
+    @help.defang_github_text = true # the GitHub issue is public
 
     if @help.save
       MsrMailer.issue_email(
@@ -85,5 +85,10 @@ class HelpController < SessionsController
 
   def help_params
     params.require(:help).permit(:name, :email, :subject, :comments)
+  end
+
+  # The typed fields, for re-rendering the form (none when the request has no help param)
+  def help_fields
+    params[:help].is_a?(ActionController::Parameters) ? help_params : {}
   end
 end

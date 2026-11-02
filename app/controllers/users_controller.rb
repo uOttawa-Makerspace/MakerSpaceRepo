@@ -77,15 +77,15 @@ class UsersController < SessionsController
   RESEND_CONFIRMATION_NOTICE =
     'If that email belongs to an account that still needs confirming, a confirmation email has been sent.'
 
-  rate_limit to: 10, within: 1.hour, only: :resend_confirmation, name: 'resend-ip',
+  RESEND_CONFIRMATION_EMAIL_LIMIT = 3 # mails per address per hour
+
+  rate_limit to: 30, within: 1.hour, only: :resend_confirmation, name: 'resend-ip',
              by: -> { request.remote_ip }, with: -> { resend_confirmation_response }
-  rate_limit to: 3, within: 1.hour, only: :resend_confirmation, name: 'resend-email',
-             by: -> { resend_confirmation_email }, with: -> { resend_confirmation_response }
 
   def resend_confirmation
     email = resend_confirmation_email
     user = User.find_by(email: email) if email.present?
-    if user && !user.confirmed?
+    if user && !user.confirmed? && resend_confirmation_budget_left?(email)
       hash = user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(user, hash).deliver_later
     end
@@ -501,9 +501,18 @@ class UsersController < SessionsController
 
   private
 
+  # The normalised email, or '' when none was given or it is longer than an address can be.
   def resend_confirmation_email
     fields = params[:user]
-    fields.is_a?(ActionController::Parameters) ? fields[:email].to_s.strip.downcase : ''
+    email = fields.is_a?(ActionController::Parameters) ? fields[:email].to_s.strip.downcase : ''
+    email.length > 254 ? '' : email
+  end
+
+  # Counts only the mails actually sent to an address, so unknown or confirmed addresses cannot
+  # use up a real account's budget. The answer to the caller is the same either way.
+  def resend_confirmation_budget_left?(email)
+    key = "rate-limit:users:resend-email:#{Digest::SHA256.hexdigest(email)}"
+    RateLimitCounter.increment(key, 1, expires_in: 1.hour) <= RESEND_CONFIRMATION_EMAIL_LIMIT
   end
 
   def resend_confirmation_response

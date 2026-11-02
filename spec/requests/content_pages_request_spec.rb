@@ -543,6 +543,48 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(posted[:body]).to eq("ping @#{zwj}someone a&amp;b")
     end
 
+    it "defangs the public GitHub issue for a signed-in user too" do
+      posted = nil
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do |_svc, **kw|
+        posted = kw
+        { number: 9 }
+      end
+      sign_in_as(:regular)
+      post help_path, params: { help: params[:help].merge(subject: "See @someone and #123 now") }
+      expect(posted[:title]).to eq("See @\u200Dsomeone and #\u200D123 now")
+    end
+
+    it "defangs the public GitHub issue on the JSON endpoint" do
+      posted = nil
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue) do |_svc, **kw|
+        posted = kw
+        { number: 9 }
+      end
+      sign_in_as(:regular)
+      put "/send_email", params: { subject: "See @someone and #123 now", comments: "Help please" }.to_json,
+                         headers: { "Content-Type" => "application/json" }
+      expect(posted[:title]).to eq("See @\u200Dsomeone and #\u200D123 now")
+    end
+
+    it "shows the team the account as well as the typed name and contact details" do
+      user = sign_in_as(:regular)
+      deliveries.clear
+      perform_enqueued_jobs do
+        post help_path, params: { help: params[:help].merge(name: "Somebody Else", email: "typed@example.test"), share_email: "1" }
+      end
+      body = deliveries.last.body.encoded
+      expect(body).to include("Somebody Else", "typed@example.test", user.name, user.username, user.email)
+    end
+
+    it "keeps the typed fields when the form is shown again after the limit trips" do
+      counts = Hash.new(0)
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      5.times { post help_path, params: params }
+      post help_path, params: { help: params[:help].merge(subject: "My unsent subject line", comments: "My unsent text") }
+      expect(response).to have_http_status(:too_many_requests)
+      expect(response.body).to include("My unsent subject line", "My unsent text", "Pat Visitor")
+    end
+
     it "counts the web form and the JSON endpoint separately" do
       counts = Hash.new(0)
       allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
@@ -754,8 +796,8 @@ RSpec.describe "Content pages (part 2)", type: :request do
     end
 
     it "shows a fallback when there is no changelog file" do
-      allow(File).to receive(:exist?).and_call_original
-      allow(File).to receive(:exist?).with(Rails.root.join("CHANGELOG.md")).and_return(false)
+      allow(File).to receive(:stat).and_call_original
+      allow(File).to receive(:stat).with(Rails.root.join("CHANGELOG.md")).and_raise(Errno::ENOENT)
       get changelog_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("No changelog available.")

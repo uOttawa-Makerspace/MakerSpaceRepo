@@ -351,8 +351,10 @@ class MsrMailer < ApplicationMailer
   end
 
   # contact_email: the address the reporter typed, shown to the team when they chose to share it
-  # (the mail itself always goes to +email+).
-  def issue_email(name, email, subject, comments, share_email, app_version = nil, contact_email: nil)
+  # (the mail itself always goes to +email+). account: the signed-in user, always shown to the
+  # team because the typed name and contact details are not verified.
+  def issue_email(name, email, subject, comments, share_email, app_version = nil, contact_email: nil, account: nil)
+    @account = account
     @name = name
     @email = email
     @contact_email = contact_email.presence || email

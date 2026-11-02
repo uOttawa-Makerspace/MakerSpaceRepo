@@ -127,6 +127,11 @@ module ApplicationHelper
     nil
   end
 
+  # An http(s) URL made safe to put inside a quoted CSS url(), or nil.
+  def css_url(value)
+    http_url(value)&.gsub(/['()]/) { |c| format('%%%02X', c.ord) }
+  end
+
   def signed_in?
     session_user.present? || has_valid_jwt?
   end

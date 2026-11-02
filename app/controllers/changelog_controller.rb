@@ -3,18 +3,20 @@ class ChangelogController < ApplicationController
   TABLE_TAGS = %w[table thead tbody tr th td].freeze
   LINK_ATTRIBUTES = %w[target rel].freeze
 
+  # Bump when the renderer options or the allow-list above change: cached HTML is keyed on it
+  CACHE_VERSION = 1
+
   def index
     changelog_path = Rails.root.join("CHANGELOG.md")
+    stat = File.stat(changelog_path)
 
-    if File.exist?(changelog_path)
-      # Rendered and sanitized once per file version, not on every request
-      html = Rails.cache.fetch(["changelog", File.mtime(changelog_path).to_f, File.size(changelog_path)]) do
-        render_markdown(File.read(changelog_path))
-      end
-      @changelog_html = html.html_safe # sanitized in render_markdown
-    else
-      @changelog_html = "<p>No changelog available.</p>".html_safe
+    # Rendered and sanitized once per file version, not on every request
+    html = Rails.cache.fetch(["changelog", CACHE_VERSION, stat.mtime.to_f, stat.size], expires_in: 1.day) do
+      render_markdown(File.read(changelog_path))
     end
+    @changelog_html = html.html_safe # sanitized in render_markdown
+  rescue Errno::ENOENT
+    @changelog_html = "<p>No changelog available.</p>".html_safe
   end
 
   private

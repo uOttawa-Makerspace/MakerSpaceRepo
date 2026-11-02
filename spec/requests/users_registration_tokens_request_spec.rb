@@ -216,6 +216,13 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries).to be_empty
     end
 
+    it "answers the same for a very long email value" do
+      get resend_confirmation_users_path, params: { user: { email: "a" * 3000 } }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq(notice)
+      expect(deliveries).to be_empty
+    end
+
     # test env uses :null_store (never counts), so back the limiter's store with a counter
     context "rate limited" do
       before do
@@ -233,12 +240,23 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
         expect(deliveries.size).to eq(3)
       end
 
-      it "limits a client IP across addresses" do
-        10.times { |i| get resend_confirmation_users_path, params: { user: { email: "n#{i}@example.test" } } }
+      it "does not count unknown or confirmed addresses against a real account's budget" do
+        confirmed = create(:user, :regular_user)
+        5.times { get resend_confirmation_users_path, params: { user: { email: confirmed.email } } }
+        5.times { get resend_confirmation_users_path, params: { user: { email: "nobody@example.test" } } }
         u = create(:user, :regular_user_not_confirmed)
         perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+        expect(deliveries.size).to eq(1)
+      end
+
+      it "allows 30 requests an hour per client IP, then mails nothing and answers the same" do
+        29.times { |i| get resend_confirmation_users_path, params: { user: { email: "n#{i}@example.test" } } }
+        u = create(:user, :regular_user_not_confirmed)
+        perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+        expect(deliveries.size).to eq(1)
+        perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
         expect(flash[:notice]).to eq(notice)
-        expect(deliveries).to be_empty
+        expect(deliveries.size).to eq(1)
       end
     end
   end

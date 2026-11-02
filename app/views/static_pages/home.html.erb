@@ -104,7 +104,7 @@
                            Time.zone.now
                          end %>
               <% link = http_url(w['link']) %>
-              <% picture = http_url(w['picture'])&.gsub(/['"()\\\s]/) { |c| format('%%%02X', c.ord) } %>
+              <% picture = css_url(w['picture']) %>
               <%= content_tag(link ? :a : :div, class: 'd-flex workshop-card',
                               **(link ? { href: link, target: '_blank', rel: 'noopener noreferrer' } : {})) do %>
                 <div class="text-center workshop-date"<% if picture %> style="background-image: url('<%= picture %>')"<% end %>>
