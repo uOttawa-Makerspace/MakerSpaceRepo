@@ -11,7 +11,8 @@
 #     with the file name, holding the uploaded file (user_files) and the staff's final files
 #     and PDF form (staff_files);
 #   - one task quote whose price is the old quote rounded to cents (0 when there was none);
-#   - one status: Declined when approved is false, otherwise Picked-Up. Both close an order.
+#   - one status: Picked-Up when picked_up is true, Declined for every other print order
+#     (declined, never answered, or finished without being marked picked up). Both close an order.
 #
 # order_type maps explicitly (0 = 3D Print, 1 = Laser Cut) and the migration stops on any other
 # value. A print order whose user does not exist is not imported (its count is raised as a
@@ -83,7 +84,7 @@ class ImportPrintOrdersAsJobOrders < ActiveRecord::Migration[8.1]
     execute <<~SQL
       INSERT INTO job_order_statuses (job_order_id, job_status_id, user_id, created_at, updated_at)
       SELECT jo.id,
-             (SELECT js.id FROM job_statuses js WHERE js.name = CASE WHEN p.approved IS FALSE THEN 'Declined' ELSE 'Picked-Up' END),
+             (SELECT js.id FROM job_statuses js WHERE js.name = CASE WHEN p.picked_up IS TRUE THEN 'Picked-Up' ELSE 'Declined' END),
              COALESCE(jo.assigned_staff_id, (SELECT u.id FROM users u WHERE u.id = p.user_id)),
              p.updated_at, p.updated_at
       FROM job_orders jo

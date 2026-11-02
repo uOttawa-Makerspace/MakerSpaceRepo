@@ -232,7 +232,7 @@ RSpec.describe "job order history repairs" do
                                file_file_name: "part.stl", created_at: created, updated_at: created + 1.day }.merge(attrs))
     end
 
-    let(:printed) { print_order(staff_id: staff.id) }
+    let(:printed) { print_order(staff_id: staff.id, picked_up: true) }
     let(:file) { blob("part.stl") }
     let(:final) { blob("final.gcode") }
     let(:form) { blob("form.pdf") }
@@ -285,6 +285,25 @@ RSpec.describe "job order history repairs" do
       expect(JobTask.count).to eq(0)
       expect(attachments("PrintOrder", printed.id).count).to eq(3)
       expect(ActiveStorage::Attachment.where(record_type: "JobTask").count).to eq(0)
+    end
+
+    # One print order per flag combination class found in production.
+    {
+      "picked up and paid" => [{ approved: true, user_approval: true, printed: true, picked_up: true, payed: true }, :picked_up],
+      "printed, not picked up" => [{ approved: true, user_approval: true, printed: true }, :declined],
+      "printed and paid, not picked up" => [{ approved: true, user_approval: true, printed: true, payed: true }, :declined],
+      "user declined" => [{ approved: true, user_approval: false }, :declined],
+      "staff declined" => [{ approved: false }, :declined],
+      "approved, never answered" => [{ approved: true }, :declined],
+      "approved by both, not printed" => [{ approved: true, user_approval: true }, :declined],
+      "no flags" => [{ approved: nil }, :declined]
+    }.each do |label, (flags, expected)|
+      it "closes a #{label} print order as #{expected == :picked_up ? 'Picked-Up' : 'Declined'}" do
+        po = print_order({ approved: nil }.merge(flags))
+        run(described_class)
+        status = JobOrder.find_by!(legacy_print_order_id: po.id).job_order_statuses.sole
+        expect(status.job_status_id).to eq(expected == :picked_up ? picked_up.id : declined.id)
+      end
     end
 
     it "adds a blob that is both a final file and the PDF form once" do
