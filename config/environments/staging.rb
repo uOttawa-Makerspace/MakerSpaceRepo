@@ -47,13 +47,13 @@ Rails.application.configure do
   config.i18n.fallbacks = true
   config.active_support.deprecation = :notify
 
+  # Rails.cache is Solid Cache (the solid_cache_entries table in the primary
+  # database; config/cache.yml): fragments and other cached values shared by every
+  # worker. Not for counting: rate limits use RateLimitCounter (an atomic upsert),
+  # because Solid Cache's increment cannot serialize a key that has no row yet.
+  config.cache_store = :solid_cache_store
+
   # Schema migrations
   config.active_record.dump_schema_after_migration = false
 
-  Octokit.configure do |c|
-    c.client_id =
-      Rails.application.credentials.dig(Rails.env.to_sym, :github, :app_key)
-    c.client_secret =
-      Rails.application.credentials.dig(Rails.env.to_sym, :github, :app_key_secret)
-  end
 end

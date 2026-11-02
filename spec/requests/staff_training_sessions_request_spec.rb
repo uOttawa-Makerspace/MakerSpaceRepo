@@ -1,0 +1,428 @@
+require "rails_helper"
+
+# Chunk 12: Staff::TrainingSessionsController (training-specific part of the
+# staff area: trainers run sessions, enrol users, certify trainees).
+# StaffAreaController#ensure_staff: guests -> /login?back_to=, regular users ->
+# root with "You cannot access this area.". Session-scoped actions then run
+# `verify_ownership`: only the session's trainer or an admin (other staff are
+# sent to new_staff_training_session_path with "Can't access training session").
+# Spaces/scheduling belongs to chunk 14.
+
+RSpec.describe "Staff training sessions", type: :request do
+  let(:space) { create(:space) }
+  let(:training) { create(:training, spaces: [space]) }
+  let!(:trainer) { create(:user, :staff) }
+  let!(:record) { create(:training_session, user: trainer, training: training, space: space, level: "Beginner") }
+  let(:student) { create(:user, :regular_user) }
+
+  def create_params(overrides = {})
+    { training_id: training.id, course: "no course", level: "Intermediate",
+      training_session: { space_id: space.id }, training_session_users: [student.id] }.merge(overrides)
+  end
+
+  describe "role matrix" do
+    let(:calls) do
+      {
+        index: -> { get staff_training_sessions_path },
+        new: -> { get new_staff_training_session_path },
+        create: -> { post staff_training_sessions_path, params: create_params },
+        show: -> { get staff_training_session_path(record) },
+        update: -> { patch staff_training_session_path(record), params: { changed_params: { level: "Advanced" } } },
+        certify: -> { post certify_trainees_staff_training_session_path(record) },
+        revoke: -> { delete revoke_certification_staff_training_session_path(record), params: { cert_id: 0 } },
+        destroy: -> { delete staff_training_session_path(record) },
+        report: -> { get training_report_staff_training_session_path(record) }
+      }
+    end
+
+    it "sends a guest to login with back_to on every action and changes nothing" do
+      calls.each_value do |call|
+        expect { instance_exec(&call) }.not_to change { [TrainingSession.count, Certification.count, record.reload.level] }
+        expect(response).to have_http_status(:found)
+        # back_to is stored only for replayable (GET) requests; other verbs get a bare /login
+        expect(response.location).to(
+          integration_session.request.get? ? start_with("http://www.example.com/login?back_to=") : eq("http://www.example.com/login")
+        )
+      end
+    end
+
+    %i[regular volunteer].each do |role|
+      it "bounces a #{role} to root with an alert on every action and changes nothing" do
+        sign_in_as(role)
+        calls.each_value do |call|
+          expect { instance_exec(&call) }.not_to change { [TrainingSession.count, Certification.count, record.reload.level] }
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq("You cannot access this area.")
+        end
+      end
+    end
+
+    it "bounces a staff member who is not the trainer from show/update/certify/destroy, to the new-session page" do
+      sign_in_as(:staff)
+      [calls[:show], calls[:update], calls[:certify], calls[:destroy], calls[:report]].each do |call|
+        expect { instance_exec(&call) }.not_to change { [TrainingSession.count, Certification.count, record.reload.level] }
+        expect(response).to redirect_to(new_staff_training_session_path)
+        expect(flash[:alert]).to eq("Can't access training session")
+      end
+    end
+  end
+
+  describe "as the trainer" do
+    before { log_in!(trainer) }
+
+    describe "GET index" do
+      it "lists only my sessions (html) and exposes them as JSON with nested data" do
+        create(:training_session, user: create(:user, :staff))
+        get staff_training_sessions_path
+        expect(response).to have_http_status(:ok)
+        get staff_training_sessions_path(format: :json)
+        body = JSON.parse(response.body)
+        expect(body.map { |s| s["id"] }).to eq([record.id])
+        expect(body.first.keys).to include("training", "space", "certifications", "users", "level")
+      end
+
+      it "limits the JSON users to id, username, name, email and role" do
+        record.users << student
+        get staff_training_sessions_path(format: :json)
+        user = JSON.parse(response.body).first["users"].first
+        expect(user.keys).to match_array(%w[id username name email role])
+      end
+    end
+
+    describe "GET new" do
+      it "renders the form" do
+        get new_staff_training_session_path
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "answers the JSON used by the form: trainings of the space, levels, course names, staff, signed-in users" do
+        get new_staff_training_session_path(format: :json)
+        body = JSON.parse(response.body)
+        expect(body.keys).to match_array(%w[trainings level course_names admins users])
+        expect(body["level"]).to eq(%w[Beginner Intermediate Advanced])
+      end
+    end
+
+    describe "POST create" do
+      it "creates a session owned by the current staff member with the enrolled users and redirects to it" do
+        expect { post staff_training_sessions_path, params: create_params }.to change(TrainingSession, :count).by(1)
+        created = TrainingSession.unscoped.order(:id).last
+        expect(response).to redirect_to(staff_training_session_path(created.id))
+        expect(created).to have_attributes(user_id: trainer.id, training_id: training.id, level: "Intermediate", space_id: space.id)
+        expect(created.users).to eq([student])
+        expect(created.course).to be_nil # "no course" is nulled
+      end
+
+      it "links the CourseName when the course matches one" do
+        course = create(:course_name, name: "Orientation")
+        post staff_training_sessions_path, params: create_params(course: "Orientation")
+        created = TrainingSession.unscoped.order(:id).last
+        expect(created.course_name).to eq(course)
+        expect(created.course).to eq("Orientation")
+      end
+
+      it "answers JSON { id, created: true }" do
+        post staff_training_sessions_path(format: :json), params: create_params
+        expect(JSON.parse(response.body)).to eq("id" => TrainingSession.unscoped.order(:id).last.id, "created" => true)
+      end
+
+      it "redirects back with an alert (html) / created:false (json) when invalid" do
+        expect { post staff_training_sessions_path, params: create_params(level: "") }.not_to change(TrainingSession, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("Something went wrong. Please try again.")
+        post staff_training_sessions_path(format: :json), params: create_params(level: "")
+        expect(JSON.parse(response.body)).to eq("created" => false)
+      end
+
+      # a non-admin who sends user_id (the React app always does) creates the session as themselves
+      it "ignores user_id for staff: the session is created with the current staff member as instructor" do
+        other = create(:user, :staff)
+        expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: other.id) }
+          .to change(TrainingSession, :count).by(1)
+        expect(JSON.parse(response.body)).to eq("id" => TrainingSession.unscoped.order(:id).last.id, "created" => true)
+        expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(trainer.id)
+      end
+
+      it "ignores a user_id that is not a user at all" do
+        expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: 0) }
+          .to change(TrainingSession, :count).by(1)
+        expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(trainer.id)
+      end
+    end
+
+    describe "GET show" do
+      it "renders the session" do
+        record.users << student
+        get staff_training_session_path(record)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(student.name)
+      end
+
+      # certify_user returns an existing certification of another
+      # session, so the Training's Cert. column looks at the training, not this session.
+      it "shows the training in Training's Cert. when the student holds it from another session" do
+        record.users << student
+        other = create(:training_session, user: trainer, training: training, space: space, level: "Beginner")
+        create(:certification, user: student, training_session: other, training: training, level: "Beginner")
+        get staff_training_session_path(record)
+        expect(response.body).to include("<td>#{ERB::Util.html_escape(training.name)}</td>")
+      end
+
+      it "shows None in Training's Cert. when the student only holds another level" do
+        record.users << student
+        other = create(:training_session, user: trainer, training: training, space: space, level: "Advanced")
+        create(:certification, user: student, training_session: other, training: training, level: "Advanced")
+        get staff_training_session_path(record)
+        expect(response.body).to include("<td>None</td>")
+        expect(response.body).not_to include("<td>#{ERB::Util.html_escape(training.name)}</td>")
+      end
+
+      # finishing an expired exam is blocked and nothing grades
+      # it, so staff must be able to resend it or the trainee is locked out.
+      describe "Resend Exam" do
+        let(:resend_path) do
+          create_for_single_user_exams_path(training_session_id: record.id, user_id: student.id)
+        end
+
+        before { record.users << student }
+
+        def exam_with(status:, expired_at: 3.days.from_now, session: record)
+          create(:exam, user: student, training_session: session, status: status, expired_at: expired_at)
+        end
+
+        it "is offered for an expired exam that was never graded" do
+          exam_with(status: Exam::STATUS[:incomplete], expired_at: 1.hour.ago)
+          get staff_training_session_path(record)
+          expect(response.body).to include("Resend Exam").and include(CGI.escapeHTML(resend_path))
+        end
+
+        it "is offered for a failed exam, also when the student has exams in other sessions" do
+          exam_with(status: Exam::STATUS[:failed])
+          other = create(:training_session, user: trainer, training: training, space: space)
+          2.times { exam_with(status: Exam::STATUS[:passed], session: other) }
+          get staff_training_session_path(record)
+          expect(response.body).to include("Resend Exam")
+        end
+
+        it "is not offered for an exam that is still open, or passed" do
+          exam_with(status: Exam::STATUS[:incomplete])
+          get staff_training_session_path(record)
+          expect(response.body).not_to include("Resend Exam")
+          Exam.destroy_all
+          exam_with(status: Exam::STATUS[:passed], expired_at: 1.hour.ago)
+          get staff_training_session_path(record)
+          expect(response.body).not_to include("Resend Exam")
+        end
+
+        it "is not offered once the session already has two exams for the student" do
+          exam_with(status: Exam::STATUS[:failed])
+          exam_with(status: Exam::STATUS[:incomplete], expired_at: 1.hour.ago)
+          get staff_training_session_path(record)
+          expect(response.body).not_to include("Resend Exam")
+        end
+
+        it "sends a fresh exam without certifying anyone" do
+          exam_with(status: Exam::STATUS[:incomplete], expired_at: 1.hour.ago)
+          expect { post resend_path }.to change { student.exams.count }.by(1).and change(Certification, :count).by(0)
+          expect(student.exams.order(:id).last).to be_open_for_answers
+        end
+      end
+
+      it "answers 404 for an unknown session" do
+        get staff_training_session_path(0)
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    describe "PATCH update" do
+      it "updates level/course and enrols added users by username (deduplicated)" do
+        patch staff_training_session_path(record),
+              params: { changed_params: { level: "Advanced" }, added_users: [student.username, student.username] }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq("Training session updated succesfully")
+        expect(record.reload.level).to eq("Advanced")
+        expect(record.users).to eq([student])
+      end
+
+      it "drops users by username and destroys their certification of this session" do
+        record.users << student
+        cert = create(:certification, user: student, training_session: record, training: training)
+        patch staff_training_session_path(record), params: { changed_params: { level: "Beginner" }, dropped_users: [student.username] }
+        expect(record.reload.users).to be_empty
+        expect(Certification.unscoped.exists?(cert.id)).to be(false)
+      end
+
+      it "refuses to change the trainer unless admin" do
+        other = create(:user, :staff)
+        patch staff_training_session_path(record), params: { changed_params: { user_id: other.id } }
+        expect(flash[:alert]).to eq("You're not an admin.")
+        expect(record.reload.user).to eq(trainer)
+      end
+
+      it "redirects to root with the ParameterMissing message without changed_params" do
+        patch staff_training_session_path(record)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to include("changed_params")
+      end
+    end
+
+    describe "POST certify_trainees" do
+      let(:second) { create(:user, :regular_user) }
+
+      before { record.users << [student, second] }
+
+      it "certifies every enrolled user at the session level and redirects with a notice (html)" do
+        expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(2)
+        expect(response).to redirect_to(staff_dashboard_index_path)
+        expect(flash[:notice]).to eq("Training Session Completed Successfully")
+        expect(student.certifications.map { |c| [c.training_session, c.level] }).to eq([[record, "Beginner"]])
+      end
+
+      %w[Intermediate Advanced].each do |level|
+        it "certifies at the session level #{level}, not a fixed one" do
+          record.update!(level: level)
+          post certify_trainees_staff_training_session_path(record)
+          expect(Certification.where(training_session: record).pluck(:level)).to eq([level, level])
+        end
+      end
+
+      it "skips users who already hold that training at that level and counts the duplicates" do
+        create(:certification, user: student, training_session: create(:training_session, training: training, user: trainer, space: space, level: "Beginner"), training: training, level: "Beginner")
+        expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(1)
+        expect(flash[:notice]).to eq("Training Session Completed Successfully (1 duplicates skipped)")
+      end
+
+      # the repeat check also sees project-granted certifications (no session)
+      it "skips a user who already holds that training and level from a proficient project" do
+        project = create(:proficient_project, training: training)
+        granted = create(:certification, user: student, training_session: nil, training: nil, level: "Beginner")
+        create(:proficient_project_session, certification: granted, user: student,
+                                            proficient_project: project, level: "Beginner")
+        expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(1)
+        expect(flash[:notice]).to eq("Training Session Completed Successfully (1 duplicates skipped)")
+        expect(student.certifications.count).to eq(1)
+      end
+
+      it "still certifies a user whose project certification is for another level" do
+        project = create(:proficient_project, training: training)
+        granted = create(:certification, user: student, training_session: nil, training: nil, level: "Advanced")
+        create(:proficient_project_session, certification: granted, user: student,
+                                            proficient_project: project, level: "Advanced")
+        expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(2)
+      end
+
+      it "is idempotent: a second run certifies nobody new" do
+        post certify_trainees_staff_training_session_path(record)
+        expect { post certify_trainees_staff_training_session_path(record) }.not_to change(Certification, :count)
+        expect(flash[:notice]).to eq("Training Session Completed Successfully (2 duplicates skipped)")
+      end
+
+      it "answers JSON { certified: true }" do
+        post certify_trainees_staff_training_session_path(record, format: :json)
+        expect(JSON.parse(response.body)).to eq("certified" => true)
+      end
+
+      it "does not require an exam pass: certification is a manual staff decision" do
+        expect(Exam.where(user: student)).to be_empty
+        expect { post certify_trainees_staff_training_session_path(record) }.to change { student.certifications.count }.by(1)
+      end
+
+      context "when the instructor is among the trainees" do
+        before { record.users << trainer }
+
+        it "certifies the others but not the instructor, and says so in the notice" do
+          expect { post certify_trainees_staff_training_session_path(record) }.to change(Certification, :count).by(2)
+          expect(trainer.certifications.count).to eq(0)
+          expect(student.certifications.count).to eq(1)
+          expect(flash[:notice]).to eq("Training Session Completed Successfully (you can't certify yourself)")
+          expect(flash[:alert]).to be_nil
+        end
+
+        it "combines the duplicate and self-skip notes" do
+          post certify_trainees_staff_training_session_path(record)
+          post certify_trainees_staff_training_session_path(record)
+          expect(flash[:notice]).to eq("Training Session Completed Successfully (2 duplicates skipped) (you can't certify yourself)")
+        end
+
+        it "answers JSON certified true" do
+          post certify_trainees_staff_training_session_path(record, format: :json)
+          expect(JSON.parse(response.body)).to eq("certified" => true)
+        end
+      end
+    end
+
+    describe "DELETE revoke_certification" do
+      # the certification is looked up through the URL's session, so another session's certification is a 404
+      it "does not delete a certification that belongs to another trainer's session" do
+        foreign_session = create(:training_session, user: create(:user, :staff))
+        cert = create(:certification, user: student, training_session: foreign_session, training: foreign_session.training)
+        expect { delete revoke_certification_staff_training_session_path(record), params: { cert_id: cert.id } }
+          .not_to change { Certification.unscoped.count }
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "deletes a certification of the session in the URL" do
+        cert = create(:certification, user: student, training_session: record, training: training)
+        expect { delete revoke_certification_staff_training_session_path(record), params: { cert_id: cert.id } }
+          .to change { Certification.unscoped.count }.by(-1)
+        expect(response).to redirect_to(user_path(student.username))
+        expect(flash[:notice]).to eq("Deleted Successfully")
+      end
+
+      it "answers 404 for an unknown certification" do
+        delete revoke_certification_staff_training_session_path(record), params: { cert_id: 0 }
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    describe "DELETE destroy" do
+      it "deletes the session, its certifications and exams, redirecting to the staff dashboard" do
+        cert = create(:certification, training_session: record, training: training)
+        create(:exam, training_session: record)
+        expect { delete staff_training_session_path(record) }
+          .to change(TrainingSession, :count).by(-1).and change(Exam, :count).by(-1)
+        expect(Certification.unscoped.exists?(cert.id)).to be(false)
+        expect(response).to redirect_to(staff_dashboard_index_path)
+        expect(flash[:notice]).to eq("Deleted Successfully")
+      end
+    end
+
+    describe "GET training_report" do
+      # the action serves only .xlsx (the dead format.html branch was removed); any other format is a 406
+      it "answers 406 for the html report (xlsx only)" do
+        get training_report_staff_training_session_path(record)
+        expect(response).to have_http_status(:not_acceptable)
+      end
+
+      it "streams an xlsx workbook" do
+        get training_report_staff_training_session_path(record, format: :xlsx)
+        expect(response).to have_http_status(:ok)
+        expect(response.body.bytes.first(2)).to eq([0x50, 0x4b]) # zip magic: an xlsx file
+      end
+    end
+  end
+
+  describe "as admin" do
+    before { log_in!(create(:user, :admin)) }
+
+    it "can open, update and delete another trainer's session" do
+      get staff_training_session_path(record)
+      expect(response).to have_http_status(:ok)
+      new_trainer = create(:user, :staff)
+      patch staff_training_session_path(record), params: { changed_params: { user_id: new_trainer.id } }
+      expect(flash[:notice]).to eq("Training session updated succesfully")
+      expect(record.reload.user).to eq(new_trainer)
+      expect { delete staff_training_session_path(record) }.to change(TrainingSession, :count).by(-1)
+    end
+
+    it "creates the session as themselves when no user_id is sent" do
+      post staff_training_sessions_path, params: create_params
+      expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(controller.send(:current_user).id)
+    end
+
+    it "can create a session for another trainer by passing user_id" do
+      expect { post staff_training_sessions_path, params: create_params(user_id: trainer.id) }.to change(TrainingSession, :count).by(1)
+      expect(TrainingSession.unscoped.order(:id).last.user).to eq(trainer)
+    end
+  end
+end

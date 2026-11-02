@@ -7,7 +7,7 @@
     <div class="col-12 col-md-6">
       <%= f.label :rented_by_id, 'Assign to User', class: 'form-label fw-bold text-body' %>
       <%= f.select :rented_by_id,
-            User.active.order(:name, :username).map { |u|
+            User.not_deactivated.order(:name, :username).map { |u|
               label = u.name.present? ? "#{u.name} (#{u.username})" : u.username
               [label, u.id, { data: { role: (u.role.humanize if u.staff?) } }]
             },

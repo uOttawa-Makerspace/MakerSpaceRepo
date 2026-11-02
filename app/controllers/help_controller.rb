@@ -1,7 +1,11 @@
 class HelpController < SessionsController
   include TurnstileHelper
-  skip_before_action :session_expiry
   before_action :current_user
+
+  # send_email opens a GitHub issue per call; the React app sends no captcha, so it is rate limited
+  rate_limit to: 5, within: 1.hour, only: :send_email,
+             by: -> { current_user.id.presence || request.remote_ip },
+             with: -> { render json: { error: 'Too many requests' }, status: :too_many_requests }
 
   def show
     @help = Help.new
@@ -35,6 +39,33 @@ class HelpController < SessionsController
     render :show, status: :unprocessable_entity
   end
   
+  # PUT /send_email: JSON endpoint used by the MakerRepo React app's Help form.
+  # Never touches a user; same validations, GitHub issue and support email as #create.
+  # The confirmation always goes to the signed-in account: the posted name/email are
+  # accepted (the React request shape) but ignored for addressing.
+  def send_email
+    unless signed_in?
+      render json: { error: 'Authentication required' }, status: :unauthorized and return
+    end
+
+    attrs = params.slice(:subject, :comments).permit(:subject, :comments)
+    @help = Help.new(attrs.merge(name: current_user.name, email: current_user.email))
+
+    if @help.save
+      MsrMailer.issue_email(
+        @help.name,
+        @help.email,
+        @help.subject,
+        @help.comments.to_plain_text,
+        params[:share_email],
+        params[:app_version].to_s.presence
+      ).deliver_later
+      render json: { status: 'sent' }
+    else
+      render json: { errors: @help.errors.full_messages }, status: :unprocessable_content
+    end
+  end
+
   private
 
   def help_params

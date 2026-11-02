@@ -5,6 +5,8 @@ class VolunteerTasksController < SessionsController
   before_action -> { @with_volunteer_header = true }
   before_action :grant_access, except: %i[show index my_tasks complete_task]
   before_action :volunteer_access, only: %i[show index]
+  before_action :signed_in, only: :complete_task
+  before_action :task_owner_or_staff, only: :complete_task
 
   def index
     # Find all tasks that currently have an active volunteer assigned
@@ -165,6 +167,14 @@ class VolunteerTasksController < SessionsController
       flash[:alert] = "You cannot access this area."
       redirect_to root_path
     end
+  end
+
+  def task_owner_or_staff
+    task = VolunteerTask.find(params[:id])
+    return if current_user.staff? || (task.user_id.present? && task.user_id == current_user.id)
+
+    flash[:alert] = "You cannot access this area."
+    redirect_to root_path
   end
 
   def add_volunteer_join(task_id)

@@ -17,8 +17,23 @@ class Exam < ApplicationRecord
 
   def calculate_score
     all_questions = exam_questions.count
+    return 0 if all_questions.zero?
+
     exam_responses_right = exam_responses.where(correct: true).count
     (exam_responses_right * 100.0 / all_questions).round
+  end
+
+  # An exam accepts answers and can be finished only until it is graded or expires.
+  def open_for_answers?
+    ungraded? && !expired?
+  end
+
+  def ungraded?
+    status.in?([STATUS[:not_started], STATUS[:incomplete]])
+  end
+
+  def expired?
+    expired_at.present? && expired_at.past?
   end
 
   def failed?

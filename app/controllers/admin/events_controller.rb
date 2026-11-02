@@ -165,7 +165,10 @@ class Admin::EventsController < AdminAreaController
 
       updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
 
-      @event.update(recurrence_rule: updated_rule)
+      unless @event.update(recurrence_rule: updated_rule)
+        flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
+        return redirect_back(fallback_location: admin_calendar_index_path)
+      end
 
       @new_event = Event.create!(
         title: title,
@@ -259,6 +262,9 @@ class Admin::EventsController < AdminAreaController
     else
       redirect_back(fallback_location: admin_calendar_index_path, alert: "Invalid delete scope: #{scope}")
     end
+  rescue ActiveRecord::RecordInvalid => e
+    # A series stored with a sub-daily rule no longer validates.
+    redirect_back(fallback_location: admin_calendar_index_path, alert: "Failed to update event: #{e.record.errors.full_messages.to_sentence}")
   end
 
   def json
@@ -300,7 +306,7 @@ class Admin::EventsController < AdminAreaController
             start: event.start_time.iso8601,
             end: event.end_time.iso8601,
             **(event.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
-            allDay: event.start_time.to_time == event.end_time.to_time - 1.day,
+            allDay: CalendarTime.all_day?(event.start_time, event.end_time),
             extendedProps: {
               name: event.event_type.capitalize,
               draft: event.draft,
@@ -332,11 +338,17 @@ class Admin::EventsController < AdminAreaController
       return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
 
       updated_count = 0
+      failures = []
 
       Event.where(space_id: space_id, start_time: start_date..end_date, draft: true).find_each do |event|
-        updated_count += 1 if event.update(draft: false)
+        if event.update(draft: false)
+          updated_count += 1
+        else
+          failures << "#{event.title.presence || "Event ##{event.id}"} (#{event.errors.full_messages.to_sentence})"
+        end
       end
 
+      flash[:alert] = "Failed to publish #{failures.size} event(s): #{failures.to_sentence}" if failures.any?
       return redirect_back(fallback_location: admin_calendar_index_path, notice: "#{updated_count} event(s) published.")
     else
       @event = Event.find(params[:id])

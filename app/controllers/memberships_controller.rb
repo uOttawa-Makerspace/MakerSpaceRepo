@@ -1,6 +1,6 @@
 class MembershipsController < SessionsController
   before_action :signed_in, except: [:index]
-  before_action only: :admin_create_membership do
+  before_action only: %i[admin_create_membership revoke] do
     head :unauthorized unless current_user.admin?
   end
   before_action :no_container, only: :index
@@ -19,6 +19,11 @@ class MembershipsController < SessionsController
   
   def create
     return flash.now[:alert] = t('memberships.purchase.purchase.cutoff_tooltip') if is_user_cutoff
+
+    tier = MembershipTier.find_by(id: membership_params[:membership_tier_id])
+    if tier && tier.hidden?
+      redirect_to memberships_path, alert: 'This membership is not available for purchase.' and return
+    end
 
     @membership = current_user.memberships.new(membership_params)
     

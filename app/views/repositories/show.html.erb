@@ -123,7 +123,7 @@
                 </div>
             <% end %>
         </div>
-        <% if @repository.users.include?(@user) || @user.role.eql?("admin") %>
+        <% if @repository.owned_by?(@user) || @user.role.eql?("admin") %>
             <%= link_to "<i class=\"fa-solid fa-pencil\"></i> #{t('repository.edit_proj')}".html_safe,
                     edit_repository_path(@repository.user_username, @repository.id),
                     class: 'btn btn-sm btn-secondary align-top float-end' %>
@@ -188,7 +188,7 @@
             </span>
         </div>
         <div class="report mb-3">
-            <%= link_to "<i class=\"fa-solid fa-flag\"></i> #{t('repository.report_in')}".html_safe, report_repository_path(@repository.id), class: 'repository_report', rel: 'nofollow' %>
+            <%= button_to "<i class=\"fa-solid fa-flag\"></i> #{t('repository.report_in')}".html_safe, report_repository_path(@repository.id), method: :post, class: 'repository_report btn btn-link p-0', form: { data: { turbo_confirm: t('repository.report_confirm') } } %>
             <div class="spinner">
                 <div class="rect1"></div>
                 <div class="rect2"></div>
@@ -205,7 +205,7 @@
             </p>
         <% end %>
 
-        <% if @repository.users.include?(@user) || @user.staff? %>
+        <% if @repository.owned_by?(@user) || @user.staff? %>
             <%= form_for :repo, url: { controller: 'repositories', action: 'link_to_pp' }, method: :patch do |f| %>
                 <span class="text-muted"><%= t('repository.link_to_prop') %> </span>
                 <div class="mb-3 input-group">
@@ -216,6 +216,7 @@
                 </div>
             <% end %>
 
+            <% if @repository.owned_by?(@user) || @user.admin? %>
             <hr />
 
             <div class="repo-info-item">
@@ -251,6 +252,7 @@
                     <% end %>
             </div>
                 <% end %>
+            <% end %>
 
         </div>
         <% end %>

@@ -20,7 +20,7 @@
         
         <% if @user.has_avatar? %>
           <div>
-            <%= link_to t('settings.profile.delete_avatar'), remove_avatar_users_path, class: "text-danger small text-decoration-none", data: { confirm: t('settings.profile.delete_avatar_confirm') } %>
+            <%= button_tag t('settings.profile.delete_avatar'), type: 'submit', form: 'remove-avatar-form', class: "btn btn-link text-danger small text-decoration-none p-0" %>
           </div>
         <% end %>
       </div>
@@ -118,3 +118,7 @@
 
   <% end %> 
 </div>
+<%# Outside the profile form (forms cannot nest); the Remove button targets it via the form attribute. %>
+<% if @user.has_avatar? %>
+  <%= form_with url: remove_avatar_users_path, method: :delete, id: 'remove-avatar-form', data: { turbo_confirm: t('settings.profile.delete_avatar_confirm') } do %><% end %>
+<% end %>

@@ -3,9 +3,11 @@
 class CommentsController < SessionsController
   before_action :current_user
   before_action :signed_in, except: %i[index show]
+  before_action :set_repository, only: %i[create vote]
+  before_action -> { ensure_repository_unlocked(@repository) }, only: %i[create vote]
 
   def create
-    repository = Repository.find(params[:id])
+    repository = @repository
     comment = repository.comments.build(comment_params)
     comment.user_id = @user.id
     comment.username = @user.username
@@ -46,9 +48,9 @@ class CommentsController < SessionsController
 
   def vote
     downvote = params["downvote"].eql?("t") ? true : false
-    comment = Comment.find params[:comment_id]
+    repository = @repository
+    comment = repository.comments.find params[:comment_id]
     comment_user = comment.user
-    repository = Repository.find(params[:id])
 
     if upvote = @user.upvotes.find_by(comment_id: comment.id)
       if downvote != upvote.downvote
@@ -87,6 +89,10 @@ class CommentsController < SessionsController
   end
 
   private
+
+  def set_repository
+    @repository = Repository.find(params[:id])
+  end
 
   def comment_params
     params.permit(:content)

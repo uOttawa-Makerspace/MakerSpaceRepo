@@ -1,13 +1,19 @@
 <ul class="timeline" id="timeline-modal-rendered">
-  <% @job_order.job_order_statuses.order(created_at: :desc).each do |jos| %>
+  <% @statuses.each do |jos| %>
+    <%# the actor link is built only for rows that show it; user is optional (rows written before the presence
+        validation have none) %>
+    <% actor = (jos.user ? link_to(jos.user.name, user_path(username: jos.user.username)) : t("job_orders.timeline.unknown_user")) if jos.actor_shown? %>
     <li>
       <div class="d-flex justify-content-between">
         <p><%= jos.job_status.name %>
-          <%= sanitize("(By: #{link_to jos.user.name, user_path(username: jos.user.username)})") if [JobStatus::BEING_PROCESSED, JobStatus::COMPLETED].include?(jos.job_status) %>
+          <% if actor && jos.reason.blank? %>(By: <%= actor %>)<% end %>
         </p>
         <p class="float-right"><%= jos.created_at.strftime('%b %e %Y at %H:%M') %></p>
       </div>
       <p><%= sanitize(jos.job_status.description) %></p>
+      <% if jos.reason.present? %>
+        <p><em><%= t("job_orders.status_reasons.#{jos.reason}") %> (By: <%= actor %>)</em></p>
+      <% end %>
     </li>
   <% end %>
 </ul>

@@ -1,9 +1,20 @@
+require Rails.root.join("lib/concurrent_index_builder")
+
 class AddBatchesToSolidQueue < ActiveRecord::Migration[7.1]
-  def change
-    # Fresh installs create all of this with the base schema, so skip
-    # anything that already exists
+  # The batch_id index is built CONCURRENTLY so a large solid_queue_jobs keeps
+  # accepting inserts, which cannot run inside a transaction; every statement
+  # is therefore safe to re-run, and an INVALID leftover index is rebuilt.
+  # This edit never ran in production, and staging's earlier non-concurrent
+  # build already produced a valid index, so nothing is needed there.
+  disable_ddl_transaction!
+  include ConcurrentIndexBuilder
+
+  # On a fresh install the base schema already has the batch_id column and
+  # index and the batch tables, so `up` skips what exists and `down` is
+  # irreversible: it cannot tell which objects this migration created.
+  def up
     add_column :solid_queue_jobs, :batch_id, :bigint, if_not_exists: true
-    add_index :solid_queue_jobs, :batch_id, if_not_exists: true
+    add_index_concurrently :solid_queue_jobs, :batch_id, name: "index_solid_queue_jobs_on_batch_id"
 
     create_table :solid_queue_batches, if_not_exists: true do |t|
       t.string :active_job_batch_id
@@ -35,5 +46,11 @@ class AddBatchesToSolidQueue < ActiveRecord::Migration[7.1]
       t.foreign_key :solid_queue_batches, column: :batch_id, on_delete: :cascade
       t.foreign_key :solid_queue_jobs, column: :job_id, on_delete: :cascade
     end
+  end
+
+  def down
+    raise ActiveRecord::IrreversibleMigration,
+          "the batch tables and solid_queue_jobs.batch_id may come from queue_schema.rb on a fresh install, " \
+          "not from this migration, so dropping them could destroy data this migration never created"
   end
 end

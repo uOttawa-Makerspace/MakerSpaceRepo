@@ -80,6 +80,48 @@ class TrainingSession < ApplicationRecord
     certifications.any?
   end
 
+  CertifyResult = Struct.new(:duplicates, :failed, :self_skipped, keyword_init: true) do
+    def certified? = failed.empty?
+  end
+
+  # Certifies every enrolled user at the session level. The single implementation behind
+  # Staff::TrainingSessionsController#certify_trainees and the /api/v1 certifications endpoint.
+  #
+  # The session row is locked for the whole check-then-create loop, so two concurrent calls
+  # on the same session serialize and the second sees the first's certifications (no
+  # duplicates). Users who already hold this training at this level (A5 guard,
+  # Certification.held_by) are skipped and counted as duplicates.
+  #
+  # NOT all-or-nothing, as legacy: a trainee whose certification fails validation is
+  # collected in `failed` and the loop carries on; everyone else stays certified. (Only an
+  # exception, e.g. a database error, rolls the whole call back, because of the lock's
+  # transaction.) Who may be a trainee is otherwise unrestricted (no attendance or space check).
+  #
+  # The instructor (user_id, admins included) is never certified by their own session: if they
+  # are among the trainees they are skipped and `self_skipped` is true. That is neither a
+  # failure nor a duplicate, so `certified?` is unaffected.
+  def certify_trainees!
+    duplicates = 0
+    failed = []
+    self_skipped = false
+    with_lock do
+      users.each do |graduate|
+        if graduate.id == user_id
+          self_skipped = true
+          next
+        end
+
+        if Certification.held_by(graduate.id, training_id, level).exists?
+          duplicates += 1
+          next
+        end
+
+        failed << graduate unless Certification.new(user_id: graduate.id, training_session_id: id, level: level).save
+      end
+    end
+    CertifyResult.new(duplicates: duplicates, failed: failed, self_skipped: self_skipped)
+  end
+
   def levels
     %w[Beginner Intermediate Advanced]
   end

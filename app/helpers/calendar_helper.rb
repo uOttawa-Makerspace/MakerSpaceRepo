@@ -213,7 +213,7 @@ module CalendarHelper
   end
   
   def parse_rrule_and_dtstart(rule_string)
-    lines = rule_string.strip.split("\n")
+    lines = RecurrenceExpansion.lines(rule_string)
     rrule_line = lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
     dtstart_line = lines.find { |l| l.start_with?("DTSTART:") }&.sub("DTSTART:", "")
 
@@ -282,42 +282,5 @@ module CalendarHelper
     js_rrule[:wkst] = openstruct_obj.week_start if openstruct_obj.week_start
     
     js_rrule
-  end
-
-  def create_makeroom_bookings_from_ics(snc, user_id, space)
-    # Parse ics events
-    @events = parse_ics_calendar(
-        snc.calendar_url,
-        name: snc.name.presence || "Unnamed Calendar",
-        color: snc.color
-      )
-    # Iteratee through every sub space of the given param space
-    space.sub_spaces.each do |sub_space|
-      # Iterate through all events, checking if one resides in a sub space
-      @events[0][:events].each do |event|
-        next unless event[:extendedProps][:location] == sub_space.name
-        # If match is found, create a MakerRoom booking
-        booking = SubSpaceBooking.new(
-          start_time: event[:start],
-          end_time: event[:end],
-          name: event[:title] || "Title",
-          description: event[:description] || "No Description",
-          sub_space_id: sub_space.id,
-          blocking: true,
-          user_id: user_id
-        )
-
-        booking.save
-        # Assign a pending status to the booking
-        status = SubSpaceBookingStatus.new(
-          sub_space_booking_id: booking.id,
-          booking_status_id: BookingStatus::PENDING.id
-        )
-      
-        status.save
-        # Once status is created, link its id in the booking instance
-        booking.update(sub_space_booking_status_id: status.id)
-      end
-    end
   end
 end

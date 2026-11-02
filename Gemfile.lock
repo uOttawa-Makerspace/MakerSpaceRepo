@@ -76,7 +76,7 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
-    addressable (2.9.0)
+    addressable (2.9.2)
       public_suffix (>= 2.0.2, < 8.0)
     airbrake (13.0.5)
       airbrake-ruby (~> 6.0)
@@ -86,8 +86,8 @@ GEM
       sshkit (>= 1.6.1, != 1.7.0)
     ast (2.4.3)
     aws-eventstream (1.4.1)
-    aws-partitions (1.1299.1)
-    aws-sdk-core (3.262.0)
+    aws-partitions (1.1300.0)
+    aws-sdk-core (3.263.0)
       aws-eventstream (~> 1, >= 1.4.1)
       aws-partitions (~> 1, >= 1.992.0)
       aws-sigv4 (~> 1.9)
@@ -96,11 +96,11 @@ GEM
       jmespath (~> 1, >= 1.6.1)
       logger
       rexml (~> 3.4, >= 3.4.2)
-    aws-sdk-kms (1.137.0)
-      aws-sdk-core (~> 3, >= 3.262.0)
+    aws-sdk-kms (1.138.0)
+      aws-sdk-core (~> 3, >= 3.263.0)
       aws-sigv4 (~> 1.5)
-    aws-sdk-s3 (1.236.0)
-      aws-sdk-core (~> 3, >= 3.262.0)
+    aws-sdk-s3 (1.237.0)
+      aws-sdk-core (~> 3, >= 3.263.0)
       aws-sdk-kms (~> 1)
       aws-sigv4 (~> 1.5)
     aws-sigv4 (1.12.1)
@@ -173,6 +173,9 @@ GEM
       highline (~> 3.0.0)
     concurrent-ruby (1.3.8)
     connection_pool (3.0.2)
+    crack (1.0.1)
+      bigdecimal
+      rexml
     crass (1.0.8)
     csv (3.3.7)
     date (3.6.0)
@@ -197,7 +200,7 @@ GEM
     erubis (2.7.0)
     et-orbi (1.4.2)
       tzinfo
-    excon (1.9.1)
+    excon (1.10.0)
     factory_bot (6.6.0)
       activesupport (>= 6.1.0)
     factory_bot_rails (6.5.1)
@@ -245,8 +248,8 @@ GEM
     google-cloud-env (2.4.1)
       base64 (~> 0.2)
       faraday (>= 1.0, < 3.a)
-    google-logging-utils (0.2.1)
-    googleauth (1.17.6)
+    google-logging-utils (0.2.2)
+    googleauth (1.17.7)
       faraday (>= 1.0, < 3.a)
       google-cloud-env (~> 2.2)
       google-logging-utils (~> 0.1)
@@ -272,6 +275,7 @@ GEM
       thor
       tilt
     hash_diff (1.1.1)
+    hashdiff (1.2.1)
     highline (3.0.1)
     htmlentities (4.4.2)
     httparty (0.24.3)
@@ -358,7 +362,7 @@ GEM
       turbo-rails
     mocha (3.1.0)
       ruby2_keywords (>= 0.0.5)
-    msgpack (1.8.6)
+    msgpack (1.8.7)
     multi_json (1.21.2)
     multi_xml (0.9.1)
       bigdecimal (>= 3.1, < 5)
@@ -384,17 +388,17 @@ GEM
       openssl (>= 3.2.0)
     nio4r (2.7.5)
     nobspw_rails7 (0.6.5)
-    nokogiri (1.19.4-aarch64-linux-gnu)
+    nokogiri (1.19.5-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.4-aarch64-linux-musl)
+    nokogiri (1.19.5-aarch64-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.19.4-arm-linux-gnu)
+    nokogiri (1.19.5-arm-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.4-arm-linux-musl)
+    nokogiri (1.19.5-arm-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.19.4-x86_64-linux-gnu)
+    nokogiri (1.19.5-x86_64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.4-x86_64-linux-musl)
+    nokogiri (1.19.5-x86_64-linux-musl)
       racc (~> 1.4)
     observer (0.1.2)
     octokit (10.0.0)
@@ -412,6 +416,8 @@ GEM
       uri
       yaml
     parallel (2.3.0)
+    parallel_tests (5.9.0)
+      parallel
     parlour (9.1.2)
       commander (~> 5.0)
       parser
@@ -451,7 +457,7 @@ GEM
       activerecord (>= 3)
     raabro (1.5.0)
     racc (1.8.1)
-    rack (3.2.7)
+    rack (3.2.8)
     rack-cors (3.0.0)
       logger
       rack (>= 3.0.14)
@@ -638,7 +644,7 @@ GEM
       sprockets-rails
     shoulda-matchers (7.0.1)
       activesupport (>= 7.1)
-    signet (0.22.1)
+    signet (0.22.2)
       addressable (~> 2.8)
       faraday (>= 0.17.5, < 3.a)
       jwt (>= 1.5, < 4.0)
@@ -651,7 +657,7 @@ GEM
     sitemap_generator (6.3.0)
       builder (~> 3.0)
     smart_properties (1.17.0)
-    solargraph (0.61.0)
+    solargraph (0.62.0)
       ast (~> 2.4.3)
       backport (~> 1.2)
       benchmark (~> 0.4)
@@ -684,6 +690,10 @@ GEM
       activejob (>= 7.2)
       activerecord (>= 7.2)
       railties (>= 7.2)
+    solid_cache (1.0.10)
+      activejob (>= 7.2)
+      activerecord (>= 7.2)
+      railties (>= 7.2)
     solid_queue (1.7.0)
       activejob (>= 7.1)
       activerecord (>= 7.1)
@@ -691,7 +701,7 @@ GEM
       fugit (~> 1.11)
       railties (>= 7.1)
       thor (>= 1.3.1)
-    sorbet-runtime (0.6.13602)
+    sorbet-runtime (0.6.13612)
     sord (7.1.0)
       commander (~> 5.0)
       parlour (~> 9.1)
@@ -721,12 +731,6 @@ GEM
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
     stringio (3.2.0)
-    stripe (19.6.3)
-      bigdecimal
-      logger
-    stripe_event (2.15.0)
-      activesupport (>= 3.1)
-      stripe (>= 2.8, < 20)
     syntax_tree (6.3.0)
       prettier_print (>= 1.2.0)
     syntax_tree-haml (4.0.3)
@@ -738,6 +742,8 @@ GEM
       rbs
       syntax_tree (>= 2.0.1)
     temple (0.10.7)
+    test-prof (1.6.4)
+      logger
     thor (1.5.0)
     tilt (2.9.0)
     timeout (0.6.1)
@@ -770,6 +776,10 @@ GEM
       actionview (>= 8.0.0)
       bindex (>= 0.4.0)
       railties (>= 8.0.0)
+    webmock (3.34.0)
+      addressable (>= 2.8.0)
+      crack (>= 0.3.2)
+      hashdiff (>= 0.4.0, < 2.0.0)
     websocket (1.2.11)
     websocket-driver (0.8.2)
       base64
@@ -849,6 +859,7 @@ DEPENDENCIES
   nobspw_rails7
   octokit (~> 10.0)
   pagy (>= 43.6.1)
+  parallel_tests
   pg (~> 1.6)
   prettier_print
   propshaft
@@ -883,15 +894,16 @@ DEPENDENCIES
   solargraph
   solargraph-rails
   solid_cable
+  solid_cache (~> 1.0)
   solid_queue (~> 1.2)
-  stripe
-  stripe_event (~> 2.3, >= 2.3.1)
   syntax_tree
   syntax_tree-haml
   syntax_tree-rbs
+  test-prof
   trix-rails (~> 2.4)
   vite_rails
   web-console
+  webmock
   youtube_id
 
 RUBY VERSION

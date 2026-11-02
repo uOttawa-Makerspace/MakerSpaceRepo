@@ -75,14 +75,17 @@ document.addEventListener("turbo:load", function () {
       },
     });
   });
-  // FIXME: remove this from here
-  let form = document.getElementById("sign_in_user_fastsearch");
-  if (form) {
-    form.onsubmit = function () {
-      document.getElementById("sign_in_user_fastsearch_username").value = [
-        document.getElementById("user_dashboard_select").value,
-      ];
-      form.submit();
+  // staff_dashboard/_search: the user picker sits outside the Sign In (PUT) and
+  // View (GET) forms; the submitted form carries the picked username.
+  [
+    ["sign_in_user_fastsearch", "sign_in_user_fastsearch_username"],
+    ["search_user_fastsearch", "search_user_fastsearch_username"],
+  ].forEach(([formId, inputId]) => {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    form.onsubmit = () => {
+      document.getElementById(inputId).value =
+        document.getElementById("user_dashboard_select")?.value ?? "";
     };
-  }
+  });
 });

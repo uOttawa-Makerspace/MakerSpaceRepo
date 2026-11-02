@@ -50,8 +50,10 @@ if (document.getElementById("search_bar")) {
         let url = "/badges";
         fetch(url, {
           method: "GET",
+          // the index.js.erb fragment is only served to same-origin XHR
           headers: {
             Accept: "*/*",
+            "X-Requested-With": "XMLHttpRequest",
           },
         })
           .then((response) => response.text())
@@ -63,8 +65,10 @@ if (document.getElementById("search_bar")) {
         let url = "/badges?search=" + query;
         fetch(url, {
           method: "GET",
+          // the index.js.erb fragment is only served to same-origin XHR
           headers: {
             Accept: "*/*",
+            "X-Requested-With": "XMLHttpRequest",
           },
         })
           .then((response) => response.text())

@@ -1,0 +1,44 @@
+#!/usr/bin/env sh
+# Run the whole RSpec suite in parallel (one process + one database per core).
+#
+#   bin/parallel_rspec                         full suite, all cores
+#   bin/parallel_rspec -n 4                    fewer processes
+#   SEED=1234 bin/parallel_rspec               random order with that seed
+#   COVERAGE=1 bin/parallel_rspec              + merged coverage report (coverage/index.html)
+#   CI=1 COVERAGE=1 bin/parallel_rspec         exactly what CI runs (eager_load + Bullet raise)
+#   SETUP=1 bin/parallel_rspec                 (re)create + load the schema into the worker DBs first
+#
+# Worker databases are makerspacerepo_test, makerspacerepo_test2 ... (see
+# config/database.yml). The dev database is never touched. Runtime-balanced
+# groups use tmp/parallel_runtime_rspec.log (written by .rspec_parallel after every
+# run; the first run balances by file size).
+set -e
+cd "$(dirname "$0")/.."
+
+export RAILS_ENV=test
+
+if [ -n "$SETUP" ]; then
+  bundle exec rake parallel:setup
+fi
+
+# Build the Vite test assets once, before the workers fork (no-op when current).
+bundle exec rails vite:build >/dev/null
+
+if [ -n "$COVERAGE" ]; then
+  rm -rf coverage
+fi
+
+set +e
+if [ -n "$SEED" ]; then
+  bundle exec parallel_rspec --test-options "--order rand:$SEED" "$@" spec
+else
+  bundle exec parallel_rspec "$@" spec
+fi
+status=$?
+set -e
+
+if [ -n "$COVERAGE" ]; then
+  bin/coverage_collate
+fi
+
+exit $status

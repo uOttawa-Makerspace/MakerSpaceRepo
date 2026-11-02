@@ -1,0 +1,25 @@
+# Solid Cache (Rails.cache in production and staging). The entries live in the
+# solid_cache_entries table of the PRIMARY database: there is no `database:` /
+# `databases:` key, so no separate cache database has to be created by hand and
+# `db:prepare` (bin/docker-entrypoint) migrates it with everything else.
+default: &default
+  store_options:
+    # Entries older than this are expired, whatever their own expires_in. Longest
+    # real lifetime here is a day (the email-domain verdict); fragments are minutes to an hour.
+    # (Rate limits are not here: they count in rate_limit_counters, see RateLimitCounter.)
+    max_age: <%= 7.days.to_i %>
+    # The table is capped; the oldest entries go first.
+    max_size: <%= 256.megabytes %>
+    namespace: <%= Rails.env %>
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+staging:
+  <<: *default
+
+production:
+  <<: *default

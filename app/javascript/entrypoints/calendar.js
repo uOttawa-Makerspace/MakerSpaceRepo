@@ -2,6 +2,7 @@ import { addEventClick } from "../src/calendar_helper";
 import "../src/fullcalendar_setup_admin";
 import "../src/manage_calendar_events";
 import "flatpickr";
+import { csrfHeaders } from "../src/csrf";
 
 document.addEventListener("turbo:load", () => {
   document
@@ -25,10 +26,10 @@ document.addEventListener("turbo:load", () => {
 function updateColor(userId, color) {
   fetch("/admin/calendar/update_color", {
     method: "POST",
-    headers: {
+    headers: csrfHeaders({
       Accept: "application/json",
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({
       user_id: userId,
       color: color,

@@ -18,6 +18,9 @@ RSpec.describe ProjectProposalsController, type: :controller do
       let!(:declined_pp) { create(:project_proposal, :not_approved, title: "Gamma Declined Project") }
       let!(:revision_pp) { create(:project_proposal, approved: nil, linked_project_proposal: approved_pp, title: "Revision of Alpha Project") }
 
+      # Non-admins only see approved proposals plus their own
+      before { session[:user_id] = admin.id }
+
       it "should return all proposals when no status filter is selected" do
         get :index
         expect(response).to have_http_status(:success)
@@ -181,7 +184,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
 
   describe "POST #create_revision" do
     context "Create revision" do
-      let!(:old_proposal) { create(:project_proposal, :approved, season: 'fall', year: 2021) }
+      let!(:old_proposal) { create(:project_proposal, :approved, season: 'fall', year: 2021, user: regular_user) }
 
       it "should create a revision with reset season, year, and pending approval status" do
         session[:user_id] = regular_user.id
@@ -213,7 +216,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
   describe "PATCH #update" do
     context "Update project proposal" do
       it "should update the project proposal" do
-        project_proposal = create(:project_proposal)
+        project_proposal = create(:project_proposal, user: regular_user)
         patch :update,
               params: {
                 id: project_proposal.id,
@@ -230,7 +233,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
       end
 
       it "should update the project proposal with photos and files" do
-        pp = create(:project_proposal, :with_repo_files)
+        pp = create(:project_proposal, :with_repo_files, user: regular_user)
         pp.reload
 
         patch :update,
@@ -276,16 +279,16 @@ RSpec.describe ProjectProposalsController, type: :controller do
     end
   end
 
-  describe "GET #unjoin_project_proposal" do
+  describe "DELETE #unjoin_project_proposal" do
     context "Un-join project proposal" do
       it "should un-join the project proposal" do
         project_proposal = create(:project_proposal, :joined)
         session[:user_id] = regular_user.id
-        get :join_project_proposal,
+        post :join_project_proposal,
             params: {
               project_proposal_id: project_proposal.id
             }
-        get :unjoin_project_proposal,
+        delete :unjoin_project_proposal,
             params: {
               project_proposal_id: project_proposal.id,
               project_join_id: ProjectJoin.last.id

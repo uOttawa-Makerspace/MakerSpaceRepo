@@ -2,7 +2,7 @@ class VideosController < DevelopmentProgramsController
   include VideosHelper
   before_action :with_development_header
   before_action :grant_access_admin
-  before_action :set_video, only: %i[download destroy]
+  before_action :set_video, only: %i[destroy]
 
   def index
     @videos_pp = Video.joins(:proficient_project).order(created_at: :desc)

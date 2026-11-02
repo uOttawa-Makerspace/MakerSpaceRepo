@@ -1,9 +1,17 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
+  # `deactivated_at` (NULL = not deactivated) changes only through deactivate!/reactivate!
+  # (token_version bump, last-admin guard). Assigning it on a persisted user raises
+  # ActiveRecord::ReadonlyAttributeError (config.active_record.raise_on_assign_to_attr_readonly).
+  # The legacy `active` column is read-only history (the 2021-22 dormancy snapshot, kept
+  # for reporting): it is not the deactivation state and nothing writes it, so it is
+  # readonly too.
+  attr_readonly :deactivated_at, :active
   include BCrypt
   include ActiveModel::Serialization
   include UoengConcern
+  include SniffedUploadValidation
 
   # ============================================
   # Constants
@@ -48,6 +56,13 @@ class User < ApplicationRecord
 
   ROLES = %w[regular_user admin staff volunteer].freeze
 
+  # Raised by User.change_roles! when the change would leave no usable admin.
+  class LastAdminError < StandardError; end
+
+  # The one wording, used by the admin UI and the API.
+  LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
+  LAST_ADMIN_LOCK_MESSAGE = "You cannot lock the last admin."
+
   ACCOUNT_IDENTITIES = %w[
     undergrad
     international_undergrad
@@ -70,6 +85,7 @@ class User < ApplicationRecord
   INTERNAL_IDENTITIES = (%w[faculty_member staff_member] + STUDENT_IDENTITIES).freeze
 
   ALLOWED_AVATAR_TYPES = %w[image/jpeg image/png image/webp image/gif].freeze
+  MAX_AVATAR_SIZE = 5.megabytes
 
   # ============================================
   # Associations
@@ -106,10 +122,11 @@ class User < ApplicationRecord
   has_many :print_orders
   has_many :volunteer_task_requests
   has_many :cc_moneys, dependent: :destroy
+  # Cleanup only: legacy discount_codes rows (feature removed) have a FK to users.
+  has_many :discount_codes, dependent: :destroy
   has_many :programs, dependent: :destroy
   has_many :orders, dependent: :destroy
   has_many :order_items, through: :orders
-  has_many :discount_codes, dependent: :destroy
   has_many :project_kits, dependent: :destroy
   has_many :learning_module_tracks
   has_many :shadowing_hours
@@ -135,7 +152,8 @@ class User < ApplicationRecord
   
   has_and_belongs_to_many :repositories
   has_and_belongs_to_many :proficient_projects
-  has_and_belongs_to_many :shifts, dependent: :destroy
+  # Cleanup only: removes shifts_users join rows on destroy (Shift is retired).
+  has_and_belongs_to_many :shifts
   
   accepts_nested_attributes_for :repositories
 
@@ -148,6 +166,12 @@ class User < ApplicationRecord
               allow: ALLOWED_AVATAR_TYPES,
               if: -> { avatar.attached? }
             }
+
+  # also check what the bytes are (no filename/declared-type fallback) and cap the size
+  validates_sniffed_upload :avatar,
+                           allow: ALLOWED_AVATAR_TYPES,
+                           max_size: -> { MAX_AVATAR_SIZE },
+                           name_fallback: false
 
   validates :name,
             presence: true,
@@ -176,10 +200,15 @@ class User < ApplicationRecord
             inclusion: { in: [true] },
             on: :create
 
+  validates :password, confirmation: true, presence: true
+
+  # The strength rules (nobspw) are for a PLAINTEXT password. The column holds a
+  # bcrypt hash, which can contain a word of the name/email by chance, so the
+  # rules must not run on it (they would fail unrelated saves such as the brute-force lock).
+  PASSWORD_STRENGTH_OPTIONS = { name: :username, email: :email }.freeze
   validates :password,
-            confirmation: true,
-            presence: true,
-            password: { name: :username, email: :email }
+            password: PASSWORD_STRENGTH_OPTIONS,
+            if: :plaintext_password_changing?
 
   validates :gender,
             presence: true,
@@ -239,6 +268,24 @@ class User < ApplicationRecord
 
   default_scope { where(deleted: false) }
 
+  EMAIL_CHANGE_VERIFIER = -> { Rails.application.message_verifier(:email_change) }
+
+  # purpose-scoped, expiring reset token that dies with the
+  # password it was issued for (the digest changes on every reset).
+  generates_token_for :password_reset, expires_in: 2.hours do
+    password&.last(10)
+  end
+
+  # confirmation (3 days, dies once confirmed) and unlock (1 hour, dies
+  # once the lock is cleared) links are purpose-scoped as well.
+  generates_token_for :email_confirmation, expires_in: 3.days do
+    confirmed
+  end
+
+  generates_token_for :account_unlock, expires_in: 1.hour do
+    [locked, locked_until&.to_i]
+  end
+
   scope :no_waiver_users, -> { where(read_and_accepted_waiver_form: false) }
   
   scope :between_dates_picked, ->(start_date, end_date) {
@@ -252,7 +299,16 @@ class User < ApplicationRecord
     )
   }
   
+  # `active` is the legacy 2021-22 dormancy snapshot, not the deactivation state (deactivated_at).
   scope :active, -> { where(active: true) }
+  # Everyone who can sign in as far as deactivation goes (legacy `active` is irrelevant).
+  scope :not_deactivated, -> { where(deactivated_at: nil) }
+
+  # Users who may hold a locker: not soft-deleted, not deactivated. Unscoped from the default scope so
+  # that a soft-deleted user is a row we see and refuse (deleted = false is explicit), not a missing one.
+  def self.eligible_renters
+    unscoped.where(deleted: false, deactivated_at: nil)
+  end
   scope :unknown_identity, -> { where(identity: 'unknown') }
   
   scope :created_at_month, ->(month) { 
@@ -299,6 +355,92 @@ class User < ApplicationRecord
       .limit(10)
   }
 
+  # Staff-facing substring search over name, email and username (accent- and
+  # case-insensitive). The caller escapes LIKE wildcards if it wants literal matching.
+  scope :text_search, ->(query) {
+    pattern = "%#{query}%"
+    where(
+      "LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR
+                           LOWER(UNACCENT(email)) like LOWER(UNACCENT(?)) OR
+                           LOWER(UNACCENT(username)) like LOWER(UNACCENT(?))",
+      pattern, pattern, pattern
+    )
+  }
+
+  # Admins who can still sign in. A locked admin (admin lock, or too many failed
+  # attempts) cannot sign in (CredentialAuthenticator), so does not count.
+  # A deactivated admin (User#deactivate!) cannot either.
+  scope :usable_admins, -> {
+    where(role: "admin").where(deactivated_at: nil)
+                        .where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
+  }
+
+  GUARD_LOCK_MODE = "FOR NO KEY UPDATE"
+
+  # Runs the block (a demotion, admin lock, soft delete or deactivation of `affected_ids`) only if
+  # at least one usable admin remains outside them; otherwise raises LastAdminError
+  # and the block never runs. Every such change must go through here.
+  #
+  # ALWAYS, before anything is decided, ALL admin rows are locked (FOR NO KEY UPDATE, in
+  # id order) and then the affected rows (also in id order), and the locks are held until
+  # the transaction ends. Whether the change touches an admin, only_if, and the
+  # usable-admin check are all evaluated from state read under those locks, and the
+  # block runs on rows that cannot change role meanwhile. Deciding first and locking
+  # after (e.g. "no admin is affected, so lock nothing") is a race: another
+  # transaction can promote the target in between, and the block would then demote
+  # an admin that nothing protected. Every role change takes the admin locks, so they
+  # are serialized with each other; a promotion takes the same locks, in the same
+  # order, and is never refused.
+  #
+  # Lock mode: FOR NO KEY UPDATE, not FOR UPDATE. It conflicts with itself, so guard
+  # callers still serialize, but not with KEY SHARE, which Postgres takes on a user
+  # row whenever a row referencing it is inserted (api_refresh_tokens.user_id).
+  # FOR UPDATE would deadlock with ApiRefreshToken#rotate!: the guard holds the user
+  # row and waits for the token rows that rotate! holds while its successor INSERT
+  # waits for the user row (bump_token_version! no longer waits on token rows, but a
+  # guarded block can). Any other lock on a users row inside a guarded block must use
+  # the same mode.
+  #
+  # Global lock order, for every caller: admin rows, then the target rows, each
+  # ORDER BY id. change_roles! follows it, so two of them cannot deadlock.
+  #
+  # Known, intentional gap: the automatic failed-login lockout (record_failed_attempt!)
+  # does NOT go through here. It is a timed 5-minute lock bounded by the login rate
+  # limit, an existing lockout-DoS trade-off logged for later.
+  #
+  # only_if: optional lambda run AFTER the locks are taken (so on fresh state); when
+  # it returns false the last-admin check is skipped (the change is not a removal,
+  # e.g. an unlock or a promotion). It may re-read the (already locked) target row.
+  def self.guarding_last_admin!(affected_ids, message: LAST_ADMIN_MESSAGE, only_if: nil)
+    affected_ids = Array(affected_ids)
+    transaction do
+      where(role: "admin").order(:id).lock(GUARD_LOCK_MODE).pluck(:id)
+      where(id: affected_ids).order(:id).lock(GUARD_LOCK_MODE).pluck(:id)
+      enforce = only_if.nil? || only_if.call
+      if enforce && where(role: "admin", id: affected_ids).exists? &&
+         usable_admins.where.not(id: affected_ids).none?
+        raise LastAdminError, message
+      end
+
+      yield
+    end
+  end
+
+  # Role change for several users in ONE transaction (all-or-nothing; the cable
+  # disconnects fire after commit). Refuses, with LastAdminError, a change that
+  # would leave no usable admin (see guarding_last_admin!). Promoting never removes
+  # an admin, so it is not checked, but it takes the same locks in the same order.
+  def self.change_roles!(user_ids, new_role, actor: nil)
+    user_ids = Array(user_ids).map(&:to_i).reject(&:zero?)
+    guarding_last_admin!(user_ids, only_if: -> { new_role != "admin" }) do
+      # rows already locked (in id order) by the guard
+      where(id: user_ids).order(:id).each do |user|
+        Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{new_role}' by Admin##{actor&.id}"
+        user.change_role!(new_role)
+      end
+    end
+  end
+
   # ============================================
   # Class Methods
   # ============================================
@@ -343,14 +485,158 @@ class User < ApplicationRecord
     @pword ||= Password.new(password)
   end
 
+  # The memoized Password must not outlive the row it was built from
+  # (a rolled-back change_password reloads the user).
+  def reload(*)
+    @pword = nil
+    @own_password_hash = nil
+    super
+  end
+
+  # True unless the value in `password` is the hash pword= produced: a
+  # bcrypt-SHAPED string typed by a user is still a plaintext password.
+  def plaintext_password_changing?
+    password_changed? && password.present? && password != @own_password_hash
+  end
+
+  # Problems with a candidate plaintext password (strength rules only; no other
+  # validation of the user runs). Leaves the plaintext assigned, like update would.
+  def plaintext_password_problems(plain)
+    errors.clear
+    self.password = plain
+    self.password_confirmation = plain
+    errors.add(:password, :blank) if plain.blank?
+    if plain.present?
+      ActiveModel::Validations::PasswordValidator
+        .new(attributes: [:password], **PASSWORD_STRENGTH_OPTIONS)
+        .validate_each(self, :password, plain)
+    end
+    errors.full_messages_for(:password)
+  end
+
+  # Stores a new password and what goes with it (token_version bump, and the
+  # timed lockout if asked) with ONE UPDATE of those columns only. The plaintext
+  # was checked beforehand (plaintext_password_problems); validating the whole row
+  # again would block users whose row fails an unrelated, legacy validation
+  # (old usernames, a stale gender, a student without a program ...).
+  # Callers must have checked plaintext_password_problems(plain) first (one UPDATE, no transaction needed).
+  #
+  # Compare-and-set from the token_version this instance was LOADED with (the version
+  # the session or token authenticated with): if a revocation committed meanwhile, or
+  # the account was soft-deleted or removed, nothing is written and
+  # ActiveRecord::StaleObjectError is raised, and the instance is left as it was
+  # loaded (nothing assigned, not dirty). The caller's credential is dead; it is
+  # never re-synced to the new version. Only after the UPDATE succeeded does the
+  # instance take the new password and version.
+  def store_new_password!(plain, clear_timed_lock: false)
+    loaded_version = token_version_in_database
+    hashed = Password.create(plain)
+    columns = [:password]
+    assign_attributes(password: hashed.to_s)
+    if clear_timed_lock && timed_lockout?
+      assign_attributes(locked: false, auth_attempts: 0, locked_until: nil)
+      columns += %i[locked auth_attempts locked_until]
+    end
+    stored = false
+    begin
+      stored = bump_token_version!(*columns, from_version: loaded_version)
+    ensure
+      # Any failure (no row matched, or the UPDATE itself raised) leaves the instance as loaded.
+      restore_attributes(columns) unless stored
+    end
+    raise ActiveRecord::StaleObjectError.new(self, "store a new password for") unless stored
+
+    @pword = hashed
+    @own_password_hash = hashed.to_s
+    self.password_confirmation = hashed
+    self
+  end
+
+  # The one way to end every credential of a user (password change/reset, admin
+  # lock, soft delete): increments token_version IN SQL (never from a possibly
+  # stale in-memory value, so concurrent bumps cannot overwrite each other) in the
+  # same UPDATE that writes the given columns' current in-memory values (and
+  # updated_at), no validations or callbacks. That ONE UPDATE is the revocation: the
+  # access JWTs, legacy JWTs, cookie sessions, websocket handshakes and /api/v1
+  # refresh tokens (ApiRefreshToken#usable?) are all checked against token_version.
+  # After the real commit (also inside a caller's transaction) the websockets are
+  # closed first (the access cut that matters), then the refresh-token rows are
+  # marked revoked (bookkeeping, best effort: a failure is reported, never raised,
+  # and cannot undo the bump).
+  #
+  # from_version: makes the bump conditional and idempotent (compare-and-set): the
+  # UPDATE only matches while token_version still equals it, and when it matches no
+  # row nothing else runs and false is returned. Any number of callers holding the
+  # same version race safely; exactly one bumps.
+  # With from_version the UPDATE also requires deleted = false (the column list may
+  # set it: the condition is on the row as it was): a soft-deleted or missing row
+  # returns false. Without it (admin lock, soft delete, deactivation: the admin's
+  # decision stands whatever state the row is in) any existing row is bumped,
+  # soft-deleted or not, and only a missing row raises ActiveRecord::RecordNotFound
+  # (never a silent no-op).
+  def bump_token_version!(*columns, from_version: nil)
+    values = columns.index_with { |column| self[column] }
+    written = write_and_bump_token_version(values, from_version: from_version)
+    unless written
+      return false if from_version
+
+      raise_missing_row!
+    end
+
+    apply_bumped_row(written, values)
+  end
+
+  # The key of the re-authentication attempt counter: per user AND token_version, so
+  # signing in again (or any bump) starts a fresh budget.
+  def reauth_attempts_key
+    "reauth/#{id}/#{token_version_in_database}"
+  end
+
+  # Counts one failed/attempted re-authentication and, when that is over `max`, ends
+  # every credential of the user, in ONE transaction: the counter upsert, then (over
+  # the limit) the compare-and-set bump from the version the key was built from. Of
+  # any number of racing over-limit callers exactly one bumps. Returns the count; the
+  # bump is a no-op when another caller bumped first or the row is gone or
+  # soft-deleted (the credential is dead either way). Anything that raises
+  # rolls the count back and propagates (fail closed).
+  #
+  # Lock order: the counter row (the upsert), then the user row (the bump). No path
+  # takes a users lock and then a rate_limit_counters row, and no token-row lock is
+  # taken inside. Keep it that way. Its own top-level transaction (own_transaction:
+  # it refuses to run inside a caller's), so every lock wait is bounded by LOCK_TIMEOUT.
+  def count_reauth_attempt!(max:, window:)
+    RateLimitCounter.own_transaction("User#count_reauth_attempt!") do
+      count = RateLimitCounter.increment(reauth_attempts_key, 1, expires_in: window)
+      bump_token_version!(from_version: token_version_in_database) if count > max
+      count
+    end
+  end
+
   def pword=(new_password)
     @pword = Password.create(new_password)
+    @own_password_hash = @pword.to_s
+    self.token_version += 1 if persisted?
     self.password = @pword
     self.password_confirmation = @pword
   end
 
+  # Secrets never leave the server: every JSON rendering of a user
+  # (as_json/to_json/render json:) goes through serializable_hash.
+  SERIALIZATION_EXCLUDED_ATTRIBUTES = %w[password access_token].freeze
+
+  def serializable_hash(options = nil)
+    options = options ? options.dup : {}
+    # Rails ignores :except when :only is given, so filter both.
+    options[:only] = Array(options[:only]).map(&:to_s) - SERIALIZATION_EXCLUDED_ATTRIBUTES if options[:only]
+    options[:except] = Array(options[:except]).map(&:to_s) | SERIALIZATION_EXCLUDED_ATTRIBUTES
+    super
+  end
+
+  # Lock bookkeeping uses update_columns: a validated update silently fails for a
+  # row that is invalid for an unrelated legacy reason, and the lock would never
+  # persist (unlimited guessing).
   def reset_auth_attempts!
-    update(auth_attempts: 0)
+    update_columns(auth_attempts: 0)
   end
 
   def record_failed_attempt!
@@ -358,28 +644,62 @@ class User < ApplicationRecord
     lock_account! if auth_attempts >= MAX_AUTH_ATTEMPTS
   end
 
+  # A lock (timed or admin) blocks NEW logins; it never ends existing sessions.
+  def lock_in_effect?
+    locked? && (locked_until.nil? || locked_until > Time.current)
+  end
+
+  # The brute-force lockout (locked_until within TIMED_LOCKOUT_CEILING, or already
+  # lapsed), as opposed to an admin lock (99 years ahead, or no end). The ceiling is
+  # deliberately far above LOCK_DURATION so clock skew between nodes cannot
+  # misclassify a lock. Only the timed kind is cleared by a password reset. The
+  # migration backfill (AddTokenVersionToUsers) uses the same one-day threshold.
+  TIMED_LOCKOUT_CEILING = 1.day
+
+  def timed_lockout?
+    locked? && locked_until.present? && locked_until <= TIMED_LOCKOUT_CEILING.from_now
+  end
+
+  # Never shortens an existing lock (an admin lock lasts 99 years): a no-op, and
+  # no second unlock mail, when the user is already locked for longer.
   def lock_account!
-    update(locked: true, locked_until: LOCK_DURATION.from_now)
+    new_until = LOCK_DURATION.from_now
+    return if lock_in_effect? && (locked_until.nil? || locked_until >= new_until)
+
+    update_columns(locked: true, locked_until: new_until)
     send_unlock_email
   end
 
   def send_unlock_email
-    user_hash = Rails.application.message_verifier('unlock').generate(id)
+    user_hash = generate_token_for(:account_unlock)
     MsrMailer.unlock_account(self, user_hash).deliver_now
   end
 
   def token(exp = 14.days.from_now.to_i)
     JWT.encode(
-      { user_id: id, exp: exp },
+      { user_id: id, ver: token_version, exp: exp },
       Rails.application.credentials.secret_key_base,
       'HS256'
     )
   end
 
+  # bound to this user, the target address, the current address
+  # (so it is single-use: it dies once the address changes) and the
+  # token_version (so a password change/reset or an admin lock ends a pending
+  # change too); purpose-scoped, valid for 24 hours.
+  def generate_email_change_token(new_email)
+    EMAIL_CHANGE_VERIFIER.call.generate([id, new_email, email, token_version], purpose: :email_change, expires_in: 24.hours)
+  end
+
+  # Returns [user, new_email] for a live token, nil otherwise.
+  def self.email_change_from_token(token)
+    id, new_email, old_email, version = EMAIL_CHANGE_VERIFIER.call.verified(token.to_s, purpose: :email_change)
+    user = find_by(id: id) if id
+    [user, new_email] if user && user.email == old_email && user.token_version == version
+  end
+
   def send_password_reset
-    user_hash = Rails.application.message_verifier(:user).generate(id)
-    expiry_date_hash = Rails.application.message_verifier(:user).generate(1.day.from_now)
-    MsrMailer.forgot_password(email, user_hash, expiry_date_hash).deliver_now
+    MsrMailer.forgot_password(email, generate_token_for(:password_reset)).deliver_now
   end
 
   # ============================================
@@ -393,6 +713,96 @@ class User < ApplicationRecord
   def admin?
     role == 'admin'
   end
+
+  # Admin lock: blocks new logins for 99 years AND ends every existing session and JWT
+  # for good by bumping token_version. The bump is a SQL increment (not
+  # token_version + 1 computed from a possibly stale in-memory value), so a password
+  # reset racing with the lock cannot overwrite it with an equal or lower version.
+  # Column writes only (no validations): a row that is invalid for an unrelated
+  # legacy reason must still be lockable.
+  def admin_lock!
+    assign_attributes(locked: true, locked_until: 99.years.from_now, auth_attempts: MAX_AUTH_ATTEMPTS)
+    bump_token_version!(:locked, :locked_until, :auth_attempts)
+  end
+
+  # Does not restore token_version: sessions and JWTs revoked by the lock stay dead.
+  def admin_unlock!
+    update_columns(locked: false, locked_until: nil, auth_attempts: 0, updated_at: Time.current)
+    self
+  end
+
+  # Closes this user's open websocket connections (ApplicationCable identifies them
+  # by current_user). Called when the credentials or rights behind them change:
+  # sign out, password change/reset, admin lock, demotion from staff/admin. A
+  # still-valid session simply reconnects and is re-checked at the handshake.
+  # Best effort: it runs after the change is already committed (mostly from the
+  # after_update_commit below; the solid_cable broadcast is an INSERT that can fail),
+  # so a failure is reported, never raised.
+  # Rescues StandardError, not just ActiveRecordError: any broadcast failure (Timeout,
+  # a raw PG error from the pool, ActionCable server errors) must not 500 a role change,
+  # delete, lock or logout that already happened. Rails.error.report keeps real bugs
+  # visible in the error tracker.
+  def disconnect_cable!
+    ActionCable.server.remote_connections.where(current_user: self).disconnect
+  rescue StandardError => e
+    Rails.error.report(e, handled: true)
+  end
+
+  # Role and soft-delete writes skip validations only (a row that is invalid for an
+  # unrelated legacy reason must still be demotable/deletable); callbacks run, so the
+  # after_update_commit below (cable_access_lost?) closes the connections once, after
+  # the real commit, even inside an outer transaction.
+  def change_role!(new_role)
+    raise ArgumentError, "unknown role #{new_role.inspect}" unless ROLES.include?(new_role)
+
+    self.role = new_role
+    save!(validate: false)
+    self
+  end
+
+  # Also revokes every session and JWT issued so far (SQL increment, like admin_lock!,
+  # so a concurrent bump is not overwritten): restore! must not revive them.
+  def soft_delete!
+    self.deleted = true
+    bump_token_version!(:deleted)
+  end
+
+  def restore!
+    self.deleted = false
+    save!(validate: false)
+    self
+  end
+
+  # Deactivation and reactivation both end every credential issued so far (cookie
+  # sessions, access and legacy JWTs, websockets, /api/v1 refresh tokens): `deactivated_at`
+  # is set (or cleared) and token_version bumped in ONE UPDATE, so reactivating an account
+  # never revives what was issued before. These are the only ways to change
+  # `deactivated_at` (it is attr_readonly). Each returns whether it changed anything: the
+  # UPDATE only matches a row whose state differs, so a repeated call bumps and revokes
+  # nothing.
+  # deactivate! runs inside guarding_last_admin!, so deactivating the last usable
+  # admin raises LastAdminError and changes nothing (an already deactivated account is a
+  # no-op, not a removal).
+  def deactivate!
+    # Only a target that currently counts as a usable admin can be a removal (usable_admins
+    # requires deactivated_at IS NULL, so an already deactivated target is a no-op, and a
+    # locked admin is not refused). One read, under the guard's locks. The no-op decision itself is the
+    # UPDATE's state condition in change_deactivation!.
+    self.class.guarding_last_admin!([id], only_if: -> { self.class.unscoped.merge(self.class.usable_admins).where(id: id).exists? }) do
+      change_deactivation!(true)
+    end
+  end
+
+  def reactivate!
+    change_deactivation!(false)
+  end
+
+  # Demoted from staff/admin, soft-deleted or deactivated: such a connection must not
+  # keep receiving broadcasts (StaffDashboardChannel authorizes at subscribe time
+  # only; the handshake already refuses deleted/deactivated users on reconnect).
+  after_update_commit :disconnect_cable!, if: :cable_access_lost?
+  # A block, not the method symbol: Rails de-duplicates commit callbacks by method name.
+  after_destroy_commit { disconnect_cable! }
 
   def staff?
     role.in?(%w[staff admin])
@@ -412,6 +822,25 @@ class User < ApplicationRecord
 
   def teams_program?
     programs.exists?(program_type: Program::TEAMS)
+  end
+
+  # Sets the development / volunteer / teams memberships. Each argument is true
+  # (join), false (leave) or nil (leave as is; only meaningful for teams).
+  # All-or-nothing: raises ActiveRecord::RecordInvalid / RecordNotDestroyed (and
+  # rolls everything back) when a step fails. Returns the user's program types afterwards.
+  def sync_programs!(development:, volunteer:, teams: nil)
+    transaction do
+      { Program::DEV_PROGRAM => development, Program::VOLUNTEER => volunteer, Program::TEAMS => teams }.each do |type, wanted|
+        next if wanted.nil?
+
+        if wanted
+          programs.find_or_create_by!(program_type: type)
+        else
+          programs.find_by(program_type: type)&.destroy!
+        end
+      end
+    end
+    programs.reload.pluck(:program_type)
   end
 
   def staff_in_space?
@@ -458,10 +887,15 @@ class User < ApplicationRecord
     certifications.map(&:get_name_en)
   end
 
+  # Trainings with no active certification, whether it was earned in a training
+  # session or through a proficient project. One query; a certification with
+  # neither (legacy/orphaned rows) simply holds no training.
   def remaining_trainings
-    trainings = []
-    certifications.each { |cert| trainings << cert.training.id }
-    Training.all.where.not(id: trainings)
+    held = certifications
+           .left_joins(:training_session, proficient_project_session: :proficient_project)
+           .pluck("training_sessions.training_id", "proficient_projects.training_id")
+           .flatten.compact
+    Training.all.where.not(id: held)
   end
 
   def has_requirements?(training_reqs)
@@ -504,8 +938,28 @@ class User < ApplicationRecord
     volunteer_hours.approved.sum(:total_time)
   end
 
+  # users.wallet is a CACHE of SUM(cc_moneys.cc). Written with update_columns, never a validated
+  # update: a user failing any validation (legacy data) still gets a fresh wallet.
+  # The sum is read under the user-row lock (the wallet lock every CC spend takes, same mode), so
+  # a refresh racing a spend cannot write back a sum read before that spend committed. As its own
+  # transaction its lock wait is bounded and, being only a cache refresh, a timeout skips it
+  # (logged); inside a caller's transaction it joins it and a timeout propagates.
+  # A guest (unsaved User.new) has nothing to cache.
+  # Returns true when the cache was written, false for a guest or a skipped refresh.
   def update_wallet
-    update(wallet: get_total_cc)
+    return false unless persisted?
+
+    own = !self.class.caller_transaction_open?
+    refresh = proc do
+      self.class.unscoped.where(id: id).lock(GUARD_LOCK_MODE).take
+      update_columns(wallet: CcMoney.uncached { cc_moneys.sum(:cc) })
+    end
+    own ? self.class.own_transaction("User#update_wallet", &refresh) : self.class.transaction(&refresh)
+  rescue ActiveRecord::LockWaitTimeout
+    raise unless own
+
+    Rails.logger.warn("[User#update_wallet] wallet cache refresh skipped (lock timeout): user id=#{id}")
+    false
   end
 
   # ============================================
@@ -557,7 +1011,97 @@ class User < ApplicationRecord
   # Private Methods
   # ============================================
 
+  # The ONE UPDATE behind every bump: token_version + 1 and `values` (column => value,
+  # not read from the instance, so attr_readonly columns can be written too) with
+  # updated_at. `extra_where` is an optional [sql, *binds] condition on the row as it
+  # was. Returns [new token_version, updated_at], or nil when no row matched.
+  def write_and_bump_token_version(values, from_version: nil, extra_where: nil, stamp: Time.current)
+    conn = self.class.connection
+    values = values.merge(updated_at: stamp)
+    assignments = values.keys.map { |column| "#{conn.quote_column_name(column)} = ?" }
+    where_sql = +"id = ?"
+    binds = [id]
+    if from_version
+      where_sql << " AND deleted = false AND token_version = ?"
+      binds << from_version
+    end
+    if extra_where
+      where_sql << " AND #{extra_where.first}"
+      binds.concat(extra_where.drop(1))
+    end
+    sql = self.class.sanitize_sql_array(
+      ["UPDATE #{conn.quote_table_name(self.class.table_name)} SET token_version = token_version + 1, " \
+       "#{assignments.join(', ')} WHERE #{where_sql} RETURNING token_version",
+       *values.values, *binds]
+    )
+    # select_value is a read API: never let the query cache answer this write.
+    # (Rails 8.1 already clears the cache on write SQL; this is belt and braces.)
+    new_version = self.class.uncached { conn.select_value(sql) }
+    new_version && [new_version, values[:updated_at]]
+  end
+
+  # Syncs the instance to the row the bump just wrote (clean, no pending change) and
+  # schedules the revocation side effects. `values` are the columns that were written.
+  def apply_bumped_row((new_version, updated_at), values)
+    # attributes written from the database state, not assigned: attr_readonly columns
+    # (deactivated_at) cannot be assigned on a persisted record
+    values.each { |column, value| @attributes.write_from_database(column.to_s, value) }
+    @attributes.write_from_database("token_version", new_version)
+    @attributes.write_from_database("updated_at", updated_at)
+    # After the real commit when called inside a caller's transaction (a rolled-back
+    # change must not drop connections, and a reconnect must see the new state).
+    # The sockets are closed first (the access cut that matters), then the refresh
+    # token rows are marked revoked (bookkeeping).
+    ActiveRecord.after_all_transactions_commit do
+      disconnect_cable!
+      begin
+        ApiRefreshToken.revoke_all_for!(id)
+      rescue StandardError => e
+        Rails.error.report(e, handled: true)
+      end
+    end
+    self
+  end
+
+  # Deactivates (deactivated_at = now) or reactivates (NULL) and bumps token_version
+  # in ONE UPDATE, only when the account is not already in that state (deactivating an
+  # already deactivated row keeps its original time). Returns true when it changed, false
+  # when it already was (nothing bumped, nothing revoked).
+  #
+  # Unlike bump_token_version!(from_version:), which returns false and leaves the
+  # instance alone when its compare-and-set matches nothing, a no-match here has TWO
+  # possible causes (the row already is in that state, or it is gone) and the caller is
+  # handed an instance that must tell the truth about `deactivated_at`, so it reads the
+  # row back; only the missing-row error is shared (raise_missing_row!).
+  def change_deactivation!(deactivate)
+    # ONE captured time: deactivated_at and updated_at are the same instant.
+    stamp = Time.current
+    value = deactivate ? stamp : nil
+    differs = deactivate ? "deactivated_at IS NULL" : "deactivated_at IS NOT NULL"
+    written = write_and_bump_token_version({ deactivated_at: value }, extra_where: [differs], stamp: stamp)
+    unless written
+      current = self.class.uncached { self.class.unscoped.where(id: id).pick(:deactivated_at, :token_version) }
+      raise_missing_row! unless current
+
+      @attributes.write_from_database("deactivated_at", current[0])
+      @attributes.write_from_database("token_version", current[1])
+      return false
+    end
+
+    apply_bumped_row(written, { deactivated_at: value })
+    true
+  end
+
+  def raise_missing_row!
+    raise ActiveRecord::RecordNotFound, "#{self.class.name} #{id} no longer exists"
+  end
+
   def translate_faculty
     self.faculty = FACULTY_TRANSLATIONS[faculty] if FACULTY_TRANSLATIONS.key?(faculty)
+  end
+
+  def cable_access_lost?
+    demoted = saved_change_to_role? && role_before_last_save.in?(%w[staff admin]) && !staff?
+    demoted || (saved_change_to_deleted? && !AuthEligibility.allowed?(self))
   end
 end

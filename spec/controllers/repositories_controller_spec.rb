@@ -488,7 +488,7 @@ RSpec.describe RepositoriesController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         pp = create(:project_proposal, :approved)
-        repo = create(:repository)
+        repo = create(:repository, owner: user) # only the owner/member/staff/admin may link
         post :link_to_pp,
              params: {
                repo: {

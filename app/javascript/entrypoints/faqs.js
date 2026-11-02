@@ -1,4 +1,5 @@
 import Sortable from "sortablejs";
+import { csrfHeaders } from "../src/csrf";
 
 document.addEventListener("turbo:load", () => {
   // On sort, POST to reorder
@@ -6,10 +7,10 @@ document.addEventListener("turbo:load", () => {
     const reorderData = [...evt.to.children].map((i) => i.dataset.faqId);
     fetch("/faq/reorder", {
       method: "PUT",
-      headers: {
+      headers: csrfHeaders({
         Accept: "application/json",
         "Content-Type": "application/json",
-      },
+      }),
       body: JSON.stringify({
         data: reorderData,
         format: "json",

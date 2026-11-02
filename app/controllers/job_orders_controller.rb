@@ -7,23 +7,18 @@ class JobOrdersController < SessionsController
                   user_magic_approval
                   user_magic_approval_confirmation
                   pay
-                  stripe_success
-                  stripe_cancelled
                   landing
                 ]
   before_action :grant_access,
                 only: %w[
+                  assign_staff
                   admin
                   settings
                   start_processing
                   processed
                   paid
                   picked_up
-                  quote_modal
                   timeline_modal
-                  decline_modal
-                  completed_email_modal
-                  comments_modal
                   quote
                   resend_quote_email
                   comments
@@ -36,11 +31,7 @@ class JobOrdersController < SessionsController
                   processed
                   paid
                   picked_up
-                  quote_modal
                   timeline_modal
-                  decline_modal
-                  completed_email_modal
-                  comments_modal
                   quote
                   invoice
                   resend_quote_email
@@ -51,10 +42,10 @@ class JobOrdersController < SessionsController
     @job_orders = []
     @archived_job_orders = []
     @drafts = []
-    @user.job_orders.not_deleted.each do |jo|
-      next unless jo.job_order_statuses.last
+    @user.job_orders.not_deleted.includes(job_order_statuses: :job_status).each do |jo|
+      next unless jo.latest_status
 
-      if jo.job_order_statuses.last.job_status == JobStatus::DRAFT
+      if jo.latest_status.job_status == JobStatus.draft
         @drafts << jo
       else
         @job_orders << jo
@@ -73,19 +64,24 @@ class JobOrdersController < SessionsController
       return redirect_to job_orders_path     
     end
     
+    unless current_user.admin? || current_user.staff? || current_user.id == @job_order.user_id
+      flash[:alert] = t("job_orders.alerts.no_permission")
+      return redirect_to new_job_orders_path
+    end
+
     if current_user.id == @job_order.user_id
       @unread_messages = @job_order.chat_messages.unread(current_user)
       @unread_messages.update_all(is_read: true) # rubocop:disable Rails/SkipsModelValidations
     end
 
-    flash[:notice] = t("job_orders.alerts.action_required_scroll_to_timeline") if [JobStatus::USER_APPROVAL, 
-JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_statuses.last&.job_status) && @job_order.user_id == current_user.id
+    flash.now[:notice] = t("job_orders.alerts.action_required_scroll_to_timeline") if [JobStatus.user_approval, 
+JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&.job_status) && @job_order.user_id == current_user.id
 
     @tasks_missing_information = @job_order.job_tasks.select do |task|
       # job type is missing or job type has a service not chosen
       task.job_type.blank? || (task.job_type.job_service_groups.any? && task.job_service.blank?)
     end
-    flash[:alert] = 
+    flash.now[:alert] =
 "#{t('job_orders.alerts.missing_info')} #{@tasks_missing_information.map(&:title).join(', ')}" if @tasks_missing_information.any? 
   end
 
@@ -94,13 +90,13 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   end
 
   def create
-    @job_order = JobOrder.new(job_order_params)
+    @job_order = JobOrder.new(job_order_create_params)
     @job_order.user = @user
 
     if @job_order.save
       @job_order.job_order_statuses << JobOrderStatus.create(
         job_order: @job_order,
-        job_status: JobStatus::DRAFT,
+        job_status: JobStatus.draft,
         user: @user
       )
 
@@ -124,22 +120,11 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
   def user_magic_approval
     @token = params[:token]
-    verifier = Rails.application.message_verifier(:job_order_id)
-    if verifier.valid_message?(@token) &&
-         JobOrder.where(
-           id: verifier.verify(@token),
-           is_deleted: false
-         ).present? &&
-         [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER].include?(
-           JobOrder
-             .where(id: verifier.verify(@token), is_deleted: false)
-             .first
-             .job_order_statuses
-             .last
-             .job_status
+    @job_order = JobOrder.from_approval_token(@token)
+    if @job_order &&
+         [JobStatus.user_approval, JobStatus.sent_reminder].include?(
+           @job_order.latest_status&.job_status # an order without a status is not approvable
          )
-      @job_order =
-        JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
       render "job_orders/magic_approval"
     else
       flash[:alert] = t("job_orders.alerts.approval_magic_link_expired")
@@ -149,17 +134,17 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
   def user_magic_approval_confirmation
     @token = params[:token]
-    verifier = Rails.application.message_verifier(:job_order_id)
-    if verifier.valid_message?(params[:token])
-      @job_order =
-        JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
+    @job_order = JobOrder.from_approval_token(@token)
+    if @job_order
       @status = if update_status(
            params[:approved],
-           [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER],
-           JobStatus::WAITING_PROCESSED,
+           %i[user_approval sent_reminder],
+           :waiting_processed,
            true,
-           JobStatus::DECLINED,
-           nil
+           :declined,
+           nil,
+           actor: @job_order.user,
+           approval_token: @token
          )
         true
       else
@@ -175,10 +160,10 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   def user_approval
     if update_status(
          params[:approved],
-         [JobStatus::USER_APPROVAL, JobStatus::SENT_REMINDER],
-         JobStatus::WAITING_PROCESSED,
+         %i[user_approval sent_reminder],
+         :waiting_processed,
          true,
-         JobStatus::DECLINED,
+         :declined,
          nil
        ) && params[:approved] == "true"
       JobOrderMailer.send_job_user_approval(@job_order.id).deliver_now
@@ -190,127 +175,62 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     end
   end
 
-  def quote_modal
-    render layout: false
-  end
-
+  # One query for the rows and their statuses, one for the users of the rows that name their actor
+  # (JobOrderStatus#actor_shown?); no per-row lookups.
   def timeline_modal
-    render layout: false
-  end
-
-  def decline_modal
-    render layout: false
-  end
-
-  def comments_modal
+    @statuses = @job_order.job_order_statuses.includes(:job_status).reorder(id: :desc).to_a
+    ActiveRecord::Associations::Preloader.new(records: @statuses.select(&:actor_shown?), associations: :user).call
     render layout: false
   end
 
   def quote
     error = false
+    mail_failed = false
 
     return flash[:alert] = t("job_orders.alerts.error_while_updating") if params[:approved].blank?
 
-    if params[:approved].present? && params[:approved] == "true"
-      # ACCEPT JOB
-      JobOrder.transaction do
-        @job_order.job_tasks.each do |task|
-          price_key = "job_task_quote_price_#{task.id}"
-          job_task_quote = task.job_task_quote || task.build_job_task_quote
-          job_task_quote.price = params[price_key].presence || 0.0
-          
-          # Service
-          qty_key   = "task_#{task.id}_service_qty"
-          svc_price_key = "task_#{task.id}_service_price"
-          
-          job_task_quote.service_quantity = params[qty_key].presence || 0.0
-          job_task_quote.service_price = params[svc_price_key].presence || 0.0
-
-          job_task_quote.save!
-
-          # Options
-          task.job_task_options.each do |option|
-            opt_key = "task_#{task.id}_option_price_#{option.job_option_id}"
-            next if params[opt_key].blank?
-
-            qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id)
-            qt_option.price = params[opt_key]
-            qt_option.save!
-          end
-
-          file_key = "task_#{task.id}_staff_files"
-          next if params[file_key].blank?
-          params[file_key].each do |file|
-            task.staff_files.attach(file)
-          end
-        end
-
-        # line items
-        if params[:job_quote_line_items].present?
-          @job_order.job_quote_line_items.destroy_all
-
-          params[:job_quote_line_items].each_value do |item_params|
-            desc = item_params[:description].to_s.strip
-            price = item_params[:price].to_s.strip
-
-            next if desc.blank? && price.blank?
-
-            @job_order.job_quote_line_items.create!(
-              description: desc,
-              price: price.presence || 0.0
-            )
-          end
-        end
-
-        if params[:user_comments].present?
-          @job_order.chat_messages.create(
-            message: params[:user_comments],
-            sender: current_user
-          )
-        end
-
-        @job_order.staff_comments = params[:job_order][:staff_comments] if params[:job_order][:staff_comments].present?
-
-        @job_order.job_order_statuses << JobOrderStatus.create(
-          job_order: @job_order,
-          job_status: JobStatus::USER_APPROVAL,
-          user: @user
-        )
-
-        if @job_order.save
-          JobOrderMailer.send_job_quote(@job_order.id).deliver_now
-        else
-          error = true
-        end
+    if params[:approved] == "true"
+      # ACCEPT JOB. The prices and the new status are one transition: its own transaction, row lock first
+      # (concurrent re-quotes serialize; the status is read under the lock, and a paid order is refused there,
+      # the new quote's draft rule voiding any live Shopify draft (fail closed: if it cannot be deleted
+      # nothing is written: no price, status or email). A refusal is reported by the model, once.
+      result = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus.user_approval,
+                                      actor: @user) { apply_quote_params! }
+      unless result.ok?
+        flash[:alert] = refusal_alert(result, requote: true)
+        return redirect_to job_order_path(@job_order.id)
+      end
+      # After the commit: the chat message's notification must not be enqueued by a quote that is rolled back, and
+      # a mail failure must not roll back a quote whose old Shopify draft is already deleted (the restored id would
+      # point at a deleted draft). Staff can use resend_quote_email.
+      post_user_comment
+      begin
+        JobOrderMailer.send_job_quote(@job_order.id).deliver_now
+      rescue StandardError => e
+        Rails.logger.error("[job_orders#quote] quote email for ##{@job_order.id} failed: #{e.class}: #{e.message}")
+        mail_failed = true
       end
     elsif params[:approved] == "false"
-      # DELCINE JOB
-      if params[:user_comments].present?
-        @job_order.chat_messages.create(
-          message: params[:user_comments],
-          sender: current_user
-        )
-      end
+      # DECLINE JOB. Never once paid (transition! reads the status under the row lock).
+      declined = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus.declined, actor: @user)
 
-      @job_order.job_order_statuses << JobOrderStatus.create(
-        job_order: @job_order,
-        job_status: JobStatus::DECLINED,
-        user: @user
-      )
-
-      if @job_order.save
+      if declined.ok?
+        post_user_comment
         JobOrderMailer.send_job_declined(@job_order.id).deliver_now
       else
-        error = true
+        flash[:alert] = refusal_alert(declined)
+        return redirect_to job_order_path(@job_order.id)
       end
     else
       error = true
     end
 
-    if !error
+    if mail_failed
+      flash[:alert] = t("job_orders.alerts.quote_saved_email_failed")
+    elsif !error
       flash[:notice] = t(
         "job_orders.alerts.updated_job_status_to_x",
-        status: @job_order.job_order_statuses.last.job_status.t_name
+        status: @job_order.latest_status.job_status.t_name
       )
     else
       flash[:alert] = t("job_orders.alerts.error_while_updating")
@@ -336,8 +256,8 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   def start_processing
     update_status(
       params[:start_processing],
-      JobStatus::WAITING_PROCESSED,
-      JobStatus::BEING_PROCESSED,
+      :waiting_processed,
+      :being_processed,
       false
     )
   end
@@ -345,20 +265,23 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   def processed
     if update_status(
          params[:completed],
-         JobStatus::BEING_PROCESSED,
-         JobStatus::COMPLETED,
+         :being_processed,
+         :completed,
          false,
          nil,
          nil
        ) && params[:completed] == "true"
-      # Bypass Payment if order is 0$
-      if @job_order.total_price === 0
-        @job_order.job_order_statuses << JobOrderStatus.create(
-          job_order: @job_order,
-          job_status: JobStatus::PAID,
-          user: @user
-        )
-        JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
+      # Skip payment if the order is $0 (through the same transition rule as any other payment)
+      if @job_order.total_price.zero?
+        paid = @job_order.transition!(from: JobStatus.completed, to: JobStatus.paid, actor: @user)
+        if paid.ok?
+          flash[:notice] = t("job_orders.alerts.updated_job_status_to_x", status: JobStatus.paid.t_name)
+          JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
+        else
+          # the order is Completed but not Paid: say so, and no "updated" notice that would suggest otherwise
+          flash.delete(:notice)
+          flash[:alert] = t(paid.zero_order_message_key)
+        end
       elsif params[:send_email].present? && params[:send_email] == "true"
         JobOrderMailer.send_job_completed(
           @job_order.id,
@@ -374,25 +297,28 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   end
 
   def paid
-    update_status(params[:paid], JobStatus::COMPLETED, JobStatus::PAID, false)
+    update_status(params[:paid], :completed, :paid, false)
   end
 
   def picked_up
     update_status(
       params[:picked_up],
-      JobStatus::PAID,
-      JobStatus::PICKED_UP,
+      :paid,
+      :picked_up,
       false
     )
   end
 
+  # Only while the customer has a live quote: a reminder re-issues the approve link, so one for an order that went
+  # back to staff (or moved on) would make an unquoted or spent quote approvable again.
   def resend_quote_email
-    @job_order.job_order_statuses << JobOrderStatus.create(
-      job_order: @job_order,
-      job_status: JobStatus::SENT_REMINDER,
-      user: @user
-    )
-    JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now if @job_order.save
+    sent = @job_order.transition!(from: [JobStatus.user_approval, JobStatus.sent_reminder],
+                                  to: JobStatus.sent_reminder, actor: @user)
+    if sent.ok?
+      JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now
+    else
+      flash[:alert] = t(sent.message_key)
+    end
     respond_to do |format|
       format.html { redirect_to job_order_path(@job_order.id) }
       format.js { render "admin_row" }
@@ -400,14 +326,16 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
   end
 
   def destroy
-    @job_order.update(is_deleted: true)
-    if @user.admin?
-      redirect_to admin_job_orders_path
+    # One locked operation: the order's Shopify draft (a payable invoice) is settled with the delete, fail closed.
+    result = @job_order.soft_delete!(actor: @user)
+    if result.ok?
+      flash[:notice] = "Job order deleted successfully."
+      redirect_to orders_list_path
     else
-      redirect_to job_orders_path
+      flash[:alert] = t(result.message_key("job_orders.alerts.delete_refused", reasons: JobOrder::TransitionResult::DELETE_REASONS))
+      # a deleted order has no page to show the message on (set_job_order would replace it)
+      redirect_to(result.reason == :order_missing ? orders_list_path : job_order_path(@job_order.id))
     end
-
-    flash[:notice] = "Job order deleted successfully."
   end
 
   def assign_staff
@@ -436,7 +364,7 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     @statuses = JobStatus.where.not(name: "Draft")
     @job_types = JobType.all
 
-    @job_orders = JobOrder.all.not_deleted.without_drafts.includes(:job_services).order(created_at: :desc)
+    @job_orders = JobOrder.all.not_deleted.without_drafts.includes(:job_services, job_order_statuses: :job_status).order(created_at: :desc)
   end
 
   def settings
@@ -452,33 +380,33 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
 
   def pay
     @token = params[:token]
-    verifier = Rails.application.message_verifier(:job_order_id)
-    if verifier.valid_message?(@token) &&
-         JobOrder.where(
-           id: verifier.verify(@token),
-           is_deleted: false
-         ).present? &&
-         JobStatus::COMPLETED ==
-           JobOrder
-             .where(id: verifier.verify(@token), is_deleted: false)
-             .first
-             .job_order_statuses
-             .last
-             .job_status
-      @job_order =
-        JobOrder.where(id: verifier.verify(@token), is_deleted: false).first
-      @payment_link = @job_order.checkout_link
-      render "job_orders/pay"
+    @job_order = JobOrder.from_pay_token(@token)
+    if @job_order.nil?
+      # expired, invalid, deleted-order, already-retired or legacy links
+      flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
+      redirect_to job_orders_path
+    elsif (status = @job_order.current_status) == JobStatus.completed # no status (nil): not payable, as below
+      link = @job_order.checkout_link(status) # the fresh read just made is the fast path's; a refusal is already reported; the page says the link is unavailable
+      if link.reason == :order_missing
+        flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
+        return redirect_to job_orders_path
+      elsif link.reason == :invalid_status_row # the send-back to staff could not be written
+        flash[:alert] = t("job_orders.alerts.pay_send_back_failed")
+        return redirect_to job_order_path(@job_order.id)
+      end
+      @payment_link = link.value
+      # The status may have changed under checkout_link (maybe on another connection): read it again, fresh.
+      if @job_order.current_status == JobStatus.completed
+        render "job_orders/pay"
+      else
+        # checkout_link found the invoice out of date and sent the order back to staff (or an owner change did)
+        flash[:alert] = t("job_orders.alerts.pay_quote_changed")
+        redirect_to job_order_path(@job_order.id)
+      end
     else
       flash[:alert] = t("job_orders.alerts.pay_magic_link_expired")
       redirect_to job_order_path(@job_order.id)
     end
-  end
-
-  def stripe_success
-  end
-
-  def stripe_cancelled
   end
 
   def landing
@@ -509,9 +437,15 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     end
   end
 
+  # Customer-facing params: no staff-only fields, no owner (the owner is set to
+  # the current user in #create).
+  def job_order_create_params
+    job_order_params.except(:staff_comments, :staff_files)
+  end
+
+  # Staff params (comments action). The owner can never be reassigned.
   def job_order_params
     params.require(:job_order).permit(
-      :user_id,
       :job_type_id,
       :job_service_group_id,
       :job_service_ids,
@@ -525,6 +459,11 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     )
   end
 
+  # Where the order list is for the current user (an admin's is the admin list).
+  def orders_list_path
+    @user.admin? ? admin_job_orders_path : job_orders_path
+  end
+
   def grant_access
     return if current_user.staff? || current_user.admin?
       flash[:alert] = t("job_orders.alerts.cannot_access_area")
@@ -532,51 +471,118 @@ JobStatus::SENT_REMINDER, JobStatus::COMPLETED].include?(@job_order.job_order_st
     
   end
 
+  # The quote form's writes, run by JobOrder#transition! under the order's row lock (the order was reloaded by
+  # lock!, so its tasks are read fresh). Validation failures raise, which rolls the transition back.
+  def apply_quote_params!
+    @job_order.job_tasks.each do |task|
+      price_key = "job_task_quote_price_#{task.id}"
+      job_task_quote = task.job_task_quote || task.build_job_task_quote
+      job_task_quote.price = params[price_key].presence || 0.0
+
+      # Service
+      qty_key   = "task_#{task.id}_service_qty"
+      svc_price_key = "task_#{task.id}_service_price"
+
+      job_task_quote.service_quantity = params[qty_key].presence || 0.0
+      job_task_quote.service_price = params[svc_price_key].presence || 0.0
+
+      job_task_quote.save!
+
+      # Options
+      task.job_task_options.each do |option|
+        opt_key = "task_#{task.id}_option_price_#{option.job_option_id}"
+        next if params[opt_key].blank?
+
+        qt_option = job_task_quote.job_task_quote_options.find_or_initialize_by(job_option_id: option.job_option_id)
+        qt_option.price = params[opt_key]
+        qt_option.save!
+      end
+
+      file_key = "task_#{task.id}_staff_files"
+      next if params[file_key].blank?
+      params[file_key].each do |file|
+        task.staff_files.attach(file)
+      end
+    end
+
+    # line items
+    if params[:job_quote_line_items].present?
+      @job_order.job_quote_line_items.destroy_all
+
+      params[:job_quote_line_items].each_value do |item_params|
+        desc = item_params[:description].to_s.strip
+        price = item_params[:price].to_s.strip
+
+        next if desc.blank? && price.blank?
+
+        @job_order.job_quote_line_items.create!(description: desc, price: price.presence || 0.0)
+      end
+    end
+
+    # one scalar read from job_order; its other keys are not this action's to permit, so none is logged unpermitted
+    fields = params[:job_order]
+    staff_comments = fields[:staff_comments] if fields.is_a?(ActionController::Parameters)
+    @job_order.staff_comments = staff_comments if staff_comments.is_a?(String) && staff_comments.present?
+    @job_order.save!
+  end
+
+  # The customer's comment on a quote or a decline, posted to the order chat. Only after the transition committed:
+  # the chat message's after_save notification enqueues a mail that a rolled-back transition must not send.
+  def post_user_comment
+    return if params[:user_comments].blank?
+
+    @job_order.chat_messages.create(message: params[:user_comments], sender: current_user)
+  end
+
+  # The flash for a refused quote / decline. A paid order says so, decided from the status the operation read
+  # under its lock (result.status), not from a re-read after the commit; invalid input says what was wrong.
+  def refusal_alert(result, requote: false)
+    case result.reason
+    when :wrong_state
+      return t("job_orders.alerts.quote_refused_paid") if JobOrder.money_taken_status?(result.status)
+    when :change_invalid
+      return "#{t('job_orders.alerts.error_while_updating')} #{ERB::Util.html_escape(result.error.message)}"
+    when :draft_not_voidable
+      return t("job_orders.alerts.requote_draft_order_failed") if requote
+    end
+    t(result.message_key)
+  end
+
+  # One status transition through JobOrder#transition! (row lock, source state and approve link checked under it).
+  # The statuses are given as JobStatus keys (one or several for `from`) and resolved only when the request asks for
+  # them: a missing row of a status this request does not use never matters.
   def update_status(
     param,
-    current_status,
+    from_keys,
     true_status,
     need_false_status,
     false_status = nil,
-    redirect_link = job_order_path(@job_order.id)
+    redirect_link = job_order_path(@job_order.id),
+    actor: @user,
+    approval_token: nil
   )
-    error = false
+    # which status was asked for, decided from the param alone
+    asked = param == "true" || (param == "false" && need_false_status)
+    result = if asked
+               to_key = param == "true" ? true_status : false_status
+               @job_order.transition!(from: Array.wrap(from_keys).map { |key| JobStatus.fetch(key) },
+                                      to: to_key && JobStatus.fetch(to_key),
+                                      actor: actor, approval_token: approval_token)
+             else
+               JobOrder::TransitionResult.refused(:wrong_state)
+             end
 
-    if if current_status.is_a?(Array)
-         !current_status.include?(@job_order.job_order_statuses.last.job_status)
-       else
-         @job_order.job_order_statuses.last.job_status != current_status
-       end
-      error = true
-    elsif param.present? && param == "true"
-      @job_order.job_order_statuses << JobOrderStatus.create(
-        job_order: @job_order,
-        job_status: true_status,
-        user: @user
-      )
-      error = true unless @job_order.save
-    elsif param.present? && param == "false" && need_false_status
-      @job_order.job_order_statuses << JobOrderStatus.create(
-        job_order: @job_order,
-        job_status: false_status,
-        user: @user
-      )
-      error = true unless @job_order.save
-    else
-      error = true
-    end
-
-    if !error
+    if result.ok?
       flash[:notice] = t(
         "job_orders.alerts.updated_job_status_to_x",
-        status: @job_order.job_order_statuses.last.job_status.t_name
+        status: @job_order.latest_status.job_status.t_name
       )
     else
-      flash[:alert] = t("job_orders.alerts.error_while_updating")
+      flash[:alert] = t(result.message_key)
     end
 
     if redirect_link.nil?
-      !error
+      result.ok?
     else
       respond_to do |format|
         format.html { redirect_to redirect_link }
