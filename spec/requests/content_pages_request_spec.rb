@@ -493,6 +493,25 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(mail.body.encoded).to include("See the attached notes")
     end
 
+    it "sends a signed-in user a copy at the account address, never the typed one" do
+      user = sign_in_as(:regular)
+      deliveries.clear
+      typed = { help: params[:help].merge(email: "typed@example.test") }
+      perform_enqueued_jobs { post help_path, params: typed }
+      expect(deliveries.size).to eq(1)
+      mail = deliveries.last
+      expect(mail.to).to eq([user.email])
+      expect(mail.bcc).to eq(["uottawa.makerepo@gmail.com"])
+      expect(mail.cc).to be_blank
+      expect(deliveries.flat_map { |m| Array(m.to) + Array(m.cc) + Array(m.bcc) }).not_to include("typed@example.test")
+    end
+
+    it "sends a guest no copy" do
+      deliveries.clear
+      perform_enqueued_jobs { post help_path, params: params }
+      expect(deliveries.flat_map { |m| Array(m.to) + Array(m.cc) + Array(m.bcc) }).not_to include("pat@example.test")
+    end
+
     # test env uses :null_store (never counts), so back the limiter's store with a counter
     it "allows 5 submissions an hour per visitor, then answers 429 and creates nothing" do
       counts = Hash.new(0)

@@ -7,8 +7,9 @@ class HelpController < SessionsController
              by: -> { current_user.id.presence || request.remote_ip },
              with: -> { render json: { error: 'Too many requests' }, status: :too_many_requests }
 
-  # The web form mails the team only (the reporter's address goes in Reply-To), so one visitor
-  # cannot make the site send mail to arbitrary addresses; it is also rate limited per visitor.
+  # The web form never mails an address typed into it: guests' reports go to the team (the typed
+  # address is only the Reply-To), signed-in users also get a copy at their account address.
+  # It is rate limited per visitor.
   rate_limit to: 5, within: 1.hour, only: :create,
              by: -> { current_user.id.presence || request.remote_ip },
              with: -> {
@@ -31,12 +32,13 @@ class HelpController < SessionsController
 
     if @help.save
       redirect_to help_path, notice: 'Your issue has been submitted.'
-      MsrMailer.issue_email_to_team(
-        @help.name,
-        @help.email,
-        @help.subject,
-        @help.comments.to_plain_text
-      ).deliver_later
+      text = @help.comments.to_plain_text
+      if signed_in?
+        # Signed in: the copy goes to the account's own address (bcc the team), never the typed one
+        MsrMailer.issue_email(current_user.name, current_user.email, @help.subject, text, params[:share_email]).deliver_later
+      else
+        MsrMailer.issue_email_to_team(@help.name, @help.email, @help.subject, text).deliver_later
+      end
     else
       flash[:alert] = 'An error occurred while receiving your issue.'
       render :show, status: :unprocessable_entity
