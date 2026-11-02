@@ -1,0 +1,74 @@
+fr:
+  rewards:
+    index:
+      title: "Points de CC"
+      subtitle: "Gagnez des points en participant à la communauté du CGEC et échangez-les contre des récompenses en magasin."
+      wallet:
+        title: "Votre solde de CC"
+        redeem_button: "Échanger des points"
+      what:
+        title: "Que sont les points de CC?"
+        # %{store_link} = link to the MakerStore
+        body_html: "Les points de Crédit CGEC (CC) sont la façon dont le CGEC reconnaît votre participation à la communauté des makers. Tout engagement, que ce soit de compléter des formations, d'aider vos pairs ou de participer à des événements, vous attribue des points de CC pouvant être échangés contre des rabais au %{store_link}."
+      earn:
+        title: "Comment gagner des points de CC"
+        training:
+          title: "Complétez des formations"
+          body: "Finissez des formations et gagnez des certificats de l'appareillage CGEC."
+        events:
+          title: "Participez à des événements"
+          body: "Participez à des ateliers CGEC, à des événements et à des activités de notre communauté."
+        volunteer:
+          title: "Effectuez du bénévolat et contributez à la communauté"
+          body: "Aidez durant les événements, faites du mentorat ou contribuez aux projets de la communauté."
+        qr_codes:
+          title: "Scannez les codes QR CC"
+          body: "Scannez les codes QR étant distribués durant les événements du CGEC pour gagner des points instantanément."
+        projects:
+          title: "Partagez vos projets"
+          body: "Téléversez vos projets Maker sur la plateforme MakerRepo."
+        achievements:
+          title: "Accomplissements"
+          body: "Obtenez des badges grâce à notre programme de développement."
+      redeem:
+        title: "Comment échanger vos points?"
+        step1:
+          title: "Gagnez des points de CC"
+          body: "Tout engagement vous attribue des points de CC."
+        step2:
+          title: "Choisissez votre récompense"
+          # %{redemption_link} = link to the redemption page, text from link_text
+          body_html: "Visitez la %{redemption_link} et choisissez un rabais."
+          link_text: "page d'échange"
+        step3:
+          title: "Obtenez votre code"
+          body: "Vos points de CC sont soustraits et vous recevez un code correspondant à votre rabais."
+        step4:
+          title: "Magasinez"
+          # %{store_link} = link to the MakerStore
+          body_html: "Utilisez le code à la caisse dans le %{store_link}."
+      activity:
+        title: "Votre activité CC récente"
+        date: "Date"
+        points: "Points de CC"
+      faq:
+        title: "Foire aux questions"
+        expire:
+          question: "Est-ce que les points de CC expirent?"
+          answer: "Non, les points de CC n'expirent pas. Ils demeurent dans votre compte jusqu'à ce que vous les utilisiez."
+        transfer:
+          question: "Est-ce que je peux transférer mes points de CC à un autre utilisateur?"
+          answer: "Pour l'instant, les points de CC ne peuvent pas être transférés et se rattachent à votre compte seulement."
+        discount:
+          question: "Où puis-je utiliser le rabais associé à mon code?"
+          # %{store_link} = link to the MakerStore, %{codes_link} = link to the discount codes page
+          answer_html: "Les codes de rabais peuvent être utilisés à la caisse dans le %{store_link}. Copiez le code de la %{codes_link} et collez-le à la caisse."
+          codes_link_text: "page des codes de rabais"
+        contact:
+          question: "J'ai d'autres questions. Qui puis-je contacter?"
+          # %{email_link} = mailto link to the MakerRepo email
+          answer_html: "Envoyez-nous un courriel à %{email_link} et nous serons ravis de vous aider."
+      sign_in_cta:
+        title: "Prêt à commencer à gagner?"
+        body: "Connectez-vous pour voir votre solde de CC et commencer à échanger vos points."
+        button: "Connexion"
