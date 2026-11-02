@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class VolunteerTaskJoinsController < SessionsController
-  before_action :signed_in, only: :remove
+  include VolunteerAreaAccess
+
+  before_action :signed_in
+  before_action :volunteer_access, only: :create
 
   def create
     volunteer_join = VolunteerTaskJoin.new(volunteer_task_joins_params)

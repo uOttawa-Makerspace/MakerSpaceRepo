@@ -5,7 +5,7 @@ require "rails_helper"
 # Chunk 13: VolunteerTasksController.
 #   index, show         staff or volunteer-program member (`volunteer_access`)
 #   new/create/edit/update/destroy   staff or admin only (`grant_access`)
-#   my_tasks                         NO gate (guests included)
+#   my_tasks                         staff or volunteer-program member (`volunteer_access`)
 #   complete_task (POST)             sign-in + staff or the task's creator
 RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   let(:space) { create(:space) }
@@ -331,8 +331,17 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_tasks/my_tasks" do
-    %i[guest regular volunteer staff].each do |role|
-      it "#{role}: renders (no gate)" do
+    %i[guest regular role_only].each do |role|
+      it "#{role}: redirects to root with an alert" do
+        vol_sign_in_as(role)
+        get my_tasks_volunteer_tasks_path
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+      end
+    end
+
+    %i[volunteer staff].each do |role|
+      it "#{role}: renders" do
         vol_sign_in_as(role)
         get my_tasks_volunteer_tasks_path
         expect(response).to have_http_status(:ok)

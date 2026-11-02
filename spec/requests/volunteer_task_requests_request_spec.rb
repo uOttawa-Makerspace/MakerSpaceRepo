@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-# Chunk 13: VolunteerTaskRequestsController. No role gate except update_approval
-# (sign-in + staff); the listing scope differs for staff. Approval creates CC money and an approved
+# Chunk 13: VolunteerTaskRequestsController. The listings need staff or volunteer-program
+# membership, create_request any signed-in user, update_approval staff; the listing scope differs for staff. Approval creates CC money and an approved
 # VolunteerHour and emails the requester.
 RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
   let(:task) { create(:volunteer_task, title: "tour guide", cc: 12, hours: 3.5) }
@@ -17,8 +17,17 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_task_requests (index)" do
-    %i[guest regular volunteer staff admin].each do |role|
-      it "#{role}: renders (no role gate)" do
+    %i[guest regular role_only].each do |role|
+      it "#{role}: redirects to root with an alert" do
+        vol_sign_in_as(role)
+        get volunteer_task_requests_path
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+      end
+    end
+
+    %i[volunteer staff admin].each do |role|
+      it "#{role}: renders" do
         vol_sign_in_as(role)
         get volunteer_task_requests_path
         expect(response).to have_http_status(:ok)
@@ -78,11 +87,19 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect(ivar(:@processed_volunteer_task_requests)).to be_empty
     end
 
-    it "renders for a guest with empty results (no gate)" do
+    it "sends a guest away from both partials" do
       get search_pending_volunteer_task_requests_path
-      expect(response).to have_http_status(:ok)
+      expect(response).to redirect_to(root_path)
       get search_processed_volunteer_task_requests_path
-      expect(response).to have_http_status(:ok)
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "sends a regular user away from both partials" do
+      vol_sign_in_as(:regular)
+      get search_pending_volunteer_task_requests_path
+      expect(response).to redirect_to(root_path)
+      get search_processed_volunteer_task_requests_path
+      expect(response).to redirect_to(root_path)
     end
   end
 
