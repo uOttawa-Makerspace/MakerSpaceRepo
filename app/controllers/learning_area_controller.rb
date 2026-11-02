@@ -13,6 +13,10 @@ class LearningAreaController < DevelopmentProgramsController
                   retry_scorm
                 ]
 
+  # A byte-range answer covers at most this much, read from storage in slices
+  SCORM_RANGE_WINDOW = 5.megabytes
+  SCORM_RANGE_SLICE = 1.megabyte
+
   before_action :form_training_data, only: %i[new edit create update]
   before_action :with_development_header
 
@@ -101,23 +105,23 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def serve_scorm_asset
-    return head :not_found unless @learning_module.scorm_ready?
+    return scorm_refusal(:not_found) unless @learning_module.scorm_ready?
 
     # Reconstruct blob key from request path and stored prefix. Stored names
     # are NFC, so a link written in another normalization form still finds them.
     path = params[:path].to_s
-    return head :not_found unless path.valid_encoding?
+    return scorm_refusal(:not_found) unless path.valid_encoding?
 
     path = path.unicode_normalize(:nfc)
     key = "#{@learning_module.scorm_prefix}/#{path}"
     blob = @learning_module.scorm_package_files.blobs.find_by(key: key)
-    return head :not_found unless blob
+    return scorm_refusal(:not_found) unless blob
 
     ext = File.extname(path.presence || blob.filename.to_s)
     content_type = Rack::Mime.mime_type(ext, blob.content_type || 'application/octet-stream')
 
-    # Instruct Cloudflare and the browser to cache this asset at the edge for 1 year
-    expires_in 1.year, public: true
+    # The route needs a signed-in user, so shared caches must not keep it
+    expires_in 1.year, public: false
 
     stream_scorm_blob blob, content_type
   end
@@ -174,31 +178,76 @@ class LearningAreaController < DevelopmentProgramsController
 
   private
 
+  def scorm_refusal(status)
+    response.cache_control.replace(no_store: true)
+    head status
+  end
+
   # ActiveStorage's send_blob_stream serves html, scripts and styles as a
-  # download, which package content must not be, so the type and inline
-  # disposition are set here. Byte ranges (video, audio) answer 206.
+  # download, which package content must not be, so the type, inline
+  # disposition and byte ranges (RFC 9110) are handled here.
   def stream_scorm_blob(blob, content_type)
+    size = blob.byte_size
+    range = scorm_byte_range(request.headers['Range'], size)
+    if range == :unsatisfiable
+      response.headers['Content-Range'] = "bytes */#{size}"
+      return scorm_refusal(:range_not_satisfiable)
+    end
+    return scorm_refusal(:not_found) unless request.head? || blob.service.exist?(blob.key)
+
     response.headers['Accept-Ranges'] = 'bytes'
+    if range
+      response.headers['Content-Range'] = "bytes #{range.begin}-#{range.end}/#{size}"
+      response.status = :partial_content
+    end
 
-    if request.headers['Range'].present?
-      ranges = Rack::Utils.get_byte_ranges(request.headers['Range'], blob.byte_size)
-      range = ranges.first if ranges&.length == 1
-      unless range && range.size <= ActiveStorage.streaming_chunk_max_size
-        return head :range_not_satisfiable
-      end
+    if request.head?
+      response.headers['Content-Length'] = (range ? range.size : size).to_s
+      response.headers['Content-Disposition'] =
+        ActionDispatch::Http::ContentDisposition.format(disposition: 'inline', filename: blob.filename.sanitized)
+      return head response.status, content_type: content_type
+    end
 
-      response.headers['Content-Range'] = "bytes #{range.begin}-#{range.end}/#{blob.byte_size}"
-      send_data blob.download_chunk(range),
-                type: content_type,
-                disposition: :inline,
-                filename: blob.filename.sanitized,
-                status: :partial_content
-    else
-      response.headers['Content-Length'] = blob.byte_size.to_s
-      send_stream(filename: blob.filename.sanitized, disposition: :inline, type: content_type) do |stream|
+    send_stream(filename: blob.filename.sanitized, disposition: :inline, type: content_type) do |stream|
+      if range
+        range.step(SCORM_RANGE_SLICE) do |from|
+          stream.write blob.download_chunk(from..[from + SCORM_RANGE_SLICE - 1, range.end].min)
+        end
+      else
         blob.download { |chunk| stream.write chunk }
       end
+    rescue ActiveStorage::FileNotFoundError
+      scorm_refusal(:not_found)
+    rescue StandardError => e
+      # Once bytes are on the wire all that is left is to log and close the stream
+      Rails.logger.error "SCORM asset stream failed for blob #{blob.key}: #{e.message}"
+      head :internal_server_error unless response.committed?
     end
+  end
+
+  # The single satisfiable range to send (clamped to the window), :unsatisfiable,
+  # or nil when the header is absent or to be ignored (other unit, malformed,
+  # reversed, several ranges, empty file) and the whole file is sent.
+  def scorm_byte_range(header, size)
+    match = /\Abytes=(\d*)-(\d*)\z/i.match(header.to_s.strip)
+    return if match.nil? || size.zero?
+
+    first, last = match[1], match[2]
+    if first.empty?
+      return if last.empty?
+      return :unsatisfiable if last.to_i.zero?
+
+      start = [size - last.to_i, 0].max
+      stop = size - 1
+    else
+      start = first.to_i
+      stop = last.empty? ? size - 1 : last.to_i
+      return if stop < start
+      return :unsatisfiable if start >= size
+
+      stop = [stop, size - 1].min
+    end
+    start..[stop, start + SCORM_RANGE_WINDOW - 1].min
   end
 
   def only_admin_access

@@ -507,7 +507,7 @@ RSpec.describe "Learning area", type: :request do
         files = {
           "imsmanifest.xml" => '<manifest><resources><resource href="index.html"/></resources></manifest>',
           "index.html" => "<html><body>hi</body></html>", "app.js" => "var a = 1;", "style.css" => "a { color: red }",
-          "data.bin" => "0123456789"
+          "data.bin" => "0123456789", "empty.txt" => ""
         }
         io = StringIO.new
         Zip::OutputStream.write_buffer(io) { |z| files.each { |n, body| z.put_next_entry(n); z.write(body) } }
@@ -526,28 +526,113 @@ RSpec.describe "Learning area", type: :request do
         "app.js" => ["text/javascript", "var a = 1;"],
         "style.css" => ["text/css", "a { color: red }"]
       }.each do |path, (type, body)|
-        it "serves #{path} inline as #{type} with the file's bytes and a public one-year cache" do
+        it "serves #{path} inline as #{type} with the file's bytes and a private one-year cache" do
           get scorm_asset_learning_area_path(site, path: path)
           expect(response).to have_http_status(:ok)
           expect(response.media_type).to eq(type)
           expect(response.body).to eq(body)
           expect(response.headers["Content-Disposition"]).to start_with("inline")
           expect(response.headers["Accept-Ranges"]).to eq("bytes")
-          expect(response.headers["Cache-Control"]).to include("public").and include("max-age=#{1.year.to_i}")
+          expect(response.headers["Cache-Control"]).to include("private").and include("max-age=#{1.year.to_i}")
+          expect(response.headers["Cache-Control"]).not_to include("public")
         end
       end
 
+      def range_get(path, range)
+        get scorm_asset_learning_area_path(site, path: path), headers: { "Range" => range }
+      end
+
       it "serves a byte range with 206 and the matching slice" do
-        get scorm_asset_learning_area_path(site, path: "data.bin"), headers: { "Range" => "bytes=2-5" }
+        range_get("data.bin", "bytes=2-5")
         expect(response).to have_http_status(:partial_content)
         expect(response.body).to eq("2345")
         expect(response.headers["Content-Range"]).to eq("bytes 2-5/10")
-        expect(response.headers["Content-Length"]).to eq("4")
       end
 
-      it "answers 416 for a range outside the file" do
-        get scorm_asset_learning_area_path(site, path: "data.bin"), headers: { "Range" => "bytes=50-60" }
+      it "serves an open-ended range to the end of a small file" do
+        range_get("data.bin", "bytes=7-")
+        expect(response).to have_http_status(:partial_content)
+        expect(response.body).to eq("789")
+        expect(response.headers["Content-Range"]).to eq("bytes 7-9/10")
+      end
+
+      it "serves a suffix range" do
+        range_get("data.bin", "bytes=-3")
+        expect(response).to have_http_status(:partial_content)
+        expect(response.body).to eq("789")
+      end
+
+      it "clamps a range on a 300 MB file to a 5 MB window, read in slices of at most 1 MB" do
+        allow_any_instance_of(ActiveStorage::Blob).to receive(:byte_size).and_return(314_572_800)
+        sizes = []
+        allow_any_instance_of(ActiveStorage::Blob).to receive(:download_chunk) { |_, r| sizes << r.size; "x" * r.size }
+        range_get("data.bin", "bytes=0-")
+        expect(response).to have_http_status(:partial_content)
+        expect(response.headers["Content-Range"]).to eq("bytes 0-5242879/314572800")
+        expect(response.body.bytesize).to eq(5_242_880)
+        expect(sizes.max).to be <= 1_048_576
+        expect(sizes.size).to eq(5)
+      end
+
+      it "answers 200 with the whole file for a range on an empty file" do
+        range_get("empty.txt", "bytes=0-")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to eq("")
+      end
+
+      ["bytes=5-2", "items=0-1", "bytes=0-1,4-5", "bytes=abc", "bytes=-"].each do |range|
+        it "ignores the range #{range.inspect} and answers 200 with the whole file" do
+          range_get("data.bin", range)
+          expect(response).to have_http_status(:ok)
+          expect(response.body).to eq("0123456789")
+          expect(response.headers).not_to have_key("Content-Range")
+        end
+      end
+
+      it "answers 416 with the size, and no-store, for a range starting past the end" do
+        range_get("data.bin", "bytes=50-60")
         expect(response).to have_http_status(:range_not_satisfiable)
+        expect(response.headers["Content-Range"]).to eq("bytes */10")
+        expect(response.headers["Cache-Control"]).to eq("no-store")
+      end
+
+      it "answers HEAD with the same headers as GET and reads nothing from storage" do
+        expect_any_instance_of(ActiveStorage::Blob).not_to receive(:download)
+        expect_any_instance_of(ActiveStorage::Blob).not_to receive(:download_chunk)
+        head scorm_asset_learning_area_path(site, path: "data.bin"), headers: { "Range" => "bytes=2-5" }
+        expect(response).to have_http_status(:partial_content)
+        expect(response.body).to eq("")
+        expect(response.headers["Content-Range"]).to eq("bytes 2-5/10")
+        expect(response.headers["Content-Length"]).to eq("4")
+        expect(response.headers["Accept-Ranges"]).to eq("bytes")
+        expect(response.headers["Cache-Control"]).to include("private")
+        head scorm_asset_learning_area_path(site, path: "index.html")
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq("text/html")
+        expect(response.headers["Content-Length"]).to eq("28")
+      end
+
+      it "answers 404 with no-store when the stored file is gone" do
+        blob = site.scorm_package_files.blobs.find_by(key: "#{site.scorm_prefix}/data.bin")
+        blob.service.delete(blob.key)
+        get scorm_asset_learning_area_path(site, path: "data.bin")
+        expect(response).to have_http_status(:not_found)
+        expect(response.headers["Cache-Control"]).to eq("no-store")
+      end
+
+      it "logs a storage failure while streaming and answers an empty 500 rather than raising" do
+        allow_any_instance_of(ActiveStorage::Blob).to receive(:download).and_raise("storage down")
+        allow(Rails.logger).to receive(:error)
+        get scorm_asset_learning_area_path(site, path: "index.html")
+        expect(Rails.logger).to have_received(:error).with(/SCORM asset stream failed.*storage down/)
+        expect(response).to have_http_status(:internal_server_error)
+        expect(response.body).to eq("")
+      end
+
+      it "sends no-store with a 404 for an unknown path" do
+        get scorm_asset_learning_area_path(site, path: "nope.html")
+        expect(response).to have_http_status(:not_found)
+        expect(response.headers["Cache-Control"]).to eq("no-store")
       end
     end
 
