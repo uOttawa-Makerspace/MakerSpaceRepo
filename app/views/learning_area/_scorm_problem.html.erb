@@ -1,0 +1,17 @@
+<% if current_user.staff? %>
+    <div class="mb-3 alert alert-danger p-3 border rounded" id="scorm-problem">
+        <h5 class="alert-heading"><%= learning_module.scorm_failed? ? 'SCORM Extraction Failed' : 'SCORM Extraction Stalled' %></h5>
+        <p class="mb-0"><%= learning_module.scorm_problem %></p>
+        <% if learning_module.scorm_failed? %>
+            <p class="mb-0 mt-2">Please make sure the upload is a valid SCORM 1.2 or 2004 <code>.zip</code> file containing an <code>imsmanifest.xml</code>.</p>
+        <% end %>
+        <% if current_user.admin? && learning_module.scorm_retryable? %>
+            <%= button_to 'Retry extraction', retry_scorm_learning_area_path(learning_module),
+                          method: :post, class: 'btn btn-sm btn-primary mt-2' %>
+        <% end %>
+    </div>
+<% else %>
+    <div class="mb-3 alert alert-warning p-3 border rounded" id="scorm-problem">
+        <p class="mb-0">This module is not available yet. Please check back later.</p>
+    </div>
+<% end %>

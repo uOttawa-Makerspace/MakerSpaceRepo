@@ -41,6 +41,9 @@
         </div>
     </div>
 
+<% elsif learning_module.scorm_stalled? || learning_module.scorm_failed? %>
+    <%= render 'scorm_problem', learning_module: %>
+
 <% elsif learning_module.scorm_processing? || learning_module.scorm_pending? %>
     <div class="mb-3 alert alert-info d-flex align-items-center justify-content-between p-4 border rounded" role="alert" id="scorm-processing-container">
         <div class="d-flex align-items-center">
@@ -55,7 +58,7 @@
     </div>
 
     <script>
-      // Automatically poll and refresh the page every 3 seconds
+      // Poll every 3 seconds; once the extraction counts as stalled the server renders the problem instead
       setTimeout(() => {
         if (window.Turbo) {
           Turbo.visit(window.location.href, { action: 'replace' });
@@ -64,12 +67,6 @@
         }
       }, 3000);
     </script>
-
-<% elsif learning_module.scorm_failed? %>
-    <div class="mb-3 alert alert-danger p-3 border rounded">
-        <h5 class="alert-heading">SCORM Extraction Failed</h5>
-        <p class="mb-0">The uploaded package could not be processed. Please make sure it is a valid SCORM 1.2 or 2004 <code>.zip</code> file containing an <code>imsmanifest.xml</code>.</p>
-    </div>
 <% end %>
 
 <% if learning_module.extract_valid_urls.present? %>

@@ -7,9 +7,13 @@ class LearningModuleTrackController < DevelopmentProgramsController
 
   def start
     learning_module = LearningModule.find_by(id: params[:learning_module_id])
-    learning_module_track = learning_module.learning_module_tracks.new
-    learning_module_track.user = current_user
-    if learning_module_track.save
+    if learning_module.nil?
+      flash[:alert] = "That learning module could not be found."
+      return redirect_to learning_area_index_path
+    end
+
+    learning_module_track = learning_module.learning_module_tracks.find_or_create_by(user: current_user)
+    if learning_module_track.persisted?
       flash[:notice] = "You have successfully started the learning module !"
     else
       flash[
@@ -21,11 +25,18 @@ class LearningModuleTrackController < DevelopmentProgramsController
 
   def completed
     learning_module = LearningModule.find_by(id: params[:learning_module_id])
-    if learning_module
+    if learning_module.nil?
+      flash[:alert] = "That learning module could not be found."
+      return redirect_to learning_area_index_path
+    end
+
+    # A SCORM package reports its own completion
+    if learning_module.scorm_package.attached?
+      flash[:alert] = "This learning module records its own completion."
+    elsif learning_module
          .learning_module_tracks
-         .where(user: current_user)
-         .first
-         .update(status: "Completed")
+         .find_by(user: current_user)
+         &.update(status: "Completed")
       flash[:notice] = "You have successfully completed the learning module !"
     else
       flash[
