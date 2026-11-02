@@ -992,13 +992,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_000002) do
   end
 
   create_table "processed_orders", force: :cascade do |t|
+    t.datetime "applied_at"
+    t.integer "attempts", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.string "last_error"
+    t.string "order_name"
+    t.jsonb "payload", null: false
     t.string "provider", null: false
     t.string "provider_ref", null: false
+    t.string "status", default: "received", null: false
     t.string "topic", null: false
-    t.string "order_name"
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["provider", "provider_ref"], name: "index_processed_orders_on_provider_and_provider_ref", unique: true
+    t.index ["status"], name: "index_processed_orders_on_status"
+    t.check_constraint "status::text = ANY (ARRAY['received'::character varying, 'applied'::character varying, 'failed'::character varying]::text[])", name: "processed_orders_status_check"
   end
 
   create_table "proficient_project_sessions", force: :cascade do |t|

@@ -123,4 +123,5 @@ RSpec.configure do |config|
   config.include ShopSpecHelpers, type: :request
   config.include ShopSpecHelpers, type: :model
   config.include ShopSpecHelpers, type: :system
+  config.include ShopSpecHelpers, type: :job
 end
