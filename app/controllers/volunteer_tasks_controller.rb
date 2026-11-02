@@ -157,6 +157,8 @@ class VolunteerTasksController < SessionsController
   private
 
   def grant_access
+    return signed_in unless signed_in?
+
     unless current_user.staff?
       flash[:alert] = "You cannot access this area."
       redirect_to root_path

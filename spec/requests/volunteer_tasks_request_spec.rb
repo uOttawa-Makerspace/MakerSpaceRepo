@@ -97,7 +97,21 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "staff-only actions: role matrix" do
-    %i[guest regular role_only volunteer inactive].each do |role|
+    it "guest: new/create/edit/update/destroy redirect to login and change nothing" do
+      get new_volunteer_task_path
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks/new"))
+      expect { post volunteer_tasks_path, params: task_params }.not_to change(VolunteerTask, :count)
+      expect(response.location).to include("/login")
+      get edit_volunteer_task_path(task)
+      expect(response.location).to include("/login")
+      patch volunteer_task_path(task), params: task_params(title: "changed")
+      expect(response.location).to include("/login")
+      expect(task.reload.title).to eq("Setup crew")
+      expect { delete volunteer_task_path(task) }.not_to change(VolunteerTask, :count)
+      expect(response.location).to include("/login")
+    end
+
+    %i[regular role_only volunteer inactive].each do |role|
       it "#{role}: new/create/edit/update/destroy redirect to root with an alert and change nothing" do
         vol_sign_in_as(role)
         get new_volunteer_task_path
