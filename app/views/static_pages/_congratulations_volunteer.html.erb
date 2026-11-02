@@ -7,4 +7,4 @@
   </strong>
 </p>
 
-<p><%= link_to 'Join Volunteer Program', join_volunteer_program_volunteers_path, class: 'btn btn-primary btn-lg' %></p>
+<p><%= button_to 'Join Volunteer Program', join_volunteer_program_volunteers_path, method: :post, form: { data: { turbo: false } }, class: 'btn btn-primary btn-lg' %></p>

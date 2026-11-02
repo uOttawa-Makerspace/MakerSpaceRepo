@@ -5,8 +5,9 @@ class CcMoneysController < SessionsController
 
   def index
     if current_user
-      current_user.update_wallet
-      @user_wallet = current_user.wallet || 0
+      # A page view only reads: the balance is the ledger sum (uncached), no lock and no cache
+      # write (the cached users.wallet is written only by spends and credits).
+      @user_wallet = current_user.persisted? ? CcMoney.uncached { current_user.get_total_cc } : 0
       @cc_activities = current_user.cc_moneys.order(created_at: :desc).limit(10)
     end
   end
@@ -16,7 +17,10 @@ class CcMoneysController < SessionsController
     if @verifier.valid_message?(@cc_token)
       cc_id = @verifier.verify(@cc_token)
       @cc_money = CcMoney.find_by_id(cc_id)
-      if @cc_money.linked?
+      if @cc_money.nil?
+        flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+        redirect_to cc_moneys_path
+      elsif @cc_money.linked?
         redirect_to cc_moneys_path,
                     alert: "The CC Money has already been added to an account"
       end
@@ -28,10 +32,12 @@ class CcMoneysController < SessionsController
 
   def redeem
     cc_token = params[:token]
-    cc_id = @verifier.verify(cc_token)
+    cc_id = @verifier.verified(cc_token)
     user = User.find_by(email: user_params[:email])
     cc_money = CcMoney.find_by_id(cc_id)
-    if !cc_money.linked? && user.present?
+    if cc_money.nil?
+      flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+    elsif !cc_money.linked? && user.present?
       cc_money.update(user: user, linked: true)
       flash[:notice] = "The CC Money has been added to #{user.name}"
     else

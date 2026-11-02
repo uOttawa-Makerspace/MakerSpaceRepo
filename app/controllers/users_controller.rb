@@ -3,7 +3,6 @@
 class UsersController < SessionsController
   include TurnstileHelper
   
-  skip_before_action :session_expiry, only: [:create]
   before_action :current_user,
                 except: %i[
                   create
@@ -25,6 +24,18 @@ class UsersController < SessionsController
                   unlock_account
                 ]
 
+  # Re-authentication (the current password on change_password / change_email) is throttled
+  # per signed-in user, one budget shared with every other re-check (see ReauthThrottle).
+  include ReauthThrottle
+  before_action :limit_reauth_attempts, only: %i[change_password change_email], if: :current_password_submitted?
+
+  LINK_EXPIRED_ALERT =
+    'This link has expired or has already been used. Please request a new one.'
+  RESET_LINK_INVALID_ALERT =
+    'Your reset link is no longer valid. Please sign in or request a new link.'
+  EMAIL_CHANGE_OTHER_ACCOUNT_ALERT =
+    'This link was requested by a different account. Please sign in as the account that requested the change.'
+
   def create
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
@@ -36,7 +47,7 @@ class UsersController < SessionsController
         format.json { render json: {errors: 'captcha failure'}, status: :unprocessable_content }
       end 
     elsif @new_user.save
-      hash = Rails.application.message_verifier(:user).generate(@new_user.id)
+      hash = @new_user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(@new_user, hash).deliver_now
       
       respond_to do |format| 
@@ -65,7 +76,7 @@ class UsersController < SessionsController
     email = params[:user][:email]
     user = User.find_by(email: email)
     if user.present?
-      hash = Rails.application.message_verifier(:user).generate(user.id)
+      hash = user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(user, hash).deliver_now
       flash[:notice] = 'A new confirmation email has been sent'
     else
@@ -77,76 +88,53 @@ class UsersController < SessionsController
   end
 
   def confirm
-    @cc_token = params[:token]
-    @verifier = Rails.application.message_verifier(:user)
-    if @verifier.valid_message?(@cc_token)
-      user_id = @verifier.verify(@cc_token)
-      if User.find(user_id).present?
-        user = User.find(user_id)
-        user.update(confirmed: true)
-        MsrMailer.welcome_email(user).deliver_now
-        flash[
-          :notice
-        ] = 'The email has been confirmed, you can now fully use your Makerepo Account !'
-      else
-        flash[
-          :alert
-        ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
-      end
-    else
+    user = User.find_by_token_for(:email_confirmation, params[:token])
+    if user
+      user.update(confirmed: true)
+      MsrMailer.welcome_email(user).deliver_now
       flash[
-        :alert
-      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
+        :notice
+      ] = 'The email has been confirmed, you can now fully use your Makerepo Account !'
+    else
+      flash[:alert] = LINK_EXPIRED_ALERT
     end
     redirect_to root_path
   end
 
+  # GET, the link in the confirmation email: shows what would change and a button
+  # that POSTs the token to apply_edited_email. A GET never changes anything, so
+  # a cross-site navigation to the link cannot apply it.
   def confirm_edited_email
-    @user_token = params[:user_token]
-    @user_verifier = Rails.application.message_verifier(:user)
-    @email_token = params[:email_token]
-    @email_verifier = Rails.application.message_verifier(:email)
-    if @user_verifier.valid_message?(@user_token) and
-         @email_verifier.valid_message?(@email_token)
-      user_id = @user_verifier.verify(@user_token)
-      new_email = @email_verifier.verify(@email_token)
-      if User.find(user_id).present?
-        user = User.find(user_id)
-        old_email = user.email
-        user.update(email: new_email)
-        MsrMailer.email_changed_email(user, old_email).deliver_now
-        flash[:notice] = "The email has been updated to #{user.email} !"
-      else
-        flash[
-          :alert
-        ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
-      end
+    user, @new_email = User.email_change_from_token(params[:token])
+    return redirect_to(root_path) unless email_change_token_for_current_user?(user)
+
+    @token = params[:token]
+  end
+
+  # POST /confirm_edited_email: applies the change for the signed-in owner of the
+  # token. The token is bound to the address it was issued for (and the account's
+  # token_version), so it is refused once the address has changed.
+  def apply_edited_email
+    user, new_email = User.email_change_from_token(params[:token])
+    if !email_change_token_for_current_user?(user)
+      nil # the alert is set
+    elsif change_email_to(user, new_email)
+      MsrMailer.email_changed_email(user, @old_email).deliver_now
+      flash[:notice] = "The email has been updated to #{user.email} !"
     else
-      flash[
-        :alert
-      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
+      flash[:alert] =
+        'The email could not be updated, the address may already be used by another account. Please request a new change.'
     end
     redirect_to root_path
   end
 
   def unlock_account
-    @user_token = params[:token]
-    @user_verifier = Rails.application.message_verifier('unlock')
-    if @user_verifier.valid_message?(@user_token)
-      user_id = @user_verifier.verify(@user_token)
-      if User.find(user_id).present?
-        user = User.find(user_id)
-        if user.locked?
-          user.update(locked: false)
-          user.update(auth_attempts: 0)
-          user.update(locked_until: nil)
-          flash[:notice] = 'The account has been unlocked!'
-        end
-      else
-        flash[:alert] = 'We can not find that user. Please try again..'
-      end
+    user = User.find_by_token_for(:account_unlock, params[:token])
+    if user
+      user.update_columns(locked: false, auth_attempts: 0, locked_until: nil)
+      flash[:notice] = 'The account has been unlocked!'
     else
-      flash[:alert] = 'Invalid Token'
+      flash[:alert] = LINK_EXPIRED_ALERT
     end
     redirect_to root_path
   end
@@ -195,6 +183,8 @@ class UsersController < SessionsController
   end
 
   def remove_flag
+    redirect_to user_path(@user.username) and return unless @user.staff?
+
     @repo_user = User.find(params[:repo_user_id])
     msg = params[:flag_msg]
     @repo_user.flag_message = @repo_user.flag_message.gsub("; #{msg}", '')
@@ -209,7 +199,7 @@ class UsersController < SessionsController
   end
 
   def update
-    if @user.update(user_params)
+    if @user.update(profile_params)
       flash[:notice] = 'Profile updated successfully.'
       redirect_to settings_profile_path
     else
@@ -220,44 +210,66 @@ class UsersController < SessionsController
   end
 
   def change_password
-    if github?
-      @client = github_client
-      @client_info = @client.user
-    end
-
-    if @user.pword != params[:user][:old_password]
-      flash.now[:alert] = 'Incorrect old password.'
+    if (alert = current_password_alert)
+      flash.now[:alert] = alert
       render 'settings/admin', layout: 'setting' and return
     end
 
-    if @user.update(user_params)
-      @user.pword = @user.password
-      @user.save
-      MsrMailer.confirm_password_change(@user).deliver_now
-      redirect_to settings_admin_path,
-                  notice:
-                    'Password changed successfully, an email will be sent to confirm.'
-    else
-      render 'settings/admin', layout: 'setting'
+    if user_params[:password].blank?
+      flash.now[:alert] = 'New password cannot be blank.'
+      render 'settings/admin', layout: 'setting' and return
     end
+
+    new_password = user_params[:password]
+    if new_password != user_params[:password_confirmation]
+      flash.now[:alert] = 'Your password and password confirmation do not match.'
+      render 'settings/admin', layout: 'setting' and return
+    end
+
+    # The plaintext is checked (presence, strength); only the password columns are
+    # then written, so an unrelated legacy-invalid field cannot block the change.
+    if @user.plaintext_password_problems(new_password).any?
+      render 'settings/admin', layout: 'setting' and return
+    end
+
+    begin
+      # A timed (brute-force) lockout is cleared: the owner just proved the password.
+      @user.store_new_password!(new_password, clear_timed_lock: true)
+    rescue ActiveRecord::StaleObjectError
+      # An expected race, not an error: the credentials were revoked while this request
+      # ran (or the account was soft-deleted or removed). This session is dead, never
+      # re-synced.
+      sign_out
+      redirect_to login_path, alert: 'Your session has ended. Please sign in again.' and return
+    rescue ActiveRecord::ActiveRecordError => e
+      Rails.error.report(e, handled: true)
+      flash.now[:alert] = 'Your password could not be changed. Please try again.'
+      render 'settings/admin', layout: 'setting' and return
+    end
+
+    session[:token_version] = @user.token_version if session[:user_id] # this session stays signed in
+    MsrMailer.confirm_password_change(@user).deliver_now
+    redirect_to settings_admin_path,
+                notice:
+                  'Password changed successfully, an email will be sent to confirm.'
   end
 
+  # POST only, and it needs the account's current password (the same check as
+  # change_password, throttled by limit_reauth_attempts): the token it mails confirms the
+  # change of address.
   def change_email
+    if (alert = current_password_alert)
+      redirect_to settings_admin_path, alert: alert
+      return
+    end
+
     if params[:new_email].present? and params[:confirm_new_email].present?
       if params[:new_email] == params[:confirm_new_email]
         if !User.find_by_email(params[:new_email]).present?
-          user_hash =
-            Rails.application.message_verifier(:user).generate(@user.id)
-          email_hash =
-            Rails
-              .application
-              .message_verifier(:email)
-              .generate(params[:new_email])
           MsrMailer.email_confirmation_email(
             params[:new_email],
             @user,
-            user_hash,
-            email_hash
+            @user.generate_email_change_token(params[:new_email])
           ).deliver_now
           flash[:notice] = 'A confirmation email has been sent to the new email'
         else
@@ -275,47 +287,54 @@ class UsersController < SessionsController
   end
 
   def reset_password_form
+    return if User.find_by_token_for(:password_reset, params[:token])
+
+    flash[:alert] = LINK_EXPIRED_ALERT
+    redirect_to forgot_password_path
   end
 
   def reset_password_confirmation
-    @user_token = params[:user_token]
-    @expiry_date_token = params[:expiry_date_token]
-    @user_verifier = Rails.application.message_verifier(:user)
-    if @user_verifier.valid_message?(@user_token) &&
-         @user_verifier.valid_message?(@expiry_date_token)
-      if params[:password] == params[:password_confirmation]
-        user_id = @user_verifier.verify(@user_token)
-        expiry_date = @user_verifier.verify(@expiry_date_token)
-        if User.find(user_id).present? && Time.now <= expiry_date
-          @user = User.find(user_id)
-          if @user.locked?
-            @user.update(locked: false)
-            @user.update(auth_attempts: 0)
-            @user.update(locked_until: nil)
-          end
-          @user.pword = params[:password]
-          if @user.save!
-            MsrMailer.confirm_password_change(@user).deliver_now
-            flash[
-              :notice
-            ] = 'Your password has been updated, an email will be sent to confirm!'
-          else
-            flash[
-              :alert
-            ] = 'An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com'
-          end
-        else
-          flash[
-            :alert
-          ] = 'Something went wrong. You might have tried to change your password more than 24h after the email was sent. Try to access the page again or send us an email at uottawa.makerepo@gmail.com.'
-        end
-      else
-        flash[:alert] = 'Your password and password confirmation do not match.'
-      end
+    user = User.find_by_token_for(:password_reset, params[:token])
+    if user.nil?
+      flash[:alert] = LINK_EXPIRED_ALERT
+    elsif params[:password] != params[:password_confirmation]
+      flash[:alert] = 'Your password and password confirmation do not match.'
+    elsif (problems = user.plaintext_password_problems(params[:password])).any?
+      # the strength rules see the plain password
+      flash[:alert] = "Your password was not changed: #{problems.to_sentence}."
+      return redirect_to reset_password_form_users_path(token: params[:token])
     else
-      flash[
-        :alert
-      ] = 'Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com'
+      stored =
+        begin
+          user.store_new_password!(params[:password], clear_timed_lock: true)
+          true
+        rescue ActiveRecord::StaleObjectError
+          # A concurrent bump (an expected race, not an error). Re-check UNCACHED: the
+          # request's query cache may hold the first lookup. A link that no longer resolves
+          # can mean a changed password, a soft-deleted account or an expiry, which must
+          # not be told apart to someone holding no valid token: one neutral message.
+          if User.uncached { User.find_by_token_for(:password_reset, params[:token]) }.nil?
+            flash[:alert] = RESET_LINK_INVALID_ALERT
+            return redirect_to login_path
+          end
+
+          flash[:alert] = 'Your account changed while resetting the password. Please use the link again.'
+          return redirect_to reset_password_form_users_path(token: params[:token])
+        rescue ActiveRecord::ActiveRecordError => e
+          Rails.error.report(e, handled: true)
+          false
+        end
+      if stored
+        session[:token_version] = user.token_version if session[:user_id] == user.id
+        MsrMailer.confirm_password_change(user).deliver_now
+        flash[
+          :notice
+        ] = 'Your password has been updated, an email will be sent to confirm!'
+      else
+        flash[
+          :alert
+        ] = 'An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com'
+      end
     end
     redirect_to root_path
   end
@@ -323,32 +342,44 @@ class UsersController < SessionsController
   def change_programs
     user = User.find(params[:user_id])
     if user.present? && (@user.staff? || @user.admin?)
-      if params[:dev_program].present?
-        user.programs.find_or_create_by(program_type: Program::DEV_PROGRAM)
-      elsif user.programs.find_by(program_type: Program::DEV_PROGRAM).present?
-        user.programs.find_by(program_type: Program::DEV_PROGRAM).destroy
-      end
+      begin
+        programs = user.sync_programs!(
+          development: params[:dev_program].present?,
+          volunteer: params[:volunteer].present?,
+          # JSON never removes teams (the React app does not send it)
+          teams: params[:teams].present? || (json_request? ? nil : false)
+        )
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
+        message = e.record.errors.full_messages.to_sentence.presence || e.message
+        return render json: { error: message }, status: :unprocessable_content if json_request?
 
-      if params[:volunteer].present?
-        user.programs.find_or_create_by(program_type: Program::VOLUNTEER)
-      elsif user.programs.find_by(program_type: Program::VOLUNTEER).present?
-        user.programs.find_by(program_type: Program::VOLUNTEER).destroy
+        flash[:alert] = "The programs could not be updated: #{message}"
+        return redirect_to user_path(user.username)
       end
-
-      if params[:teams].present?
-        user.programs.find_or_create_by(program_type: Program::TEAMS)
-      elsif user.programs.find_by(program_type: Program::TEAMS).present?
-        user.programs.find_by(program_type: Program::TEAMS).destroy
+      if json_request?
+        render json: { programs: programs }
+        return
       end
       flash[:notice] = "The programs for #{user.name} has been updated!"
       redirect_to user_path(user.username)
     else
+      if json_request?
+        head :forbidden
+        return
+      end
       flash[
         :alert
       ] = 'An error occurred: A user must me selected; You need to be staff/admin to change the programs.'
       redirect_to root_path
     end
   end
+
+  # Private repositories/makes on a profile are visible only to the profile
+  # owner, staff and admins (staff? includes admin).
+  def sees_private_repos?(repo_user)
+    @user == repo_user || (@user && @user.staff?)
+  end
+  private :sees_private_repos?
 
   def show
     @repo_user =
@@ -361,21 +392,16 @@ class UsersController < SessionsController
     raise ActiveRecord::RecordNotFound if @repo_user.nil?
 
     @programs = @repo_user.programs.pluck(:program_type)
-    begin
-      @github_username =
-        Octokit::Client.new(access_token: @repo_user.access_token).login
-    rescue Octokit::Unauthorized
-      @github_username = nil
-    end
 
     # Get repositories owned by user
     repo_scope = @repo_user.repositories.where(make_id: nil).order(created_at: :desc)
-    repo_scope = repo_scope.public_repos unless @user == @repo_user || (@user && @user.admin?)
+    repo_scope = repo_scope.public_repos unless sees_private_repos?(@repo_user)
     @pagy, @repositories = pagy(repo_scope, limit: 18)
 
     @acclaim_data = @repo_user.certifications
     
-    makes_scope = @repo_user.repositories.where.not(make_id: nil).order(created_at: :desc)
+    makes_scope = @repo_user.repositories.includes(:owner, :photos).where.not(make_id: nil).order(created_at: :desc)
+    makes_scope = makes_scope.public_repos unless sees_private_repos?(@repo_user)
     @pagy_makes, @makes = pagy(makes_scope, page_key: 'page_makes', limit: 18)
 
     @joined_projects = @repo_user.project_joins
@@ -450,15 +476,74 @@ class UsersController < SessionsController
     @photos = photo_hash
   end
 
+  # Hard delete of the signed-in user's own account. Goes through the last-admin
+  # guard: the last usable admin cannot delete themself.
   def destroy
+    account = @user
+    begin
+      User.guarding_last_admin!([account.id]) do
+        account.repositories.each(&:destroy)
+        LabSession.where(user_id: account.id).destroy_all
+        account.destroy!
+      end
+    rescue User::LastAdminError => e
+      redirect_to user_path(account.username), alert: e.message
+      return
+    end
     sign_out
-    @user.repositories.each { |repo| repo.destroy }
-    LabSession.where(user_id: @user.id).destroy_all
-    @user.destroy
     redirect_to root_path
   end
 
   private
+
+  # The current password the action was given (change_password nests it).
+  def submitted_current_password
+    (action_name == 'change_password' ? params.dig(:user, :old_password) : params[:current_password]).to_s
+  end
+
+  # nil when the submitted current password is right (which clears the attempt
+  # count); the alert otherwise. The attempt was counted by limit_reauth_attempts.
+  def current_password_alert
+    return 'Please enter your current password.' unless current_password_submitted?
+
+    if @user.authenticate_password(submitted_current_password)
+      RateLimitCounter.reset(@user.reauth_attempts_key)
+      nil
+    else
+      'Incorrect current password.'
+    end
+  end
+
+  # A live email-change token whose user is the signed-in user; sets the alert
+  # otherwise.
+  def email_change_token_for_current_user?(user)
+    alert = if user.nil?
+              LINK_EXPIRED_ALERT
+            elsif user != @user
+              EMAIL_CHANGE_OTHER_ACCOUNT_ALERT
+            end
+    flash[:alert] = alert if alert
+    alert.nil?
+  end
+
+  # Applies the address; false (nothing changed) when it is rejected, e.g. taken
+  # by another account in the meantime. Remembers the previous address.
+  def change_email_to(user, new_email)
+    @old_email = user.email
+    user.update(email: new_email)
+  rescue ActiveRecord::RecordNotUnique
+    false
+  end
+
+  def json_request?
+    request.format.json? || request.content_mime_type&.json?
+  end
+
+  # Profile edits: no :email (use change_email's confirm flow) and no :password
+  # (use change_password).
+  def profile_params
+    user_params.except(:password, :password_confirmation, :email)
+  end
 
   def user_params
     params.require(:user).permit(

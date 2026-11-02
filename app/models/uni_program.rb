@@ -6,7 +6,6 @@ class UniProgram < ApplicationRecord
   # NOTE: This returns duplicates, because some programs are listed
   # as both Bachelor's and PhD for some reason. Check docs for more info
   default_scope { where.not(faculty: "") }
-  scope :per_faculty, -> { group(:faculty) }
 
   def self.no_program
     UniProgram.unscoped.find_by(faculty: "").program

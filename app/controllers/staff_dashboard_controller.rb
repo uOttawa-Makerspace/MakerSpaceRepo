@@ -39,7 +39,7 @@ class StaffDashboardController < StaffAreaController
           space_users:
             users_with_certs
               .map do |u|
-                u.attributes.except("password").merge({
+                u.serializable_hash.merge({
                   "certifications" => u.certifications.map do |c|
                     {
                       id: c.id,
@@ -357,14 +357,7 @@ end
         @query = params[:query]
         @users =
           User
-            .where(
-              "LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR
-                           LOWER(UNACCENT(email)) like LOWER(UNACCENT(?)) OR
-                           LOWER(UNACCENT(username)) like LOWER(UNACCENT(?))",
-              "%#{@query}%",
-              "%#{@query}%",
-              "%#{@query}%"
-            )
+            .text_search(@query)
             .includes(lab_sessions: :space)
             .order(:updated_at)
       end
@@ -380,7 +373,6 @@ end
 
   def present_users_report
     respond_to do |format|
-      format.html
       format.xlsx do
         send_data ReportGenerator
                     .generate_space_present_users_report(@space.id)

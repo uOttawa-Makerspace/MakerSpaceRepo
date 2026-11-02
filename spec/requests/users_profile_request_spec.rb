@@ -1,0 +1,720 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+# Characterization spec for the signed-in side of UsersController: profile
+# show/update, avatar, password change, flags, programs, search, likes, and the
+# soft-delete / inactive visibility rules (`default_scope { where(deleted: false) }`).
+# Chunk 9 "Identity".
+
+RSpec.describe "Users profile (HTTP contract)", type: :request do
+  let(:password) { "asa32A353#" }
+  let(:user) { create(:user, :regular_user) }
+  let(:other) { create(:user, :regular_user) }
+  let(:staff) { create(:user, :staff) }
+  let(:admin) { create(:user, :admin) }
+
+  before do
+    block_external_http!
+  end
+
+  def login!(u, pw: password)
+    post login_authentication_path, params: { username_email: u.username, password: pw }
+    u
+  end
+
+  def deliveries
+    ActionMailer::Base.deliveries
+  end
+
+  def json
+    JSON.parse(response.body)
+  end
+
+  describe "settings pages" do
+    it "guest is redirected to login with back_to" do
+      get settings_profile_path
+      expect(response).to redirect_to(login_path(back_to: "/settings/profile"))
+      get settings_admin_path
+      expect(response).to redirect_to(login_path(back_to: "/settings/admin"))
+    end
+
+    it "signed-in user sees profile and account settings" do
+      login!(user)
+      get settings_profile_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("user[name]")
+      get settings_admin_path
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe "GET /:username (show)" do
+    it "guest: 200 public profile page" do
+      get user_path(user.username)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(user.username)
+    end
+
+    it "username lookup is case-insensitive" do
+      get user_path(user.username.upcase)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "unknown username: 404" do
+      get user_path("nosuchuser")
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "json: guest gets 401 with an empty body" do
+      get user_path(user.username), as: :json
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.body).to be_blank
+    end
+
+    it "json: a regular user gets 401 for someone else" do
+      login!(other)
+      get user_path(user.username), as: :json
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "json: own profile returns user, programs, certifications" do
+      login!(user)
+      get user_path(user.username), as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json.keys).to match_array(%w[user programs certifications])
+      expect(json["user"]["username"]).to eq(user.username)
+    end
+
+    it "json: staff and admin may read anyone" do
+      login!(staff)
+      get user_path(user.username), as: :json
+      expect(response).to have_http_status(:ok)
+      login!(admin)
+      get user_path(user.username), as: :json
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "json never exposes the password hash or access token in the staff profile view" do
+      # User#serializable_hash excludes password and access_token
+      login!(staff)
+      get user_path(user.username), as: :json
+      expect(json["user"]).not_to have_key("password")
+      expect(json["user"]).not_to have_key("access_token")
+      expect(json["user"]["username"]).to eq(user.username)
+    end
+
+    it "deactivated users still have a visible profile" do
+      u = create(:user, :regular_user, deactivated_at: Time.current)
+      get user_path(u.username)
+      expect(response).to have_http_status(:ok)
+    end
+
+    context "soft-deleted user (deleted: true)" do
+      let!(:gone) { create(:user, :regular_user, deleted: true) }
+
+      it "is invisible to guests and regular users (404)" do
+        get user_path(gone.username)
+        expect(response).to have_http_status(:not_found)
+        login!(other)
+        get user_path(gone.username)
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "is visible to staff and admin through User.unscoped" do
+        login!(staff)
+        get user_path(gone.username)
+        expect(response).to have_http_status(:ok)
+        login!(admin)
+        get user_path(gone.username)
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    it "private repos are hidden from non-owners and shown to the owner, staff and admin" do
+      repo = create(:repository, :private)
+      repo.users << user
+      repos = -> { controller.instance_variable_get(:@repositories).to_a }
+      get user_path(user.username)
+      expect(repos.call).to eq([])
+      login!(other)
+      get user_path(user.username)
+      expect(repos.call).to eq([])
+      login!(user)
+      get user_path(user.username)
+      expect(repos.call).to eq([repo])
+      login!(staff)
+      get user_path(user.username)
+      expect(repos.call).to eq([repo])
+      login!(admin)
+      get user_path(user.username)
+      expect(repos.call).to eq([repo])
+    end
+
+    it "staff (non-admin) sees another user's private repos" do
+      repo = create(:repository, :private)
+      repo.users << user
+      login!(staff)
+      get user_path(user.username)
+      expect(controller.instance_variable_get(:@repositories).to_a).to eq([repo])
+    end
+  end
+
+  describe "PATCH /:username (update)" do
+    it "guest is redirected to login" do
+      patch user_path(user.username), params: { user: { name: "X" } }
+      expect(response).to have_http_status(:found)
+      expect(response.location).to start_with("http://www.example.com/login")
+      expect(user.reload.name).not_to eq("X")
+    end
+
+    it "updates the signed-in user and redirects with notice" do
+      login!(user)
+      patch user_path(user.username), params: { user: { name: "Jane Doe" } }
+      expect(response).to redirect_to(settings_profile_path)
+      expect(flash[:notice]).to eq("Profile updated successfully.")
+      expect(user.reload.name).to eq("Jane Doe")
+    end
+
+    it "ignores the :username in the path: always updates the session user" do
+      login!(user)
+      patch user_path(other.username), params: { user: { name: "Hijack" } }
+      expect(user.reload.name).to eq("Hijack")
+      expect(other.reload.name).not_to eq("Hijack")
+    end
+
+    it "validation failure: redirect with alert listing errors, nothing saved" do
+      login!(user)
+      patch user_path(user.username), params: { user: { name: "" } }
+      expect(response).to redirect_to(settings_profile_path)
+      expect(flash[:alert]).to start_with("Could not save changes. ")
+      expect(flash[:alert]).to include("Name")
+    end
+
+    it "does not allow mass-assigning role, confirmed or locked" do
+      login!(user)
+      patch user_path(user.username), params: { user: { name: "Z Z", role: "admin", confirmed: false, locked: true } }
+      user.reload
+      expect(user.role).to eq("regular_user")
+      expect(user.confirmed).to be(true)
+      expect(user.locked).to be(false)
+    end
+
+    it "can change username and lets it collide only on case-insensitive uniqueness" do
+      login!(user)
+      patch user_path(user.username), params: { user: { username: other.username.upcase } }
+      expect(flash[:alert]).to include("Username")
+    end
+
+    it "ignores :email on profile update (the confirm-by-email flow is the only way)" do
+      # :email removed from the profile update params
+      login!(user)
+      original = user.email
+      patch user_path(user.username), params: { user: { email: "swapped@example.com", name: "Still Works" } }
+      expect(response).to redirect_to(settings_profile_path)
+      expect(user.reload.email).to eq(original)
+      expect(user.name).to eq("Still Works")
+      expect(deliveries).to be_empty
+    end
+
+    it "ignores :password on profile update so the hash column is never clobbered" do
+      # :password/:password_confirmation removed from the profile update params
+      login!(user)
+      patch user_path(user.username),
+            params: { user: { password: "NewPassw0rd!x#9", password_confirmation: "NewPassw0rd!x#9" } }
+      expect(response).to redirect_to(settings_profile_path)
+      expect(user.reload.password).not_to eq("NewPassw0rd!x#9")
+      post login_authentication_path, params: { username_email: user.username, password: password }
+      expect(response).not_to have_http_status(:internal_server_error)
+    end
+
+    it "student identity requires program, faculty, year and student id" do
+      login!(user)
+      patch user_path(user.username), params: { user: { identity: "undergrad" } }
+      expect(flash[:alert]).to include("Could not save changes.")
+      expect(user.reload.identity).to eq("community_member")
+    end
+
+    it "rejects an out-of-range URL" do
+      login!(user)
+      patch user_path(user.username), params: { user: { url: "javascript:alert(1)" } }
+      expect(flash[:alert]).to include("Url")
+    end
+
+    it "rejects html characters in the name" do
+      login!(user)
+      patch user_path(user.username), params: { user: { name: "<b>x</b>" } }
+      expect(flash[:alert]).to include("must not contain special HTML characters")
+    end
+  end
+
+  describe "avatar" do
+    it "accepts a png upload" do
+      login!(user)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
+      expect(response).to redirect_to(settings_profile_path)
+      expect(flash[:notice]).to eq("Profile updated successfully.")
+      expect(user.reload.avatar).to be_attached
+    end
+
+    it "rejects a non-image upload with the validation message" do
+      login!(user)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.stl } }
+      expect(response).to redirect_to(settings_profile_path)
+      expect(flash[:alert]).to start_with("Could not save changes.")
+      expect(flash[:alert]).to include("Avatar")
+      expect(user.reload.avatar).not_to be_attached
+    end
+
+    # the avatar is validated by sniffed content (not the declared type, not the filename) and size
+    it "refuses non-image bytes labelled image/png" do
+      login!(user)
+      fake = Rack::Test::UploadedFile.new("spec/support/assets/test.stl", "image/png")
+      patch user_path(user.username), params: { user: { avatar: fake } }
+      expect(flash[:alert]).to start_with("Could not save changes.")
+      expect(user.reload.avatar).not_to be_attached
+    end
+
+    it "refuses text bytes named .png and labelled image/png" do
+      login!(user)
+      fake = Rack::Test::UploadedFile.new(StringIO.new("<script>alert(1)</script>"), "image/png", original_filename: "me.png")
+      patch user_path(user.username), params: { user: { avatar: fake } }
+      expect(user.reload.avatar).not_to be_attached
+    end
+
+    it "refuses an avatar over the size cap but accepts one under it" do
+      stub_const("User::MAX_AVATAR_SIZE", AvatarTestHelper.png.size - 1)
+      login!(user)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
+      expect(user.reload.avatar).not_to be_attached
+      stub_const("User::MAX_AVATAR_SIZE", AvatarTestHelper.png.size + 1)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
+      expect(user.reload.avatar).to be_attached
+    end
+
+    # remove_avatar is DELETE; a GET does not purge the avatar
+    it "DELETE /remove_avatar purges the avatar" do
+      login!(user)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
+      delete remove_avatar_users_path
+      expect(response).to redirect_to(settings_profile_path)
+      expect(user.reload.avatar).not_to be_attached
+    end
+
+    it "GET /remove_avatar does not remove the avatar" do
+      login!(user)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
+      get "/remove_avatar"
+      expect(user.reload.avatar).to be_attached
+    end
+
+    it "the profile settings page offers the removal as a DELETE form" do
+      login!(user)
+      patch user_path(user.username), params: { user: { avatar: AvatarTestHelper.png } }
+      get settings_profile_path
+      doc = Nokogiri::HTML5(response.body)
+      form = doc.at_css(%(form[action="#{remove_avatar_users_path}"]))
+      expect(form).not_to be_nil
+      expect(form["id"]).to eq("remove-avatar-form")
+      expect(form.at_css("input[name=_method]")["value"]).to eq("delete")
+      expect(form.ancestors("form")).to be_empty # not nested in the profile form
+      expect(doc.at_css(%(button[form="remove-avatar-form"]))).not_to be_nil
+    end
+
+    it "remove_avatar with no avatar is a harmless redirect" do
+      login!(user)
+      delete remove_avatar_users_path
+      expect(response).to redirect_to(settings_profile_path)
+    end
+
+    it "remove_avatar as guest redirects to login" do
+      delete remove_avatar_users_path
+      expect(response.location).to start_with("http://www.example.com/login")
+    end
+  end
+
+  describe "PATCH /:username/change_password" do
+    let(:new_pw) { "NewPassw0rd!x#9" }
+
+    def change!(old: password, pw: new_pw, confirm: pw)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: old, password: pw, password_confirmation: confirm } }
+    end
+
+    it "guest is redirected to login" do
+      patch change_password_user_path(user.username), params: { user: { old_password: "x" } }
+      expect(response.location).to start_with("http://www.example.com/login")
+    end
+
+    it "a failed save keeps the old password, the session version and sends no mail" do
+      # the result of the hashing save was ignored (session got N+1 while the DB stayed at N, success mail sent)
+      login!(user)
+      allow_any_instance_of(User).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "boom")
+      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), handled: true)
+      perform_enqueued_jobs { change! }
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to eq("Your password could not be changed. Please try again.")
+      expect(deliveries).to be_empty
+      user.reload
+      expect(user.authenticate_password(password)).to be(true)
+      expect(user.token_version).to eq(0)
+      expect(user.password).to start_with("$2") # the bcrypt hash, not the plain new password
+      allow_any_instance_of(User).to receive(:bump_token_version!).and_call_original
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
+    end
+
+    it "works for a legacy user whose row fails an unrelated validation (old username, stale gender)" do
+      # only the password columns are written, so unrelated legacy-invalid fields cannot block the change
+      user.update_columns(username: "old_user_name_longer_than_20", gender: "stale value")
+      expect(user.reload).not_to be_valid
+      login!(user.reload, pw: password)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+      expect(response).to redirect_to(settings_admin_path)
+      expect(user.reload.authenticate_password(new_pw)).to be(true)
+      expect(user.token_version).to eq(1)
+      expect(user.username).to eq("old_user_name_longer_than_20") # nothing else was touched
+    end
+
+    it "refuses a confirmation mismatch" do
+      login!(user)
+      change!(confirm: "different")
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to eq("Your password and password confirmation do not match.")
+      expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "still refuses a weak plaintext password" do
+      login!(user)
+      change!(pw: "abc")
+      expect(response).to have_http_status(:ok)
+      expect(user.reload.authenticate_password(password)).to be(true)
+      expect(user.token_version).to eq(0)
+    end
+
+    it "succeeds even when the bcrypt hash happens to contain the username" do
+      # the hashing save re-ran the nobspw validator on the hash and failed at random
+      u = create(:user, :regular_user, username: "hunterxsmith")
+      login!(u)
+      forced = "$2a$12$" + ("a" * 22) + "hunterxsmith" + ("b" * 19)
+      allow(BCrypt::Password).to receive(:create).and_return(BCrypt::Password.new(forced))
+      patch change_password_user_path(u.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw } }
+      expect(response).to redirect_to(settings_admin_path)
+      expect(u.reload.password).to eq(forced)
+    end
+
+    it "changes the password, emails the owner, redirects with notice" do
+      login!(user)
+      perform_enqueued_jobs { change! }
+      expect(response).to redirect_to(settings_admin_path)
+      expect(flash[:notice]).to eq("Password changed successfully, an email will be sent to confirm.")
+      expect(user.reload.authenticate_password(new_pw)).to be(true)
+      expect(deliveries.size).to eq(1)
+      expect(deliveries.first.to).to eq([user.email])
+      expect(deliveries.first.subject).to eq("MakerRepo | Your password has been changed")
+    end
+
+    # change_password only takes the password fields.
+    it "ignores email and username posted alongside the password" do
+      login!(user)
+      original = user.slice(:email, :username, :name)
+      patch change_password_user_path(user.username),
+            params: { user: { old_password: password, password: new_pw, password_confirmation: new_pw,
+                              email: "hijack@example.com", username: "hijacked", name: "Hijacked" } }
+      user.reload
+      expect(user.authenticate_password(new_pw)).to be(true)
+      expect(user.slice(:email, :username, :name)).to eq(original)
+    end
+
+    # update({}) does not re-hash the stored bcrypt hash
+    it "blank or missing new password: re-renders (200), password still works, no email" do
+      login!(user)
+      [{}, { password: "", password_confirmation: "" }].each do |extra|
+        patch change_password_user_path(user.username), params: { user: { old_password: password }.merge(extra) }
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("New password cannot be blank.")
+      end
+      user.reload
+      expect(user.authenticate_password(password)).to be(true)
+      expect(user.pword).to eq(password)
+      expect(deliveries).to be_empty
+    end
+
+    it "wrong old password: re-renders settings/admin (200) with alert, unchanged" do
+      login!(user)
+      change!(old: "wrong")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Incorrect current password.")
+      expect(user.reload.authenticate_password(password)).to be(true)
+      expect(deliveries).to be_empty
+    end
+
+    it "mismatched confirmation: re-renders (200), unchanged" do
+      login!(user)
+      change!(confirm: "other")
+      expect(response).to have_http_status(:ok)
+      expect(user.reload.authenticate_password(password)).to be(true)
+    end
+
+    it "does not terminate other sessions or force re-login" do
+      login!(user)
+      change!
+      get check_signed_in_path
+      expect(json["signed_in"]).to eq("true")
+    end
+  end
+
+  describe "flags (staff moderation)" do
+    it "staff can flag, appending messages" do
+      login!(staff)
+      post flag_users_path, params: { flagged_user: user.id, flag_message: "late" }
+      expect(response).to redirect_to(user_path(user.username))
+      post flag_users_path, params: { flagged_user: user.id, flag_message: "again" }
+      user.reload
+      expect(user.flagged).to be(true)
+      expect(user.flag_message).to eq("; late; again")
+    end
+
+    it "regular user cannot flag: redirected to own profile, nothing changes" do
+      login!(other)
+      post flag_users_path, params: { flagged_user: user.id, flag_message: "x" }
+      expect(response).to redirect_to(user_path(other.username))
+      expect(user.reload.flagged).to be_falsey
+    end
+
+    it "guest is redirected to login" do
+      post flag_users_path, params: { flagged_user: user.id, flag_message: "x" }
+      expect(response.location).to start_with("http://www.example.com/login")
+    end
+
+    it "staff can unflag; regular users cannot" do
+      user.update_columns(flagged: true, flag_message: "; bad")
+      login!(other)
+      post unflag_users_path, params: { flagged_user: user.id }
+      expect(user.reload.flagged).to be(true)
+      login!(staff)
+      post unflag_users_path, params: { flagged_user: user.id }
+      expect(response).to redirect_to(user_path(user.username))
+      user.reload
+      expect(user.flagged).to be(false)
+      expect(user.flag_message).to be_nil
+    end
+
+    it "a regular user cannot remove a flag message" do
+      # #remove_flag requires staff/admin like flag/unflag
+      user.update_columns(flagged: true, flag_message: "; bad")
+      login!(other)
+      put remove_flag_users_path, params: { repo_user_id: user.id, flag_msg: "bad" }
+      expect(response).to redirect_to(user_path(other.username))
+      user.reload
+      expect(user.flagged).to be(true)
+      expect(user.flag_message).to eq("; bad")
+    end
+
+    it "staff and admin can remove a flag message" do
+      [staff, admin].each do |actor|
+        user.update_columns(flagged: true, flag_message: "; bad")
+        login!(actor)
+        put remove_flag_users_path, params: { repo_user_id: user.id, flag_msg: "bad" }
+        expect(response).to redirect_to(user_path(user.username))
+        expect(user.reload.flagged).to be(false)
+        expect(user.flag_message).to eq("")
+      end
+    end
+
+    it "guest cannot remove a flag" do
+      user.update_columns(flagged: true, flag_message: "; bad")
+      put remove_flag_users_path, params: { repo_user_id: user.id, flag_msg: "bad" }
+      expect(response.location).to start_with("http://www.example.com/login")
+      expect(user.reload.flagged).to be(true)
+    end
+  end
+
+  describe "POST /change_programs" do
+    it "guest is redirected to login" do
+      post change_programs_users_path, params: { user_id: user.id, volunteer: "1" }
+      expect(response.location).to start_with("http://www.example.com/login")
+    end
+
+    it "regular user is refused with an alert" do
+      login!(other)
+      post change_programs_users_path, params: { user_id: user.id, volunteer: "1" }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to start_with("An error occurred:")
+      expect(user.programs).to be_empty
+    end
+
+    it "staff adds and removes programs" do
+      login!(staff)
+      post change_programs_users_path, params: { user_id: user.id, volunteer: "1", dev_program: "1" }
+      expect(response).to redirect_to(user_path(user.username))
+      expect(flash[:notice]).to eq("The programs for #{user.name} has been updated!")
+      expect(user.programs.pluck(:program_type)).to match_array([Program::VOLUNTEER, Program::DEV_PROGRAM])
+      post change_programs_users_path, params: { user_id: user.id, teams: "1" }
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::TEAMS])
+    end
+
+    it "flashes an alert and changes nothing when a membership cannot be saved" do
+      login!(staff)
+      user.programs.create!(program_type: Program::DEV_PROGRAM)
+      allow_any_instance_of(Program).to receive(:valid?).and_return(false)
+      post change_programs_users_path, params: { user_id: user.id, volunteer: "1" }
+      expect(response).to redirect_to(user_path(user.username))
+      expect(flash[:alert]).to start_with("The programs could not be updated")
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
+    end
+
+    it "unknown user id: 404" do
+      login!(staff)
+      post change_programs_users_path, params: { user_id: 0 }
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  # the React app sends PATCH /change_programs with JSON; the route now accepts PATCH and answers JSON.
+  describe "PATCH /change_programs (JSON, React app)" do
+    let(:body) { { user_id: user.id, dev_program: true, volunteer: false } }
+
+    def patch_programs(as_user, payload = body)
+      login!(as_user)
+      patch change_programs_users_path, params: payload.to_json,
+                                        headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
+    end
+
+    it "lets staff set programs and returns them as JSON, leaving teams alone" do
+      user.programs.create!(program_type: Program::TEAMS)
+      patch_programs(staff)
+      expect(response).to have_http_status(:ok)
+      expect(json["programs"]).to match_array([Program::DEV_PROGRAM, Program::TEAMS])
+      expect(user.programs.reload.pluck(:program_type)).to match_array([Program::DEV_PROGRAM, Program::TEAMS])
+    end
+
+    it "removes a program when it is sent as false" do
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      patch_programs(staff)
+      expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
+    end
+
+    it "refuses a regular user with 403 and changes nothing" do
+      patch_programs(other)
+      expect(response).to have_http_status(:forbidden)
+      expect(user.programs).to be_empty
+    end
+
+    it "does not touch the caller's profile (no fall-through to users#update)" do
+      patch_programs(staff)
+      expect(staff.reload.name).to eq(staff.name)
+    end
+  end
+
+  describe "GET /users/search" do
+    before do
+      create(:user, :regular_user, name: "Zebulon Quasar", username: "zebulonq")
+    end
+
+    it "guest gets the literal json string \"redirect\"" do
+      get search_users_path, params: { search: "zebulon" }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("redirect")
+    end
+
+    it "regular user gets usernames only" do
+      login!(user)
+      get search_users_path, params: { search: "zebulonq" }, as: :json
+      expect(json["users"]).to eq([{ "username" => "zebulonq" }])
+    end
+
+    it "staff gets name and username" do
+      login!(staff)
+      get search_users_path, params: { search: "zebulonq" }, as: :json
+      expect(json["users"]).to eq([{ "name" => "Zebulon Quasar", "username" => "zebulonq" }])
+    end
+
+    it "soft-deleted users never appear" do
+      create(:user, :regular_user, name: "Deleted Dan", username: "deleteddan", deleted: true)
+      login!(staff)
+      get search_users_path, params: { search: "deleteddan" }, as: :json
+      expect(json["users"]).to eq([])
+    end
+
+    it "inactive users do appear" do
+      create(:user, :regular_user, name: "Inactive Ian", username: "inactiveian", deactivated_at: Time.current)
+      login!(staff)
+      get search_users_path, params: { search: "inactiveian" }, as: :json
+      expect(json["users"].map { |u| u["username"] }).to include("inactiveian")
+    end
+  end
+
+  describe "GET /:username/likes" do
+    it "guest is redirected to login" do
+      get likes_user_path(user.username)
+      expect(response.location).to start_with("http://www.example.com/login")
+    end
+
+    it "lists the signed-in user's liked repos (path username is ignored)" do
+      repo = create(:repository, user_id: other.id, title: "Liked Thing", share_type: "public")
+      Like.create!(user_id: user.id, repository_id: repo.id)
+      login!(user)
+      get likes_user_path(other.username)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Liked Thing")
+    end
+  end
+
+  describe "DELETE /:username (destroy)" do
+    it "has no route: UsersController#destroy is unreachable" do
+      login!(user)
+      delete user_path(user.username)
+      expect(response).to have_http_status(:not_found)
+      expect(User.exists?(user.id)).to be(true)
+    end
+  end
+
+  describe "makes tab privacy" do
+    let!(:original) { create(:repository, user_id: other.id, title: "Original Thing", share_type: "public") }
+    let!(:public_make) do
+      create(:repository, owner: user, users: [user], title: "Public Make", share_type: "public", make_id: original.id)
+    end
+    let!(:private_make) do
+      create(:repository, owner: user, users: [user], title: "Secret Make Title", description: "secret make words",
+                          share_type: "private", password: "secret1", make_id: original.id)
+    end
+
+    def makes_count
+      response.body[%r{show=makes#user-show-links">\s*<span class="number">(\d+)</span>}, 1]
+    end
+
+    it "hides a private make and excludes it from the count for guests and unrelated users" do
+      get user_path(user.username, show: :makes)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Public Make")
+      expect(response.body).not_to include("Secret Make Title", "secret make words")
+      expect(makes_count).to eq("1")
+
+      login!(other)
+      get user_path(user.username, show: :makes)
+      expect(response.body).to include("Public Make")
+      expect(response.body).not_to include("Secret Make Title", "secret make words")
+      expect(makes_count).to eq("1")
+    end
+
+    it "shows the private make to its owner, staff and admins" do
+      login!(staff)
+      get user_path(user.username, show: :makes)
+      expect(response.body).to include("Public Make", "Secret Make Title")
+      expect(makes_count).to eq("2")
+
+      login!(user)
+      get user_path(user.username, show: :makes)
+      expect(response.body).to include("Public Make", "Secret Make Title")
+      expect(makes_count).to eq("2")
+
+      login!(admin)
+      get user_path(user.username, show: :makes)
+      expect(response.body).to include("Public Make", "Secret Make Title")
+      expect(makes_count).to eq("2")
+    end
+  end
+end

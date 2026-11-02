@@ -103,7 +103,7 @@ RSpec.describe ExamsController, type: :controller do
     end
   end
 
-  describe "GET /create_from_training" do
+  describe "POST /create_from_training" do
     context "logged as admin" do
       it "should create an exam and redirect" do
         training = create(:training_with_questions)
@@ -111,7 +111,7 @@ RSpec.describe ExamsController, type: :controller do
           create(:training_session_with_users, training: training)
         n_users = training_session.users.count
         expect do
-          get :create_from_training,
+          post :create_from_training,
               params: {
                 training_session_id: training_session.id
               }
@@ -130,7 +130,7 @@ RSpec.describe ExamsController, type: :controller do
     end
   end
 
-  describe "GET /create_for_single_user" do
+  describe "POST /create_for_single_user" do
     context "logged as admin" do
       it "should create an exam and redirect" do
         training = create(:training_with_questions)
@@ -138,7 +138,7 @@ RSpec.describe ExamsController, type: :controller do
           create(:training_session_with_users, training: training)
         user = create(:user, :regular_user)
         expect do
-          get :create_for_single_user,
+          post :create_for_single_user,
               params: {
                 user_id: user.id,
                 training_session_id: training_session.id
@@ -156,11 +156,12 @@ RSpec.describe ExamsController, type: :controller do
     end
   end
 
-  describe "GET /finish_exam" do
-    context "logged as admin" do
+  describe "POST /finish_exam" do
+    context "logged as the exam's owner" do
       it "should updated exam, create certification, send email and redirect to exams path" do
         exam_instance = create(:exam_with_exam_questions_and_exam_responses)
-        expect { get :finish_exam, params: { exam_id: exam_instance.id } }.to change(
+        session[:user_id] = exam_instance.user.id
+        expect { post :finish_exam, params: { exam_id: exam_instance.id } }.to change(
           Certification,
           :count
         ).by(1)
@@ -180,7 +181,8 @@ RSpec.describe ExamsController, type: :controller do
             :exam_with_exam_questions_and_exam_responses_wrong,
             training_session: training_session
           )
-        expect { get :finish_exam, params: { exam_id: exam_instance.id } }.to change(
+        session[:user_id] = exam_instance.user.id
+        expect { post :finish_exam, params: { exam_id: exam_instance.id } }.to change(
           Certification,
           :count
         ).by(0).and change(Exam, :count).by(1).and change(

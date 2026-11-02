@@ -73,3 +73,56 @@ RSpec.describe VolunteerHour, type: :model do
     end
   end
 end
+
+# Chunk 13 characterization.
+RSpec.describe VolunteerHour, "state and defaults", type: :model do
+  let(:user) { create(:user, :volunteer_with_volunteer_program) }
+  let(:task) { create(:volunteer_task) }
+
+  it "has no validations: negative, zero and orphan-task hours are valid and saved" do
+    expect(VolunteerHour.new(user: user, volunteer_task_id: 0, total_time: -2)).to be_valid
+    expect { VolunteerHour.create!(user: user, volunteer_task: task, total_time: -2) }.to change(VolunteerHour, :count).by(1)
+  end
+
+  it "defaults total_time to 0 and approval to nil" do
+    hour = VolunteerHour.create!(user: user, volunteer_task: task)
+    expect([hour.total_time, hour.approval]).to eq([0, nil])
+  end
+
+  it "rounds total_time to 2 decimals and raises RangeError beyond precision 9" do
+    expect(VolunteerHour.create!(user: user, volunteer_task: task, total_time: 0.125).total_time).to eq(0.13)
+    expect { VolunteerHour.create!(user: user, volunteer_task: task, total_time: 10**8) }.to raise_error(ActiveRecord::RangeError)
+  end
+
+  it "requires user_id and volunteer_task_id at the database level only" do
+    expect { VolunteerHour.create!(volunteer_task: task) }.to raise_error(ActiveRecord::NotNullViolation)
+    expect { VolunteerHour.create!(user: user) }.to raise_error(ActiveRecord::NotNullViolation)
+  end
+
+  it "was_processed? is true for both approved and rejected" do
+    expect(build(:volunteer_hour, :approved1).was_processed?).to be(true)
+    expect(build(:volunteer_hour, :not_approved1).was_processed?).to be(true)
+    expect(build(:volunteer_hour, :not_processed).was_processed?).to be(false)
+  end
+
+  describe ".create_volunteer_hour_from_approval(task_id, user_id, hours)" do
+    it "creates an approved hour with the arguments in that order" do
+      hour = VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 4.5)
+      expect(hour).to be_persisted
+      expect(hour.attributes.values_at("volunteer_task_id", "user_id", "approval")).to eq([task.id, user.id, true])
+      expect(hour.total_time).to eq(4.5)
+    end
+
+    it "raises NotNullViolation (not a soft failure) when the user id is missing" do
+      expect { VolunteerHour.create_volunteer_hour_from_approval(task.id, nil, 1) }
+        .to raise_error(ActiveRecord::NotNullViolation)
+    end
+  end
+
+  it "feeds User#get_total_hours from approved hours only" do
+    create(:volunteer_hour, :approved1, user: user)
+    create(:volunteer_hour, :not_processed, user: user)
+    create(:volunteer_hour, :not_approved1, user: user)
+    expect(user.get_total_hours).to eq(10)
+  end
+end

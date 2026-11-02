@@ -58,12 +58,6 @@ Rails.application.configure do
 
   config.console = Pry
 
-  Octokit.configure do |c|
-    c.client_id =
-      Rails.application.credentials[Rails.env.to_sym][:github][:app_key]
-    c.client_secret =
-      Rails.application.credentials[Rails.env.to_sym][:github][:app_key_secret]
-  end
 
   # Use letter opener to open emails in development mode
   config.action_mailer.delivery_method = :letter_opener_web

@@ -1,5 +1,7 @@
+<%# The cart badge for `order` (local; nil = no open cart: 0). It reads only the order it is given and
+    touches no session: current_order (which also clears a stale session[:order_id]) is the caller's choice. %>
 <div class="cart-text" aria-label="cart">
     <%= link_to carts_path, aria: { label: 'cart' }, class: 'nav-link' do %>
-        <i class="fa-solid fa-cart-shopping fs-2 me-1"></i> <span class="fs-4"><%= current_order.order_items.size %></span>
+        <i class="fa-solid fa-cart-shopping fs-2 me-1"></i> <span class="fs-4"><%= order ? order.order_items.size : 0 %></span>
     <% end %>
 </div>

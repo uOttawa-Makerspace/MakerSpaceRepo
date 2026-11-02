@@ -5,4 +5,13 @@ class JobOrderStatus < ApplicationRecord
 
   validates :job_status_id, presence: true
   validates :user_id, presence: true
+
+  # Why a row was added outside the normal flow (see JobOrder#apply_owner_change! and #checkout_link); nil for ordinary transitions.
+  REASONS = %w[owner_change invoice_mismatch].freeze
+  validates :reason, inclusion: { in: REASONS }, allow_nil: true
+
+  # Whether the staff timeline names who added this row: processing steps and rows with a reason.
+  def actor_shown?
+    reason.present? || [JobStatus.being_processed, JobStatus.completed].include?(job_status)
+  end
 end

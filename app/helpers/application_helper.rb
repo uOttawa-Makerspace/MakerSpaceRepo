@@ -1,60 +1,138 @@
 # frozen_string_literal: true
 
-module ApplicationHelper
-  attr_accessor :github
+require Rails.root.join("lib/jwt_authenticator")
 
+module ApplicationHelper
+  # Keys that are not about who is signed in and must survive the session
+  # reset done on sign-in (sign-out keeps only the locale).
+  SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale authorized_repo_ids selected_dates order_id].freeze
+
+  # Every login path (HTML, JSON, SAML) goes through here, so the refusals live
+  # here: a lock still in effect (checked BEFORE the password so a locked account
+  # cannot be probed or have its lock rewritten by failed attempts), a
+  # deactivated account and an unconfirmed one. The caller words the
+  # refusal from @sign_in_refusal (:locked, :inactive, :unconfirmed).
   def sign_in(username_email, password)
-    user = User.authenticate(username_email, password)
-    session[:user_id] = user.id unless user.nil?
+    result = CredentialAuthenticator.call(username_email, password)
+    @sign_in_refusal = result.refusal
+    user = result.user
+    unless user.nil?
+      kept = session.to_hash.slice(*SESSION_KEYS_KEPT_ON_SIGN_IN)
+      reset_session # new session id on privilege change (session fixation)
+      kept.each { |key, value| session[key] = value }
+      session[:user_id] = user.id
+      session[:token_version] = user.token_version
+      SessionAuthenticator.start(session) # a new session gets a full idle window
+      reset_auth_memo # a user memoized earlier in this request (set_last_seen_at) is stale now
+    end
     user
   end
 
+  # " or wait 5 minutes" for a timed (brute-force) lockout (see CredentialAuthenticator).
+  def lock_wait_suffix(user, verb = "wait")
+    CredentialAuthenticator.lock_wait_suffix(user, verb)
+  end
+
   def sign_out
-    session[:user_id] = nil
-    session[:authorized_repo_ids] = nil
-    session[:selected_dates] = nil
+    locale = session[:locale]
+    reset_session
+    session[:locale] = locale if locale
+    reset_auth_memo
   end
 
   def current_user
-    @user ||= User.find(session[:user_id]) if signed_in?
+    @user ||= session_user
+    @user ||= jwt_user
     @user ||= User.new
   end
 
-  def github_client
-    @github_client ||=
-      Octokit::Client.new(access_token: @user.access_token) if github?
+  # The cookie-session user, or nil. A session that is idle-expired (72h), whose
+  # stored token_version no longer matches the user's (password changed/reset
+  # elsewhere; a session without the key is version 0), or whose user was
+  # deactivated is ended (SessionAuthenticator.valid_for?). A valid
+  # session's idle window is extended here, whatever the controller, but only by
+  # real user activity (user_activity?): background polling must not keep an
+  # abandoned tab signed in forever.
+  def session_user
+    return @session_user if defined?(@session_user)
+
+    @session_user = nil
+    return nil if session[:user_id].blank?
+
+    user = User.find_by(id: session[:user_id])
+    if SessionAuthenticator.valid_for?(session, user)
+      SessionAuthenticator.touch(session) if user_activity?
+      @session_user = user
+    else
+      sign_out
+    end
+    @session_user
+  end
+
+  # A person using the app: opening a page or submitting something (any non-GET
+  # request). Not a background poll. The browser says which a GET is: Sec-Fetch-Mode
+  # is "navigate" for a page navigation and "cors"/"same-origin" for fetch() and
+  # XHR, whatever Accept or X-Requested-With the script sends. Turbo Drive visits
+  # are fetches too, so they are recognised by Turbo's own headers (not a frame
+  # load, which is a partial page). A speculative load (prefetch/prerender) counts: it
+  # happens while the person types an address or hovers a link, and activating it
+  # sends no new request. A client that sends no Sec-Fetch-Mode (old browsers)
+  # falls back to: not an XHR and answered with HTML.
+  def user_activity?
+    return true unless request.get? || request.head?
+
+    mode = request.headers["Sec-Fetch-Mode"]
+    return mode == "navigate" || turbo_visit? if mode.present?
+
+    !request.xhr? && request.format.html?
+  end
+
+  def turbo_visit?
+    request.headers["X-Turbo-Request-Id"].present? &&
+      request.headers["Turbo-Frame"].blank?
+  end
+
+  ROLE_FLAGS = %i[admin? staff? volunteer? dev_program?].freeze
+
+  # One of the current user's role flags, read at most once per request and only if
+  # asked for (volunteer? and dev_program? are queries). The per-user caches (the
+  # home page fragments, the announcements bar) key on them, so a promotion,
+  # demotion or program join changes what is rendered at once, not after the
+  # fragment's expiry.
+  def role_flag(name)
+    @role_flags ||= {}
+    return @role_flags[name] if @role_flags.key?(name)
+
+    @role_flags[name] = current_user.public_send(name)
+  end
+
+  # [admin?, staff?, volunteer?, dev_program?] of the current user.
+  def current_role_flags
+    ROLE_FLAGS.map { |name| role_flag(name) }
+  end
+
+  def current_user_volunteer?
+    role_flag(:volunteer?)
+  end
+
+  def current_user_dev_program?
+    role_flag(:dev_program?)
   end
 
   def signed_in?
-    session[:user_id].present? || has_valid_jwt?
+    session_user.present? || has_valid_jwt?
   end
 
   def has_valid_jwt?
-    auth_header = request.headers["Authorization"]
-    if auth_header
-      user_token = auth_header.split(" ")[1]
-      begin
-        decoded_token =
-          JWT.decode(
-            user_token,
-            Rails.application.credentials.secret_key_base,
-            true,
-            { algorithm: "HS256" }
-          )
-        session[:user_id] = decoded_token[0]["user_id"]
-        return true
-      rescue JWT::ExpiredSignature
-        return false
-      rescue JWT::DecodeError
-        return false
-      end
-    end
-
-    false
+    jwt_user.present?
   end
 
-  def github?
-    current_user.access_token.present?
+  # The user a valid Bearer token authenticates. Not written to the session:
+  # a Bearer request must not mint a cookie session.
+  def jwt_user
+    return @jwt_user if defined?(@jwt_user)
+
+    @jwt_user = JwtAuthenticator.user_for(request.headers["Authorization"])
   end
 
   def locales_change
@@ -75,6 +153,14 @@ module ApplicationHelper
   end
 
   private
+
+  # Forget who was resolved earlier in this request (cookie user, current user,
+  # Bearer user) so the next call looks again. Used when the session changes.
+  def reset_auth_memo
+    %i[@session_user @user @jwt_user @role_flags].each do |ivar|
+      remove_instance_variable(ivar) if instance_variable_defined?(ivar)
+    end
+  end
 
   def page_title(curr_page = "", base_title: "MakerRepo")
     #base_title = "MakerRepo"

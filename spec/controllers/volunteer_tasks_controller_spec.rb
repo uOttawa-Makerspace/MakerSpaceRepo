@@ -168,7 +168,7 @@ RSpec.describe VolunteerTasksController, type: :controller do
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:volunteer_task)
-        get :complete_task, params: { id: VolunteerTask.last.id }
+        post :complete_task, params: { id: VolunteerTask.last.id }
         expect(response).to redirect_to my_tasks_volunteer_tasks_path
         expect(VolunteerTask.last.status).to eq("completed")
       end

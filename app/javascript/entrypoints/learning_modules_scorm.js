@@ -1,4 +1,5 @@
 import { Scorm12API, Scorm2004API } from "scorm-again";
+import { ScormCommitService } from "../src/scorm_commit_service";
 
 function initScorm() {
   const iframes = document.querySelectorAll("iframe[data-learning-module-id]");
@@ -21,12 +22,21 @@ function initScorm() {
       autocommit: true,
       autocommitSeconds: 15,
       lmsCommitUrl: `/learning_area/${learningModuleId}/scorm_commit`,
+      // Every commit is JSON (see src/scorm_commit_service.js); the final one is a
+      // beacon, or a synchronous XHR when it is too big for one.
       logLevel: "WARN", // Change to "DEBUG" if you need verbose LMS logs in console
     };
 
     // Initialize both SCORM 1.2 and 2004 so any package works
-    const scorm2004 = new Scorm2004API(settings);
-    const scorm12 = new Scorm12API(settings);
+    // Each API tells its SCO its own commit failure code.
+    const scorm2004 = new Scorm2004API({
+      ...settings,
+      httpService: new ScormCommitService({ commitFailureCode: 391 }), // GENERAL_COMMIT_FAILURE
+    });
+    const scorm12 = new Scorm12API({
+      ...settings,
+      httpService: new ScormCommitService({ commitFailureCode: 101 }), // General Exception
+    });
 
     if (Object.keys(cmiData).length > 0) {
       try {

@@ -4,6 +4,7 @@ class MakesController < SessionsController
   before_action :current_user
   before_action :signed_in
   before_action :set_repository
+  before_action -> { ensure_repository_unlocked(@repository) }
 
   # A make is just another repository that points to another one
   def create
@@ -15,6 +16,7 @@ class MakesController < SessionsController
         r.github = @repository.github
         r.github_url = @repository.github_url
         r.user_id = @user.id
+        r.users << @user
         r.share_type = 'public'
         r.photos_attributes = make_params[:photos_attributes]
         r.slug =

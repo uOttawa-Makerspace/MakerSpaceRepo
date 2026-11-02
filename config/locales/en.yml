@@ -167,6 +167,7 @@ en:
         grad: "a graduate student at uOttawa"
         international_grad: "an international graduate student at uOttawa"
         faculty_member: "a faculty member at uOttawa"
+        staff_member: "a staff member at uOttawa"
         community_member: "a community member, outside of uOttawa"
         faculty: "Faculty"
         arts: "Arts"
@@ -197,6 +198,7 @@ en:
         how_heard_about_us: "How did you hear about us?"
         accept_waiver_html: "By checking this box, <strong>I ACCEPT AND FULLY ASSUME</strong> all such (health and safety) risks, dangers and hazards which may be associated with my participation."
   sessions:
+    account_deactivated: "This account has been deactivated. Please contact %{support_email}."
     login:
       sign_in: "Sign In"
       username_or_email: "Username or Email Address"
@@ -231,9 +233,30 @@ en:
               too_long: "Maximum of %{count} characters."
             read_and_accepted_waiver_form:
               inclusion: "You must accept the terms of the waiver."
+        locker_rental:
+          attributes:
+            rented_by:
+              deactivated: "is deactivated"
+              deleted: "is deleted"
+        locker:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This locker has rental history and cannot be deleted. Mark it as not available instead."
+        sub_space_booking:
+          attributes:
+            start_time:
+              in_the_past: "cannot be in the past. Pick a start time from now on."
+            end_time:
+              in_the_past: "cannot be in the past for a booking that has already started. Pick an end time after now."
+              booking_ended: "cannot be changed: this booking has already ended."
       messages:
         blank: "This field is required."
         inclusion: "Selection is not valid."
+  sub_space_booking:
+    series:
+      too_long: "A recurring booking can span at most %{days} days."
+      partial: "Booked %{booked} of %{total} occurrences. Not booked: %{failed}."
   saml:
     login:
       sign_in: "Sign In"
@@ -289,6 +312,34 @@ en:
       approval_magic_link_expired: "The following Job Order Approval link is invalid or has expired. Please Sign In to look at the Job Order Page."
       error_accept_deny_order: "An error occurred while trying to accept or deny the Job Order. Please try again."
       updated_job_status_to_x: "You have updated the Job Order Status to: %{status}!"
+      quote_saved_email_failed: "Quote saved, but the email could not be sent. Use Resend quote email."
+      payment_link_unavailable: "The payment link is temporarily unavailable. Please try again in a few minutes."
+      requote_draft_order_failed: "This order's quote could not be updated because its existing payment link could not be cancelled. Nothing was changed. Please try again later."
+      delete_refused:
+        draft_not_voidable: "This order was not deleted because its payment link could not be cancelled. Nothing was changed. Please try again later."
+        order_missing: "This order no longer exists."
+        busy: "This order was not deleted because it is being changed by someone else. Nothing was changed. Please try again in a moment."
+        not_deletable: "This order can no longer be deleted by you. Please contact the makerspace staff."
+      owner_change_busy: "Your change could not be saved because the order is being changed by someone else. Nothing was changed. Please try again in a moment."
+      owner_change_order_missing: "Your change could not be saved because this order no longer exists."
+      status_change:
+        draft_not_voidable: "The status could not be changed because this order's payment link could not be cancelled. Nothing was changed. Please try again later."
+        invalid_status_row: "The status could not be changed because the change could not be recorded. Nothing was changed. The problem has been reported."
+        order_missing: "The status could not be changed because this order no longer exists. Nothing was changed."
+        busy: "The status could not be changed because the order is being changed by someone else. Nothing was changed. Please try again in a moment."
+      zero_order_not_marked_paid:
+        draft_not_voidable: "The order is Completed, but this $0 order could not be marked Paid because its payment link could not be cancelled. Please mark it Paid again later."
+        invalid_status_row: "The order is Completed, but this $0 order could not be marked Paid because the change could not be recorded. The problem has been reported."
+        order_missing: "The order is Completed, but this $0 order could not be marked Paid because it no longer exists."
+        busy: "The order is Completed, but this $0 order could not be marked Paid because it is being changed by someone else. Please mark it Paid again in a moment."
+        other: "The order is Completed, but this $0 order could not be marked Paid because its status changed in the meantime. Please check the order."
+      quote_refused_paid: "This order has already been paid, so its quote can no longer be changed or declined."
+      paid_order_cannot_change: "This order has already been paid, so it can no longer be changed here. Please contact makerspace@uottawa.ca to change it."
+      order_sent_back_for_requote: "Your change has been saved. Because this order had already been quoted, it has been sent back to staff for a new quote. The previous quote and payment link no longer work."
+      owner_change_draft_order_failed: "Your change could not be saved because this order's existing payment link could not be cancelled. Nothing was changed. Please try again later."
+      send_back_failed: "Your change could not be saved because the order could not be sent back to staff for a new quote. Nothing was changed. The problem has been reported; please try again later or contact makerspace@uottawa.ca."
+      pay_send_back_failed: "This order's invoice no longer matches its quote, and the order could not be sent back to staff for a new quote. Nothing was charged. The problem has been reported; please contact makerspace@uottawa.ca."
+      pay_quote_changed: "This order changed after its invoice was prepared, so it has been sent back to staff for a new quote. You will receive an email when the new quote is ready."
       error_while_updating: "An error occurred while updating the Job Order Status. Please try again later."
       pay_magic_link_expired: "The following Job Order Payment link is invalid or has expired. Please Sign In to look at the Job Order Page."
       no_permission: "You do not have permission to view this job order."
@@ -297,6 +348,11 @@ en:
       updated_successfully: "Updated successfully!"
       action_required_scroll_to_timeline: "Action Required: Please scroll down to the 'Timeline' section to provide your input. Your response is needed to proceed. Thank you!"
       missing_info: "Your job order is not submitted! The following tasks are missing required information:"
+    timeline:
+      unknown_user: "Unknown"
+    status_reasons:
+      owner_change: "The order was changed after it had been quoted."
+      invoice_mismatch: "The payment link no longer matched the order's quote."
     public_page:
       my_job_orders: "My Job Orders"
       create_a_new_job_order: "Create a new Job Order"

@@ -8,7 +8,7 @@ class StaffAreaController < SessionsController
 
   def ensure_staff
     unless signed_in?
-      redirect_to login_path(back_to: request.fullpath)
+      redirect_to login_path(back_to: login_back_to)
       return
     end
 

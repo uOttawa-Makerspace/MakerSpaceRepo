@@ -1,5 +1,6 @@
 import Sortable from "sortablejs";
 import TomSelect from "tom-select";
+import { csrfHeaders } from "../src/csrf";
 
 document.addEventListener("turbo:load", () => {
   document.querySelectorAll("[data-order]").forEach((reorderSwitch) => {
@@ -14,10 +15,10 @@ document.addEventListener("turbo:load", () => {
       onEnd: (e) => {
         fetch("/learning_area/reorder", {
           method: "PUT",
-          headers: {
+          headers: csrfHeaders({
             Accept: "application/json",
             "Content-Type": "application/json",
-          },
+          }),
           body: JSON.stringify({
             data: [...e.from.children].map((c) => c.dataset.id),
             format: "json",

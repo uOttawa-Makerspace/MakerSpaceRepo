@@ -55,7 +55,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
         user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:volunteer_hour, :approved1, user_id: user.id)
+        create(:volunteer_hour, :not_processed, user_id: user.id)
         get :edit, params: { id: VolunteerHour.last.id }
         expect(response).to have_http_status(:success)
         expect(@controller.instance_variable_get(:@hour)).to eq(10)
@@ -109,15 +109,15 @@ RSpec.describe VolunteerHoursController, type: :controller do
         user = create(:user, :volunteer_with_volunteer_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:volunteer_hour, :not_processed)
+        create(:volunteer_hour, :not_processed, user: user)
         patch :update,
               params: {
                 id: VolunteerHour.last.id,
                 volunteer_hour: {
-                  approval: true
+                  total_time: 4
                 }
               }
-        expect(VolunteerHour.last.approval).to be_truthy
+        expect(VolunteerHour.last.total_time).to eq(4)
         expect(response).to redirect_to volunteer_hours_path
         expect(flash[:notice]).to eq("Volunteer hour updated")
       end
@@ -153,8 +153,8 @@ RSpec.describe VolunteerHoursController, type: :controller do
   describe "#update_approval" do
     context "update_approval" do
       it "should update the volunteer hours approval to true" do
-        volunteer = create(:user, :volunteer_with_volunteer_program)
-        session[:user_id] = volunteer.id
+        staff = create(:user, :staff)
+        session[:user_id] = staff.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:volunteer_hour, :not_processed)
         put :update_approval,
@@ -163,13 +163,13 @@ RSpec.describe VolunteerHoursController, type: :controller do
               approval: true
             }
         expect(flash[:notice]).to eq("Volunteer hour updated")
-        expect(response).to redirect_to volunteer_hours_path
+        expect(response).to redirect_to volunteer_hour_requests_volunteer_hours_path
         expect(VolunteerHour.last.approval).to be_truthy
       end
 
       it "should update the volunteer hours approval to false" do
-        volunteer = create(:user, :volunteer_with_volunteer_program)
-        session[:user_id] = volunteer.id
+        staff = create(:user, :staff)
+        session[:user_id] = staff.id
         session[:expires_at] = Time.zone.now + 10_000
         create(:volunteer_hour, :not_processed)
         put :update_approval,
@@ -178,7 +178,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
               approval: false
             }
         expect(flash[:notice]).to eq("Volunteer hour updated")
-        expect(response).to redirect_to volunteer_hours_path
+        expect(response).to redirect_to volunteer_hour_requests_volunteer_hours_path
         expect(VolunteerHour.last.approval).to be_falsey
       end
     end

@@ -17,9 +17,5 @@ class SettingsController < SessionsController
   end
 
   def admin
-    if github?
-      @client = github_client
-      @client_info = @client.user
-    end
   end
 end

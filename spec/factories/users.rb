@@ -1,15 +1,26 @@
 # frozen_string_literal: true
 
+# Plaintext "asa32A353#", stored as a FIXED bcrypt hash at bcrypt's minimum cost.
+# (The previous literal was cost 12, so every real login in specs spent ~0.3 s
+# inside bcrypt; rails_helper's MIN_COST only affects newly created hashes.)
+# The hash is a literal, not generated at load time, on purpose: the nobspw
+# validator checks the `password` attribute value, which here IS the hash, for any
+# name/username/email word longer than 2 chars. A random hash sometimes contained
+# e.g. "tom" and failed "Password is too similar to your email/name". This one was
+# picked so that it has no run of 3+ letters, so no such word can ever match.
+TEST_USER_PASSWORD_HASH = "$2a$04$745165//11.171653//26.Eq7TK1uF2b9cx7T6H6UQ9uS/Vg3ZH3y"
+
 FactoryBot.define do
   factory :user do
     read_and_accepted_waiver_form { true }
     active { true }
     sequence(:email) { |n| "user#{n}#{SecureRandom.hex(3)}@uottawa.ca" }
-    name { Faker::Name.name }
+    # no apostrophes: HTML escaping (&#39;) breaks `include(user.name)` on rendered pages
+    name { Faker::Name.name.delete("'") }
     sequence(:username) { |n| "user#{n}#{SecureRandom.hex(3)}" }
     wallet { 1000 }
     confirmed { true }
-    password { "$2a$12$t3MkhdxmndlLDLHiJiVqBOdBAjFZWidydW/vd53.pS5ej7DcIZ1LC" }
+    password { TEST_USER_PASSWORD_HASH }
     role { "regular_user" }
     identity { "community_member" }
     gender { "Male" }

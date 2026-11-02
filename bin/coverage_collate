@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+# Merge the per-worker SimpleCov results (coverage/<n>/.resultset.json written by
+# bin/parallel_rspec) into one report at coverage/index.html.
+require "bundler/setup"
+require "simplecov"
+
+results = Dir[File.expand_path("../coverage/*/.resultset.json", __dir__)]
+abort "coverage_collate: no coverage/*/.resultset.json found (run with COVERAGE=1)" if results.empty?
+
+SimpleCov.collate(results) do
+  coverage_dir "coverage"
+end

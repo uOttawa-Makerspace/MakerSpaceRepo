@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_01_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -79,6 +79,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.datetime "created_at", precision: nil, null: false
     t.integer "question_id"
     t.datetime "updated_at", precision: nil, null: false
+  end
+
+  create_table "api_refresh_tokens", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "family_expires_at", null: false
+    t.uuid "family_id", null: false
+    t.datetime "last_used_at"
+    t.bigint "replaced_by_id"
+    t.datetime "revoked_at"
+    t.string "token_digest", null: false
+    t.integer "token_version", default: 0, null: false
+    t.string "user_agent"
+    t.integer "user_id", null: false
+    t.index ["family_id"], name: "index_api_refresh_tokens_on_family_id"
+    t.index ["token_digest"], name: "index_api_refresh_tokens_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_api_refresh_tokens_on_user_id"
+    t.check_constraint "expires_at <= family_expires_at", name: "api_refresh_tokens_expires_within_cap"
   end
 
   create_table "area_options", id: :serial, force: :cascade do |t|
@@ -176,13 +194,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
   end
 
   create_table "coupon_codes", force: :cascade do |t|
-    t.integer "cc_cost"
+    t.integer "cc_cost", null: false
     t.string "code"
     t.datetime "created_at", null: false
     t.integer "dollar_cost"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["user_id"], name: "index_coupon_codes_on_user_id"
+    t.check_constraint "cc_cost >= 0", name: "coupon_codes_cc_cost_non_negative"
   end
 
   create_table "course_names", force: :cascade do |t|
@@ -270,7 +289,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.index ["created_by_id"], name: "index_events_on_created_by_id"
     t.index ["space_id", "draft"], name: "idx_events_on_space_and_draft"
     t.index ["space_id", "start_time", "end_time"], name: "idx_events_on_space_and_times"
-    t.index ["space_id"], name: "index_events_on_space_id"
     t.index ["training_id"], name: "index_events_on_training_id"
   end
 
@@ -298,18 +316,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.integer "training_session_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
-  end
-
-  create_table "external_contacts", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.boolean "deleted", default: false, null: false
-    t.string "email", null: false
-    t.string "first_name", null: false
-    t.string "last_name", null: false
-    t.string "phone"
-    t.datetime "updated_at", null: false
-    t.index ["deleted"], name: "index_external_contacts_on_deleted"
-    t.index ["email"], name: "index_external_contacts_on_email", unique: true
   end
 
   create_table "faqs", force: :cascade do |t|
@@ -426,6 +432,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.datetime "created_at", null: false
     t.bigint "job_order_id"
     t.bigint "job_status_id"
+    t.string "reason"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["job_order_id"], name: "index_job_order_statuses_on_job_order_id"
@@ -441,6 +448,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.bigint "job_order_quote_id"
     t.bigint "job_service_group_id"
     t.bigint "job_type_id"
+    t.string "shopify_draft_order_fingerprint"
     t.string "shopify_draft_order_id"
     t.text "staff_comments"
     t.datetime "updated_at", null: false
@@ -694,6 +702,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.string "name"
     t.datetime "updated_at", null: false
     t.string "value"
+  end
+
+  create_table "locker_payments", force: :cascade do |t|
+    t.decimal "amount", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.string "currency"
+    t.string "hold_reason"
+    t.bigint "locker_rental_id", null: false
+    t.decimal "order_total", precision: 10, scale: 2
+    t.datetime "paid_at", null: false
+    t.string "resolution_note"
+    t.datetime "resolved_at"
+    t.bigint "resolved_by_id"
+    t.string "shopify_order_id", null: false
+    t.string "status", null: false
+    t.datetime "updated_at", null: false
+    t.index ["locker_rental_id"], name: "index_locker_payments_held_on_locker_rental_id", where: "((status)::text = 'held'::text)"
+    t.index ["locker_rental_id"], name: "index_locker_payments_on_locker_rental_id"
+    t.index ["resolved_by_id"], name: "index_locker_payments_on_resolved_by_id"
+    t.index ["shopify_order_id"], name: "index_locker_payments_on_shopify_order_id", unique: true
+    t.check_constraint "(status::text = 'held'::text) = (resolved_at IS NULL)", name: "locker_payments_resolved_unless_held_check"
+    t.check_constraint "hold_reason IS NULL OR (hold_reason::text = ANY (ARRAY['renter_ineligible'::character varying, 'rental_cancelled'::character varying, 'not_activatable'::character varying, 'already_paid'::character varying]::text[]))", name: "locker_payments_hold_reason_check"
+    t.check_constraint "status::text <> 'held'::text OR hold_reason IS NOT NULL", name: "locker_payments_held_has_reason_check"
+    t.check_constraint "status::text = ANY (ARRAY['applied'::character varying, 'held'::character varying, 'refunded'::character varying, 'dismissed'::character varying]::text[])", name: "locker_payments_status_check"
   end
 
   create_table "locker_rentals", force: :cascade do |t|
@@ -983,6 +1015,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.integer "training_id"
     t.datetime "updated_at", precision: nil, null: false
     t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
+    t.check_constraint "cc >= 0", name: "proficient_projects_cc_non_negative"
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
@@ -1081,6 +1114,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_quick_access_links_on_user_id"
+  end
+
+  create_table "rate_limit_counters", primary_key: "key", id: :string, force: :cascade do |t|
+    t.integer "count", default: 0, null: false
+    t.datetime "expires_at", null: false
+    t.index ["expires_at"], name: "index_rate_limit_counters_on_expires_at"
   end
 
   create_table "recurring_bookings", force: :cascade do |t|
@@ -1198,6 +1237,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "solid_cache_entries", force: :cascade do |t|
+    t.integer "byte_size", null: false
+    t.datetime "created_at", null: false
+    t.binary "key", null: false
+    t.bigint "key_hash", null: false
+    t.binary "value", null: false
+    t.index ["byte_size"], name: "index_solid_cache_entries_on_byte_size"
+    t.index ["key_hash", "byte_size"], name: "index_solid_cache_entries_on_key_hash_and_byte_size"
+    t.index ["key_hash"], name: "index_solid_cache_entries_on_key_hash", unique: true
+  end
+
   create_table "space_manager_joins", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "space_id"
@@ -1270,7 +1320,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["space_id", "user_id"], name: "idx_staff_spaces_space_user"
-    t.index ["space_id"], name: "index_staff_spaces_on_space_id"
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
   end
 
@@ -1283,7 +1332,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.string "title"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
-    t.index ["user_id", "start_time", "end_time"], name: "idx_staff_unavail_user_times"
     t.index ["user_id"], name: "index_staff_unavailabilities_on_user_id"
   end
 
@@ -1461,7 +1509,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.boolean "booking_approval", default: false
     t.boolean "confirmed", default: false
     t.datetime "created_at", precision: nil, null: false
-    t.boolean "deleted"
+    t.datetime "deactivated_at"
+    t.boolean "deleted", default: false, null: false
     t.text "description"
     t.citext "email"
     t.string "faculty"
@@ -1483,6 +1532,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
     t.bigint "space_id"
     t.string "student_id"
     t.boolean "terms_and_conditions"
+    t.integer "token_version", default: 0, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.string "url"
     t.string "use"
@@ -1572,6 +1622,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "announcement_dismisses", "announcements"
   add_foreign_key "announcement_dismisses", "users"
+  add_foreign_key "api_refresh_tokens", "users", on_delete: :cascade
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"
@@ -1625,6 +1676,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_27_020611) do
   add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
+  add_foreign_key "locker_payments", "locker_rentals"
+  add_foreign_key "locker_payments", "users", column: "resolved_by_id"
   add_foreign_key "locker_rentals", "lockers"
   add_foreign_key "locker_rentals", "users", column: "decided_by_id"
   add_foreign_key "locker_rentals", "users", column: "rented_by_id"

@@ -1,5 +1,7 @@
 class GoogleCalendarController < ApplicationController
-  skip_before_action :verify_authenticity_token
+  # Google's push notifications carry no CSRF token; the caller is authenticated by
+  # the channel id/resource id pair we registered (GoogleCalendarChannel.valid_channel?).
+  skip_forgery_protection
 
   def webhook
     channel_id  = request.headers["X-Goog-Channel-Id"]

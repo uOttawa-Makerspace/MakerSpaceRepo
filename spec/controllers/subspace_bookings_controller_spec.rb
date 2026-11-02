@@ -1,6 +1,6 @@
 require "rails_helper"
 require "rspec/mocks/standalone"
-RSpec.describe SubSpaceBookingController, type: :controller do
+RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
   before(:each) do
     stub_const("BookingStatus::PENDING", create(:booking_status, :pending))
     stub_const("BookingStatus::APPROVED", create(:booking_status, :approved))
@@ -92,11 +92,15 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         session[:user_id] = @user.id
         booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
         
-        expect {
+        ActionMailer::Base.deliveries.clear
+        perform_enqueued_jobs do
           put :approve, params: { sub_space_booking_id: booking.id }
-        }.to have_enqueued_job(ActionMailer::MailDeliveryJob)
-            .with("BookingMailer", "send_booking_approved", "deliver_now",  # <-- Changed here
-                  { args: [booking.id] })
+        end
+
+        expect(ActionMailer::Base.deliveries.size).to eq(1)
+        mail = ActionMailer::Base.deliveries.last
+        expect(mail.to).to eq([booking.user.email])
+        expect(mail.subject).to eq("Booking approved")
       end
     end
   end
@@ -267,6 +271,18 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         expect(JSON.parse(response.body).length).to eq(3)
 
         booking_ids = SubSpaceBooking.pluck(:id)
+        # a regular user cannot bulk approve; staff can
+        statuses_before =
+          SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.sub_space_booking_status.booking_status_id }
+        %w[approve decline].each do |bulk_status|
+          put :bulk_approve_decline,
+              params: { bulk_status: bulk_status, sub_space_booking_ids: booking_ids }
+          expect(response).to redirect_to(root_path)
+        end
+        expect(
+          SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.sub_space_booking_status.booking_status_id }
+        ).to eq(statuses_before)
+        @user.update_column(:role, "staff")
         # approve first two
         first_two_ids = booking_ids.first(2)
         put :bulk_approve_decline,
@@ -306,12 +322,19 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         booking1 = create(:sub_space_booking, sub_space: @subspace, user: @user)
         booking2 = create(:sub_space_booking, sub_space: @subspace, user: @user)
         
-        expect {
-          put :bulk_approve_decline, params: { 
-            bulk_status: 'approve', 
-            sub_space_booking_ids: [booking1.id, booking2.id] 
+        ActionMailer::Base.deliveries.clear
+        perform_enqueued_jobs do
+          put :bulk_approve_decline, params: {
+            bulk_status: 'approve',
+            sub_space_booking_ids: [booking1.id, booking2.id]
           }
-        }.to have_enqueued_job(ActionMailer::MailDeliveryJob).twice
+        end
+
+        expect(ActionMailer::Base.deliveries.size).to eq(2)
+        expect(ActionMailer::Base.deliveries.map(&:subject))
+          .to eq(["Booking approved", "Booking approved"])
+        expect(ActionMailer::Base.deliveries.map(&:to))
+          .to match_array([[booking1.user.email], [booking2.user.email]])
       end
     end
   end
@@ -337,7 +360,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
       end
 
       it "should return 422 and notify the user they need to enter a name" do
-        post :create,
+        post :create, format: :json,
              params: {
                sub_space_booking: {
                  sub_space_id: @subspace.id,
@@ -346,11 +369,12 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
       it "should return 422 and notify the user they need to enter a description" do
-        post :create,
+        post :create, format: :json,
              params: {
                sub_space_booking: {
                  sub_space_id: @subspace.id,
@@ -359,11 +383,12 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  name: Faker::Lorem.word
                }
              }
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
       it "should return 422 and notify the user they need to enter a start time" do
-        post :create,
+        post :create, format: :json,
              params: {
                sub_space_booking: {
                  sub_space_id: @subspace.id,
@@ -372,11 +397,12 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
       it "should return 422 and notify the user they need to enter a end time" do
-        post :create,
+        post :create, format: :json,
              params: {
                sub_space_booking: {
                  sub_space_id: @subspace.id,
@@ -385,6 +411,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
@@ -392,7 +419,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         subspace = create(:sub_space, space: @space)
         subspace.maximum_booking_duration = 4
         subspace.save
-        post :create,
+        post :create, format: :json,
              params: {
                sub_space_booking: {
                  sub_space_id: subspace.id,
@@ -402,6 +429,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  description: Faker::Lorem.sentence
                }
              }
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 
@@ -410,7 +438,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
         subspace.maximum_booking_hours_per_week = 4
         subspace.save
         1..2.times do
-          post :create,
+          post :create, format: :json,
                params: {
                  sub_space_booking: {
                    sub_space_id: subspace.id,
@@ -421,6 +449,7 @@ RSpec.describe SubSpaceBookingController, type: :controller do
                  }
                }
         end
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"].length).to eq(1)
       end
 

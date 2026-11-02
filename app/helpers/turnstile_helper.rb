@@ -3,6 +3,11 @@ module TurnstileHelper
   TURNSTILE_SITEVERIFY_ENDPOINT =
     'https://challenges.cloudflare.com/turnstile/v0/siteverify'.freeze
 
+  # Single seam for "should we really call Cloudflare?". Off in the test env.
+  def self.verification_enabled?
+    !Rails.env.test?
+  end
+
   def creds
     Rails.application.credentials[Rails.env.to_sym][:cloudflare][:turnstile]
 
@@ -24,7 +29,7 @@ module TurnstileHelper
   end
 
   def verify_turnstile
-    return true if Rails.env.test?
+    return true unless TurnstileHelper.verification_enabled?
     cf_turnstile_response = params['cf-turnstile-response']
     response =
       Excon.post(

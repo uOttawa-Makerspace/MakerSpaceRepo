@@ -6,7 +6,7 @@ module Admin::UsersHelper
       rfids.map do |r|
         if r.mac_address.present?
           location =
-            PiReader.find_by(pi_mac_address: r.mac_address).try(:pi_location)
+            PiReader.find_by_mac(r.mac_address).try(:pi_location)
           location =
             if location.nil?
               " - #{r.mac_address}"

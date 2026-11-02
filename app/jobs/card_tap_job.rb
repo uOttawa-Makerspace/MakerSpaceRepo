@@ -10,10 +10,21 @@ class CardTapJob < ApplicationJob
     # Update faculty membership
     space = Space.find_by(id: space_id)
 
-    rfid.user.validate_uoeng_membership(
-      card_number: rfid.card_number,
-      space: space
-    )
+    begin
+      rfid.user.validate_uoeng_membership(
+        card_number: rfid.card_number,
+        space: space
+      )
+    rescue ActiveRecord::RecordNotFound => e
+      # the "Faculty membership" tier is missing. Log it, but the tap is
+      # already persisted, so staff still get their modal.
+      TapBoxLog.log_card_tap_job_failure(
+        user: rfid.user,
+        card_number: rfid.card_number,
+        space: space,
+        exception: e
+      )
+    end
 
     # Push notification to staff dashboard
     StaffDashboardChannel.send_tap_in(rfid.user, space_id)

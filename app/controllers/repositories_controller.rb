@@ -1,7 +1,8 @@
 class RepositoriesController < SessionsController
   include BCrypt
-  before_action :current_user, :check_session
-  before_action :signed_in, except: %i[show download_files]
+  before_action :current_user
+  before_action :signed_in,
+                except: %i[show download_files password_entry pass_authenticate]
   before_action :set_repository,
                 only: %i[
                   show
@@ -14,8 +15,21 @@ class RepositoriesController < SessionsController
                   pass_authenticate
                   password_entry
                 ]
+  # Password guessing: per repository and per user (or IP for guests)
+  rate_limit to: 10, within: 10.minutes, only: :pass_authenticate,
+             by: -> { "#{@repository.id}:#{@user.id.presence || request.remote_ip}" },
+             with: -> {
+               redirect_to password_entry_repository_path(@repository.user_username, @repository.id),
+                           alert: "Too many attempts. Please try again later."
+             }
   before_action :check_auth, only: %i[show download_files]
-  before_action :check_ownership, only: %i[edit update destroy]
+  before_action -> { ensure_repository_unlocked(@repository) }, only: :add_like
+  before_action :set_member_repository,
+                only: %i[link_to_pp add_member remove_member]
+  before_action :check_ownership,
+                only: %i[edit update destroy add_member remove_member]
+  # Same rule as the show page's link form: members, staff and admin
+  before_action :check_link_permission, only: :link_to_pp
 
   def show
     if @repository.private? && !@check_passed
@@ -153,7 +167,7 @@ class RepositoriesController < SessionsController
   end
 
   def edit
-    if @repository.users.include?(@user) || @user.admin?
+    if @repository.owned_by?(@user) || @user.admin?
       @project_proposals =
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
         :project_proposal_id
@@ -249,11 +263,16 @@ class RepositoriesController < SessionsController
   end
 
   def pass_authenticate
-    @auth = Repository.authenticate(params[:id], params[:password])
+    unless @repository.private?
+      redirect_to repository_path(@repository.user_username, @repository.slug) and return
+    end
+
+    @auth =
+      @repository.password.present? && @repository.pword == params[:password]
     respond_to do |format|
       if @auth
         @authorized = true
-        authorized_repo_ids << params[:id]
+        authorized_repo_ids << @repository.id
         flash[:notice] = "Success"
         format.html do
           redirect_to repository_path(
@@ -275,8 +294,13 @@ class RepositoriesController < SessionsController
   end
 
   def link_to_pp
-    repository = Repository.find params[:repo][:repository_id]
+    repository = @repository
     project_proposal_id = params[:repo][:project_proposal_id]
+    if project_proposal_id.present? &&
+       !ProjectProposal.approved.exists?(id: project_proposal_id)
+      flash[:alert] = "Only an approved Project Proposal can be linked."
+      redirect_to repository_path(repository.user_username, repository.slug) and return
+    end
     repository.project_proposal_id = project_proposal_id
     if repository.save
       flash[
@@ -289,7 +313,7 @@ class RepositoriesController < SessionsController
   end
 
   def add_member
-    repository = Repository.find params[:repo_owner][:repository_id]
+    repository = @repository
     member_username = params[:repo_owner][:owner_username]
     member = User.find_by_username(member_username)
 
@@ -314,7 +338,7 @@ class RepositoriesController < SessionsController
   end
 
   def remove_member
-    repository = Repository.find params[:repo_owner][:repository_id]
+    repository = @repository
     member_id = params[:repo_owner][:owner_id]
     member = User.find_by(id: member_id)
 
@@ -361,10 +385,16 @@ class RepositoriesController < SessionsController
   end
 
   def populate_users
+    # Only the fields the user-search autocompletes read (repositories.js, teams.js, add_new_staff.js)
     json_data =
-      User.where("LOWER(name) like LOWER(?)", "%#{params[:search]}%").map(
-        &:as_json
-      )
+      User
+        .where(
+          "LOWER(name) like LOWER(?)",
+          "%#{User.sanitize_sql_like(params[:search].to_s)}%"
+        )
+        .limit(10)
+        .pluck(:id, :name, :username)
+        .map { |id, name, username| { id: id, name: name, username: username } }
     render json: { users: json_data }
   end
 
@@ -373,24 +403,26 @@ class RepositoriesController < SessionsController
   # Block if user is not authorized to modify repository
   def check_ownership
     # admins can modify repo
-    unless @user.admin? || @repository.users.include?(@user)
+    unless @user.admin? || @repository.owned_by?(@user)
       flash[:alert] = "You are not allowed to perform this action!"
       redirect_to repository_path(@repository.user_username, @repository.slug)
     end
   end
 
-  def check_session
-    @authorized = true if authorized_repo_ids.include? params[:id]
+  def set_member_repository
+    key = params.key?(:repo) ? :repo : :repo_owner
+    @repository = Repository.find(params.expect(key => [:repository_id])[:repository_id])
+  end
+
+  def check_link_permission
+    unless @user.staff? || @user.admin? || @repository.owned_by?(@user)
+      flash[:alert] = "You are not allowed to perform this action!"
+      redirect_to repository_path(@repository.user_username, @repository.slug)
+    end
   end
 
   def check_auth
-    @check_passed =
-      if @authorized || @user.admin? || @user.staff? ||
-           @repository.user_username.casecmp?(@user.username)
-        true
-      else
-        false
-      end
+    @check_passed = repository_unlocked?(@repository)
   end
 
   def set_repository
@@ -407,7 +439,6 @@ class RepositoriesController < SessionsController
       :title,
       :description,
       :license,
-      :user_id,
       :share_type,
       :password,
       :youtube_link,

@@ -259,13 +259,13 @@
 
                     <% @project_join = find_project_join(current_user.id, @project_proposal.id) %>
                     <% if @project_join.present? %>
-                        <%= button_to t('project_proposal.leave_project'), unjoin_project_proposal_project_proposals_path, method: :get,
+                        <%= button_to t('project_proposal.leave_project'), unjoin_project_proposal_project_proposals_path, method: :delete,
                                       params: { project_proposal_id: @project_proposal.id, project_join_id: @project_join.id },
-                                      class: 'btn btn-outline-danger btn-sm flex-fill', data: { confirm: 'Are you sure you want to leave this project?' } %>
+                                      class: 'btn btn-outline-danger btn-sm flex-fill', form: { data: { turbo_confirm: 'Are you sure you want to leave this project?' } } %>
                     <% else %>
-                        <%= button_to t('project_proposal.join_project'), join_project_proposal_project_proposals_path, method: :get,
+                        <%= button_to t('project_proposal.join_project'), join_project_proposal_project_proposals_path, method: :post,
                                       params: { project_proposal_id: @project_proposal.id },
-                                      class: 'btn btn-primary btn-sm flex-fill', data: { confirm: 'Are you sure you want to join this project?' } %>
+                                      class: 'btn btn-primary btn-sm flex-fill', form: { data: { turbo_confirm: 'Are you sure you want to join this project?' } } %>
                     <% end %>
                 <% end %>
             </div>

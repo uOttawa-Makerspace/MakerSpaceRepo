@@ -11,7 +11,6 @@ class Training < ApplicationRecord
   has_many :shifts, dependent: :nullify
   has_many :events, dependent: :nullify
   belongs_to :skill, optional: true
-  has_many :badge_templates
 
   # Column was renamed to name_en and it broke a lot
   alias_attribute :name, :name_en

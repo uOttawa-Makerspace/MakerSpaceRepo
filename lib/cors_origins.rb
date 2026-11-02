@@ -1,0 +1,38 @@
+# frozen_string_literal: true
+
+# Origins allowed to call this app from a browser with CORS
+# (config/initializers/cors.rb), per environment. Every origin is an exact string
+# (scheme included) or a fully anchored regexp (\A...\z), so look-alike hosts
+# do not match.
+#
+# app_origins is used for the credentialed catch-all (cookie session) and
+# for /api (Bearer tokens). So it is as narrow as each environment allows:
+# - production: the staff app (MakerRepoApp) only;
+# - staging: plus its Cloudflare Pages previews (previews point to staging);
+# - development/test: plus the Vite dev server on localhost:5173.
+# Design Day sends no cookies and calls only GET /api/v1/design_day, which has
+# its own non-credentialed block in config/initializers/cors.rb.
+module CorsOrigins
+  PRODUCTION = [
+    "https://app.makerepo.com"
+  ].freeze
+
+  PREVIEWS = [
+    %r{\Ahttps://([a-z0-9-]+\.)+makerepo-app\.pages\.dev\z}
+  ].freeze
+
+  LOCAL_DEV_SERVERS = [
+    "http://localhost:5173",
+    "https://localhost:5173"
+  ].freeze
+
+  module_function
+
+  def app_origins(env = Rails.env)
+    env = ActiveSupport::EnvironmentInquirer.new(env.to_s)
+    origins = PRODUCTION.dup
+    origins += PREVIEWS if env.staging?
+    origins += LOCAL_DEV_SERVERS if env.local?
+    origins.freeze
+  end
+end

@@ -36,7 +36,7 @@
         <% else %>
             <p class="guest-shortcuts"><%= t('home.shortcuts.ask_for_sign_in') %></p>
         <% end %>
-        <% unless current_user.volunteer? %>
+        <% unless current_user_volunteer? %>
             <h3><%= t('home.shortcuts.volunteer_program_header') %></h3>
             <ul class="explanation-list">
                 <% t('home.shortcuts.volunteer_program_desc').each do |line| %>
@@ -45,7 +45,7 @@
             </ul>
             <%= link_to t('home.show_more'), volunteers_path, class: 'mb-3 d-block' %>
         <% end %>
-        <% unless current_user.dev_program? %>
+        <% unless current_user_dev_program? %>
             <h3><%= t('home.shortcuts.development_program_header') %></h3>
             <ul class="explanation-list">
                 <% t('home.shortcuts.development_program_desc').each do |line| %>

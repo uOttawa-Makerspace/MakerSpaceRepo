@@ -11,7 +11,7 @@ namespace :update_profile do
     emails_to_remove = args.removed_emails.split(" ")
     max_bcc_at_once = 498
     emails =
-      (User.active.pluck(:email) - emails_to_remove).in_groups_of(
+      (User.active.not_deactivated.pluck(:email) - emails_to_remove).in_groups_of(
         max_bcc_at_once,
         false
       )

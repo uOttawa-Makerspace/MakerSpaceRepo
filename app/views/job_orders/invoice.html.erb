@@ -142,7 +142,7 @@
             <td>
               Client : <%= @job_order.user.name %>
               <br>
-              Date : <%= @job_order.job_order_statuses.last.created_at.strftime('%Y/%m/%d') %>
+              Date : <%= @job_order.latest_status.created_at.strftime('%Y/%m/%d') %>
             </td>
           </tr>
         </table>

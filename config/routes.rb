@@ -7,41 +7,71 @@ Rails.application.routes.draw do
     mount LetterOpenerWeb::Engine, at: "/letter_opener"
   end
 
-  resources :price_rules, only: %i[index new create destroy edit update]
+  # JSON API for the React frontends: Bearer auth, no cookies. Contracts: doc/api/v1/.
+  namespace :api do
+    namespace :v1 do
+      resource :session, only: %i[create show destroy] do
+        post :refresh
+      end
+      get "users", to: "users#index"
+      get "users/:username", to: "users#show", constraints: { username: %r{[^/]+} }
+      # Strict integer ids at the router (UsersController#find_user! checks again).
+      patch "users/:id/role", to: "users#role", constraints: { id: /\d+/ }
+      put "users/:id/programs", to: "users#programs", constraints: { id: /\d+/ }
+      get "spaces", to: "spaces#index"
+      get "me/space", to: "my_spaces#show"
+      put "me/space", to: "my_spaces#update"
+      get "spaces/:id/presence", to: "presence#show", constraints: { id: /\d+/ }
+      post "spaces/:id/presence", to: "presence#create", constraints: { id: /\d+/ }
+      delete "spaces/:id/presence/:username", to: "presence#destroy", constraints: { id: /\d+/, username: %r{[^/]+} }
+      get "rfid_cards", to: "rfid_cards#index"
+      put "users/:id/rfid", to: "user_rfids#update", constraints: { id: /\d+/ }
+      delete "users/:id/rfid", to: "user_rfids#destroy", constraints: { id: /\d+/ }
+      post "rfid_taps", to: "rfid_taps#create"
+      get "training_sessions", to: "training_sessions#index"
+      post "training_sessions", to: "training_sessions#create"
+      get "training_session_options", to: "training_session_options#show"
+      post "training_sessions/:training_session_id/certifications", to: "training_session_certifications#create",
+                                                                    constraints: { training_session_id: /\d+/ }
+      get "printer_types", to: "printer_types#index"
+      post "printers/:id/assignments", to: "printer_assignments#create", constraints: { id: /\d+/ }
+      get "printer_issues", to: "printer_issues#index"
+      patch "printer_issues/:id", to: "printer_issues#update", constraints: { id: /\d+/ }
+      get "spaces/:id/shifts", to: "shifts#index", constraints: { id: /\d+/ }
+      get "design_day", to: "design_days#show", format: false
+      post "support_requests", to: "support_requests#create", format: false
+      get "contact_infos", to: "contact_infos#index", format: false
+      # keep last: unknown /api/v1 paths answer with the JSON 404, not the HTML one
+      match "*path", to: "base#route_not_found", via: :all
+    end
+  end
+
   resources :discount_codes, only: %i[new index create]
   resources :coupon_codes, only: %i[index new create destroy edit update]
 
   resources :custom_webhooks do
     collection do
       post :orders_paid
+      post :orders_fulfilled
     end
   end
 
   resources :videos, only: %i[index new create destroy]
-  get "videos/:id/download/:filename",
-      to: "videos#download",
-      constraints: {
-        filename: /.+/
-      },
-      as: "download_video"
-
-  mount StripeEvent::Engine, at: "/stripe/webhooks"
-
   resources :project_kits, only: %i[index new create destroy] do
-    get :mark_delivered
+    patch :mark_delivered
     collection { get :populate_kit_users }
   end
 
   resources :cc_moneys, only: [:index] do
     collection do
-      get :redeem
+      post :redeem
       get :link_cc_to_user
     end
   end
 
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do
-    get :destroy, path: "revoke"
+    post :revoke
     get :order_item_modal
     get :approve_order_item_modal
     get :revoke_order_item_modal
@@ -54,16 +84,10 @@ Rails.application.routes.draw do
   get "/saml/wiki_metadata" => "saml_idp#wiki_metadata"
   post "/saml/auth" => "saml_idp#auth"
     
-  resources :job_orders, only: %i[index show create update new destroy] do
-    get :steps
-    get :quote_modal
+  resources :job_orders, only: %i[index show create new destroy] do
     get :timeline_modal
-    get :completed_email_modal
-    get :decline_modal
-    get :comments_modal
     get :invoice
     patch :quote
-    patch :steps
     patch :user_approval
     patch :start_processing
     patch :processed
@@ -77,8 +101,6 @@ Rails.application.routes.draw do
       get :settings
       get :user_magic_approval
       get :pay
-      get :stripe_success
-      get :stripe_cancelled
       get :landing
       patch :user_magic_approval_confirmation
       post "/new" => "job_orders#new"
@@ -96,8 +118,8 @@ Rails.application.routes.draw do
       post :create_revision
       post :approve
       post :decline
-      get :join_project_proposal
-      get :unjoin_project_proposal
+      post :join_project_proposal
+      delete :unjoin_project_proposal
       get :projects_assigned
       get :projects_completed
       get :user_projects
@@ -121,6 +143,7 @@ Rails.application.routes.draw do
   resources :printer_types, except: %i[show]
   resources :printer_issues,
             only: %i[index show new create edit update destroy] do
+    post :resolve, on: :member
     collection do
       get :history
       patch :update_notification_email
@@ -137,13 +160,16 @@ Rails.application.routes.draw do
     end
   end
   
-  resources :locker_sizes, only: [:create, :show, :update, :destroy]
+  resources :locker_sizes, only: [:create, :update, :destroy]
 
-  resources :locker_rentals do
+  resources :locker_rentals, except: %i[edit destroy] do
     member do
       patch :renew
       patch :toggle_contacted
     end
+
+    # Staff resolve a held payment (refunded / dismissed)
+    resources :locker_payments, only: :update
 
     collection do
       get :admin
@@ -180,7 +206,7 @@ Rails.application.routes.draw do
     get "about"
     get "contact"
     get "calendar"
-    get "report_repository/:repository_id",
+    post "report_repository/:repository_id",
         as: "report_repository",
         action: "report_repository"
     post "join_team_program"
@@ -211,24 +237,18 @@ Rails.application.routes.draw do
     get "category"
     get "equipment"
     get "certification"
-    get "comment"
   end
 
   # SESSION
   namespace :sessions, path: "/", as: nil do
     post "login_authentication"
+    # GET /logout is kept for MakerRepoApp until it ships POST logout
+    # (frontend-api-inventory.md row 3). The site's own UI uses DELETE.
     get "logout"
+    match "logout", via: %i[post delete], as: :perform_logout
     get "login"
     get "resend_email_confirmation"
     get "check_signed_in"
-  end
-
-  # GITHUB
-  namespace :github do
-    get "authorize"
-    get "callback"
-    get "unauthorize"
-    get "repositories"
   end
 
   # SETTING
@@ -239,6 +259,7 @@ Rails.application.routes.draw do
 
   # HELP
   resource :help, only: [:show, :create], controller: "help"
+  put "send_email", to: "help#send_email"
 
   # keep index singular, rename path
   # don't define second resourece, that breaks HTTP verbs
@@ -273,8 +294,6 @@ Rails.application.routes.draw do
     resources :job_options, only: %i[index new create edit update destroy]
     resources :job_types, only: %i[index new create edit update]
 
-    get "manage_badges"
-
     namespace :report_generator do
       get "/", as: "index", action: "index"
       post "/generate", as: "generate", action: "generate"
@@ -307,6 +326,9 @@ Rails.application.routes.draw do
         get "manage_roles"
         patch :rename_user
         #   patch "mass_update_roles", to: "users#mass_update_roles"
+      end
+      member do
+        patch :change_email
       end
       # member do
       #   get "fetch_spaces"
@@ -349,27 +371,19 @@ Rails.application.routes.draw do
       get "/", as: "index", action: "index"
     end
     
-    resources :pi_readers, only: [:update]
+    resources :pi_readers, only: %i[create update]
 
-    resources :trainings do
-      collection do
-        get "skill_search"
-        get "add_skill"
-        get "skills"
-      end
-    end
+    resources :trainings
 
     resources :skills
 
     resources :drop_off_locations
 
-    resources :contact_infos
+    resources :contact_infos, except: :show
 
     resources :time_periods, except: [:show]
 
-    resources :training_sessions do
-      get "/", as: "index", action: "index"
-
+    resources :training_sessions, only: %i[index update destroy] do
       member { patch "update" }
     end
 
@@ -447,7 +461,6 @@ Rails.application.routes.draw do
         get 'utc_unavailabilities_json/:id', to: 'calendar#utc_unavailabilities_json', as: :utc_unavailabilities_json
         get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json
         get 'imported_calendars_json/:id', to: 'calendar#imported_calendars_json', as: :imported_calendars_json
-        get 'ics_to_json', to: 'calendar#ics_to_json', as: :ics_to_json 
         post :update_color
       end
     end
@@ -491,9 +504,7 @@ Rails.application.routes.draw do
         get "training_report"
       end
     end
-    resources :proficient_project_sessions, only: [:show] do
-      post "certify_participant"
-    end
+    resources :proficient_project_sessions, only: [:show]
 
     resources :my_calendar do
       collection do
@@ -521,7 +532,7 @@ Rails.application.routes.draw do
     put "/remove_users", as: "sign_out_users", action: "sign_out_users"
     put "link_rfid"
     put "unlink_rfid"
-    get "sign_out_all_users"
+    post "sign_out_all_users"
     get :user_profile
     get :populate_users
     post :import_excel
@@ -555,7 +566,7 @@ Rails.application.routes.draw do
 
   resources :development_programs, only: [:index] do
     collection do
-      get :join_development_program
+      post :join_development_program
       get :skills
       get :all_badges
     end
@@ -570,11 +581,10 @@ Rails.application.routes.draw do
   resources :proficient_projects do
     get :proficient_project_modal
     collection do
-      get :join_development_program
       get :requests
       put :complete_project
-      get :approve_project
-      get :revoke_project
+      post :approve_project
+      post :revoke_project
       get :generate_acquired_badge
     end
   end
@@ -583,7 +593,6 @@ Rails.application.routes.draw do
   get '/learning_area/s/:shortcut', to: 'learning_area#show', as: :shortcut_learning_area
   resources :learning_area do
     collection do
-      get :open_modal
       put :reorder
       get 'subskill/:subskill', to: 'learning_area#subskill', as: :subskill
     end
@@ -598,8 +607,8 @@ Rails.application.routes.draw do
 
   resources :learning_module_track, only: %i[index] do
     collection do
-      get :start
-      get :completed
+      post :start
+      post :completed
     end
   end
 
@@ -609,13 +618,13 @@ Rails.application.routes.draw do
     collection do
       get :emails
       get :volunteer_list
-      match :join_volunteer_program, via: %i[get post]
+      post :join_volunteer_program
       get :my_stats
       get :transcript
       get :calendar
       get :shadowing_shifts
-      get :delete_event
-      get :create_event
+      delete :delete_event
+      post :create_event
       get :new_event
       get :populate_users
     end
@@ -623,17 +632,14 @@ Rails.application.routes.draw do
 
   resources :questions do
     collection { delete :delete_individually }
-  end
-
-  resources :staff_availabilities, except: :show do
-    collection { get :get_availabilities }
+    member { delete "answers/:answer_id", action: :remove_answer, as: :remove_answer }
   end
 
   resources :exams, only: %i[index create show destroy] do
     collection do
-      get :finish_exam
+      post :finish_exam
       post :create_from_training
-      get :create_for_single_user
+      post :create_for_single_user
     end
   end
 
@@ -642,13 +648,13 @@ Rails.application.routes.draw do
   resources :volunteer_tasks do
     collection do
       get :my_tasks
-      get :complete_task
+      post :complete_task
     end
   end
 
   resources :volunteer_task_requests, only: [:index] do
     collection do
-      get :create_request
+      post :create_request
       put :update_approval
       get :search_pending
       get :search_processed
@@ -680,7 +686,7 @@ Rails.application.routes.draw do
   end
 
   # :show and :update would take a space ID and use the logged in session user ID
-  resources :walk_in_safety_sheets, except: :destroy
+  resources :walk_in_safety_sheets, except: %i[new destroy]
 
   # namespace :help do
   #   get 'main', path: '/'
@@ -694,16 +700,20 @@ Rails.application.routes.draw do
   resources :users, path: "/", param: :username, except: %i[edit destroy] do
     collection do
       get :resend_confirmation
+      # the emailed link (GET) only shows a confirmation page; the
+      # change is applied by its POST, and requesting one needs a POST with
+      # the current password.
       get :confirm_edited_email
+      post :confirm_edited_email, action: :apply_edited_email
       get :reset_password_form
       patch :reset_password_confirmation
       get :confirm
-      post :change_programs
+      match :change_programs, via: %i[post patch]
       post :create, path: "/new"
-      get :remove_avatar
+      delete :remove_avatar
       post :flag
       post :unflag
-      get :change_email
+      post :change_email
       put :remove_flag
       get :unlock_account
       get :search, path: "/users/search"
@@ -712,6 +722,9 @@ Rails.application.routes.draw do
     get "likes", on: :member
     patch "change_password", on: :member
   end
+
+  # Must come before the /:user_username catch-all below
+  get "/repositories/populate_users", to: "repositories#populate_users"
 
   # REPOSITORY RESOURCES
   # /:user_username/:id.title-is-ignored
@@ -749,8 +762,6 @@ Rails.application.routes.draw do
       post 'pass_authenticate'
     end
   end
-
-  get "/repositories/populate_users", to: "repositories#populate_users"
 
   namespace :makes, path: "makes/:user_username/:id" do
     post "create"

@@ -13,7 +13,7 @@ lab sessions are created when users tap in. They have a sign in time, and a sign
 
 ## The Kiosk Controller
 
-The kiosk requires a staff or admin login to access, because having it exposed to the internet means anyone can put curl in a loop and spam people's emails the login link
+The kiosk requires a staff or admin login to access, because it emails the login link
 
 The controller sends a sign link, people click on the link, and they're signed in or out of a space.
 
@@ -29,7 +29,7 @@ Now i'm not sure if encrypting username+expiry_date+salt is good enough, but tha
 
 https://security.stackexchange.com/questions/252585/security-of-email-otp-authentication
 
-This is probably a simpler way, similar to how my bank does it. We send an OTP valid for 10 mins, user clicks on the link and it submits the OTP authenticating with the server. Downside is that the OTP will be valid for the full 10 mins, emails are 'slow' delivery, and email DDoS is still a risk unless we rate limit something down the chain.
+This is probably a simpler way, similar to how my bank does it. We send an OTP valid for 10 mins, user clicks on the link and it submits the OTP authenticating with the server. Downside is that the OTP will be valid for the full 10 mins, emails are 'slow' delivery, and the emails need a rate limit somewhere down the chain.
 
 ## Simple way
 

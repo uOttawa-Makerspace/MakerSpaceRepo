@@ -137,7 +137,6 @@ class KeyRequestsController < SessionsController
       :read_lab_rules,
       :read_policies,
       :read_agreement,
-      :status,
       :question_1,
       :question_2,
       :question_3,

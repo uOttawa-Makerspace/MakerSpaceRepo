@@ -119,14 +119,14 @@ RSpec.describe ProjectKitsController, type: :controller do
     end
   end
 
-  describe "GET #mark_delivered" do
+  describe "PATCH #mark_delivered" do
     context "mark_delivered" do
       it "should accept admin requests" do
         kit = create(:project_kit)
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :mark_delivered, params: { project_kit_id: kit.id }
+        patch :mark_delivered, params: { project_kit_id: kit.id }
         expect(response).to redirect_to project_kits_path
         expect(flash[:notice]).to eq("The kit has been marked as delivered.")
         expect(ProjectKit.last.delivered?).to be_truthy
@@ -136,7 +136,7 @@ RSpec.describe ProjectKitsController, type: :controller do
         staff = create(:user, :staff)
         session[:user_id] = staff.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :mark_delivered, params: { project_kit_id: "" }
+        patch :mark_delivered, params: { project_kit_id: "" }
         expect(response).to redirect_to project_kits_path
         expect(flash[:alert]).to eq("Project kit ID was not found.")
       end
@@ -145,7 +145,7 @@ RSpec.describe ProjectKitsController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :mark_delivered, params: { project_kit_id: "" }
+        patch :mark_delivered, params: { project_kit_id: "" }
         expect(response).to redirect_to project_kits_path
         # expect(flash[:alert]).to eq("You must be a part of the Development Program to access this area.")
       end

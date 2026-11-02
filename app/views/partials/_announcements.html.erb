@@ -1,48 +1,13 @@
-<% if current_user.admin? %>
-  <% Announcement.active.admins.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a| %>
-    <div class="alert alert-secondary text-center alert-dismissible fade show" role="alert">
-      <b>To Admins:</b> <%= a.description %>
-      <%= button_to '', dismiss_announcements_path(announcement_id: a.id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' } %>
-    </div>
-  <% end %>
-<% end %>
-
-<% if current_user.staff? %>
-  <% Announcement.active.staff.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a| %>
-    <div class="alert alert-info text-center alert-dismissible fade show" role="alert">
-      <b>To Staff:</b> <%= a.description %>
-      <%= button_to '', dismiss_announcements_path(announcement_id: a.id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' } %>
-    </div>
-  <% end %>
-<% end %>
-
-<% if !Announcement.active.regular_user.blank? && signed_in? %>
-  <% Announcement.active.all_users.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a| %>
-    <div class="alert alert-primary text-center alert-dismissible fade show" role="alert">
-      <b>To All Users: </b><%= a.description %>
-      <%= button_to '', dismiss_announcements_path(announcement_id: a.id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' } %>
-    </div>
-  <% end %>
-<% end %>
-
-<% unless Announcement.active.all_users.blank? %>
-    <% Announcement.active.all_users.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a| %>
-        <div class="alert alert-primary text-center alert-dismissible fade show" role="alert">
-            <b>To All Visitors: </b><%= a.description %>
-            <% if signed_in? %>
-                <%= button_to '', dismiss_announcements_path(announcement_id: a.id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' } %>
-            <% else %>
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            <% end %>
-        </div>
+<%# The list comes from AnnouncementsHelper#visible_announcements (cached per
+    user); the dismiss forms are rendered live (session-bound CSRF tokens). %>
+<% visible_announcements.each do |group, id, description| %>
+  <% css, label = AnnouncementsHelper::ANNOUNCEMENT_BAR_STYLES.fetch(group) %>
+  <div class="alert <%= css %> text-center alert-dismissible fade show" role="alert">
+    <b><%= label %></b> <%= description %>
+    <% if signed_in? %>
+      <%= button_to '', dismiss_announcements_path(announcement_id: id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' } %>
+    <% else %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     <% end %>
-<% end %>
-
-<% if current_user.volunteer? || current_user.staff? %>
-  <% Announcement.active.volunteers.where.not(id: AnnouncementDismiss.where(user_id: current_user.id).pluck(:announcement_id)).find_each do |a| %>
-    <div class="alert alert-warning text-center alert-dismissible fade show" role="alert">
-      <b>To Volunteers:</b> <%= a.description %>
-      <%= button_to '', dismiss_announcements_path(announcement_id: a.id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' } %>
-    </div>
-  <% end %>
+  </div>
 <% end %>
