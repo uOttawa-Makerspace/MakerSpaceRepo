@@ -41,6 +41,14 @@ class CustomWebhooksController < ApplicationController
     head :ok
   end
 
+  # Cash payments are only recorded as fulfilled in Shopify, so they're treated as paid.
+  # Orders already paid were handled by orders_paid: skipped to avoid counting twice.
+  def orders_fulfilled
+    return head :ok if webhook_params["financial_status"] == "paid"
+
+    orders_paid
+  end
+
   private
 
   def webhook_params
