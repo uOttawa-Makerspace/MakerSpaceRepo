@@ -1,0 +1,74 @@
+en:
+  rewards:
+    index:
+      title: "CC Points"
+      subtitle: "Earn points by participating in the CEED community and redeem them for real rewards."
+      wallet:
+        title: "Your CC Balance"
+        redeem_button: "Redeem Points"
+      what:
+        title: "What Are CC Points?"
+        # %{store_link} = link to the MakerStore
+        body_html: "CEED Credit (CC) Points are CEED's way of recognizing and rewarding participation in the maker community. Any involvement, whether by completing trainings, helping peers, or taking part in events, earns CC Points that can be redeemed for discounts at the %{store_link}."
+      earn:
+        title: "How to Earn CC Points"
+        training:
+          title: "Complete Training"
+          body: "Finish training modules and certifications for CEED equipment."
+        events:
+          title: "Attend Events"
+          body: "Participate in CEED workshops, events, and community activities."
+        volunteer:
+          title: "Volunteer & Contribute"
+          body: "Help during events, mentor other students, or contribute to community projects."
+        qr_codes:
+          title: "Scan CC Codes"
+          body: "Scan QR codes distributed at CEED events to instantly add CC Points."
+        projects:
+          title: "Share Projects"
+          body: "Upload and share your maker projects on MakerRepo."
+        achievements:
+          title: "Achievements"
+          body: "Unlock badges and milestones within the Development Program."
+      redeem:
+        title: "How to Redeem CC Points"
+        step1:
+          title: "Earn CC Points"
+          body: "Any involvement earns CC Points."
+        step2:
+          title: "Choose a Reward"
+          # %{redemption_link} = link to the redemption page, text from link_text
+          body_html: "Visit the %{redemption_link} and pick a discount tier."
+          link_text: "redemption page"
+        step3:
+          title: "Get Your Code"
+          body: "CC Points are deducted and you receive a unique discount code."
+        step4:
+          title: "Shop & Save"
+          # %{store_link} = link to the MakerStore
+          body_html: "Use the code at checkout in the %{store_link}."
+      activity:
+        title: "Your Recent CC Activity"
+        date: "Date"
+        points: "CC Points"
+      faq:
+        title: "Frequently Asked Questions"
+        expire:
+          question: "Do CC Points expire?"
+          answer: "No, CC Points do not expire. They stay in your account until you choose to redeem them."
+        transfer:
+          question: "Can I transfer CC Points to another user?"
+          answer: "CC Points are tied to your individual account and cannot be transferred at this time."
+        discount:
+          question: "Where can I use my discount codes?"
+          # %{store_link} = link to the MakerStore, %{codes_link} = link to the discount codes page
+          answer_html: "Discount codes can be used at checkout on the %{store_link}. Copy the code from your %{codes_link} and paste it at checkout."
+          codes_link_text: "discount codes page"
+        contact:
+          question: "I have another question. Who do I contact?"
+          # %{email_link} = mailto link to the MakerRepo email
+          answer_html: "Send us an email at %{email_link} and we'll be happy to help."
+      sign_in_cta:
+        title: "Ready to Start Earning?"
+        body: "Sign in to view your CC balance and start redeeming rewards."
+        button: "Sign In"

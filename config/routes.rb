@@ -32,12 +32,20 @@ Rails.application.routes.draw do
     collection { get :populate_kit_users }
   end
 
-  resources :cc_moneys, only: [:index] do
+  resources :cc_moneys, path: "rewards", only: [:index] do
     collection do
       get :redeem
       get :link_cc_to_user
     end
   end
+
+  # Keep old /cc_moneys links (already-sent emails, bookmarks) working
+  get "/cc_moneys(/*rest)",
+      to:
+        redirect { |params, req|
+          ["/rewards", params[:rest]].compact.join("/") +
+            (req.query_string.present? ? "?#{req.query_string}" : "")
+        }
 
   resources :carts, only: [:index]
   resources :order_items, only: %i[create update destroy] do

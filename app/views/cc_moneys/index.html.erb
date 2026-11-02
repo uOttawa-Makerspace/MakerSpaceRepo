@@ -1,12 +1,13 @@
+<% store_link = link_to('MakerStore', 'http://makerstore.ca/', target: :blank) %>
 <div class="container py-5">
 
   <!-- Hero -->
   <div class="text-center mb-5">
     <h1 class="display-4 fw-bold">
-      <i class="fa fa-money text-warning"></i> CC Points
+      <i class="fa fa-money text-warning"></i> <%= t('rewards.index.title') %>
     </h1>
     <p class="lead text-muted">
-      Earn points by participating in the MakerSpace community and redeem them for real rewards.
+      <%= t('rewards.index.subtitle') %>
     </p>
   </div>
 
@@ -16,11 +17,11 @@
       <div class="col-md-6">
         <div class="card border-0 shadow text-center">
           <div class="card-body py-4">
-            <h5 class="text-muted mb-1">Your CC Balance</h5>
+            <h5 class="text-muted mb-1"><%= t('rewards.index.wallet.title') %></h5>
             <h2 class="display-5 fw-bold text-primary">
-              <%= @user_wallet %> <small class="fs-4">CCs</small>
+              <%= @user_wallet %>
             </h2>
-            <%= link_to 'Redeem Points', new_discount_code_path, class: 'btn btn-primary mt-2' %>
+            <%= link_to t('rewards.index.wallet.redeem_button'), new_discount_code_path, class: 'btn btn-primary mt-2' %>
           </div>
         </div>
       </div>
@@ -34,14 +35,10 @@
         <div class="card-body p-4">
           <h2 class="card-title mb-3">
             <i class="fa fa-question-circle text-primary me-2"></i>
-            What Are CC Points?
+            <%= t('rewards.index.what.title') %>
           </h2>
           <p class="card-text fs-5">
-            CC (Community Contribution) points are the MakerSpace's way of recognizing and rewarding
-            your participation in the maker community. Every time you contribute — whether by completing
-            training, helping peers, or engaging with events — you earn CC points that can be
-            redeemed for discounts at the
-            <%= link_to 'MakerStore', 'http://makerstore.ca/', target: :blank %>.
+            <%= t('rewards.index.what.body_html', store_link: store_link) %>
           </p>
         </div>
       </div>
@@ -53,16 +50,16 @@
     <div class="col-lg-10">
       <h2 class="text-center mb-4">
         <i class="fa fa-line-chart text-success me-2"></i>
-        How to Earn CC Points
+        <%= t('rewards.index.earn.title') %>
       </h2>
       <div class="row g-4">
         <div class="col-md-4">
           <div class="card h-100 border-0 shadow-sm text-center">
             <div class="card-body p-4">
               <i class="fa fa-graduation-cap fa-3x text-primary mb-3"></i>
-              <h5 class="card-title">Complete Training</h5>
+              <h5 class="card-title"><%= t('rewards.index.earn.training.title') %></h5>
               <p class="card-text text-muted">
-                Finish training modules and certifications for MakerSpace equipment.
+                <%= t('rewards.index.earn.training.body') %>
               </p>
             </div>
           </div>
@@ -71,9 +68,9 @@
           <div class="card h-100 border-0 shadow-sm text-center">
             <div class="card-body p-4">
               <i class="fa fa-calendar-check-o fa-3x text-success mb-3"></i>
-              <h5 class="card-title">Attend Events</h5>
+              <h5 class="card-title"><%= t('rewards.index.earn.events.title') %></h5>
               <p class="card-text text-muted">
-                Participate in MakerSpace workshops, events, and community activities.
+                <%= t('rewards.index.earn.events.body') %>
               </p>
             </div>
           </div>
@@ -82,9 +79,9 @@
           <div class="card h-100 border-0 shadow-sm text-center">
             <div class="card-body p-4">
               <i class="fa fa-users fa-3x text-warning mb-3"></i>
-              <h5 class="card-title">Volunteer &amp; Contribute</h5>
+              <h5 class="card-title"><%= t('rewards.index.earn.volunteer.title') %></h5>
               <p class="card-text text-muted">
-                Help during events, mentor other students, or contribute to community projects.
+                <%= t('rewards.index.earn.volunteer.body') %>
               </p>
             </div>
           </div>
@@ -93,9 +90,9 @@
           <div class="card h-100 border-0 shadow-sm text-center">
             <div class="card-body p-4">
               <i class="fa fa-qrcode fa-3x text-info mb-3"></i>
-              <h5 class="card-title">Scan CC Codes</h5>
+              <h5 class="card-title"><%= t('rewards.index.earn.qr_codes.title') %></h5>
               <p class="card-text text-muted">
-                Scan QR codes distributed at MakerSpace events to instantly add CC points.
+                <%= t('rewards.index.earn.qr_codes.body') %>
               </p>
             </div>
           </div>
@@ -104,9 +101,9 @@
           <div class="card h-100 border-0 shadow-sm text-center">
             <div class="card-body p-4">
               <i class="fa fa-lightbulb-o fa-3x text-danger mb-3"></i>
-              <h5 class="card-title">Share Projects</h5>
+              <h5 class="card-title"><%= t('rewards.index.earn.projects.title') %></h5>
               <p class="card-text text-muted">
-                Upload and share your maker projects on MakerRepo.
+                <%= t('rewards.index.earn.projects.body') %>
               </p>
             </div>
           </div>
@@ -115,9 +112,9 @@
           <div class="card h-100 border-0 shadow-sm text-center">
             <div class="card-body p-4">
               <i class="fa fa-trophy fa-3x text-secondary mb-3"></i>
-              <h5 class="card-title">Achievements</h5>
+              <h5 class="card-title"><%= t('rewards.index.earn.achievements.title') %></h5>
               <p class="card-text text-muted">
-                Unlock badges and milestones within the Development Program.
+                <%= t('rewards.index.earn.achievements.body') %>
               </p>
             </div>
           </div>
@@ -131,7 +128,7 @@
     <div class="col-lg-10">
       <h2 class="text-center mb-4">
         <i class="fa fa-gift text-danger me-2"></i>
-        How to Redeem CC Points
+        <%= t('rewards.index.redeem.title') %>
       </h2>
       <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
@@ -140,29 +137,29 @@
               <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
                 <span class="fw-bold fs-5">1</span>
               </div>
-              <h6>Earn CC Points</h6>
-              <p class="text-muted small">Participate in MakerSpace activities to accumulate points.</p>
+              <h6><%= t('rewards.index.redeem.step1.title') %></h6>
+              <p class="text-muted small"><%= t('rewards.index.redeem.step1.body') %></p>
             </div>
             <div class="col-md-3 mb-3">
               <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
                 <span class="fw-bold fs-5">2</span>
               </div>
-              <h6>Choose a Reward</h6>
-              <p class="text-muted small">Visit the <%= link_to 'redemption page', new_discount_code_path %> and pick a discount tier.</p>
+              <h6><%= t('rewards.index.redeem.step2.title') %></h6>
+              <p class="text-muted small"><%= t('rewards.index.redeem.step2.body_html', redemption_link: link_to(t('rewards.index.redeem.step2.link_text'), new_discount_code_path)) %></p>
             </div>
             <div class="col-md-3 mb-3">
               <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
                 <span class="fw-bold fs-5">3</span>
               </div>
-              <h6>Get Your Code</h6>
-              <p class="text-muted small">CC points are deducted and you receive a unique discount code.</p>
+              <h6><%= t('rewards.index.redeem.step3.title') %></h6>
+              <p class="text-muted small"><%= t('rewards.index.redeem.step3.body') %></p>
             </div>
             <div class="col-md-3 mb-3">
               <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
                 <span class="fw-bold fs-5">4</span>
               </div>
-              <h6>Shop &amp; Save</h6>
-              <p class="text-muted small">Use the code at checkout in the <%= link_to 'MakerStore', 'http://makerstore.ca/', target: :blank %>.</p>
+              <h6><%= t('rewards.index.redeem.step4.title') %></h6>
+              <p class="text-muted small"><%= t('rewards.index.redeem.step4.body_html', store_link: store_link) %></p>
             </div>
           </div>
         </div>
@@ -176,14 +173,14 @@
       <div class="col-lg-10">
         <h2 class="text-center mb-4">
           <i class="fa fa-history text-secondary me-2"></i>
-          Your Recent CC Activity
+          <%= t('rewards.index.activity.title') %>
         </h2>
         <div class="table-responsive">
           <table class="table table-striped">
             <thead class="table-primary">
               <tr class="text-center">
-                <th>Date</th>
-                <th>CC Points</th>
+                <th><%= t('rewards.index.activity.date') %></th>
+                <th><%= t('rewards.index.activity.points') %></th>
               </tr>
             </thead>
             <tbody>
@@ -209,41 +206,39 @@
     <div class="col-lg-10">
       <h2 class="text-center mb-4">
         <i class="fa fa-question-circle text-info me-2"></i>
-        Frequently Asked Questions
+        <%= t('rewards.index.faq.title') %>
       </h2>
       <div class="card border-0 shadow-sm mb-3">
         <div class="card-body p-4">
-          <h5 class="fw-bold mb-2">Do CC points expire?</h5>
+          <h5 class="fw-bold mb-2"><%= t('rewards.index.faq.expire.question') %></h5>
           <p class="mb-0 text-muted">
-            No, CC points do not expire. They stay in your account until you choose to redeem them.
+            <%= t('rewards.index.faq.expire.answer') %>
           </p>
         </div>
       </div>
       <div class="card border-0 shadow-sm mb-3">
         <div class="card-body p-4">
-          <h5 class="fw-bold mb-2">Can I transfer CC points to another user?</h5>
+          <h5 class="fw-bold mb-2"><%= t('rewards.index.faq.transfer.question') %></h5>
           <p class="mb-0 text-muted">
-            CC points are tied to your individual account and cannot be transferred at this time.
+            <%= t('rewards.index.faq.transfer.answer') %>
           </p>
         </div>
       </div>
       <div class="card border-0 shadow-sm mb-3">
         <div class="card-body p-4">
-          <h5 class="fw-bold mb-2">Where can I use my discount codes?</h5>
+          <h5 class="fw-bold mb-2"><%= t('rewards.index.faq.discount.question') %></h5>
           <p class="mb-0 text-muted">
-            Discount codes can be used at checkout on the
-            <%= link_to 'MakerStore', 'http://makerstore.ca/', target: :blank %>.
-            Copy the code from your <%= link_to 'discount codes page', discount_codes_path %> and paste it at checkout.
+            <%= t('rewards.index.faq.discount.answer_html',
+                  store_link: store_link,
+                  codes_link: link_to(t('rewards.index.faq.discount.codes_link_text'), discount_codes_path)) %>
           </p>
         </div>
       </div>
       <div class="card border-0 shadow-sm mb-3">
         <div class="card-body p-4">
-          <h5 class="fw-bold mb-2">I have another question. Who do I contact?</h5>
+          <h5 class="fw-bold mb-2"><%= t('rewards.index.faq.contact.question') %></h5>
           <p class="mb-0 text-muted">
-            Send us an email at
-            <a href="mailto:uottawa.makerepo@gmail.com">uottawa.makerepo@gmail.com</a>
-            and we'll be happy to help.
+            <%= t('rewards.index.faq.contact.answer_html', email_link: mail_to('uottawa.makerepo@gmail.com')) %>
           </p>
         </div>
       </div>
@@ -255,9 +250,9 @@
     <div class="text-center mb-5">
       <div class="card border-0 shadow bg-primary text-white">
         <div class="card-body py-5">
-          <h3 class="fw-bold mb-3">Ready to Start Earning?</h3>
-          <p class="fs-5 mb-4">Sign in to view your CC balance and start redeeming rewards.</p>
-          <%= link_to 'Sign In', new_user_session_path, class: 'btn btn-light btn-lg fw-bold' %>
+          <h3 class="fw-bold mb-3"><%= t('rewards.index.sign_in_cta.title') %></h3>
+          <p class="fs-5 mb-4"><%= t('rewards.index.sign_in_cta.body') %></p>
+          <%= link_to t('rewards.index.sign_in_cta.button'), new_user_session_path, class: 'btn btn-light btn-lg fw-bold' %>
         </div>
       </div>
     </div>
