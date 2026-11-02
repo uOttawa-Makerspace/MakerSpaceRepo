@@ -1,5 +1,5 @@
 <div id="revoke-order-item-modal-rendered" class="d-grid gap-3">
-    <%= form_for(@order_item, url: revoke_project_proficient_projects_path, html: { multipart: true }, method: :get) do |f| %>
+    <%= form_for(@order_item, url: revoke_project_proficient_projects_path, html: { multipart: true }, method: :post) do |f| %>
         <%= hidden_field_tag(:oi_id, @order_item.id) %> 
         <%= f.label :admin_comments, 'Comments/Reason for revoking: ', class: 'form-label' %>
         <%= f.trix_editor :admin_comments, class: 'form-control mb-3' %>

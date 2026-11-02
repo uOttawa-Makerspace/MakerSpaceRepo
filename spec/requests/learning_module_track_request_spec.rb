@@ -1,4 +1,165 @@
 require "rails_helper"
 
-RSpec.describe "LearningModuleTracks", type: :request do
+# Chunk 12 characterization of LearningModuleTrackController (start / completed
+# are POSTs (were state-changing GETs), no ownership concept: a track always belongs
+# to current_user). Inherits DevelopmentProgramsController#grant_access, which is
+# only `signed_in` (guests go to /login?back_to=...).
+
+RSpec.describe "Learning module tracks", type: :request do
+  let(:training) { create(:training) }
+  let(:learning_module) { create(:learning_module, training: training, title: "Track me") }
+  let(:user) { create(:user, :regular_user) }
+
+  describe "role matrix" do
+    {
+      "index" => -> { get learning_module_track_index_path },
+      "start" => ->(lm) { post start_learning_module_track_index_path(learning_module_id: lm.id) },
+      "completed" => ->(lm) { post completed_learning_module_track_index_path(learning_module_id: lm.id) }
+    }.each do |name, request|
+      it "sends a guest to the login page for #{name} and persists nothing" do
+        expect do
+          request.arity.zero? ? instance_exec(&request) : instance_exec(learning_module, &request)
+        end.not_to change(LearningModuleTrack, :count)
+        expect(response).to have_http_status(:found)
+        # back_to is stored only for replayable (GET) requests; other verbs get a bare /login
+        expect(response.location).to(
+          integration_session.request.get? ? start_with("http://www.example.com/login?back_to=") : eq("http://www.example.com/login")
+        )
+      end
+    end
+
+    %i[regular staff admin volunteer].each do |role|
+      it "lets a #{role} start a module" do
+        signed = sign_in_as(role)
+        expect { post start_learning_module_track_index_path(learning_module_id: learning_module.id) }
+          .to change { signed.learning_module_tracks.count }.by(1)
+        expect(response).to redirect_to(learning_area_path(learning_module.id))
+      end
+    end
+  end
+
+  describe "GET /learning_module_track (index)" do
+    it "renders the skills overview with each skill's trainings" do
+      skill = create(:skill, name: "Fabrication skill")
+      create(:training, skill: skill, name_en: "Laser Cutting EN", name_fr: "Laser FR")
+      sign_in_as(:regular)
+      get learning_module_track_index_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Fabrication skill").and include("Laser Cutting EN")
+    end
+
+    it "counts finished modules per training for the signed-in user" do
+      skill = create(:skill)
+      t = create(:training, skill: skill)
+      done = create(:learning_module, training: t, title: "Done one")
+      create(:learning_module, training: t, title: "Todo one")
+      signed = sign_in_as(:regular)
+      create(:learning_module_track, :completed, user: signed, learning_module: done)
+      get learning_module_track_index_path
+      expect(response.body).to include("Modules finished : 1 / 2")
+      expect(response.body).to include("Todo one")
+    end
+  end
+
+  describe "POST /learning_module_track/start" do
+    before { sign_in_as(:regular) }
+
+    it "creates an In progress track for the user, flashes a notice and redirects to the module" do
+      post start_learning_module_track_index_path(learning_module_id: learning_module.id)
+      expect(response).to redirect_to(learning_area_path(learning_module.id))
+      expect(flash[:notice]).to eq("You have successfully started the learning module !")
+      track = LearningModuleTrack.last
+      expect(track.learning_module).to eq(learning_module)
+      expect(track.status).to eq("in_progress")
+      expect(track.scorm_state).to be_nil
+    end
+
+    it "does not create a second track when started twice and flashes the error alert" do
+      post start_learning_module_track_index_path(learning_module_id: learning_module.id)
+      expect { post start_learning_module_track_index_path(learning_module_id: learning_module.id) }
+        .not_to change(LearningModuleTrack, :count)
+      expect(response).to redirect_to(learning_area_path(learning_module.id))
+      expect(flash[:alert]).to start_with("An error has occurred while starting the learning module")
+    end
+
+    it "does not reset a Completed track when started again" do
+      post start_learning_module_track_index_path(learning_module_id: learning_module.id)
+      LearningModuleTrack.last.update!(status: "Completed")
+      post start_learning_module_track_index_path(learning_module_id: learning_module.id)
+      expect(LearningModuleTrack.last.status).to eq("completed")
+    end
+
+    # start/completed assume the module exists; an unknown id is a 500 (nil.learning_module_tracks)
+    it "answers 500 for an unknown module id" do
+      expect { post start_learning_module_track_index_path(learning_module_id: 0) }
+        .not_to change(LearningModuleTrack, :count)
+      expect(response).to have_http_status(:internal_server_error)
+      expect(error_text).to include("NoMethodError")
+    end
+  end
+
+  describe "POST /learning_module_track/completed" do
+    let!(:signed) { sign_in_as(:regular) }
+
+    it "marks the user's track Completed, flashes a notice and redirects to the module" do
+      track = create(:learning_module_track, user: signed, learning_module: learning_module)
+      post completed_learning_module_track_index_path(learning_module_id: learning_module.id)
+      expect(response).to redirect_to(learning_area_path(learning_module.id))
+      expect(flash[:notice]).to eq("You have successfully completed the learning module !")
+      expect(track.reload.status).to eq("completed")
+    end
+
+    it "is idempotent on an already completed track" do
+      track = create(:learning_module_track, :completed, user: signed, learning_module: learning_module)
+      post completed_learning_module_track_index_path(learning_module_id: learning_module.id)
+      expect(track.reload.status).to eq("completed")
+      expect(flash[:notice]).to eq("You have successfully completed the learning module !")
+    end
+
+    it "never touches another user's track of the same module" do
+      other = create(:learning_module_track, learning_module: learning_module)
+      create(:learning_module_track, user: signed, learning_module: learning_module)
+      post completed_learning_module_track_index_path(learning_module_id: learning_module.id)
+      expect(other.reload.status).to eq("in_progress")
+    end
+
+    # completing a module never started (no track) is a 500 (nil.update)
+    it "answers 500 when the user never started the module" do
+      post completed_learning_module_track_index_path(learning_module_id: learning_module.id)
+      expect(response).to have_http_status(:internal_server_error)
+      expect(LearningModuleTrack.count).to eq(0)
+    end
+
+    # completion is a POST; a link, prefetch or image tag (GET) does not complete a module.
+    it "completes with a POST" do
+      create(:learning_module_track, user: signed, learning_module: learning_module)
+      post completed_learning_module_track_index_path(learning_module_id: learning_module.id)
+      expect(signed.learning_module_tracks.completed.count).to eq(1)
+    end
+
+    it "does not complete on a GET (no route), changing nothing" do
+      track = create(:learning_module_track, user: signed, learning_module: learning_module)
+      get "/learning_module_track/completed", params: { learning_module_id: learning_module.id }
+      expect(response).to have_http_status(:not_found)
+      expect(track.reload.status).to eq("in_progress")
+    end
+  end
+
+  describe "GET /learning_module_track/start" do
+    # start is a POST too
+    it "does not start a module on a GET (no route), creating nothing" do
+      sign_in_as(:regular)
+      expect { get "/learning_module_track/start", params: { learning_module_id: learning_module.id } }
+        .not_to change(LearningModuleTrack, :count)
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "completion feeds the skills pages" do
+    it "shows the completed module in Training#learning_modules_completed" do
+      create(:learning_module_track, :completed, user: user, learning_module: learning_module)
+      expect(training.learning_modules_completed(user)).to eq([learning_module])
+      expect(training.learning_modules_completed(user, "Advanced")).to be_empty
+    end
+  end
 end

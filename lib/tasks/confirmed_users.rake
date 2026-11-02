@@ -11,7 +11,7 @@ namespace :confirmed_users do
     User
       .where(confirmed: false)
       .find_each do |user|
-        hash = Rails.application.message_verifier(:user).generate(user.id)
+        hash = user.generate_token_for(:email_confirmation)
         MsrMailer.confirmation_email(user, hash).deliver_now
       end
   end

@@ -149,14 +149,27 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
         expect(json_response.map { |e| e['id'] }).to include("event-#{@base_event.id}")
       end
 
-      it 'handles timezone parsing' do
-        expect {
-          get :json, params: {
-            id: @space.id,
-            start: Time.zone.now.iso8601,
-            end: 1.day.from_now.iso8601
-          }, format: :json
-        }.not_to raise_error
+      it 'parses the start/end params with their offset and renders events in the app zone' do
+        # 09:00-11:00 EST (-05:00) on 2027-03-10 is 14:00-16:00 UTC.
+        inside = create(:event, space: @space, draft: false, title: 'Inside',
+                                start_time: Time.utc(2027, 3, 10, 14, 0),
+                                end_time: Time.utc(2027, 3, 10, 16, 0))
+        starts_early = create(:event, space: @space, draft: false, title: 'StartsEarly',
+                                      start_time: Time.utc(2027, 3, 10, 13, 59),
+                                      end_time: Time.utc(2027, 3, 10, 15, 0))
+
+        get :json, params: {
+          id: @space.id,
+          start: '2027-03-10T09:00:00-05:00',
+          end: '2027-03-10T11:00:00-05:00'
+        }, format: :json
+
+        expect(response).to have_http_status(:success)
+        json_response = JSON.parse(response.body)
+        expect(json_response.map { |e| e['id'] }).to eq(["event-#{inside.id}"])
+        expect(json_response.first['start']).to eq('2027-03-10T09:00:00-05:00')
+        expect(json_response.first['end']).to eq('2027-03-10T11:00:00-05:00')
+        expect(json_response.map { |e| e['id'] }).not_to include("event-#{starts_early.id}")
       end
     end
 
@@ -167,7 +180,7 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
           draft: false,
           start_time: 1.day.from_now.beginning_of_week,
           end_time: 1.day.from_now.beginning_of_week + 2.hours,
-          recurrence_rule: 'FREQ=WEEKLY;BYDAY=MO;COUNT=4'
+          recurrence_rule: 'RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4'
         )
         
         @daily_event = create(:event,
@@ -175,7 +188,7 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
           draft: false,
           start_time: 2.hours.from_now,
           end_time: 3.hours.from_now,
-          recurrence_rule: 'FREQ=DAILY;COUNT=3'
+          recurrence_rule: 'RRULE:FREQ=DAILY;COUNT=3'
         )
       end
 
@@ -210,7 +223,9 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
 
       it 'handles RRULE with and without prefix' do
         event_with_prefix = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: "RRULE:FREQ=DAILY;COUNT=2")
-        event_without_prefix = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: "FREQ=DAILY;COUNT=2")
+        event_without_prefix = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: "RRULE:FREQ=DAILY;COUNT=2")
+        # a legacy row stored before the validator required the RRULE: prefix
+        event_without_prefix.update_column(:recurrence_rule, "FREQ=DAILY;COUNT=2")
 
         get :json, params: { id: @space.id }, format: :json
         json_response = JSON.parse(response.body)
@@ -220,12 +235,20 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
       end
 
       it 'handles malformed and empty recurrence rules' do
-        create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: 'INVALID_RULE')
-        create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: '')
+        invalid = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now)
+        # the model now refuses an unparseable rule, so store it the way legacy rows exist
+        invalid.update_column(:recurrence_rule, 'INVALID_RULE')
+        empty = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now, recurrence_rule: '')
 
-        expect {
-          get :json, params: { id: @space.id }, format: :json
-        }.not_to raise_error
+        get :json, params: { id: @space.id }, format: :json
+
+        expect(response).to have_http_status(:success)
+        json_response = JSON.parse(response.body)
+        # the unparseable rule falls back to the single event; the blank rule is a plain event
+        expect(json_response.select { |e| e['id'] == "event-#{invalid.id}" }.length).to eq(1)
+        expect(json_response.select { |e| e['id'] == "event-#{empty.id}" }.length).to eq(1)
+        expect(json_response.find { |e| e['id'] == "event-#{empty.id}" }['start'])
+          .to eq(empty.start_time.iso8601)
       end
     end
 

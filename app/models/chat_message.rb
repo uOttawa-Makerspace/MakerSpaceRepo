@@ -3,6 +3,7 @@ class ChatMessage < ApplicationRecord
   belongs_to :sender, class_name: 'User'
 
   validates :message, presence: true
+  validates :sender_id, presence: true
 
   after_save :schedule_notification_email
 
@@ -30,7 +31,7 @@ class ChatMessage < ApplicationRecord
   private
 
   def schedule_notification_email
-    return if recent_message_by_sender? || job_order.job_order_statuses.last&.job_status == JobStatus::DRAFT
+    return if recent_message_by_sender? || job_order.latest_status&.job_status == JobStatus.draft
 
     recipients = job_order.chat_messages
                   .where.not(sender_id: sender_id)
@@ -43,7 +44,6 @@ class ChatMessage < ApplicationRecord
     all_recipients = (recipients + additional_recipients).uniq - [sender]
 
     ChatMessageMailer.new_message(self, all_recipients).deliver_later if all_recipients.any?
-    # ChatNotificationJob.set(wait: 1.hour).perform_later(id)
   end
 
   def recent_message_by_sender?

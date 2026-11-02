@@ -9,24 +9,7 @@ module ShopifyCartConcern
 
   class_methods do
     def start_shopify_session
-      config = Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {}
-
-      session = ShopifyAPI::Auth::Session.new(
-        shop: "#{config[:shop_name]}.myshopify.com",
-        access_token: config[:password]
-      )
-
-      ShopifyAPI::Context.setup(
-        api_key: config[:api_key],
-        api_secret_key: config[:password],
-        host: "#{config[:shop_name]}.myshopify.com",
-        is_embedded: false,
-        is_private: true,
-        api_version: config[:api_version]
-      )
-
-      ShopifyAPI::Context.activate_session(session)
-      session
+      ShopifyContext.start_session!
     end
   end
 

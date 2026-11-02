@@ -9,7 +9,10 @@ RSpec.describe JobTasksController, type: :controller do
   let(:job_service) { create(:job_service) }
   let!(:job_task) { create(:job_task, job_order: job_order, job_type: job_type, job_service: job_service) }
 
+  include JobOrderSpecHelpers
+
   before do
+    seed_job_statuses! # apply_owner_change! compares the order's status with the paid ones
     session[:user_id] = user.id
   end
 

@@ -97,19 +97,12 @@ end
 #   rake "exams:check_expired_exams"
 # end
 
-# Removed acclaim, no longer needed
-# every :day, at: "3am" do
-#   rake "badges:get_data"
-#   rake "badges:get_and_update_badge_templates"
-# end
-
 # every :day, at: "2am" do
 #   rake "update_wiki_users:run"
 # end
 
 every :day, at: "9am" do
   rake "print_order_notifications:two_weeks_reminder"
-  # rake "users_inactive:check"
 end
 
 # Use this file to easily define all of your cron jobs.

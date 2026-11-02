@@ -60,12 +60,12 @@ RSpec.describe DevelopmentProgramsController, type: :controller do
     end
   end
 
-  describe "GET /join_development_program" do
+  describe "POST /join_development_program" do
     context "joins the user to the development program" do
       it "should create a program with user" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
-        get :join_development_program
+        post :join_development_program
         expect(response).to redirect_to development_programs_path
         expect(flash[:notice]).to eq("You've joined the Development Program")
         expect(user.programs.pluck(:program_type)).to eq([Program::DEV_PROGRAM])

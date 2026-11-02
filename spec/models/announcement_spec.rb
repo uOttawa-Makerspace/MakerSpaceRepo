@@ -62,4 +62,53 @@ RSpec.describe Announcement, type: :model do
       end
     end
   end
+
+  describe "#active date and flag rules" do
+    let(:admin) { create(:user, :admin) }
+
+    def ann(**attrs)
+      create(:announcement, :all, { user: admin }.merge(attrs))
+    end
+
+    it "includes announcements with no end date, today, or the future" do
+      open_ended = ann(end_date: nil)
+      today = ann(end_date: Time.zone.today)
+      future = ann(end_date: Time.zone.today + 5)
+      expect(Announcement.active).to include(open_ended, today, future)
+    end
+
+    it "excludes past end dates and inactive ones" do
+      expired = ann(end_date: Time.zone.yesterday)
+      inactive = ann(active: false)
+      expect(Announcement.active).not_to include(expired, inactive)
+    end
+
+    it "does not filter by audience" do
+      goals = %w[all admin staff volunteer regular_user nonsense]
+      goals.each { |g| create(:announcement, user: admin, public_goal: g) }
+      expect(Announcement.active.pluck(:public_goal)).to match_array(goals)
+    end
+
+    it "has a regular_user scope" do
+      create(:announcement, :regular_user, user: admin)
+      expect(Announcement.regular_user.count).to eq(1)
+    end
+  end
+
+  describe "associations" do
+    it "requires a user" do
+      expect(Announcement.new(description: "x")).not_to be_valid
+    end
+
+    it "destroys dismissals with it" do
+      admin = create(:user, :admin)
+      a = create(:announcement, :all, user: admin)
+      AnnouncementDismiss.create!(user: admin, announcement: a)
+      expect { a.destroy }.to change(AnnouncementDismiss, :count).by(-1)
+    end
+
+    it "does not validate description or public_goal" do
+      expect(Announcement.new(user: create(:user, :admin))).to be_valid
+    end
+  end
 end

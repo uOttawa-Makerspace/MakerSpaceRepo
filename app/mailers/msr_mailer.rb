@@ -7,11 +7,10 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, subject: "Makerepo | Please confirm your email")
   end
 
-  def email_confirmation_email(new_email, user, user_hash, email_hash)
+  def email_confirmation_email(new_email, user, token)
     @new_email = new_email
     @user = user
-    @email_hash = email_hash
-    @user_hash = user_hash
+    @token = token
     mail(to: new_email, subject: "Makerepo | Please confirm your new email")
   end
 
@@ -211,15 +210,9 @@ class MsrMailer < ApplicationMailer
   #   mail(to: email, subject: 'New password for MakerRepo')
   # end
 
-  def forgot_password(email, user_hash, expiry_date_hash)
-    @user_hash = user_hash
-    @expiry_date_hash = expiry_date_hash
+  def forgot_password(email, token)
+    @token = token
     mail(to: email, subject: "Reset your MakerRepo password")
-  end
-
-  def send_inactive_email(user)
-    @user = user
-    mail(to: @user.email, subject: "Inactive MakerRepo password")
   end
 
   def send_training_report(to)
@@ -357,16 +350,33 @@ class MsrMailer < ApplicationMailer
     mail(to: email, subject: "Please Sign The Release Agreement!")
   end
 
-  def issue_email(name, email, subject, comments, share_email)
+  def issue_email(name, email, subject, comments, share_email, app_version = nil)
     @name = name
     @email = email
     @subject = subject
     @comments = comments
     @share_email = share_email
+    @app_version = app_version
 
     mail(
       to: @email,
       bcc: "uottawa.makerepo@gmail.com",
+      subject: "Issue Report | #{@subject}"
+    )
+  end
+
+  # Anonymous /api/v1 support requests: goes to the team only. The reporter's (unverified)
+  # address is in Reply-To and the body, never To/Cc/Bcc, so this cannot relay mail to third parties.
+  def issue_email_to_team(name, email, subject, comments, app_version = nil)
+    @name = name
+    @email = email
+    @subject = subject
+    @comments = comments
+    @app_version = app_version
+
+    mail(
+      to: "uottawa.makerepo@gmail.com",
+      reply_to: @email,
       subject: "Issue Report | #{@subject}"
     )
   end
@@ -458,29 +468,6 @@ class MsrMailer < ApplicationMailer
     mail(
       to: email_volunteer,
       subject: "Your request was updated: #{@volunteer_task.title.capitalize}"
-    )
-  end
-
-  def send_email_for_stripe_transfer(
-    transfer_id,
-    date,
-    amount,
-    bank,
-    routing_number
-  )
-    @transfer_id = transfer_id
-    @date = date
-    @amount = amount.to_f / 100 # Amount is given in cents for some reason
-    @bank = bank
-    @routing_number = routing_number
-    @faculty_of_eng_number =
-      Rails.application.credentials[Rails.env.to_sym][:stripe][
-        :faculty_of_eng_number
-      ]
-    mail(
-      to: Rails.application.credentials[Rails.env.to_sym][:stripe][:to_email],
-      cc: Rails.application.credentials[Rails.env.to_sym][:stripe][:cc_email],
-      subject: "STRIPE TRANSFER MAKERSPACE: #{date}"
     )
   end
 

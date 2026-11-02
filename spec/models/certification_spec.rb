@@ -160,4 +160,90 @@ RSpec.describe Certification, type: :model do
       end
     end
   end
+
+  describe "Chunk 12: awarding rules and levels" do
+    let(:training) { create(:training) }
+    let(:ts) { create(:training_session, training: training, level: "Beginner") }
+    let(:user) { create(:user, :regular_user) }
+
+    it "requires a level among Beginner/Intermediate/Advanced" do
+      cert = Certification.new(user: user, level: "Expert")
+      expect(cert).not_to be_valid
+      expect(cert.errors[:level]).to eq(["A level is required."])
+      expect(Certification.new(user: user, level: "Advanced")).to be_valid
+    end
+
+    # certify_user no longer adds a second active certification for the same user + training + level
+    it "certify_user creates one active certification per user, training and level, without checking exam results" do
+      expect { 2.times { Certification.certify_user(ts.id, user.id, "Beginner") } }.to change(Certification, :count).by(1)
+    end
+
+    it "certify_user returns the existing certification for a repeat, even from another session of the same training" do
+      first = Certification.certify_user(ts.id, user.id, "Beginner")
+      other_session = create(:training_session, user: ts.user, training: training, level: "Beginner")
+      expect(Certification.certify_user(other_session.id, user.id, "Beginner")).to eq(first)
+    end
+
+    # the repeat check also sees certifications without a training session
+    it "certify_user returns the certification a proficient project already granted for that training and level" do
+      project = create(:proficient_project, training: training)
+      granted = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+      create(:proficient_project_session, certification: granted, user: user, proficient_project: project, level: "Beginner")
+      expect { expect(Certification.certify_user(ts.id, user.id, "Beginner")).to eq(granted) }
+        .not_to change(Certification, :count)
+    end
+
+    it "certify_user does not treat a project certification of another training, level or user as a repeat" do
+      project = create(:proficient_project, training: create(:training))
+      granted = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+      create(:proficient_project_session, certification: granted, user: user, proficient_project: project, level: "Beginner")
+      other_level = create(:certification, user: user, training_session: nil, training: nil, level: "Advanced")
+      create(:proficient_project_session, certification: other_level, user: user, level: "Advanced",
+                                          proficient_project: create(:proficient_project, training: training))
+      expect { Certification.certify_user(ts.id, user.id, "Beginner") }.to change(Certification, :count).by(1)
+      expect { Certification.certify_user(ts.id, create(:user, :regular_user).id, "Advanced") }
+        .to change(Certification, :count).by(1)
+    end
+
+    it "certify_user still certifies a different level, a different user, or after the earlier one was deactivated" do
+      first = Certification.certify_user(ts.id, user.id, "Beginner")
+      expect { Certification.certify_user(ts.id, user.id, "Advanced") }.to change(Certification, :count).by(1)
+      expect { Certification.certify_user(ts.id, create(:user, :regular_user).id, "Beginner") }.to change(Certification, :count).by(1)
+      first.update!(active: false)
+      expect { Certification.certify_user(ts.id, user.id, "Beginner") }.to change(Certification, :count).by(1)
+    end
+
+    it "certify_user returns an unsaved record for an invalid level" do
+      cert = Certification.certify_user(ts.id, user.id, "Nope")
+      expect(cert).not_to be_persisted
+    end
+
+    it "resolves training and trainer through the training session" do
+      cert = create(:certification, user: user, training_session: ts, training: training)
+      expect(cert.training).to eq(training)
+      expect(cert.trainer).to eq(ts.user)
+      expect(cert.get_name_en).to eq(training.name_en)
+      expect(cert.get_skill_id).to eq(training.skill_id)
+    end
+
+    it "existent_certification finds a certification of the same training at the same session level, else false" do
+      create(:certification, user: user, training_session: ts, training: training, level: "Beginner")
+      expect(Certification.existent_certification(user, training, "Beginner")).to be_a(Certification)
+      expect(Certification.existent_certification(user, training, "Advanced")).to be(false)
+    end
+
+    it "highest_level keeps only the top-level certifications per training" do
+      adv = create(:training_session, training: training, level: "Advanced")
+      create(:certification, user: user, training_session: ts, training: training, level: "Beginner")
+      top = create(:certification, user: create(:user), training_session: adv, training: training, level: "Advanced")
+      expect(Certification.highest_level).to eq([top])
+    end
+
+    it "demoted (inactive) certifications disappear from the default scope but not from unscoped" do
+      cert = create(:certification, user: user, training_session: ts, training: training)
+      cert.update!(active: false)
+      expect(user.certifications.reload).to be_empty
+      expect(Certification.unscoped.where(id: cert.id)).to exist
+    end
+  end
 end

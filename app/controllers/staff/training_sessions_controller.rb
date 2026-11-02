@@ -117,35 +117,11 @@ class Staff::TrainingSessionsController < StaffDashboardController
   end
 
   def certify_trainees
-    error = false
-    duplicates = 0
-    # Count users that already have a certification
-    @current_training_session.users.each do |graduate|
-      # Skip if user already has a certifications that match the training id and training level
-      if graduate
-           .certifications
-           .joins(:training)
-           .where(
-              training: {id: @current_training_session.training_id},
-              level: @current_training_session.level
-               ).any?
-        duplicates += 1
-        next
-      end
-
-      # Else make a certification
-      certification =
-        Certification.new(
-          user_id: graduate.id,
-          training_session_id: @current_training_session.id,
-          level: @current_training_session.level
-        )
-        
-      next if certification.save
-      error = true
-      flash[
-        :alert
-      ] = "#{graduate.username}'s certification has not saved properly!"
+    result = @current_training_session.certify_trainees!
+    error = !result.certified?
+    duplicates = result.duplicates
+    if error
+      flash[:alert] = "#{result.failed.last.username}'s certification has not saved properly!"
     end
 
     respond_to do |format|
@@ -159,14 +135,15 @@ class Staff::TrainingSessionsController < StaffDashboardController
                           else
                             ""
                           end
-                        )
+                        ) +
+                        (result.self_skipped ? " (you can't certify yourself)" : "")
       end
       format.json { render json: { certified: !error } }
     end
   end
 
   def revoke_certification
-    cert = Certification.find(params[:cert_id])
+    cert = @current_training_session.certifications.find(params[:cert_id])
     if cert.destroy
       flash[:notice] = "Deleted Successfully"
     else
@@ -187,7 +164,6 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def training_report
     respond_to do |format|
-      format.html
       format.xlsx do
         send_data ReportGenerator
                     .generate_training_session_report(params[:id])
@@ -199,28 +175,19 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   private
 
+  # The React app always sends user_id. Only an admin may pick another instructor;
+  # for everyone else the instructor is the current staff user.
   def default_params
-    if params[:user_id].present?
-      if @user.admin?
-        {
-          user_id: params[:user_id],
-          training_id: params[:training_id],
-          course: params[:course],
-          space_id: params[:training_session][:space_id],
-          level: params[:level],
-          user_ids: params["training_session_users"]
-        }
-      end
-    else
-      {
-        user_id: current_user.id,
-        training_id: params[:training_id],
-        course: params[:course],
-        space_id: params[:training_session][:space_id],
-        level: params[:level],
-        user_ids: params["training_session_users"]
-      }
-    end
+    instructor_id =
+      @user.admin? && params[:user_id].present? ? params[:user_id] : current_user.id
+    {
+      user_id: instructor_id,
+      training_id: params[:training_id],
+      course: params[:course],
+      space_id: params[:training_session][:space_id],
+      level: params[:level],
+      user_ids: params["training_session_users"]
+    }
   end
 
   def training_session_params

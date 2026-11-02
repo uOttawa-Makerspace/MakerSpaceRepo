@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Admin::SpacesController < AdminAreaController
+  UNKNOWN_READERS_SHOWN = 50
+
   layout "admin_area"
 
   def index
@@ -103,6 +105,11 @@ class Admin::SpacesController < AdminAreaController
     @staff_needed_calendars = StaffNeededCalendar.where(space: params[:id])
     @new_training = Training.new
     @sub_spaces = SubSpace.where(space: Space.find(params[:id]))
+    # readers seen tapping but not registered (those already in pi_readers show in the tables above)
+    registered = PiReader.pluck(:pi_mac_address).filter_map { |mac| PiReader.normalize_mac(mac) }.to_set
+    unknown = TapBoxLog.unknown_readers_seen.reject { |mac, _seen| registered.include?(mac) }
+    @unknown_readers = unknown.first(UNKNOWN_READERS_SHOWN)
+    @unknown_readers_more = unknown.size - @unknown_readers.size
     admins = User.where(role: "admin").order("LOWER(name) ASC")
     @admin_options = admins.map { |admin| [admin.name, admin.id] }
     @admin_options.unshift(["Select an Admin", -1])
@@ -270,22 +277,26 @@ class Admin::SpacesController < AdminAreaController
       return redirect_back(fallback_location: root_path)
     end
 
-    StaffNeededCalendar.where(space_id: params[:space_id]).destroy_all
+    begin
+      StaffNeededCalendar.transaction do
+        StaffNeededCalendar.where(space_id: params[:space_id]).destroy_all
 
-    calendar_urls.each_with_index do |url, i|
-      next if url.blank?
+        calendar_urls.each_with_index do |url, i|
+          next if url.blank?
 
-      snc = StaffNeededCalendar.create(
-        name: calendar_names[i],
-        color: calendar_colors[i],
-        role: calendar_roles[i].presence,
-        space_id: params[:space_id],
-        calendar_url: url
-      )
-      # Copy over to MakerRoom
-      space = Space.find(params[:space_id])
-      helpers.create_makeroom_bookings_from_ics(snc, current_user.id, space) if calendar_roles[i] == "makeroom"
-    end    
+          StaffNeededCalendar.create!(
+            name: calendar_names[i],
+            color: calendar_colors[i],
+            role: calendar_roles[i].presence,
+            space_id: params[:space_id],
+            calendar_url: url
+          )
+        end
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      flash[:alert] = "Calendars were not saved (nothing changed): #{e.record.errors.full_messages.join(', ')}"
+      return redirect_back(fallback_location: root_path)
+    end
 
     flash[:notice] = "Calendars updated successfully."
     redirect_back(fallback_location: root_path)

@@ -13,6 +13,7 @@ class ProficientProjectsController < DevelopmentProgramsController
                 only: %i[
                   requests
                   approve_project
+                  revoke_project
   ]
   before_action :set_proficient_project,
                 only: %i[show destroy edit update complete_project]
@@ -181,12 +182,14 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def complete_project
     order_items =
-      current_user.order_items.where(
+      current_user.order_items.completed_order.where(
         proficient_project_id: @proficient_project.id
       )
     if !order_items.present?
       flash[:alert] = "This project hasn't been found"
-    elsif order_items.first.update(
+    elsif !order_items.in_progress.exists?
+      flash[:alert] = "This project can only be submitted while it is in progress."
+    elsif order_items.in_progress.first.update(
           order_item_params.merge(status: "Waiting for approval")
         )
       MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
@@ -210,22 +213,28 @@ class ProficientProjectsController < DevelopmentProgramsController
     if order_item
       admin = @user
       duplicates = 0
-      training_id = order_item.proficient_project.training_id
-      cert = Certification.joins(:training).where(
-        training: {id: training_id}).find_or_create_by(
-          user_id: order_item.order.user_id,
-          level: order_item.proficient_project.level
-        )
-      proficient_project_session =
-        ProficientProjectSession.create(
-          proficient_project_id: order_item.proficient_project.id,
-          level: order_item.proficient_project.level,
-          user_id: admin.id,
-          certification_id: cert.id
-      )
-      # Award the cert
-      if proficient_project_session.present?
-        order_item.update(order_item_params.merge({ status: "Awarded" }))
+      awarded = false
+      begin
+        order_item.with_lock do
+          if order_item.status == "Waiting for approval"
+            level = order_item.proficient_project.level
+            user_id = order_item.order.user_id
+            cert = Certification.create!(user_id: user_id, level: level)
+            ProficientProjectSession.create!(
+              proficient_project_id: order_item.proficient_project.id,
+              level: level,
+              user_id: admin.id,
+              certification_id: cert.id
+            )
+            # Award the cert
+            order_item.update!(order_item_params.merge({ status: "Awarded" }))
+            awarded = true
+          end
+        end
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved
+        awarded = false
+      end
+      if awarded
         MsrMailer.send_results_pp(
           order_item,
           order_item.order.user,
@@ -238,14 +247,26 @@ class ProficientProjectsController < DevelopmentProgramsController
     else
       flash[:error] = "An error has occurred, please try again later."
     end
-    redirect_path = current_user.admin? ? requests_proficient_projects_path : order_item.proficient_project
+    redirect_path =
+      if order_item.nil? || current_user.admin?
+        requests_proficient_projects_path
+      else
+        order_item.proficient_project
+      end
     redirect_to redirect_path
   end
 
   def revoke_project
     order_item = OrderItem.find_by(id: params[:oi_id])
+    revoked = false
     if order_item
-      order_item.update(order_item_params.merge(status: "Revoked"))
+      order_item.with_lock do
+        if order_item.status == "Waiting for approval"
+          revoked = order_item.update(order_item_params.merge(status: "Revoked"))
+        end
+      end
+    end
+    if revoked
       MsrMailer.send_results_pp(
         order_item,
         order_item.order.user,
@@ -304,7 +325,6 @@ class ProficientProjectsController < DevelopmentProgramsController
       :description,
       :training_id,
       :level,
-      :proficient,
       :cc,
       :has_project_kit,
       :drop_off_location_id,

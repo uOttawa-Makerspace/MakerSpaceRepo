@@ -26,7 +26,7 @@
     <%= task.job_type&.name || "Unselected" %>
   <% end %>
 </td>
-<td><%= jo.job_order_statuses.last.job_status.name %></td>
+<td><%= jo.latest_status.job_status.name %></td>
 <td>
   <%= 
     link_to 'View', job_order_path(jo.id), class: 'btn btn-primary btn-sm'

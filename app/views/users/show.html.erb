@@ -9,10 +9,6 @@
             <p><%= t('.more_info') %></p>
             <i class="fa-solid fa-location-arrow"></i> <%= @repo_user.location.presence %><br />
             <i class="fa-regular fa-clock"></i> <%= t('.joined_on') %> <%= @repo_user.created_at.to_date.to_fs :long %><br />
-            <% if @github_username.present? %>
-                <i class="fa-brands fa-github-alt"></i>
-                <%= link_to @github_username, "https://github.com/#{@github_username}" %><br />
-            <% end %>
             <% if @repo_user.url.present? && @repo_user.url.match?(%r{\Ahttps?://}i) %>
                 <i class="fa-solid fa-link"></i>
                 <%= link_to @repo_user.url.sub(%r{\Ahttps?://}i, ''), sanitize_url(@repo_user.url), target: '_blank', rel: 'noopener noreferrer' %><br />
@@ -78,7 +74,12 @@
                                 <% end %>
                             <% end %>
                         <% end %>
-                        <%= link_to "<i class=\"fa-solid fa-gear\"></i> #{t('.edit_profile')}".html_safe, settings_profile_path, class: 'btn btn-secondary' if @repo_user.eql?(@user) %>
+                            <!--Edit other users profile if on their section-->
+                            <% if @repo_user.eql?(@user) %>
+                                <%= link_to "<i class=\"fa-solid fa-gear\"></i> #{t('.edit_profile')}".html_safe, settings_profile_path, class: 'btn btn-secondary' %>
+                            <% elsif current_user.admin? %>
+                                <%= link_to "<i class=\"fa-solid fa-gear\"></i> #{t('.edit_profile')}".html_safe, edit_admin_user_path(@repo_user), class: 'btn btn-secondary' %>
+                            <% end %>                        
 
                         <% if @user.staff? %>
                             <%= render 'users/flag' %>
@@ -116,7 +117,7 @@
                                         <h5 class="dropdown-header text-center"><%= t('.unregistered_cards') %></h5>
                                         <% Rfid.recent_unset.first(5).each do |rfid| %>
                                             <% space = begin
-                                            PiReader.find_by(pi_mac_address: rfid.mac_address).space.name
+                                            PiReader.find_by_mac(rfid.mac_address).space.name
                                             rescue StandardError
                                             'unknown'
                                             end %>

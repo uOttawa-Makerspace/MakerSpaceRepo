@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
 class Admin::UsersController < AdminAreaController
-  before_action :load_user, only: %i[show edit update]
-  before_action :require_admin, only: %i[delete_user restore_user toggle_lock_user set_role manage_roles]
+  before_action :load_user, only: %i[show edit update change_email]
+  before_action :require_admin, only: %i[update change_email rename_user delete_repository delete_user restore_user toggle_lock_user set_role manage_roles]
+  # delete_user re-checks the admin's own password: counted in the same budget as change_password and
+  # change_email (ReauthThrottle), so re-entered passwords share one attempt limit.
+  include ReauthThrottle
+  before_action :limit_reauth_attempts, only: :delete_user, if: :current_password_submitted?
 
   layout "admin_area"
 
@@ -54,27 +58,59 @@ class Admin::UsersController < AdminAreaController
   def show
     @all_sessions = @edit_admin_user.lab_sessions.order(sign_in_time: :desc)
     calculate_average_session_time
-    @certifications = @edit_admin_user.certifications.order(Arel.sql("lower(name) ASC"))
+    @certifications = @edit_admin_user.certifications
   end
 
   def edit
     @rfids = Rfid.recent_unset
-    @certifications = @edit_admin_user.certifications.order(Arel.sql("lower(name) ASC"))
   end
 
   def update
-    @edit_admin_user.certifications.destroy_all
-    
-    # Handle RFID assignment separately
-    assign_rfid_if_present
-    
-    if @edit_admin_user.update(user_params)
-      create_certifications
-      redirect_to edit_admin_user_path(@edit_admin_user), notice: "User information updated!"
+    saved = User.transaction do
+      # Handle RFID assignment separately
+      assign_rfid_if_present
+
+      if @edit_admin_user.update(user_params)
+        true
+      else
+        raise ActiveRecord::Rollback # Undo rfid change if user update fails
+      end
+    end
+
+    if saved
+      redirect_to edit_admin_user_path(@edit_admin_user), notice: "User information updated"
     else
+      # the rollback restored the card rows, not the loaded association
+      @edit_admin_user.association(:rfid).reset
       @rfids = Rfid.recent_unset
-      @certifications = @edit_admin_user.certifications.order(Arel.sql("lower(name) ASC"))
-      render :edit
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def change_email
+    new_email = User.normalize_value_for(:email, params[:new_email].to_s)
+    confirm_new_email = User.normalize_value_for(:email, params[:confirm_new_email].to_s)
+
+    if new_email.blank? || confirm_new_email.blank?
+      redirect_to edit_admin_user_path(@edit_admin_user),
+                  alert: "There was a problem with the email, please try sending the email again."
+    elsif new_email != confirm_new_email
+      redirect_to edit_admin_user_path(@edit_admin_user),
+                  alert: "This confirmation email isn't matching the new email"
+    # LOWER(email) matches legacy mixed-case rows and uses index_users_on_lowercase_email
+    elsif User.unscoped.where("LOWER(email) = ?", new_email).where.not(id: @edit_admin_user.id).exists?
+      redirect_to edit_admin_user_path(@edit_admin_user),
+                  alert: "This email is already used by a MakerRepo Account."
+    else
+      # The same link as the user's own change: it only works for that user, signed in, within 24 hours.
+      MsrMailer.email_confirmation_email(
+        new_email,
+        @edit_admin_user,
+        @edit_admin_user.generate_email_change_token(new_email)
+      ).deliver_now
+
+      redirect_to edit_admin_user_path(@edit_admin_user),
+                  notice: "A confirmation email has been sent to the new email"
     end
   end
 
@@ -84,13 +120,20 @@ class Admin::UsersController < AdminAreaController
   end
 
   def delete_user
-    unless @user.admin? && @user.pword == params[:password]
+    unless @user.admin? && @user.authenticate_password(submitted_current_password)
       redirect_to user_path(User.find(params[:id]).username), alert: "Invalid password!"
       return
     end
+    RateLimitCounter.reset(@user.reauth_attempts_key)
 
     delete_user = User.find(params[:id])
-    soft_delete_user(delete_user)
+    begin
+      User.guarding_last_admin!([delete_user.id]) { soft_delete_user(delete_user) }
+    rescue User::LastAdminError => e
+      redirect_to user_path(delete_user.username), alert: e.message
+      return
+    end
+
     redirect_to root_path, notice: "User flagged as deleted"
   end
 
@@ -102,13 +145,28 @@ class Admin::UsersController < AdminAreaController
 
   def toggle_lock_user
     user_to_toggle = User.find(params[:id])
-    toggle_user_lock_status(user_to_toggle)
+    begin
+      toggle_user_lock_status(user_to_toggle)
+    rescue User::LastAdminError => e
+      redirect_to user_path(user_to_toggle.username), alert: e.message
+      return
+    end
     redirect_to user_path(user_to_toggle.username),
                 notice: "User #{user_to_toggle.locked ? 'locked' : 'unlocked'}!"
   end
 
   def set_role
-    update_user_roles if valid_role_update_params?
+    if valid_role_update_params?
+      begin
+        update_user_roles
+      rescue User::LastAdminError
+        respond_to do |format|
+          format.json { render json: { error: User::LAST_ADMIN_MESSAGE }, status: :unprocessable_content }
+          format.any { redirect_back(fallback_location: root_path, alert: User::LAST_ADMIN_MESSAGE) }
+        end
+        return
+      end
+    end
     update_user_staff_spaces if params[:spaces].present?
 
     respond_to do |format|
@@ -151,6 +209,12 @@ class Admin::UsersController < AdminAreaController
 
   private
 
+  # The password the admin re-typed to delete an account (counted by ReauthThrottle).
+  def submitted_current_password
+    params[:password].to_s
+  end
+
+
   # ============================================
   # Authorization
   # ============================================
@@ -185,6 +249,7 @@ class Admin::UsersController < AdminAreaController
     [column, direction]
   end
 
+
   def valid_role_update_params?
     params[:role].present? && 
       params[:user_ids].is_a?(Array) && 
@@ -198,7 +263,7 @@ class Admin::UsersController < AdminAreaController
   # SECURITY FIX: Removed :role from permitted params
   # Role changes should only happen through set_role action with proper authorization
   def user_params
-    params.require(:user).permit(:gender, :faculty, :use)
+    params.require(:user).permit(:name, :username, :gender, :student_id, :faculty, :year_of_study, :use)
   end
 
   # ============================================
@@ -318,21 +383,13 @@ class Admin::UsersController < AdminAreaController
     rfid = Rfid.find_by(id: params[:user][:rfid])
     return unless rfid
     
+    #Do nothing if the RFID is already the users
+    return if @edit_admin_user.rfid&.id == rfid.id
+
     @edit_admin_user.rfid&.destroy!
     rfid.update!(user: @edit_admin_user)
   end
 
-  # ============================================
-  # Certifications
-  # ============================================
-
-  def create_certifications
-    return unless params["certifications"].present?
-    
-    params["certifications"].first(5).each do |cert_name|
-      Certification.create(name: cert_name, user_id: @edit_admin_user.id)
-    end
-  end
 
   # ============================================
   # User Management
@@ -340,27 +397,29 @@ class Admin::UsersController < AdminAreaController
 
   def soft_delete_user(user)
     user.transaction do
-      user.deleted = true
       user.repositories.update_all(deleted: true)
       LabSession.where(user_id: user.id).destroy_all
       Certification.where(user_id: user.id).destroy_all
-      user.save!
+      user.soft_delete!
     end
   end
 
   def restore_user_account(user)
     user.transaction do
-      user.deleted = false
       user.repositories.update_all(deleted: false)
-      user.save!
+      user.restore!
     end
   end
 
+  # Locking is guarded (it removes a usable admin); unlocking never is. Which of the
+  # two to do is decided from the row re-read under the guard's locks (lock! reloads
+  # `user`), never from the state read before them: a lock or unlock by another admin
+  # in between must not be overwritten with a stale decision.
   def toggle_user_lock_status(user)
-    user.locked = !user.locked
-    user.locked_until = user.locked ? 99.years.from_now : nil
-    user.auth_attempts = user.locked ? 5 : 0
-    user.save!
+    User.guarding_last_admin!([user.id], message: User::LAST_ADMIN_LOCK_MESSAGE,
+                                         only_if: -> { !user.lock!(User::GUARD_LOCK_MODE).locked }) do
+      user.locked ? user.admin_unlock! : user.admin_lock!
+    end
   end
 
   # ============================================
@@ -368,17 +427,9 @@ class Admin::UsersController < AdminAreaController
   # ============================================
 
   def update_user_roles
-    # SECURITY: Validate role before assignment
-    return unless ASSIGNABLE_ROLES.include?(params[:role])
-    
-    # SECURITY: Validate user_ids are integers
-    user_ids = params[:user_ids].map(&:to_i).reject(&:zero?)
-    
-    User.where(id: user_ids).find_each do |user|
-      # Audit log for role changes
-      Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{params[:role]}' by Admin##{@user.id}"
-      user.update(role: params[:role])
-    end
+    # ASSIGNABLE_ROLES and the integer ids were validated by valid_role_update_params?;
+    # the last-admin guard, transaction and audit log live in User.change_roles!.
+    User.change_roles!(params[:user_ids], params[:role], actor: @user)
   end
 
   def update_user_staff_spaces

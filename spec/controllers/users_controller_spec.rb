@@ -33,7 +33,7 @@ RSpec.describe UsersController, type: :controller do
     context "confirm" do
       it "should confirm the user" do
         user = create(:user, :regular_user_not_confirmed)
-        @hash = Rails.application.message_verifier(:user).generate(user.id)
+        @hash = user.generate_token_for(:email_confirmation)
         get :confirm, params: { token: @hash }
         expect(response).to redirect_to root_path
         expect(flash[:notice]).to eq(
@@ -49,28 +49,22 @@ RSpec.describe UsersController, type: :controller do
         get :confirm, params: { token: "abc" }
         expect(response).to redirect_to root_path
         expect(flash[:alert]).to eq(
-          "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+          "This link has expired or has already been used. Please request a new one."
         )
         expect(User.find(user.id).confirmed?).to be_falsey
       end
     end
   end
 
-  describe "GET /confirm_edited_email" do
+  describe "POST /confirm_edited_email" do
     context "confirm_edited_email" do
       it "should confirm the email" do
         user = create(:user, :regular_user)
         old_email = user.email
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        @user_hash = Rails.application.message_verifier(:user).generate(user.id)
-        @email_hash =
-          Rails.application.message_verifier(:email).generate("bob@bob.ca")
-        get :confirm_edited_email,
-            params: {
-              email_token: @email_hash,
-              user_token: @user_hash
-            }
+        post :apply_edited_email,
+             params: { token: user.generate_email_change_token("bob@bob.ca") }
         expect(response).to redirect_to root_path
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(old_email)
@@ -85,16 +79,10 @@ RSpec.describe UsersController, type: :controller do
         old_email = user.email
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        @email_hash =
-          Rails.application.message_verifier(:email).generate("bob@bob.ca")
-        get :confirm_edited_email,
-            params: {
-              email_token: @email_hash,
-              user_token: ""
-            }
+        post :apply_edited_email, params: { token: "" }
         expect(response).to redirect_to root_path
         expect(flash[:alert]).to eq(
-          "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
+          "This link has expired or has already been used. Please request a new one."
         )
         expect(User.last.email).to eq(old_email)
       end
@@ -211,7 +199,7 @@ RSpec.describe UsersController, type: :controller do
         )
       end
 
-      it "should create the user with avatar" do
+      it "should not create the user with a username that is too long" do
         user_params =
           FactoryBot.attributes_for(
             :user,
@@ -233,7 +221,7 @@ RSpec.describe UsersController, type: :controller do
         user = create(:user, :regular_user_with_avatar)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :remove_avatar
+        delete :remove_avatar
         expect(response).to redirect_to settings_profile_path
         user = User.find(user.id)
         expect(user.display_avatar).to eq("/default-avatar.png")
@@ -243,7 +231,7 @@ RSpec.describe UsersController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :remove_avatar
+        delete :remove_avatar
         expect(response).to redirect_to settings_profile_path
         expect(user.display_avatar).to eq("/default-avatar.png")
       end
@@ -336,7 +324,7 @@ RSpec.describe UsersController, type: :controller do
                 }
               }
         @newpass = User.find(User.last.id).password
-        expect(@oldpass).not_to be(@newpass)
+        expect(@newpass).not_to eq(@oldpass)
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(response).to redirect_to settings_admin_path
         expect(flash[:notice]).to eq(
@@ -356,7 +344,7 @@ RSpec.describe UsersController, type: :controller do
               }
         expect(ActionMailer::Base.deliveries.count).to eq(0)
         expect(response).to have_http_status(:success)
-        expect(flash[:alert]).to eq("Incorrect old password.")
+        expect(flash[:alert]).to eq("Incorrect current password.")
       end
 
       it 'shouldn\'t change password (Confirmation doesn\'t match)' do
@@ -372,13 +360,13 @@ RSpec.describe UsersController, type: :controller do
               }
         @newpass = User.find(User.last.id).password
         expect(ActionMailer::Base.deliveries.count).to eq(0)
-        expect(@oldpass).not_to be(@newpass)
+        expect(@newpass).to eq(@oldpass)
         expect(response).to have_http_status(:success)
       end
     end
   end
 
-  describe "GET /change_email" do
+  describe "POST /change_email" do
     context 'change user\'s email' do
       before(:each) do
         user = create(:user, :regular_user)
@@ -387,11 +375,12 @@ RSpec.describe UsersController, type: :controller do
       end
 
       it "should send confirmation email" do
-        get :change_email,
-            params: {
-              new_email: "bobbb@bobbb.ca",
-              confirm_new_email: "bobbb@bobbb.ca"
-            }
+        post :change_email,
+             params: {
+               new_email: "bobbb@bobbb.ca",
+               confirm_new_email: "bobbb@bobbb.ca",
+               current_password: "asa32A353#"
+             }
         expect(response).to redirect_to settings_admin_path
         expect(flash[:notice]).to eq(
           "A confirmation email has been sent to the new email"
@@ -403,11 +392,12 @@ RSpec.describe UsersController, type: :controller do
       end
 
       it 'shouldn\'t change password (email already used)' do
-        get :change_email,
-            params: {
-              new_email: User.last.email,
-              confirm_new_email: User.last.email
-            }
+        post :change_email,
+             params: {
+               new_email: User.last.email,
+               confirm_new_email: User.last.email,
+               current_password: "asa32A353#"
+             }
         expect(response).to redirect_to settings_admin_path
         expect(flash[:alert]).to eq(
           "This email is already used by a MakerRepo Account."
@@ -415,11 +405,12 @@ RSpec.describe UsersController, type: :controller do
       end
 
       it 'shouldn\'t change password (Confirmation doesn\'t match)' do
-        get :change_email,
-            params: {
-              new_email: "bobbb@bobbb.ca",
-              confirm_new_email: "bobbb1@bobbb.ca"
-            }
+        post :change_email,
+             params: {
+               new_email: "bobbb@bobbb.ca",
+               confirm_new_email: "bobbb1@bobbb.ca",
+               current_password: "asa32A353#"
+             }
         expect(response).to redirect_to settings_admin_path
         expect(flash[:alert]).to eq(
           "This confirmation email isn't matching the new email"
@@ -543,5 +534,52 @@ RSpec.describe UsersController, type: :controller do
         expect(@controller.instance_variable_get(:@repositories).count).to eq(2)
       end
     end
+  end
+end
+
+# UsersController#destroy has no route today (see users_profile_request_spec); the
+# action is exercised through a temporary route so it cannot become a way to delete
+# the last usable admin if it is ever routed.
+RSpec.describe UsersController, "#destroy", type: :controller do
+  # A separate route set: drawing on the app's own set would leak into other examples.
+  routes do
+    ActionDispatch::Routing::RouteSet.new.tap do |set|
+      set.draw do
+        delete "/users_destroy_probe" => "users#destroy"
+        get "/u/:username" => "users#show", as: :user
+        root to: "users#new"
+      end
+    end
+  end
+
+  def sign_in_as(user)
+    session[:user_id] = user.id
+    session[:token_version] = user.token_version
+    session[:expires_at] = Time.zone.now + 10_000
+  end
+
+  it "refuses the last usable admin deleting their own account" do
+    admin = create(:user, :admin)
+    sign_in_as(admin)
+    delete :destroy
+    expect(flash[:alert]).to eq(User::LAST_ADMIN_MESSAGE)
+    expect(User.unscoped.exists?(admin.id)).to be(true)
+  end
+
+  it "lets an admin delete their own account while another usable admin remains" do
+    admin = create(:user, :admin)
+    create(:user, :admin)
+    sign_in_as(admin)
+    delete :destroy
+    expect(response).to redirect_to(root_path)
+    expect(User.unscoped.exists?(admin.id)).to be(false)
+  end
+
+  it "lets a regular user delete their own account" do
+    create(:user, :admin)
+    user = create(:user)
+    sign_in_as(user)
+    delete :destroy
+    expect(User.unscoped.exists?(user.id)).to be(false)
   end
 end

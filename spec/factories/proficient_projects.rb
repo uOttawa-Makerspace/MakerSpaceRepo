@@ -2,7 +2,9 @@ FactoryBot.define do
   factory :proficient_project do
     association :training
 
-    title { Faker::Lorem.word }
+    # unique: single Lorem words ("id", "et") also match unrelated page text,
+    # which made `not_to include(project.title)` assertions flaky
+    sequence(:title) { |n| "Project #{n} #{Faker::Lorem.word}" }
     description { Faker::Lorem.paragraph }
     level { "Beginner" }
     cc { 10 }

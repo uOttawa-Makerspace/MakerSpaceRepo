@@ -1,4 +1,14 @@
-<% cache ["v1_home_page", current_user&.id || "anonymous", I18n.locale, @recent_projects.hash, @workshops.hash], expires_in: 10.minutes do %>
+<%# Cached per user (two fragments). The forms that carry a CSRF token (the
+    announcement dismiss buttons and the sign-out button in home_userinfo) are
+    rendered outside the fragments: their tokens belong to the current session,
+    so a cached copy would go stale after a new sign-in or on another device. %>
+<%# Digests, not Ruby #hash values (seeded per process), so every server worker
+    reads and writes the same fragments. %>
+<%# The role flags are in the key: the cards branch on staff?, admin?, volunteer?
+    and dev_program?, so a promotion or a program join shows at once. %>
+<% home_cache_key = ["v5_home_page", current_user&.id || "anonymous", I18n.locale, *current_role_flags,
+                     ActiveSupport::Digest.hexdigest(@recent_projects.map(&:cache_key_with_version).join(",")),
+                     ActiveSupport::Digest.hexdigest(@workshops.to_json)] %>
 <section id="home">
   <button class="d-xl-none" id="ShortcutButton" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-shortcuts" aria-controls="offcanvas-shortcuts">
     Shortcuts
@@ -6,8 +16,9 @@
   
   <div class="container-fluid">
     <%= render 'partials/announcements' %>
-    
+
     <div class="row g-0">
+      <% cache [*home_cache_key, :left_and_middle], expires_in: 10.minutes do %>
       <!-- Left column -->
       <div class="col-xl-3 order-xl-0 order-1 offcanvas-xl offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">
         <div class="offcanvas-header pb-0">
@@ -46,8 +57,8 @@
           </div>
 
           <%= render 'static_pages/home_shortcuts' %>
-          <%= render 'static_pages/home_volunteer' if signed_in? && current_user.volunteer? %>
-          <%= render 'static_pages/home_development' if signed_in? && current_user.dev_program? %>
+          <%= render 'static_pages/home_volunteer' if signed_in? && current_user_volunteer? %>
+          <%= render 'static_pages/home_development' if signed_in? && current_user_dev_program? %>
         </div>
       </div>
 
@@ -58,10 +69,13 @@
         <%= render 'static_pages/home_makerstore' %>
       </div>
 
+      <% end %>
+
       <!-- Right column -->
       <div class="col-xl-3 order-xl-2 order-1">
+        <%= render partial: 'home_userinfo' if signed_in? %>
+        <% cache [*home_cache_key, :right], expires_in: 10.minutes do %>
         <% if signed_in? %>
-          <%= render partial: 'home_userinfo' %>
           <%= render partial: 'home_badges' %>
           <%= render partial: 'home_skills' %>
         <% end %>
@@ -101,8 +115,8 @@
             <% end %>
           </div>
         </div>
+        <% end %>
       </div>
     </div>
   </div>
 </section>
-<% end %>

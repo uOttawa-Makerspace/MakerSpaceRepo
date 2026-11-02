@@ -12,6 +12,7 @@
         <%= button_to t('volunteers.hero.join_button'),
                     join_volunteer_program_volunteers_path,
                     method: :post,
+                    form: { data: { turbo: false } },
                     class: 'btn btn-ceed btn-lg px-4 py-3 rounded-pill fs-6 fw-bold shadow' %>
       </div>
     </div>
@@ -324,6 +325,7 @@
         <%= button_to t('volunteers.bottom_banner.button'),
                     join_volunteer_program_volunteers_path,
                     method: :post,
+                    form: { data: { turbo: false } },
                     class: 'btn btn-banner-pill shadow-sm' %>
       </div>
 

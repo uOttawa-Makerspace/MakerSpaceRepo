@@ -2,6 +2,8 @@ require "rails_helper"
 
 RSpec.describe ChatMessageMailer, type: :mailer do
   describe ".new_message" do
+    before { create(:job_status, name: "Draft") } # ChatMessage#schedule_notification_email reads JobStatus.draft
+
     let(:job_order) { create(:job_order) }
     let(:sender) { create(:user) }
     let(:recipient1) { create(:user) }

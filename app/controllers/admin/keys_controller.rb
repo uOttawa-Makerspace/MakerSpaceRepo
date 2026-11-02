@@ -1,4 +1,6 @@
 class Admin::KeysController < AdminAreaController
+  HOLDER_NOT_APPROVED_MESSAGE = "The key holder must have an approved key request."
+
   before_action :set_key,
                 only: %i[
                   show
@@ -11,6 +13,7 @@ class Admin::KeysController < AdminAreaController
                   revoke_key
                   history
                 ]
+  before_action :ensure_holder_has_approved_request, only: %i[create update]
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
@@ -95,6 +98,10 @@ class Admin::KeysController < AdminAreaController
   def assign_key
     user = User.find(params[:key][:user_id])
 
+    unless holder_approved?(user)
+      redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE and return
+    end
+
     key_transaction =
       KeyTransaction.new(
         user_id: user.id,
@@ -170,6 +177,30 @@ class Admin::KeysController < AdminAreaController
       :custom_keycode,
       :additional_info
     )
+  end
+
+  # A key can only be given to a holder (user_id) whose key request is approved,
+  # on every path that sets it (assign_key checks the same rule).
+  def ensure_holder_has_approved_request
+    holder_id = params.dig(:key, :user_id).presence
+    if holder_id.nil? && @key&.status_held? && params[:key]&.key?(:user_id)
+      redirect_to admin_keys_path,
+                  alert: "Use revoke to remove the holder of a held key." and return
+    end
+    return if holder_id.nil? || holder_id.to_s == @key&.user_id.to_s
+
+    if @key&.status_held?
+      redirect_to admin_keys_path,
+                  alert: "Revoke the key before assigning it to another holder." and return
+    end
+
+    return if holder_approved?(User.find_by(id: holder_id))
+
+    redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE
+  end
+
+  def holder_approved?(user)
+    user&.key_request&.status_approved? || false
   end
 
   def set_key

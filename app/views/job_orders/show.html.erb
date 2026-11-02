@@ -14,15 +14,15 @@
       <h2 class="fw-bold"><%= t("job_orders.order.job_order") %> #<%= @job_order.id %></h2>
 
       <div class="d-flex gap-1">
-        <%= link_to "<i class='fa fa-download'></i> #{sanitize(t('job_orders.public_page.invoice'))}", job_order_invoice_path(job_order_id: @job_order.id), target: '_blank', class: 'btn btn-secondary', rel: 'noopener' if [JobStatus::COMPLETED,
-        JobStatus::PAID,
-        JobStatus::PICKED_UP].include?(@job_order.job_order_statuses.last&.job_status) %>
+        <%= link_to "<i class='fa fa-download'></i> #{sanitize(t('job_orders.public_page.invoice'))}", job_order_invoice_path(job_order_id: @job_order.id), target: '_blank', class: 'btn btn-secondary', rel: 'noopener' if [JobStatus.completed,
+        JobStatus.paid,
+        JobStatus.picked_up].include?(@job_order.latest_status&.job_status) %>
         
-        <% if @job_order.job_order_statuses.last&.job_status == JobStatus::DRAFT && !@tasks_missing_information.any? %>
+        <% if @job_order.latest_status&.job_status == JobStatus.draft && !@tasks_missing_information.any? %>
           <%= button_to 'Submit for Approval', job_order_job_task_path(@job_order, @job_order.job_tasks.first, step: 4), method: :post, format: :js, class: 'btn btn-outline-primary', data: { confirm: 'Are you sure you want to submit this job order for staff approval?' } %>
         <% end %>
 
-        <% if @job_order.allow_edit? || current_user.admin? %>
+        <% if @job_order.deletable_by?(current_user, @job_order.latest_status&.job_status) %>
           <%= button_to t('job_orders.order.delete', default: "Delete"), job_order_path(@job_order), method: :delete, format: :js, class: 'btn btn-danger', data: { confirm: 'Are you sure you want to delete this job order?' } %>
         <% end %>
       </div>
@@ -62,7 +62,7 @@
                     <%= task.title.presence || t("job_orders.order.unnamed_task", default: "Unnamed Task") %>
                   </h6>
 
-                  <% if (@job_order.allow_edit? && current_user.id == @job_order.user_id) || current_user.admin? %>
+                  <% if @job_order.task_edits_offered_to?(current_user) %>
                     <div class="d-flex gap-1 flex-row align-items-center">
                       <%= link_to t('job_orders.public_page.edit'), edit_job_order_job_task_path(@job_order, task, step: 1), class: 'btn btn-secondary py-0 px-2' %>
                       <% if @job_order.job_tasks.count > 1 %>
@@ -178,7 +178,7 @@
               </div>
             <% end %>
 
-            <% if @job_order.allow_edit? || current_user.admin? %>
+            <% if @job_order.task_edits_offered_to?(current_user) %>
               <%= button_to t('job_orders.order.add_another_task', default: "Add Another Task"), job_order_job_tasks_path(@job_order), method: :post, class: "btn btn-outline-primary" %>
             <% end %>
           </div>

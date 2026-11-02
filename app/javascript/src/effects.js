@@ -51,7 +51,9 @@ document.addEventListener("turbo:load", function (event) {
 
   [...document.getElementsByClassName("repository_report")].forEach(
     function (element) {
-      element.addEventListener("click", function (event) {
+      // Show the spinner only once the (confirmed) form is really submitted.
+      const form = element.closest("form") || element;
+      form.addEventListener("turbo:submit-start", function (event) {
         [...document.getElementsByClassName("spinner")].forEach(
           function (element) {
             element.style.display = "inline-block";

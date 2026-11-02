@@ -7,7 +7,7 @@ module ScormZipHelper
   extend ActionDispatch::TestProcess
 
   def create_scorm_zip(entry_point = 'index.html', nested_dir: nil)
-    path = Rails.root.join('tmp', 'test_scorm.zip')
+    path = Rails.root.join('tmp', "test_scorm_#{ENV['TEST_ENV_NUMBER']}_#{Process.pid}.zip")
 
     Zip::OutputStream.open(path) do |zip|
       zip.put_next_entry([nested_dir, 'imsmanifest.xml'].compact.join('/'))

@@ -1,16 +1,20 @@
-<form class="input-group mb-3">
+<%# Two forms around one user picker: Sign In is a PUT form (with its CSRF token),
+    View a GET form (no token, so none ends up in the URL). staff_dashboard.js copies
+    the picked username into the submitted form's hidden field. %>
+<div class="input-group mb-3">
     <%= select_tag(:username, '', prompt: " Search for users to sign them in or out of #{@space.name.titleize}",
                    class: 'form-select',
                    id: 'user_dashboard_select',
                    data: {user_search_bar: ''}) %>
-    <%= button_tag class: 'btn btn-primary', formaction: staff_dashboard_sign_in_users_path, formmethod: 'post', name: '_method', value: 'put' do %>
-        Sign In
+    <%= form_with url: staff_dashboard_sign_in_users_path, method: :put, id: 'sign_in_user_fastsearch', style: 'display: contents' do %>
+        <%= hidden_field_tag :username, nil, id: 'sign_in_user_fastsearch_username' %>
+        <%= button_tag 'Sign In', class: 'btn btn-primary' %>
     <% end %>
-
-    <%= button_tag class: 'btn btn-secondary', formaction: staff_dashboard_user_profile_path, formmethod: 'get' do %>
-        View
+    <%= form_with url: staff_dashboard_user_profile_path, method: :get, id: 'search_user_fastsearch', style: 'display: contents' do %>
+        <%= hidden_field_tag :username, nil, id: 'search_user_fastsearch_username' %>
+        <%= button_tag 'View', class: 'btn btn-secondary' %>
     <% end %>
-</form>
+</div>
 
 <div class="mb-4 align-items-baseline">
     <div class="form-check form-switch form-check-inline">

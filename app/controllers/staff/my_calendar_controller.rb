@@ -53,46 +53,30 @@ class Staff::MyCalendarController < StaffAreaController
     expanded_events = []
     
     begin
-      # Parse the iCalendar format recurrence rule
-      rrule_string = event.recurrence_rule.to_s
-      
-      # Extract just the RRULE part (remove DTSTART line)
-      rrule_line = rrule_string.lines.find { |line| line.start_with?('RRULE:') }
-      
-      if rrule_line.nil?
-        # If no RRULE: prefix, assume the whole string is the rule
-        rrule_line = rrule_string.include?('RRULE:') ? rrule_string : "RRULE:#{rrule_string}"
-      end
-      
-      # Remove RRULE: prefix and whitespace
-      rrule_clean = rrule_line.gsub('RRULE:', '').strip
-      
-      # Create schedule with event's actual start time
-      schedule = IceCube::Schedule.new(event.start_time)
-      
-      # Parse and add the recurrence rule
-      rule = IceCube::Rule.from_ical(rrule_clean)
-      schedule.add_recurrence_rule(rule)
-      
-      # Get occurrences within date range
-      # Use a larger buffer to ensure we catch all occurrences
-      occurrences = schedule.occurrences_between(start_date, end_date)
+      # Bounded: rules stored before validation existed (e.g. MINUTELY)
+      # must not pin a worker. Same caps as the /api/v1 shifts serializer.
+      found = RecurrenceExpansion.occurrences(
+        event.recurrence_rule, event.start_time, start_date, end_date,
+        Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT
+      )
 
       # Calculate duration
       duration = event.end_time - event.start_time
-      
-      occurrences.each_with_index do |occurrence, index|
+
+      found.occurrences.each do |occurrence|
         occurrence_end = occurrence + duration
-        
+
         formatted_event = format_event(event, occurrence, occurrence_end)
         # Create unique ID using timestamp to avoid collisions
         formatted_event[:id] = "event-#{event.id}-#{occurrence.to_i}"
-        
+
         expanded_events << formatted_event
       end
-      
+
     rescue => e
-      # Fallback: return the original event if within date range
+      # Report it (event id only), then fall back: return the
+      # original event if within date range
+      Rails.error.report(e, handled: true, context: { event_id: event.id })
       if event.start_time >= start_date && event.end_time <= end_date
         expanded_events << format_event(event)
       end
@@ -127,7 +111,7 @@ class Staff::MyCalendarController < StaffAreaController
       title: title,
       start: start_time.iso8601,
       end: end_time.iso8601,
-      allDay: start_time.to_time == end_time.to_time - 1.day,
+      allDay: CalendarTime.all_day?(start_time, end_time),
       extendedProps: {
         name: event.event_type.capitalize,
         draft: event.draft,

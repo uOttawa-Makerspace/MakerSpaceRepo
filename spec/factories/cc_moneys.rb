@@ -3,10 +3,6 @@ FactoryBot.define do
     association :user, :regular_user
     cc { Faker::Number.number(digits: 2) }
 
-    trait :with_discount_code do
-      association :discount_code
-    end
-
     trait :with_volunteer_task do
       association :volunteer_task
     end

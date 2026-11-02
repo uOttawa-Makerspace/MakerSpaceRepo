@@ -2,6 +2,8 @@ require "rails_helper"
 include FilesTestHelper
 
 RSpec.describe StaffDashboardController, type: :controller do
+  include ActiveSupport::Testing::TimeHelpers
+
   before(:each) do
     @admin = create(:user, :admin)
     @space = create(:space)
@@ -69,45 +71,44 @@ RSpec.describe StaffDashboardController, type: :controller do
     end
   end
 
-  describe "PUT /sign_out_all_users" do
+  describe "POST /sign_out_all_users" do
     context "sign out all users" do
       it "should sign out all users" do
-        user = create(:user, :regular_user)
-        lab1 =
-          LabSession.create(
-            user_id: @admin.id,
-            space_id: @space.id,
-            sign_in_time: 1.hour.ago,
-            sign_out_time: DateTime.now.tomorrow
-          )
-        lab2 =
-          LabSession.create(
-            user_id: user.id,
-            space_id: @space.id,
-            sign_in_time: 1.hour.ago,
-            sign_out_time: DateTime.now.tomorrow
-          )
-        # Previous session
-        lab3 =
-          LabSession.create(
-            user_id: user.id,
-            space_id: @space.id,
-            sign_in_time: 1.day.ago,
-            sign_out_time: 1.day.ago + 3.hours
-          )
-        put :sign_out_all_users
-        expect(response).to redirect_to staff_dashboard_index_path(
-                      space_id: Space.first.id
-                    )
-        expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
-        expect(LabSession.find(lab2.id).sign_out_time < DateTime.now)
-        # ensure previous lab sessions are left intact
-        expect(
-          LabSession.find(lab3.id).sign_out_time
-        ).to_not eq lab2.sign_out_time
-        expect(
-          LabSession.find(lab3.id).sign_out_time
-        ).to_not eq lab1.sign_out_time
+        freeze_time do
+          user = create(:user, :regular_user)
+          lab1 =
+            LabSession.create(
+              user_id: @admin.id,
+              space_id: @space.id,
+              sign_in_time: 1.hour.ago,
+              sign_out_time: DateTime.now.tomorrow
+            )
+          lab2 =
+            LabSession.create(
+              user_id: user.id,
+              space_id: @space.id,
+              sign_in_time: 1.hour.ago,
+              sign_out_time: DateTime.now.tomorrow
+            )
+          # Previous session
+          previous_end = 1.day.ago + 3.hours
+          lab3 =
+            LabSession.create(
+              user_id: user.id,
+              space_id: @space.id,
+              sign_in_time: 1.day.ago,
+              sign_out_time: previous_end
+            )
+          post :sign_out_all_users
+          expect(response).to redirect_to staff_dashboard_index_path(
+                        space_id: Space.first.id
+                      )
+          # Active sessions end exactly now (time is frozen)
+          expect(LabSession.find(lab1.id).sign_out_time).to eq(Time.zone.now)
+          expect(LabSession.find(lab2.id).sign_out_time).to eq(Time.zone.now)
+          # ensure previous lab sessions are left intact
+          expect(LabSession.find(lab3.id).sign_out_time).to eq(previous_end)
+        end
       end
     end
   end
@@ -116,11 +117,18 @@ RSpec.describe StaffDashboardController, type: :controller do
     context "sign in" do
       it "should sign in users" do
         user = create(:user, :regular_user)
-        put :sign_in_users, params: { added_users: user.username }
-        expect(response).to redirect_to staff_dashboard_index_path(
-                      space_id: Space.first.id
-                    )
-        expect(LabSession.last.sign_out_time > DateTime.now)
+        freeze_time do
+          put :sign_in_users, params: { added_users: user.username }
+          expect(response).to redirect_to staff_dashboard_index_path(
+                        space_id: Space.first.id
+                      )
+          session_row = LabSession.last
+          expect(session_row.user_id).to eq(user.id)
+          expect(session_row.space_id).to eq(Space.first.id)
+          expect(session_row.sign_in_time).to eq(Time.zone.now)
+          # A staff-dashboard sign in lasts exactly 6 hours
+          expect(session_row.sign_out_time).to eq(Time.zone.now + 6.hours)
+        end
       end
     end
   end
@@ -155,12 +163,13 @@ RSpec.describe StaffDashboardController, type: :controller do
   describe "PUT /change_space" do
     context "change space" do
       it "should change space" do
+        sign_out_time = DateTime.now.tomorrow.change(usec: 0)
         lab1 =
           LabSession.create(
             user_id: @admin.id,
             space_id: @space.id,
             sign_in_time: 1.hour.ago,
-            sign_out_time: DateTime.now.tomorrow
+            sign_out_time: sign_out_time
           )
         new_space = create(:space)
         expect {
@@ -170,8 +179,11 @@ RSpec.describe StaffDashboardController, type: :controller do
           new_space.id
         )
         expect(response).to have_http_status(302)
-        expect(LabSession.last.sign_out_time < DateTime.now)
-        expect(LabSession.find(lab1.id).sign_out_time < DateTime.now)
+        expect(@admin.reload.space_id).to eq(new_space.id)
+        # changing space does not touch the user's open sessions
+        expect(LabSession.last.id).to eq(lab1.id)
+        expect(LabSession.find(lab1.id).sign_out_time).to eq(sign_out_time)
+        expect(LabSession.find(lab1.id).space_id).to eq(@space.id)
       end
     end
   end

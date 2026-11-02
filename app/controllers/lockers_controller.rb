@@ -96,7 +96,7 @@ class LockersController < AdminAreaController
       flash[:notice] = 'Locker removed'
       redirect_to lockers_path
     else
-      redirect_to @locker, alert: @discount.errors.full_messages.to_sentence
+      redirect_to @locker, alert: "Locker #{@locker.specifier} was not deleted: #{@locker.errors.full_messages.to_sentence}"
     end
   end
 
@@ -104,8 +104,14 @@ class LockersController < AdminAreaController
     # The Javascript on the frontend populates params[:id] with the selected locker IDs
     if params[:bulk_delete]
       # Delete button was clicked
-      Locker.where(id: params[:id]).destroy_all
-      flash[:notice] = 'Selected lockers deleted'
+      # A locker with any rental history is refused, one by one, and reported; the others are deleted.
+      refused = []
+      Locker.where(id: params[:id]).find_each { |locker| refused << (locker.specifier.presence || "##{locker.id}") unless locker.destroy }
+      if refused.empty?
+        flash[:notice] = 'Selected lockers deleted'
+      else
+        flash[:alert] = "Not deleted, they have rental history (mark them not available instead): #{refused.sort_by(&:to_s).to_sentence}"
+      end
     else
       # Update button was clicked
       Locker
