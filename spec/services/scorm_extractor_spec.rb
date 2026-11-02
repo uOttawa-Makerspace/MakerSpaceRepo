@@ -162,6 +162,39 @@ RSpec.describe ScormExtractor do
     end
   end
 
+  describe "unsafe file paths" do
+    # Zip::OutputStream refuses to write such names, so write a same-length
+    # placeholder and rename it in the archive bytes. (Backslashes cannot reach
+    # the extractor: rubyzip reads them back as "/".)
+    def module_with_entry_named(name)
+      placeholder = "x" * (name.bytesize - "evil.html".bytesize) + "evil.html"
+      io = zip_io("imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1", placeholder => "x")
+      lm = create(:learning_module)
+      lm.scorm_package.attach(io: StringIO.new(io.string.gsub(placeholder, name)), filename: "pkg.zip",
+                              content_type: "application/zip")
+      lm.save!
+      lm.reload
+    end
+
+    ["../evil.html", "/evil.html", "sub/../../evil.html", "sub/\u0001evil.html"].each do |name|
+      it "fails the extraction with a reason, uploading nothing, for the entry #{name.inspect}" do
+        lm = module_with_entry_named(name)
+        ScormExtractor.extract(lm)
+        lm.reload
+        expect(lm.scorm_status).to eq("failed")
+        expect(lm.scorm_error).to eq("the package contains a file path that is not allowed")
+        expect(ActiveStorage::Blob.where("key LIKE ?", "%evil%")).to be_empty
+        expect(ActiveStorage::Blob.where("key LIKE ?", "scorm/learning_modules/test_#{lm.id}_%")).to be_empty
+      end
+    end
+
+    it "still extracts nested relative paths" do
+      lm = module_with("imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1", "sub/dir/b.css" => "x")
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("ready")
+    end
+  end
+
   describe "progress and cleanup" do
     let(:files) { { "imsmanifest.xml" => format(MANIFEST, href: "a.html"), "a.html" => "1", "b.html" => "2" } }
 

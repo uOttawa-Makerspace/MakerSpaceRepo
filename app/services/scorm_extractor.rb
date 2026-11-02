@@ -101,6 +101,11 @@ class ScormExtractor
     )
   end
 
+  # A relative path made only of ordinary segments
+  def plain_path?(name)
+    !name.start_with?('/') && !name.match?(/[\\\x00-\x1f]/) && name.split('/').none? { |segment| segment == '..' }
+  end
+
   # Files this run uploaded but never attached
   def discard_uploaded
     @uploaded.each do |blob|
@@ -124,6 +129,13 @@ class ScormExtractor
         raise InvalidPackage, "no #{MANIFEST_FILE} found" unless manifest_entry
 
         root_dir = (manifest_entry.name == MANIFEST_FILE ? nil : File.dirname(manifest_entry.name))
+
+        # Check every path before uploading anything: a package with a path
+        # that could leave its folder is rejected whole rather than half used
+        zip.each do |entry|
+          next if entry.directory?
+          raise InvalidPackage, 'the package contains a file path that is not allowed' unless plain_path?(entry.name)
+        end
 
         zip.each do |entry|
           next if entry.directory?

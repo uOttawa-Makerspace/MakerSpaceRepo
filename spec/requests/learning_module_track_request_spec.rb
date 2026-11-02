@@ -123,10 +123,10 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(other.reload.status).to eq("in_progress")
     end
 
-    # completing a module never started (no track) is a 500 (nil.update)
-    it "answers 500 when the user never started the module" do
+    it "refuses with an alert, recording nothing, when the user never started the module" do
       post completed_learning_module_track_index_path(learning_module_id: learning_module.id)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(learning_area_path(learning_module.id))
+      expect(flash[:alert]).to be_present
       expect(LearningModuleTrack.count).to eq(0)
     end
 

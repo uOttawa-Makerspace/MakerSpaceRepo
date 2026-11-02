@@ -31,9 +31,8 @@ class LearningModuleTrackController < DevelopmentProgramsController
       flash[:alert] = "This learning module records its own completion."
     elsif learning_module
          .learning_module_tracks
-         .where(user: current_user)
-         .first
-         .update(status: "Completed")
+         .find_by(user: current_user)
+         &.update(status: "Completed")
       flash[:notice] = "You have successfully completed the learning module !"
     else
       flash[
