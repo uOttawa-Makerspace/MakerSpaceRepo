@@ -4,13 +4,15 @@ require "rails_helper"
 require Rails.root.join("db/migrate/20261104120000_mark_long_expired_locker_rentals_notified")
 
 RSpec.describe MarkLongExpiredLockerRentalsNotified do
-  let(:marker) { described_class::MARKER }
+  include ActiveSupport::Testing::TimeHelpers
 
   def rental(owned_until:, **attrs)
     create(:locker_rental, :active, owned_until: owned_until, **attrs)
   end
 
   def run(direction) = ActiveRecord::Migration.suppress_messages { described_class.new.public_send(direction) }
+
+  def marker_line(record) = record.staff_notes.lines.last.strip
 
   it "marks active rentals that expired more than 14 days ago and were never notified, without mailing" do
     old = rental(owned_until: 15.days.ago)
@@ -21,11 +23,20 @@ RSpec.describe MarkLongExpiredLockerRentalsNotified do
     run(:up)
 
     expect(old.reload.notified_of_cancellation_at).to be_within(1.minute).of(Time.current)
-    expect(old.staff_notes).to eq(marker)
-    expect(older_with_notes.reload.staff_notes).to eq("call back\n#{marker}")
-    expect(marker).to start_with("[20261104120000] ")
+    expect(marker_line(old)).to match(/\A\[20261104120000 \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\] marked notified at deploy; no email sent\z/)
+    expect(old.staff_notes).to eq(marker_line(old))
+    expect(older_with_notes.reload.staff_notes).to eq("call back\n#{marker_line(old)}")
     expect(old.contacted_for_clearance).to be(false)
     expect(ActionMailer::Base.deliveries).to be_empty
+  end
+
+  it "writes one timestamp to every marked row, the one its marker carries" do
+    rows = [rental(owned_until: 20.days.ago), rental(owned_until: 30.days.ago)]
+    run(:up)
+    stamps = rows.map { |r| r.reload.notified_of_cancellation_at }
+    expect(stamps.uniq.size).to eq(1)
+    expect(marker_line(rows.first)).to include(stamps.first.utc.iso8601)
+    expect(stamps.first.usec).to eq(0)
   end
 
   it "leaves the rest alone: inside the window, running, indefinite, already notified, and not active" do
@@ -69,9 +80,10 @@ RSpec.describe MarkLongExpiredLockerRentalsNotified do
       lookalike = rental(owned_until: 25.days.ago, notified_of_cancellation_at: told_at)
       lookalike.update_columns(staff_notes: "marked notified at deploy; no email sent")
       mid = rental(owned_until: 26.days.ago, notified_of_cancellation_at: told_at)
-      mid.update_columns(staff_notes: "#{marker}\nand more")
       run(:up)
-      expect(empty_notes.reload.staff_notes).to eq("\n#{marker}")
+      line = marker_line(null_notes.reload)
+      mid.update_columns(staff_notes: "#{line}\nand more", notified_of_cancellation_at: told_at)
+      expect(empty_notes.reload.staff_notes).to eq("\n#{line}")
 
       run(:down)
 
@@ -80,7 +92,21 @@ RSpec.describe MarkLongExpiredLockerRentalsNotified do
       expect(text_notes.reload).to have_attributes(notified_of_cancellation_at: nil, staff_notes: "call back\nsecond line")
       expect(genuine.reload.notified_of_cancellation_at).to eq(told_at)
       expect(lookalike.reload).to have_attributes(notified_of_cancellation_at: told_at, staff_notes: "marked notified at deploy; no email sent")
-      expect(mid.reload).to have_attributes(notified_of_cancellation_at: told_at, staff_notes: "#{marker}\nand more")
+      expect(mid.reload).to have_attributes(notified_of_cancellation_at: told_at, staff_notes: "#{line}\nand more")
+    end
+
+    it "keeps the real notice of a marked rental that was renewed and notified again, and still removes the marker line" do
+      renewed = rental(owned_until: 30.days.ago)
+      untouched = rental(owned_until: 31.days.ago)
+      run(:up)
+      real_notice = 2.days.ago.change(usec: 0)
+      renewed.update!(owned_until: 3.days.ago) # a renewal clears the notice ...
+      renewed.update_columns(notified_of_cancellation_at: real_notice) # ... and the next expiry is announced
+
+      run(:down)
+
+      expect(renewed.reload).to have_attributes(notified_of_cancellation_at: real_notice, staff_notes: nil)
+      expect(untouched.reload).to have_attributes(notified_of_cancellation_at: nil, staff_notes: nil)
     end
   end
 end

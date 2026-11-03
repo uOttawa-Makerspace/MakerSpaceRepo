@@ -15,7 +15,6 @@ class GoogleCalendarSyncJob < ApplicationJob
   # does not advance past an event that was never processed) instead of being reported and skipped.
   TRANSIENT_DATABASE_ERRORS = [
     ActiveRecord::Deadlocked, ActiveRecord::LockWaitTimeout, ActiveRecord::SerializationFailure,
-    ActiveRecord::QueryCanceled, ActiveRecord::StatementTimeout,
     ActiveRecord::ConnectionNotEstablished, ActiveRecord::ConnectionFailed, ActiveRecord::ConnectionTimeoutError
   ].freeze
 

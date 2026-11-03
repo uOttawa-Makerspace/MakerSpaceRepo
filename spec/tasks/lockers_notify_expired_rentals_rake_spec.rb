@@ -70,7 +70,8 @@ RSpec.describe "lockers:notify_expired_rentals" do
       Rake::Task["lockers:notify_expired_rentals"].reenable
       relation = Object.new
       relation.define_singleton_method(:find_each) { |&blk| stale.each(&blk) }
-      allow(LockerRental).to receive(:expiry_notice_due).and_return(relation)
+      real = LockerRental.method(:expiry_notice_due)
+      allow(LockerRental).to receive(:expiry_notice_due) { |*args| args.empty? ? relation : real.call(*args) }
       expect { run_task }.not_to(change { ActionMailer::Base.deliveries.size })
       expect(ActionMailer::Base.deliveries.map(&:to)).to eq([[rental.rented_by.email]])
     end
@@ -83,11 +84,45 @@ RSpec.describe "lockers:notify_expired_rentals" do
       expect(lines.join).not_to include(rental.rented_by.email)
     end
 
-    it "releases its claim when the mail cannot be enqueued, so the next run mails it" do
+    it "releases its claim and leaves the contacted flag unset when the mail cannot be enqueued, so the next run mails it" do
       rental = expired_rental
       allow(LockerMailer).to receive(:with).and_raise(RuntimeError, "queue down")
       expect { LockerRental.notify_expired_rentals! }.to raise_error("queue down")
       expect(rental.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+    end
+
+    it "releases only a claim that is still ours" do
+      rental = expired_rental
+      other = 1.hour.from_now.change(usec: 0)
+      allow(LockerMailer).to receive(:with) do
+        rental.update_columns(notified_of_cancellation_at: other) # another run re-claimed it
+        raise "queue down"
+      end
+      expect { LockerRental.notify_expired_rentals! }.to raise_error("queue down")
+      expect(rental.reload.notified_of_cancellation_at).to eq(other)
+    end
+
+    it "sets the contacted flag after the mail is enqueued, on the claim it made" do
+      rental = expired_rental
+      LockerRental.notify_expired_rentals!
+      expect(rental.reload).to have_attributes(contacted_for_clearance: true)
+      expect(rental.notified_of_cancellation_at).to be_present
+    end
+
+    it "does not claim or mail a rental renewed (or cancelled) between loading and claiming" do
+      renewed = expired_rental
+      cancelled = expired_rental
+      stale = LockerRental.expiry_notice_due.to_a
+      renewed.update!(owned_until: 3.months.from_now)
+      cancelled.update_columns(state: "cancelled")
+      relation = Object.new
+      relation.define_singleton_method(:find_each) { |&blk| stale.each(&blk) }
+      real = LockerRental.method(:expiry_notice_due)
+      allow(LockerRental).to receive(:expiry_notice_due) { |*args| args.empty? ? relation : real.call(*args) }
+
+      expect(LockerRental.notify_expired_rentals!).to eq(0)
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect([renewed, cancelled].map { |r| r.reload.notified_of_cancellation_at }).to all(be_nil)
     end
 
     it "mails a rental once: a second run finds nothing" do

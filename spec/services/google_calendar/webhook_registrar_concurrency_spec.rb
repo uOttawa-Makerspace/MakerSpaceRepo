@@ -6,12 +6,16 @@ require "rails_helper"
 RSpec.describe GoogleCalendar::WebhookRegistrar, "overlapping runs", type: :service do
   self.use_transactional_tests = false
 
-  WATCH_URL_C = "https://www.googleapis.com/calendar/v3/calendars/primary/events/watch"
-  STOP_URL_C = "https://www.googleapis.com/calendar/v3/channels/stop"
+  let(:watch_url) { "https://www.googleapis.com/calendar/v3/calendars/primary/events/watch" }
+  let(:stop_url) { "https://www.googleapis.com/calendar/v3/channels/stop" }
 
   let(:authorizer) { Class.new { def apply!(headers) = headers["Authorization"] = "Bearer test-token" }.new }
 
-  before { allow(SubSpaceBooking).to receive(:authorizer).and_return(authorizer) }
+  before do
+    GoogleCalendarChannel.delete_all
+    allow(SubSpaceBooking).to receive(:authorizer).and_return(authorizer)
+  end
+
   after { GoogleCalendarChannel.delete_all }
 
   def in_thread(&block)
@@ -34,7 +38,7 @@ RSpec.describe GoogleCalendar::WebhookRegistrar, "overlapping runs", type: :serv
     first = nil
     calls = 0
     lock = Mutex.new
-    stub_request(:post, WATCH_URL_C).to_return do
+    stub_request(:post, watch_url).to_return do
       n = lock.synchronize { calls += 1 }
       if Thread.current == first
         first = nil
@@ -44,7 +48,7 @@ RSpec.describe GoogleCalendar::WebhookRegistrar, "overlapping runs", type: :serv
       { status: 200, headers: { "Content-Type" => "application/json" },
         body: { id: "chan-#{n}", resourceId: "res-#{n}", expiration: (((Time.current + 7.days).to_f) * 1000).to_i.to_s }.to_json }
     end
-    stub_request(:post, STOP_URL_C).to_return(status: 204, body: "")
+    stub_request(:post, stop_url).to_return(status: 204, body: "")
 
     one = two = nil
     begin
@@ -64,7 +68,7 @@ RSpec.describe GoogleCalendar::WebhookRegistrar, "overlapping runs", type: :serv
 
     expect([one.value, two.value].grep(StandardError)).to be_empty
     expect(GoogleCalendarChannel.pluck(:channel_id)).to eq(["chan-2"])
-    expect(a_request(:post, STOP_URL_C).with { |r| JSON.parse(r.body)["id"] == "chan-1" }).to have_been_made.once
-    expect(a_request(:post, STOP_URL_C)).to have_been_made.once
+    expect(a_request(:post, stop_url).with { |r| JSON.parse(r.body)["id"] == "chan-1" }).to have_been_made.once
+    expect(a_request(:post, stop_url)).to have_been_made.once
   end
 end

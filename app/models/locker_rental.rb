@@ -163,17 +163,20 @@ class LockerRental < ApplicationRecord
         next
       end
 
-      claimed = where(id: rental.id, notified_of_cancellation_at: nil)
-                .update_all(notified_of_cancellation_at: Time.current, contacted_for_clearance: true)
+      # Claim through the due scope: a rental renewed or cancelled since it was loaded is no longer due.
+      claimed_at = Time.current
+      claimed = expiry_notice_due(claimed_at).where(id: rental.id, notified_of_cancellation_at: nil)
+                                             .update_all(notified_of_cancellation_at: claimed_at)
       next unless claimed == 1
 
       begin
         LockerMailer.with(locker_rental: rental).rental_expired.deliver_later
       rescue StandardError
-        # nothing was enqueued: release the claim so the next run mails it
-        where(id: rental.id).update_all(notified_of_cancellation_at: nil, contacted_for_clearance: rental.contacted_for_clearance)
+        # nothing was enqueued: release our claim (and only ours) so the next run mails it
+        where(id: rental.id, notified_of_cancellation_at: claimed_at).update_all(notified_of_cancellation_at: nil)
         raise
       end
+      where(id: rental.id, notified_of_cancellation_at: claimed_at).update_all(contacted_for_clearance: true)
 
       count += 1
       log.call("Sent expiration notice for Locker Rental ##{rental.id} (Locker ##{rental.locker&.specifier})")

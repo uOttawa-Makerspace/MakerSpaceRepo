@@ -101,6 +101,37 @@ RSpec.describe GoogleCalendar::WebhookRegistrar do
         expect(GoogleCalendarChannel.pluck(:channel_id)).to match_array(%w[stuck fresh])
       end
 
+      it "stops the channel it just created and leaves the old ones intact when its row cannot be saved" do
+        old_channel("week-1")
+        stub_watch(id: "week-2", resource_id: "res-week-2")
+        stub_stop
+        allow(GoogleCalendarChannel).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "db down")
+        expect { described_class.register! }.to raise_error(ActiveRecord::StatementInvalid)
+        expect(a_request(:post, STOP_URL).with { |r| JSON.parse(r.body).values_at("id", "resourceId") == %w[week-2 res-week-2] })
+          .to have_been_made.once
+        expect(a_request(:post, STOP_URL)).to have_been_made.once
+        expect(GoogleCalendarChannel.pluck(:channel_id)).to eq(["week-1"])
+      end
+
+      it "reports a failing compensating stop and still raises the original error" do
+        old_channel("week-1")
+        stub_watch(id: "week-2")
+        stub_stop(status: 503)
+        allow(GoogleCalendarChannel).to receive(:create!).and_raise(ActiveRecord::StatementInvalid, "db down")
+        expect(Rails.error).to receive(:report).once
+        expect { described_class.register! }.to raise_error(ActiveRecord::StatementInvalid, /db down/)
+      end
+
+      it "keeps the new channel and reports when a database error hits while an old channel is removed" do
+        old_channel("week-1")
+        stub_watch(id: "week-2")
+        stub_stop
+        allow_any_instance_of(GoogleCalendarChannel).to receive(:destroy!).and_raise(ActiveRecord::StatementInvalid, "db down")
+        expect(Rails.error).to receive(:report).with(instance_of(ActiveRecord::StatementInvalid), hash_including(handled: true)).once
+        expect { described_class.register! }.not_to raise_error
+        expect(GoogleCalendarChannel.pluck(:channel_id)).to match_array(%w[week-1 week-2])
+      end
+
       it "hands the calendar's newest sync token to the new channel" do
         old_channel("older", expires_at: 2.days.from_now, sync_token: "OLDER")
         old_channel("newer", expires_at: 4.days.from_now, sync_token: "NEWER")
@@ -121,6 +152,7 @@ RSpec.describe GoogleCalendar::WebhookRegistrar do
     it "raises RecordInvalid when Google returns a channel id we already store" do
       GoogleCalendarChannel.create!(channel_id: "dup", resource_id: "r", expires_at: 1.week.from_now)
       stub_watch(id: "dup")
+      stub_request(:post, "https://www.googleapis.com/calendar/v3/channels/stop").to_return(status: 204, body: "")
       expect { described_class.register! }.to raise_error(ActiveRecord::RecordInvalid)
     end
   end
