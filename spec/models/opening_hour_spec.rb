@@ -45,6 +45,12 @@ RSpec.describe OpeningHour, type: :model do
       I18n.with_locale(:fr) { expect([hour.notes, hour.target]).to eq(%w[Bonjour Etudiants]) }
     end
 
+    it "falls back to the other language when the current one is blank" do
+      hour = OpeningHour.new(notes_en: "", notes_fr: "Bonjour", target_en: "Students", target_fr: nil)
+      I18n.with_locale(:en) { expect([hour.notes, hour.target]).to eq(%w[Bonjour Students]) }
+      I18n.with_locale(:fr) { expect([hour.notes, hour.target]).to eq(%w[Bonjour Students]) }
+    end
+
     it "requires a contact_info" do
       expect(OpeningHour.new).not_to be_valid
     end
