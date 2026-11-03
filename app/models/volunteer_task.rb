@@ -5,7 +5,7 @@ class VolunteerTask < ApplicationRecord
   belongs_to :space, optional: true
   has_many :volunteer_hours, dependent: :destroy
   has_many :volunteer_task_joins, dependent: :destroy
-  has_many :require_trainings
+  has_many :require_trainings, dependent: :destroy
   has_many :volunteer_task_requests, dependent: :destroy
   has_many :cc_moneys, dependent: :destroy
   has_many :photos, dependent: :destroy

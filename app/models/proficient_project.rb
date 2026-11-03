@@ -12,7 +12,8 @@ class ProficientProject < ApplicationRecord
   has_many :required_projects, through: :project_requirements
   has_many :inverse_project_requirements,
            class_name: "ProjectRequirement",
-           foreign_key: "required_project_id"
+           foreign_key: "required_project_id",
+           dependent: :destroy
   has_many :inverse_required_projects,
            through: :inverse_project_requirements,
            source: :proficient_project

@@ -71,6 +71,19 @@ RSpec.describe "Require trainings", type: :request do
         expect(flash[:alert]).to eq("Something went wrong")
       end
 
+      it "saves nothing and alerts when the task id is unknown but the training is valid" do
+        unknown = { require_training: { volunteer_task_id: 987_654_321, training_id: training.id } }
+        expect { post require_trainings_path, params: unknown }.not_to change(RequireTraining, :count)
+        expect(response).to redirect_to(volunteer_tasks_path)
+        expect(flash[:alert]).to eq("Something went wrong")
+      end
+
+      it "saves nothing and alerts when no task id is given" do
+        missing = { require_training: { training_id: training.id } }
+        expect { post require_trainings_path, params: missing, headers: back }.not_to change(RequireTraining, :count)
+        expect(flash[:alert]).to eq("Something went wrong")
+      end
+
       it "allows the same training twice on a task (no uniqueness)" do
         post require_trainings_path, params: params
         expect { post require_trainings_path, params: params }.to change(RequireTraining, :count).by(1)

@@ -320,6 +320,21 @@ RSpec.describe "Admin spaces", type: :request do
         expect(second).to be_present
       end
 
+      it "keeps the space, its pi readers and its request state, and says why, when a signed walk-in sheet refuses the delete" do
+        create(:walk_in_safety_sheet, :is_adult, user: create(:user), space: space)
+        reader = create(:pi_reader, space: space)
+        space.update!(destroy_admin_id: admin.id)
+        sign_in_as(:admin)
+
+        expect { destroy_space("ALPHA") }.not_to change(Space, :count)
+
+        expect(response).to redirect_to(admin_spaces_path)
+        expect(flash[:alert]).to include("walk in safety sheets")
+        expect(flash[:notice]).to be_nil
+        expect(space.reload.destroy_admin_id).to be_nil
+        expect(reader.reload.space_id).to eq(space.id)
+      end
+
       it "404s without the id param (the route only supplies space_id)" do
         delete admin_space_destroy_path(space_id: space.id), params: { admin_input: "ALPHA" }
         expect(response).to have_http_status(:not_found)

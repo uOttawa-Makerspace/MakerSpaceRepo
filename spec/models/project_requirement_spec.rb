@@ -11,6 +11,7 @@ RSpec.describe ProjectRequirement, type: :model do
   describe "Validations" do
     context "user" do
       it do
+        ProjectRequirement.create!(proficient_project: create(:proficient_project), required_project: create(:proficient_project))
         should validate_uniqueness_of(:proficient_project_id).scoped_to(
                  :required_project_id
                ).with_message("This project is already a pre-requisite")

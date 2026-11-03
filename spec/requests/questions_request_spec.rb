@@ -275,12 +275,11 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(flash[:notice]).to eq("Question Deleted")
     end
 
-    # Question has no dependent handling for exam_questions: deleting a question used in an exam leaves dangling exam_questions
-    it "leaves the exam_questions of a used question behind" do
+    it "keeps the exam_questions of a used question, with the question cleared" do
       exam = create(:exam)
       eq = ExamQuestion.create!(exam: exam, question: question)
       delete question_path(question)
-      expect(ExamQuestion.find(eq.id).question_id).to eq(question.id)
+      expect(ExamQuestion.find(eq.id).question_id).to be_nil
       expect(Question.exists?(question.id)).to be(false)
     end
   end

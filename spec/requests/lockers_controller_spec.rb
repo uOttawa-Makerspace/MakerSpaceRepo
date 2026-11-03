@@ -36,6 +36,22 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       end
     end
 
+    it "refuses to delete a locker size that has lockers, redirecting with the reason" do
+      log_in!(create(:user, :admin))
+      locker = create(:locker)
+      expect { delete locker_size_path(locker.locker_size) }.not_to change(LockerSize, :count)
+      expect(response).to redirect_to(lockers_path)
+      expect(flash[:alert]).to include("lockers")
+    end
+
+    it "deletes a locker size that has no lockers" do
+      log_in!(create(:user, :admin))
+      size = create(:locker_size)
+      expect { delete locker_size_path(size) }.to change(LockerSize, :count).by(-1)
+      expect(response).to redirect_to(lockers_path)
+      expect(flash[:alert]).to be_nil
+    end
+
     it "redirects non-admins away from locker_sizes mutations and does not apply them" do
       size = create(:locker_size)
       log_in!(staff)

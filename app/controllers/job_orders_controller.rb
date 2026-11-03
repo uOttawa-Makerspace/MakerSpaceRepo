@@ -23,6 +23,7 @@ class JobOrdersController < SessionsController
                   resend_quote_email
                   comments
                 ]
+  before_action :set_design_services_type, only: %i[new create]
   before_action :set_job_order,
                 only: %w[
                   destroy
@@ -104,7 +105,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
         @job_task = @job_order.job_tasks.create!(
           title: "Task #1",
           # Force job_type_id = 3 if it's the "Need Design Help" flow
-          job_type: params[:redirect_step].to_i == 2 ? JobType.where(name: "Design Services").first : nil
+          job_type: params[:redirect_step].to_i == 2 ? JobType.design_services : nil
         )
         
         redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1)
@@ -414,6 +415,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   private
+
+  # The "new" page is also rendered again when create fails, so both actions need it.
+  def set_design_services_type
+    @design_services_type = JobType.design_services
+  end
 
   def set_job_order
     if JobOrder.where(id: params[:job_order_id], is_deleted: false).present? ||

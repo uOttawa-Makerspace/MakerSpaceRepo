@@ -72,6 +72,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.string "public_goal"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["user_id"], name: "index_announcements_on_user_id"
   end
 
   create_table "answers", id: :serial, force: :cascade do |t|
@@ -79,6 +80,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.datetime "created_at", precision: nil, null: false
     t.integer "question_id"
     t.datetime "updated_at", precision: nil, null: false
+    t.index ["question_id"], name: "index_answers_on_question_id"
   end
 
   create_table "api_refresh_tokens", force: :cascade do |t|
@@ -120,6 +122,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.integer "repository_id"
     t.datetime "updated_at", precision: nil, null: false
     t.index ["category_option_id"], name: "index_categories_on_category_option_id"
+    t.index ["project_proposal_id"], name: "index_categories_on_project_proposal_id"
     t.index ["repository_id"], name: "index_categories_on_repository_id"
   end
 
@@ -142,6 +145,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.index ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id"
     t.index ["order_id"], name: "index_cc_moneys_on_order_id"
     t.index ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id"
+    t.index ["user_id"], name: "index_cc_moneys_on_user_id"
+    t.index ["volunteer_task_id"], name: "index_cc_moneys_on_volunteer_task_id"
   end
 
   create_table "certifications", id: :serial, force: :cascade do |t|
@@ -154,6 +159,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.index ["demotion_staff_id"], name: "index_certifications_on_demotion_staff_id"
+    t.index ["training_session_id"], name: "index_certifications_on_training_session_id"
     t.index ["user_id"], name: "index_certifications_on_user_id"
   end
 
@@ -297,6 +303,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.integer "exam_id"
     t.integer "question_id"
     t.datetime "updated_at", precision: nil, null: false
+    t.index ["exam_id"], name: "index_exam_questions_on_exam_id"
+    t.index ["question_id"], name: "index_exam_questions_on_question_id"
   end
 
   create_table "exam_responses", id: :serial, force: :cascade do |t|
@@ -305,6 +313,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.datetime "created_at", precision: nil, null: false
     t.integer "exam_question_id"
     t.datetime "updated_at", precision: nil, null: false
+    t.index ["answer_id"], name: "index_exam_responses_on_answer_id"
+    t.index ["exam_question_id"], name: "index_exam_responses_on_exam_question_id"
   end
 
   create_table "exams", id: :serial, force: :cascade do |t|
@@ -316,6 +326,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.integer "training_session_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["training_session_id"], name: "index_exams_on_training_session_id"
+    t.index ["user_id"], name: "index_exams_on_user_id"
   end
 
   create_table "faqs", force: :cascade do |t|
@@ -671,7 +683,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["learning_module_id"], name: "index_learning_module_tracks_on_learning_module_id"
-    t.index ["user_id"], name: "index_learning_module_tracks_on_user_id"
+    t.index ["user_id", "learning_module_id"], name: "index_learning_module_tracks_on_user_and_learning_module", unique: true
   end
 
   create_table "learning_modules", force: :cascade do |t|
@@ -690,6 +702,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.datetime "scorm_status_changed_at"
     t.string "scorm_error"
     t.index ["shortcut_name"], name: "index_learning_modules_on_shortcut_name", unique: true
+    t.index ["training_id"], name: "index_learning_modules_on_training_id"
   end
 
   create_table "likes", id: :serial, force: :cascade do |t|
@@ -864,6 +877,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.decimal "total", precision: 12, scale: 3
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["user_id"], name: "index_orders_on_user_id"
   end
 
   create_table "photos", id: :serial, force: :cascade do |t|
@@ -873,7 +887,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.string "image_file_name"
     t.integer "image_file_size"
     t.datetime "image_updated_at", precision: nil
-    t.integer "learning_module_id"
+    t.bigint "learning_module_id"
     t.integer "position", default: 0, null: false
     t.integer "proficient_project_id"
     t.integer "project_proposal_id"
@@ -881,7 +895,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "volunteer_task_id"
     t.integer "width"
+    t.index ["learning_module_id"], name: "index_photos_on_learning_module_id"
+    t.index ["proficient_project_id"], name: "index_photos_on_proficient_project_id"
+    t.index ["project_proposal_id"], name: "index_photos_on_project_proposal_id"
     t.index ["repository_id"], name: "index_photos_on_repository_id"
+    t.index ["volunteer_task_id"], name: "index_photos_on_volunteer_task_id"
   end
 
   create_table "pi_readers", id: :serial, force: :cascade do |t|
@@ -976,6 +994,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.integer "printer_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["printer_id"], name: "index_printer_sessions_on_printer_id"
+    t.index ["user_id"], name: "index_printer_sessions_on_user_id"
   end
 
   create_table "printer_types", force: :cascade do |t|
@@ -1039,12 +1059,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.integer "training_id"
     t.datetime "updated_at", precision: nil, null: false
     t.index ["drop_off_location_id"], name: "index_proficient_projects_on_drop_off_location_id"
+    t.index ["training_id"], name: "index_proficient_projects_on_training_id"
     t.check_constraint "cc >= 0", name: "proficient_projects_cc_non_negative"
   end
 
   create_table "proficient_projects_users", id: false, force: :cascade do |t|
     t.integer "proficient_project_id", null: false
     t.integer "user_id", null: false
+    t.index ["proficient_project_id"], name: "index_proficient_projects_users_on_proficient_project_id"
+    t.index ["user_id"], name: "index_proficient_projects_users_on_user_id"
   end
 
   create_table "programs", id: :serial, force: :cascade do |t|
@@ -1053,6 +1076,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.string "program_type"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["user_id"], name: "index_programs_on_user_id"
   end
 
   create_table "project_joins", id: :serial, force: :cascade do |t|
@@ -1060,6 +1084,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.integer "project_proposal_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["project_proposal_id"], name: "index_project_joins_on_project_proposal_id"
+    t.index ["user_id"], name: "index_project_joins_on_user_id"
   end
 
   create_table "project_kits", force: :cascade do |t|
@@ -1101,8 +1127,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.string "username"
     t.integer "year"
     t.string "youtube_link"
+    t.index ["admin_id"], name: "index_project_proposals_on_admin_id"
     t.index ["linked_project_proposal_id"], name: "index_project_proposals_on_linked_project_proposal_id"
     t.index ["title"], name: "index_project_proposals_on_title", opclass: :gin_trgm_ops, using: :gin
+    t.index ["user_id"], name: "index_project_proposals_on_user_id"
     t.index ["year", "season"], name: "index_project_proposals_on_year_and_season"
   end
 
@@ -1111,6 +1139,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.integer "proficient_project_id"
     t.integer "required_project_id"
     t.datetime "updated_at", precision: nil, null: false
+    t.index ["proficient_project_id"], name: "index_project_requirements_on_proficient_project_id"
+    t.index ["required_project_id"], name: "index_project_requirements_on_required_project_id"
   end
 
   create_table "questions", id: :serial, force: :cascade do |t|
@@ -1124,11 +1154,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.integer "training_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["user_id"], name: "index_questions_on_user_id"
   end
 
   create_table "questions_trainings", id: false, force: :cascade do |t|
     t.bigint "question_id", null: false
     t.bigint "training_id", null: false
+    t.index ["question_id"], name: "index_questions_trainings_on_question_id"
+    t.index ["training_id"], name: "index_questions_trainings_on_training_id"
   end
 
   create_table "quick_access_links", force: :cascade do |t|
@@ -1157,11 +1190,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.string "file_file_name"
     t.integer "file_file_size"
     t.datetime "file_updated_at", precision: nil
-    t.integer "learning_module_id"
+    t.bigint "learning_module_id"
     t.integer "proficient_project_id"
     t.integer "project_proposal_id"
     t.integer "repository_id"
     t.datetime "updated_at", precision: nil, null: false
+    t.index ["learning_module_id"], name: "index_repo_files_on_learning_module_id"
+    t.index ["proficient_project_id"], name: "index_repo_files_on_proficient_project_id"
+    t.index ["project_proposal_id"], name: "index_repo_files_on_project_proposal_id"
     t.index ["repository_id"], name: "index_repo_files_on_repository_id"
   end
 
@@ -1187,6 +1223,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.string "youtube_link"
     t.index ["category"], name: "index_repositories_on_category", opclass: :gin_trgm_ops, using: :gin
     t.index ["description"], name: "index_repositories_on_description", opclass: :gin_trgm_ops, using: :gin
+    t.index ["make_id"], name: "index_repositories_on_make_id"
+    t.index ["project_proposal_id"], name: "index_repositories_on_project_proposal_id"
     t.index ["title"], name: "index_repositories_on_title", opclass: :gin_trgm_ops, using: :gin
     t.index ["user_id"], name: "index_repositories_on_user_id"
   end
@@ -1194,6 +1232,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
   create_table "repositories_users", id: false, force: :cascade do |t|
     t.integer "repository_id", null: false
     t.integer "user_id", null: false
+    t.index ["repository_id"], name: "index_repositories_users_on_repository_id"
+    t.index ["user_id"], name: "index_repositories_users_on_user_id"
   end
 
   create_table "require_trainings", id: :serial, force: :cascade do |t|
@@ -1201,6 +1241,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.integer "training_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "volunteer_task_id"
+    t.index ["training_id"], name: "index_require_trainings_on_training_id"
+    t.index ["volunteer_task_id"], name: "index_require_trainings_on_volunteer_task_id"
   end
 
   create_table "rfids", id: :serial, force: :cascade do |t|
@@ -1293,6 +1335,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
   create_table "spaces_trainings", id: false, force: :cascade do |t|
     t.integer "space_id", null: false
     t.integer "training_id", null: false
+    t.index ["space_id"], name: "index_spaces_trainings_on_space_id"
+    t.index ["training_id"], name: "index_spaces_trainings_on_training_id"
   end
 
   create_table "staff_availabilities", force: :cascade do |t|
@@ -1457,13 +1501,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
 
   create_table "training_sessions", id: :serial, force: :cascade do |t|
     t.string "course"
-    t.integer "course_name_id"
+    t.bigint "course_name_id"
     t.datetime "created_at", precision: nil, null: false
     t.string "level", default: "Beginner"
     t.integer "space_id"
     t.integer "training_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["course_name_id"], name: "index_training_sessions_on_course_name_id"
+    t.index ["space_id"], name: "index_training_sessions_on_space_id"
     t.index ["training_id"], name: "index_training_sessions_on_training_id"
     t.index ["user_id"], name: "index_training_sessions_on_user_id"
   end
@@ -1588,6 +1634,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id", null: false
     t.integer "volunteer_task_id", null: false
+    t.index ["user_id"], name: "index_volunteer_hours_on_user_id"
+    t.index ["volunteer_task_id"], name: "index_volunteer_hours_on_volunteer_task_id"
   end
 
   create_table "volunteer_task_joins", id: :serial, force: :cascade do |t|
@@ -1597,6 +1645,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.integer "user_id"
     t.string "user_type", default: "Volunteer"
     t.integer "volunteer_task_id"
+    t.index ["user_id"], name: "index_volunteer_task_joins_on_user_id"
+    t.index ["volunteer_task_id"], name: "index_volunteer_task_joins_on_volunteer_task_id"
   end
 
   create_table "volunteer_task_requests", id: :serial, force: :cascade do |t|
@@ -1605,6 +1655,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.integer "volunteer_task_id"
+    t.index ["user_id"], name: "index_volunteer_task_requests_on_user_id"
+    t.index ["volunteer_task_id"], name: "index_volunteer_task_requests_on_volunteer_task_id"
   end
 
   create_table "volunteer_tasks", id: :serial, force: :cascade do |t|
@@ -1619,6 +1671,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.string "title", default: ""
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["space_id"], name: "index_volunteer_tasks_on_space_id"
+    t.index ["user_id"], name: "index_volunteer_tasks_on_user_id"
   end
 
   create_table "walk_in_safety_sheets", force: :cascade do |t|
@@ -1646,12 +1700,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "announcement_dismisses", "announcements"
   add_foreign_key "announcement_dismisses", "users"
+  add_foreign_key "announcements", "users"
+  add_foreign_key "answers", "questions"
   add_foreign_key "api_refresh_tokens", "users", on_delete: :cascade
   add_foreign_key "categories", "category_options"
+  add_foreign_key "categories", "project_proposals"
   add_foreign_key "categories", "repositories"
   add_foreign_key "cc_moneys", "discount_codes"
   add_foreign_key "cc_moneys", "orders"
   add_foreign_key "cc_moneys", "proficient_projects"
+  add_foreign_key "cc_moneys", "users"
+  add_foreign_key "cc_moneys", "volunteer_tasks"
+  add_foreign_key "certifications", "training_sessions"
   add_foreign_key "certifications", "users"
   add_foreign_key "certifications", "users", column: "demotion_staff_id"
   add_foreign_key "chat_messages", "job_orders"
@@ -1660,6 +1720,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
   add_foreign_key "comments", "users"
   add_foreign_key "contact_infos", "spaces"
   add_foreign_key "coupon_codes", "users"
+  add_foreign_key "design_day_schedules", "design_days"
   add_foreign_key "discount_codes", "price_rules"
   add_foreign_key "discount_codes", "users"
   add_foreign_key "equipment", "repositories"
@@ -1669,6 +1730,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
   add_foreign_key "events", "spaces"
   add_foreign_key "events", "trainings", on_delete: :nullify
   add_foreign_key "events", "users", column: "created_by_id"
+  add_foreign_key "exam_questions", "exams"
+  add_foreign_key "exam_questions", "questions", on_delete: :nullify
+  add_foreign_key "exam_responses", "answers", on_delete: :nullify
+  add_foreign_key "exam_responses", "exam_questions", on_delete: :nullify
+  add_foreign_key "exams", "training_sessions"
+  add_foreign_key "exams", "users"
+  add_foreign_key "job_options_types", "job_options"
+  add_foreign_key "job_options_types", "job_types"
   add_foreign_key "job_order_options", "job_options"
   add_foreign_key "job_order_options", "job_orders"
   add_foreign_key "job_order_quote_options", "job_options"
@@ -1680,8 +1749,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
   add_foreign_key "job_order_statuses", "job_orders"
   add_foreign_key "job_order_statuses", "job_statuses"
   add_foreign_key "job_order_statuses", "users"
+  add_foreign_key "job_orders", "job_order_quotes"
   add_foreign_key "job_orders", "job_service_groups"
+  add_foreign_key "job_orders", "job_types"
+  add_foreign_key "job_orders", "users"
   add_foreign_key "job_orders", "users", column: "assigned_staff_id"
+  add_foreign_key "job_orders_services", "job_orders"
+  add_foreign_key "job_orders_services", "job_services"
   add_foreign_key "job_quote_line_items", "job_orders"
   add_foreign_key "job_service_groups", "job_types"
   add_foreign_key "job_services", "job_orders"
@@ -1695,44 +1769,96 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
   add_foreign_key "job_tasks", "job_services"
   add_foreign_key "job_tasks", "job_types"
   add_foreign_key "job_type_extras", "job_types"
+  add_foreign_key "key_certifications", "users"
+  add_foreign_key "key_requests", "spaces", on_delete: :nullify
+  add_foreign_key "key_requests", "users"
+  add_foreign_key "key_requests", "users", column: "supervisor_id"
+  add_foreign_key "key_transactions", "keys"
+  add_foreign_key "key_transactions", "users"
+  add_foreign_key "keys", "spaces", on_delete: :nullify
+  add_foreign_key "keys", "users"
+  add_foreign_key "keys", "users", column: "supervisor_id"
   add_foreign_key "lab_sessions", "spaces"
+  add_foreign_key "lab_sessions", "users"
   add_foreign_key "learning_module_tracks", "learning_modules"
   add_foreign_key "learning_module_tracks", "users"
+  add_foreign_key "learning_modules", "trainings"
   add_foreign_key "likes", "repositories"
   add_foreign_key "likes", "users"
   add_foreign_key "locker_payments", "locker_rentals"
   add_foreign_key "locker_payments", "users", column: "resolved_by_id"
+  add_foreign_key "locker_rentals", "course_names", on_delete: :nullify
   add_foreign_key "locker_rentals", "lockers"
+  add_foreign_key "locker_rentals", "lockers", column: "preferred_locker_id"
   add_foreign_key "locker_rentals", "users", column: "decided_by_id"
   add_foreign_key "locker_rentals", "users", column: "rented_by_id"
+  add_foreign_key "lockers", "locker_sizes"
   add_foreign_key "memberships", "membership_tiers"
   add_foreign_key "memberships", "users"
+  add_foreign_key "opening_hours", "contact_infos"
   add_foreign_key "order_items", "orders"
   add_foreign_key "order_items", "proficient_projects"
   add_foreign_key "orders", "order_statuses"
+  add_foreign_key "orders", "users"
+  add_foreign_key "photos", "learning_modules"
+  add_foreign_key "photos", "proficient_projects"
+  add_foreign_key "photos", "project_proposals"
   add_foreign_key "photos", "repositories"
+  add_foreign_key "photos", "volunteer_tasks"
   add_foreign_key "pi_readers", "spaces"
   add_foreign_key "popular_hours", "spaces"
   add_foreign_key "printer_issues", "printers"
   add_foreign_key "printer_issues", "users", column: "reporter_id"
+  add_foreign_key "printer_sessions", "printers"
+  add_foreign_key "printer_sessions", "users"
   add_foreign_key "printers", "printer_types"
   add_foreign_key "proficient_project_sessions", "certifications"
   add_foreign_key "proficient_project_sessions", "proficient_projects"
   add_foreign_key "proficient_project_sessions", "users"
   add_foreign_key "proficient_projects", "drop_off_locations"
+  add_foreign_key "proficient_projects", "trainings"
+  add_foreign_key "proficient_projects_users", "proficient_projects"
+  add_foreign_key "proficient_projects_users", "users"
+  add_foreign_key "programs", "users"
+  add_foreign_key "project_joins", "project_proposals"
+  add_foreign_key "project_joins", "users"
   add_foreign_key "project_kits", "learning_modules"
   add_foreign_key "project_kits", "proficient_projects"
   add_foreign_key "project_kits", "users"
+  add_foreign_key "project_proposals", "project_proposals", column: "linked_project_proposal_id", on_delete: :nullify
+  add_foreign_key "project_proposals", "users"
+  add_foreign_key "project_proposals", "users", column: "admin_id"
+  add_foreign_key "project_requirements", "proficient_projects"
+  add_foreign_key "project_requirements", "proficient_projects", column: "required_project_id"
+  add_foreign_key "questions", "users"
+  add_foreign_key "questions_trainings", "questions"
+  add_foreign_key "questions_trainings", "trainings"
   add_foreign_key "quick_access_links", "users"
+  add_foreign_key "repo_files", "learning_modules"
+  add_foreign_key "repo_files", "proficient_projects"
+  add_foreign_key "repo_files", "project_proposals"
   add_foreign_key "repo_files", "repositories"
+  add_foreign_key "repositories", "project_proposals", on_delete: :nullify
+  add_foreign_key "repositories", "repositories", column: "make_id", on_delete: :nullify
   add_foreign_key "repositories", "users"
+  add_foreign_key "repositories_users", "repositories", validate: false
+  add_foreign_key "repositories_users", "users"
+  add_foreign_key "require_trainings", "trainings"
+  add_foreign_key "require_trainings", "volunteer_tasks"
   add_foreign_key "rfids", "users"
   add_foreign_key "shadowing_hours", "spaces"
   add_foreign_key "shadowing_hours", "users"
   add_foreign_key "shifts", "spaces"
   add_foreign_key "shifts", "trainings"
+  add_foreign_key "shifts_users", "shifts"
+  add_foreign_key "shifts_users", "users"
+  add_foreign_key "space_manager_joins", "spaces"
+  add_foreign_key "space_manager_joins", "users"
+  add_foreign_key "spaces_trainings", "spaces"
+  add_foreign_key "spaces_trainings", "trainings"
   add_foreign_key "staff_availabilities", "time_periods"
   add_foreign_key "staff_availabilities", "users"
+  add_foreign_key "staff_availability_exceptions", "staff_availabilities"
   add_foreign_key "staff_external_unavailabilities", "users"
   add_foreign_key "staff_needed_calendars", "spaces"
   add_foreign_key "staff_spaces", "spaces"
@@ -1748,10 +1874,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
   add_foreign_key "sub_spaces", "spaces"
   add_foreign_key "tap_box_logs", "spaces"
   add_foreign_key "tap_box_logs", "users"
+  add_foreign_key "team_memberships", "teams"
+  add_foreign_key "team_memberships", "users"
   add_foreign_key "training_requirements", "proficient_projects"
   add_foreign_key "training_requirements", "trainings"
+  add_foreign_key "training_sessions", "course_names", on_delete: :nullify
+  add_foreign_key "training_sessions", "spaces"
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
+  add_foreign_key "training_sessions_users", "users"
   add_foreign_key "trainings", "skills"
   add_foreign_key "trainings", "spaces"
   add_foreign_key "upvotes", "comments"
@@ -1761,5 +1892,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
   add_foreign_key "users", "spaces"
   add_foreign_key "videos", "learning_modules"
   add_foreign_key "videos", "proficient_projects"
+  add_foreign_key "volunteer_hours", "users"
+  add_foreign_key "volunteer_hours", "volunteer_tasks"
+  add_foreign_key "volunteer_task_joins", "users"
+  add_foreign_key "volunteer_task_joins", "volunteer_tasks"
+  add_foreign_key "volunteer_task_requests", "users"
+  add_foreign_key "volunteer_task_requests", "volunteer_tasks"
+  add_foreign_key "volunteer_tasks", "spaces"
+  add_foreign_key "volunteer_tasks", "users"
+  add_foreign_key "walk_in_safety_sheets", "spaces"
   add_foreign_key "walk_in_safety_sheets", "users"
 end
