@@ -32,6 +32,11 @@ RSpec.describe LockerRental, type: :model do
       expect(rental.reload.notified_of_cancellation_at).to be_nil
     end
 
+    it "does not touch a notice recorded on a rental being created" do
+      told = create(:locker_rental, :active, owned_until: 3.days.ago, notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+      expect(told.reload).to have_attributes(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+    end
+
     it "keeps it when owned_until moves earlier or is not changed" do
       rental.update!(owned_until: 5.days.ago)
       rental.update!(staff_notes: "chasing")

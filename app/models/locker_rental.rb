@@ -461,7 +461,7 @@ class LockerRental < ApplicationRecord
   private
 
   def owned_until_moved_later?
-    notified_of_cancellation_at.present? && will_save_change_to_owned_until? &&
+    persisted? && notified_of_cancellation_at.present? && will_save_change_to_owned_until? &&
       (owned_until.nil? || owned_until_was.nil? || owned_until > owned_until_was)
   end
 
