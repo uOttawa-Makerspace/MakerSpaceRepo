@@ -116,10 +116,6 @@ class MsrMailer < ApplicationMailer
     )
   end
 
-  def send_print_reminder(email, id)
-    mail(to: email, subject: "Reminder for your print order ##{id}")
-  end
-
   def send_print_declined(user, comments, filename)
     @user = user
     @comments = comments
