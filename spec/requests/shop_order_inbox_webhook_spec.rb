@@ -54,20 +54,20 @@ RSpec.describe "Shopify order webhooks (inbox)", type: :request do
       expect([pending.reload.status, Membership.count, CcMoney.count]).to eq(["pending", 1, 0])
     end
 
-    it "does not duplicate the row for a redelivery and queues the job again while the order is not applied" do
+    it "does not duplicate the row for a redelivery, and queues nothing more: the stored order's schedule owns it" do
       body = membership_order
       signed_orders_paid(body)
       signed_orders_paid(body)
       expect(ProcessedOrder.count).to eq(1)
-      expect(queued_ids).to eq([stored(9001).id] * 2)
+      expect(queued_ids).to eq([stored(9001).id])
     end
 
-    it "queues the job again for a failed order" do
+    it "queues nothing for a failed order: staff re-run it" do
       signed_orders_paid(membership_order)
       stored(9001).update!(status: "failed")
       clear_enqueued_jobs
       signed_orders_paid(membership_order)
-      expect(queued_ids).to eq([stored(9001).id])
+      expect(queued_ids).to be_empty
     end
 
     it "queues nothing for an order already applied" do
@@ -80,17 +80,34 @@ RSpec.describe "Shopify order webhooks (inbox)", type: :request do
       expect(ProcessedOrder.count).to eq(1)
     end
 
-    it "answers 503 when the job cannot be queued: the order stays received and a redelivery queues it" do
+    it "hands an order whose backoff has passed out again on a redelivery, and one still waiting nothing" do
+      signed_orders_paid(membership_order)
+      clear_enqueued_jobs
+      stored(9001).update_columns(next_attempt_at: 1.hour.from_now)
+      signed_orders_paid(membership_order)
+      expect(queued_ids).to be_empty
+      stored(9001).update_columns(next_attempt_at: 1.minute.ago)
+      signed_orders_paid(membership_order)
+      expect(queued_ids).to eq([stored(9001).id])
+    end
+
+    it "answers 200 when the job cannot be queued: the stored order stays due and the dispatcher picks it up" do
       allow(ApplyProcessedOrderJob).to receive(:perform_later).and_return(false)
       signed_orders_paid(membership_order)
-      expect(response).to have_http_status(:service_unavailable)
-      expect(stored(9001).status).to eq("received")
+      expect(response).to have_http_status(:ok)
+      expect(stored(9001)).to have_attributes(status: "received")
+      expect(stored(9001).next_attempt_at).to be <= Time.current
 
       allow(ApplyProcessedOrderJob).to receive(:perform_later).and_call_original
+      DispatchDueOrdersJob.perform_now
+      expect(queued_ids).to eq([stored(9001).id])
+    end
+
+    it "answers 200 when queueing raises" do
+      allow(ApplyProcessedOrderJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished)
       signed_orders_paid(membership_order)
       expect(response).to have_http_status(:ok)
       expect(ProcessedOrder.count).to eq(1)
-      expect(queued_ids).to eq([stored(9001).id])
     end
 
     it "treats the numeric id and the admin_graphql_api_id spelling of one order as one" do

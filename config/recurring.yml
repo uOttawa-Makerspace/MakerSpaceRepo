@@ -32,10 +32,11 @@ production: &production
     class: JobOrderDraftSweepJob
     schedule: every hour at minute 42
 
-  # Queues stored Shopify orders nothing is working on again, and reports the ones stuck for hours.
-  sweep_stranded_orders:
-    class: SweepStrandedOrdersJob
-    schedule: every 10 minutes
+  # Hands out the stored Shopify orders that are due (new ones, retries, expired leases) and reports the ones
+  # nothing has dispatched for hours. ProcessedOrder is the schedule.
+  dispatch_due_orders:
+    class: DispatchDueOrdersJob
+    schedule: every minute
 
 staging:
   <<: *production

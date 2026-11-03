@@ -1,36 +1,24 @@
 # frozen_string_literal: true
 
-# Applies one stored order (ProcessedOrder) with ShopOrderApplier. Every error is retried, with a growing wait
-# (10 attempts over about a day and a half, see wait_for), because the stored payload loses nothing by waiting. A failed
-# attempt rolls its whole application back, then counts itself and keeps its error on the row in a transaction of
-# its own. When the attempts run out the order is marked failed and reported; staff re-run it with
+# Applies one stored order (ProcessedOrder) with ShopOrderApplier: one run, one attempt. It is queued only by
+# ProcessedOrder.dispatch_due, which owns the schedule. A run that fails has rolled its whole application back;
+# the failure is then recorded on the row (error, attempts, the backoff until the next attempt, failed after
+# ProcessedOrder::MAX_ATTEMPTS) and the error is not raised: the row, not this job, retries. Every error is
+# retried because the stored payload loses nothing by waiting; staff re-run a failed order with
 # `rake shop_orders:reapply`.
 class ApplyProcessedOrderJob < ApplicationJob
   queue_as :default
 
+  # Raised only to be reported (Rails.error.report).
   class OrderApplyFailed < StandardError; end
-  # An attempt failed (the first one, and the fifth): staff see a systemic or single-branch problem within minutes,
-  # while the order is still being retried.
   class OrderApplyRetrying < StandardError; end
 
-  ATTEMPTS = 10
-  WARN_AT_ATTEMPTS = [1, 5].freeze
-
-  # The wait before retry number `executions` (1..9): 61s, 92s, 5m, 18m, 53m, 2h10m, 4h41m, 9h07m, 16h25m.
-  def self.wait_for(executions) = (executions**5 + 60).seconds
-
-  retry_on StandardError, attempts: ATTEMPTS, wait: ->(executions) { wait_for(executions) } do |job, error|
-    ProcessedOrder.mark_failed!(job.arguments.first, error)
-  end
-
   def perform(processed_order_id)
-    order = ProcessedOrder.find(processed_order_id)
-    return if order.applied?
+    order = ProcessedOrder.find_by(id: processed_order_id)
+    return unless order&.status == "received"
 
     ShopOrderApplier.new(order).call
   rescue StandardError => e
     ProcessedOrder.record_failure!(processed_order_id, e)
-    ProcessedOrder.report_retrying(processed_order_id, executions, e) if WARN_AT_ATTEMPTS.include?(executions)
-    raise
   end
 end

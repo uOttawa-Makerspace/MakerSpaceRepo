@@ -51,11 +51,20 @@ RSpec.describe "shop_orders:reapply" do
     expect(enqueued_jobs).to be_empty
   end
 
-  it "says so when the job cannot be queued; the sweep will queue it" do
+  it "resets the schedule (attempts, due now, report mark) and hands the order out" do
+    order.update!(status: "failed", attempts: 10, reported_at: 1.day.ago, next_attempt_at: 3.days.from_now)
+    run("8800")
+    expect(order.reload).to have_attributes(status: "received", attempts: 0, reported_at: nil)
+    expect(order.next_attempt_at).to be_within(1.minute).of(Time.current + ProcessedOrder::LEASE)
+    expect(enqueued_jobs.map { |j| j["job_class"] }).to eq(["ApplyProcessedOrderJob"])
+  end
+
+  it "says so when the job cannot be queued; the dispatcher will queue it" do
     order.update!(status: "failed")
     allow(ApplyProcessedOrderJob).to receive(:perform_later).and_return(false)
-    expect { run("8800") }.to output(/the sweep will queue it/).to_stdout
+    expect { run("8800") }.to output(/the dispatcher will queue it/).to_stdout
     expect(order.reload.status).to eq("received")
+    expect(order.next_attempt_at).to be <= Time.current
   end
 
   it "aborts for an unknown order" do

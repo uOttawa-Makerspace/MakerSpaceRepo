@@ -28,11 +28,13 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
 
   def applied_orders = ProcessedOrder.where(status: "applied")
 
-  # The last run failed: nothing applied, the attempt counted, the error kept, a retry queued.
+  # The last run failed: nothing applied, the attempt counted, the error kept, the next attempt scheduled on the row
+  # (the job itself neither raises nor queues a retry).
   def expect_retry(order = @order)
     expect(order.reload).to have_attributes(status: "received", attempts: 1)
     expect(order.last_error).to be_present
-    expect(enqueued_jobs.map { |j| j["job_class"] }).to include("ApplyProcessedOrderJob")
+    expect(order.next_attempt_at).to be > Time.current + 30.seconds
+    expect(enqueued_jobs.map { |j| j["job_class"] }).not_to include("ApplyProcessedOrderJob")
   end
 
   def membership_payload(membership_id, **extra)
@@ -596,49 +598,69 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       end
     end
 
-    describe "retries" do
+    describe "the schedule on the row" do
       let(:pending) { create(:membership, user: user, membership_tier: tier, status: "pending") }
 
-      it "waits longer after every attempt, about a day and a half over ten attempts" do
-        waits = (1..9).map { |n| described_class.wait_for(n) }
-        expect(waits).to eq(waits.sort)
-        expect(waits.sum).to be_between(24.hours, 48.hours)
-      end
-
-      it "marks the order failed and reports it once the attempts run out" do
+      it "sets the next attempt from the row's attempts: backoff(1) after the first failure, backoff(2) after the second" do
         allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
         order = hook(membership_payload(pending.id, id: 7420))
-        job = described_class.new(order.id)
-        job.exception_executions = { "[StandardError]" => described_class::ATTEMPTS - 1 }
-        job.perform_now
-        expect(order.reload).to have_attributes(status: "failed", attempts: 2)
-        error, opts = reports.find { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyFailed) }
-        expect(error.message).to include("7420", "2 attempts", "LockWaitTimeout")
-        expect(opts[:context]).to include(shopify_order_id: "7420", attempts: 2, error_class: "ActiveRecord::LockWaitTimeout")
+        expect(order.next_attempt_at).to be_within(5.seconds).of(Time.current + ProcessedOrder.backoff(1))
+        described_class.perform_now(order.id)
+        expect(order.reload).to have_attributes(attempts: 2)
+        expect(order.next_attempt_at).to be_within(5.seconds).of(Time.current + ProcessedOrder.backoff(2))
       end
 
-      it "reports the first failed attempt and the fifth as OrderApplyRetrying, ids and error class only" do
+      it "marks the order failed and reports it at the 10th failure, and not before" do
+        allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        order = hook(membership_payload(pending.id, id: 7421))
+        order.update_columns(attempts: ProcessedOrder::MAX_ATTEMPTS - 2)
+        described_class.perform_now(order.id)
+        expect(order.reload).to have_attributes(status: "received", attempts: ProcessedOrder::MAX_ATTEMPTS - 1)
+        expect(reports.none? { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyFailed) }).to be(true)
+
+        described_class.perform_now(order.id)
+        expect(order.reload).to have_attributes(status: "failed", attempts: ProcessedOrder::MAX_ATTEMPTS)
+        error, opts = reports.find { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyFailed) }
+        expect(error.message).to include("7421", "10 attempts", "LockWaitTimeout")
+        expect(opts[:context]).to include(shopify_order_id: "7421", attempts: 10, error_class: "ActiveRecord::LockWaitTimeout")
+
+        described_class.perform_now(order.id) # a failed order is not run again
+        expect(order.reload.attempts).to eq(10)
+      end
+
+      it "reports OrderApplyRetrying when the row's attempts become 1 and 5 only, ids and error class only" do
         allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "secret-value")
         order = hook(membership_payload(pending.id, id: 7422))
+        8.times { described_class.perform_now(order.id) }
         retrying = reports.select { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyRetrying) }
-        expect(retrying.size).to eq(1)
-        expect(retrying.first.last[:context]).to eq(shopify_order_id: "7422", attempt: 1, error_class: "ActiveRecord::LockWaitTimeout")
+        expect(retrying.map { |_, o| o[:context][:attempts] }).to eq([1, 5])
+        expect(retrying.first.last[:context]).to eq(shopify_order_id: "7422", attempts: 1, error_class: "ActiveRecord::LockWaitTimeout")
         expect(retrying.first.first.message).not_to include("secret-value")
+      end
 
-        [2, 3, 4, 5, 6].each do |executions|
-          job = described_class.new(order.id)
-          job.executions = executions - 1
-          job.exception_executions = { "[StandardError]" => executions - 1 }
-          job.perform_now
+      it "never raises, even when recording the failure raises" do
+        allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        allow(ProcessedOrder).to receive(:own_transaction).and_raise(ActiveRecord::ConnectionNotEstablished)
+        order = ProcessedOrder.receive!(provider: "shopify", order_id: 7423, topic: "orders/paid",
+                                        payload: JSON.parse(membership_payload(pending.id, id: 7423).to_json)).first
+        expect { described_class.perform_now(order.id) }.not_to raise_error
+      end
+
+      it "does not touch an order a concurrent run applied while this one was failing" do
+        allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        allow(ProcessedOrder).to receive(:record_failure!).and_wrap_original do |original, *args|
+          ProcessedOrder.where(provider_ref: "7424").update_all(status: "applied") # the other run commits first
+          original.call(*args)
         end
-        expect(reports.select { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyRetrying) }.map { |_, o| o[:context][:attempt] })
-          .to eq([1, 5])
+        order = hook(membership_payload(pending.id, id: 7424))
+        expect(order).to have_attributes(status: "applied", attempts: 0)
       end
 
       it "applies a failed order again when it is re-run" do
         allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
-        order = hook(membership_payload(pending.id, id: 7421))
+        order = hook(membership_payload(pending.id, id: 7425))
         order.update!(status: "failed")
+        expect(order.reload.reapply!).to be(true)
         allow_any_instance_of(Membership).to receive(:update!).and_call_original
         described_class.perform_now(order.id)
         expect([order.reload.status, pending.reload.status]).to eq(["applied", "paid"])

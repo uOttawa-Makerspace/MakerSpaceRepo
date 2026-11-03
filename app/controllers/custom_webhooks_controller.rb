@@ -26,7 +26,8 @@ class CustomWebhooksController < ApplicationController
 
   # Both order webhooks are an inbox: the verified body is stored (ProcessedOrder) and ApplyProcessedOrderJob applies
   # it, so the webhook itself never calls Shopify and never touches memberships, CC Money or lockers, and answers
-  # fast. A delivery of an order already stored inserts nothing; it queues the job again unless the order is applied.
+  # fast. A delivery of an order already stored inserts nothing and changes nothing: the stored order's own schedule
+  # (ProcessedOrder.dispatch_due) decides when it is applied.
   # An order with nothing to apply (plain merch, job orders) is answered and not stored.
   def orders_paid
     hook = verified_body
@@ -114,10 +115,10 @@ class CustomWebhooksController < ApplicationController
 
     order, = ProcessedOrder.receive!(provider: ShopOrderApplier::PROVIDER, order_id: plan.id, topic: topic,
                                      payload: hook, name: hook["name"])
-    # A job that could not be queued (perform_later answers false) is not an applied order: answer 503 so Shopify
-    # delivers it again; the stored row stays received and the redelivery queues it.
-    return head :service_unavailable if !order.applied? && !ApplyProcessedOrderJob.perform_later(order.id)
-
+    # The row is durable and due now: it is handed to the queue here, and if that fails (answer 200 all the same)
+    # the recurring dispatcher hands it out. A redelivery of an order that is already scheduled, applied or failed
+    # hands out nothing.
+    ProcessedOrder.dispatch_due(id: order.id)
     head :ok
   end
 end

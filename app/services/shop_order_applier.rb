@@ -83,7 +83,7 @@ class ShopOrderApplier
 
     ApplicationRecord.own_transaction("apply_processed_order") do
       order = ProcessedOrder.lock.find(@record.id)
-      next if order.applied?
+      next unless order.status == "received"
 
       apply(plan)
       order.update!(status: "applied", applied_at: Time.current, attempts: order.attempts + 1, last_error: nil)

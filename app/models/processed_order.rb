@@ -6,8 +6,24 @@
 # orders/fulfilled delivery of the same order (see ref_for). `topic` records which delivery the row came from.
 # status: received (still to apply), applied, or failed (retries exhausted; staff re-run it with
 # shop_orders:reapply). Rows are never deleted.
+#
+# The row is the scheduler. A received order is due when next_attempt_at has passed; dispatch_due hands due rows out
+# (and only it enqueues ApplyProcessedOrderJob) by moving next_attempt_at forward by a lease in the same atomic
+# UPDATE, so a row cannot be handed out twice while a job for it is pending or running, and a job that dies just
+# lets the lease expire. A failed run overwrites next_attempt_at with the backoff of its attempts; the MAX_ATTEMPTSth
+# failure marks the order failed. reported_at is when a stranded order (see report_stranded) was last reported.
 class ProcessedOrder < ApplicationRecord
   STATUSES = %w[received applied failed].freeze
+  MAX_ATTEMPTS = 10
+  WARN_AT_ATTEMPTS = [1, 5].freeze
+  LEASE = 15.minutes
+  BATCH = 200
+  STRANDED_AFTER = 2.hours
+  REPORT_EVERY = 1.hour
+
+  # The wait before the retry that follows failed attempt number `attempts` (1..9): 61s, 92s, 5m, 18m, 53m,
+  # 2h10m, 4h41m, 9h07m, 16h25m (about 34 hours over the nine waits).
+  def self.backoff(attempts) = (attempts**5 + 60).seconds
 
   scope :unapplied, -> { where.not(status: "applied") }
 
@@ -25,7 +41,7 @@ class ProcessedOrder < ApplicationRecord
     now = Time.current
     inserted = insert_all(
       [{ provider: provider, provider_ref: ref, topic: topic, order_name: name.presence&.to_s&.first(64), payload: payload,
-         created_at: now, updated_at: now }],
+         next_attempt_at: now, created_at: now, updated_at: now }],
       unique_by: %i[provider provider_ref], returning: %w[id]
     ).rows.first
     return [find(inserted.first), true] if inserted
@@ -33,53 +49,109 @@ class ProcessedOrder < ApplicationRecord
     [find_by!(provider: provider, provider_ref: ref), false]
   end
 
-  # An application attempt failed (its transaction is already rolled back): count it and keep what went wrong,
-  # in a transaction of its own with the lock wait bounded (a run holding the row must not pin this one). Never
-  # raises, so it cannot hide the error being retried; a count lost to a lock timeout is only the count.
-  def self.record_failure!(id, error)
-    own_transaction("record_failure") do
-      unapplied.where(id: id).update_all(
-        ["attempts = attempts + 1, last_error = ?, updated_at = ?", error_summary(error), Time.current]
+  # Hands out the due received orders (optionally only `id`) and enqueues one ApplyProcessedOrderJob for each, then
+  # returns the ids it queued. Handing out is ONE atomic UPDATE that moves next_attempt_at to now + LEASE (a concurrent
+  # dispatcher waits on the locked rows and then finds them no longer due), so an order is queued once per lease.
+  # A job that cannot be queued gives its lease back (the order keeps its old due time, so it is picked up by the
+  # next dispatch and is reported as stranded if that never works). Never raises.
+  def self.dispatch_due(id: nil, now: Time.current)
+    leased_until = now + LEASE
+    where_id = id ? sanitize_sql_array(["AND id = ?", id]) : ""
+    rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, now, BATCH, leased_until, now]))
+      WITH due AS (
+        SELECT id, next_attempt_at AS previous FROM processed_orders
+        WHERE status = 'received' AND next_attempt_at <= ? #{where_id}
+        ORDER BY next_attempt_at LIMIT ? FOR UPDATE
       )
+      UPDATE processed_orders o SET next_attempt_at = ?, updated_at = ?
+      FROM due WHERE o.id = due.id RETURNING o.id, due.previous
+    SQL
+    queued_ids = []
+    rows.each do |order_id, previous|
+      queued = begin
+        ApplyProcessedOrderJob.perform_later(order_id)
+      rescue StandardError => e
+        Rails.logger.error("[ProcessedOrder] could not queue order #{order_id}: #{e.class}")
+        false
+      end
+      if queued
+        queued_ids << order_id
+      else
+        where(id: order_id, status: "received", next_attempt_at: leased_until).update_all(next_attempt_at: previous)
+      end
     end
+    queued_ids
+  rescue StandardError => e
+    Rails.logger.error("[ProcessedOrder] dispatch failed: #{e.class}")
+    []
+  end
+
+  # An application attempt failed (its transaction is already rolled back). In a small transaction with the lock
+  # wait bounded (a run holding the row must not pin this one) the received order counts the attempt, keeps the
+  # error and is scheduled after its backoff; its MAX_ATTEMPTSth failure marks it failed instead. Then it is
+  # reported by the row's own attempts: OrderApplyRetrying at attempts 1 and 5, OrderApplyFailed at the end. An
+  # applied or already failed order is left alone. Never raises, so it cannot hide the error: a failure recorded
+  # nowhere (the database is down) leaves the lease to expire and the order to be dispatched again.
+  def self.record_failure!(id, error)
+    order = own_transaction("record_failure") do
+      row = where(status: "received").lock.find_by(id: id)
+      next unless row
+
+      attempts = row.attempts + 1
+      if attempts >= MAX_ATTEMPTS
+        row.update!(attempts: attempts, last_error: error_summary(error), status: "failed")
+      else
+        row.update!(attempts: attempts, last_error: error_summary(error), next_attempt_at: Time.current + backoff(attempts))
+      end
+      row
+    end
+    report_attempt(order, error) if order
   rescue StandardError => e
     Rails.logger.error("[ProcessedOrder] could not record the failure of #{id}: #{e.class}")
   end
 
-  # Retries are exhausted: the order is failed (staff re-run it) and reported with ids and the error class only.
-  # A conditional update, so an order a concurrent run just applied stays applied. True when it was failed here.
-  def self.mark_failed!(id, error)
-    return false unless unapplied.where(id: id).where.not(status: "failed").update_all(status: "failed", updated_at: Time.current) == 1
+  def self.report_attempt(order, error)
+    context = { shopify_order_id: order.provider_ref, attempts: order.attempts, error_class: error.class.name }
+    if order.status == "failed"
+      Rails.error.report(
+        ApplyProcessedOrderJob::OrderApplyFailed.new(
+          "order #{order.provider_ref} could not be applied after #{order.attempts} attempts (#{error.class})"
+        ), handled: true, severity: :error, context: context
+      )
+    elsif WARN_AT_ATTEMPTS.include?(order.attempts)
+      Rails.error.report(
+        ApplyProcessedOrderJob::OrderApplyRetrying.new(
+          "order #{order.provider_ref} failed attempt #{order.attempts}, retrying (#{error.class})"
+        ), handled: true, severity: :warning, context: context
+      )
+    end
+  end
+  private_class_method :report_attempt
 
-    order = find(id)
-    Rails.error.report(
-      ApplyProcessedOrderJob::OrderApplyFailed.new(
-        "order #{order.provider_ref} could not be applied after #{order.attempts} attempts (#{error.class})"
-      ),
-      handled: true, severity: :error,
-      context: { shopify_order_id: order.provider_ref, attempts: order.attempts, error_class: error.class.name }
-    )
-    true
+  # Reports (ids only) the received orders that are more than STRANDED_AFTER overdue, which only happens when
+  # nothing dispatches them (a dispatched order is due in the future), at most once per REPORT_EVERY each: the
+  # reported ones are stamped in the same UPDATE that selects them. Returns the provider refs reported.
+  def self.report_stranded(now: Time.current)
+    rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, now, now - STRANDED_AFTER, now - REPORT_EVERY]))
+      UPDATE processed_orders SET reported_at = ?
+      WHERE status = 'received' AND next_attempt_at < ? AND (reported_at IS NULL OR reported_at < ?)
+      RETURNING provider_ref, attempts
+    SQL
+    rows.each do |ref, attempts|
+      Rails.error.report(
+        DispatchDueOrdersJob::StrandedOrder.new("order #{ref} has been waiting to be applied for over 2 hours"),
+        handled: true, severity: :error, context: { shopify_order_id: ref, attempts: attempts }
+      )
+    end
+    rows.map(&:first)
   end
 
-  # An attempt failed and the order is still being retried (see ApplyProcessedOrderJob::WARN_AT_ATTEMPTS).
-  def self.report_retrying(id, attempt, error)
-    order = find_by(id: id)
-    return unless order
-
-    Rails.error.report(
-      ApplyProcessedOrderJob::OrderApplyRetrying.new(
-        "order #{order.provider_ref} failed attempt #{attempt}, retrying (#{error.class})"
-      ),
-      handled: true, severity: :warning,
-      context: { shopify_order_id: order.provider_ref, attempt: attempt, error_class: error.class.name }
-    )
-  end
-
-  # Staff re-run: a failed order goes back to received, counting its attempts afresh. A conditional update, so an
-  # order a concurrent run just applied is left alone. True when it was reset here; the caller then queues the job.
-  def reapply!
-    self.class.where(id: id, status: "failed").update_all(status: "received", attempts: 0, updated_at: Time.current) == 1
+  # Staff re-run: a failed order goes back to received, due now, counting its attempts afresh. A conditional
+  # update, so an order a concurrent run just applied is left alone. True when it was reset here; the caller then
+  # dispatches it.
+  def reapply!(now: Time.current)
+    self.class.where(id: id, status: "failed")
+        .update_all(status: "received", attempts: 0, next_attempt_at: now, reported_at: nil, updated_at: now) == 1
   end
 
   # The error class and a short message for last_error. Never SQL (its text can carry values).

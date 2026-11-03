@@ -13,11 +13,11 @@ namespace :shop_orders do
       abort "order #{order.provider_ref} is #{order.reload.status}, only failed orders are re-run"
     end
 
-    # A job that cannot be queued now is picked up by the stranded-order sweep.
-    if ApplyProcessedOrderJob.perform_later(order.id)
+    # Due now: handed to the queue here, or by the recurring dispatcher if that fails.
+    if ProcessedOrder.dispatch_due(id: order.id).any?
       puts "order #{order.provider_ref} queued again"
     else
-      puts "order #{order.provider_ref} reset to received; it could not be queued now and the sweep will queue it"
+      puts "order #{order.provider_ref} reset to received; the dispatcher will queue it"
     end
   end
 end
