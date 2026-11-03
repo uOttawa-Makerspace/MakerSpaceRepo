@@ -62,7 +62,12 @@ RSpec.describe ProcessedOrder do
     before { allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] } }
 
     it "counts the attempt when it starts, once, and only for the lease it holds" do
-      expect(described_class.start_run!(order.id, token)).to eq(1)
+      now = Time.current.floor(6)
+      attempts, fresh = described_class.start_run!(order.id, token, now: now)
+      expect(attempts).to eq(1)
+      expect(fresh).to eq(now + described_class::LEASE)
+      expect(order.reload.leased_until).to eq(fresh)
+      expect(described_class.start_run!(order.id, token)).to be_nil # the original token no longer matches
       expect(described_class.start_run!(order.id, token - 1.minute)).to be_nil
       expect(described_class.start_run!(order.id, nil)).to be_nil
       expect(order.reload.attempts).to eq(1)

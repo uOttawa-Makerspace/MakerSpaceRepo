@@ -96,28 +96,33 @@ class ProcessedOrder < ApplicationRecord
   end
 
   # A run starts: counts the attempt, before anything else is done, if the run still holds the order (received, and
-  # `token` is its lease). Returns the attempts, or nil when the token is stale, the job a duplicate, or the order
-  # already settled, in which case the run must do nothing. The wait on a row another run is applying is bounded.
+  # `token` is its lease). In the same UPDATE the lease is replaced by a fresh one (now + LEASE), so the run has a full
+  # lease from its start and a duplicate job holding the original token no longer matches. Returns [attempts, new token]
+  # (the token as the database stored it), or nil when the token is stale, the job a duplicate, or the order already
+  # settled, in which case the run must do nothing. The wait on a row another run is applying is bounded.
   def self.start_run!(id, token, now: Time.current)
     return if token.nil?
 
-    sql = "UPDATE processed_orders SET attempts = attempts + 1, updated_at = ? " \
-          "WHERE id = ? AND status = 'received' AND leased_until = ? RETURNING attempts"
-    own_transaction("start_run") { connection.select_value(sanitize_sql_array([sql, now, id, token])) }
+    sql = "UPDATE processed_orders SET attempts = attempts + 1, leased_until = ?, updated_at = ? " \
+          "WHERE id = ? AND status = 'received' AND leased_until = ? RETURNING attempts, leased_until"
+    own_transaction("start_run") do
+      connection.select_all(sanitize_sql_array([sql, now + LEASE, now, id, token])).cast_values.first
+    end
   end
 
   # Marks failed (and reports, ids only) the received orders whose MAX_ATTEMPTSth run started and never recorded an
-  # outcome: its lease has expired with every attempt spent, so it died. Rows locked by a running apply are skipped, never
+  # outcome: every attempt is spent and its lease has expired (it died) or is gone (a queue refusal cleared it after the
+  # job had already started). The last real error is kept, with a note that the last attempt did not finish. Rows locked by a running apply are skipped, never
   # waited for. Without this such an order would be handed out for ever. Returns the provider refs failed.
   def self.fail_exhausted(id: nil, now: Time.current)
     where_id = id ? sanitize_sql_array(["AND id = ?", id]) : ""
-    rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, MAX_ATTEMPTS, now, "the last attempt did not finish", now]))
+    rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, MAX_ATTEMPTS, now, " (then the last attempt did not finish)", "the last attempt did not finish", now]))
       WITH spent AS (
         SELECT id FROM processed_orders
-        WHERE status = 'received' AND attempts >= ? AND leased_until IS NOT NULL AND leased_until <= ? #{where_id}
+        WHERE status = 'received' AND attempts >= ? AND (leased_until IS NULL OR leased_until <= ?) #{where_id}
         FOR UPDATE SKIP LOCKED
       )
-      UPDATE processed_orders o SET status = 'failed', leased_until = NULL, last_error = ?, updated_at = ?
+      UPDATE processed_orders o SET status = 'failed', leased_until = NULL, last_error = COALESCE(o.last_error || ?, ?), updated_at = ?
       FROM spent WHERE o.id = spent.id RETURNING o.provider_ref, o.attempts
     SQL
     rows.each do |ref, attempts|

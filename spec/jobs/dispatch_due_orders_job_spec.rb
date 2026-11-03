@@ -186,6 +186,20 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
       expect(reported_failures.size).to eq(1)
     end
 
+    it "keeps the last real error and says the last attempt did not finish" do
+      order = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS, leased_until: now - 1.minute, last_error: "ArgumentError: bad")
+      described_class.perform_now(now: now)
+      expect(order.reload).to have_attributes(status: "failed", last_error: "ArgumentError: bad (then the last attempt did not finish)")
+    end
+
+    it "also fails a spent order that has no lease (a queue refusal cleared it after the job started)" do
+      order = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS, leased_until: nil)
+      described_class.perform_now(now: now)
+      expect(queued_ids).to be_empty
+      expect(order.reload).to have_attributes(status: "failed", leased_until: nil)
+      expect(reported_failures.sole.last[:context]).to include(shopify_order_id: order.provider_ref, attempts: 10)
+    end
+
     it "leaves an order whose last run is still inside its lease alone" do
       order = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS, leased_until: now + 10.minutes)
       described_class.perform_now(now: now)

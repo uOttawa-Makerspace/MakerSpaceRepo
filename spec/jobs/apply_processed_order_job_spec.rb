@@ -605,6 +605,34 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       end
     end
 
+    describe "starting a run" do
+      it "counts one attempt for two jobs that carry the same original token, and the second does nothing" do
+        order, = ProcessedOrder.receive!(provider: "shopify", order_id: 7440, topic: "orders/paid", payload: { "id" => 7440 })
+        token = (Time.current + ProcessedOrder::LEASE).floor(6)
+        order.update_columns(leased_until: token)
+        allow_any_instance_of(ShopOrderApplier).to receive(:call) # applies nothing: the order stays received
+        2.times { described_class.perform_now(order.id, token) }
+        expect(order.reload).to have_attributes(attempts: 1, status: "received")
+        expect(order.leased_until).to be > token
+      end
+
+      it "records a failure against the run's own lease" do
+        allow_any_instance_of(ShopOrderApplier).to receive(:call).and_raise(ArgumentError, "bad")
+        order, = ProcessedOrder.receive!(provider: "shopify", order_id: 7441, topic: "orders/paid", payload: { "id" => 7441 })
+        perform(order)
+        expect(order.reload).to have_attributes(attempts: 1, status: "received", leased_until: nil, last_error: "ArgumentError: bad")
+      end
+
+      it "returns quietly when it times out waiting for another run that holds the order" do
+        order, = ProcessedOrder.receive!(provider: "shopify", order_id: 7442, topic: "orders/paid", payload: { "id" => 7442 })
+        allow(ProcessedOrder).to receive(:start_run!).and_raise(ActiveRecord::LockWaitTimeout)
+        expect(ProcessedOrder).not_to receive(:record_failure!)
+        expect { perform(order) }.not_to raise_error
+        expect(reports).to be_empty
+        expect(order.reload).to have_attributes(attempts: 0, status: "received", last_error: nil)
+      end
+    end
+
     describe "a side effect that fails after the commit" do
       def cc_order(id)
         cc_payload(email: "nobody-#{id}@example.com").merge(id: id)

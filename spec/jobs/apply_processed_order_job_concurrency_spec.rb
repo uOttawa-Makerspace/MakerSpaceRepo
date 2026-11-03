@@ -143,7 +143,8 @@ RSpec.describe ApplyProcessedOrderJob, "under concurrency", type: :job do
     token = lease!(stored)
     first = in_thread { described_class.perform_now(stored.id, token) }
     first_in.pop
-    second = in_thread { described_class.perform_now(stored.id, token) } # a duplicate of the same hand-out
+    running = stored.reload.leased_until # the lease the first run took when it started
+    second = in_thread { described_class.perform_now(stored.id, running) } # a job that would start on that lease
     wait_until_blocked_on_lock(resume)
     finished = second.join(5)
     resume << true
