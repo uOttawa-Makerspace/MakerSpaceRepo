@@ -81,6 +81,10 @@ class LockerRental < ApplicationRecord
   # The virtual attribute `indefinite` lifts the requirement.
   validates :owned_until, presence: true, if: -> { active? && indefinite != '1' }
 
+  # A renewal or extension (owned_until moved later, or made indefinite) makes the earlier expiry notice history:
+  # the next expiry has to be announced again. A column reset on the same row, whichever path changed the date.
+  before_save :reset_expiry_notice, if: :owned_until_moved_later?
+
   # If state ever changes from request, record who did it
   # Which staff member approved the request, or if owner cancelled the request
   validates :decided_by, presence: true, unless: :reviewing?
@@ -455,6 +459,16 @@ class LockerRental < ApplicationRecord
   end
 
   private
+
+  def owned_until_moved_later?
+    notified_of_cancellation_at.present? && will_save_change_to_owned_until? &&
+      (owned_until.nil? || owned_until_was.nil? || owned_until > owned_until_was)
+  end
+
+  def reset_expiry_notice
+    self.notified_of_cancellation_at = nil
+    self.contacted_for_clearance = false
+  end
 
   # THE place a link is served from: fetch the stored draft, classify it, serve it only when payable. The url, nil
   # (no link; #checkout_state says why) or :gone (Shopify no longer has it).

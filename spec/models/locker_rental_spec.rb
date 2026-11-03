@@ -13,6 +13,39 @@ RSpec.describe LockerRental, type: :model do
 
   before { ActionMailer::Base.deliveries.clear }
 
+  describe "expiry notice reset on renewal" do
+    let(:told_at) { 2.days.ago.change(usec: 0) }
+    let(:rental) do
+      create(:locker_rental, :active, owned_until: 3.days.ago).tap do |r|
+        r.update_columns(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+      end
+    end
+
+    it "clears the notice record when owned_until moves later, so the next expiry is announced" do
+      rental.update!(owned_until: 4.months.from_now)
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+    end
+
+    it "clears it when the rental becomes indefinite" do
+      rental.indefinite = "1"
+      rental.update!(owned_until: nil)
+      expect(rental.reload.notified_of_cancellation_at).to be_nil
+    end
+
+    it "keeps it when owned_until moves earlier or is not changed" do
+      rental.update!(owned_until: 5.days.ago)
+      rental.update!(staff_notes: "chasing")
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+    end
+
+    it "leaves a staff-set contacted flag alone when no notice was recorded" do
+      plain = create(:locker_rental, :active, owned_until: 3.days.ago)
+      plain.update_columns(contacted_for_clearance: true)
+      plain.update!(owned_until: 2.months.from_now)
+      expect(plain.reload.contacted_for_clearance).to be(true)
+    end
+  end
+
   describe "#renewable?" do
     it "is true for expired active rentals" do
       rental = build(:locker_rental, :active, owned_until: 1.week.ago)
