@@ -454,7 +454,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
           end
         end
       end
-      locked.pop
+      ThreadPause.await(locked)
       started = Time.current
       add_to_cart(other_project)
       waited = Time.current - started
