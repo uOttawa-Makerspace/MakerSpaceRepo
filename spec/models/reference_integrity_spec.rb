@@ -1,5 +1,5 @@
 require "rails_helper"
-require Rails.root.join("db/migrate/20261104000003_add_foreign_keys_to_unenforced_references")
+require Rails.root.join("db/migrate/20261104000004_add_foreign_keys_to_unenforced_references")
 
 # Every belongs_to the app relies on is enforced by the database, and deleting a
 # parent from the app either clears, removes or refuses its dependants the way the

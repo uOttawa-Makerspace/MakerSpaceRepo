@@ -1288,3 +1288,26 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     end
   end
 end
+
+RSpec.describe "GET /job_orders/new design help card", type: :request do
+  include JobOrdersSpecHelpers if defined?(JobOrdersSpecHelpers)
+
+  let(:user) { create(:user, :regular_user) }
+
+  before { log_in!(user) }
+
+  it "offers the Design Services card with that type's id" do
+    type = JobType.find_by(name: "Design Services") || JobType.create!(name: "Design Services", description: "d")
+    get new_job_orders_path
+    expect(response.body).to include(%(name="job_order[job_type_id]" id="job_order_job_type_id" value="#{type.id}"))
+    expect(response.body).to include('name="redirect_step" id="redirect_step" value="2"')
+  end
+
+  it "hides the card when there is no Design Services type" do
+    JobType.where(name: "Design Services").destroy_all
+    get new_job_orders_path
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include('name="redirect_step" id="redirect_step" value="2"')
+    expect(response.body).to include('name="redirect_step" id="redirect_step" value="1"')
+  end
+end

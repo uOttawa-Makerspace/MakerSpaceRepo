@@ -10,8 +10,12 @@ class LockerSizesController < AdminAreaController
   end
 
   def destroy
-    LockerSize.find(params[:id]).destroy
-    redirect_to lockers_path
+    size = LockerSize.find(params[:id])
+    if size.destroy
+      redirect_to lockers_path
+    else
+      redirect_to lockers_path, alert: size.errors.full_messages.to_sentence
+    end
   end
 
   private

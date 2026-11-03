@@ -1,9 +1,10 @@
 require "rails_helper"
-require Rails.root.join("db/migrate/20261104000005_merge_duplicate_learning_module_tracks")
+require Rails.root.join("db/migrate/20261104000006_merge_duplicates_and_add_unique_index_to_learning_module_tracks")
 
 # Duplicates only exist where the unique index is missing, so the example drops it
-# (DDL is transactional; the index is back after the rollback).
-RSpec.describe MergeDuplicateLearningModuleTracks do
+# (DDL is transactional; the index is back after the rollback). The merge is tested here;
+# the index build and its retry are in the non-transactional spec below.
+RSpec.describe MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks do
   let(:connection) { ActiveRecord::Base.connection }
   let(:user) { create(:user) }
   let(:learning_module) { create(:learning_module) }
@@ -14,7 +15,7 @@ RSpec.describe MergeDuplicateLearningModuleTracks do
   end
 
   def migrate
-    ActiveRecord::Migration.suppress_messages { described_class.new.up }
+    ActiveRecord::Migration.suppress_messages { described_class.new.merge_duplicates }
   end
 
   def track(status:, created: 0, updated: created, scorm: nil, user: self.user, learning_module: self.learning_module)
@@ -122,5 +123,101 @@ RSpec.describe MergeDuplicateLearningModuleTracks do
     track(status: "Completed", created: 2)
     migrate
     expect { migrate }.not_to change { LearningModuleTrack.order(:id).map { |t| [t.id, status_of(t), t.created_at, t.updated_at, t.scorm_state] } }
+  end
+end
+
+# CREATE INDEX CONCURRENTLY cannot run in a transaction, so the full migration runs
+# outside the transactional wrapper; the rows it creates are removed afterwards and
+# the index set is put back as schema.rb defines it.
+RSpec.describe MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks, "index build" do
+  self.use_transactional_tests = false
+
+  let(:connection) { ActiveRecord::Base.connection }
+  let(:index_name) { described_class::INDEX_NAME }
+  let(:user) { create(:user) }
+  let(:learning_module) { create(:learning_module) }
+
+  def migration
+    described_class.new
+  end
+
+  def run_up(migration = self.migration)
+    ActiveRecord::Migration.suppress_messages { migration.up }
+  end
+
+  def insert_track(status)
+    now = Time.current
+    connection.execute(<<~SQL.squish)
+      INSERT INTO learning_module_tracks (user_id, learning_module_id, status, created_at, updated_at)
+      VALUES (#{user.id}, #{learning_module.id}, '#{status}', '#{now.utc.to_fs(:db)}', '#{now.utc.to_fs(:db)}')
+    SQL
+  end
+
+  def index_present?
+    connection.indexes(:learning_module_tracks).any? { |i| i.name == index_name && i.unique }
+  end
+
+  def tracks
+    connection.select_values("SELECT status FROM learning_module_tracks WHERE user_id = #{user.id}")
+  end
+
+  before do
+    user
+    learning_module
+    connection.remove_index(:learning_module_tracks, name: index_name, if_exists: true)
+  end
+
+  after do
+    connection.execute("DELETE FROM learning_module_tracks WHERE user_id = #{user.id}")
+    run_up
+    training = learning_module.training
+    connection.execute("DELETE FROM learning_modules WHERE id = #{learning_module.id}")
+    connection.execute("DELETE FROM trainings WHERE id = #{training.id}")
+    connection.execute("DELETE FROM skills WHERE id = #{training.skill_id}") if training.skill_id
+    connection.execute("DELETE FROM users WHERE id = #{user.id}")
+  end
+
+  it "merges the duplicates and builds the unique index" do
+    insert_track("In progress")
+    insert_track("Completed")
+    run_up
+    expect(tracks).to eq(["Completed"])
+    expect(index_present?).to be(true)
+    expect(connection.indexes(:learning_module_tracks).map(&:name)).not_to include("index_learning_module_tracks_on_user_id")
+  end
+
+  it "merges again and retries once when a duplicate appears while the index is built" do
+    insert_track("In progress")
+    migration = self.migration
+    builds = 0
+    allow(migration).to receive(:add_index_concurrently).and_wrap_original do |original, *args, **kwargs|
+      builds += 1
+      insert_track("Completed") if builds == 1 # a request creating a second track mid-build
+      original.call(*args, **kwargs)
+    end
+
+    run_up(migration)
+
+    expect(builds).to eq(2)
+    expect(tracks).to eq(["Completed"])
+    expect(index_present?).to be(true)
+  end
+
+  it "gives up after the one retry when duplicates keep appearing" do
+    insert_track("In progress")
+    migration = self.migration
+    allow(migration).to receive(:add_index_concurrently).and_wrap_original do |original, *args, **kwargs|
+      insert_track("In progress")
+      original.call(*args, **kwargs)
+    end
+    expect { run_up(migration) }.to raise_error(ActiveRecord::RecordNotUnique)
+    leftover = connection.indexes(:learning_module_tracks).find { |i| i.name == index_name }
+    expect(leftover.nil? || !leftover.valid?).to be(true)
+  end
+
+  it "changes nothing when run again" do
+    insert_track("In progress")
+    run_up
+    expect { run_up }.not_to change { [tracks, index_present?] }
   end
 end

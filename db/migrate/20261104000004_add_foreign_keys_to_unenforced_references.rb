@@ -1,7 +1,11 @@
 # Foreign keys for the belongs_to relationships that only Ruby enforced. They are
 # added NOT VALID: new and changed rows are checked at once, existing rows are
-# checked by the next migration, so adding them only takes a brief lock on each
-# table. The next migration validates them without blocking writes.
+# checked by the next migration. Adding a key needs a brief lock on the child and the
+# parent table, so each key is added in its own short transaction with a lock timeout
+# of 3 seconds: a table busy with a long transaction makes the attempt fail fast
+# instead of queueing writes behind it, and the attempt is retried (3 times, with a
+# growing pause) before the migration gives up. Keys that exist already are skipped, so
+# the migration can be run again after a failure.
 #
 # on_delete follows the model: "dependent: :nullify" (and the optional references
 # whose parent can be deleted from the app) clears the reference; "dependent:
@@ -14,6 +18,12 @@
 #   the token it replaced is still kept for replay detection.
 # - print_orders.user_id: print_orders is a legacy table that is being dropped.
 class AddForeignKeysToUnenforcedReferences < ActiveRecord::Migration[8.1]
+  disable_ddl_transaction!
+
+  LOCK_TIMEOUT = "3s"
+  ATTEMPTS = 3
+  RETRY_PAUSE = 2 # seconds, multiplied by the attempt number
+
   # [child table, parent table, column, on_delete (omitted = no action)]
   REFERENCES = [
     # Identity
@@ -124,16 +134,33 @@ class AddForeignKeysToUnenforcedReferences < ActiveRecord::Migration[8.1]
   ].freeze
 
   def up
-    REFERENCES.each do |table, parent, column, on_delete|
-      options = { column: column, validate: false, if_not_exists: true }
-      options[:on_delete] = on_delete if on_delete
-      add_foreign_key table, parent, **options
-    end
+    REFERENCES.each { |table, parent, column, on_delete| add_key(table, parent, column, on_delete) }
   end
 
   def down
     REFERENCES.each do |table, parent, column, _on_delete|
       remove_foreign_key table, parent, column: column, if_exists: true
+    end
+  end
+
+  private
+
+  def add_key(table, parent, column, on_delete)
+    options = { column: column, validate: false, if_not_exists: true }
+    options[:on_delete] = on_delete if on_delete
+    attempt = 0
+    begin
+      attempt += 1
+      transaction do
+        execute "SET LOCAL lock_timeout = '#{LOCK_TIMEOUT}'"
+        add_foreign_key table, parent, **options
+      end
+    rescue ActiveRecord::LockWaitTimeout
+      raise if attempt >= ATTEMPTS
+
+      say "#{table}.#{column}: lock not available, retrying (attempt #{attempt} of #{ATTEMPTS})"
+      sleep RETRY_PAUSE * attempt
+      retry
     end
   end
 end

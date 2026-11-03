@@ -177,6 +177,8 @@ namespace :users do
     # https://api.rubyonrails.org/classes/ActiveRecord/Reflection/ClassMethods.html#method-i-reflect_on_all_associations
     # Reflect on all table-level associations
     # User.reflect_on_all_associations.map(&:macro).uniq
+    carry_over_completed_tracks(primary, duplicate)
+    discard_rows_primary_already_has(primary, duplicate)
     # We're going to hit all possible assocs, need to make sure there's a record to update
     User.reflect_on_all_associations.each do |assoc|
       case assoc.macro
@@ -198,27 +200,92 @@ namespace :users do
     duplicate.destroy!
   end
 
-  # Columns that reference users without a User association (supervisor_id, admin_id)
-  # and have no on_delete action: the foreign key would refuse to delete the duplicate
-  # while they still point at it.
-  def repoint_remaining_user_references(primary, duplicate)
+  # A learning module the duplicate completed stays completed when the primary has its own
+  # track of the same module: the duplicate's track is discarded as a repeat row next.
+  def carry_over_completed_tracks(primary, duplicate)
     connection = ActiveRecord::Base.connection
-    connection.tables.each do |table|
-      connection.foreign_keys(table).each do |foreign_key|
-        next unless foreign_key.to_table == 'users' && foreign_key.on_delete.nil?
+    connection.update(
+      ActiveRecord::Base.sanitize_sql_array(
+        [
+          "UPDATE learning_module_tracks p SET status = 'Completed' FROM learning_module_tracks d " \
+            'WHERE p.user_id = ? AND d.user_id = ? AND p.learning_module_id = d.learning_module_id ' \
+            "AND d.status = 'Completed' AND p.status IS DISTINCT FROM 'Completed'",
+          primary.id,
+          duplicate.id
+        ]
+      )
+    )
+  end
 
-        connection.update(
-          ActiveRecord::Base.sanitize_sql_array(
-            [
-              "UPDATE #{connection.quote_table_name(table)} SET #{connection.quote_column_name(foreign_key.column)} = ? " \
-                "WHERE #{connection.quote_column_name(foreign_key.column)} = ?",
-              primary.id,
-              duplicate.id
-            ]
-          )
-        )
+  # Foreign keys to users that the database does not clear by itself (no action or restrict).
+  def user_reference_columns
+    connection = ActiveRecord::Base.connection
+    connection.tables.flat_map do |table|
+      connection.foreign_keys(table).filter_map do |foreign_key|
+        next unless foreign_key.to_table == 'users' && [nil, :restrict].include?(foreign_key.on_delete)
+
+        [table, foreign_key.column]
       end
     end
+  end
+
+  # Where a unique index would stop the duplicate's row from moving to the primary because
+  # the primary already has a row with the same other columns, the duplicate's row is
+  # dropped. It is the same row (same module, same space, ...), already held by the primary,
+  # so nothing is lost; rows the primary does not have are moved afterwards.
+  def discard_rows_primary_already_has(primary, duplicate)
+    connection = ActiveRecord::Base.connection
+    user_reference_columns.each do |table, column|
+      connection.indexes(table).each do |index|
+        next unless index.unique && index.where.nil? && index.columns.is_a?(Array) && index.columns.include?(column)
+
+        same = (index.columns - [column]).map do |other|
+          "d.#{connection.quote_column_name(other)} = p.#{connection.quote_column_name(other)}"
+        end
+        delete_repeat_rows(connection, table, column, same, primary, duplicate)
+      end
+    end
+  end
+
+  # Columns that reference users without a User association (supervisor_id, admin_id) and
+  # the join tables without a primary key (training_sessions_users, ...) are repointed to
+  # the primary; the foreign key would otherwise refuse to delete the duplicate. A join row
+  # the primary already has, column for column, is dropped instead of moved twice: it is
+  # the same row, not lost data.
+  def repoint_remaining_user_references(primary, duplicate)
+    connection = ActiveRecord::Base.connection
+    user_reference_columns.each do |table, column|
+      if connection.primary_key(table).nil?
+        same = (connection.columns(table).map(&:name) - [column]).map do |other|
+          quoted = connection.quote_column_name(other)
+          "d.#{quoted} IS NOT DISTINCT FROM p.#{quoted}"
+        end
+        delete_repeat_rows(connection, table, column, same, primary, duplicate)
+      end
+
+      connection.update(
+        ActiveRecord::Base.sanitize_sql_array(
+          [
+            "UPDATE #{connection.quote_table_name(table)} SET #{connection.quote_column_name(column)} = ? " \
+              "WHERE #{connection.quote_column_name(column)} = ?",
+            primary.id,
+            duplicate.id
+          ]
+        )
+      )
+    end
+  end
+
+  def delete_repeat_rows(connection, table, column, same_conditions, primary, duplicate)
+    quoted_table = connection.quote_table_name(table)
+    quoted_column = connection.quote_column_name(column)
+    conditions = ["d.#{quoted_column} = ?", "p.#{quoted_column} = ?"]
+    connection.delete(
+      ActiveRecord::Base.sanitize_sql_array(
+        ["DELETE FROM #{quoted_table} d USING #{quoted_table} p WHERE #{(conditions + same_conditions).join(' AND ')}",
+         duplicate.id, primary.id]
+      )
+    )
   end
 
   def merge_has_many_association(primary, duplicated, assoc)

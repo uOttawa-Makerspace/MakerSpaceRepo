@@ -1,6 +1,8 @@
-# Validates the foreign keys added NOT VALID by the previous migration. Validation
-# scans the child table under SHARE UPDATE EXCLUSIVE, which does not block reads
-# or writes.
+require Rails.root.join("db/migrate/20261104000004_add_foreign_keys_to_unenforced_references")
+
+# Validates the foreign keys that the previous migration added NOT VALID, and only
+# those. Validation scans the child table under SHARE UPDATE EXCLUSIVE, which does not
+# block reads or writes.
 #
 # A key whose table still holds a row pointing at a missing parent is reported
 # with its count before anything is validated, so the rows can be repaired and
@@ -35,8 +37,10 @@ class ValidateForeignKeysOnUnenforcedReferences < ActiveRecord::Migration[8.1]
   private
 
   def pending_foreign_keys
-    tables.flat_map { |table| foreign_keys(table) }
-          .reject(&:validated?)
-          .reject { |fk| UNVALIDATED.include?([fk.from_table.to_sym, fk.column.to_sym]) }
+    AddForeignKeysToUnenforcedReferences::REFERENCES.filter_map do |table, parent, column, _on_delete|
+      next if UNVALIDATED.include?([table, column])
+
+      foreign_keys(table).find { |fk| fk.column == column.to_s && fk.to_table == parent.to_s && !fk.validated? }
+    end
   end
 end
