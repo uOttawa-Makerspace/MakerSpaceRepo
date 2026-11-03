@@ -13,6 +13,16 @@ RSpec.describe "SamlConfig", type: :configuration do
           staff.makerepo.com
         ]
       },
+      "https://en.wiki.makerepo.com/simplesamlphp" => {
+        metadata_url:
+          "https://en.wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com",
+        response_hosts: %w[en.wiki.makerepo.com]
+      },
+      "https://fr.wiki.makerepo.com/simplesamlphp" => {
+        metadata_url:
+          "https://fr.wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com",
+        response_hosts: %w[fr.wiki.makerepo.com]
+      },
       "rooms.makerepo.com" => {
         metadata_url: "https://rooms.makerepo.com/users/auth/saml/metadata",
         response_hosts: %w[rooms.makerepo.com]
