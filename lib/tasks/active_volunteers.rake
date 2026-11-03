@@ -3,16 +3,7 @@
 namespace :active_volunteers do
   desc "Check if volunteers are active or not"
   task check_volunteers_status: :environment do
-    User.volunteers.find_each do |user|
-      program = user.programs.find_by_program_type("Volunteer Program")
-      if (user.last_seen_at.nil? || user.last_seen_at < 2.months.ago) &&
-           program.active == true
-        program.update(active: false)
-      elsif !user.last_seen_at.nil? && user.last_seen_at > 2.months.ago &&
-            program.active == false
-        program.update(active: true)
-      end
-    end
+    Program.refresh_volunteer_activity!
   end
 
   desc "Check if volunteers had at least one task completed"

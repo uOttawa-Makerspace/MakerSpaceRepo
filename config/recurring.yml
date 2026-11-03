@@ -32,5 +32,19 @@ production: &production
     class: JobOrderDraftSweepJob
     schedule: every hour at minute 42
 
+  # Hourly head count folded into the running mean behind the admin "Popular Hours" report.
+  popular_hours:
+    command: "PopularHour.record_current_hour!"
+    schedule: every hour at minute 50
+
+  # Volunteer programs follow last_seen_at (inactive after two months unseen); a repeat run changes nothing.
+  active_volunteers_status:
+    command: "Program.refresh_volunteer_activity!"
+    schedule: every day at 2am
+
+  clear_printer_sessions:
+    command: "PrinterSession.clear_in_use!"
+    schedule: every day at 2:30am
+
 staging:
   <<: *production
