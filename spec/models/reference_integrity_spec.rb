@@ -17,9 +17,9 @@ RSpec.describe "Reference integrity" do
       end
     end
 
-    it "are validated, except two whose existing rows wait for the owner" do
+    it "are validated, except the membership row of a deleted repository" do
       unvalidated = connection.tables.flat_map { |t| connection.foreign_keys(t) }.reject(&:validated?)
-      expect(unvalidated.map { |fk| [fk.from_table, fk.column] }).to contain_exactly(%w[repositories_users repository_id], %w[training_sessions space_id])
+      expect(unvalidated.map { |fk| [fk.from_table, fk.column] }).to eq([%w[repositories_users repository_id]])
     end
 
     it "refuse a row that points at a missing parent" do

@@ -3,9 +3,9 @@
 # is cleared: every row, with its other columns and history, stays. The dangling
 # id points at nothing, so no information is lost.
 #
-# training_sessions.space_id is left alone: its dangling references are all one value (0, a
-# space that never existed) and another session created in the same batch names the space
-# they most likely belong to, so they are for the owner to remap rather than to clear.
+# Four training sessions created in one batch name space 0, which never existed; the
+# other two sessions of that batch are in space 16, so those four are pointed at space 16
+# first (the owner confirmed it). The migration stops if space 16 does not exist.
 #
 # Safe to run again: the second run finds nothing to clear.
 class NullifyDanglingReferences < ActiveRecord::Migration[8.1]
@@ -18,7 +18,12 @@ class NullifyDanglingReferences < ActiveRecord::Migration[8.1]
     [:certifications, :training_session_id, :training_sessions]
   ].freeze
 
+  REMAPPED_SESSION_IDS = [1947, 1948, 1949, 1951].freeze
+  REMAPPED_FROM_SPACE = 0
+  REMAPPED_TO_SPACE = 16
+
   def up
+    remap_sessions_to_space
     REFERENCES.each do |table, column, parent|
       result = execute(<<~SQL.squish)
         UPDATE #{table} SET #{column} = NULL
@@ -29,6 +34,30 @@ class NullifyDanglingReferences < ActiveRecord::Migration[8.1]
     end
   end
 
-  # A cleared reference cannot be restored: it pointed at a row that does not exist.
-  def down; end
+  # A cleared reference cannot be restored: it pointed at a row that does not exist. The
+  # remapped sessions go back to the space id they had.
+  def down
+    execute(<<~SQL.squish)
+      UPDATE training_sessions SET space_id = #{REMAPPED_FROM_SPACE}
+      WHERE id IN (#{REMAPPED_SESSION_IDS.join(', ')}) AND space_id = #{REMAPPED_TO_SPACE}
+    SQL
+  end
+
+  private
+
+  def remap_sessions_to_space
+    ids = REMAPPED_SESSION_IDS.join(', ')
+    pending = select_value("SELECT COUNT(*) FROM training_sessions WHERE id IN (#{ids}) AND space_id = #{REMAPPED_FROM_SPACE}").to_i
+    return if pending.zero?
+
+    unless select_value("SELECT 1 FROM spaces WHERE id = #{REMAPPED_TO_SPACE}")
+      raise "Cannot point training sessions #{ids} at space #{REMAPPED_TO_SPACE}: that space does not exist"
+    end
+
+    result = execute(<<~SQL.squish)
+      UPDATE training_sessions SET space_id = #{REMAPPED_TO_SPACE}
+      WHERE id IN (#{ids}) AND space_id = #{REMAPPED_FROM_SPACE}
+    SQL
+    say "training_sessions.space_id: #{result.cmd_tuples} sessions moved from space #{REMAPPED_FROM_SPACE} to space #{REMAPPED_TO_SPACE}"
+  end
 end

@@ -51,11 +51,59 @@ RSpec.describe NullifyDanglingReferences do
     expect(value(:certifications, :training_session_id, id: certification.id)).to be_nil
   end
 
-  it "leaves a session that names a space which never existed for the owner to remap" do
-    session = create(:training_session)
-    dangle(:training_sessions, :space_id, id: session.id)
-    migrate
-    expect(value(:training_sessions, :space_id, id: session.id)).to eq(gone_id)
+  describe "sessions that name space 0" do
+    let!(:space_16) { Space.find_by(id: 16) || create(:space, id: 16) }
+    let(:ids) { described_class::REMAPPED_SESSION_IDS }
+
+    def make_session(id, space_id)
+      session = create(:training_session)
+      connection.remove_foreign_key(:training_sessions, column: :space_id) if connection.foreign_key_exists?(:training_sessions, column: :space_id)
+      connection.execute("UPDATE training_sessions SET id = #{id}, space_id = #{space_id} WHERE id = #{session.id}")
+      id
+    end
+
+    it "points exactly the four listed sessions at space 16 and touches nothing else" do
+      ids.each { |id| make_session(id, 0) }
+      other_zero = make_session(1950, 0)
+      other_real = make_session(1946, space_16.id)
+      other_missing = make_session(1945, gone_id)
+
+      migrate
+
+      expect(ids.map { |id| value(:training_sessions, :space_id, id: id) }).to all(eq(16))
+      expect(value(:training_sessions, :space_id, id: other_zero)).to eq(0)
+      expect(value(:training_sessions, :space_id, id: other_real)).to eq(16)
+      expect(value(:training_sessions, :space_id, id: other_missing)).to eq(gone_id)
+    end
+
+    it "does not move a listed session that is already in another space" do
+      make_session(ids.first, space_16.id)
+      other = create(:space)
+      connection.execute("UPDATE training_sessions SET space_id = #{other.id} WHERE id = #{ids.first}")
+      migrate
+      expect(value(:training_sessions, :space_id, id: ids.first)).to eq(other.id)
+    end
+
+    it "stops when space 16 does not exist" do
+      make_session(ids.first, 0)
+      connection.remove_foreign_key(:training_sessions, column: :space_id) if connection.foreign_key_exists?(:training_sessions, column: :space_id)
+      connection.execute("DELETE FROM spaces WHERE id = 16")
+      expect { migrate }.to raise_error(/space 16: that space does not exist/)
+      expect(value(:training_sessions, :space_id, id: ids.first)).to eq(0)
+    end
+
+    it "does nothing, even without space 16, when no listed session names space 0" do
+      connection.execute("DELETE FROM spaces WHERE id = 16")
+      expect { migrate }.not_to raise_error
+    end
+
+    it "puts the sessions back to space 0 on rollback, and is a no-op when run again" do
+      ids.each { |id| make_session(id, 0) }
+      migrate
+      expect { migrate }.not_to change { ids.map { |id| value(:training_sessions, :space_id, id: id) } }
+      ActiveRecord::Migration.suppress_messages { described_class.new.down }
+      expect(ids.map { |id| value(:training_sessions, :space_id, id: id) }).to all(eq(0))
+    end
   end
 
   it "keeps the other columns of a row it clears" do

@@ -13,12 +13,10 @@ require Rails.root.join("db/migrate/20261104000004_add_foreign_keys_to_unenforce
 # repositories_users.repository_id stays unvalidated: the table holds a membership
 # row of a repository that no longer exists. The key already refuses new such rows;
 # the existing row is kept and the key is validated once that row is dealt with.
-# training_sessions.space_id stays unvalidated for the same reason: a few sessions name a
-# space id that never existed and are waiting to be pointed at the right space.
 class ValidateForeignKeysOnUnenforcedReferences < ActiveRecord::Migration[8.1]
   disable_ddl_transaction!
 
-  UNVALIDATED = [[:repositories_users, :repository_id], [:training_sessions, :space_id]].freeze
+  UNVALIDATED = [[:repositories_users, :repository_id]].freeze
 
   def up
     pending = pending_foreign_keys
