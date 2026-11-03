@@ -3,33 +3,53 @@
 # its tasks becomes a task of its own, with the order's job type and, for an order that had
 # an old quote, a quote priced from the matching job_order_quote_services row (per_unit as
 # service_price, quantity as service_quantity, price 0). Tasks are numbered after the
-# order's existing ones, as the wizard does. Only orders the multi-task migration converted
-# are in scope: created before their "Main Task" (all made on 2025-08-11) and still having
-# exactly that one task and whose Main Task quote was not edited since the copy (updated_at
-# within 5 seconds of created_at); an order that has been worked on since is left alone, and
-# the number skipped for an edited quote is raised as a NOTICE. Re-running adds nothing: a
-# service already on a task is not missing.
+# order's existing ones, as the wizard does. Re-running adds nothing: a service already on a
+# task is not missing.
+#
+# Scope: the orders the multi-task migration converted, i.e. an order created before its
+# "Main Task" (all made on 2025-08-11) that still has exactly that one task. The scope is
+# computed once, before anything is written, into job_order_repair_scope, and the restore,
+# the notice and the final check all read it, so they cannot drift apart. An order whose Main
+# Task quote was edited since the copy (updated_at more than 5 seconds after created_at) is in
+# the scope table as edited and is left alone.
 #
 # The migration then checks its own result in the same transaction: for every order that had
 # an old quote, the total JobOrder#total_price computes from the tasks must equal the old
-# quote's total (service_fee + services + options + type extras). Any difference raises, naming
-# the orders, and rolls the migration back, so the data it actually ran on proves the invariant.
+# quote's total (service_fee + services + options + type extras). A difference in an unedited,
+# in-scope order raises, naming the orders (ids only), and rolls the migration back, so the
+# data it actually ran on proves the invariant. Orders outside that scope (edited, or changed
+# since) that differ are only reported in a notice: a staff edit made between a backup and a
+# deploy must not block the deploy.
 class RestoreMissingJobOrderServicesAsTasks < ActiveRecord::Migration[8.1]
   def up
+    execute <<~SQL
+      DROP TABLE IF EXISTS job_order_repair_scope
+    SQL
+    execute <<~SQL
+      CREATE TEMP TABLE job_order_repair_scope ON COMMIT DROP AS
+      SELECT o.id AS job_order_id, o.job_type_id, o.job_order_quote_id,
+             EXISTS (
+               SELECT 1 FROM job_task_quotes mq
+               WHERE mq.job_task_id = main.id AND mq.updated_at > mq.created_at + INTERVAL '5 seconds'
+             ) AS edited
+      FROM job_orders o
+      JOIN job_tasks main ON main.job_order_id = o.id AND main.title = 'Main Task'
+      WHERE main.created_at::date = DATE '2025-08-11'
+        AND o.created_at < main.created_at
+        AND (SELECT COUNT(*) FROM job_tasks t WHERE t.job_order_id = o.id) = 1
+    SQL
+
     execute <<~SQL
       DO $$
       BEGIN
         RAISE NOTICE 'orders with missing services skipped, Main Task quote edited since the copy: %',
           (SELECT COUNT(DISTINCT os.job_order_id)
            FROM job_orders_services os
-           JOIN job_tasks main ON main.job_order_id = os.job_order_id AND main.title = 'Main Task'
-           JOIN job_task_quotes mq ON mq.job_task_id = main.id
-           WHERE mq.updated_at > mq.created_at + INTERVAL '5 seconds'
-             AND (SELECT COUNT(*) FROM job_tasks t WHERE t.job_order_id = os.job_order_id) = 1
-             AND NOT EXISTS (
-               SELECT 1 FROM job_tasks t
-               WHERE t.job_order_id = os.job_order_id AND t.job_service_id = os.job_service_id
-             ));
+           JOIN job_order_repair_scope sc ON sc.job_order_id = os.job_order_id AND sc.edited
+           WHERE NOT EXISTS (
+             SELECT 1 FROM job_tasks t
+             WHERE t.job_order_id = os.job_order_id AND t.job_service_id = os.job_service_id
+           ));
       END $$
     SQL
 
@@ -37,18 +57,10 @@ class RestoreMissingJobOrderServicesAsTasks < ActiveRecord::Migration[8.1]
       WITH missing AS (
         SELECT d.*, ROW_NUMBER() OVER (PARTITION BY d.job_order_id ORDER BY d.job_service_id) AS rn
         FROM (
-          SELECT DISTINCT os.job_order_id, os.job_service_id, o.job_type_id
+          SELECT DISTINCT os.job_order_id, os.job_service_id, sc.job_type_id
           FROM job_orders_services os
-          JOIN job_orders o ON o.id = os.job_order_id
-          JOIN job_tasks main ON main.job_order_id = o.id AND main.title = 'Main Task'
-          WHERE main.created_at::date = DATE '2025-08-11'
-            AND o.created_at < main.created_at
-            AND (SELECT COUNT(*) FROM job_tasks t WHERE t.job_order_id = o.id) = 1
-            AND NOT EXISTS (
-              SELECT 1 FROM job_task_quotes mq
-              WHERE mq.job_task_id = main.id AND mq.updated_at > mq.created_at + INTERVAL '5 seconds'
-            )
-            AND EXISTS (SELECT 1 FROM job_services js WHERE js.id = os.job_service_id)
+          JOIN job_order_repair_scope sc ON sc.job_order_id = os.job_order_id AND NOT sc.edited
+          WHERE EXISTS (SELECT 1 FROM job_services js WHERE js.id = os.job_service_id)
             AND NOT EXISTS (
               SELECT 1 FROM job_tasks t
               WHERE t.job_order_id = os.job_order_id AND t.job_service_id = os.job_service_id
@@ -79,30 +91,46 @@ class RestoreMissingJobOrderServicesAsTasks < ActiveRecord::Migration[8.1]
     execute <<~SQL
       DO $$
       DECLARE
-        differing bigint[];
+        checked bigint;
+        in_scope_differing bigint[];
+        out_of_scope_differing bigint[];
       BEGIN
-        SELECT ARRAY_AGG(c.order_id ORDER BY c.order_id) INTO differing
-        FROM (
-          SELECT o.id AS order_id,
-                 qt.service_fee
-                   + COALESCE((SELECT SUM(s.per_unit * s.quantity) FROM job_order_quote_services s WHERE s.job_order_quote_id = qt.id), 0)
-                   + COALESCE((SELECT SUM(x.amount) FROM job_order_quote_options x WHERE x.job_order_quote_id = qt.id), 0)
-                   + COALESCE((SELECT SUM(e.price) FROM job_order_quote_type_extras e WHERE e.job_order_quote_id = qt.id), 0) AS old_total,
-                 COALESCE((SELECT SUM(COALESCE(q.price, 0) + COALESCE(q.service_price, 0) * COALESCE(q.service_quantity, 0)
-                                      + COALESCE((SELECT SUM(COALESCE(p.price, 0)) FROM job_task_quote_options p WHERE p.job_task_quote_id = q.id), 0))
-                           FROM job_tasks t JOIN job_task_quotes q ON q.job_task_id = t.id
-                           WHERE t.job_order_id = o.id), 0)
-                   + COALESCE((SELECT SUM(COALESCE(li.price, 0)) FROM job_quote_line_items li WHERE li.job_order_id = o.id), 0) AS new_total
-          FROM job_orders o
-          JOIN job_order_quotes qt ON qt.id = o.job_order_quote_id
-        ) c
-        WHERE c.old_total <> c.new_total;
+        CREATE TEMP TABLE job_order_repair_totals ON COMMIT DROP AS
+        SELECT o.id AS order_id,
+               COALESCE(qt.service_fee, 0)
+                 + COALESCE((SELECT SUM(s.per_unit * s.quantity) FROM job_order_quote_services s WHERE s.job_order_quote_id = qt.id), 0)
+                 + COALESCE((SELECT SUM(x.amount) FROM job_order_quote_options x WHERE x.job_order_quote_id = qt.id), 0)
+                 + COALESCE((SELECT SUM(e.price) FROM job_order_quote_type_extras e WHERE e.job_order_quote_id = qt.id), 0) AS old_total,
+               COALESCE((SELECT SUM(COALESCE(q.price, 0) + COALESCE(q.service_price, 0) * COALESCE(q.service_quantity, 0)
+                                    + COALESCE((SELECT SUM(COALESCE(p.price, 0)) FROM job_task_quote_options p WHERE p.job_task_quote_id = q.id), 0))
+                         FROM job_tasks t JOIN job_task_quotes q ON q.job_task_id = t.id
+                         WHERE t.job_order_id = o.id), 0)
+                 + COALESCE((SELECT SUM(COALESCE(li.price, 0)) FROM job_quote_line_items li WHERE li.job_order_id = o.id), 0) AS new_total,
+               (sc.job_order_id IS NOT NULL AND NOT sc.edited) AS in_scope
+        FROM job_orders o
+        JOIN job_order_quotes qt ON qt.id = o.job_order_quote_id
+        LEFT JOIN job_order_repair_scope sc ON sc.job_order_id = o.id;
 
-        IF differing IS NOT NULL THEN
-          RAISE EXCEPTION '% old-quote orders do not total the same as their old quote after the restore: order ids %',
-            ARRAY_LENGTH(differing, 1), differing;
+        SELECT COUNT(*) INTO checked FROM job_order_repair_totals WHERE in_scope;
+        SELECT ARRAY_AGG(order_id ORDER BY order_id) INTO in_scope_differing
+          FROM job_order_repair_totals WHERE in_scope AND old_total <> new_total;
+        SELECT ARRAY_AGG(order_id ORDER BY order_id) INTO out_of_scope_differing
+          FROM job_order_repair_totals WHERE NOT in_scope AND old_total <> new_total;
+
+        RAISE NOTICE 'old-quote orders checked in scope: %', checked;
+        IF out_of_scope_differing IS NOT NULL THEN
+          RAISE NOTICE '% old-quote orders outside the repair scope differ from their old quote: order ids %',
+            ARRAY_LENGTH(out_of_scope_differing, 1), out_of_scope_differing;
         END IF;
+        IF in_scope_differing IS NOT NULL THEN
+          RAISE EXCEPTION '% old-quote orders do not total the same as their old quote after the restore: order ids %',
+            ARRAY_LENGTH(in_scope_differing, 1), in_scope_differing;
+        END IF;
+        DROP TABLE job_order_repair_totals;
       END $$
+    SQL
+    execute <<~SQL
+      DROP TABLE job_order_repair_scope
     SQL
   end
 

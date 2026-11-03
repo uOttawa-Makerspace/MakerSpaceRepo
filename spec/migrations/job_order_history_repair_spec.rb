@@ -188,12 +188,36 @@ RSpec.describe "job order history repairs" do
       expect(order.job_tasks.count).to eq(1)
     end
 
-    it "raises, naming the orders and adding nothing, when an old-quote order's total differs from its old quote" do
+    it "raises, naming the orders and adding nothing, when an unedited in-scope order's total differs from its old quote" do
       order, _task, q = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
-      q.update_columns(price: 999, updated_at: COPY_TIME + 1.day)
+      q.update_columns(price: 999)
       expect { ApplicationRecord.transaction(requires_new: true) { restore } }
         .to raise_error(ActiveRecord::StatementInvalid, /1 old-quote orders do not total.*#{order.id}/m)
       expect(order.job_tasks.count).to eq(1)
+    end
+
+    it "only reports, and does not raise, for a differing order outside the scope (quote edited since the copy)" do
+      order, _task, q = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+      q.update_columns(price: 999, updated_at: COPY_TIME + 1.day)
+      expect { restore }.not_to raise_error
+      expect(order.job_tasks.count).to eq(1)
+    end
+
+    it "only reports a differing old-quote order that has more than its Main Task" do
+      order, = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+      JobTask.create!(job_order: order, job_type: job_type, title: "Task #2")
+      expect { restore }.not_to raise_error
+    end
+
+    it "treats a NULL service fee as 0 in the old total" do
+      ActiveRecord::Base.connection.execute("ALTER TABLE job_order_quotes ALTER COLUMN service_fee DROP NOT NULL")
+      order, _task, q = legacy_order(services: [service_a], quote_services: [[service_a, 2, 3]])
+      ActiveRecord::Base.connection.execute("UPDATE job_order_quotes SET service_fee = NULL WHERE id = #{order.job_order_quote_id}")
+      q.update_columns(price: 0)
+      expect { restore }.not_to raise_error
+      q.update_columns(price: 999)
+      expect { ApplicationRecord.transaction(requires_new: true) { restore } }
+        .to raise_error(ActiveRecord::StatementInvalid, /do not total.*#{order.id}/m)
     end
 
     it "passes when every old-quote order totals the same as before" do
