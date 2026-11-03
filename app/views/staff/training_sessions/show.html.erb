@@ -14,7 +14,7 @@
     <div style="float:right;">Created On: <%= @current_training_session.created_at.strftime('%D at %l:%M%P') %></div>
     <br />
     <div style="float:right;">Updated On: <%= @current_training_session.updated_at.strftime('%D at %l:%M%P') %></div>
-    <div>Space: <span style="font-weight:bold;"> <%= @current_training_session.space.name %></span></div>
+    <div>Space: <span style="font-weight:bold;"> <%= @current_training_session.space&.name %></span></div>
     <div>
       Status:
       <% if @current_training_session.completed? %>
@@ -36,7 +36,7 @@
           Training Type: <%= @current_training_session.training.localized_name %>
           <br />
           <% label_tag 'changed_params[training_id]', class: 'form-label' %>
-          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings.order('name_en ASC'), 'id', 'name_en'), prompt: 'Change training', class: 'form-control' %>
+          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select((@current_training_session.space&.trainings || Training.all).order('name_en ASC'), 'id', 'name_en'), prompt: 'Change training', class: 'form-control' %>
           <br />
           Level: <%= @current_training_session.level %>
           <br />
@@ -145,7 +145,7 @@
     <br />
     <br />
     <table class="space-users-table table table-striped">
-        Users inside <%= @current_training_session.space.name %>
+        Users inside <%= @current_training_session.space&.name %>
       <thead class="table-primary">
         <tr class="text-center">
            <th class="action-header">Add To This Session</th>
@@ -154,7 +154,7 @@
            <th>Certifications <span onclick="sortTable('space-users-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
          </tr>
       </thead>
-      <% @current_training_session.space.signed_in_users.each do |user| %>
+      <% (@current_training_session.space&.signed_in_users || []).each do |user| %>
         <% unless @current_training_session.users.include? user %>
           <tr>
             <td class="action-cell">

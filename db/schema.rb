@@ -1859,7 +1859,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_000006) do
   add_foreign_key "training_requirements", "proficient_projects"
   add_foreign_key "training_requirements", "trainings"
   add_foreign_key "training_sessions", "course_names", on_delete: :nullify
-  add_foreign_key "training_sessions", "spaces"
+  add_foreign_key "training_sessions", "spaces", validate: false
   add_foreign_key "training_sessions", "trainings"
   add_foreign_key "training_sessions", "users"
   add_foreign_key "training_sessions_users", "users"

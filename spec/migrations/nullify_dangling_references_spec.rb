@@ -34,7 +34,6 @@ RSpec.describe NullifyDanglingReferences do
     dangle(:exam_responses, :answer_id, id: response.id)
     dangle(:exam_questions, :question_id, id: exam_question.id)
     dangle(:training_sessions_users, :user_id, id_column: :training_session_id, id: session.id)
-    dangle(:training_sessions, :space_id, id: session.id)
     dangle(:require_trainings, :volunteer_task_id, id: task_requirement.id)
     dangle(:repositories, :make_id, id: make.id)
     dangle(:certifications, :training_session_id, id: certification.id)
@@ -47,10 +46,16 @@ RSpec.describe NullifyDanglingReferences do
     expect(value(:exam_responses, :answer_id, id: response.id)).to be_nil
     expect(value(:exam_questions, :question_id, id: exam_question.id)).to be_nil
     expect(value(:training_sessions_users, :user_id, id_column: :training_session_id, id: session.id)).to be_nil
-    expect(value(:training_sessions, :space_id, id: session.id)).to be_nil
     expect(value(:require_trainings, :volunteer_task_id, id: task_requirement.id)).to be_nil
     expect(value(:repositories, :make_id, id: make.id)).to be_nil
     expect(value(:certifications, :training_session_id, id: certification.id)).to be_nil
+  end
+
+  it "leaves a session that names a space which never existed for the owner to remap" do
+    session = create(:training_session)
+    dangle(:training_sessions, :space_id, id: session.id)
+    migrate
+    expect(value(:training_sessions, :space_id, id: session.id)).to eq(gone_id)
   end
 
   it "keeps the other columns of a row it clears" do
