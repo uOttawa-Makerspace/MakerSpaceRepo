@@ -8,10 +8,15 @@
 #   * locker_options: every page that renders the header reads LockerOption.lockers_enabled,
 #     which find_or_creates its row.
 RSpec.configure do |config|
+  config.before(:each) do
+    @locker_option_ids_before = LockerOption.pluck(:id) unless respond_to?(:use_transactional_tests) && use_transactional_tests
+  end
+
   config.after(:each) do
     next if respond_to?(:use_transactional_tests) && use_transactional_tests
 
     RateLimitCounter.delete_all
-    LockerOption.delete_all
+    # only the rows this example's requests created: never one that was already committed
+    LockerOption.where.not(id: @locker_option_ids_before).delete_all
   end
 end
