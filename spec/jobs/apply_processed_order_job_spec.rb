@@ -22,8 +22,14 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
     payload = JSON.parse({ id: SecureRandom.random_number(10**15) }.merge(path_params).merge(extra).to_json)
     plan = ShopOrderApplier.plan_for(payload, topic: topic)
     @order, = ProcessedOrder.receive!(provider: "shopify", order_id: plan.id || "x#{SecureRandom.hex(4)}", topic: topic, payload: payload, name: payload["name"])
-    described_class.perform_now(@order.id)
+    perform(@order)
     @order.reload
+  end
+
+  # One run as the dispatcher starts it: the hand-out has already counted the attempt.
+  def perform(order)
+    ProcessedOrder.where(id: order.id).update_all("attempts = attempts + 1")
+    described_class.perform_now(order.id)
   end
 
   def applied_orders = ProcessedOrder.where(status: "applied")
@@ -150,7 +156,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       stub_shopify_graphql("query NodeMetafields", { "node" => { "metafields" => { "edges" => [
         { "node" => { "namespace" => "makerepo", "key" => "membership_db_reference", "value" => pending.id.to_s } }
       ] } } })
-      described_class.perform_now(@order.id)
+      perform(@order)
       expect([rental.reload.state, pending.reload.status, user.cc_moneys.pluck(:cc)]).to eq(["active", "paid", [30]])
       expect(@order.reload).to have_attributes(status: "applied", last_error: nil, attempts: 2)
     end
@@ -436,7 +442,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
 
         allow_any_instance_of(Membership).to receive(:update!).and_call_original
         allow(CcMoney).to receive(:create!).and_call_original
-        described_class.perform_now(order.id)
+        perform(order)
         expect(order.reload).to have_attributes(status: "applied", attempts: 2, last_error: nil)
         expect([pending.reload.status, user.cc_moneys.pluck(:cc)]).to eq(["paid", [10]])
       end
@@ -458,7 +464,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       expect([rental.reload.state, LockerPayment.count]).to eq(["await_payment", 0])
 
       allow_any_instance_of(Membership).to receive(:update!).and_call_original
-      described_class.perform_now(order.id)
+      perform(order)
       expect([rental.reload.state, LockerPayment.count, pending.reload.status, order.reload.status])
         .to eq(["active", 1, "paid", "applied"])
     end
@@ -513,7 +519,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
                   line_items: [{ product_id: cc_product_id, quantity: 1 }, { product_id: cc_product_id, quantity: 1 }] }
       expect { hook(payload) }.not_to have_enqueued_mail
       calls = 2
-      expect { described_class.perform_now(@order.id) }.to have_enqueued_mail(MsrMailer, :send_cc_money_email).twice
+      expect { perform(@order) }.to have_enqueued_mail(MsrMailer, :send_cc_money_email).twice
     end
 
     it "does nothing and asks Shopify nothing for an order that is already applied" do
@@ -598,6 +604,42 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       end
     end
 
+    describe "a side effect that fails after the commit" do
+      def cc_order(id)
+        cc_payload(email: "nobody-#{id}@example.com").merge(id: id)
+      end
+
+      it "leaves the order applied and reports the order and the side effect, without personal data" do
+        mail = instance_double(ActionMailer::MessageDelivery)
+        allow(mail).to receive(:deliver_later).and_raise(ActiveRecord::ConnectionNotEstablished, "queue db down")
+        allow(MsrMailer).to receive(:send_cc_money_email).and_return(mail)
+        order = hook(cc_order(7430))
+        expect(order).to have_attributes(status: "applied", attempts: 1, last_error: nil)
+        expect(CcMoney.where(linked: false).count).to eq(1)
+        error, opts = reports.sole
+        expect(error).to be_a(ActiveRecord::ConnectionNotEstablished)
+        expect(opts[:context]).to eq(shopify_order_id: "7430", side_effect: "cc_claim_mail", error_class: "ActiveRecord::ConnectionNotEstablished")
+        expect(opts[:context].to_s).not_to include("nobody-7430")
+      end
+
+      it "reports any other post-commit failure the same way instead of failing the attempt" do
+        allow_any_instance_of(ShopOrderApplier).to receive(:apply).and_wrap_original do |original, *args|
+          original.call(*args)
+          ActiveRecord.after_all_transactions_commit { raise "late" }
+        end
+        order = hook(cc_order(7431))
+        expect(order).to have_attributes(status: "applied", last_error: nil)
+        expect(reports.sole.last[:context]).to include(shopify_order_id: "7431", side_effect: "after_commit")
+      end
+
+      it "still retries an attempt that fails before the commit" do
+        allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        order = hook(cc_payload(email: user.email).merge(id: 7432))
+        expect(order.status).to eq("received")
+        expect(reports.map { |e, _| e.class }).to eq([ApplyProcessedOrderJob::OrderApplyRetrying])
+      end
+    end
+
     describe "the schedule on the row" do
       let(:pending) { create(:membership, user: user, membership_tier: tier, status: "pending") }
 
@@ -605,7 +647,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
         order = hook(membership_payload(pending.id, id: 7420))
         expect(order.next_attempt_at).to be_within(5.seconds).of(Time.current + ProcessedOrder.backoff(1))
-        described_class.perform_now(order.id)
+        perform(order)
         expect(order.reload).to have_attributes(attempts: 2)
         expect(order.next_attempt_at).to be_within(5.seconds).of(Time.current + ProcessedOrder.backoff(2))
       end
@@ -614,11 +656,11 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
         order = hook(membership_payload(pending.id, id: 7421))
         order.update_columns(attempts: ProcessedOrder::MAX_ATTEMPTS - 2)
-        described_class.perform_now(order.id)
+        perform(order)
         expect(order.reload).to have_attributes(status: "received", attempts: ProcessedOrder::MAX_ATTEMPTS - 1)
         expect(reports.none? { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyFailed) }).to be(true)
 
-        described_class.perform_now(order.id)
+        perform(order)
         expect(order.reload).to have_attributes(status: "failed", attempts: ProcessedOrder::MAX_ATTEMPTS)
         error, opts = reports.find { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyFailed) }
         expect(error.message).to include("7421", "10 attempts", "LockWaitTimeout")
@@ -631,7 +673,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       it "reports OrderApplyRetrying when the row's attempts become 1 and 5 only, ids and error class only" do
         allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "secret-value")
         order = hook(membership_payload(pending.id, id: 7422))
-        8.times { described_class.perform_now(order.id) }
+        8.times { perform(order) }
         retrying = reports.select { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyRetrying) }
         expect(retrying.map { |_, o| o[:context][:attempts] }).to eq([1, 5])
         expect(retrying.first.last[:context]).to eq(shopify_order_id: "7422", attempts: 1, error_class: "ActiveRecord::LockWaitTimeout")
@@ -643,7 +685,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         allow(ProcessedOrder).to receive(:own_transaction).and_raise(ActiveRecord::ConnectionNotEstablished)
         order = ProcessedOrder.receive!(provider: "shopify", order_id: 7423, topic: "orders/paid",
                                         payload: JSON.parse(membership_payload(pending.id, id: 7423).to_json)).first
-        expect { described_class.perform_now(order.id) }.not_to raise_error
+        expect { perform(order) }.not_to raise_error
       end
 
       it "does not touch an order a concurrent run applied while this one was failing" do
@@ -653,7 +695,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
           original.call(*args)
         end
         order = hook(membership_payload(pending.id, id: 7424))
-        expect(order).to have_attributes(status: "applied", attempts: 0)
+        expect(order).to have_attributes(status: "applied", attempts: 1)
       end
 
       it "applies a failed order again when it is re-run" do
@@ -662,7 +704,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         order.update!(status: "failed")
         expect(order.reload.reapply!).to be(true)
         allow_any_instance_of(Membership).to receive(:update!).and_call_original
-        described_class.perform_now(order.id)
+        perform(order)
         expect([order.reload.status, pending.reload.status]).to eq(["applied", "paid"])
       end
     end

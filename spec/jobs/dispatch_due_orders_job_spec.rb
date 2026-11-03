@@ -53,6 +53,17 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
       expect(queued_ids).to eq([order.id, order.id])
     end
 
+    it "counts every hand-out in attempts and gives the attempt back when the job cannot be queued" do
+      order = stored(1)
+      allow(ApplyProcessedOrderJob).to receive(:perform_later).and_return(false)
+      ProcessedOrder.dispatch_due(now: now)
+      expect(order.reload.attempts).to eq(0)
+
+      allow(ApplyProcessedOrderJob).to receive(:perform_later).and_call_original
+      described_class.perform_now(now: now)
+      expect(order.reload.attempts).to eq(1)
+    end
+
     it "leaves orders that are not due, applied or failed alone" do
       stored(1, due_in: 5.minutes)
       stored(2, status: "applied")
@@ -118,6 +129,67 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
       described_class.perform_now(now: now) # the first is handed out and leased: in the future, not stranded
       expect(reports).to be_empty
       expect(queued_ids.size).to eq(1)
+    end
+  end
+
+  describe "a job that dies without raising" do
+    def reported_failures = reports.select { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyFailed) }
+
+    it "uses up an attempt per hand-out, so the order ends failed and reported instead of looping" do
+      order = stored(1)
+      handed_out = (0..ProcessedOrder::MAX_ATTEMPTS + 2).sum do |n|
+        before = queued_ids.size # nobody runs the jobs: each lease just expires
+        described_class.perform_now(now: now + (n * 16).minutes)
+        queued_ids.size - before
+      end
+      expect(handed_out).to eq(ProcessedOrder::MAX_ATTEMPTS)
+      expect(order.reload).to have_attributes(status: "failed", attempts: ProcessedOrder::MAX_ATTEMPTS)
+      expect(order.last_error).to be_present
+      error, opts = reported_failures.sole
+      expect(error.message).to include(order.provider_ref, "10 attempts")
+      expect(opts[:context]).to include(shopify_order_id: order.provider_ref, attempts: 10)
+    end
+
+    it "counts a run killed by an exception that bypasses StandardError" do
+      order = stored(1)
+      allow_any_instance_of(ShopOrderApplier).to receive(:call).and_raise(NoMemoryError)
+      (ProcessedOrder::MAX_ATTEMPTS + 1).times do |n|
+        described_class.perform_now(now: now + (n * 16).minutes)
+        ids = queued_ids
+        clear_enqueued_jobs
+        ids.each do |id|
+          ApplyProcessedOrderJob.perform_now(id)
+        rescue NoMemoryError
+          nil # the worker died: nothing was recorded
+        end
+      end
+      expect(order.reload).to have_attributes(status: "failed", attempts: ProcessedOrder::MAX_ATTEMPTS)
+      expect(reported_failures.size).to eq(1)
+    end
+
+    it "does not hand out an 11th time or report twice" do
+      order = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS)
+      2.times { described_class.perform_now(now: now) }
+      expect(queued_ids).to be_empty
+      expect(order.reload.status).to eq("failed")
+      expect(reported_failures.size).to eq(1)
+    end
+
+    it "leaves an order whose last run is still inside its lease alone" do
+      order = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS, due_in: 10.minutes)
+      described_class.perform_now(now: now)
+      expect(order.reload.status).to eq("received")
+      expect(reports).to be_empty
+    end
+  end
+
+  describe "a backlog of more than one batch" do
+    it "is handed out in rounds and not reported as stranded" do
+      stub_const("ProcessedOrder::BATCH", 2)
+      orders = (1..5).map { |n| stored(n, due_in: -3.hours) }
+      described_class.perform_now(now: now)
+      expect(queued_ids).to match_array(orders.map(&:id))
+      expect(reports).to be_empty
     end
   end
 

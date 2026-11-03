@@ -36,7 +36,7 @@ RSpec.describe "Shopify order webhooks (inbox)", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to be_blank
       row = stored(9001)
-      expect(row).to have_attributes(topic: "orders/paid", status: "received", attempts: 0, order_name: "#1042", applied_at: nil)
+      expect(row).to have_attributes(topic: "orders/paid", status: "received", attempts: 1, order_name: "#1042", applied_at: nil)
       expect(row.payload).to include("id" => 9001, "tags" => [membership_tag])
       expect(queued_ids).to eq([row.id])
     end

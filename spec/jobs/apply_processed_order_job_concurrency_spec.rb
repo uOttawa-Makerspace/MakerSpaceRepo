@@ -16,7 +16,7 @@ RSpec.describe ApplyProcessedOrderJob, "under concurrency", type: :job do
   end
   let!(:stored) do
     ProcessedOrder.receive!(provider: "shopify", order_id: order_id, topic: "orders/paid",
-                            payload: JSON.parse(payload.to_json)).first
+                            payload: JSON.parse(payload.to_json)).first.tap { |o| o.update_columns(attempts: 1) } # handed out once
   end
 
   before do
@@ -127,7 +127,7 @@ RSpec.describe ApplyProcessedOrderJob, "under concurrency", type: :job do
         provider: "shopify", order_id: 8_100_000_000_002, topic: "orders/paid",
         payload: JSON.parse({ id: 8_100_000_000_002, tags: [LockerRental.draft_order_operating_tag],
                               metafields: [{ namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s }] }.to_json)
-      ).first
+      ).first.tap { |o| o.update_columns(attempts: 1) } # handed out once
     end
 
     after do

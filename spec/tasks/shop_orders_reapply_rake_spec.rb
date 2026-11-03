@@ -54,7 +54,7 @@ RSpec.describe "shop_orders:reapply" do
   it "resets the schedule (attempts, due now, report mark) and hands the order out" do
     order.update!(status: "failed", attempts: 10, reported_at: 1.day.ago, next_attempt_at: 3.days.from_now)
     run("8800")
-    expect(order.reload).to have_attributes(status: "received", attempts: 0, reported_at: nil)
+    expect(order.reload).to have_attributes(status: "received", attempts: 1, reported_at: nil) # reset to 0, then the hand-out counts one
     expect(order.next_attempt_at).to be_within(1.minute).of(Time.current + ProcessedOrder::LEASE)
     expect(enqueued_jobs.map { |j| j["job_class"] }).to eq(["ApplyProcessedOrderJob"])
   end

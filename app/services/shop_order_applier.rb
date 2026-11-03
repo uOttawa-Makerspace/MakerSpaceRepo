@@ -86,8 +86,15 @@ class ShopOrderApplier
       next unless order.status == "received"
 
       apply(plan)
-      order.update!(status: "applied", applied_at: Time.current, attempts: order.attempts + 1, last_error: nil)
+      order.update!(status: "applied", applied_at: Time.current, last_error: nil)
+      @applied_here = true
     end
+  rescue StandardError => e
+    raise unless post_commit_failure?
+
+    # The order committed as applied and something that runs after the commit raised: not a failed attempt (the
+    # order must not be applied again), so tell staff, who can resend whatever it was.
+    report_after_commit_failure(e, "after_commit")
   end
 
   private
@@ -142,9 +149,29 @@ class ShopOrderApplier
   # Reports a problem for staff to reconcile. Sent once the transaction has committed, so an attempt that rolls
   # back (and is retried) reports nothing and a retry does not report twice.
   def report_problem(error, context: {})
+    after_commit("problem_report") { Rails.error.report(error, handled: true, severity: :error, context: context) }
+  end
+
+  # Runs a side effect once the transaction has committed. If it raises, the order is already applied, so the failure
+  # is reported (order id and which side effect, no personal data) instead of failing the attempt.
+  def after_commit(side_effect, &block)
     ActiveRecord.after_all_transactions_commit do
-      Rails.error.report(error, handled: true, severity: :error, context: context)
+      block.call
+    rescue StandardError => e
+      report_after_commit_failure(e, side_effect)
     end
+  end
+
+  def report_after_commit_failure(error, side_effect)
+    Rails.error.report(
+      error, handled: true, severity: :error,
+             context: { shopify_order_id: @record.provider_ref, side_effect: side_effect, error_class: error.class.name }
+    )
+  end
+
+  # True when this run committed the order as applied (so an error now came after the commit, not from the attempt).
+  def post_commit_failure?
+    @applied_here && ProcessedOrder.where(id: @record.id, status: "applied").exists?
   end
 
   def report_lookup_rejection(plan)
@@ -272,7 +299,7 @@ class ShopOrderApplier
         new_cc = CcMoney.create!(cc: cc, linked: false)
         hash = Rails.application.message_verifier(:cc).generate(new_cc.id)
         email = plan.email
-        ActiveRecord.after_all_transactions_commit { MsrMailer.send_cc_money_email(email, cc, hash).deliver_later }
+        after_commit("cc_claim_mail") { MsrMailer.send_cc_money_email(email, cc, hash).deliver_later }
       end
     end
   end

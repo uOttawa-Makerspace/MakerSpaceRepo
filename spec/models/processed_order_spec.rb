@@ -53,4 +53,29 @@ RSpec.describe ProcessedOrder do
     expect(stale.reapply!).to be(false)
     expect(order.reload.status).to eq("applied")
   end
+
+  describe ".record_failure!" do
+    let(:reports) { [] }
+
+    before { allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] } }
+
+    it "does not count the attempt again: the hand-out did" do
+      order, = store
+      order.update_columns(attempts: 3)
+      described_class.record_failure!(order.id, ArgumentError.new("bad"))
+      expect(order.reload).to have_attributes(attempts: 3, status: "received", last_error: "ArgumentError: bad")
+      expect(order.next_attempt_at).to be_within(5.seconds).of(Time.current + described_class.backoff(3))
+    end
+
+    it "reports, and changes nothing, when the order is no longer received" do
+      order, = store
+      order.update_columns(status: "applied", applied_at: Time.current)
+      described_class.record_failure!(order.id, ArgumentError.new("bad"))
+      expect(order.reload).to have_attributes(status: "applied", last_error: nil)
+      error, opts = reports.sole
+      expect(error).to be_a(ArgumentError)
+      expect(opts[:context]).to include(shopify_order_id: "5001", status: "applied")
+      expect(opts[:severity]).to eq(:warning)
+    end
+  end
 end
