@@ -178,5 +178,23 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
       expect(SubSpaceBooking.where(google_booking_id: %w[good-1 good-2]).count).to eq(2)
       expect(chan.reload.sync_token).to eq("NEW")
     end
+
+    [ActiveRecord::Deadlocked, ActiveRecord::LockWaitTimeout, ActiveRecord::ConnectionNotEstablished].each do |error|
+      it "fails the job on a transient database error (#{error}) and does not advance the sync token" do
+        chan = channel(sync_token: "OLD")
+        stub_events([c18_gcal_event(id: "e1")], next_sync_token: "NEW")
+        allow(GoogleCalendar::EventProcessor).to receive(:process).and_raise(error, "db")
+        expect(Rails.error).not_to receive(:report)
+        expect { described_class.perform_now }.to raise_error(error)
+        expect(chan.reload.sync_token).to eq("OLD")
+      end
+    end
+
+    it "still reports and skips a data error in a single event" do
+      stub_events([c18_gcal_event(id: "e1")], next_sync_token: "NEW")
+      allow(GoogleCalendar::EventProcessor).to receive(:process).and_raise(ActiveRecord::RecordInvalid.new(SubSpaceBooking.new))
+      expect(Rails.error).to receive(:report).once
+      expect { described_class.perform_now }.not_to raise_error
+    end
   end
 end

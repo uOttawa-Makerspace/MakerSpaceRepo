@@ -5,8 +5,21 @@ module GoogleCalendar
   # channel, hands the calendar's sync token to it, and then retires every other channel: Google is told to stop
   # it (an expired or unknown one is simply forgotten) and its row is removed, so one channel is live at a time
   # and the rows do not pile up.
+  #
+  # Runs are serialised by a transaction-level advisory lock, and a run retires only the channels created before
+  # its own, so overlapping runs (a host cron line and Solid Queue during a deploy, the renew job) leave exactly
+  # one live channel: the newest.
   class WebhookRegistrar
+    LOCK_KEY = Zlib.crc32("google_calendar_webhook_registrar")
+
     def self.register!
+      GoogleCalendarChannel.transaction do
+        GoogleCalendarChannel.connection.execute("SELECT pg_advisory_xact_lock(#{LOCK_KEY})")
+        register_locked!
+      end
+    end
+
+    def self.register_locked!
       service = Google::Apis::CalendarV3::CalendarService.new
       service.authorization = SubSpaceBooking.authorizer
 
@@ -31,9 +44,10 @@ module GoogleCalendar
       retire_other_channels(service, except: created)
       created
     end
+    private_class_method :register_locked!
 
     def self.retire_other_channels(service, except:)
-      GoogleCalendarChannel.where.not(id: except.id).find_each do |old|
+      GoogleCalendarChannel.where(id: ...except.id).find_each do |old|
         stop(service, old) if old.expires_at > Time.current
         old.destroy!
       rescue Google::Apis::ClientError

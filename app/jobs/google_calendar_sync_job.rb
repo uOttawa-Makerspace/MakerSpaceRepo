@@ -6,10 +6,18 @@
 #
 # Lists every page. The sync token of the active channel makes the listing incremental; when Google refuses it
 # (410: expired) the token is dropped and the calendar is listed in full, once. Any other client error, or a
-# second one, is raised. One event that cannot be processed is reported and skipped; it does not stop the others,
-# and the new sync token is still stored.
+# second one, is raised. One event that cannot be processed (bad data) is reported and skipped; it does not stop
+# the others, and the new sync token is still stored. A transient database error is not that: it fails the job.
 class GoogleCalendarSyncJob < ApplicationJob
   queue_as :default
+
+  # A failure of the database or its connection says nothing about the event, so it fails the job (the token
+  # does not advance past an event that was never processed) instead of being reported and skipped.
+  TRANSIENT_DATABASE_ERRORS = [
+    ActiveRecord::Deadlocked, ActiveRecord::LockWaitTimeout, ActiveRecord::SerializationFailure,
+    ActiveRecord::QueryCanceled, ActiveRecord::StatementTimeout,
+    ActiveRecord::ConnectionNotEstablished, ActiveRecord::ConnectionFailed, ActiveRecord::ConnectionTimeoutError
+  ].freeze
 
   def perform
     logger.info "[GCAL] Sync job triggered"
@@ -64,6 +72,8 @@ class GoogleCalendarSyncJob < ApplicationJob
 
   def process(event)
     GoogleCalendar::EventProcessor.process(event)
+  rescue *TRANSIENT_DATABASE_ERRORS
+    raise
   rescue StandardError => e
     Rails.error.report(e, handled: true, context: { job: self.class.name, google_event_id: event.id })
   end

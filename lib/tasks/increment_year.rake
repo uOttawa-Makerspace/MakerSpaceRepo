@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# This is not scheduled on Solid Queue: it stays on the host crontab until the year-of-study redesign.
+
 namespace :increment_year do
   desc "increment year to students"
   task increment_one_year: :environment do

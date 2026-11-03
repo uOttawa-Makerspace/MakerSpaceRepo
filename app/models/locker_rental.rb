@@ -139,15 +139,20 @@ class LockerRental < ApplicationRecord
   # An expired rental is announced only while its end is this recent. Older ones are not mailed (the renter was
   # not told at the time and a notice now would be noise); staff chase those by hand.
   EXPIRY_NOTICE_WINDOW = 14.days
+  # The notice query looks back one more day than the window. A run that is a day late, and the first run after the
+  # data migration that marks everything older than the window as notified, then lose no rental.
+  EXPIRY_NOTICE_GRACE = 1.day
 
-  # Active rentals whose owned_until fell within EXPIRY_NOTICE_WINDOW and whose renter has not been told.
+  # Active rentals whose owned_until fell within EXPIRY_NOTICE_WINDOW (plus the grace day) and whose renter has not been told.
   scope :expiry_notice_due, lambda { |now = Time.current|
-    active.where(owned_until: (now - EXPIRY_NOTICE_WINDOW)..now).where(notified_of_cancellation_at: nil)
+    active.where(owned_until: (now - EXPIRY_NOTICE_WINDOW - EXPIRY_NOTICE_GRACE)..now).where(notified_of_cancellation_at: nil)
   }
 
-  # Mails the renter of each rental in expiry_notice_due once (notified_of_cancellation_at records it; a repeat
-  # run finds nothing). A rental without a mailable, eligible renter is skipped as a whole and left unrecorded,
-  # so staff still see it as one to chase. +log+ receives one line per rental. Returns the number notified.
+  # Mails the renter of each rental in expiry_notice_due once. The rental is claimed first (a conditional update
+  # on notified_of_cancellation_at IS NULL), and the mail is enqueued only by the run whose update changed the
+  # row, so overlapping runs send one mail per rental. A rental without a mailable, eligible renter is skipped as a
+  # whole and left unrecorded, so staff still see it as one to chase. +log+ receives one line per rental (its id,
+  # never the renter's details). Returns the number notified.
   def self.notify_expired_rentals!(log: ->(line) { Rails.logger.info("[LockerRental] #{line}") })
     count = 0
     expiry_notice_due.find_each do |rental|
@@ -158,11 +163,20 @@ class LockerRental < ApplicationRecord
         next
       end
 
-      LockerMailer.with(locker_rental: rental).rental_expired.deliver_later
-      rental.update_columns(notified_of_cancellation_at: Time.current, contacted_for_clearance: true)
+      claimed = where(id: rental.id, notified_of_cancellation_at: nil)
+                .update_all(notified_of_cancellation_at: Time.current, contacted_for_clearance: true)
+      next unless claimed == 1
+
+      begin
+        LockerMailer.with(locker_rental: rental).rental_expired.deliver_later
+      rescue StandardError
+        # nothing was enqueued: release the claim so the next run mails it
+        where(id: rental.id).update_all(notified_of_cancellation_at: nil, contacted_for_clearance: rental.contacted_for_clearance)
+        raise
+      end
 
       count += 1
-      log.call("Sent expiration notice for Locker Rental ##{rental.id} (Locker ##{rental.locker&.specifier}) to #{rental.rented_by.email}")
+      log.call("Sent expiration notice for Locker Rental ##{rental.id} (Locker ##{rental.locker&.specifier})")
     end
     count
   end
