@@ -58,3 +58,16 @@ RSpec.describe AddIndexesToForeignKeyColumns do
     end
   end
 end
+
+require Rails.root.join("db/migrate/20261104000005_validate_foreign_keys_on_unenforced_references")
+
+RSpec.describe ValidateForeignKeysOnUnenforcedReferences do
+  it "does not wrap the validations in one DDL transaction, so each commits on its own" do
+    expect(described_class.disable_ddl_transaction).to be(true)
+  end
+
+  it "can be run again: validated keys are skipped" do
+    run = -> { ActiveRecord::Migration.suppress_messages { described_class.new.up } }
+    expect { run.call; run.call }.not_to raise_error
+  end
+end

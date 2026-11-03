@@ -59,18 +59,76 @@ RSpec.describe "users:merge_duplicates" do
     expect(rows).to contain_exactly([shared.id, primary.id], [only_duplicate.id, primary.id])
   end
 
-  it "merges tracks of a module both users started without losing a completion" do
-    shared_module = create(:learning_module)
-    only_duplicate_module = create(:learning_module)
-    create(:learning_module_track, user: primary, learning_module: shared_module)
-    create(:learning_module_track, :completed, user: duplicate, learning_module: shared_module)
-    moved = create(:learning_module_track, user: duplicate, learning_module: only_duplicate_module)
+  describe "tracks of a module both users started" do
+    let(:shared_module) { create(:learning_module) }
+    let(:t0) { Time.zone.parse("2025-03-01 10:00") }
 
-    merge
+    def track_row(user, status:, created:, updated:, scorm: nil)
+      LearningModuleTrack.insert_all!([{ user_id: user.id, learning_module_id: shared_module.id, status: status,
+                                         scorm_state: scorm, created_at: t0 + created.days, updated_at: t0 + updated.days }])
+      LearningModuleTrack.where(user_id: user.id, learning_module_id: shared_module.id).sole
+    end
 
-    expect(primary.learning_module_tracks.where(learning_module: shared_module).pluck(:status)).to eq(["completed"])
-    expect(moved.reload.user_id).to eq(primary.id)
-    expect(LearningModuleTrack.where(user_id: duplicate.id)).to be_empty
+    it "merges them like the unique-index migration: best status, newest SCORM state, earliest and latest dates" do
+      only_duplicate_module = create(:learning_module)
+      kept = track_row(primary, status: "In progress", created: 5, updated: 6, scorm: { "cmi.location" => "old" })
+      track_row(duplicate, status: "Completed", created: 2, updated: 9,
+                           scorm: { "cmi.location" => "new", "cmi.suspend_data" => "bookmark", "cmi.score.raw" => "80" })
+      moved = create(:learning_module_track, user: duplicate, learning_module: only_duplicate_module)
+
+      merge
+
+      row = LearningModuleTrack.where(learning_module: shared_module).sole
+      expect(row.id).to eq(kept.id)
+      expect(row.user_id).to eq(primary.id)
+      expect(row.status_before_type_cast).to eq("Completed")
+      expect(row.scorm_state).to eq("cmi.location" => "new", "cmi.suspend_data" => "bookmark", "cmi.score.raw" => "80")
+      expect(row.created_at).to eq(t0 + 2.days)
+      expect(row.updated_at).to eq(t0 + 9.days)
+      expect(moved.reload.user_id).to eq(primary.id)
+    end
+
+    it "keeps the primary's SCORM state when it is the newest and the duplicate's progress otherwise" do
+      track_row(primary, status: "In progress", created: 1, updated: 8, scorm: { "cmi.location" => "primary" })
+      track_row(duplicate, status: "In progress", created: 2, updated: 3, scorm: { "cmi.location" => "duplicate" })
+      merge
+      expect(LearningModuleTrack.where(learning_module: shared_module).sole.scorm_state).to eq("cmi.location" => "primary")
+    end
+
+    it "uses the merge rule of the migration (one shared implementation)" do
+      expect(LearningModuleTrackMerge).to receive(:merge!).and_call_original.at_least(:once)
+      merge
+    end
+  end
+
+  describe "walk-in safety sheets of the same space" do
+    let(:space) { create(:space) }
+
+    def sheet_for(user)
+      create(:walk_in_safety_sheet, :is_adult, user: user, space: space)
+    end
+
+    it "drops the duplicate's sheet only when it holds exactly the same data as the primary's" do
+      kept = sheet_for(primary)
+      copy = sheet_for(duplicate)
+      attrs = kept.attributes.except("id", "user_id", "created_at", "updated_at")
+      WalkInSafetySheet.where(id: copy.id).update_all(attrs)
+
+      merge
+
+      expect(WalkInSafetySheet.where(space: space).pluck(:id)).to eq([kept.id])
+      expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    end
+
+    it "stops without deleting anything when the duplicate's sheet differs" do
+      sheet_for(primary)
+      different = sheet_for(duplicate)
+
+      expect { merge }.to raise_error(/walk_in_safety_sheets rows #{different.id}/)
+
+      expect(WalkInSafetySheet.exists?(different.id)).to be(true)
+      expect(User.unscoped.exists?(duplicate.id)).to be(true)
+    end
   end
 
   it "does not drop a row the primary does not have" do

@@ -1,3 +1,5 @@
+require Rails.root.join("lib/learning_module_track_merge")
+
 # Finds all duplicated users and deletes them. This also doubles as a quick test
 # for destroying user records.
 
@@ -177,7 +179,7 @@ namespace :users do
     # https://api.rubyonrails.org/classes/ActiveRecord/Reflection/ClassMethods.html#method-i-reflect_on_all_associations
     # Reflect on all table-level associations
     # User.reflect_on_all_associations.map(&:macro).uniq
-    carry_over_completed_tracks(primary, duplicate)
+    merge_shared_tracks(primary, duplicate)
     discard_rows_primary_already_has(primary, duplicate)
     # We're going to hit all possible assocs, need to make sure there's a record to update
     User.reflect_on_all_associations.each do |assoc|
@@ -200,20 +202,17 @@ namespace :users do
     duplicate.destroy!
   end
 
-  # A learning module the duplicate completed stays completed when the primary has its own
-  # track of the same module: the duplicate's track is discarded as a repeat row next.
-  def carry_over_completed_tracks(primary, duplicate)
+  # Tracks of a module both users have are merged into the primary's track by the same
+  # rule the unique-index migration uses (best status, newest SCORM state, earliest
+  # created_at, latest updated_at), so nothing the duplicate recorded is lost. The
+  # primary's row is the one kept; tracks only the duplicate has are moved afterwards.
+  def merge_shared_tracks(primary, duplicate)
     connection = ActiveRecord::Base.connection
-    connection.update(
-      ActiveRecord::Base.sanitize_sql_array(
-        [
-          "UPDATE learning_module_tracks p SET status = 'Completed' FROM learning_module_tracks d " \
-            'WHERE p.user_id = ? AND d.user_id = ? AND p.learning_module_id = d.learning_module_id ' \
-            "AND d.status = 'Completed' AND p.status IS DISTINCT FROM 'Completed'",
-          primary.id,
-          duplicate.id
-        ]
-      )
+    LearningModuleTrackMerge.merge!(
+      connection,
+      group: %w[learning_module_id],
+      where: ActiveRecord::Base.sanitize_sql_array(['user_id IN (?)', [primary.id, duplicate.id]]),
+      keeper_order: ActiveRecord::Base.sanitize_sql_array(['(user_id = ?) DESC, created_at, id', primary.id])
     )
   end
 
@@ -231,20 +230,49 @@ namespace :users do
 
   # Where a unique index would stop the duplicate's row from moving to the primary because
   # the primary already has a row with the same other columns, the duplicate's row is
-  # dropped. It is the same row (same module, same space, ...), already held by the primary,
-  # so nothing is lost; rows the primary does not have are moved afterwards.
+  # dropped only when it holds exactly the same data as the primary's (every column but
+  # id, the user and the timestamps). A row that differs is never dropped: the merge of
+  # this pair stops with an error naming it, to be settled by hand. An index on the user
+  # column alone cannot be settled by dropping anything, so it is left to fail loudly when
+  # the row is moved.
   def discard_rows_primary_already_has(primary, duplicate)
     connection = ActiveRecord::Base.connection
     user_reference_columns.each do |table, column|
       connection.indexes(table).each do |index|
         next unless index.unique && index.where.nil? && index.columns.is_a?(Array) && index.columns.include?(column)
 
-        same = (index.columns - [column]).map do |other|
+        others = index.columns - [column]
+        next if others.empty?
+
+        same_key = others.map do |other|
           "d.#{connection.quote_column_name(other)} = p.#{connection.quote_column_name(other)}"
         end
-        delete_repeat_rows(connection, table, column, same, primary, duplicate)
+        delete_repeat_rows(connection, table, column, same_key + [same_data_condition(connection, table, column)],
+                           primary, duplicate)
+        raise_on_differing_rows(connection, table, column, same_key, primary, duplicate)
       end
     end
+  end
+
+  def same_data_condition(connection, table, column)
+    ignored = [connection.primary_key(table), column, 'created_at', 'updated_at'].compact.map { |name| connection.quote(name) }
+    "(to_jsonb(d) - ARRAY[#{ignored.join(', ')}]) = (to_jsonb(p) - ARRAY[#{ignored.join(', ')}])"
+  end
+
+  def raise_on_differing_rows(connection, table, column, same_key, primary, duplicate)
+    quoted_table = connection.quote_table_name(table)
+    quoted_column = connection.quote_column_name(column)
+    differing = connection.select_values(
+      ActiveRecord::Base.sanitize_sql_array(
+        ["SELECT d.#{connection.quote_column_name(connection.primary_key(table) || column)} FROM #{quoted_table} d " \
+           "JOIN #{quoted_table} p ON #{same_key.join(' AND ')} AND p.#{quoted_column} = ? WHERE d.#{quoted_column} = ?",
+         primary.id, duplicate.id]
+      )
+    )
+    return if differing.empty?
+
+    raise "Cannot merge user #{duplicate.id} into #{primary.id}: #{table} rows #{differing.join(', ')} of the " \
+          'duplicate differ from the primary\'s row for the same key. Settle them by hand and run the task again.'
   end
 
   # Columns that reference users without a User association (supervisor_id, admin_id) and
@@ -305,15 +333,6 @@ namespace :users do
           # update in a map to get validations to run
           foreign_record.update!(assoc.foreign_key => primary.id)
           puts "\tUpdating has_many association #{assoc.name}"
-        rescue ActiveRecord::RecordInvalid => e
-          # At the time of writing this, there's only one space you can sign a
-          # sheet for. Assuming you've signed it we can discard the second copy.
-          if assoc.name == :walk_in_safety_sheets
-            puts "\tRecord already has a safety sheet, discarding..."
-            foreign_record.destroy
-          else
-            raise e
-          end
         end
     end
   end

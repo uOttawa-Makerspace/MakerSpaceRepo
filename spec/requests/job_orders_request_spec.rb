@@ -1303,6 +1303,15 @@ RSpec.describe "GET /job_orders/new design help card", type: :request do
     expect(response.body).to include('name="redirect_step" id="redirect_step" value="2"')
   end
 
+  it "still offers the card when create fails and the page is rendered again" do
+    JobType.find_by(name: "Design Services") || JobType.create!(name: "Design Services", description: "d")
+    allow_any_instance_of(JobOrder).to receive(:save).and_return(false)
+    expect { post job_orders_path, params: { job_order: { job_type_id: "" }, redirect_step: 1 } }
+      .not_to change(JobOrder, :count)
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('name="redirect_step" id="redirect_step" value="2"')
+  end
+
   it "hides the card when there is no Design Services type" do
     JobType.where(name: "Design Services").destroy_all
     get new_job_orders_path

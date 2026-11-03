@@ -2,7 +2,9 @@ require Rails.root.join("db/migrate/20261104000004_add_foreign_keys_to_unenforce
 
 # Validates the foreign keys that the previous migration added NOT VALID, and only
 # those. Validation scans the child table under SHARE UPDATE EXCLUSIVE, which does not
-# block reads or writes.
+# block reads or writes. Each validation commits on its own (no DDL transaction around the
+# migration), so a failure part-way keeps the keys already validated and the migration can
+# be run again: keys that are validated are skipped.
 #
 # A key whose table still holds a row pointing at a missing parent is reported
 # with its count before anything is validated, so the rows can be repaired and
@@ -12,6 +14,8 @@ require Rails.root.join("db/migrate/20261104000004_add_foreign_keys_to_unenforce
 # row of a repository that no longer exists. The key already refuses new such rows;
 # the existing row is kept and the key is validated once that row is dealt with.
 class ValidateForeignKeysOnUnenforcedReferences < ActiveRecord::Migration[8.1]
+  disable_ddl_transaction!
+
   UNVALIDATED = [[:repositories_users, :repository_id]].freeze
 
   def up
