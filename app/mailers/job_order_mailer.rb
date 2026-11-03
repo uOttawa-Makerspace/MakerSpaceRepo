@@ -146,8 +146,4 @@ class JobOrderMailer < ApplicationMailer
 
     logger.warn "YOU'VE GOT MAIL #{@staff_member.inspect}"
   end
-
-  # def send_print_reminder(email, id)
-  #   mail(to: email, subject: "Reminder for your print order ##{id}")
-  # end
 end

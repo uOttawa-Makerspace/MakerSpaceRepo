@@ -108,24 +108,34 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
   end
 
   describe "pagination" do
-    it "fetches only the first page: events on later pages are never processed and no sync token is saved" do
-      # the job ignores nextPageToken (one list_events call, no loop), so with more than one page of events the rest are skipped, and because only the LAST page carries nextSyncToken the stored token is never advanced
+    def stub_page(query, events, next_page_token: nil, next_sync_token: nil)
+      stub_request(:get, EVENTS_URL).with(query: query).to_return(
+        status: 200, headers: { "Content-Type" => "application/json" },
+        body: c18_gcal_events_json(events, next_page_token: next_page_token, next_sync_token: next_sync_token)
+      )
+    end
+
+    it "reads every page, processes the events of all of them and stores the token of the last page" do
       chan = channel(sync_token: "OLD")
-      stub_events([c18_gcal_event(id: "page-1")], next_page_token: "PAGE2")
+      base = { "syncToken" => "OLD", "showDeleted" => "true", "singleEvents" => "true" }
+      stub_page(base, [c18_gcal_event(id: "page-1")], next_page_token: "PAGE2")
+      stub_page(base.merge("pageToken" => "PAGE2"), [c18_gcal_event(id: "page-2")], next_sync_token: "DONE")
       described_class.perform_now
-      expect(a_request(:get, EVENTS_URL).with(query: hash_including({}))).to have_been_made.once
-      expect(a_request(:get, EVENTS_URL).with(query: hash_including("pageToken" => "PAGE2"))).not_to have_been_made
-      expect(SubSpaceBooking.where(google_booking_id: "page-1").count).to eq(1)
-      expect(chan.reload.sync_token).to eq("OLD")
+      expect(SubSpaceBooking.where(google_booking_id: %w[page-1 page-2]).count).to eq(2)
+      expect(chan.reload.sync_token).to eq("DONE")
     end
   end
 
   describe "ClientError handling" do
-    it "clears the channel's sync token and retries immediately (a 410 'sync token expired' recovers)" do
-      chan = channel(sync_token: "STALE")
-      stub_request(:get, EVENTS_URL).with(query: hash_including("syncToken" => "STALE"))
+    def gone(query)
+      stub_request(:get, EVENTS_URL).with(query: query)
         .to_return(status: 410, body: { error: { code: 410, message: "Gone" } }.to_json,
                    headers: { "Content-Type" => "application/json" })
+    end
+
+    it "clears the channel's sync token and lists the whole calendar once (a 410 'sync token expired' recovers)" do
+      chan = channel(sync_token: "STALE")
+      gone("syncToken" => "STALE", "showDeleted" => "true", "singleEvents" => "true")
       stub_request(:get, EVENTS_URL).with(query: { "showDeleted" => "true", "singleEvents" => "true" })
         .to_return(status: 200, body: c18_gcal_events_json([c18_gcal_event(id: "fresh")], next_sync_token: "FRESH"),
                    headers: { "Content-Type" => "application/json" })
@@ -134,21 +144,19 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
       expect(chan.reload.sync_token).to eq("FRESH")
     end
 
-    it "retries forever on any 4xx: it only stops here because the stub finally answers 200" do
-      # `rescue Google::Apis::ClientError ... retry` has no attempt cap, no backoff and no distinction between a recoverable 410 and a permanent 400/401/403/404; a persistent client error spins the worker (and the Google quota) indefinitely
-      channel(sync_token: "S")
-      calls = 0
-      stub_request(:get, EVENTS_URL).with(query: hash_including({})).to_return do |_request|
-        calls += 1
-        if calls <= 25
-          { status: 403, body: { error: { code: 403, message: "forbidden" } }.to_json,
-            headers: { "Content-Type" => "application/json" } }
-        else
-          { status: 200, body: c18_gcal_events_json([]), headers: { "Content-Type" => "application/json" } }
-        end
-      end
-      expect { described_class.perform_now }.not_to raise_error
-      expect(calls).to eq(26)
+    it "gives up when the full listing is refused too: two requests, then the error is raised" do
+      channel(sync_token: "STALE")
+      gone(hash_including({}))
+      expect { described_class.perform_now }.to raise_error(Google::Apis::ClientError)
+      expect(a_request(:get, EVENTS_URL).with(query: hash_including({}))).to have_been_made.twice
+    end
+
+    it "raises a permanent client error (403) at once, with one request and the sync token kept" do
+      chan = channel(sync_token: "S")
+      stub_events(403)
+      expect { described_class.perform_now }.to raise_error(Google::Apis::ClientError)
+      expect(a_request(:get, EVENTS_URL).with(query: hash_including({}))).to have_been_made.once
+      expect(chan.reload.sync_token).to eq("S")
     end
 
     it "does not rescue server errors (5xx propagate to the queue's retry policy)" do
@@ -158,17 +166,17 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
   end
 
   describe "bad events (EventProcessor failures)" do
-    it "one event that raises aborts the rest of the batch and the sync token is not saved" do
-      # EventProcessor.process is called without rescue per event, so a single event that raises (here: no creator) skips every later event in the page and the next sync token is never stored, so the same page is refetched and fails the same way forever
+    it "reports the one event that raises and carries on with the rest, storing the new sync token" do
       chan = channel(sync_token: "OLD")
       events = [c18_gcal_event(id: "good-1"),
                 c18_gcal_event(id: "bad", creator_email: nil),
                 c18_gcal_event(id: "good-2")]
       stub_events(events, next_sync_token: "NEW")
-      expect { described_class.perform_now }.to raise_error(NoMethodError)
-      expect(SubSpaceBooking.where(google_booking_id: "good-1").count).to eq(1) # processed before the failure, not rolled back
-      expect(SubSpaceBooking.where(google_booking_id: "good-2").count).to eq(0)
-      expect(chan.reload.sync_token).to eq("OLD")
+      expect(Rails.error).to receive(:report)
+        .with(instance_of(NoMethodError), hash_including(handled: true, context: hash_including(google_event_id: "bad"))).once
+      expect { described_class.perform_now }.not_to raise_error
+      expect(SubSpaceBooking.where(google_booking_id: %w[good-1 good-2]).count).to eq(2)
+      expect(chan.reload.sync_token).to eq("NEW")
     end
   end
 end
