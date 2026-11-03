@@ -34,14 +34,10 @@ class NullifyDanglingReferences < ActiveRecord::Migration[8.1]
     end
   end
 
-  # A cleared reference cannot be restored: it pointed at a row that does not exist. The
-  # remapped sessions go back to the space id they had.
-  def down
-    execute(<<~SQL.squish)
-      UPDATE training_sessions SET space_id = #{REMAPPED_FROM_SPACE}
-      WHERE id IN (#{REMAPPED_SESSION_IDS.join(', ')}) AND space_id = #{REMAPPED_TO_SPACE}
-    SQL
-  end
+  # Nothing is undone. A cleared reference pointed at a row that does not exist, and the
+  # remapped sessions stay in space 16: space 0 never existed, and a session staff later put
+  # in space 16 must not be moved out of it.
+  def down; end
 
   private
 

@@ -102,12 +102,12 @@ RSpec.describe NullifyDanglingReferences do
       expect { migrate }.not_to raise_error
     end
 
-    it "puts the sessions back to space 0 on rollback, and is a no-op when run again" do
+    it "leaves the sessions in space 16 on rollback, and is a no-op when run again" do
       ids.each { |id| make_session(id, 0) }
       migrate
       expect { migrate }.not_to change { ids.map { |id| value(:training_sessions, :space_id, id: id) } }
       ActiveRecord::Migration.suppress_messages { described_class.new.down }
-      expect(ids.map { |id| value(:training_sessions, :space_id, id: id) }).to all(eq(0))
+      expect(ids.map { |id| value(:training_sessions, :space_id, id: id) }).to all(eq(16))
     end
   end
 
