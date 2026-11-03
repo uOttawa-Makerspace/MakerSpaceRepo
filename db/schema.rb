@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_02_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_03_000005) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -448,6 +448,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_000001) do
     t.bigint "job_order_quote_id"
     t.bigint "job_service_group_id"
     t.bigint "job_type_id"
+    t.bigint "legacy_print_order_id"
     t.string "shopify_draft_order_fingerprint"
     t.string "shopify_draft_order_id"
     t.text "staff_comments"
@@ -458,6 +459,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_000001) do
     t.index ["job_order_quote_id"], name: "index_job_orders_on_job_order_quote_id"
     t.index ["job_service_group_id"], name: "index_job_orders_on_job_service_group_id"
     t.index ["job_type_id"], name: "index_job_orders_on_job_type_id"
+    t.index ["legacy_print_order_id"], name: "index_job_orders_on_legacy_print_order_id", unique: true
     t.index ["user_id"], name: "index_job_orders_on_user_id"
   end
 
