@@ -116,8 +116,9 @@ class ImportPrintOrdersAsJobOrders < ActiveRecord::Migration[8.1]
     # Removes only what the import created, found through legacy_print_order_id: the new
     # attachment rows (the blobs and the PrintOrder rows stay), the order's quote, status and
     # task, then the order. If anything else has been added to an imported order since (more
-    # tasks, quotes or statuses, options, line items, chat messages, other files), it stops
-    # and leaves every row in place.
+    # tasks, quotes or statuses, options, line items, chat messages, other files), or any
+    # imported row was edited (updated_at later than the value the import wrote, 5 seconds of
+    # slack; an old quote linked to the order), it stops and leaves every row in place.
     execute <<~SQL
       DO $$
       BEGIN
@@ -131,6 +132,17 @@ class ImportPrintOrdersAsJobOrders < ActiveRecord::Migration[8.1]
             OR EXISTS (SELECT 1 FROM job_services js WHERE js.job_order_id = jo.id)
             OR EXISTS (SELECT 1 FROM job_orders_services os WHERE os.job_order_id = jo.id)
             OR EXISTS (SELECT 1 FROM active_storage_attachments a WHERE a.record_type = 'JobOrder' AND a.record_id = jo.id)
+            OR jo.job_order_quote_id IS NOT NULL
+            OR EXISTS (SELECT 1 FROM print_orders pe WHERE pe.id = jo.legacy_print_order_id
+                       AND jo.updated_at > pe.updated_at + INTERVAL '5 seconds')
+            OR EXISTS (SELECT 1 FROM job_tasks t, print_orders pe
+                       WHERE t.job_order_id = jo.id AND pe.id = jo.legacy_print_order_id
+                         AND t.updated_at > pe.updated_at + INTERVAL '5 seconds')
+            OR EXISTS (SELECT 1 FROM job_tasks t, job_task_quotes q, print_orders pe
+                       WHERE t.job_order_id = jo.id AND q.job_task_id = t.id AND pe.id = jo.legacy_print_order_id
+                         AND q.updated_at > pe.updated_at + INTERVAL '5 seconds')
+            OR EXISTS (SELECT 1 FROM job_order_statuses s
+                       WHERE s.job_order_id = jo.id AND s.updated_at > s.created_at + INTERVAL '5 seconds')
             OR EXISTS (
               SELECT 1 FROM job_tasks t WHERE t.job_order_id = jo.id AND (
                 (SELECT COUNT(*) FROM job_task_quotes q WHERE q.job_task_id = t.id) > 1
@@ -143,6 +155,7 @@ class ImportPrintOrdersAsJobOrders < ActiveRecord::Migration[8.1]
                     AND NOT EXISTS (
                       SELECT 1 FROM active_storage_attachments pa
                       WHERE pa.record_type = 'PrintOrder' AND pa.record_id = jo.legacy_print_order_id
+                        AND pa.name IN ('file', 'final_file', 'pdf_form')
                         AND pa.blob_id = a.blob_id
                         AND a.name = CASE pa.name WHEN 'file' THEN 'user_files' ELSE 'staff_files' END
                     )
@@ -151,7 +164,7 @@ class ImportPrintOrdersAsJobOrders < ActiveRecord::Migration[8.1]
             )
           )
         ) THEN
-          RAISE EXCEPTION 'imported print orders were changed after the import (extra tasks, quotes, statuses, options, files, line items, chat messages or services); nothing was removed';
+          RAISE EXCEPTION 'imported print orders were changed after the import (edited or extra rows: tasks, quotes, statuses, options, files, line items, chat messages or services); nothing was removed';
         END IF;
       END $$
     SQL

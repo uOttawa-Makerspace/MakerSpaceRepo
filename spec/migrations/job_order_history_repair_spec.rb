@@ -126,10 +126,15 @@ RSpec.describe "job order history repairs" do
   end
 
   describe RestoreMissingJobOrderServicesAsTasks do
-    it "adds a task per missing service, priced from the old quote service, and the total matches the old one" do
-      order, task, = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+    # The quantities are restored first, as in the deploy: the migration checks the totals.
+    def restore
       run(RestoreJobTaskQuoteQuantities)
       run(described_class)
+    end
+
+    it "adds a task per missing service, priced from the old quote service, and the total matches the old one" do
+      order, task, = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+      restore
       added = order.job_tasks.where.not(id: task.id).sole
       expect(added).to have_attributes(job_service_id: service_b.id, job_type_id: job_type.id, title: "Task #2")
       expect(added.job_task_quote).to have_attributes(price: 0, service_price: 4, service_quantity: 2.5)
@@ -143,36 +148,57 @@ RSpec.describe "job order history repairs" do
       main = JobTask.create!(job_order: order, job_type: job_type, job_service: service_a, title: "Main Task")
       order.update_columns(created_at: COPY_TIME - 1.year)
       main.update_columns(created_at: COPY_TIME)
-      run(described_class)
+      restore
       added = order.job_tasks.find_by!(job_service_id: service_b.id)
       expect(added.job_task_quote).to be_nil
     end
 
     it "is idempotent" do
       legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
-      run(described_class)
-      expect { run(described_class) }.not_to(change { [JobTask.count, JobTaskQuote.count] })
+      restore
+      expect { restore }.not_to(change { [JobTask.count, JobTaskQuote.count] })
     end
 
     it "adds one task and at most one quote when the service is listed twice" do
       order, task, = legacy_order(services: [service_a, service_b, service_b],
-                                  quote_services: [[service_a, 2, 3], [service_b, 4, 2.5], [service_b, 9, 9]])
-      run(described_class)
+                                  quote_services: [[service_a, 2, 3], [service_b, 4, 2.5], [service_b, 0, 0]])
+      restore
       added = order.job_tasks.where.not(id: task.id)
       expect(added.count).to eq(1)
       expect(JobTaskQuote.where(job_task_id: added.ids).pluck(:service_price)).to eq([4])
     end
 
     it "leaves an order that has more than its Main Task" do
-      order, = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+      order, = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 0, 0]])
       JobTask.create!(job_order: order, job_type: job_type, title: "Task #2")
-      expect { run(described_class) }.not_to(change { JobTask.count })
+      # (a task on the second service keeps the totals equal)
+      expect { restore }.not_to(change { JobTask.count })
     end
 
     it "leaves an order created after the multi-task migration" do
-      order, task, = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+      order, task, = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 0, 0]])
       order.update_columns(created_at: task.created_at + 1.day)
-      expect { run(described_class) }.not_to(change { JobTask.count })
+      expect { restore }.not_to(change { JobTask.count })
+    end
+    it "skips an order whose Main Task quote was edited since the copy" do
+      order, _task, q = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 0, 0]],
+                                     updated_at: COPY_TIME + 1.day)
+      expect { restore }.not_to(change { JobTask.count })
+      expect(q.reload.updated_at).to eq(COPY_TIME + 1.day)
+      expect(order.job_tasks.count).to eq(1)
+    end
+
+    it "raises, naming the orders and adding nothing, when an old-quote order's total differs from its old quote" do
+      order, _task, q = legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+      q.update_columns(price: 999, updated_at: COPY_TIME + 1.day)
+      expect { ApplicationRecord.transaction(requires_new: true) { restore } }
+        .to raise_error(ActiveRecord::StatementInvalid, /1 old-quote orders do not total.*#{order.id}/m)
+      expect(order.job_tasks.count).to eq(1)
+    end
+
+    it "passes when every old-quote order totals the same as before" do
+      legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+      expect { restore }.not_to raise_error
     end
   end
 
@@ -335,6 +361,36 @@ RSpec.describe "job order history repairs" do
       expect(JobOrder.where.not(legacy_print_order_id: nil).count).to eq(1)
       expect(order.job_tasks.count).to eq(1)
       expect(attachments("JobTask", order.job_tasks.first.id).count).to eq(3)
+    end
+
+    it "down refuses, leaving every row, when an imported quote price was edited" do
+      run(described_class)
+      quote = JobOrder.find_by!(legacy_print_order_id: printed.id).job_tasks.sole.job_task_quote
+      quote.update!(price: 99)
+      expect { ApplicationRecord.transaction(requires_new: true) { ActiveRecord::Migration.suppress_messages { described_class.new.down } } }
+        .to raise_error(ActiveRecord::StatementInvalid, /changed after the import/)
+      expect(quote.reload.price).to eq(99)
+      expect(JobOrder.where.not(legacy_print_order_id: nil).count).to eq(1)
+    end
+
+    it "down refuses when an old quote was linked to an imported order" do
+      run(described_class)
+      order = JobOrder.find_by!(legacy_print_order_id: printed.id)
+      order.update_columns(job_order_quote_id: insert("job_order_quotes", service_fee: 1).id)
+      expect { ApplicationRecord.transaction(requires_new: true) { ActiveRecord::Migration.suppress_messages { described_class.new.down } } }
+        .to raise_error(ActiveRecord::StatementInvalid, /changed after the import/)
+      expect(JobOrder.where.not(legacy_print_order_id: nil).count).to eq(1)
+    end
+
+    it "down refuses a task file whose blob is on the print order under a name the import does not copy" do
+      run(described_class)
+      task = JobOrder.find_by!(legacy_print_order_id: printed.id).job_tasks.sole
+      other = blob("other.pdf")
+      attach("PrintOrder", printed.id, "extra", other)
+      attach("JobTask", task.id, "staff_files", other)
+      expect { ApplicationRecord.transaction(requires_new: true) { ActiveRecord::Migration.suppress_messages { described_class.new.down } } }
+        .to raise_error(ActiveRecord::StatementInvalid, /changed after the import/)
+      expect(attachments("JobTask", task.id).count).to eq(4)
     end
 
     it "down refuses when a file was added to an imported task" do
