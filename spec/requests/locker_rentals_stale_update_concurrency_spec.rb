@@ -17,7 +17,7 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
   # Captured at creation: a staff update reassigns decided_by to the staff user, and `rental.reload`
   # in the example would then hide the factory's original decider from this cleanup and leave that
   # user committed for every later example in the run.
-  let!(:created_user_ids) { [staff.id, rental.rented_by_id, rental.decided_by_id] }
+  let!(:created_user_ids) { [staff.id, rental.rented_by_id, rental.decided_by_id].compact }
 
   after do
     LockerPayment.where(locker_rental_id: rental.id).delete_all
