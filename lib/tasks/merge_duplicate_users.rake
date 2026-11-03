@@ -231,8 +231,8 @@ namespace :users do
   # Where a unique index would stop the duplicate's row from moving to the primary because
   # the primary already has a row with the same other columns, the duplicate's row is
   # dropped only when it holds exactly the same data as the primary's (every column but
-  # id, the user and the timestamps). A row that differs is never dropped: the merge of
-  # this pair stops with an error naming it, to be settled by hand. An index on the user
+  # id, the user and updated_at; created_at counts, as the signing date of a sheet). A row
+  # that differs is never dropped: the merge of this pair stops with an error naming it, to be settled by hand. An index on the user
   # column alone cannot be settled by dropping anything, so it is left to fail loudly when
   # the row is moved.
   def discard_rows_primary_already_has(primary, duplicate)
@@ -255,7 +255,7 @@ namespace :users do
   end
 
   def same_data_condition(connection, table, column)
-    ignored = [connection.primary_key(table), column, 'created_at', 'updated_at'].compact.map { |name| connection.quote(name) }
+    ignored = [connection.primary_key(table), column, 'updated_at'].compact.map { |name| connection.quote(name) }
     "(to_jsonb(d) - ARRAY[#{ignored.join(', ')}]) = (to_jsonb(p) - ARRAY[#{ignored.join(', ')}])"
   end
 

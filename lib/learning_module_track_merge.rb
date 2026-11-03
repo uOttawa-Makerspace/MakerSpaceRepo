@@ -8,8 +8,12 @@
 #   completion is never lost;
 # - created_at: the earliest of the group;
 # - updated_at: the latest of the group;
-# - scorm_state: that of the most recently updated row that has a non-empty one
-#   (bookmark, suspend data and score travel together with it).
+# - scorm_state: when the group is completed, that of the most recently updated row that
+#   is itself completed (status Completed, or a state reporting completion) and has a
+#   non-empty state, so a finished attempt keeps its score and bookmark even if a newer
+#   row holds a partial state; otherwise that of the most recently updated row with a
+#   non-empty state (bookmark, suspend data and score travel together with it).
+# - A row whose own state reports completion makes the merged status Completed.
 # The other rows of the group are then removed: everything they held is on the kept row.
 module LearningModuleTrackMerge
   # group: the columns that make rows "the same track" (default: user and module).
@@ -26,8 +30,12 @@ module LearningModuleTrackMerge
                MAX(updated_at) AS last_updated_at,
                MAX(CASE status WHEN 'Completed' THEN 3 WHEN 'In progress' THEN 2 ELSE 1 END) AS best_rank,
                (ARRAY_AGG(status ORDER BY updated_at DESC, id DESC))[1] AS latest_status,
+               COALESCE(BOOL_OR(scorm_state ->> 'cmi.completion_status' = 'completed'), FALSE) AS state_completed,
                (ARRAY_AGG(scorm_state ORDER BY updated_at DESC, id DESC)
-                  FILTER (WHERE scorm_state IS NOT NULL AND scorm_state <> '{}'::jsonb))[1] AS scorm_state
+                  FILTER (WHERE scorm_state IS NOT NULL AND scorm_state <> '{}'::jsonb
+                            AND (status = 'Completed' OR scorm_state ->> 'cmi.completion_status' = 'completed')))[1] AS completed_scorm_state,
+               (ARRAY_AGG(scorm_state ORDER BY updated_at DESC, id DESC)
+                  FILTER (WHERE scorm_state IS NOT NULL AND scorm_state <> '{}'::jsonb))[1] AS newest_scorm_state
         FROM learning_module_tracks
         WHERE user_id IS NOT NULL AND learning_module_id IS NOT NULL AND (#{where})
         GROUP BY #{group_by}
@@ -36,9 +44,9 @@ module LearningModuleTrackMerge
         UPDATE learning_module_tracks t
         SET created_at = g.first_created_at,
             updated_at = g.last_updated_at,
-            scorm_state = COALESCE(g.scorm_state, t.scorm_state),
+            scorm_state = COALESCE(g.completed_scorm_state, g.newest_scorm_state, t.scorm_state),
             status = CASE
-                       WHEN g.best_rank = 3 OR g.scorm_state ->> 'cmi.completion_status' = 'completed' THEN 'Completed'
+                       WHEN g.best_rank = 3 OR g.state_completed THEN 'Completed'
                        WHEN g.best_rank = 2 THEN 'In progress'
                        ELSE g.latest_status
                      END

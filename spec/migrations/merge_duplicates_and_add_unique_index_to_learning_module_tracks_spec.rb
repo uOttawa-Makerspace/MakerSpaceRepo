@@ -78,6 +78,32 @@ RSpec.describe MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks do
     expect(tracks.sole.scorm_state).to eq("cmi.location" => "new")
   end
 
+  it "keeps the state of the completed attempt when a newer row holds a partial state" do
+    full = { "cmi.completion_status" => "completed", "cmi.score.raw" => "95", "cmi.location" => "end" }
+    track(status: "Completed", created: 1, updated: 3, scorm: full)
+    track(status: "In progress", created: 2, updated: 9, scorm: { "cmi.completion_status" => "incomplete", "cmi.location" => "slide-2" })
+    migrate
+    expect(status_of(tracks.sole)).to eq("Completed")
+    expect(tracks.sole.scorm_state).to eq(full)
+  end
+
+  it "takes the newest completed state when several rows are completed, and the newest state when none is" do
+    older = { "cmi.completion_status" => "completed", "cmi.score.raw" => "70" }
+    newer = { "cmi.completion_status" => "completed", "cmi.score.raw" => "90" }
+    track(status: "In progress", created: 1, updated: 2, scorm: older)
+    track(status: "In progress", created: 2, updated: 6, scorm: newer)
+    track(status: "In progress", created: 3, updated: 9, scorm: { "cmi.completion_status" => "incomplete" })
+    migrate
+    expect(tracks.sole.scorm_state).to eq(newer)
+  end
+
+  it "marks the group Completed when an older, not chosen, state reports completion" do
+    track(status: "In progress", created: 1, updated: 2, scorm: { "cmi.completion_status" => "completed" })
+    track(status: "In progress", created: 2, updated: 9, scorm: { "cmi.completion_status" => "incomplete" })
+    migrate
+    expect(status_of(tracks.sole)).to eq("Completed")
+  end
+
   it "counts a SCORM state that reports completion as a completion" do
     track(status: "In progress", created: 1, updated: 2)
     track(status: "In progress", created: 2, updated: 3, scorm: { "cmi.completion_status" => "completed" })

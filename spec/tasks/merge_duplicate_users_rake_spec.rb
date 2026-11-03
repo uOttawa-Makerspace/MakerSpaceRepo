@@ -95,6 +95,17 @@ RSpec.describe "users:merge_duplicates" do
       expect(LearningModuleTrack.where(learning_module: shared_module).sole.scorm_state).to eq("cmi.location" => "primary")
     end
 
+    it "keeps the score and bookmark of the completed attempt when a newer row holds a partial state" do
+      full = { "cmi.completion_status" => "completed", "cmi.score.raw" => "95", "cmi.location" => "end" }
+      track_row(primary, status: "In progress", created: 3, updated: 8, scorm: { "cmi.completion_status" => "incomplete", "cmi.location" => "slide-2" })
+      track_row(duplicate, status: "Completed", created: 1, updated: 4, scorm: full)
+      merge
+      row = LearningModuleTrack.where(learning_module: shared_module).sole
+      expect(row.status_before_type_cast).to eq("Completed")
+      expect(row.scorm_state).to eq(full)
+      expect(row.updated_at).to eq(t0 + 8.days)
+    end
+
     it "uses the merge rule of the migration (one shared implementation)" do
       expect(LearningModuleTrackMerge).to receive(:merge!).and_call_original.at_least(:once)
       merge
@@ -111,13 +122,25 @@ RSpec.describe "users:merge_duplicates" do
     it "drops the duplicate's sheet only when it holds exactly the same data as the primary's" do
       kept = sheet_for(primary)
       copy = sheet_for(duplicate)
-      attrs = kept.attributes.except("id", "user_id", "created_at", "updated_at")
+      attrs = kept.attributes.except("id", "user_id", "updated_at")
       WalkInSafetySheet.where(id: copy.id).update_all(attrs)
 
       merge
 
       expect(WalkInSafetySheet.where(space: space).pluck(:id)).to eq([kept.id])
       expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    end
+
+    it "stops without deleting anything when the sheets differ only in the signing date" do
+      kept = sheet_for(primary)
+      copy = sheet_for(duplicate)
+      WalkInSafetySheet.where(id: copy.id).update_all(kept.attributes.except("id", "user_id", "created_at", "updated_at"))
+      WalkInSafetySheet.where(id: copy.id).update_all(created_at: kept.created_at - 30.days)
+
+      expect { merge }.to raise_error(/walk_in_safety_sheets rows #{copy.id}/)
+
+      expect(WalkInSafetySheet.exists?(copy.id)).to be(true)
+      expect(User.unscoped.exists?(duplicate.id)).to be(true)
     end
 
     it "stops without deleting anything when the duplicate's sheet differs" do
