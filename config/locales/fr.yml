@@ -5,8 +5,7 @@ fr:
       short: "%-d %b, %H:%M" # 15 juin, 14:30
       long: "%d %B %Y à %H:%M" # 15 juin 2023 à 14:30
   date:
-    formats:
-      issued: "%-d %B %Y" # 3 novembre 2026
+    issued: "%{day} %{month} %{year}" # 1er novembre 2026
     month_names:
       [
         ~,
@@ -153,8 +152,8 @@ fr:
         i_am: "Je suis..."
         undergrad: "un étudiant de premier cycle de uOttawa"
         international_undergrad: "un étudiant international de premier cycle de uOttawa"
-        grad: "un étudiant diplômé de uOttawa"
-        international_grad: "un étudiant international diplômé de uOttawa"
+        grad: "un étudiant aux cycles supérieurs de uOttawa"
+        international_grad: "un étudiant international aux cycles supérieurs de uOttawa"
         faculty_member: "un membre de la faculté de uOttawa"
         staff_member: "un membre du personnel à uOttawa"
         community_member: "un membre de la communauté, hors de uOttawa"

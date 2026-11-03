@@ -891,9 +891,23 @@ RSpec.describe User, type: :model do
       it "words a student's year and identity in French, with 1re but 2e" do
         expect(readable("undergrad", 1, locale: :fr)).to eq("Étudiant de premier cycle, 1re année")
         expect(readable("undergrad", 2, locale: :fr)).to eq("Étudiant de premier cycle, 2e année")
-        expect(readable("grad", 3, locale: :fr)).to eq("Étudiant diplômé, 3e année")
+        expect(readable("grad", 3, locale: :fr)).to eq("Étudiant aux cycles supérieurs, 3e année")
         expect(readable("international_undergrad", 4, locale: :fr)).to eq("Étudiant international de premier cycle, 4e année")
-        expect(readable("international_grad", 5, locale: :fr)).to eq("Étudiant international diplômé, 5e année")
+        expect(readable("international_grad", 5, locale: :fr)).to eq("Étudiant international aux cycles supérieurs, 5e année")
+      end
+
+      it "returns a string for a blank identity, in both languages" do
+        [nil, ""].each do |blank|
+          expect(readable(blank)).to eq("")
+          expect(readable(blank, 2, locale: :fr)).to eq("")
+        end
+      end
+
+      it "gives a student without a usable year of study just the identity" do
+        [nil, 0].each do |year|
+          expect(readable("undergrad", year)).to eq("Undergraduate")
+          expect(readable("grad", year, locale: :fr)).to eq("Étudiant aux cycles supérieurs")
+        end
       end
 
       it "mixes no language: no English word appears in a French result and no French word in an English one" do

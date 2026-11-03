@@ -15,8 +15,6 @@
 module Translatable
   extend ActiveSupport::Concern
 
-  LOCALES = %i[en fr].freeze
-
   class_methods do
     # prefix:  prepended to the reader's name, for models whose bare name is a real column or
     #          already means something else (job_statuses.name is the English column).
@@ -34,10 +32,11 @@ module Translatable
   private
 
   def translation_for(attribute, locale, bare_en:)
+    locales = I18n.available_locales
     locale = locale.to_s.to_sym
-    locale = I18n.default_locale.to_sym unless LOCALES.include?(locale)
+    locale = I18n.default_locale unless locales.include?(locale)
 
-    values = [locale, *(LOCALES - [locale])].map do |candidate|
+    values = [locale, *(locales - [locale])].map do |candidate|
       self[bare_en && candidate == :en ? attribute : :"#{attribute}_#{candidate}"]
     end
 

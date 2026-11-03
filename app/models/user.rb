@@ -999,8 +999,10 @@ class User < ApplicationRecord
   # The identity and, for students, the year of study, worded in the current language:
   # "2nd Year Undergraduate", "Étudiant de premier cycle, 2e année".
   def identity_readable
-    name = I18n.t(identity.to_s, scope: "users.identity_readable.identities", default: identity.to_s.humanize)
-    return name unless student?
+    return "" if identity.blank?
+
+    name = I18n.t(identity, scope: "users.identity_readable.identities", default: identity.humanize)
+    return name unless student? && year_of_study.to_i.positive?
 
     I18n.t(
       "users.identity_readable.student_year",

@@ -104,7 +104,7 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       it "words the labels, the date and the skills in English" do
         get badge_path(cert, locale: "en")
 
-        expect(response.body).to include("Badge Owner: Ada Earner", "on November 3, 2026", "Learn more", "Design", "Safety")
+        expect(response.body).to include("Badge Owner: Ada Earner", "on November 3rd, 2026", "Learn more", "Design", "Safety")
         expect(response.body).not_to include("Conception", "Titulaire")
       end
 

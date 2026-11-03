@@ -188,7 +188,7 @@
                       current_level    = badge&.level
                       raw_status       = training_status(training.id, user.id)
                       clean_status     = raw_status.to_s.gsub(/color:\s*black/i, 'color: currentColor')
-                      skills_list      = (training.list_of_skills || "").split(',').map(&:strip).reject(&:blank?)
+                      skills_list      = training.skill_list
 
                       # Next level calculation
                       next_level = case current_level

@@ -50,29 +50,6 @@ class Training < ApplicationRecord
   end
 
   ##
-  # Convertes column list_of_skills_en into an array of strings
-  def tokenize_info_en
-    if list_of_skills_en.nil?
-      arr = []
-    else
-      arr = list_of_skills_en.split(',')
-      arr.collect(&:strip)
-      arr
-    end
-  end
-  ##
-  # Converts column list_of_skills_fr into an array of strings
-  def tokenize_info_fr
-    if list_of_skills_fr.nil?
-      arr = []
-    else
-      arr = list_of_skills_fr.split(',')
-      arr.collect(&:strip)
-      arr
-    end
-  end
-
-  ##
   # returns and array containing every skill ever listed
   def self.all_skills_en
     Training.all.pluck(:list_of_skills_en).flat_map { |l| l&.split(',') }.uniq

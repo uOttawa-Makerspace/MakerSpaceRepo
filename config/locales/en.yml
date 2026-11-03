@@ -3,8 +3,7 @@ en:
     index:
       no_history: "No membership history found"
   date:
-    formats:
-      issued: "%B %-d, %Y" # November 3, 2026
+    issued: "%{month} %{day}, %{year}" # November 3rd, 2026
   time:
     formats:
       time_only: "%l:%M %p" # 2:30 PM

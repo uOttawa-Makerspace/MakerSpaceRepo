@@ -6,7 +6,7 @@
         <div class="col-8 py-3 px-my-5">
             <h1><%= @certification.training.localized_name %></h1>
             <h4 class="my-3 fw-bold"><%= t("badges.show.owner", name: @earner.name) %></h4>
-            <h5 class="my-3"><%= t("badges.show.issued_by", date: l(@certification.created_at.to_date, format: :issued)) %></h5>
+            <h5 class="my-3"><%= t("badges.show.issued_by", date: issued_date(@certification.created_at.to_date)) %></h5>
             <p><%= @certification.training.description %></p>
 
             <a class="my-4 text-decoration-underline" href="https://www.uottawa.ca/faculty-engineering/"><%= t("badges.show.learn_more") %></a> <br>

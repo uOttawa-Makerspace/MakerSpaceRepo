@@ -92,14 +92,6 @@ RSpec.describe Training, type: :model do
       expect(build(:training, list_of_skills_en: nil, list_of_skills_fr: nil).skill_list).to eq([])
     end
 
-    # tokenize_info_* calls `collect(&:strip)` without using the result, so tokens keep their padding
-    it "tokenizes the skill lists on commas WITHOUT stripping (collect result discarded)" do
-      t = build(:training, list_of_skills_en: "a, b,c", list_of_skills_fr: ", x, y")
-      expect(t.tokenize_info_en).to eq(["a", " b", "c"])
-      expect(t.tokenize_info_fr).to eq(["", " x", " y"])
-      expect(build(:training, list_of_skills_en: nil).tokenize_info_en).to eq([])
-    end
-
     it "lists every skill ever used (with duplicates removed, nils collapsed)" do
       create(:training, list_of_skills_en: "a,b")
       create(:training, list_of_skills_en: "b,c")

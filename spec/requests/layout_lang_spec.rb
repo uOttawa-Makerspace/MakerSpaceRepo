@@ -25,6 +25,14 @@ RSpec.describe "The lang attribute on every layout", type: :request do
     expect(missing.map { |f| f.basename.to_s }).to eq([])
   end
 
+  it "declares it in every template that renders an <html> element" do
+    documents = Rails.root.glob("app/views/**/*.erb").select { |f| f.read.match?(/<html[\s>]/) }
+
+    expect(documents.map { |f| f.relative_path_from(Rails.root).to_s }).to include("app/views/job_orders/invoice.html.erb", "app/views/msr_mailer/send_invoice.html.erb")
+    missing = documents.reject { |f| f.read.match?(/<html[^>]*\blang="<%= I18n\.locale %>"/) }
+    expect(missing.map { |f| f.relative_path_from(Rails.root).to_s }).to eq([])
+  end
+
   %w[en fr].each do |locale|
     context "in #{locale}" do
       it "application layout (home page)" do

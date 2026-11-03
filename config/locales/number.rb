@@ -5,7 +5,17 @@
 # development and test and printed English suffixes ("3rd") in production. Ruby values, not YAML,
 # because the suffix depends on the number.
 {
+  en: {
+    date: {
+      # The day of the month as written in a date: 1st, 2nd, 3rd.
+      day_ordinal: ->(_key, options) { ActiveSupport::Inflector.ordinalize(options[:number]) }
+    }
+  },
   fr: {
+    date: {
+      # "1er novembre", then plain numbers: "2 novembre".
+      day_ordinal: ->(_key, options) { options[:number] == 1 ? "1er" : options[:number].to_s }
+    },
     number: {
       nth: {
         # "1er", "2e", "3e". Words that need the feminine ("1re année") spell that out in their own

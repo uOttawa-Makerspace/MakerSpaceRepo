@@ -1,8 +1,4 @@
 class DesignDaySchedule < ApplicationRecord
-  include Translatable
-
-  translates :title
-
   belongs_to :design_day
 
   enum :event_for, { student: 0, judge: 1 }, default: :student, validate: true

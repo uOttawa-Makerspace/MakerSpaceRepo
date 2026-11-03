@@ -3,6 +3,15 @@
 require Rails.root.join("lib/jwt_authenticator")
 
 module ApplicationHelper
+  # A date worded in the current language with its own day rule: "November 3rd, 2026",
+  # "1er novembre 2026", "3 novembre 2026" (see config/locales/number.rb).
+  def issued_date(date)
+    t("date.issued",
+      day: t("date.day_ordinal", number: date.day),
+      month: l(date, format: "%B"),
+      year: date.year)
+  end
+
   # Keys that are not about who is signed in and must survive the session
   # reset done on sign-in (sign-out keeps only the locale).
   SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale authorized_repo_ids selected_dates order_id].freeze

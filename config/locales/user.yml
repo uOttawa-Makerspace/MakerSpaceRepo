@@ -104,8 +104,8 @@ fr:
       identities:
         undergrad: Étudiant de premier cycle
         international_undergrad: Étudiant international de premier cycle
-        grad: Étudiant diplômé
-        international_grad: Étudiant international diplômé
+        grad: Étudiant aux cycles supérieurs
+        international_grad: Étudiant international aux cycles supérieurs
         faculty_member: Membre de la faculté
         staff_member: Membre du personnel
         community_member: Membre de la communauté
