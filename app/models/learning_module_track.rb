@@ -6,6 +6,16 @@ class LearningModuleTrack < ApplicationRecord
 
   validates :learning_module, uniqueness: { scope: :user }
 
+  # The user's track for the module, created when there is none. The unique index on
+  # (user_id, learning_module_id) decides a race between two requests: the loser
+  # reads the track the winner created instead of failing.
+  def self.for_user_and_module!(user, learning_module)
+    find_by(user: user, learning_module: learning_module) ||
+      create_or_find_by!(user: user, learning_module: learning_module)
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+    find_by!(user: user, learning_module: learning_module)
+  end
+
   before_save :check_scorm_status
 
   def check_scorm_status

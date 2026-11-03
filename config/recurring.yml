@@ -9,7 +9,8 @@
 #     priority: 2
 #     schedule: at 5am every day
 
-production: &production
+# Tasks every environment runs. Production and staging add their own below.
+shared: &shared
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
@@ -32,5 +33,53 @@ production: &production
     class: JobOrderDraftSweepJob
     schedule: every hour at minute 42
 
+  # Hands out the stored Shopify orders that are due (new ones, retries, expired leases) and reports the ones
+  # nothing has dispatched for hours. ProcessedOrder is the schedule.
+  dispatch_due_orders:
+    class: DispatchDueOrdersJob
+    schedule: every minute
+
+  # Blanks the payload (customer data) of Shopify orders applied more than 90 days ago; the rows stay.
+  purge_processed_order_payloads:
+    class: PurgeProcessedOrderPayloadsJob
+    schedule: every day at 4am
+
+  # Hourly head count folded into the running mean behind the admin "Popular Hours" report.
+  popular_hours:
+    command: "PopularHour.record_current_hour!"
+    schedule: every hour at minute 50
+
+  # Volunteer programs follow last_seen_at (inactive after two months unseen); a repeat run changes nothing.
+  active_volunteers_status:
+    command: "Program.refresh_volunteer_activity!"
+    schedule: every day at 2am
+
+  clear_printer_sessions:
+    command: "PrinterSession.clear_in_use!"
+    schedule: every day at 2:30am
+
+  # Mails the renters of rentals that expired within LockerRental::EXPIRY_NOTICE_WINDOW, once each.
+  locker_expiry_notices:
+    command: "LockerRental.notify_expired_rentals!"
+    schedule: every day at 8:30am
+
+  # Keeps one Google Calendar push channel live (stops the old one); see GoogleCalendar::WebhookRegistrar.
+  google_calendar_webhook:
+    command: "GoogleCalendar::WebhookRegistrar.register!"
+    schedule: every sunday at 3am
+
+production:
+  <<: *shared
+
+  # Last month's CDEL reports, mailed to the inbox whose Power Automate flow files them in SharePoint.
+  cdel_report:
+    class: CdelReportJob
+    schedule: "0 0 1 * *"
+
 staging:
-  <<: *production
+  <<: *shared
+
+  # Catch-up listing of the Google Calendar (production is kept current by the webhook's pushes).
+  google_calendar_sync:
+    class: GoogleCalendarSyncJob
+    schedule: every sunday at 3am

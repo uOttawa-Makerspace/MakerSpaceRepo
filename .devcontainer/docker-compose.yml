@@ -28,6 +28,10 @@ services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    # Docker's default 64 MB /dev/shm is too small for parallel queries while
+    # several 4-worker test runs share this server ("could not resize shared
+    # memory segment").
+    shm_size: 256mb
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password

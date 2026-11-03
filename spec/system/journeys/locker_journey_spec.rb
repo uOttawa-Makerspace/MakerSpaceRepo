@@ -17,7 +17,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     LockerOption.lockers_enabled = true
     allow(LockerOption).to receive(:locker_product_info).and_return({ variants: {} })
     stub_shopify_admin!
-    allow_any_instance_of(CustomWebhooksController).to receive(:draft_order_metafields).and_return(nil)
+    allow_any_instance_of(ShopOrderApplier).to receive(:draft_order_metafields).and_return(nil)
     ActionMailer::Base.deliveries.clear
   end
 
@@ -83,6 +83,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
                              metafields: [{ namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s }] },
                            shopify_signed: true)
     expect(res.code).to eq("200")
+    perform_enqueued_jobs(only: ApplyProcessedOrderJob) # the queue applies the stored order
 
     as_actor(:user) do
       visit locker_rentals_path

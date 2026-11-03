@@ -101,13 +101,10 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response.body).not_to include("100.0 Hours")
     end
 
-    # an hour whose volunteer_task_id points at nothing (accepted on create) 500s the owner's index
-    it "500s when one of the user's hours references a missing task" do
-      VolunteerHour.create!(user: owner, volunteer_task_id: 999_999, total_time: 1)
-      vol_login!(owner)
-      get volunteer_hours_path
-      expect(response).to have_http_status(:internal_server_error)
-      expect(vol_error_text).to include("undefined method 'title' for nil")
+    # the database refuses an hour that points at a missing task, so the index never meets one
+    it "cannot hold an hour that references a missing task" do
+      expect { VolunteerHour.new(user: owner, volunteer_task_id: 999_999, total_time: 1).save!(validate: false) }
+        .to raise_error(ActiveRecord::InvalidForeignKey)
     end
   end
 
@@ -179,20 +176,19 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(vol_error_text).to include("ActiveRecord::RangeError")
     end
 
-    # missing volunteer_task_id hits the NOT NULL constraint (500)
-    it "500s without a volunteer_task_id" do
+    it "stores nothing and alerts without a volunteer_task_id" do
       expect { post volunteer_hours_path, params: { volunteer_hour: { total_time: 1 } } }
         .not_to change(VolunteerHour, :count)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(vol_error_text).to include("ActiveRecord::NotNullViolation")
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to include("Volunteer task")
     end
 
-    # the task is never checked to exist, so an orphan hour is stored (and later breaks the index)
-    it "stores an hour for a nonexistent task id" do
+    it "stores nothing and alerts for a nonexistent task id" do
       expect do
         post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: 999_999, total_time: 1 } }
-      end.to change(VolunteerHour, :count).by(1)
-      expect(VolunteerHour.last.volunteer_task).to be_nil
+      end.not_to change(VolunteerHour, :count)
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to include("Volunteer task")
     end
 
     it "does not require the user to have joined the task" do

@@ -62,7 +62,7 @@ RSpec.describe "Learning module tracks", type: :request do
   end
 
   describe "POST /learning_module_track/start" do
-    before { sign_in_as(:regular) }
+    let!(:signed) { sign_in_as(:regular) }
 
     it "creates an In progress track for the user, flashes a notice and redirects to the module" do
       post start_learning_module_track_index_path(learning_module_id: learning_module.id)
@@ -81,6 +81,21 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(response).to redirect_to(learning_area_path(learning_module.id))
       expect(flash[:alert]).to be_nil
       expect(flash[:notice]).to eq("You have successfully started the learning module !")
+    end
+
+    it "starts the module for the user when another request created the track between the lookup and the insert" do
+      track = create(:learning_module_track, user: signed, learning_module: learning_module)
+      calls = 0
+      allow(LearningModuleTrack).to receive(:find_by).and_wrap_original do |original, *args, **kwargs|
+        (calls += 1) == 1 ? nil : original.call(*args, **kwargs)
+      end
+      allow_any_instance_of(LearningModuleTrack).to receive(:valid?).and_return(true)
+
+      expect { post start_learning_module_track_index_path(learning_module_id: learning_module.id) }
+        .not_to change(LearningModuleTrack, :count)
+      expect(flash[:notice]).to eq("You have successfully started the learning module !")
+      expect(flash[:alert]).to be_nil
+      expect(track.reload.user_id).to eq(signed.id)
     end
 
     it "does not reset a Completed track when started again" do

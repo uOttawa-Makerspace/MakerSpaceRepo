@@ -70,7 +70,7 @@ RSpec.describe "CC wallet races", type: :request do
       if Thread.current == first && (calls += 1) == nth
         first = nil
         paused << true
-        resume.pop
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
       original.call(*args)
     end
@@ -157,7 +157,7 @@ RSpec.describe "CC wallet races", type: :request do
         release.pop(timeout: 3)
       end
     end
-    locked.pop
+    ThreadPause.await(locked)
     started = Time.current
     expect { Order.checkout!(cart, user) }.to raise_error(ActiveRecord::LockWaitTimeout)
     waited = Time.current - started

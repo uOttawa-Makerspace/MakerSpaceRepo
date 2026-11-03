@@ -374,12 +374,12 @@ RSpec.describe ShopifyContext, :shopify_context do
       allow(ShopifyAPI::Context).to receive(:setup).and_wrap_original do |original, **args|
         calls.increment
         entered << :in
-        release.pop # hold the first setup open until the second thread has had every chance to race in
+        release.pop(timeout: ThreadPause::PARKED_TIMEOUT) # hold the first setup open until the second thread has had every chance to race in
         original.call(**args)
       end
 
       first = Thread.new { described_class.ensure_setup! }
-      entered.pop # first thread is inside Context.setup, Context still cold
+      ThreadPause.await(entered) # first thread is inside Context.setup, Context still cold
       second = Thread.new { described_class.ensure_setup! }
       deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 0.5
       sleep 0.01 until second.status == "sleep" && (calls.value > 1 || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline)

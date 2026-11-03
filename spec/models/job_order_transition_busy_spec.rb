@@ -36,7 +36,7 @@ RSpec.describe JobOrder, "transition! lock wait", type: :model do
     rescue StandardError => e
       e
     end
-    locked.pop
+    ThreadPause.await(locked)
 
     started = Time.current
     result = JobOrder.find(order.id).transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)

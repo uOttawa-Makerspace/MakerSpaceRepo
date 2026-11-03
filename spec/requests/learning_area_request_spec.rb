@@ -748,6 +748,20 @@ RSpec.describe "Learning area", type: :request do
       expect(user.learning_module_tracks.last.scorm_state["cmi.location"]).to eq("slide-9")
     end
 
+    it "stores the state on the track another request created between the lookup and the insert" do
+      track = create(:learning_module_track, user: user, learning_module: learning_module)
+      log_in!(user)
+      calls = 0
+      allow(LearningModuleTrack).to receive(:find_by).and_wrap_original do |original, *args, **kwargs|
+        (calls += 1) == 1 ? nil : original.call(*args, **kwargs)
+      end
+      allow_any_instance_of(LearningModuleTrack).to receive(:valid?).and_return(true)
+
+      expect { commit(learning_module.id) }.not_to change(LearningModuleTrack, :count)
+      expect(response).to have_http_status(:ok)
+      expect(track.reload.scorm_state).to eq(state)
+    end
+
     it "marks the track Completed when the package reports completion_status=completed" do
       log_in!(user)
       commit(learning_module.id, state.merge("cmi.completion_status" => "completed"))

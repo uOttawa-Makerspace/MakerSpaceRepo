@@ -65,7 +65,7 @@ RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model d
     expect(task).to be_valid
   end
 
-  it "destroy cascades to hours, joins, requests, CC money and photos but not require_trainings" do
+  it "destroy cascades to hours, joins, requests, CC money, photos and require_trainings" do
     task = create(:volunteer_task, :with_certifications)
     create(:volunteer_hour, :approved1, volunteer_task: task)
     create(:volunteer_task_join, :active, volunteer_task: task)
@@ -73,6 +73,6 @@ RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model d
     create(:cc_money, volunteer_task: task)
     Photo.new(volunteer_task: task).save(validate: false)
     expect { task.destroy }.to change { [VolunteerHour, VolunteerTaskJoin, VolunteerTaskRequest, CcMoney, Photo].sum(&:count) }.by(-5)
-    expect(RequireTraining.where(volunteer_task_id: task.id).count).to eq(2)
+    expect(RequireTraining.where(volunteer_task_id: task.id).count).to eq(0)
   end
 end

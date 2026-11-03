@@ -144,9 +144,8 @@ class LearningAreaController < DevelopmentProgramsController
       )
     end
 
-    current_user
-      .learning_module_tracks
-      .find_or_create_by!(learning_module_id: params[:id])
+    LearningModuleTrack
+      .for_user_and_module!(current_user, @learning_module)
       .update(scorm_state: scorm_state_params)
 
     head :ok

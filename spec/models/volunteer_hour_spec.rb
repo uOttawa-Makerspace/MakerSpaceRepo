@@ -64,8 +64,8 @@ RSpec.describe VolunteerHour, type: :model do
         task = create(:volunteer_task)
         expect {
           VolunteerHour.create_volunteer_hour_from_approval(
-            user.id,
             task.id,
+            user.id,
             task.hours
           )
         }.to change(VolunteerHour, :count).by(1)
@@ -79,8 +79,8 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
   let(:user) { create(:user, :volunteer_with_volunteer_program) }
   let(:task) { create(:volunteer_task) }
 
-  it "has no validations: negative, zero and orphan-task hours are valid and saved" do
-    expect(VolunteerHour.new(user: user, volunteer_task_id: 0, total_time: -2)).to be_valid
+  it "requires a volunteer task that exists but does not limit total_time: negative hours are saved" do
+    expect(VolunteerHour.new(user: user, volunteer_task_id: 0, total_time: -2)).not_to be_valid
     expect { VolunteerHour.create!(user: user, volunteer_task: task, total_time: -2) }.to change(VolunteerHour, :count).by(1)
   end
 
@@ -94,9 +94,9 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
     expect { VolunteerHour.create!(user: user, volunteer_task: task, total_time: 10**8) }.to raise_error(ActiveRecord::RangeError)
   end
 
-  it "requires user_id and volunteer_task_id at the database level only" do
+  it "requires a volunteer task in the model and a user at the database level only" do
     expect { VolunteerHour.create!(volunteer_task: task) }.to raise_error(ActiveRecord::NotNullViolation)
-    expect { VolunteerHour.create!(user: user) }.to raise_error(ActiveRecord::NotNullViolation)
+    expect { VolunteerHour.create!(user: user) }.to raise_error(ActiveRecord::RecordInvalid, /Volunteer task/)
   end
 
   it "was_processed? is true for both approved and rejected" do

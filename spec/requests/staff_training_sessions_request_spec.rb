@@ -424,5 +424,19 @@ RSpec.describe "Staff training sessions", type: :request do
       expect { post staff_training_sessions_path, params: create_params(user_id: trainer.id) }.to change(TrainingSession, :count).by(1)
       expect(TrainingSession.unscoped.order(:id).last.user).to eq(trainer)
     end
+
+    describe "a session whose space is missing" do
+      it "still renders its page when the space reference is empty" do
+        TrainingSession.where(id: record.id).update_all(space_id: nil)
+        get staff_training_session_path(record)
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "is not created for a space id that does not exist" do
+        expect { post staff_training_sessions_path, params: create_params(training_session: { space_id: 0 }, user_id: trainer.id) }
+          .not_to change(TrainingSession, :count)
+        expect(flash[:alert]).to eq("Something went wrong. Please try again.")
+      end
+    end
   end
 end

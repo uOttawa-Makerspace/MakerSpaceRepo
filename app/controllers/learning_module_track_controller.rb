@@ -12,10 +12,10 @@ class LearningModuleTrackController < DevelopmentProgramsController
       return redirect_to learning_area_index_path
     end
 
-    learning_module_track = learning_module.learning_module_tracks.find_or_create_by(user: current_user)
-    if learning_module_track.persisted?
+    begin
+      LearningModuleTrack.for_user_and_module!(current_user, learning_module)
       flash[:notice] = "You have successfully started the learning module !"
-    else
+    rescue ActiveRecord::ActiveRecordError
       flash[
         :alert
       ] = "An error has occurred while starting the learning module, please try again or contact uottawa.makerepo@uottawa.ca for support."

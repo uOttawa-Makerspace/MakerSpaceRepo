@@ -2,7 +2,7 @@
 
 class RequireTraining < ApplicationRecord
   belongs_to :training, optional: true
-  belongs_to :volunteer_task, optional: true
+  belongs_to :volunteer_task
 
   validates :training_id, presence: { message: "A training must be selected" }
 end
