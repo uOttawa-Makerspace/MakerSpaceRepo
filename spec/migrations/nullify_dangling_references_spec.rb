@@ -52,7 +52,12 @@ RSpec.describe NullifyDanglingReferences do
   end
 
   describe "sessions that name space 0" do
-    let!(:space_16) { Space.find_by(id: 16) || create(:space, id: 16) }
+    # Space 16 is claimed by id, and the sequence is moved past it so later factory spaces
+    # cannot be handed the same id.
+    let!(:space_16) do
+      connection.execute("SELECT setval('spaces_id_seq', GREATEST((SELECT COALESCE(MAX(id), 0) FROM spaces), 16))")
+      Space.find_by(id: 16) || create(:space).tap { |space| connection.execute("UPDATE spaces SET id = 16 WHERE id = #{space.id}") }.then { Space.find(16) }
+    end
     let(:ids) { described_class::REMAPPED_SESSION_IDS }
 
     def make_session(id, space_id)
