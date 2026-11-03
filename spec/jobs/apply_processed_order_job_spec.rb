@@ -623,6 +623,15 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         expect(order.reload).to have_attributes(attempts: 1, status: "received", leased_until: nil, last_error: "ArgumentError: bad")
       end
 
+      it "records a lock timeout raised while applying (not while starting) like any other failure" do
+        allow_any_instance_of(ShopOrderApplier).to receive(:call).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        order, = ProcessedOrder.receive!(provider: "shopify", order_id: 7443, topic: "orders/paid", payload: { "id" => 7443 })
+        perform(order)
+        expect(order.reload).to have_attributes(attempts: 1, status: "received", leased_until: nil)
+        expect(order.last_error).to include("LockWaitTimeout")
+        expect(order.next_attempt_at).to be > Time.current
+      end
+
       it "returns quietly when it times out waiting for another run that holds the order" do
         order, = ProcessedOrder.receive!(provider: "shopify", order_id: 7442, topic: "orders/paid", payload: { "id" => 7442 })
         allow(ProcessedOrder).to receive(:start_run!).and_raise(ActiveRecord::LockWaitTimeout)

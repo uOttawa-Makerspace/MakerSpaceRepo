@@ -192,7 +192,7 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
       expect(order.reload).to have_attributes(status: "failed", last_error: "ArgumentError: bad (then the last attempt did not finish)")
     end
 
-    it "also fails a spent order that has no lease (a queue refusal cleared it after the job started)" do
+    it "also fails a spent order left with no lease, as a backstop" do
       order = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS, leased_until: nil)
       described_class.perform_now(now: now)
       expect(queued_ids).to be_empty

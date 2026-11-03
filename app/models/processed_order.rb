@@ -111,9 +111,10 @@ class ProcessedOrder < ApplicationRecord
   end
 
   # Marks failed (and reports, ids only) the received orders whose MAX_ATTEMPTSth run started and never recorded an
-  # outcome: every attempt is spent and its lease has expired (it died) or is gone (a queue refusal cleared it after the
-  # job had already started). The last real error is kept, with a note that the last attempt did not finish. Rows locked by a running apply are skipped, never
-  # waited for. Without this such an order would be handed out for ever. Returns the provider refs failed.
+  # outcome: every attempt is spent and its lease has expired, so the run died. A spent order left with no lease at all
+  # is failed the same way, as a backstop. The last real error is kept, with a note that the last attempt did not
+  # finish. Rows locked by a running apply are skipped, never waited for. Without this such an order would be handed
+  # out for ever. Returns the provider refs failed.
   def self.fail_exhausted(id: nil, now: Time.current)
     where_id = id ? sanitize_sql_array(["AND id = ?", id]) : ""
     rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, MAX_ATTEMPTS, now, " (then the last attempt did not finish)", "the last attempt did not finish", now]))
@@ -231,7 +232,8 @@ class ProcessedOrder < ApplicationRecord
   # dispatches it.
   def reapply!(now: Time.current)
     self.class.where(id: id, status: "failed")
-        .update_all(status: "received", attempts: 0, next_attempt_at: now, leased_until: nil, reported_at: nil, updated_at: now) == 1
+        .update_all(status: "received", attempts: 0, next_attempt_at: now, leased_until: nil, last_error: nil, reported_at: nil,
+                    updated_at: now) == 1
   end
 
   # The error class and a short message for last_error. Never SQL (its text can carry values).

@@ -39,9 +39,9 @@ RSpec.describe ProcessedOrder do
   it "re-runs only a failed order, counting its attempts afresh" do
     order, = store
     expect(order.reapply!).to be(false)
-    order.update!(status: "failed", attempts: 10)
+    order.update!(status: "failed", attempts: 10, last_error: "ArgumentError: bad")
     expect(order.reapply!).to be(true)
-    expect(order.reload).to have_attributes(status: "received", attempts: 0, reported_at: nil)
+    expect(order.reload).to have_attributes(status: "received", attempts: 0, reported_at: nil, last_error: nil)
     expect(order.next_attempt_at).to be_within(5.seconds).of(Time.current)
   end
 

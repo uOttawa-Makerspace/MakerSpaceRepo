@@ -154,6 +154,7 @@ RSpec.describe ApplyProcessedOrderJob, "under concurrency", type: :job do
     expect(user.cc_moneys.pluck(:cc)).to eq([20])
     expect(stored.reload).to have_attributes(status: "applied")
     expect(stored.last_error).to be_nil
+    expect(Rails.error).not_to have_received(:report) # the timed-out start is quiet
   end
 
   it "never waits on an order a running apply holds: neither marking exhausted orders failed nor handing out" do
