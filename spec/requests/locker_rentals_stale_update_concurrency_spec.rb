@@ -49,13 +49,13 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
         LockerRental.transaction do
           LockerRental.find(rental.id).record_payment(shopify_order_id: "stale-1")
           paused << true
-          resume.pop
+          resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
         end
       end
     rescue StandardError => e
       e
     end
-    paused.pop
+    ThreadPause.await(paused)
     releaser = Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do
         deadline = Time.current + 10
@@ -136,12 +136,12 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
         LockerRental.transaction do
           LockerRental.find(rental.id).lock!
           paused << true
-          resume.pop
+          resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
           released_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         end
       end
     end
-    paused.pop
+    ThreadPause.await(paused)
     releaser = Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do
         deadline = Time.current + 3

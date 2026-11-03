@@ -28,6 +28,7 @@ module CommittedRowsGuard
       sql = tables.map { |t| "SELECT #{conn.quote(t)} AS t, count(*) AS n FROM #{conn.quote_table_name(t)}" }.join(" UNION ALL ")
       conn.transaction do
         conn.execute("SET LOCAL lock_timeout = '10s'")
+        conn.execute("SET LOCAL max_parallel_workers_per_gather = 0")
         conn.select_rows(sql).to_h { |t, n| [t, n.to_i] }
       end
     ensure
@@ -43,9 +44,23 @@ end
 RSpec.configure do |config|
   config.around(:each) do |example|
     non_transactional = respond_to?(:use_transactional_tests) && !use_transactional_tests
-    before = CommittedRowsGuard.counts if non_transactional
-    example.run
-    next unless non_transactional && example.exception.nil?
+    unless non_transactional
+      example.run
+      next
+    end
+
+    before = CommittedRowsGuard.counts
+    # Bound every lock wait of this example's connection, including its own `after` cleanup (which
+    # runs inside example.run): a thread of the example still holding a row lock then fails the
+    # example after 20s instead of hanging the worker. Reset before the connection is reused.
+    conn = ActiveRecord::Base.connection
+    conn.execute("SET lock_timeout = '20s'")
+    begin
+      example.run
+    ensure
+      conn.execute("SET lock_timeout = DEFAULT") if conn.active?
+    end
+    next unless example.exception.nil?
 
     leaked = CommittedRowsGuard.leaked(before, CommittedRowsGuard.counts)
     next if leaked.empty?
