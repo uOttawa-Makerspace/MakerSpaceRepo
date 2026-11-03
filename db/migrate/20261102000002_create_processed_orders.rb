@@ -8,7 +8,8 @@
 # to the queue, and a failed run sets it to the backoff time. attempts counts the applications tried, last_error is
 # the error class and a short message of the last failed one (no SQL values, no personal data); reported_at is when
 # an order nothing dispatched for hours was last reported. payload is the webhook body as received, so it holds the
-# customer data Shopify sends: it is read only by the application job.
+# customer data Shopify sends: it is read only by the application job,
+# and it is blanked to {} 90 days after the order is applied (ProcessedOrder.purge_payloads!); the row stays.
 # Holds no amounts of its own: it is not the payments ledger. No backfill: orders applied before this table
 # existed carry no record. order_name is the provider's display name (Shopify's "#1042").
 class CreateProcessedOrders < ActiveRecord::Migration[8.1]

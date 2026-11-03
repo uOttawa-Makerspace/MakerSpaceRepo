@@ -20,6 +20,8 @@ class ProcessedOrder < ApplicationRecord
   BATCH = 200
   STRANDED_AFTER = 2.hours
   REPORT_EVERY = 1.hour
+  # How long an applied order keeps its payload (the customer data Shopify sent); see purge_payloads!.
+  PAYLOAD_RETENTION = 90.days
 
   # The wait before the retry that follows failed attempt number `attempts` (1..9): 61s, 92s, 5m, 18m, 53m,
   # 2h10m, 4h41m, 9h07m, 16h25m (about 34 hours over the nine waits).
@@ -144,6 +146,21 @@ class ProcessedOrder < ApplicationRecord
       )
     end
     rows.map(&:first)
+  end
+
+  # Blanks (payload = '{}') the payload of every order applied more than PAYLOAD_RETENTION ago, in batches of BATCH
+  # rows, one UPDATE per batch. The row stays: it is the idempotency key, so a resent order is still skipped. Received
+  # and failed orders are never touched (staff re-run a failed one from its payload), and a row already blank is
+  # skipped, so a second run changes nothing. Returns the number of rows blanked.
+  def self.purge_payloads!(now: Time.current)
+    total = 0
+    loop do
+      ids = where(status: "applied", applied_at: ...(now - PAYLOAD_RETENTION))
+            .where.not(payload: {}).order(:id).limit(BATCH).pluck(:id)
+      return total if ids.empty?
+
+      total += where(id: ids, status: "applied").update_all(payload: {}, updated_at: now)
+    end
   end
 
   # Staff re-run: a failed order goes back to received, due now, counting its attempts afresh. A conditional
