@@ -194,7 +194,31 @@ namespace :users do
       end
     end
 
+    repoint_remaining_user_references(primary, duplicate)
     duplicate.destroy!
+  end
+
+  # Columns that reference users without a User association (supervisor_id, admin_id)
+  # and have no on_delete action: the foreign key would refuse to delete the duplicate
+  # while they still point at it.
+  def repoint_remaining_user_references(primary, duplicate)
+    connection = ActiveRecord::Base.connection
+    connection.tables.each do |table|
+      connection.foreign_keys(table).each do |foreign_key|
+        next unless foreign_key.to_table == 'users' && foreign_key.on_delete.nil?
+
+        connection.update(
+          ActiveRecord::Base.sanitize_sql_array(
+            [
+              "UPDATE #{connection.quote_table_name(table)} SET #{connection.quote_column_name(foreign_key.column)} = ? " \
+                "WHERE #{connection.quote_column_name(foreign_key.column)} = ?",
+              primary.id,
+              duplicate.id
+            ]
+          )
+        )
+      end
+    end
   end
 
   def merge_has_many_association(primary, duplicated, assoc)

@@ -4,6 +4,9 @@ class Space < ApplicationRecord
   include CalendarHelper
 
   has_many :pi_readers
+  has_many :keys, dependent: :nullify
+  has_many :key_requests, dependent: :nullify
+  has_many :walk_in_safety_sheets, dependent: :restrict_with_error
   has_many :lab_sessions, dependent: :destroy
   has_many :users, through: :lab_sessions
   has_and_belongs_to_many :trainings

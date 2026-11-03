@@ -7,10 +7,11 @@ class ProjectProposal < ApplicationRecord
   belongs_to :admin, class_name: 'User', foreign_key: 'admin_id', optional: true
   has_many :categories, dependent: :destroy
   has_many :project_joins, dependent: :destroy
-  has_many :repositories
+  has_many :repositories, dependent: :nullify
   has_many :project_proposals,
            class_name: 'ProjectProposal',
-           foreign_key: 'linked_project_proposal_id'
+           foreign_key: 'linked_project_proposal_id',
+           dependent: :nullify
   belongs_to :linked_project_proposal,
              class_name: 'ProjectProposal',
              foreign_key: 'linked_project_proposal_id',

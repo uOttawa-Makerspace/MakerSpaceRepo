@@ -30,7 +30,7 @@ class Repository < ApplicationRecord
   has_many :equipments, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
-  has_many :makes, class_name: 'Repository', foreign_key: 'make_id'
+  has_many :makes, class_name: 'Repository', foreign_key: 'make_id', dependent: :nullify
   belongs_to :parent,
              class_name: 'Repository',
              foreign_key: 'make_id',
