@@ -78,8 +78,6 @@ class ShopOrderApplier
   end
 
   def call
-    return if ProcessedOrder.find(@record.id).applied?
-
     plan = self.class.plan_for(@record.payload, topic: @record.topic, received_at: @record.created_at)
     resolve_references(plan)
 

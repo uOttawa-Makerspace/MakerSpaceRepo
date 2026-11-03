@@ -430,7 +430,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         expect_retry(order)
         expect([pending.reload.status, CcMoney.count]).to eq(["pending", 0])
         expect(order.last_error).not_to include("secret-value")
-        expect(reports).to be_empty
+        expect(reports.map { |e, _| e.class }).to eq([ApplyProcessedOrderJob::OrderApplyRetrying]) # the early warning only
 
         allow_any_instance_of(Membership).to receive(:update!).and_call_original
         allow(CcMoney).to receive(:create!).and_call_original
@@ -496,7 +496,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       order = hook(membership_payload(0, id: 7404, customer: { email: user.email },
                                          line_items: [{ title: "1 Day Membership", product_id: cc_product_id, quantity: 1 }]))
       expect_retry(order)
-      expect(reports).to be_empty
+      expect(reports.map { |e, _| e.class }).to eq([ApplyProcessedOrderJob::OrderApplyRetrying]) # none of the decision reports
     end
 
     it "queues the claim mail only once the order has committed" do
@@ -615,6 +615,24 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         error, opts = reports.find { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyFailed) }
         expect(error.message).to include("7420", "2 attempts", "LockWaitTimeout")
         expect(opts[:context]).to include(shopify_order_id: "7420", attempts: 2, error_class: "ActiveRecord::LockWaitTimeout")
+      end
+
+      it "reports the first failed attempt and the fifth as OrderApplyRetrying, ids and error class only" do
+        allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "secret-value")
+        order = hook(membership_payload(pending.id, id: 7422))
+        retrying = reports.select { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyRetrying) }
+        expect(retrying.size).to eq(1)
+        expect(retrying.first.last[:context]).to eq(shopify_order_id: "7422", attempt: 1, error_class: "ActiveRecord::LockWaitTimeout")
+        expect(retrying.first.first.message).not_to include("secret-value")
+
+        [2, 3, 4, 5, 6].each do |executions|
+          job = described_class.new(order.id)
+          job.executions = executions - 1
+          job.exception_executions = { "[StandardError]" => executions - 1 }
+          job.perform_now
+        end
+        expect(reports.select { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyRetrying) }.map { |_, o| o[:context][:attempt] })
+          .to eq([1, 5])
       end
 
       it "applies a failed order again when it is re-run" do

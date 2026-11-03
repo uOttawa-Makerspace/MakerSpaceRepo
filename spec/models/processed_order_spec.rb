@@ -31,11 +31,41 @@ RSpec.describe ProcessedOrder do
     expect(described_class.error_summary(ArgumentError.new("x" * 500)).length).to eq(200)
   end
 
-  it "re-runs only a failed order" do
+  it "re-runs only a failed order, counting its attempts afresh" do
     order, = store
     expect(order.reapply!).to be(false)
-    order.update!(status: "failed")
+    order.update!(status: "failed", attempts: 10)
     expect(order.reapply!).to be(true)
-    expect(order.reload.status).to eq("received")
+    expect(order.reload).to have_attributes(status: "received", attempts: 0)
+  end
+
+  it "does not re-run an order a concurrent run applied after it was loaded as failed" do
+    order, = store
+    order.update!(status: "failed")
+    stale = described_class.find(order.id)
+    order.update_columns(status: "applied", applied_at: Time.current) # the concurrent run commits
+    expect(stale.reapply!).to be(false)
+    expect(order.reload.status).to eq("applied")
+  end
+
+  describe ".mark_failed!" do
+    let(:reports) { [] }
+
+    before { allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] } }
+
+    it "fails a received order and reports it" do
+      order, = store
+      expect(described_class.mark_failed!(order.id, ArgumentError.new("x"))).to be(true)
+      expect(order.reload.status).to eq("failed")
+      expect(reports.map { |e, _| e.class }).to eq([ApplyProcessedOrderJob::OrderApplyFailed])
+    end
+
+    it "leaves an order a concurrent run applied alone and reports nothing" do
+      order, = store
+      order.update_columns(status: "applied", applied_at: Time.current)
+      expect(described_class.mark_failed!(order.id, ArgumentError.new("x"))).to be(false)
+      expect(order.reload.status).to eq("applied")
+      expect(reports).to be_empty
+    end
   end
 end

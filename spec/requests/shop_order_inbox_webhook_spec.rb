@@ -80,6 +80,19 @@ RSpec.describe "Shopify order webhooks (inbox)", type: :request do
       expect(ProcessedOrder.count).to eq(1)
     end
 
+    it "answers 503 when the job cannot be queued: the order stays received and a redelivery queues it" do
+      allow(ApplyProcessedOrderJob).to receive(:perform_later).and_return(false)
+      signed_orders_paid(membership_order)
+      expect(response).to have_http_status(:service_unavailable)
+      expect(stored(9001).status).to eq("received")
+
+      allow(ApplyProcessedOrderJob).to receive(:perform_later).and_call_original
+      signed_orders_paid(membership_order)
+      expect(response).to have_http_status(:ok)
+      expect(ProcessedOrder.count).to eq(1)
+      expect(queued_ids).to eq([stored(9001).id])
+    end
+
     it "treats the numeric id and the admin_graphql_api_id spelling of one order as one" do
       signed_orders_paid(membership_order)
       signed_orders_paid(membership_order.except(:id).merge(admin_graphql_api_id: "gid://shopify/Order/9001"))

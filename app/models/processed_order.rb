@@ -47,11 +47,11 @@ class ProcessedOrder < ApplicationRecord
   end
 
   # Retries are exhausted: the order is failed (staff re-run it) and reported with ids and the error class only.
+  # A conditional update, so an order a concurrent run just applied stays applied. True when it was failed here.
   def self.mark_failed!(id, error)
-    order = find_by(id: id)
-    return unless order && !order.applied?
+    return false unless unapplied.where(id: id).where.not(status: "failed").update_all(status: "failed", updated_at: Time.current) == 1
 
-    order.update_columns(status: "failed", updated_at: Time.current)
+    order = find(id)
     Rails.error.report(
       ApplyProcessedOrderJob::OrderApplyFailed.new(
         "order #{order.provider_ref} could not be applied after #{order.attempts} attempts (#{error.class})"
@@ -59,13 +59,27 @@ class ProcessedOrder < ApplicationRecord
       handled: true, severity: :error,
       context: { shopify_order_id: order.provider_ref, attempts: order.attempts, error_class: error.class.name }
     )
+    true
   end
 
-  # Staff re-run: a failed order goes back to received. The caller enqueues the job.
-  def reapply!
-    return false unless status == "failed"
+  # An attempt failed and the order is still being retried (see ApplyProcessedOrderJob::WARN_AT_ATTEMPTS).
+  def self.report_retrying(id, attempt, error)
+    order = find_by(id: id)
+    return unless order
 
-    update!(status: "received")
+    Rails.error.report(
+      ApplyProcessedOrderJob::OrderApplyRetrying.new(
+        "order #{order.provider_ref} failed attempt #{attempt}, retrying (#{error.class})"
+      ),
+      handled: true, severity: :warning,
+      context: { shopify_order_id: order.provider_ref, attempt: attempt, error_class: error.class.name }
+    )
+  end
+
+  # Staff re-run: a failed order goes back to received, counting its attempts afresh. A conditional update, so an
+  # order a concurrent run just applied is left alone. True when it was reset here; the caller then queues the job.
+  def reapply!
+    self.class.where(id: id, status: "failed").update_all(status: "received", attempts: 0, updated_at: Time.current) == 1
   end
 
   # The error class and a short message for last_error. Never SQL (its text can carry values).

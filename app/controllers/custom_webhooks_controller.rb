@@ -114,7 +114,10 @@ class CustomWebhooksController < ApplicationController
 
     order, = ProcessedOrder.receive!(provider: ShopOrderApplier::PROVIDER, order_id: plan.id, topic: topic,
                                      payload: hook, name: hook["name"])
-    ApplyProcessedOrderJob.perform_later(order.id) unless order.applied?
+    # A job that could not be queued (perform_later answers false) is not an applied order: answer 503 so Shopify
+    # delivers it again; the stored row stays received and the redelivery queues it.
+    return head :service_unavailable if !order.applied? && !ApplyProcessedOrderJob.perform_later(order.id)
+
     head :ok
   end
 end

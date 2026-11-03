@@ -9,8 +9,12 @@ class ApplyProcessedOrderJob < ApplicationJob
   queue_as :default
 
   class OrderApplyFailed < StandardError; end
+  # An attempt failed (the first one, and the fifth): staff see a systemic or single-branch problem within minutes,
+  # while the order is still being retried.
+  class OrderApplyRetrying < StandardError; end
 
   ATTEMPTS = 10
+  WARN_AT_ATTEMPTS = [1, 5].freeze
 
   # The wait before retry number `executions` (1..9): 61s, 92s, 5m, 18m, 53m, 2h10m, 4h41m, 9h07m, 16h25m.
   def self.wait_for(executions) = (executions**5 + 60).seconds
@@ -20,9 +24,13 @@ class ApplyProcessedOrderJob < ApplicationJob
   end
 
   def perform(processed_order_id)
-    ShopOrderApplier.new(ProcessedOrder.find(processed_order_id)).call
+    order = ProcessedOrder.find(processed_order_id)
+    return if order.applied?
+
+    ShopOrderApplier.new(order).call
   rescue StandardError => e
     ProcessedOrder.record_failure!(processed_order_id, e)
+    ProcessedOrder.report_retrying(processed_order_id, executions, e) if WARN_AT_ATTEMPTS.include?(executions)
     raise
   end
 end

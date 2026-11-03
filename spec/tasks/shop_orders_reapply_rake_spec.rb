@@ -40,6 +40,24 @@ RSpec.describe "shop_orders:reapply" do
     end
   end
 
+  it "refuses, reporting the real status, when the order was applied in the meantime" do
+    order.update!(status: "failed")
+    allow(ProcessedOrder).to receive(:find_by).and_wrap_original do |original, *args, **kw|
+      found = original.call(*args, **kw)
+      found&.update_columns(status: "applied") # the concurrent run commits after the task read the row
+      found
+    end
+    expect { run("8800") }.to raise_error(SystemExit).and output(/is applied, only failed orders are re-run/).to_stderr
+    expect(enqueued_jobs).to be_empty
+  end
+
+  it "says so when the job cannot be queued; the sweep will queue it" do
+    order.update!(status: "failed")
+    allow(ApplyProcessedOrderJob).to receive(:perform_later).and_return(false)
+    expect { run("8800") }.to output(/the sweep will queue it/).to_stdout
+    expect(order.reload.status).to eq("received")
+  end
+
   it "aborts for an unknown order" do
     expect { run("1234567") }.to raise_error(SystemExit).and output(/no stored order/).to_stderr
   end
