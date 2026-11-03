@@ -2,11 +2,13 @@ en:
   memberships:
     index:
       no_history: "No membership history found"
+  date:
+    formats:
+      issued: "%B %-d, %Y" # November 3, 2026
   time:
     formats:
       time_only: "%l:%M %p" # 2:30 PM
       short: "%b %d, %l:%M %p" # Jun 15, 2:30 PM
-  year: "year"
   name: "English"
   faq:
     header: "Frequently Asked Questions"

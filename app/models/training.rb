@@ -44,6 +44,11 @@ class Training < ApplicationRecord
     order(name: :asc).pluck(:name)
   end
 
+  # list_of_skills in the current language as an array of trimmed, non-empty skill names.
+  def skill_list
+    list_of_skills.to_s.split(",").map(&:strip).compact_blank
+  end
+
   ##
   # Convertes column list_of_skills_en into an array of strings
   def tokenize_info_en

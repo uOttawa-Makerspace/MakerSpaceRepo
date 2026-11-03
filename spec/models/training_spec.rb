@@ -83,6 +83,15 @@ RSpec.describe Training, type: :model do
       expect([t.description, t.list_of_skills]).to eq(["Cuts", "a,b"])
     end
 
+    it "skill_list is the current language's list_of_skills as trimmed, non-empty names" do
+      t = build(:training, list_of_skills_en: " a, b,,c ", list_of_skills_fr: "x, y")
+      expect(t.skill_list).to eq(%w[a b c])
+      I18n.with_locale(:fr) { expect(t.skill_list).to eq(%w[x y]) }
+      t.list_of_skills_fr = ""
+      I18n.with_locale(:fr) { expect(t.skill_list).to eq(%w[a b c]) }
+      expect(build(:training, list_of_skills_en: nil, list_of_skills_fr: nil).skill_list).to eq([])
+    end
+
     # tokenize_info_* calls `collect(&:strip)` without using the result, so tokens keep their padding
     it "tokenizes the skill lists on commas WITHOUT stripping (collect result discarded)" do
       t = build(:training, list_of_skills_en: "a, b,c", list_of_skills_fr: ", x, y")

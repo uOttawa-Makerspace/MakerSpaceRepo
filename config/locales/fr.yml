@@ -5,6 +5,8 @@ fr:
       short: "%-d %b, %H:%M" # 15 juin, 14:30
       long: "%d %B %Y à %H:%M" # 15 juin 2023 à 14:30
   date:
+    formats:
+      issued: "%-d %B %Y" # 3 novembre 2026
     month_names:
       [
         ~,
@@ -37,7 +39,6 @@ fr:
         nov.,
         déc.,
       ]
-  year: "année"
   name: "Français"
   faq:
     header: "Foire Aux Questions"

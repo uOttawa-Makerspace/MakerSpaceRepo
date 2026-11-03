@@ -996,21 +996,18 @@ class User < ApplicationRecord
       .pick(:department)
   end
 
+  # The identity and, for students, the year of study, worded in the current language:
+  # "2nd Year Undergraduate", "Étudiant de premier cycle, 2e année".
   def identity_readable
-    if student?
-      year = year_of_study.to_s
-      
-      if I18n.locale == :fr
-        suffix = year.last == '1' ? 'ère' : 'ème'
-        year += suffix
-      elsif I18n.locale == :en
-        year = year.to_i.ordinalize
-      end
+    name = I18n.t(identity.to_s, scope: "users.identity_readable.identities", default: identity.to_s.humanize)
+    return name unless student?
 
-      "#{year} #{I18n.t('year')} #{identity}uate".titleize
-    else
-      identity.titleize
-    end
+    I18n.t(
+      "users.identity_readable.student_year",
+      count: year_of_study.to_i,
+      ordinal: year_of_study.to_i.ordinalize,
+      identity: name
+    )
   end
 
   private

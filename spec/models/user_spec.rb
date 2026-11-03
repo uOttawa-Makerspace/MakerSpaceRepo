@@ -867,10 +867,42 @@ RSpec.describe User, type: :model do
       expect(build(:user, program: "Unknown Thing").department).to be_nil
     end
 
-    it "identity_readable titleizes non-students and builds a year string for students" do
-      expect(build(:user, identity: "community_member").identity_readable).to eq("Community Member")
-      s = build(:user, identity: "undergrad", year_of_study: 2)
-      I18n.with_locale(:en) { expect(s.identity_readable).to eq("2nd Year Undergraduate") }
+    describe "#identity_readable" do
+      def readable(identity, year = nil, locale: :en)
+        I18n.with_locale(locale) { build(:user, identity: identity, year_of_study: year).identity_readable }
+      end
+
+      it "names a non-student's identity" do
+        expect(readable("community_member")).to eq("Community Member")
+        expect(readable("faculty_member")).to eq("Faculty Member")
+        expect(readable("staff_member")).to eq("Staff Member")
+        expect(readable("community_member", locale: :fr)).to eq("Membre de la communauté")
+        expect(readable("staff_member", locale: :fr)).to eq("Membre du personnel")
+      end
+
+      it "words a student's year and identity in English" do
+        expect(readable("undergrad", 1)).to eq("1st Year Undergraduate")
+        expect(readable("undergrad", 2)).to eq("2nd Year Undergraduate")
+        expect(readable("grad", 3)).to eq("3rd Year Graduate")
+        expect(readable("international_undergrad", 4)).to eq("4th Year International Undergraduate")
+        expect(readable("international_grad", 11)).to eq("11th Year International Graduate")
+      end
+
+      it "words a student's year and identity in French, with 1re but 2e" do
+        expect(readable("undergrad", 1, locale: :fr)).to eq("Étudiant de premier cycle, 1re année")
+        expect(readable("undergrad", 2, locale: :fr)).to eq("Étudiant de premier cycle, 2e année")
+        expect(readable("grad", 3, locale: :fr)).to eq("Étudiant diplômé, 3e année")
+        expect(readable("international_undergrad", 4, locale: :fr)).to eq("Étudiant international de premier cycle, 4e année")
+        expect(readable("international_grad", 5, locale: :fr)).to eq("Étudiant international diplômé, 5e année")
+      end
+
+      it "mixes no language: no English word appears in a French result and no French word in an English one" do
+        User::IDENTITIES.each do |identity|
+          year = User::STUDENT_IDENTITIES.include?(identity) ? 2 : nil
+          expect(readable(identity, year, locale: :fr)).not_to match(/\b(year|undergraduate|graduate|member|unknown)\b/i)
+          expect(readable(identity, year)).not_to match(/\b(année|étudiant|membre|inconnu)\b/i)
+        end
+      end
     end
   end
 

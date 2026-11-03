@@ -95,6 +95,34 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(response.body).to include("Design").and include("Safety")
     end
 
+    describe "language" do
+      before do
+        training.update!(list_of_skills_en: "Design, Safety", list_of_skills_fr: "Conception, Sécurité")
+        Certification.unscoped.where(id: cert.id).update_all(created_at: Time.zone.local(2026, 11, 3, 12))
+      end
+
+      it "words the labels, the date and the skills in English" do
+        get badge_path(cert, locale: "en")
+
+        expect(response.body).to include("Badge Owner: Ada Earner", "on November 3, 2026", "Learn more", "Design", "Safety")
+        expect(response.body).not_to include("Conception", "Titulaire")
+      end
+
+      it "words the labels, the date and the skills in French" do
+        get badge_path(cert, locale: "fr")
+
+        expect(response.body).to include("Titulaire du badge : Ada Earner", "le 3 novembre 2026", "En savoir plus", "Conception", "Sécurité")
+        expect(response.body).not_to include("Badge Owner", "Safety", "Learn more")
+      end
+
+      it "shows the other language's skills when the current one has none" do
+        training.update!(list_of_skills_fr: "")
+        get badge_path(cert, locale: "fr")
+
+        expect(response.body).to include("Design").and include("Safety")
+      end
+    end
+
     it "answers 404 for an unknown id" do
       get badge_path(0)
       expect(response).to have_http_status(:not_found)
