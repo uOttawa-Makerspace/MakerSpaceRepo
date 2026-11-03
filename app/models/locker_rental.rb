@@ -81,6 +81,10 @@ class LockerRental < ApplicationRecord
   # The virtual attribute `indefinite` lifts the requirement.
   validates :owned_until, presence: true, if: -> { active? && indefinite != '1' }
 
+  # A renewal or extension (owned_until moved later, or made indefinite) makes the earlier expiry notice history:
+  # the next expiry has to be announced again. A column reset on the same row, whichever path changed the date.
+  before_save :reset_expiry_notice, if: :owned_until_moved_later?
+
   # If state ever changes from request, record who did it
   # Which staff member approved the request, or if owner cancelled the request
   validates :decided_by, presence: true, unless: :reviewing?
@@ -131,6 +135,54 @@ class LockerRental < ApplicationRecord
   scope :pending, -> { where(state: %i[reviewing await_payment]) }
   scope :reserves_locker, -> { where(state: %i[await_payment active]) }
   scope :assigned, -> { where(state: :active) }
+
+  # An expired rental is announced only while its end is this recent. Older ones are not mailed (the renter was
+  # not told at the time and a notice now would be noise); staff chase those by hand.
+  EXPIRY_NOTICE_WINDOW = 14.days
+  # The notice query looks back one more day than the window. A run that is a day late, and the first run after the
+  # data migration that marks everything older than the window as notified, then lose no rental.
+  EXPIRY_NOTICE_GRACE = 1.day
+
+  # Active rentals whose owned_until fell within EXPIRY_NOTICE_WINDOW (plus the grace day) and whose renter has not been told.
+  scope :expiry_notice_due, lambda { |now = Time.current|
+    active.where(owned_until: (now - EXPIRY_NOTICE_WINDOW - EXPIRY_NOTICE_GRACE)..now).where(notified_of_cancellation_at: nil)
+  }
+
+  # Mails the renter of each rental in expiry_notice_due once. The rental is claimed first (a conditional update
+  # on notified_of_cancellation_at IS NULL), and the mail is enqueued only by the run whose update changed the
+  # row, so overlapping runs send one mail per rental. A rental without a mailable, eligible renter is skipped as a
+  # whole and left unrecorded, so staff still see it as one to chase. +log+ receives one line per rental (its id,
+  # never the renter's details). Returns the number notified.
+  def self.notify_expired_rentals!(log: ->(line) { Rails.logger.info("[LockerRental] #{line}") })
+    count = 0
+    expiry_notice_due.find_each do |rental|
+      next unless rental.rented_by&.email.present?
+
+      unless rental.renter_eligible?(lock: false)
+        log.call("Skipped Locker Rental ##{rental.id}: renter is deactivated or deleted, not notified")
+        next
+      end
+
+      # Claim through the due scope: a rental renewed or cancelled since it was loaded is no longer due.
+      claimed_at = Time.current
+      claimed = expiry_notice_due(claimed_at).where(id: rental.id, notified_of_cancellation_at: nil)
+                                             .update_all(notified_of_cancellation_at: claimed_at)
+      next unless claimed == 1
+
+      begin
+        LockerMailer.with(locker_rental: rental).rental_expired.deliver_later
+      rescue StandardError
+        # nothing was enqueued: release our claim (and only ours) so the next run mails it
+        where(id: rental.id, notified_of_cancellation_at: claimed_at).update_all(notified_of_cancellation_at: nil)
+        raise
+      end
+      where(id: rental.id, notified_of_cancellation_at: claimed_at).update_all(contacted_for_clearance: true)
+
+      count += 1
+      log.call("Sent expiration notice for Locker Rental ##{rental.id} (Locker ##{rental.locker&.specifier})")
+    end
+    count
+  end
   
   # Added this missing scope so the admin controller can exclude cancelled rentals
   scope :not_cancelled, -> { where.not(state: :cancelled) }
@@ -424,6 +476,16 @@ class LockerRental < ApplicationRecord
   end
 
   private
+
+  def owned_until_moved_later?
+    persisted? && notified_of_cancellation_at.present? && will_save_change_to_owned_until? &&
+      (owned_until.nil? || owned_until_was.nil? || owned_until > owned_until_was)
+  end
+
+  def reset_expiry_notice
+    self.notified_of_cancellation_at = nil
+    self.contacted_for_clearance = false
+  end
 
   # THE place a link is served from: fetch the stored draft, classify it, serve it only when payable. The url, nil
   # (no link; #checkout_state says why) or :gone (Shopify no longer has it).

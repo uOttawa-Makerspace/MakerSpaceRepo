@@ -18,4 +18,18 @@ class Program < ApplicationRecord
   VOLUNTEER = "Volunteer Program"
   DEV_PROGRAM = "Development Program"
   TEAMS = "Teams Program"
+
+  # Volunteer programs follow the volunteer's last visit to the site: inactive when not seen for two months (or
+  # never), active again once seen. Derived from last_seen_at only, so a repeat run changes nothing
+  # (config/recurring.yml, nightly).
+  def self.refresh_volunteer_activity!(now = Time.current)
+    cutoff = now - 2.months
+    User.volunteers.find_each do |user|
+      program = user.programs.find_by(program_type: VOLUNTEER)
+      next if program.nil?
+
+      seen_recently = user.last_seen_at.present? && user.last_seen_at >= cutoff
+      program.update(active: seen_recently) if program.active != seen_recently
+    end
+  end
 end
