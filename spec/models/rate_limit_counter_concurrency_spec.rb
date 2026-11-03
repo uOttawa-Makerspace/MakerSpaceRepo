@@ -26,7 +26,7 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
         end
       end
     end
-    threads.times { ready.pop }
+    ThreadPause.await_all(ready, threads)
     threads.times { go << true }
     workers.flat_map(&:value)
   end

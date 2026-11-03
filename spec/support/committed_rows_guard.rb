@@ -52,9 +52,9 @@ RSpec.configure do |config|
     before = CommittedRowsGuard.counts
     # Bound every lock wait of this example's connection, including its own `after` cleanup (which
     # runs inside example.run): a thread of the example still holding a row lock then fails the
-    # example after 20s instead of hanging the worker. Reset before the connection is reused.
+    # example after ThreadPause::LOCK_TIMEOUT instead of hanging the worker. Reset before the connection is reused.
     conn = ActiveRecord::Base.connection
-    conn.execute("SET lock_timeout = '20s'")
+    conn.execute("SET lock_timeout = '#{ThreadPause::LOCK_TIMEOUT}s'")
     begin
       example.run
     ensure
