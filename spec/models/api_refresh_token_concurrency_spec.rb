@@ -42,12 +42,12 @@ RSpec.describe ApiRefreshToken, "concurrency", type: :model do
     # Rotation A: holds T's lock and pauses right before inserting the successor.
     allow(described_class).to receive(:issue!).and_wrap_original do |original, *args, **kwargs|
       paused << true
-      resume.pop
+      resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       original.call(*args, **kwargs)
     end
 
     rotation = in_thread { described_class.find(token.id).rotate! }
-    paused.pop
+    ThreadPause.await(paused)
     logout = in_thread { described_class.revoke_family!(token.family_id) }
     wait_until_blocked_on_lock
     resume << true
@@ -63,12 +63,12 @@ RSpec.describe ApiRefreshToken, "concurrency", type: :model do
     resume = Queue.new
     allow(described_class).to receive(:issue!).and_wrap_original do |original, *args, **kwargs|
       paused << true
-      resume.pop
+      resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       original.call(*args, **kwargs)
     end
 
     rotation = in_thread { described_class.find(token.id).rotate! }
-    paused.pop
+    ThreadPause.await(paused)
     revoke = in_thread { described_class.revoke_all_for!(user.id) }
     wait_until_blocked_on_lock
     resume << true

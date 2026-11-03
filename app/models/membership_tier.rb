@@ -1,4 +1,8 @@
 class MembershipTier < ApplicationRecord
+  include Translatable
+
+  translates :title
+
   has_many :memberships, dependent: :restrict_with_error
 
   validates :title_en, :title_fr, presence: true
@@ -7,10 +11,6 @@ class MembershipTier < ApplicationRecord
 
   scope :visible, -> { where(hidden: false) }
   
-  def title(locale = I18n.locale)
-    locale == :fr ? title_fr : title_en
-  end
-
   def price(user)
     user.internal? ? internal_price : external_price
   end

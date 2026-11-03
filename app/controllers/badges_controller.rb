@@ -23,8 +23,6 @@ class BadgesController < DevelopmentProgramsController
   def show
     @certification = Certification.find(params[:id])
     @earner = User.find(@certification.user_id)
-    @los_en = @certification.training.tokenize_info_en
-    @los_fr = @certification.training.tokenize_info_fr
     @skill_colour =
       if @certification.training.skill_id == 1
         "#488b2c"

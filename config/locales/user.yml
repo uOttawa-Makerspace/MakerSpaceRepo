@@ -41,6 +41,22 @@ en:
         identity: Identity
         edit_profile: Edit your profile
 
+    # User#identity_readable. The student phrases take the identity name and the year of study,
+    # and are pluralized on the year so French can say "1re année" (feminine) but "2e année".
+    identity_readable:
+      identities:
+        undergrad: Undergraduate
+        international_undergrad: International Undergraduate
+        grad: Graduate
+        international_grad: International Graduate
+        faculty_member: Faculty Member
+        staff_member: Staff Member
+        community_member: Community Member
+        unknown: Unknown
+      student_year:
+        one: "%{ordinal} Year %{identity}"
+        other: "%{ordinal} Year %{identity}"
+
 fr:
   users:
     show:
@@ -83,3 +99,17 @@ fr:
         year_of_study: Année d'études
         identity: Identité
         edit_profile: Modifier votre profil
+
+    identity_readable:
+      identities:
+        undergrad: Étudiant de premier cycle
+        international_undergrad: Étudiant international de premier cycle
+        grad: Étudiant aux cycles supérieurs
+        international_grad: Étudiant international aux cycles supérieurs
+        faculty_member: Membre de la faculté
+        staff_member: Membre du personnel
+        community_member: Membre de la communauté
+        unknown: Inconnu
+      student_year:
+        one: "%{identity}, 1re année"
+        other: "%{identity}, %{ordinal} année"

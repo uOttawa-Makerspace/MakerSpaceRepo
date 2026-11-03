@@ -60,7 +60,7 @@ RSpec.describe "Coupon claim race", type: :request do
       if Thread.current == first
         first = nil
         paused << true
-        resume.pop
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
         raise ActiveRecord::RecordNotSaved, "simulated" if first_fails
       end
       original.call(*args, **kw)
@@ -70,7 +70,7 @@ RSpec.describe "Coupon claim race", type: :request do
       first = Thread.current
       claim(session_one)
     end
-    paused.pop
+    ThreadPause.await(paused)
     two = in_thread { claim(session_two) }
     deadline = Time.current + 5
     Thread.pass until blocked_backends.positive? || !two.alive? || Time.current > deadline
@@ -190,7 +190,7 @@ RSpec.describe "Coupon claim race", type: :request do
         release.pop(timeout: 3) # without a lock timeout the claim would wait this long, then succeed
       end
     end
-    locked.pop
+    ThreadPause.await(locked)
     started = Time.current
     claim(session_a)
     waited = Time.current - started

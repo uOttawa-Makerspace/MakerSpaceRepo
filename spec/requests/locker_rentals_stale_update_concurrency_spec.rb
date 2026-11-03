@@ -14,6 +14,10 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
   let(:password) { "asa32A353#" }
   let!(:staff) { create(:user, :staff) }
   let!(:rental) { create(:locker_rental, :await_payment) }
+  # Captured at creation: a staff update reassigns decided_by to the staff user, and `rental.reload`
+  # in the example would then hide the factory's original decider from this cleanup and leave that
+  # user committed for every later example in the run.
+  let!(:created_user_ids) { [staff.id, rental.rented_by_id, rental.decided_by_id].compact }
 
   after do
     LockerPayment.where(locker_rental_id: rental.id).delete_all
@@ -21,7 +25,7 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
     locker = Locker.find_by(id: rental.locker_id)
     locker&.destroy
     locker&.locker_size&.destroy
-    User.unscoped.where(id: [staff.id, rental.rented_by_id, rental.decided_by_id]).delete_all
+    User.unscoped.where(id: created_user_ids).delete_all
   end
 
   def log_in!
@@ -45,13 +49,13 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
         LockerRental.transaction do
           LockerRental.find(rental.id).record_payment(shopify_order_id: "stale-1")
           paused << true
-          resume.pop
+          resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
         end
       end
     rescue StandardError => e
       e
     end
-    paused.pop
+    ThreadPause.await(paused)
     releaser = Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do
         deadline = Time.current + 10
@@ -132,12 +136,12 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
         LockerRental.transaction do
           LockerRental.find(rental.id).lock!
           paused << true
-          resume.pop
+          resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
           released_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         end
       end
     end
-    paused.pop
+    ThreadPause.await(paused)
     releaser = Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do
         deadline = Time.current + 3

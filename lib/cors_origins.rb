@@ -10,8 +10,9 @@
 # - production: the staff app (MakerRepoApp) only;
 # - staging: plus its Cloudflare Pages previews (previews point to staging);
 # - development/test: plus the Vite dev server on localhost:5173.
-# Design Day sends no cookies and calls only GET /api/v1/design_day, which has
-# its own non-credentialed block in config/initializers/cors.rb.
+# Design Day sends no cookies and reads GET /api/v1/design_day or, in the deployed
+# app, GET /admin/design_day/data; both have their own non-credentialed block in
+# config/initializers/cors.rb.
 module CorsOrigins
   PRODUCTION = [
     "https://app.makerepo.com"

@@ -32,5 +32,16 @@ production: &production
     class: JobOrderDraftSweepJob
     schedule: every hour at minute 42
 
+  # Hands out the stored Shopify orders that are due (new ones, retries, expired leases) and reports the ones
+  # nothing has dispatched for hours. ProcessedOrder is the schedule.
+  dispatch_due_orders:
+    class: DispatchDueOrdersJob
+    schedule: every minute
+
+  # Blanks the payload (customer data) of Shopify orders applied more than 90 days ago; the rows stay.
+  purge_processed_order_payloads:
+    class: PurgeProcessedOrderPayloadsJob
+    schedule: every day at 4am
+
 staging:
   <<: *production

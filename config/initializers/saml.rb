@@ -14,6 +14,18 @@ SamlIdp.configure do |config|
         staff.makerepo.com
       ]
     },
+    # The language wikis' SimpleSAMLphp service providers identify themselves by these entity
+    # ids; each may only receive responses on its own host.
+    "https://en.wiki.makerepo.com/simplesamlphp" => {
+      metadata_url:
+        "https://en.wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com",
+      response_hosts: %w[en.wiki.makerepo.com]
+    },
+    "https://fr.wiki.makerepo.com/simplesamlphp" => {
+      metadata_url:
+        "https://fr.wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com",
+      response_hosts: %w[fr.wiki.makerepo.com]
+    },
     "rooms.makerepo.com" => {
       metadata_url: "https://rooms.makerepo.com/users/auth/saml/metadata",
       response_hosts: %w[rooms.makerepo.com]
