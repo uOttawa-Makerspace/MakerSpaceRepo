@@ -72,6 +72,17 @@ RSpec.describe Training, type: :model do
       expect(t.localized_name).to eq("Laseur")
     end
 
+    it "localized_name, description and list_of_skills fall back when the current language is blank, not only when nil" do
+      t = build(:training, name_en: "", name_fr: "Laseur", description_en: "Cuts", description_fr: " ",
+                           list_of_skills_en: "a,b", list_of_skills_fr: "")
+      expect(t.localized_name).to eq("Laseur")
+      I18n.with_locale(:fr) do
+        expect(t.description).to eq("Cuts")
+        expect(t.list_of_skills).to eq("a,b")
+      end
+      expect([t.description, t.list_of_skills]).to eq(["Cuts", "a,b"])
+    end
+
     # tokenize_info_* calls `collect(&:strip)` without using the result, so tokens keep their padding
     it "tokenizes the skill lists on commas WITHOUT stripping (collect result discarded)" do
       t = build(:training, list_of_skills_en: "a, b,c", list_of_skills_fr: ", x, y")

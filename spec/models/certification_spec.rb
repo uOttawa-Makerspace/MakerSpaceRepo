@@ -226,6 +226,15 @@ RSpec.describe Certification, type: :model do
       expect(cert.get_skill_id).to eq(training.skill_id)
     end
 
+    it "name is the training's name in the current language, falling back when that one is blank" do
+      training.update!(name_en: "Laser", name_fr: "Laseur")
+      cert = create(:certification, user: user, training_session: ts, training: training)
+      expect(cert.name).to eq("Laser")
+      I18n.with_locale(:fr) { expect(cert.name).to eq("Laseur") }
+      cert.training.name_fr = ""
+      I18n.with_locale(:fr) { expect(cert.name).to eq("Laser") }
+    end
+
     it "existent_certification finds a certification of the same training at the same session level, else false" do
       create(:certification, user: user, training_session: ts, training: training, level: "Beginner")
       expect(Certification.existent_certification(user, training, "Beginner")).to be_a(Certification)

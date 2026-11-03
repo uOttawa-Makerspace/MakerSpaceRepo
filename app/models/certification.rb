@@ -159,8 +159,9 @@ class Certification < ApplicationRecord
     high_certs
   end
 
+  # The name of the training behind the certification, in the current language.
   def name
-    I18n.locale == :fr ? get_name_fr : get_name_en
+    training.localized_name
   end
 
   def get_name_en
