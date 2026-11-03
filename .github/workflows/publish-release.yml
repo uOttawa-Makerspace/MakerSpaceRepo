@@ -1,0 +1,94 @@
+name: Publish release
+
+# Recovery for the release step of CI & Deploy: tags a shipped release, publishes the GitHub
+# Release and opens the master -> staging sync PR. It builds and deploys nothing, and only
+# publishes a release whose production deploy succeeded. The image that is already deployed keeps
+# the CHANGELOG.md it was built with until the next deploy.
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Master squash commit of the release (a short sha is accepted)"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-release-manual
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    env:
+      # A PR opened with the built-in token runs no workflows; see RELEASE_BOT_TOKEN in main.yml.
+      GH_TOKEN: ${{ secrets.RELEASE_BOT_TOKEN || github.token }}
+      TARGET_REF: refs/heads/master
+      INPUT_SHA: ${{ inputs.sha }}
+      NOTES_ONLY: "true"
+
+    steps:
+      - name: Require the master branch
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/master" ]; then
+            echo "::error::Run this workflow on the master branch (it was started on $GITHUB_REF)."
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Resolve the commit
+        run: |
+          if ! sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$INPUT_SHA" --jq .sha); then
+            echo "::error::'$INPUT_SHA' is not a commit of this repository."
+            exit 1
+          fi
+          if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::'$INPUT_SHA' did not resolve to a full commit sha."
+            exit 1
+          fi
+          echo "TARGET_SHA=$sha" >> "$GITHUB_ENV"
+
+      - name: Require a production deploy of that commit
+        run: .github/scripts/release-check-deployed.sh
+
+      - name: Find the shipped commit, its version and the previous release
+        id: target
+        run: .github/scripts/release-resolve.sh
+
+      - name: Stop when the commit is not a release
+        if: steps.target.outputs.publishable != 'true'
+        run: |
+          echo "::error::No merged staging -> master pull request has merge commit $TARGET_SHA; nothing to publish. Check the sha."
+          exit 1
+
+      - name: Build the notes
+        id: notes
+        if: steps.target.outputs.previous != ''
+        uses: mikepenz/release-changelog-builder-action@32e3c96f29a6532607f638797455e9e98cfc703d # v4.2.2
+        with:
+          configuration: .github/release-changelog-config.json
+          fromTag: ${{ steps.target.outputs.previous }}
+          toTag: ${{ steps.target.outputs.shipped }}
+
+      - name: Write the release notes
+        env:
+          NOTES: ${{ steps.notes.outputs.changelog }}
+          VERSION: ${{ steps.target.outputs.version }}
+        run: .github/scripts/release-write-notes.sh
+
+      - name: Tag and publish
+        env:
+          VERSION: ${{ steps.target.outputs.version }}
+          SHIPPED: ${{ steps.target.outputs.shipped }}
+        run: .github/scripts/release-publish.sh
+
+      - name: Open the master -> staging sync PR
+        run: .github/scripts/release-sync.sh

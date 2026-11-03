@@ -72,19 +72,24 @@ class UsersController < SessionsController
     end
   end
 
+  # The answer is the same whether or not the email belongs to an account (and when the
+  # request is rate limited); only an account that is still unconfirmed is mailed.
+  RESEND_CONFIRMATION_NOTICE =
+    'If that email belongs to an account that still needs confirming, a confirmation email has been sent.'
+
+  RESEND_CONFIRMATION_EMAIL_LIMIT = 3 # mails per address per hour
+
+  rate_limit to: 30, within: 1.hour, only: :resend_confirmation, name: 'resend-ip',
+             by: -> { request.remote_ip }, with: -> { resend_confirmation_response }
+
   def resend_confirmation
-    email = params[:user][:email]
-    user = User.find_by(email: email)
-    if user.present?
+    email = resend_confirmation_email
+    user = User.find_by(email: email) if email.present?
+    if user && !user.confirmed? && resend_confirmation_budget_left?(email)
       hash = user.generate_token_for(:email_confirmation)
-      MsrMailer.confirmation_email(user, hash).deliver_now
-      flash[:notice] = 'A new confirmation email has been sent'
-    else
-      flash[
-        :alert
-      ] = 'No users with that email were found. Please select a valid email.'
+      MsrMailer.confirmation_email(user, hash).deliver_later
     end
-    redirect_back(fallback_location: root_path)
+    resend_confirmation_response
   end
 
   def confirm
@@ -495,6 +500,25 @@ class UsersController < SessionsController
   end
 
   private
+
+  # The normalised email, or '' when none was given or it is longer than an address can be.
+  def resend_confirmation_email
+    fields = params[:user]
+    email = fields.is_a?(ActionController::Parameters) ? fields[:email].to_s.strip.downcase : ''
+    email.length > 254 ? '' : email
+  end
+
+  # Counts only the mails actually sent to an address, so unknown or confirmed addresses cannot
+  # use up a real account's budget. The answer to the caller is the same either way.
+  def resend_confirmation_budget_left?(email)
+    key = "rate-limit:users:resend-email:#{Digest::SHA256.hexdigest(email)}"
+    RateLimitCounter.increment(key, 1, expires_in: 1.hour) <= RESEND_CONFIRMATION_EMAIL_LIMIT
+  end
+
+  def resend_confirmation_response
+    flash[:notice] = RESEND_CONFIRMATION_NOTICE
+    redirect_back(fallback_location: root_path)
+  end
 
   # The current password the action was given (change_password nests it).
   def submitted_current_password

@@ -42,7 +42,7 @@ RSpec.describe Rfid, ".link_to_user! under concurrency", type: :model do
       if Thread.current == first
         first = nil
         paused << true
-        resume.pop
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
       original.call(*args)
     end
@@ -51,7 +51,7 @@ RSpec.describe Rfid, ".link_to_user! under concurrency", type: :model do
       first = Thread.current
       Rfid.link_to_user!(card_number, first_user)
     end
-    paused.pop
+    ThreadPause.await(paused)
     two = in_thread { Rfid.link_to_user!(card_number, second_user) }
     deadline = Time.current + 5
     Thread.pass until blocked_backends.positive? || !two.alive? || Time.current > deadline

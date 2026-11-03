@@ -4,8 +4,8 @@ require "rails_helper"
 
 # Chunk 13: VolunteerTasksController.
 #   index, show         staff or volunteer-program member (`volunteer_access`)
-#   new/create/edit/update/destroy   staff or admin only (`grant_access`)
-#   my_tasks                         NO gate (guests included)
+#   new/create/edit/update/destroy   staff or admin only (`VolunteerAreaAccess#staff_access`)
+#   my_tasks                         staff or volunteer-program member (`volunteer_access`)
 #   complete_task (POST)             sign-in + staff or the task's creator
 RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   let(:space) { create(:space) }
@@ -22,7 +22,14 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "index and show gate" do
-    %i[guest regular role_only].each do |role|
+    it "guest: index and show redirect to login" do
+      get volunteer_tasks_path
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks"))
+      get volunteer_task_path(task)
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks/#{task.id}"))
+    end
+
+    %i[regular role_only].each do |role|
       it "#{role}: index and show redirect to root with an alert" do
         vol_sign_in_as(role)
         get volunteer_tasks_path
@@ -90,7 +97,21 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "staff-only actions: role matrix" do
-    %i[guest regular role_only volunteer inactive].each do |role|
+    it "guest: new/create/edit/update/destroy redirect to login and change nothing" do
+      get new_volunteer_task_path
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks/new"))
+      expect { post volunteer_tasks_path, params: task_params }.not_to change(VolunteerTask, :count)
+      expect(response.location).to include("/login")
+      get edit_volunteer_task_path(task)
+      expect(response.location).to include("/login")
+      patch volunteer_task_path(task), params: task_params(title: "changed")
+      expect(response.location).to include("/login")
+      expect(task.reload.title).to eq("Setup crew")
+      expect { delete volunteer_task_path(task) }.not_to change(VolunteerTask, :count)
+      expect(response.location).to include("/login")
+    end
+
+    %i[regular role_only volunteer inactive].each do |role|
       it "#{role}: new/create/edit/update/destroy redirect to root with an alert and change nothing" do
         vol_sign_in_as(role)
         get new_volunteer_task_path
@@ -331,8 +352,22 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_tasks/my_tasks" do
-    %i[guest regular volunteer staff].each do |role|
-      it "#{role}: renders (no gate)" do
+    it "guest: redirects to login" do
+      get my_tasks_volunteer_tasks_path
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks/my_tasks"))
+    end
+
+    %i[regular role_only].each do |role|
+      it "#{role}: redirects to root with an alert" do
+        vol_sign_in_as(role)
+        get my_tasks_volunteer_tasks_path
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+      end
+    end
+
+    %i[volunteer staff].each do |role|
+      it "#{role}: renders" do
         vol_sign_in_as(role)
         get my_tasks_volunteer_tasks_path
         expect(response).to have_http_status(:ok)

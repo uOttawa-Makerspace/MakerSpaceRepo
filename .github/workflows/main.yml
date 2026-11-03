@@ -168,11 +168,85 @@ jobs:
         run: bundle exec ruby-audit check
 
   # ==========================================
+  # RELEASE NOTES (parallel to tests; uses only the API and the checkout)
+  # ==========================================
+  # staging -> master releases are squash-merged, so master holds one commit per release while
+  # staging keeps every PR merge. Notes are therefore built on staging's history: a release is
+  # tagged on the staging commit it shipped (the head of the release PR whose merge commit is the
+  # pushed master commit), and the notes run from the newest release not on that commit to it.
+  # The version is derived from the shipped commit, so a re-run yields the same version.
+  # The shell logic lives in .github/scripts and is shared with the Publish release workflow.
+  # The image builds wait for this job (a few seconds) because the image carries CHANGELOG.md,
+  # but they ignore its result: when it fails the images ship without notes, and publish-release
+  # fails with a message pointing to the Publish release workflow.
+  changelog:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_REF: ${{ github.ref }}
+      TARGET_SHA: ${{ github.sha }}
+    outputs:
+      version: ${{ steps.target.outputs.version }}
+      shipped: ${{ steps.target.outputs.shipped }}
+      publishable: ${{ steps.target.outputs.publishable }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Find the shipped commit, its version and the previous release
+        id: target
+        run: .github/scripts/release-resolve.sh
+
+      # Release PRs (staging -> master) and sync PRs (master -> staging) are not changes. Only PRs
+      # merged into staging are listed (base_branches, a regex), which drops the release PRs, and
+      # sync PRs carry the release label, which ignore_labels drops.
+      - name: Build the notes
+        id: notes
+        if: steps.target.outputs.previous != '' && steps.target.outputs.shipped != ''
+        continue-on-error: true
+        uses: mikepenz/release-changelog-builder-action@32e3c96f29a6532607f638797455e9e98cfc703d # v4.2.2
+        with:
+          configuration: .github/release-changelog-config.json
+          fromTag: ${{ steps.target.outputs.previous }}
+          toTag: ${{ steps.target.outputs.shipped }}
+
+      - name: Write CHANGELOG.md
+        env:
+          NOTES: ${{ steps.notes.outputs.changelog }}
+          VERSION: ${{ steps.target.outputs.version }}
+        run: .github/scripts/release-write-notes.sh
+
+      - name: Upload the notes
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: changelog
+          path: |
+            CHANGELOG.md
+            release-notes.md
+          if-no-files-found: error
+          retention-days: 14
+
+      # The notes step may not block anything, but it must not fail silently either: the job turns
+      # red (after the artifact is uploaded) and publish-release reports it.
+      - name: Report a failed notes step
+        if: steps.notes.outcome == 'failure'
+        run: |
+          echo "::error::The release notes could not be built; CHANGELOG.md has published releases only. Run the Publish release workflow for $GITHUB_SHA once fixed."
+          exit 1
+
+  # ==========================================
   # STAGE 2: PARALLEL NATIVE DOCKER BUILDS
   # ==========================================
   build-staging-images:
-    needs: [test, security]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: [test, security, changelog]
+    # the changelog job only adds CHANGELOG.md; its result is deliberately not checked
+    if: ${{ !cancelled() && needs.test.result == 'success' && needs.security.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/staging' }}
     name: Build (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -189,6 +263,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # The release notes for this commit, read by the /changelog page
+      - name: Download CHANGELOG.md
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: changelog
 
       - name: Set lowercase image name
         run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
@@ -232,8 +313,9 @@ jobs:
           retention-days: 1
 
   build-production-images:
-    needs: [test, security]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [test, security, changelog]
+    # the changelog job only adds CHANGELOG.md; its result is deliberately not checked
+    if: ${{ !cancelled() && needs.test.result == 'success' && needs.security.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     name: Build Production (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -250,6 +332,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # The release notes for this commit, read by the /changelog page
+      - name: Download CHANGELOG.md
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: changelog
 
       - name: Set lowercase image name
         run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
@@ -294,6 +383,7 @@ jobs:
   # ==========================================
   deploy-staging:
     needs: [test, security, build-staging-images]
+    if: ${{ !cancelled() && needs.build-staging-images.result == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -359,7 +449,7 @@ jobs:
   # ==========================================
   deploy-production:
     needs: [test, security, build-production-images]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: ${{ !cancelled() && needs.build-production-images.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -417,3 +507,70 @@ jobs:
             docker compose --env-file .env.production -f docker-compose.production.yml up -d --remove-orphans
             docker image prune -f
           EOF
+
+  # ==========================================
+  # STAGE 4: PUBLISH THE RELEASE (after production is live)
+  # ==========================================
+  # Tags the shipped staging commit, publishes the GitHub Release with the notes the image was
+  # built with, and opens a master -> staging sync PR (see .github/scripts). Re-running is safe:
+  # existing tags, releases and sync PRs are reused. It runs whenever production was deployed;
+  # when the notes job failed or the release PR was not found it fails with a message instead of
+  # being skipped. Recovery is the manual Publish release workflow, never a re-run of the jobs
+  # above, which would rebuild and redeploy production.
+  #
+  # Repo settings: "Allow auto-merge" (Settings > General) for the sync PR to merge itself, and
+  # "Allow GitHub Actions to create and approve pull requests" (Settings > Actions > General)
+  # unless a RELEASE_BOT_TOKEN secret is set.
+  publish-release:
+    needs: [changelog, deploy-production]
+    if: ${{ !cancelled() && needs.deploy-production.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      # A PR opened with the built-in token runs no workflows. If staging requires status checks,
+      # add a RELEASE_BOT_TOKEN secret (fine-grained, contents + pull requests write) so they run.
+      GH_TOKEN: ${{ secrets.RELEASE_BOT_TOKEN || github.token }}
+      CHANGELOG_RESULT: ${{ needs.changelog.result }}
+      VERSION: ${{ needs.changelog.outputs.version }}
+      SHIPPED: ${{ needs.changelog.outputs.shipped }}
+      PUBLISHABLE: ${{ needs.changelog.outputs.publishable }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Check what can be published
+        id: check
+        run: |
+          ok=true
+          if [ "$CHANGELOG_RESULT" != "success" ]; then
+            ok=false
+            echo "::error::Production is deployed, but the changelog job ended as '$CHANGELOG_RESULT', so no release was published. Run the Publish release workflow for $GITHUB_SHA. Do not re-run these jobs: that would rebuild and redeploy production."
+          elif [ "$PUBLISHABLE" != "true" ] || [ -z "$VERSION" ] || [ -z "$SHIPPED" ]; then
+            ok=false
+            echo "::error::Production is deployed, but no merged staging -> master pull request has merge commit $GITHUB_SHA, so there is no shipped staging commit to tag. Run the Publish release workflow for $GITHUB_SHA once the pull request is visible. Do not re-run these jobs: that would rebuild and redeploy production."
+          fi
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+
+      - name: Download the notes
+        if: steps.check.outputs.ok == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: changelog
+
+      - name: Tag and publish
+        if: steps.check.outputs.ok == 'true'
+        run: .github/scripts/release-publish.sh
+
+      - name: Open the master -> staging sync PR
+        if: ${{ !cancelled() }}
+        run: .github/scripts/release-sync.sh
+
+      - name: Fail when no release was published
+        if: ${{ !cancelled() && steps.check.outputs.ok != 'true' }}
+        run: |
+          echo "::error::No release was published for $GITHUB_SHA (see the first step)."
+          exit 1

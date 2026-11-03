@@ -2,7 +2,9 @@
 
 class AnnouncementsController < StaffAreaController
   layout "staff_area"
-  before_action :set_announcement, only: %i[show edit]
+  before_action :set_announcement, only: %i[show edit update destroy]
+  before_action :build_announcement, only: :create
+  before_action :ensure_announcement_access, only: %i[show edit]
   before_action :check_announcement, only: %i[create update destroy]
 
   def index
@@ -18,6 +20,8 @@ class AnnouncementsController < StaffAreaController
   end
 
   def dismiss
+    return head(:no_content) unless signed_in?
+
     AnnouncementDismiss.create(
       announcement_id: params[:announcement_id],
       user_id: current_user.id
@@ -70,14 +74,28 @@ class AnnouncementsController < StaffAreaController
     @announcement = Announcement.find(params[:id])
   end
 
+  def build_announcement
+    @announcement = Announcement.new(announcement_params)
+  end
+
+  # Staff manage volunteer announcements only; admins manage every audience.
+  def audience_allowed?(*goals)
+    current_user.admin? || goals.compact.all? { |goal| goal == "volunteer" }
+  end
+
+  def ensure_announcement_access
+    return if audience_allowed?(@announcement.public_goal)
+
+    flash[:alert] = "You cannot access this area."
+    redirect_to root_path
+  end
+
+  # Writes must hold for the stored audience and for any audience being requested.
   def check_announcement
-    @announcement =
-      Announcement.find_by(id: params[:id]) ||
-        Announcement.new(announcement_params)
-    unless %w[volunteer].include?(@announcement.public_goal) ||
-             current_user.admin?
-      flash[:alert] = "Please select another public goal"
-      redirect_to new_announcement_path
-    end
+    return if audience_allowed?(@announcement.public_goal,
+                                params.dig(:announcement, :public_goal))
+
+    flash[:alert] = "Please select another public goal"
+    redirect_to new_announcement_path
   end
 end

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Training < ApplicationRecord
+  include Translatable
+
   has_and_belongs_to_many :spaces
   has_and_belongs_to_many :questions
   has_many :training_sessions, dependent: :destroy
@@ -15,6 +17,11 @@ class Training < ApplicationRecord
   # Column was renamed to name_en and it broke a lot
   alias_attribute :name, :name_en
   alias_attribute :description, :description_en
+
+  # `name` stays the English column; localized_name is the current-language reader. `description`
+  # reads in the current language (the alias above remains for writing).
+  translates :name, prefix: "localized_"
+  translates :description, :list_of_skills
 
   validates :name_en, presence: true, uniqueness: true
   validates :name_fr, presence: true, uniqueness: true
@@ -37,52 +44,9 @@ class Training < ApplicationRecord
     order(name: :asc).pluck(:name)
   end
 
-  def localized_name
-    # Pick one, show other if unavailable
-    if I18n.locale == :fr
-      name_fr || name_en
-    else
-      name_en || name_fr
-    end
-  end
-
-  def description
-    if I18n.locale == :fr
-      description_fr || description_en
-    else
-      description_en || description_fr
-    end
-  end
-
-  def list_of_skills
-    if I18n.locale == :fr
-      list_of_skills_fr || list_of_skills_en
-    else
-      list_of_skills_en || list_of_skills_fr
-    end
-  end
-
-  ##
-  # Convertes column list_of_skills_en into an array of strings
-  def tokenize_info_en
-    if list_of_skills_en.nil?
-      arr = []
-    else
-      arr = list_of_skills_en.split(',')
-      arr.collect(&:strip)
-      arr
-    end
-  end
-  ##
-  # Converts column list_of_skills_fr into an array of strings
-  def tokenize_info_fr
-    if list_of_skills_fr.nil?
-      arr = []
-    else
-      arr = list_of_skills_fr.split(',')
-      arr.collect(&:strip)
-      arr
-    end
+  # list_of_skills in the current language as an array of trimmed, non-empty skill names.
+  def skill_list
+    list_of_skills.to_s.split(",").map(&:strip).compact_blank
   end
 
   ##

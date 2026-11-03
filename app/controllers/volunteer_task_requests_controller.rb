@@ -2,7 +2,10 @@
 
 class VolunteerTaskRequestsController < SessionsController
   before_action -> { @with_volunteer_header = true }
-  before_action :signed_in, only: %i[create_request update_approval]
+  include VolunteerAreaAccess
+
+  before_action :signed_in, only: :update_approval
+  before_action :volunteer_access, only: %i[index search_pending search_processed create_request]
   before_action :ensure_staff, only: :update_approval
 
   def index

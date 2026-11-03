@@ -338,6 +338,14 @@ class User < ApplicationRecord
     ).limit(30)
   }
 
+  # Name/username lookup for staff pickers: too-short terms match nothing, so a
+  # blank or wildcard-only search never lists everyone.
+  DIRECTORY_SEARCH_MIN_LENGTH = 3
+  scope :directory_search, ->(query) {
+    query = query.to_s.strip
+    query.length < DIRECTORY_SEARCH_MIN_LENGTH ? none : search(query)
+  }
+
   scope :fuzzy_search, ->(query) {
     where(
       'LOWER(UNACCENT(name)) % LOWER(UNACCENT(:query)) OR LOWER(UNACCENT(username)) % LOWER(UNACCENT(:query))',
@@ -988,21 +996,20 @@ class User < ApplicationRecord
       .pick(:department)
   end
 
+  # The identity and, for students, the year of study, worded in the current language:
+  # "2nd Year Undergraduate", "Étudiant de premier cycle, 2e année".
   def identity_readable
-    if student?
-      year = year_of_study.to_s
-      
-      if I18n.locale == :fr
-        suffix = year.last == '1' ? 'ère' : 'ème'
-        year += suffix
-      elsif I18n.locale == :en
-        year = year.to_i.ordinalize
-      end
+    return "" if identity.blank?
 
-      "#{year} #{I18n.t('year')} #{identity}uate".titleize
-    else
-      identity.titleize
-    end
+    name = I18n.t(identity, scope: "users.identity_readable.identities", default: identity.humanize)
+    return name unless student? && year_of_study.to_i.positive?
+
+    I18n.t(
+      "users.identity_readable.student_year",
+      count: year_of_study.to_i,
+      ordinal: year_of_study.to_i.ordinalize,
+      identity: name
+    )
   end
 
   private

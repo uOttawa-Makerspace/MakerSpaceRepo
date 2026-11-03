@@ -53,11 +53,11 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
       LockerRental.transaction do
         LockerRental.find(rental.id).update!(state: :active)
         paused << true
-        resume.pop
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
       :committed
     end
-    paused.pop
+    ThreadPause.await(paused)
     deactivation = in_thread { User.find(renter.id).deactivate! }
     wait_until_blocked_on_lock(resume)
     resume << true
@@ -75,11 +75,11 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
       User.transaction do
         User.find(renter.id).deactivate!
         paused << true
-        resume.pop
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
       :committed
     end
-    paused.pop
+    ThreadPause.await(paused)
     activation = in_thread do
       candidate = LockerRental.find(rental.id)
       [candidate.update(state: :active), candidate.errors[:rented_by]]
@@ -101,11 +101,11 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
       User.transaction do
         User.find(renter.id).deactivate!
         paused << true
-        resume.pop
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
       :committed
     end
-    paused.pop
+    ThreadPause.await(paused)
     delivery = in_thread { LockerRental.find(rental.id).record_payment(shopify_order_id: "race-1") }
     wait_until_blocked_on_lock(resume)
     resume << true
@@ -122,13 +122,13 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
     allow_any_instance_of(described_class).to receive(:renter_eligible?).and_wrap_original do |original, *args|
       if paused_once.make_true
         first_in << true
-        resume.pop
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
       original.call(*args)
     end
 
     first = in_thread { LockerRental.find(rental.id).record_payment(shopify_order_id: "race-2") }
-    first_in.pop
+    ThreadPause.await(first_in)
     second = in_thread { LockerRental.find(rental.id).record_payment(shopify_order_id: "race-2") }
     wait_until_blocked_on_lock(resume) # the second waits on the first's row lock
     resume << true

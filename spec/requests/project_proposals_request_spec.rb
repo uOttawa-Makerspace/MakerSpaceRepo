@@ -264,14 +264,38 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "POST create" do
-    it "lets a guest create a proposal (the captcha check runs only for a nil current_user)" do
+    it "lets a guest create a proposal" do
       expect { post project_proposals_path, params: proposal_params }.to change(ProjectProposal, :count).by(1)
-      # `current_user.nil? && !verify_turnstile` does not run (current_user is User.new)
       pp = ProjectProposal.find_by(title: "New Idea")
       expect(pp.user_id).to be_nil
       expect(pp.approved).to be_nil
       expect(response).to redirect_to(project_proposal_path(pp.slug))
       expect(flash[:notice]).to eq("Project proposal was successfully created.")
+    end
+
+    it "checks the captcha for a guest and creates nothing when it fails" do
+      allow(TurnstileHelper).to receive(:verification_enabled?).and_return(true)
+      siteverify = stub_request(:post, TurnstileHelper::TURNSTILE_SITEVERIFY_ENDPOINT)
+                   .to_return(status: 200, body: { success: false }.to_json)
+      expect { post project_proposals_path, params: proposal_params }.not_to change(ProjectProposal, :count)
+      expect(siteverify).to have_been_requested.once
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "does not ask a signed-in user for the captcha" do
+      allow(TurnstileHelper).to receive(:verification_enabled?).and_return(true)
+      content_login!(owner)
+      expect { post project_proposals_path, params: proposal_params }.to change(ProjectProposal, :count).by(1)
+    end
+
+    # test env uses :null_store (never counts), so back the limiter's store with a counter
+    it "allows 10 creations an hour per visitor, then redirects with an alert and creates nothing" do
+      counts = Hash.new(0)
+      allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      10.times { |i| post project_proposals_path, params: proposal_params(title: "Idea #{i}") }
+      expect { post project_proposals_path, params: proposal_params(title: "One more") }.not_to change(ProjectProposal, :count)
+      expect(response).to redirect_to(project_proposals_path)
+      expect(flash[:alert]).to eq("Too many requests, please try again later.")
     end
 
     it "sets user_id from the session and emails makerlab@uottawa.ca" do

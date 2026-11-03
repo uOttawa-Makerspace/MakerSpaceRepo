@@ -3,6 +3,15 @@
 require Rails.root.join("lib/jwt_authenticator")
 
 module ApplicationHelper
+  # A date worded in the current language with its own day rule: "November 3rd, 2026",
+  # "1er novembre 2026", "3 novembre 2026" (see config/locales/number.rb).
+  def issued_date(date)
+    t("date.issued",
+      day: t("date.day_ordinal", number: date.day),
+      month: l(date, format: "%B"),
+      year: date.year)
+  end
+
   # Keys that are not about who is signed in and must survive the session
   # reset done on sign-in (sign-out keeps only the locale).
   SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale authorized_repo_ids selected_dates order_id].freeze
@@ -117,6 +126,19 @@ module ApplicationHelper
 
   def current_user_dev_program?
     role_flag(:dev_program?)
+  end
+
+  # The URL when it is an absolute http(s) link, else nil (for links that come from outside the app).
+  def http_url(value)
+    uri = URI.parse(value.to_s.strip)
+    value.to_s.strip if uri.is_a?(URI::HTTP) && uri.host.present?
+  rescue URI::InvalidURIError
+    nil
+  end
+
+  # An http(s) URL made safe to put inside a quoted CSS url(), or nil.
+  def css_url(value)
+    http_url(value)&.gsub(/['()]/) { |c| format('%%%02X', c.ord) }
   end
 
   def signed_in?

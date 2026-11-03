@@ -5,6 +5,8 @@ cors_origins = CorsOrigins.app_origins
 
 # GET /api/v1/design_day is public data for the Design Day app only: it answers just these
 # origins (not the staff app, not localhost), and no other CORS block may answer that path.
+# The deployed Design Day app still reads the same data from GET /admin/design_day/data,
+# so that path is answered the same way until the app moves to the API endpoint.
 design_day_origins = [
   "https://designday.makerepo.com",
   %r{\Ahttps://([a-z0-9-]+\.)+design-day-react\.pages\.dev\z}
@@ -13,7 +15,9 @@ design_day_origins = [
 # which uses :3000, or :3001 when this Rails server already holds :3000.
 design_day_origins += ["http://localhost:3000", "http://localhost:3001"] if Rails.env.local?
 design_day_origins.freeze
-design_day_path = %r{\A/api/v1/design_day/?\z}
+design_day_path = %r{\A/(?:api/v1/design_day|admin/design_day/data)/?\z}
+# Only the API endpoint is reserved for the Design Day block; other origins keep their usual
+# answer on /admin/design_day/data (rack-cors uses the first block whose origin and path match).
 not_design_day_path = %r{\A(?!/api/v1/design_day/?\z)}
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do

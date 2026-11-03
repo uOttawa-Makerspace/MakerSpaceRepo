@@ -53,22 +53,28 @@ RSpec.describe TrainingSession, "#certify_trainees! under concurrency", type: :m
             if Thread.current == first
               first = nil
               paused << true
-              resume.pop
+              resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
             end
           end
         end
       end
     end
 
-    one = in_thread do
-      first = Thread.current
-      TrainingSession.find(session.id).certify_trainees!
+    one = two = nil
+    begin
+      one = in_thread do
+        first = Thread.current
+        TrainingSession.find(session.id).certify_trainees!
+      end
+      ThreadPause.await(paused, "the first certification")
+      two = in_thread { TrainingSession.find(session.id).certify_trainees! }
+      deadline = Time.current + 5
+      Thread.pass until blocked_backends.positive? || !two.alive? || Time.current > deadline
+    ensure
+      # however the main thread got here, never leave thread one parked on its row lock
+      resume << true
+      [one, two].compact.each { |t| t.join(ThreadPause::AWAIT_TIMEOUT) }
     end
-    paused.pop
-    two = in_thread { TrainingSession.find(session.id).certify_trainees! }
-    deadline = Time.current + 5
-    Thread.pass until blocked_backends.positive? || !two.alive? || Time.current > deadline
-    resume << true
 
     results = [one.value, two.value]
     expect(results.grep(StandardError)).to be_empty

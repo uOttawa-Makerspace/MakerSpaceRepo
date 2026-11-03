@@ -199,6 +199,40 @@ RSpec.describe "SAML IdP", type: :request do
       expect(response.body).to include('value="current_user"', 'value="logout"', user.username, ERB::Util.html_escape(user.name))
     end
 
+    # The AuthnRequest the English wiki's SimpleSAMLphp sends (HTTP-Redirect binding, unsigned).
+    it "accepts the English wiki's own request and shows the sign-in form" do
+      wiki_request = "fZJvT4MwEMa/Cul7/k4YNmzJ3GJcMpVs6AvfmA4OaUZb7BWn314GGmeW8Krp9X53zz29BJmoG7poTSW38N4CGutT1BJp/zAjrZZUMeRIJROA1OR0t7jf0MDxaKOVUbmqyRkyTjBE0IYrSaz1akZeI/D8OGRFGIQhFNMyiiZ+FHlwFV6XLIxLFsR5eT1h+5xYz6CxI2ekK9ThiC2sJRomTRfygsj2fdsLMn9KJx4N4xdirbppuGSmpypjGqSuK9gBNDTKyZVwT4pd1g1PrMWvtKWS2ArQO9AfPIen7eYPBukc+YE7l0WEKtoanKZqhjsOZ2CzHPvoBUes9Me/Gy4LLt/GrdsPSUjvsiy108ddRubJqQXtrdDzcY1cNDX0f1o1iXvOJcMKPHQd16tU1Tz/sm6VFsyMCzpFeGGXfSo1mknkIE3nZF2r41IDMzAjRrdA3PnQ8v+izb8B"
+      get "/saml/auth", params: { SAMLRequest: wiki_request,
+                                 RelayState: "https://en.wiki.makerepo.com/wiki/Special:PluggableAuthLogin" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('name="username"', 'name="password"')
+    end
+
+    # Each language wiki may only receive responses on its own host.
+    def wiki_authn_request(issuer:, acs_host:)
+      xml = <<~XML
+        <samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_wiki1" Version="2.0" IssueInstant="#{Time.now.utc.iso8601}" Destination="https://makerepo.com/saml/auth" AssertionConsumerServiceURL="https://#{acs_host}/saml/module.php/saml/sp/saml2-acs.php/wiki.makerepo.com" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"><saml:Issuer>#{issuer}</saml:Issuer></samlp:AuthnRequest>
+      XML
+      Base64.strict_encode64(Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS).deflate(xml, Zlib::FINISH))
+    end
+
+    it "accepts each language wiki on its own host" do
+      %w[en fr].each do |lang|
+        get "/saml/auth", params: { SAMLRequest: wiki_authn_request(issuer: "https://#{lang}.wiki.makerepo.com/simplesamlphp",
+                                                                    acs_host: "#{lang}.wiki.makerepo.com") }
+        expect(response).to have_http_status(:ok), lang
+      end
+    end
+
+    it "refuses a language wiki asking for a response on another host" do
+      [["en", "fr.wiki.makerepo.com"], ["fr", "en.wiki.makerepo.com"], ["en", "staff.makerepo.com"],
+       ["en", "en.wiki.makerepo.com.evil.example"]].each do |lang, host|
+        get "/saml/auth", params: { SAMLRequest: wiki_authn_request(issuer: "https://#{lang}.wiki.makerepo.com/simplesamlphp",
+                                                                    acs_host: host) }
+        expect(response).to have_http_status(:forbidden), "#{lang} -> #{host}"
+      end
+    end
+
     it "answers 400 for a missing or garbage SAMLRequest" do
       get "/saml/auth"
       expect(response).to have_http_status(:bad_request)

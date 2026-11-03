@@ -165,20 +165,30 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
   end
 
   describe "GET /resend_confirmation" do
+    let(:notice) { "If that email belongs to an account that still needs confirming, a confirmation email has been sent." }
+
     it "emails a fresh confirmation link to a known address" do
       u = create(:user, :regular_user_not_confirmed)
-      get resend_confirmation_users_path, params: { user: { email: u.email } }
+      perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
       expect(response).to redirect_to(root_path)
-      expect(flash[:notice]).to eq("A new confirmation email has been sent")
+      expect(flash[:notice]).to eq(notice)
       expect(deliveries.size).to eq(1)
       expect(deliveries.first.to).to eq([u.email])
       expect(deliveries.first.subject).to eq("Makerepo | Please confirm your email")
     end
 
-    it "tells the caller whether an email is registered" do
-      # resend_confirmation answers differently for a registered email; reset_password answers uniformly
+    it "answers the same for an unknown email and sends nothing" do
       get resend_confirmation_users_path, params: { user: { email: "nobody@example.com" } }
-      expect(flash[:alert]).to eq("No users with that email were found. Please select a valid email.")
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq(notice)
+      expect(flash[:alert]).to be_nil
+      expect(deliveries).to be_empty
+    end
+
+    it "does not mail an account that is already confirmed, and answers the same" do
+      u = create(:user, :regular_user)
+      perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+      expect(flash[:notice]).to eq(notice)
       expect(deliveries).to be_empty
     end
 
@@ -191,14 +201,63 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "does not send for soft-deleted users" do
       u = create(:user, :regular_user_not_confirmed, deleted: true)
-      get resend_confirmation_users_path, params: { user: { email: u.email } }
-      expect(flash[:alert]).to start_with("No users with that email")
+      perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+      expect(flash[:notice]).to eq(notice)
+      expect(deliveries).to be_empty
     end
 
-    it "without the user param 500s (nil[:email])" do
-      # resend_confirmation reads params[:user][:email] unguarded, so a missing user param is a 500 instead of the ParameterMissing redirect
+    it "gives the same answer when the user param is missing or not a hash" do
       get resend_confirmation_users_path
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq(notice)
+      get resend_confirmation_users_path, params: { user: "nobody@example.com" }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq(notice)
+      expect(deliveries).to be_empty
+    end
+
+    it "answers the same for a very long email value" do
+      get resend_confirmation_users_path, params: { user: { email: "a" * 3000 } }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq(notice)
+      expect(deliveries).to be_empty
+    end
+
+    # test env uses :null_store (never counts), so back the limiter's store with a counter
+    context "rate limited" do
+      before do
+        counts = Hash.new(0)
+        allow(RateLimitCounter).to receive(:increment) { |key, *| counts[key] += 1 }
+      end
+
+      it "mails an address at most 3 times an hour and answers the same once limited" do
+        u = create(:user, :regular_user_not_confirmed)
+        4.times do
+          perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+          expect(response).to redirect_to(root_path)
+          expect(flash[:notice]).to eq(notice)
+        end
+        expect(deliveries.size).to eq(3)
+      end
+
+      it "does not count unknown or confirmed addresses against a real account's budget" do
+        confirmed = create(:user, :regular_user)
+        5.times { get resend_confirmation_users_path, params: { user: { email: confirmed.email } } }
+        5.times { get resend_confirmation_users_path, params: { user: { email: "nobody@example.test" } } }
+        u = create(:user, :regular_user_not_confirmed)
+        perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+        expect(deliveries.size).to eq(1)
+      end
+
+      it "allows 30 requests an hour per client IP, then mails nothing and answers the same" do
+        29.times { |i| get resend_confirmation_users_path, params: { user: { email: "n#{i}@example.test" } } }
+        u = create(:user, :regular_user_not_confirmed)
+        perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+        expect(deliveries.size).to eq(1)
+        perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+        expect(flash[:notice]).to eq(notice)
+        expect(deliveries.size).to eq(1)
+      end
     end
   end
 
