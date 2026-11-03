@@ -36,7 +36,8 @@ RSpec.describe "Shopify order webhooks (inbox)", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to be_blank
       row = stored(9001)
-      expect(row).to have_attributes(topic: "orders/paid", status: "received", attempts: 1, order_name: "#1042", applied_at: nil)
+      expect(row).to have_attributes(topic: "orders/paid", status: "received", attempts: 0, order_name: "#1042", applied_at: nil)
+      expect(row.leased_until).to be_within(1.minute).of(Time.current + ProcessedOrder::LEASE)
       expect(row.payload).to include("id" => 9001, "tags" => [membership_tag])
       expect(queued_ids).to eq([row.id])
     end
@@ -83,10 +84,10 @@ RSpec.describe "Shopify order webhooks (inbox)", type: :request do
     it "hands an order whose backoff has passed out again on a redelivery, and one still waiting nothing" do
       signed_orders_paid(membership_order)
       clear_enqueued_jobs
-      stored(9001).update_columns(next_attempt_at: 1.hour.from_now)
+      stored(9001).update_columns(next_attempt_at: 1.hour.from_now, leased_until: nil) # the first run failed
       signed_orders_paid(membership_order)
       expect(queued_ids).to be_empty
-      stored(9001).update_columns(next_attempt_at: 1.minute.ago)
+      stored(9001).update_columns(next_attempt_at: 1.minute.ago, leased_until: nil)
       signed_orders_paid(membership_order)
       expect(queued_ids).to eq([stored(9001).id])
     end

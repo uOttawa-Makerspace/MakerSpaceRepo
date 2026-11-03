@@ -996,6 +996,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_000002) do
     t.integer "attempts", default: 0, null: false
     t.datetime "created_at", null: false
     t.string "last_error"
+    t.datetime "leased_until"
     t.datetime "next_attempt_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
     t.string "order_name"
     t.jsonb "payload", null: false

@@ -86,7 +86,7 @@ class ShopOrderApplier
       next unless order.status == "received"
 
       apply(plan)
-      order.update!(status: "applied", applied_at: Time.current, last_error: nil)
+      order.update!(status: "applied", applied_at: Time.current, last_error: nil, leased_until: nil)
       @applied_here = true
     end
   rescue StandardError => e
@@ -162,10 +162,13 @@ class ShopOrderApplier
     end
   end
 
+  # The error is wrapped (class only): its message can carry values from the order.
   def report_after_commit_failure(error, side_effect)
     Rails.error.report(
-      error, handled: true, severity: :error,
-             context: { shopify_order_id: @record.provider_ref, side_effect: side_effect, error_class: error.class.name }
+      ApplyProcessedOrderJob::PostCommitSideEffectFailed.new(
+        "order #{@record.provider_ref} was applied but its #{side_effect} failed (#{error.class})"
+      ), handled: true, severity: :error,
+         context: { shopify_order_id: @record.provider_ref, side_effect: side_effect, error_class: error.class.name }
     )
   end
 

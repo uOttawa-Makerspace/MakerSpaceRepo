@@ -54,28 +54,58 @@ RSpec.describe ProcessedOrder do
     expect(order.reload.status).to eq("applied")
   end
 
-  describe ".record_failure!" do
+  describe "the run that holds the order" do
     let(:reports) { [] }
+    let(:token) { (Time.current + described_class::LEASE).floor(6) }
+    let(:order) { store.first.tap { |o| o.update_columns(leased_until: token) } }
 
     before { allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] } }
 
-    it "does not count the attempt again: the hand-out did" do
-      order, = store
+    it "counts the attempt when it starts, once, and only for the lease it holds" do
+      expect(described_class.start_run!(order.id, token)).to eq(1)
+      expect(described_class.start_run!(order.id, token - 1.minute)).to be_nil
+      expect(described_class.start_run!(order.id, nil)).to be_nil
+      expect(order.reload.attempts).to eq(1)
+    end
+
+    it "does not start on an applied or failed order" do
+      order.update_columns(status: "applied")
+      expect(described_class.start_run!(order.id, token)).to be_nil
+      order.update_columns(status: "failed")
+      expect(described_class.start_run!(order.id, token)).to be_nil
+      expect(order.reload.attempts).to eq(0)
+    end
+
+    it "records a failure without counting the attempt again, gives up the lease and sets the backoff" do
       order.update_columns(attempts: 3)
-      described_class.record_failure!(order.id, ArgumentError.new("bad"))
-      expect(order.reload).to have_attributes(attempts: 3, status: "received", last_error: "ArgumentError: bad")
+      described_class.record_failure!(order.id, token, ArgumentError.new("bad"))
+      expect(order.reload).to have_attributes(attempts: 3, status: "received", last_error: "ArgumentError: bad", leased_until: nil)
       expect(order.next_attempt_at).to be_within(5.seconds).of(Time.current + described_class.backoff(3))
     end
 
-    it "reports, and changes nothing, when the order is no longer received" do
-      order, = store
-      order.update_columns(status: "applied", applied_at: Time.current)
-      described_class.record_failure!(order.id, ArgumentError.new("bad"))
-      expect(order.reload).to have_attributes(status: "applied", last_error: nil)
-      error, opts = reports.sole
-      expect(error).to be_a(ArgumentError)
-      expect(opts[:context]).to include(shopify_order_id: "5001", status: "applied")
+    it "marks the order failed when the failed run was the last attempt" do
+      order.update_columns(attempts: described_class::MAX_ATTEMPTS)
+      described_class.record_failure!(order.id, token, ArgumentError.new("bad"))
+      expect(order.reload).to have_attributes(status: "failed", leased_until: nil)
+    end
+
+    it "changes nothing for a stale run, and reports a warning that carries no order data" do
+      order.update_columns(leased_until: token + 1.hour, payload: { "email" => "customer@example.com" })
+      error = ArgumentError.new("secret customer@example.com")
+      described_class.record_failure!(order.id, token, error)
+      expect(order.reload).to have_attributes(last_error: nil, leased_until: token + 1.hour, status: "received")
+      reported, opts = reports.sole
+      expect(reported).to be_a(ApplyProcessedOrderJob::StaleRunFailed)
       expect(opts[:severity]).to eq(:warning)
+      expect(opts[:context]).to include(shopify_order_id: "5001", status: "received", error_class: "ArgumentError")
+      expect([reported.message, opts[:context].to_s].join).not_to match(/secret|customer@example\.com/)
+    end
+
+    it "reports, and changes nothing, when the order is already applied" do
+      order.update_columns(status: "applied", applied_at: Time.current)
+      described_class.record_failure!(order.id, token, ArgumentError.new("bad"))
+      expect(order.reload).to have_attributes(status: "applied", last_error: nil)
+      expect(reports.sole.last[:context]).to include(status: "applied")
     end
   end
 end

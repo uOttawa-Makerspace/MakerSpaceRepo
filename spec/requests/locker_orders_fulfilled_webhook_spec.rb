@@ -111,6 +111,13 @@ RSpec.describe "Shopify orders_fulfilled webhook (cash lockers)", type: :request
     expect(rental.reload).not_to be_active
   end
 
+  # One run as the dispatcher starts it: the order is leased and the job carries the lease as its token.
+  def run_leased_job(order)
+    token = (Time.current + ProcessedOrder::LEASE).floor(6)
+    ProcessedOrder.where(id: order.id).update_all(leased_until: token)
+    ApplyProcessedOrderJob.perform_now(order.id, token)
+  end
+
   it "answers 200 and stores the order when Shopify is not configured; the job retries it" do
     rental = create(:locker_rental, :await_payment)
     allow_any_instance_of(ShopOrderApplier).to receive(:resolve_references).and_raise(ShopifyContext::NotConfigured)
@@ -120,12 +127,12 @@ RSpec.describe "Shopify orders_fulfilled webhook (cash lockers)", type: :request
     stored = ProcessedOrder.find_by!(provider_ref: "#{order_id}/fulfilled")
     expect(stored).to have_attributes(topic: "orders/fulfilled", status: "received")
 
-    ApplyProcessedOrderJob.perform_now(stored.id)
+    run_leased_job(stored)
     expect(stored.reload).to have_attributes(status: "received", attempts: 1)
     expect(rental.reload).not_to be_active
 
     allow_any_instance_of(ShopOrderApplier).to receive(:resolve_references).and_call_original
-    ApplyProcessedOrderJob.perform_now(stored.id)
+    run_leased_job(stored)
     expect([stored.reload.status, rental.reload.state]).to eq(["applied", "active"])
   end
 

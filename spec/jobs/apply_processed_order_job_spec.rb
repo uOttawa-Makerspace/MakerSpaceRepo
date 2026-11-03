@@ -26,10 +26,11 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
     @order.reload
   end
 
-  # One run as the dispatcher starts it: the hand-out has already counted the attempt.
+  # One run as the dispatcher starts it: the order is leased, and the job carries that lease as its token.
   def perform(order)
-    ProcessedOrder.where(id: order.id).update_all("attempts = attempts + 1")
-    described_class.perform_now(order.id)
+    token = (Time.current + ProcessedOrder::LEASE).floor(6)
+    ProcessedOrder.where(id: order.id).update_all(leased_until: token)
+    described_class.perform_now(order.id, token)
   end
 
   def applied_orders = ProcessedOrder.where(status: "applied")
@@ -527,13 +528,13 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       order = hook(membership_payload(pending.id, id: 7406))
       pending.update!(status: "revoked")
       expect_any_instance_of(ShopOrderApplier).not_to receive(:draft_order_metafields)
-      described_class.perform_now(order.id)
+      perform(order)
       expect([pending.reload.status, order.reload.attempts]).to eq(["revoked", 1])
     end
 
     it "applies an order twice run in sequence once" do
       order = hook(cc_payload(email: user.email, quantity: 3).merge(id: 7407))
-      described_class.perform_now(order.id)
+      perform(order)
       expect(user.cc_moneys.pluck(:cc)).to eq([30])
     end
 
@@ -617,7 +618,9 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         expect(order).to have_attributes(status: "applied", attempts: 1, last_error: nil)
         expect(CcMoney.where(linked: false).count).to eq(1)
         error, opts = reports.sole
-        expect(error).to be_a(ActiveRecord::ConnectionNotEstablished)
+        expect(error).to be_a(ApplyProcessedOrderJob::PostCommitSideEffectFailed)
+        expect(error.message).to include("7430", "cc_claim_mail", "ConnectionNotEstablished")
+        expect(error.message).not_to include("queue db down")
         expect(opts[:context]).to eq(shopify_order_id: "7430", side_effect: "cc_claim_mail", error_class: "ActiveRecord::ConnectionNotEstablished")
         expect(opts[:context].to_s).not_to include("nobody-7430")
       end
@@ -666,7 +669,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         expect(error.message).to include("7421", "10 attempts", "LockWaitTimeout")
         expect(opts[:context]).to include(shopify_order_id: "7421", attempts: 10, error_class: "ActiveRecord::LockWaitTimeout")
 
-        described_class.perform_now(order.id) # a failed order is not run again
+        perform(order) # a failed order is not run again
         expect(order.reload.attempts).to eq(10)
       end
 

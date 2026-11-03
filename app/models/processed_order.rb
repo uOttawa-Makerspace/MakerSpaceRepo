@@ -7,14 +7,17 @@
 # status: received (still to apply), applied, or failed (retries exhausted; staff re-run it with
 # shop_orders:reapply). Rows are never deleted.
 #
-# The row is the scheduler. A received order is due when next_attempt_at has passed; dispatch_due hands due rows out
-# (and only it enqueues ApplyProcessedOrderJob) by moving next_attempt_at forward by a lease in the same atomic
-# UPDATE, so a row cannot be handed out twice while a job for it is pending or running, and a job that dies just
-# lets the lease expire. attempts counts hand-outs: the same UPDATE that leases a row adds one, so a run that dies
-# without raising (killed, out of memory) still counts. A failed run overwrites next_attempt_at with the backoff of
-# its attempts; a failed MAX_ATTEMPTSth run marks the order failed, and so does the dispatcher when it finds an order
-# whose MAX_ATTEMPTSth run never finished (see fail_exhausted). reported_at is when a stranded order (see
-# report_stranded) was last reported.
+# The row is the scheduler, and its columns keep three jobs apart. next_attempt_at is only when a received order is next
+# due: the webhook and a staff re-run set it to now, a failed run sets it to the backoff of its attempts, nothing else
+# moves it. leased_until is the hand-out: dispatch_due (the only thing that enqueues ApplyProcessedOrderJob) claims due
+# orders that nobody holds with one atomic UPDATE that sets it to now + LEASE, and the job it queues carries that value as
+# its token. A run that still holds the token owns the order; one that does not (its lease expired and the order was
+# handed out again, or a duplicate job) can neither start nor record a failure. attempts counts the runs that started
+# (start_run! does it before any Shopify call), so a job waiting in a queue whose workers are down costs nothing, while a
+# run that dies still counts: its lease just expires and the next dispatch retries, and when the MAX_ATTEMPTSth run dies
+# the dispatcher marks the order failed (fail_exhausted). A failed run clears the lease and sets the backoff. reported_at
+# is when an order that has been due for hours (workers or queue down, or runs that keep dying) was last reported (see
+# report_stranded).
 class ProcessedOrder < ApplicationRecord
   STATUSES = %w[received applied failed].freeze
   MAX_ATTEMPTS = 10
@@ -54,30 +57,28 @@ class ProcessedOrder < ApplicationRecord
     [find_by!(provider: provider, provider_ref: ref), false]
   end
 
-  # Hands out the due received orders (optionally only `id`) and enqueues one ApplyProcessedOrderJob for each, then
-  # returns the ids it queued. Handing out is ONE atomic UPDATE that moves next_attempt_at to now + LEASE and counts
-  # the hand-out in attempts (a concurrent dispatcher waits on the locked rows and then finds them no longer due), so
-  # an order is queued once per lease and a run that never reports back still uses up one of its MAX_ATTEMPTS. An
-  # order whose last hand-out is spent (see fail_exhausted) is marked failed first, never handed out again. A job that
-  # cannot be queued gives its lease and its attempt back (the order keeps its old due time, so it is picked up by the
-  # next dispatch and is reported as stranded if that never works). Never raises.
+  # Hands out the due received orders that nobody holds (optionally only `id`) and enqueues one ApplyProcessedOrderJob
+  # for each, with its lease as the token, then returns the ids it queued. Handing out is ONE atomic UPDATE that sets
+  # leased_until to now + LEASE (rows another dispatcher has locked are skipped, so none is handed out twice) and
+  # touches nothing else. An order whose last attempt is spent is never handed out (see fail_exhausted). A job that
+  # cannot be queued gives the lease back, so the next dispatch hands the order out again. Never raises.
   def self.dispatch_due(id: nil, now: Time.current)
     fail_exhausted(id: id, now: now)
-    leased_until = now + LEASE
     where_id = id ? sanitize_sql_array(["AND id = ?", id]) : ""
-    rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, now, BATCH, leased_until, now]))
+    rows = connection.select_all(sanitize_sql_array([<<~SQL.squish, now, now, MAX_ATTEMPTS, BATCH, now + LEASE])).cast_values
       WITH due AS (
-        SELECT id, next_attempt_at AS previous FROM processed_orders
-        WHERE status = 'received' AND next_attempt_at <= ? #{where_id}
-        ORDER BY next_attempt_at LIMIT ? FOR UPDATE
+        SELECT id FROM processed_orders
+        WHERE status = 'received' AND next_attempt_at <= ? AND (leased_until IS NULL OR leased_until <= ?)
+          AND attempts < ? #{where_id}
+        ORDER BY next_attempt_at LIMIT ? FOR UPDATE SKIP LOCKED
       )
-      UPDATE processed_orders o SET next_attempt_at = ?, attempts = o.attempts + 1, updated_at = ?
-      FROM due WHERE o.id = due.id RETURNING o.id, due.previous
+      UPDATE processed_orders o SET leased_until = ?
+      FROM due WHERE o.id = due.id RETURNING o.id, o.leased_until
     SQL
     queued_ids = []
-    rows.each do |order_id, previous|
+    rows.each do |order_id, token|
       queued = begin
-        ApplyProcessedOrderJob.perform_later(order_id)
+        ApplyProcessedOrderJob.perform_later(order_id, token)
       rescue StandardError => e
         Rails.logger.error("[ProcessedOrder] could not queue order #{order_id}: #{e.class}")
         false
@@ -85,8 +86,7 @@ class ProcessedOrder < ApplicationRecord
       if queued
         queued_ids << order_id
       else
-        where(id: order_id, status: "received", next_attempt_at: leased_until)
-          .update_all(["attempts = attempts - 1, next_attempt_at = ?", previous])
+        where(id: order_id, leased_until: token).update_all(leased_until: nil)
       end
     end
     queued_ids
@@ -95,16 +95,30 @@ class ProcessedOrder < ApplicationRecord
     []
   end
 
-  # Marks failed (and reports, ids only) the received orders that are due again with every attempt already spent: the
-  # MAX_ATTEMPTSth hand-out was leased and its run never recorded an outcome (it died, or it is hung past the lease).
-  # Without this such an order would be handed out for ever. Returns the provider refs failed.
+  # A run starts: counts the attempt, before anything else is done, if the run still holds the order (received, and
+  # `token` is its lease). Returns the attempts, or nil when the token is stale, the job a duplicate, or the order
+  # already settled, in which case the run must do nothing. The wait on a row another run is applying is bounded.
+  def self.start_run!(id, token, now: Time.current)
+    return if token.nil?
+
+    sql = "UPDATE processed_orders SET attempts = attempts + 1, updated_at = ? " \
+          "WHERE id = ? AND status = 'received' AND leased_until = ? RETURNING attempts"
+    own_transaction("start_run") { connection.select_value(sanitize_sql_array([sql, now, id, token])) }
+  end
+
+  # Marks failed (and reports, ids only) the received orders whose MAX_ATTEMPTSth run started and never recorded an
+  # outcome: its lease has expired with every attempt spent, so it died. Rows locked by a running apply are skipped, never
+  # waited for. Without this such an order would be handed out for ever. Returns the provider refs failed.
   def self.fail_exhausted(id: nil, now: Time.current)
     where_id = id ? sanitize_sql_array(["AND id = ?", id]) : ""
-    rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, "the last attempt did not finish", now, MAX_ATTEMPTS, now]))
-      UPDATE processed_orders
-      SET status = 'failed', last_error = COALESCE(last_error, ?), updated_at = ?
-      WHERE status = 'received' AND attempts >= ? AND next_attempt_at <= ? #{where_id}
-      RETURNING provider_ref, attempts
+    rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, MAX_ATTEMPTS, now, "the last attempt did not finish", now]))
+      WITH spent AS (
+        SELECT id FROM processed_orders
+        WHERE status = 'received' AND attempts >= ? AND leased_until IS NOT NULL AND leased_until <= ? #{where_id}
+        FOR UPDATE SKIP LOCKED
+      )
+      UPDATE processed_orders o SET status = 'failed', leased_until = NULL, last_error = ?, updated_at = ?
+      FROM spent WHERE o.id = spent.id RETURNING o.provider_ref, o.attempts
     SQL
     rows.each do |ref, attempts|
       Rails.error.report(
@@ -116,22 +130,23 @@ class ProcessedOrder < ApplicationRecord
     rows.map(&:first)
   end
 
-  # An application attempt failed (its transaction is already rolled back). The hand-out already counted the attempt, so
-  # in a small transaction with the lock wait bounded (a run holding the row must not pin this one) the received order
-  # keeps the error and is scheduled after the backoff of its attempts; its MAX_ATTEMPTSth failure marks it failed
-  # instead. Then it is reported by the row's own attempts: OrderApplyRetrying at attempts 1 and 5, OrderApplyFailed at
-  # the end. An order that is no longer received (applied or failed meanwhile, e.g. by a duplicate run) is left alone
-  # but the error is reported as a warning, so it is never lost. Never raises, so it cannot hide the error: a failure
-  # recorded nowhere (the database is down) leaves the lease to expire and the order to be dispatched again.
-  def self.record_failure!(id, error)
+  # An application attempt failed (its transaction is already rolled back). Only the run that still holds the order
+  # (received, `token` is its lease) records it: in a small transaction with the lock wait bounded (a run holding the row
+  # must not pin this one) the order keeps the error, gives up the lease and is scheduled after the backoff of its
+  # attempts; its MAX_ATTEMPTSth failure marks it failed instead. Then it is reported by the row's own attempts:
+  # OrderApplyRetrying at attempts 1 and 5, OrderApplyFailed at the end. A run that does not hold the order (settled, or
+  # handed out again) changes nothing, but its error is reported as a warning, so it is never lost. Never raises, so it
+  # cannot hide the error: a failure recorded nowhere (the database is down) leaves the lease to expire and the order to
+  # be dispatched again.
+  def self.record_failure!(id, token, error)
     order = own_transaction("record_failure") do
-      row = where(status: "received").lock.find_by(id: id)
+      row = where(status: "received", leased_until: token).lock.find_by(id: id) unless token.nil?
       next unless row
 
       if row.attempts >= MAX_ATTEMPTS
-        row.update!(last_error: error_summary(error), status: "failed")
+        row.update!(last_error: error_summary(error), status: "failed", leased_until: nil)
       else
-        row.update!(last_error: error_summary(error), next_attempt_at: Time.current + backoff(row.attempts))
+        row.update!(last_error: error_summary(error), leased_until: nil, next_attempt_at: Time.current + backoff(row.attempts))
       end
       row
     end
@@ -140,11 +155,15 @@ class ProcessedOrder < ApplicationRecord
     Rails.logger.error("[ProcessedOrder] could not record the failure of #{id}: #{e.class}")
   end
 
+  # The error is wrapped (class only): its message can carry values from the order.
   def self.report_unrecorded(id, error)
     row = find_by(id: id)
     Rails.error.report(
-      error, handled: true, severity: :warning,
-             context: { shopify_order_id: row&.provider_ref, status: row&.status, note: "failure of an order no longer received" }
+      ApplyProcessedOrderJob::StaleRunFailed.new(
+        "a run of order #{row&.provider_ref || id} failed without holding it (#{error.class})"
+      ), handled: true, severity: :warning,
+         context: { shopify_order_id: row&.provider_ref, status: row&.status, error_class: error.class.name,
+                    note: "failure of a run that no longer holds the order" }
     )
   end
   private_class_method :report_unrecorded
@@ -167,11 +186,11 @@ class ProcessedOrder < ApplicationRecord
   end
   private_class_method :report_attempt
 
-  # Reports (ids only) the received orders that should have been handed out more than STRANDED_AFTER ago and were not:
-  # next_attempt_at is when the row is due, and a hand-out moves it forward by a lease, so an order this far overdue
-  # means nothing is dispatching it. An order whose runs keep dying is not stranded (every hand-out counts, so it ends
-  # failed and reported), nor is a backlog the dispatcher is working through. At most once per REPORT_EVERY each: the
-  # reported ones are stamped in the same UPDATE that selects them. Returns the provider refs reported.
+  # Reports (ids only) the received orders that have been due for more than STRANDED_AFTER, at most once per
+  # REPORT_EVERY each: the reported ones are stamped in the same UPDATE that selects them. A hand-out does not move
+  # next_attempt_at, so this means no run has recorded an outcome for two hours: the workers or the queue are down,
+  # or runs keep dying. A backlog the dispatcher is working through is not reported (it hands out in rounds).
+  # Returns the provider refs reported.
   def self.report_stranded(now: Time.current)
     rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, now, now - STRANDED_AFTER, now - REPORT_EVERY]))
       UPDATE processed_orders SET reported_at = ?
@@ -207,7 +226,7 @@ class ProcessedOrder < ApplicationRecord
   # dispatches it.
   def reapply!(now: Time.current)
     self.class.where(id: id, status: "failed")
-        .update_all(status: "received", attempts: 0, next_attempt_at: now, reported_at: nil, updated_at: now) == 1
+        .update_all(status: "received", attempts: 0, next_attempt_at: now, leased_until: nil, reported_at: nil, updated_at: now) == 1
   end
 
   # The error class and a short message for last_error. Never SQL (its text can carry values).
