@@ -6,6 +6,7 @@ require "rails_helper"
 # nothing has dispatched for hours.
 RSpec.describe DispatchDueOrdersJob, type: :job do
   include ActiveJob::TestHelper
+  include ActiveSupport::Testing::TimeHelpers
 
   let(:now) { Time.zone.local(2026, 11, 3, 12, 0, 0) }
   let(:reports) { [] }
@@ -167,8 +168,11 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
       order = stored(1)
       allow_any_instance_of(ShopOrderApplier).to receive(:call).and_raise(NoMemoryError)
       runs = (0..ProcessedOrder::MAX_ATTEMPTS + 2).sum do |n|
-        described_class.perform_now(now: now + (n * 16).minutes)
-        run_queued_jobs.size
+        # A run takes a fresh lease from the clock, so the clock is the simulated one for the whole round.
+        travel_to(now + (n * 16).minutes) do
+          described_class.perform_now
+          run_queued_jobs.size
+        end
       end
       expect(runs).to eq(ProcessedOrder::MAX_ATTEMPTS)
       expect(order.reload).to have_attributes(status: "failed", attempts: ProcessedOrder::MAX_ATTEMPTS, leased_until: nil)
