@@ -16,7 +16,7 @@
 
     <!-- Need Design Help -->
     <%= form_with url: job_orders_path, method: :post, local: true do |f| %>
-      <%= hidden_field_tag 'job_order[job_type_id]', 3 %>
+      <%= hidden_field_tag 'job_order[job_type_id]', JobType.find_by(name: 'Design Services')&.id %>
       <%= hidden_field_tag :redirect_step, 2 %>
 
       <div class="card p-4 border-warning" style="min-width: 280px;">
@@ -35,7 +35,7 @@
 
     if (mode === 'design_help') {
       stepField.value = 2;
-      document.querySelector('[name="job_order[job_type_id]"]').value = 3;
+      document.querySelector('[name="job_order[job_type_id]"]').value = <%= JobType.find_by(name: 'Design Services')&.id.to_json %>;
     } else {
       stepField.value = 1;
     }

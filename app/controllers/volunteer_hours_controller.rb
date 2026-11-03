@@ -26,9 +26,12 @@ class VolunteerHoursController < VolunteersController
   def create
     @volunteer_hour = VolunteerHour.new(volunteer_hour_params)
     @volunteer_hour.user_id = @user.try(:id)
-    if @volunteer_hour.save!
+    if @volunteer_hour.save
       redirect_to volunteer_hours_path
       flash[:notice] = "You've successfully sent your volunteer working hours"
+    else
+      redirect_to volunteer_hours_path,
+                  alert: @volunteer_hour.errors.full_messages.to_sentence
     end
   end
 

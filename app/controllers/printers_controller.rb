@@ -91,6 +91,8 @@ class PrintersController < StaffAreaController
     user_id = params[:printer][:user_id]
     if printer_id.blank? || user_id.blank?
       flash[:alert] = "Please add both printer and user."
+    elsif user_id != "clear" && !(Printer.exists?(printer_id) && User.exists?(user_id))
+      flash[:alert] = "Something went wrong"
     elsif user_id == "clear" && last_session.update(in_use: false)
       flash[:notice] = "Cleared the user."
     elsif PrinterSession.create(
