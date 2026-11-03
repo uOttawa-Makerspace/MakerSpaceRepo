@@ -180,7 +180,6 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
       get new_locker_rental_path
       tbody = response.body[/<tbody>.*<\/tbody>/m, 0]
-      puts "COUNT ROW>>>#{tbody.split.join(' ')}<<<"
       expect(response).to have_http_status(:ok)
       expect(tbody).to match(
         %r{<td>\s*(?:<!--[^>]*-->\s*)?1\s*</td>\s*<td>#{Regexp.escape(size.size)}</td>}m
