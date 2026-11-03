@@ -16,13 +16,19 @@
 module CommittedRowsGuard
   IGNORED_TABLES = %w[schema_migrations ar_internal_metadata].freeze
 
+  # One UNION ALL query inside a transaction, so the lock timeout (SET LOCAL) ends with it and
+  # cannot outlive the count on a connection that goes back to the pool.
   def self.counts
     pool = ActiveRecord::Base.connection_pool
     conn = pool.checkout
     begin
-      conn.execute("SET lock_timeout = '10s'")
-      (conn.tables - IGNORED_TABLES).sort.to_h do |table|
-        [table, conn.select_value("SELECT count(*) FROM #{conn.quote_table_name(table)}").to_i]
+      tables = (conn.tables - IGNORED_TABLES).sort
+      return {} if tables.empty?
+
+      sql = tables.map { |t| "SELECT #{conn.quote(t)} AS t, count(*) AS n FROM #{conn.quote_table_name(t)}" }.join(" UNION ALL ")
+      conn.transaction do
+        conn.execute("SET LOCAL lock_timeout = '10s'")
+        conn.select_rows(sql).to_h { |t, n| [t, n.to_i] }
       end
     ensure
       pool.checkin(conn)
