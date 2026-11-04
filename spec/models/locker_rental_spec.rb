@@ -117,6 +117,15 @@ RSpec.describe LockerRental, type: :model do
       expect(rental.cancelled_at).to be_present
     end
 
+    it "keeps a cancelled rental cancelled unless it goes back to awaiting payment" do
+      rental = create(:locker_rental, :active)
+      rental.update!(state: :cancelled)
+      expect(rental.reload.update(state: :active)).to be(false)
+      expect(rental.errors[:state]).to be_present
+      expect(rental.reload.update(state: :reviewing)).to be(false)
+      expect(rental.reload.update(state: :await_payment)).to be(true)
+    end
+
     it "blocks two reserving rentals on the same locker, but not a cancelled one" do
       locker = create(:locker)
       create(:locker_rental, :active, locker: locker)

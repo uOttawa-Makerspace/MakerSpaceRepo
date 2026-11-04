@@ -966,16 +966,28 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       end
     end
 
-    describe "replay and re-activation behaviour pinned" do
-      it "lets staff re-activate a cancelled rental (the action buttons are hidden in the UI)" do
-        rental = create(:locker_rental, :active)
-        rental.update!(decided_by: staff, state: :cancelled)
+    describe "a cancelled rental" do
+      let(:rental) do
+        create(:locker_rental, :active).tap { |r| r.update!(decided_by: staff, state: :cancelled) }
+      end
+
+      it "is not re-activated by staff" do
         log_in!(staff)
 
         patch locker_rental_path(rental),
               params: { locker_rental: { state: "active", locker_id: rental.locker_id } }
 
-        expect(rental.reload.state).to eq("active")
+        expect(flash[:alert]).to include("cannot change from cancelled except back to awaiting payment")
+        expect(rental.reload.state).to eq("cancelled")
+      end
+
+      it "can be sent back to awaiting payment by staff" do
+        log_in!(staff)
+
+        patch locker_rental_path(rental),
+              params: { locker_rental: { state: "await_payment", locker_id: rental.locker_id } }
+
+        expect(rental.reload.state).to eq("await_payment")
       end
     end
 

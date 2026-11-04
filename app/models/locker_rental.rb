@@ -89,6 +89,12 @@ class LockerRental < ApplicationRecord
   # Which staff member approved the request, or if owner cancelled the request
   validates :decided_by, presence: true, unless: :reviewing?
 
+  # A cancelled rental is not assigned again directly: staff send it back through payment (await_payment).
+  validate :cancelled_only_returns_to_payment, if: -> { state_changed? && state_was == 'cancelled' }
+  def cancelled_only_returns_to_payment
+    errors.add(:state, 'cannot change from cancelled except back to awaiting payment') unless await_payment?
+  end
+
   # Track when rental was finished
   validates :cancelled_at, presence: true, if: :cancelled?
 
