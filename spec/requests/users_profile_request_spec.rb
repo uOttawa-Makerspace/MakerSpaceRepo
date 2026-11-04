@@ -121,10 +121,13 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
         expect(response).to have_http_status(:not_found)
       end
 
-      it "is visible to staff and admin through User.unscoped" do
+      it "is a 404 for staff, like a missing user" do
         login!(staff)
         get user_path(gone.username)
-        expect(response).to have_http_status(:ok)
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "is visible to admin through User.unscoped" do
         login!(admin)
         get user_path(gone.username)
         expect(response).to have_http_status(:ok)

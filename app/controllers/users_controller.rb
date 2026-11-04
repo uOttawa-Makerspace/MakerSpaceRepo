@@ -387,8 +387,9 @@ class UsersController < SessionsController
   private :sees_private_repos?
 
   def show
+    # A deleted account's profile is shown to admins only (like its badges).
     @repo_user =
-      if @user.admin? || @user.staff?
+      if @user.admin?
         User.unscoped.find_by_username params[:username]
       else
         User.find_by_username params[:username]
