@@ -32,5 +32,13 @@ production: &production
     class: JobOrderDraftSweepJob
     schedule: every hour at minute 42
 
+  clear_printer_sessions:
+    class: ClearPrinterSessionsJob
+    schedule: every day at 3am
+
 staging:
+  <<: *production
+
+# for local testing
+development:
   <<: *production
