@@ -130,22 +130,20 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(m.end_date).to be_within(1.second).of(prior_end + 120.days)
       end
 
-      it "when Shopify fails: destroys the pending row, then 500s while re-rendering :index" do
+      it "when Shopify fails: destroys the pending row and redirects to the user's memberships with an alert" do
         admin_client.user_errors = [{ "message" => "boom" }]
-        # the failure path does `render :index` but only #index sets @membership_day/@membership_sem, so the intended "Error creating membership" alert page is a 500
         expect { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
           .not_to change(Membership, :count)
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to redirect_to(your_memberships_memberships_path)
+        expect(flash[:alert]).to eq("Error creating membership. Please try again.")
       end
 
-      it "a faculty tier 500s and leaves an orphan pending membership" do
+      it "a faculty tier creates no membership, makes no Shopify call and redirects home with a notice" do
         faculty = create(:membership_tier, title_en: "Faculty Membership", duration: 365)
-        # Membership#checkout_link calls `flash` (a controller method) for the faculty guard; this recurses until SystemStackError, which `rescue StandardError` does not catch, so the user gets a 500 and the pending row is never cleaned up
         expect { post memberships_path, params: { membership: { membership_tier_id: faculty.id } } }
-          .to change(Membership, :count).by(1)
-        expect(response).to have_http_status(:internal_server_error)
-        expect(Membership.last.status).to eq("pending")
-        expect(Membership.last.shopify_draft_order_id).to be_nil
+          .not_to change(Membership, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq("Money can buy a lot of things, but not this one.")
         expect(admin_client.calls).to be_empty
       end
 
@@ -159,10 +157,11 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(admin_client.calls).to be_empty
       end
 
-      it "unknown tier id: no row, and the error page is the same 500 as the other membership error paths" do
+      it "unknown tier id: no row, redirects to the user's memberships with an alert" do
         expect { post memberships_path, params: { membership: { membership_tier_id: 999_999 } } }
           .not_to change(Membership, :count)
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to redirect_to(your_memberships_memberships_path)
+        expect(flash[:alert]).to eq("Error creating membership. Please try again.")
       end
 
       it "missing membership param redirects to root with the ParameterMissing message" do
