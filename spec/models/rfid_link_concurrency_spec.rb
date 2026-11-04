@@ -105,12 +105,16 @@ RSpec.describe Rfid, ".link_to_user! under concurrency", type: :model do
     actor = create(:user, :staff)
     others = { first_user.id => second_user.id, second_user.id => first_user.id }
     attempts = 0
-    allow(User).to receive(:where).and_wrap_original do |original, *args, **kwargs, &block|
-      if kwargs.key?(:id) && kwargs[:id].is_a?(Integer) && others.key?(kwargs[:id])
-        attempts += 1
-        Rfid.where(card_number: card_number).update_all(user_id: others.fetch(kwargs[:id]))
+    allow(User).to receive(:unscoped).and_wrap_original do |unscoped, *unscoped_args|
+      relation = unscoped.call(*unscoped_args)
+      allow(relation).to receive(:where).and_wrap_original do |original, *args, **kwargs, &block|
+        if kwargs.key?(:id) && kwargs[:id].is_a?(Integer) && others.key?(kwargs[:id])
+          attempts += 1
+          Rfid.where(card_number: card_number).update_all(user_id: others.fetch(kwargs[:id]))
+        end
+        original.call(*args, **kwargs, &block)
       end
-      original.call(*args, **kwargs, &block)
+      relation
     end
 
     expect { Rfid.unlink_card!(card_number, actor: actor) }.to raise_error(Rfid::OwnerChanging)

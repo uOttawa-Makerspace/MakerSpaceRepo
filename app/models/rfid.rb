@@ -31,7 +31,7 @@ class Rfid < ApplicationRecord
     return "is invalid" if card_number.blank?
 
     transaction do
-      User.where(id: user.id).lock("FOR NO KEY UPDATE").take
+      User.unscoped.where(id: user.id).lock("FOR NO KEY UPDATE").take
       lock_card_number(card_number)
       # a legacy user may hold more than one card: owning this one is enough
       next if where(user_id: user.id, card_number: card_number).exists?
@@ -63,7 +63,7 @@ class Rfid < ApplicationRecord
   # Lock order matches link_to_user!: the user, then the cards.
   def self.unlink_from_user!(user, actor:)
     transaction do
-      User.where(id: user.id).lock("FOR NO KEY UPDATE").take
+      User.unscoped.where(id: user.id).lock("FOR NO KEY UPDATE").take
       cards = where(user_id: user.id).lock("FOR NO KEY UPDATE").to_a
       reader = rehome_reader(actor)
       cards.each { |rfid| release_card!(rfid, reader) }
@@ -84,7 +84,7 @@ class Rfid < ApplicationRecord
       attempts += 1
       outcome = transaction do
         owner_id = where(card_number: card_number).pick(:user_id)
-        User.where(id: owner_id).lock("FOR NO KEY UPDATE").take if owner_id
+        User.unscoped.where(id: owner_id).lock("FOR NO KEY UPDATE").take if owner_id
         lock_card_number(card_number)
         rfid = lock("FOR NO KEY UPDATE").find_by(card_number: card_number)
         if rfid.nil?

@@ -73,6 +73,14 @@ RSpec.describe "users:merge_duplicates" do
     expect(Rfid.where(user_id: primary.id).count).to eq(1)
   end
 
+  it "stops the merge and keeps the duplicate when the link to the kept user is refused" do
+    card = create(:rfid, user: duplicate)
+    allow(Rfid).to receive(:link_to_user!).and_return("is already linked to another user")
+
+    expect { merge }.to raise_error(/card #{card.card_number} could not move to the kept user: is already linked/)
+    expect(User.unscoped.exists?(duplicate.id)).to be(true)
+  end
+
   it "moves keys, key requests and proposals that name the duplicate only as supervisor or admin" do
     key = create(:key, supervisor: duplicate, space: create(:space))
     proposal = create(:project_proposal, admin: duplicate)
