@@ -68,6 +68,29 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
       expect(reports.map(&:first)).to include(an_instance_of(ProcessedOrder::SpentOrderStepFailed))
     end
 
+    it "survives a database error of the spent-order UPDATE inside an open transaction (a savepoint)" do
+      order = stored(1)
+      # a real database error: without a savepoint it would abort the surrounding transaction and the hand-out
+      # that follows would fail with "current transaction is aborted"
+      allow(ProcessedOrder.connection).to receive(:select_rows).and_wrap_original { |original, *| original.call("SELECT 1/0") }
+
+      expect(ProcessedOrder.dispatch_due(now: now)).to eq([order.id])
+      expect(reports.map(&:first)).to include(an_instance_of(ProcessedOrder::SpentOrderStepFailed))
+    end
+
+    it "still reports the other spent orders when the report of one raises" do
+      refs = 3.times.map { |i| stored(i + 1, attempts: ProcessedOrder::MAX_ATTEMPTS).provider_ref }
+      allow(Rails.error).to receive(:report) do |error, **opts|
+        raise "report down" if opts.dig(:context, :shopify_order_id) == refs[1]
+
+        reports << [error, opts]
+      end
+
+      expect(ProcessedOrder.fail_exhausted(now: now)).to match_array(refs)
+
+      expect(reports.map { |_, opts| opts.dig(:context, :shopify_order_id) }).to contain_exactly(refs[0], refs[2])
+    end
+
     it "keeps dispatch_due failing the spent orders when it is called alone" do
       spent = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS)
       ProcessedOrder.dispatch_due(now: now)

@@ -124,7 +124,7 @@ class ProcessedOrder < ApplicationRecord
   # point (the dispatcher job, a webhook's dispatch_due) behaves the same.
   def self.fail_exhausted(id: nil, now: Time.current)
     where_id = id ? sanitize_sql_array(["AND id = ?", id]) : ""
-    rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, MAX_ATTEMPTS, now, " (then the last attempt did not finish)", "the last attempt did not finish", now]))
+    sql = sanitize_sql_array([<<~SQL.squish, MAX_ATTEMPTS, now, " (then the last attempt did not finish)", "the last attempt did not finish", now])
       WITH spent AS (
         SELECT id FROM processed_orders
         WHERE status = 'received' AND attempts >= ? AND (leased_until IS NULL OR leased_until <= ?) #{where_id}
@@ -133,21 +133,35 @@ class ProcessedOrder < ApplicationRecord
       UPDATE processed_orders o SET status = 'failed', leased_until = NULL, last_error = COALESCE(o.last_error || ?, ?), updated_at = ?
       FROM spent WHERE o.id = spent.id RETURNING o.provider_ref, o.attempts
     SQL
+    rows = begin
+      # a savepoint, so a failing UPDATE inside a caller's open transaction does not abort that transaction
+      transaction(requires_new: true) { connection.select_rows(sql) }
+    rescue StandardError => e
+      report_spent_order_failure(SpentOrderStepFailed.new("marking the spent orders failed raised (#{e.class})"),
+                                 step: "fail_exhausted", error_class: e.class.name)
+      return []
+    end
     rows.each do |ref, attempts|
-      Rails.error.report(
-        ApplyProcessedOrderJob::OrderApplyFailed.new(
-          "order #{ref} could not be applied after #{attempts} attempts (the last one did not finish)"
-        ), handled: true, severity: :error, context: { shopify_order_id: ref, attempts: attempts, error_class: "AttemptDidNotFinish" }
-      )
+      # one order's report failing must not keep the others from being reported (the error is wrapped, class only)
+      begin
+        Rails.error.report(
+          ApplyProcessedOrderJob::OrderApplyFailed.new(
+            "order #{ref} could not be applied after #{attempts} attempts (the last one did not finish)"
+          ), handled: true, severity: :error, context: { shopify_order_id: ref, attempts: attempts, error_class: "AttemptDidNotFinish" }
+        )
+      rescue StandardError => e
+        Rails.logger.error("[ProcessedOrder] could not report spent order #{ref}: #{e.class}")
+      end
     end
     rows.map(&:first)
-  rescue StandardError => e
-    Rails.error.report(
-      SpentOrderStepFailed.new("marking the spent orders failed raised (#{e.class})"),
-      handled: true, severity: :error, context: { step: "fail_exhausted", error_class: e.class.name }
-    )
-    []
   end
+
+  def self.report_spent_order_failure(error, **context)
+    Rails.error.report(error, handled: true, severity: :error, context: context)
+  rescue StandardError => e
+    Rails.logger.error("[ProcessedOrder] could not report #{error.class}: #{e.class}")
+  end
+  private_class_method :report_spent_order_failure
 
   # An application attempt failed (its transaction is already rolled back). Only the run that still holds the order
   # (received, `token` is its lease) records it: in a small transaction with the lock wait bounded (a run holding the row
