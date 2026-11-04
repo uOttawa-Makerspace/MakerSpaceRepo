@@ -77,4 +77,13 @@ RSpec.describe IcsFetcher do
     end
     expect(connections.map(&:proxy_from_env?)).to eq([false])
   end
+
+  # an address the resolver returns that cannot be read is a refusal, not an IPAddr::Error
+  it "refuses a host whose address cannot be parsed, such as a scoped IPv6 one" do
+    ["fe80::1%eth0", "fe80::1%", "not-an-address", "2606:4700::1%\u0000"].each do |address|
+      allow(described_class).to receive(:resolve).with("odd.test").and_return([address])
+      expect { described_class.get("https://odd.test/a.ics") }.to raise_error(described_class::Refused), address
+    end
+    expect(a_request(:any, /./)).not_to have_been_made
+  end
 end

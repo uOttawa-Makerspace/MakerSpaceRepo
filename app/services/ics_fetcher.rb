@@ -72,6 +72,8 @@ module IcsFetcher
     raise Refused, "host is not public" if addresses.any? { |ip| BLOCKED_RANGES.any? { |range| range.include?(ip) } }
 
     addresses.first.to_s
+  rescue IPAddr::Error
+    raise Refused, "host is not public" # an address that cannot be read (a scoped IPv6 one, say) is not a public one
   end
   private_class_method :public_address
 
