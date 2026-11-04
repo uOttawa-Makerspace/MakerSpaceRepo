@@ -21,7 +21,16 @@ const pageGlobals = {
 
 export default [
   {
-    ignores: ["public/**", "node_modules/**", "tmp/**", "coverage/**"],
+    // .worktrees and doc hold local-only checkouts and tooling (with their own node_modules)
+    ignores: [
+      "public/**",
+      "node_modules/**",
+      "tmp/**",
+      "coverage/**",
+      ".worktrees/**",
+      "doc/**",
+      "vendor/**",
+    ],
   },
   {
     files: ["app/javascript/**/*.js"],
