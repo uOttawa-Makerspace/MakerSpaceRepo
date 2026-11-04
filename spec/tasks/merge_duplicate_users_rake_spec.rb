@@ -194,6 +194,16 @@ RSpec.describe "users:merge_duplicates" do
       expect(moved_task.reload.user_id).to eq(survivors.first.id)
     end
 
+    it "names the usernames of skipped pairs so the rename step leaves them out" do
+      first, second = duplicated_pair
+      other = create(:user)
+
+      held_back = send(:usernames_of_skipped_accounts, [{ primary_id: first.id, duplicate_id: second.id }])
+
+      expect(held_back).to contain_exactly(first.username.downcase, second.username.downcase)
+      expect(held_back).not_to include(other.username.downcase)
+    end
+
     it "prints a summary of merged and skipped pairs" do
       merged = [{ primary_id: 1, duplicate_id: 2 }]
       skipped = [{ primary_id: 3, duplicate_id: 4, table: "walk_in_safety_sheets", row_ids: [9] }]

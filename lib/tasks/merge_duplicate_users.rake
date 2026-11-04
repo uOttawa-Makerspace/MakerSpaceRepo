@@ -47,6 +47,12 @@ namespace :users do
     duplicated_usernames = username_tally.keys
     puts "After email merge, there are #{duplicated_usernames.count} usernames duplicated."
 
+    # A skipped pair still has two accounts with one email, so renaming either would fail the email uniqueness
+    # check and stop the task. Usernames held by a skipped account are left for whoever settles the pair.
+    held_back = usernames_of_skipped_accounts(skipped_pairs)
+    duplicated_usernames, left_out = duplicated_usernames.partition { |username| !held_back.include?(username) }
+    left_out.each { |username| puts "\tleft out of the rename: #{username} (belongs to a skipped pair)" }
+
     renamed_users = []
     duplicated_usernames.each do |username|
       renamed_users << rename_duplicated_username(username)
@@ -172,6 +178,12 @@ namespace :users do
       end
 
     changelog
+  end
+
+  # Lowercased usernames of the accounts in skipped pairs.
+  def usernames_of_skipped_accounts(skipped_pairs)
+    ids = skipped_pairs.flat_map { |pair| [pair[:primary_id], pair[:duplicate_id]] }
+    User.unscope(where: :deleted).where(id: ids).pluck(:username).map(&:downcase)
   end
 
   # One line per pair, then the totals. A skipped pair is listed with the table and rows to settle by hand.
