@@ -586,14 +586,38 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         end
       end
 
-      it "applies a lookup Shopify refused for good as an order with no reference, and reports it" do
+      # An order whose membership reference could not be looked up is not an order without a reference: the
+      # pending membership it names stays unpaid, so matching by email or title would create a second, paid one.
+      # (This used to apply the email fallback.)
+      it "applies nothing for the membership of a lookup Shopify refused for good, and reports it" do
+        pending = create(:membership, user: user, status: :pending)
         lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
         order = hook(membership_order.merge(id: 7413))
         expect(order).to have_attributes(status: "applied", attempts: 1)
-        expect(user.memberships.paid.count).to eq(1) # the email fallback ran
+        expect(user.memberships.paid.count).to eq(0)
+        expect(Membership.count).to eq(1)
+        expect(pending.reload).not_to be_paid
         error, opts = reports.find { |e, _| e.is_a?(ShopOrderApplier::MetafieldLookupRejected) }
         expect(error.message).to include("7413", "ACCESS_DENIED")
         expect(opts[:context]).to eq(shopify_order_id: "7413", codes: ["ACCESS_DENIED"])
+        unresolved, unresolved_opts = reports.find { |e, _| e.is_a?(ShopOrderApplier::UnresolvedMembershipOrder) }
+        expect(unresolved.message).to include("7413", "could not be looked up")
+        expect(unresolved.message).not_to include(user.email)
+        expect(unresolved_opts[:context]).to eq(shopify_order_id: "7413")
+      end
+
+      it "still applies the other branches of an order whose membership lookup was refused" do
+        lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
+        payload = membership_order.merge(id: 7415)
+        payload[:line_items] += [{ product_id: cc_product_id, quantity: 1 }]
+        expect { hook(payload) }.to change { user.cc_moneys.count }.by(1)
+        expect(Membership.count).to eq(0)
+      end
+
+      it "keeps the email fallback for a membership order whose draft order never had a reference" do
+        lookup_answers(double(query: double(code: 200, body: { "data" => { "node" => nil } })))
+        expect(hook(membership_order.merge(id: 7416)).status).to eq("applied")
+        expect(user.memberships.paid.count).to eq(1)
       end
 
       it "looks the draft order up once for a locker and membership order with no metafields in the payload" do

@@ -20,8 +20,9 @@ class ShopOrderApplier
   class UnknownMembership < StandardError; end
   class UnresolvedMembershipOrder < StandardError; end
   class UnresolvedCcOrder < StandardError; end
-  # Shopify refused a metafield lookup for good (an access or invalid-id error): reported, the order goes on
-  # as one without a reference.
+  # Shopify refused a metafield lookup for good (an access or invalid-id error): reported, and the order goes on
+  # without that reference. Its membership branch applies nothing (the reference is unknown, not absent); the
+  # locker and CC branches apply as designed.
   class MetafieldLookupRejected < StandardError; end
 
   PROVIDER = "shopify"
@@ -239,6 +240,15 @@ class ShopOrderApplier
   def apply_membership(plan)
     if plan.hook["line_items"].blank?
       report_unresolved(plan, UnresolvedMembershipOrder, "membership", "has no line items")
+      return
+    end
+
+    # A membership order whose reference could not be looked up is not an order without a reference: the pending
+    # membership it names is still unpaid, and matching by email or title would create a second, paid one.
+    # Nothing is applied for membership; staff settle it from the report.
+    if plan.membership_ref.blank? && plan.lookup_rejection
+      report_unresolved(plan, UnresolvedMembershipOrder, "membership",
+                        "has a membership reference that could not be looked up (#{plan.lookup_rejection.join(', ')})")
       return
     end
 
