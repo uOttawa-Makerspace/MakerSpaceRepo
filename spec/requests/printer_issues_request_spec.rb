@@ -114,15 +114,15 @@ RSpec.describe "Printer issues", type: :request do
         expect(body).to include("/printer_issues/#{PrinterIssue.last.id}")
       end
 
-      # the failed-create branch calls `sanitize`, which the controller does not include, so any validation failure is a NoMethodError (500) and the user never sees the error
-      it "500s on a blank summary and persists nothing" do
+      it "re-renders the form with the error on a blank summary and persists nothing" do
         expect { post printer_issues_path, params: { printer_issue: { printer_id: printer.id, summary: "" } } }.not_to change(PrinterIssue, :count)
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(flash[:alert]).to start_with("Failed to create issue:")
       end
 
-      it "500s on an unknown printer (same failure branch)" do
+      it "re-renders the form on an unknown printer (same failure branch)" do
         expect { post printer_issues_path, params: { printer_issue: { printer_id: 0, summary: "x" } } }.not_to change(PrinterIssue, :count)
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "ignores a reporter_id param (reporter is always current_user)" do
