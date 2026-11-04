@@ -19,6 +19,9 @@
 # is when an order that has been due for hours (workers or queue down, or runs that keep dying) was last reported (see
 # report_stranded).
 class ProcessedOrder < ApplicationRecord
+  # Raised only to be reported (Rails.error.report).
+  class SpentOrderStepFailed < StandardError; end
+
   STATUSES = %w[received applied failed].freeze
   MAX_ATTEMPTS = 10
   WARN_AT_ATTEMPTS = [1, 5].freeze
@@ -116,7 +119,9 @@ class ProcessedOrder < ApplicationRecord
   # outcome: every attempt is spent and its lease has expired, so the run died. A spent order left with no lease at all
   # is failed the same way, as a backstop. The last real error is kept, with a note that the last attempt did not
   # finish. Rows locked by a running apply are skipped, never waited for. Without this such an order would be handed
-  # out for ever. Returns the provider refs failed.
+  # out for ever. Returns the provider refs failed. Never raises: a failure is reported (class only, the message of a
+  # database error can carry SQL and order values) and the caller goes on to hand out what is due, so every entry
+  # point (the dispatcher job, a webhook's dispatch_due) behaves the same.
   def self.fail_exhausted(id: nil, now: Time.current)
     where_id = id ? sanitize_sql_array(["AND id = ?", id]) : ""
     rows = connection.select_rows(sanitize_sql_array([<<~SQL.squish, MAX_ATTEMPTS, now, " (then the last attempt did not finish)", "the last attempt did not finish", now]))
@@ -136,6 +141,12 @@ class ProcessedOrder < ApplicationRecord
       )
     end
     rows.map(&:first)
+  rescue StandardError => e
+    Rails.error.report(
+      SpentOrderStepFailed.new("marking the spent orders failed raised (#{e.class})"),
+      handled: true, severity: :error, context: { step: "fail_exhausted", error_class: e.class.name }
+    )
+    []
   end
 
   # An application attempt failed (its transaction is already rolled back). Only the run that still holds the order

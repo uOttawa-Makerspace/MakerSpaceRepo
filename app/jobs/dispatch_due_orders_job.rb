@@ -17,20 +17,10 @@ class DispatchDueOrdersJob < ApplicationJob
   def perform(now: Time.current)
     # Spent orders are marked failed once per run: handing out does not spend an attempt, so the rounds cannot make
     # more of them.
-    fail_spent_orders(now)
+    ProcessedOrder.fail_exhausted(now: now)
     MAX_ROUNDS.times do
       break if ProcessedOrder.dispatch_due(now: now, skip_fail_exhausted: true).size < ProcessedOrder::BATCH
     end
     ProcessedOrder.report_stranded(now: now)
-  end
-
-  private
-
-  # A failure here is reported and the run goes on: the due orders are still handed out and the stranded ones
-  # reported, as when this step lived inside dispatch_due.
-  def fail_spent_orders(now)
-    ProcessedOrder.fail_exhausted(now: now)
-  rescue StandardError => e
-    Rails.error.report(e, handled: true, severity: :error, context: { step: "fail_exhausted" })
   end
 end

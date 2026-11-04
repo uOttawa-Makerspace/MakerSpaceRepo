@@ -45,17 +45,27 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
       described_class.perform_now(now: now)
     end
 
-    it "reports a failure of the spent-order step and still dispatches and reports stranded orders" do
+    it "reports a failure of the spent-order step (class only) and still dispatches and reports stranded orders" do
       order = stored(1)
-      allow(ProcessedOrder).to receive(:fail_exhausted).and_raise(ActiveRecord::StatementInvalid, "boom")
+      allow(ProcessedOrder.connection).to receive(:select_rows)
+        .and_raise(ActiveRecord::StatementInvalid, "PG error near order 4242 secret")
       expect(ProcessedOrder).to receive(:report_stranded).with(now: now)
 
       expect { described_class.perform_now(now: now) }.not_to raise_error
 
       expect(queued_ids).to eq([order.id])
-      error, opts = reports.find { |e, _| e.is_a?(ActiveRecord::StatementInvalid) }
-      expect(error).to be_present
-      expect(opts[:context]).to eq(step: "fail_exhausted")
+      error, opts = reports.find { |e, _| e.is_a?(ProcessedOrder::SpentOrderStepFailed) }
+      expect(error.message).to eq("marking the spent orders failed raised (ActiveRecord::StatementInvalid)")
+      expect(error.message).not_to include("secret")
+      expect(opts[:context]).to eq(step: "fail_exhausted", error_class: "ActiveRecord::StatementInvalid")
+    end
+
+    it "behaves the same when dispatch_due is called alone: reported, and the due orders are still handed out" do
+      order = stored(1)
+      allow(ProcessedOrder.connection).to receive(:select_rows).and_raise(ActiveRecord::StatementInvalid, "boom")
+
+      expect(ProcessedOrder.dispatch_due(now: now)).to eq([order.id])
+      expect(reports.map(&:first)).to include(an_instance_of(ProcessedOrder::SpentOrderStepFailed))
     end
 
     it "keeps dispatch_due failing the spent orders when it is called alone" do
