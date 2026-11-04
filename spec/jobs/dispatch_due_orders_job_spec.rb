@@ -35,6 +35,28 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
   end
 
   describe "dispatching" do
+    it "marks the spent orders failed once per run, however many rounds a backlog takes" do
+      full = Array.new(ProcessedOrder::BATCH) { |i| i + 1 }
+      rounds = [full, full, full, []]
+      allow(ProcessedOrder).to receive(:dispatch_due).and_wrap_original { |_m, **| rounds.shift }
+      expect(ProcessedOrder).to receive(:fail_exhausted).once.ordered
+      expect(ProcessedOrder).to receive(:dispatch_due).with(now: now, fail_exhausted: false).exactly(4).times.ordered
+
+      described_class.perform_now(now: now)
+    end
+
+    it "keeps dispatch_due failing the spent orders when it is called alone" do
+      spent = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS)
+      ProcessedOrder.dispatch_due(now: now)
+      expect(spent.reload.status).to eq("failed")
+    end
+
+    it "leaves the spent orders to the caller with fail_exhausted: false" do
+      spent = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS)
+      ProcessedOrder.dispatch_due(now: now, fail_exhausted: false)
+      expect(spent.reload.status).to eq("received")
+    end
+
     it "hands out a due received order by leasing it for 15 minutes and touches nothing else" do
       order = stored(1)
       before = order.reload.attributes.slice("attempts", "next_attempt_at", "updated_at", "status")

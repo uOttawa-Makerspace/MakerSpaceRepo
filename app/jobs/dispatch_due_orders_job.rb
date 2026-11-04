@@ -15,7 +15,12 @@ class DispatchDueOrdersJob < ApplicationJob
   # A backlog of more than ProcessedOrder::BATCH due orders is worked through in rounds, so it is not left to age into
   # a stranded report.
   def perform(now: Time.current)
-    MAX_ROUNDS.times { break if ProcessedOrder.dispatch_due(now: now).size < ProcessedOrder::BATCH }
+    # Spent orders are marked failed once per run: handing out does not spend an attempt, so the rounds cannot make
+    # more of them.
+    ProcessedOrder.fail_exhausted(now: now)
+    MAX_ROUNDS.times do
+      break if ProcessedOrder.dispatch_due(now: now, fail_exhausted: false).size < ProcessedOrder::BATCH
+    end
     ProcessedOrder.report_stranded(now: now)
   end
 end

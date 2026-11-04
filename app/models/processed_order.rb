@@ -62,8 +62,10 @@ class ProcessedOrder < ApplicationRecord
   # leased_until to now + LEASE (rows another dispatcher has locked are skipped, so none is handed out twice) and
   # touches nothing else. An order whose last attempt is spent is never handed out (see fail_exhausted). A job that
   # cannot be queued gives the lease back, so the next dispatch hands the order out again. Never raises.
-  def self.dispatch_due(id: nil, now: Time.current)
-    fail_exhausted(id: id, now: now)
+  # It first marks the spent orders failed unless the caller has done so (fail_exhausted: false): the dispatcher job
+  # does that once before its rounds, since handing out never spends an attempt.
+  def self.dispatch_due(id: nil, now: Time.current, fail_exhausted: true)
+    fail_exhausted(id: id, now: now) if fail_exhausted
     where_id = id ? sanitize_sql_array(["AND id = ?", id]) : ""
     rows = connection.select_all(sanitize_sql_array([<<~SQL.squish, now, now, MAX_ATTEMPTS, BATCH, now + LEASE])).cast_values
       WITH due AS (
