@@ -515,7 +515,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       order = order_with_task!(status_key: :completed)
       task = order.job_tasks.first
       group = create(:job_service_group, job_type: JobType.find_by!(name: "3D Print"), name: "Resin")
-      task.update!(job_service: create(:job_service, job_service_group: group, name: "SLA print", unit: "cm3"))
+      task.update!(job_type: group.job_type, job_service: create(:job_service, job_service_group: group, name: "SLA print", unit: "cm3"))
       quote = task.build_job_task_quote(price: 10, service_price: 3, service_quantity: 2)
       quote.save!
       quote.job_task_quote_options.create!(job_option: JobOption.create!(name: "Polish", fee: 1), price: 4)

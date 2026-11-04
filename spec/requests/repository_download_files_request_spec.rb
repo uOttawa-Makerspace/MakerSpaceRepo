@@ -123,10 +123,11 @@ RSpec.describe "Repository zip download", type: :request do
     expect(zip_entries).to eq("kept.txt" => "K")
   end
 
-  it "ignores the username segment of the URL" do
+  it "sends a link with another username to the owner's address" do
     add_file("a.txt")
     download(user_username: "someone-else")
-    expect(response).to have_http_status(:ok)
+    expect(response).to have_http_status(:found)
+    expect(response.location).to include("/#{repo.user_username}/")
   end
 
   it "404s for an unknown or soft-deleted repository" do

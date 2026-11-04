@@ -192,14 +192,25 @@ RSpec.describe "JobTasks gaps", type: :request do
       end.not_to change(ChatMessage, :count)
     end
 
-    it "accepts a job_service_id that belongs to another order's group" do
+    it "refuses a job_service_id from a group of another job type" do
       foreign_group = create(:job_service_group, job_type: JobType.find_by!(name: "Laser Cut"))
       foreign_service = create(:job_service, job_service_group: foreign_group)
       task.update!(job_type: print_type)
       session_login!(owner)
       patch job_order_job_task_path(order, task),
             params: { step: "2", job_task: { job_service_id: foreign_service.id } }
-      expect(task.reload.job_service).to eq(foreign_service)
+      expect(task.reload.job_service).to be_nil
+      expect(flash[:alert]).to include("Job service is not available for this task")
+    end
+
+    it "refuses a custom service made for another order" do
+      other_task = create(:job_order).job_tasks.create!(title: "Task #1", job_type: print_type)
+      custom = JobService.create!(name: "Theirs", user_created: true, job_service_group: create(:job_service_group, job_type: print_type))
+      other_task.update_column(:job_service_id, custom.id)
+      task.update!(job_type: print_type)
+      session_login!(owner)
+      patch job_order_job_task_path(order, task), params: { step: "2", job_task: { job_service_id: custom.id } }
+      expect(task.reload.job_service).to be_nil
     end
 
     it "does not stop the owner from changing the task once the order left Draft (not yet quoted, so no re-quote)" do

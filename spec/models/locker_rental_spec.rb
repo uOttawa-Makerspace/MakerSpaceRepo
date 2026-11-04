@@ -117,6 +117,21 @@ RSpec.describe LockerRental, type: :model do
       expect(rental.cancelled_at).to be_present
     end
 
+    # staff or an admin may take a cancelled rental straight to active (cash paid at the desk)
+    it "keeps a cancelled rental cancelled unless it goes to awaiting payment, or to active by staff or admin" do
+      rental = create(:locker_rental, :active)
+      rental.update!(state: :cancelled)
+      expect(rental.reload.update(state: :active)).to be(false)
+      expect(rental.errors[:state]).to be_present
+      expect(rental.reload.update(state: :active, decided_by: create(:user))).to be(false)
+      %i[staff admin].each do |role|
+        expect(rental.reload.update(state: :active, decided_by: create(:user, role))).to be(true), role.to_s
+        rental.update!(state: :cancelled)
+      end
+      expect(rental.reload.update(state: :reviewing)).to be(false)
+      expect(rental.reload.update(state: :await_payment)).to be(true)
+    end
+
     it "blocks two reserving rentals on the same locker, but not a cancelled one" do
       locker = create(:locker)
       create(:locker_rental, :active, locker: locker)

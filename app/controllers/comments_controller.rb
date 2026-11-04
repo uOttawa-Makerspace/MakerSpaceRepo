@@ -42,7 +42,7 @@ class CommentsController < SessionsController
     end
     redirect_to repository_path(
                   id: comment.repository.id,
-                  user_username: comment.repository.user_username
+                  user_username: denial_username(comment.repository)
                 )
   end
 
@@ -51,8 +51,15 @@ class CommentsController < SessionsController
     repository = @repository
     comment = repository.comments.find params[:comment_id]
     comment_user = comment.user
+    upvote = @user.upvotes.find_by(comment_id: comment.id)
 
-    if upvote = @user.upvotes.find_by(comment_id: comment.id)
+    # Nobody votes on their own comment (a vote already cast can still be taken back).
+    if comment.user_id == @user.id && upvote.nil?
+      return redirect_to repository_path(repository.user_username, params[:id], anchor: "repo-comments"),
+                         alert: "You cannot vote on your own comment"
+    end
+
+    if upvote
       if downvote != upvote.downvote
         upvote.update!(downvote: downvote)
         if downvote

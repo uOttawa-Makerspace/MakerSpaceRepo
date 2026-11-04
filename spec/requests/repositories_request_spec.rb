@@ -61,14 +61,18 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect { get repo_path }.not_to change { repo.reload.attributes }
     end
 
-    it "finds the repository by id, slug and title, and ignores the username segment" do
-      # the :user_username segment is not matched against the repository owner
-      get repository_path("anybody-at-all", repo.id)
-      expect(response).to have_http_status(:ok)
-      get repository_path("anybody-at-all", repo.slug)
-      expect(response).to have_http_status(:ok)
-      get repository_path("anybody-at-all", "Laser Lamp")
-      expect(response).to have_http_status(:ok)
+    it "finds the repository by id, slug and title" do
+      [repo.id, repo.slug, "Laser Lamp"].each do |key|
+        get repository_path(repo.user_username, key)
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    # a temporary (302) redirect, so browsers do not keep it across username changes
+    it "sends a link with another username to the owner's address" do
+      get repository_path("anybody-at-all", repo.slug), params: { page: "2" }
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(repository_path(repo.user_username, repo.slug, page: "2"))
     end
 
     it "shows the member forms to owners and admin only, the link-to-proposal form to staff too" do
@@ -121,6 +125,27 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
         content_login!(stranger)
         get repo_path(secret)
         expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      end
+
+      # the owner-username redirect only happens for people who pass the access check
+      it "does not name the owner to a guest or stranger who holds the id with another username" do
+        [nil, stranger].each do |viewer|
+          content_login!(viewer) if viewer
+          %i[repository_path password_entry_repository_path].each do |helper|
+            get send(helper, "someone-else", secret.id)
+            expect(response.headers["Location"].to_s).not_to include(owner.username), "#{helper} #{viewer.inspect}"
+          end
+          get download_files_repositories_path("someone-else", secret.id)
+          expect(response.headers["Location"].to_s).not_to include(owner.username)
+          expect(response.headers["Location"].to_s).to include("password_entry").or be_blank
+        end
+      end
+
+      it "still sends the owner to the owner's address" do
+        content_login!(owner)
+        get repository_path("someone-else", secret.id)
+        expect(response).to redirect_to(repository_path(owner.username, secret.id))
+        expect(response).to have_http_status(:found)
       end
 
       it "lets the owner (by username), staff and admin straight in" do
@@ -677,12 +702,23 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(owner.reload.reputation).to eq(0)
     end
 
-    it "lets the owner like their own repository" do
+    it "refuses a like by the owner or a member of the repository" do
+      member = create(:user, :regular_user)
+      repo.users << member
+      [owner, member].each do |user|
+        content_login!(user)
+        expect { post add_like_repository_path(owner.username, repo.slug) }.not_to change(Like, :count)
+        expect(flash[:alert]).to eq("You cannot like a project you are a member of")
+      end
+      expect(repo.reload.like).to eq(0)
+      expect(owner.reload.reputation).to eq(0)
+    end
+
+    it "lets a member take back a like given before" do
+      Like.create!(repository: repo, user: owner)
+      repo.update_column(:like, 1)
       content_login!(owner)
-      post add_like_repository_path(owner.username, repo.slug)
-      # likes on your own repo give you +5 reputation
-      expect(repo.reload.like).to eq(1)
-      expect(owner.reload.reputation).to eq(5)
+      expect { post add_like_repository_path(owner.username, repo.slug) }.to change(Like, :count).by(-1)
     end
 
     it "refuses to like a private repository without its password" do
@@ -693,7 +729,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
     end
 
-    it "lets the owner, a collaborator and a user who entered the password like a private repository" do
+    it "lets a user who entered the password like a private repository, and refuses its owner and a collaborator" do
       secret = create(:repository, :private, owner: owner, title: "Sec", users: [owner])
       secret.update_columns(password: BCrypt::Password.create("open-sesame"))
       collaborator = create(:user, :regular_user)
@@ -703,7 +739,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
         post add_like_repository_path(owner.username, secret.slug)
         expect(response).to redirect_to(repo_path(secret))
       end
-      expect(Like.where(repository_id: secret.id).count).to eq(2)
+      expect(Like.where(repository_id: secret.id)).to be_empty
       content_login!(stranger)
       post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
       expect { post add_like_repository_path(owner.username, secret.slug) }.to change(Like, :count).by(1)

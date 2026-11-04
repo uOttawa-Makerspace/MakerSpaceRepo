@@ -19,9 +19,10 @@ class RepositoriesController < SessionsController
   rate_limit to: 10, within: 10.minutes, only: :pass_authenticate,
              by: -> { "#{@repository.id}:#{@user.id.presence || request.remote_ip}" },
              with: -> {
-               redirect_to password_entry_repository_path(@repository.user_username, @repository.id),
+               redirect_to password_entry_repository_path(denial_username(@repository), @repository.id),
                            alert: "Too many attempts. Please try again later."
              }
+  before_action :redirect_to_owner_url, only: %i[show download_files password_entry]
   before_action :check_auth, only: %i[show download_files]
   before_action -> { ensure_repository_unlocked(@repository) }, only: :add_like
   before_action :set_member_repository,
@@ -34,7 +35,7 @@ class RepositoriesController < SessionsController
   def show
     if @repository.private? && !@check_passed
       redirect_to password_entry_repository_path(
-                    @repository.user_username,
+                    denial_username(@repository),
                     @repository.id
                   ) and return
     end
@@ -85,7 +86,7 @@ class RepositoriesController < SessionsController
   def download_files
     # Verify authorization for private repositories
     if @repository.private? && !@check_passed
-      redirect_to password_entry_repository_path(@repository.user_username, @repository.id), alert: "Password required" and return
+      redirect_to password_entry_repository_path(denial_username(@repository), @repository.id), alert: "Password required" and return
     end
 
     @files = @repository.repo_files
@@ -174,7 +175,7 @@ class RepositoriesController < SessionsController
       ].blank?
     else
       flash[:alert] = 'You are not allowed to perform this action!'
-      redirect_to repository_path(@repository.user_username, @repository.slug)
+      redirect_to repository_path(denial_username(@repository), @repository.slug)
     end
   end
 
@@ -244,6 +245,12 @@ class RepositoriesController < SessionsController
   def add_like
     current_like = @repository.likes.find_by(user_id: @user.id)
 
+    # Members do not like their own repository (a like already given can still be taken back).
+    if current_like.nil? && @repository.owned_by?(@user)
+      flash[:alert] = "You cannot like a project you are a member of"
+      return redirect_to repository_path(@repository.user_username, @repository.slug)
+    end
+
     if current_like.nil?
       @repository.likes.create!(user_id: @user.id)
       @repository.users.each { |u| u.increment!(:reputation, 5) }
@@ -285,7 +292,7 @@ class RepositoriesController < SessionsController
         flash[:alert] = "Incorrect password. Try again!"
         format.html do
           redirect_to password_entry_repository_path(
-                        @repository.user_username,
+                        denial_username(@repository),
                         @repository.id
                       )
         end
@@ -381,7 +388,7 @@ class RepositoriesController < SessionsController
         :alert
       ] = "Something went wrong when transferring ownership. Please try again later."
     end
-    redirect_to repository_path(repository.user_username, repository.slug)
+    redirect_to repository_path(denial_username(repository), repository.slug)
   end
 
   def populate_users
@@ -405,7 +412,7 @@ class RepositoriesController < SessionsController
     # admins can modify repo
     unless @user.admin? || @repository.owned_by?(@user)
       flash[:alert] = "You are not allowed to perform this action!"
-      redirect_to repository_path(@repository.user_username, @repository.slug)
+      redirect_to repository_path(denial_username(@repository), @repository.slug)
     end
   end
 
@@ -417,12 +424,24 @@ class RepositoriesController < SessionsController
   def check_link_permission
     unless @user.staff? || @user.admin? || @repository.owned_by?(@user)
       flash[:alert] = "You are not allowed to perform this action!"
-      redirect_to repository_path(@repository.user_username, @repository.slug)
+      redirect_to repository_path(denial_username(@repository), @repository.slug)
     end
   end
 
   def check_auth
     @check_passed = repository_unlocked?(@repository)
+  end
+
+  # The username in the address is the owner's: a link with another (or an old) username is sent on to the
+  # repository's own address, for people who may see the repository. A locked private repository is not sent on, so
+  # the redirect cannot name its owner.
+  def redirect_to_owner_url
+    username = @repository.user_username
+    return if username.blank? || params[:user_username] == username
+    return if @repository.private? && !repository_unlocked?(@repository)
+
+    redirect_to url_for(action: action_name, user_username: username, id: params[:id], only_path: true, **request.query_parameters.symbolize_keys),
+                status: :found
   end
 
   def set_repository

@@ -728,19 +728,9 @@ Rails.application.routes.draw do
   get "/repositories/populate_users", to: "repositories#populate_users"
 
   # REPOSITORY RESOURCES
-  # /:user_username/:id.title-is-ignored
-  # This is disabled because the username has no effect on finding repositories
-  # Usernames can change, and we ran a mass rename migration
-  # Cool URLs dont break however, so we'll just ignore the username for now...
-  # User.find_by(username: request.params[:user_username]).present?
-  # constraints:
-  #   lambda { |request|
-  #     begin
-  #       Repository.find(request.params[:id])
-  #     rescue StandardError
-  #       false
-  #     end
-  #   }
+  # /:user_username/:id
+  # The repository is found by id, slug or title alone, because usernames can change and old links must not break.
+  # RepositoriesController redirects a link with another username to the owner's current address.
   resources :repositories,
             path: '/:user_username',
             param: :id,

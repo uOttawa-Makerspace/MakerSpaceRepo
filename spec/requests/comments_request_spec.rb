@@ -71,8 +71,8 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       it "refuses a signed-in user who has not entered the password" do
         content_login!(author)
         expect { post_comment("peek", repository: secret) }.not_to change(Comment, :count)
-        # create runs the shared private-repository gate
-        expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+        # create runs the shared private-repository gate; the redirect uses the caller's own username, not the owner's
+        expect(response).to redirect_to(password_entry_repository_path(author.username, secret.id))
       end
 
       it "lets the owner, a collaborator, staff and admin comment" do
@@ -207,11 +207,12 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(Upvote.last.downvote).to be(false)
     end
 
-    it "lets the author vote on their own comment" do
+    it "refuses a vote by the comment's author" do
       content_login!(author)
-      vote(comment)
-      expect(comment.reload.upvote).to eq(1)
-      expect(author.reload.reputation).to eq(2)
+      expect { vote(comment) }.not_to change(Upvote, :count)
+      expect(flash[:alert]).to eq("You cannot vote on your own comment")
+      expect(comment.reload.upvote).to eq(0)
+      expect(author.reload.reputation).to eq(0)
     end
 
     it "404s for a comment_id from a different repository than the :id segment" do
@@ -229,7 +230,7 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       secret_comment = create(:comment, repository: secret, user: author, username: author.username)
       content_login!(voter)
       expect { vote(secret_comment, repository: secret) }.not_to change(Upvote, :count)
-      expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      expect(response).to redirect_to(password_entry_repository_path(voter.username, secret.id))
       content_login!(owner)
       expect { vote(secret_comment, repository: secret) }.to change(Upvote, :count).by(1)
     end

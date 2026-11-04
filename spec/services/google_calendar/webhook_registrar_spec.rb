@@ -32,7 +32,7 @@ RSpec.describe GoogleCalendar::WebhookRegistrar do
       expect(a_request(:post, WATCH_URL).with { |req|
         body = JSON.parse(req.body)
         body["type"] == "web_hook" && body["address"] == "https://staging.makerepo.com/google/calendar/webhook" &&
-          body["id"].match?(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/) && !body.key?("token")
+          body["id"].match?(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/) && body["token"] == GoogleCalendarChannel.token_for(body["id"])
       }).to have_been_made.once
 
       channel = GoogleCalendarChannel.last
@@ -47,11 +47,13 @@ RSpec.describe GoogleCalendar::WebhookRegistrar do
       expect(described_class.webhook_url).to eq("https://makerepo.com/google/calendar/webhook")
     end
 
-    it "sends no verification token (the receiving webhook checks the channel and resource ids)" do
-      # the channel is created without a `token`; GoogleCalendarController#webhook checks the channel_id and resource_id headers
+    it "sends a token that is the channel's own, not another channel's" do
       stub_watch
       described_class.register!
-      expect(a_request(:post, WATCH_URL).with { |req| JSON.parse(req.body).key?("token") }).not_to have_been_made
+      sent = nil
+      expect(a_request(:post, WATCH_URL).with { |req| sent = JSON.parse(req.body) }).to have_been_made.once
+      expect(sent["token"]).to eq(GoogleCalendarChannel.token_for(sent["id"]))
+      expect(sent["token"]).not_to eq(GoogleCalendarChannel.token_for("another-channel"))
     end
 
     describe "the channel it replaces" do
