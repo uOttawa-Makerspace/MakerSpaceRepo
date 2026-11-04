@@ -1,5 +1,6 @@
 # A card row always has a number: NOT NULL plus a CHECK that it contains a
-# non-whitespace character (tabs and newlines count as blank, as in Ruby's blank?).
+# non-whitespace character, whitespace as Postgres sees it (spaces, tabs and
+# newlines count as blank).
 #
 # Rows without a usable number are counted first and the migration refuses to run
 # while any exist; they are never repaired or removed automatically (the card they

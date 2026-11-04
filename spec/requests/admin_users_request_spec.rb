@@ -268,9 +268,12 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     it "re-renders a refused assign with the submitted edits, unsaved, next to the reason" do
       holder = create(:user, :regular_user)
       taken = Rfid.create!(card_number: "taken#{SecureRandom.hex(3)}", user: holder)
-      patch admin_user_path(target), params: { user: { name: "Edited Name", rfid: taken.id } }
+      patch admin_user_path(target), params: { user: { name: "Edited Name", username: "typed_new_name", rfid: taken.id } }
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("Edited Name")
+      expect(response.body).to include("Editing user: #{target.username}")
+      expect(response.body).to include('value="typed_new_name"')
+      expect(response.body).not_to include("Editing user: typed_new_name")
       expect(target.reload.name).not_to eq("Edited Name")
     end
 

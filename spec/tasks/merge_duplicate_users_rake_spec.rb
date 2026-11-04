@@ -26,6 +26,28 @@ RSpec.describe "users:merge_duplicates" do
     $stdout = original_stdout
   end
 
+  it "moves the duplicate's card to the kept user when that user has none, and the merge completes" do
+    card = create(:rfid, user: duplicate, mac_address: "aa:aa:aa:aa:aa:aa")
+
+    merge
+
+    expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    expect(card.reload.user_id).to eq(primary.id)
+    expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+  end
+
+  it "unlinks the duplicate's card and keeps the row when the kept user already has one" do
+    kept = create(:rfid, user: primary)
+    surplus = create(:rfid, user: duplicate)
+
+    merge
+
+    expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    expect(kept.reload.user_id).to eq(primary.id)
+    expect(Rfid.find(surplus.id).user_id).to be_nil
+    expect(Rfid.where(user_id: primary.id).count).to eq(1)
+  end
+
   it "moves keys, key requests and proposals that name the duplicate only as supervisor or admin" do
     key = create(:key, supervisor: duplicate, space: create(:space))
     proposal = create(:project_proposal, admin: duplicate)

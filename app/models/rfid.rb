@@ -28,12 +28,15 @@ class Rfid < ApplicationRecord
   # checked first and a row is only created once every refusal has been ruled out,
   # so a refused link never inserts anything.
   def self.link_to_user!(card_number, user)
+    return "is invalid" if card_number.blank?
+
     transaction do
       User.where(id: user.id).lock("FOR NO KEY UPDATE").take
       lock_card_number(card_number)
-      held = where(user_id: user.id).take
-      next if held&.card_number == card_number
+      # a legacy user may hold more than one card: owning this one is enough
+      next if where(user_id: user.id, card_number: card_number).exists?
 
+      held = where(user_id: user.id).exists?
       rfid = lock("FOR NO KEY UPDATE").find_by(card_number: card_number)
       if rfid&.user_id.present?
         "is already linked to another user"

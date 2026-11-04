@@ -381,8 +381,16 @@ namespace :users do
     # never use them anyways
     foreign_record = duplicate.send(assoc.name)
     return unless foreign_record
-    # This is usually the rfid model, assuming we can simply move it over
-    foreign_record.update!(assoc.foreign_key => primary.id)
+    # This is usually the rfid model. A user holds one card: when the primary has
+    # none the duplicate's card moves over, otherwise it is unlinked (the row is kept)
+    # through the one unlink rule.
+    if assoc.klass == Rfid && primary.send(assoc.name)
+      Rfid.unlink_from_user!(duplicate, actor: primary)
+    else
+      foreign_record.update!(assoc.foreign_key => primary.id)
+    end
+    # the duplicate is destroyed next: its cached association must not show the old card
+    duplicate.association(assoc.name).reset
   end
 
   def merge_habtm_association(primary, duplicate, assoc)

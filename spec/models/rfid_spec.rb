@@ -205,4 +205,30 @@ RSpec.describe Rfid, type: :model do
       expect(Rfid.unlink_card!("no-such-card", actor: actor)).to eq(:not_found)
     end
   end
+
+  describe ".link_to_user! guards" do
+    let(:user) { create(:user, :regular_user) }
+
+    it "refuses a nil or blank number first, linking and creating nothing" do
+      create(:rfid, user: user)
+      [nil, "", "  "].each do |blank|
+        expect { expect(Rfid.link_to_user!(blank, user)).to eq("is invalid") }.not_to change(Rfid, :count)
+      end
+    end
+
+    it "succeeds for a card the user owns even when a legacy user holds two cards, whatever the order" do
+      first = create(:rfid, user: user)
+      second = create(:rfid, user: user)
+      [first, second, second, first].each do |card|
+        expect(Rfid.link_to_user!(card.card_number, user)).to be_nil
+      end
+      expect(Rfid.where(user_id: user.id).count).to eq(2)
+    end
+
+    it "still refuses a different card for a user who holds one" do
+      create(:rfid, user: user)
+      other = create(:rfid, user: nil)
+      expect(Rfid.link_to_user!(other.card_number, user)).to eq("user already has a card; unlink it first")
+    end
+  end
 end

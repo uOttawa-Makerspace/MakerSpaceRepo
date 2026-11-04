@@ -3,7 +3,7 @@
 <section>
   <%= form_for @edit_admin_user, url: { controller: 'admin/users', action: 'update' }, html: { class: 'edit_admin_user' } do |f| %>
     <%= link_to "<i class=\"fa-solid fa-magnifying-glass\"></i> View user".html_safe, admin_user_path(@edit_admin_user), class: 'edit-user-link' %>
-    <div class="setting-title">Editing user: <%= @edit_admin_user.username %></div>
+    <div class="setting-title">Editing user: <%= @edit_admin_user.username_in_database %></div>
     <br>
 
     <!-- BASIC INFO -->
