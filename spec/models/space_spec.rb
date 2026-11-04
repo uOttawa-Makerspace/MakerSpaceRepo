@@ -133,6 +133,15 @@ RSpec.describe Space, type: :model do
       expect(space.deletion_refusals.size).to eq(2)
     end
 
+    it "words the refusals from the locale, with the association names of the locale" do
+      space = create(:space)
+      create(:volunteer_task, space: space)
+
+      expect(I18n.with_locale(:fr) { space.deletion_refusals }).to eq(
+        ["Impossible de supprimer l'enregistrement car des tâches de bénévolat dépendants existent"]
+      )
+    end
+
     it "defaults keycode to a blank string and has no capacity limit" do
       space = Space.create!(name: "Defaults")
       expect(space).to have_attributes(keycode: "", max_capacity: nil, destroy_admin_id: nil)

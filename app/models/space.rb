@@ -30,13 +30,8 @@ class Space < ApplicationRecord
   # their certifications and exams), volunteer tasks (with their hours) and sub space bookings feed reports and
   # course records. The delete is refused with an explanation instead. The check runs before anything is
   # destroyed (prepend), so the sub spaces are not taken along with their bookings.
-  HISTORY_ASSOCIATIONS = {
-    walk_in_safety_sheets: "walk in safety sheets",
-    lab_sessions: "lab sessions",
-    training_sessions: "training sessions",
-    volunteer_tasks: "volunteer tasks",
-    sub_space_bookings: "sub space bookings"
-  }.freeze
+  HISTORY_ASSOCIATIONS = %i[walk_in_safety_sheets lab_sessions training_sessions volunteer_tasks sub_space_bookings].freeze
+  REFUSAL_KEY = :"restrict_dependent_destroy.has_many"
   before_destroy :refuse_deletion_while_history_exists, prepend: true
 
   after_create :create_popular_hours, unless: -> { Rails.env.test? }
@@ -49,12 +44,15 @@ class Space < ApplicationRecord
               message: "Space already exists"
             }
 
-  # Why this space cannot be deleted, one message per kind of history it still has, in the wording Rails uses
-  # for a refused dependent delete. Empty when it can be deleted.
+  # The history this space still has, as the associations that block its deletion. Empty when it can be deleted.
+  def blocking_history
+    HISTORY_ASSOCIATIONS.select { |association| public_send(association).exists? }
+  end
+
+  # Why this space cannot be deleted, one message per kind of history, built the way restrict_with_error builds its
+  # message (the same key and association names, so model-scoped overrides and the locale apply).
   def deletion_refusals
-    HISTORY_ASSOCIATIONS.filter_map do |association, label|
-      I18n.t("activerecord.errors.messages.restrict_dependent_destroy.has_many", record: label) if public_send(association).exists?
-    end
+    blocking_history.map { |association| errors.generate_message(:base, REFUSAL_KEY, record: refusal_record_name(association)) }
   end
 
   def signed_in_users
@@ -234,11 +232,15 @@ class Space < ApplicationRecord
 
   private
 
-  def refuse_deletion_while_history_exists
-    messages = deletion_refusals
-    return if messages.empty?
+  def refusal_record_name(association)
+    self.class.human_attribute_name(association).downcase
+  end
 
-    messages.each { |message| errors.add(:base, message) }
+  def refuse_deletion_while_history_exists
+    history = blocking_history
+    return if history.empty?
+
+    history.each { |association| errors.add(:base, REFUSAL_KEY, record: refusal_record_name(association)) }
     throw :abort
   end
 end

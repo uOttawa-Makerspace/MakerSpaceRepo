@@ -169,6 +169,12 @@ en:
       submit: "Submit"
   activerecord:
     attributes:
+      space:
+        walk_in_safety_sheets: "walk in safety sheets"
+        lab_sessions: "lab sessions"
+        training_sessions: "training sessions"
+        volunteer_tasks: "volunteer tasks"
+        sub_space_bookings: "sub space bookings"
       user:
         student_id: "Student Number"
     errors:
