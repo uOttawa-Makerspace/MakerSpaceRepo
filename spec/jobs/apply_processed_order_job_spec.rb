@@ -638,13 +638,42 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         expect(user.memberships.paid.count).to eq(0)
         expect(Membership.count).to eq(1)
         expect(pending.reload).not_to be_paid
-        # one report for the one cause, under the class staff triage membership by, with the reason in its context
+        # one report for the one cause: the refusal, with the codes and the product it left unapplied
         expect(reports.size).to eq(1)
         error, opts = reports.first
-        expect(error).to be_a(ShopOrderApplier::UnresolvedMembershipOrder)
-        expect(error.message).to include("7413", "ACCESS_DENIED")
+        expect(error).to be_a(ShopOrderApplier::MetafieldLookupRejected)
+        expect(error.message).to include("7413", "ACCESS_DENIED", "membership")
         expect(error.message).not_to include(user.email)
-        expect(opts[:context]).to eq(shopify_order_id: "7413", codes: ["ACCESS_DENIED"])
+        expect(opts[:context]).to eq(shopify_order_id: "7413", codes: ["ACCESS_DENIED"], affected: [:membership])
+      end
+
+      it "reports one refusal listing both products of a locker and membership order, and applies neither" do
+        lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
+        hook(membership_order.merge(id: 7421, tags: [LockerRental.draft_order_operating_tag, membership_tag]))
+
+        expect(Membership.count).to eq(0)
+        expect(LockerPayment.count).to eq(0)
+        expect(reports.size).to eq(1)
+        error, opts = reports.first
+        expect(error).to be_a(ShopOrderApplier::MetafieldLookupRejected)
+        expect(opts[:context]).to eq(shopify_order_id: "7421", codes: ["ACCESS_DENIED"], affected: %i[locker membership])
+      end
+
+      it "reports one refusal for a locker-only order, not a locker order without a reference" do
+        lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
+        hook(id: 7422, tags: [LockerRental.draft_order_operating_tag], draft_order_id: 99, line_items: [{ title: "Locker", quantity: 1 }])
+
+        expect(reports.size).to eq(1)
+        error, opts = reports.first
+        expect(error).to be_a(ShopOrderApplier::MetafieldLookupRejected)
+        expect(opts[:context]).to eq(shopify_order_id: "7422", codes: ["ACCESS_DENIED"], affected: [:locker])
+      end
+
+      it "still reports a locker order that really carries no reference when nothing was refused" do
+        lookup_answers(double(query: double(code: 200, body: { "data" => { "node" => nil } })))
+        hook(id: 7423, tags: [LockerRental.draft_order_operating_tag], draft_order_id: 99, line_items: [{ title: "Locker", quantity: 1 }])
+
+        expect(reports.map(&:first)).to contain_exactly(an_instance_of(ShopOrderApplier::LockerOrderWithoutReference))
       end
 
       it "does not hold back the membership when only the locker's lookup was refused and the membership field is blank" do
@@ -657,8 +686,9 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         expect(user.memberships.paid.count).to eq(1) # no reference was ever given: the email fallback applies
         error, opts = reports.find { |e, _| e.is_a?(ShopOrderApplier::MetafieldLookupRejected) }
         expect(error.message).to include("7420", "ACCESS_DENIED") # the refusal itself, reported once
-        expect(opts[:context]).to eq(shopify_order_id: "7420", codes: ["ACCESS_DENIED"])
+        expect(opts[:context]).to eq(shopify_order_id: "7420", codes: ["ACCESS_DENIED"], affected: [:locker])
         expect(reports.map(&:first)).not_to include(an_instance_of(ShopOrderApplier::UnresolvedMembershipOrder))
+        expect(reports.map(&:first)).not_to include(an_instance_of(ShopOrderApplier::LockerOrderWithoutReference))
       end
 
       it "still applies the other branches of an order whose membership lookup was refused" do
