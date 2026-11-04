@@ -254,6 +254,13 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
     context "approving as staff" do
       before { vol_login!(create(:user, :staff)) }
 
+      it "dates the created hour with the completion request's created_at, not the approval time" do
+        reported = Time.zone.parse("2026-02-10 14:00")
+        req.update_columns(created_at: reported)
+        approve!("true")
+        expect(VolunteerHour.last.date_of_task).to eq(reported)
+      end
+
       it "approves, deactivates the join, creates CC money + approved hours, updates the wallet and emails the requester" do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
         approve!("true")

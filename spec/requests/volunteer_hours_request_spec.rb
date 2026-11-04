@@ -101,18 +101,9 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response.body).not_to include("100.0 Hours")
     end
 
-    it "lists an hour without a date", skip_bullet: true do
-      hour = make_hour(approval: true, total_time: 2)
-      hour.update_columns(date_of_task: nil)
-      vol_login!(owner)
-      get volunteer_hours_path
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("2.0 Hours")
-    end
-
     # the database refuses an hour that points at a missing task, so the index never meets one
     it "cannot hold an hour that references a missing task" do
-      expect { VolunteerHour.new(user: owner, volunteer_task_id: 999_999, total_time: 1).save!(validate: false) }
+      expect { VolunteerHour.new(user: owner, volunteer_task_id: 999_999, total_time: 1, date_of_task: Date.current).save!(validate: false) }
         .to raise_error(ActiveRecord::InvalidForeignKey)
     end
   end
@@ -165,13 +156,13 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
 
     it "rounds total_time to 2 decimals (decimal(9,2))" do
       post volunteer_hours_path,
-           params: { volunteer_hour: { volunteer_task_id: task.id, total_time: 1.239 } }
+           params: { volunteer_hour: { volunteer_task_id: task.id, date_of_task: "2024-03-01", total_time: 1.239 } }
       expect(VolunteerHour.last.total_time).to eq(1.24)
     end
 
     # non-numeric total_time silently becomes 0
     it "stores 0 for a non-numeric total_time" do
-      post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, total_time: "abc" } }
+      post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, date_of_task: "2024-03-01", total_time: "abc" } }
       expect(response).to redirect_to(volunteer_hours_path)
       expect(VolunteerHour.last.total_time).to eq(0)
     end
@@ -179,10 +170,18 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
     # over-range total_time raises ActiveRecord::RangeError (500) instead of a validation message
     it "500s for a total_time beyond decimal(9,2)" do
       expect do
-        post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, total_time: 99_999_999_999 } }
+        post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, date_of_task: "2024-03-01", total_time: 99_999_999_999 } }
       end.not_to change(VolunteerHour, :count)
       expect(response).to have_http_status(:internal_server_error)
       expect(vol_error_text).to include("ActiveRecord::RangeError")
+    end
+
+    it "stores nothing and alerts without a date" do
+      expect do
+        post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, total_time: 1 } }
+      end.not_to change(VolunteerHour, :count)
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to include("Date of task")
     end
 
     it "stores nothing and alerts without a volunteer_task_id" do
@@ -330,7 +329,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
     it "500s for an out-of-range total_time" do
       hour = make_hour
       vol_login!(owner)
-      patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 99_999_999_999 } }
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { date_of_task: "2024-03-01", total_time: 99_999_999_999 } }
       expect(response).to have_http_status(:internal_server_error)
       expect(hour.reload.total_time).to eq(3)
     end
