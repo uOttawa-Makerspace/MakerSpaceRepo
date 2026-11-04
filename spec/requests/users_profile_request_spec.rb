@@ -61,6 +61,32 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
+  describe "saving the profile form with legacy stored values" do
+    let(:student) { create(:user, :regular_user, :student) }
+
+    before do
+      student.update_columns(faculty: "Law Society", student_id: "1234567890123")
+      login!(student)
+    end
+
+    it "saves another field and keeps the stored faculty and student id the form sends back" do
+      patch user_path(student.username),
+            params: { user: { name: "Renamed", faculty: "Law Society", student_id: "1234567890123" } }
+      expect(flash[:notice]).to eq("Profile updated successfully.")
+      student.reload
+      expect([student.name, student.faculty, student.student_id]).to eq(["Renamed", "Law Society", "1234567890123"])
+    end
+
+    it "still refuses a new faculty or student id outside the rules" do
+      patch user_path(student.username), params: { user: { faculty: "Made Up" } }
+      expect(flash[:alert]).to include("Faculty")
+      patch user_path(student.username), params: { user: { student_id: "123" } }
+      expect(flash[:alert]).to include("Student")
+      expect(student.reload.faculty).to eq("Law Society")
+      expect(student.student_id).to eq("1234567890123")
+    end
+  end
+
   describe "GET /:username (show)" do
     it "guest: 200 public profile page" do
       get user_path(user.username)

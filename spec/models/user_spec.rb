@@ -736,10 +736,24 @@ RSpec.describe User, type: :model do
       expect(u.faculty).to eq("Engineering")
     end
 
-    it "'Civil Law'/'Common Law' translations are not in the FACULTIES list so students with them fail" do
+    it "'Civil Law'/'Common Law' (also the French 'Droit civil'/'Droit commun') are listed faculties" do
       u = build(:user, identity: "undergrad", faculty: "Droit civil", program: "X", year_of_study: 1, student_id: "1234567")
-      expect(u).not_to be_valid
+      expect(u).to be_valid
       expect(u.faculty).to eq("Civil Law")
+      expect(build(:user, identity: "undergrad", faculty: "Common Law", program: "X", year_of_study: 1, student_id: "1234567")).to be_valid
+    end
+
+    it "a stored faculty or student id outside the rules stays valid until it is changed" do
+      u = create(:user, identity: "undergrad", faculty: "Engineering", program: "X", year_of_study: 1, student_id: "1234567")
+      u.update_columns(faculty: "Old Faculty", student_id: "1234567890123")
+      u = User.find(u.id)
+      u.name = "Another Name"
+      expect(u).to be_valid
+      u.faculty = "Other Faculty"
+      expect(u).not_to be_valid
+      u.restore_attributes
+      u.student_id = "12345"
+      expect(u).not_to be_valid
     end
 
     it "avatar: images pass, a non-image content type fails" do

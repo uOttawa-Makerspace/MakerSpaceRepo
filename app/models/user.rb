@@ -35,6 +35,8 @@ class User < ApplicationRecord
     'Arts',
     'Medicine',
     'Law',
+    'Civil Law',
+    'Common Law',
     'Health Sciences',
     'Science',
     'Telfer School of Management'
@@ -217,10 +219,14 @@ class User < ApplicationRecord
             presence: true,
             inclusion: { in: GENDERS }
 
+  # A stored value outside the list (older data) stays valid until it is changed,
+  # so saving another field does not fail; a new value must be in the list.
   validates :faculty,
             presence: true,
-            if: :student?,
-            inclusion: { in: FACULTIES }
+            if: :student?
+  validates :faculty,
+            inclusion: { in: FACULTIES },
+            if: -> { student? && faculty_changed? }
 
   validates :role,
             inclusion: { in: ROLES },
@@ -238,18 +244,15 @@ class User < ApplicationRecord
             presence: true,
             inclusion: { in: IDENTITIES }
 
-  # SECURITY FIX: Proper regex anchoring for student_id
-  # Old: /[0-9]/ - only checked for presence of ANY digit
-  # New: /\A[0-9]{9}\z/ - ensures EXACTLY 9 digits, nothing else
+  # Anchored so only digits pass. Checked when the id changes, so a stored id of
+  # another length (older data) does not block saving other fields.
   validates :student_id,
             format: {
               with: /\A[0-9]{7,12}\z/,
               message: 'must be between 7 and 12 digits'
             },
             allow_blank: true,
-            presence: true,
-            if: :student?
-  
+            if: -> { student? && student_id_changed? }
   validates :url,
             format: {
               with: %r{\Ahttps?://[^\s<>"'{}|\\^`]+\z}i,
