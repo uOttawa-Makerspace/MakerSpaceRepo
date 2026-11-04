@@ -137,7 +137,7 @@ RSpec.describe "users:merge_duplicates" do
       WalkInSafetySheet.where(id: copy.id).update_all(kept.attributes.except("id", "user_id", "created_at", "updated_at"))
       WalkInSafetySheet.where(id: copy.id).update_all(created_at: kept.created_at - 30.days)
 
-      expect { merge }.to raise_error(/walk_in_safety_sheets rows #{copy.id}/)
+      expect { merge }.to raise_error(UserMergeRefused, /walk_in_safety_sheets rows #{copy.id}/)
 
       expect(WalkInSafetySheet.exists?(copy.id)).to be(true)
       expect(User.unscoped.exists?(duplicate.id)).to be(true)
@@ -147,10 +147,109 @@ RSpec.describe "users:merge_duplicates" do
       sheet_for(primary)
       different = sheet_for(duplicate)
 
-      expect { merge }.to raise_error(/walk_in_safety_sheets rows #{different.id}/)
+      expect { merge }.to raise_error(UserMergeRefused, /walk_in_safety_sheets rows #{different.id}/)
 
       expect(WalkInSafetySheet.exists?(different.id)).to be(true)
       expect(User.unscoped.exists?(duplicate.id)).to be(true)
+    end
+  end
+
+  describe "a whole run over several pairs" do
+    let(:space) { create(:space) }
+
+    # Two accounts for one person. The users table now forbids a repeated email, so the groups
+    # are handed to the merge directly instead of being found by email.
+    def duplicated_pair
+      [create(:user), create(:user)]
+    end
+
+    it "skips the pair whose sheets differ, merges the other pair and reports both" do
+      good_primary, good_duplicate = duplicated_pair
+      bad_primary, bad_duplicate = duplicated_pair
+      kept_sheet = create(:walk_in_safety_sheet, :is_adult, user: bad_primary, space: space)
+      create(:walk_in_safety_sheet, :is_adult, user: bad_duplicate, space: space)
+      moved_task = create(:volunteer_task, user: good_duplicate)
+
+      merged = []
+      skipped = []
+      usernames = [[bad_primary, bad_duplicate], [good_primary, good_duplicate]].map do |group|
+        send(:merge_users_into_one, group, merged, skipped)
+      end
+
+      expect(merged.size).to eq(1)
+      expect(merged.first[:duplicate_id]).to be_in([good_primary.id, good_duplicate.id])
+      expect(skipped.size).to eq(1)
+      # the last user of a group is kept, so the first user's sheet is the one reported as differing
+      expect(skipped.first).to include(table: "walk_in_safety_sheets", row_ids: [kept_sheet.id])
+      expect([skipped.first[:primary_id], skipped.first[:duplicate_id]]).to match_array([bad_primary.id, bad_duplicate.id])
+      expect(usernames.first).to be_nil
+      expect(usernames.last).to be_present
+
+      # the skipped pair is untouched and the sheet is not deleted
+      expect(User.unscoped.where(id: [bad_primary.id, bad_duplicate.id]).count).to eq(2)
+      expect(WalkInSafetySheet.where(space: space).count).to eq(2)
+      # the good pair merged: one of its two users is gone and its task belongs to the survivor
+      survivors = User.unscoped.where(id: [good_primary.id, good_duplicate.id])
+      expect(survivors.count).to eq(1)
+      expect(moved_task.reload.user_id).to eq(survivors.first.id)
+    end
+
+    it "says so when every holder of a username is left alone" do
+      ActiveRecord::Base.connection.remove_index :users, name: "index_users_on_lowercase_username" # rolled back with the example
+      first, second = duplicated_pair
+      User.where(id: [first.id, second.id]).update_all(username: "same")
+      expect(send(:rename_duplicated_username, "same", [first.id, second.id])).to be_nil
+      expect($stdout.string).to include("left alone: same (every holder is in a skipped pair)")
+    end
+
+    it "lists the ids of the accounts in skipped pairs" do
+      expect(send(:skipped_account_ids, [{ primary_id: 1, duplicate_id: 2 }, { primary_id: 3, duplicate_id: 2 }]))
+        .to eq([1, 2, 3])
+    end
+
+    it "prints a summary of merged and skipped pairs" do
+      merged = [{ primary_id: 1, duplicate_id: 2 }]
+      skipped = [{ primary_id: 3, duplicate_id: 4, table: "walk_in_safety_sheets", row_ids: [9] }]
+
+      send(:print_merge_summary, merged, skipped)
+
+      output = $stdout.string
+      expect(output).to include("Merged 1 pairs, skipped 1 pairs.")
+      expect(output).to include("skipped: user 4 into 3 (walk_in_safety_sheets rows 9 differ)")
+    end
+  end
+
+  describe "the whole task with a skipped pair" do
+    let(:space) { create(:space) }
+    let(:workdir) { Dir.mktmpdir("merge-task", Rails.root.join("tmp").to_s) }
+
+    after { FileUtils.rm_rf(workdir) }
+
+    it "renames only the unrelated holder of a shared username, leaves the skipped accounts alone, and finishes" do
+      # The users table now forbids a repeated email or username; the task exists for data from before that, so the
+      # two indexes are dropped for this example (the change is rolled back with the example's transaction).
+      connection = ActiveRecord::Base.connection
+      connection.remove_index :users, name: "index_users_on_lowercase_email"
+      connection.remove_index :users, name: "index_users_on_lowercase_username"
+
+      first = create(:user)
+      second = create(:user)
+      unrelated = create(:user)
+      User.where(id: [first.id, second.id]).update_all(email: "twin@example.test")
+      User.where(id: [first.id, second.id, unrelated.id]).update_all(username: "sharedname")
+      create(:walk_in_safety_sheet, :is_adult, user: first, space: space)
+      create(:walk_in_safety_sheet, :is_adult, user: second, space: space)
+
+      Rake::Task["users:merge_duplicates"].reenable
+      Dir.chdir(workdir) { expect { Rake::Task["users:merge_duplicates"].invoke }.not_to raise_error }
+
+      expect(User.where(id: [first.id, second.id]).pluck(:username)).to eq(%w[sharedname sharedname])
+      expect(unrelated.reload.username).to match(/\Asharedname\d{3}\z/)
+      expect(WalkInSafetySheet.where(space: space).count).to eq(2)
+      renamed = JSON.parse(File.read(File.join(workdir, "renamed_username_list.json")))
+      expect(renamed.map { |entry| entry["previous_username"] }).to eq(["sharedname"])
+      expect($stdout.string).to include("Merged 0 pairs, skipped 1 pairs.")
+      expect($stdout.string).to include("Usernames left duplicated because their pair was skipped: sharedname")
     end
   end
 

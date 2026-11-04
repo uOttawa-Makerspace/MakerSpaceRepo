@@ -44,7 +44,8 @@ module JobOrderSpecHelpers
     {
       "3D Print" => "Submit a file to be 3D Printed in our MakerSpace",
       "Laser Cut" => "Submit a file to be Laser Cutted in our MakerSpace",
-      "Design Services" => "Create the design you want with the help of our employees"
+      "Design Services" => "Create the design you want with the help of our employees",
+      "Ready to Make" => "Bring a design that is ready for production"
     }.each do |name, description|
       next if JobType.find_by(name: name)
 

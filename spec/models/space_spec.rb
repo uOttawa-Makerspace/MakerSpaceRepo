@@ -117,6 +117,31 @@ RSpec.describe Space, type: :model do
       expect(dup.errors[:name]).to eq(["Space already exists"])
     end
 
+    it "refuses destroy with one message per kind of history, and deletes nothing" do
+      space = create(:space)
+      sub_space = create(:sub_space, space: space)
+      create(:sub_space_booking, sub_space: sub_space)
+      create(:volunteer_task, space: space)
+
+      expect(space.destroy).to be(false)
+
+      expect(space.errors.full_messages).to eq(
+        ["Cannot delete record because dependent volunteer tasks exist",
+         "Cannot delete record because dependent sub space bookings exist"]
+      )
+      expect(SubSpace.exists?(sub_space.id)).to be(true)
+      expect(space.deletion_refusals.size).to eq(2)
+    end
+
+    it "words the refusals from the locale, with the association names of the locale" do
+      space = create(:space)
+      create(:volunteer_task, space: space)
+
+      expect(I18n.with_locale(:fr) { space.deletion_refusals }).to eq(
+        ["Impossible de supprimer l'enregistrement car il reste des tâches de bénévolat"]
+      )
+    end
+
     it "defaults keycode to a blank string and has no capacity limit" do
       space = Space.create!(name: "Defaults")
       expect(space).to have_attributes(keycode: "", max_capacity: nil, destroy_admin_id: nil)

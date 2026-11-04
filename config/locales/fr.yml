@@ -199,6 +199,12 @@ fr:
       submit: "Soumettre"
   activerecord:
     attributes:
+      space:
+        walk_in_safety_sheets: "fiches de sécurité pour visiteurs"
+        lab_sessions: "séances de laboratoire"
+        training_sessions: "séances de formation"
+        volunteer_tasks: "tâches de bénévolat"
+        sub_space_bookings: "réservations de sous-espaces"
       user:
         student_id: Numéro d'étudiant
     errors:
@@ -239,6 +245,8 @@ fr:
               in_the_past: "ne peut pas être dans le passé pour une réservation déjà commencée. Choisissez une heure de fin après maintenant."
               booking_ended: "ne peut plus être modifiée : cette réservation est déjà terminée."
       messages:
+        restrict_dependent_destroy:
+          has_many: "Impossible de supprimer l'enregistrement car il reste des %{record}"
         blank: "Ce champ est requis."
         inclusion: "Sélection non valide."
   sub_space_booking:

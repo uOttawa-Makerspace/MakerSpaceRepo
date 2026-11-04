@@ -86,5 +86,43 @@ RSpec.describe "scheduled maintenance" do
       expect { described_class.refresh_volunteer_activity! }.not_to(change { Program.pluck(:id, :active, :updated_at) })
       expect(other.reload.active).to be(true)
     end
+
+    it "runs two set-based updates however many volunteers there are" do
+      4.times { volunteer(last_seen_at: 3.months.ago, active: true) }
+      4.times { volunteer(last_seen_at: 1.week.ago, active: false) }
+
+      updates = []
+      counter = ->(*, payload) { updates << payload[:sql] if payload[:sql].start_with?("UPDATE") }
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { described_class.refresh_volunteer_activity! }
+
+      expect(updates.size).to eq(2)
+    end
+
+    it "updates only the first volunteer row of a user that (against the validation) has two" do
+      first = volunteer(last_seen_at: 3.months.ago, active: true)
+      second = Program.insert_all!(
+        [{ user_id: first.user_id, program_type: Program::VOLUNTEER, active: true, created_at: Time.current, updated_at: Time.current }],
+        returning: %w[id]
+      ).first["id"]
+
+      described_class.refresh_volunteer_activity!
+
+      expect(first.reload.active).to be(false)
+      expect(Program.find(second).active).to be(true)
+    end
+
+    it "stamps updated_at only on the programs it changes and skips deleted users" do
+      changed = volunteer(last_seen_at: 3.months.ago, active: true)
+      unchanged = volunteer(last_seen_at: 1.week.ago, active: true)
+      gone = volunteer(last_seen_at: 3.months.ago, active: true)
+      gone.user.update_columns(deleted: true)
+      before = unchanged.reload.updated_at
+
+      described_class.refresh_volunteer_activity!
+
+      expect(changed.reload.updated_at).to be > before
+      expect(unchanged.reload.updated_at).to eq(before)
+      expect(Program.find(gone.id).active).to be(true)
+    end
   end
 end

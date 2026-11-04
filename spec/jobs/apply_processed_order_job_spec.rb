@@ -579,21 +579,130 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         end
       end
 
-      [429, 500, 502, 503].each do |code|
-        it "retries after an HTTP #{code} answer" do
+      # The client lets a 2xx that is not 200 through; with an empty body it must not read as "no metafields".
+      [202, 204].each do |code|
+        it "retries after an HTTP #{code} answer with an empty body, applying nothing" do
           lookup_answers(double(query: double(code: code, body: {})))
+          order = hook(membership_order.merge(id: 7417 + code))
+          expect_retry(order)
+          expect(order.last_error).to include("MetafieldLookupFailed")
+          expect(Membership.count).to eq(0)
+        end
+      end
+
+      # Only a well-formed answer can mean "no metafields"; any other 200 shape is a failed lookup, so the order is
+      # retried instead of taking the no-reference path (which would create a second, paid membership).
+      {
+        "a nil body" => nil,
+        "a body that is not a hash" => "<html>oops</html>",
+        "a body without data" => {},
+        "an empty errors list and no data" => { "errors" => [] },
+        "data without a node" => { "data" => {} },
+        "a node whose metafields are not a list of edges" => { "data" => { "node" => { "metafields" => {} } } }
+      }.each do |name, body|
+        it "retries after a 200 answer with #{name}, applying nothing" do
+          lookup_answers(double(query: double(code: 200, body: body)))
+          order = hook(membership_order.merge(id: 7430 + body.to_s.size))
+          expect_retry(order)
+          expect(order.last_error).to include("MetafieldLookupFailed")
+          expect(Membership.count).to eq(0)
+        end
+      end
+
+      it "reads a null node, or a node without metafields, as no metafields" do
+        [{ "data" => { "node" => nil } }, { "data" => { "node" => {} } }].each_with_index do |body, i|
+          lookup_answers(double(query: double(code: 200, body: body)))
+          expect(hook(membership_order.merge(id: 7470 + i)).status).to eq("applied")
+        end
+      end
+
+      # The shopify_api client raises HttpResponseError for every non-2xx answer (the raised-error examples above),
+      # so a non-2xx response object never reaches the lookup. These examples used to hand it one by stub.
+      [429, 500, 502, 503].each do |code|
+        it "retries after an HTTP #{code} answer, which the client raises" do
+          client = double
+          allow(client).to receive(:query) { raise ShopifyAPI::Errors::HttpResponseError.new(response: response_with(code)) }
+          lookup_answers(client)
           expect_retry(hook(membership_order.merge(id: 7412)))
         end
       end
 
-      it "applies a lookup Shopify refused for good as an order with no reference, and reports it" do
+      # An order whose membership reference could not be looked up is not an order without a reference: the
+      # pending membership it names stays unpaid, so matching by email or title would create a second, paid one.
+      # (This used to apply the email fallback.)
+      it "applies nothing for the membership of a lookup Shopify refused for good, and reports it once" do
+        pending = create(:membership, user: user, status: :pending)
         lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
         order = hook(membership_order.merge(id: 7413))
         expect(order).to have_attributes(status: "applied", attempts: 1)
-        expect(user.memberships.paid.count).to eq(1) # the email fallback ran
+        expect(user.memberships.paid.count).to eq(0)
+        expect(Membership.count).to eq(1)
+        expect(pending.reload).not_to be_paid
+        # one report for the one cause: the refusal, with the codes and the product it left unapplied
+        expect(reports.size).to eq(1)
+        error, opts = reports.first
+        expect(error).to be_a(ShopOrderApplier::MetafieldLookupRejected)
+        expect(error.message).to include("7413", "ACCESS_DENIED", "membership")
+        expect(error.message).not_to include(user.email)
+        expect(opts[:context]).to eq(shopify_order_id: "7413", codes: ["ACCESS_DENIED"], affected: [:membership])
+      end
+
+      it "reports one refusal listing both products of a locker and membership order, and applies neither" do
+        lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
+        hook(membership_order.merge(id: 7421, tags: [LockerRental.draft_order_operating_tag, membership_tag]))
+
+        expect(Membership.count).to eq(0)
+        expect(LockerPayment.count).to eq(0)
+        expect(reports.size).to eq(1)
+        error, opts = reports.first
+        expect(error).to be_a(ShopOrderApplier::MetafieldLookupRejected)
+        expect(opts[:context]).to eq(shopify_order_id: "7421", codes: ["ACCESS_DENIED"], affected: %i[locker membership])
+      end
+
+      it "reports one refusal for a locker-only order, not a locker order without a reference" do
+        lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
+        hook(id: 7422, tags: [LockerRental.draft_order_operating_tag], draft_order_id: 99, line_items: [{ title: "Locker", quantity: 1 }])
+
+        expect(reports.size).to eq(1)
+        error, opts = reports.first
+        expect(error).to be_a(ShopOrderApplier::MetafieldLookupRejected)
+        expect(opts[:context]).to eq(shopify_order_id: "7422", codes: ["ACCESS_DENIED"], affected: [:locker])
+      end
+
+      it "still reports a locker order that really carries no reference when nothing was refused" do
+        lookup_answers(double(query: double(code: 200, body: { "data" => { "node" => nil } })))
+        hook(id: 7423, tags: [LockerRental.draft_order_operating_tag], draft_order_id: 99, line_items: [{ title: "Locker", quantity: 1 }])
+
+        expect(reports.map(&:first)).to contain_exactly(an_instance_of(ShopOrderApplier::LockerOrderWithoutReference))
+      end
+
+      it "does not hold back the membership when only the locker's lookup was refused and the membership field is blank" do
+        lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
+        payload = membership_order.merge(
+          id: 7420, tags: [LockerRental.draft_order_operating_tag, membership_tag],
+          metafields: [{ namespace: "makerepo", key: "membership_db_reference", value: "" }]
+        )
+        hook(payload)
+        expect(user.memberships.paid.count).to eq(1) # no reference was ever given: the email fallback applies
         error, opts = reports.find { |e, _| e.is_a?(ShopOrderApplier::MetafieldLookupRejected) }
-        expect(error.message).to include("7413", "ACCESS_DENIED")
-        expect(opts[:context]).to eq(shopify_order_id: "7413", codes: ["ACCESS_DENIED"])
+        expect(error.message).to include("7420", "ACCESS_DENIED") # the refusal itself, reported once
+        expect(opts[:context]).to eq(shopify_order_id: "7420", codes: ["ACCESS_DENIED"], affected: [:locker])
+        expect(reports.map(&:first)).not_to include(an_instance_of(ShopOrderApplier::UnresolvedMembershipOrder))
+        expect(reports.map(&:first)).not_to include(an_instance_of(ShopOrderApplier::LockerOrderWithoutReference))
+      end
+
+      it "still applies the other branches of an order whose membership lookup was refused" do
+        lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
+        payload = membership_order.merge(id: 7415)
+        payload[:line_items] += [{ product_id: cc_product_id, quantity: 1 }]
+        expect { hook(payload) }.to change { user.cc_moneys.count }.by(1)
+        expect(Membership.count).to eq(0)
+      end
+
+      it "keeps the email fallback for a membership order whose draft order never had a reference" do
+        lookup_answers(double(query: double(code: 200, body: { "data" => { "node" => nil } })))
+        expect(hook(membership_order.merge(id: 7416)).status).to eq("applied")
+        expect(user.memberships.paid.count).to eq(1)
       end
 
       it "looks the draft order up once for a locker and membership order with no metafields in the payload" do

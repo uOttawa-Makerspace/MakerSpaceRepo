@@ -6,13 +6,13 @@ class Space < ApplicationRecord
   has_many :pi_readers
   has_many :keys, dependent: :nullify
   has_many :key_requests, dependent: :nullify
-  has_many :walk_in_safety_sheets, dependent: :restrict_with_error
-  has_many :lab_sessions, dependent: :destroy
+  has_many :walk_in_safety_sheets
+  has_many :lab_sessions
   has_many :users, through: :lab_sessions
   has_and_belongs_to_many :trainings
-  has_many :training_sessions, dependent: :destroy
+  has_many :training_sessions
   has_many :certifications, through: :training_sessions
-  has_many :volunteer_tasks, dependent: :destroy
+  has_many :volunteer_tasks
   has_many :popular_hours, dependent: :destroy
   has_many :shadowing_hours
   has_many :users, dependent: :nullify
@@ -20,10 +20,19 @@ class Space < ApplicationRecord
   has_many :space_staff_hour
   has_many :shifts, dependent: :destroy
   has_many :sub_spaces, dependent: :destroy
+  has_many :sub_space_bookings, through: :sub_spaces
   has_many :staff_needed_calendars, dependent: :destroy
   has_many :space_manager_joins, dependent: :destroy
   has_many :space_managers, through: :space_manager_joins, source: :user
   has_many :users, through: :staff_spaces
+
+  # A space with user history cannot be deleted: walk-in safety sheets, lab sessions, training sessions (with
+  # their certifications and exams), volunteer tasks (with their hours) and sub space bookings feed reports and
+  # course records. The delete is refused with an explanation instead. The check runs before anything is
+  # destroyed (prepend), so the sub spaces are not taken along with their bookings.
+  HISTORY_ASSOCIATIONS = %i[walk_in_safety_sheets lab_sessions training_sessions volunteer_tasks sub_space_bookings].freeze
+  REFUSAL_KEY = :"restrict_dependent_destroy.has_many"
+  before_destroy :refuse_deletion_while_history_exists, prepend: true
 
   after_create :create_popular_hours, unless: -> { Rails.env.test? }
 
@@ -34,6 +43,17 @@ class Space < ApplicationRecord
             uniqueness: {
               message: "Space already exists"
             }
+
+  # The history this space still has, as the associations that block its deletion. Empty when it can be deleted.
+  def blocking_history
+    HISTORY_ASSOCIATIONS.select { |association| public_send(association).exists? }
+  end
+
+  # Why this space cannot be deleted, one message per kind of history, built the way restrict_with_error builds its
+  # message (the same key and association names, so model-scoped overrides and the locale apply).
+  def deletion_refusals
+    blocking_history.map { |association| errors.generate_message(:base, REFUSAL_KEY, record: refusal_record_name(association)) }
+  end
 
   def signed_in_users
     lab_sessions
@@ -210,4 +230,17 @@ class Space < ApplicationRecord
     weekly_events.sort_by(&:dtstart)
   end
 
+  private
+
+  def refusal_record_name(association)
+    self.class.human_attribute_name(association).downcase
+  end
+
+  def refuse_deletion_while_history_exists
+    history = blocking_history
+    return if history.empty?
+
+    history.each { |association| errors.add(:base, REFUSAL_KEY, record: refusal_record_name(association)) }
+    throw :abort
+  end
 end

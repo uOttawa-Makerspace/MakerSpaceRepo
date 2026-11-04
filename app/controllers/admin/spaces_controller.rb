@@ -244,8 +244,8 @@ class Admin::SpacesController < AdminAreaController
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
       if space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
-        # The pi readers are detached only if the space is really deleted. A refusal (the
-        # space still has dependants it must not lose) clears the pending request and says why.
+        # The pi readers are detached only if the space is really deleted. A refusal (the space still has
+        # history it must not lose) is the model's, so its errors say why; the pending request is cleared.
         deleted = Space.transaction do
           PiReader.where(space_id: space.id).update_all(space_id: nil)
           space.destroy || raise(ActiveRecord::Rollback)
@@ -256,6 +256,10 @@ class Admin::SpacesController < AdminAreaController
           space.update_columns(destroy_admin_id: nil)
           flash[:alert] = space.errors.full_messages.to_sentence.presence || "The space could not be deleted."
         end
+      elsif (refusals = space.deletion_refusals).any?
+        # Said at the first request, so nobody waits for a second admin to be told, and no request is recorded.
+        space.update_columns(destroy_admin_id: nil) if space.destroy_admin_id.present?
+        flash[:alert] = refusals.to_sentence
       elsif space.update(
           destroy_admin_id: @user.id
         )

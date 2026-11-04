@@ -190,10 +190,12 @@ module ShopifyConcern
       end
       body = resp.body
       errors = body.is_a?(Hash) ? Array.wrap(body["errors"]) : []
-      if resp.code != 200
+      # The client raises HttpResponseError for non-2xx answers (rescued above), but it passes a 2xx that is not 200
+      # (202, 204 with an empty body) through. GraphQL answers with 200, so anything else is not an answer to the
+      # query; reading it as "no metafields" would send the order down the no-reference path.
+      unless resp.code == 200
         raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (HTTP #{resp.code})"
       end
-
       if errors.present?
         codes = errors.filter_map { |e| e.is_a?(Hash) ? e.dig("extensions", "code").presence : nil }.uniq
         if codes.empty? || (codes & ShopifyConcern::TRANSIENT_GRAPHQL_CODES).any?
@@ -203,7 +205,25 @@ module ShopifyConcern
         raise ShopifyConcern::MetafieldLookupRejected, codes
       end
 
-      body&.dig("data", "node", "metafields", "edges")&.map { |n| n["node"] } || []
+      parse_metafield_edges(body)
+    end
+
+    # [] only for a well-formed answer whose owner node is null or has no metafields (a node of another type).
+    # Any other shape (no body, not a hash, no "data") is not an answer to the query: reading it as "no
+    # metafields" would send a membership order down the no-reference path, so the lookup fails and is retried.
+    def parse_metafield_edges(body)
+      data = body.is_a?(Hash) ? body["data"] : nil
+      unless data.is_a?(Hash) && data.key?("node")
+        raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (unexpected answer)"
+      end
+
+      node = data["node"]
+      return [] if node.nil? || (node.is_a?(Hash) && !node.key?("metafields"))
+
+      edges = node.is_a?(Hash) && node["metafields"].is_a?(Hash) ? node["metafields"]["edges"] : nil
+      raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (unexpected answer)" unless edges.is_a?(Array)
+
+      edges.map { |edge| edge.is_a?(Hash) ? edge["node"] : nil }.compact
     end
 
     def shopify_admin_client

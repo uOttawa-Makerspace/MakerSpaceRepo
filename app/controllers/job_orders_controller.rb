@@ -23,7 +23,7 @@ class JobOrdersController < SessionsController
                   resend_quote_email
                   comments
                 ]
-  before_action :set_design_services_type, only: %i[new create]
+  before_action :set_entry_job_types, only: %i[new create]
   before_action :set_job_order,
                 only: %w[
                   destroy
@@ -417,7 +417,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   private
 
   # The "new" page is also rendered again when create fails, so both actions need it.
-  def set_design_services_type
+  def set_entry_job_types
+    @ready_to_make_type = JobType.ready_to_make
     @design_services_type = JobType.design_services
   end
 

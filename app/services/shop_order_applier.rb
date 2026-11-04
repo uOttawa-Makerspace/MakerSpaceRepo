@@ -20,19 +20,22 @@ class ShopOrderApplier
   class UnknownMembership < StandardError; end
   class UnresolvedMembershipOrder < StandardError; end
   class UnresolvedCcOrder < StandardError; end
-  # Shopify refused a metafield lookup for good (an access or invalid-id error): reported, the order goes on
-  # as one without a reference.
+  # Shopify refused a metafield lookup for good (an access or invalid-id error): reported once, and the order goes
+  # on without that reference. The locker and membership branches that needed it apply nothing (the reference is
+  # unknown, not absent); the others apply as designed.
   class MetafieldLookupRejected < StandardError; end
 
   PROVIDER = "shopify"
   CC_PRODUCT_ID = 4_359_597_129_784
   LOCKER_KEY = "locker_db_reference"
   MEMBERSHIP_KEY = "membership_db_reference"
+  PRODUCT_OF_KEY = { LOCKER_KEY => :locker, MEMBERSHIP_KEY => :membership }.freeze
 
   # What one stored payload asks for, classified once from the payload alone. The references and a refused lookup
   # are filled in by the Shopify lookup (resolve_references).
   Plan = Struct.new(:hook, :id, :topic, :locker, :membership, :email, :cc_items, :paid_at,
-                    :locker_ref, :membership_ref, :lookup_rejection, keyword_init: true) do
+                    :locker_ref, :membership_ref, :lookup_rejection, :left_unapplied,
+                    keyword_init: true) do
     alias_method :locker?, :locker
     alias_method :membership?, :membership
 
@@ -130,6 +133,9 @@ class ShopOrderApplier
       if field.nil?
         remote = fetch_remote_metafields(plan) if remote == :unfetched
         field = remote&.find { |f| f["key"] == key }
+        # the lookup that was meant to supply this reference was refused: the reference is unknown, not absent, so
+        # the product is left unapplied (and reported with the refusal) instead of being treated as one without a reference
+        (plan.left_unapplied ||= []) << PRODUCT_OF_KEY.fetch(key) if plan.lookup_rejection
       end
       field&.[]("value").presence
     end
@@ -177,24 +183,34 @@ class ShopOrderApplier
     @applied_here && ProcessedOrder.where(id: @record.id, status: "applied").exists?
   end
 
+  # One report per cause, and the cause is the refusal: it names the products it left unapplied (the locker and
+  # membership branches of an order whose reference it was meant to supply). Those branches send no report of
+  # their own; orders that really carry no reference, with nothing refused, are still reported per product.
   def report_lookup_rejection(plan)
     return unless plan.lookup_rejection
 
+    affected = Array(plan.left_unapplied)
     report_problem(
-      MetafieldLookupRejected.new("metafield lookup for order #{plan.id} rejected (#{plan.lookup_rejection.join(', ')})"),
-      context: { shopify_order_id: plan.id, codes: plan.lookup_rejection }
+      MetafieldLookupRejected.new(
+        "metafield lookup for order #{plan.id} rejected (#{plan.lookup_rejection.join(', ')}); " \
+        "left unapplied: #{affected.join(', ').presence || 'nothing'}"
+      ),
+      context: { shopify_order_id: plan.id, codes: plan.lookup_rejection, affected: affected }
     )
   end
 
   # A membership or CC order whose target cannot be found, which no retry can fix: reported with the order id
   # and left to staff. The order is still applied.
-  def report_unresolved(plan, error_class, branch, message)
-    report_problem(error_class.new("#{branch} order #{plan.id} #{message}"), context: { shopify_order_id: plan.id })
+  def report_unresolved(plan, error_class, branch, message, **extra_context)
+    report_problem(error_class.new("#{branch} order #{plan.id} #{message}"),
+                   context: { shopify_order_id: plan.id }.merge(extra_context))
   end
 
   # ---- locker
 
   def apply_locker_order(plan)
+    return if plan.left_unapplied&.include?(:locker) # the refused lookup is reported once (report_lookup_rejection)
+
     # A locker-tagged order that names no locker rental at all: nothing to apply, and not to be lost silently
     # either (staff reconcile it from the report).
     if plan.locker_ref.blank?
@@ -241,6 +257,11 @@ class ShopOrderApplier
       report_unresolved(plan, UnresolvedMembershipOrder, "membership", "has no line items")
       return
     end
+
+    # A membership order whose reference lookup was refused is not an order without a reference: the pending
+    # membership it names is still unpaid, and matching by email or title would create a second, paid one.
+    # Nothing is applied for membership; the refusal is reported once (report_lookup_rejection).
+    return if plan.left_unapplied&.include?(:membership)
 
     if plan.membership_ref.present?
       membership = Membership.find_by(id: plan.membership_ref)

@@ -51,3 +51,23 @@ Here are some things to keep in mind:
 - Based on whether the server will be available for the duration of the period, select the appropriate maintenance page.
 - Ensure you have the appropriate backups (DB, system images)
 - In the case of a migration, have both servers running simultaneously only after DNS points to the new server and functionality has been verified should you shutdown the old server.
+
+## Scheduled tasks
+
+Solid Queue now runs the recurring tasks. They are listed in `config/recurring.yml`, and they need a running Solid Queue worker. Production still has a hand-maintained crontab, so each task that moved would run twice (once from the crontab, once from Solid Queue) unless its crontab line is removed in the same deploy.
+
+In the deploy that ships the recurring tasks, remove these lines from the crontab:
+
+- `popular_hours` (the popular hours calculation)
+- `active_volunteers` (both entries)
+- `printers:clear_printers`
+- `lockers:notify_expired_rentals`, if it is there
+- the Google Calendar webhook registration
+- `reports:send_cdel_report_to_sharepoint`
+- the retired `print_order_notifications` reminder
+
+On staging, also remove the `GoogleCalendarSyncJob` line.
+
+One line stays: `increment_year`. It is not a Solid Queue task and keeps running from the crontab.
+
+The locker notices migration must run before the first 8:30am run of the locker expiry notices (`locker_expiry_notices`). It marks the rentals that expired long ago as already notified, so renters are not mailed about old expiries. Running the migrations as part of the deploy covers this.

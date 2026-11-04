@@ -35,6 +35,74 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
   end
 
   describe "dispatching" do
+    it "marks the spent orders failed once per run, however many rounds a backlog takes" do
+      full = Array.new(ProcessedOrder::BATCH) { |i| i + 1 }
+      rounds = [full, full, full, []]
+      allow(ProcessedOrder).to receive(:dispatch_due).and_wrap_original { |_m, **| rounds.shift }
+      expect(ProcessedOrder).to receive(:fail_exhausted).once.ordered
+      expect(ProcessedOrder).to receive(:dispatch_due).with(now: now, skip_fail_exhausted: true).exactly(4).times.ordered
+
+      described_class.perform_now(now: now)
+    end
+
+    it "reports a failure of the spent-order step (class only) and still dispatches and reports stranded orders" do
+      order = stored(1)
+      allow(ProcessedOrder.connection).to receive(:select_rows)
+        .and_raise(ActiveRecord::StatementInvalid, "PG error near order 4242 secret")
+      expect(ProcessedOrder).to receive(:report_stranded).with(now: now)
+
+      expect { described_class.perform_now(now: now) }.not_to raise_error
+
+      expect(queued_ids).to eq([order.id])
+      error, opts = reports.find { |e, _| e.is_a?(ProcessedOrder::SpentOrderStepFailed) }
+      expect(error.message).to eq("marking the spent orders failed raised (ActiveRecord::StatementInvalid)")
+      expect(error.message).not_to include("secret")
+      expect(opts[:context]).to eq(step: "fail_exhausted", error_class: "ActiveRecord::StatementInvalid")
+    end
+
+    it "behaves the same when dispatch_due is called alone: reported, and the due orders are still handed out" do
+      order = stored(1)
+      allow(ProcessedOrder.connection).to receive(:select_rows).and_raise(ActiveRecord::StatementInvalid, "boom")
+
+      expect(ProcessedOrder.dispatch_due(now: now)).to eq([order.id])
+      expect(reports.map(&:first)).to include(an_instance_of(ProcessedOrder::SpentOrderStepFailed))
+    end
+
+    it "survives a database error of the spent-order UPDATE inside an open transaction (a savepoint)" do
+      order = stored(1)
+      # a real database error: without a savepoint it would abort the surrounding transaction and the hand-out
+      # that follows would fail with "current transaction is aborted"
+      allow(ProcessedOrder.connection).to receive(:select_rows).and_wrap_original { |original, *| original.call("SELECT 1/0") }
+
+      expect(ProcessedOrder.dispatch_due(now: now)).to eq([order.id])
+      expect(reports.map(&:first)).to include(an_instance_of(ProcessedOrder::SpentOrderStepFailed))
+    end
+
+    it "still reports the other spent orders when the report of one raises" do
+      refs = 3.times.map { |i| stored(i + 1, attempts: ProcessedOrder::MAX_ATTEMPTS).provider_ref }
+      allow(Rails.error).to receive(:report) do |error, **opts|
+        raise "report down" if opts.dig(:context, :shopify_order_id) == refs[1]
+
+        reports << [error, opts]
+      end
+
+      expect(ProcessedOrder.fail_exhausted(now: now)).to match_array(refs)
+
+      expect(reports.map { |_, opts| opts.dig(:context, :shopify_order_id) }).to contain_exactly(refs[0], refs[2])
+    end
+
+    it "keeps dispatch_due failing the spent orders when it is called alone" do
+      spent = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS)
+      ProcessedOrder.dispatch_due(now: now)
+      expect(spent.reload.status).to eq("failed")
+    end
+
+    it "leaves the spent orders to the caller with skip_fail_exhausted: true" do
+      spent = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS)
+      ProcessedOrder.dispatch_due(now: now, skip_fail_exhausted: true)
+      expect(spent.reload.status).to eq("received")
+    end
+
     it "hands out a due received order by leasing it for 15 minutes and touches nothing else" do
       order = stored(1)
       before = order.reload.attributes.slice("attempts", "next_attempt_at", "updated_at", "status")
