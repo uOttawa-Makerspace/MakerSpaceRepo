@@ -195,6 +195,7 @@ class JobTasksController < SessionsController
     custom_service.save!
 
     params[:job_task][:job_service_id] = custom_service.id.to_s
+    @job_task.new_custom_service = custom_service
   end
 
   def job_task_params
