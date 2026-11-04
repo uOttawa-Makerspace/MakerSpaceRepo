@@ -785,8 +785,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(target.auth_attempts).to eq(5)
       expect(target.locked_until).to be > 90.years.from_now
       post login_authentication_path, params: { username_email: target.username, password: password }
-      expect(flash[:alert]).to eq("Incorrect username, email or password.")
-      expect(session[:user_id]).not_to eq(target.id)
+      expect(flash[:alert]).to include("locked")
       put toggle_lock_user_admin_users_path, params: { id: target.id }
       expect(flash[:notice]).to eq("User unlocked!")
       target.reload

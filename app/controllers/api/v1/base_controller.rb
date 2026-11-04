@@ -13,7 +13,7 @@ module Api
     #
     # Errors are always `{error: {code:, message:, fields?:}}` with a real status:
     # 400 bad_request, 406 not_acceptable, 401 unauthenticated, 403 forbidden, 404 not_found,
-    # 422 validation_failed / parameter_missing, 429 rate_limited,
+    # 422 validation_failed / parameter_missing, 423 account_locked, 429 rate_limited,
     # 500 internal_error (see json_internal_errors).
     class BaseController < ActionController::API
       include RateLimitStore

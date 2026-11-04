@@ -632,6 +632,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(user.locked_until).to be > 90.years.from_now
       post login_authentication_path, params: { username_email: user.username, password: "NewPassw0rd!x#9" }
       expect(flash[:alert]).to include("locked")
+      expect(session[:user_id]).not_to eq(user.id)
       user.update_columns(locked_until: nil)
       patch reset_password_confirmation_users_path, params: reset_params(user, pw: "AnotherPassw0rd!y#7")
       expect(user.reload.locked).to be(true)
@@ -949,7 +950,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "works end to end from the emailed lockout link" do
       u = create(:user, :regular_user)
-      u.lock_account!
+      perform_enqueued_jobs { u.lock_account! }
       expect(deliveries.size).to eq(1)
       token = deliveries.first.body.to_s[/token=([^"'&\s<]+)/, 1]
       get unlock_account_users_path, params: { token: CGI.unescape(token) }

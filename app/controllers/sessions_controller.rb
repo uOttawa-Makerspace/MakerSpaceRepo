@@ -30,6 +30,25 @@ class SessionsController < ApplicationController
                    token: @user.token
                  }
         end
+      elsif @sign_in_refusal == :locked
+        @user = User.new
+        locked_user = User.username_or_email(params[:username_email])
+        format.html do
+          flash.now[:alert] = ActionController::Base.helpers.sanitize("""
+          Your account has been locked due to too many failed login attempts. 
+          Use the unlock link in your email, or #{view_context.link_to('contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked", class: 'text-primary')} 
+          to unlock your account#{lock_wait_suffix(locked_user)}.
+          """)
+          render :login, status: :unprocessable_content
+        end
+        format.json do
+          render json: {
+                   error:
+                     "Your account has been locked due to too many failed login attempts. Use the unlock link in your email or contact an administrator at #{SUPPORT_EMAIL} to unlock your account#{lock_wait_suffix(locked_user)}.",
+                   support_email: SUPPORT_EMAIL
+                 },
+                 status: :unprocessable_content
+        end
       elsif @sign_in_refusal == :unconfirmed
         @user = User.new
         format.html do

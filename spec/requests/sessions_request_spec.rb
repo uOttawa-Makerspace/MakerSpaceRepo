@@ -169,54 +169,25 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(user.reload.locked).to be(true)
     end
 
-    # While a lock is in effect the password is not compared and the answer is the same as for
-    # an unknown login, whatever the password.
-    describe "a locked account" do
-      def unknown_answer(as_json:)
-        if as_json
-          post login_authentication_path, params: { username_email: "nobody", password: "x" }, as: :json
-          [response.status, response.body]
-        else
-          post login_authentication_path, params: { username_email: "nobody", password: "x" }
-          [response.status, flash[:alert]]
-        end
-      end
+    it "locked json response carries the support email" do
+      user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
+      post login_authentication_path,
+           params: { username_email: user.username, password: password }, as: :json
+      body = JSON.parse(response.body)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(body["support_email"]).to eq("uottawa.makerepo@gmail.com")
+      expect(body["error"]).to include("locked")
+    end
 
-      [
-        ["a timed lock", -> { { locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5 } }],
-        ["an admin lock (99 years)", -> { { locked: true, locked_until: 99.years.from_now, auth_attempts: 5 } }],
-        ["an admin lock without an end", -> { { locked: true, locked_until: nil, auth_attempts: 5 } }]
-      ].each do |name, columns|
-        it "with #{name} answers the right and a wrong password like an unknown login, html and json, with no session" do
-          user.update_columns(columns.call)
-          html_unknown = unknown_answer(as_json: false)
-          json_unknown = unknown_answer(as_json: true)
-          [password, "wrong"].each do |pw|
-            login!(user, pw: pw)
-            expect([response.status, flash[:alert]]).to eq(html_unknown)
-            expect(html_unknown.last).to eq("Incorrect username, email or password.")
-            post login_authentication_path, params: { username_email: user.username, password: pw }, as: :json
-            expect([response.status, response.body]).to eq(json_unknown)
-            expect(session[:user_id]).to be_nil
-            get check_signed_in_path
-            expect(JSON.parse(response.body)["signed_in"]).to eq("false")
-          end
-          expect(user.reload).to have_attributes(locked: true, auth_attempts: 5)
-        end
-      end
-
-      it "does not compare the password while the lock lasts" do
-        user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
-        expect_any_instance_of(User).not_to receive(:authenticate_password)
-        login!(user)
-      end
-
-      it "does not leak the flash into the next request" do
-        user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
-        login!(user)
-        get login_path
-        expect(flash[:alert]).to be_nil
-      end
+    it "rejects even the correct password while locked (html: 422 re-render with a flash.now)" do
+      user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
+      login!(user)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to include("locked due to too many failed login attempts").and include("unlock link in your email").and include("or wait")
+      get login_path
+      expect(flash[:alert]).to be_nil # flash.now: it does not leak into the next request
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
 
     it "auto-unlocks after locked_until passes and lets the user in" do
@@ -324,6 +295,52 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["signed_in"]).to eq("true")
       login!(user)
       expect(response).not_to redirect_to(root_path)
+    end
+
+    it "a lock without an end (locked_until nil) refuses the login instead of raising, html and json" do
+      # login_authentication compared nil < now (a 500) for this valid admin-lock state
+      user.update_columns(locked: true, locked_until: nil)
+      login!(user)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to include("locked")
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["error"]).to include("locked").and(satisfy { |m| !m.include?("wait") })
+    end
+
+    it "an admin lock (99 years) is not described as a 99-year wait, html and json" do
+      user.update_columns(locked: true, locked_until: 99.years.from_now, auth_attempts: 5)
+      login!(user)
+      expect(flash[:alert]).to include("locked").and(satisfy { |m| !m.include?("wait") && !m.include?("years") })
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(JSON.parse(response.body)["error"]).to include("locked").and(satisfy { |m| !m.include?("wait") && !m.include?("years") })
+    end
+
+    it "a lock in effect shows the locked wording only after the correct password" do
+      user.update_columns(locked: true, locked_until: 3.minutes.from_now, auth_attempts: 5)
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(JSON.parse(response.body)["error"]).to start_with("Your account has been locked").and include("wait")
+      expect(session[:user_id]).to be_nil
+      expect(user.reload.auth_attempts).to eq(5)
+    end
+
+    it "a wrong password for a locked account gets the generic message, html and json, and counts nothing" do
+      user.update_columns(locked: true, locked_until: 3.minutes.from_now, auth_attempts: 5)
+      login!(user, pw: "wrong")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("Incorrect username, email or password.")
+      post login_authentication_path, params: { username_email: user.username, password: "wrong" }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)).to eq("error" => "Incorrect username, email or password.")
+      expect(user.reload).to have_attributes(locked: true, auth_attempts: 5)
+    end
+
+    it "an unknown account gets the same answer as a locked account with a wrong password" do
+      user.update_columns(locked: true, locked_until: 3.minutes.from_now, auth_attempts: 5)
+      post login_authentication_path, params: { username_email: user.username, password: "wrong" }, as: :json
+      locked_answer = [response.status, response.body]
+      post login_authentication_path, params: { username_email: "nobody", password: "wrong" }, as: :json
+      expect([response.status, response.body]).to eq(locked_answer)
     end
 
     it "five wrong passwords lock a legacy-invalid account over HTTP too" do
@@ -480,7 +497,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(response).not_to redirect_to(root_path)
       post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
       expect(response).to have_http_status(:unprocessable_content)
-      expect(JSON.parse(response.body)["error"]).to eq("Incorrect username, email or password.")
+      expect(JSON.parse(response.body)["support_email"]).to be_present
     end
 
     it "accepts a JWT during a timed (brute-force) lockout and after it has lapsed" do

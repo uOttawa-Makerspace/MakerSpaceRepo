@@ -78,28 +78,30 @@ RSpec.describe "/api/v1/session", type: :request do
       expect(error["message"]).to eq("Invalid login or password")
     end
 
-    it "401s the attempt that trips the lockout like any wrong password" do
+    it "401s the attempt that trips the lockout and a wrong password after it; the right password gets 423" do
       user.update_columns(auth_attempts: 4)
       login(pw: "wrong")
       expect(response).to have_http_status(:unauthorized)
       expect(error["code"]).to eq("invalid_credentials")
       expect(user.reload.locked).to be(true)
+
+      login(pw: "wrong")
+      expect(response).to have_http_status(:unauthorized)
+      expect(error["code"]).to eq("invalid_credentials")
+      expect(user.reload.auth_attempts).to eq(5)
+
+      login
+      expect(response).to have_http_status(:locked)
+      expect(error["message"]).to include("locked").and include("or wait")
+      expect(error["support_email"]).to eq(SessionsController::SUPPORT_EMAIL)
+      expect(ApiRefreshToken.count).to eq(0)
     end
 
-    it "answers a locked account, right password or wrong, exactly like an unknown login, and issues nothing" do
-      api_post "/api/v1/session", { login: "nobody-here", password: "x" }
-      unknown = [response.status, response.body]
-      expect(unknown.first).to eq(401)
-      [-> { user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5) },
-       -> { user.admin_lock! }].each do |lock|
-        lock.call
-        [password, "wrong"].each do |pw|
-          login(pw: pw)
-          expect([response.status, response.body]).to eq(unknown)
-        end
-        expect(user.reload.auth_attempts).to eq(5)
-      end
-      expect(ApiRefreshToken.count).to eq(0)
+    it "423s an admin lock without a wait suffix" do
+      user.admin_lock!
+      login
+      expect(response).to have_http_status(:locked)
+      expect(error["message"]).not_to include("or wait")
     end
 
     it "lets the user in once a timed lockout has lapsed" do

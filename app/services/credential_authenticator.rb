@@ -1,21 +1,20 @@
 # frozen_string_literal: true
 
 # The one login rule behind every password sign-in (HTML/JSON/SAML through
-# ApplicationHelper#sign_in, and /api/v1/session): while a lock is in effect the
-# password is not compared at all and the answer is plain bad credentials, the same as
-# for a wrong password or an unknown login (so a locked account neither confirms a
-# guess nor shows that it exists, and its lock and count are left alone; a lapsed timed
-# lockout is cleared). Otherwise the password is checked with the failed-attempt
-# bookkeeping (User.authenticate), then a deactivated account and an unconfirmed one are
-# refused. A login that matches no account (or a locked one) still runs one dummy bcrypt
-# comparison, so it costs the same as a real check. No session or token work happens
-# here; callers do their own.
+# ApplicationHelper#sign_in, and /api/v1/session): a lock still in effect is
+# refused only for the correct password, which is checked without the failed-attempt
+# bookkeeping (so a locked account has its lock and count left alone, and a wrong
+# password gets the same bad-credentials answer as an unknown login; a lapsed timed
+# lockout is cleared), then the password is checked with the failed-attempt bookkeeping
+# (User.authenticate), then a deactivated account and an unconfirmed one
+# are refused. No session or token work happens here; callers do their own.
 #
 # Result#user is the authenticated User or nil; Result#refusal is nil (bad
-# credentials, or success), :inactive (deactivated: the name is a contract kept for the API
-# error code account_inactive) or :unconfirmed. Result#candidate is
-# the account the login named (nil if none, and nil for bad credentials on a locked account),
-# fresh after a failed attempt, so callers can word a refusal without looking it up again.
+# credentials, or success), :locked, :inactive (deactivated: the name is a contract kept for the API
+# error code account_inactive) or :unconfirmed. A login that matches no account still runs
+# one dummy bcrypt comparison, so it costs about the same as a real check. Result#candidate is
+# the account the login named (nil if none), fresh after a failed attempt, so
+# callers can word the refusal (lock wait, attempts) without looking it up again.
 class CredentialAuthenticator
   Result = Struct.new(:user, :refusal, :candidate, keyword_init: true)
 
@@ -23,8 +22,9 @@ class CredentialAuthenticator
     candidate = User.username_or_email(login)
     if candidate&.locked?
       if candidate.lock_in_effect?
-        compare_dummy(password)
-        return Result.new
+        return Result.new(refusal: :locked, candidate: candidate) if candidate.authenticate_password(password)
+
+        return Result.new # nothing counted, and nothing says the account exists
       end
 
       candidate.update_columns(locked: false, auth_attempts: 0) # the timed lockout has lapsed
@@ -51,10 +51,19 @@ class CredentialAuthenticator
   end
   private_class_method :refetch
 
-  # One bcrypt comparison against a fixed hash made once at the app's cost.
+  # One bcrypt comparison against a fixed hash made once at the app's cost, so a login that
+  # matches no account costs about the same as a real check.
   def self.compare_dummy(password)
     @dummy_password ||= BCrypt::Password.create(SecureRandom.hex(16))
     @dummy_password == password.to_s
   end
   private_class_method :compare_dummy
+
+  # " or wait 5 minutes" for a timed (brute-force) lockout; nothing for an admin
+  # lock, which has no meaningful wait (99 years, or no end).
+  def self.lock_wait_suffix(user, verb = "wait")
+    return "" unless user&.timed_lockout?
+
+    " or #{verb} #{ActionController::Base.helpers.distance_of_time_in_words(user.locked_until, Time.current)}"
+  end
 end
