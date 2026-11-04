@@ -18,29 +18,10 @@ class MembershipsController < SessionsController
   end
   
   def create
-    if is_user_cutoff
-      redirect_to your_memberships_memberships_path, alert: t('memberships.purchase.purchase.cutoff_tooltip') and return
-    end
+    refusal = purchase_refusal
+    return redirect_to(refusal[:path], refusal[:flash] => refusal[:message]) if refusal
 
-    tier = MembershipTier.find_by(id: membership_params[:membership_tier_id])
-    if tier && tier.hidden?
-      redirect_to memberships_path, alert: 'This membership is not available for purchase.' and return
-    end
-
-    if tier&.title_en.to_s.downcase.include?('faculty')
-      redirect_to root_path, notice: 'Money can buy a lot of things, but not this one.' and return
-    end
-
-    @membership = current_user.memberships.new(membership_params)
-
-    begin
-      @membership.save!
-      redirect_to @membership.checkout_link, allow_other_host: true
-    rescue StandardError => e
-      Rails.logger.error "Membership creation failed: #{e.message}"
-      @membership.destroy if @membership.persisted?
-      redirect_to your_memberships_memberships_path, alert: 'Error creating membership. Please try again.'
-    end
+    start_purchase
   end
 
   def admin_create_membership
@@ -72,6 +53,33 @@ class MembershipsController < SessionsController
   end
 
   private
+
+  # Why this purchase is refused before anything is saved, or nil. Checked in this order: the
+  # renewal cutoff, a hidden tier, a faculty tier.
+  def purchase_refusal
+    if is_user_cutoff
+      return { path: your_memberships_memberships_path, flash: :alert,
+               message: t('memberships.purchase.purchase.cutoff_tooltip') }
+    end
+
+    tier = MembershipTier.find_by(id: membership_params[:membership_tier_id])
+    if tier&.hidden?
+      { path: memberships_path, flash: :alert, message: 'This membership is not available for purchase.' }
+    elsif tier&.title_en.to_s.downcase.include?('faculty')
+      { path: root_path, flash: :notice, message: 'Money can buy a lot of things, but not this one.' }
+    end
+  end
+
+  # Saves the pending membership and sends the user to its checkout; any failure removes it again.
+  def start_purchase
+    @membership = current_user.memberships.new(membership_params)
+    @membership.save!
+    redirect_to @membership.checkout_link, allow_other_host: true
+  rescue StandardError => e
+    Rails.logger.error "Membership creation failed: #{e.message}"
+    @membership.destroy if @membership&.persisted?
+    redirect_to your_memberships_memberships_path, alert: 'Error creating membership. Please try again.'
+  end
 
   def load_membership_data
     @memberships = current_user.memberships.where(status: 'paid').order(created_at: :desc)
