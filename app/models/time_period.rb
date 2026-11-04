@@ -1,6 +1,9 @@
 class TimePeriod < ApplicationRecord
   has_many :staff_availabilities, dependent: :destroy
 
+  validates :name, :start_date, :end_date, presence: true
+  validate :end_date_not_before_start_date
+
   default_scope -> { order(start_date: :desc) }
 
   def self.current
@@ -22,5 +25,13 @@ class TimePeriod < ApplicationRecord
     end
 
     time_period
+  end
+
+  private
+
+  def end_date_not_before_start_date
+    return if start_date.blank? || end_date.blank?
+
+    errors.add(:end_date, "must not be before the start date") if end_date < start_date
   end
 end
