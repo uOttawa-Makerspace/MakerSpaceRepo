@@ -1017,8 +1017,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response).to redirect_to(orders_path)
       expect(flash[:notice]).to eq("The order was deleted and the CC points returned to the user.")
       expect(other.cc_moneys.sum(:cc)).to eq(0)
-      # the cached users.wallet is not refreshed on refund, it stays debited until the next update_wallet
-      expect(other.reload.wallet).to eq(-10)
+      expect(other.reload.wallet).to eq(0)
     end
 
     it "404s for an unknown order id" do

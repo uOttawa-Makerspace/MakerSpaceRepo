@@ -170,12 +170,9 @@ RSpec.describe LockerRental, type: :model do
       expect(rental).to be_valid
     end
 
-    it "raises when READING a non-nil specifier (normalizes with: :squish is a Symbol)" do
-      # `normalizes :specifier, with: :squish`
-      # hands Rails a Symbol, not a callable; assignment succeeds but reading
-      # the attribute raises. The column is unused in practice (always nil).
+    it "squishes a non-nil specifier when it is read" do
       rental = LockerRental.new(specifier: "  a   b ")
-      expect { rental.specifier }.to raise_error(NoMethodError, /undefined method 'call'/)
+      expect(rental.specifier).to eq("a b")
       expect(LockerRental.new.specifier).to be_nil
     end
   end
@@ -920,16 +917,6 @@ RSpec.describe LockerRental, type: :model do
       expect(LockerRental.state_icon("reviewing")).to eq("")
       expect(LockerRental.state_icon("await_payment")).to eq("")
       expect(build(:locker_rental, :active).state_icon).to eq("fa-lock")
-    end
-  end
-
-  describe ".get_assigned_lockers" do
-    it "groups active rentals by locker_type_id" do
-      # the query plucks :locker_type_id and
-      # :locker_specifier, columns that no longer exist on locker_rentals
-      # (they were replaced by locker_id/specifier), so it raises.
-      create(:locker_rental, :active)
-      expect { LockerRental.get_assigned_lockers }.to raise_error(ActiveRecord::StatementInvalid)
     end
   end
 

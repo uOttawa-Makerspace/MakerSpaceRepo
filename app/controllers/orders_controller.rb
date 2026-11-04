@@ -56,7 +56,9 @@ class OrdersController < DevelopmentProgramsController
 
   def destroy
     @order = Order.find(params[:id])
+    owner = @order.user
     @order.destroy
+    owner&.update_wallet
     flash[
       :notice
     ] = "The order was deleted and the CC points returned to the user."

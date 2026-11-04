@@ -18,24 +18,28 @@ class MembershipsController < SessionsController
   end
   
   def create
-    return flash.now[:alert] = t('memberships.purchase.purchase.cutoff_tooltip') if is_user_cutoff
+    if is_user_cutoff
+      redirect_to your_memberships_memberships_path, alert: t('memberships.purchase.purchase.cutoff_tooltip') and return
+    end
 
     tier = MembershipTier.find_by(id: membership_params[:membership_tier_id])
     if tier && tier.hidden?
       redirect_to memberships_path, alert: 'This membership is not available for purchase.' and return
     end
 
+    if tier&.title_en.to_s.downcase.include?('faculty')
+      redirect_to root_path, notice: 'Money can buy a lot of things, but not this one.' and return
+    end
+
     @membership = current_user.memberships.new(membership_params)
-    
+
     begin
       @membership.save!
       redirect_to @membership.checkout_link, allow_other_host: true
     rescue StandardError => e
       Rails.logger.error "Membership creation failed: #{e.message}"
       @membership.destroy if @membership.persisted?
-      load_membership_data
-      flash.now[:alert] = 'Error creating membership. Please try again.'
-      render :index
+      redirect_to your_memberships_memberships_path, alert: 'Error creating membership. Please try again.'
     end
   end
 

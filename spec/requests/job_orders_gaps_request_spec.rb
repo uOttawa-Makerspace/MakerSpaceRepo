@@ -404,8 +404,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
     end
 
-    # the has_many :job_order_options dependent: :destroy has no model;
-    # destroy is a soft delete here, so the controller never trips over it.
+    # destroy is a soft delete here: the order and its tasks stay.
     it "keeps the row (soft delete) and its tasks" do
       order = order_with_task!
       session_login!(owner)
