@@ -270,7 +270,7 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
         get :bookings, params: { room: @subspace.id }
         expect(JSON.parse(response.body).length).to eq(3)
 
-        booking_ids = SubSpaceBooking.pluck(:id)
+        booking_ids = SubSpaceBooking.order(:id).pluck(:id)
         # a regular user cannot bulk approve; staff can
         statuses_before =
           SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.sub_space_booking_status.booking_status_id }
@@ -283,6 +283,9 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
           SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.sub_space_booking_status.booking_status_id }
         ).to eq(statuses_before)
         @user.update_column(:role, "staff")
+        SubSpaceBooking.where(id: booking_ids).each do |b|
+          b.sub_space_booking_status.update!(booking_status_id: BookingStatus::PENDING.id)
+        end
         # approve first two
         first_two_ids = booking_ids.first(2)
         put :bulk_approve_decline,
