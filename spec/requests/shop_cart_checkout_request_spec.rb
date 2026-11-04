@@ -450,17 +450,18 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
           Order.transaction do
             Order.lock(Order::CART_LOCK_MODE).find(cart.id) # as checkout! holds it
             locked << true
-            release.pop(timeout: 3)
+            release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
           end
         end
       end
       ThreadPause.await(locked)
-      started = Time.current
       add_to_cart(other_project)
-      waited = Time.current - started
+      # The request came back while the checkout still held the lock, so it gave up on the lock
+      # timeout rather than waiting for the release (no wall-clock budget, which a loaded run breaks).
+      holder_still_holding = holder.alive?
       release << true
       holder.join
-      expect(waited).to be < 2
+      expect(holder_still_holding).to be(true)
       expect(flash[:alert]).to eq("Your cart is being updated elsewhere; please try again.")
       expect(cart.order_items.pluck(:proficient_project_id)).to eq([project.id])
     end
