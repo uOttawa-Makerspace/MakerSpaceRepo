@@ -23,12 +23,24 @@ RSpec.describe "CORS origin allow-list", type: :request do
     end
   end
 
-  # previews are staging-only; github.io is used by no frontend; Design Day sends
-  # no cookies and has its own non-credentialed block (/api/v1/design_day)
+  # The deployed Design Day app reads /admin/design_day/data: its origin is answered there
+  # without credentials, and nowhere else outside its own block
+  ["https://designday.makerepo.com", "https://feature-x.design-day-react.pages.dev"].each do |origin|
+    it "allows the Design Day origin #{origin} on /admin/design_day/data, without credentials" do
+      expect(acao(origin)).to eq(origin)
+      expect(response.headers["Access-Control-Allow-Credentials"]).to be_nil
+      expect(response.parsed_body).to include("design_day_schedules")
+    end
+  end
+
+  it "does not allow the Design Day origin on other paths" do
+    get "/", headers: { "Origin" => "https://designday.makerepo.com" }
+    expect(response.headers["Access-Control-Allow-Origin"]).to be_nil
+  end
+
+  # previews are staging-only; github.io is used by no frontend
   [
-    "https://designday.makerepo.com",
     "https://abc123.makerepo-app.pages.dev",
-    "https://feature-x.design-day-react.pages.dev",
     "https://uottawa-makerspace.github.io"
   ].each do |origin|
     it "does not allow #{origin} outside staging" do
