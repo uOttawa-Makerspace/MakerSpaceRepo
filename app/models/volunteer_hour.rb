@@ -3,6 +3,7 @@
 class VolunteerHour < ApplicationRecord
   belongs_to :user, optional: true
   belongs_to :volunteer_task
+  validates :date_of_task, presence: true
   scope :approved, -> { where(approval: true) }
   scope :rejected, -> { where(approval: false) }
   scope :not_processed, -> { where(approval: nil) }
@@ -15,13 +16,14 @@ class VolunteerHour < ApplicationRecord
   def self.create_volunteer_hour_from_approval(
     volunteer_task_id,
     volunteer_id,
-    hours
+    hours,
+    date_of_task
   )
     create(
       volunteer_task_id: volunteer_task_id,
       user_id: volunteer_id,
       total_time: hours,
-      date_of_task: Time.current,
+      date_of_task: date_of_task,
       approval: true
     )
   end

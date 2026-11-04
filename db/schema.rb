@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_04_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_04_150100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1628,6 +1628,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_140000) do
     t.index ["proficient_project_id"], name: "index_videos_on_proficient_project_id"
   end
 
+  create_table "volunteer_hour_date_backfills", primary_key: "volunteer_hour_id", id: :integer, default: nil, force: :cascade do |t|
+    t.datetime "filled_at", precision: nil, default: -> { "now()" }, null: false
+  end
+
   create_table "volunteer_hours", id: :serial, force: :cascade do |t|
     t.boolean "approval"
     t.datetime "created_at", precision: nil, null: false
@@ -1639,6 +1643,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_140000) do
     t.index ["user_id"], name: "index_volunteer_hours_on_user_id"
     t.index ["volunteer_task_id"], name: "index_volunteer_hours_on_volunteer_task_id"
   end
+
+  add_check_constraint "volunteer_hours", "date_of_task IS NOT NULL", name: "volunteer_hours_date_of_task_present_check", validate: false
 
   create_table "volunteer_task_joins", id: :serial, force: :cascade do |t|
     t.boolean "active", default: true

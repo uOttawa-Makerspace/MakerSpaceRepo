@@ -139,7 +139,8 @@ class VolunteerTaskRequestsController < SessionsController
             VolunteerHour.create_volunteer_hour_from_approval(
               volunteer_task.id,
               volunteer_id,
-              volunteer_task.hours
+              volunteer_task.hours,
+              volunteer_task_request.created_at
             )
           end
         end

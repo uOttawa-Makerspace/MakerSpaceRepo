@@ -66,7 +66,8 @@ RSpec.describe VolunteerHour, type: :model do
           VolunteerHour.create_volunteer_hour_from_approval(
             task.id,
             user.id,
-            task.hours
+            task.hours,
+            Time.zone.parse("2026-03-02 10:00")
           )
         }.to change(VolunteerHour, :count).by(1)
       end
@@ -81,22 +82,29 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
 
   it "requires a volunteer task that exists but does not limit total_time: negative hours are saved" do
     expect(VolunteerHour.new(user: user, volunteer_task_id: 0, total_time: -2)).not_to be_valid
-    expect { VolunteerHour.create!(user: user, volunteer_task: task, total_time: -2) }.to change(VolunteerHour, :count).by(1)
+    expect { VolunteerHour.create!(user: user, volunteer_task: task, total_time: -2, date_of_task: Date.current) }.to change(VolunteerHour, :count).by(1)
   end
 
   it "defaults total_time to 0 and approval to nil" do
-    hour = VolunteerHour.create!(user: user, volunteer_task: task)
+    hour = VolunteerHour.create!(user: user, volunteer_task: task, date_of_task: Date.current)
     expect([hour.total_time, hour.approval]).to eq([0, nil])
   end
 
   it "rounds total_time to 2 decimals and raises RangeError beyond precision 9" do
-    expect(VolunteerHour.create!(user: user, volunteer_task: task, total_time: 0.125).total_time).to eq(0.13)
-    expect { VolunteerHour.create!(user: user, volunteer_task: task, total_time: 10**8) }.to raise_error(ActiveRecord::RangeError)
+    expect(VolunteerHour.create!(user: user, volunteer_task: task, total_time: 0.125, date_of_task: Date.current).total_time).to eq(0.13)
+    expect { VolunteerHour.create!(user: user, volunteer_task: task, total_time: 10**8, date_of_task: Date.current) }.to raise_error(ActiveRecord::RangeError)
   end
 
   it "requires a volunteer task in the model and a user at the database level only" do
-    expect { VolunteerHour.create!(volunteer_task: task) }.to raise_error(ActiveRecord::NotNullViolation)
-    expect { VolunteerHour.create!(user: user) }.to raise_error(ActiveRecord::RecordInvalid, /Volunteer task/)
+    expect { VolunteerHour.create!(volunteer_task: task, date_of_task: Date.current) }.to raise_error(ActiveRecord::NotNullViolation)
+    expect { VolunteerHour.create!(user: user, date_of_task: Date.current) }.to raise_error(ActiveRecord::RecordInvalid, /Volunteer task/)
+  end
+
+  it "requires date_of_task" do
+    hour = build(:volunteer_hour, date_of_task: nil)
+    expect(hour).not_to be_valid
+    expect(hour.errors[:date_of_task]).to be_present
+    expect(build(:volunteer_hour, date_of_task: Date.current)).to be_valid
   end
 
   it "was_processed? is true for both approved and rejected" do
@@ -105,21 +113,27 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
     expect(build(:volunteer_hour, :not_processed).was_processed?).to be(false)
   end
 
-  describe ".create_volunteer_hour_from_approval(task_id, user_id, hours)" do
+  describe ".create_volunteer_hour_from_approval(task_id, user_id, hours, date)" do
     it "creates an approved hour with the arguments in that order" do
-      hour = VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 4.5)
+      hour = VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 4.5, Time.current)
       expect(hour).to be_persisted
       expect(hour.attributes.values_at("volunteer_task_id", "user_id", "approval")).to eq([task.id, user.id, true])
       expect(hour.total_time).to eq(4.5)
     end
 
-    it "dates the hour on the day of approval" do
-      hour = VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 1)
-      expect(hour.date_of_task.to_date).to eq(Date.current)
+    it "dates the hour with the date it is given" do
+      worked = Time.zone.parse("2026-01-15 09:30")
+      hour = VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 1, worked)
+      expect(hour.reload.date_of_task).to eq(worked)
+    end
+
+    it "does not create an hour without a date" do
+      expect { VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 1, nil) }
+        .not_to change(VolunteerHour, :count)
     end
 
     it "raises NotNullViolation (not a soft failure) when the user id is missing" do
-      expect { VolunteerHour.create_volunteer_hour_from_approval(task.id, nil, 1) }
+      expect { VolunteerHour.create_volunteer_hour_from_approval(task.id, nil, 1, Time.current) }
         .to raise_error(ActiveRecord::NotNullViolation)
     end
   end
