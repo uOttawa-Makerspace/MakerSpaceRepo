@@ -788,7 +788,7 @@ RSpec.describe User, type: :model do
     it "record_failed_attempt! increments and locks at the 5th failure, emailing the unlock link" do
       4.times { u.record_failed_attempt! }
       expect(u.reload.locked).to be(false)
-      expect { u.record_failed_attempt! }.to change { ActionMailer::Base.deliveries.size }.by(1)
+      expect { perform_enqueued_jobs { u.record_failed_attempt! } }.to change { ActionMailer::Base.deliveries.size }.by(1)
       u.reload
       expect(u.locked).to be(true)
       expect(u.auth_attempts).to eq(5)
@@ -821,7 +821,8 @@ RSpec.describe User, type: :model do
     end
 
     it "send_password_reset emails the reset link with a single purpose-scoped token" do
-      expect { u.send_password_reset }.to change { ActionMailer::Base.deliveries.size }.by(1)
+      expect { u.send_password_reset }.to have_enqueued_mail(MsrMailer, :forgot_password)
+      expect { perform_enqueued_jobs }.to change { ActionMailer::Base.deliveries.size }.by(1)
       mail = ActionMailer::Base.deliveries.last
       expect(mail.to).to eq([u.email])
       expect(mail.subject).to eq("Reset your MakerRepo password")
@@ -954,7 +955,8 @@ RSpec.describe User, type: :model do
     let(:u) { create(:user, :regular_user) }
 
     it "locks for LOCK_DURATION and mails the unlock link" do
-      expect { u.lock_account! }.to change { ActionMailer::Base.deliveries.size }.by(1)
+      expect { u.lock_account! }.to have_enqueued_mail(MsrMailer, :unlock_account)
+      expect { perform_enqueued_jobs }.to change { ActionMailer::Base.deliveries.size }.by(1)
       expect(u.reload.locked).to be(true)
       expect(u.locked_until).to be_within(5.seconds).of(User::LOCK_DURATION.from_now)
     end
@@ -962,7 +964,7 @@ RSpec.describe User, type: :model do
     it "is a no-op, with no second mail, for an account already locked for longer (admin lock)" do
       admin_until = 99.years.from_now
       u.update_columns(locked: true, locked_until: admin_until)
-      expect { u.lock_account! }.not_to(change { ActionMailer::Base.deliveries.size })
+      expect { u.lock_account! }.not_to have_enqueued_mail(MsrMailer, :unlock_account)
       expect(u.reload.locked_until).to be_within(1.second).of(admin_until)
     end
 

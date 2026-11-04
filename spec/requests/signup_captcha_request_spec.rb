@@ -42,7 +42,7 @@ RSpec.describe "Signup captcha (Turnstile siteverify)", type: :request do
       }
       .to_return(status: 200, body: { success: true }.to_json)
 
-    expect { sign_up }.to change(User, :count).by(1)
+    expect { perform_enqueued_jobs { sign_up } }.to change(User, :count).by(1)
     expect(stub).to have_been_requested.once
     expect(response).to redirect_to(root_path)
     expect(ActionMailer::Base.deliveries.size).to eq(1)

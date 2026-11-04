@@ -736,7 +736,7 @@ class User < ApplicationRecord
 
   def send_unlock_email
     user_hash = generate_token_for(:account_unlock)
-    MsrMailer.unlock_account(self, user_hash).deliver_now
+    MsrMailer.unlock_account(self, user_hash).deliver_later
   end
 
   def token(exp = 14.days.from_now.to_i)
@@ -763,7 +763,7 @@ class User < ApplicationRecord
   end
 
   def send_password_reset
-    MsrMailer.forgot_password(email, generate_token_for(:password_reset)).deliver_now
+    MsrMailer.forgot_password(email, generate_token_for(:password_reset)).deliver_later
   end
 
   # ============================================

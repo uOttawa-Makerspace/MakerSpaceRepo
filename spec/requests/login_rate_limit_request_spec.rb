@@ -56,7 +56,7 @@ RSpec.describe "Login rate limit (real counter)", type: :request do
     10.times do |i|
       failed_html_login(i, as: :json)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(JSON.parse(response.body)["error"]).to start_with("Could not find user")
+      expect(JSON.parse(response.body)["error"]).to eq("Incorrect username, email or password.")
     end
     failed_html_login(10, as: :json)
     expect_rate_limited_json

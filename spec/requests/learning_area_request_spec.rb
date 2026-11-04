@@ -7,8 +7,8 @@ require "rails_helper"
 # (index, show, subskill, reorder, scorm_*) is open to any signed-in user.
 #
 # Guests get `current_user = User.new` (never nil), so the guest outcome is the
-# `signed_in` redirect to /login?back_to=<path> (HTML) / the literal JSON
-# "redirect" (JSON).
+# `signed_in` redirect to /login?back_to=<path> (HTML) / a JSON 401
+# error (JSON).
 
 RSpec.describe "Learning area", type: :request do
   include ActiveJob::TestHelper
@@ -691,10 +691,10 @@ RSpec.describe "Learning area", type: :request do
       post scorm_commit_learning_area_path(id), params: body, as: :json
     end
 
-    it "answers the JSON string \"redirect\" with 200 to a guest and stores nothing" do
+    it "answers a guest with a JSON 401 error and stores nothing" do
       expect { commit(learning_module.id) }.not_to change(LearningModuleTrack, :count)
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to eq("redirect")
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body).to eq("error" => "Please sign in.")
     end
 
     it "creates the user's track and stores only whitelisted cmi keys" do

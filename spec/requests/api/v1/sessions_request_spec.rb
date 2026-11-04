@@ -78,12 +78,17 @@ RSpec.describe "/api/v1/session", type: :request do
       expect(error["message"]).to eq("Invalid login or password")
     end
 
-    it "423s the attempt that trips the lockout, then rejects even the right password" do
+    it "401s the attempt that trips the lockout and a wrong password after it; the right password gets 423" do
       user.update_columns(auth_attempts: 4)
       login(pw: "wrong")
-      expect(response).to have_http_status(:locked)
-      expect(error["code"]).to eq("account_locked")
+      expect(response).to have_http_status(:unauthorized)
+      expect(error["code"]).to eq("invalid_credentials")
       expect(user.reload.locked).to be(true)
+
+      login(pw: "wrong")
+      expect(response).to have_http_status(:unauthorized)
+      expect(error["code"]).to eq("invalid_credentials")
+      expect(user.reload.auth_attempts).to eq(5)
 
       login
       expect(response).to have_http_status(:locked)

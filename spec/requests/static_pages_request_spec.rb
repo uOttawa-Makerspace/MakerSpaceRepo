@@ -701,7 +701,7 @@ RSpec.describe "Static pages", type: :request do
     it "emails a reset link to an existing account (delivered outcome)" do
       user = create(:user, :regular_user)
       deliveries.clear
-      patch reset_password_path, params: { email: " #{user.email.upcase} " }
+      perform_enqueued_jobs { patch reset_password_path, params: { email: " #{user.email.upcase} " } }
       expect(response).to have_http_status(:ok)
       expect(flash[:notice]).to eq("A reset link email has been sent to the email if the account exists.")
       expect(deliveries.size).to eq(1)

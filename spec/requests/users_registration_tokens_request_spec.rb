@@ -51,7 +51,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
   describe "POST /new (registration)" do
     it "creates an unconfirmed user, emails a confirmation link, redirects with notice" do
       attrs = registration_params
-      expect { post users_path, params: { user: attrs } }.to change(User, :count).by(1)
+      expect { perform_enqueued_jobs { post users_path, params: { user: attrs } } }.to change(User, :count).by(1)
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq(
         "Account has been created, please look in your emails to confirm your email address."
@@ -339,9 +339,24 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(User.unscoped.find(u.id).confirmed).to be(false)
     end
 
+    it "queues the confirmation mail instead of sending it inline" do
+      expect { post users_path, params: { user: registration_params } }
+        .to have_enqueued_mail(MsrMailer, :confirmation_email)
+      expect(deliveries).to be_empty
+    end
+
+    it "refuses a sign-up from an IP that has tried 30 times in an hour, html and json" do
+      30.times { post users_path, params: { user: { username: "x" } } }
+      expect { post users_path, params: { user: registration_params } }.not_to change(User, :count)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Too many sign-up attempts, please try again later.")
+      post users_path, params: { user: registration_params }, as: :json
+      expect(response).to have_http_status(:too_many_requests)
+    end
+
     it "the emailed link from registration confirms the account" do
       attrs = registration_params
-      post users_path, params: { user: attrs }
+      perform_enqueued_jobs { post users_path, params: { user: attrs } }
       token = CGI.unescape(deliveries.first.body.to_s[/confirm\?token=([^"'&\s<]+)/, 1])
       get confirm_users_path, params: { token: token }
       expect(User.find_by(username: attrs[:username]).confirmed).to be(true)
@@ -355,7 +370,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "emails a reset link to a known address and answers uniformly" do
-      patch reset_password_path, params: { email: " #{user.email.upcase} " }
+      perform_enqueued_jobs { patch reset_password_path, params: { email: " #{user.email.upcase} " } }
       expect(response).to have_http_status(:ok)
       expect(flash[:notice]).to eq("A reset link email has been sent to the email if the account exists.")
       expect(deliveries.size).to eq(1)
@@ -377,6 +392,34 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries).to be_empty
     end
 
+    it "queues the mail instead of sending it inline" do
+      expect { patch reset_password_path, params: { email: user.email } }
+        .to have_enqueued_mail(MsrMailer, :forgot_password)
+      expect(deliveries).to be_empty
+    end
+
+    it "mails an address at most 3 times an hour, with the same answer each time" do
+      4.times do
+        patch reset_password_path, params: { email: user.email }
+        expect(flash[:notice]).to eq("A reset link email has been sent to the email if the account exists.")
+      end
+      expect(enqueued_jobs.count { |j| j["job_class"] == "ActionMailer::MailDeliveryJob" }).to eq(3)
+    end
+
+    it "does not count unknown addresses against anyone's budget and answers the same" do
+      5.times { patch reset_password_path, params: { email: "nobody@example.com" } }
+      perform_enqueued_jobs { patch reset_password_path, params: { email: user.email } }
+      expect(deliveries.size).to eq(1)
+    end
+
+    it "answers the same when one IP asks too often" do
+      30.times { |i| patch reset_password_path, params: { email: "nobody#{i}@example.com" } }
+      patch reset_password_path, params: { email: user.email }
+      expect(response).to have_http_status(:ok)
+      expect(flash[:notice]).to eq("A reset link email has been sent to the email if the account exists.")
+      expect(enqueued_jobs).to be_empty
+    end
+
     it "soft-deleted user gets no email" do
       u = create(:user, :regular_user, deleted: true)
       patch reset_password_path, params: { email: u.email }
@@ -385,7 +428,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "sends to locked and inactive accounts too" do
       u = create(:user, :regular_user, deactivated_at: Time.current, locked: true)
-      patch reset_password_path, params: { email: u.email }
+      perform_enqueued_jobs { patch reset_password_path, params: { email: u.email } }
       expect(deliveries.size).to eq(1)
     end
   end
@@ -408,7 +451,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "full flow: emailed link resets the password, confirms by email, and the new password works" do
-      patch reset_password_path, params: { email: user.email }
+      perform_enqueued_jobs { patch reset_password_path, params: { email: user.email } }
       link = deliveries.first.body.to_s[/reset_password_form\?[^"'\s<]+/]
       query = Rack::Utils.parse_query(CGI.unescapeHTML(link.split("?", 2).last))
       deliveries.clear
@@ -589,6 +632,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(user.locked_until).to be > 90.years.from_now
       post login_authentication_path, params: { username_email: user.username, password: "NewPassw0rd!x#9" }
       expect(flash[:alert]).to include("locked")
+      expect(session[:user_id]).not_to eq(user.id)
       user.update_columns(locked_until: nil)
       patch reset_password_confirmation_users_path, params: reset_params(user, pw: "AnotherPassw0rd!y#7")
       expect(user.reload.locked).to be(true)
@@ -906,7 +950,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "works end to end from the emailed lockout link" do
       u = create(:user, :regular_user)
-      u.lock_account!
+      perform_enqueued_jobs { u.lock_account! }
       expect(deliveries.size).to eq(1)
       token = deliveries.first.body.to_s[/token=([^"'&\s<]+)/, 1]
       get unlock_account_users_path, params: { token: CGI.unescape(token) }

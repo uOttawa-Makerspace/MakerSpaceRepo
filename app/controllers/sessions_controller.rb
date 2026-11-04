@@ -14,6 +14,7 @@ class SessionsController < ApplicationController
   })
 
   SUPPORT_EMAIL = "uottawa.makerepo@gmail.com"
+  INVALID_CREDENTIALS_MESSAGE = "Incorrect username, email or password."
   
   def login_authentication
     @user = sign_in(params[:username_email], params[:password])
@@ -29,14 +30,13 @@ class SessionsController < ApplicationController
                    token: @user.token
                  }
         end
-        format.json { render json: { role: :guest }, status: :ok }
       elsif @sign_in_refusal == :locked
         @user = User.new
         locked_user = User.username_or_email(params[:username_email])
         format.html do
           flash.now[:alert] = ActionController::Base.helpers.sanitize("""
           Your account has been locked due to too many failed login attempts. 
-          Please #{view_context.link_to('contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked", class: 'text-primary')} 
+          Use the unlock link in your email, or #{view_context.link_to('contact an administrator', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked", class: 'text-primary')} 
           to unlock your account#{lock_wait_suffix(locked_user)}.
           """)
           render :login, status: :unprocessable_content
@@ -44,7 +44,7 @@ class SessionsController < ApplicationController
         format.json do
           render json: {
                    error:
-                     "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{SUPPORT_EMAIL} to unlock your account#{lock_wait_suffix(locked_user)}.",
+                     "Your account has been locked due to too many failed login attempts. Use the unlock link in your email or contact an administrator at #{SUPPORT_EMAIL} to unlock your account#{lock_wait_suffix(locked_user)}.",
                    support_email: SUPPORT_EMAIL
                  },
                  status: :unprocessable_content
@@ -74,34 +74,13 @@ class SessionsController < ApplicationController
                  status: :unprocessable_content
         end
       else
+        # An unknown account and a wrong password get the same answer.
         @user = User.new
-        user = User.username_or_email(params[:username_email])
-        if user
-          error_message =
-            (
-              if user.auth_attempts >= User::MAX_AUTH_ATTEMPTS
-                format.html? ? 
-                  "Your account has been locked due to too many failed login attempts. #{view_context.link_to 'Contact support', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account#{lock_wait_suffix(user, 'try again in')}." :
-                  "Your account has been locked due to too many failed login attempts. Contact support at #{SUPPORT_EMAIL} to unlock your account#{lock_wait_suffix(user, 'try again in')}."
-              elsif user.auth_attempts > 1
-                "Incorrect password. You have #{User::MAX_AUTH_ATTEMPTS - user.auth_attempts} attempts left before your account is locked."
-              else
-                "Incorrect password."
-              end
-            )
-        else
-          error_message =
-            "Could not find user with email or username: #{params[:username_email]}"
-        end
         format.html do
-          flash[:alert] = error_message
+          flash.now[:alert] = INVALID_CREDENTIALS_MESSAGE
           render :login, status: :unprocessable_content
         end
-        format.json do
-          json_response = { error: error_message }
-          json_response[:support_email] = SUPPORT_EMAIL if user&.auth_attempts&.>= User::MAX_AUTH_ATTEMPTS
-          render json: json_response, status: :unprocessable_content
-        end
+        format.json { render json: { error: INVALID_CREDENTIALS_MESSAGE }, status: :unprocessable_content }
       end
     end
   end
@@ -146,6 +125,15 @@ class SessionsController < ApplicationController
   end
 
   private
+
+  MAIL_PER_ADDRESS_LIMIT = 3 # mails per address per hour, per kind of mail
+
+  # Counts only the mails actually sent to an address, so unknown or ineligible addresses
+  # cannot use up a real account's budget. The answer to the caller is the same either way.
+  def mail_budget_left?(kind, email)
+    key = "rate-limit:users:#{kind}-email:#{Digest::SHA256.hexdigest(email)}"
+    RateLimitCounter.increment(key, 1, expires_in: 1.hour) <= MAIL_PER_ADDRESS_LIMIT
+  end
 
   # The one private-repository rule: admin, staff, the owner or a member
   # (user_id / repository.users), or a password already entered this session

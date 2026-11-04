@@ -200,6 +200,11 @@ class StaticPagesController < SessionsController
     redirect_to root_path
   end
 
+  RESET_PASSWORD_NOTICE = 'A reset link email has been sent to the email if the account exists.'
+
+  rate_limit to: 30, within: 1.hour, only: :reset_password, name: 'reset-ip',
+             by: -> { request.remote_ip }, with: -> { reset_password_response }
+
   def reset_password
     unless verify_turnstile
       flash.now[:alert] = 'There was a problem with the captcha, please try again.'
@@ -211,9 +216,10 @@ class StaticPagesController < SessionsController
       render :forgot_password and return
     end
 
-    User.find_by(email: params[:email].strip.downcase)&.send_password_reset
-    flash[:notice] = 'A reset link email has been sent to the email if the account exists.'
-    render :forgot_password
+    email = params[:email].to_s.strip.downcase
+    user = User.find_by(email: email) if email.length <= 254
+    user.send_password_reset if user && mail_budget_left?('reset', email)
+    reset_password_response
   end
 
   def report_repository
@@ -228,6 +234,12 @@ class StaticPagesController < SessionsController
   end
 
   private
+
+  # The same answer whether or not the address belongs to an account, and when throttled.
+  def reset_password_response
+    flash.now[:notice] = RESET_PASSWORD_NOTICE
+    render :forgot_password
+  end
 
   MAKERSTORE_SHOP = 'uottawa-makerspace.myshopify.com'
 

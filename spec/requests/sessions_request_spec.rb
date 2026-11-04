@@ -110,10 +110,10 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
   end
 
   describe "POST /login_authentication (failure)" do
-    it "unknown user: 422 + flash naming the identifier" do
+    it "unknown user: 422 + the generic message" do
       post login_authentication_path, params: { username_email: "nobody", password: "x" }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Could not find user with email or username: nobody")
+      expect(flash[:alert]).to eq("Incorrect username, email or password.")
     end
 
     it "unknown user json" do
@@ -121,31 +121,36 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
            params: { username_email: "nobody", password: "x" }, as: :json
       expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)).to eq(
-        "error" => "Could not find user with email or username: nobody"
+        "error" => "Incorrect username, email or password."
       )
     end
 
-    it "wrong password: 422, 'Incorrect password.' on first failure and counter increments" do
+    it "wrong password: 422, the same message as an unknown user, and the counter increments" do
       login!(user, pw: "wrong")
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Incorrect password.")
+      expect(flash[:alert]).to eq("Incorrect username, email or password.")
       expect(user.reload.auth_attempts).to eq(1)
     end
 
-    it "wrong password reports remaining attempts from the second failure" do
+    it "wrong password does not report remaining attempts (that would show the account exists)" do
       2.times { login!(user, pw: "wrong") }
-      expect(flash[:alert]).to eq(
-        "Incorrect password. You have 3 attempts left before your account is locked."
-      )
+      expect(flash[:alert]).to eq("Incorrect username, email or password.")
     end
 
-    it "locks the account on the 5th failure and emails an unlock link, but that request 500s" do
-      # the lockout-triggering (5th) failed login raises (`format.html?` / `sanitize` undefined in the respond_to block) -> 500 instead of the locked message
+    it "wrong password and unknown user give the same json answer" do
+      post login_authentication_path, params: { username_email: user.username, password: "wrong" }, as: :json
+      known = [response.status, response.body]
+      post login_authentication_path, params: { username_email: "nobody", password: "wrong" }, as: :json
+      expect([response.status, response.body]).to eq(known)
+    end
+
+    it "locks the account on the 5th failure and emails an unlock link; that failure gets the generic message" do
       perform_enqueued_jobs do
         4.times { login!(user, pw: "wrong") }
         login!(user, pw: "wrong")
       end
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("Incorrect username, email or password.")
       user.reload
       expect(user.locked).to be(true)
       expect(user.auth_attempts).to eq(5)
@@ -155,11 +160,12 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(deliveries.first.subject).to eq("Unlock your MakerRepo Account")
     end
 
-    it "the lockout-triggering failure also 500s for json" do
+    it "the lockout-triggering failure also gets the generic message for json" do
       user.update_columns(auth_attempts: 4)
       post login_authentication_path,
            params: { username_email: user.username, password: "wrong" }, as: :json
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["error"]).to eq("Incorrect username, email or password.")
       expect(user.reload.locked).to be(true)
     end
 
@@ -177,7 +183,7 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
       login!(user)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to include("locked due to too many failed login attempts").and include("or wait")
+      expect(flash[:alert]).to include("locked due to too many failed login attempts").and include("unlock link in your email").and include("or wait")
       get login_path
       expect(flash[:alert]).to be_nil # flash.now: it does not leak into the next request
       get check_signed_in_path
@@ -242,10 +248,10 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(body).not_to have_key("token")
     end
 
-    it "a wrong password for an inactive user is still just 'Incorrect password.' (no status leak)" do
+    it "a wrong password for an inactive user is still the generic message (no status leak)" do
       u = create(:user, :regular_user, deactivated_at: Time.current)
       login!(u, pw: "wrong")
-      expect(flash[:alert]).to eq("Incorrect password.")
+      expect(flash[:alert]).to eq("Incorrect username, email or password.")
     end
 
     it "an existing cookie session of a user who is deactivated is ended on the next request" do
@@ -310,11 +316,31 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["error"]).to include("locked").and(satisfy { |m| !m.include?("wait") && !m.include?("years") })
     end
 
-    it "a lock seen by sign_in gets the locked wording, never 'Incorrect password'" do
+    it "a lock in effect shows the locked wording only after the correct password" do
+      user.update_columns(locked: true, locked_until: 3.minutes.from_now, auth_attempts: 5)
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(JSON.parse(response.body)["error"]).to start_with("Your account has been locked").and include("wait")
+      expect(session[:user_id]).to be_nil
+      expect(user.reload.auth_attempts).to eq(5)
+    end
+
+    it "a wrong password for a locked account gets the generic message, html and json, and counts nothing" do
+      user.update_columns(locked: true, locked_until: 3.minutes.from_now, auth_attempts: 5)
+      login!(user, pw: "wrong")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("Incorrect username, email or password.")
+      post login_authentication_path, params: { username_email: user.username, password: "wrong" }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)).to eq("error" => "Incorrect username, email or password.")
+      expect(user.reload).to have_attributes(locked: true, auth_attempts: 5)
+    end
+
+    it "an unknown account gets the same answer as a locked account with a wrong password" do
       user.update_columns(locked: true, locked_until: 3.minutes.from_now, auth_attempts: 5)
       post login_authentication_path, params: { username_email: user.username, password: "wrong" }, as: :json
-      expect(JSON.parse(response.body)["error"]).to start_with("Your account has been locked").and include("wait")
-      expect(user.reload.auth_attempts).to eq(5)
+      locked_answer = [response.status, response.body]
+      post login_authentication_path, params: { username_email: "nobody", password: "wrong" }, as: :json
+      expect([response.status, response.body]).to eq(locked_answer)
     end
 
     it "five wrong passwords lock a legacy-invalid account over HTTP too" do
@@ -349,11 +375,11 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["signed_in"]).to eq("false")
     end
 
-    it "soft-deleted users cannot log in (default_scope hides them: 'could not find user')" do
+    it "soft-deleted users cannot log in (default_scope hides them: the generic message)" do
       u = create(:user, :regular_user, deleted: true)
       login!(u)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to start_with("Could not find user")
+      expect(flash[:alert]).to eq("Incorrect username, email or password.")
     end
 
     it "a session of a user who is soft-deleted afterwards is ended cleanly on the next request" do
