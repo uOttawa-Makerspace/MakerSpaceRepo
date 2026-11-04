@@ -105,6 +105,8 @@ class User < ApplicationRecord
   # Visit, certification and training history is never deleted with the account: deleting an account only
   # hides the user (see #soft_delete!), and reports read this history for deleted users too.
   has_many :certifications, class_name: 'Certification'
+  # No dependent: :destroy here or on the history above: a hard delete of a user who has history
+  # is refused by the foreign keys, on purpose.
   has_many :demotion_staff,
            class_name: 'Certification',
            foreign_key: 'demotion_staff_id'
