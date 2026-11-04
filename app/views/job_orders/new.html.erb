@@ -2,16 +2,18 @@
   <h1 class="mb-4"><%= t('job_orders.new.title') %></h1>
 
   <div class="row justify-content-center gap-4">
-    <!-- Ready to Make -->
-    <%= form_with url: job_orders_path, method: :post, local: true do |f| %>
-      <%= hidden_field_tag 'job_order[job_type_id]', JobType.find_by(name: 'Ready to Make')&.id %>
-      <%= hidden_field_tag :redirect_step, 1 %>
+    <!-- Ready to Make: only offered while the Ready to Make type exists -->
+    <% if @ready_to_make_type %>
+      <%= form_with url: job_orders_path, method: :post, local: true do |f| %>
+        <%= hidden_field_tag 'job_order[job_type_id]', @ready_to_make_type.id %>
+        <%= hidden_field_tag :redirect_step, 1 %>
 
-      <div class="card p-4 border-success" style="min-width: 280px;">
-        <h2 class="h4 text-success mb-3"><%= t('job_orders.new.ready_to_make.title') %></h2>
-        <p><%= t('job_orders.new.ready_to_make.description') %></p>
-        <%= button_tag t('job_orders.new.ready_to_make.button'), type: 'submit', class: 'btn btn-success btn-lg mt-3 w-100' %>
-      </div>
+        <div class="card p-4 border-success" style="min-width: 280px;">
+          <h2 class="h4 text-success mb-3"><%= t('job_orders.new.ready_to_make.title') %></h2>
+          <p><%= t('job_orders.new.ready_to_make.description') %></p>
+          <%= button_tag t('job_orders.new.ready_to_make.button'), type: 'submit', class: 'btn btn-success btn-lg mt-3 w-100' %>
+        </div>
+      <% end %>
     <% end %>
 
     <!-- Need Design Help: only offered while the Design Services type exists -->

@@ -308,12 +308,31 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   describe "GET /job_orders/new" do
     it "renders the two entry cards and the hidden redirect_step fields" do
       http_login!(owner)
+      seed_job_types!
       get new_job_orders_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(I18n.t("job_orders.new.ready_to_make.title"))
       expect(response.body).to include(I18n.t("job_orders.new.need_design_help.title"))
       expect(response.body).to include('name="job_order[job_type_id]"')
       expect(response.body).to include('name="redirect_step"')
+    end
+
+    it "shows the Ready to Make card with its type when the type exists" do
+      http_login!(owner)
+      seed_job_types!
+      get new_job_orders_path
+      expect(response.body).to include(I18n.t("job_orders.new.ready_to_make.title"))
+      expect(response.body).to include(%(value="#{JobType.ready_to_make.id}"))
+    end
+
+    it "hides the Ready to Make card when the type is missing, as it does for Design Help" do
+      http_login!(owner)
+      seed_job_types!
+      JobType.where(name: "Ready to Make").delete_all
+      get new_job_orders_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include('name="redirect_step" id="redirect_step" value="1"')
+      expect(response.body).to include('name="redirect_step" id="redirect_step" value="2"')
     end
   end
 
@@ -1313,6 +1332,7 @@ RSpec.describe "GET /job_orders/new design help card", type: :request do
   end
 
   it "hides the card when there is no Design Services type" do
+    JobType.find_by(name: "Ready to Make") || JobType.create!(name: "Ready to Make", description: "r")
     JobType.where(name: "Design Services").destroy_all
     get new_job_orders_path
     expect(response).to have_http_status(:ok)
