@@ -210,6 +210,19 @@ RSpec.describe "Admin report generator", type: :request do
       expect(redirect_query["range_type"]).to eq("date_range")
     end
 
+    {
+      "an unparseable start date" => [{ from_date: "abc", to_date: "2026-03-31" }, "Failed to parse start date"],
+      "a missing start date" => [{ to_date: "2026-03-31" }, "Failed to parse start date"],
+      "an unparseable end date" => [{ from_date: "2026-03-01", to_date: "31/31/2026" }, "Failed to parse end date"],
+      "a blank end date" => [{ from_date: "2026-03-01", to_date: "" }, "Failed to parse end date"]
+    }.each do |label, (dates, message)|
+      it "answers date_range with #{label} with 400 '#{message}'" do
+        post admin_report_generator_generate_path, params: { range_type: "date_range", type: "trainings" }.merge(dates)
+        expect(response).to have_http_status(:bad_request)
+        expect(response.body).to eq(message)
+      end
+    end
+
     it "all_time redirects with blank start/end dates (the index then reports everything)" do
       post admin_report_generator_generate_path, params: { range_type: "all_time", type: "popular_hours" }
       expect(response).to have_http_status(:found)
@@ -259,19 +272,6 @@ RSpec.describe "Admin report generator", type: :request do
       post admin_report_generator_generate_path,
            params: { range_type: "date_range", from_date: "2026-03-31", to_date: "2026-03-01", type: "visitors" }
       expect(response).to have_http_status(:found)
-    end
-
-    it "date_range with an unparseable or missing date is a 500 instead of the intended message" do
-      # `rescue ParseError` names a constant that does not exist (Date::Error is what Date.parse raises), so the rescue itself raises NameError and bad/missing dates 500 instead of "Failed to parse start date"
-      post admin_report_generator_generate_path,
-           params: { range_type: "date_range", from_date: "garbage", to_date: "2026-03-01", type: "visitors" }
-      expect(response).to have_http_status(:internal_server_error)
-      post admin_report_generator_generate_path,
-           params: { range_type: "date_range", to_date: "2026-03-01", type: "visitors" }
-      expect(response).to have_http_status(:internal_server_error)
-      post admin_report_generator_generate_path,
-           params: { range_type: "date_range", from_date: "2026-03-01", to_date: "garbage", type: "visitors" }
-      expect(response).to have_http_status(:internal_server_error)
     end
 
     # N+1 pinned
