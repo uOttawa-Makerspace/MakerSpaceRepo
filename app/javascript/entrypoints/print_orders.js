@@ -48,7 +48,7 @@ window.checkFile = function (yourForm) {
     checked = false;
   } else {
     checked = true;
-    for (x of file) {
+    for (const x of file) {
       if (x.name == "") {
         checked = false;
       }
