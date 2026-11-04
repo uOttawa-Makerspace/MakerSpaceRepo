@@ -419,11 +419,14 @@ RSpec.describe "Static pages", type: :request do
       expect(JSON.parse(response.body)).to eq([])
     end
 
-    # hours.json includes :opening_hour but ContactInfo only has_many :opening_hours, so the JSON endpoint 500s as soon as one contact info is listed
-    it "answers 500 (NoMethodError opening_hour) once a show_hours contact info exists" do
-      create(:contact_info, name: "Hours Lab", show_hours: true)
+    it "lists a show_hours contact info with its opening hours" do
+      info = create(:contact_info, name: "Hours Lab", show_hours: true)
       get hours_path(format: :json)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+      expect(body.map { |c| c["name"] }).to eq(["Hours Lab"])
+      expect(body.first["opening_hours"]).to be_an(Array)
+      expect(body.first["opening_hours"].size).to eq(info.opening_hours.count)
     end
   end
 

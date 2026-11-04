@@ -162,8 +162,8 @@ class StaticPagesController < SessionsController
       format.html { render :hours }
       format.json do
         render json: @contact_info.as_json(
-          include: :opening_hour,
-          only: %i[name email address phone_number show_hours opening_hour]
+          include: :opening_hours,
+          only: %i[name email address phone_number show_hours]
         )
       end
     end
