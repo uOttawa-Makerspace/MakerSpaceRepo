@@ -201,7 +201,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def current_training_session
     @current_training_session = TrainingSession.find(params[:id])
-    @staff = User.including_deleted.find(@current_training_session.user_id)
+    @staff = @current_training_session.user
   end
 
   def changed_params

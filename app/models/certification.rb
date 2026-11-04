@@ -3,7 +3,7 @@
 class Certification < ApplicationRecord
   # A certification belongs to its user even after the account was soft-deleted: the history stays complete.
   belongs_to :user, -> { including_deleted }, class_name: "User", optional: true
-  belongs_to :demotion_staff, class_name: "User", optional: true
+  belongs_to :demotion_staff, -> { including_deleted }, class_name: "User", optional: true
   belongs_to :training_session, optional: true
   has_one :proficient_project_session
   has_one :space, through: :training_session

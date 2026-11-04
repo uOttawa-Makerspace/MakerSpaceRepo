@@ -68,6 +68,13 @@ RSpec.describe "users.deleted" do
       expect(Certification.where(user_id: user.id)).to exist
     end
 
+    it "a certification still reaches its demoting staff member after that account is deleted" do
+      cert = create(:certification, :basic_training)
+      cert.update_columns(demotion_staff_id: user.id)
+      user.soft_delete!
+      expect(Certification.find(cert.id).demotion_staff).to eq(user)
+    end
+
     it "does not destroy the certifications another user's demotion points at" do
       cert = create(:certification, :basic_training)
       cert.update_columns(demotion_staff_id: user.id)
