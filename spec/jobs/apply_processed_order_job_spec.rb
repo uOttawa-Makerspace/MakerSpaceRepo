@@ -630,7 +630,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       # An order whose membership reference could not be looked up is not an order without a reference: the
       # pending membership it names stays unpaid, so matching by email or title would create a second, paid one.
       # (This used to apply the email fallback.)
-      it "applies nothing for the membership of a lookup Shopify refused for good, and reports it" do
+      it "applies nothing for the membership of a lookup Shopify refused for good, and reports it once" do
         pending = create(:membership, user: user, status: :pending)
         lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
         order = hook(membership_order.merge(id: 7413))
@@ -638,13 +638,13 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         expect(user.memberships.paid.count).to eq(0)
         expect(Membership.count).to eq(1)
         expect(pending.reload).not_to be_paid
-        rejected = reports.select { |e, _| e.is_a?(ShopOrderApplier::MetafieldLookupRejected) }
-        expect(rejected.size).to eq(1) # one report for the one cause
-        error, opts = rejected.first
-        expect(error.message).to include("7413", "ACCESS_DENIED", "membership not applied")
+        # one report for the one cause, under the class staff triage membership by, with the reason in its context
+        expect(reports.size).to eq(1)
+        error, opts = reports.first
+        expect(error).to be_a(ShopOrderApplier::UnresolvedMembershipOrder)
+        expect(error.message).to include("7413", "ACCESS_DENIED")
         expect(error.message).not_to include(user.email)
-        expect(opts[:context]).to eq(shopify_order_id: "7413", codes: ["ACCESS_DENIED"], membership_skipped: true)
-        expect(reports.map(&:first)).not_to include(an_instance_of(ShopOrderApplier::UnresolvedMembershipOrder))
+        expect(opts[:context]).to eq(shopify_order_id: "7413", codes: ["ACCESS_DENIED"])
       end
 
       it "does not hold back the membership when only the locker's lookup was refused and the membership field is blank" do
@@ -655,8 +655,10 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         )
         hook(payload)
         expect(user.memberships.paid.count).to eq(1) # no reference was ever given: the email fallback applies
-        _, opts = reports.find { |e, _| e.is_a?(ShopOrderApplier::MetafieldLookupRejected) }
-        expect(opts[:context]).not_to include(:membership_skipped)
+        error, opts = reports.find { |e, _| e.is_a?(ShopOrderApplier::MetafieldLookupRejected) }
+        expect(error.message).to include("7420", "ACCESS_DENIED") # the refusal itself, reported once
+        expect(opts[:context]).to eq(shopify_order_id: "7420", codes: ["ACCESS_DENIED"])
+        expect(reports.map(&:first)).not_to include(an_instance_of(ShopOrderApplier::UnresolvedMembershipOrder))
       end
 
       it "still applies the other branches of an order whose membership lookup was refused" do

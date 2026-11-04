@@ -181,26 +181,23 @@ class ShopOrderApplier
     @applied_here && ProcessedOrder.where(id: @record.id, status: "applied").exists?
   end
 
+  # One report per cause. A refused lookup that keeps the membership from being applied is reported by the
+  # membership branch (UnresolvedMembershipOrder, the class staff triage membership by), so it is not reported twice.
   def report_lookup_rejection(plan)
     return unless plan.lookup_rejection
+    return if plan.membership_lookup_rejected
 
-    # One report per cause: when the refused lookup also keeps the membership from being applied, it says so.
-    context = { shopify_order_id: plan.id, codes: plan.lookup_rejection }
-    suffix = ""
-    if plan.membership_lookup_rejected
-      context[:membership_skipped] = true
-      suffix = "; membership not applied"
-    end
     report_problem(
-      MetafieldLookupRejected.new("metafield lookup for order #{plan.id} rejected (#{plan.lookup_rejection.join(', ')})#{suffix}"),
-      context: context
+      MetafieldLookupRejected.new("metafield lookup for order #{plan.id} rejected (#{plan.lookup_rejection.join(', ')})"),
+      context: { shopify_order_id: plan.id, codes: plan.lookup_rejection }
     )
   end
 
   # A membership or CC order whose target cannot be found, which no retry can fix: reported with the order id
   # and left to staff. The order is still applied.
-  def report_unresolved(plan, error_class, branch, message)
-    report_problem(error_class.new("#{branch} order #{plan.id} #{message}"), context: { shopify_order_id: plan.id })
+  def report_unresolved(plan, error_class, branch, message, **extra_context)
+    report_problem(error_class.new("#{branch} order #{plan.id} #{message}"),
+                   context: { shopify_order_id: plan.id }.merge(extra_context))
   end
 
   # ---- locker
@@ -255,8 +252,13 @@ class ShopOrderApplier
 
     # A membership order whose reference lookup was refused is not an order without a reference: the pending
     # membership it names is still unpaid, and matching by email or title would create a second, paid one.
-    # Nothing is applied for membership; the refused lookup is already reported (report_lookup_rejection).
-    return if plan.membership_ref.blank? && plan.membership_lookup_rejected
+    # Nothing is applied for membership; staff settle it from this report.
+    if plan.membership_lookup_rejected
+      report_unresolved(plan, UnresolvedMembershipOrder, "membership",
+                        "has a membership reference that Shopify refused to look up (#{plan.lookup_rejection.join(', ')})",
+                        codes: plan.lookup_rejection)
+      return
+    end
 
     if plan.membership_ref.present?
       membership = Membership.find_by(id: plan.membership_ref)
