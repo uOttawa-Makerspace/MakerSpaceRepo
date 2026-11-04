@@ -166,12 +166,11 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(response).to have_http_status(:ok)
     end
 
-    # skills.html.erb:41 calls Training#training_level, a column that does not exist: the page is a 500 for anyone holding a certification
-    it "answers 500 (NoMethodError training_level) for a user who holds a certification" do
+    it "renders for a user who holds a certification, showing the badge" do
       log_in!(earner)
       get skills_development_programs_path
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("training_level")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Laser EN")
     end
   end
 
