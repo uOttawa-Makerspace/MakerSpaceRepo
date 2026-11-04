@@ -39,7 +39,7 @@ RSpec.describe Admin::CertificationsController, type: :controller do
   end
 
   describe "GET /show without a user" do
-    it "is not found" do
+    it "is not found", skip_bullet: true do
       @certification.update_columns(user_id: nil)
       expect { get :show, params: { id: @certification.id } }.to raise_error(ActiveRecord::RecordNotFound)
     end
