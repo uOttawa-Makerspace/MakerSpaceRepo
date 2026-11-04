@@ -58,6 +58,12 @@ namespace :users do
 
     File.write('renamed_username_list.json', renamed_users.to_json)
     puts "renamed_username_list.json written to #{Dir.pwd}"
+
+    # What is still shared now is shared by accounts of skipped pairs only.
+    still_duplicated = username_tally.keys
+    if still_duplicated.any?
+      puts "Usernames left duplicated because their pair was skipped: #{still_duplicated.join(', ')}"
+    end
   end
 
   task :notify_modified_users, [] => :environment do
@@ -162,7 +168,10 @@ namespace :users do
     end
 
     users = users.where.not(id: left_alone_ids)
-    return nil if users.none?
+    if users.none?
+      puts "\tleft alone: #{username} (every holder is in a skipped pair)"
+      return nil
+    end
 
     changelog = {}
 

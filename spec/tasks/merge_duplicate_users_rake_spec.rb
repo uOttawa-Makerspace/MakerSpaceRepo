@@ -194,6 +194,14 @@ RSpec.describe "users:merge_duplicates" do
       expect(moved_task.reload.user_id).to eq(survivors.first.id)
     end
 
+    it "says so when every holder of a username is left alone" do
+      ActiveRecord::Base.connection.remove_index :users, name: "index_users_on_lowercase_username" # rolled back with the example
+      first, second = duplicated_pair
+      User.where(id: [first.id, second.id]).update_all(username: "same")
+      expect(send(:rename_duplicated_username, "same", [first.id, second.id])).to be_nil
+      expect($stdout.string).to include("left alone: same (every holder is in a skipped pair)")
+    end
+
     it "lists the ids of the accounts in skipped pairs" do
       expect(send(:skipped_account_ids, [{ primary_id: 1, duplicate_id: 2 }, { primary_id: 3, duplicate_id: 2 }]))
         .to eq([1, 2, 3])
@@ -241,6 +249,7 @@ RSpec.describe "users:merge_duplicates" do
       renamed = JSON.parse(File.read(File.join(workdir, "renamed_username_list.json")))
       expect(renamed.map { |entry| entry["previous_username"] }).to eq(["sharedname"])
       expect($stdout.string).to include("Merged 0 pairs, skipped 1 pairs.")
+      expect($stdout.string).to include("Usernames left duplicated because their pair was skipped: sharedname")
     end
   end
 
