@@ -45,6 +45,22 @@ RSpec.describe Admin::CertificationsController, type: :controller do
     end
   end
 
+  describe "without a user" do
+    before { @certification.update_columns(user_id: nil) }
+
+    it "does not update (demote or reinstate) the certification", skip_bullet: true do
+      expect do
+        patch :update, params: { id: @certification.id, certification: { active: false, demotion_reason: "x" } }
+      end.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Certification.unscoped.find(@certification.id).active).to be(true)
+    end
+
+    it "does not open the demote modal", skip_bullet: true do
+      expect { get :open_modal, params: { id: @certification.id }, xhr: true, format: :js }
+        .to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
+
   describe "PATCH /update" do
     context "logged as admin" do
       it "should update the certification (demote) and return to the user profile" do
