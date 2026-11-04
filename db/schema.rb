@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_04_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1251,6 +1251,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_120000) do
     t.string "mac_address"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["card_number"], name: "index_rfids_on_card_number", unique: true
     t.index ["user_id"], name: "index_rfids_on_user_id"
   end
 

@@ -26,8 +26,9 @@ class Rfid < ApplicationRecord
   # (phone-scanned: mac_address nil, which a reader tap would also leave for a
   # phone). Returns nil on success (also when already linked to this user) or the
   # refusal message, changing nothing. Lock order: user, then the card number
-  # (rfids.card_number has no unique index, so two requests creating the
-  # same new card are serialised by a transaction advisory lock), then the card.
+  # (two requests creating the same new card are serialised by a transaction
+  # advisory lock, so the loser sees the card instead of hitting the unique
+  # index on rfids.card_number), then the card.
   def self.link_to_user!(card_number, user)
     transaction do
       User.where(id: user.id).lock("FOR NO KEY UPDATE").take

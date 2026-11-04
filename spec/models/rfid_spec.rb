@@ -22,6 +22,24 @@ RSpec.describe Rfid, type: :model do
     end
   end
 
+  describe "unique index on card_number" do
+    it "makes the database refuse a duplicate card number, even past the validation" do
+      create(:rfid, card_number: "DUPLICATE-1")
+      duplicate = build(:rfid, card_number: "DUPLICATE-1")
+      expect { duplicate.save!(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    it "is case-sensitive, like the validation" do
+      create(:rfid, card_number: "case-card")
+      expect(build(:rfid, card_number: "CASE-CARD")).to be_valid
+      expect { create(:rfid, card_number: "CASE-CARD") }.not_to raise_error
+    end
+
+    it "allows any number of rows without a card number" do
+      expect { 2.times { build(:rfid, card_number: nil).save!(validate: false) } }.not_to raise_error
+    end
+  end
+
   describe "Scopes" do
     before(:each) do
       3.times { create(:rfid, user: nil) }
