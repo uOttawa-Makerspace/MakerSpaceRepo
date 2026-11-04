@@ -15,15 +15,7 @@ class StaffDashboardController < StaffAreaController
 
     respond_to do |format|
       format.html do
-        @users = User.order(id: :desc).limit(10)
-        @certifications_on_space =
-          proc do |user, space_id|
-            user
-              .certifications
-              .joins(:training, training: :spaces)
-              .where(trainings: { spaces: { id: space_id } })
-          end
-        @all_user_certs = proc { |user| user.certifications }
+        load_table_context
         @printers_in_use =
           PrinterSession.order(created_at: :desc).where(in_use: true)
         @table_column_count = 0
@@ -154,8 +146,9 @@ class StaffDashboardController < StaffAreaController
   # signed in, and usernames that match no user, change nothing and are reported
   # back (flash for HTML; JSON lists signed_out, not_signed_in and not_found).
   def sign_out_users
-    # Only an array of strings is accepted; blanks, hashes and repeats are ignored.
+    # An array of strings, or a single string, is accepted; blanks, hashes and repeats are ignored.
     dropped = params[:dropped_users]
+    dropped = [dropped] if dropped.is_a?(String)
     usernames = (dropped.is_a?(Array) ? dropped : [])
                       .select { |name| name.is_a?(String) }.map(&:strip).reject(&:blank?).uniq(&:downcase)
     users = User.where(username: usernames).to_a
@@ -212,7 +205,6 @@ class StaffDashboardController < StaffAreaController
 
   def sign_out_all_users
     space = @space
-    load_table_context
 
     space.signed_in_users.each do |user|
       # Lab sessions where sign out did not happen yet (greater than time now)
@@ -248,7 +240,7 @@ class StaffDashboardController < StaffAreaController
         flash[:alert] = "Error signing #{alert.join(', ')} in" if alert.length > 0
         redirect_to staff_dashboard_index_path(space_id: @space.id)
       end
-      format.js
+      format.js { load_table_context }
       format.json { render json: { status: 'ok' } }
     end
   end
@@ -261,6 +253,7 @@ class StaffDashboardController < StaffAreaController
       message = "Space not found"
     elsif current_user.update(space_id: new_space.id)
       @space = new_space
+      flash[:notice] = "Space changed successfully"
     else
       errors = current_user.errors.full_messages
       http_status = :unprocessable_content
@@ -268,11 +261,7 @@ class StaffDashboardController < StaffAreaController
     end
     respond_to do |format|
       format.html do
-        if http_status
-          flash[:alert] = message
-        else
-          flash[:notice] = "Space changed successfully"
-        end
+        flash[:alert] = message if http_status
         redirect_back(fallback_location: staff_dashboard_index_path)
       end
       format.json do
@@ -428,11 +417,6 @@ class StaffDashboardController < StaffAreaController
 
   private
 
-  EMPTY_SIGN_IN_DETAILS = {
-    users: [], certification: [], has_membership: false,
-    expiration_date: "", is_student: false, signed_sheet: false
-  }.freeze
-
   # What the table partials (refresh_tables, the sign out JS response) read.
   def load_table_context
     @users = User.order(id: :desc).limit(10)
@@ -448,20 +432,20 @@ class StaffDashboardController < StaffAreaController
 
   # The most recent sign-in's details, which the tap-in modal reads. An empty room
   # has none: empty lists and false flags, and no certification query.
+  # The most recent sign-in's details, which the tap-in modal reads. One hash
+  # serves the empty room too: nobody signed in gives empty lists and false flags.
   def latest_sign_in_details(signed_in_users)
     latest = signed_in_users.first
-    return EMPTY_SIGN_IN_DETAILS unless latest
-
-    recent_membership = latest.memberships.active.order(end_date: :desc).first
-    EMPTY_SIGN_IN_DETAILS.merge(
+    certifications = latest ? Certification.joins(:training).where(user_id: latest.id) : Certification.none
+    {
       users: signed_in_users.map { |user| [user.name, user.email, user.username] },
-      certification: Certification.select("certifications.id, certifications.user_id, trainings.name_en")
-        .joins(:training).where(user_id: latest.id).group_by(&:user_id).to_a,
-      has_membership: latest.has_active_membership?,
-      expiration_date: recent_membership ? recent_membership.end_date.to_date : "",
-      is_student: latest.student?,
-      signed_sheet: latest.walk_in_safety_sheets.any?
-    )
+      certification: certifications.select("certifications.id, certifications.user_id, trainings.name_en")
+        .group_by(&:user_id).to_a,
+      has_membership: !!latest&.has_active_membership?,
+      expiration_date: latest&.memberships&.active&.order(end_date: :desc)&.first&.end_date&.to_date || "",
+      is_student: !!latest&.student?,
+      signed_sheet: !!latest&.walk_in_safety_sheets&.any?
+    }
   end
 
   def update_lab_session

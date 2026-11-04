@@ -209,7 +209,7 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
 
     it "answers 409 when the card keeps changing owner (JSON) and a flash (html), changing nothing" do
       staff
-      allow(Rfid).to receive(:owner_id_of).and_return(-1)
+      allow(Rfid).to receive(:unlink_card!).and_raise(Rfid::OwnerChanging)
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
       expect(response).to have_http_status(:conflict)
       expect(body).to eq("status" => "error", "error" => "card is changing, try again")

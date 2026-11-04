@@ -16,6 +16,14 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
   let(:visitor) { create(:user, :regular_user) }
 
   describe "PUT /staff_dashboard/add_users (sign_in_users)" do
+    it "answers the JS response (the dashboard tables) for format js" do
+      target = create(:user, :regular_user)
+      put "/staff_dashboard/add_users", params: { added_users: [target.username] }, as: :js, xhr: true
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("table-js-signed-in")
+      expect(LabSession.active_for_user(target)).to exist
+    end
+
     # The dashboard's user picker feeds two forms: Sign In (PUT, carries the CSRF
     # token) and View (GET, no token, so none ends up in its URL).
     def search_form(id)
@@ -129,7 +137,15 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(json).to eq("status" => "ok", "signed_out" => [visitor.username], "not_signed_in" => [], "not_found" => [])
     end
 
-    it "ignores a dropped_users that is not an array" do
+    it "accepts a single string as a one-item list (form value or JSON string)" do
+      sign_in_session(visitor, space)
+      put "/staff_dashboard/remove_users", params: { dropped_users: visitor.username }, as: :json
+      expect(json).to eq("status" => "ok", "signed_out" => [visitor.username], "not_signed_in" => [], "not_found" => [])
+      put "/staff_dashboard/remove_users", params: { dropped_users: "  " }, as: :json
+      expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [], "not_found" => [])
+    end
+
+    it "ignores a dropped_users that is a hash" do
       put "/staff_dashboard/remove_users", params: { dropped_users: { "a" => "b" } }, as: :json
       expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [], "not_found" => [])
     end
@@ -259,6 +275,13 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       put "/staff_dashboard/change_space", params: { space_id: other_space.id }
       expect(flash[:alert]).to eq("Space not changed: Space is locked")
       expect(staff.reload.space_id).to eq(space.id)
+    end
+
+    it "keeps the success notice for a JSON request, which the page shows after it reloads" do
+      put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
+      expect(response).to have_http_status(:ok)
+      get staff_dashboard_index_path
+      expect(flash[:notice]).to eq("Space changed successfully")
     end
 
     it "does not leave a flash behind for a JSON request" do

@@ -160,8 +160,7 @@ window.setSpace = async function () {
         const data = await response.json();
         if (data.error) message = data.error;
       } catch (_) {}
-      if (window.toastr) window.toastr.error(message);
-      else alert(message);
+      alert(message);
     }
   } catch (error) {
     console.error("Failed to update space:", error);

@@ -64,4 +64,34 @@ RSpec.describe Rfid, ".link_to_user! under concurrency", type: :model do
     expect(rows.count).to eq(1)
     expect(rows.first.user_id).to eq(first_user.id)
   end
+
+  # The owner of a card is only known by reading it, before the locks. Here a transaction holds the
+  # owner's row, so unlink_card! has read the owner and waits for that lock; meanwhile the card is
+  # moved to another user and committed. unlink_card! must notice and unlink the card from its new
+  # owner, not report success for the old one.
+  it "unlink_card! follows a card that was relinked to another user while it waited" do
+    Rfid.create!(card_number: card_number, user_id: first_user.id)
+    actor = create(:user, :staff)
+    locked = Queue.new
+    release = Queue.new
+    holder = in_thread do
+      Rfid.transaction do
+        User.where(id: first_user.id).lock("FOR NO KEY UPDATE").take
+        locked << true
+        release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
+        Rfid.where(card_number: card_number).update_all(user_id: second_user.id)
+      end
+    end
+    ThreadPause.await(locked)
+    unlinker = in_thread { Rfid.unlink_card!(card_number, actor: actor) }
+    deadline = Time.current + 5
+    Thread.pass until blocked_backends.positive? || !unlinker.alive? || Time.current > deadline
+    release << true
+
+    expect(holder.value).not_to be_a(StandardError)
+    expect(unlinker.value).to eq(:unlinked)
+    expect(Rfid.find_by!(card_number: card_number).user_id).to be_nil
+  ensure
+    User.unscoped.where(id: actor&.id).delete_all
+  end
 end

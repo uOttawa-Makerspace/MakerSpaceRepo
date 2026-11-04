@@ -77,7 +77,7 @@ class Rfid < ApplicationRecord
     loop do
       attempts += 1
       outcome = transaction do
-        owner_id = owner_id_of(card_number)
+        owner_id = where(card_number: card_number).pick(:user_id)
         User.where(id: owner_id).lock("FOR NO KEY UPDATE").take if owner_id
         lock_card_number(card_number)
         rfid = lock("FOR NO KEY UPDATE").find_by(card_number: card_number)
@@ -96,11 +96,6 @@ class Rfid < ApplicationRecord
       raise OwnerChanging, "card kept changing owner" if attempts >= 5
     end
   end
-
-  def self.owner_id_of(card_number)
-    where(card_number: card_number).pick(:user_id)
-  end
-  private_class_method :owner_id_of
 
   def self.rehome_reader(actor)
     actor.space&.pi_readers&.first
