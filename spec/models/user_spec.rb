@@ -807,7 +807,8 @@ RSpec.describe User, type: :model do
     end
 
     it "send_password_reset emails the reset link with a single purpose-scoped token" do
-      expect { u.send_password_reset }.to change { ActionMailer::Base.deliveries.size }.by(1)
+      expect { u.send_password_reset }.to have_enqueued_mail(MsrMailer, :forgot_password)
+      expect { perform_enqueued_jobs }.to change { ActionMailer::Base.deliveries.size }.by(1)
       mail = ActionMailer::Base.deliveries.last
       expect(mail.to).to eq([u.email])
       expect(mail.subject).to eq("Reset your MakerRepo password")

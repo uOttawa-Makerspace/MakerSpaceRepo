@@ -36,6 +36,11 @@ class UsersController < SessionsController
   EMAIL_CHANGE_OTHER_ACCOUNT_ALERT =
     'This link was requested by a different account. Please sign in as the account that requested the change.'
 
+  SIGN_UP_THROTTLED_MESSAGE = 'Too many sign-up attempts, please try again later.'
+
+  rate_limit to: 30, within: 1.hour, only: :create, name: 'sign-up-ip',
+             by: -> { request.remote_ip }, with: -> { sign_up_throttled }
+
   def create
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
@@ -48,7 +53,7 @@ class UsersController < SessionsController
       end 
     elsif @new_user.save
       hash = @new_user.generate_token_for(:email_confirmation)
-      MsrMailer.confirmation_email(@new_user, hash).deliver_now
+      MsrMailer.confirmation_email(@new_user, hash).deliver_later
       
       respond_to do |format| 
         format.html do
@@ -77,15 +82,13 @@ class UsersController < SessionsController
   RESEND_CONFIRMATION_NOTICE =
     'If that email belongs to an account that still needs confirming, a confirmation email has been sent.'
 
-  RESEND_CONFIRMATION_EMAIL_LIMIT = 3 # mails per address per hour
-
   rate_limit to: 30, within: 1.hour, only: :resend_confirmation, name: 'resend-ip',
              by: -> { request.remote_ip }, with: -> { resend_confirmation_response }
 
   def resend_confirmation
     email = resend_confirmation_email
     user = User.find_by(email: email) if email.present?
-    if user && !user.confirmed? && resend_confirmation_budget_left?(email)
+    if user && !user.confirmed? && mail_budget_left?('resend', email)
       hash = user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(user, hash).deliver_later
     end
@@ -491,11 +494,11 @@ class UsersController < SessionsController
     email.length > 254 ? '' : email
   end
 
-  # Counts only the mails actually sent to an address, so unknown or confirmed addresses cannot
-  # use up a real account's budget. The answer to the caller is the same either way.
-  def resend_confirmation_budget_left?(email)
-    key = "rate-limit:users:resend-email:#{Digest::SHA256.hexdigest(email)}"
-    RateLimitCounter.increment(key, 1, expires_in: 1.hour) <= RESEND_CONFIRMATION_EMAIL_LIMIT
+  def sign_up_throttled
+    respond_to do |format|
+      format.html { redirect_to root_path, alert: SIGN_UP_THROTTLED_MESSAGE }
+      format.json { render json: { error: SIGN_UP_THROTTLED_MESSAGE }, status: :too_many_requests }
+    end
   end
 
   def resend_confirmation_response

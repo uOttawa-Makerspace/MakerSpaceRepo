@@ -760,7 +760,7 @@ class User < ApplicationRecord
   end
 
   def send_password_reset
-    MsrMailer.forgot_password(email, generate_token_for(:password_reset)).deliver_now
+    MsrMailer.forgot_password(email, generate_token_for(:password_reset)).deliver_later
   end
 
   # ============================================

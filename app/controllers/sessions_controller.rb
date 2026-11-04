@@ -126,6 +126,15 @@ class SessionsController < ApplicationController
 
   private
 
+  MAIL_PER_ADDRESS_LIMIT = 3 # mails per address per hour, per kind of mail
+
+  # Counts only the mails actually sent to an address, so unknown or ineligible addresses
+  # cannot use up a real account's budget. The answer to the caller is the same either way.
+  def mail_budget_left?(kind, email)
+    key = "rate-limit:users:#{kind}-email:#{Digest::SHA256.hexdigest(email)}"
+    RateLimitCounter.increment(key, 1, expires_in: 1.hour) <= MAIL_PER_ADDRESS_LIMIT
+  end
+
   # The one private-repository rule: admin, staff, the owner or a member
   # (user_id / repository.users), or a password already entered this session
   # (the session stores the repository id, never the raw URL segment).
