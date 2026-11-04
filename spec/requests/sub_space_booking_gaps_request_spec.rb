@@ -906,6 +906,79 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
   end
 
+  describe "bulk approve access messages" do
+    let(:admin) { create(:user, :admin, booking_approval: true) }
+
+    def request_for(approved:)
+      user = create(:user, :regular_user, booking_approval: approved)
+      UserBookingApproval.create!(user: user, identity: "Other", approved: approved, staff: (admin if approved),
+                                  comments: "c", date: Date.new(2027, 1, 1))
+    end
+
+    before { log_in!(admin) }
+
+    it "says all were approved when none were skipped" do
+      a = request_for(approved: false)
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [a.id] }
+      expect(flash[:notice]).to eq("All selected access requests approved successfully.")
+      expect(flash[:alert]).to be_nil
+    end
+
+    it "reports the skipped ones when only some were approved" do
+      a = request_for(approved: false)
+      b = request_for(approved: true)
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [a.id, b.id] }
+      expect(flash[:notice]).to eq("Selected access requests approved successfully.")
+      expect(flash[:alert]).to eq("1 selected request(s) were already approved and were skipped.")
+    end
+
+    it "shows only the alert when everything was skipped" do
+      b = request_for(approved: true)
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [b.id] }
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("1 selected request(s) were already approved and were skipped.")
+    end
+  end
+
+  describe "bulk approve and decline booking messages" do
+    let(:staff) { create(:user, :staff, booking_approval: true) }
+    let(:booker) { create(:user, :regular_user, booking_approval: true) }
+
+    before { log_in!(staff) }
+
+    %w[approve decline].each do |action|
+      verb = action == "approve" ? "approved" : "declined"
+
+      it "#{action}: no skipped notice when all are pending" do
+        b = pending_booking(booker)
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [b.id], bulk_status: action }
+        expect(flash[:notice]).to eq("Bookings #{verb} successfully.")
+        expect(flash[:alert]).to be_nil
+      end
+
+      it "#{action}: notice and alert when only some are pending" do
+        b = pending_booking(booker)
+        done = pending_booking(booker, start_time: DateTime.parse("2027-04-04 10:00"),
+                                       end_time: DateTime.parse("2027-04-04 11:00"))
+        done.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [b.id, done.id], bulk_status: action }
+        expect(flash[:notice]).to eq("Bookings #{verb} successfully.")
+        expect(flash[:alert]).to include("1 selected booking(s)")
+      end
+
+      it "#{action}: only the alert when none are pending" do
+        done = pending_booking(booker)
+        done.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [done.id], bulk_status: action }
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to include("1 selected booking(s)")
+      end
+    end
+  end
+
   describe "deny_access / bulk_approve_access branches" do
     before { log_in!(admin) }
 

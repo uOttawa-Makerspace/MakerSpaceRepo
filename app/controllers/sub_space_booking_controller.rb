@@ -178,8 +178,10 @@ class SubSpaceBookingController < SessionsController
       BookingMailer.send_booking_approval_request_approved(id).deliver_later
     end
 
-    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "All selected access requests approved successfully."
+    skipped = Array(params[:user_booking_approval_ids]).uniq.size - approved_ids.size
+    flash[:notice] = (skipped.positive? ? "Selected access requests approved successfully." : "All selected access requests approved successfully.") if approved_ids.any?
+    flash[:alert] = "#{skipped} selected request(s) were already approved and were skipped." if skipped.positive?
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
   rescue ActiveRecord::RecordInvalid => e
     approval_failed(e)
   end
@@ -489,8 +491,8 @@ class SubSpaceBookingController < SessionsController
 
     if bulk_status == "approve"
       booking_ids.each { |id| BookingMailer.send_booking_approved(id).deliver_later }
-      flash[:notice] = "Bookings approved successfully."
-    else
+      flash[:notice] = "Bookings approved successfully." if booking_ids.any?
+    elsif booking_ids.any?
       flash[:notice] = "Bookings declined successfully."
     end
     skipped = Array(params[:sub_space_booking_ids]).uniq.size - booking_ids.size

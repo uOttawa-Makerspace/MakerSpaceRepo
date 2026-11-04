@@ -485,11 +485,12 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
       expect(status_name(b1)).to eq("Approved")
     end
 
-    it "silently ignores ids that do not exist (staff)" do
+    it "ignores ids that do not exist and reports them as skipped (staff)" do
       sign_in_as(:staff)
       put bulk_approve_decline_sub_space_booking_index_path,
           params: { sub_space_booking_ids: [99_999_999], bulk_status: "approve" }
-      expect(flash[:notice]).to eq("Bookings approved successfully.")
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to include("1 selected booking(s)")
     end
 
     it "stamps the signed-in approver on a bulk approval" do
