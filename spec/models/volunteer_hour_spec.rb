@@ -113,6 +113,11 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
       expect(hour.total_time).to eq(4.5)
     end
 
+    it "dates the hour on the day of approval" do
+      hour = VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 1)
+      expect(hour.date_of_task.to_date).to eq(Date.current)
+    end
+
     it "raises NotNullViolation (not a soft failure) when the user id is missing" do
       expect { VolunteerHour.create_volunteer_hour_from_approval(task.id, nil, 1) }
         .to raise_error(ActiveRecord::NotNullViolation)

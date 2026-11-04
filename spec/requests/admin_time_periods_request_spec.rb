@@ -57,19 +57,32 @@ RSpec.describe "Admin time periods", type: :request do
       expect(flash[:alert]).to match(/time_period/)
     end
 
-    # TimePeriod has no validations: blank dates (and end before start) are accepted.
-    it "accepts blank dates and an inverted range" do
-      post admin_time_periods_path, params: { time_period: { name: "", start_date: "2028-05-01", end_date: "2028-01-01" } }
-      expect(response).to redirect_to(admin_time_periods_path)
-      expect(TimePeriod.find_by(name: "")).to have_attributes(start_date: Date.new(2028, 5, 1), end_date: Date.new(2028, 1, 1))
+    it "rejects a blank name and an inverted range, creating nothing" do
+      expect {
+        post admin_time_periods_path, params: { time_period: { name: "", start_date: "2028-05-01", end_date: "2028-01-01" } }
+      }.not_to change(TimePeriod, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to include("Name This field is required.", "must not be before the start date")
     end
 
-    # one time period with nil dates makes the whole index page 500 (strftime on nil).
-    it "index 500s once a period without dates exists" do
-      post admin_time_periods_path, params: { time_period: { name: "Broken", start_date: "", end_date: "" } }
-      expect(response).to redirect_to(admin_time_periods_path)
+    it "rejects blank dates, creating nothing" do
+      expect {
+        post admin_time_periods_path, params: { time_period: { name: "Broken", start_date: "", end_date: "" } }
+      }.not_to change(TimePeriod, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "keeps listing when a stored period has no dates" do
+      TimePeriod.new(name: "Legacy").save!(validate: false)
       get admin_time_periods_path
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Legacy", "Fall")
+    end
+
+    it "does not save an update that inverts the range" do
+      patch admin_time_period_path(period), params: { time_period: { end_date: "2000-01-01" } }
+      expect(flash[:alert]).to eq("Something went wrong")
+      expect(period.reload.end_date).to eq(Date.new(2027, 12, 20))
     end
 
     it "updates with a notice" do

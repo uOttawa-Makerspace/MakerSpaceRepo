@@ -119,6 +119,14 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
   describe "GET /locker_rentals (index)" do
     before { log_in!(owner) }
 
+    it "shows Indefinite for an active rental without an end date", skip_bullet: true do
+      create(:locker_rental, :active, rented_by: owner).update_columns(owned_until: nil)
+
+      get locker_rentals_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Indefinite")
+    end
+
     # N+1 pinned
     it "renders the CEED-lockers page with active rental cards AND the full history table", skip_bullet: true do
       active = create(:locker_rental, :active, rented_by: owner)

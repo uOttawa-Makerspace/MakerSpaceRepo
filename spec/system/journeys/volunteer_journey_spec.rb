@@ -54,14 +54,12 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
     updated = deliver_mail.find { |m| m.subject == "Your request was updated: Stocktake" }
     expect(updated.to).to eq([volunteer.email])
 
-    # VolunteerHour.create_volunteer_hour_from_approval leaves
-    # date_of_task NULL, and volunteer_hours/index.html.erb:42 calls strftime on
-    # it, so the volunteer's hours page 500s once any task approval exists.
-    as_actor(:volunteer, allow_console: [%r{/volunteer_hours - Failed to load resource: .* 500}]) do
+    # the approved hour is dated on the day of approval, so the volunteer's hours page lists it
+    expect(VolunteerHour.find_by(user: volunteer).date_of_task.to_date).to eq(Date.current)
+    as_actor(:volunteer) do
       visit volunteer_hours_path
-      expect(page).to have_text("NoMethodError in VolunteerHours#index")
-      expect(page).to have_text("undefined method 'strftime' for nil")
+      expect(page).to have_text(/stocktake/i)
+      expect(page).to have_text("5.0 Hours")
     end
-    expect(VolunteerHour.find_by(user: volunteer).date_of_task).to be_nil
   end
 end
