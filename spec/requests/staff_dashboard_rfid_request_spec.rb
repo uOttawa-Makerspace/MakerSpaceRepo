@@ -20,23 +20,24 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
 
   describe "PUT /staff_dashboard/link_rfid" do
     let!(:unlinked) { create(:rfid, user: nil, mac_address: reader_a.pi_mac_address) }
+    let(:newcomer) { create(:user, :regular_user) }
 
     it "links the card to the user and answers {status: ok} (JSON)" do
       staff
-      put staff_dashboard_link_rfid_path, params: { card_number: unlinked.card_number, user_id: owner.id }, as: :json
+      put staff_dashboard_link_rfid_path, params: { card_number: unlinked.card_number, user_id: newcomer.id }, as: :json
       expect(response).to have_http_status(:ok)
       expect(body).to eq("status" => "ok")
-      expect(unlinked.reload.user_id).to eq(owner.id)
+      expect(unlinked.reload.user_id).to eq(newcomer.id)
       # nothing else about the card changes
       expect(unlinked.mac_address).to eq(reader_a.pi_mac_address)
     end
 
     it "html: redirects back with the success notice" do
       staff
-      put staff_dashboard_link_rfid_path, params: { card_number: unlinked.card_number, user_id: owner.id }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
+      put staff_dashboard_link_rfid_path, params: { card_number: unlinked.card_number, user_id: newcomer.id }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
       expect(response).to redirect_to("http://www.example.com/anywhere")
       expect(flash[:notice]).to eq("RFID linked successfully")
-      expect(unlinked.reload.user_id).to eq(owner.id)
+      expect(unlinked.reload.user_id).to eq(newcomer.id)
     end
 
     it "without user_id (card_number present) changes nothing and still says ok" do
@@ -71,23 +72,73 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(unlinked.reload.user_id).to be_nil
     end
 
-    it "an unknown card_number is a 500 (NoMethodError on nil), nothing is written" do
-      # Rfid.find_by returns nil and `rfid.user_id=` is called on it,
-      # so the React app gets an HTML 500 instead of {status: "error"}.
+    it "creates and links a card no reader ever saw (JSON)" do
       staff
-      expect { put staff_dashboard_link_rfid_path, params: { card_number: "no-such-card", user_id: owner.id }, as: :json }
-        .not_to change { Rfid.pluck(:id, :user_id).sort }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(exception_class).to eq("NoMethodError")
+      expect do
+        put staff_dashboard_link_rfid_path, params: { card_number: "phone-scanned-1", user_id: newcomer.id }, as: :json
+      end.to change(Rfid, :count).by(1)
+      expect(response).to have_http_status(:ok)
+      expect(body).to eq("status" => "ok")
+      created = Rfid.find_by!(card_number: "phone-scanned-1")
+      expect(created.user_id).to eq(newcomer.id)
+      expect(created.mac_address).to be_nil
     end
 
-    it "an unknown user_id is a 500 (foreign key violation), the card stays unlinked" do
-      # no existence check on user_id; rfid.save hits the FK constraint.
+    it "creates and links an unknown card (html)" do
+      staff
+      put staff_dashboard_link_rfid_path, params: { card_number: "phone-scanned-2", user_id: newcomer.id }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
+      expect(flash[:notice]).to eq("RFID linked successfully")
+      expect(Rfid.find_by!(card_number: "phone-scanned-2").user_id).to eq(newcomer.id)
+    end
+
+    it "refuses a card held by another user, with the reason (JSON), changing nothing" do
+      staff
+      other = create(:user, :regular_user)
+      put staff_dashboard_link_rfid_path, params: { card_number: card.card_number, user_id: other.id }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(body).to eq("status" => "error", "error" => "is already linked to another user")
+      expect(card.reload.user_id).to eq(owner.id)
+    end
+
+    it "refuses a card held by another user, with the reason (html flash)" do
+      staff
+      other = create(:user, :regular_user)
+      put staff_dashboard_link_rfid_path, params: { card_number: card.card_number, user_id: other.id }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
+      expect(response).to redirect_to("http://www.example.com/anywhere")
+      expect(flash[:alert]).to include("is already linked to another user")
+      expect(flash[:notice]).to be_nil
+      expect(card.reload.user_id).to eq(owner.id)
+    end
+
+    it "refuses a user who already has a card, with the reason, and links nothing" do
+      staff
+      put staff_dashboard_link_rfid_path, params: { card_number: unlinked.card_number, user_id: owner.id }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(body).to eq("status" => "error", "error" => "user already has a card; unlink it first")
+      expect(unlinked.reload.user_id).to be_nil
+      expect(Rfid.where(user_id: owner.id).pluck(:id)).to eq([card.id])
+    end
+
+    it "an unknown user_id is a 404 {status: error}, the card stays unlinked" do
       staff
       put staff_dashboard_link_rfid_path, params: { card_number: unlinked.card_number, user_id: 99_999_999 }, as: :json
-      expect(response).to have_http_status(:internal_server_error)
-      expect(exception_class).to eq("ActiveRecord::InvalidForeignKey")
+      expect(response).to have_http_status(:not_found)
+      expect(body["status"]).to eq("error")
       expect(unlinked.reload.user_id).to be_nil
+    end
+
+    it "an unknown user_id (html) flashes an alert" do
+      staff
+      put staff_dashboard_link_rfid_path, params: { card_number: unlinked.card_number, user_id: 99_999_999 }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
+      expect(response).to redirect_to("http://www.example.com/anywhere")
+      expect(flash[:alert]).to be_present
+    end
+
+    it "an invalid card_number (too long) is refused with 422" do
+      staff
+      put staff_dashboard_link_rfid_path, params: { card_number: "x" * 65, user_id: owner.id }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(body["status"]).to eq("error")
     end
   end
 

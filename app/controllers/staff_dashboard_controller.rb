@@ -279,27 +279,42 @@ end
     end
   end
 
+  # Links a card to a user through Rfid.link_to_user!, so a card no reader ever
+  # saw is created and a card another user holds, or a user who already has a
+  # card, is refused with the reason (flash for HTML, 422 body for JSON).
   def link_rfid
-    status = true
+    error = nil
+    http_status = :unprocessable_content
 
     if params[:user_id].present? && params[:card_number].present?
-      rfid = Rfid.find_by(card_number: params[:card_number])
-      rfid.user_id = params[:user_id]
-      status = false unless rfid.save
+      card_number = params[:card_number]
+      user = User.find_by(id: params[:user_id].to_s.match?(/\A\d+\z/) ? params[:user_id] : nil)
+      if user.nil?
+        error = "user not found"
+        http_status = :not_found
+      elsif !Rfid.valid_card_number?(card_number)
+        error = "card number is invalid"
+      else
+        error = Rfid.link_to_user!(card_number, user)
+      end
     end
 
     respond_to do |format|
       format.html do
-        if status
-  flash[:notice] = "RFID linked successfully"
-else
-  flash[
-            :alert
-          ] = "Something went wrong while linking the RFID, please try again later."
-end
+        if error
+          flash[:alert] = "RFID not linked: #{error}"
+        else
+          flash[:notice] = "RFID linked successfully"
+        end
         redirect_back(fallback_location: root_path)
       end
-      format.json { render json: { status: status ? "ok" : "error" } }
+      format.json do
+        if error
+          render json: { status: "error", error: error }, status: http_status
+        else
+          render json: { status: "ok" }
+        end
+      end
     end
   end
 
