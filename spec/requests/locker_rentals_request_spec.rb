@@ -971,13 +971,25 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         create(:locker_rental, :active).tap { |r| r.update!(decided_by: staff, state: :cancelled) }
       end
 
-      it "is not re-activated by staff" do
+      # staff and admin may take a cancelled rental straight to active (cash paid at the desk)
+      it "is re-activated by staff or an admin" do
+        [staff, admin].each do |actor|
+          log_in!(actor)
+          patch locker_rental_path(rental),
+                params: { locker_rental: { state: "active", locker_id: rental.locker_id } }
+          expect(rental.reload.state).to eq("active"), actor.role
+          expect(rental.decided_by).to eq(actor)
+          rental.update!(state: :cancelled)
+        end
+      end
+
+      it "is not moved to reviewing by staff" do
         log_in!(staff)
 
         patch locker_rental_path(rental),
-              params: { locker_rental: { state: "active", locker_id: rental.locker_id } }
+              params: { locker_rental: { state: "reviewing", locker_id: rental.locker_id } }
 
-        expect(flash[:alert]).to include("cannot change from cancelled except back to awaiting payment")
+        expect(flash[:alert]).to include("cannot change from cancelled")
         expect(rental.reload.state).to eq("cancelled")
       end
 
