@@ -159,6 +159,14 @@ class SessionsController < ApplicationController
   def ensure_repository_unlocked(repository)
     return if repository.nil? || !repository.private? || repository_unlocked?(repository)
 
-    redirect_to password_entry_repository_path(repository.user_username, repository.id)
+    redirect_to password_entry_repository_path(denial_username(repository), repository.id)
+  end
+
+  # The username a redirect about this repository may carry. A repository the caller cannot open is addressed
+  # with the username the request used (or the caller's own), never the owner's.
+  def denial_username(repository)
+    return repository.user_username if !repository.private? || repository_unlocked?(repository)
+
+    params[:user_username].presence || @user&.username.presence || "repositories"
   end
 end

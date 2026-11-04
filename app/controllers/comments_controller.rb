@@ -42,7 +42,7 @@ class CommentsController < SessionsController
     end
     redirect_to repository_path(
                   id: comment.repository.id,
-                  user_username: comment.repository.user_username
+                  user_username: denial_username(comment.repository)
                 )
   end
 
