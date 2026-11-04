@@ -46,7 +46,9 @@ class StaffDashboardChannel < ApplicationCable::Channel
   end
 
   def self.broadcast_table_updates(space_id)
-    space = Space.find(space_id)
+    # a space deleted meanwhile has no table to update
+    space = Space.find_by(id: space_id)
+    return unless space
 
     Turbo::StreamsChannel.broadcast_render_to(
       "signed_in_table_space_#{space_id}",

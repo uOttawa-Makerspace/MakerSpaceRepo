@@ -68,32 +68,39 @@ class RfidTap
     active_sessions = rfid.user.lab_sessions.active
 
     if active_sessions.present?
-      # Sign out of all spaces
-      active_sessions.sign_out_session
-      # If user tapped somewhere other than last active space, make a new
-      # session.
+      previous_space_ids = active_sessions.pluck(:space_id).uniq
       last_active_location = active_sessions.last.space_id
 
       if last_active_location != @space_id
+        # Sign out of all spaces and sign in here together: a failure leaves
+        # the user signed in where they were.
+        LabSession.transaction do
+          active_sessions.sign_out_session
+          LabSession.create_session(user: rfid.user, mac_address: @mac_address, space_id: @space_id)
+        end
         previous_space = Space.find_by(id: last_active_location)
         TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: @space, mac_address: @mac_address, previous_space: previous_space)
-        new_session(rfid)
+        # The spaces the user left drop them from their tables
+        (previous_space_ids - [@space_id]).each { |space_id| StaffDashboardChannel.send_tap_out rfid.user, space_id }
+        signed_in(rfid)
       else
+        active_sessions.sign_out_session
         TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: @space, mac_address: @mac_address)
         StaffDashboardChannel.send_tap_out rfid.user, @space_id
         Result.new(:sign_out)
       end
     else
-      result = new_session(rfid)
-      TapBoxLog.log_membership_check_queued(user: rfid.user, card_number: rfid.card_number, space: @space, mac_address: @mac_address)
-      CardTapJob.perform_later(rfid, @space_id)
-      result
+      LabSession.create_session(user: rfid.user, mac_address: @mac_address, space_id: @space_id)
+      signed_in(rfid)
     end
   end
 
-  def new_session(rfid)
-    LabSession.create_session(user: rfid.user, mac_address: @mac_address, space_id: @space_id)
+  # After the new session exists: log it, queue the membership check and the
+  # live popup/table update.
+  def signed_in(rfid)
     TapBoxLog.log_sign_in(user: rfid.user, card_number: rfid.card_number, space: @space, mac_address: @mac_address)
+    TapBoxLog.log_membership_check_queued(user: rfid.user, card_number: rfid.card_number, space: @space, mac_address: @mac_address)
+    CardTapJob.perform_later(rfid, @space_id)
     Result.new(:sign_in)
   end
 end

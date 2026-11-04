@@ -166,6 +166,25 @@ RSpec.describe Rfid, type: :model do
       expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
     end
 
+    it "leaves the mac_address alone for a nil actor, even though a space with readers exists" do
+      expect(Rfid.unlink_from_user!(owner, actor: nil)).to eq(1)
+      card.reload
+      expect(card.user_id).to be_nil
+      expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "locks the owner's row even when the owner is soft-deleted" do
+      owner.update_columns(deleted: true)
+      locks = []
+      subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+        locks << payload[:sql] if payload[:sql].include?("FOR NO KEY UPDATE") && payload[:sql].include?('FROM "users"')
+      end
+      Rfid.unlink_from_user!(owner, actor: nil)
+      ActiveSupport::Notifications.unsubscribe(subscriber)
+      expect(locks.size).to eq(1)
+      expect(locks.first).not_to include('"deleted"')
+    end
+
     it "is a no-op returning 0 for a user without a card" do
       other = create(:user, :regular_user)
       expect(Rfid.unlink_from_user!(other, actor: actor)).to eq(0)

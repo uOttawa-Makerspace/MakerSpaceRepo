@@ -198,6 +198,22 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(student_id["maxlength"]).to be_nil
     end
 
+    it "edit form saves another field for a user with a legacy faculty and a long student id, and still refuses new invalid values" do
+      student = create(:user, :regular_user, :student)
+      student.update_columns(faculty: "Law Society", student_id: "1234567890123")
+      patch admin_user_path(student),
+            params: { user: { name: "Renamed", faculty: "Law Society", student_id: "1234567890123" } }
+      expect(response).to redirect_to(edit_admin_user_path(student))
+      student.reload
+      expect([student.name, student.faculty, student.student_id]).to eq(["Renamed", "Law Society", "1234567890123"])
+
+      patch admin_user_path(student), params: { user: { faculty: "Made Up" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      patch admin_user_path(student), params: { user: { student_id: "123" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(student.reload.faculty).to eq("Law Society")
+    end
+
     it "manage_roles renders" do
       get manage_roles_admin_users_path
       expect(response).to have_http_status(:ok)

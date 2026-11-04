@@ -47,6 +47,44 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       get settings_admin_path
       expect(response).to have_http_status(:ok)
     end
+
+    it "profile form keeps stored values its options do not list (legacy faculty, long student id)" do
+      user.update_columns(faculty: "Common Law", student_id: "1234567890123")
+      login!(user)
+      get settings_profile_path
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("select[name='user[faculty]'] option[selected]")&.[]("value")).to eq("Common Law")
+      student_id = page.at_css("input[name='user[student_id]']")
+      expect(student_id["value"]).to eq("1234567890123")
+      expect(student_id["pattern"]).to be_nil
+      expect(student_id["maxlength"]).to be_nil
+    end
+  end
+
+  describe "saving the profile form with legacy stored values" do
+    let(:student) { create(:user, :regular_user, :student) }
+
+    before do
+      student.update_columns(faculty: "Law Society", student_id: "1234567890123")
+      login!(student)
+    end
+
+    it "saves another field and keeps the stored faculty and student id the form sends back" do
+      patch user_path(student.username),
+            params: { user: { name: "Renamed", faculty: "Law Society", student_id: "1234567890123" } }
+      expect(flash[:notice]).to eq("Profile updated successfully.")
+      student.reload
+      expect([student.name, student.faculty, student.student_id]).to eq(["Renamed", "Law Society", "1234567890123"])
+    end
+
+    it "still refuses a new faculty or student id outside the rules" do
+      patch user_path(student.username), params: { user: { faculty: "Made Up" } }
+      expect(flash[:alert]).to include("Faculty")
+      patch user_path(student.username), params: { user: { student_id: "123" } }
+      expect(flash[:alert]).to include("Student")
+      expect(student.reload.faculty).to eq("Law Society")
+      expect(student.student_id).to eq("1234567890123")
+    end
   end
 
   describe "GET /:username (show)" do
