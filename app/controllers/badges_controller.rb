@@ -44,6 +44,9 @@ class BadgesController < DevelopmentProgramsController
       .joins(:training, :training_session)
       .where(trainings: { has_badge: true })
 
+    # A deleted earner's badge is shown to admins only (see #show)
+    certifications = certifications.joins(:user).where(users: { deleted: false }) unless @user.admin?
+
     # Apply user filter if not admin/staff
     certifications = certifications.where(user: @user) unless @user.admin? || @user.staff?
 
