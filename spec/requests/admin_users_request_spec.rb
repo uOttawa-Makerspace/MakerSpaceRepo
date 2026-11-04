@@ -540,14 +540,21 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(User.find(target.id).deleted).to be(false)
     end
 
-    it "does not actually restore the user's repositories (update_all runs under Repository's default scope)" do
-      # restore_user's `user.repositories.update_all(deleted: false)` goes through Repository's default scope (deleted: false), so soft-deleted repos stay deleted after a restore
+    it "restores the user's repositories hidden by the deletion" do
       repo = create(:repository)
       repo.users << target
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
       patch restore_user_admin_users_path, params: { id: target.id }
-      expect(Repository.unscoped.find(repo.id).deleted).to be(true)
+      expect(Repository.unscoped.find(repo.id).deleted).to be(false)
+      expect(Repository.find_by(id: repo.id)).to eq(repo)
+    end
+
+    it "leaves another user's hidden repositories hidden" do
+      other_repo = create(:repository)
+      other_repo.update_columns(deleted: true)
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.unscoped.find(other_repo.id).deleted).to be(true)
     end
 
     it "finds the lab sessions and certifications intact after delete and still intact after restore" do

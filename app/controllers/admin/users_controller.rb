@@ -406,9 +406,11 @@ class Admin::UsersController < AdminAreaController
     end
   end
 
+  # Brings back what soft_delete_user hid: the account and its repositories. Repository's default
+  # scope hides deleted ones, so it is lifted to reach them.
   def restore_user_account(user)
     user.transaction do
-      user.repositories.update_all(deleted: false)
+      user.repositories.unscope(where: :deleted).update_all(deleted: false)
       user.restore!
     end
   end
