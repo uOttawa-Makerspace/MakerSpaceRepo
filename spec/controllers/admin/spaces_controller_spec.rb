@@ -127,6 +127,72 @@ RSpec.describe Admin::SpacesController, type: :controller do
         expect(response).to redirect_to admin_spaces_path
       end
 
+      context "when the space has user history" do
+        let(:second_admin) { create(:user, :admin) }
+
+        def request_and_approve(target)
+          params = { id: target.id, space_id: target.id, admin_input: target.name.upcase }
+          delete :destroy, params: params
+          session[:user_id] = second_admin.id
+          delete :destroy, params: params
+        end
+
+        it "refuses a space with training sessions, keeps the history and clears the request" do
+          target = create(:space)
+          training_session = create(:training_session_with_certifications, space: target)
+          certification_ids = training_session.certifications.pluck(:id)
+
+          expect { request_and_approve(target) }.not_to change(Space, :count)
+
+          expect(flash[:alert]).to match(/training sessions/i)
+          expect(target.reload.destroy_admin_id).to be_nil
+          expect(TrainingSession.exists?(training_session.id)).to be(true)
+          expect(Certification.where(id: certification_ids).count).to eq(certification_ids.size)
+          expect(response).to redirect_to admin_spaces_path
+        end
+
+        it "refuses a space with lab sessions" do
+          target = create(:space)
+          lab_session = create(:lab_session, space: target)
+
+          expect { request_and_approve(target) }.not_to change(Space, :count)
+
+          expect(flash[:alert]).to match(/lab sessions/i)
+          expect(target.reload.destroy_admin_id).to be_nil
+          expect(LabSession.exists?(lab_session.id)).to be(true)
+        end
+
+        it "refuses a space with volunteer tasks" do
+          target = create(:space)
+          task = create(:volunteer_task, space: target)
+
+          expect { request_and_approve(target) }.not_to change(Space, :count)
+
+          expect(flash[:alert]).to match(/volunteer tasks/i)
+          expect(VolunteerTask.exists?(task.id)).to be(true)
+        end
+
+        it "refuses a space with sub space bookings" do
+          target = create(:space)
+          booking = create(:sub_space_booking, sub_space: create(:sub_space, space: target))
+
+          expect { request_and_approve(target) }.not_to change(Space, :count)
+
+          expect(flash[:alert]).to match(/sub space bookings/i)
+          expect(target.reload.destroy_admin_id).to be_nil
+          expect(SubSpaceBooking.exists?(booking.id)).to be(true)
+        end
+
+        it "deletes an empty space on the second admin's approval" do
+          target = create(:space)
+          create(:sub_space, space: target)
+
+          expect { request_and_approve(target) }.to change(Space, :count).by(-1)
+
+          expect(flash[:notice]).to eq("Space deleted!")
+        end
+      end
+
       it "should not delete the space with invalid input" do
         # Use shared space, we don't expect it to be deleted
         expect {

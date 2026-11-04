@@ -7,12 +7,15 @@ class Space < ApplicationRecord
   has_many :keys, dependent: :nullify
   has_many :key_requests, dependent: :nullify
   has_many :walk_in_safety_sheets, dependent: :restrict_with_error
-  has_many :lab_sessions, dependent: :destroy
+  # A space with user history cannot be deleted: lab sessions, training sessions (with their
+  # certifications and exams), volunteer tasks (with their hours) and sub space bookings
+  # feed reports and course records. The delete is refused with an explanation instead.
+  has_many :lab_sessions, dependent: :restrict_with_error
   has_many :users, through: :lab_sessions
   has_and_belongs_to_many :trainings
-  has_many :training_sessions, dependent: :destroy
+  has_many :training_sessions, dependent: :restrict_with_error
   has_many :certifications, through: :training_sessions
-  has_many :volunteer_tasks, dependent: :destroy
+  has_many :volunteer_tasks, dependent: :restrict_with_error
   has_many :popular_hours, dependent: :destroy
   has_many :shadowing_hours
   has_many :users, dependent: :nullify
@@ -20,6 +23,9 @@ class Space < ApplicationRecord
   has_many :space_staff_hour
   has_many :shifts, dependent: :destroy
   has_many :sub_spaces, dependent: :destroy
+  has_many :sub_space_bookings, through: :sub_spaces
+  # runs before the sub spaces are destroyed, which would otherwise take their bookings along
+  before_destroy :refuse_while_sub_space_bookings_exist, prepend: true
   has_many :staff_needed_calendars, dependent: :destroy
   has_many :space_manager_joins, dependent: :destroy
   has_many :space_managers, through: :space_manager_joins, source: :user
@@ -210,4 +216,12 @@ class Space < ApplicationRecord
     weekly_events.sort_by(&:dtstart)
   end
 
+  private
+
+  def refuse_while_sub_space_bookings_exist
+    return unless sub_space_bookings.exists?
+
+    errors.add(:base, "Cannot delete record because dependent sub space bookings exist")
+    throw :abort
+  end
 end
