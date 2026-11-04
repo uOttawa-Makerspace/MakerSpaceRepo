@@ -67,7 +67,7 @@ class StaffDashboardController < StaffAreaController
   def refresh_tables
     signed_in_users = @space.signed_in_users
     return head :not_modified if params[:token] == signed_in_users.map(&:id).join("")
-    latest = signed_in_users.first
+
     @users = User.order(id: :desc).limit(10)
     @certifications_on_space =
       proc do |user, space_id|
@@ -81,17 +81,7 @@ class StaffDashboardController < StaffAreaController
     @all_user_certs = proc { |user| user.certifications }
     @all_user_memberships = Membership.where(user_id: signed_in_users.map(&:id)).active.pluck(:user_id)
     @all_sign_out_memberships = Membership.where(user_id: @space.recently_signed_out_users.pluck(:id)).active.pluck(:user_id)
-    recent_membership = latest&.memberships&.active&.order(end_date: :desc)&.first
-    recent_expiration_date = ""
-    recent_expiration_date = recent_membership.end_date.to_date unless recent_membership.nil?
-    render json: {
-            users: signed_in_users.map { |user| [user.name, user.email, user.username] },
-            certification: Certification.select('certifications.id, certifications.user_id, trainings.name_en')
-            .joins(:training).where(user_id: latest&.id).group_by(&:user_id).to_a,
-            has_membership: latest ? latest.has_active_membership? : false,
-            expiration_date: recent_expiration_date,
-            is_student: latest ? latest.student? : false,
-            signed_sheet: latest ? latest.walk_in_safety_sheets.any? : false,
+    render json: latest_sign_in_details(signed_in_users).merge(
              signed_out:
                render_to_string(
                  partial: "staff_dashboard/signed_out_table",
@@ -114,7 +104,7 @@ class StaffDashboardController < StaffAreaController
                  },
                  formats: [:html]
                )
-           }
+           )
   end
 
   def import_excel
@@ -276,22 +266,27 @@ class StaffDashboardController < StaffAreaController
 
   def change_space
     new_space = Space.find_by(id: params[:space_id])
-    if new_space
-      current_user.update(space_id: new_space.id)
+    errors = nil
+    if new_space.nil?
+      http_status = :not_found
+      flash[:alert] = "Space not found"
+    elsif current_user.update(space_id: new_space.id)
       @space = new_space
       flash[:notice] = "Space changed successfully"
     else
-      flash[:alert] = "Space not found"
+      errors = current_user.errors.full_messages
+      http_status = :unprocessable_content
+      flash[:alert] = "Space not changed: #{errors.join(', ')}"
     end
     respond_to do |format|
       format.html do
         redirect_back(fallback_location: staff_dashboard_index_path)
       end
       format.json do
-        if new_space
-          render json: { status: "ok" }
+        if http_status
+          render json: { status: "error", errors: errors }.compact, status: http_status
         else
-          render json: { status: "error" }, status: :not_found
+          render json: { status: "ok" }
         end
       end
     end
@@ -434,6 +429,29 @@ class StaffDashboardController < StaffAreaController
   end
 
   private
+
+  # The most recent sign-in's details, which the tap-in modal reads. An empty room
+  # has none: empty lists and false flags, and no certification query.
+  def latest_sign_in_details(signed_in_users)
+    latest = signed_in_users.first
+    unless latest
+      return {
+        users: [], certification: [], has_membership: false,
+        expiration_date: "", is_student: false, signed_sheet: false
+      }
+    end
+
+    recent_membership = latest.memberships.active.order(end_date: :desc).first
+    {
+      users: signed_in_users.map { |user| [user.name, user.email, user.username] },
+      certification: Certification.select("certifications.id, certifications.user_id, trainings.name_en")
+        .joins(:training).where(user_id: latest.id).group_by(&:user_id).to_a,
+      has_membership: latest.has_active_membership?,
+      expiration_date: recent_membership ? recent_membership.end_date.to_date : "",
+      is_student: latest.student?,
+      signed_sheet: latest.walk_in_safety_sheets.any?
+    }
+  end
 
   def update_lab_session
     current_sesh =

@@ -171,6 +171,12 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
   context "when nobody is signed in to the space" do
     before { LabSession.where(space: space).update_all(sign_out_time: 1.minute.ago) }
 
+    it "does not return certifications of users outside the room" do
+      orphan = create(:certification, user: create(:user, :regular_user))
+      refresh
+      expect(json["certification"]).to eq([])
+    end
+
     it "answers empty user details and the (empty) tables instead of failing" do
       refresh
 

@@ -220,6 +220,20 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(staff.reload.space_id).to eq(space.id)
     end
 
+    it "a failed save is a 422 with the validation messages (JSON) and an alert (html)" do
+      allow_any_instance_of(User).to receive(:update).and_wrap_original do |m, *args|
+        m.receiver.errors.add(:base, "Space is locked")
+        false
+      end
+      put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json).to eq("status" => "error", "errors" => ["Space is locked"])
+
+      put "/staff_dashboard/change_space", params: { space_id: other_space.id }
+      expect(flash[:alert]).to eq("Space not changed: Space is locked")
+      expect(staff.reload.space_id).to eq(space.id)
+    end
+
     it "html: an unknown space_id redirects back with an alert" do
       put "/staff_dashboard/change_space", params: { space_id: 0 }
       expect(response).to have_http_status(:found)
