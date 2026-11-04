@@ -207,11 +207,12 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(Upvote.last.downvote).to be(false)
     end
 
-    it "lets the author vote on their own comment" do
+    it "refuses a vote by the comment's author" do
       content_login!(author)
-      vote(comment)
-      expect(comment.reload.upvote).to eq(1)
-      expect(author.reload.reputation).to eq(2)
+      expect { vote(comment) }.not_to change(Upvote, :count)
+      expect(flash[:alert]).to eq("You cannot vote on your own comment")
+      expect(comment.reload.upvote).to eq(0)
+      expect(author.reload.reputation).to eq(0)
     end
 
     it "404s for a comment_id from a different repository than the :id segment" do
