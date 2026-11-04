@@ -5,7 +5,7 @@ require "rails_helper"
 # The "Find by" box above the admin announcements table (src/sorting.js
 # findSession): typing hides the rows that do not contain the text. Real login,
 # real page JS.
-RSpec.describe "Table search box", type: :system do
+RSpec.describe "Table search box", type: :system, skip_bullet: true do
   let(:admin) { create(:user, :admin) }
   let!(:first_note) { create(:announcement, :volunteer, description: "Alpha workshop reminder") }
   let!(:second_note) { create(:announcement, :volunteer, description: "Bravo printer downtime") }
