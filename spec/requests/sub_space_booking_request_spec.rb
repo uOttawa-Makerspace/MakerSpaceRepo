@@ -1090,14 +1090,27 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(UserBookingApproval.where(user: user).count).to eq(1)
     end
 
-    it "request_access identity 'JMTS' without a JMTS Space 500s" do
-      # `Space.find_by(name: "JMTS").space_managers` — nil receiver.
+    it "request_access identity 'JMTS' without a JMTS Space is saved, mailed to the default address and reported" do
+      user = create(:user, :regular_user, booking_approval: false)
+      log_in!(user)
+      expect(Rails.error).to receive(:report).with(
+        having_attributes(message: a_string_including('no space named "JMTS"')), anything
+      )
+      put request_access_sub_space_booking_index_path,
+          params: { comments: "j", identity: "JMTS" }
+      expect(flash[:notice]).to eq("Access request submitted successfully.")
+      expect(UserBookingApproval.find_by(user: user).identity).to eq("JMTS")
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq(["mtc@uottawa.ca"])
+    end
+
+    it "request_access identity 'JMTS' with a JMTS Space that has no managers is mailed to the default address" do
+      create(:space, name: "JMTS")
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
       put request_access_sub_space_booking_index_path,
           params: { comments: "j", identity: "JMTS" }
-      expect(response.status).to eq(500)
-      expect(UserBookingApproval.find_by(user: user)).not_to be_nil
+      expect(flash[:notice]).to eq("Access request submitted successfully.")
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq(["mtc@uottawa.ca"])
     end
 
     it "request_access identity 'JMTS' with a JMTS Space submits fine" do
@@ -1110,18 +1123,23 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(UserBookingApproval.find_by(user: user).identity).to eq("JMTS")
     end
 
-    it "request_access identity 'Staff' needs a resolvable supervisor" do
+    it "request_access identity 'Staff' without a supervisor saves nothing and lets the user retry" do
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
       put request_access_sub_space_booking_index_path,
           params: { comments: "hey", identity: "Staff" }
-      expect(response.status).to eq(404)
-      # the UBA row is saved BEFORE the supervisor lookup 404s, so the
-      # request exists (staff_id nil) but no notification email went out.
-      uba = UserBookingApproval.find_by(user: user)
-      expect(uba.identity).to eq("Staff")
-      expect(uba.staff_id).to be_nil
-      expect(uba.approved).to be(false)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Please choose a staff member as your supervisor.")
+      expect(UserBookingApproval.find_by(user: user)).to be_nil
+      expect(ActionMailer::Base.deliveries).to be_empty
+
+      supervisor = create(:user, :admin)
+      perform_enqueued_jobs do
+        put request_access_sub_space_booking_index_path,
+            params: { comments: "hey", identity: "Staff", supervisor: supervisor.id }
+      end
+      expect(flash[:notice]).to eq("Access request submitted successfully.")
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to include(supervisor.email)
     end
 
     it "request_access identity 'Staff' with a supervisor id submits" do

@@ -872,6 +872,113 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
   end
 
+  describe "approving access requests that are already approved" do
+    let(:admin) { create(:user, :admin, booking_approval: true) }
+    let(:applicant) { create(:user, :regular_user, booking_approval: false) }
+
+    before { log_in!(admin) }
+
+    it "approve by id is refused the second time: no mail and the approver is unchanged" do
+      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: false,
+                                        comments: "c", date: Date.new(2027, 1, 1))
+      perform_enqueued_jobs { put approve_access_sub_space_booking_index_path, params: { id: uba.id } }
+      first_mails = ActionMailer::Base.deliveries.size
+      other_admin = create(:user, :admin, booking_approval: true)
+      log_in!(other_admin)
+      perform_enqueued_jobs { put approve_access_sub_space_booking_index_path, params: { id: uba.id } }
+
+      expect(flash[:notice]).to eq("#{applicant.name} already has booking access.")
+      expect(ActionMailer::Base.deliveries.size).to eq(first_mails)
+      expect(uba.reload.staff_id).to eq(admin.id)
+    end
+
+    it "bulk approve skips requests that are already approved" do
+      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true, staff: admin,
+                                        comments: "c", date: Date.new(2027, 1, 1))
+      applicant.update_column(:booking_approval, true)
+      other_admin = create(:user, :admin, booking_approval: true)
+      log_in!(other_admin)
+      perform_enqueued_jobs do
+        put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [uba.id] }
+      end
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(uba.reload.staff_id).to eq(admin.id)
+    end
+  end
+
+  describe "bulk approve access messages" do
+    let(:admin) { create(:user, :admin, booking_approval: true) }
+
+    def request_for(approved:)
+      user = create(:user, :regular_user, booking_approval: approved)
+      UserBookingApproval.create!(user: user, identity: "Other", approved: approved, staff: (admin if approved),
+                                  comments: "c", date: Date.new(2027, 1, 1))
+    end
+
+    before { log_in!(admin) }
+
+    it "says all were approved when none were skipped" do
+      a = request_for(approved: false)
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [a.id] }
+      expect(flash[:notice]).to eq("All selected access requests approved successfully.")
+      expect(flash[:alert]).to be_nil
+    end
+
+    it "reports the skipped ones when only some were approved" do
+      a = request_for(approved: false)
+      b = request_for(approved: true)
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [a.id, b.id] }
+      expect(flash[:notice]).to eq("Selected access requests approved successfully.")
+      expect(flash[:alert]).to eq("1 selected request(s) were already approved and were skipped.")
+    end
+
+    it "shows only the alert when everything was skipped" do
+      b = request_for(approved: true)
+      put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [b.id] }
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("1 selected request(s) were already approved and were skipped.")
+    end
+  end
+
+  describe "bulk approve and decline booking messages" do
+    let(:staff) { create(:user, :staff, booking_approval: true) }
+    let(:booker) { create(:user, :regular_user, booking_approval: true) }
+
+    before { log_in!(staff) }
+
+    %w[approve decline].each do |action|
+      verb = action == "approve" ? "approved" : "declined"
+
+      it "#{action}: no skipped notice when all are pending" do
+        b = pending_booking(booker)
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [b.id], bulk_status: action }
+        expect(flash[:notice]).to eq("Bookings #{verb} successfully.")
+        expect(flash[:alert]).to be_nil
+      end
+
+      it "#{action}: notice and alert when only some are pending" do
+        b = pending_booking(booker)
+        done = pending_booking(booker, start_time: DateTime.parse("2027-04-04 10:00"),
+                                       end_time: DateTime.parse("2027-04-04 11:00"))
+        done.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [b.id, done.id], bulk_status: action }
+        expect(flash[:notice]).to eq("Bookings #{verb} successfully.")
+        expect(flash[:alert]).to include("1 selected booking(s)")
+      end
+
+      it "#{action}: only the alert when none are pending" do
+        done = pending_booking(booker)
+        done.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [done.id], bulk_status: action }
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to include("1 selected booking(s)")
+      end
+    end
+  end
+
   describe "deny_access / bulk_approve_access branches" do
     before { log_in!(admin) }
 
@@ -891,10 +998,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(uba.approved).to be(true)
     end
 
-    # no surrounding transaction. The default scope orders newest
-    # first, so the newer request is approved (and committed) before the older
-    # one's invalid user aborts the loop.
-    it "keeps the earlier approvals when a later one raises RecordInvalid (partial commit)" do
+    it "approves nothing and sends no mail when one of the selected requests cannot be approved" do
       good_user = create(:user, :regular_user, booking_approval: false)
       bad_user = create(:user, :regular_user, booking_approval: false)
       bad_user.update_column(:gender, "Unlisted")
@@ -904,26 +1008,38 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       newer = UserBookingApproval.create!(user: good_user, identity: "Other", approved: false,
                                           comments: "c", date: Date.new(2027, 1, 1),
                                           created_at: Time.utc(2027, 2, 1))
-      put bulk_approve_access_sub_space_booking_index_path,
-          params: { user_booking_approval_ids: [older.id, newer.id] }
+      perform_enqueued_jobs do
+        put bulk_approve_access_sub_space_booking_index_path,
+            params: { user_booking_approval_ids: [older.id, newer.id] }
+      end
 
       expect(flash[:alert]).to start_with("Failed to approve: ")
-      expect(newer.reload.approved).to be(true)
-      expect(good_user.reload.booking_approval).to be(true)
+      expect(newer.reload.approved).to be(false)
+      expect(good_user.reload.booking_approval).to be(false)
       expect(older.reload.approved).to be(false)
+      expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # the request is destroyed BEFORE user.save!; a failing save
-    # leaves the request deleted behind an unhandled RecordInvalid (422).
-    it "deny_access deletes the request even when saving the user then raises RecordInvalid" do
+    it "deny_access removes the request and clears the user's booking access even when the user record is otherwise invalid" do
       applicant = create(:user, :regular_user, booking_approval: true)
       applicant.update_column(:gender, "Unlisted")
       uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
                                         comments: "c", date: Date.new(2027, 1, 1))
       put deny_access_sub_space_booking_index_path, params: { id: uba.id }
 
-      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:notice]).to eq("Access request declined successfully.")
       expect(UserBookingApproval.exists?(uba.id)).to be(false)
+      expect(applicant.reload.booking_approval).to be(false)
+    end
+
+    it "deny_access keeps the user's access when removing the request fails" do
+      applicant = create(:user, :regular_user, booking_approval: true)
+      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
+                                        comments: "c", date: Date.new(2027, 1, 1))
+      allow_any_instance_of(UserBookingApproval).to receive(:destroy!).and_raise(ActiveRecord::RecordNotDestroyed)
+      put deny_access_sub_space_booking_index_path, params: { id: uba.id }
+
+      expect(UserBookingApproval.exists?(uba.id)).to be(true)
       expect(applicant.reload.booking_approval).to be(true)
     end
   end
@@ -946,15 +1062,49 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(mail.subject).to eq("Booking approved")
     end
 
-    # no state guard: re-approving re-sends the mail and moves approved_by
-    it "re-approving an approved booking sends the mail again and overwrites approved_by" do
+    it "re-approving an approved booking is refused: no mail and the approver is unchanged" do
       booking = pending_booking(booker, approved_by_id: booker.id, approved_at: Time.utc(2027, 1, 1))
       booking.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
       perform_enqueued_jobs do
         put sub_space_booking_approve_path(sub_space_booking_id: booking.id)
       end
-      expect(ActionMailer::Base.deliveries.size).to eq(1)
-      expect(booking.reload.approved_by_id).to eq(staff.id)
+      expect(flash[:alert]).to include("no longer pending")
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(booking.reload.approved_by_id).to eq(booker.id)
+      expect(booking.sub_space_booking_status.booking_status_id).to eq(@approved_status.id)
+    end
+
+    it "declining an approved booking is refused and leaves it approved" do
+      booking = pending_booking(booker)
+      booking.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      put sub_space_booking_decline_path(sub_space_booking_id: booking.id)
+      expect(flash[:alert]).to include("no longer pending")
+      expect(booking.reload.sub_space_booking_status.booking_status_id).to eq(@approved_status.id)
+    end
+
+    it "bulk approve skips bookings that are not pending: no mail and the approver is unchanged for them" do
+      pending_one = pending_booking(booker)
+      done = pending_booking(create(:user, :regular_user, booking_approval: true),
+                             start_time: DateTime.parse("2027-04-04 10:00"),
+                             end_time: DateTime.parse("2027-04-04 11:00"),
+                             approved_by_id: booker.id)
+      done.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      perform_enqueued_jobs do
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [pending_one.id, done.id], bulk_status: "approve" }
+      end
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq([booker.email])
+      expect(pending_one.reload.approved_by_id).to eq(staff.id)
+      expect(done.reload.approved_by_id).to eq(booker.id)
+      expect(flash[:alert]).to include("1 selected booking(s) were no longer pending")
+    end
+
+    it "bulk decline leaves an approved booking approved" do
+      done = pending_booking(booker)
+      done.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      put bulk_approve_decline_sub_space_booking_index_path,
+          params: { sub_space_booking_ids: [done.id], bulk_status: "decline" }
+      expect(done.reload.sub_space_booking_status.booking_status_id).to eq(@approved_status.id)
     end
 
     it "bulk approve delivers one approved mail per booking" do

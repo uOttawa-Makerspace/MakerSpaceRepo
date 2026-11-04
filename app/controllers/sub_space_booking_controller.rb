@@ -71,12 +71,31 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    # A missing supervisor still 404s further down
-    supervisor = User.find_by(id: params[:supervisor]) if params[:identity] == "Staff"
-    if supervisor && !supervisor.staff?
-      flash[:alert] = "Please choose a staff member as your supervisor."
-      redirect_to root_path
-      return
+    emails = nil
+    case params[:identity]
+    when "JMTS"
+      jmts = Space.find_by(name: "JMTS")
+      if jmts.nil?
+        Rails.error.report(
+          RuntimeError.new('Booking access request for JMTS, but no space named "JMTS" exists; using the default recipients'),
+          handled: true,
+          severity: :warning
+        )
+      end
+      emails = jmts ? jmts.space_managers.map(&:email) : []
+      emails = ["mtc@uottawa.ca"] if emails.empty?
+    when "Staff"
+      supervisor = User.find_by(id: params[:supervisor]) if params[:supervisor].present?
+      if supervisor.nil? || !supervisor.staff?
+        flash[:alert] = "Please choose a staff member as your supervisor."
+        redirect_to root_path
+        return
+      end
+      emails = [supervisor.email]
+    when "GNG"
+      emails = ["makerlab@uottawa.ca"]
+    else
+      emails = ["mtc@uottawa.ca"]
     end
 
     if UserBookingApproval.where(user: current_user).first.nil?
@@ -90,20 +109,6 @@ class SubSpaceBookingController < SessionsController
         )
 
       if booking_approval.save
-        emails = []
-
-        case params[:identity]
-        when "JMTS"
-          jmts = Space.find_by(name: "JMTS")
-          jmts.space_managers.each { |sm| emails << sm.email }
-        when "Staff"
-          emails << User.find(params[:supervisor]).email
-        when "GNG"
-          emails << "makerlab@uottawa.ca"
-        else
-          emails << "mtc@uottawa.ca"
-        end
-
         BookingMailer.send_booking_approval_request_sent(
           booking_approval.id,
           emails
@@ -128,11 +133,19 @@ class SubSpaceBookingController < SessionsController
                     notice: "#{user.name} already has booking access."
         return
       end
-      grant_booking_access!(uba)
+      id = grant_booking_access!(uba)
+      BookingMailer.send_booking_approval_request_approved(id).deliver_later
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access granted successfully."
     else
-      grant_booking_access!(UserBookingApproval.find(params[:id]))
+      uba = UserBookingApproval.find(params[:id])
+      if uba.approved? && uba.user.booking_approval?
+        redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                    notice: "#{uba.user.name} already has booking access."
+        return
+      end
+      id = grant_booking_access!(uba)
+      BookingMailer.send_booking_approval_request_approved(id).deliver_later
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access request approved successfully."
     end
@@ -141,10 +154,11 @@ class SubSpaceBookingController < SessionsController
   end
 
   def deny_access
-    user = UserBookingApproval.find(params[:id]).user
-    UserBookingApproval.find(params[:id]).destroy
-    user.booking_approval = false
-    user.save!
+    uba = UserBookingApproval.find(params[:id])
+    UserBookingApproval.transaction do
+      uba.user.update_column(:booking_approval, false)
+      uba.destroy!
+    end
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: "Access request declined successfully."
   end
@@ -156,12 +170,21 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    UserBookingApproval
-      .where(id: params[:user_booking_approval_ids])
-      .each { |uba| grant_booking_access!(uba) }
+    approved_ids = []
+    UserBookingApproval.transaction do
+      UserBookingApproval
+        .where(id: params[:user_booking_approval_ids])
+        .reject { |uba| uba.approved? && uba.user.booking_approval? }
+        .each { |uba| approved_ids << grant_booking_access!(uba) }
+    end
+    approved_ids.each do |id|
+      BookingMailer.send_booking_approval_request_approved(id).deliver_later
+    end
 
-    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "All selected access requests approved successfully."
+    skipped = Array(params[:user_booking_approval_ids]).uniq.size - approved_ids.size
+    flash[:notice] = (skipped.positive? ? "Selected access requests approved successfully." : "All selected access requests approved successfully.") if approved_ids.any?
+    flash[:alert] = "#{skipped} selected request(s) were already approved and were skipped." if skipped.positive?
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
   rescue ActiveRecord::RecordInvalid => e
     approval_failed(e)
   end
@@ -390,9 +413,15 @@ class SubSpaceBookingController < SessionsController
 
   def approve
     sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
-    
-    # 1. Update status
     status = SubSpaceBookingStatus.find(sub_space_booking.sub_space_booking_status_id)
+
+    unless status.booking_status_id == BookingStatus::PENDING.id
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
+      return
+    end
+
+    # 1. Update status
     status.update!(booking_status_id: BookingStatus::APPROVED.id)
     
     # 2. Stamp the approval with update_columns, so a row that no longer passes
@@ -413,8 +442,14 @@ class SubSpaceBookingController < SessionsController
 
   def decline
     sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
-    
     status = SubSpaceBookingStatus.find(sub_space_booking.sub_space_booking_status_id)
+
+    unless status.booking_status_id == BookingStatus::PENDING.id
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
+      return
+    end
+
     status.update!(booking_status_id: BookingStatus::DECLINED.id)
     
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
@@ -428,33 +463,44 @@ class SubSpaceBookingController < SessionsController
     end
 
     bulk_status = params[:bulk_status]
-    booking_ids = params[:sub_space_booking_ids]
 
-    # Use .pluck instead of buggy SQL joins for update_all
-    status_ids = SubSpaceBooking.where(id: booking_ids).pluck(:sub_space_booking_status_id)
+    unless %w[approve decline].include?(bulk_status)
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                  alert: "Failed to bulk update booking status."
+      return
+    end
+
+    # Only bookings that are still pending are changed; the others are skipped.
+    booking_ids = []
+    SubSpaceBooking.transaction do
+      pending = SubSpaceBooking.where(id: params[:sub_space_booking_ids]).select do |booking|
+        SubSpaceBookingStatus.where(id: booking.sub_space_booking_status_id,
+                                    booking_status_id: BookingStatus::PENDING.id).exists?
+      end
+      booking_ids = pending.map(&:id)
+      status_ids = pending.map(&:sub_space_booking_status_id)
+
+      if bulk_status == "approve"
+        SubSpaceBookingStatus.where(id: status_ids).update_all(booking_status_id: BookingStatus::APPROVED.id)
+        # update_all bypasses validations identically to update_columns
+        SubSpaceBooking.where(id: booking_ids).update_all(
+          approved_at: DateTime.now,
+          approved_by_id: current_user.id
+        )
+      else
+        SubSpaceBookingStatus.where(id: status_ids).update_all(booking_status_id: BookingStatus::DECLINED.id)
+      end
+    end
 
     if bulk_status == "approve"
-      SubSpaceBookingStatus.where(id: status_ids).update_all(booking_status_id: BookingStatus::APPROVED.id)
-      
-      # update_all bypasses validations identically to update_columns
-      SubSpaceBooking.where(id: booking_ids).update_all(
-        approved_at: DateTime.now,
-        approved_by_id: current_user.id
-      )
-      
-      # Send approval emails for each booking
-      SubSpaceBooking.where(id: booking_ids).find_each do |booking|
-        BookingMailer.send_booking_approved(booking.id).deliver_later
-      end
-      
-      flash[:notice] = "Bookings approved successfully."
-    elsif bulk_status == "decline"
-      SubSpaceBookingStatus.where(id: status_ids).update_all(booking_status_id: BookingStatus::DECLINED.id)
+      booking_ids.each { |id| BookingMailer.send_booking_approved(id).deliver_later }
+      flash[:notice] = "Bookings approved successfully." if booking_ids.any?
+    elsif booking_ids.any?
       flash[:notice] = "Bookings declined successfully."
-    else
-      flash[:alert] = "Failed to bulk update booking status."
     end
-    
+    skipped = Array(params[:sub_space_booking_ids]).uniq.size - booking_ids.size
+    flash[:alert] = "#{skipped} selected booking(s) were no longer pending and were skipped." if skipped.positive?
+
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab")
   end
 
@@ -774,7 +820,7 @@ class SubSpaceBookingController < SessionsController
       uba.update!(approved: true, staff: current_user)
       uba.user.update!(booking_approval: true)
     end
-    BookingMailer.send_booking_approval_request_approved(uba.id).deliver_later
+    uba.id
   end
 
   def approval_failed(error)

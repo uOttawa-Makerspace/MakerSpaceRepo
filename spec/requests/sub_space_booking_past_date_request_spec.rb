@@ -378,10 +378,11 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(flash[:notice]).to eq("Bookings approved successfully.")
       expect(status_name(past)).to eq("Approved")
 
+      other = booking_of(user, start_time: "2026-11-29 10:00", end_time: "2026-11-29 11:00")
       put bulk_approve_decline_sub_space_booking_index_path,
-          params: { sub_space_booking_ids: [past.id], bulk_status: "decline" }
+          params: { sub_space_booking_ids: [other.id], bulk_status: "decline" }
       expect(flash[:notice]).to eq("Bookings declined successfully.")
-      expect(status_name(past)).to eq("Declined")
+      expect(status_name(other)).to eq("Declined")
     end
 
     it "admins toggle it public" do
