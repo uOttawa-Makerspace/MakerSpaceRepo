@@ -22,6 +22,7 @@ class RepositoriesController < SessionsController
                redirect_to password_entry_repository_path(@repository.user_username, @repository.id),
                            alert: "Too many attempts. Please try again later."
              }
+  before_action :redirect_to_owner_url, only: %i[show download_files password_entry]
   before_action :check_auth, only: %i[show download_files]
   before_action -> { ensure_repository_unlocked(@repository) }, only: :add_like
   before_action :set_member_repository,
@@ -423,6 +424,16 @@ class RepositoriesController < SessionsController
 
   def check_auth
     @check_passed = repository_unlocked?(@repository)
+  end
+
+  # The username in the address is the owner's: a link with another (or an old) username is sent on to the
+  # repository's own address.
+  def redirect_to_owner_url
+    username = @repository.user_username
+    return if username.blank? || params[:user_username] == username
+
+    redirect_to url_for(action: action_name, user_username: username, id: params[:id], only_path: true, **request.query_parameters.symbolize_keys),
+                status: :moved_permanently
   end
 
   def set_repository

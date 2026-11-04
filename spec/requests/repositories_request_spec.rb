@@ -61,14 +61,17 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect { get repo_path }.not_to change { repo.reload.attributes }
     end
 
-    it "finds the repository by id, slug and title, and ignores the username segment" do
-      # the :user_username segment is not matched against the repository owner
-      get repository_path("anybody-at-all", repo.id)
-      expect(response).to have_http_status(:ok)
-      get repository_path("anybody-at-all", repo.slug)
-      expect(response).to have_http_status(:ok)
-      get repository_path("anybody-at-all", "Laser Lamp")
-      expect(response).to have_http_status(:ok)
+    it "finds the repository by id, slug and title" do
+      [repo.id, repo.slug, "Laser Lamp"].each do |key|
+        get repository_path(repo.user_username, key)
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    it "sends a link with another username to the owner's address" do
+      get repository_path("anybody-at-all", repo.slug), params: { page: "2" }
+      expect(response).to have_http_status(:moved_permanently)
+      expect(response).to redirect_to(repository_path(repo.user_username, repo.slug, page: "2"))
     end
 
     it "shows the member forms to owners and admin only, the link-to-proposal form to staff too" do
