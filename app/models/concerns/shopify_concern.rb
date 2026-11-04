@@ -190,8 +190,12 @@ module ShopifyConcern
       end
       body = resp.body
       errors = body.is_a?(Hash) ? Array.wrap(body["errors"]) : []
-      # The client itself raises HttpResponseError (or MaxHttpRetriesExceededError) for any non-2xx answer, which is
-      # rescued above, so only a 200 answer gets here; its GraphQL errors are told apart below.
+      # The client raises HttpResponseError for non-2xx answers (rescued above), but it passes a 2xx that is not 200
+      # (202, 204 with an empty body) through. GraphQL answers with 200, so anything else is not an answer to the
+      # query; reading it as "no metafields" would send the order down the no-reference path.
+      unless resp.code == 200
+        raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (HTTP #{resp.code})"
+      end
       if errors.present?
         codes = errors.filter_map { |e| e.is_a?(Hash) ? e.dig("extensions", "code").presence : nil }.uniq
         if codes.empty? || (codes & ShopifyConcern::TRANSIENT_GRAPHQL_CODES).any?

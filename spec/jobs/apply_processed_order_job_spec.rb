@@ -579,6 +579,17 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         end
       end
 
+      # The client lets a 2xx that is not 200 through; with an empty body it must not read as "no metafields".
+      [202, 204].each do |code|
+        it "retries after an HTTP #{code} answer with an empty body, applying nothing" do
+          lookup_answers(double(query: double(code: code, body: {})))
+          order = hook(membership_order.merge(id: 7417 + code))
+          expect_retry(order)
+          expect(order.last_error).to include("MetafieldLookupFailed")
+          expect(Membership.count).to eq(0)
+        end
+      end
+
       # The shopify_api client raises HttpResponseError for every non-2xx answer (the raised-error examples above),
       # so a non-2xx response object never reaches the lookup. These examples used to hand it one by stub.
       [429, 500, 502, 503].each do |code|
