@@ -456,8 +456,9 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       space = create(:space)
       open_session = create(:lab_session, user_id: target.id, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
       bystander = create(:lab_session, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
-      delete delete_user_admin_users_path, params: { id: target.id, password: password }
-      expect(open_session.reload.sign_out_time).to be <= Time.zone.now
+      deleted_at = Time.zone.now.change(usec: 0)
+      travel_to(deleted_at) { delete delete_user_admin_users_path, params: { id: target.id, password: password } }
+      expect(open_session.reload.sign_out_time).to eq(deleted_at)
       expect(bystander.reload.sign_out_time).to be > Time.zone.now
       expect(space.signed_in_users).to eq([bystander.user])
     end
