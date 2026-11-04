@@ -21,6 +21,7 @@ class VolunteerHour < ApplicationRecord
       volunteer_task_id: volunteer_task_id,
       user_id: volunteer_id,
       total_time: hours,
+      date_of_task: Time.current,
       approval: true
     )
   end

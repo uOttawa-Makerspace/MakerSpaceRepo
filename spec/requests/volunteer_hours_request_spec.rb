@@ -101,6 +101,15 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response.body).not_to include("100.0 Hours")
     end
 
+    it "lists an hour without a date", skip_bullet: true do
+      hour = make_hour(approval: true, total_time: 2)
+      hour.update_columns(date_of_task: nil)
+      vol_login!(owner)
+      get volunteer_hours_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("2.0 Hours")
+    end
+
     # the database refuses an hour that points at a missing task, so the index never meets one
     it "cannot hold an hour that references a missing task" do
       expect { VolunteerHour.new(user: owner, volunteer_task_id: 999_999, total_time: 1).save!(validate: false) }
