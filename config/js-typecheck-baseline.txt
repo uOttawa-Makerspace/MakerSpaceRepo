@@ -246,7 +246,6 @@
 2	app/javascript/entrypoints/volunteer_tasks.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 3	app/javascript/entrypoints/volunteer_tasks.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
 6	app/javascript/entrypoints/volunteer_tasks.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
-1	app/javascript/entrypoints/volunteers.js	TS2304	Cannot find name 'bootstrap'.
 2	app/javascript/entrypoints/volunteers.js	TS2304	Cannot find name 'flatpickr'.
 1	app/javascript/entrypoints/volunteers.js	TS2345	Argument of type 'HTMLElement' is not assignable to parameter of type 'string | TomInput'.
 1	app/javascript/entrypoints/volunteers.js	TS2353	Object literal may only specify known properties, and 'searchPlaceholder' does not exist in type 'RecursivePartial<TomSettings>'.
