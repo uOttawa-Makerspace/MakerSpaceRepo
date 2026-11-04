@@ -203,10 +203,35 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.locked).to be(false)
     end
 
-    it "can change username and lets it collide only on case-insensitive uniqueness" do
+    it "ignores :username: renaming an account is admin-only" do
       login!(user)
-      patch user_path(user.username), params: { user: { username: other.username.upcase } }
-      expect(flash[:alert]).to include("Username")
+      original = user.username
+      patch user_path(original), params: { user: { username: "renamed#{user.id}", name: "Still Works" } }
+      expect(response).to redirect_to(settings_profile_path)
+      expect(user.reload.username).to eq(original)
+      expect(user.name).to eq("Still Works")
+    end
+
+    describe "waiver checkbox" do
+      it "accepts the waiver for an account that never accepted it" do
+        user.update_columns(read_and_accepted_waiver_form: false)
+        login!(user)
+        patch user_path(user.username), params: { user: { read_and_accepted_waiver_form: "1" } }
+        expect(user.reload.read_and_accepted_waiver_form).to be(true)
+      end
+
+      it "leaves it unaccepted when the box is not ticked" do
+        user.update_columns(read_and_accepted_waiver_form: false)
+        login!(user)
+        patch user_path(user.username), params: { user: { read_and_accepted_waiver_form: "0", name: "Z Z" } }
+        expect(user.reload.read_and_accepted_waiver_form).to be(false)
+      end
+
+      it "cannot be withdrawn once accepted" do
+        login!(user)
+        patch user_path(user.username), params: { user: { read_and_accepted_waiver_form: "0" } }
+        expect(user.reload.read_and_accepted_waiver_form).to be(true)
+      end
     end
 
     it "ignores :email on profile update (the confirm-by-email flow is the only way)" do

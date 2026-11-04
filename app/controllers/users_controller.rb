@@ -548,8 +548,14 @@ class UsersController < SessionsController
 
   # Profile edits: no :email (use change_email's confirm flow) and no :password
   # (use change_password).
+  # Renaming an account is admin-only, so :username is not editable here. The waiver
+  # checkbox is on the profile form for an account that never accepted it: it can be
+  # accepted here, never withdrawn.
   def profile_params
-    user_params.except(:password, :password_confirmation, :email)
+    permitted = user_params.except(:password, :password_confirmation, :email, :username)
+    accepting = ActiveModel::Type::Boolean.new.cast(permitted[:read_and_accepted_waiver_form]) == true
+    permitted = permitted.except(:read_and_accepted_waiver_form) if @user.read_and_accepted_waiver_form || !accepting
+    permitted
   end
 
   def user_params
