@@ -128,7 +128,7 @@ class Admin::UsersController < AdminAreaController
 
     delete_user = User.find(params[:id])
     begin
-      User.guarding_last_admin!([delete_user.id]) { soft_delete_user(delete_user) }
+      User.delete_account!(delete_user)
     rescue User::LastAdminError => e
       redirect_to user_path(delete_user.username), alert: e.message
       return
@@ -139,7 +139,7 @@ class Admin::UsersController < AdminAreaController
 
   def restore_user
     restore_user = User.unscoped.find(params[:id])
-    restore_user_account(restore_user)
+    User.restore_account!(restore_user)
     redirect_to user_path(restore_user.username), notice: "User restored!"
   end
 
@@ -394,27 +394,6 @@ class Admin::UsersController < AdminAreaController
   # ============================================
   # User Management
   # ============================================
-
-  # Deleting an account hides it; nothing the user did is deleted. Each repository they own passes to
-  # another member, or is hidden when there is none, and a lab session still open is ended now, so a
-  # deleted user is not listed as in a space. Every other row (visits, certifications, training)
-  # stays as it was.
-  def soft_delete_user(user)
-    user.transaction do
-      Repository.release_owned_by!(user)
-      LabSession.where(user_id: user.id).active.update_all(sign_out_time: Time.zone.now)
-      user.soft_delete!
-    end
-  end
-
-  # Brings back what soft_delete_user hid: the account and the repositories it hid. Repositories
-  # handed to another member stay with them.
-  def restore_user_account(user)
-    user.transaction do
-      Repository.restore_hidden_for!(user)
-      user.restore!
-    end
-  end
 
   # Locking is guarded (it removes a usable admin); unlocking never is. Which of the
   # two to do is decided from the row re-read under the guard's locks (lock! reloads

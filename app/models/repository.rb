@@ -140,28 +140,32 @@ class Repository < ApplicationRecord
   end
 
   # What deleting an account does to the repositories it owns (repositories.user_id), inside the
-  # caller's transaction. A repository with another member who is not deleted passes to the
-  # member with the lowest id and stays visible; one without is hidden. The deleted user keeps
-  # their membership rows (members are listed through User's default scope, so they are not
-  # shown), and repositories they only collaborate on are not touched. Repository rows are locked
-  # in id order, and each candidate is locked and re-checked, so a member being deleted by another
-  # admin at the same time is not picked.
+  # caller's transaction (User.delete_account!, which runs one deletion at a time). A repository
+  # passes to the member with the lowest id who can sign in (not deleted, deactivated or locked) and
+  # does not already own a repository with the same title; if there is no such member it is hidden.
+  # The deleted user keeps their membership rows (members are listed through User's default scope,
+  # so they are not shown), and repositories they only collaborate on are not touched. The rows are
+  # written without validations and callbacks so the slug (and so the address) stays as it was;
+  # updated_at and the cached zip follow the change.
   def self.release_owned_by!(user)
     where(user_id: user.id).order(:id).lock.to_a.each do |repository|
-      new_owner = User.where(id: repository.users.where.not(id: user.id).select(:id))
+      new_owner = User.can_sign_in
+                      .where(id: repository.users.where.not(id: user.id).select(:id))
+                      .where.not(id: where(title: repository.title).select(:user_id))
                       .order(:id).lock('FOR SHARE').first
-      if new_owner
-        repository.update_columns(user_id: new_owner.id)
-      else
-        repository.update_columns(deleted: true)
-      end
+      changes = new_owner ? { user_id: new_owner.id } : { deleted: true }
+      repository.update_columns(changes.merge(updated_at: Time.current))
+      repository.clear_zip_cache
     end
   end
 
   # Brings back what release_owned_by! hid: the hidden repositories still owned by the user. A
   # repository handed to another member has a different owner and stays with them.
   def self.restore_hidden_for!(user)
-    unscoped.where(user_id: user.id, deleted: true).update_all(deleted: false)
+    unscoped.where(user_id: user.id, deleted: true).find_each do |repository|
+      repository.update_columns(deleted: false, updated_at: Time.current)
+      repository.clear_zip_cache
+    end
   end
 
   def self.authenticate(id, password)

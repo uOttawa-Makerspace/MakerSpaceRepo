@@ -386,9 +386,12 @@ class User < ApplicationRecord
   # Admins who can still sign in. A locked admin (admin lock, or too many failed
   # attempts) cannot sign in (CredentialAuthenticator), so does not count.
   # A deactivated admin (User#deactivate!) cannot either.
-  scope :usable_admins, -> {
-    where(role: "admin").where(deactivated_at: nil)
-                        .where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
+  scope :usable_admins, -> { where(role: "admin").can_sign_in }
+
+  # Accounts that can sign in: not deactivated, and not locked (an expired timed lockout no longer
+  # counts). Deleted accounts are already left out by the default scope.
+  scope :can_sign_in, -> {
+    where(deactivated_at: nil).where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
   }
 
   GUARD_LOCK_MODE = "FOR NO KEY UPDATE"
@@ -439,6 +442,39 @@ class User < ApplicationRecord
       end
 
       yield
+    end
+  end
+
+  # Deleting and restoring accounts hand repositories to other members and take row locks on
+  # several users, so they run one at a time: a transaction-scoped advisory lock is taken before
+  # any row lock, and two such operations can never wait on each other's rows.
+  def self.serialising_account_deletion
+    transaction do
+      connection.execute("SELECT pg_advisory_xact_lock(hashtextextended('account_deletion', 0))")
+      yield
+    end
+  end
+
+  # Deleting an account hides it; nothing the user did is deleted. Each repository they own passes to
+  # another member, or is hidden when there is none, and a lab session still open is ended now, so a
+  # deleted user is not listed as in a space. Every other row (visits, certifications, training)
+  # stays as it was. Raises LastAdminError for the last usable admin.
+  def self.delete_account!(user)
+    serialising_account_deletion do
+      guarding_last_admin!([user.id]) do
+        Repository.release_owned_by!(user)
+        LabSession.where(user_id: user.id).active.update_all(sign_out_time: Time.zone.now)
+        user.soft_delete!
+      end
+    end
+  end
+
+  # Brings back what delete_account! hid: the account and the repositories it hid. Repositories
+  # handed to another member stay with them.
+  def self.restore_account!(user)
+    serialising_account_deletion do
+      Repository.restore_hidden_for!(user)
+      user.restore!
     end
   end
 

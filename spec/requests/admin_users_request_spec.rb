@@ -492,6 +492,61 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
         expect(Repository.unscoped.where(id: [alone.id, shared.id]).pluck(:deleted)).to eq([true, true])
       end
 
+      it "skips a member who already owns a repository with the same title, and takes the next one" do
+        later = create(:user, :regular_user)
+        repo = create(:repository, owner: target, title: "Same Title")
+        repo.users << [target, partner, later]
+        create(:repository, owner: partner, title: "Same Title")
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find(repo.id)).to have_attributes(user_id: later.id, deleted: false)
+      end
+
+      it "hides the repository when every other member already owns one with the same title" do
+        repo = create(:repository, owner: target, title: "Same Title")
+        repo.users << [target, partner]
+        create(:repository, owner: partner, title: "Same Title")
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.unscoped.find(repo.id)).to have_attributes(user_id: target.id, deleted: true)
+      end
+
+      it "skips deactivated and locked members" do
+        deactivated = create(:user, :regular_user)
+        locked = create(:user, :regular_user)
+        deactivated.deactivate!
+        locked.update_columns(locked: true)
+        repo = create(:repository, owner: target)
+        repo.users << [target, deactivated, locked, partner]
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find(repo.id).user_id).to eq(partner.id)
+      end
+
+      it "hides the repository when the only other members cannot sign in" do
+        locked = create(:user, :regular_user)
+        locked.update_columns(locked: true)
+        repo = create(:repository, owner: target)
+        repo.users << [target, locked]
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.unscoped.find(repo.id).deleted).to be(true)
+      end
+
+      it "moves updated_at and drops the cached zip when it hands over or hides" do
+        handed = create(:repository, owner: target)
+        handed.users << [target, partner]
+        hidden = create(:repository, owner: target)
+        hidden.users << target
+        old = 1.day.ago.change(usec: 0)
+        Repository.unscoped.where(id: [handed.id, hidden.id]).update_all(updated_at: old)
+        [handed, hidden].each do |repo|
+          FileUtils.mkdir_p(repo.zip_path.dirname)
+          File.write(repo.zip_path, "zip")
+        end
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        [handed, hidden].each do |repo|
+          expect(Repository.unscoped.find(repo.id).updated_at).to be > old
+          expect(File.exist?(repo.zip_path)).to be(false)
+        end
+      end
+
       it "leaves a repository the user only collaborates on, and its owner, as it was" do
         other_owner = create(:user, :regular_user)
         repo = create(:repository, owner: other_owner)
