@@ -316,11 +316,31 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
       expect(JSON.parse(response.body)["error"]).to include("locked").and(satisfy { |m| !m.include?("wait") && !m.include?("years") })
     end
 
-    it "a lock seen by sign_in gets the locked wording, never 'Incorrect password'" do
+    it "a lock in effect shows the locked wording only after the correct password" do
+      user.update_columns(locked: true, locked_until: 3.minutes.from_now, auth_attempts: 5)
+      post login_authentication_path, params: { username_email: user.username, password: password }, as: :json
+      expect(JSON.parse(response.body)["error"]).to start_with("Your account has been locked").and include("wait")
+      expect(session[:user_id]).to be_nil
+      expect(user.reload.auth_attempts).to eq(5)
+    end
+
+    it "a wrong password for a locked account gets the generic message, html and json, and counts nothing" do
+      user.update_columns(locked: true, locked_until: 3.minutes.from_now, auth_attempts: 5)
+      login!(user, pw: "wrong")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("Incorrect username, email or password.")
+      post login_authentication_path, params: { username_email: user.username, password: "wrong" }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)).to eq("error" => "Incorrect username, email or password.")
+      expect(user.reload).to have_attributes(locked: true, auth_attempts: 5)
+    end
+
+    it "an unknown account gets the same answer as a locked account with a wrong password" do
       user.update_columns(locked: true, locked_until: 3.minutes.from_now, auth_attempts: 5)
       post login_authentication_path, params: { username_email: user.username, password: "wrong" }, as: :json
-      expect(JSON.parse(response.body)["error"]).to start_with("Your account has been locked").and include("wait")
-      expect(user.reload.auth_attempts).to eq(5)
+      locked_answer = [response.status, response.body]
+      post login_authentication_path, params: { username_email: "nobody", password: "wrong" }, as: :json
+      expect([response.status, response.body]).to eq(locked_answer)
     end
 
     it "five wrong passwords lock a legacy-invalid account over HTTP too" do

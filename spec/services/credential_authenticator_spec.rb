@@ -35,10 +35,19 @@ RSpec.describe CredentialAuthenticator do
     expect(result).to have_attributes(user: nil, refusal: nil, candidate: nil)
   end
 
-  it "refuses a lock in effect before checking the password (no attempt counted)" do
+  it "refuses a lock in effect only for the correct password (no attempt counted)" do
     user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
-    expect(described_class.call(user.username, "x").refusal).to eq(:locked)
+    result = described_class.call(user.username, password)
+    expect(result).to have_attributes(user: nil, refusal: :locked, candidate: user)
     expect(user.reload.auth_attempts).to eq(5)
+  end
+
+  it "answers a wrong password for a locked account as bad credentials, counting nothing" do
+    user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
+    expect(described_class.call(user.username, "x")).to have_attributes(user: nil, refusal: nil, candidate: nil)
+    user.admin_lock!
+    expect(described_class.call(user.username, "x")).to have_attributes(user: nil, refusal: nil, candidate: nil)
+    expect(user.reload).to have_attributes(locked: true, auth_attempts: 5)
   end
 
   it "refuses inactive and unconfirmed accounts after a correct password" do

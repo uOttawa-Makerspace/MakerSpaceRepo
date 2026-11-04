@@ -2,9 +2,10 @@
 
 # The one login rule behind every password sign-in (HTML/JSON/SAML through
 # ApplicationHelper#sign_in, and /api/v1/session): a lock still in effect is
-# refused BEFORE the password is looked at (so a locked account cannot be probed
-# or have its lock rewritten by failed attempts; a lapsed timed lockout is
-# cleared), then the password is checked with the failed-attempt bookkeeping
+# refused only for the correct password, which is checked without the failed-attempt
+# bookkeeping (so a locked account has its lock and count left alone, and a wrong
+# password gets the same bad-credentials answer as an unknown login; a lapsed timed
+# lockout is cleared), then the password is checked with the failed-attempt bookkeeping
 # (User.authenticate), then a deactivated account and an unconfirmed one
 # are refused. No session or token work happens here; callers do their own.
 #
@@ -19,7 +20,11 @@ class CredentialAuthenticator
   def self.call(login, password)
     candidate = User.username_or_email(login)
     if candidate&.locked?
-      return Result.new(refusal: :locked, candidate: candidate) if candidate.lock_in_effect?
+      if candidate.lock_in_effect?
+        return Result.new(refusal: :locked, candidate: candidate) if candidate.authenticate_password(password)
+
+        return Result.new # nothing counted, and nothing says the account exists
+      end
 
       candidate.update_columns(locked: false, auth_attempts: 0) # the timed lockout has lapsed
     end
