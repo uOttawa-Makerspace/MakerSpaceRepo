@@ -14,6 +14,7 @@ class SessionsController < ApplicationController
   })
 
   SUPPORT_EMAIL = "uottawa.makerepo@gmail.com"
+  INVALID_CREDENTIALS_MESSAGE = "Incorrect username, email or password."
   
   def login_authentication
     @user = sign_in(params[:username_email], params[:password])
@@ -29,7 +30,6 @@ class SessionsController < ApplicationController
                    token: @user.token
                  }
         end
-        format.json { render json: { role: :guest }, status: :ok }
       elsif @sign_in_refusal == :locked
         @user = User.new
         locked_user = User.username_or_email(params[:username_email])
@@ -74,34 +74,13 @@ class SessionsController < ApplicationController
                  status: :unprocessable_content
         end
       else
+        # An unknown account and a wrong password get the same answer.
         @user = User.new
-        user = User.username_or_email(params[:username_email])
-        if user
-          error_message =
-            (
-              if user.auth_attempts >= User::MAX_AUTH_ATTEMPTS
-                format.html? ? 
-                  "Your account has been locked due to too many failed login attempts. #{view_context.link_to 'Contact support', "mailto:#{SUPPORT_EMAIL}?subject=Account%20Locked%20-%20#{user.username}", class: 'text-primary'} to unlock your account#{lock_wait_suffix(user, 'try again in')}." :
-                  "Your account has been locked due to too many failed login attempts. Contact support at #{SUPPORT_EMAIL} to unlock your account#{lock_wait_suffix(user, 'try again in')}."
-              elsif user.auth_attempts > 1
-                "Incorrect password. You have #{User::MAX_AUTH_ATTEMPTS - user.auth_attempts} attempts left before your account is locked."
-              else
-                "Incorrect password."
-              end
-            )
-        else
-          error_message =
-            "Could not find user with email or username: #{params[:username_email]}"
-        end
         format.html do
-          flash[:alert] = error_message
+          flash.now[:alert] = INVALID_CREDENTIALS_MESSAGE
           render :login, status: :unprocessable_content
         end
-        format.json do
-          json_response = { error: error_message }
-          json_response[:support_email] = SUPPORT_EMAIL if user&.auth_attempts&.>= User::MAX_AUTH_ATTEMPTS
-          render json: json_response, status: :unprocessable_content
-        end
+        format.json { render json: { error: INVALID_CREDENTIALS_MESSAGE }, status: :unprocessable_content }
       end
     end
   end

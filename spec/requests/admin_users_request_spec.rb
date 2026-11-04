@@ -657,7 +657,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       guest = open_session
       guest.post login_authentication_path, params: { username_email: target.username, password: password }
       expect(guest.response).to have_http_status(:unprocessable_content)
-      expect(guest.flash[:alert]).to start_with("Could not find user")
+      expect(guest.flash[:alert]).to eq("Incorrect username, email or password.")
     end
 
     it "keeps the row, so the username and email stay reserved" do
