@@ -40,9 +40,22 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
       rounds = [full, full, full, []]
       allow(ProcessedOrder).to receive(:dispatch_due).and_wrap_original { |_m, **| rounds.shift }
       expect(ProcessedOrder).to receive(:fail_exhausted).once.ordered
-      expect(ProcessedOrder).to receive(:dispatch_due).with(now: now, fail_exhausted: false).exactly(4).times.ordered
+      expect(ProcessedOrder).to receive(:dispatch_due).with(now: now, skip_fail_exhausted: true).exactly(4).times.ordered
 
       described_class.perform_now(now: now)
+    end
+
+    it "reports a failure of the spent-order step and still dispatches and reports stranded orders" do
+      order = stored(1)
+      allow(ProcessedOrder).to receive(:fail_exhausted).and_raise(ActiveRecord::StatementInvalid, "boom")
+      expect(ProcessedOrder).to receive(:report_stranded).with(now: now)
+
+      expect { described_class.perform_now(now: now) }.not_to raise_error
+
+      expect(queued_ids).to eq([order.id])
+      error, opts = reports.find { |e, _| e.is_a?(ActiveRecord::StatementInvalid) }
+      expect(error).to be_present
+      expect(opts[:context]).to eq(step: "fail_exhausted")
     end
 
     it "keeps dispatch_due failing the spent orders when it is called alone" do
@@ -51,9 +64,9 @@ RSpec.describe DispatchDueOrdersJob, type: :job do
       expect(spent.reload.status).to eq("failed")
     end
 
-    it "leaves the spent orders to the caller with fail_exhausted: false" do
+    it "leaves the spent orders to the caller with skip_fail_exhausted: true" do
       spent = stored(1, attempts: ProcessedOrder::MAX_ATTEMPTS)
-      ProcessedOrder.dispatch_due(now: now, fail_exhausted: false)
+      ProcessedOrder.dispatch_due(now: now, skip_fail_exhausted: true)
       expect(spent.reload.status).to eq("received")
     end
 
