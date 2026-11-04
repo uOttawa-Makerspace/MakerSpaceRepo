@@ -35,19 +35,37 @@ RSpec.describe CredentialAuthenticator do
     expect(result).to have_attributes(user: nil, refusal: nil, candidate: nil)
   end
 
-  it "refuses a lock in effect only for the correct password (no attempt counted)" do
-    user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
-    result = described_class.call(user.username, password)
-    expect(result).to have_attributes(user: nil, refusal: :locked, candidate: user)
-    expect(user.reload.auth_attempts).to eq(5)
+  it "answers bad credentials for a lock in effect, right password or wrong, without comparing or counting" do
+    [-> { user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5) },
+     -> { user.admin_lock! }].each do |lock|
+      lock.call
+      expect_any_instance_of(User).not_to receive(:authenticate_password)
+      [password, "x"].each do |pw|
+        expect(described_class.call(user.username, pw)).to have_attributes(user: nil, refusal: nil, candidate: nil)
+      end
+      expect(user.reload).to have_attributes(locked: true, auth_attempts: 5)
+    end
   end
 
-  it "answers a wrong password for a locked account as bad credentials, counting nothing" do
-    user.update_columns(locked: true, locked_until: 5.minutes.from_now, auth_attempts: 5)
-    expect(described_class.call(user.username, "x")).to have_attributes(user: nil, refusal: nil, candidate: nil)
-    user.admin_lock!
-    expect(described_class.call(user.username, "x")).to have_attributes(user: nil, refusal: nil, candidate: nil)
-    expect(user.reload).to have_attributes(locked: true, auth_attempts: 5)
+  it "still clears a lapsed timed lock and lets the right password in" do
+    user.update_columns(locked: true, locked_until: 1.minute.ago, auth_attempts: 5)
+    expect(described_class.call(user.username, password).user).to eq(user)
+    expect(user.reload).to have_attributes(locked: false, auth_attempts: 0)
+  end
+
+  it "runs one dummy bcrypt comparison for an unknown login and for a locked account, none extra for a real one" do
+    compares = 0
+    allow_any_instance_of(BCrypt::Password).to receive(:==).and_wrap_original { |m, *a| compares += 1; m.call(*a) }
+    described_class.call("nobody-here", "x")
+    expect(compares).to eq(1)
+    compares = 0
+    user.update_columns(locked: true, locked_until: 5.minutes.from_now)
+    described_class.call(user.username, password)
+    expect(compares).to eq(1)
+    user.update_columns(locked: false, locked_until: nil)
+    compares = 0
+    described_class.call(user.username, password)
+    expect(compares).to eq(1) # the real comparison only
   end
 
   it "refuses inactive and unconfirmed accounts after a correct password" do
@@ -55,13 +73,6 @@ RSpec.describe CredentialAuthenticator do
     expect(described_class.call(user.username, password).refusal).to eq(:inactive)
     User.unscoped.where(id: user.id).update_all(deactivated_at: nil, confirmed: false)
     expect(described_class.call(user.username, password).refusal).to eq(:unconfirmed)
-  end
-
-  it "words the wait only for a timed lockout" do
-    user.update_columns(locked: true, locked_until: 5.minutes.from_now)
-    expect(described_class.lock_wait_suffix(user)).to match(/\A or wait .*minutes\z/)
-    user.admin_lock!
-    expect(described_class.lock_wait_suffix(user)).to eq("")
   end
 end
 

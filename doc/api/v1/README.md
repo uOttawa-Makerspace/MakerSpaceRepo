@@ -40,7 +40,6 @@ Always JSON, always a real status:
 | 404    | No such record or route (any unknown `/api/v1/...` path, any verb) | `not_found`                                                       |
 | 409    | Retry with the newest stored refresh token                         | `refresh_in_progress`                                             |
 | 422    | Validation or missing parameter                                    | `validation_failed`, `parameter_missing`, `last_admin`            |
-| 423    | Account locked                                                     | `account_locked`                                                  |
 | 429    | Rate limited                                                       | `rate_limited`                                                    |
 | 503    | Upstream unavailable, nothing saved                                | `service_unavailable`                                             |
 

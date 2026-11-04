@@ -20,8 +20,6 @@ module Api
         result = CredentialAuthenticator.call(login, password)
 
         case result.refusal
-        when :locked
-          render_locked(result.candidate)
         when :inactive
           # :inactive and the error code account_inactive are the external contract; both mean
           # deactivated (users.deactivated_at).
@@ -80,15 +78,9 @@ module Api
         }
       end
 
-      def render_locked(user)
-        render_error(:account_locked,
-                     "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{SUPPORT_EMAIL} to unlock your account#{CredentialAuthenticator.lock_wait_suffix(user)}.",
-                     status: :locked, support_email: SUPPORT_EMAIL)
-      end
-
       # Unknown login and wrong password answer identically (no account
-      # enumeration), including the attempt that reaches the limit and any wrong
-      # password for a locked account; the locked answer needs the right password.
+      # enumeration), including the attempt that reaches the limit and any attempt on
+      # a locked account (its password is not compared).
       def render_bad_credentials
         render_error(:invalid_credentials, "Invalid login or password", status: :unauthorized)
       end

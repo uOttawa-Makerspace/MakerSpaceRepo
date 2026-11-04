@@ -17,11 +17,10 @@ module ApplicationHelper
   SESSION_KEYS_KEPT_ON_SIGN_IN = %w[locale authorized_repo_ids selected_dates order_id].freeze
 
   # Every login path (HTML, JSON, SAML) goes through here, so the refusals live
-  # here: a lock still in effect (refused only for the correct password, which is
-  # checked without counting, so a locked account has its lock left alone and does not show
-  # that it exists), a
+  # here: a lock still in effect (answered as bad credentials without comparing the
+  # password, so a locked account neither confirms a guess nor shows that it exists), a
   # deactivated account and an unconfirmed one. The caller words the
-  # refusal from @sign_in_refusal (:locked, :inactive, :unconfirmed).
+  # refusal from @sign_in_refusal (:inactive, :unconfirmed).
   def sign_in(username_email, password)
     result = CredentialAuthenticator.call(username_email, password)
     @sign_in_refusal = result.refusal
@@ -36,11 +35,6 @@ module ApplicationHelper
       reset_auth_memo # a user memoized earlier in this request (set_last_seen_at) is stale now
     end
     user
-  end
-
-  # " or wait 5 minutes" for a timed (brute-force) lockout (see CredentialAuthenticator).
-  def lock_wait_suffix(user, verb = "wait")
-    CredentialAuthenticator.lock_wait_suffix(user, verb)
   end
 
   def sign_out

@@ -344,28 +344,21 @@ RSpec.describe "SAML IdP", type: :request do
         expect(c18_saml_response_xml).to be_nil
       end
 
-      it "refuses a LOCKED account even with the right password" do
-        # sign_in checks the lock for every login path
-        user.update!(locked: true, locked_until: 1.hour.from_now)
-        post_auth(submit: "sign_in", username: user.username, password: password)
-        expect(c18_saml_response_xml).to be_nil
-        expect(response.body).to include("Your account has been locked due to too many failed login attempts")
-        expect(response.body).to include("or wait")
-        expect(session[:user_id]).to be_nil
-      end
-
-      it "words an admin lock (99 years) as locked, without a 99-year wait" do
-        user.update!(locked: true, locked_until: 99.years.from_now)
-        post_auth(submit: "sign_in", username: user.username, password: password)
-        expect(response.body).to include("Your account has been locked")
-        expect(response.body).not_to include("or wait")
-      end
-
-      it "words an admin lock without an end as locked, without a wait time" do
-        user.update!(locked: true, locked_until: nil)
-        post_auth(submit: "sign_in", username: user.username, password: password)
-        expect(response.body).to include("Your account has been locked")
-        expect(response.body).not_to include("or wait")
+      it "answers a LOCKED account, right password or wrong, like an unknown user: no assertion, no session, nothing counted" do
+        post_auth(submit: "sign_in", username: "nobody-here", password: password)
+        unknown_status = response.status
+        [{ locked_until: 1.hour.from_now }, { locked_until: 99.years.from_now }, { locked_until: nil }].each do |lock|
+          user.update!(locked: true, auth_attempts: 5, **lock)
+          [password, "wrong"].each do |pw|
+            post_auth(submit: "sign_in", username: user.username, password: pw)
+            expect(response.status).to eq(unknown_status)
+            expect(response.body).to include("Invalid username/password")
+            expect(response.body).not_to include("locked")
+            expect(c18_saml_response_xml).to be_nil
+            expect(session[:user_id]).to be_nil
+          end
+          expect(user.reload.auth_attempts).to eq(5)
+        end
       end
 
       it "stops evaluating guesses once the account is locked: attempts stop counting and the lock is not rewritten" do

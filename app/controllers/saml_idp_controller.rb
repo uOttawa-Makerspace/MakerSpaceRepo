@@ -174,9 +174,6 @@ class SamlIdpController < ApplicationController
   def sign_in_error_message
     support = SessionsController::SUPPORT_EMAIL
     case @sign_in_refusal
-    when :locked
-      locked_user = User.username_or_email(params[:username])
-      "Your account has been locked due to too many failed login attempts. Please contact an administrator at #{support} to unlock your account#{lock_wait_suffix(locked_user)}."
     when :unconfirmed
       "Please confirm your account before logging in. You can resend the confirmation email from the MakerRepo login page."
     when :inactive

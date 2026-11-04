@@ -37,10 +37,9 @@ Request:
 
 | Status | `error.code` | When |
 |---|---|---|
-| 401 | `invalid_credentials` | Wrong password or unknown login (same answer for both). Failed attempts count towards the 5-attempt lockout |
+| 401 | `invalid_credentials` | Wrong password, unknown login or a locked account (same answer for all; a locked account's password is not compared). Failed attempts count towards the 5-attempt lockout |
 | 403 | `account_unconfirmed` | Correct password, email not confirmed |
 | 403 | `account_inactive` | Correct password, account deactivated (`support_email` included) |
-| 423 | `account_locked` | Locked: 5 failed attempts (message says how long to wait, 5 minutes), or locked by an admin (no wait). A locked account is refused even with the right password; a wrong password (including the attempt that trips the lock) is a plain 401 `invalid_credentials`, so 423 is shown only to someone who knows the password. `support_email` included |
 | 422 | `parameter_missing` | `login` or `password` absent (`fields` names it) |
 | 429 | `rate_limited` | Too many sign-in attempts |
 
