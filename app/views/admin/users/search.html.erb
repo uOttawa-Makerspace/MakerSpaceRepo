@@ -83,7 +83,7 @@
             <% end %>
           </td>
           <td>
-            <% if page_number<@users.total_pages %>
+            <% if page_number<@pagy.pages %>
               <%= link_to 'Next page >', page: page_number + 1, q: params[:q], filter: params[:filter], sort: params[:sort], direction: params[:direction] %>
             <% end %>
           </td>

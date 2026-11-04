@@ -153,10 +153,10 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("Invalid parameters!")
     end
 
-    it "search with at least one hit 500s: the view calls kaminari's total_pages on a pagy result" do
-      # Admin::Users#search view calls `total_pages` (Kaminari API) but the controller paginates with Pagy, so every search that returns at least one user raises (500)
+    it "search with at least one hit renders the result" do
       get search_admin_users_path(q: target.username, filter: "Username")
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(target.username)
     end
 
     it "search with no hit renders 200 (empty), and soft-deleted users are never hits" do
