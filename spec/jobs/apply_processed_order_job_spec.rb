@@ -612,13 +612,25 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         expect(user.memberships.paid.count).to eq(0)
         expect(Membership.count).to eq(1)
         expect(pending.reload).not_to be_paid
-        error, opts = reports.find { |e, _| e.is_a?(ShopOrderApplier::MetafieldLookupRejected) }
-        expect(error.message).to include("7413", "ACCESS_DENIED")
-        expect(opts[:context]).to eq(shopify_order_id: "7413", codes: ["ACCESS_DENIED"])
-        unresolved, unresolved_opts = reports.find { |e, _| e.is_a?(ShopOrderApplier::UnresolvedMembershipOrder) }
-        expect(unresolved.message).to include("7413", "could not be looked up")
-        expect(unresolved.message).not_to include(user.email)
-        expect(unresolved_opts[:context]).to eq(shopify_order_id: "7413")
+        rejected = reports.select { |e, _| e.is_a?(ShopOrderApplier::MetafieldLookupRejected) }
+        expect(rejected.size).to eq(1) # one report for the one cause
+        error, opts = rejected.first
+        expect(error.message).to include("7413", "ACCESS_DENIED", "membership not applied")
+        expect(error.message).not_to include(user.email)
+        expect(opts[:context]).to eq(shopify_order_id: "7413", codes: ["ACCESS_DENIED"], membership_skipped: true)
+        expect(reports.map(&:first)).not_to include(an_instance_of(ShopOrderApplier::UnresolvedMembershipOrder))
+      end
+
+      it "does not hold back the membership when only the locker's lookup was refused and the membership field is blank" do
+        lookup_answers(double(query: graphql_error("ACCESS_DENIED")))
+        payload = membership_order.merge(
+          id: 7420, tags: [LockerRental.draft_order_operating_tag, membership_tag],
+          metafields: [{ namespace: "makerepo", key: "membership_db_reference", value: "" }]
+        )
+        hook(payload)
+        expect(user.memberships.paid.count).to eq(1) # no reference was ever given: the email fallback applies
+        _, opts = reports.find { |e, _| e.is_a?(ShopOrderApplier::MetafieldLookupRejected) }
+        expect(opts[:context]).not_to include(:membership_skipped)
       end
 
       it "still applies the other branches of an order whose membership lookup was refused" do

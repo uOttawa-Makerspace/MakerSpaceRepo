@@ -33,7 +33,8 @@ class ShopOrderApplier
   # What one stored payload asks for, classified once from the payload alone. The references and a refused lookup
   # are filled in by the Shopify lookup (resolve_references).
   Plan = Struct.new(:hook, :id, :topic, :locker, :membership, :email, :cc_items, :paid_at,
-                    :locker_ref, :membership_ref, :lookup_rejection, keyword_init: true) do
+                    :locker_ref, :membership_ref, :lookup_rejection, :membership_lookup_rejected,
+                    keyword_init: true) do
     alias_method :locker?, :locker
     alias_method :membership?, :membership
 
@@ -131,6 +132,8 @@ class ShopOrderApplier
       if field.nil?
         remote = fetch_remote_metafields(plan) if remote == :unfetched
         field = remote&.find { |f| f["key"] == key }
+        # the lookup that was meant to supply this reference was refused: the reference is unknown, not absent
+        plan.membership_lookup_rejected = true if key == MEMBERSHIP_KEY && plan.lookup_rejection
       end
       field&.[]("value").presence
     end
@@ -181,9 +184,16 @@ class ShopOrderApplier
   def report_lookup_rejection(plan)
     return unless plan.lookup_rejection
 
+    # One report per cause: when the refused lookup also keeps the membership from being applied, it says so.
+    context = { shopify_order_id: plan.id, codes: plan.lookup_rejection }
+    suffix = ""
+    if plan.membership_lookup_rejected
+      context[:membership_skipped] = true
+      suffix = "; membership not applied"
+    end
     report_problem(
-      MetafieldLookupRejected.new("metafield lookup for order #{plan.id} rejected (#{plan.lookup_rejection.join(', ')})"),
-      context: { shopify_order_id: plan.id, codes: plan.lookup_rejection }
+      MetafieldLookupRejected.new("metafield lookup for order #{plan.id} rejected (#{plan.lookup_rejection.join(', ')})#{suffix}"),
+      context: context
     )
   end
 
@@ -243,14 +253,10 @@ class ShopOrderApplier
       return
     end
 
-    # A membership order whose reference could not be looked up is not an order without a reference: the pending
+    # A membership order whose reference lookup was refused is not an order without a reference: the pending
     # membership it names is still unpaid, and matching by email or title would create a second, paid one.
-    # Nothing is applied for membership; staff settle it from the report.
-    if plan.membership_ref.blank? && plan.lookup_rejection
-      report_unresolved(plan, UnresolvedMembershipOrder, "membership",
-                        "has a membership reference that could not be looked up (#{plan.lookup_rejection.join(', ')})")
-      return
-    end
+    # Nothing is applied for membership; the refused lookup is already reported (report_lookup_rejection).
+    return if plan.membership_ref.blank? && plan.membership_lookup_rejected
 
     if plan.membership_ref.present?
       membership = Membership.find_by(id: plan.membership_ref)
