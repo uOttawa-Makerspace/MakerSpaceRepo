@@ -509,6 +509,35 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
         expect(Repository.unscoped.find(repo.id)).to have_attributes(user_id: target.id, deleted: true)
       end
 
+      it "is not blocked by an ownerless repository with the same title" do
+        repo = create(:repository, owner: target, title: "Same Title")
+        repo.users << [target, partner]
+        create(:repository, owner: partner, title: "Other Title").update_columns(user_id: nil, title: "Same Title")
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find(repo.id)).to have_attributes(user_id: partner.id, deleted: false)
+      end
+
+      it "counts a hidden repository of the member with the same title as a conflict" do
+        repo = create(:repository, owner: target, title: "Same Title")
+        repo.users << [target, partner]
+        create(:repository, owner: partner, title: "Same Title").update_columns(deleted: true)
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.unscoped.find(repo.id)).to have_attributes(user_id: target.id, deleted: true)
+      end
+
+      it "leaves the cached zip alone when the deletion is rolled back" do
+        repo = create(:repository, owner: target)
+        repo.users << [target, partner]
+        FileUtils.mkdir_p(repo.zip_path.dirname)
+        File.write(repo.zip_path, "zip")
+        User.transaction do
+          Repository.release_owned_by!(target)
+          raise ActiveRecord::Rollback
+        end
+        expect(File.exist?(repo.zip_path)).to be(true)
+        File.delete(repo.zip_path)
+      end
+
       it "skips deactivated and locked members" do
         deactivated = create(:user, :regular_user)
         locked = create(:user, :regular_user)
