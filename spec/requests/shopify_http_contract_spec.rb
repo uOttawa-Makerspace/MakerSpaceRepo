@@ -67,14 +67,13 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       expect(fetch[:body]["variables"]).to eq("id" => draft_id)
     end
 
-    it "when Shopify answers userErrors over HTTP: the pending row is destroyed and the page 500s" do
+    it "when Shopify answers userErrors over HTTP: the pending row is destroyed and the user is redirected with an alert" do
       stub_shopify_graphql("mutation draftOrderCreate", { "draftOrderCreate" => { "draftOrder" => nil,
                            "userErrors" => [{ "field" => ["input"], "message" => "boom" }] } })
       shop_log_in!(user)
       post memberships_path, params: { membership: { membership_tier_id: tier.id } }
-      # the failure path renders :index without its ivars, so the intended alert page is a 500
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.location).to be_nil
+      expect(response).to redirect_to(your_memberships_memberships_path)
+      expect(flash[:alert]).to eq("Error creating membership. Please try again.")
       expect(Membership.count).to eq(0)
     end
   end
