@@ -3,6 +3,24 @@ require Rails.root.join("lib/learning_module_track_merge")
 # Finds all duplicated users and deletes them. This also doubles as a quick test
 # for destroying user records.
 
+# Raised when a pair of accounts cannot be merged without losing data (a row of the duplicate
+# differs from the primary's row for the same key). It stops that pair only: the run reports
+# the pair and goes on with the others. Neither row is ever deleted.
+class UserMergeRefused < StandardError
+  attr_reader :primary_id, :duplicate_id, :table, :row_ids
+
+  def initialize(primary_id:, duplicate_id:, table:, row_ids:)
+    @primary_id = primary_id
+    @duplicate_id = duplicate_id
+    @table = table
+    @row_ids = row_ids
+    super(
+      "Cannot merge user #{duplicate_id} into #{primary_id}: #{table} rows #{row_ids.join(', ')} of the " \
+      'duplicate differ from the primary\'s row for the same key. Settle them by hand and run the task again.'
+    )
+  end
+end
+
 namespace :users do
   desc 'Find and merge all duplicated user records. Uses the record with the
   most amount of associations to assume which record is the most-frequently
@@ -14,10 +32,13 @@ namespace :users do
     puts "#{duplicated_emails.count} duplicated emails found."
 
     merged_users = []
+    merged_pairs = []
+    skipped_pairs = []
     duplicated_emails.each do |email|
-      username = merge_duplicated_email(email)
-      merged_users << { username: username, email: email }
+      username = merge_duplicated_email(email, merged_pairs, skipped_pairs)
+      merged_users << { username: username, email: email } if username
     end
+    print_merge_summary(merged_pairs, skipped_pairs)
 
     # Writes this to root by default
     File.write('merged_emails_list.json', merged_users.to_json)
@@ -153,7 +174,22 @@ namespace :users do
     changelog
   end
 
-  def merge_duplicated_email(email)
+  # One line per pair, then the totals. A skipped pair is listed with the table and rows to settle by hand.
+  def print_merge_summary(merged_pairs, skipped_pairs)
+    puts "Merged #{merged_pairs.count} pairs, skipped #{skipped_pairs.count} pairs."
+    merged_pairs.each do |pair|
+      puts "\tmerged: user #{pair[:duplicate_id]} into #{pair[:primary_id]}"
+    end
+    skipped_pairs.each do |pair|
+      puts "\tskipped: user #{pair[:duplicate_id]} into #{pair[:primary_id]} " \
+           "(#{pair[:table]} rows #{pair[:row_ids].join(', ')} differ)"
+    end
+  end
+
+  # Merges every duplicate of the email into one user. A pair that is refused is rolled back
+  # on its own, recorded in skipped_pairs, and the rest go on. Returns the kept username, or
+  # nil when no duplicate of this email could be merged.
+  def merge_duplicated_email(email, merged_pairs = [], skipped_pairs = [])
     users =
       User
         .where('lower(email) like ?', email)
@@ -163,16 +199,29 @@ namespace :users do
       raise "Duplicated records were not found again for email #{email}. Probably a deleted user exists?"
     end
     puts "#{email} had #{users.count} records"
+    merge_users_into_one(users, merged_pairs, skipped_pairs)
+  end
+
+  # users are sorted by number of associations, the last has the most.
+  def merge_users_into_one(users, merged_pairs, skipped_pairs)
     # Prefer staff roles
     primary = users.find(&:staff?) || users.last # or most associations
     duplicates = users.excluding(primary)
 
+    merged_any = false
     duplicates.each do |duplicate|
-      ActiveRecord::Base.transaction { merge_record(primary, duplicate) }
+      begin
+        ActiveRecord::Base.transaction { merge_record(primary, duplicate) }
+        merged_pairs << { primary_id: primary.id, duplicate_id: duplicate.id }
+        merged_any = true
+      rescue UserMergeRefused => e
+        puts "\tSkipped: #{e.message}"
+        skipped_pairs << { primary_id: e.primary_id, duplicate_id: e.duplicate_id, table: e.table, row_ids: e.row_ids }
+      end
     end
 
     # Return the username left at the end
-    primary.username
+    merged_any ? primary.username : nil
   end
 
   def merge_record(primary, duplicate)
@@ -232,7 +281,7 @@ namespace :users do
   # the primary already has a row with the same other columns, the duplicate's row is
   # dropped only when it holds exactly the same data as the primary's (every column but
   # id, the user and updated_at; created_at counts, as the signing date of a sheet). A row
-  # that differs is never dropped: the merge of this pair stops with an error naming it, to be settled by hand. An index on the user
+  # that differs is never dropped: the merge of this pair is refused (UserMergeRefused) and only that pair is skipped, to be settled by hand. An index on the user
   # column alone cannot be settled by dropping anything, so it is left to fail loudly when
   # the row is moved.
   def discard_rows_primary_already_has(primary, duplicate)
@@ -271,8 +320,7 @@ namespace :users do
     )
     return if differing.empty?
 
-    raise "Cannot merge user #{duplicate.id} into #{primary.id}: #{table} rows #{differing.join(', ')} of the " \
-          'duplicate differ from the primary\'s row for the same key. Settle them by hand and run the task again.'
+    raise UserMergeRefused.new(primary_id: primary.id, duplicate_id: duplicate.id, table: table, row_ids: differing)
   end
 
   # Columns that reference users without a User association (supervisor_id, admin_id) and
