@@ -194,14 +194,9 @@ RSpec.describe "users:merge_duplicates" do
       expect(moved_task.reload.user_id).to eq(survivors.first.id)
     end
 
-    it "names the usernames of skipped pairs so the rename step leaves them out" do
-      first, second = duplicated_pair
-      other = create(:user)
-
-      held_back = send(:usernames_of_skipped_accounts, [{ primary_id: first.id, duplicate_id: second.id }])
-
-      expect(held_back).to contain_exactly(first.username.downcase, second.username.downcase)
-      expect(held_back).not_to include(other.username.downcase)
+    it "lists the ids of the accounts in skipped pairs" do
+      expect(send(:skipped_account_ids, [{ primary_id: 1, duplicate_id: 2 }, { primary_id: 3, duplicate_id: 2 }]))
+        .to eq([1, 2, 3])
     end
 
     it "prints a summary of merged and skipped pairs" do
@@ -213,6 +208,39 @@ RSpec.describe "users:merge_duplicates" do
       output = $stdout.string
       expect(output).to include("Merged 1 pairs, skipped 1 pairs.")
       expect(output).to include("skipped: user 4 into 3 (walk_in_safety_sheets rows 9 differ)")
+    end
+  end
+
+  describe "the whole task with a skipped pair" do
+    let(:space) { create(:space) }
+    let(:workdir) { Dir.mktmpdir("merge-task", Rails.root.join("tmp").to_s) }
+
+    after { FileUtils.rm_rf(workdir) }
+
+    it "renames only the unrelated holder of a shared username, leaves the skipped accounts alone, and finishes" do
+      # The users table now forbids a repeated email or username; the task exists for data from before that, so the
+      # two indexes are dropped for this example (the change is rolled back with the example's transaction).
+      connection = ActiveRecord::Base.connection
+      connection.remove_index :users, name: "index_users_on_lowercase_email"
+      connection.remove_index :users, name: "index_users_on_lowercase_username"
+
+      first = create(:user)
+      second = create(:user)
+      unrelated = create(:user)
+      User.where(id: [first.id, second.id]).update_all(email: "twin@example.test")
+      User.where(id: [first.id, second.id, unrelated.id]).update_all(username: "sharedname")
+      create(:walk_in_safety_sheet, :is_adult, user: first, space: space)
+      create(:walk_in_safety_sheet, :is_adult, user: second, space: space)
+
+      Rake::Task["users:merge_duplicates"].reenable
+      Dir.chdir(workdir) { expect { Rake::Task["users:merge_duplicates"].invoke }.not_to raise_error }
+
+      expect(User.where(id: [first.id, second.id]).pluck(:username)).to eq(%w[sharedname sharedname])
+      expect(unrelated.reload.username).to match(/\Asharedname\d{3}\z/)
+      expect(WalkInSafetySheet.where(space: space).count).to eq(2)
+      renamed = JSON.parse(File.read(File.join(workdir, "renamed_username_list.json")))
+      expect(renamed.map { |entry| entry["previous_username"] }).to eq(["sharedname"])
+      expect($stdout.string).to include("Merged 0 pairs, skipped 1 pairs.")
     end
   end
 
