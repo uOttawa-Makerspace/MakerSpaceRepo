@@ -590,6 +590,32 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         end
       end
 
+      # Only a well-formed answer can mean "no metafields"; any other 200 shape is a failed lookup, so the order is
+      # retried instead of taking the no-reference path (which would create a second, paid membership).
+      {
+        "a nil body" => nil,
+        "a body that is not a hash" => "<html>oops</html>",
+        "a body without data" => {},
+        "an empty errors list and no data" => { "errors" => [] },
+        "data without a node" => { "data" => {} },
+        "a node whose metafields are not a list of edges" => { "data" => { "node" => { "metafields" => {} } } }
+      }.each do |name, body|
+        it "retries after a 200 answer with #{name}, applying nothing" do
+          lookup_answers(double(query: double(code: 200, body: body)))
+          order = hook(membership_order.merge(id: 7430 + body.to_s.size))
+          expect_retry(order)
+          expect(order.last_error).to include("MetafieldLookupFailed")
+          expect(Membership.count).to eq(0)
+        end
+      end
+
+      it "reads a null node, or a node without metafields, as no metafields" do
+        [{ "data" => { "node" => nil } }, { "data" => { "node" => {} } }].each_with_index do |body, i|
+          lookup_answers(double(query: double(code: 200, body: body)))
+          expect(hook(membership_order.merge(id: 7470 + i)).status).to eq("applied")
+        end
+      end
+
       # The shopify_api client raises HttpResponseError for every non-2xx answer (the raised-error examples above),
       # so a non-2xx response object never reaches the lookup. These examples used to hand it one by stub.
       [429, 500, 502, 503].each do |code|

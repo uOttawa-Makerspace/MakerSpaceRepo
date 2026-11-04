@@ -205,7 +205,25 @@ module ShopifyConcern
         raise ShopifyConcern::MetafieldLookupRejected, codes
       end
 
-      body&.dig("data", "node", "metafields", "edges")&.map { |n| n["node"] } || []
+      parse_metafield_edges(body)
+    end
+
+    # [] only for a well-formed answer whose owner node is null or has no metafields (a node of another type).
+    # Any other shape (no body, not a hash, no "data") is not an answer to the query: reading it as "no
+    # metafields" would send a membership order down the no-reference path, so the lookup fails and is retried.
+    def parse_metafield_edges(body)
+      data = body.is_a?(Hash) ? body["data"] : nil
+      unless data.is_a?(Hash) && data.key?("node")
+        raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (unexpected answer)"
+      end
+
+      node = data["node"]
+      return [] if node.nil? || (node.is_a?(Hash) && !node.key?("metafields"))
+
+      edges = node.is_a?(Hash) && node["metafields"].is_a?(Hash) ? node["metafields"]["edges"] : nil
+      raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (unexpected answer)" unless edges.is_a?(Array)
+
+      edges.map { |edge| edge.is_a?(Hash) ? edge["node"] : nil }.compact
     end
 
     def shopify_admin_client
