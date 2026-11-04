@@ -41,11 +41,11 @@ class BadgesController < DevelopmentProgramsController
   def badge_scope(search_term = nil)
     certifications = Certification
       .includes(:training, :user, :training_session)
-      .joins(:training, :training_session)
+      .joins(:training, :training_session, :user)
       .where(trainings: { has_badge: true })
 
     # A deleted earner's badge is shown to admins only (see #show)
-    certifications = certifications.joins(:user).where(users: { deleted: false }) unless @user.admin?
+    certifications = certifications.where(users: { deleted: false }) unless @user.admin?
 
     # Apply user filter if not admin/staff
     certifications = certifications.where(user: @user) unless @user.admin? || @user.staff?
@@ -54,7 +54,6 @@ class BadgesController < DevelopmentProgramsController
     if search_term.present?
       search_pattern = "%#{search_term}%"
       certifications = certifications
-        .joins(:user)
         .where(
           "trainings.name_en ILIKE :search OR 
            trainings.name_fr ILIKE :search OR 
