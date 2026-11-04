@@ -24,12 +24,11 @@ class Program < ApplicationRecord
   # (config/recurring.yml, nightly).
   def self.refresh_volunteer_activity!(now = Time.current)
     cutoff = now - 2.months
-    User.volunteers.find_each do |user|
-      program = user.programs.find_by(program_type: VOLUNTEER)
-      next if program.nil?
+    volunteers = where(program_type: VOLUNTEER, user_id: User.select(:id))
+    seen = User.where("users.last_seen_at >= ?", cutoff).select(:id)
 
-      seen_recently = user.last_seen_at.present? && user.last_seen_at >= cutoff
-      program.update(active: seen_recently) if program.active != seen_recently
-    end
+    # Two set-based statements. Only rows whose value changes are written (and get a new updated_at).
+    volunteers.where(active: [true, nil]).where.not(user_id: seen).update_all(active: false, updated_at: now)
+    volunteers.where(active: [false, nil]).where(user_id: seen).update_all(active: true, updated_at: now)
   end
 end
