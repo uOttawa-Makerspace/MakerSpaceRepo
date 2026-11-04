@@ -1059,4 +1059,18 @@ RSpec.describe User, type: :model do
       expect(u.plaintext_password_problems("Xk3#vbN9!qLw")).to be_empty
     end
   end
+
+  describe "deleting a user who holds a card" do
+    it "is refused while the card is linked, and works once it is unlinked through Rfid.unlink_from_user!" do
+      user = create(:user, :regular_user)
+      card = create(:rfid, user: user)
+      expect(user.destroy).to be(false)
+      expect(user.errors[:base]).to be_present
+      expect(card.reload.user_id).to eq(user.id)
+
+      Rfid.unlink_from_user!(user, actor: create(:user, :staff))
+      expect(user.reload.destroy).to be_truthy
+      expect(Rfid.find(card.id).user_id).to be_nil
+    end
+  end
 end

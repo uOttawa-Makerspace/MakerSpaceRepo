@@ -25,8 +25,13 @@ import "../controllers";
 import.meta.glob("../images/**", { eager: true });
 
 import { Tooltip, Popover } from "bootstrap";
-import "toastr/toastr";
+import toastr from "toastr/toastr";
 import "@hotwired/turbo-rails";
+
+// Toasts show their message as text unless a call opts out with { escapeHtml: false }.
+// The global is what views rendering JS responses (order_items/create.js.erb) call.
+toastr.options.escapeHtml = true;
+window.toastr = toastr;
 
 document.addEventListener("turbo:before-render", (event) => {
   event.detail.newBody
@@ -154,6 +159,13 @@ window.setSpace = async function () {
 
     if (response.ok) {
       window.location.reload();
+    } else {
+      let message = "Could not change space";
+      try {
+        const data = await response.json();
+        if (data.error) message = data.error;
+      } catch (_) {}
+      toastr.error(message);
     }
   } catch (error) {
     console.error("Failed to update space:", error);

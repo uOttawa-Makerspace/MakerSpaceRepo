@@ -66,9 +66,11 @@ class Admin::UsersController < AdminAreaController
   end
 
   def update
+    rfid_error = nil
     saved = User.transaction do
       # Handle RFID assignment separately
-      assign_rfid_if_present
+      rfid_error = assign_rfid_if_present
+      raise ActiveRecord::Rollback if rfid_error
 
       if @edit_admin_user.update(user_params)
         true
@@ -83,6 +85,11 @@ class Admin::UsersController < AdminAreaController
       # the rollback restored the card rows, not the loaded association
       @edit_admin_user.association(:rfid).reset
       @rfids = Rfid.recent_unset
+      if rfid_error
+        # keep the admin's other edits in the form next to the refusal
+        @edit_admin_user.assign_attributes(user_params)
+        flash.now[:alert] = rfid_error
+      end
       render :edit, status: :unprocessable_entity
     end
   end
@@ -377,17 +384,21 @@ class Admin::UsersController < AdminAreaController
   # RFID Assignment
   # ============================================
 
+  # Moves the chosen card to the user through the shared rules (Rfid.unlink_from_user!
+  # for the card they hold now, which stays as an unlinked row, then Rfid.link_to_user!).
+  # Returns nil, or the refusal message; the caller rolls the whole update back on one.
   def assign_rfid_if_present
     return unless params[:user][:rfid].present?
-    
+
     rfid = Rfid.find_by(id: params[:user][:rfid])
     return unless rfid
-    
-    #Do nothing if the RFID is already the users
+
+    # Do nothing if the RFID is already the user's
     return if @edit_admin_user.rfid&.id == rfid.id
 
-    @edit_admin_user.rfid&.destroy!
-    rfid.update!(user: @edit_admin_user)
+    Rfid.unlink_from_user!(@edit_admin_user, actor: current_user)
+    error = Rfid.link_to_user!(rfid.card_number, @edit_admin_user)
+    error && "RFID card #{error}"
   end
 
 
