@@ -2,30 +2,25 @@
 
 require "rails_helper"
 
-# Real second connections, deterministic interleaving (see rfid_link_concurrency_spec). Deleting an
-# account locks the user, then the repositories it owns and a candidate member for each. Two
-# deletions of co-members would take those locks in opposite orders and deadlock, so they run one
-# at a time (User.serialising_account_deletion).
+# Real second connections, deterministic interleaving (see rfid_link_concurrency_spec). Deleting and
+# restoring accounts take a transaction advisory lock and then re-read the user under a row lock,
+# so a second request for the same account finds the work done and does not repeat it.
 RSpec.describe User, ".delete_account! under concurrency", type: :model do
   self.use_transactional_tests = false
 
   let!(:admin) { create(:user, :admin) }
   let!(:first) { create(:user, :regular_user) }
   let!(:second) { create(:user, :regular_user) }
-  let!(:third) { create(:user, :regular_user) }
-  let!(:first_repo) { create(:repository, owner: first) }
-  let!(:second_repo) { create(:repository, owner: second) }
+  let!(:repo) { create(:repository, owner: first) }
 
-  before do
-    [first_repo, second_repo].each { |repo| repo.users << [first, second, third] }
-  end
+  before { repo.users << [first, second] }
 
   after do
-    Repository.unscoped.where(id: [first_repo.id, second_repo.id]).each do |repo|
-      repo.photos.each { |photo| photo.image.purge }
-      repo.destroy
+    Repository.unscoped.where(id: repo.id).each do |r|
+      r.photos.each { |photo| photo.image.purge }
+      r.destroy
     end
-    User.unscoped.where(id: [admin.id, first.id, second.id, third.id]).delete_all
+    User.unscoped.where(id: [admin.id, first.id, second.id]).delete_all
   end
 
   def in_thread(&block)
@@ -42,16 +37,16 @@ RSpec.describe User, ".delete_account! under concurrency", type: :model do
     ).to_i
   end
 
-  # Thread 1 deletes the first user and pauses with its locks held, before it hands anything over.
-  # Thread 2 deletes the second user meanwhile. Without the advisory lock thread 2 takes its own
-  # user lock and then waits for the first user's row, while thread 1, once resumed, waits for the
-  # second user's row: a deadlock. With it thread 2 waits for thread 1 to commit, then sees the
-  # first user as deleted, so neither repository goes to a deleted member.
-  it "deletes two co-members at once without a deadlock and hands both repositories to the remaining member" do
+  # Thread 1 deletes the user and pauses inside the work. Thread 2 deletes the same user from a
+  # copy loaded before: it waits for thread 1, then finds the user already deleted and returns
+  # without repeating the handover or bumping the token version again.
+  it "two concurrent deletes of one user do the work once" do
     one_thread = nil
     paused = Queue.new
     resume = Queue.new
+    handovers = Queue.new
     allow(Repository).to receive(:release_owned_by!).and_wrap_original do |original, *args|
+      handovers << true
       if Thread.current == one_thread
         one_thread = nil
         paused << true
@@ -59,20 +54,41 @@ RSpec.describe User, ".delete_account! under concurrency", type: :model do
       end
       original.call(*args)
     end
+    version = first.token_version
+    stale_copy = User.find(first.id)
 
     one = in_thread do
       one_thread = Thread.current
       User.delete_account!(User.find(first.id))
     end
     ThreadPause.await(paused)
-    two = in_thread { User.delete_account!(User.find(second.id)) }
+    two = in_thread { User.delete_account!(stale_copy) }
     deadline = Time.current + 5
     Thread.pass until blocked_backends.positive? || !two.alive? || Time.current > deadline
     resume << true
 
     results = [one.value, two.value]
     expect(results.grep(StandardError)).to be_empty
-    expect(User.unscoped.where(id: [first.id, second.id]).pluck(:deleted)).to eq([true, true])
-    expect(Repository.where(id: [first_repo.id, second_repo.id]).pluck(:user_id)).to eq([third.id, third.id])
+    expect(results).to eq([true, false])
+    expect(handovers.size).to eq(1)
+    gone = User.unscoped.find(first.id)
+    expect(gone.deleted).to be(true)
+    expect(gone.token_version).to eq(version + 1)
+    expect(Repository.find(repo.id).user_id).to eq(second.id)
+  end
+
+  it "two concurrent restores of one user do the work once" do
+    first.update_columns(deleted: true)
+    Repository.unscoped.where(id: repo.id).update_all(deleted: true)
+    calls = Queue.new
+    allow(Repository).to receive(:restore_hidden_for!).and_wrap_original do |original, *args|
+      calls << true
+      original.call(*args)
+    end
+    results = Array.new(2) { in_thread { User.restore_account!(User.unscoped.find(first.id)) } }.map(&:value)
+    expect(results.grep(StandardError)).to be_empty
+    expect(results.sort_by(&:to_s)).to eq([false, true])
+    expect(calls.size).to eq(1)
+    expect(User.find(first.id).deleted).to be(false)
   end
 end

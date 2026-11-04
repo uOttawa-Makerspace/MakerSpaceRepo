@@ -444,9 +444,9 @@ class User < ApplicationRecord
     end
   end
 
-  # Deleting and restoring accounts hand repositories to other members and take row locks on
-  # several users, so they run one at a time: a transaction-scoped advisory lock is taken before
-  # any row lock, and two such operations can never wait on each other's rows.
+  # Deleting and restoring accounts run one at a time: a transaction-scoped advisory lock is taken
+  # before any row lock. The caller then re-reads the user under a row lock, so a second request
+  # for the same account finds the work already done.
   def self.serialising_account_deletion
     transaction do
       connection.execute("SELECT pg_advisory_xact_lock(hashtextextended('account_deletion', 0))")
@@ -457,23 +457,31 @@ class User < ApplicationRecord
   # Deleting an account hides it; nothing the user did is deleted. Each repository they own passes to
   # another member, or is hidden when there is none, and a lab session still open is ended now, so a
   # deleted user is not listed as in a space. Every other row (visits, certifications, training)
-  # stays as it was. Raises LastAdminError for the last usable admin.
+  # stays as it was. Raises LastAdminError for the last usable admin. Returns false, doing nothing,
+  # if the account was already deleted by another request.
   def self.delete_account!(user)
     serialising_account_deletion do
       guarding_last_admin!([user.id]) do
+        next false if user.lock!(GUARD_LOCK_MODE).deleted?
+
         Repository.release_owned_by!(user)
         LabSession.where(user_id: user.id).active.update_all(sign_out_time: Time.zone.now)
         user.soft_delete!
+        true
       end
     end
   end
 
   # Brings back what delete_account! hid: the account and the repositories it hid. Repositories
-  # handed to another member stay with them.
+  # handed to another member stay with them. Returns false, doing nothing, if the account is not
+  # deleted (already restored by another request).
   def self.restore_account!(user)
     serialising_account_deletion do
+      next false unless user.lock!(GUARD_LOCK_MODE).deleted?
+
       Repository.restore_hidden_for!(user)
       user.restore!
+      true
     end
   end
 
