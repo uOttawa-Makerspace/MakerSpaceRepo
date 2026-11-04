@@ -190,7 +190,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     end
   end
 
-  it "pinned: plain Assign Now makes an indefinite rental and the user's locker index 500s" do
+  it "pinned: plain Assign Now makes an indefinite rental and the user's locker index lists it as indefinite" do
     rental = request_locker_as_user("Indefinite by default")
     as_actor(:staff) do
       log_in_as(staff)
@@ -206,11 +206,10 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     expect(rental.owned_until).to be_nil
 
     as_actor(:user) do
-      # index.html.erb calls owned_until.to_date on an active
-      # rental with no end date: the whole page 500s for the renter.
+      # an active rental with no end date is listed as indefinite
       visit locker_rentals_path
-      expect(page).to have_no_css("nav.navbar")
-      expect(page).to have_text("NoMethodError in LockerRentals#index")
+      expect(page).to have_css("nav.navbar")
+      expect(page).to have_text("Indefinite")
       # the detail page still renders it
       visit locker_rental_path(rental)
       expect(page).to have_text(/indefinite rental/i)
