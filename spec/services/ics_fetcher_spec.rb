@@ -61,4 +61,20 @@ RSpec.describe IcsFetcher do
     stub_request(:get, "https://cal.test/loop.ics").to_return(status: 302, headers: { "Location" => "/loop.ics" })
     expect(described_class.get("https://cal.test/loop.ics")).to be_nil
   end
+
+  # the connection never goes through a proxy named in the environment, so the checked address is the one used
+  it "connects directly even when a proxy is set in the environment" do
+    resolves("cal.test", "93.184.216.34")
+    stub_request(:get, "https://cal.test/a.ics").to_return(status: 200, body: "OK")
+    connections = []
+    allow(Net::HTTP).to receive(:new).and_wrap_original { |m, *args| m.call(*args).tap { |http| connections << http } }
+    saved = ENV.values_at("http_proxy", "https_proxy")
+    begin
+      ENV["http_proxy"] = ENV["https_proxy"] = "http://proxy.test:3128"
+      expect(described_class.get("https://cal.test/a.ics")).to eq("OK")
+    ensure
+      ENV["http_proxy"], ENV["https_proxy"] = saved
+    end
+    expect(connections.map(&:proxy_from_env?)).to eq([false])
+  end
 end

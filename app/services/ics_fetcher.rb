@@ -50,7 +50,7 @@ module IcsFetcher
 
   def self.request(uri, timeout)
     address = public_address(uri.host)
-    http = Net::HTTP.new(uri.host, uri.port)
+    http = Net::HTTP.new(uri.host, uri.port, nil) # no proxy: an http_proxy setting must not bypass the checked address
     http.ipaddr = address # connect to the address that was checked, not to a second lookup
     http.use_ssl = uri.scheme == "https"
     http.open_timeout = http.read_timeout = timeout
