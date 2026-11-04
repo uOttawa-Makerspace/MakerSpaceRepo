@@ -26,8 +26,8 @@ class Program < ApplicationRecord
     cutoff = now - 2.months
     # programs has no unique index on (user_id, program_type), only the model validation, so a user can in principle
     # hold two volunteer rows; as before, only the first one (lowest id) follows the user's last visit.
-    first_rows = where(program_type: VOLUNTEER).group(:user_id).select("MIN(programs.id)")
-    volunteers = where(id: first_rows, user_id: User.select(:id))
+    first_ids = where(program_type: VOLUNTEER).group(:user_id).pluck(Arel.sql("MIN(programs.id)"))
+    volunteers = where(id: first_ids, user_id: User.select(:id))
     seen = User.where("users.last_seen_at >= ?", cutoff).select(:id)
 
     # Two set-based statements. Only rows whose value changes are written (and get a new updated_at).
