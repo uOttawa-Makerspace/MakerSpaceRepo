@@ -177,6 +177,14 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
       expect(json["certification"]).to eq([])
     end
 
+    it "has the same keys as the populated payload" do
+      refresh
+      empty_keys = json.keys.sort
+      create(:lab_session, space: space, user: latest, sign_in_time: 1.minute.ago, sign_out_time: 1.hour.from_now)
+      refresh
+      expect(json.keys.sort).to eq(empty_keys)
+    end
+
     it "answers empty user details and the (empty) tables instead of failing" do
       refresh
 

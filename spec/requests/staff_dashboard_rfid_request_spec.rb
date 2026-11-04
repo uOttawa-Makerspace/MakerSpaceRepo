@@ -207,6 +207,17 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(json.map { |c| c["cardNumber"] }).to eq([card.card_number])
     end
 
+    it "answers 409 when the card keeps changing owner (JSON) and a flash (html), changing nothing" do
+      staff
+      allow(Rfid).to receive(:owner_id_of).and_return(-1)
+      put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
+      expect(response).to have_http_status(:conflict)
+      expect(body).to eq("status" => "error", "error" => "card is changing, try again")
+      put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
+      expect(flash[:alert]).to eq("card is changing, try again")
+      expect(card.reload.user_id).to eq(owner.id)
+    end
+
     it "an already unlinked card changes nothing and says so (JSON)" do
       staff
       loose = create(:rfid, user: nil, mac_address: "bb:bb:bb:bb:bb:bb")

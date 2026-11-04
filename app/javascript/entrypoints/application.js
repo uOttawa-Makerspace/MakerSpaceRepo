@@ -154,6 +154,14 @@ window.setSpace = async function () {
 
     if (response.ok) {
       window.location.reload();
+    } else {
+      let message = "Could not change space";
+      try {
+        const data = await response.json();
+        if (data.error) message = data.error;
+      } catch (_) {}
+      if (window.toastr) window.toastr.error(message);
+      else alert(message);
     }
   } catch (error) {
     console.error("Failed to update space:", error);

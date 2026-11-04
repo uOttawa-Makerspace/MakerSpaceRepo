@@ -115,6 +115,33 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [], "not_found" => ["nobody"])
     end
 
+    it "matches usernames case-insensitively and does not report them as unknown" do
+      sign_in_session(visitor, space)
+      put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username.upcase] }, as: :json
+      expect(json).to eq("status" => "ok", "signed_out" => [visitor.username], "not_signed_in" => [], "not_found" => [])
+    end
+
+    it "ignores blank entries and non-string entries, never echoing them" do
+      sign_in_session(visitor, space)
+      put "/staff_dashboard/remove_users",
+          params: { dropped_users: [visitor.username, "", "  ", { "a" => "b" }, ["x"]] }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("status" => "ok", "signed_out" => [visitor.username], "not_signed_in" => [], "not_found" => [])
+    end
+
+    it "ignores a dropped_users that is not an array" do
+      put "/staff_dashboard/remove_users", params: { dropped_users: { "a" => "b" } }, as: :json
+      expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [], "not_found" => [])
+    end
+
+    it "answers the JS response (the dashboard tables) for format js" do
+      sign_in_session(visitor, space)
+      put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :js, xhr: true
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("table-js-signed-in")
+      expect(LabSession.active_for_user(visitor)).to be_empty
+    end
+
     it "html: an unknown username flashes an alert" do
       put "/staff_dashboard/remove_users", params: { dropped_users: ["nobody"] }
       expect(flash[:alert]).to include("nobody")
@@ -216,7 +243,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
     it "an unknown space_id is a 404 {status: error} and the staff member stays where they were" do
       put "/staff_dashboard/change_space", params: { space_id: 0 }, as: :json
       expect(response).to have_http_status(:not_found)
-      expect(json).to eq("status" => "error")
+      expect(json).to eq("status" => "error", "error" => "Space not found")
       expect(staff.reload.space_id).to eq(space.id)
     end
 
@@ -227,11 +254,19 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       end
       put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
       expect(response).to have_http_status(:unprocessable_content)
-      expect(json).to eq("status" => "error", "errors" => ["Space is locked"])
+      expect(json).to eq("status" => "error", "error" => "Space not changed: Space is locked", "errors" => ["Space is locked"])
 
       put "/staff_dashboard/change_space", params: { space_id: other_space.id }
       expect(flash[:alert]).to eq("Space not changed: Space is locked")
       expect(staff.reload.space_id).to eq(space.id)
+    end
+
+    it "does not leave a flash behind for a JSON request" do
+      put "/staff_dashboard/change_space", params: { space_id: 0 }, as: :json
+      expect(response).to have_http_status(:not_found)
+      expect(json["error"]).to eq("Space not found")
+      get staff_dashboard_index_path
+      expect(flash[:alert]).to be_nil
     end
 
     it "html: an unknown space_id redirects back with an alert" do
