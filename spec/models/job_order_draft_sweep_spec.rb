@@ -54,6 +54,17 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
     expect(report.counts[:deleted]).to eq(1)
   end
 
+  it "deletes the draft of an order destroyed together with its legacy option rows" do
+    order = order_with_draft!
+    gone = draft_node("gid://shopify/DraftOrder/1", order)
+    JobOrderOption.create!(job_order: order, job_option: JobOption.create!(name: "Legacy option", fee: 1))
+    expect { order.destroy }.to change(JobOrderOption, :count).by(-1)
+    report = sweep(gone)
+
+    expect(shopify.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
+    expect(report).to be_ok
+  end
+
   it "deletes the draft of an order whose row is gone" do
     order = order_with_draft!
     gone = draft_node("gid://shopify/DraftOrder/1", order)
