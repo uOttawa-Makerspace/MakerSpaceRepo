@@ -98,6 +98,19 @@ RSpec.describe "scheduled maintenance" do
       expect(updates.size).to eq(2)
     end
 
+    it "updates only the first volunteer row of a user that (against the validation) has two" do
+      first = volunteer(last_seen_at: 3.months.ago, active: true)
+      second = Program.insert_all!(
+        [{ user_id: first.user_id, program_type: Program::VOLUNTEER, active: true, created_at: Time.current, updated_at: Time.current }],
+        returning: %w[id]
+      ).first["id"]
+
+      described_class.refresh_volunteer_activity!
+
+      expect(first.reload.active).to be(false)
+      expect(Program.find(second).active).to be(true)
+    end
+
     it "stamps updated_at only on the programs it changes and skips deleted users" do
       changed = volunteer(last_seen_at: 3.months.ago, active: true)
       unchanged = volunteer(last_seen_at: 1.week.ago, active: true)
