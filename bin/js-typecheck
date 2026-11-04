@@ -1,0 +1,82 @@
+#!/usr/bin/env node
+// Type-checks app/javascript with tsc (allowJs + checkJs, see tsconfig.json) and
+// fails only on errors that are not in the committed baseline.
+//
+// An error is fingerprinted as file + TS code + message, with no line numbers,
+// so moving code around does not create "new" errors. The baseline keeps a count
+// per fingerprint; a fingerprint may only occur as often as it does there.
+//
+//   bin/js-typecheck           fail on new errors (what CI runs)
+//   bin/js-typecheck --update  rewrite the baseline from the current errors
+//                              (use after fixing errors, never to hide new ones)
+const { spawnSync } = require("node:child_process");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const root = path.resolve(__dirname, "..");
+const baselinePath = path.join(root, "config", "js-typecheck-baseline.txt");
+const tsc = path.join(root, "node_modules", ".bin", "tsc");
+
+const run = spawnSync(tsc, ["-p", "tsconfig.json", "--pretty", "false"], {
+  cwd: root,
+  encoding: "utf8",
+  maxBuffer: 64 * 1024 * 1024,
+});
+if (run.error) {
+  console.error(`could not run tsc: ${run.error.message}`);
+  process.exit(2);
+}
+
+const current = new Map();
+for (const line of run.stdout.split("\n")) {
+  const match = line.match(/^(.+?)\(\d+,\d+\): error (TS\d+): (.*)$/);
+  if (!match) continue;
+  const key = `${match[1]}\t${match[2]}\t${match[3]}`;
+  current.set(key, (current.get(key) || 0) + 1);
+}
+if (current.size === 0 && run.status !== 0) {
+  console.error(run.stdout || run.stderr);
+  process.exit(2);
+}
+
+const format = (map) =>
+  [...map.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, count]) => `${count}\t${key}`)
+    .join("\n") + "\n";
+
+if (process.argv.includes("--update")) {
+  fs.writeFileSync(baselinePath, format(current));
+  const total = [...current.values()].reduce((a, b) => a + b, 0);
+  console.log(
+    `baseline written: ${total} errors in ${current.size} fingerprints`,
+  );
+  process.exit(0);
+}
+
+const baseline = new Map();
+for (const line of fs.readFileSync(baselinePath, "utf8").split("\n")) {
+  if (!line) continue;
+  const [count, ...rest] = line.split("\t");
+  baseline.set(rest.join("\t"), Number(count));
+}
+
+const added = [];
+for (const [key, count] of current) {
+  const allowed = baseline.get(key) || 0;
+  if (count > allowed)
+    added.push(`${count - allowed} x ${key.replaceAll("\t", "  ")}`);
+}
+const total = [...current.values()].reduce((a, b) => a + b, 0);
+const known = [...baseline.values()].reduce((a, b) => a + b, 0);
+
+if (added.length > 0) {
+  console.error("New type errors (not in config/js-typecheck-baseline.txt):");
+  added.forEach((line) => console.error(`  ${line}`));
+  process.exit(1);
+}
+const note =
+  total < known
+    ? `, ${known - total} fewer than the baseline: run bin/js-typecheck --update`
+    : "";
+console.log(`js-typecheck: no new type errors (${total} baselined${note})`);
