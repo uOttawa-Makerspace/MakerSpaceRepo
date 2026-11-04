@@ -54,9 +54,9 @@
               <td><%= link_to user.username.to_s, admin_user_path(user) %></td>
               <td><%= user.name %></td>
               <td>
-                <% user_sessions = LabSession.where(user_id: user.id) %>
-                <% if user_sessions.present? %>
-                  <%= time_ago_in_words(user_sessions.last.sign_in_time) %> ago
+                <% last_session = user.lab_sessions.max_by(&:id) %>
+                <% if last_session %>
+                  <%= time_ago_in_words(last_session.sign_in_time) %> ago
                 <% else %>
                   -
                 <% end %>

@@ -159,6 +159,13 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response.body).to include(target.username)
     end
 
+    it "search shows when a hit last signed in" do
+      create(:lab_session, user: target, sign_in_time: 3.hours.ago, sign_out_time: 2.hours.ago)
+      get search_admin_users_path(q: target.username, filter: "Username")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("about 3 hours ago")
+    end
+
     it "search with no hit renders 200 (empty), and soft-deleted users are never hits" do
       get search_admin_users_path(q: "zzznomatchzzz")
       expect(response).to have_http_status(:ok)
