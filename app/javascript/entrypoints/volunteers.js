@@ -60,7 +60,7 @@ document.addEventListener("turbo:load", function () {
         if (target) {
           // Switch to skills tab if not already active
           const skillsTabBtn = document.getElementById("skills-tab");
-          if (skillsTabBtn && typeof bootstrap !== "undefined") {
+          if (skillsTabBtn) {
             Tab.getOrCreateInstance(skillsTabBtn).show();
           }
 
