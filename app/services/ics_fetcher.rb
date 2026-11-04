@@ -19,9 +19,10 @@ module IcsFetcher
     ::/128 ::1/128 64:ff9b::/96 100::/64 2001:db8::/32 fc00::/7 fe80::/10 ff00::/8
   ].map { |range| IPAddr.new(range) }.freeze
 
-  # Whether the text is an http(s) URL with a host, on the scheme's default port, without a login in it.
+  # Whether the text is an http(s) (or webcal, the usual alias for https) URL with a host, on the scheme's default
+  # port, without a login in it.
   def self.fetchable_url?(url)
-    uri = URI.parse(url.to_s.strip)
+    uri = URI.parse(https_for_webcal(url.to_s.strip))
     uri.is_a?(URI::HTTP) && uri.host.present? && uri.userinfo.nil? && uri.port == uri.default_port
   rescue URI::InvalidURIError
     false
@@ -44,9 +45,14 @@ module IcsFetcher
   def self.parse(url)
     raise Refused, "not a fetchable URL" unless fetchable_url?(url)
 
-    URI.parse(url.to_s.strip)
+    URI.parse(https_for_webcal(url.to_s.strip))
   end
   private_class_method :parse
+
+  def self.https_for_webcal(url)
+    url.sub(/\Awebcals?:\/\//i, "https://")
+  end
+  private_class_method :https_for_webcal
 
   def self.request(uri, timeout)
     address = public_address(uri.host)

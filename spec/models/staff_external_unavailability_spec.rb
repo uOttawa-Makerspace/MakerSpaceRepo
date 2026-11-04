@@ -16,6 +16,11 @@ RSpec.describe StaffExternalUnavailability, type: :model do
     end
   end
 
+  # webcal:// links (the alias for https) stay valid, so a stored one does not block its owner's list
+  it "accepts a webcal link" do
+    expect(described_class.new(user: create(:user, :staff), ics_url: "webcal://x.test/a.ics")).to be_valid
+  end
+
   it "is reachable from the user and removed with them is NOT cascaded (no dependent option)" do
     user = create(:user, :staff)
     record = described_class.create!(user: user, ics_url: "https://x.test/a.ics")

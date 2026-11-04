@@ -86,4 +86,17 @@ RSpec.describe IcsFetcher do
     end
     expect(a_request(:any, /./)).not_to have_been_made
   end
+
+  # webcal:// is the usual alias for https and is fetched as https
+  it "fetches a webcal link over https, with every other rule unchanged" do
+    resolves("cal.test", "93.184.216.34")
+    stub_request(:get, "https://cal.test/a.ics").to_return(status: 302, headers: { "Location" => "webcal://cal.test/b.ics" })
+    stub_request(:get, "https://cal.test/b.ics").to_return(status: 200, body: "OK")
+    expect(described_class.get("webcal://cal.test/a.ics")).to eq("OK")
+    expect(described_class.fetchable_url?("WEBCAL://cal.test/a.ics")).to be(true)
+    ["webcal://u:p@cal.test/a.ics", "webcal://cal.test:8080/a.ics", "webcal:///a.ics"].each do |url|
+      expect(described_class.fetchable_url?(url)).to be(false), url
+    end
+    expect { described_class.get("webcal://127.0.0.1/a.ics") }.to raise_error(described_class::Refused)
+  end
 end
