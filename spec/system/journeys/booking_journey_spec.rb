@@ -133,7 +133,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     expect(approved.map(&:to)).to eq([[user.email]] * 4)
   end
 
-  it "rejects a booking that overlaps a blocking booking (server 422; the UI shows no toast)" do
+  it "rejects a booking that overlaps a blocking booking (server 422; the UI toasts the reason)" do
     # The overlap check compares the zoned instants the model stores,
     # so a block stored at 09:00-12:00 Toronto catches the 10:00 UI booking.
     blocker = create(:sub_space_booking, sub_space: subspace, user: admin, name: "Maintenance",
@@ -147,14 +147,12 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
       open_booking_modal(day)
       fill_booking_modal(name: "Sneaky", description: "overlap")
       click_button "bookSave"
-      # The server answers 422 "TimeSlot This time slot is already booked." but
-      # the page JS calls the global `bootstrap.Toast`, which is
-      # not defined, inside a promise whose .catch swallows the error:
-      # no toast, and the modal stays open with the Book button re-enabled.
-      expect(page).to have_css("#bookSave:not([disabled])")
-      expect(page).to have_css("#bookModal.show", visible: :all)
-      expect(page).to have_no_css("#booking_toast.show")
-      expect(page.evaluate_script("typeof bootstrap")).to eq("undefined")
+      # The server answers 422 "TimeSlot This time slot is already booked."; the
+      # page closes the modal and shows it in the toast.
+      expect(page).to have_no_css("#bookModal.show", visible: :all)
+      expect(page).to have_css("#booking_toast.show")
+      expect(page).to have_css("#toast_title", text: "Booking failed")
+      expect(page).to have_css("#toast_text", text: "This time slot is already booked.")
     end
     expect(SubSpaceBooking.where(name: "Sneaky")).to be_empty
     expect(SubSpaceBooking.where(sub_space: subspace)).to contain_exactly(blocker)
@@ -181,9 +179,10 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
       open_booking_modal(day)
       fill_booking_modal(name: "Sneaky", description: "overlap")
       click_button "bookSave"
-      # 422 TimeSlot; the modal stays open (no toast).
-      expect(page).to have_css("#bookSave:not([disabled])")
-      expect(page).to have_css("#bookModal.show", visible: :all)
+      # 422 TimeSlot: the modal closes and the toast gives the reason.
+      expect(page).to have_no_css("#bookModal.show", visible: :all)
+      expect(page).to have_css("#booking_toast.show")
+      expect(page).to have_css("#toast_text", text: "This time slot is already booked.")
     end
     expect(SubSpaceBooking.where(name: "Sneaky")).to be_empty
   end

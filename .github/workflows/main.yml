@@ -83,6 +83,11 @@ jobs:
       - name: Install Node dependencies
         run: yarn install --frozen-lockfile --prefer-offline
 
+      - name: Lint and type-check JavaScript
+        run: |
+          yarn lint:js
+          yarn typecheck:js
+
       - name: Cache SSL certificates
         id: cache-certs
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0

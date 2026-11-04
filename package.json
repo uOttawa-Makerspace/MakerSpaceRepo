@@ -2,7 +2,9 @@
   "scripts": {
     "prettier:format": "prettier --write .",
     "prettier:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint:js": "eslint .",
+    "typecheck:js": "node bin/js-typecheck"
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
@@ -41,10 +43,14 @@
     "trix": "^2.1.19"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@prettier/plugin-ruby": "^4.0.4",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
+    "typescript": "7.0.2",
     "vite": "^8.0.0",
     "vite-plugin-ruby": "^5.2.5"
   },
