@@ -71,12 +71,28 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    # A missing supervisor still 404s further down
-    supervisor = User.find_by(id: params[:supervisor]) if params[:identity] == "Staff"
-    if supervisor && !supervisor.staff?
-      flash[:alert] = "Please choose a staff member as your supervisor."
-      redirect_to root_path
-      return
+    emails = nil
+    case params[:identity]
+    when "JMTS"
+      jmts = Space.find_by(name: "JMTS")
+      if jmts.nil?
+        flash[:alert] = "JMTS access requests are not available right now. Please choose another option."
+        redirect_to root_path
+        return
+      end
+      emails = jmts.space_managers.map(&:email)
+    when "Staff"
+      supervisor = User.find_by(id: params[:supervisor]) if params[:supervisor].present?
+      if supervisor.nil? || !supervisor.staff?
+        flash[:alert] = "Please choose a staff member as your supervisor."
+        redirect_to root_path
+        return
+      end
+      emails = [supervisor.email]
+    when "GNG"
+      emails = ["makerlab@uottawa.ca"]
+    else
+      emails = ["mtc@uottawa.ca"]
     end
 
     if UserBookingApproval.where(user: current_user).first.nil?
@@ -90,20 +106,6 @@ class SubSpaceBookingController < SessionsController
         )
 
       if booking_approval.save
-        emails = []
-
-        case params[:identity]
-        when "JMTS"
-          jmts = Space.find_by(name: "JMTS")
-          jmts.space_managers.each { |sm| emails << sm.email }
-        when "Staff"
-          emails << User.find(params[:supervisor]).email
-        when "GNG"
-          emails << "makerlab@uottawa.ca"
-        else
-          emails << "mtc@uottawa.ca"
-        end
-
         BookingMailer.send_booking_approval_request_sent(
           booking_approval.id,
           emails
