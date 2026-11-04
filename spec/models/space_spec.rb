@@ -138,7 +138,7 @@ RSpec.describe Space, type: :model do
       create(:volunteer_task, space: space)
 
       expect(I18n.with_locale(:fr) { space.deletion_refusals }).to eq(
-        ["Impossible de supprimer l'enregistrement car des tâches de bénévolat dépendants existent"]
+        ["Impossible de supprimer l'enregistrement car il reste des tâches de bénévolat"]
       )
     end
 

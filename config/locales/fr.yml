@@ -246,7 +246,7 @@ fr:
               booking_ended: "ne peut plus être modifiée : cette réservation est déjà terminée."
       messages:
         restrict_dependent_destroy:
-          has_many: "Impossible de supprimer l'enregistrement car des %{record} dépendants existent"
+          has_many: "Impossible de supprimer l'enregistrement car il reste des %{record}"
         blank: "Ce champ est requis."
         inclusion: "Sélection non valide."
   sub_space_booking:
