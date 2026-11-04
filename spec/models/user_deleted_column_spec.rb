@@ -36,6 +36,16 @@ RSpec.describe "users.deleted" do
       expect(User.find(user.id).certifications).to contain_exactly(cert)
     end
 
+    it "the certification summaries and training status are still worked out for a deleted user" do
+      cert = create(:certification, :basic_training, user_id: user.id)
+      training_id = cert.training_session.training_id
+      user.soft_delete!
+      expect(Certification.highest_certifications(user.id)).to eq([cert])
+      expect(Certification.certification_highest_level(training_id, user.id)).to eq(cert)
+      expect(ProficientProject.training_status(training_id, user.id)).to eq(cert.level)
+      expect(ApplicationController.helpers.training_status(training_id, user.id)).to be_present
+    end
+
     it "their lab sessions and certifications still reach the user, and join to it" do
       session = create(:lab_session, user: user, space: space)
       cert = create(:certification, :basic_training, user_id: user.id)

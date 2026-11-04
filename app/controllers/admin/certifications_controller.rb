@@ -3,7 +3,7 @@ class Admin::CertificationsController < AdminAreaController
 
   def show
     @certification = Certification.includes(:training_session).includes(:training).find(params[:id])
-    @earner = User.find(@certification.user_id)
+    @earner = User.including_deleted.find(@certification.user_id)
   end
 
   def update

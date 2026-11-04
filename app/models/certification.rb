@@ -83,7 +83,7 @@ class Certification < ApplicationRecord
     # training_ids = joins(:training).pluck(:training_id)
     # trainings = Training.where(id: training_ids)
     trainings = []
-    user = User.find(user_id)
+    user = User.including_deleted.find(user_id)
     user_certs = user.certifications
     user_certs.each do |cert|
       trainings << cert.training unless trainings.include? cert.training
@@ -96,7 +96,7 @@ class Certification < ApplicationRecord
   end
 
   def self.certification_highest_level(training_id, user_id)
-    user = User.find(user_id)
+    user = User.including_deleted.find(user_id)
     training_certs = []
     user.certifications.each do |cert|
       training_certs << cert if cert.training.id == training_id

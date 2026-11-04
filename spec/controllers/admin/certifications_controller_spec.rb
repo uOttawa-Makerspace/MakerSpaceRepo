@@ -29,6 +29,15 @@ RSpec.describe Admin::CertificationsController, type: :controller do
     end
   end
 
+  describe "GET /show" do
+    it "opens the certification of a soft-deleted user" do
+      @certification.user.soft_delete!
+      get :show, params: { id: @certification.id }
+      expect(response).to have_http_status(:success)
+      expect(@controller.instance_variable_get(:@earner)).to eq(@certification.user)
+    end
+  end
+
   describe "PATCH /update" do
     context "logged as admin" do
       it "should update the certification (demote) and return to the user profile" do
