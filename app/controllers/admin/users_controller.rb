@@ -395,22 +395,23 @@ class Admin::UsersController < AdminAreaController
   # User Management
   # ============================================
 
-  # Deleting an account hides it; nothing the user did is deleted. Their repositories are hidden
-  # with them, and a lab session still open is ended now, so a deleted user is not listed as in a
-  # space. Every other row (visits, certifications, training) stays as it was.
+  # Deleting an account hides it; nothing the user did is deleted. Each repository they own passes to
+  # another member, or is hidden when there is none, and a lab session still open is ended now, so a
+  # deleted user is not listed as in a space. Every other row (visits, certifications, training)
+  # stays as it was.
   def soft_delete_user(user)
     user.transaction do
-      user.repositories.update_all(deleted: true)
+      Repository.release_owned_by!(user)
       LabSession.where(user_id: user.id).active.update_all(sign_out_time: Time.zone.now)
       user.soft_delete!
     end
   end
 
-  # Brings back what soft_delete_user hid: the account and its repositories. Repository's default
-  # scope hides deleted ones, so it is lifted to reach them.
+  # Brings back what soft_delete_user hid: the account and the repositories it hid. Repositories
+  # handed to another member stay with them.
   def restore_user_account(user)
     user.transaction do
-      user.repositories.unscope(where: :deleted).update_all(deleted: false)
+      Repository.restore_hidden_for!(user)
       user.restore!
     end
   end

@@ -139,6 +139,31 @@ class Repository < ApplicationRecord
     user_id == user.id || users.include?(user)
   end
 
+  # What deleting an account does to the repositories it owns (repositories.user_id), inside the
+  # caller's transaction. A repository with another member who is not deleted passes to the
+  # member with the lowest id and stays visible; one without is hidden. The deleted user keeps
+  # their membership rows (members are listed through User's default scope, so they are not
+  # shown), and repositories they only collaborate on are not touched. Repository rows are locked
+  # in id order, and each candidate is locked and re-checked, so a member being deleted by another
+  # admin at the same time is not picked.
+  def self.release_owned_by!(user)
+    where(user_id: user.id).order(:id).lock.to_a.each do |repository|
+      new_owner = User.where(id: repository.users.where.not(id: user.id).select(:id))
+                      .order(:id).lock('FOR SHARE').first
+      if new_owner
+        repository.update_columns(user_id: new_owner.id)
+      else
+        repository.update_columns(deleted: true)
+      end
+    end
+  end
+
+  # Brings back what release_owned_by! hid: the hidden repositories still owned by the user. A
+  # repository handed to another member has a different owner and stays with them.
+  def self.restore_hidden_for!(user)
+    unscoped.where(user_id: user.id, deleted: true).update_all(deleted: false)
+  end
+
   def self.authenticate(id, password)
     Repository.find(id).pword == password
   end

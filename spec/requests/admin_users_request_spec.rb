@@ -431,7 +431,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "soft-deletes: hides the user and their repositories and keeps every lab session and certification" do
-      repo = create(:repository)
+      repo = create(:repository, owner: target)
       repo.users << target
       space = create(:space)
       open_session = create(:lab_session, user_id: target.id, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
@@ -445,11 +445,61 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(User.find_by(id: target.id)).to be_nil
       gone = User.unscoped.find(target.id)
       expect(gone.deleted).to be(true)
-      expect(gone.repositories.unscope(where: :deleted).pluck(:deleted)).to all(be(true))
+      expect(Repository.unscoped.find(repo.id).deleted).to be(true)
       expect(LabSession.where(user_id: target.id).pluck(:id)).to contain_exactly(open_session.id, past_session.id)
       expect(Certification.where(user_id: target.id).pluck(:id)).to eq([cert.id])
       expect(past_session.reload.sign_out_time).to be_within(1.second).of(past_out)
       expect(LabSession.where(id: bystander.id)).to exist
+    end
+
+    describe "repositories the user owns" do
+      let(:partner) { create(:user, :regular_user) }
+
+      it "passes to the member with the lowest id and stays visible" do
+        later = create(:user, :regular_user)
+        repo = create(:repository, owner: target)
+        repo.users << [target, later, partner]
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        kept = Repository.find(repo.id)
+        expect(kept.user_id).to eq([later, partner].map(&:id).min)
+        expect(kept.owned_by?(partner)).to be(true)
+        expect(kept.deleted).to be(false)
+        expect(kept.users).not_to include(target)
+        expect(Repository.unscoped.find(repo.id).users.unscope(where: :deleted)).to include(target)
+      end
+
+      it "never picks a deleted member as the new owner" do
+        gone = create(:user, :regular_user)
+        gone.update_columns(deleted: true)
+        repo = create(:repository, owner: target)
+        repo.users.push(target)
+        ActiveRecord::Base.connection.execute("INSERT INTO repositories_users (repository_id, user_id) VALUES (#{repo.id}, #{gone.id})")
+        repo.users << partner
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find(repo.id).user_id).to eq(partner.id)
+      end
+
+      it "hides the repository when no other member is left, including when the only other member is deleted" do
+        alone = create(:repository, owner: target)
+        alone.users << target
+        gone = create(:user, :regular_user)
+        gone.update_columns(deleted: true)
+        shared = create(:repository, owner: target)
+        shared.users << target
+        ActiveRecord::Base.connection.execute("INSERT INTO repositories_users (repository_id, user_id) VALUES (#{shared.id}, #{gone.id})")
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find_by(id: [alone.id, shared.id])).to be_nil
+        expect(Repository.unscoped.where(id: [alone.id, shared.id]).pluck(:deleted)).to eq([true, true])
+      end
+
+      it "leaves a repository the user only collaborates on, and its owner, as it was" do
+        other_owner = create(:user, :regular_user)
+        repo = create(:repository, owner: other_owner)
+        repo.users << [other_owner, target]
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find(repo.id)).to have_attributes(user_id: other_owner.id, deleted: false)
+        expect(repo.reload.users).to contain_exactly(other_owner)
+      end
     end
 
     it "ends the deleted user's open lab session now, so they are not listed as in the space" do
@@ -542,13 +592,26 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     end
 
     it "restores the user's repositories hidden by the deletion" do
-      repo = create(:repository)
+      repo = create(:repository, owner: target)
       repo.users << target
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
       patch restore_user_admin_users_path, params: { id: target.id }
       expect(Repository.unscoped.find(repo.id).deleted).to be(false)
       expect(Repository.find_by(id: repo.id)).to eq(repo)
+    end
+
+    it "does not undo a handover: the repository stays with its new owner and the old owner is a member again" do
+      partner = create(:user, :regular_user)
+      repo = create(:repository, owner: target)
+      repo.users << [target, partner]
+      hidden = create(:repository, owner: target)
+      hidden.users << target
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.find(repo.id).user_id).to eq(partner.id)
+      expect(Repository.find(repo.id).users).to include(target, partner)
+      expect(Repository.unscoped.find(hidden.id)).to have_attributes(user_id: target.id, deleted: false)
     end
 
     it "leaves another user's hidden repositories hidden" do
