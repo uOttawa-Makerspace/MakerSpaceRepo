@@ -182,6 +182,7 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
       empty_keys = json.keys.sort
       create(:lab_session, space: space, user: latest, sign_in_time: 1.minute.ago, sign_out_time: 1.hour.from_now)
       refresh
+      expect(json["users"]).not_to be_empty # an occupied room, not the empty payload again
       expect(json.keys.sort).to eq(empty_keys)
     end
 

@@ -269,4 +269,21 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(flash[:alert]).to eq("RFID card not found")
     end
   end
+
+  describe "the profile page card controls" do
+    it "shows the unregister button for a card with a number" do
+      staff
+      get user_path(owner.username)
+      expect(response.body).to include("RFID card set")
+      expect(response.body).to include(CGI.escapeHTML(card.card_number))
+    end
+
+    it "treats a card row without a number as no card, so the page offers to set one" do
+      staff
+      card.update_columns(card_number: "")
+      get user_path(owner.username)
+      expect(response.body).to include("RFID card not set")
+      expect(response.body).not_to include("RFID card set")
+    end
+  end
 end
