@@ -6,9 +6,14 @@ RSpec.describe StaffExternalUnavailability, type: :model do
   it { should belong_to(:user) }
   it { should validate_presence_of(:ics_url) }
 
-  it "does not validate the url format" do
-    record = described_class.new(user: create(:user, :staff), ics_url: "not a url")
-    expect(record).to be_valid
+  it "accepts only http and https links on the default port, without a login" do
+    user = create(:user, :staff)
+    ["https://x.test/a.ics", "http://x.test/a.ics"].each do |url|
+      expect(described_class.new(user: user, ics_url: url)).to be_valid
+    end
+    ["not a url", "file:///etc/passwd", "ftp://x.test/a.ics", "https://u:p@x.test/a.ics", "https://x.test:8080/a.ics", "https:///a.ics"].each do |url|
+      expect(described_class.new(user: user, ics_url: url)).not_to be_valid, url
+    end
   end
 
   it "is reachable from the user and removed with them is NOT cascaded (no dependent option)" do

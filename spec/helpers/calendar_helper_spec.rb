@@ -46,6 +46,12 @@ RSpec.describe CalendarHelper, type: :helper do
       end
     end
 
+    it "reads no events from a URL that may not be fetched, without any request" do
+      result = parse_ics_calendar("http://127.0.0.1/feed.ics")
+      expect(result.first[:events]).to eq([])
+      expect(a_request(:any, /./)).not_to have_been_made
+    end
+
     it "generates a colour from the source when none is given" do
       travel_to(Time.utc(2025, 11, 20, 12, 0)) do
         color = parse_ics_calendar(path).first[:color]
