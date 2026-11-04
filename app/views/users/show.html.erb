@@ -102,8 +102,10 @@
                                         <i class="fa-solid fa-check"></i> <%= t('.rfid_card_set') %>
                                     </button>
                                     <div class="dropdown-menu" aria-labelledby="rfidUnregisterMenu">
+                                        <% if @repo_user.rfid.card_number.present? %>
                                         <%= button_to t('.unregister_rfid_card'), staff_dashboard_unlink_rfid_path(card_number: @repo_user.rfid.card_number),
                                                       action: :link_rfid, method: :put, class: 'dropdown-item dropdown-item-danger' %>
+                                        <% end %>
                                     </div>
                                 </div>
                             <% else %>

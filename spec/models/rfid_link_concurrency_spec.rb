@@ -86,11 +86,36 @@ RSpec.describe Rfid, ".link_to_user! under concurrency", type: :model do
     unlinker = in_thread { Rfid.unlink_card!(card_number, actor: actor) }
     deadline = Time.current + 5
     Thread.pass until blocked_backends.positive? || !unlinker.alive? || Time.current > deadline
+    # unlink_card! must really be waiting for the owner's row, or the retry path is not exercised
+    expect(blocked_backends).to be_positive
     release << true
 
     expect(holder.value).not_to be_a(StandardError)
     expect(unlinker.value).to eq(:unlinked)
     expect(Rfid.find_by!(card_number: card_number).user_id).to be_nil
+  ensure
+    User.unscoped.where(id: actor&.id).delete_all
+  end
+
+  # The owner changes between unlink_card!'s read of it and its locks on every attempt (the hook
+  # moves the card to the other user right when unlink_card! takes the owner's row lock), so the
+  # real retry loop runs to its cap. It must stop there and raise, leaving the card linked.
+  it "unlink_card! gives up with OwnerChanging when the owner changes on every attempt" do
+    Rfid.create!(card_number: card_number, user_id: first_user.id)
+    actor = create(:user, :staff)
+    others = { first_user.id => second_user.id, second_user.id => first_user.id }
+    attempts = 0
+    allow(User).to receive(:where).and_wrap_original do |original, *args, **kwargs, &block|
+      if kwargs.key?(:id) && kwargs[:id].is_a?(Integer) && others.key?(kwargs[:id])
+        attempts += 1
+        Rfid.where(card_number: card_number).update_all(user_id: others.fetch(kwargs[:id]))
+      end
+      original.call(*args, **kwargs, &block)
+    end
+
+    expect { Rfid.unlink_card!(card_number, actor: actor) }.to raise_error(Rfid::OwnerChanging)
+    expect(attempts).to eq(5)
+    expect(Rfid.find_by!(card_number: card_number).user_id).to be_present
   ensure
     User.unscoped.where(id: actor&.id).delete_all
   end

@@ -25,7 +25,7 @@ import "../controllers";
 import.meta.glob("../images/**", { eager: true });
 
 import { Tooltip, Popover } from "bootstrap";
-import "toastr/toastr";
+import toastr from "toastr/toastr";
 import "@hotwired/turbo-rails";
 
 document.addEventListener("turbo:before-render", (event) => {
@@ -160,7 +160,7 @@ window.setSpace = async function () {
         const data = await response.json();
         if (data.error) message = data.error;
       } catch (_) {}
-      alert(message);
+      toastr.error(message);
     }
   } catch (error) {
     console.error("Failed to update space:", error);

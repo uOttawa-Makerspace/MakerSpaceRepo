@@ -430,22 +430,45 @@ class StaffDashboardController < StaffAreaController
     @all_user_certs = proc { |user| user.certifications }
   end
 
-  # The most recent sign-in's details, which the tap-in modal reads. An empty room
-  # has none: empty lists and false flags, and no certification query.
-  # The most recent sign-in's details, which the tap-in modal reads. One hash
-  # serves the empty room too: nobody signed in gives empty lists and false flags.
+  # What an empty room reports. These keys are also the keys of the populated
+  # payload: each is filled by the matching sign_in_detail_<key> method below, so
+  # a key added here without its method fails loudly instead of drifting.
+  EMPTY_SIGN_IN_DETAILS = {
+    users: [], certification: [], has_membership: false,
+    expiration_date: "", is_student: false, signed_sheet: false
+  }.freeze
+
+  # The most recent sign-in's details, which the tap-in modal reads.
   def latest_sign_in_details(signed_in_users)
     latest = signed_in_users.first
-    certifications = latest ? Certification.joins(:training).where(user_id: latest.id) : Certification.none
-    {
-      users: signed_in_users.map { |user| [user.name, user.email, user.username] },
-      certification: certifications.select("certifications.id, certifications.user_id, trainings.name_en")
-        .group_by(&:user_id).to_a,
-      has_membership: !!latest&.has_active_membership?,
-      expiration_date: latest&.memberships&.active&.order(end_date: :desc)&.first&.end_date&.to_date || "",
-      is_student: !!latest&.student?,
-      signed_sheet: !!latest&.walk_in_safety_sheets&.any?
-    }
+    return EMPTY_SIGN_IN_DETAILS unless latest
+
+    EMPTY_SIGN_IN_DETAILS.keys.index_with { |key| send("sign_in_detail_#{key}", signed_in_users, latest) }
+  end
+
+  def sign_in_detail_users(signed_in_users, _latest)
+    signed_in_users.map { |user| [user.name, user.email, user.username] }
+  end
+
+  def sign_in_detail_certification(_signed_in_users, latest)
+    Certification.select("certifications.id, certifications.user_id, trainings.name_en")
+      .joins(:training).where(user_id: latest.id).group_by(&:user_id).to_a
+  end
+
+  def sign_in_detail_has_membership(_signed_in_users, latest)
+    latest.has_active_membership?
+  end
+
+  def sign_in_detail_expiration_date(_signed_in_users, latest)
+    latest.memberships.active.order(end_date: :desc).first&.end_date&.to_date || ""
+  end
+
+  def sign_in_detail_is_student(_signed_in_users, latest)
+    latest.student?
+  end
+
+  def sign_in_detail_signed_sheet(_signed_in_users, latest)
+    latest.walk_in_safety_sheets.any?
   end
 
   def update_lab_session
