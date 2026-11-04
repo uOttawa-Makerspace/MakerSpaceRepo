@@ -430,25 +430,45 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(RateLimitCounter.exists?(key)).to be(false)
     end
 
-    it "soft-deletes: flags user and repositories, removes lab sessions and certifications" do
+    it "soft-deletes: hides the user and their repositories and keeps every lab session and certification" do
       repo = create(:repository)
       repo.users << target
       space = create(:space)
-      create(:lab_session, user_id: target.id, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
-      create(:lab_session, user_id: target.id, space: space, sign_in_time: 2.days.ago, sign_out_time: 2.days.ago + 1.hour)
+      open_session = create(:lab_session, user_id: target.id, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      past_out = 2.days.ago + 1.hour
+      past_session = create(:lab_session, user_id: target.id, space: space, sign_in_time: 2.days.ago, sign_out_time: past_out)
       bystander = create(:lab_session, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
-      create(:certification, :basic_training, user_id: target.id)
-      expect(LabSession.where(user_id: target.id).count).to eq(2)
+      cert = create(:certification, :basic_training, user_id: target.id)
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("User flagged as deleted")
       expect(User.find_by(id: target.id)).to be_nil
       gone = User.unscoped.find(target.id)
       expect(gone.deleted).to be(true)
-      expect(gone.repositories.reload.pluck(:deleted)).to all(be(true))
-      expect(Certification.where(user_id: target.id)).to be_empty
-      expect(LabSession.where(user_id: target.id)).to be_empty
+      expect(gone.repositories.unscope(where: :deleted).pluck(:deleted)).to all(be(true))
+      expect(LabSession.where(user_id: target.id).pluck(:id)).to contain_exactly(open_session.id, past_session.id)
+      expect(Certification.where(user_id: target.id).pluck(:id)).to eq([cert.id])
+      expect(past_session.reload.sign_out_time).to be_within(1.second).of(past_out)
       expect(LabSession.where(id: bystander.id)).to exist
+    end
+
+    it "ends the deleted user's open lab session now, so they are not listed as in the space" do
+      space = create(:space)
+      open_session = create(:lab_session, user_id: target.id, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      bystander = create(:lab_session, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      expect(open_session.reload.sign_out_time).to be <= Time.zone.now
+      expect(bystander.reload.sign_out_time).to be > Time.zone.now
+      expect(space.signed_in_users).to eq([bystander.user])
+    end
+
+    it "keeps the deleted user's history readable through its records" do
+      cert = create(:certification, :basic_training, user_id: target.id)
+      session = create(:lab_session, user_id: target.id, space: create(:space), sign_in_time: 2.days.ago, sign_out_time: 2.days.ago + 1.hour)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      expect(Certification.find(cert.id).user).to eq(User.unscoped.find(target.id))
+      expect(LabSession.find(session.id).user).to eq(User.unscoped.find(target.id))
+      expect(LabSession.joins(:user).where(id: session.id)).to exist
     end
 
     it "the deleted user can no longer log in or be found by username/email" do
@@ -530,11 +550,18 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
     end
 
-    it "does not restore the certifications or lab sessions deleted on soft delete" do
-      create(:certification, :basic_training, user_id: target.id)
+    it "finds the lab sessions and certifications intact after delete and still intact after restore" do
+      space = create(:space)
+      session = create(:lab_session, user_id: target.id, space: space, sign_in_time: 2.days.ago, sign_out_time: 2.days.ago + 1.hour)
+      cert = create(:certification, :basic_training, user_id: target.id)
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      expect(LabSession.where(user_id: target.id).pluck(:id)).to eq([session.id])
+      expect(Certification.where(user_id: target.id).pluck(:id)).to eq([cert.id])
       patch restore_user_admin_users_path, params: { id: target.id }
-      expect(Certification.where(user_id: target.id)).to be_empty
+      expect(User.find(target.id).deleted).to be(false)
+      expect(LabSession.where(user_id: target.id).pluck(:id)).to eq([session.id])
+      expect(Certification.where(user_id: target.id).pluck(:id)).to eq([cert.id])
+      expect(User.find(target.id).certifications.pluck(:id)).to eq([cert.id])
     end
 
     it "restoring a never-deleted user is a no-op success" do

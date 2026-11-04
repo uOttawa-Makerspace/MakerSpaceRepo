@@ -395,11 +395,13 @@ class Admin::UsersController < AdminAreaController
   # User Management
   # ============================================
 
+  # Deleting an account hides it; nothing the user did is deleted. Their repositories are hidden
+  # with them, and a lab session still open is ended now, so a deleted user is not listed as in a
+  # space. Every other row (visits, certifications, training) stays as it was.
   def soft_delete_user(user)
     user.transaction do
       user.repositories.update_all(deleted: true)
-      LabSession.where(user_id: user.id).destroy_all
-      Certification.where(user_id: user.id).destroy_all
+      LabSession.where(user_id: user.id).active.update_all(sign_out_time: Time.zone.now)
       user.soft_delete!
     end
   end

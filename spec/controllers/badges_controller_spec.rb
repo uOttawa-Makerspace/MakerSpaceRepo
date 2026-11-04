@@ -58,3 +58,33 @@ RSpec.describe BadgesController, type: :controller do
     end
   end
 end
+
+RSpec.describe BadgesController, "#show for a soft-deleted earner", type: :controller do
+  before { OrderStatus.find_by!(name: "In progress") }
+
+  let(:earner) { create(:user) }
+  let!(:badge) { create(:certification, user: earner) }
+
+  before { earner.soft_delete! }
+
+  def sign_in_as(user)
+    session[:user_id] = user.id
+    session[:token_version] = user.token_version
+    session[:expires_at] = Time.zone.now + 10_000
+  end
+
+  it "is not found for a guest" do
+    expect { get :show, params: { id: badge.id } }.to raise_error(ActiveRecord::RecordNotFound)
+  end
+
+  it "is not found for a regular user" do
+    sign_in_as(create(:user))
+    expect { get :show, params: { id: badge.id } }.to raise_error(ActiveRecord::RecordNotFound)
+  end
+
+  it "is shown to an admin" do
+    sign_in_as(create(:user, :admin))
+    get :show, params: { id: badge.id }
+    expect(response).to have_http_status(:success)
+  end
+end

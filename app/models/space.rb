@@ -35,9 +35,12 @@ class Space < ApplicationRecord
               message: "Space already exists"
             }
 
+  # Visits keep their user after the account is soft-deleted, so the rosters below leave deleted
+  # users out explicitly: they are not listed as in, or recently in, a space.
   def signed_in_users
     lab_sessions
       .includes(:user)
+      .where(user_id: User.select(:id))
       .where("sign_out_time > ?", Time.zone.now)
       .order(sign_out_time: :desc)
       .map(&:user)
@@ -49,6 +52,7 @@ class Space < ApplicationRecord
       lab_sessions
         .where("sign_out_time < ?", Time.zone.now)
         .where.not(user: signed_in_users)
+        .where(user_id: User.select(:id))
         .includes(:user)
         .order(sign_out_time: :asc)
         .last(20)

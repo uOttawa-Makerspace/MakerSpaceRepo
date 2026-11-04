@@ -2,7 +2,8 @@
 
 class TrainingSession < ApplicationRecord
   belongs_to :training, optional: true
-  belongs_to :user, optional: true
+  # The instructor, including one whose account was soft-deleted: past sessions keep their instructor.
+  belongs_to :user, -> { including_deleted }, optional: true
   belongs_to :space, optional: true
   has_many :certifications, dependent: :destroy
   has_many :exams, dependent: :destroy

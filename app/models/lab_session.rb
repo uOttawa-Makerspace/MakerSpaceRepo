@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class LabSession < ApplicationRecord
-  belongs_to :user, optional: true
+  # A visit belongs to its user even after the account was soft-deleted: the history stays complete.
+  belongs_to :user, -> { including_deleted }, optional: true
   belongs_to :space, optional: true
 
   scope :between_dates_picked,

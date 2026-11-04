@@ -102,12 +102,14 @@ class User < ApplicationRecord
   has_many :comments, dependent: :destroy
   has_many :owned_repositories, class_name: 'Repository', dependent: :destroy
   has_many :likes
-  has_many :certifications, class_name: 'Certification', dependent: :destroy
+  # Visit, certification and training history is never deleted with the account: deleting an account only
+  # hides the user (see #soft_delete!), and reports read this history for deleted users too.
+  has_many :certifications, class_name: 'Certification'
   has_many :demotion_staff,
            class_name: 'Certification',
            foreign_key: 'demotion_staff_id',
            dependent: :destroy
-  has_many :lab_sessions, dependent: :destroy
+  has_many :lab_sessions
   has_many :project_proposals
   has_many :project_joins, dependent: :destroy
   has_many :printer_sessions, dependent: :destroy
@@ -267,6 +269,12 @@ class User < ApplicationRecord
   # ============================================
 
   default_scope { where(deleted: false) }
+
+  # Every user row, soft-deleted ones included. For admin views and reports, which see everything;
+  # the default scope keeps deleted users out of everything else.
+  def self.including_deleted
+    unscope(where: :deleted)
+  end
 
   EMAIL_CHANGE_VERIFIER = -> { Rails.application.message_verifier(:email_change) }
 

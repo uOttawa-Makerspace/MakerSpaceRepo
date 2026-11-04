@@ -22,7 +22,10 @@ class BadgesController < DevelopmentProgramsController
 
   def show
     @certification = Certification.find(params[:id])
-    @earner = User.find(@certification.user_id)
+    @earner = @certification.user
+    raise ActiveRecord::RecordNotFound if @earner.nil?
+    # A deleted account's badge is visible to staff only, like its profile.
+    raise ActiveRecord::RecordNotFound if @earner.deleted? && !(current_user&.admin? || current_user&.staff?)
     @skill_colour =
       if @certification.training.skill_id == 1
         "#488b2c"
