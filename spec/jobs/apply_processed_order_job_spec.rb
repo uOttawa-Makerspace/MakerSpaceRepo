@@ -579,9 +579,13 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         end
       end
 
+      # The shopify_api client raises HttpResponseError for every non-2xx answer (the raised-error examples above),
+      # so a non-2xx response object never reaches the lookup. These examples used to hand it one by stub.
       [429, 500, 502, 503].each do |code|
-        it "retries after an HTTP #{code} answer" do
-          lookup_answers(double(query: double(code: code, body: {})))
+        it "retries after an HTTP #{code} answer, which the client raises" do
+          client = double
+          allow(client).to receive(:query) { raise ShopifyAPI::Errors::HttpResponseError.new(response: response_with(code)) }
+          lookup_answers(client)
           expect_retry(hook(membership_order.merge(id: 7412)))
         end
       end

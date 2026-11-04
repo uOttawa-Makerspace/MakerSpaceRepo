@@ -190,10 +190,8 @@ module ShopifyConcern
       end
       body = resp.body
       errors = body.is_a?(Hash) ? Array.wrap(body["errors"]) : []
-      if resp.code != 200
-        raise ShopifyConcern::MetafieldLookupFailed, "metafield lookup failed (HTTP #{resp.code})"
-      end
-
+      # The client itself raises HttpResponseError (or MaxHttpRetriesExceededError) for any non-2xx answer, which is
+      # rescued above, so only a 200 answer gets here; its GraphQL errors are told apart below.
       if errors.present?
         codes = errors.filter_map { |e| e.is_a?(Hash) ? e.dig("extensions", "code").presence : nil }.uniq
         if codes.empty? || (codes & ShopifyConcern::TRANSIENT_GRAPHQL_CODES).any?
