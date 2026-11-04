@@ -422,6 +422,12 @@ RSpec.describe "Staff training sessions", type: :request do
       expect(response.body).to include(trainer.name)
     end
 
+    it "answers 404 for a session with no trainer" do
+      TrainingSession.where(id: record.id).update_all(user_id: nil)
+      get staff_training_session_path(record)
+      expect(response).to have_http_status(:not_found)
+    end
+
     it "creates the session as themselves when no user_id is sent" do
       post staff_training_sessions_path, params: create_params
       expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(controller.send(:current_user).id)

@@ -38,6 +38,13 @@ RSpec.describe Admin::CertificationsController, type: :controller do
     end
   end
 
+  describe "GET /show without a user" do
+    it "is not found" do
+      @certification.update_columns(user_id: nil)
+      expect { get :show, params: { id: @certification.id } }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
+
   describe "PATCH /update" do
     context "logged as admin" do
       it "should update the certification (demote) and return to the user profile" do
