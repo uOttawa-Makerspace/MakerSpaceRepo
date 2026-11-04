@@ -664,7 +664,8 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
   end
 
   describe "DELETE /:username (destroy)" do
-    it "has no route: UsersController#destroy is unreachable" do
+    it "has no route and no action: an account is never hard-deleted from the profile" do
+      expect(UsersController.action_methods).not_to include("destroy")
       login!(user)
       delete user_path(user.username)
       expect(response).to have_http_status(:not_found)
