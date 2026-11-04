@@ -25,10 +25,11 @@ class Rfid < ApplicationRecord
   # Links the card to the user, creating the card when no reader ever saw it
   # (phone-scanned: mac_address nil, which a reader tap would also leave for a
   # phone). Returns nil on success (also when already linked to this user) or the
-  # refusal message, changing nothing. Lock order: user, then the card number
-  # (two requests creating the same new card are serialised by a transaction
-  # advisory lock, so the loser sees the card instead of hitting the unique
-  # index on rfids.card_number), then the card.
+  # refusal message, changing nothing. Lock order: user, then the card number,
+  # then the card. The advisory lock on the card number serialises changes of a
+  # card's owner (link and unlink); it does not serialise creating the row, which
+  # find_or_create_card does safely on its own, so a tap that creates the same
+  # card meanwhile is picked up and linked.
   def self.link_to_user!(card_number, user)
     transaction do
       User.where(id: user.id).lock("FOR NO KEY UPDATE").take
@@ -44,7 +45,8 @@ class Rfid < ApplicationRecord
         rfid.update!(user_id: user.id)
         nil
       else
-        insert_card(card_number, user)
+        rfid, created = find_or_create_card(card_number, user_id: user.id)
+        rfid.update!(user_id: user.id) unless created
         nil
       end
     end
@@ -115,8 +117,26 @@ class Rfid < ApplicationRecord
   end
   private_class_method :lock_card_number
 
-  def self.insert_card(card_number, user)
-    create!(card_number: card_number, mac_address: nil, user_id: user.id)
+  # The one way a card row is created (a tap of an unknown card, a staff link of
+  # a card no reader saw). Safe when two requests create the same number at once:
+  # the insert is INSERT ... ON CONFLICT (card_number) DO NOTHING against the unique
+  # index, and whoever loses reads the winner's row. Returns [rfid, created]:
+  # created is true only for the caller whose insert made the row. An invalid card
+  # (a blank number) is returned unsaved with its errors and created false.
+  def self.find_or_create_card(card_number, mac_address: nil, user_id: nil)
+    existing = find_by(card_number: card_number)
+    return [existing, false] if existing
+
+    card = new(card_number: card_number, mac_address: mac_address, user_id: user_id)
+    unless card.valid?
+      winner = find_by(card_number: card_number) if card.errors.of_kind?(:card_number, :taken)
+      return [winner || card, false]
+    end
+
+    inserted = insert({ card_number: card_number, mac_address: mac_address, user_id: user_id },
+                      unique_by: :card_number, returning: :id)
+    return [find_by!(card_number: card_number), false] if inserted.rows.empty?
+
+    [find(inserted.rows.first.first), true]
   end
-  private_class_method :insert_card
 end
