@@ -47,6 +47,18 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       get settings_admin_path
       expect(response).to have_http_status(:ok)
     end
+
+    it "profile form keeps stored values its options do not list (legacy faculty, long student id)" do
+      user.update_columns(faculty: "Common Law", student_id: "1234567890123")
+      login!(user)
+      get settings_profile_path
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("select[name='user[faculty]'] option[selected]")&.[]("value")).to eq("Common Law")
+      student_id = page.at_css("input[name='user[student_id]']")
+      expect(student_id["value"]).to eq("1234567890123")
+      expect(student_id["pattern"]).to be_nil
+      expect(student_id["maxlength"]).to be_nil
+    end
   end
 
   describe "GET /:username (show)" do
