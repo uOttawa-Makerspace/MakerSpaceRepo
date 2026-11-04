@@ -36,6 +36,31 @@ RSpec.describe "users:merge_duplicates" do
     expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
   end
 
+  it "moves only the most recently used of a legacy duplicate's two cards; the other stays as an unlinked row" do
+    older = create(:rfid, user: duplicate, mac_address: "aa:aa:aa:aa:aa:aa", updated_at: 2.days.ago)
+    newer = create(:rfid, user: duplicate, mac_address: "bb:bb:bb:bb:bb:bb", updated_at: 1.hour.ago)
+
+    merge
+
+    expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    expect(newer.reload.user_id).to eq(primary.id)
+    expect(Rfid.find(older.id).user_id).to be_nil
+    expect([older.reload.mac_address, newer.mac_address]).to eq(["aa:aa:aa:aa:aa:aa", "bb:bb:bb:bb:bb:bb"])
+  end
+
+  it "unlinks both of a legacy duplicate's cards and keeps them when the kept user already has one" do
+    kept = create(:rfid, user: primary)
+    first = create(:rfid, user: duplicate)
+    second = create(:rfid, user: duplicate)
+
+    merge
+
+    expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    expect(kept.reload.user_id).to eq(primary.id)
+    expect(Rfid.where(id: [first.id, second.id]).pluck(:user_id)).to eq([nil, nil])
+    expect(Rfid.where(user_id: primary.id).count).to eq(1)
+  end
+
   it "unlinks the duplicate's card and keeps the row when the kept user already has one" do
     kept = create(:rfid, user: primary)
     surplus = create(:rfid, user: duplicate)

@@ -58,8 +58,8 @@ class Rfid < ApplicationRecord
   # Unlinks every card the user holds (normally one) and re-homes it: its
   # mac_address becomes the first reader of the actor's assigned space (the space
   # the unlinked-card lists filter on), so the card shows up in the actor's list.
-  # An actor without an assigned space, or whose space has no reader, leaves the
-  # mac_address unchanged. Returns the number of cards unlinked (0 is a no-op).
+  # No actor (a maintenance task), an actor without an assigned space, or whose
+  # space has no reader, leaves the mac_address unchanged. Returns the number of cards unlinked (0 is a no-op).
   # Lock order matches link_to_user!: the user, then the cards.
   def self.unlink_from_user!(user, actor:)
     transaction do
@@ -104,7 +104,7 @@ class Rfid < ApplicationRecord
   end
 
   def self.rehome_reader(actor)
-    actor.space&.pi_readers&.first
+    actor&.space&.pi_readers&.first
   end
   private_class_method :rehome_reader
 

@@ -375,17 +375,27 @@ namespace :users do
 
   # move an association assoc from record duplicate to primary
   # This is a bit more tricky, as we can't just append to an array
+  # Legacy users may hold several cards. Every card of the duplicate is unlinked through
+  # the unlink rule (no actor here, so each card's mac_address stays as it is) and the rows
+  # are kept; if the kept user holds no card, the duplicate's most recently used one is
+  # linked to them through the link rule.
+  def merge_cards(primary, duplicate)
+    newest = Rfid.where(user_id: duplicate.id).order(:updated_at, :id).last
+    Rfid.unlink_from_user!(duplicate, actor: nil)
+    return unless newest && !Rfid.where(user_id: primary.id).exists?
+
+    error = Rfid.link_to_user!(newest.card_number, primary)
+    raise "card #{newest.card_number} could not move to the kept user: #{error}" if error
+  end
+
   def merge_has_one_association(primary, duplicate, assoc)
     # Call a method named 'assoc'
     # NOTE : This works because there's no polymorphic associations. You should
     # never use them anyways
     foreign_record = duplicate.send(assoc.name)
     return unless foreign_record
-    # This is usually the rfid model. A user holds one card: when the primary has
-    # none the duplicate's card moves over, otherwise it is unlinked (the row is kept)
-    # through the one unlink rule.
-    if assoc.klass == Rfid && primary.send(assoc.name)
-      Rfid.unlink_from_user!(duplicate, actor: primary)
+    if assoc.klass == Rfid
+      merge_cards(primary, duplicate)
     else
       foreign_record.update!(assoc.foreign_key => primary.id)
     end
