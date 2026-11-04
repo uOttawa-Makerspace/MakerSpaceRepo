@@ -122,26 +122,32 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(session_row.reload.sign_out_time).to be > Time.zone.now
     end
 
-    it "a user who is not signed in anywhere is a 500 (NoMethodError on nil)" do
-      # `LabSession.active_for_user(user).last.sign_out` has no nil
-      # check, so the dashboard's X button for a user whose session expired or was ended in another tab
-      # (stale table) gets a 500 instead of {status: "ok"}; the other usernames in the same request
-      # are not processed either.
-      expect { put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json }.not_to change(LabSession, :count)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(exception_class).to eq("NoMethodError")
+    it "a user who is not signed in anywhere is a 422 naming them, and the other usernames are still signed out" do
+      other = create(:user, :regular_user)
+      other_row = sign_in_session(other, space)
+      expect do
+        put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username, other.username] }, as: :json
+      end.not_to change(LabSession, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json).to eq("status" => "error", "not_signed_in" => [visitor.username])
+      expect(other_row.reload.sign_out_time).to be <= Time.zone.now
     end
 
-    it "a user whose only session already ended is also a 500" do
-      # same nil dereference.
+    it "a user whose only session already ended is also a 422, and the ended session is untouched" do
       ended = create(:lab_session, user: visitor, space: space, sign_in_time: 3.hours.ago, sign_out_time: 1.hour.ago)
       ended_at = ended.reload.sign_out_time
       expect do
         put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
       end.not_to change(LabSession, :count)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(exception_class).to eq("NoMethodError")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json["not_signed_in"]).to eq([visitor.username])
       expect(ended.reload.sign_out_time).to eq(ended_at)
+    end
+
+    it "html: a user who is not signed in anywhere redirects to the dashboard with an alert" do
+      put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }
+      expect(response).to redirect_to(staff_dashboard_index_path)
+      expect(flash[:alert]).to include(visitor.name)
     end
 
     it "refuses a regular user" do
@@ -197,12 +203,17 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(staff.reload.space_id).to eq(other_space.id)
     end
 
-    it "an unknown space_id is a 500 (nil.id)" do
-      # `new_space.id` is read before the `new_space.present?` check, so an
-      # unknown space_id raises instead of answering {status: "error"}.
+    it "an unknown space_id is a 404 {status: error} and the staff member stays where they were" do
       put "/staff_dashboard/change_space", params: { space_id: 0 }, as: :json
-      expect(response).to have_http_status(:internal_server_error)
-      expect(exception_class).to eq("NoMethodError")
+      expect(response).to have_http_status(:not_found)
+      expect(json).to eq("status" => "error")
+      expect(staff.reload.space_id).to eq(space.id)
+    end
+
+    it "html: an unknown space_id redirects back with an alert" do
+      put "/staff_dashboard/change_space", params: { space_id: 0 }
+      expect(response).to have_http_status(:found)
+      expect(flash[:alert]).to eq("Space not found")
       expect(staff.reload.space_id).to eq(space.id)
     end
   end

@@ -65,7 +65,9 @@ class StaffDashboardController < StaffAreaController
   end
 
   def refresh_tables
-    return head :not_modified if params[:token] == @space.signed_in_users.pluck(:id).join("")
+    signed_in_users = @space.signed_in_users
+    return head :not_modified if params[:token] == signed_in_users.map(&:id).join("")
+    latest = signed_in_users.first
     @users = User.order(id: :desc).limit(10)
     @certifications_on_space =
       proc do |user, space_id|
@@ -77,19 +79,19 @@ class StaffDashboardController < StaffAreaController
     @printers_in_use =
       PrinterSession.order(created_at: :desc).where(in_use: true)
     @all_user_certs = proc { |user| user.certifications }
-    @all_user_memberships = Membership.where(user_id: @space.signed_in_users.pluck(:id)).active.pluck(:user_id)
+    @all_user_memberships = Membership.where(user_id: signed_in_users.map(&:id)).active.pluck(:user_id)
     @all_sign_out_memberships = Membership.where(user_id: @space.recently_signed_out_users.pluck(:id)).active.pluck(:user_id)
-    recent_membership = @space.signed_in_users.first.memberships.active.order(end_date: :desc).first
+    recent_membership = latest&.memberships&.active&.order(end_date: :desc)&.first
     recent_expiration_date = ""
     recent_expiration_date = recent_membership.end_date.to_date unless recent_membership.nil?
     render json: {
-            users: @space.signed_in_users.pluck(:name, :email, :username),
+            users: signed_in_users.map { |user| [user.name, user.email, user.username] },
             certification: Certification.select('certifications.id, certifications.user_id, trainings.name_en')
-            .joins(:training).where(user_id: @space.signed_in_users.pick(:id)).group_by(&:user_id).to_a,
-            has_membership: @space.signed_in_users.first.has_active_membership?,
+            .joins(:training).where(user_id: latest&.id).group_by(&:user_id).to_a,
+            has_membership: latest ? latest.has_active_membership? : false,
             expiration_date: recent_expiration_date,
-            is_student: @space.signed_in_users.first.student?,
-            signed_sheet: @space.signed_in_users.first.walk_in_safety_sheets.any?,
+            is_student: latest ? latest.student? : false,
+            signed_sheet: latest ? latest.walk_in_safety_sheets.any? : false,
              signed_out:
                render_to_string(
                  partial: "staff_dashboard/signed_out_table",
@@ -167,6 +169,7 @@ class StaffDashboardController < StaffAreaController
   end
 
   def sign_out_users
+    not_signed_in = []
     if params[:dropped_users].present?
       @users = User.order(id: :desc).limit(10)
       @certifications_on_space =
@@ -182,13 +185,30 @@ class StaffDashboardController < StaffAreaController
         .where(username: params[:dropped_users])
         .each do |user|
           # get only the latest session, if they're not signed out yet
-          LabSession.active_for_user(user).last.sign_out
+          session = LabSession.active_for_user(user).last
+          if session
+            session.sign_out
+          else
+            not_signed_in << user
+          end
         end
     end
     respond_to do |format|
-      format.html { redirect_to staff_dashboard_index_path }
+      format.html do
+        if not_signed_in.any?
+          flash[:alert] = "Not signed in: #{not_signed_in.map(&:name).join(', ')}"
+        end
+        redirect_to staff_dashboard_index_path
+      end
       format.js
-      format.json { render json: { status: "ok" } }
+      format.json do
+        if not_signed_in.any?
+          render json: { status: "error", not_signed_in: not_signed_in.map(&:username) },
+                 status: :unprocessable_content
+        else
+          render json: { status: "ok" }
+        end
+      end
     end
   end
 
@@ -220,7 +240,7 @@ class StaffDashboardController < StaffAreaController
 
     space.signed_in_users.each do |user|
       # Lab sessions where sign out did not happen yet (greater than time now)
-      LabSession.active_for_user(user).last.sign_out
+      LabSession.active_for_user(user).last&.sign_out
     end
     respond_to do |format|
       format.html do
@@ -259,23 +279,24 @@ class StaffDashboardController < StaffAreaController
 
   def change_space
     new_space = Space.find_by(id: params[:space_id])
-    current_user.update(space_id: new_space.id)
-    status = true
-    if new_space.present? && (current_user.space_id = params[:space_id])
+    if new_space
+      current_user.update(space_id: new_space.id)
       @space = new_space
+      flash[:notice] = "Space changed successfully"
     else
-      status = false
+      flash[:alert] = "Space not found"
     end
-    if status
-  flash[:notice] = "Space changed successfully"
-else
-  flash[:alert] = "Something went wrong"
-end
     respond_to do |format|
       format.html do
         redirect_back(fallback_location: staff_dashboard_index_path)
       end
-      format.json { render json: { status: status ? "ok" : "error" } }
+      format.json do
+        if new_space
+          render json: { status: "ok" }
+        else
+          render json: { status: "error" }, status: :not_found
+        end
+      end
     end
   end
 
