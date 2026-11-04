@@ -76,11 +76,14 @@ class SubSpaceBookingController < SessionsController
     when "JMTS"
       jmts = Space.find_by(name: "JMTS")
       if jmts.nil?
-        flash[:alert] = "JMTS access requests are not available right now. Please choose another option."
-        redirect_to root_path
-        return
+        Rails.error.report(
+          RuntimeError.new('Booking access request for JMTS, but no space named "JMTS" exists; using the default recipients'),
+          handled: true,
+          severity: :warning
+        )
       end
-      emails = jmts.space_managers.map(&:email)
+      emails = jmts ? jmts.space_managers.map(&:email) : []
+      emails = ["mtc@uottawa.ca"] if emails.empty?
     when "Staff"
       supervisor = User.find_by(id: params[:supervisor]) if params[:supervisor].present?
       if supervisor.nil? || !supervisor.staff?

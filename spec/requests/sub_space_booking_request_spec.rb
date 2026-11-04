@@ -1090,20 +1090,27 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(UserBookingApproval.where(user: user).count).to eq(1)
     end
 
-    it "request_access identity 'JMTS' without a JMTS Space saves nothing and lets the user retry" do
+    it "request_access identity 'JMTS' without a JMTS Space is saved, mailed to the default address and reported" do
+      user = create(:user, :regular_user, booking_approval: false)
+      log_in!(user)
+      expect(Rails.error).to receive(:report).with(
+        having_attributes(message: a_string_including('no space named "JMTS"')), anything
+      )
+      put request_access_sub_space_booking_index_path,
+          params: { comments: "j", identity: "JMTS" }
+      expect(flash[:notice]).to eq("Access request submitted successfully.")
+      expect(UserBookingApproval.find_by(user: user).identity).to eq("JMTS")
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq(["mtc@uottawa.ca"])
+    end
+
+    it "request_access identity 'JMTS' with a JMTS Space that has no managers is mailed to the default address" do
+      create(:space, name: "JMTS")
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
       put request_access_sub_space_booking_index_path,
           params: { comments: "j", identity: "JMTS" }
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to eq("JMTS access requests are not available right now. Please choose another option.")
-      expect(UserBookingApproval.find_by(user: user)).to be_nil
-      expect(ActionMailer::Base.deliveries).to be_empty
-
-      put request_access_sub_space_booking_index_path,
-          params: { comments: "j", identity: "GNG" }
       expect(flash[:notice]).to eq("Access request submitted successfully.")
-      expect(UserBookingApproval.find_by(user: user).identity).to eq("GNG")
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq(["mtc@uottawa.ca"])
     end
 
     it "request_access identity 'JMTS' with a JMTS Space submits fine" do
