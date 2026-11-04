@@ -107,8 +107,7 @@ class User < ApplicationRecord
   has_many :certifications, class_name: 'Certification'
   has_many :demotion_staff,
            class_name: 'Certification',
-           foreign_key: 'demotion_staff_id',
-           dependent: :destroy
+           foreign_key: 'demotion_staff_id'
   has_many :lab_sessions
   has_many :project_proposals
   has_many :project_joins, dependent: :destroy

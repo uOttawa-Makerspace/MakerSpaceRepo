@@ -67,5 +67,12 @@ RSpec.describe "users.deleted" do
       expect { user.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
       expect(Certification.where(user_id: user.id)).to exist
     end
+
+    it "does not destroy the certifications another user's demotion points at" do
+      cert = create(:certification, :basic_training)
+      cert.update_columns(demotion_staff_id: user.id)
+      expect { user.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
+      expect(Certification.where(id: cert.id)).to exist
+    end
   end
 end
