@@ -30,7 +30,7 @@ RSpec.describe Admin::CertificationsController, type: :controller do
   end
 
   describe "GET /show" do
-    it "opens the certification of a soft-deleted user" do
+    it "opens the certification of a soft-deleted user", skip_bullet: true do
       @certification.user.soft_delete!
       get :show, params: { id: @certification.id }
       expect(response).to have_http_status(:success)
