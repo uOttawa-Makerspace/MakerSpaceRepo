@@ -97,7 +97,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
         put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
 
         expect(response).to have_http_status(:ok)
-        expect(json).to eq("status" => "ok")
+        expect(json).to eq("status" => "ok", "signed_out" => [visitor.username], "not_signed_in" => [], "not_found" => [])
         expect(session_row.reload.sign_out_time).to eq(Time.zone.now)
       end
       expect(LabSession.active_for_user(visitor)).to be_empty
@@ -109,37 +109,47 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(response).to redirect_to(staff_dashboard_index_path)
     end
 
-    it "an unknown username is silently ignored: {status: ok}" do
+    it "an unknown username is reported in not_found, not dropped silently" do
       put "/staff_dashboard/remove_users", params: { dropped_users: ["nobody"] }, as: :json
       expect(response).to have_http_status(:ok)
-      expect(json).to eq("status" => "ok")
+      expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [], "not_found" => ["nobody"])
+    end
+
+    it "html: an unknown username flashes an alert" do
+      put "/staff_dashboard/remove_users", params: { dropped_users: ["nobody"] }
+      expect(flash[:alert]).to include("nobody")
     end
 
     it "no dropped_users is a no-op {status: ok}" do
       session_row = sign_in_session(visitor, space)
       put "/staff_dashboard/remove_users", as: :json
-      expect(json).to eq("status" => "ok")
+      expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [], "not_found" => [])
       expect(session_row.reload.sign_out_time).to be > Time.zone.now
     end
 
-    it "a user who is not signed in anywhere is a 422 naming them, and the other usernames are still signed out" do
+    it "a user who is not signed in is a 200 listing them, and the other usernames are still signed out" do
       other = create(:user, :regular_user)
       other_row = sign_in_session(other, space)
       expect do
         put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username, other.username] }, as: :json
       end.not_to change(LabSession, :count)
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(json).to eq("status" => "error", "not_signed_in" => [visitor.username])
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("status" => "ok", "signed_out" => [other.username], "not_signed_in" => [visitor.username], "not_found" => [])
       expect(other_row.reload.sign_out_time).to be <= Time.zone.now
     end
 
-    it "a user whose only session already ended is also a 422, and the ended session is untouched" do
+    it "repeating the sign out of the same user is a 200 with that user in not_signed_in" do
+      sign_in_session(visitor, space)
+      2.times { put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json }
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [visitor.username], "not_found" => [])
+    end
+
+    it "a user whose only session already ended is listed in not_signed_in, and the ended session is untouched" do
       ended = create(:lab_session, user: visitor, space: space, sign_in_time: 3.hours.ago, sign_out_time: 1.hour.ago)
       ended_at = ended.reload.sign_out_time
-      expect do
-        put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
-      end.not_to change(LabSession, :count)
-      expect(response).to have_http_status(:unprocessable_content)
+      put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
+      expect(response).to have_http_status(:ok)
       expect(json["not_signed_in"]).to eq([visitor.username])
       expect(ended.reload.sign_out_time).to eq(ended_at)
     end

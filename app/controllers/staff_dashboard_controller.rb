@@ -168,46 +168,43 @@ class StaffDashboardController < StaffAreaController
     redirect_to staff_dashboard_index_path
   end
 
+  # Signs each listed user out of their latest active session. Users who are not
+  # signed in, and usernames that match no user, change nothing and are reported
+  # back (flash for HTML; JSON lists signed_out, not_signed_in and not_found).
   def sign_out_users
+    usernames = Array(params[:dropped_users]).map(&:to_s)
+    users = User.where(username: usernames).to_a
+    signed_out = []
     not_signed_in = []
-    if params[:dropped_users].present?
-      @users = User.order(id: :desc).limit(10)
-      @certifications_on_space =
-        proc do |user, space_id|
-          user
-            .certifications
-            .joins(:training, training: :spaces)
-            .where(trainings: { spaces: { id: space_id } })
-        end
-      @all_user_certs = proc { |user| user.certifications }
-      # Search user by username
-      User
-        .where(username: params[:dropped_users])
-        .each do |user|
-          # get only the latest session, if they're not signed out yet
-          session = LabSession.active_for_user(user).last
-          if session
-            session.sign_out
-          else
-            not_signed_in << user
-          end
-        end
+
+    users.each do |user|
+      # get only the latest session, if they're not signed out yet
+      session = LabSession.active_for_user(user).last
+      if session
+        session.sign_out
+        signed_out << user
+      else
+        not_signed_in << user
+      end
     end
+    not_found = usernames - users.map(&:username)
+
     respond_to do |format|
       format.html do
-        if not_signed_in.any?
-          flash[:alert] = "Not signed in: #{not_signed_in.map(&:name).join(', ')}"
-        end
+        notes = []
+        notes << "Not signed in: #{not_signed_in.map(&:name).join(', ')}" if not_signed_in.any?
+        notes << "Unknown username: #{not_found.join(', ')}" if not_found.any?
+        flash[:alert] = notes.join(". ") if notes.any?
         redirect_to staff_dashboard_index_path
       end
       format.js
       format.json do
-        if not_signed_in.any?
-          render json: { status: "error", not_signed_in: not_signed_in.map(&:username) },
-                 status: :unprocessable_content
-        else
-          render json: { status: "ok" }
-        end
+        render json: {
+          status: "ok",
+          signed_out: signed_out.map(&:username),
+          not_signed_in: not_signed_in.map(&:username),
+          not_found: not_found
+        }
       end
     end
   end
