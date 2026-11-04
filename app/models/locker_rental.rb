@@ -53,7 +53,7 @@ class LockerRental < ApplicationRecord
        prefix: true
 
   # specifier is a string, call #squish on it
-  normalizes :specifier, with: :squish
+  normalizes :specifier, with: ->(specifier) { specifier.squish }
 
   # When submitting a request, ensure only one is present
   validate :only_one_request_per_user, on: :create
@@ -462,14 +462,6 @@ class LockerRental < ApplicationRecord
     else
       ''
     end
-  end
-
-  def self.get_assigned_lockers
-    LockerRental
-      .where(state: :active)
-      .pluck(:locker_type_id, :locker_specifier)
-      .group_by(&:shift)
-      .transform_values(&:flatten)
   end
 
   # Display-only "latest applied payment" (GREATEST), written only when a payment becomes applied.
