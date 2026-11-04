@@ -184,4 +184,52 @@ RSpec.describe Rfid, ".link_to_user! under concurrency", type: :model do
       expect(rows.first.mac_address).to eq(reader_mac)
     end
   end
+
+  # An admin assigning a card (the user's current card is unlinked, then the new one linked, in one
+  # transaction) races a staff link of the same card to someone else. Both go through
+  # link_to_user!, so one wins and the other is refused with the reason, and the loser's
+  # transaction can be rolled back whole.
+  it "an admin assign and a staff link of one card: exactly one wins, the other is refused" do
+    actor = create(:user, :staff)
+    Rfid.create!(card_number: card_number)
+    old_card = Rfid.create!(card_number: "#{card_number}-OLD", user_id: second_user.id)
+    first = nil
+    paused = Queue.new
+    resume = Queue.new
+    allow(Rfid).to receive(:find_or_create_card).and_wrap_original do |original, *args, **kwargs|
+      if Thread.current == first
+        first = nil
+        paused << true
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
+      end
+      original.call(*args, **kwargs)
+    end
+
+    staff_link = in_thread do
+      first = Thread.current
+      Rfid.link_to_user!(card_number, first_user)
+    end
+    ThreadPause.await(paused)
+    refusal = nil
+    admin_assign = in_thread do
+      Rfid.transaction do
+        Rfid.unlink_from_user!(second_user, actor: actor)
+        refusal = Rfid.link_to_user!(card_number, second_user)
+        raise ActiveRecord::Rollback if refusal
+      end
+    end
+    deadline = Time.current + 5
+    Thread.pass until blocked_backends.positive? || !admin_assign.alive? || Time.current > deadline
+    expect(blocked_backends).to be_positive
+    resume << true
+
+    expect(staff_link.value).to be_nil
+    expect(admin_assign.value).not_to be_a(StandardError)
+    expect(refusal).to eq("is already linked to another user")
+    expect(Rfid.where(card_number: card_number).pluck(:user_id)).to eq([first_user.id])
+    expect(old_card.reload.user_id).to eq(second_user.id)
+  ensure
+    Rfid.where(card_number: ["#{card_number}-OLD"]).delete_all
+    User.unscoped.where(id: actor&.id).delete_all
+  end
 end

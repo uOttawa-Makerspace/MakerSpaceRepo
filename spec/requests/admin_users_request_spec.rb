@@ -245,6 +245,28 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       patch admin_user_path(target), params: { user: { gender: "Male", rfid: rfid.id } }
       expect(rfid.reload.user_id).to eq(target.id)
     end
+
+    it "replaces the user's card by unlinking the old one, which stays as an unlinked row" do
+      old = Rfid.create!(card_number: "old#{SecureRandom.hex(3)}", user: target)
+      fresh = Rfid.create!(card_number: "new#{SecureRandom.hex(3)}")
+      expect do
+        patch admin_user_path(target), params: { user: { gender: "Male", rfid: fresh.id } }
+      end.not_to change(Rfid, :count)
+      expect(fresh.reload.user_id).to eq(target.id)
+      expect(Rfid.find(old.id).user_id).to be_nil
+    end
+
+    it "refuses a card another user holds, keeps the old card and re-renders with the reason" do
+      old = Rfid.create!(card_number: "old#{SecureRandom.hex(3)}", user: target)
+      holder = create(:user, :regular_user)
+      taken = Rfid.create!(card_number: "taken#{SecureRandom.hex(3)}", user: holder)
+      patch admin_user_path(target), params: { user: { gender: "Female", rfid: taken.id } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash.now[:alert]).to eq("RFID card is already linked to another user")
+      expect(target.reload.gender).to eq("Male")
+      expect(old.reload.user_id).to eq(target.id)
+      expect(taken.reload.user_id).to eq(holder.id)
+    end
   end
 
   describe "PATCH /admin/users/:id/change_email" do

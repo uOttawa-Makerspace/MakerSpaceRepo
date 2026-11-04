@@ -94,8 +94,7 @@
                                 </button>
                             <% end %>
 
-                            <%# a card row without a number counts as no card %>
-                            <% if @repo_user.rfid&.card_number.present? %>
+                            <% if @repo_user.rfid.present? %>
                                 <div class="dropdown btn-group">
                                     <button class="btn btn-success dropdown-toggle" type="button"
                                             id="rfidUnregisterMenu" data-bs-toggle="dropdown" aria-haspopup="true"

@@ -9,6 +9,8 @@ RSpec.describe Rfid, type: :model do
 
   describe "Validations" do
     context "card_number" do
+      subject { create(:rfid) }
+
       it do
         should validate_presence_of(:card_number).with_message(
                  "Card number is required."
@@ -19,6 +21,51 @@ RSpec.describe Rfid, type: :model do
                  "Card number is already in use."
                )
       end
+    end
+  end
+
+  describe "a card row always has a number" do
+    it "is invalid without a usable number" do
+      [nil, "", "   "].each { |blank| expect(build(:rfid, card_number: blank)).not_to be_valid }
+    end
+
+    it "makes the database refuse a NULL or blank number past the validation" do
+      expect { build(:rfid, card_number: nil).save!(validate: false) }.to raise_error(ActiveRecord::NotNullViolation)
+      expect { build(:rfid, card_number: "  ").save!(validate: false) }.to raise_error(ActiveRecord::CheckViolation)
+    end
+  end
+
+  describe ".find_or_create_card" do
+    def queries
+      count = 0
+      counter = ->(*, payload) { count += 1 unless %w[SCHEMA TRANSACTION].include?(payload[:name]) || payload[:cached] }
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { yield }
+      count
+    end
+
+    it "refuses a blank or nil number without any query" do
+      [nil, "", "  "].each do |blank|
+        result = nil
+        expect(queries { result = Rfid.find_or_create_card(blank, mac_address: "m") }).to eq(0)
+        rfid, created = result
+        expect(created).to be(false)
+        expect(rfid).not_to be_persisted
+        expect(rfid.errors[:card_number]).to eq(["Card number is required."])
+      end
+    end
+
+    it "creates a card with the reader's mac_address and reports it as created" do
+      rfid, created = Rfid.find_or_create_card("new-card", mac_address: "aa:aa:aa:aa:aa:aa")
+      expect(created).to be(true)
+      expect(rfid).to be_persisted
+      expect(rfid.attributes.values_at("card_number", "mac_address", "user_id")).to eq(["new-card", "aa:aa:aa:aa:aa:aa", nil])
+      expect(rfid.created_at).to be_present
+    end
+
+    it "returns the existing row unchanged and not created" do
+      existing = create(:rfid, user: nil, mac_address: "bb:bb:bb:bb:bb:bb")
+      rfid, created = Rfid.find_or_create_card(existing.card_number, mac_address: "other")
+      expect([rfid.id, created, rfid.mac_address]).to eq([existing.id, false, "bb:bb:bb:bb:bb:bb"])
     end
   end
 
@@ -33,10 +80,6 @@ RSpec.describe Rfid, type: :model do
       create(:rfid, card_number: "case-card")
       expect(build(:rfid, card_number: "CASE-CARD")).to be_valid
       expect { create(:rfid, card_number: "CASE-CARD") }.not_to raise_error
-    end
-
-    it "allows any number of rows without a card number" do
-      expect { 2.times { build(:rfid, card_number: nil).save!(validate: false) } }.not_to raise_error
     end
   end
 

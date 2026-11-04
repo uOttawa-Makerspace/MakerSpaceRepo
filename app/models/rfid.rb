@@ -25,31 +25,36 @@ class Rfid < ApplicationRecord
   # Links the card to the user, creating the card when no reader ever saw it
   # (phone-scanned: mac_address nil, which a reader tap would also leave for a
   # phone). Returns nil on success (also when already linked to this user) or the
-  # refusal message, changing nothing. Lock order: user, then the card number,
-  # then the card. The advisory lock on the card number serialises changes of a
-  # card's owner (link and unlink); it does not serialise creating the row, which
-  # find_or_create_card does safely on its own, so a tap that creates the same
-  # card meanwhile is picked up and linked.
+  # refusal message, changing nothing. Every change of a card's owner goes through
+  # this or the unlink methods below. Lock order: user, then the card number, then
+  # the card. The advisory lock on the card number serialises owner changes; it
+  # does not serialise creating the row, which find_or_create_card does safely on
+  # its own (a tap may create the same card meanwhile). The row, created or found,
+  # is then locked and checked the same way. A refusal rolls back to a savepoint,
+  # so even a card row created by this call does not outlive it.
   def self.link_to_user!(card_number, user)
-    transaction do
+    refusal = nil
+    transaction(requires_new: true) do
       User.where(id: user.id).lock("FOR NO KEY UPDATE").take
       lock_card_number(card_number)
-      rfid = lock("FOR NO KEY UPDATE").find_by(card_number: card_number)
-      if rfid&.user_id == user.id
-        nil
-      elsif rfid&.user_id.present?
-        "is already linked to another user"
-      elsif where(user_id: user.id).exists?
-        "user already has a card; unlink it first"
-      elsif rfid
-        rfid.update!(user_id: user.id)
-        nil
+      rfid, _created = find_or_create_card(card_number)
+      if rfid.persisted?
+        rfid.lock!("FOR NO KEY UPDATE")
+        if rfid.user_id == user.id
+          # already linked to this user
+        elsif rfid.user_id.present?
+          refusal = "is already linked to another user"
+        elsif where(user_id: user.id).exists?
+          refusal = "user already has a card; unlink it first"
+        else
+          rfid.update!(user_id: user.id)
+        end
       else
-        rfid, created = find_or_create_card(card_number, user_id: user.id)
-        rfid.update!(user_id: user.id) unless created
-        nil
+        refusal = "is invalid"
       end
+      raise ActiveRecord::Rollback if refusal
     end
+    refusal
   end
 
   # Unlinks every card the user holds (normally one) and re-homes it: its
@@ -118,25 +123,26 @@ class Rfid < ApplicationRecord
   private_class_method :lock_card_number
 
   # The one way a card row is created (a tap of an unknown card, a staff link of
-  # a card no reader saw). Safe when two requests create the same number at once:
-  # the insert is INSERT ... ON CONFLICT (card_number) DO NOTHING against the unique
-  # index, and whoever loses reads the winner's row. Returns [rfid, created]:
-  # created is true only for the caller whose insert made the row. An invalid card
-  # (a blank number) is returned unsaved with its errors and created false.
-  def self.find_or_create_card(card_number, mac_address: nil, user_id: nil)
+  # a card no reader saw). Returns [rfid, created]; created is true only for the
+  # caller whose insert made the row. A blank or nil number is refused before any
+  # query: the card comes back unsaved with its error. Safe when two requests
+  # create the same number at once: the insert is INSERT ... ON CONFLICT
+  # (card_number) DO NOTHING against the unique index, and whoever loses reads the
+  # winner's row.
+  def self.find_or_create_card(card_number, mac_address: nil)
+    if card_number.blank?
+      card = new(card_number: card_number, mac_address: mac_address)
+      card.errors.add(:card_number, "Card number is required.")
+      return [card, false]
+    end
+
     existing = find_by(card_number: card_number)
     return [existing, false] if existing
 
-    card = new(card_number: card_number, mac_address: mac_address, user_id: user_id)
-    unless card.valid?
-      winner = find_by(card_number: card_number) if card.errors.of_kind?(:card_number, :taken)
-      return [winner || card, false]
-    end
-
-    inserted = insert({ card_number: card_number, mac_address: mac_address, user_id: user_id },
-                      unique_by: :card_number, returning: :id)
+    inserted = insert({ card_number: card_number, mac_address: mac_address },
+                      unique_by: :card_number, returning: column_names)
     return [find_by!(card_number: card_number), false] if inserted.rows.empty?
 
-    [find(inserted.rows.first.first), true]
+    [instantiate(inserted.to_a.first), true]
   end
 end
