@@ -243,7 +243,12 @@ class Admin::SpacesController < AdminAreaController
   def destroy
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
-      if space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
+      refusals = space.deletion_refusals
+      if refusals.any?
+        # Said at the first request, so nobody waits for a second admin to be told. A pending request is cleared.
+        space.update_columns(destroy_admin_id: nil) if space.destroy_admin_id.present?
+        flash[:alert] = refusals.to_sentence
+      elsif space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
         # The pi readers are detached only if the space is really deleted. A refusal (the
         # space still has dependants it must not lose) clears the pending request and says why.
         deleted = Space.transaction do

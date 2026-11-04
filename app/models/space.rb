@@ -6,16 +6,13 @@ class Space < ApplicationRecord
   has_many :pi_readers
   has_many :keys, dependent: :nullify
   has_many :key_requests, dependent: :nullify
-  has_many :walk_in_safety_sheets, dependent: :restrict_with_error
-  # A space with user history cannot be deleted: lab sessions, training sessions (with their
-  # certifications and exams), volunteer tasks (with their hours) and sub space bookings
-  # feed reports and course records. The delete is refused with an explanation instead.
-  has_many :lab_sessions, dependent: :restrict_with_error
+  has_many :walk_in_safety_sheets
+  has_many :lab_sessions
   has_many :users, through: :lab_sessions
   has_and_belongs_to_many :trainings
-  has_many :training_sessions, dependent: :restrict_with_error
+  has_many :training_sessions
   has_many :certifications, through: :training_sessions
-  has_many :volunteer_tasks, dependent: :restrict_with_error
+  has_many :volunteer_tasks
   has_many :popular_hours, dependent: :destroy
   has_many :shadowing_hours
   has_many :users, dependent: :nullify
@@ -24,12 +21,23 @@ class Space < ApplicationRecord
   has_many :shifts, dependent: :destroy
   has_many :sub_spaces, dependent: :destroy
   has_many :sub_space_bookings, through: :sub_spaces
-  # runs before the sub spaces are destroyed, which would otherwise take their bookings along
-  before_destroy :refuse_while_sub_space_bookings_exist, prepend: true
   has_many :staff_needed_calendars, dependent: :destroy
   has_many :space_manager_joins, dependent: :destroy
   has_many :space_managers, through: :space_manager_joins, source: :user
   has_many :users, through: :staff_spaces
+
+  # A space with user history cannot be deleted: walk-in safety sheets, lab sessions, training sessions (with
+  # their certifications and exams), volunteer tasks (with their hours) and sub space bookings feed reports and
+  # course records. The delete is refused with an explanation instead. The check runs before anything is
+  # destroyed (prepend), so the sub spaces are not taken along with their bookings.
+  HISTORY_ASSOCIATIONS = {
+    walk_in_safety_sheets: "walk in safety sheets",
+    lab_sessions: "lab sessions",
+    training_sessions: "training sessions",
+    volunteer_tasks: "volunteer tasks",
+    sub_space_bookings: "sub space bookings"
+  }.freeze
+  before_destroy :refuse_deletion_while_history_exists, prepend: true
 
   after_create :create_popular_hours, unless: -> { Rails.env.test? }
 
@@ -40,6 +48,14 @@ class Space < ApplicationRecord
             uniqueness: {
               message: "Space already exists"
             }
+
+  # Why this space cannot be deleted, one message per kind of history it still has, in the wording Rails uses
+  # for a refused dependent delete. Empty when it can be deleted.
+  def deletion_refusals
+    HISTORY_ASSOCIATIONS.filter_map do |association, label|
+      I18n.t("activerecord.errors.messages.restrict_dependent_destroy.has_many", record: label) if public_send(association).exists?
+    end
+  end
 
   def signed_in_users
     lab_sessions
@@ -218,10 +234,11 @@ class Space < ApplicationRecord
 
   private
 
-  def refuse_while_sub_space_bookings_exist
-    return unless sub_space_bookings.exists?
+  def refuse_deletion_while_history_exists
+    messages = deletion_refusals
+    return if messages.empty?
 
-    errors.add(:base, "Cannot delete record because dependent sub space bookings exist")
+    messages.each { |message| errors.add(:base, message) }
     throw :abort
   end
 end

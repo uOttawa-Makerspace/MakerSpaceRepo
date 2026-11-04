@@ -151,6 +151,32 @@ RSpec.describe Admin::SpacesController, type: :controller do
           expect(response).to redirect_to admin_spaces_path
         end
 
+        it "says so at the first admin's request and records no pending request" do
+          target = create(:space)
+          create(:training_session, space: target)
+          create(:lab_session, space: target)
+
+          delete :destroy, params: { id: target.id, space_id: target.id, admin_input: target.name.upcase }
+
+          expect(flash[:alert]).to eq(
+            "Cannot delete record because dependent lab sessions exist and " \
+            "Cannot delete record because dependent training sessions exist"
+          )
+          expect(target.reload.destroy_admin_id).to be_nil
+          expect(Space.exists?(target.id)).to be(true)
+        end
+
+        it "clears a pending request when history has appeared since it was made" do
+          target = create(:space)
+          target.update_columns(destroy_admin_id: admin.id)
+          create(:lab_session, space: target)
+
+          delete :destroy, params: { id: target.id, space_id: target.id, admin_input: target.name.upcase }
+
+          expect(flash[:alert]).to match(/lab sessions/)
+          expect(target.reload.destroy_admin_id).to be_nil
+        end
+
         it "refuses a space with lab sessions" do
           target = create(:space)
           lab_session = create(:lab_session, space: target)
