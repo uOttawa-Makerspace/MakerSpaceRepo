@@ -166,6 +166,19 @@ RSpec.describe Admin::SpacesController, type: :controller do
           expect(Space.exists?(target.id)).to be(true)
         end
 
+        it "refuses at the second admin's confirmation through the model's errors and clears the request" do
+          target = create(:space)
+          target.update_columns(destroy_admin_id: second_admin.id)
+          create(:lab_session, space: target)
+
+          expect do
+            delete :destroy, params: { id: target.id, space_id: target.id, admin_input: target.name.upcase }
+          end.not_to change(Space, :count)
+
+          expect(flash[:alert]).to eq("Cannot delete record because dependent lab sessions exist")
+          expect(target.reload.destroy_admin_id).to be_nil
+        end
+
         it "clears a pending request when history has appeared since it was made" do
           target = create(:space)
           target.update_columns(destroy_admin_id: admin.id)
