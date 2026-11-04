@@ -212,6 +212,9 @@ class User < ApplicationRecord
   validates :password,
             password: PASSWORD_STRENGTH_OPTIONS,
             if: :plaintext_password_changing?
+  # A password set through pword= is stored as its hash, so the rules above skip it: they run on the plaintext
+  # pword= was given instead.
+  validate :pword_plaintext_strength, if: :own_password_hash_changing?
 
   validates :gender,
             presence: true,
@@ -551,6 +554,7 @@ class User < ApplicationRecord
   def reload(*)
     @pword = nil
     @own_password_hash = nil
+    @pword_plaintext = nil
     super
   end
 
@@ -558,6 +562,24 @@ class User < ApplicationRecord
   # bcrypt-SHAPED string typed by a user is still a plaintext password.
   def plaintext_password_changing?
     password_changed? && password.present? && password != @own_password_hash
+  end
+
+  def own_password_hash_changing?
+    @pword_plaintext.present? && password_changed? && password == @own_password_hash
+  end
+
+  # The password validator reads the attribute from the record it is given, so it is run on a stand-in that holds
+  # the plaintext and this user's name, username and email.
+  PasswordCandidate = Struct.new(:password, :name, :username, :email) do
+    def errors = @errors ||= ActiveModel::Errors.new(self)
+  end
+
+  def pword_plaintext_strength
+    candidate = PasswordCandidate.new(@pword_plaintext, name, username, email)
+    ActiveModel::Validations::PasswordValidator
+      .new(attributes: [:password], **PASSWORD_STRENGTH_OPTIONS)
+      .validate_each(candidate, :password, @pword_plaintext)
+    candidate.errors[:password].each { |message| errors.add(:password, message) }
   end
 
   # Problems with a candidate plaintext password (strength rules only; no other
@@ -674,6 +696,7 @@ class User < ApplicationRecord
   end
 
   def pword=(new_password)
+    @pword_plaintext = new_password.to_s
     @pword = Password.create(new_password)
     @own_password_hash = @pword.to_s
     self.token_version += 1 if persisted?

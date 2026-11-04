@@ -748,10 +748,13 @@ RSpec.describe User, type: :model do
       expect(build(:user, :regular_user_with_broken_avatar)).not_to be_valid
     end
 
-    it "the password strength validator inspects the stored value, so any plaintext passes when set via the column" do
+    it "the password strength rules apply to the plaintext given to pword= as well as to the column" do
       expect(build(:user, password: "abc")).not_to be_valid
       u = create(:user)
       u.pword = "abc"
+      expect(u).not_to be_valid
+      expect(u.errors[:password]).to be_present
+      u.pword = "Xk3#vbN9!qLw"
       expect(u).to be_valid
     end
   end
