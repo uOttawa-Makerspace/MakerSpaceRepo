@@ -36,11 +36,10 @@ class Space < ApplicationRecord
             }
 
   # Visits keep their user after the account is soft-deleted, so the rosters below leave deleted
-  # users out explicitly: they are not listed as in, or recently in, a space.
+  # users out explicitly: they are not listed as in, or recently in, a space. The join reads the
+  # user's deleted flag in the same query (the association itself reaches deleted users).
   def signed_in_users
-    lab_sessions
-      .includes(:user)
-      .where(user_id: User.select(:id))
+    visible_lab_sessions
       .where("sign_out_time > ?", Time.zone.now)
       .order(sign_out_time: :desc)
       .map(&:user)
@@ -49,11 +48,9 @@ class Space < ApplicationRecord
 
   def recently_signed_out_users
     users =
-      lab_sessions
+      visible_lab_sessions
         .where("sign_out_time < ?", Time.zone.now)
         .where.not(user: signed_in_users)
-        .where(user_id: User.select(:id))
-        .includes(:user)
         .order(sign_out_time: :asc)
         .last(20)
         .map(&:user)
@@ -66,6 +63,11 @@ class Space < ApplicationRecord
         .reverse
     
   end
+
+  def visible_lab_sessions
+    lab_sessions.includes(:user).where(users: { deleted: false })
+  end
+  private :visible_lab_sessions
 
     def create_popular_hours
       # Optimization: Prepare data in memory
