@@ -691,6 +691,30 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
+  describe "the other pages under a deleted user's path" do
+    let!(:gone) { create(:user, :regular_user, deleted: true) }
+
+    it "likes lists the signed-in user's own likes, never the deleted user's, for staff and admin too" do
+      theirs = create(:repository, user_id: other.id, title: "Deleted Fan Pick", share_type: "public")
+      Like.create!(user_id: gone.id, repository_id: theirs.id)
+      mine = create(:repository, user_id: other.id, title: "Staff Pick", share_type: "public")
+      [staff, admin].each do |viewer|
+        Like.create!(user_id: viewer.id, repository_id: mine.id)
+        login!(viewer)
+        get likes_user_path(gone.username)
+        expect(response.body).to include("Staff Pick")
+        expect(response.body).not_to include("Deleted Fan Pick")
+      end
+    end
+
+    it "the profile update and password change under that path act on the signed-in user" do
+      login!(staff)
+      patch user_path(gone.username), params: { user: { name: "Not Gone" } }
+      expect(staff.reload.name).to eq("Not Gone")
+      expect(User.unscoped.find(gone.id).name).not_to eq("Not Gone")
+    end
+  end
+
   describe "DELETE /:username (destroy)" do
     it "has no route and no action: an account is never hard-deleted from the profile" do
       expect(UsersController.action_methods).not_to include("destroy")
