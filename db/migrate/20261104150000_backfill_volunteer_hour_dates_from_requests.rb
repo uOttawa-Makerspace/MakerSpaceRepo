@@ -48,6 +48,8 @@ class BackfillVolunteerHourDatesFromRequests < ActiveRecord::Migration[8.1]
     say "volunteer_hours: #{filled.size} dates filled from completion requests, #{left_blank} still blank"
   end
 
+  # Roll back 20261104150100 (the date_of_task check) first: this down sets the filled dates back to
+  # NULL, which that check rejects even while NOT VALID. A normal rollback runs them in that order.
   def down
     execute <<~SQL.squish
       UPDATE volunteer_hours SET date_of_task = NULL
