@@ -30,9 +30,9 @@ class LabSession < ApplicationRecord
     end
   end
 
-  # Create a session for a user in a space.
+  # Create a session for a user in a space; raises when it cannot be saved.
   def self.create_session(user:, mac_address:, space_id:)
-    LabSession.create(
+    LabSession.create!(
       user: user,
       sign_in_time: Time.zone.now,
       sign_out_time: Time.zone.now + 6.hours,

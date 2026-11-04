@@ -282,6 +282,20 @@ RSpec.describe "RFID endpoints", type: :request do
       ).and have_broadcasted_to("signed_in_table_space_#{other_space.id}").from_channel(Turbo::StreamsChannel)
     end
 
+    it "leaves the user signed in where they were when the switch cannot create the new session" do
+      other_space = create(:space)
+      tap_card
+      allow(LabSession).to receive(:create_session).and_raise(ActiveRecord::RecordInvalid)
+      expect {
+        RfidTap.call(card: rfid.card_number, space: other_space, mac_address: nil)
+      }.to raise_error(ActiveRecord::RecordInvalid)
+      expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
+    end
+
+    it "skips the table update for a space that no longer exists" do
+      expect { StaffDashboardChannel.send_tap_out(owner, 0) }.not_to raise_error
+    end
+
     it "enqueues CardTapJob with the rfid and space on sign in only" do
       expect { tap_card }.to have_enqueued_job(CardTapJob).with(rfid, space.id)
       expect { tap_card }.not_to have_enqueued_job(CardTapJob)
