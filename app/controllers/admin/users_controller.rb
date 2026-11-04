@@ -85,7 +85,11 @@ class Admin::UsersController < AdminAreaController
       # the rollback restored the card rows, not the loaded association
       @edit_admin_user.association(:rfid).reset
       @rfids = Rfid.recent_unset
-      flash.now[:alert] = rfid_error if rfid_error
+      if rfid_error
+        # keep the admin's other edits in the form next to the refusal
+        @edit_admin_user.assign_attributes(user_params)
+        flash.now[:alert] = rfid_error
+      end
       render :edit, status: :unprocessable_entity
     end
   end

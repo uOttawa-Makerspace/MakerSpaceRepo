@@ -29,12 +29,13 @@ RSpec.describe RequireCardNumberOnRfids do
   it "refuses while rows have a NULL or blank number, naming the count, and changes nothing" do
     insert_card(nil)
     insert_card("   ")
+    insert_card("\t\n")
     insert_card("OK-1")
 
-    expect { migrate }.to raise_error(RuntimeError, /2 rfids rows have no usable card_number/)
+    expect { migrate }.to raise_error(RuntimeError, /3 rfids rows have no usable card_number/)
     expect(not_null?).to be(false)
     expect(connection.check_constraint_exists?(:rfids, name: described_class::CHECK_NAME)).to be(false)
-    expect(Rfid.count).to eq(3)
+    expect(Rfid.count).to eq(4)
   end
 
   it "makes the database refuse a NULL or blank number afterwards" do
@@ -45,6 +46,7 @@ RSpec.describe RequireCardNumberOnRfids do
     expect(connection.check_constraint_exists?(:rfids, name: described_class::CHECK_NAME)).to be(true)
     expect { connection.transaction(requires_new: true) { insert_card(nil) } }.to raise_error(ActiveRecord::NotNullViolation)
     expect { connection.transaction(requires_new: true) { insert_card("  ") } }.to raise_error(ActiveRecord::CheckViolation)
+    expect { connection.transaction(requires_new: true) { insert_card("\t") } }.to raise_error(ActiveRecord::CheckViolation)
   end
 
   it "rolls back to a nullable column without the check, and runs again" do

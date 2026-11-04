@@ -1253,7 +1253,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_140000) do
     t.integer "user_id"
     t.index ["card_number"], name: "index_rfids_on_card_number", unique: true
     t.index ["user_id"], name: "index_rfids_on_user_id"
-    t.check_constraint "card_number IS NOT NULL AND btrim(card_number::text) <> ''::text", name: "rfids_card_number_present_check"
+    t.check_constraint "card_number IS NOT NULL AND card_number::text ~ '\\S'::text", name: "rfids_card_number_present_check"
   end
 
   create_table "settings", force: :cascade do |t|

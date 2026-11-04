@@ -93,7 +93,7 @@ class User < ApplicationRecord
   
   belongs_to :space, optional: true
   
-  has_one :rfid, dependent: :nullify
+  has_one :rfid, dependent: :restrict_with_error
   has_one :key_request, class_name: 'KeyRequest', dependent: :destroy
   has_one :key_certification, dependent: :destroy
   has_one_attached :avatar

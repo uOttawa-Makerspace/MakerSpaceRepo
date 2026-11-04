@@ -191,7 +191,6 @@ RSpec.describe Rfid, ".link_to_user! under concurrency", type: :model do
   # transaction can be rolled back whole.
   it "an admin assign and a staff link of one card: exactly one wins, the other is refused" do
     actor = create(:user, :staff)
-    Rfid.create!(card_number: card_number)
     old_card = Rfid.create!(card_number: "#{card_number}-OLD", user_id: second_user.id)
     first = nil
     paused = Queue.new

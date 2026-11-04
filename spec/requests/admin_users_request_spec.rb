@@ -256,6 +256,24 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(Rfid.find(old.id).user_id).to be_nil
     end
 
+    it "keeps the old card's mac_address when the acting admin has no assigned space" do
+      admin.update_columns(space_id: nil)
+      old = Rfid.create!(card_number: "old#{SecureRandom.hex(3)}", user: target, mac_address: "aa:aa:aa:aa:aa:aa")
+      fresh = Rfid.create!(card_number: "new#{SecureRandom.hex(3)}")
+      patch admin_user_path(target), params: { user: { gender: "Male", rfid: fresh.id } }
+      expect(old.reload.user_id).to be_nil
+      expect(old.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "re-renders a refused assign with the submitted edits, unsaved, next to the reason" do
+      holder = create(:user, :regular_user)
+      taken = Rfid.create!(card_number: "taken#{SecureRandom.hex(3)}", user: holder)
+      patch admin_user_path(target), params: { user: { name: "Edited Name", rfid: taken.id } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Edited Name")
+      expect(target.reload.name).not_to eq("Edited Name")
+    end
+
     it "refuses a card another user holds, keeps the old card and re-renders with the reason" do
       old = Rfid.create!(card_number: "old#{SecureRandom.hex(3)}", user: target)
       holder = create(:user, :regular_user)

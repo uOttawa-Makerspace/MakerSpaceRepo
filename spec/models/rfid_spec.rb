@@ -9,16 +9,10 @@ RSpec.describe Rfid, type: :model do
 
   describe "Validations" do
     context "card_number" do
-      subject { create(:rfid) }
 
       it do
         should validate_presence_of(:card_number).with_message(
                  "Card number is required."
-               )
-      end
-      it do
-        should validate_uniqueness_of(:card_number).with_message(
-                 "Card number is already in use."
                )
       end
     end
@@ -26,12 +20,13 @@ RSpec.describe Rfid, type: :model do
 
   describe "a card row always has a number" do
     it "is invalid without a usable number" do
-      [nil, "", "   "].each { |blank| expect(build(:rfid, card_number: blank)).not_to be_valid }
+      [nil, "", "   ", "\t\n"].each { |blank| expect(build(:rfid, card_number: blank)).not_to be_valid }
     end
 
     it "makes the database refuse a NULL or blank number past the validation" do
       expect { build(:rfid, card_number: nil).save!(validate: false) }.to raise_error(ActiveRecord::NotNullViolation)
       expect { build(:rfid, card_number: "  ").save!(validate: false) }.to raise_error(ActiveRecord::CheckViolation)
+      expect { build(:rfid, card_number: "\t\n ").save!(validate: false) }.to raise_error(ActiveRecord::CheckViolation)
     end
   end
 
@@ -70,15 +65,13 @@ RSpec.describe Rfid, type: :model do
   end
 
   describe "unique index on card_number" do
-    it "makes the database refuse a duplicate card number, even past the validation" do
+    it "makes the database refuse a duplicate card number (the index is the authority)" do
       create(:rfid, card_number: "DUPLICATE-1")
-      duplicate = build(:rfid, card_number: "DUPLICATE-1")
-      expect { duplicate.save!(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
+      expect { create(:rfid, card_number: "DUPLICATE-1") }.to raise_error(ActiveRecord::RecordNotUnique)
     end
 
-    it "is case-sensitive, like the validation" do
+    it "is case-sensitive" do
       create(:rfid, card_number: "case-card")
-      expect(build(:rfid, card_number: "CASE-CARD")).to be_valid
       expect { create(:rfid, card_number: "CASE-CARD") }.not_to raise_error
     end
   end

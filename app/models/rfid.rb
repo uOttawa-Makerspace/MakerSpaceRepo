@@ -4,13 +4,8 @@ class Rfid < ApplicationRecord
 
   belongs_to :user, optional: true
   scope :recent_unset, -> { where(user: nil).order("updated_at desc") }
-  validates :card_number,
-            presence: {
-              message: "Card number is required."
-            },
-            uniqueness: {
-              message: "Card number is already in use."
-            }
+  # Uniqueness is the unique index's job (find_or_create_card handles the conflict).
+  validates :card_number, presence: { message: "Card number is required." }
 
   # Nothing defines a card number format (readers store whatever string they
   # send, unnormalised), so this is a sanity bound shared by the phone endpoints:
@@ -29,32 +24,32 @@ class Rfid < ApplicationRecord
   # this or the unlink methods below. Lock order: user, then the card number, then
   # the card. The advisory lock on the card number serialises owner changes; it
   # does not serialise creating the row, which find_or_create_card does safely on
-  # its own (a tap may create the same card meanwhile). The row, created or found,
-  # is then locked and checked the same way. A refusal rolls back to a savepoint,
-  # so even a card row created by this call does not outlive it.
+  # its own (a tap may create the same card meanwhile). The user's own card is
+  # checked first and a row is only created once every refusal has been ruled out,
+  # so a refused link never inserts anything.
   def self.link_to_user!(card_number, user)
-    refusal = nil
-    transaction(requires_new: true) do
+    transaction do
       User.where(id: user.id).lock("FOR NO KEY UPDATE").take
       lock_card_number(card_number)
-      rfid, _created = find_or_create_card(card_number)
-      if rfid.persisted?
-        rfid.lock!("FOR NO KEY UPDATE")
-        if rfid.user_id == user.id
-          # already linked to this user
-        elsif rfid.user_id.present?
-          refusal = "is already linked to another user"
-        elsif where(user_id: user.id).exists?
-          refusal = "user already has a card; unlink it first"
-        else
-          rfid.update!(user_id: user.id)
-        end
+      held = where(user_id: user.id).take
+      next if held&.card_number == card_number
+
+      rfid = lock("FOR NO KEY UPDATE").find_by(card_number: card_number)
+      if rfid&.user_id.present?
+        "is already linked to another user"
+      elsif held
+        "user already has a card; unlink it first"
       else
-        refusal = "is invalid"
+        rfid, _created = find_or_create_card(card_number) unless rfid
+        if rfid.persisted?
+          rfid.lock!("FOR NO KEY UPDATE")
+          rfid.update!(user_id: user.id)
+          nil
+        else
+          "is invalid"
+        end
       end
-      raise ActiveRecord::Rollback if refusal
     end
-    refusal
   end
 
   # Unlinks every card the user holds (normally one) and re-homes it: its
@@ -130,11 +125,8 @@ class Rfid < ApplicationRecord
   # (card_number) DO NOTHING against the unique index, and whoever loses reads the
   # winner's row.
   def self.find_or_create_card(card_number, mac_address: nil)
-    if card_number.blank?
-      card = new(card_number: card_number, mac_address: mac_address)
-      card.errors.add(:card_number, "Card number is required.")
-      return [card, false]
-    end
+    card = new(card_number: card_number, mac_address: mac_address)
+    return [card, false] unless card.valid?
 
     existing = find_by(card_number: card_number)
     return [existing, false] if existing
