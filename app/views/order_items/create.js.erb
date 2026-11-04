@@ -4,5 +4,5 @@
 <% else %>
   document.getElementsByClassName("cart-text")[0].innerHTML = "<%= escape_javascript(render 'layouts/cart_text', order: @order) %>" %>
   // Display a success toast, with a title
-  toastr.success('Item added to Cart. Go to <%= link_to 'Checkout', carts_path %>');
+  toastr.success('Item added to Cart. Go to <%= link_to 'Checkout', carts_path %>', null, { escapeHtml: false });
 <% end %>

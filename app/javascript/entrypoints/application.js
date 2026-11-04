@@ -28,6 +28,11 @@ import { Tooltip, Popover } from "bootstrap";
 import toastr from "toastr/toastr";
 import "@hotwired/turbo-rails";
 
+// Toasts show their message as text unless a call opts out with { escapeHtml: false }.
+// The global is what views rendering JS responses (order_items/create.js.erb) call.
+toastr.options.escapeHtml = true;
+window.toastr = toastr;
+
 document.addEventListener("turbo:before-render", (event) => {
   event.detail.newBody
     .querySelectorAll("#noscript-warning")
@@ -160,8 +165,7 @@ window.setSpace = async function () {
         const data = await response.json();
         if (data.error) message = data.error;
       } catch (_) {}
-      // server messages are shown as text, never parsed as HTML
-      toastr.error(message, null, { escapeHtml: true });
+      toastr.error(message);
     }
   } catch (error) {
     console.error("Failed to update space:", error);
