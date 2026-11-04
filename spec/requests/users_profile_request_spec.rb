@@ -642,10 +642,10 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       create(:user, :regular_user, name: "Zebulon Quasar", username: "zebulonq")
     end
 
-    it "guest gets the literal json string \"redirect\"" do
+    it "guest gets a JSON error with 401" do
       get search_users_path, params: { search: "zebulon" }, as: :json
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to eq("redirect")
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body).to eq("error" => "Please sign in.")
     end
 
     it "regular user gets usernames only" do

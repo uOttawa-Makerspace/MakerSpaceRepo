@@ -428,10 +428,10 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(response).to redirect_to(login_path(back_to: rfid_get_unset_rfids_path))
     end
 
-    it "answers a JSON guest with the raw string redirect (not JSON) and status 200" do
+    it "answers a JSON guest with a JSON error and status 401" do
       get rfid_get_unset_rfids_path(format: :json)
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to eq("redirect")
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body).to eq("error" => "Please sign in.")
     end
 
     %i[regular volunteer].each do |role|

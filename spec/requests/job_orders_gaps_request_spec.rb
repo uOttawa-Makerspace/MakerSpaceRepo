@@ -80,18 +80,18 @@ RSpec.describe "JobOrders gaps", type: :request do
       end
     end
 
-    it "answers format.js with a client-side redirect snippet" do
+    it "answers format.js with a client-side redirect snippet and 401" do
       patch job_order_user_approval_path(order), params: { approved: "true" },
                                                  headers: { "ACCEPT" => "text/javascript" }
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:unauthorized)
       expect(response.body).to eq("window.location.href = '/login'")
     end
 
-    it "answers format.json with the literal string redirect" do
+    it "answers format.json with a JSON error and 401" do
       patch job_order_user_approval_path(order), params: { approved: "true" },
                                                  headers: { "ACCEPT" => "application/json" }
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to eq("redirect") # a bare (non-JSON) string behind a json content type
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body).to eq("error" => "Please sign in.")
     end
   end
 
