@@ -1,3 +1,4 @@
+import { Tooltip } from "bootstrap";
 import TomSelect from "tom-select";
 import DataTable from "datatables.net-bs5";
 import "datatables.net-select-bs5";
@@ -252,10 +253,9 @@ document.addEventListener("turbo:load", function () {
           const tooltipWrapper = this.closest('[data-bs-toggle="tooltip"]');
           if (tooltipWrapper) {
             tooltipWrapper.setAttribute("title", this.value || "No note");
-            const existingTooltip =
-              bootstrap.Tooltip.getInstance(tooltipWrapper);
+            const existingTooltip = Tooltip.getInstance(tooltipWrapper);
             if (existingTooltip) existingTooltip.dispose();
-            new bootstrap.Tooltip(tooltipWrapper);
+            new Tooltip(tooltipWrapper);
           }
 
           setTimeout(() => this.classList.remove("is-valid"), 1500);

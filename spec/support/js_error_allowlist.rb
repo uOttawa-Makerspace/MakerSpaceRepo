@@ -16,11 +16,6 @@ module JsErrorCheck
     # job_orders/new "Start Production" inline onclick is broken
     # HTML; the browser logs a SyntaxError when the page loads.
     { id: "js-error-01", path: %r{/job_orders/new\b}, message: /Uncaught SyntaxError: missing \) after argument list/ },
-    # locker_admin.js calls `bootstrap.Tooltip` but only the
-    # `Tooltip` named import is bundled (no global `bootstrap`), so on any staff
-    # page that has a data-bs-toggle="tooltip" (staff header) the turbo:load
-    # handler throws before the "Indefinite" checkbox wiring runs.
-    { id: "js-error-02", path: %r{/vite-test/assets/locker_admin-}, message: /locker_admin-[\w-]+\.js .*Uncaught ReferenceError: bootstrap is not defined/ },
     # the 500 from GET /locker_rentals for an indefinite active
     # rental is logged by Chrome as a SEVERE resource error.
     { id: "js-error-03", path: %r{/locker_rentals(\z|\s)}, message: /locker_rentals - Failed to load resource: the server responded with a status of 500/ },

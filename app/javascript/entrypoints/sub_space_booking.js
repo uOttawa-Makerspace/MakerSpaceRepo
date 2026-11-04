@@ -438,8 +438,6 @@ document.addEventListener("turbo:load", function () {
     );
   }
 
-  // Uses the imported Toast: the global `bootstrap` the error path below
-  // relies on is not defined on this page.
   function showToast(title, text) {
     const toastEl = document.getElementById("booking_toast");
     if (!toastEl) return;
@@ -486,7 +484,7 @@ document.addEventListener("turbo:load", function () {
                 document.getElementById("toast_text").innerText = message;
                 document.getElementById("toast_title").innerText =
                   "Booking failed";
-                bootstrap.Toast.getOrCreateInstance(toastEl).show();
+                Toast.getOrCreateInstance(toastEl).show();
               }
               closeModal();
               window.scrollTo(0, 0);

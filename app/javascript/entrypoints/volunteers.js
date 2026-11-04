@@ -1,3 +1,4 @@
+import { Tab } from "bootstrap";
 import TomSelect from "tom-select";
 import "flatpickr";
 
@@ -60,7 +61,7 @@ document.addEventListener("turbo:load", function () {
           // Switch to skills tab if not already active
           const skillsTabBtn = document.getElementById("skills-tab");
           if (skillsTabBtn && typeof bootstrap !== "undefined") {
-            bootstrap.Tab.getOrCreateInstance(skillsTabBtn).show();
+            Tab.getOrCreateInstance(skillsTabBtn).show();
           }
 
           // Smooth scroll & temporary highlight
