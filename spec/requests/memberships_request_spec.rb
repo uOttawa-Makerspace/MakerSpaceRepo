@@ -174,9 +174,8 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         create(:membership, user: user, membership_tier: tier, status: "paid", end_date: 3.years.from_now)
         expect { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
           .not_to change(Membership, :count)
-        # the cutoff branch sets flash.now and returns with no render/redirect, so the browser gets an empty 204 and no visible message
-        expect(response).to have_http_status(:no_content)
-        expect(response.body).to be_blank
+        expect(response).to redirect_to(your_memberships_memberships_path)
+        expect(flash[:alert]).to eq(I18n.t("memberships.purchase.purchase.cutoff_tooltip"))
         expect(admin_client.calls).to be_empty
       end
     end

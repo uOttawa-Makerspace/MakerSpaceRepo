@@ -18,7 +18,9 @@ class MembershipsController < SessionsController
   end
   
   def create
-    return flash.now[:alert] = t('memberships.purchase.purchase.cutoff_tooltip') if is_user_cutoff
+    if is_user_cutoff
+      redirect_to your_memberships_memberships_path, alert: t('memberships.purchase.purchase.cutoff_tooltip') and return
+    end
 
     tier = MembershipTier.find_by(id: membership_params[:membership_tier_id])
     if tier && tier.hidden?
