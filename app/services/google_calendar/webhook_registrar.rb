@@ -47,10 +47,12 @@ module GoogleCalendar
 
     # Step A.
     def self.create_channel(service)
+      id = SecureRandom.uuid
       channel = Google::Apis::CalendarV3::Channel.new(
-        id: SecureRandom.uuid,
+        id: id,
         type: "web_hook",
-        address: webhook_url
+        address: webhook_url,
+        token: GoogleCalendarChannel.token_for(id)
       )
 
       response = service.watch_event("primary", channel)
