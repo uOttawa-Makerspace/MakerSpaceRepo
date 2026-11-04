@@ -68,9 +68,10 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       end
     end
 
+    # a temporary (302) redirect, so browsers do not keep it across username changes
     it "sends a link with another username to the owner's address" do
       get repository_path("anybody-at-all", repo.slug), params: { page: "2" }
-      expect(response).to have_http_status(:moved_permanently)
+      expect(response).to have_http_status(:found)
       expect(response).to redirect_to(repository_path(repo.user_username, repo.slug, page: "2"))
     end
 
@@ -124,6 +125,27 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
         content_login!(stranger)
         get repo_path(secret)
         expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      end
+
+      # the owner-username redirect only happens for people who pass the access check
+      it "does not name the owner to a guest or stranger who holds the id with another username" do
+        [nil, stranger].each do |viewer|
+          content_login!(viewer) if viewer
+          %i[repository_path password_entry_repository_path].each do |helper|
+            get send(helper, "someone-else", secret.id)
+            expect(response.headers["Location"].to_s).not_to include(owner.username), "#{helper} #{viewer.inspect}"
+          end
+          get download_files_repositories_path("someone-else", secret.id)
+          expect(response.headers["Location"].to_s).not_to include(owner.username)
+          expect(response.headers["Location"].to_s).to include("password_entry").or be_blank
+        end
+      end
+
+      it "still sends the owner to the owner's address" do
+        content_login!(owner)
+        get repository_path("someone-else", secret.id)
+        expect(response).to redirect_to(repository_path(owner.username, secret.id))
+        expect(response).to have_http_status(:found)
       end
 
       it "lets the owner (by username), staff and admin straight in" do

@@ -19,7 +19,7 @@ class RepositoriesController < SessionsController
   rate_limit to: 10, within: 10.minutes, only: :pass_authenticate,
              by: -> { "#{@repository.id}:#{@user.id.presence || request.remote_ip}" },
              with: -> {
-               redirect_to password_entry_repository_path(@repository.user_username, @repository.id),
+               redirect_to password_entry_repository_path(address_username, @repository.id),
                            alert: "Too many attempts. Please try again later."
              }
   before_action :redirect_to_owner_url, only: %i[show download_files password_entry]
@@ -35,7 +35,7 @@ class RepositoriesController < SessionsController
   def show
     if @repository.private? && !@check_passed
       redirect_to password_entry_repository_path(
-                    @repository.user_username,
+                    address_username,
                     @repository.id
                   ) and return
     end
@@ -86,7 +86,7 @@ class RepositoriesController < SessionsController
   def download_files
     # Verify authorization for private repositories
     if @repository.private? && !@check_passed
-      redirect_to password_entry_repository_path(@repository.user_username, @repository.id), alert: "Password required" and return
+      redirect_to password_entry_repository_path(address_username, @repository.id), alert: "Password required" and return
     end
 
     @files = @repository.repo_files
@@ -292,7 +292,7 @@ class RepositoriesController < SessionsController
         flash[:alert] = "Incorrect password. Try again!"
         format.html do
           redirect_to password_entry_repository_path(
-                        @repository.user_username,
+                        address_username,
                         @repository.id
                       )
         end
@@ -433,13 +433,20 @@ class RepositoriesController < SessionsController
   end
 
   # The username in the address is the owner's: a link with another (or an old) username is sent on to the
-  # repository's own address.
+  # repository's own address, for people who may see the repository. A locked private repository is not sent on, so
+  # the redirect cannot name its owner.
   def redirect_to_owner_url
     username = @repository.user_username
     return if username.blank? || params[:user_username] == username
+    return if @repository.private? && !repository_unlocked?(@repository)
 
     redirect_to url_for(action: action_name, user_username: username, id: params[:id], only_path: true, **request.query_parameters.symbolize_keys),
-                status: :moved_permanently
+                status: :found
+  end
+
+  # The username the request was addressed with: the denial redirects keep it rather than naming the owner.
+  def address_username
+    params[:user_username].presence || @repository.user_username
   end
 
   def set_repository

@@ -126,7 +126,7 @@ RSpec.describe "Repository zip download", type: :request do
   it "sends a link with another username to the owner's address" do
     add_file("a.txt")
     download(user_username: "someone-else")
-    expect(response).to have_http_status(:moved_permanently)
+    expect(response).to have_http_status(:found)
     expect(response.location).to include("/#{repo.user_username}/")
   end
 
