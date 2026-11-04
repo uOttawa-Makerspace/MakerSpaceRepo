@@ -59,6 +59,14 @@ RSpec.describe Space, type: :model do
     end
 
     context "#recently_signed_out_users" do
+      it "is not emptied by an open session with no user" do
+        user = create(:user, :regular_user)
+        space = create(:space)
+        create(:lab_session, user: user, space: space, sign_in_time: 1.day.ago, sign_out_time: 1.hour.ago)
+        create(:lab_session, space: space, sign_in_time: 1.hour.ago, sign_out_time: 1.hour.from_now).update_columns(user_id: nil)
+        expect(space.recently_signed_out_users).to eq([user])
+      end
+
       it "never lists a soft-deleted user" do
         user = create(:user, :regular_user)
         space = create(:space)

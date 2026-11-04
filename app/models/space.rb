@@ -50,7 +50,7 @@ class Space < ApplicationRecord
     users =
       visible_lab_sessions
         .where("sign_out_time < ?", Time.zone.now)
-        .where.not(user_id: lab_sessions.where("sign_out_time > ?", Time.zone.now).select(:user_id))
+        .where.not(user_id: lab_sessions.where("sign_out_time > ?", Time.zone.now).where.not(user_id: nil).select(:user_id))
         .order(sign_out_time: :asc)
         .last(20)
         .map(&:user)
