@@ -245,6 +245,12 @@ class RepositoriesController < SessionsController
   def add_like
     current_like = @repository.likes.find_by(user_id: @user.id)
 
+    # Members do not like their own repository (a like already given can still be taken back).
+    if current_like.nil? && @repository.owned_by?(@user)
+      flash[:alert] = "You cannot like a project you are a member of"
+      return redirect_to repository_path(@repository.user_username, @repository.slug)
+    end
+
     if current_like.nil?
       @repository.likes.create!(user_id: @user.id)
       @repository.users.each { |u| u.increment!(:reputation, 5) }

@@ -680,12 +680,23 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(owner.reload.reputation).to eq(0)
     end
 
-    it "lets the owner like their own repository" do
+    it "refuses a like by the owner or a member of the repository" do
+      member = create(:user, :regular_user)
+      repo.users << member
+      [owner, member].each do |user|
+        content_login!(user)
+        expect { post add_like_repository_path(owner.username, repo.slug) }.not_to change(Like, :count)
+        expect(flash[:alert]).to eq("You cannot like a project you are a member of")
+      end
+      expect(repo.reload.like).to eq(0)
+      expect(owner.reload.reputation).to eq(0)
+    end
+
+    it "lets a member take back a like given before" do
+      Like.create!(repository: repo, user: owner)
+      repo.update_column(:like, 1)
       content_login!(owner)
-      post add_like_repository_path(owner.username, repo.slug)
-      # likes on your own repo give you +5 reputation
-      expect(repo.reload.like).to eq(1)
-      expect(owner.reload.reputation).to eq(5)
+      expect { post add_like_repository_path(owner.username, repo.slug) }.to change(Like, :count).by(-1)
     end
 
     it "refuses to like a private repository without its password" do
@@ -696,7 +707,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
     end
 
-    it "lets the owner, a collaborator and a user who entered the password like a private repository" do
+    it "lets a user who entered the password like a private repository, and refuses its owner and a collaborator" do
       secret = create(:repository, :private, owner: owner, title: "Sec", users: [owner])
       secret.update_columns(password: BCrypt::Password.create("open-sesame"))
       collaborator = create(:user, :regular_user)
@@ -706,7 +717,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
         post add_like_repository_path(owner.username, secret.slug)
         expect(response).to redirect_to(repo_path(secret))
       end
-      expect(Like.where(repository_id: secret.id).count).to eq(2)
+      expect(Like.where(repository_id: secret.id)).to be_empty
       content_login!(stranger)
       post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "open-sesame" }
       expect { post add_like_repository_path(owner.username, secret.slug) }.to change(Like, :count).by(1)
