@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_04_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_04_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1246,13 +1246,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_130000) do
   end
 
   create_table "rfids", id: :serial, force: :cascade do |t|
-    t.string "card_number"
+    t.string "card_number", null: false
     t.datetime "created_at", precision: nil, null: false
     t.string "mac_address"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.index ["card_number"], name: "index_rfids_on_card_number", unique: true
     t.index ["user_id"], name: "index_rfids_on_user_id"
+    t.check_constraint "card_number IS NOT NULL AND btrim(card_number::text) <> ''::text", name: "rfids_card_number_present_check"
   end
 
   create_table "settings", force: :cascade do |t|

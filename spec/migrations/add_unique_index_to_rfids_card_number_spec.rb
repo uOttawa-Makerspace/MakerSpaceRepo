@@ -25,9 +25,4 @@ RSpec.describe AddUniqueIndexToRfidsCardNumber do
     expect(connection.index_exists?(:rfids, :card_number, name: "index_rfids_on_card_number")).to be(false)
     expect(Rfid.where(card_number: "DUP-2").count).to eq(3)
   end
-
-  it "does not count rows without a card number as duplicates" do
-    2.times { insert_card(nil) }
-    expect { described_class.new.refuse_duplicates }.not_to raise_error
-  end
 end
