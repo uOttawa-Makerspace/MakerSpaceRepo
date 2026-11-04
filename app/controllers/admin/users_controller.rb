@@ -128,7 +128,7 @@ class Admin::UsersController < AdminAreaController
 
     delete_user = User.find(params[:id])
     begin
-      User.guarding_last_admin!([delete_user.id]) { soft_delete_user(delete_user) }
+      User.delete_account!(delete_user)
     rescue User::LastAdminError => e
       redirect_to user_path(delete_user.username), alert: e.message
       return
@@ -139,7 +139,7 @@ class Admin::UsersController < AdminAreaController
 
   def restore_user
     restore_user = User.unscoped.find(params[:id])
-    restore_user_account(restore_user)
+    User.restore_account!(restore_user)
     redirect_to user_path(restore_user.username), notice: "User restored!"
   end
 
@@ -394,22 +394,6 @@ class Admin::UsersController < AdminAreaController
   # ============================================
   # User Management
   # ============================================
-
-  def soft_delete_user(user)
-    user.transaction do
-      user.repositories.update_all(deleted: true)
-      LabSession.where(user_id: user.id).destroy_all
-      Certification.where(user_id: user.id).destroy_all
-      user.soft_delete!
-    end
-  end
-
-  def restore_user_account(user)
-    user.transaction do
-      user.repositories.update_all(deleted: false)
-      user.restore!
-    end
-  end
 
   # Locking is guarded (it removes a usable admin); unlocking never is. Which of the
   # two to do is decided from the row re-read under the guard's locks (lock! reloads

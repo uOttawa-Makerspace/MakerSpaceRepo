@@ -424,7 +424,7 @@ class ReportGenerator
   end
 
   def self.get_new_users(start_date, end_date)
-    User.where(created_at: start_date..end_date)
+    User.including_deleted.where(created_at: start_date..end_date)
   end
 
   # @param [DateTime] start_date

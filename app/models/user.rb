@@ -102,12 +102,15 @@ class User < ApplicationRecord
   has_many :comments, dependent: :destroy
   has_many :owned_repositories, class_name: 'Repository', dependent: :destroy
   has_many :likes
-  has_many :certifications, class_name: 'Certification', dependent: :destroy
+  # Visit, certification and training history is never deleted with the account: deleting an account only
+  # hides the user (see #soft_delete!), and reports read this history for deleted users too.
+  has_many :certifications, class_name: 'Certification'
+  # No dependent: :destroy here or on the history above: a hard delete of a user who has history
+  # is refused by the foreign keys, on purpose.
   has_many :demotion_staff,
            class_name: 'Certification',
-           foreign_key: 'demotion_staff_id',
-           dependent: :destroy
-  has_many :lab_sessions, dependent: :destroy
+           foreign_key: 'demotion_staff_id'
+  has_many :lab_sessions
   has_many :project_proposals
   has_many :project_joins, dependent: :destroy
   has_many :printer_sessions, dependent: :destroy
@@ -268,6 +271,12 @@ class User < ApplicationRecord
 
   default_scope { where(deleted: false) }
 
+  # Every user row, soft-deleted ones included. For admin views and reports, which see everything;
+  # the default scope keeps deleted users out of everything else.
+  def self.including_deleted
+    unscope(where: :deleted)
+  end
+
   EMAIL_CHANGE_VERIFIER = -> { Rails.application.message_verifier(:email_change) }
 
   # purpose-scoped, expiring reset token that dies with the
@@ -378,9 +387,12 @@ class User < ApplicationRecord
   # Admins who can still sign in. A locked admin (admin lock, or too many failed
   # attempts) cannot sign in (CredentialAuthenticator), so does not count.
   # A deactivated admin (User#deactivate!) cannot either.
-  scope :usable_admins, -> {
-    where(role: "admin").where(deactivated_at: nil)
-                        .where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
+  scope :usable_admins, -> { where(role: "admin").can_sign_in }
+
+  # Accounts that can sign in: not deactivated, and not locked (an expired timed lockout no longer
+  # counts). Deleted accounts are already left out by the default scope.
+  scope :can_sign_in, -> {
+    where(deactivated_at: nil).where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
   }
 
   GUARD_LOCK_MODE = "FOR NO KEY UPDATE"
@@ -431,6 +443,47 @@ class User < ApplicationRecord
       end
 
       yield
+    end
+  end
+
+  # Deleting and restoring accounts run one at a time: a transaction-scoped advisory lock is taken
+  # before any row lock. The caller then re-reads the user under a row lock, so a second request
+  # for the same account finds the work already done.
+  def self.serialising_account_deletion
+    transaction do
+      connection.execute("SELECT pg_advisory_xact_lock(hashtextextended('account_deletion', 0))")
+      yield
+    end
+  end
+
+  # Deleting an account hides it; nothing the user did is deleted. Each repository they own passes to
+  # another member, or is hidden when there is none, and a lab session still open is ended now, so a
+  # deleted user is not listed as in a space. Every other row (visits, certifications, training)
+  # stays as it was. Raises LastAdminError for the last usable admin. Returns false, doing nothing,
+  # if the account was already deleted by another request.
+  def self.delete_account!(user)
+    serialising_account_deletion do
+      guarding_last_admin!([user.id]) do
+        next false if user.lock!(GUARD_LOCK_MODE).deleted?
+
+        Repository.release_owned_by!(user)
+        LabSession.where(user_id: user.id).active.update_all(sign_out_time: Time.zone.now)
+        user.soft_delete!
+        true
+      end
+    end
+  end
+
+  # Brings back what delete_account! hid: the account and the repositories it hid. Repositories
+  # handed to another member stay with them. Returns false, doing nothing, if the account is not
+  # deleted (already restored by another request).
+  def self.restore_account!(user)
+    serialising_account_deletion do
+      next false unless user.lock!(GUARD_LOCK_MODE).deleted?
+
+      Repository.restore_hidden_for!(user)
+      user.restore!
+      true
     end
   end
 

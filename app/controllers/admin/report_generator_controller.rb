@@ -230,7 +230,7 @@ class Admin::ReportGeneratorController < AdminAreaController
             params[:end_date].to_date
           )
         else
-          User.all
+          User.including_deleted
         end
       )
   end
@@ -439,6 +439,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
     all_users = @lab_sessions.pluck(:user_id).uniq
     User
+      .including_deleted
       .where(id: all_users)
       .each do |user|
         next if user.nil?

@@ -481,24 +481,6 @@ class UsersController < SessionsController
     @photos = photo_hash
   end
 
-  # Hard delete of the signed-in user's own account. Goes through the last-admin
-  # guard: the last usable admin cannot delete themself.
-  def destroy
-    account = @user
-    begin
-      User.guarding_last_admin!([account.id]) do
-        account.repositories.each(&:destroy)
-        LabSession.where(user_id: account.id).destroy_all
-        account.destroy!
-      end
-    rescue User::LastAdminError => e
-      redirect_to user_path(account.username), alert: e.message
-      return
-    end
-    sign_out
-    redirect_to root_path
-  end
-
   private
 
   # The normalised email, or '' when none was given or it is longer than an address can be.

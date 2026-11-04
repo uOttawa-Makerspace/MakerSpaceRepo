@@ -18,7 +18,7 @@
         <p style="text-align: center">
           <% if badges.training_session.training.has_badge %>
             <% if badges.user_id.present? %>
-              <%= link_to(badges.user.name, user_path(User.find(badges.user_id).username)) %>
+              <%= link_to(badges.user.name, user_path(badges.user.username)) %>
             <% else %>
               <%= badges.user.name %>
             <% end %>

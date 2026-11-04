@@ -83,7 +83,7 @@ class ProficientProject < ApplicationRecord
   end
 
   def self.training_status(training_id, user_id)
-    user = User.find(user_id)
+    user = User.including_deleted.find(user_id)
     level =
       Certification
         .joins(:user, :training_session)
