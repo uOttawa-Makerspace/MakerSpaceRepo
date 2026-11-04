@@ -82,6 +82,11 @@ RSpec.describe BadgesController, "#show for a soft-deleted earner", type: :contr
     expect { get :show, params: { id: badge.id } }.to raise_error(ActiveRecord::RecordNotFound)
   end
 
+  it "is not found for staff" do
+    sign_in_as(create(:user, :staff))
+    expect { get :show, params: { id: badge.id } }.to raise_error(ActiveRecord::RecordNotFound)
+  end
+
   it "is shown to an admin" do
     sign_in_as(create(:user, :admin))
     get :show, params: { id: badge.id }
