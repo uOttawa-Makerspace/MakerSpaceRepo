@@ -130,11 +130,13 @@ class SubSpaceBookingController < SessionsController
                     notice: "#{user.name} already has booking access."
         return
       end
-      grant_booking_access!(uba)
+      id = grant_booking_access!(uba)
+      BookingMailer.send_booking_approval_request_approved(id).deliver_later
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access granted successfully."
     else
-      grant_booking_access!(UserBookingApproval.find(params[:id]))
+      id = grant_booking_access!(UserBookingApproval.find(params[:id]))
+      BookingMailer.send_booking_approval_request_approved(id).deliver_later
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   notice: "Access request approved successfully."
     end
@@ -143,10 +145,11 @@ class SubSpaceBookingController < SessionsController
   end
 
   def deny_access
-    user = UserBookingApproval.find(params[:id]).user
-    UserBookingApproval.find(params[:id]).destroy
-    user.booking_approval = false
-    user.save!
+    uba = UserBookingApproval.find(params[:id])
+    UserBookingApproval.transaction do
+      uba.user.update_column(:booking_approval, false)
+      uba.destroy!
+    end
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: "Access request declined successfully."
   end
@@ -158,9 +161,15 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    UserBookingApproval
-      .where(id: params[:user_booking_approval_ids])
-      .each { |uba| grant_booking_access!(uba) }
+    approved_ids = []
+    UserBookingApproval.transaction do
+      UserBookingApproval
+        .where(id: params[:user_booking_approval_ids])
+        .each { |uba| approved_ids << grant_booking_access!(uba) }
+    end
+    approved_ids.each do |id|
+      BookingMailer.send_booking_approval_request_approved(id).deliver_later
+    end
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: "All selected access requests approved successfully."
@@ -776,7 +785,7 @@ class SubSpaceBookingController < SessionsController
       uba.update!(approved: true, staff: current_user)
       uba.user.update!(booking_approval: true)
     end
-    BookingMailer.send_booking_approval_request_approved(uba.id).deliver_later
+    uba.id
   end
 
   def approval_failed(error)

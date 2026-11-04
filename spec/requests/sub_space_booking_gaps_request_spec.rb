@@ -891,10 +891,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(uba.approved).to be(true)
     end
 
-    # no surrounding transaction. The default scope orders newest
-    # first, so the newer request is approved (and committed) before the older
-    # one's invalid user aborts the loop.
-    it "keeps the earlier approvals when a later one raises RecordInvalid (partial commit)" do
+    it "approves nothing and sends no mail when one of the selected requests cannot be approved" do
       good_user = create(:user, :regular_user, booking_approval: false)
       bad_user = create(:user, :regular_user, booking_approval: false)
       bad_user.update_column(:gender, "Unlisted")
@@ -904,26 +901,38 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       newer = UserBookingApproval.create!(user: good_user, identity: "Other", approved: false,
                                           comments: "c", date: Date.new(2027, 1, 1),
                                           created_at: Time.utc(2027, 2, 1))
-      put bulk_approve_access_sub_space_booking_index_path,
-          params: { user_booking_approval_ids: [older.id, newer.id] }
+      perform_enqueued_jobs do
+        put bulk_approve_access_sub_space_booking_index_path,
+            params: { user_booking_approval_ids: [older.id, newer.id] }
+      end
 
       expect(flash[:alert]).to start_with("Failed to approve: ")
-      expect(newer.reload.approved).to be(true)
-      expect(good_user.reload.booking_approval).to be(true)
+      expect(newer.reload.approved).to be(false)
+      expect(good_user.reload.booking_approval).to be(false)
       expect(older.reload.approved).to be(false)
+      expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # the request is destroyed BEFORE user.save!; a failing save
-    # leaves the request deleted behind an unhandled RecordInvalid (422).
-    it "deny_access deletes the request even when saving the user then raises RecordInvalid" do
+    it "deny_access removes the request and clears the user's booking access even when the user record is otherwise invalid" do
       applicant = create(:user, :regular_user, booking_approval: true)
       applicant.update_column(:gender, "Unlisted")
       uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
                                         comments: "c", date: Date.new(2027, 1, 1))
       put deny_access_sub_space_booking_index_path, params: { id: uba.id }
 
-      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:notice]).to eq("Access request declined successfully.")
       expect(UserBookingApproval.exists?(uba.id)).to be(false)
+      expect(applicant.reload.booking_approval).to be(false)
+    end
+
+    it "deny_access keeps the user's access when removing the request fails" do
+      applicant = create(:user, :regular_user, booking_approval: true)
+      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
+                                        comments: "c", date: Date.new(2027, 1, 1))
+      allow_any_instance_of(UserBookingApproval).to receive(:destroy!).and_raise(ActiveRecord::RecordNotDestroyed)
+      put deny_access_sub_space_booking_index_path, params: { id: uba.id }
+
+      expect(UserBookingApproval.exists?(uba.id)).to be(true)
       expect(applicant.reload.booking_approval).to be(true)
     end
   end
