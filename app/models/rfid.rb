@@ -46,6 +46,26 @@ class Rfid < ApplicationRecord
     end
   end
 
+  # Unlinks every card the user holds (normally one) and re-homes it: its
+  # mac_address becomes the first reader of the actor's assigned space (the space
+  # the unlinked-card lists filter on), so the card shows up in the actor's list.
+  # An actor without an assigned space, or whose space has no reader, leaves the
+  # mac_address unchanged. Returns the number of cards unlinked (0 is a no-op).
+  # Lock order matches link_to_user!: the user, then the cards.
+  def self.unlink_from_user!(user, actor:)
+    transaction do
+      User.where(id: user.id).lock("FOR NO KEY UPDATE").take
+      reader = actor.space&.pi_readers&.first
+      cards = where(user_id: user.id).lock("FOR NO KEY UPDATE").to_a
+      cards.each do |rfid|
+        rfid.user_id = nil
+        rfid.mac_address = reader.pi_mac_address if reader
+        rfid.save!
+      end
+      cards.size
+    end
+  end
+
   def self.lock_card_number(card_number)
     connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(#{connection.quote("rfid:#{card_number}")}, 0))")
   end

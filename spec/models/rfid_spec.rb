@@ -34,4 +34,88 @@ RSpec.describe Rfid, type: :model do
       end
     end
   end
+
+  describe ".link_to_user!" do
+    let(:user) { create(:user, :regular_user) }
+
+    it "creates and links a card no reader ever saw" do
+      expect(Rfid.link_to_user!("brand-new-card", user)).to be_nil
+      card = Rfid.find_by!(card_number: "brand-new-card")
+      expect(card.user_id).to eq(user.id)
+      expect(card.mac_address).to be_nil
+    end
+
+    it "links an existing unlinked card without touching its mac_address" do
+      card = create(:rfid, user: nil, mac_address: "aa:aa:aa:aa:aa:aa")
+      expect(Rfid.link_to_user!(card.card_number, user)).to be_nil
+      expect(card.reload.user_id).to eq(user.id)
+      expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "refuses a card held by another user with the reason, changing nothing" do
+      holder = create(:user, :regular_user)
+      card = create(:rfid, user: holder)
+      expect(Rfid.link_to_user!(card.card_number, user)).to eq("is already linked to another user")
+      expect(card.reload.user_id).to eq(holder.id)
+    end
+
+    it "refuses a user who already has a card with the reason, changing nothing" do
+      create(:rfid, user: user)
+      other = create(:rfid, user: nil)
+      expect(Rfid.link_to_user!(other.card_number, user)).to eq("user already has a card; unlink it first")
+      expect(other.reload.user_id).to be_nil
+      expect(Rfid.where(card_number: "never-created")).to be_empty
+      expect { Rfid.link_to_user!("never-created", user) }.not_to change(Rfid, :count)
+    end
+  end
+
+  describe ".unlink_from_user!" do
+    let(:space_a) { create(:space) }
+    let(:space_b) { create(:space) }
+    let!(:reader_a) { create(:pi_reader, space: space_a) }
+    let!(:reader_a2) { create(:pi_reader, space: space_a) }
+    let!(:reader_b) { create(:pi_reader, space: space_b) }
+    let(:owner) { create(:user, :regular_user) }
+    let!(:card) { create(:rfid, user: owner, mac_address: "aa:aa:aa:aa:aa:aa") }
+    let(:actor) { create(:user, :staff, space: space_a) }
+
+    it "unlinks the card and re-homes it to the first reader of the actor's assigned space" do
+      expect(Rfid.unlink_from_user!(owner, actor: actor)).to eq(1)
+      card.reload
+      expect(card.user_id).to be_nil
+      expect(card.mac_address).to eq(reader_a.pi_mac_address)
+    end
+
+    it "uses the assigned space, not the space of the actor's last lab session" do
+      create(:lab_session, user: actor, space: space_b, sign_in_time: 1.hour.ago, sign_out_time: 1.hour.from_now)
+      Rfid.unlink_from_user!(owner, actor: actor)
+      expect(card.reload.mac_address).to eq(reader_a.pi_mac_address)
+    end
+
+    it "lists the unlinked card for the actor's space afterwards" do
+      Rfid.unlink_from_user!(owner, actor: actor)
+      macs = PiReader.where(space: actor.space).pluck(:pi_mac_address)
+      expect(Rfid.recent_unset.where(mac_address: macs)).to include(card)
+    end
+
+    it "keeps the card's mac_address when the actor has no assigned space" do
+      actor.update_columns(space_id: nil)
+      Rfid.unlink_from_user!(owner, actor: actor.reload)
+      card.reload
+      expect(card.user_id).to be_nil
+      expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "keeps the card's mac_address when the assigned space has no reader" do
+      actor.update!(space: create(:space))
+      Rfid.unlink_from_user!(owner, actor: actor)
+      expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "is a no-op returning 0 for a user without a card" do
+      other = create(:user, :regular_user)
+      expect(Rfid.unlink_from_user!(other, actor: actor)).to eq(0)
+      expect(card.reload.user_id).to eq(owner.id)
+    end
+  end
 end

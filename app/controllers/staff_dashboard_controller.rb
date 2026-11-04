@@ -339,32 +339,36 @@ class StaffDashboardController < StaffAreaController
     end
   end
 
+  # Unlinks the card from its owner through Rfid.unlink_from_user!, which
+  # re-homes it to the first reader of the staff member's assigned space.
   def unlink_rfid
-    status = true
+    missing = false
 
     if params[:card_number].present?
       rfid = Rfid.find_by(card_number: params[:card_number])
-      rfid.user_id = nil
-      if @user.location != "no sign in yet" &&
-           pi = Space.find_by(name: @user.location)&.pi_readers&.first
-        new_mac = pi.pi_mac_address
-        rfid.mac_address = new_mac
+      if rfid.nil?
+        missing = true
+      elsif rfid.user
+        Rfid.unlink_from_user!(rfid.user, actor: current_user)
       end
-      status = false unless rfid.save
     end
 
     respond_to do |format|
       format.html do
-        if status
-  flash[:notice] = "RFID unlinked successfully"
-else
-  flash[
-            :alert
-          ] = "Something went wrong while unlinking the RFID, please try again later."
-end
+        if missing
+          flash[:alert] = "RFID card not found"
+        else
+          flash[:notice] = "RFID unlinked successfully"
+        end
         redirect_back(fallback_location: root_path)
       end
-      format.json { render json: { status: status ? "ok" : "error" } }
+      format.json do
+        if missing
+          render json: { status: "error" }, status: :not_found
+        else
+          render json: { status: "ok" }
+        end
+      end
     end
   end
 

@@ -158,12 +158,9 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(flash[:notice]).to eq("RFID unlinked successfully")
     end
 
-    it "points the card's mac_address at the first reader of the space the STAFF MEMBER last signed in to, not the card owner's space" do
-      # the source of the new mac is @user.location, i.e. the signed-in
-      # STAFF member's last lab session's space (User#location), not the card owner's. The
-      # owner here was last in space B, yet the card is re-homed to space A's first reader.
+    it "points the card's mac_address at the first reader of the staff member's assigned space, not the card owner's space or the staff member's last session" do
       sign_in_session(owner, space_b, sign_out_in: 1.hour)
-      sign_in_session(staff, space_a, sign_out_in: 1.hour)
+      sign_in_session(staff, space_b, sign_out_in: 1.hour)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
 
@@ -173,9 +170,8 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(card.mac_address).not_to eq(reader_b.pi_mac_address)
     end
 
-    it "keeps the card's mac_address when the staff member has never signed in to a space" do
-      staff
-      expect(staff.reload.location).to eq("no sign in yet")
+    it "keeps the card's mac_address when the staff member has no assigned space" do
+      staff.update_columns(space_id: nil)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
 
@@ -183,9 +179,8 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
     end
 
-    it "keeps the mac when the staff member's last-session space has no reader" do
-      empty_space = create(:space)
-      sign_in_session(staff, empty_space, sign_out_in: 1.hour)
+    it "keeps the mac when the staff member's assigned space has no reader" do
+      staff.update!(space: create(:space))
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
 
@@ -193,27 +188,23 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
     end
 
-    it "re-homes the card by the staff member's last SESSION, which can differ from the space whose unset list the staff member sees" do
-      # get_unset_rfids lists by @user.space (the assigned space) while
-      # unlink_rfid re-homes by @user.location (last lab session). Staff assigned to B who last
-      # signed in at A unlinks a card, and it does not appear in staff B's unset list.
+    it "shows the unlinked card in the staff member's own unset list, wherever they last signed in" do
       staff.update!(space: space_b)
       sign_in_session(staff, space_a, sign_out_in: 1.hour)
 
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
-      expect(card.reload.mac_address).to eq(reader_a.pi_mac_address)
-
-      get rfid_get_unset_rfids_path
-      expect(json).to eq([])
-    end
-
-    it "makes the unlinked card show up in the staff member's own space's unset list when both agree" do
-      sign_in_session(staff, space_a, sign_out_in: 1.hour)
-
-      put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
+      expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
 
       get rfid_get_unset_rfids_path
       expect(json.map { |c| c["cardNumber"] }).to eq([card.card_number])
+    end
+
+    it "an already unlinked card is a no-op ok" do
+      staff
+      loose = create(:rfid, user: nil, mac_address: "bb:bb:bb:bb:bb:bb")
+      put staff_dashboard_unlink_rfid_path, params: { card_number: loose.card_number }, as: :json
+      expect(body).to eq("status" => "ok")
+      expect(loose.reload.mac_address).to eq("bb:bb:bb:bb:bb:bb")
     end
 
     it "without card_number changes nothing and still says ok" do
@@ -230,13 +221,16 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(card.reload.user_id).to eq(owner.id)
     end
 
-    it "an unknown card_number is a 500 (NoMethodError on nil)" do
-      # same nil dereference as link_rfid.
+    it "an unknown card_number is a 404 {status: error} (JSON) and a flash (html), nothing changes" do
       staff
       put staff_dashboard_unlink_rfid_path, params: { card_number: "no-such-card" }, as: :json
-      expect(response).to have_http_status(:internal_server_error)
-      expect(exception_class).to eq("NoMethodError")
+      expect(response).to have_http_status(:not_found)
+      expect(body["status"]).to eq("error")
       expect(card.reload.user_id).to eq(owner.id)
+
+      put staff_dashboard_unlink_rfid_path, params: { card_number: "no-such-card" }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
+      expect(response).to redirect_to("http://www.example.com/anywhere")
+      expect(flash[:alert]).to eq("RFID card not found")
     end
   end
 end
