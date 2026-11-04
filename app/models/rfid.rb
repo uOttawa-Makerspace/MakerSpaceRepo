@@ -55,16 +55,56 @@ class Rfid < ApplicationRecord
   def self.unlink_from_user!(user, actor:)
     transaction do
       User.where(id: user.id).lock("FOR NO KEY UPDATE").take
-      reader = actor.space&.pi_readers&.first
       cards = where(user_id: user.id).lock("FOR NO KEY UPDATE").to_a
-      cards.each do |rfid|
-        rfid.user_id = nil
-        rfid.mac_address = reader.pi_mac_address if reader
-        rfid.save!
-      end
+      reader = rehome_reader(actor)
+      cards.each { |rfid| release_card!(rfid, reader) }
       cards.size
     end
   end
+
+  # Unlinks exactly the card with this number and re-homes it as
+  # unlink_from_user! does, leaving any other card its owner holds alone.
+  # Returns :unlinked, :already_unlinked (nothing changed) or :not_found.
+  # Lock order matches link_to_user!: the owner, then the card number, then the
+  # card. The owner is only known from the card, so it is read first and
+  # re-checked under the locks; if the card was linked to someone else meanwhile
+  # the attempt starts over with the new owner.
+  def self.unlink_card!(card_number, actor:)
+    attempts = 0
+    loop do
+      attempts += 1
+      outcome = transaction do
+        owner_id = where(card_number: card_number).pick(:user_id)
+        User.where(id: owner_id).lock("FOR NO KEY UPDATE").take if owner_id
+        lock_card_number(card_number)
+        rfid = lock("FOR NO KEY UPDATE").find_by(card_number: card_number)
+        if rfid.nil?
+          :not_found
+        elsif rfid.user_id != owner_id
+          :retry
+        elsif rfid.user_id.nil?
+          :already_unlinked
+        else
+          release_card!(rfid, rehome_reader(actor))
+          :unlinked
+        end
+      end
+      return outcome unless outcome == :retry
+      raise ActiveRecord::ActiveRecordError, "card #{card_number} kept changing owner" if attempts >= 5
+    end
+  end
+
+  def self.rehome_reader(actor)
+    actor.space&.pi_readers&.first
+  end
+  private_class_method :rehome_reader
+
+  def self.release_card!(rfid, reader)
+    rfid.user_id = nil
+    rfid.mac_address = reader.pi_mac_address if reader
+    rfid.save!
+  end
+  private_class_method :release_card!
 
   def self.lock_card_number(card_number)
     connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(#{connection.quote("rfid:#{card_number}")}, 0))")

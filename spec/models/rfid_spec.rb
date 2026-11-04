@@ -118,4 +118,37 @@ RSpec.describe Rfid, type: :model do
       expect(card.reload.user_id).to eq(owner.id)
     end
   end
+
+  describe ".unlink_card!" do
+    let(:space) { create(:space) }
+    let!(:reader) { create(:pi_reader, space: space) }
+    let(:owner) { create(:user, :regular_user) }
+    let(:actor) { create(:user, :staff, space: space) }
+    let!(:card) { create(:rfid, user: owner, mac_address: "aa:aa:aa:aa:aa:aa") }
+
+    it "unlinks and re-homes only the given card" do
+      second = create(:rfid, user: owner, mac_address: "cc:cc:cc:cc:cc:cc")
+      expect(Rfid.unlink_card!(card.card_number, actor: actor)).to eq(:unlinked)
+      expect(card.reload.user_id).to be_nil
+      expect(card.mac_address).to eq(reader.pi_mac_address)
+      expect(second.reload.user_id).to eq(owner.id)
+      expect(second.mac_address).to eq("cc:cc:cc:cc:cc:cc")
+    end
+
+    it "keeps mac_address for an actor without an assigned space" do
+      actor.update_columns(space_id: nil)
+      expect(Rfid.unlink_card!(card.card_number, actor: actor.reload)).to eq(:unlinked)
+      expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "reports an already unlinked card and changes nothing" do
+      loose = create(:rfid, user: nil, mac_address: "bb:bb:bb:bb:bb:bb")
+      expect(Rfid.unlink_card!(loose.card_number, actor: actor)).to eq(:already_unlinked)
+      expect(loose.reload.mac_address).to eq("bb:bb:bb:bb:bb:bb")
+    end
+
+    it "reports an unknown card" do
+      expect(Rfid.unlink_card!("no-such-card", actor: actor)).to eq(:not_found)
+    end
+  end
 end

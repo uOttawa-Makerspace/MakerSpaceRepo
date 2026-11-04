@@ -40,22 +40,30 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(unlinked.reload.user_id).to eq(newcomer.id)
     end
 
-    it "without user_id (card_number present) changes nothing and still says ok" do
+    it "without user_id (card_number present) is a 422 and changes nothing" do
       staff
       put staff_dashboard_link_rfid_path, params: { card_number: unlinked.card_number }, as: :json
-      expect(body).to eq("status" => "ok")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(body["status"]).to eq("error")
       expect(unlinked.reload.user_id).to be_nil
     end
 
-    it "without card_number (user_id present) changes nothing and still says ok" do
+    it "without card_number (user_id present) is a 422 and changes nothing" do
       staff
       other = create(:user, :regular_user)
       put staff_dashboard_link_rfid_path, params: { user_id: other.id }, as: :json
-      expect(response).to have_http_status(:ok)
-      expect(body).to eq("status" => "ok")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(body).to eq("status" => "error", "error" => "card_number and user_id are required")
       expect(Rfid.where(user_id: other.id)).to be_empty
       expect(unlinked.reload.user_id).to be_nil
       expect(card.reload.user_id).to eq(owner.id)
+    end
+
+    it "html: a missing parameter flashes an alert" do
+      staff
+      put staff_dashboard_link_rfid_path, params: { user_id: owner.id }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
+      expect(response).to redirect_to("http://www.example.com/anywhere")
+      expect(flash[:alert]).to include("card_number and user_id are required")
     end
 
     it "refuses a regular user (redirect to root) and leaves the card alone" do
@@ -199,19 +207,36 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       expect(json.map { |c| c["cardNumber"] }).to eq([card.card_number])
     end
 
-    it "an already unlinked card is a no-op ok" do
+    it "an already unlinked card changes nothing and says so (JSON)" do
       staff
       loose = create(:rfid, user: nil, mac_address: "bb:bb:bb:bb:bb:bb")
       put staff_dashboard_unlink_rfid_path, params: { card_number: loose.card_number }, as: :json
-      expect(body).to eq("status" => "ok")
+      expect(body).to eq("status" => "ok", "already_unlinked" => true)
       expect(loose.reload.mac_address).to eq("bb:bb:bb:bb:bb:bb")
     end
 
-    it "without card_number changes nothing and still says ok" do
+    it "an already unlinked card has its own notice (html)" do
+      staff
+      loose = create(:rfid, user: nil, mac_address: "bb:bb:bb:bb:bb:bb")
+      put staff_dashboard_unlink_rfid_path, params: { card_number: loose.card_number }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
+      expect(flash[:notice]).to eq("RFID was already unlinked")
+    end
+
+    it "without card_number is a 422 and changes nothing" do
       staff
       put staff_dashboard_unlink_rfid_path, as: :json
-      expect(body).to eq("status" => "ok")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(body).to eq("status" => "error", "error" => "card_number is required")
       expect(card.reload.user_id).to eq(owner.id)
+    end
+
+    it "unlinks only the given card when the user holds several" do
+      staff
+      second = create(:rfid, user: owner, mac_address: "cc:cc:cc:cc:cc:cc")
+      put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
+      expect(card.reload.user_id).to be_nil
+      expect(second.reload.user_id).to eq(owner.id)
+      expect(second.mac_address).to eq("cc:cc:cc:cc:cc:cc")
     end
 
     it "refuses a regular user and leaves the card linked" do

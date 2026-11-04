@@ -307,7 +307,9 @@ class StaffDashboardController < StaffAreaController
     error = nil
     http_status = :unprocessable_content
 
-    if params[:user_id].present? && params[:card_number].present?
+    if params[:user_id].blank? || params[:card_number].blank?
+      error = "card_number and user_id are required"
+    else
       card_number = params[:card_number]
       user = User.find_by(id: params[:user_id].to_s.match?(/\A\d+\z/) ? params[:user_id] : nil)
       if user.nil?
@@ -339,32 +341,37 @@ class StaffDashboardController < StaffAreaController
     end
   end
 
-  # Unlinks the card from its owner through Rfid.unlink_from_user!, which
-  # re-homes it to the first reader of the staff member's assigned space.
+  # Unlinks exactly the card it is given through Rfid.unlink_card!, which
+  # re-homes it to the first reader of the staff member's assigned space. A card
+  # that is already unlinked changes nothing and says so.
   def unlink_rfid
-    missing = false
-
-    if params[:card_number].present?
-      rfid = Rfid.find_by(card_number: params[:card_number])
-      if rfid.nil?
-        missing = true
-      elsif rfid.user
-        Rfid.unlink_from_user!(rfid.user, actor: current_user)
+    if params[:card_number].blank?
+      error = "card_number is required"
+      http_status = :unprocessable_content
+    else
+      outcome = Rfid.unlink_card!(params[:card_number].to_s, actor: current_user)
+      if outcome == :not_found
+        error = "RFID card not found"
+        http_status = :not_found
       end
     end
 
     respond_to do |format|
       format.html do
-        if missing
-          flash[:alert] = "RFID card not found"
+        if error
+          flash[:alert] = error
+        elsif outcome == :already_unlinked
+          flash[:notice] = "RFID was already unlinked"
         else
           flash[:notice] = "RFID unlinked successfully"
         end
         redirect_back(fallback_location: root_path)
       end
       format.json do
-        if missing
-          render json: { status: "error" }, status: :not_found
+        if error
+          render json: { status: "error", error: error }, status: http_status
+        elsif outcome == :already_unlinked
+          render json: { status: "ok", already_unlinked: true }
         else
           render json: { status: "ok" }
         end
