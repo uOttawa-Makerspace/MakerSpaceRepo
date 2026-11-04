@@ -215,6 +215,8 @@ en:
               in_the_past: "cannot be in the past for a booking that has already started. Pick an end time after now."
               booking_ended: "cannot be changed: this booking has already ended."
       messages:
+        restrict_dependent_destroy:
+          has_many: "Cannot delete record because dependent %{record} exist"
         blank: "This field is required."
         inclusion: "Selection is not valid."
   sub_space_booking:
