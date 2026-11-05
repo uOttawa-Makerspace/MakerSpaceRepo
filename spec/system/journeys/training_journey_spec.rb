@@ -62,7 +62,7 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
     as_actor(:user) do
       visit user_path(user.username)
       expect(page).to have_text(fx[:training].localized_name)
-      expect(page).to have_css("a[href='/badges/#{cert.id}']", visible: :all)
+      expect(page).to have_css("a[href='/badges/#{cert.share_token}']", visible: :all)
     end
   end
 
