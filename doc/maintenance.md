@@ -8,15 +8,7 @@ In this guide we'll go over different scenarios, useful commands and procedures 
 
 ## Tools
 
-Whether the maintenance is planned or not, there are several tools at our disposal to facilitate an easy recovery. First if the website will be inaccessible it is preferable to have our own branding on the "Server Down" messaging than say Cloudflare. This signals we are aware the server is down and do not need to be informed. We have two different tools to accomplish this.
-
-- Cloudflare Pages
-- Capistrano
-
-Capistrano can be used with the follow command
-`cap production maintenance:enable REASON="Immediate Unexpected Maintenance" UNTIL="HH:HH (H:MM AM/PM)"`
-Capistrano is launched from your local development environment and effectively supplants MakerRepo until the disable command
-`cap production maintenance:disable` is run. The downside to this method is it requires the server to be reachable, so in cases where the server will not at all times be reachable we can use Cloudflare
+Whether the maintenance is planned or not, there are several tools at our disposal to facilitate an easy recovery. First if the website will be inaccessible it is preferable to have our own branding on the "Server Down" messaging than say Cloudflare. This signals we are aware the server is down and do not need to be informed. The app has no built-in maintenance mode, and the deploy workflow does not provide one. The way to show a branded "Server Down" page is Cloudflare Pages, which does not depend on the server being reachable.
 
 Direct the cname record for MakerRepo to makerepo-is-down.pages.dev for a server-less static down page.
 
