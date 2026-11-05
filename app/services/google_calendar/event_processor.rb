@@ -1,9 +1,10 @@
 module GoogleCalendar
   class EventProcessor
     VALID_LOCATIONS = ["STM 124", "STM 126"].freeze
+    # Time zone in which an all-day event starts and ends at midnight.
+    ALL_DAY_TIME_ZONE = "America/Toronto"
     # Owner of a mirrored booking whose Google creator has no account. Configurable with the
     # "google_calendar_fallback_email" setting or the GOOGLE_CALENDAR_FALLBACK_EMAIL environment variable.
-    ALL_DAY_TIME_ZONE = "America/Toronto"
     DEFAULT_FALLBACK_EMAIL = "avend029@uottawa.ca"
 
     def self.process(event)
