@@ -30,7 +30,10 @@ RSpec.describe "Repository zip download", type: :request do
     get download_files_repositories_path(user_username, r.id)
   end
 
-  after { FileUtils.rm_f(repo.zip_path) }
+  # Each example has its own cache directory (parallel processes would otherwise share zips of the same id).
+  let(:cache_dir) { Pathname(Dir.mktmpdir("repository_zips")) }
+  before { allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir) }
+  after { FileUtils.rm_rf(cache_dir.to_s) }
 
   # Downloads need a signed-in user; most examples are the owner.
   before { content_login!(owner) }
@@ -252,14 +255,14 @@ RSpec.describe "Repository zip download", type: :request do
       expect(response.media_type).to eq("application/zip")
       expect(response.headers["Content-Disposition"]).to include("zip-me-#{repo.id}.zip")
       expect(zip_entries).to eq("a.txt" => "v1")
-      expect(Dir.glob(Rails.root.join("tmp/repository_zips/makerepo_#{repo.id}*"))).to be_empty
+      expect(Dir.glob(cache_dir.join("*").to_s)).to be_empty
     end
 
     it "leaves no partial file when the build fails" do
       allow_any_instance_of(ActiveStorage::Blob).to receive(:download).and_raise(IOError, "boom")
       download
       expect(response).to have_http_status(:internal_server_error)
-      expect(Dir.glob(Rails.root.join("tmp/repository_zips/makerepo_#{repo.id}*"))).to be_empty
+      expect(Dir.glob(cache_dir.join("*").to_s)).to be_empty
     end
 
     it "streams a zip that is too large to cache without keeping it" do
@@ -270,7 +273,7 @@ RSpec.describe "Repository zip download", type: :request do
       expect(response.media_type).to eq("application/zip")
       expect(response.headers["Content-Disposition"]).to include("zip-me-#{repo.id}.zip")
       expect(zip_entries).to eq("a.txt" => "v1")
-      expect(Dir.glob(Rails.root.join("tmp/repository_zips/makerepo_#{repo.id}*"))).to be_empty
+      expect(Dir.glob(cache_dir.join("*").to_s)).to be_empty
     end
 
     it "skips a file missing from storage on the streamed path and redirects when none is left" do

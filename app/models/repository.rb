@@ -194,7 +194,7 @@ class Repository < ApplicationRecord
   end
 
   def zip_path
-    Rails.root.join("tmp", "repository_zips", "makerepo_#{id}.zip")
+    Repository::ZipCache.directory.join("makerepo_#{id}.zip")
   end
 
   def clear_zip_cache
