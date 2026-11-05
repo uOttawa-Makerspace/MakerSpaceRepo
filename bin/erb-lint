@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+# Lints app/views with erb_lint and fails only on offenses that are not in the
+# committed baseline.
+#
+# An offense is fingerprinted as file + linter + message, with no line numbers,
+# so moving code around does not create "new" offenses. The baseline keeps a
+# count per fingerprint; a fingerprint may only occur as often as it does there.
+#
+#   bin/erb-lint           fail on new offenses (what CI runs)
+#   bin/erb-lint --update  rewrite the baseline from the current offenses
+#                          (use after fixing offenses, never to hide new ones)
+require "json"
+require "open3"
+
+ROOT = File.expand_path("..", __dir__)
+BASELINE = File.join(ROOT, "config", "erb-lint-baseline.txt")
+
+def current_offenses
+  out, err, status = Open3.capture3("bundle", "exec", "erb_lint", "--lint-all", "--format", "json", "app/views", chdir: ROOT)
+  report = JSON.parse(out[/\{.*\}/m].to_s) rescue nil
+  abort("erb-lint: could not run erb_lint\n#{err}#{out}") if report.nil? || (!status.success? && status.exitstatus != 1)
+
+  counts = Hash.new(0)
+  report["files"].each do |file|
+    file["offenses"].each { |o| counts["#{file["path"]}\t#{o["linter"]}\t#{o["message"]}"] += 1 }
+  end
+  counts
+end
+
+def format_baseline(counts)
+  counts.sort.map { |key, count| "#{count}\t#{key}\n" }.join
+end
+
+current = current_offenses
+
+if ARGV.include?("--update")
+  File.write(BASELINE, format_baseline(current))
+  puts "baseline written: #{current.values.sum} offenses in #{current.size} fingerprints"
+  exit 0
+end
+
+baseline = Hash.new(0)
+File.foreach(BASELINE) do |line|
+  count, key = line.chomp.split("\t", 2)
+  baseline[key] = count.to_i if key
+end
+
+added = current.select { |key, count| count > baseline[key] }
+unless added.empty?
+  warn "New ERB lint offenses (not in config/erb-lint-baseline.txt):"
+  added.each { |key, count| warn "  #{count - baseline[key]} x #{key.tr("\t", "  ")}" }
+  exit 1
+end
+
+known = baseline.values.sum
+total = current.values.sum
+note = total < known ? ", #{known - total} fewer than the baseline: run bin/erb-lint --update" : ""
+puts "erb-lint: no new offenses (#{total} baselined#{note})"

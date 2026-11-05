@@ -1,7 +1,9 @@
-# Ensure the Rails bin directory is in the PATH for Git GUI tools
-export PATH="/rails/bin:$PATH"
-
-bundle lock --add-platform aarch64-linux
+# Run against the checkout being committed, which may be a git worktree with
+# its own bin/ and Gemfile (never the main checkout's).
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root" || exit 1
+export PATH="$repo_root/bin:$PATH"
+export BUNDLE_GEMFILE="$repo_root/Gemfile"
 
 yarn lint-staged
 
@@ -11,6 +13,5 @@ changed_files=$(git diff --name-only --staged HEAD --diff-filter=d | grep -E '\.
 if [ -n "$changed_files" ]; then
   printf "Running erblint..."
   bundle exec erblint $changed_files --autocorrect
-  git fetch
   git add $changed_files
 fi
