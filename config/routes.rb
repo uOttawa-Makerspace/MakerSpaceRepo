@@ -482,7 +482,7 @@ Rails.application.routes.draw do
 
   resources :key_requests, only: %i[index new create show] do
     get :steps
-    patch :steps
+    patch :steps, action: :update_steps
   end
 
   resources :key_certifications, only: %i[show update] do
