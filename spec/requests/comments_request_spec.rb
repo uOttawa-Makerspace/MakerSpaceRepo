@@ -140,11 +140,10 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect { delete comments_destroy_path(comment.id) }.to change(Comment, :count).by(-1)
     end
 
-    it "500s for an unknown comment (the redirect dereferences nil)" do
+    it "answers 404 for an unknown comment" do
       content_login!(author)
-      # destroy of a missing comment flashes then calls comment.repository on nil
       delete comments_destroy_path(0)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
