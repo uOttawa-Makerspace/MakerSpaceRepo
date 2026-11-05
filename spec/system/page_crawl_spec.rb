@@ -9,7 +9,7 @@ require "rails_helper"
 # outside spec/support/js_error_allowlist.rb. The no-500 breadth check for all
 # roles lives in spec/requests/page_crawl_spec.rb.
 RSpec.describe "Page crawl (browser, JS entrypoints)", type: :system, skip_bullet: true do
-  ENTRYPOINT = %r{/vite-test/assets/(?!application-)[\w.-]+\.js}
+  ENTRYPOINT = %r{/vite-test(?:-coverage)?/assets/(?!application-)[\w.-]+\.js}
 
   let!(:admin) { create(:user, :admin) }
 
