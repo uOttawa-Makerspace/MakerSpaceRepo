@@ -752,6 +752,7 @@ GEM
       yard (~> 0.9)
     youtube_id (0.1.0)
     zeitwerk (2.8.3)
+    zip_kit (6.4.1)
 
 PLATFORMS
   aarch64-linux
@@ -841,6 +842,7 @@ DEPENDENCIES
   web-console
   webmock
   youtube_id
+  zip_kit (~> 6.4)
 
 RUBY VERSION
   ruby 4.0.6

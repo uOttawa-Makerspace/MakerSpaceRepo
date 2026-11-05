@@ -73,3 +73,8 @@ One line stays: `increment_year`. It is not a Solid Queue task and keeps running
 The locker notices migration must run before the first 8:30am run of the locker expiry notices (`locker_expiry_notices`). It marks the rentals that expired long ago as already notified, so renters are not mailed about old expiries. Running the migrations as part of the deploy covers this.
 
 Post-deploy step for this release (Google Calendar webhook): run `bin/rails runner 'GoogleCalendar::WebhookRegistrar.register!'` once, right after the deploy. Channels registered before this release have no token, and the webhook refuses their pushes (401) until they are re-registered; there is no grace period for them. The same applies whenever `secret_key_base` is rotated: every channel's token is derived from it, so every channel is refused until it is re-registered with the same command.
+
+
+## Repository zip cache
+
+Repository downloads are cached as zips in `tmp/repository_zips`. The cache is limited by `REPOSITORY_ZIP_CACHE_MAX_BYTES` (default 5 GB), the filesystem keeps `REPOSITORY_ZIP_MIN_FREE_BYTES` free (default 5 GB), and a zip larger than `REPOSITORY_ZIP_MAX_CACHED_ZIP_BYTES` (default 1 GB) is streamed instead of kept. An hourly job trims the cache (least recently used first) and removes partial zips older than an hour. Everything in `tmp/repository_zips` can be deleted at any time; zips are rebuilt on demand. See `doc/flows/repositories-and-makes.md`.

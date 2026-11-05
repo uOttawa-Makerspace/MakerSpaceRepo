@@ -1,5 +1,6 @@
 class RepositoriesController < SessionsController
   include BCrypt
+  include ZipKit::RailsStreaming
   before_action :current_user
   before_action :signed_in,
                 except: %i[show download_files password_entry pass_authenticate]
@@ -24,6 +25,12 @@ class RepositoriesController < SessionsController
              }
   before_action :redirect_to_owner_url, only: %i[show download_files password_entry]
   before_action :check_auth, only: %i[show download_files]
+  before_action :require_sign_in_to_download, only: :download_files
+  # Zip builds are expensive: per user and per address, staff and admin exempt
+  rate_limit to: 20, within: 1.hour, only: :download_files, name: "download-user", if: -> { throttled_downloader? },
+             by: -> { current_user.id }, with: -> { download_throttled }
+  rate_limit to: 20, within: 1.hour, only: :download_files, name: "download-ip", if: -> { throttled_downloader? },
+             by: -> { request.remote_ip }, with: -> { download_throttled }
   before_action -> { ensure_repository_unlocked(@repository) }, only: :add_like
   before_action :set_member_repository,
                 only: %i[link_to_pp add_member remove_member]
@@ -89,74 +96,19 @@ class RepositoriesController < SessionsController
       redirect_to password_entry_repository_path(denial_username(@repository), @repository.id), alert: "Password required" and return
     end
 
-    @files = @repository.repo_files
-    if @files.empty?
+    if @repository.repo_files.empty?
       flash[:alert] = "This repository has no files to download."
       redirect_to repository_path(@repository.user_username, @repository.slug) and return
     end
 
-    zip_dir = Rails.root.join("tmp", "repository_zips")
-    FileUtils.mkdir_p(zip_dir) unless File.directory?(zip_dir)
-
-    zip_path = zip_dir.join("makerepo_#{@repository.id}.zip")
-
-    # CACHE CHECK: If the zip already exists and is newer than the repository,
-    # send it immediately without touching S3
-    if File.exist?(zip_path) && File.mtime(zip_path) > @repository.updated_at
-      send_file zip_path,
-                type: "application/zip",
-                filename: "#{@repository.title.parameterize.presence || 'repository'}-#{@repository.id}.zip"
-      return
-    end
-
-    # If out of date, remove the old zip and build a new one
-    File.delete(zip_path) if File.exist?(zip_path)
-
-    temp_files = []
-    files_added_count = 0
-
-    begin
-      Zip::File.open(zip_path, create: true) do |zip|
-        @files.each_with_index do |file, index|
-          next unless file.file.attached?
-
-          temp_file = Tempfile.new(["repo_file", File.extname(file.file.filename.to_s)], binmode: true)
-          temp_files << temp_file
-
-          begin
-            # Stream directly from S3 without the slow pre-check
-            file.file.download { |chunk| temp_file.write(chunk) }
-            temp_file.flush
-            temp_file.rewind
-
-            entry_name = file.file.filename.to_s
-            entry_name = "#{index}_#{entry_name}" if zip.find_entry(entry_name)
-            zip.add(entry_name, temp_file.path)
-            files_added_count += 1
-          rescue ActiveStorage::FileNotFoundError, Aws::S3::Errors::NoSuchKey
-            # Skip files that don't exist in the S3 bucket (e.g. in staging)
-            Rails.logger.warn("Attachment #{file.file.blob&.key} missing in S3, skipping.")
-          end
-        end
-      end
-    ensure
-      # Clean up all tempfiles after Zip::File has completely closed
-      temp_files.each do |tf|
-        tf.close
-        tf.unlink
-      end
-    end
-
-    # If no files actually existed in S3, don't send an empty/broken zip
-    if files_added_count.zero?
-      File.delete(zip_path) if File.exist?(zip_path)
+    zip = Repository::ZipCache.new(@repository).fetch
+    # If no files actually existed in S3, there is no zip to send
+    if zip.empty?
       flash[:alert] = "None of the files for this repository could be found in storage."
       redirect_to repository_path(@repository.user_username, @repository.slug) and return
     end
 
-    send_file zip_path,
-              type: "application/zip",
-              filename: "#{@repository.title.parameterize.presence || 'repository'}-#{@repository.id}.zip"
+    send_zip(zip)
   end
 
   def new
@@ -426,6 +378,31 @@ class RepositoriesController < SessionsController
       flash[:alert] = "You are not allowed to perform this action!"
       redirect_to repository_path(denial_username(@repository), @repository.slug)
     end
+  end
+
+  def require_sign_in_to_download
+    return if signed_in?
+
+    redirect_to login_path(back_to: login_back_to), alert: "Sign in to download this repository."
+  end
+
+  def throttled_downloader?
+    !current_user.staff?
+  end
+
+  def download_throttled
+    render plain: "Too many downloads, please try again later.", status: :too_many_requests
+  end
+
+  def zip_download_name
+    "#{@repository.title.parameterize.presence || 'repository'}-#{@repository.id}.zip"
+  end
+
+  # A cached zip is sent from disk; otherwise it streams from storage as it is built.
+  def send_zip(zip)
+    return send_file(zip.path, type: "application/zip", filename: zip_download_name) if zip.path
+
+    zip_kit_stream(filename: zip_download_name) { |streamer| Repository::ZipCache.write_entries(streamer, zip.entries) }
   end
 
   def check_auth
