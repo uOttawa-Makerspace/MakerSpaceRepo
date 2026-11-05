@@ -34,11 +34,10 @@ class Admin::EventsController < AdminAreaController
       end
     end
 
-    if @event.save && Array(@event_assignments).all?(&:save)
+    saved = @event.save && Array(@event_assignments).all?(&:save)
+    @event.push_to_google_later if @event.persisted?
 
-      @event.reload
-      Event.upsert_event(@event) unless @event.draft
-
+    if saved
       flash[:notice] = "Event created successfully."
     else
       flash[:alert] = "Failed to create event: #{@event.errors.full_messages.to_sentence}"
@@ -92,9 +91,8 @@ class Admin::EventsController < AdminAreaController
           @event.event_assignments << @event_assignments
         end
 
-        @event.reload
-        Event.upsert_event(@event) unless @event.draft
-        
+        @event.push_to_google_later
+
         flash[:notice] = "Event updated successfully."
       else
         flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
@@ -150,8 +148,7 @@ class Admin::EventsController < AdminAreaController
           @event.event_assignments << @event_assignments
         end
 
-        @event.reload
-        Event.upsert_event(@event) unless @event.draft
+        @event.push_to_google_later
 
         flash[:notice] = "Unavailability updated successfully."
       else
@@ -172,7 +169,7 @@ class Admin::EventsController < AdminAreaController
 
     if @event.recurrence_rule.blank?
       # No recurrence: just delete it normally
-      @event.destroy
+      destroy_event(@event)
       redirect_back(fallback_location: admin_calendar_index_path, notice: "Event deleted.")
       return
     end
@@ -194,6 +191,7 @@ class Admin::EventsController < AdminAreaController
       ]
       
       @event.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
+      @event.push_to_google_later
       redirect_back(fallback_location: admin_calendar_index_path, notice: "This occurrence deleted.")
       
     when "following"
@@ -212,10 +210,11 @@ class Admin::EventsController < AdminAreaController
       ]
       
       @event.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
+      @event.push_to_google_later
       redirect_back(fallback_location: admin_calendar_index_path, notice: "This and following deleted.")
       
     when "all"
-      @event.destroy
+      destroy_event(@event)
       redirect_back(fallback_location: admin_calendar_index_path, notice: "Event series deleted.")
       
     else
@@ -301,6 +300,7 @@ class Admin::EventsController < AdminAreaController
 
       Event.where(space_id: space_id, start_time: start_date..end_date, draft: true).find_each do |event|
         if event.update(draft: false)
+          event.push_to_google_later
           updated_count += 1
         else
           failures << "#{event.title.presence || "Event ##{event.id}"} (#{event.errors.full_messages.to_sentence})"
@@ -312,6 +312,7 @@ class Admin::EventsController < AdminAreaController
     else
       @event = Event.find(params[:id])
       if @event.update(draft: false)
+        @event.push_to_google_later
         flash[:notice] = "Event published successfully."
       else
         flash[:alert] = "Failed to publish event: #{@event.errors.full_messages.to_sentence}"
@@ -327,8 +328,9 @@ class Admin::EventsController < AdminAreaController
     space_id = params[:space_id]
     return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
 
-    draft_events = Event.where(space_id: space_id, start_time: start_date..end_date, draft: true, recurrence_rule: [nil, ""])
-    deleted_count = draft_events.destroy_all.size
+    draft_events = Event.where(space_id: space_id, start_time: start_date..end_date, draft: true, recurrence_rule: [nil, ""]).includes(:space).to_a
+    draft_events.each { |event| destroy_event(event) }
+    deleted_count = draft_events.size
         
     redirect_back(fallback_location: admin_calendar_index_path, 
       notice: "#{deleted_count} draft event(s) deleted. Any recurring events were untouched and must be deleted separately.")
@@ -397,8 +399,8 @@ class Admin::EventsController < AdminAreaController
     end
 
     if series_updated
-      @new_event.reload
-      Event.upsert_event(@new_event) unless @new_event.draft
+      @event.push_to_google_later
+      @new_event.push_to_google_later
       flash[:notice] = "This event occurrence updated successfully."
     else
       flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
@@ -426,6 +428,13 @@ class Admin::EventsController < AdminAreaController
         assignment.attributes.except("id", "event_id", "created_at", "updated_at")
       )
     end
+  end
+
+  # Destroys the event, then queues the removal of its Google copy (read before the row is gone).
+  def destroy_event(event)
+    google_event_id = event.google_event_id
+    space = event.space
+    Event.remove_from_google_later(google_event_id, space) if event.destroy
   end
 
   def build_occurrence_event(title)
