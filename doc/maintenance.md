@@ -66,6 +66,12 @@ SolidQueue::FailedExecution.order(created_at: :desc).limit(5).pluck(:error)     
 
 The same data is in the `solid_queue_recurring_executions` and `solid_queue_failed_executions` tables, and the worker's logs (`docker compose -f docker-compose.production.yml logs worker`) show each job. Finished jobs are cleared out regularly, so check the recurring executions or the data a task writes (for example `PopularHour.maximum(:updated_at)`).
 
+### Deploy step: remove the moved tasks from the host crontab
+
+The host crontab used to run these tasks with `docker compose exec`. After this ships they run in the `worker` container, so the owner must remove their lines from the host crontab (`crontab -e`) in the same deploy. A crontab line that starts working later (for example once `-T` is added to `docker compose exec`) would otherwise run the task a second time: the CDEL report would be mailed twice and the popular hours counted twice.
+
+Tasks that moved: popular hours, active volunteers, clear printers, the CDEL report, the Google Calendar webhook registration, and the locker expiry notices if a line for them exists. The print order reminder was removed (task and mailer method) by owner decision. Keep only the `increment_year:increment_one_year` line; it is not scheduled in `recurring.yml`. From cron, `docker compose exec` needs `-T` (no terminal) to run.
+
 ### Backfilling the CDEL report
 
 The report mailed on the 1st covers the month just ended. To mail a month again, or one that was missed, give the month as `YYYY-MM` (not later than the current month). Each run sends one mail:
