@@ -15,7 +15,7 @@ RSpec.describe "Printer issues", type: :request do
   end
 
   describe "auth matrix" do
-    GETS = %i[printer_issues_path new_printer_issue_path history_printer_issues_path].freeze
+    GETS = %i[printer_issues_path new_printer_issue_path].freeze
 
     GETS.each do |helper|
       it "#{helper}: guest -> login, regular -> root alert" do
@@ -65,15 +65,18 @@ RSpec.describe "Printer issues", type: :request do
       expect(json["issues"].first).to include("id" => issue.id, "printer_id" => printer.id, "active" => true, "reporter" => issue.reporter.name)
     end
 
-    it "renders show, new, edit and the implicit history page" do
+    it "renders show, new and edit" do
       get printer_issue_path(issue)
       expect(response).to have_http_status(:ok)
       get new_printer_issue_path
       expect(response).to have_http_status(:ok)
       get edit_printer_issue_path(issue)
       expect(response).to have_http_status(:ok)
-      get history_printer_issues_path
-      expect(response).to have_http_status(:ok)
+    end
+
+    it "has no history page route" do
+      expect(Rails.application.routes.recognize_path("/printer_issues/history"))
+        .to include(controller: "printer_issues", action: "show", id: "history")
     end
 
     # show for an unknown id uses find_by and renders the template with a nil @issue (500) instead of 404

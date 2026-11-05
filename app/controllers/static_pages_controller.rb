@@ -96,58 +96,6 @@ class StaticPagesController < SessionsController
       end
   end
 
-  # ─── 2. USER-SPECIFIC WIDGETS (Loaded via Background Turbo Frame) ─────────
-  def home_user_widgets
-    return head :ok unless current_user
-
-    @volunteer_program_shadowing_scheduled =
-      current_user.shadowing_hours.includes(:space).map do |hours|
-        end_time = hours.end_time.strftime('%H:%M')
-        formatted_time = "#{I18n.l hours.start_time, format: '%A %H:%M'} - #{end_time}"
-        [hours.space.name, formatted_time]
-      end
-
-    @volunteer_program_your_tasks =
-      current_user
-        .volunteer_task_joins
-        .active
-        .order(updated_at: :desc)
-        .joins(:volunteer_task)
-        .includes(volunteer_task: :space)
-        .where(volunteer_task: { status: 'open' })
-        .limit(5)
-        .map do |task|
-          task_name = task.volunteer_task.title
-          space_name = task.volunteer_task.space.name
-          formatted_time = task.created_at.strftime('%H:%M')
-          [task_name, space_name, formatted_time, task.volunteer_task_id]
-        end
-
-    @user_skills =
-      Certification
-        .where(user_id: current_user.id)
-        .joins(training_session: :training)
-        .limit(5)
-        .pluck('trainings.name_en', 'training_sessions.level')
-
-    # Cached total tracks (SQL Group Count instead of full table scan)
-    total_tracks = Rails.cache.fetch('LearningModuleTotalTracks', expires_in: 1.hour) do
-      LearningModule.joins(:training).group('trainings.name_en').count
-    end
-
-    @user_tracks =
-      current_user
-        .learning_module_tracks
-        .includes(learning_module: :training)
-        .group_by { |x| x.learning_module.training.name_en }
-        .transform_values { |x| x.map(&:status).tally }
-        .map do |key, value|
-          [key, "#{value['Completed'] || 0}/#{total_tracks[key] || 0}"]
-        end
-
-    render partial: 'home_user_widgets', layout: false
-  end
-
   def about; end
 
   def contact

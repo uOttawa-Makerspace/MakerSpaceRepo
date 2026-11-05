@@ -61,10 +61,9 @@ RSpec.describe "Admin settings", type: :request do
       expect(response.body).to include("Drones", "Attic", "Mill")
     end
 
-    it "answers 404 for submit_pi (route exists, action was commented out)" do
-      sign_in_as(:admin)
-      post submit_pi_admin_settings_path
-      expect(response).to have_http_status(:not_found)
+    it "has no submit_pi route" do
+      expect { Rails.application.routes.recognize_path("/admin/settings/submit_pi", method: :post) }
+        .to raise_error(ActionController::RoutingError)
     end
   end
 
