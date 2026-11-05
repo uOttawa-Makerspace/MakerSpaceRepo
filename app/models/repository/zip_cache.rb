@@ -9,8 +9,7 @@ require "open3"
 # least recently used zips are removed to make room. A repository whose zip would exceed
 # REPOSITORY_ZIP_MAX_CACHED_ZIP_BYTES is built for one response and not kept. Each file streams from storage
 # straight into the zip; the zip is written under a temporary name and renamed when complete, and a failed build
-# leaves nothing behind. Only files in the cache directory (and the repo_file* leftovers of the old build in the
-# system temp directory) are ever deleted.
+# leaves nothing behind. Only files in the cache directory are ever deleted.
 class Repository::ZipCache
   # +path+ is a cached zip to send; +entries+ are the files to stream into a response when there is no cached zip.
   # Both are empty when none of the repository's files could be found in storage.
@@ -39,19 +38,25 @@ class Repository::ZipCache
   def self.min_free_bytes = setting("REPOSITORY_ZIP_MIN_FREE_BYTES", 5 * GIGABYTE)
   def self.max_cached_zip_bytes = setting("REPOSITORY_ZIP_MAX_CACHED_ZIP_BYTES", GIGABYTE)
 
-  # Bytes available to this process on the filesystem holding +path+.
+  # Free space could not be read.
+  class UnreadableSpace < StandardError; end
+
+  # Bytes available to this process on the filesystem holding +path+. Raises UnreadableSpace for anything unexpected.
   def self.free_bytes(path)
     out, status = Open3.capture2("df", "-Pk", path.to_s)
-    raise "df failed" unless status.success?
+    raise UnreadableSpace, "df failed" unless status.success?
 
-    out.lines.last.split[3].to_i * 1024
+    kilobytes = Integer(out.lines.last.to_s.split[3], 10, exception: false)
+    raise UnreadableSpace, "unexpected df output" if kilobytes.nil? || kilobytes.negative?
+
+    kilobytes * 1024
   end
 
   # The recurring job: temporary files older than an hour, then the cap and the floor.
   def self.cleanup!(now: Time.current, directory: self.directory)
     cache = new(nil, directory: directory)
     cache.remove_stale_partials(now)
-    cache.make_room(0, capped: true)
+    cache.make_room(0, capped: true, evict_when_unreadable: false)
   end
 
   def initialize(repository, directory: self.class.directory)
@@ -80,19 +85,28 @@ class Repository::ZipCache
     Result.new(path: build(entries), entries: [])
   end
 
-  # Writes the entries into a zip streamer, each file straight from storage.
+  # Writes the entries into a zip streamer, each file straight from storage. A file that vanished from storage since
+  # it was listed is skipped (the streamer leaves it out of the archive). Returns the number written.
   def self.write_entries(zip, entries)
-    entries.each do |name, attachment|
+    entries.count do |name, attachment|
       zip.write_file(name) { |sink| attachment.download { |chunk| sink << chunk } }
+      true
+    rescue ActiveStorage::FileNotFoundError, Aws::S3::Errors::NoSuchKey
+      Rails.logger.warn("Attachment #{attachment.blob&.key} missing in S3, skipping.")
+      false
     end
   end
 
   # Evicts least recently used zips (down to none) until +needed+ more bytes fit under the cap (when +capped+)
-  # and above the free-space floor. False when nothing evictable is left and it still does not fit.
-  def make_room(needed, capped:)
+  # and above the free-space floor. False when nothing evictable is left and it still does not fit. When the free
+  # space cannot be read nothing is evicted for the floor: only the cap applies (and with
+  # evict_when_unreadable: false nothing is evicted at all).
+  def make_room(needed, capped:, evict_when_unreadable: true)
     zips = zips_by_use
     total = zips.sum { |zip| zip[:size] }
-    free = self.class.free_bytes(@directory)
+    free = readable_free_bytes
+    return true if free.nil? && !evict_when_unreadable
+
     until fits?(total, free, needed, capped)
       victim = zips.shift or return false
       total -= victim[:size]
@@ -101,11 +115,10 @@ class Repository::ZipCache
     true
   end
 
-  # Partial builds in the cache directory and repo_file* leftovers of the old build, older than an hour.
+  # Partial builds (temporary names) in the cache directory older than an hour.
   def remove_stale_partials(now)
     cutoff = now - STALE_AFTER
-    stale = Dir.glob(@directory.join("*#{TEMP_SUFFIX}").to_s) + Dir.glob(File.join(Dir.tmpdir, "repo_file*"))
-    stale.each do |file|
+    Dir.glob(@directory.join("*#{TEMP_SUFFIX}").to_s).each do |file|
       next unless File.file?(file) && !File.symlink?(file) && File.mtime(file) < cutoff
 
       FileUtils.rm_f(file)
@@ -152,15 +165,23 @@ class Repository::ZipCache
     estimate <= [self.class.max_cached_zip_bytes, self.class.cache_max_bytes].min
   end
 
+  def readable_free_bytes
+    self.class.free_bytes(@directory)
+  rescue UnreadableSpace => e
+    Rails.error.report(e, handled: true, severity: :warning, context: { directory: @directory.to_s })
+    nil
+  end
+
   def fits?(total, free, needed, capped)
-    (!capped || total + needed <= self.class.cache_max_bytes) && free - needed >= self.class.min_free_bytes
+    (!capped || total + needed <= self.class.cache_max_bytes) &&
+      (free.nil? || free - needed >= self.class.min_free_bytes)
   end
 
   def zips_by_use
     recent = Time.now - EVICTION_GRACE
     zips = Dir.glob(@directory.join("makerepo_*.zip").to_s).filter_map do |zip|
       stat = File.stat(zip)
-      next if stat.mtime > recent
+      next if stat.mtime > recent || stat.atime > recent
 
       { path: zip, size: stat.size, used: stat.atime }
     rescue Errno::ENOENT
@@ -177,9 +198,18 @@ class Repository::ZipCache
     Result.new(entries: entries)
   end
 
+  # Nothing could be read from storage: no zip is kept (the result is empty).
+  def discard(temp)
+    FileUtils.rm_f(temp)
+    nil
+  end
+
   def build(entries)
     temp = @directory.join("makerepo_#{@repository.id}.#{SecureRandom.hex(6)}#{TEMP_SUFFIX}")
-    File.open(temp, "wb") { |io| ZipKit::Streamer.open(io) { |zip| self.class.write_entries(zip, entries) } }
+    written = 0
+    File.open(temp, "wb") { |io| ZipKit::Streamer.open(io) { |zip| written = self.class.write_entries(zip, entries) } }
+    return discard(temp) if written.zero?
+
     File.rename(temp, path)
     path
   rescue StandardError

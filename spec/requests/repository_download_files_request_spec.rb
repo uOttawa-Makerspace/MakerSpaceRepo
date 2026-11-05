@@ -265,6 +265,18 @@ RSpec.describe "Repository zip download", type: :request do
       expect(Dir.glob(cache_dir.join("*").to_s)).to be_empty
     end
 
+    it "skips a file that vanishes from storage between the check and the download" do
+      gone = add_file("gone.txt")
+      allow_any_instance_of(ActiveStorage::Blob).to receive(:download).and_wrap_original do |m, *args, &blk|
+        raise ActiveStorage::FileNotFoundError if m.receiver.id == gone.file.blob.id
+
+        m.call(*args, &blk)
+      end
+      download
+      expect(response).to have_http_status(:ok)
+      expect(zip_entries).to eq("a.txt" => "v1")
+    end
+
     it "streams a zip that is too large to cache without keeping it" do
       stub_const("ENV", ENV.to_h.merge("REPOSITORY_ZIP_MAX_CACHED_ZIP_BYTES" => "10"))
       expect(Rails.error).not_to receive(:report)
