@@ -63,7 +63,6 @@ group :development, :test do
   gem "faraday-retry", "~> 2.4"
   gem "listen", "~> 3.7"
   gem "mocha"
-  gem "prettier_print"
   gem "pry", "~> 0.15"
   gem "pry-rails", "~> 0.3"
   gem "rails_best_practices", require: false
@@ -73,9 +72,6 @@ group :development, :test do
   gem "rspec_junit_formatter"
   gem "ruby_audit", require: false
   gem "simplecov", "~> 0.22"
-  gem "syntax_tree"
-  gem "syntax_tree-haml"
-  gem "syntax_tree-rbs"
   gem "debug"
 end
 
