@@ -11,7 +11,7 @@ printf "Changed Files:\n"
 # staged filenames, filter out deleted
 changed_files=$(git diff --name-only --staged HEAD --diff-filter=d | grep -E '\.(erb)$') && echo "$changed_files"
 if [ -n "$changed_files" ]; then
-  printf "Running erblint..."
-  bundle exec erblint $changed_files --autocorrect
+  printf "Running erb_lint..."
+  bundle exec erb_lint $changed_files --autocorrect
   git add $changed_files
 fi
