@@ -214,19 +214,19 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(flash[:alert]).to eq("Unable to apply the changes.")
       end
 
-      it "adds new images and deletes images by filename" do
+      it "adds new images and deletes the ticked image" do
         photo = create(:photo, proficient_project: project)
         patch proficient_project_path(project),
-              params: project_params.merge(images: [content_png_upload], deleteimages: [photo.image.filename.to_s])
+              params: project_params.merge(images: [content_png_upload], deleteimages: "#{photo.id},")
         # the new upload is also named avatar.png/test.png; the old one was purged by filename
         expect(project.reload.photos.count).to eq(1)
         expect(Photo.exists?(photo.id)).to be(false)
       end
 
-      it "adds uploaded files and deletes files by filename" do
+      it "adds uploaded files and deletes the ticked file" do
         rf = create(:repo_file, proficient_project: project)
         patch proficient_project_path(project),
-              params: project_params.merge(files: [content_pdf_upload], deletefiles: [rf.file.filename.to_s])
+              params: project_params.merge(files: [content_pdf_upload], deletefiles: "#{rf.id},")
         expect(RepoFile.exists?(rf.id)).to be(false)
         expect(project.reload.repo_files.count).to eq(1)
       end
@@ -236,6 +236,36 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         patch proficient_project_path(project), params: project_params.merge(files: [content_pdf_upload])
         expect(project.reload.repo_files.count).to eq(2)
         expect(RepoFile.exists?(rf.id)).to be(true)
+      end
+
+      it "removes only the ticked file when another file has a similar or the same name" do
+        keep_same = create(:repo_file, proficient_project: project)
+        ticked = create(:repo_file, proficient_project: project)
+        other = create(:repo_file, proficient_project: project)
+        keep_same.file.blob.update!(filename: ticked.file.filename.to_s)
+        other.file.blob.update!(filename: "x#{ticked.file.filename}")
+        patch proficient_project_path(project), params: project_params.merge(deletefiles: "#{ticked.id},")
+        expect(project.reload.repo_files.pluck(:id)).to contain_exactly(keep_same.id, other.id)
+      end
+
+      it "removes only the ticked photo when another photo has the same filename" do
+        ticked = create(:photo, proficient_project: project)
+        keep = create(:photo, proficient_project: project)
+        keep.image.blob.update!(filename: ticked.image.filename.to_s)
+        patch proficient_project_path(project), params: project_params.merge(deleteimages: "#{ticked.id},")
+        expect(project.reload.photos.pluck(:id)).to eq([keep.id])
+      end
+
+      it "removes ticked videos spread across two video records and keeps the others" do
+        v1 = create(:video, :with_video, proficient_project: project)
+        v2 = create(:video, :with_video, proficient_project: project)
+        v3 = create(:video, :with_video, proficient_project: project)
+        ticked = [v1.video.first.id, v2.video.first.id]
+        patch proficient_project_path(project), params: project_params.merge(deletevideos: ticked.join(","))
+        expect(Video.where(id: [v1.id, v2.id])).to be_empty
+        expect(Video.exists?(v3.id)).to be(true)
+        expect(v3.reload.video).to be_attached
+        expect(response).to redirect_to(proficient_project_path(project.id))
       end
 
       it "deletes a video by id from the deletevideos list" do

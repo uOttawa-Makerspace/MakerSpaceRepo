@@ -397,63 +397,52 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def update_photos
-    if params["deleteimages"].present?
-      @proficient_project.photos.each do |img|
-        next unless params["deleteimages"].include?(img.image.filename.to_s)
-        # checks if the file should be deleted
-        img.image.purge
-        img.destroy
-      end
+    ticked = ticked_ids("deleteimages")
+    @proficient_project.photos.where(id: ticked).find_each do |img|
+      img.image.purge
+      img.destroy
     end
 
-    return unless params["images"].present?
-      params["images"].each do |img|
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          proficient_project_id: @proficient_project.id,
-          width: dimension.first,
-          height: dimension.last
-        )
-      end
-    
+    Array(params["images"]).each do |img|
+      dimension = FastImage.size(img.tempfile, raise_on_failure: true)
+      Photo.create(
+        image: img,
+        proficient_project_id: @proficient_project.id,
+        width: dimension.first,
+        height: dimension.last
+      )
+    end
   end
 
   def update_files
-    if params["deletefiles"].present?
-      @proficient_project.repo_files.each do |f|
-        next unless params["deletefiles"].include?(f.file.filename.to_s)
-        # checks if the file should be deleted
-        f.file.purge
-        f.destroy
-      end
+    ticked = ticked_ids("deletefiles")
+    @proficient_project.repo_files.where(id: ticked).find_each do |f|
+      f.file.purge
+      f.destroy
     end
 
-    return unless params["files"].present?
-      params["files"].each do |f|
-        repo =
-          RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
-        next if repo.save
-        flash[
-          :alert
-        ] = "Make sure you only upload PDFs for the project files, the PDFs were uploaded"
-      end
-    
+    Array(params["files"]).each do |f|
+      repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
+      next if repo.save
+      flash[
+        :alert
+      ] = "Make sure you only upload PDFs for the project files, the PDFs were uploaded"
+    end
   end
 
   def update_videos
-    videos_id = params["deletevideos"]
-    return unless videos_id.present?
-      videos_id = videos_id.split(",").uniq.map { |id| id.to_i }
-      @proficient_project.videos.each do |f|
-        next unless (f.video.pluck(:id) & videos_id).any?
-        videos_id.each do |video_id|
-          video = f.video.find(video_id)
-          video.purge
-        end
-        f.destroy unless f.video.attached?
-      end
-    
+    ticked = ticked_ids("deletevideos")
+    return if ticked.empty?
+
+    @proficient_project.videos.each do |f|
+      purged = f.video.attachments.where(id: ticked).each(&:purge)
+      f.destroy if purged.any? && !f.reload.video.attached?
+    end
+  end
+
+  # Record ids ticked for removal on the edit form: a comma-joined string (or a list).
+  def ticked_ids(name)
+    Array(params[name]).flat_map { |v| v.to_s.split(",") }.map(&:strip).reject(&:blank?).map(&:to_i)
   end
 
   def get_filter_params
