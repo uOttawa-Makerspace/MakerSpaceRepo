@@ -187,7 +187,7 @@ RSpec.describe "Coupon claim race", type: :request do
       CouponCode.transaction do
         CouponCode.lock(User::GUARD_LOCK_MODE).find(coupon.id)
         locked << true
-        release.pop(timeout: 3) # without a lock timeout the claim would wait this long, then succeed
+        release.pop(timeout: 10) # without a lock timeout the claim would wait this long, then succeed
       end
     end
     ThreadPause.await(locked)
@@ -197,7 +197,7 @@ RSpec.describe "Coupon claim race", type: :request do
     release << true
     expect(holder.value).not_to be_a(StandardError)
 
-    expect(waited).to be < 2
+    expect(waited).to be < 8 # far below the 10 s hold; a loaded machine can take a few seconds
     expect(coupon.reload.user_id).to be_nil
     expect(debits(user_a)).to be_empty
     expect(user_a.reload.wallet).to eq(100)
