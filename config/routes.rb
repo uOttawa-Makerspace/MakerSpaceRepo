@@ -285,11 +285,10 @@ Rails.application.routes.draw do
 
     resources :announcements
 
-    resources :job_service_groups,
-              only: %i[index new create edit update destroy]
-    resources :job_services, only: %i[index new create edit update destroy]
-    resources :job_options, only: %i[index new create edit update destroy]
-    resources :job_types, only: %i[index new create edit update]
+    resources :job_service_groups, only: %i[new create edit update destroy]
+    resources :job_services, only: %i[new create edit update destroy]
+    resources :job_options, only: %i[new create edit update destroy]
+    resources :job_types, only: %i[new create edit update]
 
     namespace :report_generator do
       get "/", as: "index", action: "index"
