@@ -68,9 +68,9 @@ The same data is in the `solid_queue_recurring_executions` and `solid_queue_fail
 
 ### Deploy step: remove the moved tasks from the host crontab
 
-The host crontab used to run these tasks with `docker compose exec`. After this ships they run in the `worker` container, so the owner must remove their lines from the host crontab (`crontab -e`) in the same deploy. A crontab line that starts working later (for example once `-T` is added to `docker compose exec`) would otherwise run the task a second time: the CDEL report would be mailed twice and the popular hours counted twice.
+The host crontab still has `docker compose exec` lines for these tasks. They have not taken effect since 2026-08-31, most likely because `-T` is missing (without it `docker compose exec` fails under cron, which has no terminal). Check first with `crontab -l` and the cron mail or log. Then, in the same deploy, remove the lines for the moved tasks (`crontab -e`) rather than fixing them: after this ships they run in the `worker` container, and a crontab line that starts working would run the task a second time (the CDEL report mailed twice, the popular hours counted twice).
 
-Tasks that moved: popular hours, active volunteers, clear printers, the CDEL report, the Google Calendar webhook registration, and the locker expiry notices if a line for them exists. The print order reminder was removed (task and mailer method) by owner decision. Keep only the `increment_year:increment_one_year` line; it is not scheduled in `recurring.yml`. From cron, `docker compose exec` needs `-T` (no terminal) to run.
+Tasks that moved: popular hours, active volunteers, clear printers, the CDEL report, the Google Calendar webhook registration, and the locker expiry notices if a line for them exists. The print order reminder is removed (task and mailer method), so delete its line too. Keep only the `increment_year:increment_one_year` line; it is not scheduled in `recurring.yml`, and it needs `docker compose exec -T` to run from cron.
 
 ### Backfilling the CDEL report
 
@@ -92,7 +92,17 @@ While the hourly task did not run, the popular hours stopped changing. To catch 
 docker compose -f docker-compose.production.yml exec web bin/rails "popular_hours:backfill[2026-08-30T21:00]"
 ```
 
-For each hour in the range it takes the sample the hourly task would have taken at minute 50, counting only the sessions present at that moment, and folds it into the running means the same way. Before changing anything it writes the current rows to `tmp/popular_hours_snapshot_<time>.json` and prints the path, then prints the hours sampled, the rows changed and the hours skipped. Hours the hourly task has already recorded are skipped. The range is recorded, and a range overlapping one already backfilled is refused. To undo it, put the rows back exactly (this also clears the recorded range):
+For each hour in the range it takes the sample the hourly task would have taken at minute 50, counting only the sessions present at that moment, and folds it into the running means the same way. Before changing anything it writes the current rows to `tmp/popular_hours_snapshot_<time>.json` and prints the path, then prints the hours sampled, the rows changed and the hours skipped. Hours the hourly task has already recorded are skipped. The range is recorded, and a range overlapping one already backfilled is refused.
+
+The backfill and the hourly task take the same database lock, so an hourly run that starts while the backfill is running waits for it (a few minutes for two months) and then records its hour as usual; nothing is counted twice. Start it just after minute 50 to avoid the wait.
+
+The snapshot lives in the `web` container's `tmp/`, which is replaced on the next deploy, so copy it out straight away:
+
+```
+docker compose -f docker-compose.production.yml cp web:/rails/tmp/popular_hours_snapshot_<time>.json .
+```
+
+To undo the backfill, put the rows back exactly (this also clears the recorded range). Copy the snapshot back in first if the container has been replaced (`docker compose … cp ./popular_hours_snapshot_<time>.json web:/rails/tmp/`):
 
 ```
 docker compose -f docker-compose.production.yml exec web bin/rails "popular_hours:restore_backfill[tmp/popular_hours_snapshot_<time>.json]"
