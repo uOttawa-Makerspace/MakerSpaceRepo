@@ -96,7 +96,7 @@ RSpec.describe Repository::ZipCache do
   end
 
   describe ".cleanup!" do
-    it "deletes only only old partial zips, and keeps valid zips and other files" do
+    it "deletes only old partial zips, and keeps valid zips and other files" do
       stub_const("ENV", ENV.to_h.merge("REPOSITORY_ZIP_CACHE_MAX_BYTES" => "1000000"))
       old_partial = age(dir.join("makerepo_9.abc.tmp").tap { |f| File.write(f, "p") }, 2.hours)
       new_partial = dir.join("makerepo_8.abc.tmp").tap { |f| File.write(f, "p") }
