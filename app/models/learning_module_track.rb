@@ -20,8 +20,15 @@ class LearningModuleTrack < ApplicationRecord
 
   def check_scorm_status
     # Make sure this is a scorm object before reaching for json state
-    if scorm_state.present? && scorm_state['cmi.completion_status'] == 'completed'
-      self.status = :completed
-    end
+    self.status = :completed if scorm_completed?
+  end
+
+  # SCORM 2004 packages report cmi.completion_status; SCORM 1.2 packages report cmi.core.lesson_status,
+  # where "completed" and "passed" both mean the learner is done.
+  def scorm_completed?
+    return false if scorm_state.blank?
+
+    scorm_state['cmi.completion_status'] == 'completed' ||
+      %w[completed passed].include?(scorm_state['cmi.core.lesson_status'])
   end
 end

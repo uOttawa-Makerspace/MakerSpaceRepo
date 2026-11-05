@@ -85,6 +85,20 @@ RSpec.describe LearningModuleTrack, type: :model do
       expect(track.reload).to be_completed
     end
 
+    %w[completed passed].each do |value|
+      it "flips to completed when a SCORM 1.2 state reports cmi.core.lesson_status=#{value}" do
+        track.update!(scorm_state: { "cmi.core.lesson_status" => value })
+        expect(track.reload).to be_completed
+      end
+    end
+
+    %w[incomplete failed browsed].each do |value|
+      it "stays in progress for SCORM 1.2 lesson status #{value}" do
+        track.update!(scorm_state: { "cmi.core.lesson_status" => value })
+        expect(track.reload).to be_in_progress
+      end
+    end
+
     it "stays in progress for any other SCORM completion status" do
       track.update!(scorm_state: { "cmi.completion_status" => "incomplete" })
       expect(track.reload).to be_in_progress
