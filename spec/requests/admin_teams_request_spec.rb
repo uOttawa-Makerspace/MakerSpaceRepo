@@ -110,13 +110,22 @@ RSpec.describe "Admin teams", type: :request do
         expect(team.reload.name).to eq("Alpha")
       end
 
-      # update without a (valid member) captain param renames the team, demotes the captain, then 500s: team left captain-less.
-      it "500s after demoting the captain when captain is missing or not a member" do
+      # a missing or non-member captain is refused before anything changes
+      it "refuses a missing captain and changes nothing" do
         patch admin_team_path(team), params: { team: { name: "Alpha4" } }
-        expect(response).to have_http_status(:internal_server_error)
-        expect(team.reload.name).to eq("Alpha4")
-        expect(role_of(captain)).to eq("lead")
-        expect(team.captain).to be_nil
+        expect(response).to redirect_to(edit_admin_team_path)
+        expect(flash[:alert]).to eq("Please select a captain who is a member of the team.")
+        expect(team.reload.name).to eq("Alpha")
+        expect(role_of(captain)).to eq("captain")
+      end
+
+      it "refuses a captain who is not a member and changes nothing" do
+        patch admin_team_path(team), params: { team: { name: "Alpha4" }, captain: member.id }
+        expect(response).to redirect_to(edit_admin_team_path)
+        expect(flash[:alert]).to eq("Please select a captain who is a member of the team.")
+        expect(team.reload.name).to eq("Alpha")
+        expect(role_of(captain)).to eq("captain")
+        expect(role_of(member)).to be_nil
       end
     end
 

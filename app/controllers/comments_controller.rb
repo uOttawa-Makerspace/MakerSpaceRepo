@@ -31,12 +31,9 @@ class CommentsController < SessionsController
   end
 
   def destroy
-    if comment = Comment.find_by(id: params[:id])
-      if @user.admin? || comment.user == @user
-        flash[:notice] = "Comment deleted succesfully" if comment.destroy
-      else
-        flash[:alert] = "Something went wrong"
-      end
+    comment = Comment.find(params[:id])
+    if @user.admin? || comment.user == @user
+      flash[:notice] = "Comment deleted succesfully" if comment.destroy
     else
       flash[:alert] = "Something went wrong"
     end

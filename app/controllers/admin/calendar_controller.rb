@@ -6,7 +6,7 @@ class Admin::CalendarController < AdminAreaController
       Space.all.where(
         id: StaffSpace.where(user_id: current_user.id).pluck(:space_id)
       )
-    @space_id = @user.space_id || Space.first.id
+    @space_id = @user.space_id || Space.first&.id
 
     @colors = StaffSpace
       .includes(:user)

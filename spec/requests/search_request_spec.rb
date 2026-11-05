@@ -201,11 +201,11 @@ RSpec.describe "Search and explore", type: :request do
       expect(repos).to eq([])
     end
 
-    it "404s for the routed-but-missing likes and featured actions" do
-      get likes_path
-      expect(response).to have_http_status(:not_found)
-      get featured_path(slug: "wearable")
-      expect(response).to have_http_status(:not_found)
+    it "has no top-level likes or category featured routes" do
+      expect(Rails.application.routes.recognize_path("/likes"))
+        .to include(controller: "users", action: "show", username: "likes")
+      expect { Rails.application.routes.recognize_path("/category/wearable/featured") }
+        .to raise_error(ActionController::RoutingError)
     end
   end
 end

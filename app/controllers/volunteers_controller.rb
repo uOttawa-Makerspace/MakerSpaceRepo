@@ -157,22 +157,13 @@ class VolunteersController < SessionsController
         return redirect_to calendar_volunteers_path
       end
 
-      event =
-        ShadowingHour.create_event(start_time, end_time, user, params[:space])
-
-      if event.status != 'cancelled'
-        ShadowingHour.create!(
-          user_id: user.id,
-          start_time: start_time,
-          end_time: end_time,
-          event_id: event.id,
-          space_id:
-            Space.where('LOWER(name) = ?', params[:space].downcase).first.id
-        )
-        flash[:notice] = 'The shadowing shift has been added'
-      else
-        flash[:alert] = 'An Error occurred'
+      space = Space.where('LOWER(name) = ?', params[:space].downcase).first
+      if space.nil?
+        flash[:alert] = 'The selected space was not found.'
+        return redirect_to calendar_volunteers_path
       end
+
+      create_shadowing_shift(user, space, start_time, end_time)
     else
       flash[:alert] = 'An error occurred, please make sure you choose a space.'
     end
@@ -204,6 +195,24 @@ class VolunteersController < SessionsController
   end
 
   private
+
+  def create_shadowing_shift(user, space, start_time, end_time)
+    event =
+      ShadowingHour.create_event(start_time, end_time, user, params[:space])
+
+    if event.status != 'cancelled'
+      ShadowingHour.create!(
+        user_id: user.id,
+        start_time: start_time,
+        end_time: end_time,
+        event_id: event.id,
+        space_id: space.id
+      )
+      flash[:notice] = 'The shadowing shift has been added'
+    else
+      flash[:alert] = 'An Error occurred'
+    end
+  end
 
   def grant_access_list
     unless current_user.admin? || current_user.staff?

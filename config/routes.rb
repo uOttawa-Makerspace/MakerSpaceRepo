@@ -145,7 +145,6 @@ Rails.application.routes.draw do
             only: %i[index show new create edit update destroy] do
     post :resolve, on: :member
     collection do
-      get :history
       patch :update_notification_email
     end
   end
@@ -225,9 +224,7 @@ Rails.application.routes.draw do
   namespace :search, path: "/", as: nil do
     get "explore"
     get "search"
-    get "likes"
     get "category/:slug", as: "category", action: "category"
-    get "category/:slug/featured", as: "featured", action: "featured"
     get "equipment/:slug", as: "equipment", action: "equipment"
   end
 
@@ -400,7 +397,6 @@ Rails.application.routes.draw do
         post "add_equipment"
         post "rename_equipment"
         post "remove_equipment"
-        post "submit_pi"
         post "remove_pi"
         post "add_course"
         delete "remove_course"

@@ -8,6 +8,8 @@ class ExamsController < SessionsController
   before_action :only_admin_access, only: [:destroy]
   before_action :only_session_staff_access,
                 only: %i[create_from_training create_for_single_user]
+  before_action :require_question_pool,
+                only: %i[create_from_training create_for_single_user]
   before_action :only_owner_access, :only_open_exam, only: [:finish_exam]
 
   def index
@@ -131,6 +133,13 @@ class ExamsController < SessionsController
     return if current_user.admin? || @training_session.user.eql?(current_user)
     flash[:alert] = "You cannot access this area."
     redirect_to root_path
+  end
+
+  def require_question_pool
+    return if @training_session.training.questions.exists?(level: @training_session.level)
+    flash[:alert] =
+      "This training has no questions at this level, so no exams were created."
+    redirect_to staff_training_session_path(@training_session.id)
   end
 
   def only_owner_access
