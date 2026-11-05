@@ -182,13 +182,12 @@ RSpec.describe "Admin training area", type: :request do
         end
       end
 
-      # the skill_search / add_skill / skills routes were removed; the paths now fall to
-      # the resource's show route, which the controller does not implement.
+      # the skill_search / add_skill / skills routes were removed and the resource has no show route.
       %w[skill_search add_skill skills].each do |name|
         it "/admin/trainings/#{name} answers 404 (no route of its own)" do
           get "/admin/trainings/#{name}"
           expect(response).to have_http_status(:not_found)
-          expect(error_text).to include("AbstractController::ActionNotFound")
+          expect(error_text).to include("No route matches")
         end
       end
 
