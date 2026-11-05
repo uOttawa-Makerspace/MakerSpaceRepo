@@ -105,13 +105,47 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       expect(SubSpaceBooking.where(google_booking_id: %w[a b]).count).to eq(2)
     end
 
-    it "skips and reports an all-day event (date, no date_time) that cannot be saved" do
-      all_day = c18_gcal_event(id: "allday")
-      all_day.start = Google::Apis::CalendarV3::EventDateTime.new(date: "2027-04-05")
-      all_day.end = Google::Apis::CalendarV3::EventDateTime.new(date: "2027-04-06")
+    def all_day_event(id, from, to)
+      event = c18_gcal_event(id: id)
+      event.start = Google::Apis::CalendarV3::EventDateTime.new(date: from)
+      event.end = Google::Apis::CalendarV3::EventDateTime.new(date: to)
+      event
+    end
+
+    it "books an all-day event from midnight to midnight Toronto time (stored in UTC), end date exclusive" do
+      described_class.process(all_day_event("allday", "2027-04-05", "2027-04-06"))
+      expect(booking_for("allday")).to have_attributes(
+        start_time: Time.utc(2027, 4, 5, 4), end_time: Time.utc(2027, 4, 6, 4), blocking: true
+      )
+    end
+
+    it "keeps midnight Toronto time for an all-day event across the clocks going back (2026-11-01)" do
+      described_class.process(all_day_event("fall", "2026-11-01", "2026-11-02"))
+      # 2026-11-01 00:00 is still EDT (UTC-4); 2026-11-02 00:00 is EST (UTC-5): a 25 hour day
+      expect(booking_for("fall")).to have_attributes(
+        start_time: Time.utc(2026, 11, 1, 4), end_time: Time.utc(2026, 11, 2, 5)
+      )
+    end
+
+    it "books a multi-day all-day event through the day before its end date" do
+      described_class.process(all_day_event("multi", "2027-03-13", "2027-03-16"))
+      expect(booking_for("multi")).to have_attributes(
+        start_time: Time.utc(2027, 3, 13, 5), end_time: Time.utc(2027, 3, 16, 4)
+      )
+    end
+
+    it "stores a timed event's instant unchanged across the clocks going back" do
+      described_class.process(c18_gcal_event(id: "timed", start_at: Time.utc(2026, 11, 1, 5), end_at: Time.utc(2026, 11, 1, 7)))
+      expect(booking_for("timed")).to have_attributes(start_time: Time.utc(2026, 11, 1, 5), end_time: Time.utc(2026, 11, 1, 7))
+    end
+
+    it "skips and reports an event with neither a date_time nor a date" do
+      empty = c18_gcal_event(id: "empty")
+      empty.start = Google::Apis::CalendarV3::EventDateTime.new
+      empty.end = Google::Apis::CalendarV3::EventDateTime.new
       expect(Rails.error).to receive(:report).with(instance_of(ActiveRecord::RecordInvalid), hash_including(handled: true))
-      expect { described_class.process(all_day) }.not_to raise_error
-      expect(booking_for("allday")).to be_nil
+      expect { described_class.process(empty) }.not_to raise_error
+      expect(booking_for("empty")).to be_nil
     end
 
     it "skips and reports an event ending before it starts (validation failure)" do

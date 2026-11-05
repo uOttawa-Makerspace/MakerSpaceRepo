@@ -3,6 +3,7 @@ module GoogleCalendar
     VALID_LOCATIONS = ["STM 124", "STM 126"].freeze
     # Owner of a mirrored booking whose Google creator has no account. Configurable with the
     # "google_calendar_fallback_email" setting or the GOOGLE_CALENDAR_FALLBACK_EMAIL environment variable.
+    ALL_DAY_TIME_ZONE = "America/Toronto"
     DEFAULT_FALLBACK_EMAIL = "avend029@uottawa.ca"
 
     def self.process(event)
@@ -32,8 +33,8 @@ module GoogleCalendar
       booking.assign_attributes(
         name: event.summary.presence || "Google Calendar Event",
         description: event.description.presence || "No description",
-        start_time: event.start.date_time,
-        end_time: event.end.date_time,
+        start_time: event_time(event.start),
+        end_time: event_time(event.end),
         sub_space: sub_space,
         blocking: true,
         user: booking_owner(event)
@@ -55,6 +56,16 @@ module GoogleCalendar
       status.save
 
       booking.update(sub_space_booking_status_id: status.id)
+    end
+
+    # A timed event has a date_time. An all-day event has only a date (the end date is exclusive in Google's
+    # API), which becomes midnight in the makerspace's time zone. Booking times are stored in UTC, as for
+    # every other booking.
+    def self.event_time(event_date_time)
+      return event_date_time.date_time if event_date_time.date_time
+      return if event_date_time.date.blank?
+
+      Time.find_zone!(ALL_DAY_TIME_ZONE).parse(event_date_time.date.to_s)
     end
 
     def self.booking_owner(event)
