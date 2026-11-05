@@ -6,7 +6,6 @@ ruby "4.0.6"
 gem "rails", "~> 8.1"
 
 # Standard libraries
-gem "abbrev"
 gem "csv"
 
 # Core Application Gems
@@ -62,14 +61,12 @@ group :development, :test do
   gem "faker", "~> 3.1"
   gem "faraday-retry", "~> 2.4"
   gem "listen", "~> 3.7"
-  gem "mocha"
   gem "pry", "~> 0.15"
   gem "pry-rails", "~> 0.3"
   gem "rails_best_practices", require: false
   gem "railroady"
   gem "rspec-json_expectations"
   gem "rspec-rails", "~> 8.0"
-  gem "rspec_junit_formatter"
   gem "ruby_audit", require: false
   gem "simplecov", "~> 0.22"
   gem "debug"

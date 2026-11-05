@@ -1,6 +1,5 @@
 /* eslint no-console:0 */
 import "trix";
-import "clipboard";
 
 // Imported from ../src/
 import "../src/validation";
