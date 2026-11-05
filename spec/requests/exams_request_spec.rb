@@ -660,21 +660,20 @@ RSpec.describe "Exams", type: :request do
       expect(Exam.find_by!(user: student).questions).not_to include(other_level)
     end
 
-    # a session whose training has no questions at its level crashes (RangeError in random_records)
-    # AFTER the first user's exam row was saved: an empty exam is left behind, nobody is emailed, later users are skipped
-    it "answers 500 (RangeError) when the training has no questions at that level, leaving an empty exam behind" do
+    # a session whose training has no questions at its level is refused before any exam is saved
+    it "refuses with a message and saves nothing when the training has no questions at that level" do
       empty = build_exam_fixture(question_count: 0)
       empty[:session].users << create(:user, :regular_user)
       sign_in_as(:admin)
-      expect { perform_enqueued_jobs { create_from_training(empty[:session]) } }.to change(Exam, :count).by(1)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("RangeError")
-      expect(Exam.last.exam_questions.count).to eq(0)
+      expect { perform_enqueued_jobs { create_from_training(empty[:session]) } }.not_to change(Exam, :count)
+      expect(response).to redirect_to(staff_training_session_path(empty[:session].id))
+      expect(flash[:alert]).to eq("This training has no questions at this level, so no exams were created.")
       expect(deliveries).to be_empty
     end
 
     it "does nothing for a session without users but still redirects" do
       empty = create(:training_session, user: session_record.user)
+      empty.training.questions << create(:question, level: empty.level)
       expect { create_from_training(empty) }.not_to change(Exam, :count)
       expect(response).to redirect_to(staff_dashboard_index_path(space_id: empty.space.id))
     end
@@ -738,6 +737,14 @@ RSpec.describe "Exams", type: :request do
     it "does not require the user to be enrolled in the session" do
       stranger = create(:user, :regular_user)
       expect { create_for_single_user(stranger) }.to change { Exam.where(user: stranger).count }.by(1)
+    end
+
+    it "refuses with a message and saves nothing when the training has no questions at that level" do
+      empty = build_exam_fixture(question_count: 0)
+      sign_in_as(:admin)
+      expect { create_for_single_user(empty[:user], empty[:session]) }.not_to change(Exam, :count)
+      expect(response).to redirect_to(staff_training_session_path(empty[:session].id))
+      expect(flash[:alert]).to eq("This training has no questions at this level, so no exams were created.")
     end
 
     it "makes a guest sign in and issues nothing" do
