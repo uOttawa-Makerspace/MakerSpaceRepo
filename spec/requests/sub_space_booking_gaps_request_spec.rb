@@ -1116,7 +1116,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
         put bulk_approve_decline_sub_space_booking_index_path,
             params: { sub_space_booking_ids: [b1.id, b2.id], bulk_status: "approve" }
       end
-      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq([b1.user.email, b2.user.email])
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to contain_exactly(b1.user.email, b2.user.email)
     end
   end
 

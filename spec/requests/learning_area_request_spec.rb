@@ -768,6 +768,20 @@ RSpec.describe "Learning area", type: :request do
       expect(user.learning_module_tracks.last.status).to eq("completed")
     end
 
+    it "stores a SCORM 1.2 lesson status and marks the track Completed when it is completed or passed" do
+      log_in!(user)
+      commit(learning_module.id, { "cmi.core.lesson_status" => "passed", "cmi.location" => "end" })
+      track = user.learning_module_tracks.last
+      expect(track.status).to eq("completed")
+      expect(track.scorm_state).to eq("cmi.core.lesson_status" => "passed", "cmi.location" => "end")
+    end
+
+    it "keeps the track in progress for a SCORM 1.2 incomplete lesson status" do
+      log_in!(user)
+      commit(learning_module.id, { "cmi.core.lesson_status" => "incomplete" })
+      expect(user.learning_module_tracks.last.status).to eq("in_progress")
+    end
+
     it "does not un-complete a track once completed through the start/completed flow" do
       track = create(:learning_module_track, :completed, user: user, learning_module: learning_module)
       log_in!(user)

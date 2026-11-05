@@ -243,14 +243,32 @@ RSpec.describe "Admin events gaps", type: :request do
         expect(series.reload.event_assignments).to be_empty
       end
 
-      # the master already carries the EXDATE when Event.create! raises
-      it "leaves the master modified and answers 422 (unhandled RecordInvalid) when the replacement is invalid" do
+      it "answers 422 and leaves the series unchanged when the replacement is invalid" do
         patch admin_event_path(series),
               params: { update_scope: "this",
                         event: event_attrs(utc_start_time: "2025-05-12 18:00",
                                            utc_end_time: "2025-05-12 17:00") }
         expect(response).to have_http_status(:unprocessable_content)
-        expect(series.reload.recurrence_rule).to end_with("EXDATE:20250512T150000Z")
+        expect(series.reload.recurrence_rule).to eq(series_rule)
+        expect(Event.count).to eq(1)
+      end
+
+      it "makes no Google call when the replacement is invalid" do
+        series
+        expect(Event).not_to receive(:upsert_event)
+        patch admin_event_path(series),
+              params: { update_scope: "this",
+                        event: event_attrs(utc_start_time: "2025-05-12 18:00",
+                                           utc_end_time: "2025-05-12 17:00") }
+      end
+
+      it "flashes the error and changes nothing when the series itself cannot be updated" do
+        allow_any_instance_of(Event).to receive(:update).and_return(false)
+        patch admin_event_path(series),
+              params: { update_scope: "this",
+                        event: event_attrs(utc_start_time: "2025-05-12 17:00", utc_end_time: "2025-05-12 18:00") }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to start_with("Failed to update event:")
         expect(Event.count).to eq(1)
       end
     end
@@ -412,6 +430,46 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(copy.end_time).to eq(Time.utc(2027, 5, 3, 15, 30))
       expect(Event.where(title: %w[SkippedDraft SkippedRecurring Outside]).count).to eq(3)
       expect(outside.reload.start_time).to eq(Time.utc(2027, 4, 20, 14, 0))
+    end
+
+    # The app's zone is Eastern; clocks went forward on 2027-03-14 at 02:00. A copy keeps its wall clock time
+    # whether the source day or the target day is the day of the change.
+    it "keeps the wall clock time when copying from the day clocks go forward to a normal day" do
+      source = create(:event, space: space, title: "DstSource",
+                              start_time: Time.utc(2027, 3, 14, 14, 0), end_time: Time.utc(2027, 3, 14, 15, 0))
+      post copy_admin_events_path,
+           params: { space_id: space.id, source_range: "2027-03-14 to 2027-03-14", target_date: "2027-03-21" }
+      copy = Event.where(title: "DstSource").where.not(id: source.id).first
+      expect(copy.start_time).to eq(Time.utc(2027, 3, 21, 14, 0)) # 10:00 EDT
+      expect(copy.end_time).to eq(Time.utc(2027, 3, 21, 15, 0))
+    end
+
+    it "keeps the wall clock time when copying onto the day clocks go forward" do
+      source = create(:event, space: space, title: "DstTarget",
+                              start_time: Time.utc(2027, 3, 7, 15, 0), end_time: Time.utc(2027, 3, 7, 16, 0))
+      post copy_admin_events_path,
+           params: { space_id: space.id, source_range: "2027-03-07 to 2027-03-07", target_date: "2027-03-14" }
+      copy = Event.where(title: "DstTarget").where.not(id: source.id).first
+      expect(copy.start_time).to eq(Time.utc(2027, 3, 14, 14, 0)) # 10:00 EDT (source was 10:00 EST)
+    end
+
+    it "copies nothing when one of the events cannot be saved" do
+      create(:event, space: space, title: "First",
+                     start_time: Time.utc(2027, 4, 5, 14, 0), end_time: Time.utc(2027, 4, 5, 15, 0))
+      create(:event, space: space, title: "Second",
+                     start_time: Time.utc(2027, 4, 6, 14, 0), end_time: Time.utc(2027, 4, 6, 15, 0))
+      calls = 0
+      allow_any_instance_of(Event).to receive(:save!).and_wrap_original do |original, *args|
+        calls += 1
+        raise ActiveRecord::RecordInvalid, original.receiver if calls == 2
+
+        original.call(*args)
+      end
+      expect do
+        post copy_admin_events_path,
+             params: { space_id: space.id, source_range: "2027-04-05 to 2027-04-11", target_date: "2027-05-03" }
+      end.not_to change(Event, :count)
+      expect(flash[:alert]).to start_with("Error copying events: ")
     end
 
     it "rescues an unparsable range into an error alert" do

@@ -312,6 +312,7 @@ class LearningAreaController < DevelopmentProgramsController
     params
       .permit(
         :'cmi.completion_status',
+        :'cmi.core.lesson_status',
         :'cmi.exit',
         :'cmi.location',
         :'cmi.progress_measure',
