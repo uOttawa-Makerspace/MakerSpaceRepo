@@ -81,6 +81,10 @@ class LockerRental < ApplicationRecord
   # The virtual attribute `indefinite` lifts the requirement.
   validates :owned_until, presence: true, if: -> { active? && indefinite != '1' }
 
+  # A renewal or extension (owned_until moved later, or made indefinite) makes the earlier expiry notice history:
+  # the next expiry has to be announced again. A column reset on the same row, whichever path changed the date.
+  before_save :reset_expiry_notice, if: :owned_until_moved_later?
+
   # If state ever changes from request, record who did it
   # Which staff member approved the request, or if owner cancelled the request
   validates :decided_by, presence: true, unless: :reviewing?
@@ -134,8 +138,8 @@ class LockerRental < ApplicationRecord
   # An expired rental is announced only while its end is this recent. Older ones are not mailed (the renter was
   # not told at the time and a notice now would be noise); staff chase those by hand.
   EXPIRY_NOTICE_WINDOW = 14.days
-  # The notice query looks back one more day than the window. A run that is a day late, and the first run after the
-  # data migration that marks everything older than the window as notified, then lose no rental.
+  # The notice query looks back one more day than the window (15 days in all), so a run that is a day late loses
+  # no rental.
   EXPIRY_NOTICE_GRACE = 1.day
 
   # Active rentals whose owned_until fell within EXPIRY_NOTICE_WINDOW (plus the grace day) and whose renter has not been told.
@@ -471,6 +475,16 @@ class LockerRental < ApplicationRecord
   end
 
   private
+
+  def owned_until_moved_later?
+    persisted? && notified_of_cancellation_at.present? && will_save_change_to_owned_until? &&
+      (owned_until.nil? || owned_until_was.nil? || owned_until > owned_until_was)
+  end
+
+  def reset_expiry_notice
+    self.notified_of_cancellation_at = nil
+    self.contacted_for_clearance = false
+  end
 
   # THE place a link is served from: fetch the stored draft, classify it, serve it only when payable. The url, nil
   # (no link; #checkout_state says why) or :gone (Shopify no longer has it).
