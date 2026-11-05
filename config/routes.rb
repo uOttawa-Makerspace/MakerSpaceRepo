@@ -123,7 +123,6 @@ Rails.application.routes.draw do
       get :projects_assigned
       get :projects_completed
       get :user_projects
-      delete :destroy, path: "destroy/:id", as: "destroy"
     end
   end
 
@@ -379,9 +378,7 @@ Rails.application.routes.draw do
 
     resources :time_periods, except: [:show]
 
-    resources :training_sessions, only: %i[index update destroy] do
-      member { patch "update" }
-    end
+    resources :training_sessions, only: %i[index update destroy]
 
     resources :settings, only: [:index] do
       collection do
@@ -491,7 +488,6 @@ Rails.application.routes.draw do
 
   namespace :staff do
     resources :training_sessions, except: :edit do
-      get "/", as: "index", action: "index", on: :collection
       member do
         post "certify_trainees"
         delete "revoke_certification"
