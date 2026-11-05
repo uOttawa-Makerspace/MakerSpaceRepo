@@ -68,16 +68,17 @@ RSpec.describe "Signup captcha (Turnstile siteverify)", type: :request do
     expect_no_account
   end
 
-  it "does not create the account when the siteverify call itself errors, but the error escapes (a 500 in production)" do
-    # only the JSON parse is inside verify_turnstile's rescue; a
-    # connection error or timeout from Excon.post propagates, so a Cloudflare outage
-    # turns signup (and the help form, password-reset and project-proposal captchas)
-    # into a 500 instead of the "Captcha error, try again." refusal.
-    stub_request(:post, siteverify).to_timeout
+  [[:to_timeout, "times out"], [:to_raise, "cannot be reached"]].each do |matcher, what|
+    it "refuses the signup (captcha error, no account) and reports the error when Cloudflare #{what}" do
+      stub = stub_request(:post, siteverify)
+      matcher == :to_raise ? stub.to_raise(Excon::Error::Socket.new(Errno::ECONNREFUSED.new)) : stub.to_timeout
+      expect(Rails.error).to receive(:report).with(kind_of(Excon::Error), hash_including(handled: true))
 
-    expect { sign_up }.not_to change(User, :count)
-    expect(response).to have_http_status(:internal_server_error)
-    expect_no_account
+      expect { sign_up }.not_to change(User, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq(captcha_error)
+      expect_no_account
+    end
   end
 
   it "refuses the signup when Cloudflare answers with a non-JSON body (rescued, logged, treated as failure)" do

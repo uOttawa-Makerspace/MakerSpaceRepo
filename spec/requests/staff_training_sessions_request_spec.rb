@@ -253,6 +253,14 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(Certification.unscoped.exists?(cert.id)).to be(false)
       end
 
+      it "removes a trainee through the remove link rendered on the session page" do
+        record.users << student
+        get staff_training_session_path(record)
+        href = Nokogiri::HTML(response.body).at_css("td.action-cell a.x-button")["href"]
+        patch href
+        expect(record.reload.users).to be_empty
+      end
+
       it "refuses to change the trainer unless admin" do
         other = create(:user, :staff)
         patch staff_training_session_path(record), params: { changed_params: { user_id: other.id } }

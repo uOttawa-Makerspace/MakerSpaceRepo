@@ -4,9 +4,9 @@ require "rails_helper"
 # Inherits AdminAreaController: every action is admin-only; guests, regular
 # users AND staff are redirected to "/" with no flash (ensure_admin).
 #
-# Creation rule worth knowing: whatever the form says, the FIRST submitted
-# answer is stored as the correct one (`answers.first.correct = true`); the
-# `correct` attribute of every answer in the payload is ignored on create.
+# Creation rule worth knowing: the answer the admin marks correct is kept; when
+# no answer is marked (the new-question form has no flag) the first one is stored
+# as correct. A question must end up with exactly one correct answer.
 
 RSpec.describe "Questions (admin question bank)", type: :request do
   let(:space) { create(:space) }
@@ -123,24 +123,32 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(q.trainings).to eq([training])
     end
 
-    # the first answer is forced to correct even when the admin marked another one: the question ends up with two correct answers
-    it "forces the FIRST answer correct and keeps the other submitted flags (so two can be correct)" do
+    it "keeps the answer the admin marked correct, so exactly one is correct" do
       post questions_path, params: valid_params
       answers = Question.order(:id).last.answers.order(:id)
-      expect(answers.map { |a| [a.description.to_plain_text, a.correct] }).to eq([["first", true], ["second", true]])
+      expect(answers.map { |a| [a.description.to_plain_text, a.correct] }).to eq([["first", false], ["second", true]])
     end
 
-    it "keeps wrong answers wrong when they are submitted as false" do
+    it "marks the first answer correct when none is marked" do
       params = valid_params
       params[:question][:answers_attributes]["1"][:correct] = "false"
       post questions_path, params: params
       expect(Question.order(:id).last.answers.order(:id).pluck(:correct)).to eq([true, false])
     end
 
-    it "answers 500 when no answers are submitted (nil.correct=)" do
+    it "refuses a question with two answers marked correct, showing the error and creating nothing" do
+      params = valid_params
+      params[:question][:answers_attributes]["0"][:correct] = "true"
+      expect { post questions_path, params: params }.not_to change(Question, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("A question must have exactly one correct answer")
+    end
+
+    it "refuses a question with no answers, showing the error and creating nothing" do
       expect { post questions_path, params: { question: { description: "No answers", level: "Beginner" } } }
         .not_to change(Question, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("A question must have exactly one correct answer")
     end
 
     it "stores uploaded PNG images" do
@@ -149,12 +157,11 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(Question.order(:id).last.images.map { |i| i.filename.to_s }).to eq(["test.png"])
     end
 
-    # create uses save! so a validation failure (non-image upload) raises RecordInvalid (no friendly form error) instead of a form error
-    it "answers 422 with the RecordInvalid debug page (no form) for a non-image upload and creates nothing" do
+    it "answers 422 with the form for a non-image upload and creates nothing" do
       stl = fixture_file_upload(Rails.root.join("spec/support/assets/test.stl"), "application/octet-stream")
       expect { post questions_path, params: valid_params(images: [stl]) }.not_to change(Question, :count)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(error_text).to include("ActiveRecord::RecordInvalid")
+      expect(response.body).to include("New Question")
     end
   end
 

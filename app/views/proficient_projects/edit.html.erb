@@ -55,6 +55,7 @@
 
               <div class="mb-3">
             <h4>Training Requirements</h4>
+              <%= hidden_field_tag 'training_requirements_managed', '1' %>
               <div id="link-container">
                 <% unless @training_requirements.nil? %>
                   <% @training_requirements.each do |tr| %>
@@ -85,7 +86,7 @@
                     <tr class="file-item">
                       <td><i class="fa-regular fa-file-text"></i> <%= f.file.filename %></td>
                       <td><span><%= f.file.byte_size / 1000 %> KB</span></td>
-                      <td><span id="<%= f.file.filename %>" class="file-remove">remove</span></td>
+                      <td><span id="<%= f.id %>" class="file-remove">remove</span></td>
                     </tr>
                   </table>
                 <% end %>
@@ -131,7 +132,7 @@
               <div id="image-container" class="mx-auto mb-5">
                 <% @photos.each do |img| %>
                   <div class="image-item">
-                    <span id="<%= img.image.filename %>" class="image-remove"></span>
+                    <span id="<%= img.id %>" class="image-remove"></span>
                     <%= image_tag img.image, alt: 'Edit Proficient Project Picture' %>
                   </div>
                 <% end %>
