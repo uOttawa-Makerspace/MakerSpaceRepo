@@ -412,12 +412,13 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
         expect(response).to redirect_to(root_path)
       end
 
-      # the calendar event is created BEFORE the space row is looked up; a missing Space row 500s and leaves an orphan Google event
-      it "500s after calling Google when no Space matches the name" do
+      # the space is looked up first, so no calendar event is created when it is missing
+      it "refuses with a message, without calling Google, when no Space matches the name" do
         Space.where("LOWER(name) = 'makerspace'").destroy_all
-        expect(ShadowingHour).to receive(:create_event).and_return(event)
+        expect(ShadowingHour).not_to receive(:create_event)
         expect { post create_event_volunteers_path, params: params }.not_to change(ShadowingHour, :count)
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to redirect_to(calendar_volunteers_path)
+        expect(flash[:alert]).to eq("The selected space was not found.")
       end
 
       it "accepts 'brunsfield centre' as a space" do
