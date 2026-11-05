@@ -75,6 +75,15 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       )
     end
 
+    it "a username that is a route name is refused with a message and nothing is created" do
+      expect {
+        post users_path, params: { user: registration_params(username: "Admin") }
+      }.not_to change(User, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Username is reserved")
+      expect(deliveries).to be_empty
+    end
+
     it "invalid: re-renders new with 422 and persists nothing, sends no mail" do
       expect {
         post users_path, params: { user: registration_params(username: "bad name!") }
