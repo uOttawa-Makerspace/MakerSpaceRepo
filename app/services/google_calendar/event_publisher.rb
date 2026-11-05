@@ -4,10 +4,10 @@ module GoogleCalendar
   # Sends Event changes to the space's Google Calendar. Called by the push and delete jobs, never from a model
   # callback.
   #
-  # The Google event id is chosen by us (Event#push_to_google_later stores it before the first push), so a push is
-  # always an insert with that id. When Google answers 409 the id already exists (an earlier push, or an event
-  # created before ids were generated here) and the event is updated instead. Retrying a push therefore never
-  # creates a second copy.
+  # The Google event id is chosen by us (Event#push_to_google_later stores it before the first push). A push
+  # updates that id; when Google answers 404 the event is not there yet, so it is inserted with that same id, and a
+  # 409 on the insert (another push got there first) is answered with one more update. Retrying a push therefore
+  # never creates a second copy.
   class EventPublisher
     CALENDARS = {
       "MTC" => "c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com",
@@ -15,6 +15,7 @@ module GoogleCalendar
     }.freeze
     TEST_CALENDAR = "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
     CONFLICT = 409
+    NOT_FOUND = 404
     GONE = [404, 410].freeze
 
     def self.calendar_id_for(space)
@@ -42,11 +43,11 @@ module GoogleCalendar
       gcal_event = EventPayload.new(event).build
       gcal_event.id = event.google_event_id
       begin
-        service.insert_event(calendar_id, gcal_event)
-      rescue Google::Apis::ClientError => e
-        raise unless e.status_code == CONFLICT
-
         service.update_event(calendar_id, event.google_event_id, gcal_event)
+      rescue Google::Apis::ClientError => e
+        raise unless e.status_code == NOT_FOUND
+
+        insert(calendar_id, gcal_event)
       end
     end
 
@@ -58,6 +59,15 @@ module GoogleCalendar
     end
 
     private
+
+    # The id is not in Google yet. A 409 means another push inserted it first, so update it once.
+    def insert(calendar_id, gcal_event)
+      service.insert_event(calendar_id, gcal_event)
+    rescue Google::Apis::ClientError => e
+      raise unless e.status_code == CONFLICT
+
+      service.update_event(calendar_id, gcal_event.id, gcal_event)
+    end
 
     def service
       @service ||= self.class.service

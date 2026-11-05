@@ -17,7 +17,27 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
 
   def client_error(status) = Google::Apis::ClientError.new("failed", status_code: status)
 
-  it "inserts the event with the Google id stored on it" do
+  it "updates the event under the Google id stored on it" do
+    sent = nil
+    allow(service).to receive(:update_event) { |cal, id, gcal| sent = [cal, id, gcal] }
+    expect(service).not_to receive(:insert_event)
+
+    described_class.perform_now(event.id)
+
+    expect(sent[0..1]).to eq([calendar_id, "abc123"])
+    expect(sent.last.summary).to eq("Open Lab")
+  end
+
+  it "reads the event when it runs, so the latest state is what is sent" do
+    event.update_columns(title: "Renamed")
+    sent = nil
+    allow(service).to receive(:update_event) { |_cal, _id, gcal| sent = gcal }
+    described_class.perform_now(event.id)
+    expect(sent.summary).to eq("Renamed")
+  end
+
+  it "inserts with the same id when Google does not have the event yet (404)" do
+    allow(service).to receive(:update_event).and_raise(client_error(404))
     sent = nil
     allow(service).to receive(:insert_event) { |cal, gcal| sent = [cal, gcal] }
 
@@ -25,23 +45,16 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
 
     expect(sent.first).to eq(calendar_id)
     expect(sent.last.id).to eq("abc123")
-    expect(sent.last.summary).to eq("Open Lab")
   end
 
-  it "reads the event when it runs, so the latest state is what is sent" do
-    event
-    event.update_columns(title: "Renamed")
-    sent = nil
-    allow(service).to receive(:insert_event) { |_cal, gcal| sent = gcal }
-    described_class.perform_now(event.id)
-    expect(sent.summary).to eq("Renamed")
-  end
-
-  it "falls back to an update when Google says the id already exists" do
+  it "updates once more when the insert finds the id already there (409)" do
+    calls = 0
+    allow(service).to receive(:update_event) { calls += 1; raise client_error(404) if calls == 1 }
     allow(service).to receive(:insert_event).and_raise(client_error(409))
-    expect(service).to receive(:update_event).with(calendar_id, "abc123", having_attributes(summary: "Open Lab"))
 
     described_class.perform_now(event.id)
+
+    expect(calls).to eq(2)
   end
 
   it "does nothing for an event that no longer exists" do
@@ -56,7 +69,7 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
   end
 
   it "retries a Google server error later instead of failing" do
-    allow(service).to receive(:insert_event).and_raise(Google::Apis::ServerError.new("down", status_code: 503))
+    allow(service).to receive(:update_event).and_raise(Google::Apis::ServerError.new("down", status_code: 503))
     expect(Rails.error).not_to receive(:report)
 
     expect { described_class.perform_now(event.id) }.to have_enqueued_job(described_class).with(event.id)
@@ -65,13 +78,13 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
   [Google::Apis::RateLimitError.new("slow", status_code: 429), Google::Apis::TransmissionError.new("net"),
    Net::ReadTimeout.new].each do |error|
     it "retries #{error.class}" do
-      allow(service).to receive(:insert_event).and_raise(error)
+      allow(service).to receive(:update_event).and_raise(error)
       expect { described_class.perform_now(event.id) }.to have_enqueued_job(described_class)
     end
   end
 
   it "reports a client error other than a conflict and does not retry it" do
-    allow(service).to receive(:insert_event).and_raise(client_error(400))
+    allow(service).to receive(:update_event).and_raise(client_error(400))
     expect(Rails.error).to receive(:report)
       .with(instance_of(Google::Apis::ClientError), hash_including(handled: true, context: hash_including(event_id: event.id)))
 
@@ -80,7 +93,7 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
 
   it "reports once the retries run out" do
     attempts = 0
-    allow(service).to receive(:insert_event) do
+    allow(service).to receive(:update_event) do
       attempts += 1
       raise Google::Apis::ServerError.new("down", status_code: 503)
     end

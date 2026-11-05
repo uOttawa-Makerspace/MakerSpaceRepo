@@ -68,8 +68,8 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
       service = instance_double(Google::Apis::CalendarV3::CalendarService, "authorization=": nil)
       allow(Google::Apis::CalendarV3::CalendarService).to receive(:new).and_return(service)
       inserted = []
+      allow(service).to receive(:update_event).and_raise(Google::Apis::ClientError.new("missing", status_code: 404))
       allow(service).to receive(:insert_event) { |cal, gcal| inserted << [cal, gcal.id] }
-      expect(service).not_to receive(:update_event)
 
       post admin_events_path, params: { event: event_attrs }
       perform_enqueued_jobs
