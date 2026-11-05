@@ -62,6 +62,5 @@ RSpec.describe "config/recurring.yml" do
 
   it "no longer carries a whenever schedule" do
     expect(Rails.root.join("config/schedule.rb")).not_to exist
-    expect(File.read(Rails.root.join("Capfile"))).not_to include("whenever")
   end
 end

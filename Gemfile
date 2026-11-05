@@ -68,12 +68,6 @@ group :development, :test do
 end
 
 group :development do
-  gem "capistrano", "~> 3.10", require: false
-  gem "capistrano-bundler", require: false
-  gem "capistrano-maintenance", require: false
-  gem "capistrano-rails", require: false
-  gem "capistrano-rbenv", require: false
-  gem "capistrano3-puma", require: false
   gem "erb_lint", require: false
   gem "letter_opener_web"
   gem "net-ssh"
