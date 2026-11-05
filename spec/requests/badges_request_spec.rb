@@ -128,6 +128,50 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(response).to have_http_status(:not_found)
     end
 
+    describe "rate limit" do
+      def view(times, **opts)
+        times.times { get badge_path(cert), **opts }
+      end
+
+      it "serves a visitor up to 30 views a minute, then answers 429 with a short page" do
+        view(30)
+        expect(response).to have_http_status(:ok)
+
+        get badge_path(cert)
+        expect(response).to have_http_status(:too_many_requests)
+        expect(response.body).to eq("Too many requests, please try again later.")
+      end
+
+      it "counts old numeric addresses too" do
+        30.times { get badge_path(cert) }
+        get badge_path(cert)
+        expect(response).to have_http_status(:too_many_requests)
+      end
+
+      it "counts each address separately" do
+        view(30)
+        get badge_path(cert), env: { "REMOTE_ADDR" => "203.0.113.9" }
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "stops a visitor at 300 views an hour, even at a gentle pace" do
+        base = Time.zone.parse("2026-11-05 10:00")
+        10.times do |n|
+          travel_to(base + (n * 5).minutes) { 30.times { get badge_path(cert) } }
+        end
+        travel_to(base + 51.minutes) { get badge_path(cert) }
+        expect(response).to have_http_status(:too_many_requests)
+      end
+
+      %i[staff admin].each do |role|
+        it "does not limit a signed-in #{role}" do
+          sign_in_as(role)
+          view(35)
+          expect(response).to have_http_status(:ok)
+        end
+      end
+    end
+
     it "does not show an inactive (demoted) certification: the default scope hides it" do
       Certification.unscoped.where(id: cert.id).update_all(active: false)
       get badge_path(cert)

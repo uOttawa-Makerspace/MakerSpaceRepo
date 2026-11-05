@@ -3,6 +3,13 @@
 class BadgesController < DevelopmentProgramsController
   skip_before_action :grant_access, only: [:show]
 
+  # The badge page is public, so each visitor's address is limited to a pace that
+  # viewing and sharing badges never reaches. Signed-in staff and admins are exempt.
+  rate_limit to: 30, within: 1.minute, only: :show, name: "show-minute", if: -> { throttled_viewer? },
+             by: -> { request.remote_ip }, with: -> { badge_throttled }
+  rate_limit to: 300, within: 1.hour, only: :show, name: "show-hour", if: -> { throttled_viewer? },
+             by: -> { request.remote_ip }, with: -> { badge_throttled }
+
   def index
     @pagy, @badge_data = pagy(badge_scope(params[:search]), limit: 20)
 
@@ -37,6 +44,14 @@ class BadgesController < DevelopmentProgramsController
   end
 
   private
+
+  def throttled_viewer?
+    !current_user&.staff?
+  end
+
+  def badge_throttled
+    render plain: "Too many requests, please try again later.", status: :too_many_requests
+  end
 
   def badge_scope(search_term = nil)
     certifications = Certification
