@@ -17,6 +17,7 @@ gem "caxlsx", "~> 4.0"
 gem "chartkick"
 gem "concurrent-ruby", "~> 1.3", ">= 1.3.7"
 gem "excon"
+gem "faraday-retry", "~> 2.4"
 gem "fastimage", "~> 2.4"
 gem "file_validators"
 gem "google-apis-calendar_v3"
@@ -28,7 +29,6 @@ gem "image_processing"
 gem "jbuilder"
 gem "mission_control-jobs"
 gem "multi_json"
-gem "net-ssh"
 gem "nobspw_rails7"
 gem "octokit", "~> 10.0"
 gem "pg", "~> 1.6"
@@ -59,7 +59,6 @@ group :development, :test do
   gem "bundler-audit", require: false
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"
-  gem "faraday-retry", "~> 2.4"
   gem "listen", "~> 3.7"
   gem "rspec-json_expectations"
   gem "rspec-rails", "~> 8.0"
@@ -77,6 +76,7 @@ group :development do
   gem "capistrano3-puma", require: false
   gem "erb_lint", require: false
   gem "letter_opener_web"
+  gem "net-ssh"
   gem "rubocop-rails"
   gem "ruby-prof"
   gem "solargraph", require: false
