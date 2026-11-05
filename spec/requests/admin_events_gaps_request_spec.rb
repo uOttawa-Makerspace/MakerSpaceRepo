@@ -252,6 +252,25 @@ RSpec.describe "Admin events gaps", type: :request do
         expect(series.reload.recurrence_rule).to eq(series_rule)
         expect(Event.count).to eq(1)
       end
+
+      it "makes no Google call when the replacement is invalid" do
+        series
+        expect(Event).not_to receive(:upsert_event)
+        patch admin_event_path(series),
+              params: { update_scope: "this",
+                        event: event_attrs(utc_start_time: "2025-05-12 18:00",
+                                           utc_end_time: "2025-05-12 17:00") }
+      end
+
+      it "flashes the error and changes nothing when the series itself cannot be updated" do
+        allow_any_instance_of(Event).to receive(:update).and_return(false)
+        patch admin_event_path(series),
+              params: { update_scope: "this",
+                        event: event_attrs(utc_start_time: "2025-05-12 17:00", utc_end_time: "2025-05-12 18:00") }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to start_with("Failed to update event:")
+        expect(Event.count).to eq(1)
+      end
     end
 
     it "flashes an error for an unknown update scope on a recurring event" do

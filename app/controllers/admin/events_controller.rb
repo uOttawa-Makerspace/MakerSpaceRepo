@@ -383,10 +383,15 @@ class Admin::EventsController < AdminAreaController
     )
     updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
 
+    # The replacement is checked before anything is saved: saving the series pushes to Google, which a
+    # rollback cannot undo. A failure after this point (a database error) can still leave Google ahead.
+    @new_event = build_occurrence_event(title)
+    raise ActiveRecord::RecordInvalid, @new_event unless @new_event.valid?
+
     series_updated = Event.transaction do
       next false unless @event.update(recurrence_rule: updated_rule)
 
-      @new_event = create_occurrence_event(title)
+      @new_event.save!
       attach_participants(@new_event, participants)
       true
     end
@@ -423,8 +428,8 @@ class Admin::EventsController < AdminAreaController
     end
   end
 
-  def create_occurrence_event(title)
-    Event.create!(
+  def build_occurrence_event(title)
+    Event.new(
       title: title,
       description: event_params[:description],
       # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
