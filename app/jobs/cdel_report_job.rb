@@ -11,11 +11,17 @@ class CdelReportJob < ApplicationJob
   class InvalidMonth < ArgumentError; end
 
   # Refuse a bad month when the job is queued, not hours later in the worker.
-  before_enqueue { self.class.parse_month(arguments.first&.dig(:month)) }
+  before_enqueue { self.class.parse_month(self.class.month_argument(arguments)) }
 
-  # month: "YYYY-MM", or nil for last month.
-  def perform(month: nil)
-    MsrMailer.send_cdel_monthly_report(RECIPIENT, month: self.class.parse_month(month)).deliver_now
+  # The month as "YYYY-MM", given by keyword (month: "2026-08") or as the first argument ("2026-08"); nil for
+  # last month.
+  def perform(positional_month = nil, month: nil)
+    MsrMailer.send_cdel_monthly_report(RECIPIENT, month: self.class.parse_month(month || positional_month)).deliver_now
+  end
+
+  def self.month_argument(arguments)
+    first = arguments.first
+    first.is_a?(Hash) ? first[:month] : first
   end
 
   # The first day of the month named by +value+ ("YYYY-MM"), or nil when there is none. Raises InvalidMonth for

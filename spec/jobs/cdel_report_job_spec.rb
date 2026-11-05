@@ -40,6 +40,15 @@ RSpec.describe CdelReportJob, type: :job do
     expect(names).to all(include("2026-08-01").and(include("2026-08-31")))
   end
 
+  it "takes the month as the first argument too, queued or performed" do
+    travel_to(zone.local(2026, 11, 5, 12, 0)) do
+      perform_enqueued_jobs { described_class.perform_later("2026-09") }
+      expect(last_mail.subject).to eq("CDEL Reports from 2026-09-01 to 2026-09-30")
+      described_class.perform_now("2026-08")
+      expect(last_mail.subject).to eq("CDEL Reports from 2026-08-01 to 2026-08-31")
+    end
+  end
+
   it "covers a February of a leap year to its last day" do
     travel_to(zone.local(2026, 11, 5, 12, 0)) { described_class.perform_now(month: "2024-02") }
     expect(last_mail.subject).to eq("CDEL Reports from 2024-02-01 to 2024-02-29")
@@ -66,6 +75,13 @@ RSpec.describe CdelReportJob, type: :job do
           .to raise_error(described_class::InvalidMonth, /YYYY-MM/)
         expect(ActionMailer::Base.deliveries).to be_empty
       end
+    end
+
+    it "refuses a positional argument that is not a month, with the same message" do
+      expect { described_class.perform_later("nope") }.to raise_error(described_class::InvalidMonth, /YYYY-MM/)
+      expect { described_class.perform_later(5) }.to raise_error(described_class::InvalidMonth, /YYYY-MM/)
+      expect { described_class.perform_now("2026-12") }.to raise_error(described_class::InvalidMonth, /future/)
+      expect(enqueued_jobs).to be_empty
     end
 
     it "refuses a future month and says so" do
