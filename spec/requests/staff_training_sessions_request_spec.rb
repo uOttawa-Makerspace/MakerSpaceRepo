@@ -222,6 +222,7 @@ RSpec.describe "Staff training sessions", type: :request do
         end
 
         it "sends a fresh exam without certifying anyone" do
+          training.questions << create(:question, level: record.level)
           exam_with(status: Exam::STATUS[:incomplete], expired_at: 1.hour.ago)
           expect { post resend_path }.to change { student.exams.count }.by(1).and change(Certification, :count).by(0)
           expect(student.exams.order(:id).last).to be_open_for_answers
