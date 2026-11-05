@@ -154,6 +154,32 @@ RSpec.describe PopularHoursBackfill do
     end
   end
 
+  describe "the fold lock" do
+    def advisory_locks_held
+      ActiveRecord::Base.connection.select_value(
+        "SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND pid = pg_backend_pid() AND granted"
+      ).to_i
+    end
+
+    it "is held by a backfill while it folds" do
+      held = nil
+      allow(PopularHour).to receive(:record_hour!) { held = advisory_locks_held; 0 }
+      backfill("2026-03-04T15:00", "2026-03-04T16:00").run!
+      expect(held).to be >= 1
+    end
+
+    it "is held by the hourly task while it folds" do
+      held = nil
+      allow(PopularHour).to receive(:record_hour!) { held = advisory_locks_held; 0 }
+      PopularHour.record_current_hour!(now)
+      expect(held).to be >= 1
+    end
+
+    it "is not taken by plain reads of the head count" do
+      expect { PopularHour.head_count(space, now) }.not_to(change { advisory_locks_held })
+    end
+  end
+
   describe "snapshot and restore" do
     it "round-trips the rows and the recorded ranges exactly" do
       session(sign_in: zone.local(2026, 3, 4, 15, 10), sign_out: zone.local(2026, 3, 4, 17, 0))

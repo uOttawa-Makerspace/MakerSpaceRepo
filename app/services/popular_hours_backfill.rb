@@ -23,7 +23,7 @@ class PopularHoursBackfill
     snapshot = JSON.parse(File.read(path))
     restored = 0
     missing = []
-    transaction do
+    PopularHour.with_fold_lock do
       snapshot.fetch("rows").each do |row|
         popular_hour = PopularHour.find_by(id: row["id"])
         next missing << row["id"] if popular_hour.nil?
@@ -36,10 +36,6 @@ class PopularHoursBackfill
     { restored: restored, missing: missing }
   end
 
-  def self.transaction(&)
-    ActiveRecord::Base.transaction(&)
-  end
-
   def initialize(from:, to: nil, now: Time.zone.now, dir: Rails.root.join("tmp"))
     @now = now
     @dir = dir
@@ -47,18 +43,20 @@ class PopularHoursBackfill
   end
 
   def run!
-    refuse_overlap!
-    skipped = @hours.select { |hour| recorded_live?(hour) }
-    path = write_snapshot
-    sampled = changed = 0
-    self.class.transaction do
+    # Everything, the checks and the snapshot included, happens under the fold lock, so a second backfill or the
+    # hourly task waits and then sees the recorded range and the folded rows.
+    PopularHour.with_fold_lock do
+      refuse_overlap!
+      skipped = @hours.select { |hour| recorded_live?(hour) }
+      path = write_snapshot
+      sampled = changed = 0
       (@hours - skipped).each do |hour|
         changed += PopularHour.record_hour!(hour + SAMPLE_MINUTE.minutes, historical: true)
         sampled += 1
       end
       Setting.set(RANGES_KEY, (ranges + [[@hours.first.iso8601, @hours.last.iso8601]]).to_json)
+      Result.new(path, sampled, changed, skipped, @hours.first, @hours.last)
     end
-    Result.new(path, sampled, changed, skipped, @hours.first, @hours.last)
   end
 
   private

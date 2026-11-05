@@ -15,8 +15,22 @@ class PopularHour < ApplicationRecord
   # is cut in, so the row does not depend on the host's clock. Run hourly (config/recurring.yml). The hours it
   # has recorded are noted in Setting, so a backfill leaves them alone.
   def self.record_current_hour!(now = Time.zone.now)
-    record_hour!(now)
-    note_live_run(now)
+    with_fold_lock do
+      record_hour!(now)
+      note_live_run(now)
+    end
+  end
+
+  # The folds are read-modify-write on shared rows, so the hourly task and the backfill (and two backfills) take
+  # this transaction-level advisory lock before folding: they run one after the other and no update is lost or
+  # counted twice. The lock is released when the transaction ends.
+  FOLD_LOCK_KEY = Zlib.crc32("popular_hours_fold")
+
+  def self.with_fold_lock(&)
+    transaction do
+      connection.execute("SELECT pg_advisory_xact_lock(#{FOLD_LOCK_KEY})")
+      yield
+    end
   end
 
   # One sample taken at +at+: the running means of the rows for +at+'s weekday and hour. +historical+ takes the
