@@ -461,7 +461,7 @@ RSpec.describe "Static pages", type: :request do
     # that ended > 2 months ago; recurring series are never dropped.
     # Date#to_time inside safe_to_time uses the PROCESS time zone, so the examples
     # pin TZ explicitly. Most pin UTC process-zone behaviour; the production host's
-    # TZ is UNVERIFIED (Capistrano-deployed host, staging Docker sets none).
+    # TZ is UNVERIFIED (staging Docker sets none).
     # One example also pins America/Toronto so both host configurations are characterized.
     describe "happy path with a Google-style ICS feed" do
       let(:feed_url) { "https://calendar.example.test/feed.ics" }
