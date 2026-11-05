@@ -88,6 +88,9 @@ jobs:
           yarn lint:js
           yarn typecheck:js
 
+      - name: Run JavaScript unit tests
+        run: yarn test:js
+
       - name: Lint ERB views
         run: bin/erb-lint
 
