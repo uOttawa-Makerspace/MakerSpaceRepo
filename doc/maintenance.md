@@ -64,7 +64,7 @@ SolidQueue::RecurringExecution.order(run_at: :desc).limit(20).pluck(:task_key, :
 SolidQueue::FailedExecution.order(created_at: :desc).limit(5).pluck(:error)               # failures
 ```
 
-The same data is in the `solid_queue_recurring_executions` and `solid_queue_failed_executions` tables, and the worker's logs (`docker compose -f docker-compose.production.yml logs worker`) show each job. Rows older than an hour are cleared from the finished jobs, so check the recurring executions or the data a task writes (for example `PopularHour.maximum(:updated_at)`).
+The same data is in the `solid_queue_recurring_executions` and `solid_queue_failed_executions` tables, and the worker's logs (`docker compose -f docker-compose.production.yml logs worker`) show each job. Finished jobs are cleared out regularly, so check the recurring executions or the data a task writes (for example `PopularHour.maximum(:updated_at)`).
 
 ### Backfilling the CDEL report
 
