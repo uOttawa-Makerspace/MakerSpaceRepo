@@ -6,7 +6,7 @@ class QuestionsController < AdminAreaController
                 only: %i[show edit update destroy remove_answer add_answer]
   before_action :set_levels,
                 :set_categories,
-                only: %i[new edit remove_answer add_answer]
+                only: %i[new edit add_answer]
 
   def index
     if current_user.space.present?
@@ -55,13 +55,14 @@ class QuestionsController < AdminAreaController
       end
       flash[:notice] = "Answer added. Please update its content!"
     end
-    if params[:remove_answer].present?
-      answer = Answer.find_by(id: params[:remove_answer])
-      answer.destroy unless answer.nil?
-      flash[:notice] = "Successfully removed answer"
-    end
 
     @answers = @question.answers.sort_by { |a| a.correct ? 0 : 1 }
+  end
+
+  def remove_answer
+    @question.answers.where(correct: false).find(params[:answer_id]).destroy
+    redirect_to edit_question_path(@question),
+                notice: "Successfully removed answer"
   end
 
   def update
@@ -83,10 +84,9 @@ class QuestionsController < AdminAreaController
   end
 
   def delete_individually
-    @image = ActiveStorage::Attachment.find(params[:id])
-    question_id = @image.record.id
+    @question = Question.find(params[:question_id])
+    @image = @question.images.attachments.find(params[:id])
     @image.purge
-    @question = Question.find(question_id)
     redirect_to edit_question_path(params[:question_id]),
                 notice: "Question image deleted"
   end

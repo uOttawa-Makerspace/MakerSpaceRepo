@@ -39,3 +39,27 @@ RSpec.describe VolunteerTaskJoin, type: :model do
     end
   end
 end
+
+# Chunk 13 characterization.
+RSpec.describe VolunteerTaskJoin, "defaults and uniqueness", type: :model do
+  it "defaults to active and user_type Volunteer" do
+    join = VolunteerTaskJoin.create!
+    expect([join.active, join.user_type]).to eq([true, "Volunteer"])
+  end
+
+  it "allows the same user on the same task repeatedly (uniqueness validation is commented out)" do
+    user = create(:user, :volunteer_with_volunteer_program)
+    task = create(:volunteer_task)
+    2.times { VolunteerTaskJoin.create!(user: user, volunteer_task: task) }
+    expect(task.volunteer_task_joins.where(user: user).count).to eq(2)
+  end
+
+  it "scopes compose: active + user_type_volunteer ignores inactive and staff joins" do
+    task = create(:volunteer_task)
+    keep = create(:volunteer_task_join, :active, volunteer_task: task)
+    create(:volunteer_task_join, :not_active, volunteer_task: task)
+    create(:volunteer_task_join, :active_not_volunteer, volunteer_task: task)
+    expect(task.volunteer_task_joins.active.user_type_volunteer).to eq([keep])
+    expect(task.volunteer_task_joins.not_active.count).to eq(1)
+  end
+end

@@ -1,6 +1,7 @@
 import TomSelect from "tom-select";
 import DataTable from "datatables.net-bs5";
 import "datatables.net-select-bs5";
+import { csrfHeaders } from "../src/csrf";
 
 // Checkbox to toggle the student section on the form
 document.addEventListener("turbo:load", function () {
@@ -186,14 +187,9 @@ document.addEventListener("turbo:load", function () {
       const formData = new FormData();
       formData.append(this.name, this.value);
 
-      const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
-
       fetch(`/lockers/${lockerId}`, {
         method: "PATCH",
-        headers: {
-          "X-CSRF-Token": csrfToken,
-          Accept: "application/json",
-        },
+        headers: csrfHeaders({ Accept: "application/json" }),
         body: formData,
       })
         .then((response) => {
@@ -233,14 +229,9 @@ document.addEventListener("turbo:load", function () {
       const formData = new FormData();
       formData.append(this.name, this.value);
 
-      const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
-
       fetch(url, {
         method: "PATCH",
-        headers: {
-          "X-CSRF-Token": csrfToken,
-          Accept: "application/json",
-        },
+        headers: csrfHeaders({ Accept: "application/json" }),
         body: formData,
       })
         .then((response) => {

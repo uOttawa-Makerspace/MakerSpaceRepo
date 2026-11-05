@@ -10,8 +10,7 @@ class MsrMailerPreview < ActionMailer::Preview
     MsrMailer.email_confirmation_email(
       "new_email@example.com",
       User.first,
-      "sample_user_hash",
-      "sample_email_hash"
+      "sample_email_change_token"
     )
   end
 
@@ -139,13 +138,8 @@ class MsrMailerPreview < ActionMailer::Preview
   def forgot_password_email
     MsrMailer.forgot_password(
       User.first.email,
-      "sample_user_hash",
-      "sample_expiry_date_hash"
+      "sample_reset_token"
     )
-  end
-
-  def send_inactive_email
-    MsrMailer.send_inactive_email(User.first)
   end
 
   def send_training_report
@@ -269,16 +263,6 @@ class MsrMailerPreview < ActionMailer::Preview
     volunteer_task_request = VolunteerTaskRequest.first
     MsrMailer.send_notification_for_task_request_update(
       volunteer_task_request&.id || 1
-    )
-  end
-
-  def send_email_for_stripe_transfer
-    MsrMailer.send_email_for_stripe_transfer(
-      "tr_1234567890",           # transfer_id
-      Date.today.to_s,           # date
-      50000,                     # amount in cents ($500.00)
-      "TD Bank",                 # bank
-      "12345"                    # routing_number
     )
   end
 

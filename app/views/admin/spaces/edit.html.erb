@@ -68,7 +68,7 @@
             <input type="color" id="colorpicker" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="<%= snc.color %>" title="Choose your color">
             <%= text_field_tag 'staff_needed_calendar_name[]', snc.name, { class: 'form-control w-25', placeholder: 'Enter name...' } %>
             <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
-            <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours'], ['Send to Makeroom', 'makeroom']], snc.role), class: "form-select w-25" %>
+            <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours']], snc.role), class: "form-select w-25" %>
             <button class="btn btn-danger snc-delete-button ms-2" type="button">
               <i class="fa fa-trash"></i>
             </button>
@@ -84,7 +84,7 @@
       <input type="color" id="colorpicker" name="staff_needed_calendar_color[]" class="form-control form-control-color" style="aspect-ratio: 1;" value="navyblue" title="Choose your color">
       <%= text_field_tag 'staff_needed_calendar_name[]', nil, { class: 'form-control w-25', placeholder: 'Enter name...' } %>
       <%= text_field_tag 'staff_needed_calendar[]', nil, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
-      <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours'], ['Send to Makeroom', 'makeroom']]), class: "form-select w-25" %>
+      <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours']]), class: "form-select w-25" %>
       <button class="btn btn-danger snc-delete-button ms-2" type="button">
         <i class="fa fa-trash"></i>
       </button>
@@ -133,6 +133,37 @@
         </tr>
       <% end %>
     </table>
+
+    <h3>Recently seen unregistered readers</h3>
+    <p>Taps from these MAC addresses were rejected in the last 7 days.</p>
+    <table class="table text-center table-striped">
+      <thead class="table-primary">
+      <tr>
+        <th>Reader Mac Address</th>
+        <th>Last seen</th>
+        <th>Register for <%= @space.name %></th>
+      </tr>
+      </thead>
+      <% @unknown_readers.each do |mac, seen| %>
+        <tr>
+          <td><%= mac %></td>
+          <td><%= time_ago_in_words(seen) %> ago</td>
+          <td><%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: mac, space_id: @space.id } }, method: :post, class: 'btn btn-default' %></td>
+        </tr>
+      <% end %>
+    </table>
+    <% if @unknown_readers_more.positive? %>
+      <p class="text-muted">...and <%= @unknown_readers_more %> more not shown.</p>
+    <% end %>
+
+    <h3>Register a new RFID Reader</h3>
+    <p>Readers must be registered here before their taps are accepted.</p>
+    <%= form_with url: admin_pi_readers_path, scope: :pi_reader_params, method: :post, class: 'd-flex gap-2' do |f| %>
+      <%= f.text_field :pi_mac_address, class: 'form-control', placeholder: 'MAC address', required: true %>
+      <%= f.text_field :pi_location, class: 'form-control', placeholder: 'Location (optional)' %>
+      <%= f.hidden_field :space_id, value: @space.id %>
+      <%= f.submit 'Register reader for ' + @space.name, class: 'btn btn-primary' %>
+    <% end %>
   </div>
 
   <br>

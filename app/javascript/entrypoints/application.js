@@ -10,6 +10,7 @@ import "../src/forms";
 import "../src/header";
 import "../src/photo_gallery";
 import "../src/requests";
+import { csrfHeaders } from "../src/csrf";
 import "../src/settings";
 import "../src/sorting";
 import "../src/tabledata";
@@ -35,6 +36,22 @@ document.addEventListener("turbo:before-render", (event) => {
     });
 });
 
+// Two predicates, deliberately different:
+// - turboOptedOut: the load-time rule for server-rendered markup. Everything
+//   without .useTurbo is forced to data-turbo=false, even when the markup says
+//   data-turbo="true" (the calendar links rely on full page loads).
+// - turboOffAtEvent: used by the confirm handler at event time. Elements that say
+//   data-turbo="true" there are Turbo's own hidden forms (built after load for
+//   data-turbo-method links); marking them off would submit a DELETE as a GET.
+const turboOptedOut = (el) => !el.classList.contains("useTurbo");
+const turboOffAtEvent = (el) =>
+  el.dataset.turbo !== "true" && turboOptedOut(el);
+const disableTurboUnlessOptedIn = (root = document) => {
+  root.querySelectorAll("form, a").forEach((el) => {
+    if (turboOptedOut(el)) el.dataset.turbo = "false";
+  });
+};
+
 document.addEventListener("turbo:load", () => {
   // Initialize Bootstrap Tooltips
   document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
@@ -56,13 +73,56 @@ document.addEventListener("turbo:load", () => {
   });
 
   // Disable Turbo on forms/links not explicitly opted in
-  document.querySelectorAll("form:not(.useTurbo)").forEach((el) => {
-    el.dataset.turbo = "false";
-  });
-  document.querySelectorAll("a:not(.useTurbo)").forEach((el) => {
-    el.dataset.turbo = "false";
-  });
+  disableTurboUnlessOptedIn();
 });
+
+// Confirmations Turbo does not show. Turbo prompts only for data-turbo-confirm
+// on elements it handles; everything else (Turbo off, legacy data-confirm since
+// rails-ujs is not loaded, a Turbo link without data-turbo-method, which Turbo 8
+// does not prompt for) is prompted here. The first of `sources` (submitter before
+// form) that carries a message decides. Handling an element also marks it
+// data-turbo=false (turboOffAtEvent, which unlike the load pass's turboOptedOut
+// spares Turbo's own data-turbo="true" hidden forms), so a click before
+// turbo:load neither skips the prompt nor lets Turbo prompt again.
+const confirmMessage = (turboPrompts, sources) => {
+  for (const el of sources) {
+    if (!el) continue;
+    if (el.dataset.turboConfirm) return turboPrompts ? null : el.dataset.turboConfirm;
+    if (el.dataset.confirm) return el.dataset.confirm;
+  }
+  return null;
+};
+
+const confirmOrCancel = (event, el, { turboPrompts = false, sources = [el] } = {}) => {
+  const off = turboOffAtEvent(el);
+  if (off) el.dataset.turbo = "false";
+  const msg = confirmMessage(!off && turboPrompts, sources);
+  if (!msg || window.confirm(msg)) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+};
+
+document.addEventListener(
+  "submit",
+  (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    confirmOrCancel(event, form, { turboPrompts: true, sources: [event.submitter, form] });
+  },
+  true,
+);
+
+document.addEventListener(
+  "click",
+  (event) => {
+    const link =
+      event.target instanceof Element &&
+      event.target.closest("a[data-turbo-confirm], a[data-confirm]");
+    if (!link) return;
+    confirmOrCancel(event, link, { turboPrompts: Boolean(link.dataset.turboMethod) });
+  },
+  true,
+);
 
 window.clearEndDate = function () {
   const endDate = document.getElementById("end_date");
@@ -75,19 +135,15 @@ window.setSpace = async function () {
 
   const space_id = spaceIdInput.value;
   const url = "/staff_dashboard/change_space";
-  const csrfToken = document
-    .querySelector('meta[name="csrf-token"]')
-    ?.getAttribute("content");
 
   try {
     const response = await fetch(url, {
       method: "PUT",
       credentials: "include",
-      headers: {
+      headers: csrfHeaders({
         "Content-Type": "application/json",
         Accept: "application/json",
-        "X-CSRF-Token": csrfToken || "",
-      },
+      }),
       body: JSON.stringify({
         space_id: space_id,
         training: window.location.href.includes("training_sessions"),
@@ -120,16 +176,10 @@ window.debounce = function (func, wait, immediate) {
 };
 
 window.examResponse = async function (exam_id, answer_id) {
-  const csrfToken = document
-    .querySelector('meta[name="csrf-token"]')
-    ?.getAttribute("content");
   try {
     await fetch("/exam_responses#create", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": csrfToken || "",
-      },
+      headers: csrfHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         exam_id: exam_id,
         answer_id: answer_id,
@@ -154,3 +204,7 @@ window.dragndrop = function (event) {
 window.dragover = function (event) {
   event.preventDefault();
 };
+
+// Last statement of the entry: the confirm listeners above are registered.
+// Specs wait on this flag before any data-confirm click.
+document.documentElement.dataset.appJsReady = "true";

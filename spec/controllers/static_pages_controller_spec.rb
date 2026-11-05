@@ -148,12 +148,12 @@ RSpec.describe StaticPagesController, type: :controller do
     end
   end
 
-  describe "GET /report_repository" do
+  describe "POST /report_repository" do
     context "not logged" do
       it "should not send an email and should redirect to root" do
         session[:user_id] = nil
         repository = create(:repository)
-        get :report_repository, params: { repository_id: repository.id }
+        post :report_repository, params: { repository_id: repository.id }
         expect(ActionMailer::Base.deliveries.count).to eq(0)
         expect(flash[:alert]).to eq(
           "Please login if you wish to report this repository"

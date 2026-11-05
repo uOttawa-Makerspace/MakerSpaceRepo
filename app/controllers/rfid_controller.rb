@@ -2,8 +2,39 @@
 include ActionView::Helpers::DateHelper
 
 class RfidController < SessionsController
+  # the controller is named "rfid", so ParamsWrapper would nest a JSON
+  # tap's params under :rfid and a tap without an rfid key made params[:rfid] a hash.
+  wrap_parameters false
+
+  # The tap boxes (frozen firmware) send no CSRF token and no session cookie; they are
+  # authenticated by a registered reader's MAC (tap_reader). A tap that comes with a
+  # cookie session (the React app's staff path) is authenticated by that cookie, so
+  # it stays CSRF-checked (or goes through the legacy JSON exemption).
+  # One condition, not `only:` + `if:`: a skip with both is applied when EITHER holds.
+  skip_forgery_protection if: :tap_without_session?
+
   before_action :signed_in, only: %i[get_unset_rfids]
   before_action :grant_access, only: %i[get_unset_rfids]
+
+  # 60 taps/min per reader (mac AND source IP: a real reader taps from a
+  # fixed IP, so a request for the same MAC from another address
+  # has its own bucket and does not use up the reader's) or per staff user, plus a coarse
+  # 600/min per-IP ceiling (readers may share one NAT egress IP).
+  RATE_LIMITED = -> { render json: { error: "Too many requests" }, status: :too_many_requests }
+  # The per-reader limit runs FIRST: its 429 halts the chain, so a reader looping past 60/min does not
+  # also count against the shared per-IP ceiling (readers behind one NAT egress IP would otherwise lose
+  # the ceiling to one misbehaving reader). The per-reader counter rows this creates are bounded: each key
+  # digests the identifier (fixed length) and lives a minute, and prune! runs every 5 minutes, so one IP
+  # leaves at most (its request rate x the prune interval) rows of fixed length.
+  rate_limit to: 60, within: 1.minute, only: :card_number, name: "tap",
+             by: -> { tap_rate_limit_key }, with: RATE_LIMITED
+  rate_limit to: 600, within: 1.minute, only: :card_number, name: "tap-ip",
+             by: -> { request.remote_ip }, with: RATE_LIMITED
+
+  # Rejected taps (unknown MAC, 401) are counted per IP and capped much tighter,
+  # to slow brute-forcing of a reader's MAC. Only rejections count, so a real
+  # reader on the same IP is never throttled by them.
+  REJECTED_TAPS_PER_MINUTE = 10
 
   # Shows the list of student cards tapped for staff members to link to newly
   # signed up users
@@ -20,69 +51,63 @@ class RfidController < SessionsController
         rfids << {
           cardNumber: card.card_number,
           tappedAt:
-            "Tapped at #{PiReader.find_by(pi_mac_address: card.mac_address).space.name} #{time_ago_in_words(card.updated_at)} ago"
+            "Tapped at #{PiReader.find_by_mac(card.mac_address).space.name} #{time_ago_in_words(card.updated_at)} ago"
         }
       end
     render json: rfids
   end
 
-  # Notify server of a student card tap
+  # Notify server of a student card tap. Two callers:
+  # - Raspberry Pi readers (frozen firmware): JSON {rfid, mac_address}, no
+  #   credentials. Accepted only when mac_address belongs to a PiReader an admin
+  #   registered; the reader's space decides where the tap lands.
+  # - The React app: a staff/admin session or Bearer JWT with {rfid, space_id}.
   def card_number
     tap_start = Time.current
 
+    card = params[:rfid] if params[:rfid].is_a?(String)
+    pi_reader = tap_reader
+    staff = tap_staff?
+    mac_address = tap_mac
+
+    # no staff auth and no registered reader -> no PiReader, Rfid,
+    # LabSession or broadcast; only the bounded unregistered-reader trace is
+    # logged (one row per MAC per hour, not broadcast).
+    # A reader with no space (e.g. legacy rows the old self-registration created
+    # for any MAC) is not registered until an admin associates it with a space.
+    unless staff || pi_reader&.space
+      return render json: { error: "Too many requests" }, status: :too_many_requests if rejected_taps_exceeded?
+
+      TapBoxLog.log_unknown_reader(mac_address: tap_mac_address)
+      return render json: { error: "Unauthorized" }, status: :unauthorized
+    end
+
     TapBoxLog.log_card_tap(
-      card_number: params[:rfid],
-      mac_address: params[:mac_address],
+      card_number: card,
+      mac_address: mac_address,
       space_id_param: params[:space_id]
     )
 
     # --- Resolve space ---
-    if params[:space_id].present? && Space.find_by(id: params[:space_id]).present?
-      space_id = params[:space_id]
-    else
-      pi_reader = PiReader.find_by(pi_mac_address: params[:mac_address])
-
-      unless pi_reader
-        pi_reader = PiReader.create(pi_mac_address: params[:mac_address])
-        TapBoxLog.log_new_pi_reader(card_number: params[:rfid], mac_address: params[:mac_address])
-      end
-
-      space_id = pi_reader.space_id
-    end
-
-    space = space_id ? Space.find_by(id: space_id) : nil
+    space = Space.find_by(id: params[:space_id].to_s) if staff && params[:space_id].present?
+    space ||= pi_reader&.space
+    space_id = space&.id
 
     unless space_id
-      TapBoxLog.log_no_space_resolved(card_number: params[:rfid], mac_address: params[:mac_address])
+      TapBoxLog.log_no_space_resolved(card_number: card, mac_address: mac_address)
       return render json: { new_rfid: "Error, missing space_id or mac_address param" }, status: :unprocessable_content
     end
 
-    # --- Look up RFID ---
-    rfid = Rfid.find_by(card_number: params[:rfid])
-
-    if rfid
-      if rfid.user_id
-        # User has a card associated with their account
-        user = rfid.user
-        elapsed_ms = ((Time.current - tap_start) * 1000).round(1)
-        TapBoxLog.log_card_recognized(user: user, card_number: params[:rfid], space: space, mac_address: params[:mac_address], elapsed_ms: elapsed_ms)
-        check_session(rfid, space_id)
-      else
-        rfid.mac_address = params[:mac_address]
-        rfid.touch
-        rfid.save
-        TapBoxLog.log_unlinked_card(card_number: params[:rfid], space: space, mac_address: params[:mac_address])
-        render json: { error: "Temporary RFID already exists" }, status: :unprocessable_content
-      end
+    result = RfidTap.call(card: card, space: space, mac_address: mac_address, tap_start: tap_start)
+    case result.outcome
+    when :sign_in, :sign_out
+      render json: user_response_payload(result.success_message), status: :ok
+    when :unlinked_card
+      render json: { error: "Temporary RFID already exists" }, status: :unprocessable_content
+    when :new_card
+      render json: { new_rfid: "Temporary RFID created" }, status: :unprocessable_content
     else
-      new_rfid = Rfid.create(card_number: params[:rfid], mac_address: params[:mac_address])
-      if new_rfid.valid?
-        TapBoxLog.log_new_unknown_card(card_number: params[:rfid], space: space, mac_address: params[:mac_address])
-        render json: { new_rfid: "Temporary RFID created" }, status: :unprocessable_content
-      else
-        TapBoxLog.log_invalid_rfid(card_number: params[:rfid], mac_address: params[:mac_address], errors: new_rfid.errors.full_messages)
-        render json: { new_rfid: "Error, requires rfid param" }, status: :unprocessable_content
-      end
+      render json: { new_rfid: "Error, requires rfid param" }, status: :unprocessable_content
     end
   end
 
@@ -100,62 +125,57 @@ class RfidController < SessionsController
 
   private
 
-  # Helper method to build the response payload with additional user status info
-  def user_response_payload(user, success_message)
-    # Check if user has "Shop Fundamentals" training certification
-    has_fundamentals = user.certifications.any? do |cert|
-      name = cert.training_session&.training&.name_en || ""
-      name.downcase.include?("shop fundamentals")
-    end
+  # What the tap box sends as its identifier, bounded by PiReader.tap_identifier (the rule registration
+  # uses too): anything longer than 64 characters or with a control character is treated as missing, as a
+  # hash/array param already is: no reader matches it, it is counted against the caller's IP only, and
+  # nothing stores it. (The rate-limit key digests it, so its length is fixed whatever the input.)
+  def tap_mac_address
+    return @tap_mac_address if defined?(@tap_mac_address)
 
-    {
-      success: success_message,
-      has_membership: user.has_active_membership?,
-      has_shop_fundamentals: has_fundamentals,
-      signed_consent_form: user.walk_in_safety_sheets.any?
-    }
+    @tap_mac_address = PiReader.tap_identifier(params[:mac_address])
   end
 
-  def check_session(rfid, space_id)
-    active_sessions = rfid.user.lab_sessions.active
-    space = Space.find_by(id: space_id)
+  def tap_without_session?
+    action_name == "card_number" && session_user.nil?
+  end
 
-    if active_sessions.present?
-      # Sign out of all spaces
-      active_sessions.sign_out_session
-      # If user tapped somewhere other than last active space, make a new
-      # session.
-      last_active_location = active_sessions.last.space_id
+  def tap_reader
+    return @tap_reader if defined?(@tap_reader)
 
-      if last_active_location != space_id
-        previous_space = Space.find_by(id: last_active_location)
-        TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address], previous_space: previous_space)
-        new_session(rfid, space_id)
-      else
-        TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
-        StaffDashboardChannel.send_tap_out rfid.user, space_id
-        render json: user_response_payload(rfid.user, "RFID sign out"), status: :ok
-      end
+    @tap_reader = tap_mac_address && PiReader.find_by_mac(tap_mac_address)
+  end
+
+  def tap_staff?
+    return @tap_staff if defined?(@tap_staff)
+
+    @tap_staff = signed_in? && current_user.staff?
+  end
+
+  # The MAC stored on LabSession/Rfid/TapBoxLog rows: the registered reader's own
+  # value (so it matches PiReader exactly), else the normalized param.
+  def tap_mac
+    tap_reader&.pi_mac_address || tap_mac_address
+  end
+
+  def rejected_taps_exceeded?
+    count = RateLimitCounter.increment("rate-limit:rfid:rejected:#{request.remote_ip}", 1, expires_in: 1.minute)
+    count > REJECTED_TAPS_PER_MINUTE
+  end
+
+  def tap_rate_limit_key
+    if tap_staff?
+      "staff:#{current_user.id}"
+    elsif tap_mac_address
+      "mac:#{Digest::SHA256.hexdigest(tap_mac_address)[0, 32]}|ip:#{request.remote_ip}"
     else
-      new_session(rfid, space_id)
-      TapBoxLog.log_membership_check_queued(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
-      CardTapJob.perform_later(rfid, space_id)
+      "ip:#{request.remote_ip}"
     end
-    # While membership check is running, return an HTTP code to card scanner to
-    # signal if an account is associated with the RFID number
   end
 
-  def new_session(rfid, new_location)
-    space = Space.find_by(id: new_location)
-
-    LabSession.create_session(
-      user: rfid.user,
-      mac_address: params[:mac_address],
-      space_id: new_location
-    )
-
-    TapBoxLog.log_sign_in(user: rfid.user, card_number: rfid.card_number, space: space, mac_address: params[:mac_address])
-    render json: user_response_payload(rfid.user, "RFID sign in"), status: :ok
+  # Pi firmware and the React app read only `success`; nothing about the card
+  # owner is returned.
+  def user_response_payload(success_message)
+    { success: success_message }
   end
 
   def grant_access

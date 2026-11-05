@@ -1,4 +1,5 @@
 import TomSelect from "tom-select";
+import { csrfHeaders } from "../src/csrf";
 
 let prev_anchor = "";
 document.addEventListener("turbo:submit-start", function () {
@@ -127,19 +128,14 @@ document.addEventListener("turbo:load", function () {
       const form = document.getElementById(e.target.id + "_form");
       const uploadedFile = fileInput.files[0];
       const url = form.getAttribute("action");
-      const authToken = form[1].value;
 
       if (uploadedFile && uploadedFile.type === "application/pdf") {
         const formData = new FormData();
         formData.append(e.target.id, uploadedFile);
-        formData.append("authenticity_token", authToken);
 
         fetch(url, {
           method: "PATCH",
-          headers: {
-            Accept: "application/json",
-            //'Content-Type': 'application/json',
-          },
+          headers: csrfHeaders({ Accept: "application/json" }),
           body: formData,
         })
           .then((response) => {
@@ -188,10 +184,10 @@ document.addEventListener("turbo:load", function () {
       body["spaces"][i.dataset.userId] = space_list;
       fetch("/admin/users/set_role/", {
         method: "PATCH",
-        headers: {
+        headers: csrfHeaders({
           Accept: "application/json",
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify(body),
       });
     });

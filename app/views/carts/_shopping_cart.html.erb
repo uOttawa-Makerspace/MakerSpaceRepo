@@ -7,6 +7,7 @@
       </ul>
     </div>
 <% end %>
+<% priced = @order.priced_items(@order_items) # computed once %>
 <% if @order_items.size == 0 %>
     <p class="text-center m-5">
       There are no items in your shopping cart. <br />
@@ -35,8 +36,8 @@
     </thead>
 
     <tbody>
-    <% @order_items.each do |order_item| %>
-        <%= render 'carts/cart_row', proficient_project: order_item.proficient_project, order_item:, show_total: true %>
+    <% priced.each do |order_item, charge| %>
+        <%= render 'carts/cart_row', proficient_project: order_item.proficient_project, order_item:, charge:, show_total: true %>
     <% end %>
     </tbody>
   </table>
@@ -47,11 +48,16 @@
       <div class="bg-body-tertiary rounded-pill px-4 py-3 text-uppercase fw-bold">Order summary </div>
       <div class="p-4">
         <ul class="list-unstyled mb-4">
-          <li class="d-flex justify-content-between py-3 border-bottom"><strong class="text-muted">Order Subtotal </strong><strong><%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %><%= current_order.subtotal %></strong></li>
+          <% cart_total = Order.total_of(priced) %>
+          <% if cart_total %>
+          <li class="d-flex justify-content-between py-3 border-bottom"><strong class="text-muted">Order Subtotal </strong><strong><%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %><%= cart_total %></strong></li>
           <li class="d-flex justify-content-between py-3"><strong class="text-muted">Total</strong>
-            <h5 class="fw-bold"><%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %><%= current_order.subtotal %></h5>
+            <h5 class="fw-bold"><%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %><%= cart_total %></h5>
           </li>
-        <%= button_to 'Confirm order', orders_path, action: :create, method: :post, class: 'btn btn-primary rounded-pill py-2 d-block w-100', 'aria-label': "Confirm order, the total is #{current_order.subtotal} CC", data: { confirm: 'Are you sure you want to proceed with the order ?' } %>
+        <%= button_to 'Confirm order', orders_path, action: :create, method: :post, class: 'btn btn-primary rounded-pill py-2 d-block w-100', 'aria-label': "Confirm order, the total is #{cart_total} CC", data: { confirm: 'Are you sure you want to proceed with the order ?' } %>
+          <% else %>
+          <li class="py-3 text-danger"><strong>Remove the items marked as no longer available to see your total and check out.</strong></li>
+          <% end %>
         </ul>
       </div>
   </div>

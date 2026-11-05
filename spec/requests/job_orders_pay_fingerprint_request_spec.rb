@@ -1,0 +1,307 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+# /pay never serves a Shopify draft whose line items no longer match the
+# order (a fingerprint is stored with the draft id). A legacy draft (stored
+# before fingerprints existed) is replaced once from the current line items.
+RSpec.describe "Job order pay link fingerprint", type: :request do
+  let(:owner) { create(:user, :regular_user) }
+  let(:staff) { create(:user, :staff) }
+  let!(:shopify) { stub_shopify_admin!.tap { |fake| fake.invoice_url = "https://pay.example/old-invoice" } }
+
+  before do
+    seed_job_statuses!
+    seed_job_order_message!
+    seed_job_types!
+    ActionMailer::Base.deliveries.clear
+  end
+
+  # The request with application errors raised to the example (Rails 8.1 otherwise renders them as a 500 debug page).
+  def get_raising_app_errors(*args, **kwargs)
+    env_config = Rails.application.env_config
+    previous = env_config["action_dispatch.show_exceptions"]
+    env_config["action_dispatch.show_exceptions"] = :none
+    get(*args, **kwargs)
+  ensure
+    env_config["action_dispatch.show_exceptions"] = previous
+  end
+
+  def status_names(order)
+    order.reload.job_order_statuses.order(:id).map { |s| s.job_status.name }
+  end
+
+  def shopify_ops
+    shopify.calls.map { |c| c[:query][/\b(draftOrder\w+|getDraftOrder)\b/] }
+  end
+
+  def requote_mails
+    ActiveJob::Base.queue_adapter.enqueued_jobs
+                   .select { |j| j[:job] == ActionMailer::MailDeliveryJob && j[:args].first(2) == %w[JobOrderMailer send_job_requote_needed] }
+                   .map { |j| j[:args].last["args"].first }
+  end
+
+  def quoted_order!(status_key, price: 29.99)
+    order = make_job_order!(owner: owner, status_key: status_key)
+    task = order.job_tasks.create!(title: "Task #1")
+    task.build_job_task_quote(price: price, service_price: 0, service_quantity: 0).save!
+    [order.reload, task]
+  end
+
+  # ------------------------------------------------------------------ order rules
+
+  describe "GET /pay against the stored invoice fingerprint" do
+    def pay!(order)
+      get pay_job_orders_path, params: { token: order.pay_token }
+    end
+
+    # The first /pay of an example must have created and stored a fingerprinted draft; asserting it here makes a
+    # later failure name the request that went wrong.
+    def pay_creates_draft!(order)
+      pay!(order)
+      expect(response).to have_http_status(:ok)
+      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      expect(order.shopify_draft_order_fingerprint).to be_present
+    end
+
+    it "re-reads the status past the query cache: a change committed meanwhile by another connection is seen" do
+      order, = quoted_order!(:completed)
+      pay_creates_draft!(order)
+      staff_id = JobStatus.staff_approval.id
+      allow_any_instance_of(JobOrder).to receive(:checkout_link).and_wrap_original do |m, *args|
+        link = m.call(*args)
+        # a write that does not go through the adapter, as another connection's commit would not: the query cache
+        # still holds the row the first read of this request saw
+        JobOrderStatus.connection.raw_connection.exec(
+          "INSERT INTO job_order_statuses (job_order_id, job_status_id, user_id, created_at, updated_at) " \
+          "VALUES (#{order.id}, #{staff_id}, #{owner.id}, now(), now())"
+        )
+        link
+      end
+
+      pay!(order)
+
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_quote_changed"))
+    end
+
+    it "treats an order without any status as not payable instead of raising" do
+      order, = quoted_order!(:completed)
+      token = order.pay_token
+      JobOrderStatus.where(job_order_id: order.id).delete_all
+
+      get pay_job_orders_path, params: { token: token }
+
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_magic_link_expired"))
+    end
+
+    it "never renders the pay page for an order without a status, even with the Completed row absent" do
+      order, = quoted_order!(:completed)
+      token = order.pay_token
+      JobOrderStatus.where(job_order_id: order.id).delete_all
+      JobStatus.where(name: "Completed (Waiting for Payment)").delete_all
+      JobStatus.reset_lookup_cache!
+
+      expect { get_raising_app_errors pay_job_orders_path, params: { token: token } }
+        .to raise_error(JobStatus::Missing, /Completed/) # fails closed, never the pay page
+      expect(shopify_ops).to be_empty
+    end
+
+    it "reads the current status twice on a served draft (the guard, the final re-read), not once more for the fast path" do
+      order, = quoted_order!(:completed)
+      pay_creates_draft!(order)
+      reads = []
+      counter = lambda do |*, payload|
+        reads << payload[:sql] if payload[:sql].include?("SELECT s.job_status_id FROM job_order_statuses s")
+      end
+
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { pay!(order) }
+
+      expect(response).to have_http_status(:ok)
+      expect(reads.size).to eq(2)
+    end
+
+    describe "#checkout_link lock-free fast path" do
+      it "sees a status committed on another connection while the query cache is on" do
+        order, = quoted_order!(:completed)
+        pay_creates_draft!(order)
+        staff_id = JobStatus.staff_approval.id
+        reader = JobOrder.find(order.id)
+        calls_before = shopify.calls.size
+
+        result = ActiveRecord::Base.cache do
+          reader.latest_status # primes the cache with the COMPLETED row
+          JobOrderStatus.connection.raw_connection.exec(
+            "INSERT INTO job_order_statuses (job_order_id, job_status_id, user_id, created_at, updated_at) " \
+            "VALUES (#{order.id}, #{staff_id}, #{owner.id}, now(), now())"
+          )
+          expect(reader.latest_status.job_status).to eq(JobStatus.completed) # the cached read is stale: display only
+          reader.checkout_link
+        end
+
+        expect(result.value).to be_nil
+        expect(shopify.calls.size).to eq(calls_before) # the fast path did not fetch the draft
+      end
+    end
+
+    it "stores a fingerprint with the draft and serves that draft while the line items match" do
+      order, = quoted_order!(:completed)
+      pay!(order)
+      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      expect(order.shopify_draft_order_fingerprint).to be_present
+
+      shopify.calls.clear
+      pay!(order)
+      expect(response.body).to include("https://pay.example/old-invoice")
+      expect(shopify_ops).to eq(["getDraftOrder"])
+    end
+
+    it "never serves a draft whose line items changed; the order goes back to staff and the draft is voided" do
+      order, task = quoted_order!(:completed)
+      pay_creates_draft!(order)
+      # a price change made outside the quote rule (console, a path not yet routed through the rule)
+      task.job_task_quote.update_column(:price, 5)
+      shopify.calls.clear
+
+      pay!(order)
+
+      expect(response).to redirect_to(job_order_path(order.id))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_quote_changed"))
+      expect(shopify_ops).to include("draftOrderDelete")
+      expect(shopify_ops).not_to include("draftOrderCreate")
+      order.reload
+      expect(order.shopify_draft_order_id).to be_nil
+      last = order.job_order_statuses.order(:id).last
+      expect(last).to have_attributes(job_status: JobStatus.staff_approval, user: owner, reason: "invoice_mismatch")
+      expect(requote_mails).to eq([order.id])
+    end
+
+    it "serves nothing and changes nothing when the mismatched draft cannot be deleted" do
+      order, task = quoted_order!(:completed)
+      pay_creates_draft!(order)
+      task.job_task_quote.update_column(:price, 5)
+      shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete a completed draft order" }]
+      before = status_names(order)
+
+      pay!(order)
+
+      expect(response.body).not_to include("old-invoice")
+      expect(Nokogiri::HTML(response.body).text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+      expect(status_names(order)).to eq(before)
+      expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+      expect(requote_mails).to be_empty
+    end
+
+    it "lets staff clear a mismatch with a same-price re-quote: the stale draft is replaced, not kept" do
+      order, task = quoted_order!(:completed)
+      pay!(order)
+      task.job_task_quote.update_column(:price, 5) # changed behind the draft
+      pay!(order)                                  # sent back to staff, draft voided
+      # the draft is voided by the send-back; model one that survived (e.g. Shopify kept it) to pin the re-quote rule
+      order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/9001",
+                           shopify_draft_order_fingerprint: "stale-fingerprint")
+      shopify.calls.clear
+
+      session_login!(staff)
+      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "5",
+                                                   job_order: { staff_comments: "" } }
+
+      expect(status_names(order).last).to eq("Waiting for User Approval")
+      expect(shopify_ops).to eq(%w[draftOrderDelete])
+      expect(order.reload.shopify_draft_order_id).to be_nil
+    end
+
+    describe "a legacy draft (stored before fingerprints existed)" do
+      def legacy_order!
+        order, = quoted_order!(:completed, price: 42)
+        order.update_columns(shopify_draft_order_id: "gid://shopify/DraftOrder/7000",
+                             shopify_draft_order_fingerprint: nil)
+        shopify.draft_id = "gid://shopify/DraftOrder/7000"
+        order
+      end
+
+      it "is replaced once by a draft built from the current line items, which is then served" do
+        order = legacy_order!
+        created = []
+        allow(shopify).to receive(:query).and_wrap_original do |m, **kw|
+          if kw[:query].include?("draftOrderCreate")
+            created << kw[:variables][:input][:lineItems].map { |l| l[:originalUnitPriceWithCurrency][:amount] }
+            shopify.draft_id = "gid://shopify/DraftOrder/7001"
+            shopify.invoice_url = "https://pay.example/new-invoice"
+          end
+          m.call(**kw)
+        end
+
+        pay!(order)
+
+        expect(response).to have_http_status(:ok)
+        expect(shopify_ops).to include("draftOrderDelete", "draftOrderCreate")
+        expect(created).to eq([[BigDecimal("42"), 0]])
+        expect(response.body).to include("https://pay.example/new-invoice")
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/7001")
+        expect(order.shopify_draft_order_fingerprint).to be_present
+        expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
+
+        shopify.calls.clear
+        pay!(order)
+        expect(shopify_ops).to eq(["getDraftOrder"])
+      end
+
+      it "carries on and creates a new draft when the legacy draft vanished between the probe and the delete" do
+        order = legacy_order!
+        shopify.lose_delete_race = :gone
+        shopify.on_query = ->(query, _variables) { shopify.draft_id = "gid://shopify/DraftOrder/7001" if query.include?("draftOrderCreate") }
+
+        pay!(order)
+
+        expect(response).to have_http_status(:ok)
+        expect(shopify_ops).to include("draftOrderDelete", "draftOrderCreate")
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/7001")
+        expect(Nokogiri::HTML(response.body).text).not_to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+      end
+
+      it "refuses, keeping the id, when the legacy draft was paid in the meantime" do
+        order = legacy_order!
+        shopify.lose_delete_race = :paid
+
+        pay!(order)
+
+        expect(Nokogiri::HTML(response.body).text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/7000")
+        expect(shopify_ops).not_to include("draftOrderCreate")
+      end
+
+      it "shows the try-again message and keeps the id when the legacy draft cannot be deleted" do
+        order = legacy_order!
+        shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete a completed draft order" }]
+
+        pay!(order)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include("old-invoice")
+        expect(Nokogiri::HTML(response.body).text).to include(I18n.t("job_orders.alerts.payment_link_unavailable"))
+        expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/7000")
+        expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
+      end
+    end
+
+    it "creates no draft when the order left COMPLETED before the lock was taken" do
+      order, = quoted_order!(:completed)
+      allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original do |m, *args, &blk|
+        # an owner change sends the order back to staff just before /pay locks it
+        unless JobOrderStatus.exists?(job_order_id: order.id, reason: "owner_change")
+          JobOrderStatus.create!(job_order_id: order.id, job_status: JobStatus.staff_approval, user: owner,
+                                 reason: "owner_change")
+        end
+        m.call(*args, &blk)
+      end
+
+      pay!(order)
+
+      expect(shopify_ops).not_to include("draftOrderCreate")
+      expect(order.reload.shopify_draft_order_id).to be_nil
+      expect(response.body).not_to include("old-invoice")
+    end
+  end
+end

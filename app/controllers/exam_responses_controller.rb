@@ -5,6 +5,7 @@ class ExamResponsesController < SessionsController
   def create
     permitted_params = exam_response_params
     exam = Exam.find(permitted_params[:exam_id])
+    return head :forbidden unless exam.open_for_answers?
     answer = Answer.find(permitted_params[:answer_id])
     question = answer.question
     response = question.response_for_exam(exam)

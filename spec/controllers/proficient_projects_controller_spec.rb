@@ -298,7 +298,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:order, :with_item, user_id: user.id)
+        create(:order, :completed, :with_item, user_id: user.id)
         proficient_project = ProficientProject.last
         put :complete_project,
             format: "js",
@@ -327,7 +327,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         @user = create(:user, :admin)
         session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:order, :with_item, user_id: @user.id)
+        create(:order, :completed, :with_item, user_id: @user.id)
         create(:user, email: "avend029@uottawa.ca")
         @proficient_project = ProficientProject.last
         put :complete_project,
@@ -345,7 +345,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         staff = create(:user, :staff)
         session[:staff_id] = staff.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :approve_project,
+        post :approve_project,
             params: {
               oi_id: OrderItem.last.id,
               order_item: {
@@ -361,7 +361,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
       end
 
       it "should set the oi as Awarded" do
-        get :approve_project,
+        post :approve_project,
             params: {
               oi_id: OrderItem.last.id,
               order_item: {
@@ -379,7 +379,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
         user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        get :approve_project, format: "js"
+        post :approve_project, format: "js"
         expect(response).to redirect_to development_programs_path
         expect(OrderItem.last.status).to eq("Waiting for approval")
         expect(flash[:alert]).to eq("Only staff members can access this area.")
@@ -387,7 +387,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
 
       it "should create a new Certification" do
         expect do
-          get :approve_project,
+          post :approve_project,
             params: {
               oi_id: OrderItem.last.id,
               order_item: {
@@ -397,18 +397,20 @@ RSpec.describe ProficientProjectsController, type: :controller do
         end.to change(Certification, :count).by(1)
       end
 
-      it "should NOT create a new Certification" do
-        create(:certification, user: OrderItem.last.order.user, training: @proficient_project.training, 
+      it "creates its own Certification and leaves an existing training certification alone" do
+        existing = create(:certification, user: OrderItem.last.order.user, training: @proficient_project.training,
 level: @proficient_project.level)
         expect do
-          get :approve_project,
+          post :approve_project,
             params: {
               oi_id: OrderItem.last.id,
               order_item: {
                 admin_comments: ""
               }
             }
-        end.to change(Certification, :count).by(0)
+        end.to change(Certification, :count).by(1)
+        expect(Certification.exists?(existing.id)).to be(true)
+        expect(ProficientProjectSession.last.certification_id).not_to eq(existing.id)
       end
     end
   end
@@ -419,7 +421,7 @@ level: @proficient_project.level)
         @user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:order, :with_item, user_id: @user.id)
+        create(:order, :completed, :with_item, user_id: @user.id)
         @proficient_project = ProficientProject.last
         put :complete_project,
             format: "js",
@@ -433,7 +435,8 @@ level: @proficient_project.level)
       end
 
       it "should set the oi as Revoked" do
-        get :revoke_project,
+        session[:user_id] = create(:user, :staff).id # revoke_project is staff-only
+        post :revoke_project,
             format: "js",
             params: {
               oi_id: OrderItem.last.id,
@@ -449,7 +452,8 @@ level: @proficient_project.level)
       end
 
       it "should NOT set the oi as Revoked" do
-        get :revoke_project, format: "js"
+        session[:user_id] = create(:user, :staff).id # revoke_project is staff-only
+        post :revoke_project, format: "js"
         expect(response).to redirect_to requests_proficient_projects_path
         expect(OrderItem.order(updated_at: :desc).first.status).to eq(
           "Waiting for approval"

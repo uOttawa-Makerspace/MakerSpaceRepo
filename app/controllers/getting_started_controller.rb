@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class GettingStartedController < SessionsController
-  skip_before_action :session_expiry
   before_action :current_user
 
   layout "getting_started"

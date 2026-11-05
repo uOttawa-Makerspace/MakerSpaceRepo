@@ -30,13 +30,16 @@
                 <%= e.training.localized_name %>
               </td>
               <td>
-                <b><%= e.status.capitalize %></b>
+                <b><%= e.ungraded? && e.expired? ? 'Expired' : e.status.capitalize %></b>
               </td>
               <td>
                 <%= e.score || 'NA' %>
               </td>
               <td class="action-cell">
-                <% if e.status == "not started" %>
+                <% if e.ungraded? && e.expired? %>
+                  Expired
+                  <br />
+                <% elsif e.status == "not started" %>
                   <%= link_to 'Start Exam', exam_path(e.id), class: 'btn btn-primary' %>
                 <% elsif e.status == "incomplete" %>
                   <%= link_to 'Resume Exam', exam_path(e.id), class: 'btn btn-primary' %>

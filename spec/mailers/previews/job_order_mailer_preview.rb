@@ -42,11 +42,6 @@ class JobOrderMailerPreview < ActionMailer::Preview
     JobOrderMailer.payment_succeeded(job_order.id)
   end
 
-  def payment_failed
-    job_order = JobOrder.last || create_job_order_with_files
-    JobOrderMailer.payment_failed(job_order.id)
-  end
-
   def staff_assigned
     job_order = JobOrder.last || JobOrder.create!(user: User.last, expedited: true)
     staff_member = User.staff.first || User.create!(email: 'staff@example.com', role: 'staff')
@@ -59,8 +54,8 @@ class JobOrderMailerPreview < ActionMailer::Preview
     JobOrder.create!(
       user: User.last || User.create!(email: 'user@example.com'),
       job_order_statuses: [
-        JobOrderStatus.new(job_status: JobStatus::USER_APPROVAL),
-        JobOrderStatus.new(job_status: JobStatus::USER_APPROVAL) # For testing re-approved scenario
+        JobOrderStatus.new(job_status: JobStatus.user_approval),
+        JobOrderStatus.new(job_status: JobStatus.user_approval) # For testing re-approved scenario
       ]
     )
   end

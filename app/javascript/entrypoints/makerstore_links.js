@@ -1,4 +1,5 @@
 import Sortable from "sortablejs";
+import { csrfHeaders } from "../src/csrf";
 
 document.addEventListener("turbo:load", function () {
   let linkList = document.querySelector("#linkList");
@@ -11,10 +12,10 @@ document.addEventListener("turbo:load", function () {
       );
       fetch("makerstore_links/reorder", {
         method: "PUT",
-        headers: {
+        headers: csrfHeaders({
           Accept: "application/json",
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           data: reorderData,
           format: "json",

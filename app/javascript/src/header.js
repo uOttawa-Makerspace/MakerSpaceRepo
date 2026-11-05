@@ -1,4 +1,5 @@
 import { Turbo } from "@hotwired/turbo-rails";
+import { csrfHeaders } from "./csrf";
 /**
  *
  * This JS deals with the navbar and login modal
@@ -42,10 +43,10 @@ document.addEventListener("turbo:load", function () {
         // Send request to server
         fetch("/quick_access_links/create", {
           method: "POST",
-          headers: {
+          headers: csrfHeaders({
             "Content-Type": "application/json",
             accept: "application/json",
-          },
+          }),
           body: JSON.stringify({
             name: title,
             path: path,

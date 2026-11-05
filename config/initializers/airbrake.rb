@@ -9,6 +9,12 @@
 #
 # Configuration details:
 # https://github.com/airbrake/airbrake-ruby#configuration
+# Keys whose values must never reach Airbrake (params, headers, session): passwords,
+# Authorization / Bearer headers, and every token field, including the /api/v1
+# refresh_token / access_token bodies and the X-Refresh-Token header. A named setting
+# so a spec can pin it (the configure block below only runs with credentials).
+Rails.application.config.x.airbrake_blocklist_keys = [/password/i, /authorization/i, /token/i, /refresh/i].freeze
+
 project_id = Rails.application.credentials.dig(Rails.env.to_sym, :airbrake, :project_id)
 project_key = Rails.application.credentials.dig(Rails.env.to_sym, :airbrake, :project_key)
 
@@ -52,7 +58,7 @@ if project_id && project_key
     # Airbrake. By default, all "password" attributes will have their contents
     # replaced.
     # https://github.com/airbrake/airbrake-ruby#blocklist_keys
-    c.blocklist_keys = [/password/i, /authorization/i]
+    c.blocklist_keys = Rails.application.config.x.airbrake_blocklist_keys
 
     # Alternatively, you can integrate with Rails' filter_parameters.
     # Read more: https://goo.gl/gqQ1xS

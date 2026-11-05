@@ -38,6 +38,10 @@ class OrderItem < ApplicationRecord
               only_integer: true,
               greater_than: 0
             }
+  # The project is fixed once the item exists: its unit_price snapshot and the badge-requirement
+  # check (on add) belong to that project, so swapping it would buy another project at the old
+  # price. Assigning it on a persisted item raises ActiveRecord::ReadonlyAttributeError.
+  attr_readonly :proficient_project_id
   validate :product_present
   validate :order_present
   before_save :finalize
@@ -59,6 +63,20 @@ class OrderItem < ApplicationRecord
 
   def total_price
     unit_price * quantity
+  end
+
+  # THE price of this item (Order#priced_items): its price snapshot x quantity in whole CC, what
+  # the cart shows, what is stored and what checkout charges; nil when the item can no longer be
+  # bought (fails validation), shown as needing removal and never charged.
+  def charge
+    valid? ? total_price.to_i : nil
+  end
+
+  # What a checked-out item was charged, as stored when it was checked out (a whole-CC amount),
+  # or nil for a legacy row that never stored one. Never raises, unlike total_price, which
+  # multiplies the nullable unit_price and quantity.
+  def paid_amount
+    self[:total_price]&.to_i
   end
 
   private

@@ -23,7 +23,8 @@
   <tr>
     <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; padding: 5px 0;" valign="top">
       <strong>Description:</strong><br>
-      <%= @issue.description.html_safe %>
+      <%# descriptions are sanitised like other rich text %>
+      <%= sanitize(@issue.description) %>
     </td>
   </tr>
   <tr>

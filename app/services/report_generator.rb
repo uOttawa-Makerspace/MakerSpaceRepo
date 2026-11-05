@@ -1169,6 +1169,8 @@ class ReportGenerator
           "Graduate"
         when "faculty_member"
           "Faculty Member"
+        when "staff_member"
+          "Staff Member"
         when "community_member"
           # @param [DateTime] start_date
           # @param [DateTime] end_date

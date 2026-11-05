@@ -28,15 +28,6 @@ RSpec.describe RfidController, type: :controller do
       let(:pi_reader) { create(:pi_reader) }
       let(:rfid_attributes) { FactoryBot.attributes_for(:rfid) }
       
-      # Base response payload for a user without membership, certs, or consent forms
-      let(:default_user_status) do
-        {
-          has_membership: false,
-          has_shop_fundamentals: false,
-          signed_consent_form: false
-        }
-      end
-
       it 'should create an rfid and render json ok' do
         rfid_params = {
           rfid: rfid_attributes[:card_number],
@@ -60,11 +51,12 @@ RSpec.describe RfidController, type: :controller do
           post :card_number, params: rfid_params, format: :json
         }.to change(Rfid, :count).by(0)
         actual = JSON.parse(response.body, symbolize_names: true)
-        expected = default_user_status.merge(success: 'RFID sign in')
+        expected = { success: 'RFID sign in' }
         expect(actual).to eq(expected)
       end
 
-      it 'should not create rfid and should sign in RFID with Space ID' do
+      it 'should not create rfid and should sign in RFID with Space ID (staff only)' do
+        session[:user_id] = create(:user, :staff).id
         existing_rfid = create(:rfid, mac_address: pi_reader.pi_mac_address)
         rfid_params = {
           rfid: existing_rfid.card_number,
@@ -74,11 +66,12 @@ RSpec.describe RfidController, type: :controller do
           post :card_number, params: rfid_params, format: :json
         }.to change(Rfid, :count).by(0)
         actual = JSON.parse(response.body, symbolize_names: true)
-        expected = default_user_status.merge(success: 'RFID sign in')
+        expected = { success: 'RFID sign in' }
         expect(actual).to eq(expected)
       end
 
-      it 'should not create rfid and should MOT sign in RFID without Mac Address or Space ID' do
+      it 'should not create rfid and should MOT sign in RFID without Mac Address or Space ID (staff session)' do
+        session[:user_id] = create(:user, :staff).id
         existing_rfid = create(:rfid, mac_address: pi_reader.pi_mac_address)
         rfid_params = { rfid: existing_rfid.card_number }
         expect {
@@ -114,13 +107,13 @@ RSpec.describe RfidController, type: :controller do
         # Sign In
         post :card_number, params: rfid_params, format: :json
         expect(JSON.parse(response.body, symbolize_names: true)).to eq(
-          default_user_status.merge(success: 'RFID sign in')
+          { success: 'RFID sign in' }
         )
         
         # Sign Out
         post :card_number, params: rfid_params, format: :json
         expect(JSON.parse(response.body, symbolize_names: true)).to eq(
-          default_user_status.merge(success: 'RFID sign out')
+          { success: 'RFID sign out' }
         )
       end
 
@@ -137,7 +130,7 @@ RSpec.describe RfidController, type: :controller do
         
         post :card_number, params: sign_in_rfid_params, format: :json
         expect(JSON.parse(response.body, symbolize_names: true)).to eq(
-          default_user_status.merge(success: 'RFID sign in')
+          { success: 'RFID sign in' }
         )
         
         sign_out_rfid_params = {
@@ -147,7 +140,7 @@ RSpec.describe RfidController, type: :controller do
         
         post :card_number, params: sign_out_rfid_params, format: :json
         expect(JSON.parse(response.body, symbolize_names: true)).to eq(
-          default_user_status.merge(success: 'RFID sign out')
+          { success: 'RFID sign out' }
         )
       end
 

@@ -3,33 +3,97 @@
 module ShopifyConcern
   extend ActiveSupport::Concern
 
+  # The gid-level Shopify calls (a draft order id, no record). Deliberately not class methods of the models that
+  # include the concern: they skip #ensure_can_use_draft_order, so lockers and memberships must not gain them.
+  # Used by the concern's instance methods and by JobOrder (its draft rule, JobOrder::DraftSweep).
+  module DraftOrders
+    # THE Admin GraphQL client builder (ShopifyService.admin_client uses it too): starts the session and builds the client.
+    def self.client
+      ShopifyContext.start_session!
+      ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
+    end
+
+    # One getDraftOrder query that tells three outcomes apart: [:found, draft], [:gone, nil] (HTTP 200 with
+    # `draftOrder: null` and no GraphQL errors) and [:error, nil] (non-200 or an error payload). Exceptions
+    # propagate (unknown, never "gone").
+    def self.fetch_result(gid)
+      query_draft_order = <<~QUERY
+        query getDraftOrder($id: ID!) {
+          draftOrder(id: $id) {
+            id
+            name
+            invoiceUrl
+            status
+            tags
+            order {
+              id
+              fullyPaid
+              displayFinancialStatus
+            }
+            metafields(first: 10) {
+              nodes {
+                key
+                value
+                type
+              }
+            }
+          }
+        }
+      QUERY
+
+      resp = client.query(query: query_draft_order, variables: { id: gid })
+      return [:error, nil] unless resp.code == 200
+
+      body = resp.body
+      draft = body&.dig("data", "draftOrder")
+      return [:found, draft] unless draft.nil?
+
+      gone = body.is_a?(Hash) && body["errors"].blank? && body["data"].is_a?(Hash) && body["data"].key?("draftOrder")
+      [gone ? :gone : :error, nil]
+    end
+
+    # draftOrderDelete for the draft `gid`. It checks nothing about whose draft it is, so it stays out of the models'
+    # API. Its only caller is ShopifyConcern::DraftRemoval (the one delete-and-classify rule, used by
+    # JobOrder::DraftDeletion and LockerRental).
+    # `user_errors_out`: optional Array that receives Shopify's userErrors.
+    # True when Shopify reports it deleted the draft. Fail closed: anything but HTTP 200 raises.
+    def self.delete(gid, user_errors_out: nil)
+      delete_draft_order = <<~QUERY
+        mutation draftOrderDelete($input: DraftOrderDeleteInput!) {
+          draftOrderDelete(input: $input) {
+            deletedId
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      QUERY
+
+      resp = client.query(query: delete_draft_order, variables: { input: { id: gid } })
+      raise "Received HTTP #{resp.code} when deleting shopify draft order" unless resp.code == 200
+
+      user_errors_out&.concat(Array(resp.body&.dig("data", "draftOrderDelete", "userErrors")))
+      resp.body&.dig("data", "draftOrderDelete", "deletedId").present?
+    end
+  end
+
   def self.target_tag
     Rails.env.production? ? "makerepo" : "makerepo_#{Rails.env}"
   end
 
   class_methods do
-    def start_shopify_session
-      shopify_config = Rails.application.credentials.dig(Rails.env.to_sym, :shopify) || {}
+    def draft_order_processable?(tag) = draft_tag_list(tag).include?(draft_order_operating_tag)
 
-      session = ShopifyAPI::Auth::Session.new(
-        shop: "#{shopify_config[:shop_name]}.myshopify.com",
-        access_token: shopify_config[:password]
-      )
-
-      ShopifyAPI::Context.activate_session(session)
-      session
-    end
-
-    def draft_order_processable?(tag)
-      tags = if tag.is_a?(String)
-               tag.split(',').map(&:strip)
-             elsif tag.is_a?(Array)
-               tag.map(&:to_s).map(&:strip)
-             else
-               []
-             end
-
-      tags.include?(draft_order_operating_tag)
+    # A draft's tags as a list of stripped strings, whether Shopify gave an array or a comma-separated string.
+    def draft_tag_list(tag)
+      if tag.is_a?(String)
+        tag.split(',').map(&:strip)
+      elsif tag.is_a?(Array)
+        tag.map(&:to_s).map(&:strip)
+      else
+        []
+      end
     end
 
     def draft_order_operating_tag
@@ -49,6 +113,14 @@ module ShopifyConcern
     self.class.shopify_draft_order_key_name
   end
 
+  private
+
+  # Stores the id of a draft Shopify just created from `line_items` (the exact items sent). A model that needs to
+  # remember what the draft was built from overrides this (JobOrder stores a fingerprint in the same UPDATE).
+  def store_shopify_draft_order_id(new_id, _line_items)
+    update_column(:shopify_draft_order_id, new_id)
+  end
+
   included do
     private
 
@@ -58,8 +130,6 @@ module ShopifyConcern
         gid = shopify_draft_order_id
       end
       return [] if gid.blank?
-
-      start_shopify_session
 
       query = <<~QUERY
         query NodeMetafields($ownerId: ID!) {
@@ -90,15 +160,13 @@ module ShopifyConcern
         }
       QUERY
 
-      resp = ShopifyAPI::Clients::Graphql::Admin
-        .new(session: ShopifyAPI::Context.active_session)
-        .query(query: query, variables: { ownerId: gid })
+      resp = shopify_admin_client.query(query: query, variables: { ownerId: gid })
 
       resp.body&.dig("data", "node", "metafields", "edges")&.map { |n| n["node"] } || []
     end
 
-    def start_shopify_session
-      self.class.start_shopify_session
+    def shopify_admin_client
+      ShopifyConcern::DraftOrders.client
     end
 
     def ensure_can_use_draft_order
@@ -123,70 +191,26 @@ module ShopifyConcern
       end
     end
 
-    def destroy_shopify_draft_order
-      ensure_can_use_draft_order
-      return false if shopify_draft_order_id.blank?
-
-      start_shopify_session
-      admin_client = ShopifyAPI::Clients::Graphql::Admin.new(
-        session: ShopifyAPI::Context.active_session
-      )
-
-      delete_draft_order = <<~QUERY
-        mutation draftOrderDelete($input: DraftOrderDeleteInput!) {
-          draftOrderDelete(input: $input) {
-            deletedId
-            userErrors {
-              field
-              message
-            }
-          }
-        }
-      QUERY
-
-      resp = admin_client.query(query: delete_draft_order, variables: { input: { id: shopify_draft_order_id } })
-      return false unless resp.code == 200
-
-      update_column(:shopify_draft_order_id, nil)
-      resp.body&.dig("data", "draftOrderDelete", "deletedId").present?
+    def fetch_shopify_draft_order
+      fetch_shopify_draft_order_result.last
     end
 
-    def fetch_shopify_draft_order
-      start_shopify_session
-      admin_client = ShopifyAPI::Clients::Graphql::Admin.new(
-        session: ShopifyAPI::Context.active_session
-      )
-
-      query_draft_order = <<~QUERY
-        query getDraftOrder($id: ID!) {
-          draftOrder(id: $id) {
-            id
-            name
-            invoiceUrl
-            status
-            order {
-              id
-              fullyPaid
-              displayFinancialStatus
-            }
-            metafields(first: 10) {
-              nodes {
-                key
-                value
-                type
-              }
-            }
-          }
-        }
-      QUERY
-
-      resp = admin_client.query(query: query_draft_order, variables: { id: shopify_draft_order_id })
-      return nil unless resp.code == 200
-
-      resp.body&.dig("data", "draftOrder")
+    # One getDraftOrder query that tells three outcomes apart: [:found, draft], [:gone, nil] (HTTP 200 with
+    # `draftOrder: null` and no GraphQL errors) and [:error, nil] (non-200 or an error payload). Exceptions
+    # propagate (unknown, never "gone").
+    def fetch_shopify_draft_order_result(gid = shopify_draft_order_id)
+      ShopifyConcern::DraftOrders.fetch_result(gid)
     end
 
     def create_shopify_draft_order
+      new_id, line_items = create_remote_draft_order
+      store_shopify_draft_order_id(new_id, line_items)
+      fetch_shopify_draft_order
+    end
+
+    # Creates the draft on Shopify and returns [its gid, the line items sent]; stores nothing, so a caller that must
+    # decide under a lock whether to keep it (LockerRental#checkout_link) can do the Shopify call outside the lock.
+    def create_remote_draft_order
       create_draft_order = <<~QUERY
         mutation draftOrderCreate($input: DraftOrderInput!) {
           draftOrderCreate(input: $input) {
@@ -201,14 +225,10 @@ module ShopifyConcern
         }
       QUERY
 
-      start_shopify_session
-      admin_client = ShopifyAPI::Clients::Graphql::Admin.new(
-        session: ShopifyAPI::Context.active_session
-      )
-
-      resp = admin_client.query(
+      variables = shopify_draft_order_input
+      resp = shopify_admin_client.query(
         query: create_draft_order,
-        variables: shopify_draft_order_input
+        variables: variables
       )
 
       unless resp.code == 200
@@ -226,16 +246,20 @@ module ShopifyConcern
         raise "No draft order data received: #{resp.body}"
       end
 
-      new_id = draft_order_data["id"]
-      update_column(:shopify_draft_order_id, new_id)
-      fetch_shopify_draft_order
+      [draft_order_data["id"], variables.dig(:input, :lineItems)]
+    end
+
+    # The tags of the draft: the environment's operating tag (what the paid webhook routes on). A model may add
+    # a marker that identifies the record the draft was made for (JobOrder: "job_order:<id>").
+    def shopify_draft_order_tags
+      [self.class.draft_order_operating_tag]
     end
 
     def shopify_draft_order_input
       {
         input: {
           note: "Generated by makerepo",
-          tags: [self.class.draft_order_operating_tag],
+          tags: shopify_draft_order_tags,
           lineItems: send(:shopify_draft_order_line_items),
           metafields: [
             {

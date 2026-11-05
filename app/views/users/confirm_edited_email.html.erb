@@ -1,0 +1,16 @@
+<% provide(:title, 'Confirm email change') %>
+
+<div class="container py-5" style="max-width: 36rem;">
+  <h2 class="mb-3">Confirm your new email address</h2>
+  <p>
+    Change the email of the account <strong><%= @user.username %></strong>
+    from <strong><%= @user.email %></strong> to <strong><%= @new_email %></strong>?
+  </p>
+  <p class="text-muted small">Nothing changes until you confirm. Your old address will be notified.</p>
+
+  <div class="d-flex gap-2">
+    <%= button_to 'Confirm email change', confirm_edited_email_users_path,
+                  params: { token: @token }, method: :post, class: 'btn btn-primary' %>
+    <%= link_to 'Cancel', root_path, class: 'btn btn-outline-secondary' %>
+  </div>
+</div>

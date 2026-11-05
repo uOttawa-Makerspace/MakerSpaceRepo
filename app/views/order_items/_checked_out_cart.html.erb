@@ -1,0 +1,13 @@
+<%# A checked-out order, read-only: what was stored when it was paid. Reads the stored columns
+    only (a legacy row may have a NULL quantity, price or amount), so it never raises. %>
+<div class="alert alert-warning" role="alert"><%= @refusal_message %></div>
+<p>This order was checked out with:</p>
+<ul class="list-unstyled">
+  <% @order_items.each do |order_item| %>
+    <li><%= order_item.proficient_project&.title %> &times; <%= order_item.quantity.to_i %><%= " (#{order_item.paid_amount} CC)" if order_item.paid_amount %></li>
+  <% end %>
+</ul>
+<% if @order.subtotal %>
+  <p><strong>Total charged: <%= @order.subtotal.to_i %> CC</strong></p>
+<% end %>
+<p><%= link_to 'View your orders', orders_path %></p>

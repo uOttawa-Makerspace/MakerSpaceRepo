@@ -4,7 +4,15 @@
 <p class="text-center">Review pending requests and manage active rentals</p>
 
 <!-- Requirement: Split between requests that have been dealt with vs requests that have not been looked at -->
-<h2 class="mt-4">Requests</h2>
+<h2 class="mt-4"><%= t('lockers.held_payments.title') %></h2>
+<p><%= t('lockers.held_payments.intro') %></p>
+<% if @held_rentals.any? %>
+  <%= render partial: 'rental_data_table', locals: { locker_rentals: @held_rentals, show_hold_reasons: true } %>
+<% else %>
+  <div class="alert alert-info"><%= t('lockers.held_payments.none') %></div>
+<% end %>
+
+<h2 class="mt-5">Requests</h2>
 <p>Lockers that are pending review and have not been looked at yet.</p>
 <% if @pending_requests.any? %>
   <%= render partial: 'rental_data_table', locals: { locker_rentals: @pending_requests } %>

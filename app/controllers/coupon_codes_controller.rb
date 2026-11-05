@@ -13,7 +13,10 @@ class CouponCodesController < DevelopmentProgramsController
       redirect_to coupon_codes_path,
                   notice: "Coupon code was successfully created."
     else
-      render :index
+      @coupon_codes = CouponCode.unclaimed
+      @user_codes = CouponCode.claimed
+      flash.now[:alert] = @coupon_code.errors.full_messages.to_sentence
+      render :index, status: :unprocessable_content
     end
   end
 
@@ -27,6 +30,9 @@ class CouponCodesController < DevelopmentProgramsController
     if @coupon_code.update(coupon_code_params)
       redirect_to coupon_codes_path,
                   notice: "Coupon code was successfully updated."
+    else
+      flash.now[:alert] = @coupon_code.errors.full_messages.to_sentence
+      render :edit, status: :unprocessable_content
     end
   end
 

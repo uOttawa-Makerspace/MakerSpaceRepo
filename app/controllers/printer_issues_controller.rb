@@ -80,7 +80,7 @@ class PrinterIssuesController < StaffAreaController
   def update
     # Ideally, all updates happen from /printer_issues
     issue = PrinterIssue.find_by(id: params[:id])
-    unless issue.update(printer_issue_params)
+    unless issue.update(printer_issue_params.except(:printer_id))
       flash[:alert] = "Failed to update printer issue #{params[:id]}, #{issue.errors.full_messages.join(";")}"
       redirect_to printer_issues_path
     end
@@ -88,6 +88,17 @@ class PrinterIssuesController < StaffAreaController
       redirect_to issue
     else
       redirect_to printer_issues_path
+    end
+  end
+
+  # POST /printer_issues/:id/resolve (MakerRepo React app): same as the staff
+  # UI's resolve, i.e. update(active: false).
+  def resolve
+    issue = PrinterIssue.find(params[:id])
+    if issue.update(active: false)
+      head :ok
+    else
+      render json: { errors: issue.errors.full_messages }, status: :unprocessable_content
     end
   end
 

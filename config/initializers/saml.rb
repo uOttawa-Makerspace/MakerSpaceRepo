@@ -14,6 +14,18 @@ SamlIdp.configure do |config|
         staff.makerepo.com
       ]
     },
+    # The language wikis' SimpleSAMLphp service providers identify themselves by these entity
+    # ids; each may only receive responses on its own host.
+    "https://en.wiki.makerepo.com/simplesamlphp" => {
+      metadata_url:
+        "https://en.wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com",
+      response_hosts: %w[en.wiki.makerepo.com]
+    },
+    "https://fr.wiki.makerepo.com/simplesamlphp" => {
+      metadata_url:
+        "https://fr.wiki.makerepo.com/saml/module.php/saml/sp/metadata.php/wiki.makerepo.com",
+      response_hosts: %w[fr.wiki.makerepo.com]
+    },
     "rooms.makerepo.com" => {
       metadata_url: "https://rooms.makerepo.com/users/auth/saml/metadata",
       response_hosts: %w[rooms.makerepo.com]
@@ -116,6 +128,10 @@ SamlIdp.configure do |config|
       getter: ->(principal) { principal.avatar.attachment&.content_type }
     }
   }
+
+  # Every attribute is sent (and advertised in the metadata) under a Name equal
+  # to its key; the assertion already fell back to the key, the metadata did not.
+  config.attributes = config.attributes.to_h { |key, opts| [key, opts.merge(name: key.to_s)] }
 
   config.service_provider.finder = ->(issuer_or_entity_id) do
     service_providers[issuer_or_entity_id]

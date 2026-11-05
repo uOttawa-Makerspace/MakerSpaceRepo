@@ -69,7 +69,9 @@ RSpec.describe KeyRequestsController, type: :controller do
       @space = create(:space)
 
       session[:user_id] = @staff.id
-      session[:expires_at] = Time.zone.now
+      # was Time.zone.now (an already-expired session that only worked because
+      # an expired session stayed signed in for the request that expired it)
+      session[:expires_at] = Time.zone.now + 10_000
     end
 
     context "admin" do
