@@ -822,11 +822,11 @@ RSpec.describe "Exams", type: :request do
     end
   end
 
-  describe "POST /exams (no create action)" do
-    it "answers 404 (ActionNotFound) because the route has no action" do
-      post exams_path
-      expect(response).to have_http_status(:not_found)
-      expect(error_text).to include("AbstractController::ActionNotFound")
+  describe "POST /exams (no exams route)" do
+    it "is not routed to the exams controller and creates no exam" do
+      sign_in_as(:admin)
+      expect(Rails.application.routes.recognize_path("/exams", method: :post)[:controller]).not_to eq("exams")
+      expect { post "/exams" }.not_to change(Exam, :count)
     end
   end
 end

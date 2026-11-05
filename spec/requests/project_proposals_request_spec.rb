@@ -630,7 +630,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response).to redirect_to(project_proposals_url)
       expect(flash[:notice]).to eq("Project proposal was successfully deleted.")
       expect(Repository.exists?(repo.id)).to be(true)
-      expect { delete destroy_project_proposals_path(id: approved.id) }.to change(ProjectProposal, :count).by(-1)
+      expect { delete project_proposal_path(approved.slug) }.to change(ProjectProposal, :count).by(-1)
     end
 
     it "answers 204 for JSON when admin" do

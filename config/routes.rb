@@ -47,9 +47,9 @@ Rails.application.routes.draw do
   end
 
   resources :discount_codes, only: %i[new index create]
-  resources :coupon_codes, only: %i[index new create destroy edit update]
+  resources :coupon_codes, only: %i[index create destroy edit update]
 
-  resources :custom_webhooks do
+  resources :custom_webhooks, only: [] do
     collection do
       post :orders_paid
       post :orders_fulfilled
@@ -123,7 +123,6 @@ Rails.application.routes.draw do
       get :projects_assigned
       get :projects_completed
       get :user_projects
-      delete :destroy, path: "destroy/:id", as: "destroy"
     end
   end
 
@@ -149,7 +148,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :lockers do
+  resources :lockers, except: %i[new edit] do
     collection do
       post :create_multiple
       # Update only
@@ -285,11 +284,10 @@ Rails.application.routes.draw do
 
     resources :announcements
 
-    resources :job_service_groups,
-              only: %i[index new create edit update destroy]
-    resources :job_services, only: %i[index new create edit update destroy]
-    resources :job_options, only: %i[index new create edit update destroy]
-    resources :job_types, only: %i[index new create edit update]
+    resources :job_service_groups, only: %i[new create edit update destroy]
+    resources :job_services, only: %i[new create edit update destroy]
+    resources :job_options, only: %i[new create edit update destroy]
+    resources :job_types, only: %i[new create edit update]
 
     namespace :report_generator do
       get "/", as: "index", action: "index"
@@ -370,19 +368,17 @@ Rails.application.routes.draw do
     
     resources :pi_readers, only: %i[create update]
 
-    resources :trainings
+    resources :trainings, except: :show
 
-    resources :skills
+    resources :skills, except: :show
 
-    resources :drop_off_locations
+    resources :drop_off_locations, except: :show
 
     resources :contact_infos, except: :show
 
     resources :time_periods, except: [:show]
 
-    resources :training_sessions, only: %i[index update destroy] do
-      member { patch "update" }
-    end
+    resources :training_sessions, only: %i[index update destroy]
 
     resources :settings, only: [:index] do
       collection do
@@ -409,7 +405,6 @@ Rails.application.routes.draw do
       collection do
         get :open_modal
         get :demotions
-        get :search_demotions
       end
     end
 
@@ -452,7 +447,7 @@ Rails.application.routes.draw do
       post "import_programs"
     end
 
-    resources :calendar do
+    resources :calendar, only: :index do
       collection do
         get 'utc_unavailabilities_json/:id', to: 'calendar#utc_unavailabilities_json', as: :utc_unavailabilities_json
         get 'unavailabilities_json/:id', to: 'calendar#unavailabilities_json', as: :unavailabilities_json
@@ -492,8 +487,7 @@ Rails.application.routes.draw do
   end
 
   namespace :staff do
-    resources :training_sessions do
-      get "/", as: "index", action: "index", on: :collection
+    resources :training_sessions, except: :edit do
       member do
         post "certify_trainees"
         delete "revoke_certification"
@@ -502,12 +496,12 @@ Rails.application.routes.draw do
     end
     resources :proficient_project_sessions, only: [:show]
 
-    resources :my_calendar do
+    resources :my_calendar, only: :index do
       collection do
         get 'json/:id', to: 'my_calendar#json', as: :json
       end
     end
-    resources :unavailabilities do
+    resources :unavailabilities, except: %i[new edit show] do
       collection do
         get :json
         patch :update_external_unavailabilities
@@ -632,7 +626,7 @@ Rails.application.routes.draw do
     member { delete "answers/:answer_id", action: :remove_answer, as: :remove_answer }
   end
 
-  resources :exams, only: %i[index create show destroy] do
+  resources :exams, only: %i[index show destroy] do
     collection do
       post :finish_exam
       post :create_from_training
@@ -678,12 +672,12 @@ Rails.application.routes.draw do
     collection { post :remove_trainings }
   end
 
-  resources :staff_spaces do
+  resources :staff_spaces, only: [] do
     collection { post :bulk_add_users }
   end
 
   # :show and :update would take a space ID and use the logged in session user ID
-  resources :walk_in_safety_sheets, except: %i[new destroy]
+  resources :walk_in_safety_sheets, except: %i[new edit destroy]
 
   # namespace :help do
   #   get 'main', path: '/'
@@ -694,7 +688,7 @@ Rails.application.routes.draw do
   # request to a user page
 
   # USER RESOURCES
-  resources :users, path: "/", param: :username, except: %i[edit destroy] do
+  resources :users, path: "/", param: :username, except: %i[index edit destroy] do
     collection do
       get :resend_confirmation
       post :resend_confirmation, action: :send_confirmation

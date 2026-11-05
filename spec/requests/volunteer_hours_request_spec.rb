@@ -109,11 +109,38 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_hours/new" do
-    # route exists but there is no action/template (only a partial)
-    it "is a 404 for a volunteer" do
+    it "renders the tracking form for a volunteer" do
       vol_login!(owner)
       get new_volunteer_hour_path
-      expect(response).to have_http_status(:not_found)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("volunteerForm")
+      expect(response.body).to include(%(action="#{volunteer_hours_path}"))
+    end
+
+    it "is reached by the Track Hours link on the empty hours page" do
+      vol_login!(owner)
+      get volunteer_hours_path
+      link = Capybara.string(response.body).find_link("Track Hours")
+      expect(link[:href]).to eq(new_volunteer_hour_path)
+      get link[:href]
+      expect(response).to have_http_status(:ok)
+      expect(Capybara.string(response.body)).to have_css("form#volunteerForm")
+    end
+
+    it "offers only the tasks the user has joined" do
+      joined = create(:volunteer_task, title: "joined task")
+      create(:volunteer_task, title: "other task")
+      create(:volunteer_task_join, volunteer_task: joined, user: owner)
+      vol_login!(owner)
+      get new_volunteer_hour_path
+      expect(response.body).to include("joined task")
+      expect(response.body).not_to include("other task")
+    end
+
+    it "redirects a user without volunteer access" do
+      vol_sign_in_as(:regular)
+      get new_volunteer_hour_path
+      expect(response).to redirect_to(root_path)
     end
   end
 
