@@ -169,11 +169,11 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
     it "reports the one event that raises and carries on with the rest, storing the new sync token" do
       chan = channel(sync_token: "OLD")
       events = [c18_gcal_event(id: "good-1"),
-                c18_gcal_event(id: "bad", creator_email: nil),
+                c18_gcal_event(id: "bad", start_at: Time.utc(2027, 4, 5, 16), end_at: Time.utc(2027, 4, 5, 15)),
                 c18_gcal_event(id: "good-2")]
       stub_events(events, next_sync_token: "NEW")
       expect(Rails.error).to receive(:report)
-        .with(instance_of(NoMethodError), hash_including(handled: true, context: hash_including(google_event_id: "bad"))).once
+        .with(instance_of(ActiveRecord::RecordInvalid), hash_including(handled: true, context: hash_including(google_event_id: "bad"))).once
       expect { described_class.perform_now }.not_to raise_error
       expect(SubSpaceBooking.where(google_booking_id: %w[good-1 good-2]).count).to eq(2)
       expect(chan.reload.sync_token).to eq("NEW")
