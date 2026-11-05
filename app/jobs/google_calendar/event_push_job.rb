@@ -6,7 +6,7 @@ module GoogleCalendar
   # never pushed).
   class EventPushJob < EventJob
     def perform(event_id)
-      event = Event.includes(:space, :training, :course_name, event_assignments: :user).find_by(id: event_id)
+      event = Event.find_by(id: event_id)
       return if event.nil? || event.draft
 
       EventPublisher.new.push(event)
