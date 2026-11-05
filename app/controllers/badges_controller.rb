@@ -28,7 +28,7 @@ class BadgesController < DevelopmentProgramsController
   # app/controllers/badges_controller.rb
 
   def show
-    @certification = Certification.find(params[:id])
+    @certification = Certification.find_for_badge_page!(params[:id])
     @earner = @certification.user
     raise ActiveRecord::RecordNotFound if @earner.nil?
     # A deleted account's badge is visible to admins only.

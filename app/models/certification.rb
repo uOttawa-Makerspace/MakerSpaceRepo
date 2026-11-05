@@ -11,6 +11,11 @@ class Certification < ApplicationRecord
   has_one :proficient_project, through: :proficient_project_session
 
   validates :user, presence: { message: "A user is required." }
+  # The random token in the public badge link; set once at creation and never changed.
+  attr_readonly :share_token
+  before_validation :assign_share_token, on: :create
+  validates :share_token, presence: true, on: :create
+
   validates :level, inclusion: { in: %w[Beginner Intermediate Advanced], message: "A level is required."}
 
   default_scope -> { where(active: true) }
@@ -19,6 +24,25 @@ class Certification < ApplicationRecord
           where("created_at BETWEEN ? AND ? ", start_date, end_date)
         }
   scope :inactive, -> { unscoped.where(active: false) }
+
+  # A badge page is addressed by its share token, or by the numeric id older links use.
+  # Tokens always contain a non-digit, so an all-digit key is an id.
+  def self.find_for_badge_page!(key)
+    key = key.to_s
+    key.match?(/\A\d+\z/) ? find(key) : find_by!(share_token: key)
+  end
+
+  def self.generate_share_token
+    loop do
+      token = SecureRandom.urlsafe_base64(16)
+      return token if token.match?(/\D/)
+    end
+  end
+
+  # What a badge link carries: the token (the id only for a row that has none yet).
+  def badge_param
+    share_token.presence || id
+  end
 
   ##
   # manually finds the training associated with this certification. If you know an easier way of doing this using active
@@ -64,6 +88,10 @@ class Certification < ApplicationRecord
       return existing if existing
     end
     create(user_id:, training_session_id:, level:)
+  end
+
+  def assign_share_token
+    self.share_token = self.class.generate_share_token if share_token.blank?
   end
 
   def get_badge_path

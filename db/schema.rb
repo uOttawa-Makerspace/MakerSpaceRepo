@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_04_150100) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_04_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -158,7 +158,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_150100) do
     t.integer "training_session_id"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.string "share_token"
     t.index ["demotion_staff_id"], name: "index_certifications_on_demotion_staff_id"
+    t.index ["share_token"], name: "index_certifications_on_share_token", unique: true
     t.index ["training_session_id"], name: "index_certifications_on_training_session_id"
     t.index ["user_id"], name: "index_certifications_on_user_id"
   end

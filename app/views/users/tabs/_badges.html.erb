@@ -4,7 +4,7 @@
       <% @acclaim_data.each do |badges| %>
         <% if badges.training.has_badge %>
           <div>
-              <a target="_blank" href="/badges/<%= badges.id %>">
+              <a target="_blank" href="<%= badge_path(badges.badge_param) %>">
                 <%= render "badges/badge_icon", width: 200, height: 200, level: badges.level, name: badges.training.localized_name, skill: badges.training.skill_id %>
               </a>
           </div>
