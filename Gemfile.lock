@@ -748,8 +748,6 @@ GEM
     tilt (2.9.0)
     timeout (0.6.1)
     trailblazer-option (0.1.2)
-    trix-rails (2.4.0)
-      rails (> 4.1)
     tsort (0.2.0)
     turbo-rails (2.0.23)
       actionpack (>= 7.1.0)
@@ -900,7 +898,6 @@ DEPENDENCIES
   syntax_tree-haml
   syntax_tree-rbs
   test-prof
-  trix-rails (~> 2.4)
   vite_rails
   web-console
   webmock
