@@ -138,7 +138,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     replace_training_requirements
     if @proficient_project.update(proficient_project_params)
       begin
-        update_photos
+        update_media
       rescue FastImage::ImageFetchFailure,
              FastImage::UnknownImageType,
              FastImage::SizeNotFound => e
@@ -388,6 +388,12 @@ class ProficientProjectsController < DevelopmentProgramsController
       params[:training_requirements_id],
       params[:training_requirements_level]
     )
+  end
+
+  def update_media
+    update_photos
+    update_files
+    update_videos
   end
 
   def update_photos

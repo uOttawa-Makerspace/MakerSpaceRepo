@@ -223,6 +223,29 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(Photo.exists?(photo.id)).to be(false)
       end
 
+      it "adds uploaded files and deletes files by filename" do
+        rf = create(:repo_file, proficient_project: project)
+        patch proficient_project_path(project),
+              params: project_params.merge(files: [content_pdf_upload], deletefiles: [rf.file.filename.to_s])
+        expect(RepoFile.exists?(rf.id)).to be(false)
+        expect(project.reload.repo_files.count).to eq(1)
+      end
+
+      it "adds uploaded files without touching the existing ones" do
+        rf = create(:repo_file, proficient_project: project)
+        patch proficient_project_path(project), params: project_params.merge(files: [content_pdf_upload])
+        expect(project.reload.repo_files.count).to eq(2)
+        expect(RepoFile.exists?(rf.id)).to be(true)
+      end
+
+      it "deletes a video by id from the deletevideos list" do
+        video = create(:video, :with_video, proficient_project: project)
+        video_id = video.video.first.id
+        patch proficient_project_path(project), params: project_params.merge(deletevideos: "#{video_id},")
+        expect(Video.exists?(video.id)).to be(false)
+        expect(ActiveStorage::Attachment.exists?(video_id)).to be(false)
+      end
+
       describe "training requirements" do
         let(:t2) { create(:training) }
         let!(:existing) { create(:training_requirement, :"3d_printing", proficient_project: project) }
