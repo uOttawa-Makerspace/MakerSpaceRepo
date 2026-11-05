@@ -88,6 +88,9 @@ jobs:
           yarn lint:js
           yarn typecheck:js
 
+      - name: Lint ERB views
+        run: bin/erb-lint
+
       - name: Cache SSL certificates
         id: cache-certs
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0

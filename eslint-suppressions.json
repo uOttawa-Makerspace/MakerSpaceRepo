@@ -147,11 +147,6 @@
       "count": 2
     }
   },
-  "app/javascript/src/clipboard.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/src/effects.js": {
     "no-unused-vars": {
       "count": 6
