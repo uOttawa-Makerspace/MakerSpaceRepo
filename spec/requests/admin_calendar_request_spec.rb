@@ -55,12 +55,12 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(flash[:alert]).to eq("You are not assigned to any spaces.")
   end
 
-  # index falls back with `@user.space_id || Space.first.id` — if
-  # the DB contains NO spaces at all, Space.first is nil and `.id` raises — 500.
-  it "index 500s when no spaces exist at all" do
+  # with no spaces at all the page still renders, with the "not assigned" notice
+  it "index renders when no spaces exist at all" do
     log_in!(admin) # nothing else creates a space in this example
     get admin_calendar_index_path
-    expect(response.status).to eq(500) # NoMethodError on Space.first.id
+    expect(response.status).to eq(200)
+    expect(flash[:alert]).to eq("You are not assigned to any spaces.")
   end
 
   # NOTE: the :id segment is REQUIRED by the route, so the controller's
