@@ -19,7 +19,7 @@
                 <% end %>
             </div>
             <% if current_user.id == @earner.id %>
-                <a id="linkedin" class="btn btn-outline-secondary" href="https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=<%= @certification.get_name_fr %> // <%= @certification.get_name_en %>&organizationId=38127375&issueYear=<%= @certification.created_at.year %>&issueMonth=<%= @certification.created_at.month %>&expirationYear=<%= @certification.created_at.year + 10 %>&expirationMonth=5&certUrl=https://makerepo.com/badges/<%= @certification.id %>/&certId=<%= @certification.id %>"><%= t("badges.show.add_to_linkedin") %>
+                <a id="linkedin" class="btn btn-outline-secondary" href="https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&name=<%= @certification.get_name_fr %> // <%= @certification.get_name_en %>&organizationId=38127375&issueYear=<%= @certification.created_at.year %>&issueMonth=<%= @certification.created_at.month %>&expirationYear=<%= @certification.created_at.year + 10 %>&expirationMonth=5&certUrl=https://makerepo.com/badges/<%= @certification.badge_param %>&certId=<%= @certification.badge_param %>"><%= t("badges.show.add_to_linkedin") %>
                 </a>
                 
                 <button id="add-to-linkedin" class="btn btn-outline-secondary"><%= t("badges.show.download_png") %></button>

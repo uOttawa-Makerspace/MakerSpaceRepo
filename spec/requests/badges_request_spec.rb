@@ -128,6 +128,110 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(response).to have_http_status(:not_found)
     end
 
+    describe "share token" do
+      it "shows the badge at the token address" do
+        get badge_path(cert.share_token)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Ada Earner").and include("Laser EN")
+      end
+
+      it "still shows the badge at the old numeric address" do
+        get badge_path(cert.id)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Ada Earner")
+      end
+
+      it "answers 404 for an unknown token" do
+        get badge_path("no-such-token_x")
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "does not read a numeric key as a token" do
+        Certification.unscoped.where(id: cert.id).update_all(share_token: "12345")
+        get badge_path("12345")
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "keeps a deleted user's badge admin-only at both addresses" do
+        earner.update_columns(deleted: true)
+        [cert.share_token, cert.id].each do |key|
+          get badge_path(key)
+          expect(response).to have_http_status(:not_found)
+        end
+
+        sign_in_as(:admin)
+        [cert.share_token, cert.id].each do |key|
+          get badge_path(key)
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      it "puts the token in the LinkedIn button for the earner" do
+        log_in!(earner)
+        get badge_path(cert.share_token)
+        expect(response.body).to include("certUrl=https://makerepo.com/badges/#{cert.share_token}&amp;certId=#{cert.share_token}")
+                                   .or include("certUrl=https://makerepo.com/badges/#{cert.share_token}&certId=#{cert.share_token}")
+        expect(response.body).not_to include("badges/#{cert.id}/")
+      end
+    end
+
+    describe "links to the badge page" do
+
+      it "uses the token on the earner's own pages and the home page" do
+        log_in!(earner)
+        [skills_development_programs_path, all_badges_development_programs_path, badges_path,
+         user_path(earner.username), root_path].each do |path|
+          get path
+          expect(response.body).to include("/badges/#{cert.share_token}"), "#{path} has no token link"
+          expect(response.body).not_to include("/badges/#{cert.id}\"")
+        end
+      end
+    end
+
+    describe "rate limit" do
+      def view(times, **opts)
+        times.times { get badge_path(cert.share_token), **opts }
+      end
+
+      it "serves a visitor up to 30 views a minute, then answers 429 with a short page" do
+        view(30)
+        expect(response).to have_http_status(:ok)
+
+        get badge_path(cert.share_token)
+        expect(response).to have_http_status(:too_many_requests)
+        expect(response.body).to eq("Too many requests, please try again later.")
+      end
+
+      it "counts old numeric addresses too" do
+        30.times { get badge_path(cert.id) }
+        get badge_path(cert.id)
+        expect(response).to have_http_status(:too_many_requests)
+      end
+
+      it "counts each address separately" do
+        view(30)
+        get badge_path(cert.share_token), env: { "REMOTE_ADDR" => "203.0.113.9" }
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "stops a visitor at 300 views an hour, even at a gentle pace" do
+        base = Time.zone.parse("2026-11-05 10:00")
+        10.times do |n|
+          travel_to(base + (n * 5).minutes) { 30.times { get badge_path(cert.share_token) } }
+        end
+        travel_to(base + 51.minutes) { get badge_path(cert.share_token) }
+        expect(response).to have_http_status(:too_many_requests)
+      end
+
+      %i[staff admin].each do |role|
+        it "does not limit a signed-in #{role}" do
+          sign_in_as(role)
+          view(35)
+          expect(response).to have_http_status(:ok)
+        end
+      end
+    end
+
     it "does not show an inactive (demoted) certification: the default scope hides it" do
       Certification.unscoped.where(id: cert.id).update_all(active: false)
       get badge_path(cert)

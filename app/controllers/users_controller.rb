@@ -462,7 +462,7 @@ class UsersController < SessionsController
           render json: {
                    user: @repo_user.as_json(include: :rfid),
                    programs: @programs.as_json,
-                   certifications: @certifications.as_json(include: :training)
+                   certifications: @certifications.as_json(include: :training, except: :share_token)
                  }
         else
           head :unauthorized

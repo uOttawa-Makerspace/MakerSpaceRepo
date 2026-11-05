@@ -393,7 +393,7 @@ RSpec.describe "Exams", type: :request do
         get user_path(student.username)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include(fixture[:training].localized_name)
-        expect(response.body).to include("/badges/#{cert.id}")
+        expect(response.body).to include("/badges/#{cert.share_token}")
       end
     end
 
