@@ -37,7 +37,6 @@
 1	app/javascript/entrypoints/application.js	TS2339	Property 'dragndrop' does not exist on type 'Window & typeof globalThis'.
 2	app/javascript/entrypoints/application.js	TS2339	Property 'files' does not exist on type 'Element'.
 1	app/javascript/entrypoints/application.js	TS2339	Property 'setSpace' does not exist on type 'Window & typeof globalThis'.
-1	app/javascript/entrypoints/application.js	TS2339	Property 'toastr' does not exist on type 'Window & typeof globalThis'.
 2	app/javascript/entrypoints/application.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/application.js	TS2551	Property 'dragover' does not exist on type 'Window & typeof globalThis'. Did you mean 'ondragover'?
 1	app/javascript/entrypoints/application.js	TS2551	Property 'examResponse' does not exist on type 'Window & typeof globalThis'. Did you mean 'Response'?

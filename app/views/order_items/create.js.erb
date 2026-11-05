@@ -3,6 +3,6 @@
   alert("<%= @order.errors.messages %>");
 <% else %>
   document.getElementsByClassName("cart-text")[0].innerHTML = "<%= escape_javascript(render 'layouts/cart_text', order: @order) %>" %>
-  // Display a success toast, with a title
-  toastr.success('Item added to Cart. Go to <%= link_to 'Checkout', carts_path %>', null, { escapeHtml: false });
+  // Display a success toast
+  document.dispatchEvent(new CustomEvent("toast:show", { detail: <%= raw({ message: "Item added to Cart. Go to ", type: "success", link: { text: "Checkout", href: carts_path } }.to_json) %> }));
 <% end %>
