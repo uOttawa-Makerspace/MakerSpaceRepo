@@ -194,6 +194,14 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "edit refuses a username that is a route name and shows why" do
+      old = target.username
+      patch admin_user_path(target), params: { user: { username: "Admin" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("is reserved")
+      expect(target.reload.username).to eq(old)
+    end
+
     it "edit keeps stored values the form's options do not list (legacy faculty, long student id)" do
       target.update_columns(faculty: "Common Law", student_id: "1234567890123")
       get edit_admin_user_path(target)

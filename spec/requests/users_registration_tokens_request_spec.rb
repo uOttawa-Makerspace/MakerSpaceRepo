@@ -75,6 +75,15 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       )
     end
 
+    it "a username that is a route name is refused with a message and nothing is created" do
+      expect {
+        post users_path, params: { user: registration_params(username: "Admin") }
+      }.not_to change(User, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Username is reserved")
+      expect(deliveries).to be_empty
+    end
+
     it "invalid: re-renders new with 422 and persists nothing, sends no mail" do
       expect {
         post users_path, params: { user: registration_params(username: "bad name!") }
@@ -164,12 +173,12 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
   end
 
-  describe "GET /resend_confirmation" do
+  describe "POST /resend_confirmation" do
     let(:notice) { "If that email belongs to an account that still needs confirming, a confirmation email has been sent." }
 
     it "emails a fresh confirmation link to a known address" do
       u = create(:user, :regular_user_not_confirmed)
-      perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+      perform_enqueued_jobs { post resend_confirmation_users_path, params: { user: { email: u.email } } }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq(notice)
       expect(deliveries.size).to eq(1)
@@ -178,7 +187,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "answers the same for an unknown email and sends nothing" do
-      get resend_confirmation_users_path, params: { user: { email: "nobody@example.com" } }
+      post resend_confirmation_users_path, params: { user: { email: "nobody@example.com" } }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq(notice)
       expect(flash[:alert]).to be_nil
@@ -187,13 +196,13 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "does not mail an account that is already confirmed, and answers the same" do
       u = create(:user, :regular_user)
-      perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+      perform_enqueued_jobs { post resend_confirmation_users_path, params: { user: { email: u.email } } }
       expect(flash[:notice]).to eq(notice)
       expect(deliveries).to be_empty
     end
 
     it "redirects back to the referer when present" do
-      get resend_confirmation_users_path,
+      post resend_confirmation_users_path,
           params: { user: { email: "nobody@example.com" } },
           headers: { "HTTP_REFERER" => "http://www.example.com/login" }
       expect(response).to redirect_to("http://www.example.com/login")
@@ -201,23 +210,23 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "does not send for soft-deleted users" do
       u = create(:user, :regular_user_not_confirmed, deleted: true)
-      perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+      perform_enqueued_jobs { post resend_confirmation_users_path, params: { user: { email: u.email } } }
       expect(flash[:notice]).to eq(notice)
       expect(deliveries).to be_empty
     end
 
     it "gives the same answer when the user param is missing or not a hash" do
-      get resend_confirmation_users_path
+      post resend_confirmation_users_path
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq(notice)
-      get resend_confirmation_users_path, params: { user: "nobody@example.com" }
+      post resend_confirmation_users_path, params: { user: "nobody@example.com" }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq(notice)
       expect(deliveries).to be_empty
     end
 
     it "answers the same for a very long email value" do
-      get resend_confirmation_users_path, params: { user: { email: "a" * 3000 } }
+      post resend_confirmation_users_path, params: { user: { email: "a" * 3000 } }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq(notice)
       expect(deliveries).to be_empty
@@ -233,7 +242,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       it "mails an address at most 3 times an hour and answers the same once limited" do
         u = create(:user, :regular_user_not_confirmed)
         4.times do
-          perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+          perform_enqueued_jobs { post resend_confirmation_users_path, params: { user: { email: u.email } } }
           expect(response).to redirect_to(root_path)
           expect(flash[:notice]).to eq(notice)
         end
@@ -242,31 +251,31 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
       it "does not count unknown or confirmed addresses against a real account's budget" do
         confirmed = create(:user, :regular_user)
-        5.times { get resend_confirmation_users_path, params: { user: { email: confirmed.email } } }
-        5.times { get resend_confirmation_users_path, params: { user: { email: "nobody@example.test" } } }
+        5.times { post resend_confirmation_users_path, params: { user: { email: confirmed.email } } }
+        5.times { post resend_confirmation_users_path, params: { user: { email: "nobody@example.test" } } }
         u = create(:user, :regular_user_not_confirmed)
-        perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+        perform_enqueued_jobs { post resend_confirmation_users_path, params: { user: { email: u.email } } }
         expect(deliveries.size).to eq(1)
       end
 
       it "allows 30 requests an hour per client IP, then mails nothing and answers the same" do
-        29.times { |i| get resend_confirmation_users_path, params: { user: { email: "n#{i}@example.test" } } }
+        29.times { |i| post resend_confirmation_users_path, params: { user: { email: "n#{i}@example.test" } } }
         u = create(:user, :regular_user_not_confirmed)
-        perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+        perform_enqueued_jobs { post resend_confirmation_users_path, params: { user: { email: u.email } } }
         expect(deliveries.size).to eq(1)
-        perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+        perform_enqueued_jobs { post resend_confirmation_users_path, params: { user: { email: u.email } } }
         expect(flash[:notice]).to eq(notice)
         expect(deliveries.size).to eq(1)
       end
     end
   end
 
-  describe "GET /confirm" do
+  describe "POST /confirm" do
     let(:unconfirmed) { create(:user, :regular_user_not_confirmed) }
     let(:confirm_token) { unconfirmed.generate_token_for(:email_confirmation) }
 
     it "confirms the account and sends the welcome email" do
-      get confirm_users_path, params: { token: confirm_token }
+      post confirm_users_path, params: { token: confirm_token }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq(
         "The email has been confirmed, you can now fully use your Makerepo Account !"
@@ -281,7 +290,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       # confirmation tokens are purpose-scoped and expire (3 days)
       token = confirm_token
       travel 73.hours do
-        get confirm_users_path, params: { token: token }
+        post confirm_users_path, params: { token: token }
         expect(flash[:alert]).to eq(expired_alert)
         expect(unconfirmed.reload.confirmed).to be(false)
       end
@@ -290,7 +299,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     it "still works just inside 3 days" do
       token = confirm_token
       travel 71.hours do
-        get confirm_users_path, params: { token: token }
+        post confirm_users_path, params: { token: token }
         expect(unconfirmed.reload.confirmed).to be(true)
       end
     end
@@ -298,13 +307,13 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     it "cannot be replayed: the second use is refused and sends no second welcome email" do
       # the token is bound to the confirmed flag
       token = confirm_token
-      2.times { get confirm_users_path, params: { token: token } }
+      2.times { post confirm_users_path, params: { token: token } }
       expect(deliveries.map(&:subject)).to eq(["Welcome to MakerRepo"])
       expect(flash[:alert]).to eq(expired_alert)
     end
 
     it "a legacy token (plain :user verifier message, mailed before the deploy) is refused with the expired message" do
-      get confirm_users_path, params: { token: verifier.generate(unconfirmed.id) }
+      post confirm_users_path, params: { token: verifier.generate(unconfirmed.id) }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq(expired_alert)
       expect(unconfirmed.reload.confirmed).to be(false)
@@ -312,7 +321,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "tampered token: alert, nothing changes" do
-      get confirm_users_path, params: { token: confirm_token + "x" }
+      post confirm_users_path, params: { token: confirm_token + "x" }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq(expired_alert)
       expect(unconfirmed.reload.confirmed).to be(false)
@@ -320,12 +329,12 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
 
     it "missing token: same alert" do
-      get confirm_users_path
+      post confirm_users_path
       expect(flash[:alert]).to eq(expired_alert)
     end
 
     it "another purpose's token (password reset) does not confirm" do
-      get confirm_users_path, params: { token: unconfirmed.generate_token_for(:password_reset) }
+      post confirm_users_path, params: { token: unconfirmed.generate_token_for(:password_reset) }
       expect(flash[:alert]).to eq(expired_alert)
       expect(unconfirmed.reload.confirmed).to be(false)
     end
@@ -334,7 +343,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       u = create(:user, :regular_user_not_confirmed)
       tok = u.generate_token_for(:email_confirmation)
       u.update_columns(deleted: true)
-      get confirm_users_path, params: { token: tok }
+      post confirm_users_path, params: { token: tok }
       expect(flash[:alert]).to eq(expired_alert)
       expect(User.unscoped.find(u.id).confirmed).to be(false)
     end
@@ -358,7 +367,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       attrs = registration_params
       perform_enqueued_jobs { post users_path, params: { user: attrs } }
       token = CGI.unescape(deliveries.first.body.to_s[/confirm\?token=([^"'&\s<]+)/, 1])
-      get confirm_users_path, params: { token: token }
+      post confirm_users_path, params: { token: token }
       expect(User.find_by(username: attrs[:username]).confirmed).to be(true)
     end
   end
@@ -890,14 +899,14 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     end
   end
 
-  describe "GET /unlock_account" do
+  describe "POST /unlock_account" do
     let(:locked_user) do
       create(:user, :regular_user, locked: true, locked_until: 1.hour.from_now, auth_attempts: 5)
     end
     let(:unlock_token) { locked_user.generate_token_for(:account_unlock) }
 
     it "unlocks the account and clears counters" do
-      get unlock_account_users_path, params: { token: unlock_token }
+      post unlock_account_users_path, params: { token: unlock_token }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("The account has been unlocked!")
       locked_user.reload
@@ -909,15 +918,15 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
     it "is single-use: the link is refused once the account is unlocked" do
       # was silent on an already-unlocked account; the token is bound to the lock
       token = unlock_token
-      get unlock_account_users_path, params: { token: token }
-      get unlock_account_users_path, params: { token: token }
+      post unlock_account_users_path, params: { token: token }
+      post unlock_account_users_path, params: { token: token }
       expect(flash[:alert]).to eq(expired_alert)
     end
 
     it "expires after 1 hour" do
       token = unlock_token
       travel 61.minutes do
-        get unlock_account_users_path, params: { token: token }
+        post unlock_account_users_path, params: { token: token }
       end
       expect(flash[:alert]).to eq(expired_alert)
       expect(locked_user.reload.locked).to be(true)
@@ -925,25 +934,25 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
 
     it "unlocks a legacy-invalid account too (the unlock is written without validations)" do
       locked_user.update_columns(gender: "stale value")
-      get unlock_account_users_path, params: { token: unlock_token }
+      post unlock_account_users_path, params: { token: unlock_token }
       expect(flash[:notice]).to eq("The account has been unlocked!")
       expect(locked_user.reload.locked).to be(false)
       expect(locked_user.auth_attempts).to eq(0)
     end
 
     it "invalid token" do
-      get unlock_account_users_path, params: { token: "nope" }
+      post unlock_account_users_path, params: { token: "nope" }
       expect(flash[:alert]).to eq(expired_alert)
     end
 
     it "a legacy 'unlock' verifier token is refused with the expired message" do
-      get unlock_account_users_path, params: { token: Rails.application.message_verifier("unlock").generate(locked_user.id) }
+      post unlock_account_users_path, params: { token: Rails.application.message_verifier("unlock").generate(locked_user.id) }
       expect(flash[:alert]).to eq(expired_alert)
       expect(locked_user.reload.locked).to be(true)
     end
 
     it "a confirmation token does not unlock" do
-      get unlock_account_users_path, params: { token: locked_user.generate_token_for(:email_confirmation) }
+      post unlock_account_users_path, params: { token: locked_user.generate_token_for(:email_confirmation) }
       expect(flash[:alert]).to eq(expired_alert)
       expect(locked_user.reload.locked).to be(true)
     end
@@ -953,8 +962,84 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       perform_enqueued_jobs { u.lock_account! }
       expect(deliveries.size).to eq(1)
       token = deliveries.first.body.to_s[/token=([^"'&\s<]+)/, 1]
-      get unlock_account_users_path, params: { token: CGI.unescape(token) }
+      post unlock_account_users_path, params: { token: CGI.unescape(token) }
       expect(u.reload.locked).to be(false)
+    end
+  end
+
+  # The emailed GET links only show a page with a button; nothing is written or
+  # sent until the button's POST.
+  describe "GET confirm pages for emailed links" do
+    let(:unconfirmed) { create(:user, :regular_user_not_confirmed) }
+    let(:locked_user) do
+      create(:user, :regular_user, locked: true, locked_until: 1.hour.from_now, auth_attempts: 5)
+    end
+
+    def button_form(path)
+      Nokogiri::HTML(response.body).at_css("form[action='#{path}']")
+    end
+
+    it "GET /confirm with a valid token shows a confirm button and changes nothing" do
+      token = unconfirmed.generate_token_for(:email_confirmation)
+      get confirm_users_path, params: { token: token }
+      expect(response).to have_http_status(:ok)
+      expect(button_form("/confirm")["method"]).to eq("post")
+      expect(button_form("/confirm").at_css("input[name='token']")["value"]).to eq(token)
+      expect(button_form("/confirm").at_css("input[name='authenticity_token']")).to be_present
+      expect(unconfirmed.reload.confirmed).to be(false)
+      expect(deliveries).to be_empty
+    end
+
+    it "GET /confirm with a bad or expired token shows the expired alert and changes nothing" do
+      token = unconfirmed.generate_token_for(:email_confirmation)
+      travel(73.hours) { get confirm_users_path, params: { token: token } }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq(expired_alert)
+      get confirm_users_path, params: { token: "nope" }
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(unconfirmed.reload.confirmed).to be(false)
+      expect(deliveries).to be_empty
+    end
+
+    it "GET /unlock_account with a valid token shows an unlock button and changes nothing" do
+      token = locked_user.generate_token_for(:account_unlock)
+      get unlock_account_users_path, params: { token: token }
+      expect(response).to have_http_status(:ok)
+      expect(button_form("/unlock_account")["method"]).to eq("post")
+      expect(button_form("/unlock_account").at_css("input[name='token']")["value"]).to eq(token)
+      locked_user.reload
+      expect(locked_user.locked).to be(true)
+      expect(locked_user.auth_attempts).to eq(5)
+    end
+
+    it "GET /unlock_account with a bad token shows the expired alert and changes nothing" do
+      get unlock_account_users_path, params: { token: "nope" }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq(expired_alert)
+      expect(locked_user.reload.locked).to be(true)
+    end
+
+    it "GET /resend_confirmation shows a send button and mails nothing" do
+      u = create(:user, :regular_user_not_confirmed)
+      perform_enqueued_jobs { get resend_confirmation_users_path, params: { user: { email: u.email } } }
+      expect(response).to have_http_status(:ok)
+      form = button_form("/resend_confirmation")
+      expect(form["method"]).to eq("post")
+      expect(form.at_css("input[name='user[email]']")["value"]).to eq(u.email)
+      expect(deliveries).to be_empty
+    end
+
+    it "GET /resend_confirmation without an address sends the visitor to the resend form" do
+      get resend_confirmation_users_path
+      expect(response).to redirect_to(resend_email_confirmation_path)
+      get resend_confirmation_users_path, params: { user: "nobody@example.com" }
+      expect(response).to redirect_to(resend_email_confirmation_path)
+      expect(deliveries).to be_empty
+    end
+
+    it "the resend form posts" do
+      get resend_email_confirmation_path
+      expect(button_form("/resend_confirmation")["method"]).to eq("post")
     end
   end
 end

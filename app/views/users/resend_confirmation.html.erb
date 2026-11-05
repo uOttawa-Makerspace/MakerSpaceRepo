@@ -1,0 +1,13 @@
+<% provide(:title, 'Resend confirmation email') %>
+
+<div class="container py-5" style="max-width: 36rem;">
+  <h2 class="mb-3">Resend the confirmation email</h2>
+  <p>Send a new confirmation email to <strong><%= @email %></strong>?</p>
+  <p class="text-muted small">Nothing is sent until you press the button.</p>
+
+  <div class="d-flex gap-2">
+    <%= button_to 'Send the email', resend_confirmation_users_path,
+                  params: { user: { email: @email } }, method: :post, class: 'btn btn-primary' %>
+    <%= link_to 'Cancel', root_path, class: 'btn btn-outline-secondary' %>
+  </div>
+</div>

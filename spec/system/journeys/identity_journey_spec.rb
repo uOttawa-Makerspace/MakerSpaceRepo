@@ -37,6 +37,8 @@ RSpec.describe "Journey: identity", type: :system, skip_bullet: true do
 
     # follow the link from the email
     visit confirm_path
+    expect(created.reload.confirmed).to be(false)
+    click_button "Confirm my email"
     expect(page).to have_current_path(root_path)
     expect(page).to have_text("The email has been confirmed, you can now fully use your Makerepo Account !")
     expect(created.reload.confirmed).to be(true)

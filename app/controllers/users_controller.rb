@@ -8,9 +8,11 @@ class UsersController < SessionsController
                   create
                   new
                   resend_confirmation
+                  send_confirmation
                   reset_password_confirmation
                   reset_password_form
                   unlock_account
+                  apply_unlock
                 ]
   before_action :signed_in,
                 except: %i[
@@ -18,10 +20,13 @@ class UsersController < SessionsController
                   create
                   show
                   resend_confirmation
+                  send_confirmation
                   confirm
+                  apply_confirmation
                   reset_password_confirmation
                   reset_password_form
                   unlock_account
+                  apply_unlock
                 ]
 
   # Re-authentication (the current password on change_password / change_email) is throttled
@@ -82,10 +87,18 @@ class UsersController < SessionsController
   RESEND_CONFIRMATION_NOTICE =
     'If that email belongs to an account that still needs confirming, a confirmation email has been sent.'
 
-  rate_limit to: 30, within: 1.hour, only: :resend_confirmation, name: 'resend-ip',
+  rate_limit to: 30, within: 1.hour, only: :send_confirmation, name: 'resend-ip',
              by: -> { request.remote_ip }, with: -> { resend_confirmation_response }
 
+  # GET: asks for confirmation before anything is sent, so opening the link
+  # (or having it prefetched) never mails anyone.
   def resend_confirmation
+    @email = resend_confirmation_email
+    redirect_to resend_email_confirmation_path if @email.blank?
+  end
+
+  # POST: sends the mail.
+  def send_confirmation
     email = resend_confirmation_email
     user = User.find_by(email: email) if email.present?
     if user && !user.confirmed? && mail_budget_left?('resend', email)
@@ -95,7 +108,17 @@ class UsersController < SessionsController
     resend_confirmation_response
   end
 
+  # GET, the link in the sign-up mail: shows a button that POSTs the token to
+  # apply_confirmation. A GET never changes anything.
   def confirm
+    return if User.find_by_token_for(:email_confirmation, params[:token])
+
+    flash[:alert] = LINK_EXPIRED_ALERT
+    redirect_to root_path
+  end
+
+  # POST /confirm
+  def apply_confirmation
     user = User.find_by_token_for(:email_confirmation, params[:token])
     if user
       user.update(confirmed: true)
@@ -136,7 +159,17 @@ class UsersController < SessionsController
     redirect_to root_path
   end
 
+  # GET, the link in the unlock mail: shows a button that POSTs the token to
+  # apply_unlock. A GET never changes anything.
   def unlock_account
+    return if User.find_by_token_for(:account_unlock, params[:token])
+
+    flash[:alert] = LINK_EXPIRED_ALERT
+    redirect_to root_path
+  end
+
+  # POST /unlock_account
+  def apply_unlock
     user = User.find_by_token_for(:account_unlock, params[:token])
     if user
       user.update_columns(locked: false, auth_attempts: 0, locked_until: nil)
