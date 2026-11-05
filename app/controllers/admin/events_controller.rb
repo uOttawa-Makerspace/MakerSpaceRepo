@@ -158,48 +158,7 @@ class Admin::EventsController < AdminAreaController
         flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
       end
     when "this"
-      exclusion_start_time = helpers.combine_date_and_time(
-        Time.parse(event_params[:utc_start_time]).utc, 
-        @event.start_time.utc
-      )
-
-      updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
-
-      unless @event.update(recurrence_rule: updated_rule)
-        flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
-        return redirect_back(fallback_location: admin_calendar_index_path)
-      end
-
-      @new_event = Event.create!(
-        title: title,
-        description: event_params[:description],
-        # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-        start_time: Time.parse(event_params[:utc_start_time]).utc,
-        end_time: Time.parse(event_params[:utc_end_time]).utc,
-        recurrence_rule: nil,
-        created_by_id: current_user.id,
-        space_id: event_params[:space_id],
-        event_type: event_params[:event_type],
-        training_id: event_params[:training_id],
-        language: event_params[:language],
-        course_name_id: event_params[:course_name]
-      )
-
-      # Update event assignments
-      unless participants.empty?
-        @event_assignments = participants.map do |staff_id|
-          EventAssignment.new(
-            event: @new_event,
-            user_id: staff_id
-          )
-        end
-        @new_event.event_assignments << @event_assignments
-      end 
-
-      @new_event.reload
-      Event.upsert_event(@new_event) unless @new_event.draft
-
-      flash[:notice] = "This event occurrence updated successfully."
+      update_this_occurrence(title, participants)
     else
       flash[:alert] = "Invalid update scope."
     end
@@ -429,6 +388,55 @@ class Admin::EventsController < AdminAreaController
   end
 
   private
+
+  # Excludes the occurrence from the series and creates it as its own event. Both happen in one
+  # transaction, so a failure leaves the series as it was.
+  def update_this_occurrence(title, participants)
+    exclusion_start_time = helpers.combine_date_and_time(
+      Time.parse(event_params[:utc_start_time]).utc,
+      @event.start_time.utc
+    )
+    updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
+
+    series_updated = Event.transaction do
+      next false unless @event.update(recurrence_rule: updated_rule)
+
+      @new_event = create_occurrence_event(title)
+      attach_participants(@new_event, participants)
+      true
+    end
+
+    if series_updated
+      @new_event.reload
+      Event.upsert_event(@new_event) unless @new_event.draft
+      flash[:notice] = "This event occurrence updated successfully."
+    else
+      flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
+    end
+  end
+
+  def create_occurrence_event(title)
+    Event.create!(
+      title: title,
+      description: event_params[:description],
+      # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
+      start_time: Time.parse(event_params[:utc_start_time]).utc,
+      end_time: Time.parse(event_params[:utc_end_time]).utc,
+      recurrence_rule: nil,
+      created_by_id: current_user.id,
+      space_id: event_params[:space_id],
+      event_type: event_params[:event_type],
+      training_id: event_params[:training_id],
+      language: event_params[:language],
+      course_name_id: event_params[:course_name]
+    )
+  end
+
+  def attach_participants(event, participants)
+    return if participants.empty?
+
+    event.event_assignments << participants.map { |staff_id| EventAssignment.new(event: event, user_id: staff_id) }
+  end
 
   def event_params
     params.require(:event).permit(

@@ -243,14 +243,13 @@ RSpec.describe "Admin events gaps", type: :request do
         expect(series.reload.event_assignments).to be_empty
       end
 
-      # the master already carries the EXDATE when Event.create! raises
-      it "leaves the master modified and answers 422 (unhandled RecordInvalid) when the replacement is invalid" do
+      it "answers 422 and leaves the series unchanged when the replacement is invalid" do
         patch admin_event_path(series),
               params: { update_scope: "this",
                         event: event_attrs(utc_start_time: "2025-05-12 18:00",
                                            utc_end_time: "2025-05-12 17:00") }
         expect(response).to have_http_status(:unprocessable_content)
-        expect(series.reload.recurrence_rule).to end_with("EXDATE:20250512T150000Z")
+        expect(series.reload.recurrence_rule).to eq(series_rule)
         expect(Event.count).to eq(1)
       end
     end
