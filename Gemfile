@@ -70,16 +70,11 @@ end
 group :development do
   gem "erb_lint", require: false
   gem "letter_opener_web"
-  gem "net-ssh"
   gem "rubocop-rails"
   gem "ruby-prof"
   gem "solargraph", require: false
   gem "solargraph-rails", require: false
   gem "web-console"
-
-  # SSH deployment
-  gem "bcrypt_pbkdf", "~> 1.0"
-  gem "ed25519", "~> 1.2"
 end
 
 group :test do
