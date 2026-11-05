@@ -201,7 +201,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(Event.count).to eq(2)
     end
 
-    it "removes one occurrence by excluding its date", js: true, skip_bullet: true do
+    it "removes one occurrence by excluding its date", js: true, browser_zone: "America/Toronto", skip_bullet: true do
       series = create_series
       open_admin_calendar
       open_event("Open lab", index: 1)
@@ -209,12 +209,12 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "This event"
 
       expect(page).to have_text("This occurrence deleted.")
-      # the excluded instant is the wall-clock time read as UTC (10:00Z), not the occurrence (14:00Z)
-      expect(series.reload.recurrence_rule).to include("EXDATE:20270317T100000Z")
-      expect(page).to have_css(".fc-timegrid-event", text: "Open lab", count: 2, visible: :all)
+      # in the Toronto browser the excluded instant is the occurrence itself (14:00Z)
+      expect(series.reload.recurrence_rule).to include("EXDATE:20270317T140000Z")
+      expect(page).to have_css(".fc-timegrid-event", text: "Open lab", count: 1, visible: :all)
     end
 
-    it "ends the series the day before when 'This and following events' is chosen", js: true, skip_bullet: true do
+    it "ends the series the day before when 'This and following events' is chosen", js: true, browser_zone: "America/Toronto", skip_bullet: true do
       series = create_series
       open_admin_calendar
       open_event("Open lab", index: 1)
@@ -222,7 +222,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "This and following events"
 
       expect(page).to have_text("This and following deleted.")
-      expect(series.reload.recurrence_rule).to include("UNTIL=20270316T100000Z")
+      expect(series.reload.recurrence_rule).to include("UNTIL=20270316T140000Z")
     end
 
     it "deletes the whole series when 'All events' is chosen", js: true, skip_bullet: true do
@@ -260,7 +260,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
     end
 
     # Saving logs an uncaught TypeError from the staff select (an option without its unavailable dates); the save still goes through.
-    it "saves a change to its description through the unavailability endpoint", js: true, skip_bullet: true, js_errors: :allow do
+    it "saves a change to its description through the unavailability endpoint", js: true, skip_bullet: true do
       open_admin_calendar
       open_event("Lecture")
       open_custom_values
@@ -273,7 +273,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
 
     # The title field is filled with the calendar's own label ("<icon> <name> - <title>"),
     # so every save writes that label back as the title.
-    it "fills the title field with the calendar label and saves it back as the title", js: true, skip_bullet: true, js_errors: :allow do
+    it "fills the title field with the calendar label and saves it back as the title", js: true, skip_bullet: true do
       open_admin_calendar
       open_event("Lecture")
       expect(find("#title", visible: :all).value).to eq("🚫 Wanda Worker - Lecture")

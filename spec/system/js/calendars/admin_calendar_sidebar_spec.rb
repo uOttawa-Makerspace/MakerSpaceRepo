@@ -297,7 +297,7 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
     end
 
     # Closing the dialog throws "flatpickr is not a function" from its hide handler; the dialog still closes.
-    it "closes the copy dialog with Cancel", js: true, skip_bullet: true, js_errors: :allow do
+    it "closes the copy dialog with Cancel", js: true, skip_bullet: true do
       open_admin_calendar
       page.execute_script("document.getElementById('copyEventsModal').addEventListener('shown.bs.modal', function (e) { e.target.dataset.shown = '1'; })")
       click_button "Copy Events"
@@ -319,7 +319,7 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       JS
 
       expect(page).to have_css("#color-#{worker.id}")
-      Timeout.timeout(5) { sleep 0.1 until StaffSpace.find_by(user: worker, space: space).color == "#112233" }
+      eventually { StaffSpace.find_by(user: worker, space: space).color == "#112233" }
       expect(StaffSpace.find_by(user: worker, space: space).color).to eq("#112233")
     end
 

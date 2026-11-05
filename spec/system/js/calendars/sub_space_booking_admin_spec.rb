@@ -164,7 +164,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
     # The modal has no container for the dates the script builds (an element
     # that is not in the page), so the script throws and the dialog shows only
     # its template row.
-    it "opens the select-dates dialog with a single unlabelled template row and logs an error", js: true, skip_bullet: true, js_errors: :allow do
+    it "opens the select-dates dialog with a single unlabelled template row and logs an error", js: true, skip_bullet: true do
       open_admin_panel
       find("button[title='Select Specific']").click
 

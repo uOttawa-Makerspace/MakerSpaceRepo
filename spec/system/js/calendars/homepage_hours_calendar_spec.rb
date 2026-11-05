@@ -101,7 +101,7 @@ RSpec.describe "Opening hours calendar", type: :system do
     expect(page).to have_css("#filters input[type=checkbox]", count: 1, visible: :all)
   end
 
-  it "shows no calendar when the hours cannot be loaded", js: true, skip_bullet: true, js_errors: :allow do
+  it "shows no calendar when the hours cannot be loaded", js: true, skip_bullet: true do
     allow_any_instance_of(StaticPagesController).to receive(:open_hours) { |controller| controller.head :internal_server_error }
     visit root_path
 

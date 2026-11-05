@@ -100,9 +100,9 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
     end
   end
 
-  # Examples marked js_errors: :allow below: the browser logs the 422 answers of
-  # refused bookings, and a 404 after a delete (the page follows the redirect
-  # with a JSON request).
+  # The browser logs the 422 answers of refused bookings, and a 404 after a
+  # delete (the page follows the redirect with a JSON request); both are
+  # allowlisted in spec/support/js_error_allowlist.rb.
   describe "booking a room" do
     it "books a single slot and shows it on the calendar", js: true, skip_bullet: true do
       open_calendar
@@ -131,7 +131,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_css("#bookModal.show", visible: :all)
     end
 
-    it "marks the name field when the server says it is blank, and keeps the modal open", js: true, skip_bullet: true, js_errors: :allow do
+    it "marks the name field when the server says it is blank, and keeps the modal open", js: true, skip_bullet: true do
       open_calendar
       open_book_modal
       fill_booking(name: "")
@@ -160,7 +160,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(bookings.map(&:recurring_booking_id).uniq.size).to eq(1)
     end
 
-    it "refuses a series without an end date", js: true, skip_bullet: true, js_errors: :allow do
+    it "refuses a series without an end date", js: true, skip_bullet: true do
       open_calendar
       open_book_modal
       fill_booking
@@ -172,7 +172,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_no_css("#bookSave[disabled]")
     end
 
-    it "shows a toast and closes the modal when the slot is blocked", js: true, skip_bullet: true, js_errors: :allow do
+    it "shows a toast and closes the modal when the slot is blocked", js: true, skip_bullet: true do
       create(:sub_space_booking, sub_space: subspace, user: admin, name: "Maintenance", blocking: true, public: true,
                                  start_time: eastern.local(2027, 3, 16, 9), end_time: eastern.local(2027, 3, 16, 12))
       open_calendar
@@ -186,7 +186,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(SubSpaceBooking.where(name: "Laser practice")).to be_empty
     end
 
-    it "shows a toast when the booking is longer than the room allows", js: true, skip_bullet: true, js_errors: :allow do
+    it "shows a toast when the booking is longer than the room allows", js: true, skip_bullet: true do
       subspace.update!(maximum_booking_duration: 1)
       open_calendar
       open_book_modal
@@ -198,7 +198,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(SubSpaceBooking.where(name: "Laser practice")).to be_empty
     end
 
-    it "keeps the occurrences that fit and says so when part of a series is blocked", js: true, skip_bullet: true, js_errors: :allow do
+    it "keeps the occurrences that fit and says so when part of a series is blocked", js: true, skip_bullet: true do
       create(:sub_space_booking, sub_space: subspace, user: admin, name: "Maintenance", blocking: true, public: true,
                                  start_time: eastern.local(2027, 3, 23, 9), end_time: eastern.local(2027, 3, 23, 12))
       open_calendar
@@ -279,7 +279,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(stored(booking)).to eq("2027-03-16 10:00")
     end
 
-    it "deletes the booking after confirming", js: true, skip_bullet: true, js_errors: :allow do
+    it "deletes the booking after confirming", js: true, skip_bullet: true do
       open_calendar(admin)
       open_booking
       accept_confirm("Delete this booking?") { click_button "bookDelete" }
@@ -297,6 +297,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_css("#bookModal.show", visible: :all)
     end
 
+    # Example-wide allow: the refused lookup may or may not be logged before the example ends.
     it "shows 'Space Booked' to a user for somebody else's private booking, and opens nothing for staff-only data", js: true, skip_bullet: true, js_errors: :allow do
       open_calendar(user)
       expect(page).to have_css(".fc-timegrid-event", text: "Space Booked", visible: :all)
@@ -332,7 +333,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_css("#bookDeleteRecurringDropdown", visible: :visible)
     end
 
-    it "deletes only the clicked occurrence with 'This only'", js: true, skip_bullet: true, js_errors: :allow do
+    it "deletes only the clicked occurrence with 'This only'", js: true, skip_bullet: true do
       open_calendar(admin)
       open_first
       click_button "Delete..."
@@ -342,7 +343,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(SubSpaceBooking.where(name: "Club night").count).to eq(1)
     end
 
-    it "deletes the clicked and later occurrences with 'This and rest'", js: true, skip_bullet: true, js_errors: :allow do
+    it "deletes the clicked and later occurrences with 'This and rest'", js: true, skip_bullet: true do
       open_calendar(admin)
       open_first
       click_button "Delete..."

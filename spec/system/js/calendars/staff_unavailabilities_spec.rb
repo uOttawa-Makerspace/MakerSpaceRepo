@@ -315,7 +315,7 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       expect(series.reload.title).to eq("Class (renamed)")
     end
 
-    it "excludes one date for 'This event' (the date is the wall clock read as UTC)", js: true, skip_bullet: true do
+    it "excludes the occurrence instant for 'This event'", js: true, browser_zone: "America/Toronto", skip_bullet: true do
       series = create_series
       open_page
       open_entry("Class", index: 1)
@@ -323,19 +323,19 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       click_button "This event"
 
       eventually { series.reload.recurrence_rule.include?("EXDATE") }
-      expect(series.reload.recurrence_rule).to include("EXDATE:20270317T100000Z")
+      expect(series.reload.recurrence_rule).to include("EXDATE:20270317T140000Z")
       expect(page).to have_css(".fc-timegrid-event", text: "Class", count: 2, visible: :all)
     end
 
-    it "ends the series with 'This and following events'", js: true, skip_bullet: true do
+    it "ends the series with 'This and following events'", js: true, browser_zone: "America/Toronto", skip_bullet: true do
       series = create_series
       open_page
       open_entry("Class", index: 1)
       click_button "Delete"
       click_button "This and following events"
 
-      eventually { series.reload.recurrence_rule.include?("UNTIL=20270316T100000Z") }
-      expect(series.reload.recurrence_rule).to include("UNTIL=20270316T100000Z")
+      eventually { series.reload.recurrence_rule.include?("UNTIL=20270316T140000Z") }
+      expect(series.reload.recurrence_rule).to include("UNTIL=20270316T140000Z")
     end
 
     it "deletes the series with 'All events'", js: true, skip_bullet: true do

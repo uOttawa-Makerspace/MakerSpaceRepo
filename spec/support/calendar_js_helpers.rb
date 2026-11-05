@@ -71,4 +71,15 @@ end
 
 RSpec.configure do |config|
   config.include CalendarJsHelpers, type: :system
+
+  # `browser_zone: "America/Toronto"` runs the example with the browser's
+  # time zone set through DevTools, so expectations built from browser-side
+  # dates do not depend on the host zone. The override is cleared afterwards
+  # because the Chrome session is reused.
+  config.before(:each, :browser_zone, type: :system) do |example|
+    page.driver.browser.execute_cdp("Emulation.setTimezoneOverride", timezoneId: example.metadata[:browser_zone])
+  end
+  config.after(:each, :browser_zone, type: :system) do
+    page.driver.browser.execute_cdp("Emulation.setTimezoneOverride", timezoneId: "")
+  end
 end

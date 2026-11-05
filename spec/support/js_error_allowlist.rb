@@ -47,6 +47,17 @@ module JsErrorCheck
     # Opening the add-event modal asks for /admin/calendar/staff_json/:id,
     # which no route serves (404); the staff list is filled from another feed.
     { id: "js-error-staff-json", path: %r{/admin/calendar}, message: %r{/admin/calendar/staff_json/\d+ - Failed to load resource: .* 404} },
+    # Calendar page scripts (pinned by the calendar characterization specs).
+    # Saving an unavailability from the staff select reads an option without its unavailable dates.
+    { id: "js-error-cal-staff-option", path: %r{/admin/calendar}, message: /calendar-[\w-]+\.js .*Uncaught TypeError: Cannot read properties of undefined \(reading 'split'\)/ },
+    # The copy-events dialog calls flatpickr on an element that has no plugin.
+    { id: "js-error-cal-copy-flatpickr", path: %r{/admin/calendar}, message: /calendar-[\w-]+\.js .*Uncaught TypeError: \w+\.flatpickr is not a function/ },
+    # Refused bookings answer 422; Chrome logs each as a resource error.
+    { id: "js-error-booking-422", path: %r{/sub_space_booking\b}, message: %r{/sub_space_booking - Failed to load resource: the server responded with a status of 422} },
+    # After a delete the page follows the redirect with a JSON request that answers 404.
+    { id: "js-error-booking-delete-404", path: %r{/sub_space_booking\b}, message: %r{/sub_space_booking#booking-tab - Failed to load resource: the server responded with a status of 404} },
+    # The select-dates dialog writes into a template row that is missing.
+    { id: "js-error-booking-dates-row", path: %r{/sub_space_booking\b}, message: /sub_space_booking-[\w-]+\.js .*Uncaught TypeError: Cannot set properties of null \(setting 'innerHTML'\)/ },
   ].freeze
 
   module_function
