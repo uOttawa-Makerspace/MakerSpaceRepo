@@ -6,7 +6,7 @@ class Admin::KeyTransactionsController < AdminAreaController
   end
 
   def update
-    if !params[:key_transaction][:deposit_return_date].empty? &&
+    if params.dig(:key_transaction, :deposit_return_date).present? &&
          @key_transaction.update(key_transaction_params)
       redirect_to admin_key_transactions_path,
                   notice: "Successfully updated deposit information"

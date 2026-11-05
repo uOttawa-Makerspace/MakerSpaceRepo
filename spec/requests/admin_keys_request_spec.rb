@@ -376,6 +376,14 @@ RSpec.describe "Admin keys", type: :request do
       expect(tx.reload.deposit_return_date).to be_nil
     end
 
+    it "treats a missing deposit return date like a blank one" do
+      patch admin_key_transaction_path(tx), params: { key_transaction: { deposit_amount: 999 } }
+      expect(response).to redirect_to(admin_key_transactions_path)
+      expect(flash[:alert]).to eq("Something went wrong while updating the deposit")
+      expect(tx.reload.deposit_return_date).to be_nil
+      expect(tx.deposit_amount).to eq(20)
+    end
+
     it "only permits deposit_return_date" do
       patch admin_key_transaction_path(tx), params: { key_transaction: { deposit_return_date: "2024-02-02", deposit_amount: 999 } }
       expect(tx.reload.deposit_amount).to eq(20)
