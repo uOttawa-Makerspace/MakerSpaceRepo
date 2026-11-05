@@ -142,6 +142,8 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
     let!(:key) { create(:key, :regular_key_type, :held_status, number: 3, space: space, user: holder, supervisor: admin) }
     let!(:deposit) { create(:key_transaction, key: key, user: holder, deposit_amount: 0) }
 
+    include_context "with the browser in Toronto time"
+
     before { log_in_as(admin) }
 
     it "prefills today as the deposit return date when there is no deposit and clears it with the button" do
@@ -162,7 +164,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       expect(page).to have_text("Successfully revoked key")
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
       expect(deposit.reload.deposit_return_date).to eq(Time.zone.today)
-      expect(deposit.return_date).to eq(Date.today)
+      expect(deposit.return_date).to eq(Time.zone.today)
     end
 
     it "revokes the key with no deposit return date after the date is cleared" do

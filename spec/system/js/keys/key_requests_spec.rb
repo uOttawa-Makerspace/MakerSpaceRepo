@@ -43,8 +43,9 @@ RSpec.describe "Key request form and wizard", type: :system, skip_bullet: true d
 
     it "saves the picked department and supervisor and opens step 2 of the wizard" do
       fill_personal_details
-      pick "space-select", "Wood Shop", search: "Wood"
+      # the supervisor list is picked first: an open department list would cover it
       pick "supervisor-select", "Sam Supervisor", search: "Sam"
+      pick "space-select", "Wood Shop", search: "Wood"
       click_button "Next Step"
 
       expect(page).to have_text("Lab")

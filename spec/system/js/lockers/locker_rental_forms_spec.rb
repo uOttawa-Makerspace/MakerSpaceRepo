@@ -112,6 +112,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
       native = find("#locker_rental_rented_by_id", visible: :all)
       wrapper = native.find(:xpath, "following-sibling::div[contains(@class,'ts-wrapper')][1]")
       wrapper.find(".ts-control").click
+      expect(wrapper).to have_css(".ts-control input:focus") # typing goes to the picker only once it has the focus
       wrapper.find(".ts-control input").send_keys("Zelda")
       expect(wrapper).to have_css(".ts-dropdown .option", text: "Zelda Tenant (zeldat)")
       wrapper.find(".ts-dropdown .option", text: "Zelda Tenant (zeldat)").click

@@ -150,7 +150,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
       expect(page).to have_no_css("#lockerBulkEditList li")
     end
 
-    it "is refused with a missing-parameter error, so no locker size changes", js_errors: :allow do
+    it "is refused with a missing-parameter error, so no locker size changes" do
       select_rows(l1, l3)
       open_modal "Bulk edit", "#lockerBulkEditModal"
       within("#lockerBulkEditModal") do
@@ -237,7 +237,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
       wait_until("size not deleted") { !LockerSize.exists?(unused.id) }
     end
 
-    it "shows no options in the size dropdown of the single locker modal", js_errors: :allow do
+    it "shows no options in the size dropdown of the single locker modal" do
       visit lockers_path
       wait_for_app_js
       open_modal "Make a single locker", "#newLockerModal"

@@ -64,7 +64,7 @@ RSpec.describe "Locker inventory inline editing", type: :system, skip_bullet: tr
     expect(page).to have_no_css("#{row} select[name='locker[audience]'].is-valid")
   end
 
-  it "saves a locker note on change and refreshes the row's search text but not the hover note", js_errors: :allow do
+  it "saves a locker note on change and refreshes the row's search text but not the hover note" do
     switch_on
     commit_note("#{row} input[name='locker[notes]']", "Door sticks")
 
@@ -76,7 +76,7 @@ RSpec.describe "Locker inventory inline editing", type: :system, skip_bullet: tr
     expect(page).to have_no_css("#{row} [data-bs-original-title='Door sticks']")
   end
 
-  it "keeps the old hover note after the note is cleared", js_errors: :allow do
+  it "keeps the old hover note after the note is cleared" do
     locker.update!(notes: "Old note")
     visit lockers_path
     expect(page).to have_css("#{row} input[name='locker[notes]']")
@@ -88,7 +88,7 @@ RSpec.describe "Locker inventory inline editing", type: :system, skip_bullet: tr
     expect(page).to have_no_css("#{row} [data-bs-original-title='No note']")
   end
 
-  it "saves a staff note of an assigned locker on its rental", js_errors: :allow do
+  it "saves a staff note of an assigned locker on its rental" do
     rental = create(:locker_rental, :active, locker: other, requested_as: "general")
     visit lockers_path
     expect(page).to have_css("tr[data-locker-id='#{other.id}'] input[name='locker_rental[staff_notes]']")
@@ -111,7 +111,7 @@ RSpec.describe "Locker inventory inline editing", type: :system, skip_bullet: tr
     expect(page).to have_no_css("#{row} select.is-invalid", visible: :all)
   end
 
-  it "marks the size dropdown invalid when the save is refused and keeps the old size", js_errors: :allow do
+  it "marks the size dropdown invalid when the save is refused and keeps the old size" do
     allow_any_instance_of(Locker).to receive(:update).and_return(false)
     switch_on
     within(row) { pick_size "24x24" }
@@ -123,7 +123,7 @@ RSpec.describe "Locker inventory inline editing", type: :system, skip_bullet: tr
     expect(page).to have_no_css("#{row} select.is-invalid", visible: :all)
   end
 
-  it "marks a note invalid when the save is refused", js_errors: :allow do
+  it "marks a note invalid when the save is refused" do
     allow_any_instance_of(Locker).to receive(:update).and_return(false)
     switch_on
     commit_note("#{row} input[name='locker[notes]']", "Never saved")

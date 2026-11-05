@@ -11,6 +11,8 @@ RSpec.describe "Key transaction deposit return", type: :system, skip_bullet: tru
   let!(:key) { create(:key, :regular_key_type, :held_status, space: space, user: holder, supervisor: admin) }
   let!(:transaction) { create(:key_transaction, key: key, user: holder, deposit_amount: 30) }
 
+  include_context "with the browser in Toronto time"
+
   before { log_in_as(admin) }
 
   it "prefills today in a date picker and clears it with the button" do

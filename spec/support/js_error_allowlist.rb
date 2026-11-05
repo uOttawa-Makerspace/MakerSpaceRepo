@@ -44,6 +44,15 @@ module JsErrorCheck
     # the admin calendar script requests its JSON endpoints with an
     # empty id (404) and then fails to parse the HTML.
     { id: "js-error-11", path: %r{/admin/(calendar|events)}, message: %r{/admin/(calendar/(utc_)?unavailabilities_json/|events/json/|calendar|calendar/imported_calendars_json/) .*(Failed to load resource: .* 404|Uncaught \(in promise\) SyntaxError)} },
+    # the Bootstrap tooltip of a locker row note throws when the
+    # row's hover text is rewritten after an inline save.
+    { id: "js-error-12", path: %r{/lockers\z}, message: /bootstrap\.esm-[\w-]+\.js \d+:\d+ Uncaught TypeError: Cannot convert undefined or null to object/ },
+    # a refused inline locker save answers 500 and lockers.js logs the failure.
+    { id: "js-error-13", path: %r{/lockers\z}, message: %r{/lockers/\d+ - Failed to load resource: the server responded with a status of 500} },
+    { id: "js-error-13", path: %r{/lockers\z}, message: /lockers-[\w-]+\.js \d+:\d+ Error: Failed to update (size|note\/details)/ },
+    # the size dropdown of the single locker modal is built from options that
+    # lack a display name when no size has a store variant.
+    { id: "js-error-14", path: %r{/lockers\z}, message: /lockers-[\w-]+\.js \d+:\d+ Uncaught TypeError: Cannot read properties of null \(reading 'displayName'\)/ },
   ].freeze
 
   module_function
