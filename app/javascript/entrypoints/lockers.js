@@ -18,7 +18,7 @@ document.addEventListener("turbo:load", function () {
 });
 
 // Handle grabbing the product gid on link paste
-function handleLinkInput() {
+export function handleLinkInput() {
   const url = this.value;
   const match = url.match(/\/products\/(\d+)/i);
   const id = match ? match[1] : null;
@@ -30,7 +30,7 @@ function handleLinkInput() {
 }
 
 // Goes through a Set of numbers and returns the start and end of any continuous ranges in it
-const findContiguous = (set) => {
+export const findContiguous = (set) => {
   const sorted = [...set].map(Number).sort((a, b) => a - b);
   if (sorted.length === 0) return [];
   const groups = [];
@@ -48,7 +48,7 @@ const findContiguous = (set) => {
   return groups;
 };
 
-function validateRange() {
+export function validateRange() {
   const modal = document.querySelector("#newRangeLockerModal");
   if (!modal) return;
 

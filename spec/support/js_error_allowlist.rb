@@ -58,6 +58,15 @@ module JsErrorCheck
     { id: "js-error-booking-delete-404", path: %r{/sub_space_booking\b}, message: %r{/sub_space_booking#booking-tab - Failed to load resource: the server responded with a status of 404} },
     # The select-dates dialog writes into a template row that is missing.
     { id: "js-error-booking-dates-row", path: %r{/sub_space_booking\b}, message: /sub_space_booking-[\w-]+\.js .*Uncaught TypeError: Cannot set properties of null \(setting 'innerHTML'\)/ },
+    # the Bootstrap tooltip of a locker row note throws when the
+    # row's hover text is rewritten after an inline save.
+    { id: "js-error-12", path: %r{/lockers\z}, message: /bootstrap\.esm-[\w-]+\.js \d+:\d+ Uncaught TypeError: Cannot convert undefined or null to object/ },
+    # a refused inline locker save answers 500 and lockers.js logs the failure.
+    { id: "js-error-13", path: %r{/lockers\z}, message: %r{/lockers/\d+ - Failed to load resource: the server responded with a status of 500} },
+    { id: "js-error-13", path: %r{/lockers\z}, message: /lockers-[\w-]+\.js \d+:\d+ Error: Failed to update (size|note\/details)/ },
+    # the size dropdown of the single locker modal is built from options that
+    # lack a display name when no size has a store variant.
+    { id: "js-error-14", path: %r{/lockers\z}, message: /lockers-[\w-]+\.js \d+:\d+ Uncaught TypeError: Cannot read properties of null \(reading 'displayName'\)/ },
   ].freeze
 
   module_function
