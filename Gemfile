@@ -61,10 +61,6 @@ group :development, :test do
   gem "faker", "~> 3.1"
   gem "faraday-retry", "~> 2.4"
   gem "listen", "~> 3.7"
-  gem "pry", "~> 0.15"
-  gem "pry-rails", "~> 0.3"
-  gem "rails_best_practices", require: false
-  gem "railroady"
   gem "rspec-json_expectations"
   gem "rspec-rails", "~> 8.0"
   gem "ruby_audit", require: false
@@ -83,7 +79,6 @@ group :development do
   gem "letter_opener_web"
   gem "rubocop-rails"
   gem "ruby-prof"
-  gem "sdoc", "~> 2.6"
   gem "solargraph", require: false
   gem "solargraph-rails", require: false
   gem "web-console"
@@ -95,7 +90,6 @@ end
 
 group :test do
   gem "capybara"
-  gem "launchy", "~> 3.0"
   gem "selenium-webdriver", "~> 4.0"
   gem "shoulda-matchers", "~> 7.0"
   gem "parallel_tests"
