@@ -37,10 +37,14 @@ class QuestionsController < AdminAreaController
 
   def create
     @new_question = current_user.questions.new(question_params)
-    @new_question.answers.first.correct = true
-    if @new_question.save!
+    mark_first_answer_correct_by_default
+    if @new_question.save(context: :question_form)
       redirect_to questions_path
       flash[:notice] = "You've successfully created a new question!"
+    else
+      set_levels
+      set_categories
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -101,6 +105,14 @@ class QuestionsController < AdminAreaController
       training_ids: [],
       answers_attributes: %i[id description correct]
     )
+  end
+
+  # The new-question form has no correct flag, so its first answer is the correct one.
+  # When the submission marks an answer correct, that choice is kept.
+  def mark_first_answer_correct_by_default
+    answers = @new_question.answers
+    return if answers.empty? || answers.any?(&:correct)
+    answers.first.correct = true
   end
 
   def set_question
