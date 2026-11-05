@@ -13,14 +13,11 @@ class VolunteerHoursController < VolunteersController
     @pagy, @user_volunteer_hours = pagy(scope, limit: 50)
     @total_hours =
       calculate_hours(@user_volunteer_hours.approved.pluck(:total_time))
+    load_new_hour_form
+  end
 
-    @new_volunteer_hour = VolunteerHour.new
-    @volunteer_tasks =
-      VolunteerTask
-        .joins(:volunteer_task_joins)
-        .where("volunteer_task_joins.user_id = ?", current_user.id)
-        .order(created_at: :desc)
-        .pluck(:title, :id)
+  def new
+    load_new_hour_form
   end
 
   def create
@@ -96,6 +93,16 @@ class VolunteerHoursController < VolunteersController
   end
 
   private
+
+  def load_new_hour_form
+    @new_volunteer_hour = VolunteerHour.new
+    @volunteer_tasks =
+      VolunteerTask
+        .joins(:volunteer_task_joins)
+        .where("volunteer_task_joins.user_id = ?", current_user.id)
+        .order(created_at: :desc)
+        .pluck(:title, :id)
+  end
 
   def volunteer_hour_params
     permitted = %i[volunteer_task_id date_of_task total_time]
