@@ -69,6 +69,17 @@ class ProficientProject < ApplicationRecord
     training_requirements.create(training: Training.find(training_requirements_id), level: training_requirements_level)
   end
 
+  # Make the project's requirements match the submitted (training, level) pairs:
+  # rows no longer listed are removed, missing ones are added, matching rows stay as they are.
+  def replace_training_requirements(training_ids, levels)
+    wanted = Array(training_ids).zip(Array(levels)).map { |id, level| [id.to_i, level] }.uniq
+    transaction do
+      training_requirements.reject { |r| wanted.include?([r.training_id, r.level]) }.each(&:destroy)
+      kept = training_requirements.reload.map { |r| [r.training_id, r.level] }
+      (wanted - kept).each { |id, level| create_training_requirements(id, level) }
+    end
+  end
+
   def extract_urls
     URI.extract(description)
   end

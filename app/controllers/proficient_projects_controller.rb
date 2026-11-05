@@ -135,12 +135,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def update
-    @proficient_project.training_requirements.destroy
-    if params[:training_requirements_id].present?
-      params[:training_requirements_id].each_with_index do |t, i|
-        @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
-      end
-    end
+    replace_training_requirements
     if @proficient_project.update(proficient_project_params)
       begin
         update_photos
@@ -383,6 +378,16 @@ class ProficientProjectsController < DevelopmentProgramsController
     @photos = @proficient_project.photos || []
     @files = @proficient_project.repo_files.order(created_at: :asc)
     @videos = @proficient_project.videos.processed.order(created_at: :asc)
+  end
+
+  # The edit form always lists the project's whole requirement set; a request that
+  # carries neither the list nor the form marker leaves the requirements alone.
+  def replace_training_requirements
+    return unless params[:training_requirements_id].present? || params[:training_requirements_managed].present?
+    @proficient_project.replace_training_requirements(
+      params[:training_requirements_id],
+      params[:training_requirements_level]
+    )
   end
 
   def update_photos

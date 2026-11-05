@@ -223,21 +223,39 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(Photo.exists?(photo.id)).to be(false)
       end
 
-      it "ignores files / deletefiles / deletevideos: update_files and update_videos are never called" do
-        rf = create(:repo_file, proficient_project: project)
-        patch proficient_project_path(project),
-              params: project_params.merge(files: [content_pdf_upload], deletefiles: [rf.file.filename.to_s])
-        # update only calls update_photos; file add/delete helpers are dead code
-        expect(project.reload.repo_files.map(&:id)).to eq([rf.id])
-      end
+      describe "training requirements" do
+        let(:t2) { create(:training) }
+        let!(:existing) { create(:training_requirement, :"3d_printing", proficient_project: project) }
 
-      it "does not replace training requirements: destroy on the collection proxy is a no-op, so they accumulate" do
-        t2 = create(:training)
-        create(:training_requirement, :"3d_printing", proficient_project: project)
-        patch proficient_project_path(project),
-              params: project_params.merge(training_requirements_id: [t2.id], training_requirements_level: ["Advanced"])
-        # `training_requirements.destroy` (no args) removes nothing, then new ones are appended
-        expect(project.reload.training_requirements.count).to eq(2)
+        def requirement_pairs
+          project.reload.training_requirements.map { |r| [r.training_id, r.level] }
+        end
+
+        it "replaces the set with the submitted one" do
+          patch proficient_project_path(project),
+                params: project_params.merge(training_requirements_id: [t2.id], training_requirements_level: ["Advanced"])
+          expect(requirement_pairs).to eq([[t2.id, "Advanced"]])
+        end
+
+        it "keeps the rows that are resubmitted unchanged and adds the new ones" do
+          patch proficient_project_path(project),
+                params: project_params.merge(
+                  training_requirements_id: [existing.training_id, t2.id],
+                  training_requirements_level: [existing.level, "Advanced"]
+                )
+          expect(project.reload.training_requirements.pluck(:id)).to include(existing.id)
+          expect(requirement_pairs).to contain_exactly([existing.training_id, existing.level], [t2.id, "Advanced"])
+        end
+
+        it "removes every requirement when the form is submitted with none left" do
+          patch proficient_project_path(project), params: project_params.merge(training_requirements_managed: "1")
+          expect(project.reload.training_requirements).to be_empty
+        end
+
+        it "leaves the requirements alone when the request does not carry them" do
+          patch proficient_project_path(project), params: project_params
+          expect(project.reload.training_requirements.pluck(:id)).to eq([existing.id])
+        end
       end
     end
 

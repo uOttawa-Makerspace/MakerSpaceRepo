@@ -55,6 +55,7 @@
 
               <div class="mb-3">
             <h4>Training Requirements</h4>
+              <%= hidden_field_tag 'training_requirements_managed', '1' %>
               <div id="link-container">
                 <% unless @training_requirements.nil? %>
                   <% @training_requirements.each do |tr| %>
