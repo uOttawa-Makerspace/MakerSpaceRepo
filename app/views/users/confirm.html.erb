@@ -1,0 +1,13 @@
+<% provide(:title, 'Confirm your email') %>
+
+<div class="container py-5" style="max-width: 36rem;">
+  <h2 class="mb-3">Confirm your email address</h2>
+  <p>Press the button to confirm your email address and finish setting up your account.</p>
+  <p class="text-muted small">Nothing changes until you press the button.</p>
+
+  <div class="d-flex gap-2">
+    <%= button_to 'Confirm my email', confirm_users_path,
+                  params: { token: params[:token] }, method: :post, class: 'btn btn-primary' %>
+    <%= link_to 'Cancel', root_path, class: 'btn btn-outline-secondary' %>
+  </div>
+</div>

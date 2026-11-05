@@ -192,6 +192,9 @@ class User < ApplicationRecord
             format: { with: /\A[a-zA-ZÀ-ÿ\d]*\z/ },
             length: { maximum: 20 }
 
+  # Only checked when the username is set or changed, so existing users are unaffected.
+  validate :username_not_reserved, if: :will_save_change_to_username?
+
   validates :email,
             presence: true,
             on: :create,
@@ -1092,6 +1095,10 @@ class User < ApplicationRecord
   end
 
   private
+
+  def username_not_reserved
+    errors.add(:username, 'is reserved') if ReservedUsernames.include?(username)
+  end
 
   # ============================================
   # Private Methods
