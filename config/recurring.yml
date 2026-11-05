@@ -54,6 +54,12 @@ shared: &shared
     command: "Program.refresh_volunteer_activity!"
     schedule: every day at 2am
 
+  # Trims the repository zip cache to its size cap and free-space floor and removes partial zips and old
+  # repo_file* temp files (Repository::ZipCache).
+  repository_zip_cache_cleanup:
+    class: RepositoryZipCacheCleanupJob
+    schedule: every hour at minute 22
+
   clear_printer_sessions:
     command: "PrinterSession.clear_in_use!"
     schedule: every day at 2:30am

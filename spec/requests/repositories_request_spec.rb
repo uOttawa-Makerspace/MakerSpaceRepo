@@ -137,7 +137,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
           end
           get download_files_repositories_path("someone-else", secret.id)
           expect(response.headers["Location"].to_s).not_to include(owner.username)
-          expect(response.headers["Location"].to_s).to include("password_entry").or be_blank
+          expect(response.headers["Location"].to_s).to include("password_entry").or include("/login").or be_blank
         end
       end
 

@@ -143,7 +143,8 @@
                         </ul>
                     <% end %>
                 </div>
-                <%= link_to "<i class=\"fa-solid fa-download\"></i> #{t('repository.download')}".html_safe,
+                <% download_label = signed_in? ? t('repository.download') : t('repository.sign_in_to_download') %>
+                <%= link_to "<i class=\"fa-solid fa-download\"></i> #{download_label}".html_safe,
                         download_files_repositories_path(@repository.user_username, @repository.id),
                         rel: "nofollow",
                         class: 'btn btn-primary btn-sm float-end' %>
