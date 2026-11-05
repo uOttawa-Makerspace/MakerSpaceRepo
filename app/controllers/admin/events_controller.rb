@@ -358,25 +358,10 @@ class Admin::EventsController < AdminAreaController
 
       copied_count = 0
 
-      events_to_copy.find_each do |event|
-        days_offset = (event.start_time.to_date - start_date.to_date).to_i
-        event_offset = event.start_time - event.start_time.beginning_of_day
-        new_start = new_start_date + days_offset.days + event_offset
-        new_end = event.end_time.present? ? (new_start + (event.end_time - event.start_time)) : nil
-
-        new_event = event.dup
-        new_event.start_time = new_start
-        new_event.end_time = new_end
-        new_event.draft = true
-        new_event.google_event_id = ""
-        new_event.save!
-
-        copied_count += 1
-
-        event.event_assignments.each do |assignment|
-          new_event.event_assignments.create!(
-            assignment.attributes.except("id", "event_id", "created_at", "updated_at")
-          )
+      Event.transaction do
+        events_to_copy.find_each do |event|
+          copy_event_as_draft(event, start_date, new_start_date)
+          copied_count += 1
         end
       end
 
@@ -412,6 +397,29 @@ class Admin::EventsController < AdminAreaController
       flash[:notice] = "This event occurrence updated successfully."
     else
       flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
+    end
+  end
+
+  # Copies one event (and its assignments) as a draft on the matching day of the target week, at the same wall
+  # clock time in the app's time zone.
+  def copy_event_as_draft(event, start_date, new_start_date)
+    days_offset = (event.start_time.to_date - start_date.to_date).to_i
+    day = new_start_date + days_offset.days
+    new_start = day.change(hour: event.start_time.hour, min: event.start_time.min,
+                           sec: event.start_time.sec, usec: event.start_time.usec)
+    new_end = event.end_time.present? ? (new_start + (event.end_time - event.start_time)) : nil
+
+    new_event = event.dup
+    new_event.start_time = new_start
+    new_event.end_time = new_end
+    new_event.draft = true
+    new_event.google_event_id = ""
+    new_event.save!
+
+    event.event_assignments.each do |assignment|
+      new_event.event_assignments.create!(
+        assignment.attributes.except("id", "event_id", "created_at", "updated_at")
+      )
     end
   end
 
