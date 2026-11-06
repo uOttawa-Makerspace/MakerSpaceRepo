@@ -216,6 +216,24 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       expect(requester_one.reload.booking_approval).to be(true)
     end
 
+    it "asks for the minimum number of characters instead of searching for a shorter text", js: true, skip_bullet: true do
+      open_admin_panel
+      find("#user_booking_select + .ts-wrapper .ts-control input").send_keys("Ri")
+
+      expect(page).to have_css(".ts-dropdown .no-results", text: "Type at least 3 characters to search for a person.")
+      expect(page).to have_no_css(".ts-dropdown .option")
+    end
+
+    it "lists a person whose username, not name, matches the text", js: true, skip_bullet: true do
+      requester_one.update!(username: "quokka42")
+      open_admin_panel
+      tom_select "Rita Requester", from: "user_booking_select", search: "quokka"
+      click_button "Permit Access"
+
+      expect(page).to have_text("Access granted successfully.")
+      expect(requester_one.reload.booking_approval).to be(true)
+    end
+
     it "shows nothing for an empty search", js: true, skip_bullet: true do
       open_admin_panel
       find("#user_booking_select + .ts-wrapper .ts-control input").send_keys("Zzzzz")

@@ -16,6 +16,37 @@ function updateSelectedCount(checkboxClass, displayId) {
   el.textContent = count > 0 ? `${count} selected` : "";
 }
 
+// Options for the admin user picker. The server does the matching (name or username, at least
+// `minLength` characters), so Tom Select trusts the returned order and does not re-filter by name.
+function userPickerOptions(select) {
+  const minLength = Number(select.dataset.minLength);
+  const hint = select.dataset.hint;
+  return {
+    plugins: { remove_button: { title: "Remove" } },
+    valueField: "id",
+    labelField: "name",
+    searchField: ["name"],
+    options: [],
+    score: () => () => 1,
+    shouldLoad: (query) => query.length >= minLength,
+    render: {
+      not_loading: () => {
+        const el = document.createElement("div");
+        el.className = "no-results";
+        el.textContent = hint;
+        return el;
+      },
+    },
+    load(query, callback) {
+      this.clearOptions();
+      fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
+        .then((r) => r.json())
+        .then(callback)
+        .catch(() => callback());
+    },
+  };
+}
+
 // ─── turbo:load — runs every soft navigation ──────────────────────────────────
 
 document.addEventListener("turbo:load", function () {
@@ -133,20 +164,10 @@ document.addEventListener("turbo:load", function () {
   // ── TomSelect for admin "grant access" user search ────────────────────────
   const userSelect = document.getElementById("user_booking_select");
   if (userSelect && !userSelect.tomSelect) {
-    userSelect.tomSelect = new TomSelect(userSelect, {
-      plugins: { remove_button: { title: "Remove" } },
-      valueField: "id",
-      labelField: "name",
-      searchField: ["name"],
-      options: [],
-      load(query, callback) {
-        if (!query.length) return callback();
-        fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
-          .then((r) => r.json())
-          .then(callback)
-          .catch(() => callback());
-      },
-    });
+    userSelect.tomSelect = new TomSelect(
+      userSelect,
+      userPickerOptions(userSelect),
+    );
   }
 
   // ── Edit-page flatpickr ───────────────────────────────────────────────────

@@ -238,7 +238,7 @@
         <div class="card-body p-4 bg-body">
           <%= form_with url: approve_access_sub_space_booking_index_path, method: :put, class: 'mb-4' do |f| %>
             <div class="input-group">
-              <%= f.select :user_id, [], {}, { class: 'form-select', id: 'user_booking_select' } %>
+              <%= f.select :user_id, [], {}, { class: 'form-select', id: 'user_booking_select', data: { min_length: User::DIRECTORY_SEARCH_MIN_LENGTH, hint: t('sub_space_booking.picker.min_length', count: User::DIRECTORY_SEARCH_MIN_LENGTH) } } %>
               <%= f.submit 'Permit Access', class: 'btn btn-primary fw-bold' %>
             </div>
           <% end %>
