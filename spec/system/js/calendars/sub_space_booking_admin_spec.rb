@@ -224,6 +224,17 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       expect(page).to have_no_css(".ts-dropdown .option")
     end
 
+    it "stops listing people once the text is cut back below the minimum", js: true, skip_bullet: true do
+      open_admin_panel
+      input = find("#user_booking_select + .ts-wrapper .ts-control input")
+      input.send_keys("Rit")
+      expect(page).to have_css(".ts-dropdown .option", text: "Rita Requester")
+
+      input.send_keys(:backspace)
+      expect(page).to have_no_css(".ts-dropdown .option")
+      expect(page).to have_css(".ts-dropdown .no-results", text: "Type at least 3 characters")
+    end
+
     it "lists a person whose username, not name, matches the text", js: true, skip_bullet: true do
       requester_one.update!(username: "quokka42")
       open_admin_panel

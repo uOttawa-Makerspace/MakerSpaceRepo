@@ -42,6 +42,32 @@ describe("admin user picker", () => {
     expect(picker.options.score("quokka")({ name: "Rita" })).toBe(1);
   });
 
+  it("lists nothing once the text is cut back below the minimum", () => {
+    expect(picker.options.score("ab")({ name: "Rita" })).toBe(0);
+    expect(picker.options.score("")({ name: "Rita" })).toBe(0);
+  });
+
+  it("offers only the answer to the latest query when answers arrive out of order", async () => {
+    const answers = {};
+    global.fetch = vi.fn(
+      (url) =>
+        new Promise((resolve) => {
+          answers[url.split("=")[1]] = (people) =>
+            resolve({ json: async () => people });
+        }),
+    );
+    const callback = vi.fn();
+    const tomSelect = { clearOptions: vi.fn() };
+    picker.options.load.call(tomSelect, "abc", callback);
+    picker.options.load.call(tomSelect, "abcd", callback);
+    answers.abcd([{ id: 2, name: "Abcd Person" }]);
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
+    answers.abc([{ id: 1, name: "Abc Person" }]);
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(2));
+    expect(callback.mock.calls[0]).toEqual([[{ id: 2, name: "Abcd Person" }]]);
+    expect(callback.mock.calls[1]).toEqual([]);
+  });
+
   it("asks the server for the typed text and passes its answer on", async () => {
     const people = [{ id: 1, name: "Rita" }];
     global.fetch = vi.fn().mockResolvedValue({ json: async () => people });

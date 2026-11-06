@@ -18,16 +18,18 @@ function updateSelectedCount(checkboxClass, displayId) {
 
 // Options for the admin user picker. The server does the matching (name or username, at least
 // `minLength` characters), so Tom Select trusts the returned order and does not re-filter by name.
+// Only the answer to the latest request is listed, and nothing is listed for text under the minimum.
 function userPickerOptions(select) {
   const minLength = Number(select.dataset.minLength);
   const hint = select.dataset.hint;
+  let latestRequest = 0;
   return {
     plugins: { remove_button: { title: "Remove" } },
     valueField: "id",
     labelField: "name",
     searchField: ["name"],
     options: [],
-    score: () => () => 1,
+    score: (query) => (query.length >= minLength ? () => 1 : () => 0),
     shouldLoad: (query) => query.length >= minLength,
     render: {
       not_loading: () => {
@@ -39,9 +41,12 @@ function userPickerOptions(select) {
     },
     load(query, callback) {
       this.clearOptions();
+      const request = ++latestRequest;
       fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
         .then((r) => r.json())
-        .then(callback)
+        .then((people) =>
+          request === latestRequest ? callback(people) : callback(),
+        )
         .catch(() => callback());
     },
   };
