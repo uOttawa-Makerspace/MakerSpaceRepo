@@ -93,6 +93,23 @@ RSpec.describe Event, type: :model do
         .to eq("Laser 101 (#{event.course_name.name} - FR) for Alex One")
     end
 
+    it "leaves out an assignment whose user is gone from a default-titled event" do
+      event = create(:event, space: space, created_by: creator, title: "Meeting")
+      create(:event_assignment, event: event, user: create(:user, :staff, name: "Alex One"))
+      orphan = create(:event_assignment, event: event, user: create(:user, :staff))
+      orphan.update_column(:user_id, nil)
+      expect(event.reload.display_title).to eq("Meeting for Alex One")
+    end
+
+    it "leaves out an assignment whose user is gone from a training title" do
+      event = create(:event, :training, space: space, created_by: creator, title: "Training",
+                                        training: create(:training, name_en: "Laser 101"), language: nil, course_name: nil)
+      create(:event_assignment, event: event, user: create(:user, :staff, name: "Alex One"))
+      orphan = create(:event_assignment, event: event, user: create(:user, :staff))
+      orphan.update_column(:user_id, nil)
+      expect(event.reload.display_title).to eq("Laser 101 for Alex One")
+    end
+
     it "falls back to the word Training when the training is missing" do
       event = create(:event, space: space, created_by: creator, event_type: "training", title: "Training", draft: true)
       create(:event_assignment, event: event, user: create(:user, :staff, name: "Alex One"))
