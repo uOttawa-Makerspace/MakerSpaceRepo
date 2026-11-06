@@ -152,4 +152,115 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
       expect(creds).to have_received(:sub=).with("volunteer@makerepo.com")
     end
   end
+
+  describe "calendars" do
+    let(:shop) { create(:space, name: "Makerspace") }
+    let(:mtc) { create(:space, name: "MTC") }
+    let(:shop_calendar) { "c_g1bk6ctpenjeko2dourrr0h6pc@group.calendar.google.com" }
+    let(:mtc_calendar) { "c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com" }
+    # Google as a set of [calendar, id] pairs. A move into a calendar that already has the id is refused (409).
+    let(:google) { Set.new }
+
+    before do
+      allow(service).to receive(:update_event) do |cal, id, _|
+        raise client_error(404) unless google.include?([cal, id])
+      end
+      allow(service).to receive(:insert_event) do |cal, gcal|
+        raise client_error(409) if google.include?([cal, gcal.id])
+
+        google << [cal, gcal.id]
+      end
+      allow(service).to receive(:move_event) do |from, id, to|
+        raise client_error(404) unless google.include?([from, id])
+        raise client_error(409) if google.include?([to, id])
+
+        google.delete([from, id])
+        google << [to, id]
+      end
+    end
+
+    it "records the calendar after the first insert and leaves it alone on later pushes" do
+      event.update_columns(space_id: shop.id)
+      described_class.perform_now(event.id)
+      expect(event.reload.google_calendar_id).to eq(shop_calendar)
+      expect(google).to eq(Set[[shop_calendar, "abc123"]])
+
+      expect(service).not_to receive(:move_event)
+      described_class.perform_now(event.id)
+    end
+
+    it "treats an empty record as today: updates in the calendar of the space, then records it" do
+      event.update_columns(space_id: shop.id)
+      google << [shop_calendar, "abc123"]
+      expect(service).not_to receive(:insert_event)
+
+      described_class.perform_now(event.id)
+
+      expect(event.reload.google_calendar_id).to eq(shop_calendar)
+    end
+
+    it "moves the copy from the recorded calendar to the one of the space, then updates it" do
+      event.update_columns(space_id: mtc.id, google_calendar_id: shop_calendar)
+      google << [shop_calendar, "abc123"]
+
+      described_class.perform_now(event.id)
+
+      expect(google).to eq(Set[[mtc_calendar, "abc123"]])
+      expect(event.reload.google_calendar_id).to eq(mtc_calendar)
+    end
+
+    it "converges on one copy when the pushes of two successive moves run in either order" do
+      event.update_columns(space_id: shop.id)
+      described_class.perform_now(event.id) # inserted in the shop
+      event.update_columns(space_id: mtc.id) # moved to MTC, then on to the test calendar before any job ran
+      event.update_columns(space_id: space.id)
+
+      2.times { described_class.perform_now(event.id) }
+
+      expect(google).to eq(Set[[calendar_id, "abc123"]])
+      expect(event.reload.google_calendar_id).to eq(calendar_id)
+    end
+
+    it "moves back and forth without leaving a copy behind" do
+      event.update_columns(space_id: shop.id)
+      described_class.perform_now(event.id)
+      event.update_columns(space_id: mtc.id)
+      described_class.perform_now(event.id)
+      event.update_columns(space_id: shop.id)
+      described_class.perform_now(event.id)
+
+      expect(google).to eq(Set[[shop_calendar, "abc123"]])
+    end
+
+    it "inserts when the recorded calendar does not have the event (404 on the move)" do
+      event.update_columns(space_id: mtc.id, google_calendar_id: shop_calendar)
+
+      described_class.perform_now(event.id)
+
+      expect(google).to eq(Set[[mtc_calendar, "abc123"]])
+      expect(event.reload.google_calendar_id).to eq(mtc_calendar)
+    end
+
+    it "reports a move that is refused for good and keeps the recorded calendar, so the next push moves instead of inserting" do
+      event.update_columns(space_id: mtc.id, google_calendar_id: shop_calendar)
+      google << [shop_calendar, "abc123"]
+      refuse = true
+      allow(service).to receive(:move_event) do |from, id, to|
+        raise client_error(403) if refuse
+
+        google.delete([from, id])
+        google << [to, id]
+      end
+      expect(Rails.error).to receive(:report).with(instance_of(Google::Apis::ClientError), anything)
+
+      described_class.perform_now(event.id)
+
+      expect(event.reload.google_calendar_id).to eq(shop_calendar)
+      expect(google).to eq(Set[[shop_calendar, "abc123"]])
+
+      refuse = false
+      described_class.perform_now(event.id)
+      expect(google).to eq(Set[[mtc_calendar, "abc123"]])
+    end
+  end
 end

@@ -57,6 +57,19 @@ RSpec.describe GoogleCalendar::DuplicateEventReport do
       expect(rows.map { |r| [r.calendar_id, r.google_event_id, r.reason] }).to eq([[test_calendar, "mine", :leftover]])
     end
 
+    it "uses the recorded calendar as the one that holds the event" do
+      event.update_columns(space_id: mtc.id, google_calendar_id: test_calendar)
+      create(:event, space: mtc, title: "Other", google_event_id: "other")
+      allow(service).to receive(:list_events).with(test_calendar, anything)
+        .and_return(Google::Apis::CalendarV3::Events.new(items: [item("mine", "Open Lab", start_time)]))
+      allow(service).to receive(:list_events).with(mtc_calendar, anything)
+        .and_return(Google::Apis::CalendarV3::Events.new(items: [item("mine", "Open Lab", start_time)]))
+
+      rows = described_class.new(service).rows
+
+      expect(rows.map { |r| [r.calendar_id, r.google_event_id, r.reason] }).to eq([[mtc_calendar, "mine", :leftover]])
+    end
+
     it "labels a same-title copy as a copy" do
       stub_listing(item("orphan", "Open Lab", start_time))
       expect(described_class.new(service).rows.map(&:reason)).to eq([:copy])

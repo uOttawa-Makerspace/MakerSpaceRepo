@@ -37,35 +37,28 @@ class Event < ApplicationRecord
 
   # Queues the push of this event to Google Calendar, to be called once the change is committed. Drafts are never
   # pushed. The Google event id is chosen here, before the first push, so that a retried push cannot create a
-  # second copy.
-  #
-  # When the event was moved to another space, pass the space it came from: if that is a different calendar the
-  # Google event is moved there (keeping its id) before it is pushed.
-  def push_to_google_later(previous_space: nil)
+  # second copy. The job moves the Google copy first if the event now belongs to another calendar.
+  def push_to_google_later
     return if draft
 
     assign_google_event_id
-    if moved_calendar?(previous_space)
-      GoogleCalendar::EventMoveJob.perform_later(id, GoogleCalendar::EventPublisher.calendar_id_for(previous_space))
-    else
-      GoogleCalendar::EventPushJob.perform_later(id)
-    end
+    GoogleCalendar::EventPushJob.perform_later(id)
   end
 
-  # Queues the removal of a destroyed event's copy in Google Calendar. Takes what was read from the event before
-  # it was destroyed.
-  def self.remove_from_google_later(google_event_id, space)
+  # The Google calendar that holds this event's Google copy: the recorded one, else the calendar of its space.
+  def google_calendar
+    google_calendar_id.presence || GoogleCalendar::EventPublisher.calendar_id_for(space)
+  end
+
+  # Queues the removal of a destroyed event's copy in Google Calendar. Takes what was read from the event
+  # (google_event_id and google_calendar) before it was destroyed.
+  def self.remove_from_google_later(google_event_id, calendar_id)
     return if google_event_id.blank?
 
-    GoogleCalendar::EventDeleteJob.perform_later(google_event_id, GoogleCalendar::EventPublisher.calendar_id_for(space))
+    GoogleCalendar::EventDeleteJob.perform_later(google_event_id, calendar_id)
   end
 
   private
-
-  def moved_calendar?(previous_space)
-    previous_space.present? &&
-      GoogleCalendar::EventPublisher.calendar_id_for(previous_space) != GoogleCalendar::EventPublisher.calendar_id_for(space)
-  end
 
   def assign_google_event_id
     return if google_event_id.present?

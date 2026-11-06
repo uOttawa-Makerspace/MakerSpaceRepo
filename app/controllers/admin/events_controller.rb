@@ -64,7 +64,6 @@ class Admin::EventsController < AdminAreaController
 
     case update_scope
     when "non-recurring"
-      previous_space = @event.space
       if @event.update(
         title: title,
         description: event_params[:description],
@@ -92,7 +91,7 @@ class Admin::EventsController < AdminAreaController
           @event.event_assignments << @event_assignments
         end
 
-        @event.push_to_google_later(previous_space: previous_space)
+        @event.push_to_google_later
 
         flash[:notice] = "Event updated successfully."
       else
@@ -434,8 +433,8 @@ class Admin::EventsController < AdminAreaController
   # Destroys the event, then queues the removal of its Google copy (read before the row is gone).
   def destroy_event(event)
     google_event_id = event.google_event_id
-    space = event.space
-    Event.remove_from_google_later(google_event_id, space) if event.destroy
+    calendar_id = event.google_calendar
+    Event.remove_from_google_later(google_event_id, calendar_id) if event.destroy
   end
 
   def build_occurrence_event(title)

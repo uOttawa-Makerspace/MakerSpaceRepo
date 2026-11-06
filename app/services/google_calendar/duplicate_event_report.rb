@@ -50,7 +50,7 @@ module GoogleCalendar
 
     def events_by_calendar
       @events_by_calendar ||= Event.includes(:space).group_by do |event|
-        EventPublisher.calendar_id_for(event.space)
+        event.google_calendar
       end
     end
 

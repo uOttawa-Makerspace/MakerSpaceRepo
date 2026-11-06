@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_04_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -293,6 +293,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_160000) do
     t.string "title"
     t.bigint "training_id"
     t.datetime "updated_at", null: false
+    t.string "google_calendar_id"
     t.index ["course_name_id"], name: "index_events_on_course_name_id"
     t.index ["created_by_id"], name: "index_events_on_created_by_id"
     t.index ["space_id", "draft"], name: "idx_events_on_space_and_draft"

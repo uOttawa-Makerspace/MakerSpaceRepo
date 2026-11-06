@@ -131,22 +131,6 @@ RSpec.describe Event, type: :model do
         expect(event.reload.google_event_id).to be_present
       end
 
-      it "queues a move from the previous calendar when the space changed to another calendar" do
-        old = create(:space, name: "MTC")
-        event = create(:event, space: space, created_by: creator, google_event_id: "abc123")
-        event.push_to_google_later(previous_space: old)
-        expect(GoogleCalendar::EventMoveJob).to have_been_enqueued
-          .with(event.id, "c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com")
-        expect(GoogleCalendar::EventPushJob).not_to have_been_enqueued
-      end
-
-      it "queues a plain push when the previous space has the same calendar" do
-        event = create(:event, space: space, created_by: creator)
-        event.push_to_google_later(previous_space: create(:space))
-        expect(GoogleCalendar::EventMoveJob).not_to have_been_enqueued
-        expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id)
-      end
-
       it "queues nothing for a draft" do
         event = create(:event, :draft, space: space, created_by: creator, google_event_id: nil)
         event.push_to_google_later
@@ -155,16 +139,25 @@ RSpec.describe Event, type: :model do
       end
     end
 
+    describe "#google_calendar" do
+      it "is the recorded calendar when there is one, else the calendar of the space" do
+        event = build_event
+        expect(event.google_calendar).to eq("c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com")
+        event.google_calendar_id = "recorded@group.calendar.google.com"
+        expect(event.google_calendar).to eq("recorded@group.calendar.google.com")
+      end
+    end
+
     describe ".remove_from_google_later" do
-      it "queues the removal with the Google id and the space's calendar id" do
-        described_class.remove_from_google_later("abc123", space)
+      it "queues the removal with the Google id and the calendar id" do
+        described_class.remove_from_google_later("abc123", "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com")
         expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued
           .with("abc123", "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com")
       end
 
       it "queues nothing without a Google id" do
-        described_class.remove_from_google_later(nil, space)
-        described_class.remove_from_google_later("", space)
+        described_class.remove_from_google_later(nil, "cal")
+        described_class.remove_from_google_later("", "cal")
         expect(GoogleCalendar::EventDeleteJob).not_to have_been_enqueued
       end
 

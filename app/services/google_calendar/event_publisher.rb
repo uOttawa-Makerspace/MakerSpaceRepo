@@ -38,8 +38,12 @@ module GoogleCalendar
       Google::Apis::CalendarV3::CalendarService.new.tap { |service| service.authorization = authorizer }
     end
 
+    # Brings the Google copy in line with the event: moves it first if it sits in another calendar than the
+    # event's space now calls for (the stored calendar is where it really is), then updates it, or inserts it when
+    # Google does not have it. The calendar that holds it is recorded.
     def push(event)
       calendar_id = self.class.calendar_id_for(event.space)
+      move_to(event, calendar_id)
       gcal_event = EventPayload.new(event).build
       gcal_event.id = event.google_event_id
       begin
@@ -49,15 +53,7 @@ module GoogleCalendar
 
         insert(calendar_id, gcal_event)
       end
-    end
-
-    # Moves the Google event out of the calendar the event was in, so it keeps its id and leaves nothing behind,
-    # then pushes its current state. An event that is not in the old calendar (never pushed, or already moved by
-    # an earlier run) is just pushed.
-    def move_and_push(event, from_calendar_id)
-      to_calendar_id = self.class.calendar_id_for(event.space)
-      move(from_calendar_id, to_calendar_id, event.google_event_id) unless from_calendar_id == to_calendar_id
-      push(event)
+      record_calendar(event, calendar_id)
     end
 
     # A Google event that is already gone counts as removed.
@@ -69,10 +65,23 @@ module GoogleCalendar
 
     private
 
-    def move(from_calendar_id, to_calendar_id, google_event_id)
-      service.move_event(from_calendar_id, google_event_id, to_calendar_id)
+    # Moving keeps the Google id and leaves no deleted copy behind. A 404 means the event is not in the stored
+    # calendar, so the update or insert that follows decides. Any other failure keeps the stored calendar as it
+    # is, so the next push tries the move again instead of inserting a second copy.
+    def move_to(event, calendar_id)
+      from_calendar_id = event.google_calendar_id
+      return if from_calendar_id.blank? || from_calendar_id == calendar_id
+
+      service.move_event(from_calendar_id, event.google_event_id, calendar_id)
+      record_calendar(event, calendar_id)
     rescue Google::Apis::ClientError => e
       raise unless e.status_code == NOT_FOUND
+    end
+
+    # Bookkeeping written by the jobs only, never by a callback: update_column keeps it from validating the event,
+    # touching updated_at or running callbacks.
+    def record_calendar(event, calendar_id)
+      event.update_column(:google_calendar_id, calendar_id) unless event.google_calendar_id == calendar_id
     end
 
     # The id is not in Google yet. A 409 means another push inserted it first, so update it once.

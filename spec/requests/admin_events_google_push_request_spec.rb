@@ -87,28 +87,14 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
       expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id)
     end
 
-    it "queues one move from the old calendar when the event moves to another space with a different calendar" do
+    it "queues one push when the event moves to another space (the job moves the Google copy)" do
       mtc = create(:space, name: "MTC")
-      event = create(:event, space: space, google_event_id: "g1")
+      event = create(:event, space: space, google_event_id: "g1", google_calendar_id: calendar_id)
       patch admin_event_path(event), params: { event: event_attrs(space_id: mtc.id) }
       expect(event.reload.space_id).to eq(mtc.id)
-      expect(GoogleCalendar::EventMoveJob).to have_been_enqueued.with(event.id, calendar_id).exactly(:once)
-      expect(push_jobs + delete_jobs).to be_empty
-    end
-
-    it "queues a plain push when the space is unchanged" do
-      event = create(:event, space: space, google_event_id: "g1")
-      patch admin_event_path(event), params: { event: event_attrs }
-      expect(GoogleCalendar::EventMoveJob).not_to have_been_enqueued
       expect(push_jobs.size).to eq(1)
-    end
-
-    it "queues a plain push when the new space uses the same calendar" do
-      event = create(:event, space: space, google_event_id: "g1")
-      patch admin_event_path(event), params: { event: event_attrs(space_id: create(:space).id) }
-      expect(GoogleCalendar::EventMoveJob).not_to have_been_enqueued
+      expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id)
       expect(delete_jobs).to be_empty
-      expect(push_jobs.size).to eq(1)
     end
 
     it "queues nothing when the update is invalid" do
@@ -160,6 +146,13 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
     let(:series) do
       create(:event, space: space, recurrence_rule: series_rule, google_event_id: "g1",
                      start_time: Time.utc(2025, 5, 5, 15), end_time: Time.utc(2025, 5, 5, 16))
+    end
+
+    it "removes the copy from the calendar that really holds it when a move is still pending" do
+      mtc = create(:space, name: "MTC")
+      event = create(:event, space: mtc, google_event_id: "g1", google_calendar_id: calendar_id)
+      delete delete_with_scope_admin_event_path(event)
+      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id).exactly(:once)
     end
 
     it "queues the removal of a destroyed event's Google copy with the ids captured before the destroy" do
