@@ -48,7 +48,7 @@ Instructions for anyone, human or AI agent, changing this repository. MakerRepo 
 
 ## Documentation
 
-- `doc/flows/` describes each user-facing and background flow. Any change to behaviour, a route, a job, a schedule, a mail or a data path updates the matching page in the same change. A new flow gets a new page, linked from `doc/flows/README.md`.
+- The maintainers keep private flow notes, one page per user-facing and background flow, in `doc/flows/`. That folder is git-ignored and never committed. When it exists in your checkout, any change to behaviour, a route, a job, a schedule, a mail or a data path updates the matching page in the same change, and a new flow gets a new page linked from its README. Never commit these pages or quote them in commits, code comments or pull requests.
 - `doc/maintenance.md` covers operations (scheduled tasks, backfills, deploy steps). Update it when you change how something is run in production.
 - Write docs from the code as it is, in plain neutral English. No personal data in docs, specs or fixtures.
 
