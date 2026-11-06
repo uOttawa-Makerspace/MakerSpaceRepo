@@ -51,6 +51,11 @@ RSpec.describe Setting, type: :model do
       expect(Setting.get("run")).to eq("2026-12")
     end
 
+    it "is true again for the same value when forced" do
+      Setting.claim("run", "2026-11")
+      expect(Setting.claim("run", "2026-11", force: true)).to be(true)
+    end
+
     it "keeps one row per key" do
       2.times { Setting.claim("run", "2026-11") }
       expect(Setting.where(key: "run").count).to eq(1)

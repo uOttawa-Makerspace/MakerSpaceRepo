@@ -10,7 +10,7 @@ namespace :increment_year do
     # a run that fails rolls the claim back so it can be run again.
     today = Date.today
     Setting.transaction do
-      next unless Setting.claim("increment_year_last_run", today.strftime("%Y-%m"))
+      next unless Setting.claim("increment_year_last_run", today.strftime("%Y-%m"), force: ENV["FORCE"] == "1")
 
       User
         .active
@@ -28,31 +28,37 @@ namespace :increment_year do
     end
   end
 
-  desc "fix year for students"
+  desc "fix year for students (once per month; FORCE=1 repeats it)"
   task fix: :environment do
-    User.active.students.not_created_this_year.find_each do |u|
-      this_year = Date.today.year
-      this_month = Date.today.month
-      year_of_study = u.year_of_study.to_i
-      year_difference = this_year - u.created_at.year
-      if year_of_study.between?(1, 7)
-        # If the month of creation has passed it will be the year of study + year_difference
-        if u.created_at.month < this_month
-          u.update(year_of_study: year_of_study + year_difference)
+    this_year = Date.today.year
+    this_month = Date.today.month
+    # The repair is relative to the current month, so the month is claimed in the same transaction as the changes:
+    # a repeat in the same month changes nothing (FORCE=1 repeats it on purpose), and a failed run releases the claim.
+    Setting.transaction do
+      next unless Setting.claim("increment_year_fix_run", format("%04d-%02d", this_year, this_month), force: ENV["FORCE"] == "1")
+
+      User.active.students.not_created_this_year.find_each do |u|
+        year_of_study = u.year_of_study.to_i
+        year_difference = this_year - u.created_at.year
+        if year_of_study.between?(1, 7)
+          # If the month of creation has passed it will be the year of study + year_difference
+          if u.created_at.month < this_month
+            u.update(year_of_study: year_of_study + year_difference)
+          else
+            # Otherwise, it will be the year of study + year_difference - 1 to compensate for the fact that
+            # it will get updated once again with the monthly rake
+            u.update(year_of_study: year_of_study + year_difference - 1)
+          end
+        elsif year_of_study.between?(8, 15)
+          u.update(year_of_study: "Alumni")
         else
-          # Otherwise, it will be the year of study + year_difference - 1 to compensate for the fact that
-          # it will get updated once again with the monthly rake
-          u.update(year_of_study: year_of_study + year_difference - 1)
-        end
-      elsif year_of_study.between?(8, 15)
-        u.update(year_of_study: "Alumni")
-      else
-        # If the month of creation has passed it will be the year_difference + 1
-        if u.created_at.month < this_month
-          u.update(year_of_study: 1 + year_difference)
-        else
-          # Otherwise, it will be the year_difference
-          u.update(year_of_study: year_difference)
+          # If the month of creation has passed it will be the year_difference + 1
+          if u.created_at.month < this_month
+            u.update(year_of_study: 1 + year_difference)
+          else
+            # Otherwise, it will be the year_difference
+            u.update(year_of_study: year_difference)
+          end
         end
       end
     end
