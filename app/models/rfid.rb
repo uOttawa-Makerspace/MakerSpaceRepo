@@ -116,7 +116,7 @@ class Rfid < ApplicationRecord
   private_class_method :release_card!
 
   def self.lock_card_number(card_number)
-    connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(#{connection.quote("rfid:#{card_number}")}, 0))")
+    connection.select_value("SELECT 1 FROM pg_advisory_xact_lock(hashtextextended($1, 0))", "Rfid card lock", ["rfid:#{card_number}"])
   end
   private_class_method :lock_card_number
 
