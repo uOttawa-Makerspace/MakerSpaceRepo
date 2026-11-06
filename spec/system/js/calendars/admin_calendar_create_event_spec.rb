@@ -48,6 +48,16 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     expect(page).to have_button("+ Add Event", disabled: false)
   end
 
+  it "tells the admin and keeps Add Event disabled when the staff availability cannot be loaded", js: true, js_errors: :allow, skip_bullet: true do
+    allow_any_instance_of(Admin::CalendarController).to receive(:utc_unavailabilities_json) { |controller| controller.head :internal_server_error }
+    log_in_as(admin)
+    visit admin_calendar_index_path
+
+    expect(page).to have_css("#staff_load_error[role='alert']", text: "staff availability could not be loaded")
+    expect(page).to have_button("+ Add Event", disabled: true)
+    expect(page).to have_no_css("#eventModal[data-ready]", visible: :all)
+  end
+
   it "opens the add modal with a draft save button, one-hour default times and no type chosen", js: true, skip_bullet: true do
     open_admin_calendar
     open_add_modal

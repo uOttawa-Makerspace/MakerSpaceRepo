@@ -7,6 +7,10 @@ import {
   toLocalDatetimeString,
 } from "./calendar_helper";
 
+function showStaffLoadError() {
+  document.getElementById("staff_load_error").classList.remove("d-none");
+}
+
 document.addEventListener("turbo:load", async () => {
   const container = document.querySelector("#content");
 
@@ -36,7 +40,13 @@ document.addEventListener("turbo:load", async () => {
   const fetchedStaffUnavailabilitiesRes = await fetch(
     "/admin/calendar/utc_unavailabilities_json/" +
       document.getElementById("space_id").value,
-  ).catch((error) => console.log(error));
+  ).catch((error) => console.error(error));
+  // Without the staff data the modal must not be used: tell the admin and
+  // leave "Add Event" disabled.
+  if (!fetchedStaffUnavailabilitiesRes?.ok) {
+    showStaffLoadError();
+    return;
+  }
   const fetchedStaffUnavailabilities =
     await fetchedStaffUnavailabilitiesRes.json();
 

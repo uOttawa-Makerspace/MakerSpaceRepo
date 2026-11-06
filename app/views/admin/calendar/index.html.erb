@@ -20,6 +20,7 @@
             <button type="button" id="addEventButton" class="btn btn-outline-primary my-2 w-100" disabled data-bs-toggle="modal" data-bs-target="#eventModal">
                 + Add Event
             </button>
+            <div id="staff_load_error" class="alert alert-danger d-none" role="alert"><%= t("admin.calendar_staff_load_error") %></div>
             <p class="fw-bold mt-1">Events / Unavailabilities</p>
             <div id="staff_checkbox_container"></div>
             <p class="fw-bold" style="display: none;">Events</p>
