@@ -18,7 +18,12 @@ unless ENV["COVERAGE"].to_s.empty?
     # the merged HTML report is produced once by bin/coverage_collate
     SimpleCov.formatter Class.new { def format(_result) = nil }
   end
-  SimpleCov.start
+  SimpleCov.start "rails" do
+    enable_coverage :branch
+    primary_coverage :line
+    # count only app/ and lib/ (the rails profile already drops spec, config, db)
+    add_filter { |src| !src.filename.start_with?("#{SimpleCov.root}/app/", "#{SimpleCov.root}/lib/") }
+  end
 end
 
 ENV["RAILS_ENV"] = "test"
