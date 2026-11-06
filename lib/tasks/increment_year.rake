@@ -5,21 +5,27 @@
 namespace :increment_year do
   desc "increment year to students"
   task increment_one_year: :environment do
-    # Get students, created this month and are not alumni and not created this year
-    this_month = Date.today.month
-    User
-      .active
-      .students
-      .not_created_this_year
-      .created_at_month(this_month)
-      .where.not(year_of_study: "Alumni")
-      .find_each do |u|
-        if u.year_of_study.to_i.between?(1, 7)
-          u.update(year_of_study: u.year_of_study.next)
-        else
-          u.update(year_of_study: "Alumni")
+    # Get students, created this month and are not alumni and not created this year. The month is claimed in the
+    # same transaction as the increments: a repeat run in the same month finds it claimed and changes nothing, and
+    # a run that fails rolls the claim back so it can be run again.
+    today = Date.today
+    Setting.transaction do
+      next unless Setting.claim("increment_year_last_run", today.strftime("%Y-%m"))
+
+      User
+        .active
+        .students
+        .not_created_this_year
+        .created_at_month(today.month)
+        .where.not(year_of_study: "Alumni")
+        .find_each do |u|
+          if u.year_of_study.to_i.between?(1, 7)
+            u.update(year_of_study: u.year_of_study.next)
+          else
+            u.update(year_of_study: "Alumni")
+          end
         end
-      end
+    end
   end
 
   desc "fix year for students"

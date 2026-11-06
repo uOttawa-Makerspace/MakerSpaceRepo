@@ -11,6 +11,14 @@ class Setting < ApplicationRecord
     setting
   end
 
+  # Moves +key+ to +value+ for exactly one caller: true for the one that changed it, false when the setting
+  # already holds +value+. The conditional update takes the row lock, so a second caller waits for the first
+  # one's transaction and then finds the value already set.
+  def self.claim(key, value)
+    insert({ key: key }, unique_by: :key)
+    where(key: key).where("value IS DISTINCT FROM ?", value).update_all(value: value, updated_at: Time.current).positive?
+  end
+
   def self.maintenance_email
     get("maintenance_notification_email")
   end
