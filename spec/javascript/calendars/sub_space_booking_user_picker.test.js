@@ -38,13 +38,36 @@ describe("admin user picker", () => {
     expect(el.textContent).toBe("Type at least 3 characters.");
   });
 
-  it("trusts the order and matches the server returns", () => {
+  it("lists whatever the server matched, whatever the name", () => {
     expect(picker.options.score("quokka")({ name: "Rita" })).toBe(1);
   });
 
-  it("lists nothing once the text is cut back below the minimum", () => {
-    expect(picker.options.score("ab")({ name: "Rita" })).toBe(0);
-    expect(picker.options.score("")({ name: "Rita" })).toBe(0);
+  it("empties the list, and ignores a pending answer, once the text is under the minimum", async () => {
+    let answer;
+    global.fetch = vi.fn(() => new Promise((resolve) => (answer = resolve)));
+    const callback = vi.fn();
+    const tomSelect = { clearOptions: vi.fn() };
+    picker.options.load.call(tomSelect, "abc", callback);
+    tomSelect.clearOptions.mockClear();
+
+    picker.options.onType.call(tomSelect, "abcd");
+    expect(tomSelect.clearOptions).not.toHaveBeenCalled();
+    picker.options.onType.call(tomSelect, "");
+    expect(tomSelect.clearOptions).toHaveBeenCalledTimes(1);
+
+    answer({ json: async () => [{ id: 1, name: "Abc Person" }] });
+    await vi.waitFor(() => expect(callback).toHaveBeenCalled());
+    expect(callback).toHaveBeenCalledWith();
+  });
+
+  it("calls back exactly once even when the callback throws", async () => {
+    global.fetch = vi.fn().mockResolvedValue({ json: async () => [] });
+    const callback = vi.fn(() => {
+      throw new Error("boom");
+    });
+    picker.options.load.call({ clearOptions: vi.fn() }, "abc", callback);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(callback).toHaveBeenCalledTimes(1);
   });
 
   it("offers only the answer to the latest query when answers arrive out of order", async () => {

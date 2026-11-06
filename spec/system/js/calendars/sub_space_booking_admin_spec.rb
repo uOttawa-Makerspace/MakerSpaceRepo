@@ -233,6 +233,9 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       input.send_keys(:backspace)
       expect(page).to have_no_css(".ts-dropdown .option")
       expect(page).to have_css(".ts-dropdown .no-results", text: "Type at least 3 characters")
+
+      input.send_keys(:backspace, :backspace)
+      expect(page).to have_no_css(".ts-dropdown .option")
     end
 
     it "lists a person whose username, not name, matches the text", js: true, skip_bullet: true do
