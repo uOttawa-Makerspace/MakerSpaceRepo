@@ -81,14 +81,15 @@ class LockerRental < ApplicationRecord
 
   # Two simultaneous assignments of one locker can both pass the uniqueness validation; the partial unique index
   # lets only one through. The other is refused with the validation's own message instead of an error page.
-  # The savepoint keeps an enclosing transaction usable after the refused insert.
+  # The savepoint keeps an enclosing transaction usable after the refused insert. It fails like any validation:
+  # `save` returns false, `save!` raises RecordInvalid.
   def create_or_update(...)
     self.class.transaction(requires_new: true) { super }
   rescue ActiveRecord::RecordNotUnique => e
     raise unless e.message.include?(RESERVED_LOCKER_INDEX)
 
     errors.add(:locker, :taken)
-    false
+    raise ActiveRecord::RecordInvalid, self
   end
 
   # Active rentals require an owned_until date unless explicitly marked as indefinite.
