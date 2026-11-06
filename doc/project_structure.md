@@ -16,7 +16,7 @@
   - **Note**: `/db/schema.rb` should only be modified from migrations and should not be directly modified
 
 - `/config/routes.rb`: contains all the HTTP routes within our app
-- `/config/schedule.rb`: contains CRON jobs that are run at specific intervals
+- `/config/recurring.yml`: the scheduled tasks, run by Solid Queue in the `worker` container
 - `/config/locales`: contains the english and french translation files used in certain parts of the app
 
 - `/spec`: contains tests & factories that are used in our github workflow

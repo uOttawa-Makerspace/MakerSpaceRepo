@@ -11,7 +11,6 @@ require 'capistrano/scm/git'
 require 'capistrano/rbenv' # include rbenv before puma
 require 'capistrano/rails'
 require 'capistrano/puma'
-require 'whenever/capistrano'
 require 'capistrano/maintenance'
 
 install_plugin Capistrano::SCM::Git
