@@ -55,7 +55,7 @@ RSpec.describe GoogleCalendar::WebhookRegistrar do
     end
 
     it "adds a row on every call and never prunes older channels (the weekly cron calls register!, nothing schedules the renew job)" do
-      # config/schedule.rb runs register! every Sunday and RenewGoogleCalendarWebhooksJob is not referenced by the schedule, so expired/duplicate channel rows accumulate and every one stays "valid" for the webhook
+      # config/recurring.yml runs register! every Sunday and RenewGoogleCalendarWebhooksJob is not referenced by the schedule, so expired/duplicate channel rows accumulate and every one stays "valid" for the webhook
       stub_watch(id: "week-1")
       described_class.register!
       stub_watch(id: "week-2")

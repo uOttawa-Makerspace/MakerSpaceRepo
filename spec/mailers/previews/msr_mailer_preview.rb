@@ -75,10 +75,6 @@ class MsrMailerPreview < ActionMailer::Preview
     )
   end
 
-  def send_print_reminder
-    MsrMailer.send_print_reminder("user@example.com", 123)
-  end
-
   def send_print_declined
     MsrMailer.send_print_declined(
       User.new(name: "Test Name", email: "test@makerepo.com"),
