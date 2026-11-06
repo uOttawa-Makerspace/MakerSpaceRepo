@@ -103,7 +103,11 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
       native = find("##{id}", visible: :all)
       wrapper = native.find(:xpath, "following-sibling::div[contains(@class,'ts-wrapper')][1]")
       wrapper.find(".ts-control").click
-      wrapper.find(".ts-control input").send_keys(search) if search
+      if search
+        wrapper.find(".ts-control input").send_keys(search)
+        # the list is re-rendered (and the option moves) once the typing is filtered; click after that
+        expect(wrapper).to have_no_css(".ts-dropdown .option", text: /\A(?!.*#{Regexp.escape(search)})/im)
+      end
       wrapper.find(".ts-dropdown .option", text: text).click
       page.execute_script("arguments[0].tomselect.close()", native)
     end
