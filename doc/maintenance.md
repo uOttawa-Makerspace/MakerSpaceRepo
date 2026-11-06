@@ -46,26 +46,65 @@ Here are some things to keep in mind:
 
 ## Scheduled tasks
 
-Solid Queue now runs the recurring tasks. They are listed in `config/recurring.yml`, and they need a running Solid Queue worker. Production still has a hand-maintained crontab, so each task that moved would run twice (once from the crontab, once from Solid Queue) unless its crontab line is removed in the same deploy.
+Scheduled tasks run in the `worker` container (`bundle exec rake solid_queue:start`), from `config/recurring.yml`, in the application time zone (Eastern). Nothing is scheduled with cron any more. The file has a block shared by production and staging, plus a block for each: the monthly CDEL report is production only, and the Google Calendar catch-up sync is staging only. If the `worker` container is not running, nothing is scheduled. Starting it again resumes the schedule; runs missed while it was down are not made up. Solid Queue records each tick once, so restarting the worker during a deploy does not run a task twice.
 
-In the deploy that ships the recurring tasks, remove these lines from the crontab:
+Check that tasks ran, in a Rails console (`docker compose -f docker-compose.production.yml exec web bin/rails console`):
 
-- `popular_hours` (the popular hours calculation)
-- `active_volunteers` (both entries)
-- `printers:clear_printers`
-- `lockers:notify_expired_rentals`, if it is there
-- the Google Calendar webhook registration
-- `reports:send_cdel_report_to_sharepoint`
-- the retired `print_order_notifications` reminder
+```ruby
+SolidQueue::RecurringTask.pluck(:key, :schedule)             # what is loaded
+SolidQueue::RecurringExecution.order(run_at: :desc).limit(20).pluck(:task_key, :run_at)  # recent ticks
+SolidQueue::FailedExecution.order(created_at: :desc).limit(5).pluck(:error)               # failures
+```
 
-On staging, also remove the `GoogleCalendarSyncJob` line.
+The same data is in the `solid_queue_recurring_executions` and `solid_queue_failed_executions` tables, and the worker's logs (`docker compose -f docker-compose.production.yml logs worker`) show each job. Finished jobs are cleared out regularly, so check the recurring executions or the data a task writes (for example `PopularHour.maximum(:updated_at)`).
 
-One line stays: `increment_year`. It is not a Solid Queue task and keeps running from the crontab.
+### Deploy step: remove the moved tasks from the host crontab
+
+The host crontab still has `docker compose exec` lines for these tasks. They have not taken effect since 2026-08-31, most likely because `-T` is missing (without it `docker compose exec` fails under cron, which has no terminal). Check first with `crontab -l` and the cron mail or log. Then, in the same deploy, remove the lines for the moved tasks (`crontab -e`) rather than fixing them: after this ships they run in the `worker` container, and a crontab line that starts working would run the task a second time (the CDEL report mailed twice, the popular hours counted twice).
+
+Tasks that moved: popular hours, active volunteers, clear printers, the CDEL report, the Google Calendar webhook registration, and the locker expiry notices if a line for them exists. The print order reminder is removed (task and mailer method), so delete its line too. Keep only the `increment_year:increment_one_year` line; it is not scheduled in `recurring.yml`, and it needs `docker compose exec -T` to run from cron.
 
 The locker notices migration must run before the first 8:30am run of the locker expiry notices (`locker_expiry_notices`). It marks the rentals that expired long ago as already notified, so renters are not mailed about old expiries. Running the migrations as part of the deploy covers this.
 
 Post-deploy step for this release (Google Calendar webhook): run `bin/rails runner 'GoogleCalendar::WebhookRegistrar.register!'` once, right after the deploy. Channels registered before this release have no token, and the webhook refuses their pushes (401) until they are re-registered; there is no grace period for them. The same applies whenever `secret_key_base` is rotated: every channel's token is derived from it, so every channel is refused until it is re-registered with the same command.
 
+### Backfilling the CDEL report
+
+The report mailed on the 1st covers the month just ended. To mail a month again, or one that was missed, give the month as `YYYY-MM` (not later than the current month). Each run sends one mail:
+
+```
+docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-08]"
+docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-09]"
+docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-10]"
+```
+
+From a console, `CdelReportJob.perform_later(month: "2026-08")` does the same.
+
+### Backfilling the popular hours
+
+While the hourly task did not run, the popular hours stopped changing. To catch up, run once, with the start and end in the application time zone (the end is optional and never later than the last full hour before now):
+
+```
+docker compose -f docker-compose.production.yml exec web bin/rails "popular_hours:backfill[2026-08-30T21:00]"
+```
+
+For each hour in the range it takes the sample the hourly task would have taken at minute 50, counting only the sessions present at that moment, and folds it into the running means the same way. Before changing anything it writes the current rows to `tmp/popular_hours_snapshot_<time>.json` and prints the path, then prints the hours sampled, the rows changed and the hours skipped. Hours the hourly task has already recorded are skipped. The range is recorded, and a range overlapping one already backfilled is refused.
+
+The backfill and the hourly task take the same database lock, so an hourly run that starts while the backfill is running waits for it (a few minutes for two months) and then records its hour as usual; nothing is counted twice. Start it just after minute 50 to avoid the wait.
+
+The snapshot lives in the `web` container's `tmp/`, which is replaced on the next deploy, so copy it out straight away:
+
+```
+docker compose -f docker-compose.production.yml cp web:/rails/tmp/popular_hours_snapshot_<time>.json .
+```
+
+To undo the backfill, put the rows back exactly (this also clears the recorded range). Copy the snapshot back in first if the container has been replaced (`docker compose … cp ./popular_hours_snapshot_<time>.json web:/rails/tmp/`):
+
+```
+docker compose -f docker-compose.production.yml exec web bin/rails "popular_hours:restore_backfill[tmp/popular_hours_snapshot_<time>.json]"
+```
+
+Restoring returns the rows to how they were at the snapshot, so it also drops any samples the hourly task folded in since.
 
 ## Repository zip cache
 

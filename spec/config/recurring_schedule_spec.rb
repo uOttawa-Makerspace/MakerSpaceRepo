@@ -36,6 +36,12 @@ RSpec.describe "config/recurring.yml" do
     expect(config["production"]).not_to have_key("google_calendar_sync")
   end
 
+  it "keeps the maintenance jobs that were already scheduled" do
+    %w[production staging].each do |env|
+      expect(config.fetch(env).keys).to include("clear_solid_queue_finished_jobs", "tap_box_log_cleanup")
+    end
+  end
+
   it "names an existing job class for every class entry" do
     config.slice("production", "staging").each_value do |tasks|
       tasks.each_value { |entry| entry["class"]&.constantize }
@@ -48,10 +54,12 @@ RSpec.describe "config/recurring.yml" do
   end
 
   it "only names commands that resolve to a class method" do
-    config.fetch("production").each_value do |entry|
-      next unless entry["command"] =~ /\A([A-Z]\w*(?:::\w+)*)\.(\w+[!?]?)/
+    config.slice("production", "staging").each_value do |tasks|
+      tasks.each_value do |entry|
+        next unless entry["command"] =~ /\A([A-Z]\w*(?:::\w+)*)\.(\w+[!?]?)/
 
-      expect(Object.const_get($1)).to respond_to($2)
+        expect(Object.const_get($1)).to respond_to($2)
+      end
     end
   end
 
