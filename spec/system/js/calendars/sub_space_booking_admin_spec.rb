@@ -238,6 +238,57 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       expect(page).to have_no_css(".ts-dropdown .option")
     end
 
+    # Replaces the lookup request in the page: every call is recorded and held until the spec answers it.
+    def hold_user_lookups
+      page.execute_script(<<~JS)
+        window.heldLookups = [];
+        window.fetch = (url) => new Promise((resolve) => window.heldLookups.push({ url, resolve }));
+      JS
+    end
+
+    def held_lookups
+      page.evaluate_script("window.heldLookups.length")
+    end
+
+    def answer_lookup(index, status, people)
+      page.execute_script(<<~JS, index, status, people)
+        const [i, status, people] = arguments;
+        window.heldLookups[i].resolve(new Response(JSON.stringify(people), { status }));
+      JS
+    end
+
+    it "lists nothing from a failed lookup and looks the same text up again when it is typed again", js: true, skip_bullet: true do
+      open_admin_panel
+      hold_user_lookups
+      input = find("#user_booking_select + .ts-wrapper .ts-control input")
+      input.send_keys("Rit")
+      wait_until("lookup not sent") { held_lookups == 1 }
+      answer_lookup(0, 500, [{ id: requester_one.id, name: "Rita Requester" }])
+      expect(page).to have_no_css(".ts-dropdown .option")
+
+      input.send_keys(:backspace)
+      input.send_keys("t")
+      wait_until("lookup not sent again") { held_lookups == 2 }
+      answer_lookup(1, 200, [{ id: requester_one.id, name: "Rita Requester" }])
+      expect(page).to have_css(".ts-dropdown .option", text: "Rita Requester")
+    end
+
+    it "drops a late answer to earlier text and lists only the answer for the text in the box", js: true, skip_bullet: true do
+      open_admin_panel
+      hold_user_lookups
+      input = find("#user_booking_select + .ts-wrapper .ts-control input")
+      input.send_keys("Rit")
+      wait_until("first lookup not sent") { held_lookups == 1 }
+      input.send_keys("a")
+      wait_until("second lookup not sent") { held_lookups == 2 }
+
+      answer_lookup(0, 200, [{ id: requester_two.id, name: "Rex Requester" }])
+      expect(page).to have_no_css(".ts-dropdown .option", text: "Rex Requester")
+      answer_lookup(1, 200, [{ id: requester_one.id, name: "Rita Requester" }])
+      expect(page).to have_css(".ts-dropdown .option", text: "Rita Requester")
+      expect(page).to have_no_css(".ts-dropdown .option", text: "Rex Requester")
+    end
+
     it "lists a person whose username, not name, matches the text", js: true, skip_bullet: true do
       requester_one.update!(username: "quokka42")
       open_admin_panel
