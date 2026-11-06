@@ -38,7 +38,11 @@ class Event < ApplicationRecord
   # Queues the push of this event to Google Calendar, to be called once the change is committed. Drafts are never
   # pushed. The Google event id is chosen here, before the first push, so that a retried push cannot create a
   # second copy.
-  def push_to_google_later
+  #
+  # When the event was moved to another space, pass the space it came from: its copy in the old calendar is then
+  # removed too.
+  def push_to_google_later(previous_space: nil)
+    remove_from_previous_calendar(previous_space)
     return if draft
 
     assign_google_event_id
@@ -54,6 +58,14 @@ class Event < ApplicationRecord
   end
 
   private
+
+  def remove_from_previous_calendar(previous_space)
+    return if previous_space.nil?
+    return if GoogleCalendar::EventPublisher.calendar_id_for(previous_space) ==
+              GoogleCalendar::EventPublisher.calendar_id_for(space)
+
+    Event.remove_from_google_later(google_event_id, previous_space)
+  end
 
   def assign_google_event_id
     return if google_event_id.present?
