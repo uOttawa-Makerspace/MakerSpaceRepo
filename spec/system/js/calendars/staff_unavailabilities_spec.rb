@@ -324,7 +324,10 @@ RSpec.describe "Staff unavailabilities page", type: :system do
 
       eventually { series.reload.recurrence_rule.include?("EXDATE") }
       expect(series.reload.recurrence_rule).to include("EXDATE:20270317T140000Z")
-      expect(page).to have_css(".fc-timegrid-event", text: "Class", count: 2, visible: :all)
+      # The form submit reloads the page; the Wednesday occurrence is gone and Monday remains.
+      expect(page).to have_css(".fc-timegrid-event", text: "Class", count: 1, visible: :all)
+      expect(page).to have_css(".fc-day-mon .fc-timegrid-event", text: "Class", visible: :all)
+      expect(page).to have_no_css(".fc-day-wed .fc-timegrid-event", text: "Class", visible: :all)
     end
 
     it "ends the series with 'This and following events'", js: true, browser_zone: "America/Toronto", skip_bullet: true do
