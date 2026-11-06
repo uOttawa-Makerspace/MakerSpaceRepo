@@ -253,5 +253,86 @@ RSpec.describe Space, type: :model do
         expect { space.weekly_open_hours }.to raise_error(TypeError)
       end
     end
+
+    # parse_ics_calendar never returns the hash shape below (it gives the RRULE as a String), so these
+    # examples hand the method the hash form it was written for.
+    describe "#weekly_open_hours with an RRULE hash (feed parsing stubbed)" do
+      let(:space) { create(:space) }
+
+      before do
+        travel_to(Time.zone.local(2027, 3, 16, 12)) # Tuesday, week of Sat 03-13 .. Fri 03-19
+        StaffNeededCalendar.create!(space: space, calendar_url: "https://cal.test/open.ics", role: "open_hours")
+      end
+
+      after { travel_back }
+
+      def feed(*events)
+        allow(space).to receive(:parse_ics_calendar).and_return([{ id: "x", color: "#000", events: events }])
+      end
+
+      def times(rows)
+        rows.map { |r| [r.title, r.dtstart.iso8601, r.dtend.iso8601] }
+      end
+
+      it "is empty when the parser returns nothing" do
+        allow(space).to receive(:parse_ics_calendar).and_return([])
+        expect(space.weekly_open_hours).to eq([])
+      end
+
+      it "skips events without a start" do
+        feed({ title: "No start", start: nil, end: "2027-03-16T10:00:00" })
+        expect(space.weekly_open_hours).to eq([])
+      end
+
+      it "ends an event at its end, else after its duration in ms, else one hour later" do
+        feed({ title: "End", start: "2027-03-15T09:00:00", end: "2027-03-15T10:30:00" },
+             { title: "Duration", start: "2027-03-16T09:00:00", duration: 7_200_000 },
+             { title: "Plain", start: "2027-03-17T09:00:00" })
+        expect(times(space.weekly_open_hours)).to eq(
+          [["End", "2027-03-15T09:00:00-04:00", "2027-03-15T10:30:00-04:00"],
+           ["Duration", "2027-03-16T09:00:00-04:00", "2027-03-16T11:00:00-04:00"],
+           ["Plain", "2027-03-17T09:00:00-04:00", "2027-03-17T10:00:00-04:00"]]
+        )
+      end
+
+      it "expands a weekly rule on its weekdays, leaving out exceptions, and keeps the week's occurrences only" do
+        feed({ title: "Weekly", start: "2027-03-01T09:00:00", end: "2027-03-01T11:00:00",
+               rrule: { freq: "weekly", byweekday: %w[mo we xx] }, exdate: ["2027-03-17T09:00:00", "not a date"] })
+        expect(times(space.weekly_open_hours)).to eq([["Weekly", "2027-03-15T09:00:00-04:00", "2027-03-15T11:00:00-04:00"]])
+      end
+
+      it "expands daily, monthly and yearly rules, stopping at an until date or a count" do
+        feed({ title: "Daily", start: "2027-03-01T09:00:00", end: "2027-03-01T10:00:00",
+               rrule: { freq: "DAILY", until: "2027-03-14T23:00:00" } },
+             { title: "Counted", start: "2027-03-13T09:00:00", end: "2027-03-13T10:00:00",
+               rrule: { freq: "DAILY", count: 2 } },
+             { title: "Monthly", start: "2027-02-17T09:00:00", end: "2027-02-17T10:00:00", rrule: { freq: "MONTHLY" } },
+             { title: "Yearly", start: "2026-03-18T09:00:00", end: "2026-03-18T10:00:00", rrule: { freq: "YEARLY" } })
+        expect(times(space.weekly_open_hours).map(&:first).tally).to eq("Daily" => 2, "Counted" => 2, "Monthly" => 1, "Yearly" => 1)
+        daily = space.weekly_open_hours.select { |r| r.title == "Daily" }
+        expect(daily.map { |r| r.dtstart.to_date.to_s }).to eq(["2027-03-13", "2027-03-14"])
+      end
+
+      it "skips a rule with an unknown or missing frequency" do
+        feed({ title: "Hourly", start: "2027-03-16T09:00:00", end: "2027-03-16T10:00:00", rrule: { freq: "HOURLY" } },
+             { title: "None", start: "2027-03-16T09:00:00", end: "2027-03-16T10:00:00", rrule: { byweekday: ["mo"] } })
+        expect(space.weekly_open_hours).to eq([])
+      end
+
+      it "ignores a weekday list without a known day" do
+        feed({ title: "Odd", start: "2027-03-16T09:00:00", end: "2027-03-16T10:00:00",
+               rrule: { freq: "WEEKLY", byweekday: ["xx"] } })
+        expect(space.weekly_open_hours.map(&:title)).to eq(["Odd"])
+      end
+
+      it "falls back to the event length when an occurrence has no end time" do
+        occurrence = double("occurrence", start_time: Time.zone.local(2027, 3, 16, 9))
+        allow(occurrence).to receive(:end_time).and_raise(StandardError)
+        schedule = instance_double(IceCube::Schedule, add_recurrence_rule: nil, occurrences_between: [occurrence])
+        allow(IceCube::Schedule).to receive(:new).and_return(schedule)
+        feed({ title: "Odd", start: "2027-03-16T09:00:00", end: "2027-03-16T10:15:00", rrule: { freq: "DAILY" } })
+        expect(times(space.weekly_open_hours)).to eq([["Odd", "2027-03-16T09:00:00-04:00", "2027-03-16T10:15:00-04:00"]])
+      end
+    end
   end
 end

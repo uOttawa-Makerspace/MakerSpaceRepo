@@ -427,4 +427,36 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(flash[:notice]).to eq("Color updated successfully")
     end
   end
+
+  describe "a blank space id" do
+    before { log_in!(admin) }
+
+    # the route needs a segment, but a space-only segment is present and blank
+    {
+      "unavailabilities_json" => "/admin/calendar/unavailabilities_json/%20",
+      "utc_unavailabilities_json" => "/admin/calendar/utc_unavailabilities_json/%20",
+      "imported_calendars_json" => "/admin/calendar/imported_calendars_json/%20"
+    }.each do |name, path|
+      it "answers 400 with an error for #{name}" do
+        get path
+        expect(response).to have_http_status(:bad_request)
+        expect(response.parsed_body).to eq("error" => "Space ID is required")
+      end
+    end
+  end
+
+  describe "update_color when the colour cannot be saved" do
+    it "alerts and keeps the stored colour" do
+      log_in!(admin)
+      admin.update_column(:space_id, space.id)
+      row = StaffSpace.create!(user: admin, space: space, color: "#3788d8")
+      stored = row.reload.color
+      allow_any_instance_of(StaffSpace).to receive(:update).and_return(false) # the model has no validation that refuses a colour
+      post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "#ff0000" }
+      expect(response.status).to eq(204)
+      expect(flash[:alert]).to eq("An error occurred, try again later.")
+      expect(flash[:notice]).to be_nil
+      expect(row.reload.color).to eq(stored)
+    end
+  end
 end
