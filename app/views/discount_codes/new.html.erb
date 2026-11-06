@@ -1,7 +1,7 @@
 <br>
 <div class="text-center">
-  <h2><b>Redeem your CC points!</b></h2>
-  <h5>Get discounts and buy in our <%= link_to 'makerstore', 'http://makerstore.ca/', target: :blank, class: 'text-primary' %></h5>
+  <h2><b><%= t('discount_codes.new.title') %></b></h2>
+  <h5><%= t('discount_codes.new.subtitle_html', store_link: link_to('MakerStore', 'http://makerstore.ca/', target: :blank, class: 'text-primary')) %></h5>
 </div>
 
 <div class="container my-5">
@@ -11,20 +11,20 @@
       <% @price_rules.each do |price_rule| %>
         <div class="card" style="width:18rem; border: 5px dotted #bbb; margin-right: 5px; margin-bottom: 5px;">
           <div class="card-body">
-            <h5 class="card-title"><%= link_to "$#{price_rule[0]} off our MakerStore", 'https://makerstore.ca' %>
+            <h5 class="card-title"><%= link_to t('discount_codes.new.coupon_title', amount: price_rule[0]), 'https://makerstore.ca' %></h5>
 <!--            <p class="card-text">Monetary value : $<%#= price_rule.value %></p>-->
 <!--            <p class="card-text">Coupon Price : <%#= price_rule.cc %> CCs</p>-->
-            <p class="card-text">Coupon Price : <%= price_rule[1] %> CCs</p>
+            <p class="card-text"><%= t('discount_codes.new.coupon_price', cost: price_rule[1]) %></p>
             <%#= link_to 'Redeem', discount_codes_path(price_rule_id: price_rule.id), method: :post, class: 'btn btn-info d-block w-100', data: { confirm: "Are you sure you want to buy the coupon for #{price_rule.cc} CCs ? You can't undo this action." } %>
-            <%= button_to 'Redeem', discount_codes_path(dollar_cost: price_rule[0], cc_cost: price_rule[1]), method: :post, class: 'btn btn-info d-block w-100', data: { confirm: "Are you sure you want to buy the coupon for #{price_rule[1]} CCs ? You can't undo this action." } %>
+            <%= button_to t('discount_codes.new.redeem'), discount_codes_path(dollar_cost: price_rule[0], cc_cost: price_rule[1]), method: :post, class: 'btn btn-info d-block w-100', data: { confirm: t('discount_codes.new.confirm', cost: price_rule[1]) } %>
           </div>
         </div>
       <% end %>
     </div>
   <% else %>
     <div class="text-center">
-      <p>Sorry. At this moment we don't have any coupons to offer.</p>
-      <p>Please come back another day or contact us at uottawa.makerepo@gmail.com</p>
+      <p><%= t('discount_codes.new.empty.title') %></p>
+      <p><%= t('discount_codes.new.empty.body_html', email_link: mail_to('uottawa.makerepo@gmail.com')) %></p>
     </div>
   <% end %>
 </div>
