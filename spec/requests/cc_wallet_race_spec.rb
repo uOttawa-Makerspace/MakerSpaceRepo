@@ -154,7 +154,7 @@ RSpec.describe "CC wallet races", type: :request do
       User.transaction do
         User.where(id: user.id).lock(User::GUARD_LOCK_MODE).take
         locked << true
-        release.pop # held until the checkout has given up
+        release.pop(timeout: ThreadPause::PARKED_TIMEOUT) # held until the checkout has given up
       end
     end
     begin

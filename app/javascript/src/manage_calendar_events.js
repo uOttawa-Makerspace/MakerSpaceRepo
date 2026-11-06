@@ -12,6 +12,9 @@ function showStaffLoadError() {
 }
 
 document.addEventListener("turbo:load", async () => {
+  // A Turbo-cached page may still show the alert from an earlier failed load.
+  document.getElementById("staff_load_error").classList.add("d-none");
+
   const container = document.querySelector("#content");
 
   // Recurrence rule

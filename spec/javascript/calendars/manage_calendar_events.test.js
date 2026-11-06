@@ -130,6 +130,19 @@ describe("when the staff data cannot be loaded", () => {
   });
 });
 
+describe("a successful load after a failed one", () => {
+  it("hides the error again and enables the add button", async () => {
+    await load(staffFeed, { ok: false });
+    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
+
+    await load();
+
+    expect($("staff_load_error").classList.contains("d-none")).toBe(true);
+    expect($("addEventButton").disabled).toBe(false);
+    expect($("eventModal").dataset.ready).toBe("true");
+  });
+});
+
 describe("staff options", () => {
   it("lists available staff first, then the unavailable ones, each by name", async () => {
     await load();

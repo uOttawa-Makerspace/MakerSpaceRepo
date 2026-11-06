@@ -30,15 +30,14 @@ RSpec.describe JobOrder, "transition! lock wait", type: :model do
         JobOrder.transaction do
           JobOrder.lock.find(order.id)
           locked << true
-          release.pop # held until the transition has given up
+          release.pop(timeout: ThreadPause::PARKED_TIMEOUT) # held until the transition has given up
         end
       end
     rescue StandardError => e
       e
     end
-    ThreadPause.await(locked)
-
     begin
+      ThreadPause.await(locked)
       result = JobOrder.find(order.id).transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
       # :busy came from the lock timeout, while the holder still had the lock
       holder_alive = holder.alive?
