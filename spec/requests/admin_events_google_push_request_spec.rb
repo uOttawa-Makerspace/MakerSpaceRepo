@@ -92,7 +92,7 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
       event = create(:event, space: space, google_event_id: "g1")
       patch admin_event_path(event), params: { event: event_attrs(space_id: mtc.id) }
       expect(event.reload.space_id).to eq(mtc.id)
-      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id).exactly(:once)
+      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id, event.id).exactly(:once)
       expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id).exactly(:once)
     end
 

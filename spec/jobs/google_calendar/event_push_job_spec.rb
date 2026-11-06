@@ -47,6 +47,13 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
     expect(sent.last.id).to eq("abc123")
   end
 
+  it "inserts with the same id when Google answers 410 for an id removed earlier" do
+    allow(service).to receive(:update_event).and_raise(client_error(410))
+    expect(service).to receive(:insert_event).with(calendar_id, having_attributes(id: "abc123"))
+
+    described_class.perform_now(event.id)
+  end
+
   it "updates once more when the insert finds the id already there (409)" do
     calls = 0
     allow(service).to receive(:update_event) { calls += 1; raise client_error(404) if calls == 1 }

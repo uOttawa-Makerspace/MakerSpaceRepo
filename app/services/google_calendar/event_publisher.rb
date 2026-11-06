@@ -5,9 +5,9 @@ module GoogleCalendar
   # callback.
   #
   # The Google event id is chosen by us (Event#push_to_google_later stores it before the first push). A push
-  # updates that id; when Google answers 404 the event is not there yet, so it is inserted with that same id, and a
-  # 409 on the insert (another push got there first) is answered with one more update. Retrying a push therefore
-  # never creates a second copy.
+  # updates that id. When Google answers 404 (not there yet) or 410 (removed earlier) the event is inserted with
+  # that same id, and a 409 on the insert (another push got there first) is answered with one more update.
+  # Retrying a push therefore never creates a second copy.
   class EventPublisher
     CALENDARS = {
       "MTC" => "c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com",
@@ -15,7 +15,6 @@ module GoogleCalendar
     }.freeze
     TEST_CALENDAR = "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
     CONFLICT = 409
-    NOT_FOUND = 404
     GONE = [404, 410].freeze
 
     def self.calendar_id_for(space)
@@ -45,7 +44,7 @@ module GoogleCalendar
       begin
         service.update_event(calendar_id, event.google_event_id, gcal_event)
       rescue Google::Apis::ClientError => e
-        raise unless e.status_code == NOT_FOUND
+        raise unless GONE.include?(e.status_code)
 
         insert(calendar_id, gcal_event)
       end

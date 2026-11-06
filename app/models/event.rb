@@ -51,10 +51,12 @@ class Event < ApplicationRecord
 
   # Queues the removal of a destroyed event's copy in Google Calendar. Takes what was read from the event before
   # it was destroyed.
-  def self.remove_from_google_later(google_event_id, space)
+  # Pass +event_id+ when the event still exists, so the removal is skipped if it has come back to that calendar.
+  def self.remove_from_google_later(google_event_id, space, event_id: nil)
     return if google_event_id.blank?
 
-    GoogleCalendar::EventDeleteJob.perform_later(google_event_id, GoogleCalendar::EventPublisher.calendar_id_for(space))
+    calendar_id = GoogleCalendar::EventPublisher.calendar_id_for(space)
+    GoogleCalendar::EventDeleteJob.perform_later(*[google_event_id, calendar_id, event_id].compact)
   end
 
   private
@@ -64,7 +66,7 @@ class Event < ApplicationRecord
     return if GoogleCalendar::EventPublisher.calendar_id_for(previous_space) ==
               GoogleCalendar::EventPublisher.calendar_id_for(space)
 
-    Event.remove_from_google_later(google_event_id, previous_space)
+    Event.remove_from_google_later(google_event_id, previous_space, event_id: id)
   end
 
   def assign_google_event_id

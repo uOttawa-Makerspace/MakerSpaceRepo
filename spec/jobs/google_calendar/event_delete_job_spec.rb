@@ -39,4 +39,32 @@ RSpec.describe GoogleCalendar::EventDeleteJob, type: :job do
     allow(GoogleCalendar::EventPublisher).to receive(:authorizer).and_raise(Signet::RemoteServerError, "down")
     expect { described_class.perform_now("abc123", calendar_id) }.to have_enqueued_job(described_class).with("abc123", calendar_id)
   end
+
+  describe "when the event still exists" do
+    let(:test_calendar) { "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com" }
+    let(:other_calendar) { "c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com" }
+
+    it "removes the old calendar's copy of an event that now belongs to another calendar" do
+      event = create(:event, space: create(:space, name: "MTC"), google_event_id: "abc123")
+      expect(service).to receive(:delete_event).with(test_calendar, "abc123")
+      described_class.perform_now("abc123", test_calendar, event.id)
+    end
+
+    it "keeps the copy when the event has moved back to that calendar under the same id" do
+      event = create(:event, space: create(:space), google_event_id: "abc123")
+      expect(service).not_to receive(:delete_event)
+      described_class.perform_now("abc123", test_calendar, event.id)
+    end
+
+    it "removes the copy when the event now has another Google id in that calendar" do
+      event = create(:event, space: create(:space), google_event_id: "other")
+      expect(service).to receive(:delete_event).with(test_calendar, "abc123")
+      described_class.perform_now("abc123", test_calendar, event.id)
+    end
+
+    it "removes the copy when the event is gone" do
+      expect(service).to receive(:delete_event).with(test_calendar, "abc123")
+      described_class.perform_now("abc123", test_calendar, 0)
+    end
+  end
 end
