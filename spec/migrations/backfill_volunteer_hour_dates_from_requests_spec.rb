@@ -120,4 +120,44 @@ RSpec.describe BackfillVolunteerHourDatesFromRequests do
     expect(kept.reload.date_of_task).to eq(Time.zone.parse("2020-01-15 00:00"))
     expect(connection.table_exists?("volunteer_hour_date_backfills")).to be(false)
   end
+
+  it "records the date written to each hour it fills" do
+    request_at(base - 3.days)
+    filled = hour_at(base)
+    migrate
+    recorded = connection.select_rows("SELECT b.volunteer_hour_id, b.filled_value = h.date_of_task FROM volunteer_hour_date_backfills b JOIN volunteer_hours h ON h.id = b.volunteer_hour_id")
+    expect(recorded).to eq([[filled.id, true]])
+    expect(filled.reload.date_of_task).to eq(base - 3.days)
+  end
+
+  it "down leaves an hour whose date was edited since, refuses, and keeps the table" do
+    request_at(base - 3.days)
+    untouched = hour_at(base)
+    edited = hour_at(base)
+    migrate
+    edited.update_columns(date_of_task: base + 1.day)
+
+    expect { ApplicationRecord.transaction(requires_new: true) { migrate(:down) } }.to raise_error(/blanked 1 of 2.*nothing was changed/m)
+
+    expect(edited.reload.date_of_task).to eq(base + 1.day)
+    expect(untouched.reload.date_of_task).to eq(base - 3.days)
+    expect(connection.select_value("SELECT COUNT(*) FROM volunteer_hour_date_backfills").to_i).to eq(2)
+  end
+
+  it "down refuses when a recorded hour is gone" do
+    request_at(base - 3.days)
+    hour = hour_at(base)
+    migrate
+    connection.execute("DELETE FROM volunteer_hours WHERE id = #{hour.id}")
+    expect { ApplicationRecord.transaction(requires_new: true) { migrate(:down) } }.to raise_error(/blanked 0 of 1/)
+  end
+
+  it "down refuses, changing nothing, when the table of written dates is missing" do
+    request_at(base - 3.days)
+    hour = hour_at(base)
+    migrate
+    connection.drop_table(:volunteer_hour_date_backfills)
+    expect { migrate(:down) }.to raise_error(/volunteer_hour_date_backfills is missing: .* nothing was changed/)
+    expect(hour.reload.date_of_task).to eq(base - 3.days)
+  end
 end

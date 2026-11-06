@@ -120,8 +120,56 @@ RSpec.describe "job order history repairs" do
       expect { run(described_class) }.not_to(change { JobTaskQuote.pluck(:id, :service_quantity, :service_price, :updated_at) })
     end
 
-    it "is irreversible" do
-      expect { described_class.new.down }.to raise_error(ActiveRecord::IrreversibleMigration)
+    describe "the archive of replaced values" do
+      let(:connection) { ActiveRecord::Base.connection }
+      let(:archive) { connection.select_rows("SELECT job_task_quote_id, old_service_price, old_service_quantity, new_service_price, new_service_quantity FROM job_task_quote_repairs ORDER BY 1") }
+
+      def rollback = ActiveRecord::Migration.suppress_messages { described_class.new.down }
+
+      def quote_rows = connection.select_values("SELECT q::text FROM job_task_quotes q ORDER BY id")
+
+      let!(:changed) { legacy_order(services: [service_a], quote_services: [[service_a, 0.53, 60.5]]).last }
+      let!(:unchanged) { legacy_order(services: [service_b], quote_services: [[service_b, 2, 3]]).last }
+
+      it "holds the old and new price and quantity of every quote it changes, and only those" do
+        run(described_class)
+        expect(archive).to eq([[changed.id, 0.53.to_d, 60.to_d, 0.53.to_d, 60.5.to_d]])
+      end
+
+      it "archives nothing more when run again" do
+        run(described_class)
+        expect { run(described_class) }.not_to(change { archive })
+      end
+
+      it "puts the old values back exactly on rollback and drops the archive" do
+        before_rows = quote_rows
+        run(described_class)
+        expect(quote_rows).not_to eq(before_rows)
+        rollback
+        expect(quote_rows).to eq(before_rows)
+        expect(connection.table_exists?("job_task_quote_repairs")).to be(false)
+      end
+
+      it "leaves a quote edited since, refuses the rollback and keeps the archive" do
+        run(described_class)
+        changed.update_columns(service_quantity: 99)
+        expect { ApplicationRecord.transaction(requires_new: true) { rollback } }.to raise_error(/put back 0 of 1.*nothing was changed/m)
+        expect(changed.reload.service_quantity).to eq(99)
+        expect(archive.size).to eq(1)
+      end
+
+      it "refuses the rollback when the archive table is missing" do
+        run(described_class)
+        connection.drop_table(:job_task_quote_repairs)
+        expect { rollback }.to raise_error(/job_task_quote_repairs is missing: .* nothing was changed/)
+      end
+
+      it "refuses the rollback when an archived quote is gone" do
+        run(described_class)
+        connection.execute("DELETE FROM job_task_quotes WHERE id = #{changed.id}")
+        expect { ApplicationRecord.transaction(requires_new: true) { rollback } }.to raise_error(/put back 0 of 1/)
+        expect(archive.size).to eq(1)
+      end
     end
   end
 

@@ -282,6 +282,7 @@ namespace :users do
     connection = ActiveRecord::Base.connection
     LearningModuleTrackMerge.merge!(
       connection,
+      source: 'users:merge_duplicates',
       group: %w[learning_module_id],
       where: ActiveRecord::Base.sanitize_sql_array(['user_id IN (?)', [primary.id, duplicate.id]]),
       keeper_order: ActiveRecord::Base.sanitize_sql_array(['(user_id = ?) DESC, created_at, id', primary.id])

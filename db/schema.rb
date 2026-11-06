@@ -550,6 +550,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_160000) do
     t.index ["job_task_quote_id"], name: "index_job_task_quote_options_on_job_task_quote_id"
   end
 
+  create_table "job_task_quote_repairs", primary_key: "job_task_quote_id", force: :cascade do |t|
+    t.datetime "archived_at", default: -> { "now()" }, null: false
+    t.decimal "new_service_price", precision: 10, scale: 2
+    t.decimal "new_service_quantity", precision: 10, scale: 4
+    t.decimal "old_service_price", precision: 10, scale: 2
+    t.decimal "old_service_quantity", precision: 10, scale: 4
+    t.jsonb "row_data", null: false
+  end
+
   create_table "job_task_quotes", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "job_task_id", null: false
@@ -688,6 +697,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_160000) do
     t.index ["user_id", "learning_module_id"], name: "index_learning_module_tracks_on_user_and_learning_module", unique: true
   end
 
+  create_table "learning_module_tracks_merged", force: :cascade do |t|
+    t.datetime "archived_at", default: -> { "now()" }, null: false
+    t.jsonb "keeper_after", null: false
+    t.jsonb "keeper_before", null: false
+    t.bigint "keeper_id", null: false
+    t.bigint "merged_id", null: false
+    t.jsonb "row_data", null: false
+    t.text "source", null: false
+    t.index ["merged_id"], name: "index_learning_module_tracks_merged_on_merged_id", unique: true
+  end
+
   create_table "learning_modules", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -818,6 +838,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_160000) do
     t.bigint "user_id", null: false
     t.index ["membership_tier_id"], name: "index_memberships_on_membership_tier_id"
     t.index ["user_id"], name: "index_memberships_on_user_id"
+  end
+
+  create_table "nullified_references", force: :cascade do |t|
+    t.datetime "archived_at", default: -> { "now()" }, null: false
+    t.text "column_name", null: false
+    t.text "migration_version", null: false
+    t.bigint "new_value"
+    t.bigint "old_value"
+    t.jsonb "row_data", null: false
+    t.bigint "row_id"
+    t.text "table_name", null: false
   end
 
   create_table "opening_hours", force: :cascade do |t|
@@ -1632,6 +1663,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_160000) do
 
   create_table "volunteer_hour_date_backfills", primary_key: "volunteer_hour_id", id: :integer, default: nil, force: :cascade do |t|
     t.datetime "filled_at", precision: nil, default: -> { "now()" }, null: false
+    t.datetime "filled_value", precision: nil
   end
 
   create_table "volunteer_hours", id: :serial, force: :cascade do |t|
