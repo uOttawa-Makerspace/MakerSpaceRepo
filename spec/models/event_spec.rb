@@ -150,14 +150,14 @@ RSpec.describe Event, type: :model do
 
     describe ".remove_from_google_later" do
       it "queues the removal with the Google id and the calendar id" do
-        described_class.remove_from_google_later("abc123", "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com")
+        described_class.remove_from_google_later("abc123", "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com", 7)
         expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued
-          .with("abc123", "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com")
+          .with("abc123", "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com", 7)
       end
 
       it "queues nothing without a Google id" do
-        described_class.remove_from_google_later(nil, "cal")
-        described_class.remove_from_google_later("", "cal")
+        described_class.remove_from_google_later(nil, "cal", 7)
+        described_class.remove_from_google_later("", "cal", 7)
         expect(GoogleCalendar::EventDeleteJob).not_to have_been_enqueued
       end
 

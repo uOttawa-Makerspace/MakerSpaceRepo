@@ -152,20 +152,20 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
       mtc = create(:space, name: "MTC")
       event = create(:event, space: mtc, google_event_id: "g1", google_calendar_id: calendar_id)
       delete delete_with_scope_admin_event_path(event)
-      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id).exactly(:once)
+      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id, event.id).exactly(:once)
     end
 
     it "queues the removal of a destroyed event's Google copy with the ids captured before the destroy" do
       event = create(:event, space: space, google_event_id: "g1")
       expect { delete delete_with_scope_admin_event_path(event) }.to change(Event, :count).by(-1)
-      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id).exactly(:once)
+      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id, event.id).exactly(:once)
       expect(push_jobs).to be_empty
     end
 
     it "queues the removal of a destroyed draft that has a Google id" do
       draft = create(:event, :draft, space: space, google_event_id: "g2")
       delete delete_with_scope_admin_event_path(draft)
-      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g2", calendar_id)
+      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g2", calendar_id, draft.id)
     end
 
     it "queues no removal for an event never pushed" do
@@ -176,7 +176,7 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
 
     it "removes the whole series for scope all" do
       delete delete_with_scope_admin_event_path(series), params: { scope: "all" }
-      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id).exactly(:once)
+      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id, series.id).exactly(:once)
     end
 
     %w[single following].each do |scope|
@@ -226,7 +226,7 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
         delete delete_drafts_admin_events_path, params: { space_id: space.id, view_start_date: "2027-03-31", view_end_date: "2027-04-02" }
         expect(Event.exists?(with_id.id)).to be(false)
         expect(delete_jobs.size).to eq(1)
-        expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g3", calendar_id)
+        expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g3", calendar_id, with_id.id)
       end
     end
   end

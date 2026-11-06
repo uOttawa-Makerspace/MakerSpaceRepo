@@ -11,6 +11,12 @@ module GoogleCalendar
   class EventJob < ApplicationJob
     queue_as :default
 
+    # One job at a time per event, whichever kind (push or delete): concurrent runs would act on a stale idea of
+    # where the Google copy is. The key is the event id, which is the last argument of both jobs. A retry is queued
+    # after the failed run has finished, so it simply waits its turn; the duration only frees the slot if a worker
+    # dies mid-run.
+    limits_concurrency to: 1, key: ->(*args) { args.last }, group: "GoogleCalendarEvent", duration: 5.minutes
+
     TRANSIENT_ERRORS = [
       Google::Apis::ServerError, Google::Apis::RateLimitError, Google::Apis::TransmissionError,
       Timeout::Error, Net::OpenTimeout, Net::ReadTimeout,

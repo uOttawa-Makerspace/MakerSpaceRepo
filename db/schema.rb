@@ -285,6 +285,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.boolean "draft", default: true
     t.datetime "end_time"
     t.string "event_type"
+    t.string "google_calendar_id"
     t.string "google_event_id"
     t.string "language"
     t.string "recurrence_rule"
@@ -293,7 +294,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.string "title"
     t.bigint "training_id"
     t.datetime "updated_at", null: false
-    t.string "google_calendar_id"
     t.index ["course_name_id"], name: "index_events_on_course_name_id"
     t.index ["created_by_id"], name: "index_events_on_created_by_id"
     t.index ["space_id", "draft"], name: "idx_events_on_space_and_draft"

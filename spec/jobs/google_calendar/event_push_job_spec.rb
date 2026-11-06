@@ -263,4 +263,33 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
       expect(google).to eq(Set[[mtc_calendar, "abc123"]])
     end
   end
+
+  describe "one job at a time per event" do
+    def key_of(job_class, *args) = job_class.new(*args).concurrency_key
+
+    it "gives the push and the delete of one event the same concurrency key, and other events another" do
+      push = key_of(described_class, 5)
+      expect(key_of(GoogleCalendar::EventDeleteJob, "g1", "cal", 5)).to eq(push)
+      expect(key_of(GoogleCalendar::EventPushJob, 6)).not_to eq(push)
+      expect(key_of(GoogleCalendar::EventDeleteJob, "g1", "cal", 6)).not_to eq(push)
+    end
+
+    it "allows one at a time and frees a slot held by a dead worker" do
+      expect(described_class.concurrency_limit).to eq(1)
+      expect(described_class.concurrency_duration).to eq(5.minutes)
+      expect(GoogleCalendar::EventDeleteJob.concurrency_limit).to eq(1)
+    end
+
+    it "uses the latest state each run, whatever happened between the runs" do
+      allow(service).to receive(:move_event)
+      allow(service).to receive(:update_event)
+      event.update_columns(space_id: create(:space, name: "Makerspace").id)
+      described_class.perform_now(event.id)
+      event.update_columns(space_id: create(:space, name: "MTC").id, google_calendar_id: "stale")
+
+      described_class.perform_now(event.id)
+
+      expect(event.reload.google_calendar_id).to eq("c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com")
+    end
+  end
 end

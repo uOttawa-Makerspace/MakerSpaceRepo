@@ -51,11 +51,11 @@ class Event < ApplicationRecord
   end
 
   # Queues the removal of a destroyed event's copy in Google Calendar. Takes what was read from the event
-  # (google_event_id and google_calendar) before it was destroyed.
-  def self.remove_from_google_later(google_event_id, calendar_id)
+  # (id, google_event_id and google_calendar) before it was destroyed.
+  def self.remove_from_google_later(google_event_id, calendar_id, event_id)
     return if google_event_id.blank?
 
-    GoogleCalendar::EventDeleteJob.perform_later(google_event_id, calendar_id)
+    GoogleCalendar::EventDeleteJob.perform_later(google_event_id, calendar_id, event_id)
   end
 
   private

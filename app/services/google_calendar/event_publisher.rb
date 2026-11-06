@@ -79,9 +79,10 @@ module GoogleCalendar
     end
 
     # Bookkeeping written by the jobs only, never by a callback: update_column keeps it from validating the event,
-    # touching updated_at or running callbacks.
+    # touching updated_at or running callbacks. It is written after every confirmed change in Google, not compared
+    # with the value this run loaded, which another run may have changed since.
     def record_calendar(event, calendar_id)
-      event.update_column(:google_calendar_id, calendar_id) unless event.google_calendar_id == calendar_id
+      event.update_column(:google_calendar_id, calendar_id)
     end
 
     # The id is not in Google yet. A 409 means another push inserted it first, so update it once.

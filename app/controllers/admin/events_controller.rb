@@ -434,7 +434,7 @@ class Admin::EventsController < AdminAreaController
   def destroy_event(event)
     google_event_id = event.google_event_id
     calendar_id = event.google_calendar
-    Event.remove_from_google_later(google_event_id, calendar_id) if event.destroy
+    Event.remove_from_google_later(google_event_id, calendar_id, event.id) if event.destroy
   end
 
   def build_occurrence_event(title)
