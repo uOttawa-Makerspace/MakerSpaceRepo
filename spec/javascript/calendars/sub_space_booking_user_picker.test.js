@@ -1,104 +1,140 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const picker = vi.hoisted(() => ({ options: null }));
+// Drives the real Tom Select: the picker lists only the server's answer for the text now in the box.
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@fullcalendar/core", () => ({ Calendar: class {} }));
 vi.mock("@fullcalendar/interaction", () => ({ default: {} }));
 vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/list", () => ({ default: {} }));
-vi.mock("tom-select", () => ({
-  default: class {
-    constructor(_el, options) {
-      picker.options = options;
-    }
-  },
-}));
 vi.mock("flatpickr", () => ({ default: {} }));
 vi.mock("bootstrap", () => ({
   Toast: { getOrCreateInstance: () => ({ show() {} }) },
 }));
 vi.mock("../../../app/javascript/src/csrf", () => ({ csrfHeaders: (h) => h }));
 
+const RITA = { id: 1, name: "Rita Requester" };
+const BOB = { id: 2, name: "Bob Brown" };
+
+let picker;
+let pending;
+
+const names = () => Object.values(picker.options).map((o) => o.name);
+
+function type(text) {
+  picker.control_input.value = text;
+  picker.control_input.dispatchEvent(new Event("input"));
+}
+
+// answers a pending fetch by its query
+function answer(query, people, { ok = true } = {}) {
+  pending[query]({ ok, json: async () => people });
+}
+
+async function settle() {
+  await vi.advanceTimersByTimeAsync(1000);
+}
+
 beforeEach(async () => {
-  document.body.innerHTML = `<select id="user_booking_select" data-min-length="3" data-hint="Type at least 3 characters."></select>`;
+  vi.useFakeTimers();
+  pending = {};
+  global.fetch = vi.fn(
+    (url) =>
+      new Promise((resolve) => {
+        pending[decodeURIComponent(url.split("query=")[1])] = resolve;
+      }),
+  );
+  document.body.innerHTML = `<form><select id="user_booking_select" data-min-length="3" data-hint="Type at least 3 characters."></select></form>`;
   vi.resetModules();
   await import("../../../app/javascript/entrypoints/sub_space_booking.js");
   document.dispatchEvent(new Event("turbo:load"));
+  picker = document.getElementById("user_booking_select").tomSelect;
 });
 
+afterEach(() => vi.useRealTimers());
+
 describe("admin user picker", () => {
-  it("only fetches from the minimum length the server reads", () => {
-    expect(picker.options.shouldLoad("ab")).toBe(false);
-    expect(picker.options.shouldLoad("abc")).toBe(true);
+  it("lists the server's answer for the typed text, matches by username included", async () => {
+    type("quokka");
+    await settle();
+    answer("quokka", [RITA]);
+    await settle();
+    expect(names()).toEqual(["Rita Requester"]);
   });
 
-  it("explains the minimum instead of reporting no results", () => {
-    const el = picker.options.render.not_loading();
-    expect(el.textContent).toBe("Type at least 3 characters.");
+  it("does not fetch below the minimum length", async () => {
+    type("ri");
+    await settle();
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it("lists whatever the server matched, whatever the name", () => {
-    expect(picker.options.score("quokka")({ name: "Rita" })).toBe(1);
+  it("lists nothing when a loaded text is cut below the minimum, down to empty", async () => {
+    type("rit");
+    await settle();
+    answer("rit", [RITA]);
+    await settle();
+    type("ri");
+    expect(names()).toEqual([]);
+    type("rit");
+    type("");
+    expect(names()).toEqual([]);
   });
 
-  it("empties the list, and ignores a pending answer, once the text is under the minimum", async () => {
-    let answer;
-    global.fetch = vi.fn(() => new Promise((resolve) => (answer = resolve)));
-    const callback = vi.fn();
-    const tomSelect = { clearOptions: vi.fn() };
-    picker.options.load.call(tomSelect, "abc", callback);
-    tomSelect.clearOptions.mockClear();
-
-    picker.options.onType.call(tomSelect, "abcd");
-    expect(tomSelect.clearOptions).not.toHaveBeenCalled();
-    picker.options.onType.call(tomSelect, "");
-    expect(tomSelect.clearOptions).toHaveBeenCalledTimes(1);
-
-    answer({ json: async () => [{ id: 1, name: "Abc Person" }] });
-    await vi.waitFor(() => expect(callback).toHaveBeenCalled());
-    expect(callback).toHaveBeenCalledWith();
+  it("lists nothing when the box is emptied while a delayed lookup is on its way", async () => {
+    type("rit");
+    await vi.advanceTimersByTimeAsync(350);
+    type("");
+    await settle();
+    if (pending.rit) answer("rit", [RITA, BOB]);
+    await settle();
+    expect(names()).toEqual([]);
   });
 
-  it("calls back exactly once even when the callback throws", async () => {
-    global.fetch = vi.fn().mockResolvedValue({ json: async () => [] });
-    const callback = vi.fn(() => {
-      throw new Error("boom");
-    });
-    picker.options.load.call({ clearOptions: vi.fn() }, "abc", callback);
-    await new Promise((r) => setTimeout(r, 20));
-    expect(callback).toHaveBeenCalledTimes(1);
+  it("lists nothing when the text is cut below the minimum while a delayed lookup is on its way", async () => {
+    type("rit");
+    await vi.advanceTimersByTimeAsync(350);
+    type("ri");
+    await settle();
+    if (pending.rit) answer("rit", [RITA, BOB]);
+    await settle();
+    expect(names()).toEqual([]);
   });
 
-  it("offers only the answer to the latest query when answers arrive out of order", async () => {
-    const answers = {};
-    global.fetch = vi.fn(
-      (url) =>
-        new Promise((resolve) => {
-          answers[url.split("=")[1]] = (people) =>
-            resolve({ json: async () => people });
-        }),
-    );
-    const callback = vi.fn();
-    const tomSelect = { clearOptions: vi.fn() };
-    picker.options.load.call(tomSelect, "abc", callback);
-    picker.options.load.call(tomSelect, "abcd", callback);
-    answers.abcd([{ id: 2, name: "Abcd Person" }]);
-    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
-    answers.abc([{ id: 1, name: "Abc Person" }]);
-    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(2));
-    expect(callback.mock.calls[0]).toEqual([[{ id: 2, name: "Abcd Person" }]]);
-    expect(callback.mock.calls[1]).toEqual([]);
+  it("drops the old answer as soon as the text changes, before the new one arrives", async () => {
+    type("abc");
+    await settle();
+    answer("abc", [RITA]);
+    await settle();
+    type("abx");
+    expect(names()).toEqual([]);
   });
 
-  it("asks the server for the typed text and passes its answer on", async () => {
-    const people = [{ id: 1, name: "Rita" }];
-    global.fetch = vi.fn().mockResolvedValue({ json: async () => people });
-    const callback = vi.fn();
-    picker.options.load.call({ clearOptions: vi.fn() }, "a b", callback);
-    await vi.waitFor(() => expect(callback).toHaveBeenCalledWith(people));
-    expect(global.fetch).toHaveBeenCalledWith(
-      "/sub_space_booking/users?query=a%20b",
-    );
+  it("ignores the answer to an older text when a newer one is in the box", async () => {
+    type("abc");
+    await settle();
+    type("abcd");
+    await settle();
+    answer("abcd", [BOB]);
+    answer("abc", [RITA]);
+    await settle();
+    expect(names()).toEqual(["Bob Brown"]);
+  });
+
+  it("lists nothing from an error response", async () => {
+    type("rit");
+    await settle();
+    answer("rit", [RITA], { ok: false });
+    await settle();
+    expect(names()).toEqual([]);
+  });
+
+  it("lists nothing under an emptied box after a selection and reopen", async () => {
+    type("rit");
+    await settle();
+    answer("rit", [RITA, BOB]);
+    await settle();
+    picker.addItem("1");
+    picker.close();
+    picker.open();
+    expect(names()).toEqual(["Rita Requester"]);
   });
 });

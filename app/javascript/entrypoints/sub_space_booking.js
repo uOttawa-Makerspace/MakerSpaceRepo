@@ -16,14 +16,19 @@ function updateSelectedCount(checkboxClass, displayId) {
   el.textContent = count > 0 ? `${count} selected` : "";
 }
 
-// Options for the admin user picker. The server does the matching (name or username, at least
-// `minLength` characters), so Tom Select trusts the returned order and does not re-filter by name.
-// Only the answer to the latest request is listed, and cutting the text below the minimum empties the list.
-function userPickerOptions(select) {
+// The admin user picker. The server does the matching (name or username, at least `minLength`
+// characters), and the list always obeys one rule: it holds only the server's answer for exactly the text
+// now in the box, and nothing when that text is shorter than the minimum.
+//  - an answer is accepted only if its query is still the text in the box, and the response is OK;
+//  - whenever the text differs from the answered query (typing, or Tom Select itself emptying the box on
+//    selection, close or clear) the options are dropped before anything is shown.
+// `score` always 1 keeps Tom Select from filtering the server's matches again by name.
+function userPicker(select) {
   const minLength = Number(select.dataset.minLength);
   const hint = select.dataset.hint;
-  let latestRequest = 0;
-  return {
+  let answeredQuery = null;
+
+  const picker = new TomSelect(select, {
     plugins: { remove_button: { title: "Remove" } },
     valueField: "id",
     labelField: "name",
@@ -31,11 +36,6 @@ function userPickerOptions(select) {
     options: [],
     score: () => () => 1,
     shouldLoad: (query) => query.length >= minLength,
-    onType(query) {
-      if (query.length >= minLength) return;
-      latestRequest++;
-      this.clearOptions();
-    },
     render: {
       not_loading: () => {
         const el = document.createElement("div");
@@ -45,17 +45,31 @@ function userPickerOptions(select) {
       },
     },
     load(query, callback) {
-      this.clearOptions();
-      const request = ++latestRequest;
+      const answer = (people) => {
+        if (people && this.inputValue() === query) {
+          answeredQuery = query;
+          callback(people);
+        } else {
+          callback();
+        }
+      };
+      if (this.inputValue() !== query) return callback();
       fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
-        .then((r) => r.json())
-        .then(
-          (people) =>
-            request === latestRequest ? callback(people) : callback(),
-          () => callback(),
-        );
+        .then((r) => (r.ok ? r.json() : null))
+        .then(answer, () => callback());
     },
+  });
+
+  const dropStaleOptions = () => {
+    if (answeredQuery === null || answeredQuery === picker.inputValue()) return;
+    answeredQuery = null;
+    picker.clearOptions();
+    picker.refreshOptions(false);
   };
+  picker.hook("before", "refreshOptions", dropStaleOptions);
+  picker.hook("after", "onInput", dropStaleOptions);
+  picker.hook("after", "setTextboxValue", dropStaleOptions);
+  return picker;
 }
 
 // ─── turbo:load — runs every soft navigation ──────────────────────────────────
@@ -175,10 +189,7 @@ document.addEventListener("turbo:load", function () {
   // ── TomSelect for admin "grant access" user search ────────────────────────
   const userSelect = document.getElementById("user_booking_select");
   if (userSelect && !userSelect.tomSelect) {
-    userSelect.tomSelect = new TomSelect(
-      userSelect,
-      userPickerOptions(userSelect),
-    );
+    userSelect.tomSelect = userPicker(userSelect);
   }
 
   // ── Edit-page flatpickr ───────────────────────────────────────────────────
