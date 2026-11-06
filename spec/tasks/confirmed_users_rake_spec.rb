@@ -30,6 +30,12 @@ RSpec.describe "confirmed_users:remind" do
     expect(User.find_by_token_for(:email_confirmation, token)).to eq(unconfirmed)
   end
 
+  it "does not remind a deactivated user" do
+    create(:user, :regular_user_not_confirmed).deactivate!
+
+    expect(remind).to eq([unconfirmed.email])
+  end
+
   it "mails nobody on a second run the same day" do
     remind
     expect(remind).to be_empty

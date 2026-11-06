@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 namespace :confirmed_users do
-  # Mails every unconfirmed user once per day. A second run on the same day mails nobody, an interrupted run
+  # Mails every unconfirmed, not deactivated user once per day. A second run on the same day mails nobody, an interrupted run
   # continues where it stopped, and FORCE=1 mails everyone again.
   desc "Remind users to confirm their email"
   task remind: :environment do
@@ -9,7 +9,7 @@ namespace :confirmed_users do
     if run.done?
       puts "Reminders were already sent today; run with FORCE=1 to send them again."
     else
-      mailed = run.each_user(User.where(confirmed: false)) do |user|
+      mailed = run.each_user(User.where(confirmed: false).not_deactivated) do |user|
         hash = user.generate_token_for(:email_confirmation)
         MsrMailer.confirmation_email(user, hash).deliver_now
       end
