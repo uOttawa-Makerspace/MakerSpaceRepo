@@ -40,6 +40,14 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     expect(page).to have_no_css("#eventModal.show")
   end
 
+  it "enables the Add Event button and marks the modal ready once the page script has attached its handlers", js: true, skip_bullet: true do
+    log_in_as(admin)
+    visit admin_calendar_index_path
+
+    expect(page).to have_css("#eventModal[data-ready='true']", visible: :all)
+    expect(page).to have_button("+ Add Event", disabled: false)
+  end
+
   it "opens the add modal with a draft save button, one-hour default times and no type chosen", js: true, skip_bullet: true do
     open_admin_calendar
     open_add_modal
