@@ -33,6 +33,7 @@ Instructions for anyone, human or AI agent, changing this repository. MakerRepo 
 - **Coverage may not go down**, for lines or branches, in Ruby or JavaScript. New branches need specs that take them.
 - Authorization: Pundit policies, with policy methods delegating to model predicates (for example `rental.editable_by?(user)`).
 - Style follows the 37signals conventions (rich models, concerns named for a capability, REST resources for state changes, positive naming), except where this file says otherwise.
+- Repeated UI is built as ViewComponents (`app/components/`), each with its Stimulus controller and scoped CSS beside it; one-off markup stays a partial. New JavaScript is Stimulus controllers that touch only their own element: nothing on `window`, no document-wide queries.
 - Do not change the request or response contract of `/api/v1` (documented in `doc/api/v1/`) or the endpoints used by the staff app and Design Day without coordinating with those front ends.
 
 ## Tests
