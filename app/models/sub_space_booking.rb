@@ -219,7 +219,7 @@ class SubSpaceBooking < ApplicationRecord
           attendees: attendees
       )
 
-    calendar_id = return_sub_space_calendar(sub_space_booking.sub_space)
+    calendar_id = GoogleCalendar::EventPublisher::SHARED_CALENDAR
     if sub_space_booking.google_booking_id.present?
       begin # Update an existing booking
         service.update_event(calendar_id, sub_space_booking.google_booking_id, gcal_event)
@@ -243,23 +243,12 @@ class SubSpaceBooking < ApplicationRecord
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
     
-    calendar_id = return_sub_space_calendar(sub_space_booking.sub_space)
+    calendar_id = GoogleCalendar::EventPublisher::SHARED_CALENDAR
 
     begin
       response = service.delete_event(calendar_id, sub_space_booking.google_booking_id)
     rescue Google::Apis::ClientError => e
       Rails.logger.error "Failed to delete Google event #{sub_space_booking.id}: #{e.message}"
-    end
-  end
-
-  # Fill in the STM 124 and 126 links with the correct calendars when ready to link up.
-  def self.return_sub_space_calendar(sub_space)
-    if sub_space.name == "STM 124"
-      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
-    elsif sub_space.name == "STM 126"
-      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
-    else
-      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com" # my personal test calendar
     end
   end
 end

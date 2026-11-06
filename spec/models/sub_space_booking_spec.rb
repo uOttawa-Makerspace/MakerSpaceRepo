@@ -308,4 +308,32 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         .to eq("#ABABABFF")
     end
   end
+
+  describe "Google calendar used for bookings" do
+    let(:shared_calendar) { "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com" }
+    let(:service) { instance_double(Google::Apis::CalendarV3::CalendarService, "authorization=": nil) }
+
+    before do
+      allow(Google::Apis::CalendarV3::CalendarService).to receive(:new).and_return(service)
+      allow(described_class).to receive(:authorizer).and_return(double("auth"))
+    end
+
+    ["STM 124", "STM 126", "Another room"].each do |name|
+      it "inserts and deletes bookings of #{name} on the shared booking calendar" do
+        booking = create(:sub_space_booking, sub_space: create(:sub_space, name: name))
+        expect(service).to receive(:insert_event)
+          .with(shared_calendar, anything).and_return(double(id: "g1"))
+        described_class.upsert_booking(booking)
+        expect(booking.reload.google_booking_id).to eq("g1")
+
+        expect(service).to receive(:delete_event).with(shared_calendar, "g1")
+        described_class.delete_booking(booking)
+      end
+    end
+
+    it "is the calendar the event publisher falls back to for spaces it does not list" do
+      expect(GoogleCalendar::EventPublisher.calendar_id_for(create(:space, name: "Elsewhere")))
+        .to eq(shared_calendar)
+    end
+  end
 end
