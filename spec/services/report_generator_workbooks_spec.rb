@@ -432,7 +432,7 @@ RSpec.describe ReportGenerator do
   end
 
   describe ".generate_peak_hours_report" do
-    it "an empty range has only the Date header and a zero row per day (hours 23..0 collapse to none)" do
+    it "an empty range lists one row per day, with no hour columns" do
       rows = grid(described_class.generate_peak_hours_report(DateTime.new(2026, 3, 1), DateTime.new(2026, 3, 2)))["Sheet1"]
       expect(rows[4]).to eq(["Date"])
       expect(rows[5..]).to eq([["2026-03-01"], ["2026-03-02"]])
@@ -446,12 +446,17 @@ RSpec.describe ReportGenerator do
 
   describe ".generate_space_present_users_report" do
     it "stamps the report with the current time and lists nobody when the space is empty" do
-      travel_to(Time.utc(2026, 3, 10, 15, 30, 45)) do
-        space = create(:space)
-        rows = grid(described_class.generate_space_present_users_report(space.id))["Report"]
-        expect(rows).to eq(
-          [["Present Users"], ["Date", DateTime.now.strftime("%Y-%m-%d %H:%M:%S")], [], %w[Name Email]]
-        )
+      # the stamp is DateTime.now, i.e. the process zone: pin it to UTC for this example
+      previous_zone = ENV["TZ"]
+      ENV["TZ"] = "UTC"
+      begin
+        travel_to(Time.utc(2026, 3, 10, 15, 30, 45)) do
+          space = create(:space)
+          rows = grid(described_class.generate_space_present_users_report(space.id))["Report"]
+          expect(rows).to eq([["Present Users"], ["Date", "2026-03-10 15:30:45"], [], %w[Name Email]])
+        end
+      ensure
+        ENV["TZ"] = previous_zone
       end
     end
   end
