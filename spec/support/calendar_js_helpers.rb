@@ -14,6 +14,16 @@ module CalendarJsHelpers
     Time.iso8601(iso).utc
   end
 
+  # The admin calendar page starts up in independent asynchronous steps: the
+  # application entry (Bootstrap's data API; it sets the app-ready flag last),
+  # then the calendar script, which renders the title after two fetches and only
+  # then loads the imported calendars. The title alone is therefore not enough
+  # to click the sidebar buttons; wait until the last step has finished too.
+  def wait_for_admin_calendar_scripts
+    expect(page).to have_css("html[data-app-js-ready='true']", visible: :all)
+    expect(page).to have_no_css("#imported_calendars_status", text: "Loading...")
+  end
+
   # Types into a datetime-local field the way a person would (Capybara fires
   # input and change for it).
   def fill_datetime(field, local_value)

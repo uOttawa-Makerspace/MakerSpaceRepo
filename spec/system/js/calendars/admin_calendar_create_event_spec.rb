@@ -26,6 +26,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     log_in_as(admin)
     show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
+    wait_for_admin_calendar_scripts
   end
 
   def open_add_modal
@@ -308,6 +309,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     def start_modal_with_slot
       show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
       expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
+      wait_for_admin_calendar_scripts
       open_add_modal
       fill_datetime("start_time_field", slot_start)
       fill_datetime("end_time_field", slot_end)

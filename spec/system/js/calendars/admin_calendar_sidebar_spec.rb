@@ -27,6 +27,7 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
     page.execute_script("localStorage.fullCalendarDefaultDateAdmin = '#{CalendarJsHelpers::WEEK_MIDDAY}'")
     visit "#{admin_calendar_index_path}#{query}"
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
+    wait_for_admin_calendar_scripts
   end
 
   def event_titled(title)
