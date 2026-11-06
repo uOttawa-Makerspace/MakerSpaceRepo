@@ -148,8 +148,8 @@ class LockerRental < ApplicationRecord
   # An expired rental is announced only while its end is this recent. Older ones are not mailed (the renter was
   # not told at the time and a notice now would be noise); staff chase those by hand.
   EXPIRY_NOTICE_WINDOW = 14.days
-  # The notice query looks back one more day than the window. A run that is a day late, and the first run after the
-  # data migration that marks everything older than the window as notified, then lose no rental.
+  # The notice query looks back one more day than the window (15 days in all). A run that is a day late, and the
+  # first run after the data migration that marks everything older than the window as notified, then lose no rental.
   EXPIRY_NOTICE_GRACE = 1.day
 
   # Active rentals whose owned_until fell within EXPIRY_NOTICE_WINDOW (plus the grace day) and whose renter has not been told.

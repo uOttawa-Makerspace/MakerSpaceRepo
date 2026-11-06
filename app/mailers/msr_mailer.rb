@@ -297,10 +297,11 @@ class MsrMailer < ApplicationMailer
   # 'someone' should have a script running that grabs this email
   # and passes the attachments to CDEL
   # Power Automate grabs and sends to a folder on the CEED sharepoint
-  def send_cdel_monthly_report(to)
-    # last month
-    start_date = 1.month.ago.beginning_of_month
-    end_date = 1.month.ago.end_of_month
+  #
+  # month: the first day of the month to report on; last month when omitted.
+  def send_cdel_monthly_report(to, month: nil)
+    start_date = month ? month.in_time_zone.beginning_of_month : 1.month.ago.beginning_of_month
+    end_date = start_date.end_of_month
 
     # List of {data: csv, filename: string}
     # Look into CdelReportGenerator for details
