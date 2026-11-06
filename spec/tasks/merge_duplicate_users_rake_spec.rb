@@ -161,6 +161,16 @@ RSpec.describe "users:merge_duplicates" do
       expect(row.updated_at).to eq(t0 + 8.days)
     end
 
+    it "archives the track it removes in full, naming the task" do
+      track_row(primary, status: "In progress", created: 3, updated: 8)
+      removed = track_row(duplicate, status: "Completed", created: 1, updated: 4)
+      archived_attributes = removed.attributes.as_json
+      merge
+      archive = ActiveRecord::Base.connection.select_one("SELECT * FROM learning_module_tracks_merged")
+      expect(archive).to include("merged_id" => removed.id, "source" => "users:merge_duplicates")
+      expect(JSON.parse(archive["row_data"])).to include(archived_attributes.slice("id", "user_id", "learning_module_id"))
+    end
+
     it "uses the merge rule of the migration (one shared implementation)" do
       expect(LearningModuleTrackMerge).to receive(:merge!).and_call_original.at_least(:once)
       merge

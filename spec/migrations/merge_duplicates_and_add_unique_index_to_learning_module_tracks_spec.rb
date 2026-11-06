@@ -150,6 +150,94 @@ RSpec.describe MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks do
     migrate
     expect { migrate }.not_to change { LearningModuleTrack.order(:id).map { |t| [t.id, status_of(t), t.created_at, t.updated_at, t.scorm_state] } }
   end
+
+  describe "the archive of removed rows" do
+    let(:archive) { connection.select_all("SELECT * FROM learning_module_tracks_merged ORDER BY merged_id").to_a }
+
+    def snapshot
+      connection.select_values("SELECT to_jsonb(t)::text FROM learning_module_tracks t ORDER BY id")
+    end
+
+    def restore
+      ActiveRecord::Migration.suppress_messages do
+        LearningModuleTrackMerge.restore!(connection, source: described_class::SOURCE)
+      end
+    end
+
+    let!(:kept) { track(status: "In progress", created: 1, updated: 2, scorm: { "cmi.location" => "a" }) }
+    let!(:second) { track(status: "Completed", created: 2, updated: 5) }
+    let!(:third) { track(status: "Other", created: 3, updated: 9, scorm: { "cmi.location" => "b" }) }
+
+    it "holds every removed row in full, with the kept row's id and its values before and after" do
+      before_rows = snapshot
+      migrate
+      expect(archive.pluck("merged_id")).to eq([second.id, third.id])
+      expect(archive.pluck("keeper_id").uniq).to eq([kept.id])
+      expect(archive.pluck("source").uniq).to eq([described_class::SOURCE])
+      removed = before_rows.map { |row| JSON.parse(row) }.select { |row| [second.id, third.id].include?(row["id"]) }
+      expect(archive.map { |a| JSON.parse(a["row_data"]) }).to eq(removed)
+      expect(JSON.parse(archive.first["keeper_before"])).to include("status" => "In progress", "scorm_state" => { "cmi.location" => "a" })
+      expect(JSON.parse(archive.first["keeper_after"])).to include("status" => "Completed", "scorm_state" => { "cmi.location" => "b" })
+    end
+
+    it "archives nothing more when run again" do
+      migrate
+      expect { migrate }.not_to change { archive.size }
+    end
+
+    it "puts every row and the kept row back exactly, then drops the archive" do
+      before_rows = snapshot
+      migrate
+      expect(snapshot).not_to eq(before_rows)
+
+      result = restore
+
+      expect(result).to include(restored: 2, keepers_restored: 1, keepers_left: 0)
+      expect(snapshot).to eq(before_rows)
+      expect(connection.table_exists?("learning_module_tracks_merged")).to be(false)
+    end
+
+    it "leaves a kept row that changed since the merge as it is, and still puts the removed rows back" do
+      migrate
+      LearningModuleTrack.where(id: kept.id).update_all(status: "Edited")
+
+      result = restore
+
+      expect(result).to include(restored: 2, keepers_restored: 0, keepers_left: 1)
+      expect(status_of(LearningModuleTrack.find(kept.id))).to eq("Edited")
+      expect(LearningModuleTrack.where(id: [second.id, third.id]).count).to eq(2)
+    end
+
+    it "puts a kept row back through two merges" do
+      before_rows = snapshot
+      migrate
+      later = track(status: "Completed", created: 20, updated: 30)
+      later_row = connection.select_value("SELECT to_jsonb(t)::text FROM learning_module_tracks t WHERE id = #{later.id}")
+      migrate
+      expect(archive.pluck("merged_id")).to include(later.id)
+
+      restore
+
+      expect(snapshot).to eq(before_rows + [later_row])
+    end
+
+    it "raises and changes nothing when a removed row cannot be put back" do
+      migrate
+      LearningModuleTrack.insert_all!([{ id: second.id, user_id: nil, learning_module_id: nil, status: "x", created_at: t0, updated_at: t0 }])
+      before_rows = snapshot
+
+      expect { restore }.to raise_error(/only 1 of 2 merged rows could be put back/)
+
+      expect(snapshot).to eq(before_rows)
+      expect(archive.size).to eq(2)
+    end
+
+    it "leaves the rows archived by another source alone" do
+      migrate
+      expect { LearningModuleTrackMerge.restore!(connection, source: "another") }.not_to change { snapshot }
+      expect(archive.size).to eq(2)
+    end
+  end
 end
 
 # CREATE INDEX CONCURRENTLY cannot run in a transaction, so the full migration runs
@@ -196,6 +284,7 @@ RSpec.describe MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks, "index bu
   after do
     connection.execute("DELETE FROM learning_module_tracks WHERE user_id = #{user.id}")
     run_up
+    connection.execute("DELETE FROM learning_module_tracks_merged")
     training = learning_module.training
     connection.execute("DELETE FROM learning_modules WHERE id = #{learning_module.id}")
     connection.execute("DELETE FROM trainings WHERE id = #{training.id}")
@@ -245,5 +334,20 @@ RSpec.describe MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks, "index bu
     insert_track("In progress")
     run_up
     expect { run_up }.not_to change { [tracks, index_present?] }
+  end
+
+  it "down puts the removed rows back with their ids and restores the earlier indexes" do
+    insert_track("In progress")
+    insert_track("Completed")
+    before_rows = connection.select_values("SELECT to_jsonb(t)::text FROM learning_module_tracks t WHERE user_id = #{user.id} ORDER BY id")
+    run_up
+    expect(tracks.size).to eq(1)
+
+    ActiveRecord::Migration.suppress_messages { migration.down }
+
+    expect(connection.select_values("SELECT to_jsonb(t)::text FROM learning_module_tracks t WHERE user_id = #{user.id} ORDER BY id")).to eq(before_rows)
+    expect(index_present?).to be(false)
+    expect(connection.indexes(:learning_module_tracks).map(&:name)).to include("index_learning_module_tracks_on_user_id")
+    expect(connection.table_exists?("learning_module_tracks_merged")).to be(false)
   end
 end

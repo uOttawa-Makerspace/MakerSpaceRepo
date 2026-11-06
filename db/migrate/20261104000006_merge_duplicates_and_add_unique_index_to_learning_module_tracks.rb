@@ -6,7 +6,9 @@ require Rails.root.join("lib/learning_module_track_merge")
 # are merged into the oldest row of each group. Nothing else references a track.
 #
 # The merge rule (status, dates, SCORM state) is LearningModuleTrackMerge, shared with
-# users:merge_duplicates; no completion is ever lost.
+# users:merge_duplicates; no completion is ever lost. Every removed row is copied in full
+# into learning_module_tracks_merged, with the kept row's values before and after, by the
+# same statement that removes it, so down can put the rows back exactly.
 #
 # The unique index on (user_id, learning_module_id) is built right after the merge,
 # CONCURRENTLY, so writes to the table are not blocked. A request can still create a
@@ -22,8 +24,10 @@ class MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks < ActiveRecord::Mig
   disable_ddl_transaction!
 
   INDEX_NAME = "index_learning_module_tracks_on_user_and_learning_module"
+  SOURCE = "20261104000006"
 
   def up
+    create_archive_table
     merge_duplicates
     begin
       add_index_concurrently :learning_module_tracks, %i[user_id learning_module_id], name: INDEX_NAME, unique: true
@@ -40,10 +44,31 @@ class MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks < ActiveRecord::Mig
                                           algorithm: :concurrently, if_exists: true
   end
 
-  # The merged rows cannot be split apart again; the indexes are put back as they were.
+  # Puts back the rows this migration removed, with their ids, and the kept rows' values
+  # from before the merge (only where a kept row still holds the merged values), then the
+  # indexes as they were. Raises, changing nothing, if a removed row cannot be put back.
   def down
+    transaction do
+      execute "SET LOCAL lock_timeout = '3s'"
+      execute "LOCK TABLE learning_module_tracks IN SHARE ROW EXCLUSIVE MODE"
+      execute "DROP INDEX IF EXISTS #{INDEX_NAME}"
+      result = LearningModuleTrackMerge.restore!(connection, source: SOURCE)
+      say "learning_module_tracks: #{result[:restored]} rows put back, #{result[:keepers_restored]} kept rows restored, " \
+          "#{result[:keepers_left]} kept rows changed since and left as they are"
+    end
     add_index_concurrently :learning_module_tracks, :user_id, name: "index_learning_module_tracks_on_user_id"
-    remove_index :learning_module_tracks, name: INDEX_NAME, algorithm: :concurrently, if_exists: true
+  end
+
+  def create_archive_table
+    create_table LearningModuleTrackMerge::ARCHIVE_TABLE, if_not_exists: true do |t|
+      t.bigint :merged_id, null: false, index: { unique: true }
+      t.bigint :keeper_id, null: false
+      t.text :source, null: false
+      t.jsonb :row_data, null: false
+      t.jsonb :keeper_before, null: false
+      t.jsonb :keeper_after, null: false
+      t.datetime :archived_at, null: false, default: -> { "now()" }
+    end
   end
 
   def merge_duplicates
@@ -54,7 +79,7 @@ class MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks < ActiveRecord::Mig
       # cannot be removed without having been merged.
       execute "SET LOCAL lock_timeout = '3s'"
       execute "LOCK TABLE learning_module_tracks IN SHARE ROW EXCLUSIVE MODE"
-      removed = LearningModuleTrackMerge.merge!(connection)
+      removed = LearningModuleTrackMerge.merge!(connection, source: SOURCE)
       say "learning_module_tracks: #{removed} duplicate rows merged away"
     end
   end

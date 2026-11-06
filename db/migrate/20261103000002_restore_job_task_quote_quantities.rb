@@ -14,13 +14,26 @@
 # first; a task with no service, or one the quote does not list, is restored from the
 # quote's first service, which is what the copy used. A quote edited afterwards, or holding
 # any other values, is left alone.
+#
+# Each quote it changes is first copied, with its old and new price and quantity, into
+# job_task_quote_repairs by the same statement, so down puts the old values back (only where
+# the quote still holds the repaired ones) and drops the table once every one is back.
 class RestoreJobTaskQuoteQuantities < ActiveRecord::Migration[8.1]
+  ARCHIVE = "job_task_quote_repairs"
+
   def up
+    create_table ARCHIVE, id: false, if_not_exists: true do |t|
+      t.bigint :job_task_quote_id, null: false, primary_key: true
+      t.decimal :old_service_price, precision: 10, scale: 2
+      t.decimal :old_service_quantity, precision: 10, scale: 4
+      t.decimal :new_service_price, precision: 10, scale: 2
+      t.decimal :new_service_quantity, precision: 10, scale: 4
+      t.jsonb :row_data, null: false
+      t.datetime :archived_at, null: false, default: -> { "now()" }
+    end
+
     execute <<~SQL
-      UPDATE job_task_quotes q
-      SET service_price = c.per_unit,
-          service_quantity = c.quantity
-      FROM (
+      WITH c AS (
         SELECT DISTINCT ON (q2.id) q2.id AS quote_id, s.per_unit, s.quantity
         FROM job_task_quotes q2
         JOIN job_tasks t ON t.id = q2.job_task_id
@@ -37,14 +50,46 @@ class RestoreJobTaskQuoteQuantities < ActiveRecord::Migration[8.1]
           AND q2.service_price = f.per_unit
           AND q2.service_quantity IN (TRUNC(f.quantity), ROUND(f.quantity))
         ORDER BY q2.id, (t.job_service_id IS NOT NULL AND s.job_service_id = t.job_service_id) DESC, s.id
-      ) c
-      WHERE q.id = c.quote_id
-        AND (q.service_price, q.service_quantity) IS DISTINCT FROM (c.per_unit, c.quantity)
+      ), changing AS (
+        SELECT q.id, q.service_price AS old_price, q.service_quantity AS old_quantity,
+               c.per_unit, c.quantity, to_jsonb(q) AS row_data
+        FROM job_task_quotes q JOIN c ON c.quote_id = q.id
+        WHERE (q.service_price, q.service_quantity) IS DISTINCT FROM (c.per_unit, c.quantity)
+        FOR UPDATE OF q
+      ), archived AS (
+        INSERT INTO #{ARCHIVE} (job_task_quote_id, old_service_price, old_service_quantity,
+                                new_service_price, new_service_quantity, row_data)
+        SELECT id, old_price, old_quantity, per_unit, quantity, row_data FROM changing
+        RETURNING 1
+      )
+      UPDATE job_task_quotes q
+      SET service_price = changing.per_unit,
+          service_quantity = changing.quantity
+      FROM changing
+      WHERE q.id = changing.id
     SQL
   end
 
+  # Puts the old price and quantity back on every quote that still holds the repaired ones
+  # (a quote edited since is left alone). Raises, changing nothing, unless every archived
+  # quote is put back; the archive is dropped only after that.
   def down
-    raise ActiveRecord::IrreversibleMigration,
-          "the values it replaces are the truncated ones; putting them back would re-introduce the loss"
+    return unless table_exists?(ARCHIVE)
+
+    archived = select_value("SELECT COUNT(*) FROM #{ARCHIVE}").to_i
+    restored = execute(<<~SQL.squish).cmd_tuples
+      UPDATE job_task_quotes q
+      SET service_price = a.old_service_price, service_quantity = a.old_service_quantity
+      FROM #{ARCHIVE} a
+      WHERE q.id = a.job_task_quote_id
+        AND q.service_price IS NOT DISTINCT FROM a.new_service_price
+        AND q.service_quantity IS NOT DISTINCT FROM a.new_service_quantity
+    SQL
+    if restored != archived
+      raise "Cannot restore job task quotes: put back #{restored} of #{archived} (the others were edited since or are gone); " \
+            "nothing was changed and #{ARCHIVE} was kept"
+    end
+
+    execute "DROP TABLE #{ARCHIVE}"
   end
 end
