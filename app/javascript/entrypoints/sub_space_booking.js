@@ -45,18 +45,20 @@ function userPicker(select) {
       },
     },
     load(query, callback) {
-      const answer = (people) => {
-        if (people && this.inputValue() === query) {
-          answeredQuery = query;
-          callback(people);
-        } else {
-          callback();
-        }
+      // an unanswered lookup is forgotten, so typing the same text again asks the server again
+      const skip = () => {
+        delete this.loadedSearches[query];
+        callback();
       };
-      if (this.inputValue() !== query) return callback();
+      const answer = (people) => {
+        if (!people || this.inputValue() !== query) return skip();
+        answeredQuery = query;
+        callback(people);
+      };
+      if (this.inputValue() !== query) return skip();
       fetch(`/sub_space_booking/users?query=${encodeURIComponent(query)}`)
         .then((r) => (r.ok ? r.json() : null))
-        .then(answer, () => callback());
+        .then(answer, skip);
     },
   });
 

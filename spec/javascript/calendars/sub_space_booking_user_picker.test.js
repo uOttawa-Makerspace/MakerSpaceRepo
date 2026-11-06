@@ -119,6 +119,32 @@ describe("admin user picker", () => {
     expect(names()).toEqual(["Bob Brown"]);
   });
 
+  it("asks again when a text is typed again after its lookup was abandoned", async () => {
+    type("abc");
+    await vi.advanceTimersByTimeAsync(350);
+    type("ab");
+    await settle();
+    type("abc");
+    await settle();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    answer("abc", [RITA]);
+    await settle();
+    expect(names()).toEqual(["Rita Requester"]);
+  });
+
+  it("asks again when a text is typed again after its lookup failed", async () => {
+    type("abc");
+    await settle();
+    global.fetch.mockRejectedValueOnce(new Error("offline"));
+    pending.abc({ ok: false, json: async () => [] });
+    await settle();
+    type("ab");
+    await settle();
+    type("abc");
+    await settle();
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
   it("lists nothing from an error response", async () => {
     type("rit");
     await settle();
