@@ -1,8 +1,8 @@
 <br>
 <div class="text-center">
-  <h2><b>You can use these discount codes in our <%= link_to 'MakerStore', 'http://makerstore.ca/', target: :blank %></b></h2>
-  <p class="fs-4"><b><%= link_to 'Redeem more discount codes here', new_discount_code_path %></b></p>
-  <p class="fs-4"><b><%= link_to 'Learn about CC Points', cc_moneys_path %></b></p>
+  <h2><b><%= t('discount_codes.index.title_html', store_link: link_to('MakerStore', 'http://makerstore.ca/', target: :blank)) %></b></h2>
+  <p class="fs-4"><b><%= link_to t('discount_codes.index.redeem_more'), new_discount_code_path %></b></p>
+  <p class="fs-4"><b><%= link_to t('discount_codes.index.learn_more'), cc_moneys_path %></b></p>
 </div>
 
 <div class="container py-5">
@@ -15,10 +15,10 @@
           <div class="card" style="width: 100%;  border: 5px dotted #bbb;">
             <div class="card-body">
               <!--<h5 class="card-title"><%# <%= discount_code.price_rule.title %></h5> !-->
-              <h5 class="card-title">$<%= discount_code.dollar_cost %> off <%= link_to "MakerStore", "https://makerstore.ca/" %></h5>
+              <h5 class="card-title"><%= t('discount_codes.index.coupon_title_html', amount: discount_code.dollar_cost, store_link: link_to('MakerStore', 'https://makerstore.ca/')) %></h5>
               <p class="card-text">
-                Use code : <span id="coupon-<%= discount_code.id %>"><%= discount_code.code %></span>
-                <a tabIndex="0" class="clipboard-btn btn btn-primary float-end" role="button" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="Copied !" data-bs-placement="left" data-clipboard-action="copy" data-clipboard-target="#coupon-<%= discount_code.id %>">Copy</a>
+                <%= t('discount_codes.index.use_code') %> <span id="coupon-<%= discount_code.id %>"><%= discount_code.code %></span>
+                <a tabIndex="0" class="clipboard-btn btn btn-primary float-end" role="button" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="<%= t('discount_codes.index.copied') %>" data-bs-placement="left" data-clipboard-action="copy" data-clipboard-target="#coupon-<%= discount_code.id %>"><%= t('discount_codes.index.copy') %></a>
             </div>
           </div>
         </div>
@@ -26,8 +26,8 @@
     </div>
   <% else %>
     <div class="text-center">
-      <p>You don't have any coupons.</p>
-      <p>Redeem your CC points <%= link_to 'here', new_discount_code_path %></p>
+      <p><%= t('discount_codes.index.empty.title') %></p>
+      <p><%= t('discount_codes.index.empty.body_html', redeem_link: link_to(t('discount_codes.index.empty.link_text'), new_discount_code_path)) %></p>
     </div>
   <% end %>
 <!--  <div class="container my-3">-->

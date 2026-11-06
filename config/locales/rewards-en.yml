@@ -1,17 +1,17 @@
 en:
   rewards:
     index:
-      title: "CC Points"
-      subtitle: "Earn points by participating in the CEED community and redeem them for real rewards."
+      title: "CEED Credits"
+      subtitle: "Earn CCs by participating in the CEED community and redeem them for real rewards."
       wallet:
         title: "Your CC Balance"
-        redeem_button: "Redeem Points"
+        redeem_button: "Redeem CCs"
       what:
-        title: "What Are CC Points?"
+        title: "What Are CEED Credits?"
         # %{store_link} = link to the MakerStore
-        body_html: "CEED Credit (CC) Points are CEED's way of recognizing and rewarding participation in the maker community. Any involvement, whether by completing trainings, helping peers, or taking part in events, earns CC Points that can be redeemed for discounts at the %{store_link}."
+        body_html: "CEED Credits (CCs) are CEED's way of recognizing and rewarding participation in the maker community. Any involvement, whether by completing trainings, helping peers, or taking part in events, earns CCs that can be redeemed for discounts at the %{store_link}."
       earn:
-        title: "How to Earn CC Points"
+        title: "How to Earn CCs"
         training:
           title: "Complete Training"
           body: "Finish training modules and certifications for CEED equipment."
@@ -23,7 +23,7 @@ en:
           body: "Help during events, mentor other students, or contribute to community projects."
         qr_codes:
           title: "Scan CC Codes"
-          body: "Scan QR codes distributed at CEED events to instantly add CC Points."
+          body: "Scan QR codes distributed at CEED events to instantly add CCs to your account."
         projects:
           title: "Share Projects"
           body: "Upload and share your maker projects on MakerRepo."
@@ -31,10 +31,10 @@ en:
           title: "Achievements"
           body: "Unlock badges and milestones within the Development Program."
       redeem:
-        title: "How to Redeem CC Points"
+        title: "How to Redeem CCs"
         step1:
-          title: "Earn CC Points"
-          body: "Any involvement earns CC Points."
+          title: "Earn CCs"
+          body: "Any involvement earns CCs."
         step2:
           title: "Choose a Reward"
           # %{redemption_link} = link to the redemption page, text from link_text
@@ -42,7 +42,7 @@ en:
           link_text: "redemption page"
         step3:
           title: "Get Your Code"
-          body: "CC Points are deducted and you receive a unique discount code."
+          body: "CCs are deducted and you receive a unique discount code."
         step4:
           title: "Shop & Save"
           # %{store_link} = link to the MakerStore
@@ -50,15 +50,15 @@ en:
       activity:
         title: "Your Recent CC Activity"
         date: "Date"
-        points: "CC Points"
+        credits: "CCs"
       faq:
         title: "Frequently Asked Questions"
         expire:
-          question: "Do CC Points expire?"
-          answer: "No, CC Points do not expire. They stay in your account until you choose to redeem them."
+          question: "Do CCs expire?"
+          answer: "No, CCs do not expire. They stay in your account until you choose to redeem them."
         transfer:
-          question: "Can I transfer CC Points to another user?"
-          answer: "CC Points are tied to your individual account and cannot be transferred at this time."
+          question: "Can I transfer CCs to another user?"
+          answer: "CCs are tied to your individual account and cannot be transferred at this time."
         discount:
           question: "Where can I use my discount codes?"
           # %{store_link} = link to the MakerStore, %{codes_link} = link to the discount codes page
