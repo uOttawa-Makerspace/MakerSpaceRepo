@@ -47,7 +47,6 @@ class CommentsController < SessionsController
     downvote = params["downvote"].eql?("t") ? true : false
     repository = @repository
     comment = repository.comments.find params[:comment_id]
-    comment_user = comment.user
     upvote = @user.upvotes.find_by(comment_id: comment.id)
 
     # Nobody votes on their own comment (a vote already cast can still be taken back).
@@ -58,20 +57,10 @@ class CommentsController < SessionsController
 
     if upvote
       if downvote != upvote.downvote
-        upvote.update!(downvote: downvote)
-        if downvote
-          comment_user.decrement!(:reputation, 4)
-        else
-          comment_user.increment!(:reputation, 4)
-        end
+        switch_vote(comment, downvote)
         message = "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
       else
-        upvote.destroy!
-        if downvote
-          comment_user.increment!(:reputation, 2)
-        else
-          comment_user.decrement!(:reputation, 2)
-        end
+        retract_vote(comment, downvote)
         message = "Successfully removed #{downvote ? "downvote" : "upvote"}"
       end
     else
@@ -93,7 +82,19 @@ class CommentsController < SessionsController
   def cast_new_vote(comment, downvote)
     return unless Upvote.cast(@user, comment, downvote)
 
-    comment.user.public_send(downvote ? :decrement! : :increment!, :reputation, 2)
+    adjust_reputation(comment.user, downvote ? -2 : 2)
+  end
+
+  def switch_vote(comment, downvote)
+    adjust_reputation(comment.user, downvote ? -4 : 4) if Upvote.switch(@user, comment, downvote)
+  end
+
+  def retract_vote(comment, downvote)
+    adjust_reputation(comment.user, downvote ? 2 : -2) if Upvote.retract(@user, comment, downvote)
+  end
+
+  def adjust_reputation(user, amount)
+    user.increment!(:reputation, amount)
   end
 
   def set_repository

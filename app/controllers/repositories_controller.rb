@@ -208,8 +208,7 @@ class RepositoriesController < SessionsController
       @repository.users.each { |u| u.increment!(:reputation, 5) } if Like.give(@repository, @user)
       flash[:notice] = "You have liked this project!"
     else
-      current_like.destroy
-      @repository.users.each { |u| u.decrement!(:reputation, 5) }
+      take_back_like
       flash[:notice] = "You have unliked this project"
     end
     redirect_to repository_path(@repository.user_username, @repository.slug)
@@ -358,6 +357,13 @@ class RepositoriesController < SessionsController
   end
 
   private
+
+  # Only the request that actually removed the like takes the reputation back.
+  def take_back_like
+    return unless Like.take_back(@repository, @user)
+
+    @repository.users.each { |u| u.decrement!(:reputation, 5) }
+  end
 
   # Block if user is not authorized to modify repository
   def check_ownership
