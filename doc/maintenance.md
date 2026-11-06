@@ -68,6 +68,14 @@ The locker notices migration must run before the first 8:30am run of the locker 
 
 Post-deploy step for this release (Google Calendar webhook): run `bin/rails runner 'GoogleCalendar::WebhookRegistrar.register!'` once, right after the deploy. Channels registered before this release have no token, and the webhook refuses their pushes (401) until they are re-registered; there is no grace period for them. The same applies whenever `secret_key_base` is rotated: every channel's token is derived from it, so every channel is refused until it is re-registered with the same command.
 
+### Bulk mail tasks run by hand
+
+`rake "update_profile:send_emails"` (profile update request, once per year, BCC groups of 498) and `rake confirmed_users:remind` (confirmation reminder, once per day, one user at a time) record their progress in the `settings` table, so running one again in the same period mails nobody and an interrupted run continues where it stopped. Each task prints how many groups or users it mailed. See [sign-up](flows/sign-up.md) and [profile and account deletion](flows/profile-and-account-deletion.md).
+
+- The row is `bulk_mail:<task>:<period>` (`bulk_mail:update_profile:2026`, `bulk_mail:confirmed_users_remind:2026-11-06`). Its value is the id of the last user handled, or `done`. Rows are tiny and never pruned.
+- `FORCE=1` starts the period over and mails everyone again, including people a live run already mailed. Do not run it while another run of the same task is still going.
+- A run stopped with Ctrl-C or SIGTERM, or one that raised an error, hands its current claim back, so the next run repeats that user (`confirmed_users:remind`, one user at a time) or group of up to 498 (`update_profile:send_emails`). This is best effort: a run killed outright (SIGKILL, a crash, power loss) leaves its last user or group marked as sent. To resume instead of using `FORCE=1`, look at the row (`Setting.find_by(key: "bulk_mail:update_profile:2026")` in a console) and set its value to the id of the last user who really got the mail, for example `Setting.set("bulk_mail:update_profile:2026", "12345")`; to start over, delete the row or set it to empty. A value that is neither a number nor `done` makes the task stop with an error.
+
 ### Backfilling the CDEL report
 
 The report mailed on the 1st covers the month just ended. To mail a month again, or one that was missed, give the month as `YYYY-MM` (not later than the current month). Each run sends one mail:

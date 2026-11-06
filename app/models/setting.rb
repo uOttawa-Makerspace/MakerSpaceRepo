@@ -18,4 +18,12 @@ class Setting < ApplicationRecord
   def self.maintenance_email=(email)
     set("maintenance_notification_email", email)
   end
+
+  # Moves +key+ from +from+ to +to+ only if it still holds +from+ (nil meaning no row or an empty value). True for
+  # the one caller that made the move. The conditional update takes the row lock, so concurrent callers cannot
+  # both succeed.
+  def self.swap(key, from, to)
+    insert({ key: key }, unique_by: :key)
+    where(key: key).where("value IS NOT DISTINCT FROM ?", from).update_all(value: to, updated_at: Time.current).positive?
+  end
 end
