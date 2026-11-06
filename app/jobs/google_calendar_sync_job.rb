@@ -11,6 +11,10 @@
 class GoogleCalendarSyncJob < ApplicationJob
   queue_as :default
 
+  # Google sends several pushes per change. One sync at a time: a second waits for the first (and then lists
+  # from the token the first stored) instead of racing it over the same events and the same sync token.
+  limits_concurrency to: 1, key: -> { "google_calendar_sync" }, duration: 15.minutes
+
   # A failure of the database or its connection says nothing about the event, so it fails the job (the token
   # does not advance past an event that was never processed) instead of being reported and skipped.
   TRANSIENT_DATABASE_ERRORS = [

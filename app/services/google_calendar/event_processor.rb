@@ -26,7 +26,16 @@ module GoogleCalendar
       end
     end
 
+    # One transaction for the booking and its status. Two syncs of the same event cannot both insert it: the
+    # unique index on google_booking_id makes the later one wait for the earlier commit and then fail, and it
+    # runs again to update the booking the earlier one created.
     def self.upsert_ss_booking(event, sub_space)
+      SubSpaceBooking.transaction { save_mirrored_booking(event, sub_space) }
+    rescue ActiveRecord::RecordNotUnique
+      SubSpaceBooking.transaction { save_mirrored_booking(event, sub_space) }
+    end
+
+    def self.save_mirrored_booking(event, sub_space)
       booking = SubSpaceBooking.find_or_initialize_by(
         google_booking_id: event.id
       )
@@ -53,7 +62,7 @@ module GoogleCalendar
       status = SubSpaceBookingStatus.new(
         sub_space_booking_id: booking.id,
         booking_status_id: BookingStatus::APPROVED.id
-      )    
+      )
       status.save
 
       booking.update(sub_space_booking_status_id: status.id)

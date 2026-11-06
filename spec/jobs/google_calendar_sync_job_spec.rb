@@ -198,3 +198,10 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
     end
   end
 end
+
+RSpec.describe GoogleCalendarSyncJob, "concurrency limit" do
+  it "runs one sync at a time" do
+    expect(described_class.concurrency_limit).to eq(1)
+    expect(described_class.new.concurrency_key).to be_present
+  end
+end
