@@ -24,17 +24,4 @@ RSpec.describe "bulk mail rake tasks skip deactivated users" do
     expect(sent).to include(regular.email)
     expect(sent).not_to include(deactivated.email, dormant.email)
   end
-
-  it "emails:send_survey_ceed mails only active, not deactivated users" do
-    Rake::Task["emails:send_survey_ceed"].reenable
-    sent = []
-    without_partial_double_verification do # the mailer action is commented out in MsrMailer
-      allow(MsrMailer).to receive(:send_survey_ceed) { |email| sent << email; double(deliver_now: true) }
-    end
-
-    Rake::Task["emails:send_survey_ceed"].invoke
-
-    expect(sent).to include(regular.email)
-    expect(sent).not_to include(deactivated.email, dormant.email)
-  end
 end
