@@ -125,7 +125,7 @@ RSpec.describe "Admin events gaps", type: :request do
 
     it "does not push a draft to Google Calendar" do
       post admin_events_path, params: { event: event_attrs }
-      expect(Event).not_to have_received(:upsert_event)
+      expect(GoogleCalendar::EventPushJob).not_to have_been_enqueued
     end
 
     # Time.parse(nil) raises TypeError before any validation
@@ -176,8 +176,7 @@ RSpec.describe "Admin events gaps", type: :request do
     it "pushes a published event to Google Calendar after updating" do
       event = create(:event, space: space)
       patch admin_event_path(event), params: { event: event_attrs }
-      # the before_save callback AND the controller both upsert
-      expect(Event).to have_received(:upsert_event).with(event).at_least(:twice)
+      expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id).exactly(:once)
     end
 
     context "recurring event, scope 'all'" do
@@ -253,13 +252,14 @@ RSpec.describe "Admin events gaps", type: :request do
         expect(Event.count).to eq(1)
       end
 
-      it "makes no Google call when the replacement is invalid" do
+      it "queues no Google job when the replacement is invalid" do
         series
-        expect(Event).not_to receive(:upsert_event)
         patch admin_event_path(series),
               params: { update_scope: "this",
                         event: event_attrs(utc_start_time: "2025-05-12 18:00",
                                            utc_end_time: "2025-05-12 17:00") }
+        expect(GoogleCalendar::EventPushJob).not_to have_been_enqueued
+        expect(GoogleCalendar::EventDeleteJob).not_to have_been_enqueued
       end
 
       it "flashes the error and changes nothing when the series itself cannot be updated" do

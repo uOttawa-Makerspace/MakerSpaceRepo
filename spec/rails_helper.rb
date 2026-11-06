@@ -82,9 +82,7 @@ RSpec.configure do |config|
   config.before(:each) { JobStatus.reset_lookup_cache! }
 
   config.before(:each) do
-    allow(Event).to receive(:upsert_event).and_return(true)
-    allow(Event).to receive(:delete_event).and_return(true)
-    allow(Event).to receive(:authorizer).and_return(double("GoogleAuthorizer", fetch_access_token!: true))
+    allow(GoogleCalendar::EventPublisher).to receive(:authorizer).and_return(double("GoogleAuthorizer", fetch_access_token!: true))
   end
 end
 

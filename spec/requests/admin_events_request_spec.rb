@@ -138,7 +138,6 @@ RSpec.describe "Admin events contract", type: :request do
   # M61: the batch publish is scoped to the admin's space.
   it "batch publish leaves drafts of another space as drafts and does not push them" do
     travel_to(Time.zone.local(2027, 4, 1, 18, 0)) do
-      allow(Event).to receive(:upsert_event)
       other_space = create(:space)
       mine = create(:event, :draft, space: space)
       foreign = create(:event, :draft, space: other_space)
@@ -151,8 +150,8 @@ RSpec.describe "Admin events contract", type: :request do
       expect(flash[:notice]).to eq("1 event(s) published.")
       expect(mine.reload.draft).to be(false)
       expect(foreign.reload.draft).to be(true)
-      expect(Event).to have_received(:upsert_event).with(mine).at_least(:once)
-      expect(Event).not_to have_received(:upsert_event).with(foreign)
+      expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(mine.id).exactly(:once)
+      expect(GoogleCalendar::EventPushJob).not_to have_been_enqueued.with(foreign.id)
     end
   end
 

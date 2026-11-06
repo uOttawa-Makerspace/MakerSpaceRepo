@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_04_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -285,6 +285,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_160000) do
     t.boolean "draft", default: true
     t.datetime "end_time"
     t.string "event_type"
+    t.string "google_calendar_id"
     t.string "google_event_id"
     t.string "language"
     t.string "recurrence_rule"
