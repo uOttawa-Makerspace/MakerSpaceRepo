@@ -40,6 +40,29 @@ RSpec.describe GoogleCalendar::DuplicateEventReport do
     expect(described_class.new(service).rows).to be_empty
   end
 
+  describe "leftovers of a moved event" do
+    let(:mtc) { create(:space, name: "MTC") }
+    let(:mtc_calendar) { "c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com" }
+    let(:test_calendar) { "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com" }
+
+    it "flags a Google event whose id belongs to a stored event of another calendar, even with no match on title" do
+      event.update_columns(space_id: mtc.id)
+      allow(service).to receive(:list_events).with(test_calendar, anything)
+        .and_return(Google::Apis::CalendarV3::Events.new(items: [item("mine", "Old title", start_time + 1.day)]))
+      allow(service).to receive(:list_events).with(mtc_calendar, anything)
+        .and_return(Google::Apis::CalendarV3::Events.new(items: [item("mine", "Open Lab", start_time)]))
+
+      rows = described_class.new(service).rows
+
+      expect(rows.map { |r| [r.calendar_id, r.google_event_id, r.reason] }).to eq([[test_calendar, "mine", :leftover]])
+    end
+
+    it "labels a same-title copy as a copy" do
+      stub_listing(item("orphan", "Open Lab", start_time))
+      expect(described_class.new(service).rows.map(&:reason)).to eq([:copy])
+    end
+  end
+
   it "reads every page of the listing" do
     first = Google::Apis::CalendarV3::Events.new(items: [item("orphan", "Open Lab", start_time)], next_page_token: "p2")
     second = Google::Apis::CalendarV3::Events.new(items: [item("orphan2", "Open Lab", start_time)], next_page_token: nil)
@@ -76,7 +99,7 @@ RSpec.describe GoogleCalendar::DuplicateEventReport do
       expect(service).not_to receive(:insert_event)
 
       expect { Rake::Task["google_calendar:duplicate_events"].invoke }
-        .to output(/orphan\tOpen Lab\t2027-04-01T14:00:00Z\n1 possible duplicate/).to_stdout
+        .to output(/orphan\tOpen Lab\t2027-04-01T14:00:00Z\tcopy\n1 possible duplicate/).to_stdout
       expect(event.reload.google_event_id).to eq("mine")
     end
   end
