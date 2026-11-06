@@ -77,6 +77,21 @@ class LockerRental < ApplicationRecord
             if: :reserves_locker?
   validates :locker, presence: true, if: :reserves_locker?
 
+  RESERVED_LOCKER_INDEX = 'index_locker_rentals_on_locker_id_reserved'
+
+  # Two simultaneous assignments of one locker can both pass the uniqueness validation; the partial unique index
+  # lets only one through. The other is refused with the validation's own message instead of an error page.
+  # The savepoint keeps an enclosing transaction usable after the refused insert. It fails like any validation:
+  # `save` returns false, `save!` raises RecordInvalid.
+  def create_or_update(...)
+    self.class.transaction(requires_new: true) { super }
+  rescue ActiveRecord::RecordNotUnique => e
+    raise unless e.message.include?(RESERVED_LOCKER_INDEX)
+
+    errors.add(:locker, :taken)
+    raise ActiveRecord::RecordInvalid, self
+  end
+
   # Active rentals require an owned_until date unless explicitly marked as indefinite.
   # The virtual attribute `indefinite` lifts the requirement.
   validates :owned_until, presence: true, if: -> { active? && indefinite != '1' }

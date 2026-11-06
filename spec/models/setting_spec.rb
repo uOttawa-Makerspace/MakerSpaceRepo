@@ -37,4 +37,28 @@ RSpec.describe Setting, type: :model do
       expect(Setting.get("maintenance_notification_email")).to eq("ops@example.test")
     end
   end
+
+  describe ".claim" do
+    it "is true for the first caller and false for a repeat with the same value" do
+      expect(Setting.claim("run", "2026-11")).to be(true)
+      expect(Setting.claim("run", "2026-11")).to be(false)
+      expect(Setting.get("run")).to eq("2026-11")
+    end
+
+    it "is true again for a different value" do
+      Setting.claim("run", "2026-11")
+      expect(Setting.claim("run", "2026-12")).to be(true)
+      expect(Setting.get("run")).to eq("2026-12")
+    end
+
+    it "is true again for the same value when forced" do
+      Setting.claim("run", "2026-11")
+      expect(Setting.claim("run", "2026-11", force: true)).to be(true)
+    end
+
+    it "keeps one row per key" do
+      2.times { Setting.claim("run", "2026-11") }
+      expect(Setting.where(key: "run").count).to eq(1)
+    end
+  end
 end

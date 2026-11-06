@@ -234,6 +234,18 @@ RSpec.describe LockerRental, type: :model do
       rental.record_payment(shopify_order_id: id, **opts)
     end
 
+    it "holds the payment as not_activatable when a simultaneous assignment takes the locker first" do
+      other = create(:locker_rental, :active)
+      rental = create(:locker_rental, locker: other.locker)
+      allow_any_instance_of(described_class).to receive(:valid?).and_return(true)
+
+      payment = nil
+      expect { payment = pay(rental, id: "race-1") }.not_to raise_error
+
+      expect(payment).to have_attributes(status: "held", hold_reason: "not_activatable")
+      expect(rental.reload).to be_reviewing
+    end
+
     it "activates an await_payment rental, defaults owned_until, stamps paid_at, mails locker_assigned" do
       rental = create(:locker_rental, :await_payment)
       rental.update_column(:owned_until, nil)
