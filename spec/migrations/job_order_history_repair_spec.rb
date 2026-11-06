@@ -158,6 +158,12 @@ RSpec.describe "job order history repairs" do
         expect(archive.size).to eq(1)
       end
 
+      it "refuses the rollback when the archive table is missing" do
+        run(described_class)
+        connection.drop_table(:job_task_quote_repairs)
+        expect { rollback }.to raise_error(/job_task_quote_repairs is missing: .* nothing was changed/)
+      end
+
       it "refuses the rollback when an archived quote is gone" do
         run(described_class)
         connection.execute("DELETE FROM job_task_quotes WHERE id = #{changed.id}")

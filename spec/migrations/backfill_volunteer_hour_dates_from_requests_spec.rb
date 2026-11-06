@@ -151,4 +151,13 @@ RSpec.describe BackfillVolunteerHourDatesFromRequests do
     connection.execute("DELETE FROM volunteer_hours WHERE id = #{hour.id}")
     expect { ApplicationRecord.transaction(requires_new: true) { migrate(:down) } }.to raise_error(/blanked 0 of 1/)
   end
+
+  it "down refuses, changing nothing, when the table of written dates is missing" do
+    request_at(base - 3.days)
+    hour = hour_at(base)
+    migrate
+    connection.drop_table(:volunteer_hour_date_backfills)
+    expect { migrate(:down) }.to raise_error(/volunteer_hour_date_backfills is missing: .* nothing was changed/)
+    expect(hour.reload.date_of_task).to eq(base - 3.days)
+  end
 end

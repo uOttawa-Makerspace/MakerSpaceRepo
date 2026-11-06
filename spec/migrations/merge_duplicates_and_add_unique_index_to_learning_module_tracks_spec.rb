@@ -209,9 +209,15 @@ RSpec.describe MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks do
       expect(connection.table_exists?("learning_module_tracks_merged")).to be(true)
     end
 
-    it "does nothing when there is no archive" do
+    it "refuses, changing nothing, when there is no archive" do
       connection.drop_table(:learning_module_tracks_merged)
-      expect(restore).to include(restored: 0, missing: true)
+      expect { restore }.to raise_error(/learning_module_tracks_merged is missing: .* nothing was changed/)
+    end
+
+    it "creates the archive table when it is missing, so a merge never fails on it" do
+      connection.drop_table(:learning_module_tracks_merged)
+      migrate
+      expect(archive.pluck("merged_id")).to eq([second.id, third.id])
     end
 
     it "puts a kept row back through two merges" do
@@ -340,6 +346,18 @@ RSpec.describe MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks, "index bu
     insert_track("In progress")
     run_up
     expect { run_up }.not_to change { [tracks, index_present?] }
+  end
+
+  it "down refuses, changing nothing, when the archive table is missing" do
+    insert_track("In progress")
+    insert_track("Completed")
+    run_up
+    connection.drop_table(:learning_module_tracks_merged)
+
+    expect { ActiveRecord::Migration.suppress_messages { migration.down } }.to raise_error(/is missing: .* nothing was changed/)
+
+    expect(tracks.size).to eq(1)
+    expect(index_present?).to be(true)
   end
 
   it "down puts the removed rows back with their ids and restores the earlier indexes" do

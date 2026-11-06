@@ -74,7 +74,10 @@ class RestoreJobTaskQuoteQuantities < ActiveRecord::Migration[8.1]
   # (a quote edited since is left alone). Raises, changing nothing, unless every archived
   # quote is put back; the archive is dropped only after that.
   def down
-    return unless table_exists?(ARCHIVE)
+    unless table_exists?(ARCHIVE)
+      raise "#{ARCHIVE} is missing: this database ran a version of the migration that did not record its changes, " \
+            "so they cannot be restored; nothing was changed"
+    end
 
     archived = select_value("SELECT COUNT(*) FROM #{ARCHIVE}").to_i
     restored = execute(<<~SQL.squish).cmd_tuples

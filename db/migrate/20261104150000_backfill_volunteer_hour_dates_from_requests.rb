@@ -56,7 +56,10 @@ class BackfillVolunteerHourDatesFromRequests < ActiveRecord::Migration[8.1]
   # Only an hour that still holds the date written is blanked; raises, changing nothing, unless
   # every recorded hour is blanked, and the table is dropped only after that.
   def down
-    return unless table_exists?(TABLE)
+    unless table_exists?(TABLE)
+      raise "#{TABLE} is missing: this database ran a version of the migration that did not record its changes, " \
+            "so they cannot be restored; nothing was changed"
+    end
 
     recorded = select_value("SELECT COUNT(*) FROM #{TABLE}").to_i
     blanked = execute(<<~SQL.squish).cmd_tuples

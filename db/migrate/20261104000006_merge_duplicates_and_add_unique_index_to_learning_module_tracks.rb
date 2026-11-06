@@ -53,25 +53,13 @@ class MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks < ActiveRecord::Mig
       execute "LOCK TABLE learning_module_tracks IN SHARE ROW EXCLUSIVE MODE"
       execute "DROP INDEX IF EXISTS #{INDEX_NAME}"
       result = LearningModuleTrackMerge.restore!(connection, source: SOURCE)
-      if result[:missing]
-        say "#{LearningModuleTrackMerge::ARCHIVE_TABLE} does not exist; no rows to put back"
-      else
-        say "learning_module_tracks: #{result[:restored]} rows put back, #{result[:keepers_restored]} kept rows restored"
-      end
+      say "learning_module_tracks: #{result[:restored]} rows put back, #{result[:keepers_restored]} kept rows restored"
     end
     add_index_concurrently :learning_module_tracks, :user_id, name: "index_learning_module_tracks_on_user_id"
   end
 
   def create_archive_table
-    create_table LearningModuleTrackMerge::ARCHIVE_TABLE, if_not_exists: true do |t|
-      t.bigint :merged_id, null: false, index: { unique: true }
-      t.bigint :keeper_id, null: false
-      t.text :source, null: false
-      t.jsonb :row_data, null: false
-      t.jsonb :keeper_before, null: false
-      t.jsonb :keeper_after, null: false
-      t.datetime :archived_at, null: false, default: -> { "now()" }
-    end
+    LearningModuleTrackMerge.create_archive_table(connection)
   end
 
   def merge_duplicates

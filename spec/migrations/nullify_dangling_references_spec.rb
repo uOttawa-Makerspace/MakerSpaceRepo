@@ -167,6 +167,12 @@ RSpec.describe NullifyDanglingReferences do
       expect(connection.table_exists?("nullified_references")).to be(false)
     end
 
+    it "refuses the rollback, changing nothing, when the archive table is missing" do
+      migrate
+      connection.drop_table(:nullified_references)
+      expect { rollback }.to raise_error(/nullified_references is missing: .* nothing was changed/)
+    end
+
     it "leaves a reference staff set since, refuses the rollback and keeps the archive" do
       migrate
       connection.execute("UPDATE exam_responses SET answer_id = #{create(:answer).id} WHERE id = #{response.id}")

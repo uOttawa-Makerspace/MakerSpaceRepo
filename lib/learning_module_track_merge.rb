@@ -26,6 +26,7 @@ module LearningModuleTrackMerge
   # row's id and the kept row's values before and after the merge, by the same statement
   # that changes the data. Returns the number of rows removed.
   def self.merge!(connection, source:, group: %w[user_id learning_module_id], where: "TRUE", keeper_order: "created_at, id")
+    create_archive_table(connection)
     group_by = group.map { |column| connection.quote_column_name(column) }.join(", ")
     result = connection.execute(<<~SQL.squish)
       WITH g AS (
@@ -76,19 +77,36 @@ module LearningModuleTrackMerge
     result.cmd_tuples
   end
 
+  # The one definition of the archive table, used by the migration and by merge!, so a caller
+  # never finds it missing (it is dropped when a rollback has put every row back).
+  def self.create_archive_table(connection)
+    connection.create_table ARCHIVE_TABLE, if_not_exists: true do |t|
+      t.bigint :merged_id, null: false, index: { unique: true }
+      t.bigint :keeper_id, null: false
+      t.text :source, null: false
+      t.jsonb :row_data, null: false
+      t.jsonb :keeper_before, null: false
+      t.jsonb :keeper_after, null: false
+      t.datetime :archived_at, null: false, default: -> { "now()" }
+    end
+  end
+
   # Puts back what merge! removed for one source: the removed rows with their ids, and each
   # kept row's values from before the merge. Raises, changing nothing and keeping the archive,
   # if a removed row cannot be put back or a kept row no longer holds the values the merge
   # gave it (it was edited since, so its original values must not be overwritten). Returns
-  # { restored:, keepers_restored: }, or { restored: 0, keepers_restored: 0, missing: true } when
-  # there is no archive. The archived rows of that source are deleted once every one is back,
+  # { restored:, keepers_restored: }. Raises, changing nothing, when there is no archive (the
+  # database ran a version of the migration that did not record its changes). The archived rows of that source are deleted once every one is back,
   # and the table is dropped when nothing else is in it.
   def self.restore!(connection, source:)
     connection.transaction(requires_new: true) { restore_in_transaction(connection, source) }
   end
 
   def self.restore_in_transaction(connection, source)
-    return { restored: 0, keepers_restored: 0, missing: true } unless connection.table_exists?(ARCHIVE_TABLE)
+    unless connection.table_exists?(ARCHIVE_TABLE)
+      raise "#{ARCHIVE_TABLE} is missing: this database ran a version of the migration that did not record its changes, " \
+            "so they cannot be restored; nothing was changed"
+    end
 
     quoted = connection.quote(source)
     archived = connection.select_value("SELECT COUNT(*) FROM #{ARCHIVE_TABLE} WHERE source = #{quoted}").to_i
