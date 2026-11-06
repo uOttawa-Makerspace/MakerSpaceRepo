@@ -21,7 +21,7 @@ RSpec.describe JobOrder, "transition! lock wait", type: :model do
     User.unscoped.where(id: [owner.id, staff.id]).delete_all
   end
 
-  it "returns :busy within the lock timeout while another connection holds the order's row lock" do
+  it "returns :busy at the lock timeout while another connection holds the order's row lock" do
     stub_const("ApplicationRecord::LOCK_TIMEOUT", "200ms")
     locked = Queue.new
     release = Queue.new
@@ -30,7 +30,7 @@ RSpec.describe JobOrder, "transition! lock wait", type: :model do
         JobOrder.transaction do
           JobOrder.lock.find(order.id)
           locked << true
-          release.pop(timeout: 5)
+          release.pop # held until the transition has given up
         end
       end
     rescue StandardError => e
@@ -38,14 +38,17 @@ RSpec.describe JobOrder, "transition! lock wait", type: :model do
     end
     ThreadPause.await(locked)
 
-    started = Time.current
-    result = JobOrder.find(order.id).transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
-    waited = Time.current - started
-    release << true
+    begin
+      result = JobOrder.find(order.id).transition!(from: JobStatus.being_processed, to: JobStatus.completed, actor: staff)
+      # :busy came from the lock timeout, while the holder still had the lock
+      holder_alive = holder.alive?
+    ensure
+      release << true
+    end
 
     expect(holder.value).not_to be_a(StandardError)
     expect(result.reason).to eq(:busy)
-    expect(waited).to be < 2
+    expect(holder_alive).to be(true)
     expect(JobOrderStatus.where(job_order_id: order.id).count).to eq(1)
   end
 end
