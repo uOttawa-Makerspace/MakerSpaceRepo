@@ -8,7 +8,7 @@
 # ShopifyService call that staff lockers pages happened to trigger.
 #
 # Called at boot (config/initializers/shopify_api.rb) AND before every Shopify session
-# (via start_session!: ShopifyConcern, ShopifyService, ShopifyCartConcern; the homepage calls ensure_setup!), so a failed boot setup heals on the
+# (via start_session!: ShopifyConcern, ShopifyService; the homepage calls ensure_setup!), so a failed boot setup heals on the
 # next draft order. Idempotent and cheap, and it never raises: failures are logged and
 # reported in production/staging only (Rails.error, which Airbrake subscribes to) and ensure_setup! returns false.
 require Rails.root.join("lib/report_throttle")
@@ -60,8 +60,8 @@ module ShopifyContext
 
   # The ONE way to start a Shopify Admin/Storefront session: reads the credentials ONCE, makes sure
   # the Context is set up for them (raising NotConfigured when it cannot be), then builds the
-  # session from that same validated config and activates it. ShopifyConcern, ShopifyCartConcern
-  # and ShopifyService all call this.
+  # session from that same validated config and activates it. ShopifyConcern
+  # and ShopifyService both call this.
   def self.start_session!
     config, error = setup_context
     if error
