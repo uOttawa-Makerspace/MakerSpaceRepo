@@ -40,6 +40,28 @@ RSpec.describe GoogleCalendar::DuplicateEventReport do
     expect(described_class.new(service).rows).to be_empty
   end
 
+  it "reads every page of the listing" do
+    first = Google::Apis::CalendarV3::Events.new(items: [item("orphan", "Open Lab", start_time)], next_page_token: "p2")
+    second = Google::Apis::CalendarV3::Events.new(items: [item("orphan2", "Open Lab", start_time)], next_page_token: nil)
+    allow(service).to receive(:list_events).with(anything, hash_including(page_token: nil)).and_return(first)
+    allow(service).to receive(:list_events).with(anything, hash_including(page_token: "p2")).and_return(second)
+
+    expect(described_class.new(service).rows.map(&:google_event_id)).to eq(%w[orphan orphan2])
+  end
+
+  it "ignores a listing without items and an all-day Google event that has no start time" do
+    all_day = Google::Apis::CalendarV3::Event.new(
+      id: "allday", summary: "Open Lab", start: Google::Apis::CalendarV3::EventDateTime.new(date: "2027-04-01")
+    )
+    no_start = Google::Apis::CalendarV3::Event.new(id: "nostart", summary: "Open Lab")
+    allow(service).to receive(:list_events)
+      .and_return(Google::Apis::CalendarV3::Events.new(items: [all_day, no_start], next_page_token: nil))
+    expect(described_class.new(service).rows).to be_empty
+
+    allow(service).to receive(:list_events).and_return(Google::Apis::CalendarV3::Events.new(next_page_token: nil))
+    expect(described_class.new(service).rows).to be_empty
+  end
+
   describe "google_calendar:duplicate_events" do
     before do
       Rails.application.load_tasks unless Rake::Task.task_defined?("google_calendar:duplicate_events")

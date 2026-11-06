@@ -127,4 +127,29 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
       expect(attempts).to eq(described_class::ATTEMPTS)
     end
   end
+
+  describe "insert after a 404" do
+    it "reports an insert refused with any status other than a conflict" do
+      allow(service).to receive(:update_event).and_raise(client_error(404))
+      allow(service).to receive(:insert_event).and_raise(client_error(403))
+      expect(Rails.error).to receive(:report).with(instance_of(Google::Apis::ClientError), anything)
+
+      described_class.perform_now(event.id)
+    end
+  end
+
+  describe "the Google client" do
+    it "signs in with the service account of the credentials" do
+      google = { private_key: "k", client_email: "e", project_id: "p", private_key_id: "i", type: "service_account", extra: "x" }
+      allow(Rails.application.credentials).to receive(:[]).with(Rails.env.to_sym).and_return({ google: google })
+      allow(GoogleCalendar::EventPublisher).to receive(:authorizer).and_call_original
+      creds = instance_double(Google::Auth::ServiceAccountCredentials, "sub=": nil, fetch_access_token!: true)
+      captured = nil
+      allow(Google::Auth::ServiceAccountCredentials).to receive(:make_creds) { |args| captured = args; creds }
+
+      expect(GoogleCalendar::EventPublisher.authorizer).to eq(creds)
+      expect(JSON.parse(captured[:json_key_io].read).keys).to match_array(%w[private_key client_email project_id private_key_id type])
+      expect(creds).to have_received(:sub=).with("volunteer@makerepo.com")
+    end
+  end
 end

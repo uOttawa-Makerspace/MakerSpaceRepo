@@ -45,4 +45,40 @@ RSpec.describe GoogleCalendar::EventPayload do
       "Bring goggles\n\nTraining: Laser 101\nLanguage: French\nCourse: #{event.course_name.name}"
     )
   end
+
+  describe "corners" do
+    it "sends each assigned user as an attendee outside the test environment" do
+      event = create(:event, space: space, created_by: creator)
+      user = create(:user, :staff)
+      create(:event_assignment, event: event, user: user)
+      allow(Rails.env).to receive(:test?).and_return(false)
+
+      attendees = described_class.new(event.reload).build.attendees
+
+      expect(attendees.map(&:email)).to eq([user.email])
+    end
+
+    it "sends an unknown language as given and no course line when the event has no course" do
+      training = create(:training, name_en: "Atelier")
+      event = create(:event, :training, space: space, created_by: creator, training: training, language: "de",
+                                        description: "")
+      event.update_columns(course_name_id: nil)
+
+      expect(described_class.new(event.reload).build.description)
+        .to eq("Training: Atelier\nLanguage: de")
+    end
+
+    it "leaves the training name empty when the training row is gone" do
+      event = build_stubbed(:event, :training, space: space, created_by: creator, language: "en", description: "")
+      allow(event).to receive(:training).and_return(nil)
+      allow(event).to receive(:course_name).and_return(nil)
+
+      expect(described_class.new(event).build.description).to eq("Training: \nLanguage: English")
+    end
+
+    it "sends no recurrence when the rule has neither RRULE nor EXDATE lines" do
+      event = build_stubbed(:event, space: space, created_by: creator, recurrence_rule: "DTSTART:20270401T140000Z")
+      expect(described_class.new(event).build.recurrence).to be_nil
+    end
+  end
 end
