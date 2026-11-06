@@ -422,7 +422,7 @@ RSpec.describe "Admin events gaps", type: :request do
       copy = Event.where(title: "Source").where.not(id: source.id).first
       expect(copy.draft).to be(true)
       expect(copy.description).to eq("Orig")
-      expect(copy.google_event_id).to eq("")
+      expect(copy.google_event_id).to be_nil
       expect(copy.event_assignments.pluck(:user_id)).to eq([staff.id])
       # target date (Eastern midnight) + the original offset into the Eastern day:
       # 14:00 UTC on Apr 5 is 10:00 EDT, so the copy is 10:00 EDT on May 3

@@ -420,7 +420,8 @@ class Admin::EventsController < AdminAreaController
     new_event.start_time = new_start
     new_event.end_time = new_end
     new_event.draft = true
-    new_event.google_event_id = ""
+    new_event.google_event_id = nil
+    new_event.google_calendar_id = nil
     new_event.save!
 
     event.event_assignments.each do |assignment|

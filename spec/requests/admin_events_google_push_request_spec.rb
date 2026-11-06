@@ -238,5 +238,14 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
       expect(Event.where(draft: true).count).to eq(1)
       expect(push_jobs + delete_jobs).to be_empty
     end
+
+    it "gives the copy of a published event no Google ids, as for any event not yet in Google" do
+      create(:event, space: space, start_time: Time.utc(2027, 4, 5, 14), end_time: Time.utc(2027, 4, 5, 15),
+                     google_event_id: "g1", google_calendar_id: calendar_id)
+      post copy_admin_events_path, params: { space_id: space.id, source_range: "2027-04-05 to 2027-04-11", target_date: "2027-05-03" }
+      copy = Event.find_by!(draft: true)
+      expect(copy.google_event_id).to be_nil
+      expect(copy.google_calendar_id).to be_nil
+    end
   end
 end
