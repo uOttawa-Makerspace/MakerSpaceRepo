@@ -209,8 +209,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
 
     it "finds users by name in the search box and grants the chosen one access", js: true, skip_bullet: true do
       open_admin_panel
-      find("#user_booking_select + .ts-wrapper .ts-control input").send_keys("Rita")
-      find(".ts-dropdown .option", text: "Rita Requester").click
+      tom_select "Rita Requester", from: "user_booking_select", search: "Rita"
       click_button "Permit Access"
 
       expect(page).to have_text("Access granted successfully.")
