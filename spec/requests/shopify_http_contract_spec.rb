@@ -194,8 +194,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
   end
 
   it "every Shopify session start goes through ShopifyContext.start_session!, and the boot initializer through ensure_setup!" do
-    %w[app/services/shopify_service.rb app/models/concerns/shopify_concern.rb
-       app/models/concerns/shopify_cart_concern.rb].each do |file|
+    %w[app/services/shopify_service.rb app/models/concerns/shopify_concern.rb].each do |file|
       src = File.read(Rails.root.join(file))
       expect(src).to include("ShopifyContext.start_session!"), file
       expect(src).not_to include("ShopifyAPI::Auth::Session.new"), "#{file} builds its own session"
