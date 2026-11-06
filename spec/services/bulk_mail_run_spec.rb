@@ -89,4 +89,20 @@ RSpec.describe BulkMailRun do
     Setting.set("bulk_mail:spec:2026", "")
     expect(run_with).to eq(users.map(&:id).sort)
   end
+
+  it "lets the original error propagate and reports the claim when handing it back fails" do
+    allow(Setting).to receive(:swap).and_call_original
+    allow(Setting).to receive(:swap).with("bulk_mail:spec:2026", anything, nil).and_raise(ActiveRecord::ConnectionNotEstablished, "db down")
+    reported = []
+    subscriber = Class.new { define_method(:report) { |error, **opts| reported << [error, opts[:context]] } }.new
+    Rails.error.subscribe(subscriber)
+
+    run = -> { described_class.new("spec", "2026").each_user(scope) { |_| raise "mail down" } }
+
+    expect(&run).to raise_error("mail down").and output(/Setting\.set\("bulk_mail:spec:2026", nil\)/).to_stderr
+    expect(reported.map { |error, _| error.message }).to eq(["db down"])
+    expect(reported.first.last).to eq(key: "bulk_mail:spec:2026", claimed: users.map(&:id).min.to_s)
+  ensure
+    Rails.error.unsubscribe(subscriber)
+  end
 end

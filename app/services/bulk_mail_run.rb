@@ -42,7 +42,8 @@ class BulkMailRun
 
   private
 
-  # The stored value is nil (or empty), "done" or the id of the last user handled; anything else is not ours to guess at.
+  # The stored value is nil (or empty), "done" or the id of the last user handled; anything else is not ours
+  # to guess at.
   def current_progress
     value = Setting.get(@key)
     if value == ""
@@ -61,10 +62,20 @@ class BulkMailRun
 
   def mail_claimed(batch, previous, claimed)
     yield batch
-  rescue StandardError, SignalException
+  rescue StandardError, SignalException => error
     # Best effort: also covers Ctrl-C (Interrupt) and SIGTERM, the usual ways a hand-run task is stopped.
     # Only SIGKILL or a crash of the process leaves the claimed batch marked as sent.
+    give_back(previous, claimed)
+    raise error
+  end
+
+  # If handing the claim back fails too, the original error must still be the one that propagates; the
+  # operator is told which row to reset so that recipient or group is not skipped by the next run.
+  def give_back(previous, claimed)
     Setting.swap(@key, claimed, previous)
-    raise
+  rescue StandardError, SignalException => failure
+    Rails.error.report(failure, handled: true, context: { key: @key, claimed: claimed })
+    $stderr.puts "Could not hand back the claim on #{@key} (now #{claimed}). To retry that recipient or group, run " \
+           "Setting.set(#{@key.inspect}, #{previous.inspect}) in a console."
   end
 end
