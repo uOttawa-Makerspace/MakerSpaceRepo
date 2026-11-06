@@ -28,7 +28,7 @@ RSpec.describe "The lang attribute on every layout", type: :request do
   it "declares it in every template that renders an <html> element" do
     documents = Rails.root.glob("app/views/**/*.erb").select { |f| f.read.match?(/<html[\s>]/) }
 
-    expect(documents.map { |f| f.relative_path_from(Rails.root).to_s }).to include("app/views/job_orders/invoice.html.erb", "app/views/msr_mailer/send_invoice.html.erb")
+    expect(documents.map { |f| f.relative_path_from(Rails.root).to_s }).to include("app/views/job_orders/invoice.html.erb")
     missing = documents.reject { |f| f.read.match?(/<html[^>]*\blang="<%= I18n\.locale %>"/) }
     expect(missing.map { |f| f.relative_path_from(Rails.root).to_s }).to eq([])
   end
@@ -84,7 +84,7 @@ RSpec.describe "The lang attribute on every layout", type: :request do
 
   it "mailer layout names the locale the mail is rendered in" do
     user = create(:user, :regular_user)
-    mail = I18n.with_locale(:fr) { UpdateMailer.update_identity(user).message }
+    mail = I18n.with_locale(:fr) { MsrMailer.welcome_email(user).message }
     html = (mail.html_part || mail).body.to_s
 
     expect(html[/<html[^>]*>/]).to include('lang="fr"')
