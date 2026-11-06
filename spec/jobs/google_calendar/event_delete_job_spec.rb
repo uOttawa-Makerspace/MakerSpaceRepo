@@ -34,4 +34,9 @@ RSpec.describe GoogleCalendar::EventDeleteJob, type: :job do
     allow(service).to receive(:delete_event).and_raise(Google::Apis::ServerError.new("down", status_code: 500))
     expect { described_class.perform_now("abc123", calendar_id) }.to have_enqueued_job(described_class).with("abc123", calendar_id)
   end
+
+  it "retries a failure to fetch the access token" do
+    allow(GoogleCalendar::EventPublisher).to receive(:authorizer).and_raise(Signet::RemoteServerError, "down")
+    expect { described_class.perform_now("abc123", calendar_id) }.to have_enqueued_job(described_class).with("abc123", calendar_id)
+  end
 end

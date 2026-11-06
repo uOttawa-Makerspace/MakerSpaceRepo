@@ -104,4 +104,27 @@ RSpec.describe GoogleCalendar::EventPushJob, type: :job do
 
     expect(attempts).to eq(described_class::ATTEMPTS)
   end
+
+  describe "access token failures" do
+    [Signet::AuthorizationError.new("denied"), Signet::RemoteServerError.new("down"), Faraday::ConnectionFailed.new("refused"),
+     Faraday::TimeoutError.new("slow"), Faraday::SSLError.new("ssl"), SocketError.new("dns"),
+     OpenSSL::SSL::SSLError.new("ssl"), Errno::ECONNRESET.new].each do |error|
+      it "retries #{error.class} raised while fetching the token" do
+        allow(GoogleCalendar::EventPublisher).to receive(:authorizer).and_raise(error)
+        expect(Rails.error).not_to receive(:report)
+        expect { described_class.perform_now(event.id) }.to have_enqueued_job(described_class).with(event.id)
+      end
+    end
+
+    it "reports once the retries run out" do
+      attempts = 0
+      allow(GoogleCalendar::EventPublisher).to receive(:authorizer) { attempts += 1; raise Faraday::ConnectionFailed, "refused" }
+      expect(Rails.error).to receive(:report).once
+        .with(instance_of(Faraday::ConnectionFailed), hash_including(context: hash_including(event_id: event.id)))
+
+      perform_enqueued_jobs { described_class.perform_later(event.id) }
+
+      expect(attempts).to eq(described_class::ATTEMPTS)
+    end
+  end
 end
