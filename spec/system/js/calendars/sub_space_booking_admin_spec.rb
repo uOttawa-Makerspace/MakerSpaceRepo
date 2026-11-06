@@ -273,7 +273,8 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       expect(page).to have_css(".ts-dropdown .option", text: "Rita Requester")
     end
 
-    it "drops a late answer to earlier text and lists only the answer for the text in the box", js: true, skip_bullet: true do
+    # What the person sees; the acceptance check on the answer itself is pinned in the Vitest picker tests.
+    it "never shows people from a late answer to earlier text", js: true, skip_bullet: true do
       open_admin_panel
       hold_user_lookups
       input = find("#user_booking_select + .ts-wrapper .ts-control input")
