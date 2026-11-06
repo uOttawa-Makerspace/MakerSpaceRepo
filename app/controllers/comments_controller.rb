@@ -75,12 +75,7 @@ class CommentsController < SessionsController
         message = "Successfully removed #{downvote ? "downvote" : "upvote"}"
       end
     else
-      @user.upvotes.create!(comment_id: comment.id, downvote: downvote)
-      if downvote
-        comment_user.decrement!(:reputation, 2)
-      else
-        comment_user.increment!(:reputation, 2)
-      end
+      cast_new_vote(comment, downvote)
       message = "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
     end
 
@@ -93,6 +88,13 @@ class CommentsController < SessionsController
   end
 
   private
+
+  # A repeated click or a simultaneous request finds the vote already cast and counts nothing again.
+  def cast_new_vote(comment, downvote)
+    return unless Upvote.cast(@user, comment, downvote)
+
+    comment.user.public_send(downvote ? :decrement! : :increment!, :reputation, 2)
+  end
 
   def set_repository
     @repository = Repository.find(params[:id])

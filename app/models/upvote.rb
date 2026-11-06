@@ -11,6 +11,14 @@ class Upvote < ApplicationRecord
     find_by(comment_id: comment_id, user_id: user_id).present?
   end
 
+  # Records the vote. False when the user already voted on the comment: a repeated click, or two simultaneous
+  # requests of which the unique index lets only one through. Nothing is counted in that case.
+  def self.cast(user, comment, downvote)
+    user.upvotes.build(comment_id: comment.id, downvote: downvote).save
+  rescue ActiveRecord::RecordNotUnique
+    false
+  end
+
   before_create do
     downvote ? comment.decrement!(:upvote) : comment.increment!(:upvote)
   end

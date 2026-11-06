@@ -164,6 +164,22 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(response).to redirect_to(repository_path(owner.username, repo.id, anchor: "repo-comments"))
     end
 
+    it "counts a vote once when the same user's vote lands between the check and the insert" do
+      content_login!(voter)
+      vote(comment)
+      allow_any_instance_of(User).to receive(:upvotes).and_wrap_original do |original|
+        relation = original.call
+        allow(relation).to receive(:find_by).and_return(nil)
+        relation
+      end
+
+      expect { vote(comment) }.not_to change(Upvote, :count)
+
+      expect(response).to redirect_to(anchor_path)
+      expect(comment.reload.upvote).to eq(1)
+      expect(author.reload.reputation).to eq(2)
+    end
+
     it "downvote: -1 counter, -2 reputation" do
       content_login!(voter)
       vote(comment, downvote: "t")

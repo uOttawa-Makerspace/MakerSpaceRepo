@@ -204,8 +204,8 @@ class RepositoriesController < SessionsController
     end
 
     if current_like.nil?
-      @repository.likes.create!(user_id: @user.id)
-      @repository.users.each { |u| u.increment!(:reputation, 5) }
+      # A repeated click or a simultaneous request finds the like already given and counts nothing again.
+      @repository.users.each { |u| u.increment!(:reputation, 5) } if Like.give(@repository, @user)
       flash[:notice] = "You have liked this project!"
     else
       current_like.destroy
