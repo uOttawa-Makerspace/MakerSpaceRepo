@@ -192,20 +192,26 @@ RSpec.describe MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks do
 
       result = restore
 
-      expect(result).to include(restored: 2, keepers_restored: 1, keepers_left: 0)
+      expect(result).to include(restored: 2, keepers_restored: 1)
       expect(snapshot).to eq(before_rows)
       expect(connection.table_exists?("learning_module_tracks_merged")).to be(false)
     end
 
-    it "leaves a kept row that changed since the merge as it is, and still puts the removed rows back" do
+    it "raises, changes nothing and keeps the archive when a kept row was edited since the merge" do
       migrate
       LearningModuleTrack.where(id: kept.id).update_all(status: "Edited")
+      before_rows = snapshot
 
-      result = restore
+      expect { restore }.to raise_error(/kept rows #{kept.id} were changed after the merge/)
 
-      expect(result).to include(restored: 2, keepers_restored: 0, keepers_left: 1)
-      expect(status_of(LearningModuleTrack.find(kept.id))).to eq("Edited")
-      expect(LearningModuleTrack.where(id: [second.id, third.id]).count).to eq(2)
+      expect(snapshot).to eq(before_rows)
+      expect(archive.size).to eq(2)
+      expect(connection.table_exists?("learning_module_tracks_merged")).to be(true)
+    end
+
+    it "does nothing when there is no archive" do
+      connection.drop_table(:learning_module_tracks_merged)
+      expect(restore).to include(restored: 0, missing: true)
     end
 
     it "puts a kept row back through two merges" do

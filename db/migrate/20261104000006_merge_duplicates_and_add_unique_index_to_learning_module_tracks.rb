@@ -45,16 +45,19 @@ class MergeDuplicatesAndAddUniqueIndexToLearningModuleTracks < ActiveRecord::Mig
   end
 
   # Puts back the rows this migration removed, with their ids, and the kept rows' values
-  # from before the merge (only where a kept row still holds the merged values), then the
-  # indexes as they were. Raises, changing nothing, if a removed row cannot be put back.
+  # from before the merge, then the indexes as they were. Raises, changing nothing and keeping
+  # the archive, if a removed row cannot be put back or a kept row was edited since the merge.
   def down
     transaction do
       execute "SET LOCAL lock_timeout = '3s'"
       execute "LOCK TABLE learning_module_tracks IN SHARE ROW EXCLUSIVE MODE"
       execute "DROP INDEX IF EXISTS #{INDEX_NAME}"
       result = LearningModuleTrackMerge.restore!(connection, source: SOURCE)
-      say "learning_module_tracks: #{result[:restored]} rows put back, #{result[:keepers_restored]} kept rows restored, " \
-          "#{result[:keepers_left]} kept rows changed since and left as they are"
+      if result[:missing]
+        say "#{LearningModuleTrackMerge::ARCHIVE_TABLE} does not exist; no rows to put back"
+      else
+        say "learning_module_tracks: #{result[:restored]} rows put back, #{result[:keepers_restored]} kept rows restored"
+      end
     end
     add_index_concurrently :learning_module_tracks, :user_id, name: "index_learning_module_tracks_on_user_id"
   end

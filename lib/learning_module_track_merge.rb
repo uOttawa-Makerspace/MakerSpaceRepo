@@ -77,16 +77,19 @@ module LearningModuleTrackMerge
   end
 
   # Puts back what merge! removed for one source: the removed rows with their ids, and each
-  # kept row's values before the merge, only where the kept row still holds what the merge
-  # gave it (a track the learner went on with since is left as it is). Raises, changing
-  # nothing, if a removed row cannot be put back. Returns
-  # { restored:, keepers_restored:, keepers_left: }; the archived rows of that source are
-  # deleted once every one is back, and the table is dropped when nothing else is in it.
+  # kept row's values from before the merge. Raises, changing nothing and keeping the archive,
+  # if a removed row cannot be put back or a kept row no longer holds the values the merge
+  # gave it (it was edited since, so its original values must not be overwritten). Returns
+  # { restored:, keepers_restored: }, or { restored: 0, keepers_restored: 0, missing: true } when
+  # there is no archive. The archived rows of that source are deleted once every one is back,
+  # and the table is dropped when nothing else is in it.
   def self.restore!(connection, source:)
     connection.transaction(requires_new: true) { restore_in_transaction(connection, source) }
   end
 
   def self.restore_in_transaction(connection, source)
+    return { restored: 0, keepers_restored: 0, missing: true } unless connection.table_exists?(ARCHIVE_TABLE)
+
     quoted = connection.quote(source)
     archived = connection.select_value("SELECT COUNT(*) FROM #{ARCHIVE_TABLE} WHERE source = #{quoted}").to_i
     restored = connection.execute(<<~SQL.squish).cmd_tuples
@@ -112,24 +115,46 @@ module LearningModuleTrackMerge
   end
   private_class_method :keeper_values, :restore_in_transaction
 
-  # Newest archive row first, so a kept row merged twice goes back through both states.
+  # Newest archive row first, so a kept row merged twice goes back through both states. A kept
+  # row that holds neither the merged values nor the original ones was edited since: raises.
   def self.restore_keepers(connection, quoted_source)
     rows = connection.select_rows(<<~SQL.squish)
       SELECT keeper_id, keeper_before::text, keeper_after::text FROM #{ARCHIVE_TABLE}
       WHERE source = #{quoted_source} AND keeper_before <> keeper_after ORDER BY id DESC
     SQL
-    matched = rows.filter_map do |keeper_id, before, after|
-      next unless connection.execute(<<~SQL.squish).cmd_tuples.positive?
-        UPDATE learning_module_tracks t
-        SET (status, created_at, updated_at, scorm_state) =
-            (SELECT r.status, r.created_at, r.updated_at, r.scorm_state
-             FROM jsonb_populate_record(NULL::learning_module_tracks, #{connection.quote(before)}::jsonb) r)
-        WHERE t.id = #{keeper_id.to_i} AND #{keeper_values('t')} = #{connection.quote(after)}::jsonb
-      SQL
+    edited = []
+    restored = rows.filter_map do |keeper_id, before, after|
+      if keeper_update(connection, keeper_id, before, after).positive?
+        keeper_id
+      elsif !keeper_holds?(connection, keeper_id, before)
+        edited << keeper_id
+        nil
+      end
+    end
+    unless edited.empty?
+      raise "learning_module_tracks: kept rows #{edited.uniq.sort.join(', ')} were changed after the merge; " \
+            "nothing was changed and #{ARCHIVE_TABLE} was kept"
+    end
 
-      keeper_id
-    end.uniq
-    { keepers_restored: matched.size, keepers_left: rows.map(&:first).uniq.size - matched.size }
+    { keepers_restored: restored.uniq.size }
   end
   private_class_method :restore_keepers
+
+  def self.keeper_update(connection, keeper_id, before, after)
+    connection.execute(<<~SQL.squish).cmd_tuples
+      UPDATE learning_module_tracks t
+      SET (status, created_at, updated_at, scorm_state) =
+          (SELECT r.status, r.created_at, r.updated_at, r.scorm_state
+           FROM jsonb_populate_record(NULL::learning_module_tracks, #{connection.quote(before)}::jsonb) r)
+      WHERE t.id = #{keeper_id.to_i} AND #{keeper_values('t')} = #{connection.quote(after)}::jsonb
+    SQL
+  end
+
+  def self.keeper_holds?(connection, keeper_id, values)
+    connection.select_value(<<~SQL.squish).present?
+      SELECT 1 FROM learning_module_tracks t
+      WHERE t.id = #{keeper_id.to_i} AND #{keeper_values('t')} = #{connection.quote(values)}::jsonb
+    SQL
+  end
+  private_class_method :keeper_update, :keeper_holds?
 end
