@@ -9,16 +9,6 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
   let!(:space) { create(:space, name: "Machine Shop", keycode: "MS-1") }
   let!(:other_space) { create(:space, name: "Wood Shop", keycode: "WS-2") }
 
-  def pick(id, text, search: nil)
-    native = find("##{id}", visible: :all)
-    expect(native[:class].to_s.split).to include("tomselected")
-    wrapper = native.find(:xpath, "following-sibling::div[contains(@class,'ts-wrapper')][1]")
-    wrapper.find(".ts-control").click
-    wrapper.find(".ts-control input").send_keys(search) if search
-    wrapper.find(".ts-dropdown .option", text: text).click
-    page.execute_script("arguments[0].tomselect.close()", native)
-  end
-
   def style_of(selector)
     page.evaluate_script("document.querySelector(#{selector.to_json}).parentElement.style.display")
   end
@@ -55,7 +45,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
 
     it "creates a regular key in the chosen space" do
       fill_in "key_number", with: "12"
-      pick "space-select", "Wood Shop (WS-2)", search: "Wood"
+      tom_select "Wood Shop (WS-2)", from: "space-select", search: "Wood"
       select "Inventory", from: "status-select"
       click_button "Create Key"
       expect(page).to have_text("Successfully created key.")
@@ -76,7 +66,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       create(:user, :admin, name: "Quentin Boss")
       visit new_admin_key_path
       expect(page).to have_css("#supervisor-select.tomselected", visible: :all)
-      pick "supervisor-select", "Quentin Boss", search: "Quen"
+      tom_select "Quentin Boss", from: "supervisor-select", search: "Quen"
       expect(page).to have_css("#supervisor-select + .ts-wrapper .item", text: "Quentin Boss")
     end
   end
@@ -124,7 +114,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
     end
 
     it "assigns the key to the user picked from the searchable list with the deposit" do
-      pick "key-request-select", "Hank Holder", search: "Hank"
+      tom_select "Hank Holder", from: "key-request-select", search: "Hank"
       fill_in "deposit_amount", with: "25"
       click_button "Assign Key"
       expect(page).to have_text("Successfully assigned key")

@@ -99,26 +99,11 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
       wait_for_app_js
     end
 
-    def pick(id, text, search: nil)
-      native = find("##{id}", visible: :all)
-      wrapper = native.find(:xpath, "following-sibling::div[contains(@class,'ts-wrapper')][1]")
-      wrapper.find(".ts-control").click
-      wrapper.find(".ts-control input").send_keys(search) if search
-      wrapper.find(".ts-dropdown .option", text: text).click
-      page.execute_script("arguments[0].tomselect.close()", native)
-    end
-
     it "finds a user by name in the searchable user list and shows the picked locker with its size" do
-      native = find("#locker_rental_rented_by_id", visible: :all)
-      wrapper = native.find(:xpath, "following-sibling::div[contains(@class,'ts-wrapper')][1]")
-      wrapper.find(".ts-control").click
-      expect(wrapper).to have_css(".ts-control input:focus") # typing goes to the picker only once it has the focus
-      wrapper.find(".ts-control input").send_keys("Zelda")
-      expect(wrapper).to have_css(".ts-dropdown .option", text: "Zelda Tenant (zeldat)")
-      wrapper.find(".ts-dropdown .option", text: "Zelda Tenant (zeldat)").click
-      expect(wrapper).to have_css(".ts-control .item", text: "Zelda Tenant (zeldat)")
+      tom_select "Zelda Tenant (zeldat)", from: "locker_rental_rented_by_id", search: "Zelda", exact: false
+      expect(page).to have_css("#locker_rental_rented_by_id + .ts-wrapper .ts-control .item", text: "Zelda Tenant (zeldat)")
 
-      pick "locker_rental_locker_id", "Locker #301 (12x12) - Size 12x12"
+      tom_select "#301 (12x12)", from: "locker_rental_locker_id", exact: false
       expect(page).to have_css("#locker_rental_locker_id + .ts-wrapper .item", text: "Locker #301 (12x12) - Size 12x12")
     end
 
@@ -130,15 +115,15 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
     end
 
     it "marks a locker kept for staff in the list and shows the staff badge on a picked staff user" do
-      pick "locker_rental_locker_id", "302"
+      tom_select "#302 (24x24)", from: "locker_rental_locker_id", exact: false
       expect(page).to have_css("#locker_rental_locker_id + .ts-wrapper .item", text: "Staff only")
-      pick "locker_rental_rented_by_id", "Sasha Staffer", search: "Sasha"
+      tom_select "Sasha Staffer (#{colleague.username})", from: "locker_rental_rented_by_id", search: "Sasha", exact: false
       expect(page).to have_css("#locker_rental_rented_by_id + .ts-wrapper .item .badge", text: "Staff")
     end
 
     it "assigns the locker immediately with the chosen end date" do
-      pick "locker_rental_rented_by_id", "Zelda Tenant (zeldat)", search: "zelda"
-      pick "locker_rental_locker_id", "#301"
+      tom_select "Zelda Tenant (zeldat)", from: "locker_rental_rented_by_id", search: "zelda", exact: false
+      tom_select "#301 (12x12)", from: "locker_rental_locker_id", exact: false
       fill_in "assign_owned_until", with: Date.new(2031, 1, 15)
       fill_in "locker_rental_staff_notes", with: "Hand over keys"
       click_button "Assign Locker"
@@ -150,8 +135,8 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
     end
 
     it "clears the end date while Indefinite is ticked and assigns without an end date" do
-      pick "locker_rental_rented_by_id", "Zelda Tenant (zeldat)", search: "zelda"
-      pick "locker_rental_locker_id", "#301"
+      tom_select "Zelda Tenant (zeldat)", from: "locker_rental_rented_by_id", search: "zelda", exact: false
+      tom_select "#301 (12x12)", from: "locker_rental_locker_id", exact: false
       check "Indefinite (No expiry)"
       expect(page).to have_field("assign_owned_until", disabled: true, with: "")
       click_button "Assign Locker"

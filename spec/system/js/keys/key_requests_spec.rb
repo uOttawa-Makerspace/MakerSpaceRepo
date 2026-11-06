@@ -10,16 +10,6 @@ RSpec.describe "Key request form and wizard", type: :system, skip_bullet: true d
   let!(:other_space) { create(:space, name: "Wood Shop", keycode: "WS-2") }
   let!(:supervisor) { create(:user, :admin, name: "Sam Supervisor") }
 
-  def pick(id, text, search: nil)
-    native = find("##{id}", visible: :all)
-    expect(native[:class].to_s.split).to include("tomselected")
-    wrapper = native.find(:xpath, "following-sibling::div[contains(@class,'ts-wrapper')][1]")
-    wrapper.find(".ts-control").click
-    wrapper.find(".ts-control input").send_keys(search) if search
-    wrapper.find(".ts-dropdown .option", text: text).click
-    page.execute_script("arguments[0].tomselect.close()", native)
-  end
-
   def fill_personal_details
     fill_in "key_request_student_number", with: "300123456"
     fill_in "key_request_phone_number", with: "6135550101"
@@ -44,8 +34,8 @@ RSpec.describe "Key request form and wizard", type: :system, skip_bullet: true d
     it "saves the picked department and supervisor and opens step 2 of the wizard" do
       fill_personal_details
       # the supervisor list is picked first: an open department list would cover it
-      pick "supervisor-select", "Sam Supervisor", search: "Sam"
-      pick "space-select", "Wood Shop", search: "Wood"
+      tom_select "Sam Supervisor", from: "supervisor-select", search: "Sam"
+      tom_select "Wood Shop", from: "space-select", search: "Wood"
       click_button "Next Step"
 
       expect(page).to have_text("Lab")
@@ -64,7 +54,7 @@ RSpec.describe "Key request form and wizard", type: :system, skip_bullet: true d
     it "saves the changed department with PATCH and shows step 2" do
       visit key_request_steps_path(key_request_id: request.id, step: 1)
       expect(page).to have_css("#space-select.tomselected", visible: :all)
-      pick "space-select", "Wood Shop", search: "Wood"
+      tom_select "Wood Shop", from: "space-select", search: "Wood"
       click_button "Next Step"
 
       wait_until("department not saved") { request.reload.space_id == other_space.id }
