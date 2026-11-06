@@ -46,7 +46,7 @@ Here are some things to keep in mind:
 
 ## Scheduled tasks
 
-Scheduled tasks run in the `worker` container (`bundle exec rake solid_queue:start`), from `config/recurring.yml`, in the application time zone (Eastern). Nothing is scheduled with cron any more. The file has a block shared by production and staging, plus a block for each: the monthly CDEL report is production only, and the Google Calendar catch-up sync is staging only. If the `worker` container is not running, nothing is scheduled. Starting it again resumes the schedule; runs missed while it was down are not made up. Solid Queue records each tick once, so restarting the worker during a deploy does not run a task twice.
+Scheduled tasks run in the `worker` container (`bundle exec rake solid_queue:start`), from `config/recurring.yml`, in the application time zone (Eastern). Apart from the year-of-study bump (see below), nothing is scheduled with cron any more. The file has a block shared by production and staging, plus a block for each: the monthly CDEL report is production only, and the Google Calendar catch-up sync is staging only. If the `worker` container is not running, nothing is scheduled. Starting it again resumes the schedule; runs missed while it was down are not made up. Solid Queue records each tick once, so restarting the worker during a deploy does not run a task twice.
 
 Check that tasks ran, in a Rails console (`docker compose -f docker-compose.production.yml exec web bin/rails console`):
 
@@ -60,9 +60,9 @@ The same data is in the `solid_queue_recurring_executions` and `solid_queue_fail
 
 ### Deploy step: remove the moved tasks from the host crontab
 
-The host crontab still has `docker compose exec` lines for these tasks. They have not taken effect since 2026-08-31, most likely because `-T` is missing (without it `docker compose exec` fails under cron, which has no terminal). Check first with `crontab -l` and the cron mail or log. Then, in the same deploy, remove the lines for the moved tasks (`crontab -e`) rather than fixing them: after this ships they run in the `worker` container, and a crontab line that starts working would run the task a second time (the CDEL report mailed twice, the popular hours counted twice).
+The host crontab still has `docker compose exec -T web` lines for these tasks (the containers have no cron of their own). They have not taken effect since 2026-08-31; `/var/www/makerrepo/log/cron_log.log` shows why. In the same deploy, remove the lines for the moved tasks (`crontab -e`) rather than fixing them: after this ships they run in the `worker` container, and a crontab line that starts working would run the task a second time (the CDEL report mailed twice, the popular hours counted twice).
 
-Tasks that moved: popular hours, active volunteers, clear printers, the CDEL report, the Google Calendar webhook registration, and the locker expiry notices if a line for them exists. The print order reminder is removed (task and mailer method), so delete its line too. Keep only the `increment_year:increment_one_year` line; it is not scheduled in `recurring.yml`, and it needs `docker compose exec -T` to run from cron.
+Tasks that moved: popular hours, active volunteers, clear printers, the CDEL report, the Google Calendar webhook registration, and the locker expiry notices if a line for them exists. The print order reminder is removed (task and mailer method), so delete its line too. Keep only the `increment_year:increment_one_year` line; it is not scheduled in `recurring.yml`. Check in the cron log that it runs, since it goes through the same `docker compose exec` as the lines that stopped.
 
 The locker notices migration must run before the first 8:30am run of the locker expiry notices (`locker_expiry_notices`). It marks the rentals that expired long ago as already notified, so renters are not mailed about old expiries. Running the migrations as part of the deploy covers this.
 
