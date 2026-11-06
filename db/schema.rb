@@ -735,6 +735,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.integer "user_id"
     t.index ["repository_id"], name: "index_likes_on_repository_id"
     t.index ["user_id"], name: "index_likes_on_user_id"
+    t.index ["user_id", "repository_id"], name: "index_likes_on_user_id_and_repository_id", unique: true
   end
 
   create_table "locker_options", force: :cascade do |t|
@@ -793,6 +794,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.index ["course_name_id"], name: "index_locker_rentals_on_course_name_id"
     t.index ["decided_by_id"], name: "index_locker_rentals_on_decided_by_id"
     t.index ["locker_id"], name: "index_locker_rentals_on_locker_id"
+    t.index ["locker_id"], name: "index_locker_rentals_on_locker_id_reserved", unique: true, where: "((state)::text = ANY ((ARRAY['await_payment'::character varying, 'active'::character varying])::text[]))"
     t.index ["preferred_locker_id"], name: "index_locker_rentals_on_preferred_locker_id"
     t.index ["rented_by_id"], name: "index_locker_rentals_on_rented_by_id"
   end
@@ -1465,6 +1467,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["approved_by_id"], name: "index_sub_space_bookings_on_approved_by_id"
+    t.index ["google_booking_id"], name: "index_sub_space_bookings_on_google_booking_id", unique: true, where: "((google_booking_id IS NOT NULL) AND ((google_booking_id)::text <> ''::text))"
     t.index ["recurring_booking_id"], name: "index_sub_space_bookings_on_recurring_booking_id"
     t.index ["sub_space_booking_status_id"], name: "index_sub_space_bookings_on_sub_space_booking_status_id"
     t.index ["sub_space_id"], name: "index_sub_space_bookings_on_sub_space_id"
@@ -1589,6 +1592,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.integer "user_id"
     t.index ["comment_id"], name: "index_upvotes_on_comment_id"
     t.index ["user_id"], name: "index_upvotes_on_user_id"
+    t.index ["user_id", "comment_id"], name: "index_upvotes_on_user_id_and_comment_id", unique: true
   end
 
   create_table "user_booking_approvals", force: :cascade do |t|
