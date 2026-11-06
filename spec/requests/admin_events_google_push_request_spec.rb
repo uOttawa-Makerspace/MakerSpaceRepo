@@ -87,24 +87,26 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
       expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id)
     end
 
-    it "removes the old calendar's copy and pushes to the new calendar when the event moves to another space" do
+    it "queues one move from the old calendar when the event moves to another space with a different calendar" do
       mtc = create(:space, name: "MTC")
       event = create(:event, space: space, google_event_id: "g1")
       patch admin_event_path(event), params: { event: event_attrs(space_id: mtc.id) }
       expect(event.reload.space_id).to eq(mtc.id)
-      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id, event.id).exactly(:once)
-      expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id).exactly(:once)
+      expect(GoogleCalendar::EventMoveJob).to have_been_enqueued.with(event.id, calendar_id).exactly(:once)
+      expect(push_jobs + delete_jobs).to be_empty
     end
 
-    it "removes nothing when the space is unchanged" do
+    it "queues a plain push when the space is unchanged" do
       event = create(:event, space: space, google_event_id: "g1")
       patch admin_event_path(event), params: { event: event_attrs }
-      expect(delete_jobs).to be_empty
+      expect(GoogleCalendar::EventMoveJob).not_to have_been_enqueued
+      expect(push_jobs.size).to eq(1)
     end
 
-    it "removes nothing when the new space uses the same calendar" do
+    it "queues a plain push when the new space uses the same calendar" do
       event = create(:event, space: space, google_event_id: "g1")
       patch admin_event_path(event), params: { event: event_attrs(space_id: create(:space).id) }
+      expect(GoogleCalendar::EventMoveJob).not_to have_been_enqueued
       expect(delete_jobs).to be_empty
       expect(push_jobs.size).to eq(1)
     end

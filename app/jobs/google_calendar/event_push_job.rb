@@ -6,13 +6,16 @@ module GoogleCalendar
   # never pushed).
   class EventPushJob < EventJob
     def perform(event_id)
-      event = Event.find_by(id: event_id)
-      return if event.nil? || event.draft
-
-      EventPublisher.new.push(event)
+      event = publishable_event(event_id)
+      EventPublisher.new.push(event) if event
     end
 
     private
+
+    def publishable_event(event_id)
+      event = Event.find_by(id: event_id)
+      event unless event.nil? || event.draft
+    end
 
     def failure_context
       { event_id: arguments.first }

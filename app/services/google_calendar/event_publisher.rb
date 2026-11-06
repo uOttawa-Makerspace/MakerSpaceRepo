@@ -5,7 +5,7 @@ module GoogleCalendar
   # callback.
   #
   # The Google event id is chosen by us (Event#push_to_google_later stores it before the first push). A push
-  # updates that id. When Google answers 404 (not there yet) or 410 (removed earlier) the event is inserted with
+  # updates that id. When Google answers 404 (not there yet) the event is inserted with
   # that same id, and a 409 on the insert (another push got there first) is answered with one more update.
   # Retrying a push therefore never creates a second copy.
   class EventPublisher
@@ -15,7 +15,8 @@ module GoogleCalendar
     }.freeze
     TEST_CALENDAR = "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
     CONFLICT = 409
-    GONE = [404, 410].freeze
+    NOT_FOUND = 404
+    GONE = [NOT_FOUND, 410].freeze
 
     def self.calendar_id_for(space)
       CALENDARS.fetch(space.name, TEST_CALENDAR)
@@ -44,10 +45,19 @@ module GoogleCalendar
       begin
         service.update_event(calendar_id, event.google_event_id, gcal_event)
       rescue Google::Apis::ClientError => e
-        raise unless GONE.include?(e.status_code)
+        raise unless e.status_code == NOT_FOUND
 
         insert(calendar_id, gcal_event)
       end
+    end
+
+    # Moves the Google event out of the calendar the event was in, so it keeps its id and leaves nothing behind,
+    # then pushes its current state. An event that is not in the old calendar (never pushed, or already moved by
+    # an earlier run) is just pushed.
+    def move_and_push(event, from_calendar_id)
+      to_calendar_id = self.class.calendar_id_for(event.space)
+      move(from_calendar_id, to_calendar_id, event.google_event_id) unless from_calendar_id == to_calendar_id
+      push(event)
     end
 
     # A Google event that is already gone counts as removed.
@@ -58,6 +68,12 @@ module GoogleCalendar
     end
 
     private
+
+    def move(from_calendar_id, to_calendar_id, google_event_id)
+      service.move_event(from_calendar_id, google_event_id, to_calendar_id)
+    rescue Google::Apis::ClientError => e
+      raise unless e.status_code == NOT_FOUND
+    end
 
     # The id is not in Google yet. A 409 means another push inserted it first, so update it once.
     def insert(calendar_id, gcal_event)

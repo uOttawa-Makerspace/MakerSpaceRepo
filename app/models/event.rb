@@ -39,34 +39,32 @@ class Event < ApplicationRecord
   # pushed. The Google event id is chosen here, before the first push, so that a retried push cannot create a
   # second copy.
   #
-  # When the event was moved to another space, pass the space it came from: its copy in the old calendar is then
-  # removed too.
+  # When the event was moved to another space, pass the space it came from: if that is a different calendar the
+  # Google event is moved there (keeping its id) before it is pushed.
   def push_to_google_later(previous_space: nil)
-    remove_from_previous_calendar(previous_space)
     return if draft
 
     assign_google_event_id
-    GoogleCalendar::EventPushJob.perform_later(id)
+    if moved_calendar?(previous_space)
+      GoogleCalendar::EventMoveJob.perform_later(id, GoogleCalendar::EventPublisher.calendar_id_for(previous_space))
+    else
+      GoogleCalendar::EventPushJob.perform_later(id)
+    end
   end
 
   # Queues the removal of a destroyed event's copy in Google Calendar. Takes what was read from the event before
   # it was destroyed.
-  # Pass +event_id+ when the event still exists, so the removal is skipped if it has come back to that calendar.
-  def self.remove_from_google_later(google_event_id, space, event_id: nil)
+  def self.remove_from_google_later(google_event_id, space)
     return if google_event_id.blank?
 
-    calendar_id = GoogleCalendar::EventPublisher.calendar_id_for(space)
-    GoogleCalendar::EventDeleteJob.perform_later(*[google_event_id, calendar_id, event_id].compact)
+    GoogleCalendar::EventDeleteJob.perform_later(google_event_id, GoogleCalendar::EventPublisher.calendar_id_for(space))
   end
 
   private
 
-  def remove_from_previous_calendar(previous_space)
-    return if previous_space.nil?
-    return if GoogleCalendar::EventPublisher.calendar_id_for(previous_space) ==
-              GoogleCalendar::EventPublisher.calendar_id_for(space)
-
-    Event.remove_from_google_later(google_event_id, previous_space, event_id: id)
+  def moved_calendar?(previous_space)
+    previous_space.present? &&
+      GoogleCalendar::EventPublisher.calendar_id_for(previous_space) != GoogleCalendar::EventPublisher.calendar_id_for(space)
   end
 
   def assign_google_event_id

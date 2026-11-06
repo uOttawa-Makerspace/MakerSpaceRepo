@@ -131,6 +131,22 @@ RSpec.describe Event, type: :model do
         expect(event.reload.google_event_id).to be_present
       end
 
+      it "queues a move from the previous calendar when the space changed to another calendar" do
+        old = create(:space, name: "MTC")
+        event = create(:event, space: space, created_by: creator, google_event_id: "abc123")
+        event.push_to_google_later(previous_space: old)
+        expect(GoogleCalendar::EventMoveJob).to have_been_enqueued
+          .with(event.id, "c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com")
+        expect(GoogleCalendar::EventPushJob).not_to have_been_enqueued
+      end
+
+      it "queues a plain push when the previous space has the same calendar" do
+        event = create(:event, space: space, created_by: creator)
+        event.push_to_google_later(previous_space: create(:space))
+        expect(GoogleCalendar::EventMoveJob).not_to have_been_enqueued
+        expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id)
+      end
+
       it "queues nothing for a draft" do
         event = create(:event, :draft, space: space, created_by: creator, google_event_id: nil)
         event.push_to_google_later
