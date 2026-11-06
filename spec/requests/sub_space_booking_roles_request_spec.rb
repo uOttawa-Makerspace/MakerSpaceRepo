@@ -235,20 +235,12 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
           expect(response.parsed_body.keys).to match_array(SubSpaceBooking.column_names)
         end
 
-        it "users returns the JSON user list" do
-          signed_in = sign_in_as(role)
+        it "users returns the matching people as a JSON list" do
           other = create(:user, :regular_user, name: "Listed Person", booking_approval: false)
-          get users_sub_space_booking_index_path
+          sign_in_as(role)
+          get users_sub_space_booking_index_path, params: { query: "Listed" }
           expect(response).to have_http_status(:ok)
-          json = response.parsed_body
-          expect(json).to be_an(Array)
-          expect(json.map { |u| u["id"] }).to match_array(User.pluck(:id))
-          expect(json.map { |u| u["id"] }).to include(signed_in.id, other.id)
-          listed = json.find { |u| u["id"] == other.id }
-          expect(listed).to include(
-            "name" => "Listed Person", "email" => other.email, "username" => other.username
-          )
-          expect(json.flat_map(&:keys)).not_to include("password", "access_token")
+          expect(response.parsed_body).to eq([{ "id" => other.id, "name" => "Listed Person" }])
         end
       end
     end
@@ -504,30 +496,21 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   describe "users JSON" do
-    # `render json: User.all` goes through User#serializable_hash,
-    # so staff/admin get every column except password and access_token.
-    it "exposes every user column except the password hash and access_token to staff" do
-      subject_user = create(:user, :regular_user, access_token: "ghp_secret_token_value")
+    it "exposes only id and name, not email, tokens or other columns, to staff" do
+      subject_user = create(:user, :regular_user, name: "Needle Person", access_token: "ghp_secret_token_value")
       sign_in_as(:staff)
 
-      get users_sub_space_booking_index_path
+      get users_sub_space_booking_index_path, params: { query: "Needle" }
       expect(response).to have_http_status(:ok)
-
-      entry = response.parsed_body.find { |u| u["id"] == subject_user.id }
-      expect(entry.keys).to match_array(User.column_names - %w[password access_token])
-      expect(entry).not_to have_key("password")
-      expect(entry).not_to have_key("access_token")
-      expect(entry["email"]).to eq(subject_user.email)
+      expect(response.parsed_body).to eq([{ "id" => subject_user.id, "name" => "Needle Person" }])
     end
 
-    it "ignores the query parameter and lists every user" do
+    it "lists only the users matching the query" do
       create(:user, :regular_user, name: "Needle Person")
       create(:user, :regular_user, name: "Other Person")
       sign_in_as(:admin)
       get users_sub_space_booking_index_path, params: { query: "Needle" }
-      names = response.parsed_body.map { |u| u["name"] }
-      expect(names).to include("Needle Person", "Other Person")
-      expect(response.parsed_body.size).to eq(User.count)
+      expect(response.parsed_body.pluck("name")).to eq(["Needle Person"])
     end
   end
 
