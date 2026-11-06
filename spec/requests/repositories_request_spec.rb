@@ -718,6 +718,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(owner.reload.reputation).to eq(5)
     end
 
+    it "reverses nothing when a simultaneous request already took the like back" do
+      content_login!(stranger)
+      post add_like_repository_path(owner.username, repo.slug)
+      allow(Like).to receive(:take_back).and_return(false)
+
+      expect { post add_like_repository_path(owner.username, repo.slug) }.not_to change { owner.reload.reputation }
+
+      expect(response).to redirect_to(repository_path(owner.username, repo.slug))
+    end
+
     it "refuses a like by the owner or a member of the repository" do
       member = create(:user, :regular_user)
       repo.users << member

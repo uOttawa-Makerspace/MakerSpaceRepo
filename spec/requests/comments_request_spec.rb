@@ -180,6 +180,20 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(author.reload.reputation).to eq(2)
     end
 
+    it "changes no reputation when a simultaneous request already switched or removed the vote" do
+      content_login!(voter)
+      vote(comment)
+      reputation = author.reload.reputation
+      allow(Upvote).to receive(:switch).and_return(false)
+      allow(Upvote).to receive(:retract).and_return(false)
+
+      vote(comment, downvote: "t")
+      vote(comment)
+
+      expect(response).to redirect_to(anchor_path)
+      expect(author.reload.reputation).to eq(reputation)
+    end
+
     it "downvote: -1 counter, -2 reputation" do
       content_login!(voter)
       vote(comment, downvote: "t")
@@ -205,6 +219,14 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(comment.reload.upvote).to eq(-1)
       expect(author.reload.reputation).to eq(-2)
       expect(Upvote.where(comment: comment, user: voter).count).to eq(1)
+    end
+
+    it "flipping a downvote to an upvote swings the counter by 2 and the reputation by 4" do
+      content_login!(voter)
+      vote(comment, downvote: "t")
+      vote(comment)
+      expect(comment.reload.upvote).to eq(1)
+      expect(author.reload.reputation).to eq(2)
     end
 
     it "removing a downvote restores counter and reputation" do
