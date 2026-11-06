@@ -65,8 +65,11 @@ class BulkMailRun
   rescue StandardError, SignalException => error
     # Best effort: also covers Ctrl-C (Interrupt) and SIGTERM, the usual ways a hand-run task is stopped.
     # Only SIGKILL or a crash of the process leaves the claimed batch marked as sent.
-    give_back(previous, claimed)
-    raise error
+    begin
+      give_back(previous, claimed)
+    ensure
+      raise error # whatever went wrong while handing the claim back, the original error is the one raised
+    end
   end
 
   # If handing the claim back fails too, the original error must still be the one that propagates; the

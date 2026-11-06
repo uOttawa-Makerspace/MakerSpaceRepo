@@ -105,4 +105,19 @@ RSpec.describe BulkMailRun do
   ensure
     Rails.error.unsubscribe(subscriber)
   end
+
+  it "still raises the original error when the operator message cannot be written either" do
+    allow(Setting).to receive(:swap).and_call_original
+    allow(Setting).to receive(:swap).with("bulk_mail:spec:2026", anything, nil).and_raise(ActiveRecord::ConnectionNotEstablished, "db down")
+    dead_terminal = Class.new do
+      def write(*) = raise(Errno::EPIPE)
+      def puts(*) = raise(Errno::EPIPE)
+    end.new
+    original = $stderr
+    $stderr = dead_terminal
+
+    expect { described_class.new("spec", "2026").each_user(scope) { |_| raise "mail down" } }.to raise_error("mail down")
+  ensure
+    $stderr = original
+  end
 end
