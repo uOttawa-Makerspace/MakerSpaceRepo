@@ -147,26 +147,12 @@ class Admin::CalendarController < AdminAreaController
   end
 
   def update_color
-    if params[:user_id].present? &&
-         StaffSpace.where(
-           user_id: params[:user_id],
-           space_id: @user.space_id
-         ).present? && params[:color].present?
-      staff_space =
-        StaffSpace.where(
-          user_id: params[:user_id],
-          space_id: @user.space_id
-        ).first
-      return flash[:notice] = "Color updated successfully" if staff_space.update(color: params[:color])
+    staff_space = StaffSpace.find_by(user_id: params[:user_id], space_id: @user.space_id) if params[:user_id].present?
+
+    if params[:color].present? && staff_space&.update(color: params[:color])
+      render json: { status: "ok" }
+    else
+      render json: { status: "error", error: "An error occurred, try again later." }, status: :unprocessable_entity
     end
-
-    flash[:alert] = "An error occurred, try again later."
-  end
-
-
-  private
-
-  def set_default_space
-    @space_id = current_user.space_id || Space.first.id
   end
 end

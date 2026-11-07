@@ -221,8 +221,8 @@ class SubSpaceBooking < ApplicationRecord
 
   def end_time_after_start_time
     return unless start_time.present? && end_time.present? && start_time >= end_time
-      errors.add(:expiration_date, "Start Time needs to be before end time")
-    
+
+    errors.add(:end_time, :before_start)
   end
 
   def self.color_legend

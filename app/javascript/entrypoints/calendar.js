@@ -38,7 +38,7 @@ function updateColor(userId, color) {
     }),
   })
     .then((res) => {
-      // Yippee!
+      if (!res.ok) console.error("The staff colour could not be saved.");
     })
     .catch((error) => {
       console.error("An error occurred: " + error.message);

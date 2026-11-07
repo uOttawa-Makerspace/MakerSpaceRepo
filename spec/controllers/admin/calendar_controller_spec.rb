@@ -96,7 +96,7 @@ RSpec.describe Admin::CalendarController, type: :controller do
         color: "#00FF00"
       }
       expect(response).to be_successful
-      expect(flash[:notice]).to eq("Color updated successfully")
+      expect(response.parsed_body).to eq("status" => "ok")
       expect(staff_space.reload.color).to eq("#00FF00")
     end
 
@@ -104,7 +104,8 @@ RSpec.describe Admin::CalendarController, type: :controller do
       post :update_color, params: {
         user_id: staff_members.first.id
       }
-      expect(flash[:alert]).to eq("An error occurred, try again later.")
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["error"]).to eq("An error occurred, try again later.")
     end
 
     it "does not update if user not in space" do
@@ -113,7 +114,8 @@ RSpec.describe Admin::CalendarController, type: :controller do
         user_id: other_user.id,
         color: "#00FF00"
       }
-      expect(flash[:alert]).to eq("An error occurred, try again later.")
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["error"]).to eq("An error occurred, try again later.")
     end
   end
 end

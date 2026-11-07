@@ -185,7 +185,6 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       )
     end
 
-    # the time-order error is attached to :expiration_date
     it "rejects end_time <= start_time" do
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {
@@ -194,8 +193,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
            } }
       expect(response.status).to eq(422)
       expect(response.parsed_body)
-        .to eq("errors" =>
-               ["Expiration date Start Time needs to be before end time"])
+        .to eq("errors" => ["End time must be after the start time."])
     end
 
     it "needs a real sub space" do

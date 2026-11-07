@@ -255,11 +255,16 @@ fr:
             end_time:
               in_the_past: "ne peut pas être dans le passé pour une réservation déjà commencée. Choisissez une heure de fin après maintenant."
               booking_ended: "ne peut plus être modifiée : cette réservation est déjà terminée."
+              before_start: "doit être après l'heure de début."
       messages:
         restrict_dependent_destroy:
           has_many: "Impossible de supprimer l'enregistrement car il reste des %{record}"
         blank: "Ce champ est requis."
         inclusion: "Sélection non valide."
+  admin_events:
+    times_required: "Les heures de début et de fin sont requises."
+    dates_required: "Les dates de début et de fin sont requises."
+    start_date_required: "La date de début est requise."
   sub_space_booking:
     picker:
       min_length: "Saisissez au moins %{count} caractères pour rechercher une personne."

@@ -116,10 +116,7 @@ RSpec.describe "Admin events contract", type: :request do
 
       log_in!(admin)
 
-      # the no-:id publish branch parses view_start_date/
-      # view_end_date BEFORE the space guard — date params must be present or
-      # the request 500s before the "Space ID is required." flash can even
-      # fire (pinned in admin_events_gaps_request_spec.rb).
+      # the view dates are required before the space is checked
       patch publish_admin_events_path, params: {
         view_start_date: "2027-03-31", view_end_date: "2027-04-02"
       }
