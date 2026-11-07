@@ -35,6 +35,7 @@ en:
     preferred_not_assigned: Preferred, no locker assigned
     no_preferred_not_assigned: No preference, no locker assigned
     none: none
+    access_denied: You do not have access to that page.
 
     submitted_on: Submitted on
     for: for
@@ -172,6 +173,7 @@ fr:
     preferred_not_assigned: Préféré, aucun casier assigné
     no_preferred_not_assigned: Aucune préférence, aucun casier assigné
     none: aucun
+    access_denied: Vous n'avez pas accès à cette page.
 
     submitted_on: Soumise le
     for: par

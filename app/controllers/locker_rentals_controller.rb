@@ -277,7 +277,7 @@ class LockerRentalsController < SessionsController
     # Always allow staff
     return if current_user.staff?
 
-    redirect_to locker_rentals_path
+    redirect_to locker_rentals_path, alert: t('lockers.access_denied')
   end
 
   def new_instance_attributes

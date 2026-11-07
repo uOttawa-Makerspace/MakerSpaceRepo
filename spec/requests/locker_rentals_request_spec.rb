@@ -584,14 +584,13 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include("Locker Inventory")
     end
 
-    it "denies strangers with a plain redirect to the index (no flash set)" do
-      # stranger denial sets no flash
+    it "denies strangers with a redirect to the index and an alert" do
       rental = reviewing_rental!
       log_in!(other)
 
       get locker_rental_path(rental)
       expect(response).to redirect_to(locker_rentals_path)
-      expect(flash[:alert]).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("lockers.access_denied"))
     end
 
     it "returns 404 for an unknown rental id" do
@@ -957,6 +956,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         patch locker_rental_path(rental),
               params: { locker_rental: { state: "cancelled" } }
         expect(response).to redirect_to(locker_rentals_path)
+        expect(flash[:alert]).to eq(I18n.t("lockers.access_denied"))
         expect(rental.reload.state).to eq("reviewing")
       end
 
@@ -1517,11 +1517,11 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         .to include(toggle_contacted_locker_rental_path(awaiting))
     end
 
-    it "is staff/admin-only for HTML (regular users bounce with no flash)" do
+    it "is staff/admin-only for HTML (regular users bounce with an alert)" do
       log_in!(owner)
       get admin_locker_rentals_path
       expect(response).to redirect_to(locker_rentals_path)
-      expect(flash[:alert]).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("lockers.access_denied"))
     end
 
     # N+1 pinned
@@ -1654,6 +1654,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       patch toggle_contacted_locker_rental_path(rental)
 
       expect(response).to redirect_to(locker_rentals_path)
+      expect(flash[:alert]).to eq(I18n.t("lockers.access_denied"))
       expect(rental.reload.contacted_for_clearance).to eq(false)
     end
 
