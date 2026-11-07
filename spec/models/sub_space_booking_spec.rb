@@ -47,6 +47,94 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     end
   end
 
+  describe "status" do
+    let(:booking) { create(:sub_space_booking) }
+
+    def legacy_status(record)
+      SubSpaceBookingStatus.find_by(sub_space_booking_id: record.id)&.booking_status
+    end
+
+    it "is pending, approved or declined, and the scopes follow it" do
+      booking.change_status!(@approved_status)
+      expect(booking.reload).to be_approved
+      expect(booking).not_to be_pending
+      expect(described_class.approved).to contain_exactly(booking)
+      expect(described_class.pending).to be_empty
+      booking.change_status!(@declined_status)
+      expect(booking.reload).to be_declined
+      expect(described_class.declined).to contain_exactly(booking)
+    end
+
+    it "must exist when one is given" do
+      booking.booking_status_id = -1
+      expect(booking).not_to be_valid
+      expect(booking.errors[:booking_status]).to be_present
+    end
+
+    describe "#save_with_status!" do
+      it "saves the booking with the status and a matching old status row, linked" do
+        new_booking = build(:sub_space_booking, booking_status: nil)
+
+        new_booking.save_with_status!(@approved_status)
+
+        expect(new_booking.reload.booking_status).to eq(@approved_status)
+        expect(legacy_status(new_booking)).to eq(@approved_status)
+        expect(new_booking.sub_space_booking_status_id).to eq(SubSpaceBookingStatus.find_by(sub_space_booking_id: new_booking.id).id)
+      end
+
+      it "saves nothing when the booking is invalid" do
+        new_booking = build(:sub_space_booking, booking_status: nil, name: nil)
+
+        expect { new_booking.save_with_status!(@approved_status) }.to raise_error(ActiveRecord::RecordInvalid)
+
+        expect(described_class.count).to eq(0)
+        expect(SubSpaceBookingStatus.count).to eq(0)
+      end
+    end
+
+    describe "#change_status!" do
+      it "sets the status and keeps the old status row in step" do
+        booking.change_status!(@approved_status)
+
+        expect(booking.reload.booking_status).to eq(@approved_status)
+        expect(legacy_status(booking)).to eq(@approved_status)
+        expect(SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).count).to eq(1)
+      end
+
+      it "creates the old status row when the booking has none" do
+        booking.update_column(:sub_space_booking_status_id, nil)
+        SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).delete_all
+
+        described_class.find(booking.id).change_status!(@declined_status)
+
+        expect(legacy_status(booking)).to eq(@declined_status)
+        expect(booking.reload.sub_space_booking_status_id).to be_present
+      end
+
+      it "works on a booking that no longer passes validation" do
+        booking.update_columns(end_time: booking.start_time - 1.hour)
+
+        described_class.find(booking.id).change_status!(@approved_status)
+
+        expect(booking.reload).to be_approved
+      end
+    end
+
+    describe ".change_status_of!" do
+      it "changes the listed bookings and their old status rows, and no others" do
+        listed = create_list(:sub_space_booking, 2)
+        other = create(:sub_space_booking)
+
+        described_class.change_status_of!(listed, @declined_status)
+
+        expect(listed.map { |b| b.reload.booking_status }).to all(eq(@declined_status))
+        expect(listed.map { |b| legacy_status(b) }).to all(eq(@declined_status))
+        expect(other.reload.booking_status).to eq(@pending_status)
+        expect(legacy_status(other)).to eq(@pending_status)
+      end
+    end
+  end
+
   describe "validations" do
     it "needs name, description, start_time, end_time (i18n full messages)" do
       blank = described_class.new(sub_space: nil)
@@ -316,8 +404,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       made = create(:sub_space_booking, { sub_space: subspace, user: user,
                    start_time: DateTime.parse("2027-04-05 10:00"),
                    end_time: DateTime.parse("2027-04-05 11:00") }.merge(attrs))
-      made.sub_space_booking_status
-          .update!(booking_status_id: status_row.id)
+      made.change_status!(status_row)
       made
     end
 

@@ -3,14 +3,14 @@ class SubSpaceBooking < ApplicationRecord
   belongs_to :approved_by, class_name: "User", optional: true
   belongs_to :sub_space
   belongs_to :recurring_booking, optional: true
+  # Set by save_with_status!, which every writer of a new booking uses. Optional here because the
+  # controller checks an occurrence before its status is chosen; the column may become NOT NULL later.
+  belongs_to :booking_status, optional: true
+  validates :booking_status, presence: true, if: :booking_status_id?
+  # The status row the booking used to be linked to. It is still written with every status change
+  # so the old table stays consistent until it is retired; nothing reads it.
   has_one :sub_space_booking_status,
           dependent: :destroy
-  # The status the booking's own column points at; empty only for a booking
-  # that was never given one.
-  belongs_to :current_status,
-             class_name: "SubSpaceBookingStatus",
-             foreign_key: :sub_space_booking_status_id,
-             optional: true
   validates :name, presence: true
   validates :description, presence: true
   validates :start_time, presence: true
@@ -55,6 +55,42 @@ class SubSpaceBooking < ApplicationRecord
           where("(sub_space_bookings.start_time, sub_space_bookings.end_time) OVERLAPS (?, ?)",
                 start_time, end_time)
         }
+
+  scope :pending, -> { where(booking_status_id: BookingStatus.pending.id) }
+  scope :approved, -> { where(booking_status_id: BookingStatus.approved.id) }
+  scope :declined, -> { where(booking_status_id: BookingStatus.declined.id) }
+
+  def pending? = booking_status_id == BookingStatus.pending.id
+  def approved? = booking_status_id == BookingStatus.approved.id
+  def declined? = booking_status_id == BookingStatus.declined.id
+
+  # Saves a new booking with its first status, and records the status on the old status row too.
+  # All or nothing.
+  def save_with_status!(status)
+    transaction do
+      self.booking_status_id = status.id
+      save!
+      write_status_row
+    end
+  end
+
+  # Changes the status of a saved booking without running validations (a booking that no longer passes
+  # some rule can still be approved or declined), and records it on the old status row too.
+  def change_status!(status)
+    transaction do
+      update_column(:booking_status_id, status.id)
+      write_status_row
+    end
+  end
+
+  # Gives every booking of the list the status, with the old status rows following. One statement per table.
+  def self.change_status_of!(bookings, status)
+    ids = bookings.map(&:id)
+    transaction do
+      where(id: ids).update_all(booking_status_id: status.id)
+      SubSpaceBookingStatus.where(sub_space_booking_id: ids).update_all(booking_status_id: status.id)
+    end
+  end
 
   # Destroys the booking together with its status, the one way a booking is
   # removed. The booking and its status row reference each other, so both links
@@ -193,7 +229,7 @@ class SubSpaceBooking < ApplicationRecord
     status =
       if blocking
         "blocking_booking"
-      elsif current_status.booking_status_id == BookingStatus.approved.id
+      elsif approved?
         if user_id == current_user_id
           "your_confirmed_bookings"
         else
@@ -268,5 +304,14 @@ class SubSpaceBooking < ApplicationRecord
     rescue Google::Apis::ClientError => e
       Rails.logger.error "Failed to delete Google event #{sub_space_booking.id}: #{e.message}"
     end
+  end
+
+  private
+
+  # The old status row follows the booking's status: created when the booking has none, linked back.
+  def write_status_row
+    row = sub_space_booking_status || build_sub_space_booking_status
+    row.update!(booking_status_id: booking_status_id)
+    update_column(:sub_space_booking_status_id, row.id)
   end
 end

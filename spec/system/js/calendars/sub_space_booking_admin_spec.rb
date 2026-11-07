@@ -112,8 +112,8 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       find("button[form=bulkApproveDeclineForm][value=approve]").click
 
       expect(page).to have_text("Bookings approved successfully.")
-      expect(first.reload.sub_space_booking_status.booking_status).to eq(@approved_status)
-      expect(second.reload.sub_space_booking_status.booking_status).to eq(@pending_status)
+      expect(first.reload.booking_status).to eq(@approved_status)
+      expect(second.reload.booking_status).to eq(@pending_status)
     end
 
     it "declines every booking when all are ticked and Bulk Reject is pressed", js: true, skip_bullet: true do
@@ -122,7 +122,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       click_button "Bulk Reject Selected"
 
       expect(page).to have_text("Bookings declined successfully.")
-      expect([first, second].map { |b| b.reload.sub_space_booking_status.booking_status }).to all(eq(@declined_status))
+      expect([first, second].map { |b| b.reload.booking_status }).to all(eq(@declined_status))
     end
 
     it "approves a single booking with its own button", js: true, skip_bullet: true do
@@ -130,7 +130,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       within(find("tr", text: "Soldering club")) { click_button "Approve" }
 
       expect(page).to have_text("approved successfully")
-      expect(first.reload.sub_space_booking_status.booking_status).to eq(@approved_status)
+      expect(first.reload.booking_status).to eq(@approved_status)
     end
   end
 
@@ -155,7 +155,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       find("button[title='Approve All']").click
 
       expect(page).to have_text("Bookings approved successfully.")
-      expect(SubSpaceBooking.where(name: "Club night").map { |b| b.sub_space_booking_status.booking_status }).to all(eq(@approved_status))
+      expect(SubSpaceBooking.where(name: "Club night").map { |b| b.booking_status }).to all(eq(@approved_status))
     end
 
     # The modal has no container for the dates the script builds (an element

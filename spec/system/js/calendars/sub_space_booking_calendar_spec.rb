@@ -113,7 +113,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(booking.user).to eq(user)
       expect(booking.sub_space).to eq(subspace)
       expect(stored(booking)).to eq("2027-03-16 10:00")
-      expect(booking.sub_space_booking_status.booking_status).to eq(@approved_status)
+      expect(booking.booking_status).to eq(@approved_status)
     end
 
     it "shows the end-before-start message and sends nothing", js: true, skip_bullet: true do
@@ -226,7 +226,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
     let!(:booking) do
       create(:sub_space_booking, sub_space: subspace, user: admin, name: "Team lab", description: "Weekly",
                                  start_time: eastern.local(2027, 3, 16, 10), end_time: eastern.local(2027, 3, 16, 11)).tap do |b|
-        b.sub_space_booking_status.update!(booking_status: @approved_status)
+        b.change_status!(@approved_status)
       end
     end
 
@@ -311,7 +311,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       [eastern.local(2027, 3, 16, 10), eastern.local(2027, 3, 23, 10)].map do |start|
         create(:sub_space_booking, sub_space: subspace, user: admin, name: "Club night", recurring_booking_id: recurring.id,
                                    start_time: start, end_time: start + 1.hour).tap do |b|
-          b.sub_space_booking_status.update!(booking_status: @approved_status)
+          b.change_status!(@approved_status)
         end
       end
     end

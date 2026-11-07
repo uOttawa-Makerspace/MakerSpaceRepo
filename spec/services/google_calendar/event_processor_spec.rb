@@ -40,8 +40,8 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
         name: "Team meeting", description: "Weekly", sub_space: stm124, blocking: true, user: creator,
         start_time: Time.utc(2027, 4, 5, 14), end_time: Time.utc(2027, 4, 5, 15)
       )
-      expect(booking.sub_space_booking_status.booking_status).to eq(approved)
-      expect(booking.sub_space_booking_status_id).to eq(booking.sub_space_booking_status.id)
+      expect(booking.booking_status).to eq(approved)
+      expect(booking.sub_space_booking_status).to have_attributes(booking_status: approved, id: booking.sub_space_booking_status_id)
     end
 
     it "saves nothing and reports when the status of the new booking cannot be saved" do
@@ -61,7 +61,7 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       described_class.process(c18_gcal_event(start_at: 1.week.ago.utc, end_at: 1.week.ago.utc + 1.hour))
       booking = booking_for("evt-1")
       expect(booking).to be_persisted
-      expect(booking.sub_space_booking_status.booking_status).to eq(approved)
+      expect(booking.booking_status).to eq(approved)
     end
 
     it "defaults a blank summary/description to 'Google Calendar Event' / 'No description'" do
@@ -103,9 +103,9 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
     it "re-approves nothing: an existing status is left as it is on update" do
       described_class.process(c18_gcal_event)
       booking = booking_for("evt-1")
-      booking.sub_space_booking_status.update!(booking_status: create(:booking_status, :rejected))
+      booking.change_status!(create(:booking_status, :rejected))
       described_class.process(c18_gcal_event(summary: "Again"))
-      expect(booking.reload.sub_space_booking_status.booking_status.name).to eq("Declined")
+      expect(booking.reload.booking_status.name).to eq("Declined")
     end
 
     it "skips overlap/conflict checks: overlapping events create overlapping blocking bookings" do

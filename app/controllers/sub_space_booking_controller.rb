@@ -41,7 +41,7 @@ class SubSpaceBookingController < SessionsController
       SubSpaceBooking
         .where(user_id: current_user.id)
         .joins(:user)
-        .includes(:sub_space, :sub_space_booking_status)
+        .includes(:sub_space)
         .order(start_time: :desc)
 
     if current_user.admin?
@@ -243,12 +243,10 @@ class SubSpaceBookingController < SessionsController
   def edit
     @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
 
-    ssb_status = @sub_space_booking.sub_space_booking_status.booking_status_id
-
     if (
-         ssb_status == BookingStatus.pending.id && !@user.admin? &&
+         @sub_space_booking.pending? && !@user.admin? &&
            !@user.eql?(@sub_space_booking.user)
-       ) || (ssb_status == BookingStatus.approved.id && !@user.admin?)
+       ) || (@sub_space_booking.approved? && !@user.admin?)
       redirect_to sub_space_booking_index_path,
                   alert: "You can't access this subspace booking."
     end
@@ -257,9 +255,7 @@ class SubSpaceBookingController < SessionsController
   def update
     @sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
 
-    unless @user.admin? ||
-             @sub_space_booking.sub_space_booking_status.booking_status_id !=
-               BookingStatus.approved.id
+    if @sub_space_booking.approved? && !@user.admin?
       redirect_to sub_space_booking_index_path(
                     anchor: "booking-calendar-tab",
                     room: @sub_space_booking.sub_space_id
@@ -355,16 +351,15 @@ class SubSpaceBookingController < SessionsController
 
   def approve
     sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
-    status = SubSpaceBookingStatus.find(sub_space_booking.sub_space_booking_status_id)
 
-    unless status.booking_status_id == BookingStatus.pending.id
+    unless sub_space_booking.pending?
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
       return
     end
 
     # 1. Update status
-    status.update!(booking_status_id: BookingStatus.approved.id)
+    sub_space_booking.change_status!(BookingStatus.approved)
     
     # 2. Stamp the approval with update_columns, so a row that no longer passes
     # some validation can still be approved. It writes only the approval
@@ -384,15 +379,14 @@ class SubSpaceBookingController < SessionsController
 
   def decline
     sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
-    status = SubSpaceBookingStatus.find(sub_space_booking.sub_space_booking_status_id)
 
-    unless status.booking_status_id == BookingStatus.pending.id
+    unless sub_space_booking.pending?
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
       return
     end
 
-    status.update!(booking_status_id: BookingStatus.declined.id)
+    sub_space_booking.change_status!(BookingStatus.declined)
     
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: "Booking for #{sub_space_booking.sub_space.name} declined successfully."
@@ -607,37 +601,31 @@ class SubSpaceBookingController < SessionsController
       )
     end
 
-    status_id =
+    status =
       # Auto-approve bookings made by admins
       if current_user.admin?
-        BookingStatus.approved.id
+        BookingStatus.approved
       elsif sub_space.approval_required
         if sub_space.max_automatic_approval_hour.nil?
-          BookingStatus.pending.id
+          BookingStatus.pending
         elsif duration <= sub_space.max_automatic_approval_hour
-          BookingStatus.approved.id
+          BookingStatus.approved
         else
-          BookingStatus.pending.id
+          BookingStatus.pending
         end
       else
-        BookingStatus.approved.id
+        BookingStatus.approved
       end
 
     booking.public = sub_space.default_public
     booking.recurring_booking = recurring_booking # Attach the RecurringBooking handle, is saved with the booking itself
     # Set approved_at and approved_by for admin bookings
-    if current_user.admin? && status_id == BookingStatus.approved.id
+    if current_user.admin? && status == BookingStatus.approved
       booking.approved_at = DateTime.now
       booking.approved_by_id = current_user.id
     end
 
-    # The booking and its status reference each other, so this is an insert,
-    # the status insert, and the link; all or nothing.
-    SubSpaceBooking.transaction do
-      booking.save!
-      status = SubSpaceBookingStatus.create!(sub_space_booking_id: booking.id, booking_status_id: status_id)
-      booking.update_column(:sub_space_booking_status_id, status.id)
-    end
+    booking.save_with_status!(status)
 
     send_booking_created_mail(booking) if send_email
     nil
@@ -654,9 +642,9 @@ class SubSpaceBookingController < SessionsController
   end
 
   def send_booking_created_mail(booking)
-    if booking.sub_space_booking_status.booking_status_id == BookingStatus.pending.id
+    if booking.pending?
       BookingMailer.send_booking_needs_approval(booking.id).deliver_now
-    elsif booking.sub_space_booking_status.booking_status_id == BookingStatus.approved.id
+    elsif booking.approved?
       # Send appropriate confirmation for approved bookings
       if current_user.admin?
         BookingMailer.send_booking_approved(booking.id).deliver_now
@@ -792,22 +780,18 @@ class SubSpaceBookingController < SessionsController
   def apply_bulk_booking_status(bulk_status)
     booking_ids = []
     SubSpaceBooking.transaction do
-      pending = SubSpaceBooking.where(id: params[:sub_space_booking_ids]).select do |booking|
-        SubSpaceBookingStatus.where(id: booking.sub_space_booking_status_id,
-                                    booking_status_id: BookingStatus.pending.id).exists?
-      end
+      pending = SubSpaceBooking.pending.where(id: params[:sub_space_booking_ids]).to_a
       booking_ids = pending.map(&:id)
-      status_ids = pending.map(&:sub_space_booking_status_id)
 
       if bulk_status == "approve"
-        SubSpaceBookingStatus.where(id: status_ids).update_all(booking_status_id: BookingStatus.approved.id)
+        SubSpaceBooking.change_status_of!(pending, BookingStatus.approved)
         # update_all bypasses validations identically to update_columns
         SubSpaceBooking.where(id: booking_ids).update_all(
           approved_at: DateTime.now,
           approved_by_id: current_user.id
         )
       else
-        SubSpaceBookingStatus.where(id: status_ids).update_all(booking_status_id: BookingStatus.declined.id)
+        SubSpaceBooking.change_status_of!(pending, BookingStatus.declined)
       end
     end
     booking_ids
@@ -835,10 +819,9 @@ class SubSpaceBookingController < SessionsController
     # Load ALL pending bookings for these recurring groups (not just current page)
     # Use the same timestamp as the main query to avoid timing issues
     all_recurring_bookings = SubSpaceBooking
-      .includes(:approved_by, :user, :sub_space_booking_status, sub_space: :space)
-      .joins(:sub_space_booking_status)
+      .pending
+      .includes(:approved_by, :user, sub_space: :space)
       .where(recurring_booking_id: recurring_ids)
-      .where(sub_space_booking_statuses: { booking_status_id: BookingStatus.pending.id })
       .where('sub_space_bookings.end_time > ?', @current_time)
       .order(start_time: :asc)
     
@@ -851,9 +834,9 @@ class SubSpaceBookingController < SessionsController
   def feed_bookings
     SubSpaceBooking
       .where(sub_space_id: params[:room])
-      .joins(:user, :current_status)
-      .where(sub_space_booking_statuses: { booking_status_id: [BookingStatus.approved.id, BookingStatus.pending.id] })
-      .includes(:user, :current_status)
+      .joins(:user)
+      .where(booking_status_id: [BookingStatus.approved.id, BookingStatus.pending.id])
+      .includes(:user)
       .order(:id)
   end
 
@@ -871,7 +854,7 @@ class SubSpaceBookingController < SessionsController
     return "Space Blocked" if blocked_for_viewer?(booking)
 
     title = details_visible?(booking) ? "#{booking.name} - #{booking.description}" : "Space Booked"
-    title += " (Pending)" if booking.current_status.booking_status_id == BookingStatus.pending.id
+    title += " (Pending)" if booking.pending?
     title += " - #{booking.user.name}" if @user.admin? && booking.user != @user
     title
   end
@@ -886,8 +869,7 @@ class SubSpaceBookingController < SessionsController
 
   def current_bookings(booking_status_id, page_key: "pending_page")
     scope = SubSpaceBooking
-              .joins(:sub_space_booking_status)
-              .where(sub_space_booking_statuses: { booking_status_id: booking_status_id })
+              .where(booking_status_id: booking_status_id)
               .where("sub_space_bookings.end_time > ?", @current_time)
               .includes(:approved_by, :user, :recurring_booking, sub_space: :space)
               .order(start_time: :asc)
@@ -897,8 +879,7 @@ class SubSpaceBookingController < SessionsController
 
   def old_bookings(booking_status_id, page_key: "old_approved_page")
     scope = SubSpaceBooking
-              .joins(:sub_space_booking_status)
-              .where(sub_space_booking_statuses: { booking_status_id: booking_status_id })
+              .where(booking_status_id: booking_status_id)
               .where("sub_space_bookings.end_time < ?", @current_time)
               .includes(:approved_by, :user, :recurring_booking, sub_space: :space)
               .order(start_time: :desc)

@@ -81,7 +81,6 @@
                 <% if @bookings.empty? %>
                   <tr><td colspan="7" class="text-center text-body-secondary py-4">No bookings found.</td></tr>
                 <% else %>
-                  <% approved_id = BookingStatus.approved.id %>
                   <% @bookings.each do |booking| %>
                     <tr>
                       <td class="text-center"><span class="badge text-bg-secondary"><%= booking.sub_space.name %></span></td>
@@ -90,7 +89,7 @@
                       <td><%= booking.start_time.strftime("%b %e, %Y %l:%M %p") %></td>
                       <td><%= booking.end_time.strftime("%b %e, %Y %l:%M %p") %></td>
                       <td class="text-center">
-                        <% if booking.sub_space_booking_status.booking_status_id == approved_id %>
+                        <% if booking.approved? %>
                           <span class="badge text-bg-success">Approved</span>
                         <% else %>
                           <span class="badge text-bg-warning">Pending</span>
@@ -98,7 +97,7 @@
                       </td>
                       <td>
                         <div class="btn-group btn-group-sm d-flex justify-content-center">
-                          <% if @user.admin? || booking.sub_space_booking_status.booking_status_id != approved_id %>
+                          <% if @user.admin? || !booking.approved? %>
                             <%= button_to sub_space_booking_edit_path(sub_space_booking_id: booking.id), method: :get, class: 'btn btn-outline-primary' do %><i class="fa-solid fa-pencil"></i><% end %>
                           <% end %>
                           <%= button_to sub_space_booking_delete_path(sub_space_booking_id: booking.id), method: :delete, data: { confirm: 'Are you sure you want to delete this booking?' }, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-trash"></i><% end %>

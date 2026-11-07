@@ -30,7 +30,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
   end
 
   def status_name(booking)
-    booking.reload.sub_space_booking_status.booking_status.name
+    booking.reload.booking_status.name
   end
 
   def raw_wall(booking, column = "start_time")
@@ -52,7 +52,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
                      { sub_space: subspace, user: owner,
                        start_time: DateTime.parse("2027-04-03 10:00"),
                        end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs))
-    booking.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+    booking.change_status!(@pending_status)
     booking
   end
 
@@ -62,7 +62,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     row = create(:sub_space_booking, sub_space: target, user: user, name: "Block",
                                      start_time: Time.zone.parse(start_wall),
                                      end_time: Time.zone.parse(end_wall), blocking: true)
-    row.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+    row.change_status!(@approved_status)
     row
   end
 
@@ -637,7 +637,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           log_in!(user)
           week_booking(user, "06", "10:00", "12:00") # 2h already used
           own = week_booking(user, "07", "10:00", "11:00")
-          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          own.change_status!(@pending_status)
 
           update_times(own, "10:00", "12:00") # 2h + 2h > 3h
           expect(response).to have_http_status(:unprocessable_content)
@@ -659,7 +659,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           log_in!(user)
           week_booking(user, "06", "10:00", "12:00")
           own = week_booking(user, "07", "10:00", "11:00")
-          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          own.change_status!(@pending_status)
 
           update_times(own, "11:00", "12:00") # moved: 2h + 1h = 3h, exactly the quota
           expect(response).to have_http_status(:ok)
@@ -673,7 +673,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           log_in!(user)
           week_booking(user, "06", "10:00", "13:00") # 3h
           own = week_booking(user, "07", "10:00", "13:00") # 3h: 6h in a 3h week
-          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          own.change_status!(@pending_status)
 
           patch update_path_for(own), as: :json, params: {
             sub_space_booking: { start_time: "2027-04-07 10:00", end_time: "2027-04-07 13:00",
@@ -694,7 +694,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           log_in!(user)
           week_booking(user, "06", "10:00", "12:00") # 2h this week
           own = week_booking(user, "07", "10:00", "11:00")
-          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          own.change_status!(@pending_status)
 
           patch update_path_for(own), as: :json, params: {
             sub_space_booking: { start_time: "2027-04-14 10:00", end_time: "2027-04-14 13:00",
@@ -710,7 +710,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           week_booking(create(:user, :regular_user), "06", "10:00", "16:00")
           log_in!(user)
           own = week_booking(user, "07", "10:00", "11:00")
-          own.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+          own.change_status!(@pending_status)
           update_times(own, "10:00", "12:00")
           expect(response).to have_http_status(:ok)
 
@@ -958,7 +958,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
         b = pending_booking(booker)
         done = pending_booking(booker, start_time: DateTime.parse("2027-04-04 10:00"),
                                        end_time: DateTime.parse("2027-04-04 11:00"))
-        done.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+        done.change_status!(@approved_status)
         put bulk_approve_decline_sub_space_booking_index_path,
             params: { sub_space_booking_ids: [b.id, done.id], bulk_status: action }
         expect(flash[:notice]).to eq("Bookings #{verb} successfully.")
@@ -967,7 +967,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
       it "#{action}: only the alert when none are pending" do
         done = pending_booking(booker)
-        done.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+        done.change_status!(@approved_status)
         put bulk_approve_decline_sub_space_booking_index_path,
             params: { sub_space_booking_ids: [done.id], bulk_status: action }
         expect(flash[:notice]).to be_nil
@@ -1061,22 +1061,22 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
     it "re-approving an approved booking is refused: no mail and the approver is unchanged" do
       booking = pending_booking(booker, approved_by_id: booker.id, approved_at: Time.utc(2027, 1, 1))
-      booking.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      booking.change_status!(@approved_status)
       perform_enqueued_jobs do
         put sub_space_booking_approve_path(sub_space_booking_id: booking.id)
       end
       expect(flash[:alert]).to include("no longer pending")
       expect(ActionMailer::Base.deliveries).to be_empty
       expect(booking.reload.approved_by_id).to eq(booker.id)
-      expect(booking.sub_space_booking_status.booking_status_id).to eq(@approved_status.id)
+      expect(booking.booking_status_id).to eq(@approved_status.id)
     end
 
     it "declining an approved booking is refused and leaves it approved" do
       booking = pending_booking(booker)
-      booking.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      booking.change_status!(@approved_status)
       put sub_space_booking_decline_path(sub_space_booking_id: booking.id)
       expect(flash[:alert]).to include("no longer pending")
-      expect(booking.reload.sub_space_booking_status.booking_status_id).to eq(@approved_status.id)
+      expect(booking.reload.booking_status_id).to eq(@approved_status.id)
     end
 
     it "bulk approve skips bookings that are not pending: no mail and the approver is unchanged for them" do
@@ -1085,7 +1085,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
                              start_time: DateTime.parse("2027-04-04 10:00"),
                              end_time: DateTime.parse("2027-04-04 11:00"),
                              approved_by_id: booker.id)
-      done.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      done.change_status!(@approved_status)
       perform_enqueued_jobs do
         put bulk_approve_decline_sub_space_booking_index_path,
             params: { sub_space_booking_ids: [pending_one.id, done.id], bulk_status: "approve" }
@@ -1098,10 +1098,10 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
     it "bulk decline leaves an approved booking approved" do
       done = pending_booking(booker)
-      done.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      done.change_status!(@approved_status)
       put bulk_approve_decline_sub_space_booking_index_path,
           params: { sub_space_booking_ids: [done.id], bulk_status: "decline" }
-      expect(done.reload.sub_space_booking_status.booking_status_id).to eq(@approved_status.id)
+      expect(done.reload.booking_status_id).to eq(@approved_status.id)
     end
 
     it "bulk approve delivers one approved mail per booking" do
@@ -1192,10 +1192,10 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
                               end_time: DateTime.parse("2027-06-10 11:00"))
         approved = pending_booking(user, name: "FutureApproved", start_time: DateTime.parse("2027-06-21 10:00"),
                                          end_time: DateTime.parse("2027-06-21 11:00"))
-        approved.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+        approved.change_status!(@approved_status)
         declined = pending_booking(user, name: "PastDeclined", start_time: DateTime.parse("2027-06-09 10:00"),
                                          end_time: DateTime.parse("2027-06-09 11:00"))
-        declined.sub_space_booking_status.update!(booking_status_id: @declined_status.id)
+        declined.change_status!(@declined_status)
 
         get sub_space_booking_index_path
         expect(response).to have_http_status(:ok)
@@ -1222,7 +1222,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
                        { sub_space: subspace, user: owner,
                          start_time: DateTime.parse("2027-04-03 10:00"),
                          end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs))
-      booking.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      booking.change_status!(@approved_status)
       booking
     end
 
@@ -1253,7 +1253,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       broken = feed_booking(name: "Broken", description: "D",
                             start_time: DateTime.parse("2027-04-04 10:00"),
                             end_time: DateTime.parse("2027-04-04 11:00"))
-      broken.update_column(:sub_space_booking_status_id, nil)
+      broken.update_column(:booking_status_id, nil)
       log_in!(user)
       get bookings_sub_space_booking_index_path, params: { room: subspace.id }
       expect(response).to have_http_status(:ok)

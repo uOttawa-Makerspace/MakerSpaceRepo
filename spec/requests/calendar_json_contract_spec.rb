@@ -38,10 +38,9 @@ RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
   let(:admin) { create(:user, :admin, booking_approval: true) }
   let(:owner) { create(:user, :regular_user, booking_approval: true) }
 
-  # Booking factory hooks a Pending status row after create; override it.
+  # Booking factory creates a Pending booking; give it the wanted status.
   def set_booking_status!(booking, status_row)
-    booking.sub_space_booking_status
-           .update!(booking_status_id: status_row.id)
+    booking.change_status!(status_row)
     booking
   end
 
@@ -94,7 +93,7 @@ RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
 
   it "appends (Pending), keeps milliseconds .000 and lists keys first" do
     booking = approved_booking(name: "P", description: "D", public: true)
-    booking.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+    booking.change_status!(@pending_status)
 
     body = JSON.parse(fetch)
     expect(body.size).to eq(1)
@@ -135,14 +134,14 @@ RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
 
   it "includes the admin name suffix for admin pending views" do
     booking = approved_booking(name: "O2", description: "D", public: false)
-    booking.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+    booking.change_status!(@pending_status)
     expect(JSON.parse(fetch(user: admin)).first["title"])
       .to eq("O2 - D (Pending) - #{owner.name}")
   end
 
   it "excludes declined bookings" do
     booking = approved_booking(name: "Gone", description: "D", public: true)
-    booking.sub_space_booking_status.update!(booking_status_id: @declined_status.id)
+    booking.change_status!(@declined_status)
     expect(fetch).to eq("[]")
   end
 

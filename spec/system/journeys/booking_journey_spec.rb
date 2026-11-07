@@ -65,7 +65,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     expect(booking.user).to eq(user)
     expect(booking.name).to eq("Robot team")
     expect(booking.sub_space).to eq(subspace)
-    expect(booking.sub_space_booking_status.booking_status).to eq(@pending_status)
+    expect(booking.booking_status).to eq(@pending_status)
     needs = deliver_mail.select { |m| m.subject == "Booking needs approval" }
     expect(needs.map(&:to)).to eq([[manager.email]])
 
@@ -81,7 +81,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     end
 
     booking.reload
-    expect(booking.sub_space_booking_status.booking_status).to eq(@approved_status)
+    expect(booking.booking_status).to eq(@approved_status)
     expect(booking.approved_by).to eq(admin)
     approved = deliver_mail.select { |m| m.subject == "Booking approved" }
     expect(approved.map(&:to)).to eq([[user.email]])
@@ -124,7 +124,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
       expect(page).to have_text("Bookings approved successfully.")
     end
     bookings.each do |b|
-      expect(b.reload.sub_space_booking_status.booking_status).to eq(@approved_status)
+      expect(b.reload.booking_status).to eq(@approved_status)
     end
     approved = deliver_mail.select { |m| m.subject == "Booking approved" }
     expect(approved.map(&:to)).to eq([[user.email]] * 4)
@@ -137,7 +137,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
                                          description: "closed", blocking: true,
                                          start_time: Time.zone.parse(stamp(day, 9)),
                                          end_time: Time.zone.parse(stamp(day, 12)))
-    blocker.sub_space_booking_status.update!(booking_status: @approved_status)
+    blocker.change_status!(@approved_status)
 
     as_actor(:user, allow_console: [%r{/sub_space_booking - Failed to load resource: .* 422}]) do
       log_in_as(user)
@@ -169,7 +169,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     end
     blocker = SubSpaceBooking.find_by!(name: "Maintenance")
     expect(blocker.blocking).to be(true)
-    expect(blocker.sub_space_booking_status.booking_status).to eq(@approved_status)
+    expect(blocker.booking_status).to eq(@approved_status)
 
     as_actor(:user, allow_console: [%r{/sub_space_booking - Failed to load resource: .* 422}]) do
       log_in_as(user)
@@ -193,7 +193,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
                                          description: "closed", blocking: true,
                                          start_time: Time.zone.parse(stamp(second, 10)) + 30.minutes,
                                          end_time: Time.zone.parse(stamp(second, 11)) + 30.minutes)
-    blocker.sub_space_booking_status.update!(booking_status: @approved_status)
+    blocker.change_status!(@approved_status)
 
     as_actor(:user, allow_console: [%r{/sub_space_booking - Failed to load resource: .* 422}]) do
       log_in_as(user)

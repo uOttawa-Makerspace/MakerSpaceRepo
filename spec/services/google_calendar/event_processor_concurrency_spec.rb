@@ -65,5 +65,6 @@ RSpec.describe GoogleCalendar::EventProcessor, "under concurrency", :booking_clo
     expect(bookings.first.name).to eq("Second")
     expect(SubSpaceBookingStatus.where(sub_space_booking_id: bookings.first.id).count).to eq(1)
     expect(bookings.first.sub_space_booking_status_id).to be_present
+    expect(bookings.first.booking_status).to eq(approved)
   end
 end

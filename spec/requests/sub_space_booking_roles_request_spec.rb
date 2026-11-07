@@ -47,7 +47,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   def status_name(booking)
-    booking.reload.sub_space_booking_status.booking_status.name
+    booking.reload.booking_status.name
   end
 
   def pending_booking(user = owner, **attrs)
@@ -55,7 +55,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
                      { sub_space: subspace, user: user,
                        start_time: DateTime.parse("2027-04-03 10:00"),
                        end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs))
-    booking.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+    booking.change_status!(@pending_status)
     booking
   end
 
@@ -317,7 +317,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
 
     it "lets an admin edit and update an APPROVED booking (owners cannot)" do
       approved = pending_booking
-      approved.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      approved.change_status!(@approved_status)
       sign_in_as(:admin)
       get sub_space_booking_edit_path(sub_space_booking_id: approved.id)
       expect(response).to have_http_status(:ok)
@@ -332,7 +332,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
 
     it "lets the owner edit a DECLINED booking (only PENDING-by-others and APPROVED are blocked)" do
       declined = pending_booking
-      declined.sub_space_booking_status.update!(booking_status_id: @declined_status.id)
+      declined.change_status!(@declined_status)
       log_in!(owner)
       get sub_space_booking_edit_path(sub_space_booking_id: declined.id)
       expect(response).to have_http_status(:ok)
