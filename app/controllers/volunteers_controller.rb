@@ -116,7 +116,7 @@ class VolunteersController < SessionsController
 
   def shadowing_shifts
     @shifts = current_user.shadowing_hours.where('end_time > ?', DateTime.now)
-    @all_shifts = ShadowingHour.where('end_time > ?', DateTime.now).all
+    @all_shifts = ShadowingHour.includes(:display_user).where('end_time > ?', DateTime.now)
   end
 
   def delete_event

@@ -1,7 +1,9 @@
 class KeyRequest < ApplicationRecord
+  include DisplayUser
   belongs_to :user, class_name: "User", optional: true
   belongs_to :supervisor, class_name: "User", optional: true
   belongs_to :space, optional: true
+  display_user_for :user, :supervisor
 
   enum :user_status, %i[student professor staff], prefix: true
   enum :status, %i[in_progress waiting_for_approval approved], prefix: true

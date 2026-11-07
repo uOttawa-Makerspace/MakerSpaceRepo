@@ -243,14 +243,12 @@
                       <td class="ps-3 ps-md-4 py-3">
                         <div class="d-flex align-items-center gap-2">
                           <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center small flex-shrink-0" style="width: 34px; height: 34px;">
-                            <%= s.user&.name&.first&.upcase || "V" %>
+                            <%= staff_user_name(s.display_user)&.first&.upcase || "V" %>
                           </div>
                           <div>
-                            <% if s.user %>
-                              <%= link_to user_path(s.user.username), class: "fw-bold text-body-emphasis text-decoration-none d-block lh-sm small" do %>
-                                <%= s.user.name.titleize %>
-                              <% end %>
-                              <span class="text-body-secondary small"><%= s.user.email %></span>
+                            <% if s.display_user %>
+                              <%= staff_user_link(s.display_user, titleize: true, class: "fw-bold text-body-emphasis text-decoration-none d-block lh-sm small") %>
+                              <span class="text-body-secondary small"><%= s.display_user.email %></span>
                             <% else %>
                               <span class="text-body-secondary small fst-italic">Unassigned User</span>
                             <% end %>
@@ -303,7 +301,7 @@
 
                       <!-- Cancel Action -->
                       <td class="pe-3 pe-md-4 py-3 text-end">
-                        <%= button_to delete_event_volunteers_path(event_id: s.event_id), method: :delete, form: { data: { turbo_confirm: "Are you sure you want to cancel #{s.user&.name}'s shadowing shift?" } }, class: "btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" do %>
+                        <%= button_to delete_event_volunteers_path(event_id: s.event_id), method: :delete, form: { data: { turbo_confirm: "Are you sure you want to cancel #{staff_user_name(s.display_user)}'s shadowing shift?" } }, class: "btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" do %>
                           <i class="fa-solid fa-trash-can"></i>
                           <span>Cancel Shift</span>
                         <% end %>

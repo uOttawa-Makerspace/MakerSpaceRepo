@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class Order < ApplicationRecord
+  include DisplayUser
   IN_PROGRESS = "In progress"
   COMPLETED = "Completed"
   # The order-row lock shared by checkout and every cart change.
@@ -8,6 +9,7 @@ class Order < ApplicationRecord
   before_validation :set_order_status, on: :create
 
   belongs_to :user, optional: true
+  display_user_for :user
   belongs_to :order_status, optional: true
 
   has_many :order_items, dependent: :destroy

@@ -3,7 +3,7 @@ class Staff::TapBoxConsoleController < StaffAreaController
   before_action :grant_access
 
   def show
-    @logs = TapBoxLog.recent.includes(:user, :space)
+    @logs = TapBoxLog.recent.includes(:display_user, :space)
   end
 
   private

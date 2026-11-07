@@ -1,4 +1,6 @@
 class Key < ApplicationRecord
+  include DisplayUser
+
   # Raised when an assign or revoke is asked of a key in the wrong state.
   class StateError < StandardError
   end
@@ -6,6 +8,7 @@ class Key < ApplicationRecord
   belongs_to :user, class_name: "User", optional: true
   belongs_to :supervisor, class_name: "User", optional: true
   belongs_to :space, optional: true
+  display_user_for :user, :supervisor
   # belongs_to :key_request, optional: true
   has_many :key_transactions, dependent: :destroy
 
@@ -61,8 +64,9 @@ class Key < ApplicationRecord
             },
             unless: :key_type_regular?
 
+  # The holder's key request, read for display on the admin key page, so a deleted holder's request shows too.
   def key_request
-    user&.key_request
+    display_user&.key_request
   end
 
   # Hands the key to a holder: saves the key as held and records the deposit

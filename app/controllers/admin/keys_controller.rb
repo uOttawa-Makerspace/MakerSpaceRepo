@@ -17,7 +17,7 @@ class Admin::KeysController < AdminAreaController
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
-    @keys = Key.includes(:space, :user, :supervisor).order(updated_at: :desc)
+    @keys = Key.includes(:space, :display_user, :display_supervisor).order(updated_at: :desc)
 
     @spaces = Space.order(name: :asc)
   end
@@ -118,7 +118,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def requests
-    @key_requests = KeyRequest.order(created_at: :asc)
+    @key_requests = KeyRequest.includes(:space, :display_user, :display_supervisor).order(created_at: :asc)
   end
 
   def approve_key_request

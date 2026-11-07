@@ -2,9 +2,11 @@
 
 class ProjectProposal < ApplicationRecord
   include SniffedUploadValidation
+  include DisplayUser
 
   belongs_to :user, optional: true
   belongs_to :admin, class_name: 'User', foreign_key: 'admin_id', optional: true
+  display_user_for :user, :admin
   has_many :categories, dependent: :destroy
   has_many :project_joins, dependent: :destroy
   has_many :repositories, dependent: :nullify
