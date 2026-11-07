@@ -2,7 +2,7 @@
 // 1. CEED Brand Color Palette
 // ==========================================================================
 $ceed-orange: $primary;
-$ceed-orange-hover: #c4381b;
+$ceed-orange-hover: shade-color($primary, 5%);
 
 .text-ceed-orange {
   color: var(--primary-text) !important;

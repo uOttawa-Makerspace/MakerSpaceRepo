@@ -22,6 +22,33 @@ $utilities: (
 }
 [data-bs-theme="dark"] {
   --primary-text: #{$primary-text-dark};
+  --secondary-text: #{$secondary-text-dark};
+  --bs-primary-text-emphasis: #{$primary-text-dark};
+
+  // Bootstrap draws these with the background shades; on the dark page they
+  // need the lighter text shades to stay readable.
+  .btn-outline-primary {
+    --bs-btn-color: #{$primary-text-dark};
+    --bs-btn-border-color: #{$primary-text-dark};
+  }
+  .btn-outline-secondary {
+    --bs-btn-color: #{$secondary-text-dark};
+    --bs-btn-border-color: #{$secondary-text-dark};
+  }
+  .link-primary {
+    color: var(--primary-text) !important;
+  }
+  .border-primary {
+    border-color: var(--primary-text) !important;
+  }
+  .text-secondary {
+    color: var(--secondary-text) !important;
+  }
+  // Declared before the .dropdown-item rules below, so their hover, active and
+  // danger colours still win at equal specificity.
+  .dropdown-item {
+    color: var(--secondary-text);
+  }
 }
 .text-primary {
   --bs-text-opacity: 1;

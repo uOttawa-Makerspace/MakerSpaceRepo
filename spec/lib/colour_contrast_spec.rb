@@ -39,6 +39,9 @@ RSpec.describe "Theme colour contrast" do
     "secondary text on white" => %w[secondary #ffffff],
     "secondary text on the tertiary background" => %w[secondary tertiary],
     "white text on secondary (buttons, badges)" => %w[#ffffff secondary],
+    "primary text on the dark theme raised surface" => %w[primary-text-dark #2b3035],
+    "dark theme muted text on the page" => %w[secondary-text-dark #212529],
+    "dark theme muted text on the raised surface" => %w[secondary-text-dark #2b3035],
   }.each do |name, (fg, bg)|
     it "#{name} is at least 4.5:1" do
       colour = ->(key) { key.start_with?("#") ? key : variables.fetch(key) }
@@ -51,13 +54,31 @@ RSpec.describe "Theme colour contrast" do
   end
 
   it "keeps white text readable on the volunteer button hover colour" do
-    hover = styles.join("volunteers.scss").read[/^\$ceed-orange-hover:\s*(#\h{6});/, 1]
-    expect(ratio("#ffffff", hover)).to be >= 4.5
+    amount = styles.join("volunteers.scss").read[/^\$ceed-orange-hover:\s*shade-color\(\$primary,\s*(\d+)%\);/, 1]
+    expect(amount).to be_present
+    expect(ratio("#ffffff", shade(variables.fetch("primary"), amount.to_i))).to be >= 4.5
   end
 
   it "keeps white text readable on the home tile hover background" do
     background = styles.join("static_pages.scss").read[/&:active\s*\{.*?background:\s*(#\h{6});/m, 1]
     expect(background).to be_present
     expect(ratio("#ffffff", background)).to be >= 4.5
+  end
+end
+
+RSpec.describe "Dark theme overrides" do
+  let(:application) { Rails.root.join("app/javascript/entrypoints/application.scss").read }
+  let(:dark_block) { application[/\[data-bs-theme="dark"\] \{\n  --primary-text:.*?\n\}\n/m] }
+
+  it "points Bootstrap's primary and secondary text-facing variables at the light shades" do
+    expect(dark_block).to be_present
+    %w[
+      --bs-primary-text-emphasis:\s*\#\{\$primary-text-dark\}
+      --bs-btn-color:\s*\#\{\$primary-text-dark\}
+      --bs-btn-border-color:\s*\#\{\$primary-text-dark\}
+      --bs-btn-color:\s*\#\{\$secondary-text-dark\}
+      --bs-btn-border-color:\s*\#\{\$secondary-text-dark\}
+      --secondary-text:\s*\#\{\$secondary-text-dark\}
+    ].each { |pattern| expect(dark_block).to match(/#{pattern}/) }
   end
 end
