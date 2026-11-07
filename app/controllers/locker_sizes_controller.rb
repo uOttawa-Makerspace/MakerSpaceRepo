@@ -1,4 +1,7 @@
 class LockerSizesController < AdminAreaController
+  # Guests are sent to the login page before the admin check can send them away.
+  prepend_before_action :signed_in
+
   def create
     LockerSize.create(locker_size_params)
     redirect_to lockers_path(anchor: 'productVariants')

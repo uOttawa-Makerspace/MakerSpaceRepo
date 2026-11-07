@@ -21,11 +21,13 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
   end
 
   describe "access matrix" do
-    it "sends guests to / (ensure_admin runs before signed_in; no login redirect)" do
-      # unlike LockerRentals, guests are not
-      # sent to the login page here.
+    it "sends guests to the login page, back to the page they asked for" do
       get lockers_path
-      expect(response).to redirect_to("/")
+      expect(response).to redirect_to(login_path(back_to: "/lockers"))
+
+      expect { post locker_sizes_path, params: { locker_size: { size: "X", shopify_gid: "g" } } }
+        .not_to change(LockerSize, :count)
+      expect(response).to redirect_to(login_path)
     end
 
     it "redirects non-admins (regular and staff) to / on lockers#index, with no flash" do
