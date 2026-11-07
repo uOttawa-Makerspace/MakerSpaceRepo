@@ -54,7 +54,6 @@ class VolunteerTasksController < SessionsController
         @volunteer_task.create_certifications(params[:certifications_id])
       end
       add_volunteer_join(@volunteer_task.id)
-      remove_volunteer_join(@volunteer_task.id)
       redirect_to volunteer_tasks_path
       flash[:notice] = "You've successfully created a new Volunteer Task"
     else
@@ -130,21 +129,13 @@ class VolunteerTasksController < SessionsController
 
   def update
     volunteer_task = VolunteerTask.find(params[:id])
-    volunteer_task.assign_attributes(volunteer_task_params)
-    unless volunteer_task.valid?(:task_form)
-      return redirect_to edit_volunteer_task_path(volunteer_task), alert: volunteer_task.errors.full_messages.to_sentence
-    end
-
-    replace_certifications(volunteer_task)
-    add_volunteer_join(volunteer_task.id)
-    remove_volunteer_join(volunteer_task.id)
-    if volunteer_task.save(context: :task_form)
+    if volunteer_task.update_from_form(volunteer_task_params, **task_edit_params)
+      @volunteer_task = volunteer_task
       update_photos
-      flash[:notice] = "Volunteer task updated"
+      redirect_to volunteer_tasks_path, notice: "Volunteer task updated"
     else
-      flash[:alert] = "Something went wrong"
+      redirect_to edit_volunteer_task_path(volunteer_task), alert: volunteer_task.errors.full_messages.to_sentence
     end
-    redirect_to volunteer_tasks_path
   end
 
   def destroy
@@ -159,11 +150,14 @@ class VolunteerTasksController < SessionsController
 
   private
 
-  def replace_certifications(volunteer_task)
-    volunteer_task.delete_all_certifications
-    return if params[:certifications_id].blank?
-
-    volunteer_task.create_certifications(params[:certifications_id])
+  def task_edit_params
+    {
+      certification_ids: Array(params[:certifications_id]),
+      joins: {
+        add_staff: Array(params[:staff_id]), add_volunteers: Array(params[:volunteer_id]),
+        remove_staff: Array(params[:remove_staff_id]), remove_volunteers: Array(params[:remove_volunteer_id])
+      }
+    }
   end
 
   def task_owner_or_staff
@@ -201,39 +195,6 @@ class VolunteerTasksController < SessionsController
         )
         unless @volunteer_task_join.save
           flash[:error] = "The volunteer could not be added to this task, please try again later."
-        end
-      end
-    end
-  end
-
-  def remove_volunteer_join(task_id)
-    if params[:remove_staff_id].present?
-      params[:remove_staff_id] = [params[:remove_staff_id]] unless params[:remove_staff_id].is_a?(Array)
-      params[:remove_staff_id].each do |staff_id|
-        volunteer_task = VolunteerTask.find(task_id)
-        if volunteer_task.user_id == staff_id.to_i
-          users = VolunteerTaskJoin.where(volunteer_task_id: task_id).where.not(user_id: staff_id.to_i)
-          if users.present?
-            volunteer_task.update(user_id: users.first.user_id)
-            VolunteerTaskJoin.where(volunteer_task_id: task_id, user_id: staff_id.to_i).destroy_all
-          else
-            flash[:error] = "There must be at least one staff member assigned to this task."
-            redirect_to edit_volunteer_task_path(task_id)
-          end
-        else
-          @volunteer_join_staff = VolunteerTaskJoin.find_by(user_id: staff_id, volunteer_task_id: task_id)
-          unless @volunteer_join_staff&.destroy
-            flash[:error] = "The staff could not be deleted from this task, please try again later."
-          end
-        end
-      end
-    end
-    if params[:remove_volunteer_id].present?
-      params[:remove_volunteer_id] = [params[:remove_volunteer_id]] unless params[:remove_volunteer_id].is_a?(Array)
-      params[:remove_volunteer_id].each do |volunteer_id|
-        @volunteer_join_volunteer = VolunteerTaskJoin.find_by(user_id: volunteer_id, volunteer_task_id: task_id)
-        unless @volunteer_join_volunteer&.destroy
-          flash[:error] = "The volunteer could not be deleted from this task, please try again later."
         end
       end
     end

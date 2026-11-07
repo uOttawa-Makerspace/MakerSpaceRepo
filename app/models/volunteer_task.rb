@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class VolunteerTask < ApplicationRecord
+  class EditRefused < StandardError; end
+
   belongs_to :user, optional: true
   belongs_to :space, optional: true
   has_many :volunteer_hours, dependent: :destroy
@@ -31,6 +33,28 @@ class VolunteerTask < ApplicationRecord
     save(context: :task_form)
   end
 
+  # Applies a whole edit from the task form as one unit: the task's attributes, its required
+  # trainings and its joins. Any step that fails undoes every step, leaves the reason in errors and
+  # returns false. `joins` takes :add_staff, :add_volunteers, :remove_staff and :remove_volunteers
+  # (lists of user ids).
+  def update_from_form(attributes, certification_ids: [], joins: {})
+    transaction do
+      assign_attributes(attributes)
+      save!(context: :task_form)
+      replace_certifications(certification_ids)
+      add_joins(joins[:add_staff], "staff", staff: true)
+      add_joins(joins[:add_volunteers], "volunteer", staff: false)
+      Array(joins[:remove_staff]).each { |user_id| remove_staff(user_id) }
+      Array(joins[:remove_volunteers]).each { |user_id| remove_join(user_id, "volunteer") }
+    end
+    true
+  rescue ActiveRecord::RecordInvalid
+    false
+  rescue EditRefused => e
+    errors.add(:base, e.message)
+    false
+  end
+
   def delete_all_certifications
     require_trainings.destroy_all
   end
@@ -42,6 +66,41 @@ class VolunteerTask < ApplicationRecord
   end
 
   private
+
+  def refuse!(message)
+    raise EditRefused, message
+  end
+
+  def replace_certifications(certification_ids)
+    ids = Array(certification_ids).compact_blank
+    refuse!("A required training does not exist.") unless Training.where(id: ids).count == ids.uniq.size
+    delete_all_certifications
+    create_certifications(ids)
+  end
+
+  def add_joins(user_ids, label, staff:)
+    Array(user_ids).each do |user_id|
+      user = User.find_by(id: user_id)
+      refuse!("The #{label} to add could not be found.") unless user
+      volunteer_task_joins.create!(user: user, user_type: staff ? user.role.capitalize : "Volunteer", active: true)
+    end
+  end
+
+  def remove_join(user_id, label)
+    joins = volunteer_task_joins.where(user_id: user_id)
+    refuse!("The #{label} to remove is not on this task.") if joins.empty?
+    joins.destroy_all
+  end
+
+  # The task's creator can only leave when another joined user can take over as creator.
+  def remove_staff(user_id)
+    if self.user_id == user_id.to_i
+      successor = volunteer_task_joins.where.not(user_id: user_id).order(:id).first
+      refuse!("There must be at least one staff member assigned to this task.") unless successor
+      update!(user_id: successor.user_id)
+    end
+    remove_join(user_id, "staff")
+  end
 
   def refuse_deletion_while_awarded
     return unless awarded?

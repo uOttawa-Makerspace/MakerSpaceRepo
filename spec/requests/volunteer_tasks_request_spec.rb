@@ -234,6 +234,17 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(task.require_trainings.reload).to be_empty
     end
 
+    it "adds staff typed by their role and applies the whole edit together" do
+      admin = create(:user, :admin)
+      trainings = create_list(:training, 2)
+      patch volunteer_task_path(task),
+            params: task_params(title: "Renamed").merge(staff_id: admin.id, certifications_id: trainings.map(&:id))
+      expect(flash[:notice]).to eq("Volunteer task updated")
+      expect(task.reload.title).to eq("Renamed")
+      expect(task.require_trainings.pluck(:training_id)).to match_array(trainings.map(&:id))
+      expect(task.volunteer_task_joins.pluck(:user_id, :user_type, :active)).to eq([[admin.id, "Admin", true]])
+    end
+
     it "adds and removes joins" do
       keep = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
       gone = create(:volunteer_task_join, :active, volunteer_task: task)
@@ -243,22 +254,56 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(task.volunteer_task_joins.pluck(:user_id)).to contain_exactly(keep.user_id, new_volunteer.id)
     end
 
-    it "flashes an error (but still updates) when a removal target is not joined" do
-      patch volunteer_task_path(task), params: task_params(title: "x").merge(remove_volunteer_id: [volunteer.id])
-      expect(response).to redirect_to(volunteer_tasks_path)
-      expect(flash[:error]).to eq("The volunteer could not be deleted from this task, please try again later.")
-      expect(task.reload.title).to eq("x")
-    end
+    describe "a refused edit changes nothing" do
+      let(:old_training) { create(:training) }
+      let(:joined) { create(:user, :volunteer_with_volunteer_program) }
+      let(:snapshot) do
+        lambda {
+          [task.reload.attributes.values_at("title", "cc", "user_id"),
+           task.require_trainings.pluck(:training_id).sort,
+           task.volunteer_task_joins.pluck(:user_id, :user_type, :active).sort]
+        }
+      end
 
-    # removing the creating staff member when nobody else is joined redirects twice (DoubleRenderError 500); the update itself IS applied
-    it "500s with DoubleRenderError when removing the task creator with no other join" do
-      task.update!(user_id: staff.id)
-      create(:volunteer_task_join, :first, volunteer_task: task, user: staff, user_type: "Staff")
-      patch volunteer_task_path(task), params: task_params(title: "never").merge(remove_staff_id: [staff.id])
-      expect(response).to have_http_status(:internal_server_error)
-      expect(vol_error_text).to include("DoubleRenderError")
-      expect(task.reload.title).to eq("never")
-      expect(flash[:error]).to eq("There must be at least one staff member assigned to this task.")
+      before do
+        task.update!(user_id: staff.id)
+        task.create_certifications([old_training.id])
+        create(:volunteer_task_join, volunteer_task: task, user: staff, user_type: "Staff")
+        create(:volunteer_task_join, :active, volunteer_task: task, user: joined)
+      end
+
+      def refuse_edit(message, extra)
+        before_edit = snapshot.call
+        patch volunteer_task_path(task), params: task_params(title: "Renamed", cc: 1).merge(certifications_id: [create(:training).id]).merge(extra)
+        expect(response).to redirect_to(edit_volunteer_task_path(task))
+        expect(flash[:alert]).to eq(message)
+        expect(snapshot.call).to eq(before_edit)
+      end
+
+      it "when a training to require does not exist" do
+        refuse_edit("A required training does not exist.", certifications_id: [0])
+      end
+
+      it "when a user to add as staff does not exist" do
+        refuse_edit("The staff to add could not be found.", staff_id: [0])
+      end
+
+      it "when a user to add as a volunteer does not exist, after a valid staff add" do
+        refuse_edit("The volunteer to add could not be found.", staff_id: [create(:user, :admin).id], volunteer_id: [0])
+      end
+
+      it "when a staff member to remove is not joined, after a valid removal" do
+        refuse_edit("The staff to remove is not on this task.", remove_volunteer_id: [joined.id], remove_staff_id: [create(:user, :admin).id])
+      end
+
+      it "when a volunteer to remove is not joined" do
+        refuse_edit("The volunteer to remove is not on this task.", remove_volunteer_id: [create(:user, :volunteer).id])
+      end
+
+      it "when the creator is removed and nobody else is joined" do
+        task.volunteer_task_joins.where.not(user_id: staff.id).destroy_all
+        refuse_edit("There must be at least one staff member assigned to this task.", remove_staff_id: [staff.id])
+      end
     end
 
     it "hands the task to another joined user when the creator is removed" do
