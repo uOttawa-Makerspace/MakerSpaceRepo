@@ -1186,8 +1186,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(body.index("NewerMine")).to be < body.index("OlderMine")
     end
 
-    # N+1 pinned: @supervisors reads smj.user per join row
-    it "offers the supervisor select with every space manager once, sorted by name", skip_bullet: true do
+    it "offers the supervisor select with every space manager once, sorted by name" do
       create(:space, :with_space_managers) # 2 managers
       shared = create(:user, :admin, name: "Zed Manager")
       other_space = create(:space)
@@ -1200,6 +1199,19 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(options).to eq(options.sort_by(&:downcase))
       expect(options.count("Zed Manager")).to eq(1)
       expect(options.size).to eq(SpaceManagerJoin.all.map(&:user_id).uniq.size)
+    end
+
+    it "runs the same number of queries for the supervisor select however many managers there are" do
+      managed = create(:space, :with_space_managers)
+      log_in!(create(:user, :regular_user, booking_approval: false))
+      get sub_space_booking_index_path # warm caches
+      few = count_queries { get sub_space_booking_index_path }
+
+      4.times { managed.space_managers << create(:user, :admin) }
+      many = count_queries { get sub_space_booking_index_path }
+
+      expect(Capybara.string(response.body).all("select#supervisor option", visible: :all).size).to eq(6)
+      expect(many).to eq(few)
     end
 
     # Unused eager load pinned

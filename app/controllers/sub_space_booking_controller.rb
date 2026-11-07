@@ -58,7 +58,7 @@ class SubSpaceBookingController < SessionsController
     end
 
     @supervisors = []
-    SpaceManagerJoin.all.each do |smj|
+    SpaceManagerJoin.includes(:user).each do |smj|
       @supervisors << [smj.user.name, smj.user.id] unless @supervisors.include?([smj.user.name, smj.user.id])
     end
     @supervisors = @supervisors.sort_by { |elem| elem[0].downcase }
