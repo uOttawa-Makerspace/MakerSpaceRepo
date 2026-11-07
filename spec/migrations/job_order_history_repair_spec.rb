@@ -272,6 +272,85 @@ RSpec.describe "job order history repairs" do
       legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
       expect { restore }.not_to raise_error
     end
+
+    describe "down" do
+      def undo = ApplicationRecord.transaction(requires_new: true) { ActiveRecord::Migration.suppress_messages { described_class.new.down } }
+
+      def state = [JobTask.order(:id).map(&:attributes), JobTaskQuote.order(:id).map(&:attributes)]
+
+      def record_table? = ActiveRecord::Base.connection.table_exists?("job_task_restorations")
+
+      let!(:order_with_task) do
+        legacy_order(services: [service_a, service_b], quote_services: [[service_a, 2, 3], [service_b, 4, 2.5]])
+      end
+
+      it "restores the exact state from before up, and drops the record table" do
+        run(RestoreJobTaskQuoteQuantities)
+        before = state
+        run(described_class)
+        expect(state).not_to eq(before)
+        expect(ActiveRecord::Base.connection.select_value("SELECT COUNT(*) FROM job_task_restorations")).to eq(1)
+        undo
+        expect(state).to eq(before)
+        expect(record_table?).to be(false)
+      end
+
+      it "adds nothing when run twice" do
+        restore
+        expect { run(described_class) }.not_to(change { [state, ActiveRecord::Base.connection.select_value("SELECT COUNT(*) FROM job_task_restorations")] })
+      end
+
+      it "refuses, changing nothing, when a restored quote was edited" do
+        restore
+        JobTaskQuote.order(:id).last.update_columns(service_quantity: 99, updated_at: 1.day.from_now)
+        before = state
+        added = JobTask.order(:id).last
+        expect { undo }.to raise_error(/tasks \[#{added.id}\]/)
+        expect(state).to eq(before)
+        expect(record_table?).to be(true)
+      end
+
+      it "refuses, changing nothing, when a restored task was edited" do
+        restore
+        added = JobTask.order(:id).last
+        added.update_columns(title: "Renamed", updated_at: 1.day.from_now)
+        before = state
+        expect { undo }.to raise_error(/tasks \[#{added.id}\]/)
+        expect(state).to eq(before)
+      end
+
+      it "refuses, changing nothing, when a restored task has an option" do
+        restore
+        added = JobTask.order(:id).last
+        insert("job_task_options", job_task_id: added.id, job_option_id: create(:job_option).id)
+        before = state
+        expect { undo }.to raise_error(/tasks \[#{added.id}\]/)
+        expect(state).to eq(before)
+      end
+
+      it "refuses, changing nothing, when a restored quote has an option" do
+        restore
+        quote = JobTaskQuote.order(:id).last
+        insert("job_task_quote_options", job_task_quote_id: quote.id, job_option_id: create(:job_option).id, price: 1)
+        before = state
+        expect { undo }.to raise_error(/tasks \[#{quote.job_task_id}\]/)
+        expect(state).to eq(before)
+      end
+
+      it "refuses, changing nothing, when a restored task has a file" do
+        restore
+        added = JobTask.order(:id).last
+        attach("JobTask", added.id, "user_files", blob("part.pdf"))
+        expect { undo }.to raise_error(/tasks \[#{added.id}\]/)
+        expect(JobTask.exists?(added.id)).to be(true)
+      end
+
+      it "refuses when the record table is missing" do
+        restore
+        ActiveRecord::Base.connection.execute("DROP TABLE job_task_restorations")
+        expect { undo }.to raise_error(/job_task_restorations is missing/)
+      end
+    end
   end
 
   describe AttachOptionFilesToJobTaskOptions do

@@ -20,8 +20,23 @@
 # data it actually ran on proves the invariant. Orders outside that scope (edited, or changed
 # since) that differ are only reported in a notice: a staff edit made between a backup and a
 # deploy must not block the deploy.
+#
+# Every task and quote it inserts is recorded, as the full row, in job_task_restorations by the
+# same statement. down deletes exactly those rows, and only when each is still as it was
+# inserted and has nothing attached to it (no task options, quote options, other quotes or
+# uploaded files); otherwise it raises with the ids, deletes nothing and keeps the record.
+# The record table is dropped only after every recorded row is removed.
 class RestoreMissingJobOrderServicesAsTasks < ActiveRecord::Migration[8.1]
+  RECORD = "job_task_restorations"
+
   def up
+    create_table RECORD, primary_key: :job_task_id, id: :bigint, default: nil, if_not_exists: true do |t|
+      t.bigint :job_task_quote_id
+      t.jsonb :task_row, null: false
+      t.jsonb :quote_row
+      t.datetime :archived_at, null: false, default: -> { "now()" }
+    end
+
     execute <<~SQL
       DROP TABLE IF EXISTS job_order_repair_scope
     SQL
@@ -77,15 +92,21 @@ class RestoreMissingJobOrderServicesAsTasks < ActiveRecord::Migration[8.1]
                ) + m.rn),
                NOW(), NOW()
         FROM missing m
-        RETURNING id, job_order_id, job_service_id
+        RETURNING id, job_order_id, job_service_id, to_jsonb(job_tasks) AS row_data
+      ),
+      new_quotes AS (
+        INSERT INTO job_task_quotes (job_task_id, price, service_price, service_quantity, created_at, updated_at)
+        SELECT DISTINCT ON (nt.id) nt.id, 0, s.per_unit, s.quantity, NOW(), NOW()
+        FROM new_tasks nt
+        JOIN job_orders o ON o.id = nt.job_order_id
+        JOIN job_order_quote_services s
+          ON s.job_order_quote_id = o.job_order_quote_id AND s.job_service_id = nt.job_service_id
+        ORDER BY nt.id, s.id
+        RETURNING id, job_task_id, to_jsonb(job_task_quotes) AS row_data
       )
-      INSERT INTO job_task_quotes (job_task_id, price, service_price, service_quantity, created_at, updated_at)
-      SELECT DISTINCT ON (nt.id) nt.id, 0, s.per_unit, s.quantity, NOW(), NOW()
-      FROM new_tasks nt
-      JOIN job_orders o ON o.id = nt.job_order_id
-      JOIN job_order_quote_services s
-        ON s.job_order_quote_id = o.job_order_quote_id AND s.job_service_id = nt.job_service_id
-      ORDER BY nt.id, s.id
+      INSERT INTO #{RECORD} (job_task_id, job_task_quote_id, task_row, quote_row)
+      SELECT nt.id, nq.id, nt.row_data, nq.row_data
+      FROM new_tasks nt LEFT JOIN new_quotes nq ON nq.job_task_id = nt.id
     SQL
 
     execute <<~SQL
@@ -134,8 +155,34 @@ class RestoreMissingJobOrderServicesAsTasks < ActiveRecord::Migration[8.1]
     SQL
   end
 
+  # Deletes the recorded tasks and quotes, all or none. A recorded row that was edited since,
+  # is gone, or has anything attached makes it raise (ids only) with nothing changed.
   def down
-    raise ActiveRecord::IrreversibleMigration,
-          "the restored tasks are not marked, so they cannot be told from tasks added since"
+    unless table_exists?(RECORD)
+      raise "#{RECORD} is missing: this database ran a version of the migration that did not record its rows, " \
+            "so they cannot be removed; nothing was changed"
+    end
+
+    blocked = select_values(<<~SQL.squish)
+      SELECT r.job_task_id FROM #{RECORD} r
+      WHERE NOT (
+        EXISTS (SELECT 1 FROM job_tasks t WHERE t.id = r.job_task_id AND to_jsonb(t) = r.task_row)
+        AND (SELECT COUNT(*) FROM job_task_quotes q WHERE q.job_task_id = r.job_task_id) = (r.job_task_quote_id IS NOT NULL)::int
+        AND (r.job_task_quote_id IS NULL
+             OR EXISTS (SELECT 1 FROM job_task_quotes q WHERE q.id = r.job_task_quote_id AND to_jsonb(q) = r.quote_row))
+        AND NOT EXISTS (SELECT 1 FROM job_task_options o WHERE o.job_task_id = r.job_task_id)
+        AND NOT EXISTS (SELECT 1 FROM job_task_quote_options x WHERE x.job_task_quote_id = r.job_task_quote_id)
+        AND NOT EXISTS (SELECT 1 FROM active_storage_attachments a WHERE a.record_type = 'JobTask' AND a.record_id = r.job_task_id)
+      )
+      ORDER BY r.job_task_id
+    SQL
+    if blocked.any?
+      raise "Cannot remove the restored job tasks: tasks #{blocked.inspect} were edited since, are gone or have " \
+            "something attached; nothing was changed and #{RECORD} was kept"
+    end
+
+    execute "DELETE FROM job_task_quotes WHERE id IN (SELECT job_task_quote_id FROM #{RECORD})"
+    execute "DELETE FROM job_tasks WHERE id IN (SELECT job_task_id FROM #{RECORD})"
+    execute "DROP TABLE #{RECORD}"
   end
 end
