@@ -1198,8 +1198,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(body.index("NewerMine")).to be < body.index("OlderMine")
     end
 
-    # N+1 pinned: @supervisors reads smj.user per join row
-    it "offers the supervisor select with every space manager once, sorted by name", skip_bullet: true do
+    it "offers the supervisor select with every space manager once, sorted by name" do
       create(:space, :with_space_managers) # 2 managers
       shared = create(:user, :admin, name: "Zed Manager")
       other_space = create(:space)
@@ -1214,8 +1213,52 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(options.size).to eq(SpaceManagerJoin.all.map(&:user_id).uniq.size)
     end
 
-    # Unused eager load pinned
-    it "partitions the admin panel into current and past lists by end time", skip_bullet: true do
+    it "runs the same number of queries for the supervisor select however many managers there are" do
+      managed = create(:space, :with_space_managers)
+      log_in!(create(:user, :regular_user, booking_approval: false))
+      get sub_space_booking_index_path # warm caches
+      few = count_queries { get sub_space_booking_index_path }
+
+      4.times { managed.space_managers << create(:user, :admin) }
+      many = count_queries { get sub_space_booking_index_path }
+
+      expect(Capybara.string(response.body).all("select#supervisor option", visible: :all).size).to eq(6)
+      expect(many).to eq(few)
+    end
+
+    it "runs the same number of queries for the admin panel however many bookings it lists" do
+      travel_to(Time.zone.local(2027, 6, 15, 12, 0)) do
+        log_in!(admin)
+        [[20, @approved_status], [10, @declined_status]].each do |day, status|
+          pending_booking(user, name: "Seed#{day}", start_time: DateTime.parse("2027-06-#{day} 10:00"),
+                                end_time: DateTime.parse("2027-06-#{day} 11:00")).change_status!(status)
+        end
+        series = RecurringBooking.create!
+        [24, 25].each do |day|
+          pending_booking(user, name: "Series#{day}", recurring_booking: series, approved_by: admin,
+                                start_time: DateTime.parse("2027-06-#{day} 10:00"),
+                                end_time: DateTime.parse("2027-06-#{day} 11:00"))
+        end
+        get sub_space_booking_index_path # warm caches
+        few = count_queries { get sub_space_booking_index_path }
+
+        [[21, @approved_status], [22, @approved_status], [8, @approved_status], [9, @declined_status]].each do |day, status|
+          pending_booking(user, name: "More#{day}", start_time: DateTime.parse("2027-06-#{format('%02d', day)} 10:00"),
+                                end_time: DateTime.parse("2027-06-#{format('%02d', day)} 11:00")).change_status!(status)
+        end
+        pending_booking(user, name: "MorePending", start_time: DateTime.parse("2027-06-23 10:00"),
+                              end_time: DateTime.parse("2027-06-23 11:00"))
+        pending_booking(user, name: "Series26", recurring_booking: series, approved_by: admin,
+                              start_time: DateTime.parse("2027-06-26 10:00"),
+                              end_time: DateTime.parse("2027-06-26 11:00"))
+        many = count_queries { get sub_space_booking_index_path }
+
+        expect(response.body).to include("More21", "More8", "More9", "MorePending", "Series24")
+        expect(many).to eq(few)
+      end
+    end
+
+    it "partitions the admin panel into current and past lists by end time" do
       travel_to(Time.zone.local(2027, 6, 15, 12, 0)) do
         log_in!(admin)
         pending_booking(user, name: "FuturePending", start_time: DateTime.parse("2027-06-20 10:00"),

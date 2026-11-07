@@ -18,7 +18,7 @@
     <!-- Locker Dropdown -->
     <div class="col-12 col-md-6">
       <%= f.label :locker_id, 'Locker', class: 'form-label fw-bold text-body' %>
-      <%= f.select :locker_id, Locker.available.order_by_specifier.map { |locker|
+      <%= f.select :locker_id, Locker.available.includes(:locker_size).order_by_specifier.map { |locker|
             size_label = locker.locker_size&.size ? " (#{locker.locker_size.size})" : ""
             ["##{locker.specifier}#{size_label}", locker.id, { data: { size: locker.locker_size&.size, staff_only: !locker.available } }]
           },

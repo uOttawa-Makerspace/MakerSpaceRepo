@@ -119,7 +119,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
   describe "GET /locker_rentals (index)" do
     before { log_in!(owner) }
 
-    it "shows Indefinite for an active rental without an end date", skip_bullet: true do
+    it "shows Indefinite for an active rental without an end date" do
       create(:locker_rental, :active, rented_by: owner).update_columns(owned_until: nil)
 
       get locker_rentals_path
@@ -127,8 +127,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include("Indefinite")
     end
 
-    # N+1 pinned
-    it "renders the CEED-lockers page with active rental cards AND the full history table", skip_bullet: true do
+    it "renders the CEED-lockers page with active rental cards AND the full history table" do
       active = create(:locker_rental, :active, rented_by: owner)
       cancelled = create(:locker_rental, rented_by: owner)
       cancelled.update!(decided_by: staff, state: :cancelled)
@@ -154,6 +153,20 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Request a locker")
       expect(response.body).to include('href="' + new_locker_rental_path + '"')
+    end
+
+    it "runs the same number of queries however many rentals the user has" do
+      create(:locker_rental, :active, rented_by: owner)
+      create(:locker_rental, rented_by: owner).update!(decided_by: staff, state: :cancelled)
+      get locker_rentals_path # warm caches
+      few = count_queries { get locker_rentals_path }
+
+      create_list(:locker_rental, 2, :active, rented_by: owner)
+      create(:locker_rental, rented_by: owner).update!(decided_by: staff, state: :cancelled)
+      many = count_queries { get locker_rentals_path }
+
+      expect(response.body.scan('data-search="').size).to eq(5)
+      expect(many).to eq(few)
     end
 
     it "only ever shows the signed-in user's own rentals" do
@@ -1564,8 +1577,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq(I18n.t("lockers.access_denied"))
     end
 
-    # N+1 pinned
-    it "serves JSON with pending/active keys (no eager-serialized association payloads)", skip_bullet: true do
+    it "serves JSON with pending/active keys (no eager-serialized association payloads)" do
       tenant = create(:locker_rental, :reviewing)
       awaiting = create(:locker_rental, :await_payment)
 
@@ -1579,6 +1591,23 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(json["pending"].first.keys).to include("state", "rented_by_id", "notes")
       expect(json["pending"].first).not_to have_key("locker")
       expect(json["pending"].first).not_to have_key("rented_by")
+    end
+
+    it "serves the JSON with one query per list, however many rentals there are" do
+      preferred = create(:locker)
+      create(:locker_rental, :reviewing, preferred_locker: preferred)
+      log_in!(staff)
+      get admin_locker_rentals_path, as: :json
+      few = count_queries { get admin_locker_rentals_path, as: :json }
+
+      create_list(:locker_rental, 2, :reviewing)
+      create(:locker_rental, :reviewing, preferred_locker: create(:locker))
+      create_list(:locker_rental, 2, :await_payment)
+      many = count_queries { get admin_locker_rentals_path, as: :json }
+
+      expect(response.parsed_body.values.map(&:size)).to eq([4, 2])
+      expect(response.parsed_body["pending"].map { |r| r.dig("preferred_locker", "id") }.compact.size).to eq(2)
+      expect(many).to eq(few)
     end
 
     it "renders a pending request whose owner was soft-deleted (the association is unscoped from User's default scope)" do

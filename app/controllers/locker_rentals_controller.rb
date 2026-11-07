@@ -7,6 +7,8 @@ class LockerRentalsController < SessionsController
   layout 'staff_area', only: [:admin]
   layout 'admin_area', only: [:assign_locker]
 
+  RENTAL_TABLE_ASSOCIATIONS = %i[locker rented_by locker_payments].freeze
+
   def index
     @own_locker_rentals = current_user.locker_rentals
   end
@@ -17,18 +19,27 @@ class LockerRentalsController < SessionsController
   end
 
   def admin
-    base_rentals = LockerRental.includes(:locker, :rented_by, :locker_payments).order(created_at: :desc).not_cancelled
+    base_rentals = LockerRental.order(created_at: :desc).not_cancelled
     
     # Requirement: Split between requests that have been dealt with vs requests that have not been looked at
     @pending_requests = base_rentals.reviewing
     @active_rentals = base_rentals.where(state: %i[await_payment active])
     # Paid, but the payment could not be applied: staff must decide. Includes cancelled rentals (their payment
     # is still unresolved). The same scope drives the badge in the tables below.
-    @held_rentals = LockerRental.with_held_payment.includes(:locker, :rented_by, :locker_payments).order(created_at: :desc)
+    @held_rentals = LockerRental.with_held_payment.includes(*RENTAL_TABLE_ASSOCIATIONS).order(created_at: :desc)
 
     respond_to do |format|
-      format.json { render json: { pending: @pending_requests, active: @active_rentals } }
-      format.all { render layout: 'staff_area' }
+      format.json do
+        # The JSON carries the rental columns, and `preferred_locker` (an old text column) reads the association of
+        # the same name, so that is the one thing it loads.
+        render json: { pending: @pending_requests.preload(:preferred_locker),
+                       active: @active_rentals.preload(:preferred_locker) }
+      end
+      format.all do
+        # Only the tables read the locker, tenant and payments; the JSON above serializes columns only.
+        @pending_requests, @active_rentals = [@pending_requests, @active_rentals].map { |rentals| rentals.includes(*RENTAL_TABLE_ASSOCIATIONS) }
+        render layout: 'staff_area'
+      end
     end
   end
 
@@ -46,7 +57,7 @@ class LockerRentalsController < SessionsController
 
     # Only show available lockers matching the user's audience
     @locker_select_options =
-      Locker.available(audience).order_by_specifier.map do |locker|
+      Locker.available(audience).includes(:locker_size).order_by_specifier.map do |locker|
         [
           locker.specifier,
           locker.id,
