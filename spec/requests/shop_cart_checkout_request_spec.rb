@@ -154,12 +154,12 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You do not have the required badges to do this project")
     end
 
-    it "does not persist an invalid quantity but STILL reports success" do
+    it "refuses an invalid quantity with the reason and no success message" do
       pp = pp_with_cc(10)
       expect { add_to_cart(pp, quantity: 0) }.not_to change(OrderItem, :count)
       expect(response).to redirect_to(carts_path)
-      # the invalid-quantity save is silently dropped yet the flash says it was added
-      expect(flash[:notice]).to eq("Successfully added item to cart")
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to include("could not be added").and include("Quantity must be greater than 0")
     end
 
     it "answers 404 for an unknown project" do

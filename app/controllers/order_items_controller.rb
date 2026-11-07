@@ -26,8 +26,7 @@ class OrderItemsController < DevelopmentProgramsController
         existing_order =
           cart.order_items.where(proficient_project: proficient_project)
         if existing_order.count < 1
-          cart.save
-          flash[:notice] = "Successfully added item to cart"
+          report_add_outcome(cart.save, @order_item)
         else
           flash[:alert] = "You have already ordered this item"
         end
@@ -120,6 +119,14 @@ class OrderItemsController < DevelopmentProgramsController
   end
 
   private
+
+  def report_add_outcome(saved, item)
+    if saved
+      flash[:notice] = "Successfully added item to cart"
+    else
+      flash[:alert] = "The item could not be added to your cart: #{item.errors.full_messages.to_sentence}"
+    end
+  end
 
   def cart_change_refused_message(error)
     error.is_a?(Order::CartClosed) ? CART_CLOSED_MESSAGE : CART_BUSY_MESSAGE
