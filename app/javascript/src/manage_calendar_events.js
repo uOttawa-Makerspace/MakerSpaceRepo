@@ -2,6 +2,7 @@ import { Collapse } from "bootstrap";
 import { RRule, RRuleSet, rrulestr, datetime } from "rrule";
 import TomSelect from "tom-select";
 
+import { onPageLoad } from "./on_page";
 import {
   parseLocalDatetimeString,
   toLocalDatetimeString,
@@ -24,7 +25,7 @@ document.addEventListener("turbo:before-cache", () => {
   if (document.getElementById("eventModal")) resetReadyState();
 });
 
-document.addEventListener("turbo:load", async () => {
+onPageLoad("#eventModal", async () => {
   resetReadyState();
 
   const container = document.querySelector("#content");

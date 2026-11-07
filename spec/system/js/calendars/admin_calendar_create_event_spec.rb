@@ -57,6 +57,23 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     expect(page).to have_css("#eventModal[data-shown]")
   end
 
+  # The calendar scripts stay registered after Turbo leaves the page (the admin
+  # layout does not force a reload); the console guard fails this example if
+  # they run, and throw, on the next page.
+  it "leaves no console errors when Turbo moves on to another admin page", js: true do
+    open_admin_calendar
+    page.execute_script("window.sameDocument = true")
+    # resolves after every turbo:load listener of the new page has run
+    page.evaluate_async_script(<<~JS)
+      const done = arguments[0];
+      document.addEventListener("turbo:load", () => setTimeout(done, 0), { once: true });
+      Turbo.visit("#{admin_users_path}");
+    JS
+
+    expect(page).to have_current_path(admin_users_path)
+    expect(page.evaluate_script("window.sameDocument")).to be(true)
+  end
+
   def confirm_modal_hidden
     expect(page).to have_no_css("#eventModal.show")
   end
