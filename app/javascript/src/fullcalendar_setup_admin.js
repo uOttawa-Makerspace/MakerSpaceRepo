@@ -9,10 +9,10 @@ import { rrulestr } from "rrule";
 import { Tooltip } from "bootstrap";
 
 import { eventClick, eventCreate } from "./calendar_helper.js";
+import { onPageLoad } from "./on_page";
 
-document.addEventListener("turbo:load", async () => {
+onPageLoad("#calendar", async () => {
   const calendarEl = document.getElementById("calendar");
-  if (!calendarEl) return;
 
   let hiddenUserIds = new Set();
   const hiddenEventTypes = new Set(

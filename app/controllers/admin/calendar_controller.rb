@@ -30,6 +30,7 @@ class Admin::CalendarController < AdminAreaController
     
     result = User
                .where(id: staff_user_ids, role: ['admin', 'staff'])
+               .includes(:staff_external_unavailabilities)
                .order(name: :desc).map do |staff|
       local_unavails = StaffUnavailability.where(user_id: staff.id).map do |u| 
 
@@ -84,6 +85,7 @@ class Admin::CalendarController < AdminAreaController
     
     result = User
                .where(id: staff_user_ids, role: ['admin', 'staff'])
+               .includes(:staff_external_unavailabilities)
                .order(name: :desc).map do |staff|
       local_unavails = StaffUnavailability.where(user_id: staff.id).map do |u| 
 

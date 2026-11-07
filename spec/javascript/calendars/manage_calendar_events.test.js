@@ -92,6 +92,20 @@ beforeEach(async () => {
 });
 
 describe("loading", () => {
+  it("does nothing on a page without the calendar", async () => {
+    document.body.innerHTML = "<p>another page</p>";
+    vi.stubGlobal("fetch", vi.fn());
+    const failures = [];
+    const record = (e) => failures.push(e.reason ?? e.error);
+    process.on("unhandledRejection", record);
+    document.dispatchEvent(new Event("turbo:load"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    process.off("unhandledRejection", record);
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(failures).toEqual([]);
+  });
+
   it("asks for the staff and their unavailabilities of the space", async () => {
     await load();
     expect(fetch).toHaveBeenCalledWith(

@@ -3,8 +3,9 @@ import "../src/fullcalendar_setup_admin";
 import "../src/manage_calendar_events";
 import "flatpickr";
 import { csrfHeaders } from "../src/csrf";
+import { onPageLoad } from "../src/on_page";
 
-document.addEventListener("turbo:load", () => {
+onPageLoad("#addEventButton", () => {
   document
     .getElementById("addEventButton")
     .addEventListener("click", addEventClick);
@@ -45,7 +46,7 @@ function updateColor(userId, color) {
 }
 
 /* For the event modal */
-document.addEventListener("turbo:load", () => {
+onPageLoad("#addEventButton", () => {
   const fp1 = flatpickr("#source_range", {
     mode: "range",
     dateFormat: "Y-m-d",

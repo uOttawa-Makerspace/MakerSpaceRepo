@@ -582,7 +582,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         "title" => "Laser Safety - Laser 101",
         "start" => "2027-04-03T06:00:00.000-04:00",
         "end" => "2027-04-03T07:00:00.000-04:00",
-        "color" => "#497979" # somebody else's confirmed booking
+        "color" => "#497979", # somebody else's confirmed booking
+        "viewable" => false # a regular user cannot open booking details
       )
     end
 
