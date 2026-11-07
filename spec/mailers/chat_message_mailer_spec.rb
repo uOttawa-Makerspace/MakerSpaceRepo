@@ -58,5 +58,23 @@ RSpec.describe ChatMessageMailer, type: :mailer do
         expect(body).not_to include(sender.name)
       end
     end
+
+    it "drops a queued notification whose message was deleted before the job ran" do
+      recipient = recipient1.email
+      message = chat_message
+      ChatMessageMailer.new_message(message, recipient).deliver_later
+      message.destroy!
+
+      expect do
+        expect { perform_enqueued_jobs }.not_to raise_error
+      end.not_to change { ActionMailer::Base.deliveries.size }
+    end
+
+    it "still fails the job for an error other than a missing record" do
+      ChatMessageMailer.new_message(chat_message, recipient1.email).deliver_later
+      allow_any_instance_of(ChatMessageMailer).to receive(:sender_name).and_raise(ArgumentError, "boom")
+
+      expect { perform_enqueued_jobs }.to raise_error(ArgumentError, "boom")
+    end
   end
 end
