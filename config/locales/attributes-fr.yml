@@ -23,6 +23,14 @@ fr:
         url: Site web
       training_session:
         user: Formateur
+      staff_unavailability:
+        start_time: Heure de début
+        end_time: Heure de fin
+        recurrence_rule: Règle de récurrence
+      staff_external_unavailability:
+        ics_url: Lien ICS
+      staff_needed_calendar:
+        space_id: Espace
       locker_rental:
         state: État
         locker: Casier

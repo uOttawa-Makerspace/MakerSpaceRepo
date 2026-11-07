@@ -94,3 +94,23 @@ en:
           attributes:
             base:
               one_correct_answer: "A question must have exactly one correct answer"
+        staff_unavailability:
+          attributes:
+            start_time:
+              before_end_time: "must be before the end time"
+            recurrence_rule:
+              weekly_needs_days: "must include days of the week when using weekly frequency"
+        event:
+          attributes:
+            start_time:
+              before_end_time: "must be before the end time"
+            recurrence_rule:
+              weekly_needs_days: "must include days of the week when using weekly frequency"
+        staff_external_unavailability:
+          attributes:
+            ics_url:
+              not_http_link: "must be an http or https link"
+        staff_needed_calendar:
+          attributes:
+            space_id:
+              taken: "can only have one open_hours calendar"

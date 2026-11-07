@@ -94,3 +94,23 @@ fr:
           attributes:
             base:
               one_correct_answer: "Une question doit avoir exactement une bonne réponse"
+        staff_unavailability:
+          attributes:
+            start_time:
+              before_end_time: "doit être antérieure à l'heure de fin"
+            recurrence_rule:
+              weekly_needs_days: "doit inclure des jours de la semaine lorsque la fréquence est hebdomadaire"
+        event:
+          attributes:
+            start_time:
+              before_end_time: "doit être antérieure à l'heure de fin"
+            recurrence_rule:
+              weekly_needs_days: "doit inclure des jours de la semaine lorsque la fréquence est hebdomadaire"
+        staff_external_unavailability:
+          attributes:
+            ics_url:
+              not_http_link: "doit être un lien http ou https"
+        staff_needed_calendar:
+          attributes:
+            space_id:
+              taken: "ne peut avoir qu'un seul calendrier d'heures d'ouverture"

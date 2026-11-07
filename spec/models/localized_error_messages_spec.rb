@@ -132,4 +132,40 @@ RSpec.describe "Localized model error messages" do
     expect_messages(Question.new, :base, "A question must have exactly one correct answer",
                     "Une question doit avoir exactement une bonne réponse", :question_form)
   end
+
+  describe "staff and event calendars" do
+    let(:weekly) { "FREQ=WEEKLY;INTERVAL=1" }
+    let(:later) { 2.days.from_now.change(usec: 0) }
+
+    it "localizes the unavailability time and recurrence messages" do
+      record = StaffUnavailability.new(user: user, start_time: later, end_time: later - 1.hour, recurrence_rule: weekly)
+      expect_messages(record, :start_time, "must be before the end time", "doit être antérieure à l'heure de fin")
+      expect_messages(record, :recurrence_rule, "must include days of the week when using weekly frequency",
+                      "doit inclure des jours de la semaine lorsque la fréquence est hebdomadaire")
+      I18n.with_locale(:fr) do
+        record.valid?
+        expect(record.errors.full_messages).to include("Heure de début doit être antérieure à l'heure de fin")
+      end
+    end
+
+    it "localizes the event time and recurrence messages" do
+      event = Event.new(start_time: later, end_time: later - 1.hour, recurrence_rule: weekly)
+      expect_messages(event, :start_time, "must be before the end time", "doit être antérieure à l'heure de fin")
+      expect_messages(event, :recurrence_rule, "must include days of the week when using weekly frequency",
+                      "doit inclure des jours de la semaine lorsque la fréquence est hebdomadaire")
+    end
+
+    it "localizes the external calendar link message" do
+      record = StaffExternalUnavailability.new(user: user, ics_url: "ftp://example.test/cal.ics")
+      expect_messages(record, :ics_url, "must be an http or https link", "doit être un lien http ou https")
+    end
+
+    it "localizes the single open hours calendar message" do
+      space = create(:space)
+      StaffNeededCalendar.create!(space: space, calendar_url: "https://x.test/a.ics", role: "open_hours")
+      second = StaffNeededCalendar.new(space: space, role: "open_hours")
+      expect_messages(second, :space_id, "can only have one open_hours calendar",
+                      "ne peut avoir qu'un seul calendrier d'heures d'ouverture")
+    end
+  end
 end
