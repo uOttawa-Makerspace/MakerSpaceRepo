@@ -225,7 +225,7 @@
                     <%= f.label t('repository.add_member'), class: 'form-label' %>
                     <div class="mb-3 input-group">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
-                        <%= f.select(:owner_username, '', { prompt: t('repository.search_user') }, { class: 'form-control', data: {user_search_bar: ''} }) %>
+                        <%= f.select(:owner_username, '', { prompt: t('repository.search_user') }, { class: 'form-control', aria: { label: t('repository.search_user') }, data: {user_search_bar: ''} }) %>
                         <%= f.submit t('repository.add'), class: 'btn btn-success' %>
                     </div>
                 <% end %>

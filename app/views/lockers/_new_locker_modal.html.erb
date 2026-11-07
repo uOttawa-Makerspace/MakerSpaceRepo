@@ -29,7 +29,7 @@
                         <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
                         <%= f.select :locker_size_id, @locker_sizes.map { |size|
                             [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
-                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select' } %>
+                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select', aria: { label: 'Locker size' } } %>
                         <%= f.submit class: 'btn btn-primary' %>
                     </div>
                 <% end %>
@@ -67,7 +67,7 @@
                         <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
                         <%= f.select :locker_size_id, @locker_sizes.map { |size|
                             [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
-                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select' } %>
+                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select', aria: { label: 'Locker size' } } %>
                     </div>
                     <%= f.submit class: 'btn btn-primary float-end' %>
                 <% end %>

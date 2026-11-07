@@ -88,6 +88,7 @@ RSpec.describe "Accessibility baseline", type: :request do
         new_admin_key_path => %w[space-select supervisor-select],
         edit_admin_space_path(space) => %w[space-manager-select auto_approve_hours max_hours max_weekly_hours keycode admin_input],
         printers_path => %w[remove_printer printer_number],
+        staff_printers_printers_path => %w[options],
         staff_dashboard_index_path => %w[set_space_id user_dashboard_select],
         new_staff_training_session_path(space_id: space.id) => %w[set_space_id training_id level course]
       }
