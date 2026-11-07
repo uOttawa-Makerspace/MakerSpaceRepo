@@ -130,6 +130,29 @@ describe("when the staff data cannot be loaded", () => {
   });
 });
 
+describe("a page restored from the Turbo cache", () => {
+  it("is not ready when the load then fails", async () => {
+    $("eventModal").dataset.ready = "true";
+    $("addEventButton").disabled = false;
+
+    await load(staffFeed, { ok: false });
+
+    expect($("eventModal").dataset.ready).toBeUndefined();
+    expect($("addEventButton").disabled).toBe(true);
+    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
+  });
+
+  it("is reset before Turbo caches the page", () => {
+    $("eventModal").dataset.ready = "true";
+    $("addEventButton").disabled = false;
+
+    document.dispatchEvent(new Event("turbo:before-cache"));
+
+    expect($("eventModal").dataset.ready).toBeUndefined();
+    expect($("addEventButton").disabled).toBe(true);
+  });
+});
+
 describe("a successful load after a failed one", () => {
   it("hides the error again and enables the add button", async () => {
     await load(staffFeed, { ok: false });

@@ -633,7 +633,10 @@ function openEventForEditing(eventImpl) {
 }
 
 export function eventCreate(info) {
-  if (!eventModalReady()) return;
+  if (!eventModalReady()) {
+    info.view.calendar.unselect(); // drop the highlight of the dragged range
+    return;
+  }
 
   document.getElementById("start_time_field").value = toLocalDatetimeString(
     new Date(info.startStr),

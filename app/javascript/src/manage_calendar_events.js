@@ -11,9 +11,21 @@ function showStaffLoadError() {
   document.getElementById("staff_load_error").classList.remove("d-none");
 }
 
-document.addEventListener("turbo:load", async () => {
-  // A Turbo-cached page may still show the alert from an earlier failed load.
+// "Not ready" is the state at every start, including a page Turbo restored
+// from its cache: the modal is closed to every entry point until the
+// handlers below are attached again.
+function resetReadyState() {
+  document.getElementById("eventModal").removeAttribute("data-ready");
+  document.getElementById("addEventButton").disabled = true;
   document.getElementById("staff_load_error").classList.add("d-none");
+}
+
+document.addEventListener("turbo:before-cache", () => {
+  if (document.getElementById("eventModal")) resetReadyState();
+});
+
+document.addEventListener("turbo:load", async () => {
+  resetReadyState();
 
   const container = document.querySelector("#content");
 

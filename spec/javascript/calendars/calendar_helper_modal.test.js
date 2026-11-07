@@ -482,14 +482,17 @@ describe("before the modal is ready", () => {
 
   it("does not touch the form or click Add Event for a dragged range", () => {
     const click = vi.fn();
+    const unselect = vi.fn();
     $("addEventButton").addEventListener("click", click);
     eventCreate({
       startStr: "2027-03-17T10:00:00-04:00",
       endStr: "2027-03-17T12:00:00-04:00",
+      view: { calendar: { unselect } },
     });
 
     expect(click).not.toHaveBeenCalled();
     expect($("start_time_field").value).toBe("");
+    expect(unselect).toHaveBeenCalledTimes(1);
   });
 
   it("works again once the modal is marked ready", () => {
