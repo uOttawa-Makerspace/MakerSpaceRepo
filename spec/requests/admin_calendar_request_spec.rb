@@ -229,6 +229,19 @@ RSpec.describe "Admin calendar contract", type: :request do
     end
   end
 
+  it "update_color keeps the stored colour when the new one is not a #rrggbb value" do
+    log_in!(admin)
+    admin.update_column(:space_id, space.id)
+    row = StaffSpace.create!(user: admin, space: space, color: "#3788d8")
+
+    post update_color_admin_calendar_index_path,
+         params: { user_id: admin.id, color: "red;background:url(https://example.test/x)" }
+
+    expect(response.status).to eq(422)
+    expect(response.parsed_body).to eq("status" => "error", "error" => "That colour is not valid.")
+    expect(row.reload.color).to eq("#3788d8")
+  end
+
   it "update_color only touches the staff colour in the admin's own space" do
     other_space = create(:space)
     log_in!(admin)

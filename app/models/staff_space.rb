@@ -1,7 +1,14 @@
 class StaffSpace < ApplicationRecord
   belongs_to :user, optional: true
   belongs_to :space, optional: true
-  
+
+  COLOR_FORMAT = /\A#\h{6}\z/
+
+  normalizes :color, with: ->(color) { color.strip.downcase }
+
+  # The colour is written into style attributes by the calendar pages, so only a #rrggbb value is accepted. A
+  # stored value is only checked when it changes, so an older row stays editable for its other fields.
+  validates :color, format: { with: COLOR_FORMAT }, allow_blank: true, if: :will_save_change_to_color?
 
   before_save :ensure_color
 

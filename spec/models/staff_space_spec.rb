@@ -51,4 +51,33 @@ RSpec.describe StaffSpace, type: :model do
       expect(StaffSpace.new).to be_valid
     end
   end
+
+  describe "colour format" do
+    let(:space) { create(:space) }
+
+    it "accepts a #rrggbb value in either case and stores it lower case" do
+      expect(create(:staff_space, space: space, color: "#ABCDEF").reload.color).to eq("#abcdef")
+    end
+
+    ["red", "#fff", "#12345", "#1234567", "red;background:url(x)", "#ff0000;x", "url(x)"].each do |bad|
+      it "rejects #{bad.inspect}" do
+        staff_space = build(:staff_space, space: space, color: bad)
+        expect(staff_space).not_to be_valid
+        expect(staff_space.errors[:color]).to be_present
+      end
+    end
+
+    it "treats an upper case colour as the palette colour it spells when picking a free one" do
+      create(:staff_space, space: space, color: "#E6194B")
+      expect(create(:staff_space, space: space, color: nil).color).to eq("#3cb44b")
+    end
+
+    it "leaves a stored value that no longer matches alone while other fields change" do
+      staff_space = create(:staff_space, space: space)
+      staff_space.update_column(:color, "red") # rubocop:disable Rails/SkipsModelValidations
+      expect(staff_space.reload.update(user: create(:user))).to be(true)
+      expect(staff_space.reload.color).to eq("red")
+      expect(staff_space.update(color: "blue")).to be(false)
+    end
+  end
 end

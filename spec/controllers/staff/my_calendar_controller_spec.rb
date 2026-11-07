@@ -299,7 +299,7 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
         get :json, params: { id: @space.id }, format: :json
         event_data = JSON.parse(response.body).find { |e| e['id'] == "event-#{@training_event.id}" }
         
-        expect(event_data['extendedProps']['background']).to include('linear-gradient', '#FF5733', '#00FF00')
+        expect(event_data['extendedProps']['background']).to include('linear-gradient', '#ff5733', '#00ff00')
         
         user_without_color = create(:user, :staff)
         event_without_color = create(:event, space: @space, draft: false, start_time: 1.hour.from_now, end_time: 2.hours.from_now)
