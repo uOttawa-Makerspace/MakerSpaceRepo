@@ -515,20 +515,24 @@ class SubSpaceBookingController < SessionsController
   end
 
   # Books every occurrence that does not start in the past, all in one
-  # RecurringBooking group, and renders once at the end. A failed occurrence
-  # does not stop the rest. The mail goes out for the first occurrence
-  # actually booked.
+  # RecurringBooking group, and renders once at the end. If the first
+  # occurrence cannot be booked, the series is refused and nothing is saved.
+  # A later failed occurrence does not stop the rest (a partial series is
+  # kept and reported). The mail goes out for the first occurrence actually
+  # booked.
   def book_series(attrs, occurrences, now)
     recurring_booking = RecurringBooking.new
     booked = 0
     last_booked = nil
     failures = [] # [date, failure]
-    occurrences.each do |start_time, end_time|
+    occurrences.each_with_index do |(start_time, end_time), index|
       booking = new_occurrence(attrs.merge(start_time: start_time, end_time: end_time), now)
       next if SubSpaceBooking.start_in_past?(booking.start_time, now)
 
       failure = book_occurrence(booking, recurring_booking: recurring_booking, send_email: booked.zero?)
       if failure
+        return render_first_occurrence_refused(booking, failure) if index.zero?
+
         failures << [booking.start_time.to_date.iso8601, failure]
       else
         booked += 1
@@ -536,6 +540,10 @@ class SubSpaceBookingController < SessionsController
       end
     end
 
+    render_series_result(failures, booked, last_booked)
+  end
+
+  def render_series_result(failures, booked, last_booked)
     if failures.any?
       render_series_failure(failures, booked)
     elsif booked.zero? # every occurrence was in the past
@@ -657,6 +665,21 @@ class SubSpaceBookingController < SessionsController
         render json: { errors: failure[:errors] }, status: :unprocessable_content
       end
       format.html { redirect_to booking_calendar_path, alert: failure[:alert] }
+    end
+  end
+
+  # The first occurrence failed, so no occurrence was booked: 422 with the
+  # failure's errors, as for a single booking, and a message that says the
+  # series was not created.
+  def render_first_occurrence_refused(booking, failure)
+    summary = I18n.t("sub_space_booking.series.first_failed",
+                     date: booking.start_time.to_date.iso8601, reason: failure[:alert])
+    respond_to do |format|
+      format.json do
+        flash[:alert] = summary
+        render json: { errors: failure[:errors], summary: summary }, status: :unprocessable_content
+      end
+      format.html { redirect_to booking_calendar_path, alert: summary }
     end
   end
 

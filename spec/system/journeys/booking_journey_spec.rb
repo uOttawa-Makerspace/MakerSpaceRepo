@@ -109,11 +109,11 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     end
 
     bookings = SubSpaceBooking.where(name: "Club night").order(:start_time)
-    # the series loop books one occurrence AFTER the chosen
-    # recurring end date (day+21 for an end of day+15).
-    expect(bookings.count).to eq(4)
+    # recurring_end is inclusive: the last occurrence is the latest one on or
+    # before it (day+14 for an end of day+15).
+    expect(bookings.count).to eq(3)
     expect(bookings.map(&:recurring_booking_id).uniq.size).to eq(1)
-    expect(bookings.map { |b| b.start_time.to_date }).to eq([day, day + 7, day + 14, day + 21])
+    expect(bookings.map { |b| b.start_time.to_date }).to eq([day, day + 7, day + 14])
 
     as_actor(:admin) do
       log_in_as(admin)
@@ -127,7 +127,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
       expect(b.reload.sub_space_booking_status.booking_status).to eq(@approved_status)
     end
     approved = deliver_mail.select { |m| m.subject == "Booking approved" }
-    expect(approved.map(&:to)).to eq([[user.email]] * 4)
+    expect(approved.map(&:to)).to eq([[user.email]] * 3)
   end
 
   it "rejects a booking that overlaps a blocking booking (server 422; the UI toasts the reason)" do

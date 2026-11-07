@@ -255,6 +255,7 @@ fr:
     series:
       too_long: "Une réservation récurrente peut couvrir au plus %{days} jours."
       partial: "%{booked} occurrences sur %{total} réservées. Non réservées : %{failed}."
+      first_failed: "La série n'a pas été créée, car la première occurrence, le %{date}, n'a pas pu être réservée. %{reason}"
   saml:
     login:
       sign_in: "Connexion"
