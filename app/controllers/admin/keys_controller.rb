@@ -13,7 +13,6 @@ class Admin::KeysController < AdminAreaController
                   revoke_key
                   history
                 ]
-  before_action :refuse_hand_out_by_edit, only: %i[create update]
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
@@ -28,7 +27,9 @@ class Admin::KeysController < AdminAreaController
   def create
     @key = Key.new(key_params)
 
-    if @key.save
+    if @key.hands_out_by_edit?
+      redirect_to admin_keys_path, alert: Key::HAND_OUT_REFUSAL
+    elsif @key.save
       flash[:notice] = "Successfully created key."
       redirect_to admin_keys_path
     else
@@ -57,16 +58,13 @@ class Admin::KeysController < AdminAreaController
   end
 
   def update
-    update_params = key_params
-    update_params = update_params.except(:status) if @key.status_held?
-
-    if @key.update(update_params)
-      flash[:notice] = "The key was successfully updated."
-      redirect_to admin_keys_path
-    else
-      flash[:alert] = "Something went wrong while updating the key."
-      redirect_to edit_admin_key_path
-    end
+    @key.update_from_edit!(key_params)
+    redirect_to admin_keys_path, notice: "The key was successfully updated."
+  rescue Key::StateError => e
+    redirect_to admin_keys_path, alert: e.message
+  rescue ActiveRecord::RecordInvalid
+    redirect_to edit_admin_key_path,
+                alert: "Something went wrong while updating the key."
   end
 
   def destroy
@@ -157,24 +155,6 @@ class Admin::KeysController < AdminAreaController
       :custom_keycode,
       :additional_info
     )
-  end
-
-  # Creating or editing a key never hands it out or takes it back: the holder
-  # and the held status are set only by Key#assign_to! and Key#revoke!, which
-  # also record the key transaction. A held key keeps ignoring a posted status.
-  def refuse_hand_out_by_edit
-    return unless hands_out_by_edit?
-
-    redirect_to admin_keys_path,
-                alert: "Use Assign and Revoke to give a key to a holder or take it back."
-  end
-
-  # Decided on the key as it would be saved, so any spelling of the status
-  # (name or number) is judged by the state it produces.
-  def hands_out_by_edit?
-    candidate = @key ? Key.find(@key.id) : Key.new
-    candidate.assign_attributes(key_params)
-    candidate.status_changed?(to: "held") || candidate.user_id_changed?
   end
 
   def holder_approved?(user)
