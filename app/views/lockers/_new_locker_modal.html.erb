@@ -14,12 +14,14 @@
                             Create new lockers ranging from
                         </span>
                         <div class="me-3">
+                            <%= f.label :range_start, 'First locker number', class: 'visually-hidden', for: 'newLockerRangeStart' %>
                             <%= f.number_field :range_start, class: 'form-control', id: 'newLockerRangeStart', required: true %>
                         </div>
                         <span class="me-3">
                             to
                         </span>
                         <div class="me-3">
+                            <%= f.label :range_end, 'Last locker number', class: 'visually-hidden', for: 'newLockerRangeEnd' %>
                             <%= f.number_field :range_end, class: 'form-control', id: 'newLockerRangeEnd', required: true %>
                         </div>
                     </div>

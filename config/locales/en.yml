@@ -13,6 +13,7 @@ en:
     header: "Frequently Asked Questions"
     subtext: "Here's what you need to know about CEED"
   navbar:
+    skip_to_content: "Skip to main content"
     home: "Home"
     theme: "Theme"
     # explore section

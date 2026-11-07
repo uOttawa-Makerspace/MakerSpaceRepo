@@ -8,7 +8,7 @@
             <div class="modal-body">
                 <%= form_with url: admin_events_path, scope: :event, local: false, html: { id: "eventForm", class: "useTurbo" } do |f| %>
                     <div id="staff_select_container" class="mb-3">
-                        <label class="form-label">Assigned Staff</label>
+                        <label class="form-label" for="staff_select">Assigned Staff</label>
                         <select name="staff_select[]" id="staff_select" class="form-select" multiple></select>
                     </div>
 
@@ -19,11 +19,11 @@
 
                     <div class="row">
                         <div class="col">
-                            <%= f.label :start_time, "Start Time", class: "form-label", required: "true" %>
+                            <%= f.label :start_time, "Start Time", class: "form-label", for: "start_time_field" %>
                             <%= f.datetime_local_field :start_time, class: "form-control mb-3", id: "start_time_field", required: "true" %>
                         </div>
                         <div class="col">
-                            <%= f.label :end_time, "End Time", class: "form-label" %>
+                            <%= f.label :end_time, "End Time", class: "form-label", for: "end_time_field" %>
                             <%= f.datetime_local_field :end_time, class: "form-control mb-3", id: "end_time_field", disabled: false %>
                         </div>
                     </div>
@@ -33,7 +33,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Repeats</label>
+                        <label class="form-label" for="recurrence_frequency">Repeats</label>
                         <select id="recurrence_frequency" class="form-select">
                             <option value="">Does not repeat</option>
                             <option value="DAILY">Daily</option>
@@ -44,7 +44,7 @@
 
                     <div id="recurrence_options" style="display: none;">
                         <div class="mb-3">
-                            <label class="form-label">Ends (Leave blank for never)</label>
+                            <label class="form-label" for="recurrence_until">Ends (Leave blank for never)</label>
                             <input type="date" id="recurrence_until" class="form-control">
                         </div>
 
@@ -66,7 +66,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Event Type</label>
+                        <label class="form-label" for="event_type_select">Event Type</label>
                         <%= f.select :event_type,
                             options_for_select([['Shift', 'shift'], ['Training', 'training'], ['Meeting', 'meeting'], ['Other', 'other'], ['Unavailability', 'unavailability']]),
                             {include_blank: 'Select an event type'},
@@ -77,7 +77,7 @@
 
                     <div id="training-fields" style="display: none;">
                         <div class="mb-3">
-                            <label class="form-label">Training</label>
+                            <label class="form-label" for="training_select">Training</label>
                             <%= f.collection_select :training_id,
                                 Training.joins(:spaces_trainings)
                                         .where(spaces_trainings: { space_id: @space_id })
@@ -89,7 +89,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Language</label>
+                            <label class="form-label" for="language_select">Language</label>
                             <%= f.select :language,
                                 options_for_select([['English', 'en'], ['French', 'fr']]),
                                 {include_blank: 'Select language'},
@@ -98,7 +98,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Course</label>
+                            <label class="form-label" for="course_select">Course</label>
                             <%= f.select :course_name,
                                 options_for_select(CourseName.all.map {|c| [c.name, c.id]}),
                                 {include_blank: 'Select course'},
@@ -122,12 +122,12 @@
                             <div id="customFieldsCollapse" class="accordion-collapse collapse">
                                 <div class="accordion-body">
                                     <div class="mb-3">
-                                        <%= f.label :title, class: "form-label" %>
+                                        <%= f.label :title, class: "form-label", for: "title" %>
                                         <%= f.text_field :title, class: "form-control", id: "title", placeholder: "Leave blank to autogenerate" %>
                                     </div>
 
                                     <div class="mb-3">
-                                        <%= f.label :description, class: "form-label" %>
+                                        <%= f.label :description, class: "form-label", for: "description" %>
                                         <%= f.text_area :description, class: "form-control", rows: 2, id: "description" %>
                                     </div>
                                 </div>

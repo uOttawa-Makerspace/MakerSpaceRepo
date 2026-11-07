@@ -14,8 +14,9 @@
     <%= csrf_meta_tags %>
   </head>
   <body>
+    <%= render 'layouts/skip_link' %>
     <%= render 'layouts/header' %>
-    <div class="help-grid">
+    <main class="help-grid" id="main-content" tabindex="-1">
       <%= yield %>
       <div class="help-side-panel">
         <div class="title"><%= link_to 'Help Center', help_path %> / Getting Started </div>
@@ -27,7 +28,7 @@
       <div class="contact">
         If any error occurs, or if you would like to make a suggestion, do not hesitate to <%= link_to 'contact us', '#' %>.
       </div>
-    </div>
+    </main>
     <%= render 'layouts/footer' %>
   </body>
 </html>

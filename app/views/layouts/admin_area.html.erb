@@ -18,10 +18,11 @@
     <noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
   </head>
   <body>
+    <%= render 'layouts/skip_link' %>
     <%= render 'layouts/header', with_admin: true %>
     <%= render partial: 'partials/announcements' %>
 
-    <main class="main">
+    <main class="main" id="main-content" tabindex="-1">
       <%= yield(:before_container) %>
       <div class="container mt-3">
         <div class="flash" id="flash">

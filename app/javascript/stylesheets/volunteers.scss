@@ -102,9 +102,6 @@ section#volunteersIndex {
     &:hover {
       background-color: $ceed-orange-hover;
     }
-    &:focus {
-      outline: none;
-    }
   }
 
   .accordion-item {
@@ -131,9 +128,6 @@ section#volunteersIndex {
 
     &:hover {
       background-color: var(--bs-secondary-bg);
-    }
-    &:focus {
-      outline: none;
     }
   }
 

@@ -8,6 +8,7 @@
 
     <div class="input-group">
         <span class="input-group-text">Extracted GID: gid://shopify/Product/</span>
+        <%= f.label :value, 'Extracted product ID', class: 'visually-hidden' %>
         <%= f.text_field :value, class: 'w-auto flex-fill form-control-plaintext', readonly: true %>
         <%= f.submit class: 'btn btn-primary' %>
     </div>

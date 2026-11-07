@@ -28,7 +28,7 @@
 
     <!-- Dates and Indefinite -->
     <div class="col-12 col-md-6">
-      <%= f.label :owned_until, 'End Date', class: 'form-label fw-bold text-body' %>
+      <%= f.label :owned_until, 'End Date', class: 'form-label fw-bold text-body', for: 'assign_owned_until' %>
       <%= f.date_field :owned_until, value: end_of_this_semester, class: 'form-control', id: 'assign_owned_until' %>
       <div class="form-check mt-2">
         <%= check_box_tag 'locker_rental[indefinite]', '1', false, class: 'form-check-input', id: 'assign_indefinite', data: { indefinite_target: 'assign_owned_until' } %>

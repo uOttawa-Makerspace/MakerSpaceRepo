@@ -257,7 +257,6 @@ section#repo-comments {
     min-height: 100px;
 
     &:focus {
-      outline: none;
       border-color: $primary;
       box-shadow: 0 0 0 0.2rem rgba(226, 72, 41, 0.25);
     }

@@ -43,6 +43,7 @@ fr:
     header: "Foire Aux Questions"
     subtext: "Voici tout ce qu'il faut savoir sur CEED"
   navbar:
+    skip_to_content: "Passer au contenu principal"
     home: "Accueil"
     theme: "Thème"
     # explore section
