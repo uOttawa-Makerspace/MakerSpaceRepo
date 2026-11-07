@@ -412,7 +412,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   def save_staff_assignment
     @job_order.assigned_staff_id = params[:staff_id]
     if @job_order.save
-      flash[:notice] = "#{@job_order.assigned_staff&.name || "No staff"} has been assigned to this job order."
+      flash[:notice] = assignment_notice
 
       if @job_order.assigned_staff.present? && @user.admin? && @job_order.assigned_staff != @user
         JobOrderMailer.staff_assigned(@job_order.id, @job_order.assigned_staff.id).deliver_later
@@ -421,6 +421,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       refusal = @job_order.errors.messages_for(:assigned_staff).to_sentence
       flash[:alert] = refusal.presence || t("job_orders.alerts.assign_staff_failed")
     end
+  end
+
+  def assignment_notice
+    staff = @job_order.assigned_staff
+    staff ? t("job_orders.alerts.staff_assigned", name: staff.name) : t("job_orders.alerts.no_staff_assigned")
   end
 
   def set_job_order

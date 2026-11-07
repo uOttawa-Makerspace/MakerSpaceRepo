@@ -238,6 +238,17 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).to include("Submit for Approval")
     end
 
+    it "words the Submit for Approval button and its confirm text in the request's language" do
+      order = order_with_task!(owner: owner)
+      seed_job_types!
+      order.job_tasks.first.update!(job_type: JobType.all.find { |type| type.job_service_groups.none? })
+      http_login!(owner)
+      get job_order_path(order, locale: "fr")
+      expect(response.body).to include(I18n.t("job_orders.order.submit_for_approval", locale: :fr))
+      expect(response.body).to include(ERB::Util.html_escape(I18n.t("job_orders.order.submit_for_approval_confirm", locale: :fr)))
+      expect(response.body).not_to include("Submit for Approval")
+    end
+
     it "redirects to the order list with a not-found message for a missing or deleted order" do
       order = order_with_task!(owner: owner)
       http_login!(owner)

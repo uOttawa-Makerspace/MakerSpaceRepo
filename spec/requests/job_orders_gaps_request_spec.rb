@@ -446,6 +446,16 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(order.reload.assigned_staff).to eq(staff)
     end
 
+    it "words the assigned and unassigned notices in the request's language" do
+      session_login!(admin)
+      patch job_order_assign_staff_path(order, locale: "fr"), params: { staff_id: staff.id }
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.staff_assigned", name: staff.name, locale: :fr))
+
+      patch job_order_assign_staff_path(order, locale: "fr"), params: { staff_id: "" }
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.no_staff_assigned", locale: :fr))
+      expect(flash[:notice]).not_to include("assigned")
+    end
+
     it "unassigns with a blank staff_id and says 'No staff'" do
       order.update!(assigned_staff: staff)
       session_login!(admin)

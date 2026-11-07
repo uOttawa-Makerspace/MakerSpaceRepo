@@ -289,6 +289,8 @@ en:
       job_order_not_found: "The Job Order hasn't been found."
       assign_staff_not_permitted: "Only an admin can assign another staff member to a job order."
       assign_staff_not_staff: "Only a staff member or an admin can be assigned to a job order."
+      staff_assigned: "%{name} has been assigned to this job order."
+      no_staff_assigned: "No staff has been assigned to this job order."
       assign_staff_failed: "The staff member could not be assigned to this job order."
       error_while_saving_step: "An error occurred while saving the Job Order Step. "
       job_order_submitted_for_approval: "Your job order has been submitted for staff approval!"
@@ -392,6 +394,8 @@ en:
       step_4:
         additional_comments: "Additional Comments"
     order:
+      submit_for_approval: "Submit for Approval"
+      submit_for_approval_confirm: "Are you sure you want to submit this job order for staff approval?"
       job_order: "Job Order"
       client_information: "Client Information"
       name: "Name"

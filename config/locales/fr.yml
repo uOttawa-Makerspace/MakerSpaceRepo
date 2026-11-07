@@ -367,6 +367,8 @@ fr:
       job_order_not_found: "La commande n'a pas été trouvée"
       assign_staff_not_permitted: "Seul un administrateur peut assigner un autre membre du personnel à une commande."
       assign_staff_not_staff: "Seul un membre du personnel ou un administrateur peut être assigné à une commande."
+      staff_assigned: "%{name} a été assigné à cette commande."
+      no_staff_assigned: "Aucun membre du personnel n'est assigné à cette commande."
       assign_staff_failed: "Le membre du personnel n'a pas pu être assigné à cette commande."
       error_while_saving_step: "Une erreur s'est produite lors de l'enregistrement de l'étape de commande.  "
       job_order_submitted_for_approval: "Votre commande a été soumise à l'approbation du personnel !"
@@ -470,6 +472,8 @@ fr:
       step_4:
         additional_comments: "Commentaires supplémentaires"
     order:
+      submit_for_approval: "Soumettre pour approbation"
+      submit_for_approval_confirm: "Voulez-vous vraiment soumettre cette commande à l'approbation du personnel ?"
       job_order: "Commande"
       client_information: "Informations du client"
       name: "Nom"
