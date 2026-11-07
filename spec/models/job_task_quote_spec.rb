@@ -39,13 +39,17 @@ RSpec.describe JobTaskQuote, type: :model do
       expect(quote.total_task_price).to eq(17.5)
     end
 
-    # with a nil service_quantity (Design Services quotes) the math
-    # raises; the callers rescue nothing.
-    it "crashes when service_quantity is nil" do
+    it "counts a missing service quantity or price as zero (Design Services quotes have no service line)" do
       task = create(:job_order).job_tasks.create!(title: "Task #1")
       quote = task.build_job_task_quote(price: 10)
       quote.save!
-      expect { quote.reload.total_task_price }.to raise_error(TypeError, /BigDecimal/)
+      expect(quote.reload.total_task_price).to eq(10)
+
+      quote.update!(service_quantity: 2)
+      expect(quote.reload.total_task_price).to eq(10)
+
+      quote.update!(service_quantity: nil, service_price: 3)
+      expect(quote.reload.total_task_price).to eq(10)
     end
   end
 end

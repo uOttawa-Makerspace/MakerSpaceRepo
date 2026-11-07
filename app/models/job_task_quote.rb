@@ -9,6 +9,6 @@ class JobTaskQuote < ApplicationRecord
   validates :service_quantity, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
 
   def total_task_price
-    price + (service_quantity * service_price) + job_task_quote_options.sum(:price)
+    price + ((service_quantity || 0) * (service_price || 0)) + job_task_quote_options.sum(:price)
   end
 end
