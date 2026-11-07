@@ -114,3 +114,15 @@ en:
           attributes:
             space_id:
               taken: "can only have one open_hours calendar"
+        quick_access_link:
+          attributes:
+            path:
+              taken: "You already have a quick access link to that location"
+              points_to_user: "cannot point to a user"
+              not_a_valid_path: "must be a valid path"
+        locker_rental:
+          attributes:
+            rented_by:
+              request_under_review: "already has a request under review"
+            state:
+              cancelled_cannot_change: "cannot change from cancelled except back to awaiting payment, or to active by staff"

@@ -133,6 +133,34 @@ RSpec.describe "Localized model error messages" do
                     "Une question doit avoir exactement une bonne réponse", :question_form)
   end
 
+  it "localizes the quick access link messages" do
+    admin = create(:user, :admin)
+    QuickAccessLink.create!(user: admin, name: "Faq", path: "/faq")
+    expect_messages(QuickAccessLink.new(user: admin, name: "Again", path: "/faq"), :path,
+                    "You already have a quick access link to that location",
+                    "Vous avez déjà un lien d'accès rapide vers cet emplacement")
+    expect_messages(QuickAccessLink.new(user: admin, name: "Me", path: "/#{admin.username}"), :path,
+                    "cannot point to a user", "ne peut pas pointer vers un utilisateur")
+    expect_messages(QuickAccessLink.new(user: admin, name: "Bad", path: "/no/such/route/at/all/xyz"), :path,
+                    "must be a valid path", "doit être un chemin valide")
+  end
+
+  describe LockerRental do
+    it "localizes the one request and cancelled state messages" do
+      renter = create(:user)
+      create(:locker_rental, :reviewing, rented_by: renter)
+      expect_messages(build(:locker_rental, :reviewing, rented_by: renter), :rented_by,
+                      "already has a request under review", "a déjà une demande en attente de révision")
+
+      rental = create(:locker_rental, :active)
+      rental.update!(state: :cancelled)
+      rental.state = :active
+      expect_messages(rental, :state,
+                      "cannot change from cancelled except back to awaiting payment, or to active by staff",
+                      "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « Attendre le paiement » ou pour passer à « Actif » par le personnel")
+    end
+  end
+
   describe "staff and event calendars" do
     let(:weekly) { "FREQ=WEEKLY;INTERVAL=1" }
     let(:later) { 2.days.from_now.change(usec: 0) }

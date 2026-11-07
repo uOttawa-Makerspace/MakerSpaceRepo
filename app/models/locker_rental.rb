@@ -63,7 +63,7 @@ class LockerRental < ApplicationRecord
          LockerRental.where(rented_by: rented_by).exists?(
            state: %i[reviewing await_payment]
          )
-      errors.add(:rented_by, 'already has a request under review')
+      errors.add(:rented_by, :request_under_review)
     end
   end
 
@@ -110,7 +110,7 @@ class LockerRental < ApplicationRecord
   def cancelled_only_returns_to_payment
     return if await_payment? || (active? && decided_by&.staff?)
 
-    errors.add(:state, 'cannot change from cancelled except back to awaiting payment, or to active by staff')
+    errors.add(:state, :cancelled_cannot_change)
   end
 
   # Track when rental was finished

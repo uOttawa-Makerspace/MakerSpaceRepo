@@ -114,3 +114,15 @@ fr:
           attributes:
             space_id:
               taken: "ne peut avoir qu'un seul calendrier d'heures d'ouverture"
+        quick_access_link:
+          attributes:
+            path:
+              taken: "Vous avez déjà un lien d'accès rapide vers cet emplacement"
+              points_to_user: "ne peut pas pointer vers un utilisateur"
+              not_a_valid_path: "doit être un chemin valide"
+        locker_rental:
+          attributes:
+            rented_by:
+              request_under_review: "a déjà une demande en attente de révision"
+            state:
+              cancelled_cannot_change: "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « Attendre le paiement » ou pour passer à « Actif » par le personnel"
