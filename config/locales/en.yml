@@ -186,6 +186,7 @@ en:
         users_with_current_space: "users with current space"
       user:
         student_id: "Student Number"
+        email: "Email"
     errors:
       models:
         user:
@@ -202,6 +203,7 @@ en:
               confirmation: "Passwords do not match."
             email:
               taken: "This email address is already in use."
+              invalid: "is invalid"
             how_heard_about_us:
               too_long: "Maximum of %{count} characters."
             read_and_accepted_waiver_form:

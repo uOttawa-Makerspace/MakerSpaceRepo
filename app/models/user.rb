@@ -203,6 +203,11 @@ class User < ApplicationRecord
             uniqueness: { case_sensitive: false },
             email: true
 
+  # A changed address must still have the shape of an address; the provider-typo
+  # hint is for sign-up only. Unchanged addresses are not checked, so existing
+  # users with an odd stored address can still save other fields.
+  validates :email, email: { typo_check: false }, on: :update, if: :will_save_change_to_email?
+
   validates :how_heard_about_us, 
             length: { maximum: 250 }
 
@@ -281,6 +286,14 @@ class User < ApplicationRecord
   # ============================================
 
   default_scope { where(deleted: false) }
+
+  # The shape error (in the current locale) when `address` could not be an
+  # email address, nil when it is acceptable. The provider-typo hint is not part of it.
+  def self.email_shape_error(address)
+    probe = new
+    EmailValidator.new(attributes: [:email], typo_check: false).validate_each(probe, :email, address)
+    probe.errors.full_messages_for(:email).to_sentence.presence
+  end
 
   # Every user row, soft-deleted ones included. For admin views and reports, which see everything;
   # the default scope keeps deleted users out of everything else.

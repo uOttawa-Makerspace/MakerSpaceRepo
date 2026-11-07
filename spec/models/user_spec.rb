@@ -686,15 +686,32 @@ RSpec.describe User, type: :model do
       expect(u.email).to eq("mixed@example.com")
     end
 
-    it "email format is checked on create only, and the format check is lenient" do
-      # the `email: true` validator accepts addresses without an @ (e.g. "not-an-email") and no email rule runs on update
-      expect(build(:user, email: "not-an-email")).to be_valid
+    it "rejects an email that is not an address, on create" do
+      %w[not-an-email a@ @b.ca a@@b.ca].each do |bad|
+        user = build(:user, email: bad)
+        expect(user).not_to be_valid, "expected #{bad.inspect} to be rejected"
+        expect(user.errors[:email]).to be_present
+      end
       expect(build(:user, email: "")).not_to be_valid
+      expect(build(:user, email: "first.last+tag@uottawa.ca")).to be_valid
+    end
+
+    it "checks the email format on update only when the email changes" do
       u = create(:user)
       u.email = "not-an-email"
+      expect(u).not_to be_valid
+      expect(u.errors[:email]).to be_present
+
+      u = create(:user)
+      u.email = "someone@mail.com"
       expect(u).to be_valid
-      u.email = ""
-      expect(u).to be_valid
+
+      stored = create(:user)
+      stored.update_columns(email: "odd-stored-address")
+      stored = User.find(stored.id)
+      stored.name = "Renamed"
+      expect(stored).to be_valid
+      expect(stored.save).to be true
     end
 
     it "the waiver is required on create only" do
@@ -1090,6 +1107,18 @@ RSpec.describe User, type: :model do
       Rfid.unlink_from_user!(user, actor: create(:user, :staff))
       expect(user.reload.destroy).to be_truthy
       expect(Rfid.find(card.id).user_id).to be_nil
+    end
+  end
+
+  describe ".email_shape_error" do
+    it "names the problem for a malformed address, in the current locale" do
+      expect(User.email_shape_error("not-an-address")).to be_present
+      expect(I18n.with_locale(:fr) { User.email_shape_error("not-an-address") }).not_to include("translation missing")
+    end
+
+    it "accepts a well-formed address and does not apply the provider-typo hint" do
+      expect(User.email_shape_error("someone@example.com")).to be_nil
+      expect(User.email_shape_error("someone@gmial.com")).to be_nil
     end
   end
 end

@@ -765,6 +765,19 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries).to be_empty
     end
 
+    it "refuses a malformed address before creating a token or sending anything, in either language" do
+      login!(user)
+      %i[en fr].each do |locale|
+        expect_any_instance_of(User).not_to receive(:generate_email_change_token)
+        post change_email_users_path(locale: locale), params: change_params.merge(new_email: "not-an-address", confirm_new_email: "not-an-address")
+        expect(response).to redirect_to(settings_admin_path)
+        expect(flash[:alert]).to eq(I18n.with_locale(locale) { User.email_shape_error("not-an-address") })
+        expect(flash[:alert]).to be_present
+        expect(flash[:alert]).not_to include("translation missing")
+      end
+      expect(deliveries).to be_empty
+    end
+
     it "already used" do
       login!(user)
       other = create(:user, :regular_user)
@@ -894,6 +907,23 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       login!(user)
       post confirm_edited_email_users_path, params: { token: user.generate_token_for(:password_reset) }
       expect(flash[:alert]).to eq(expired_alert)
+    end
+
+    it "to a domain close to a common provider succeeds the first time" do
+      login!(user)
+      post confirm_edited_email_users_path, params: { token: user.generate_email_change_token("someone@mail.com") }
+      expect(flash[:alert]).to be_nil
+      expect(user.reload.email).to eq("someone@mail.com")
+    end
+
+    it "to a malformed address is refused with the shape error: no mail, no change" do
+      original = user.email
+      login!(user)
+      post confirm_edited_email_users_path, params: { token: user.generate_email_change_token("not-an-address") }
+      expect(flash[:alert]).to start_with("The email could not be updated: Email is invalid")
+      expect(flash[:alert]).not_to include("already be used")
+      expect(user.reload.email).to eq(original)
+      expect(deliveries).to be_empty
     end
 
     it "to an address taken in the meantime fails cleanly: error flash, no mail, no change" do
