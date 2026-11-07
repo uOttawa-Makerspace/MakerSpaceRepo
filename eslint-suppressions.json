@@ -27,7 +27,7 @@
   },
   "app/javascript/entrypoints/calendar.js": {
     "no-unused-vars": {
-      "count": 2
+      "count": 1
     }
   },
   "app/javascript/entrypoints/cdel_reports.js": {

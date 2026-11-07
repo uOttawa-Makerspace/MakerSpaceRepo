@@ -13,8 +13,8 @@ require "rails_helper"
 #   - the :in_time_zone("America/Toronto") round-trip of the UTC variant maps
 #     back to the values they were written with (creation is UTC-normalized,
 #     readback is evaluated as UTC then re-zoned)
-#   - update_color only flashes (no render/redirect) → the response collapses
-#     to 204 No Content even when data changed
+#   - update_color answers JSON: 200 {"status":"ok"} when the colour is saved,
+#     422 with an error message when it is not
 #   - ics_to_json route was removed → 404
 
 RSpec.describe "Admin calendar contract", type: :request do
@@ -199,22 +199,20 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(response.status).to eq(404)
   end
 
-  # update_color only ever assigns flash — no render, no redirect,
-  # and no template exists for the action — so both the success path (which
-  # also mutated data) and the failure path fall through to an empty
-  # render-less response that surfaces as 204 No Content. Verified live.
-  it "update_color returns 204 on success AND failure; color persists" do
+  it "update_color answers 200 when the colour is saved and 422 when it is not" do
     log_in!(admin)
     admin.update_column(:space_id, space.id)
     row = StaffSpace.create!(user: admin, space: space, color: "#3788d8")
 
     post update_color_admin_calendar_index_path,
          params: { user_id: admin.id, color: "#ff0000" }
-    expect(response.status).to eq(204)
-    expect(row.reload.color).to eq("#ff0000") # data changed via 204
+    expect(response.status).to eq(200)
+    expect(response.parsed_body).to eq("status" => "ok")
+    expect(row.reload.color).to eq("#ff0000")
 
     post update_color_admin_calendar_index_path, params: {}
-    expect(response.status).to eq(204) # alert branch is ALSO flash-only
+    expect(response.status).to eq(422)
+    expect(response.parsed_body).to eq("status" => "error", "error" => "An error occurred, try again later.")
   end
 
   it "update_color only touches the staff colour in the admin's own space" do
@@ -233,7 +231,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     post update_color_admin_calendar_index_path,
          params: { user_id: staff.id, color: "#ff0000" }
 
-    expect(response.status).to eq(204)
+    expect(response.status).to eq(200)
     expect(own_row.reload.color).to eq("#ff0000")
     expect(other_row.reload.color).to eq("#00ff00")
     expect(unrelated.reload.color).to eq("#0000ff")
@@ -249,7 +247,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     post update_color_admin_calendar_index_path,
          params: { user_id: staff.id, color: "#ff0000" }
 
-    expect(response.status).to eq(204)
+    expect(response.status).to eq(422)
     expect(other_row.reload.color).to eq("#00ff00")
   end
 
@@ -393,7 +391,7 @@ RSpec.describe "Admin calendar contract", type: :request do
     end
   end
 
-  describe "update_color failure variants (all answer 204 with an alert flash)" do
+  describe "update_color failure variants (all answer 422 and change nothing)" do
     before do
       log_in!(admin)
       admin.update_column(:space_id, space.id)
@@ -403,8 +401,8 @@ RSpec.describe "Admin calendar contract", type: :request do
       row = StaffSpace.create!(user: admin, space: space, color: "#3788d8")
       stored = row.reload.color
       post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "" }
-      expect(response.status).to eq(204)
-      expect(flash[:alert]).to eq("An error occurred, try again later.")
+      expect(response.status).to eq(422)
+      expect(response.parsed_body["error"]).to eq("An error occurred, try again later.")
       expect(row.reload.color).to eq(stored)
     end
 
@@ -413,15 +411,16 @@ RSpec.describe "Admin calendar contract", type: :request do
       row = StaffSpace.create!(user: staff, space: other_space, color: "#3788d8")
       stored = row.reload.color
       post update_color_admin_calendar_index_path, params: { user_id: staff.id, color: "#ff0000" }
-      expect(response.status).to eq(204)
-      expect(flash[:alert]).to eq("An error occurred, try again later.")
+      expect(response.status).to eq(422)
+      expect(response.parsed_body["error"]).to eq("An error occurred, try again later.")
       expect(row.reload.color).to eq(stored)
     end
 
-    it "flashes the success notice when the colour is applied" do
+    it "answers ok when the colour is applied" do
       StaffSpace.create!(user: admin, space: space, color: "#3788d8")
       post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "#ff0000" }
-      expect(flash[:notice]).to eq("Color updated successfully")
+      expect(response.status).to eq(200)
+      expect(response.parsed_body).to eq("status" => "ok")
     end
   end
 
@@ -443,16 +442,15 @@ RSpec.describe "Admin calendar contract", type: :request do
   end
 
   describe "update_color when the colour cannot be saved" do
-    it "alerts and keeps the stored colour" do
+    it "answers 422 and keeps the stored colour" do
       log_in!(admin)
       admin.update_column(:space_id, space.id)
       row = StaffSpace.create!(user: admin, space: space, color: "#3788d8")
       stored = row.reload.color
       allow_any_instance_of(StaffSpace).to receive(:update).and_return(false) # the model has no validation that refuses a colour
       post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "#ff0000" }
-      expect(response.status).to eq(204)
-      expect(flash[:alert]).to eq("An error occurred, try again later.")
-      expect(flash[:notice]).to be_nil
+      expect(response.status).to eq(422)
+      expect(response.parsed_body["status"]).to eq("error")
       expect(row.reload.color).to eq(stored)
     end
   end
