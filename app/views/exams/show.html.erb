@@ -2,7 +2,7 @@
   <div class="text-center">
     <% @questions.find_each.each_with_index do |question, i| %>
       Question <%= i + 1 %>
-      <% response = question.response_for_exam(@exam) %>
+      <% response = @responses[question.id] %>
         <% if response %>
           <%= render partial: 'question_with_response', locals: { question:, response: } %>
         <% else %>

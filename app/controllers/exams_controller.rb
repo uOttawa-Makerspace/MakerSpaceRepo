@@ -40,6 +40,7 @@ class ExamsController < SessionsController
       @exam.update(status: Exam::STATUS[:incomplete])
     end
     @questions = @exam.questions.includes(images_attachments: :blob, answers: :rich_text_description)
+    @responses = @exam.responses_by_question_id
   end
 
   def destroy

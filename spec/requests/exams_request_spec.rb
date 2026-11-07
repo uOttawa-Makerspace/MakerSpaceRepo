@@ -170,6 +170,25 @@ RSpec.describe "Exams", type: :request do
       expect(many.size).to eq(few.size)
     end
 
+    it "reads the owner's recorded answers in a constant number of queries" do
+      log_in!(student)
+      record_answers = lambda do |taken|
+        taken.exam_questions.includes(question: :answers).each do |eq|
+          ExamResponse.create!(exam_question: eq, answer: eq.question.answers.first)
+        end
+      end
+      record_answers.call(exam)
+      get exam_path(exam) # warm up
+      few = selects_on("exam_responses") { get exam_path(exam) }
+      bigger = new_exam(questions: fixture[:questions] + Array.new(3) { add_question_with_image })
+      record_answers.call(bigger)
+      many = selects_on("exam_responses") { get exam_path(bigger) }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan("checked=true").size).to eq(6)
+      expect(many.size).to eq(few.size)
+    end
+
     it "never marks which answer is correct in the page (no answer leakage)" do
       log_in!(student)
       get exam_path(exam)
