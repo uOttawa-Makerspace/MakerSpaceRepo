@@ -90,6 +90,44 @@ class JobOrderMailer < ApplicationMailer
     end
   end
 
+  def send_job_user_declined(job_order_id)
+    return unless JobOrder.where(id: job_order_id).present?
+    @job_order = JobOrder.find(job_order_id)
+
+    if @job_order.expedited?
+      mail(
+        to: "makerspace@uottawa.ca",
+        subject: "EXPEDITED: A user has declined a Job Order",
+        Importance: "high",
+        "X-Priority": "1"
+      )
+    else
+      mail(
+        to: "makerspace@uottawa.ca",
+        subject: "A user has declined a Job Order"
+      )
+    end
+  end
+
+  # Tells the customer their own approval or decline of the quote was recorded.
+  def send_job_decision_confirmation(job_order_id, approved)
+    return unless JobOrder.where(id: job_order_id).present?
+    @job_order = JobOrder.find(job_order_id)
+    @approved = approved
+
+    mail(
+      to: @job_order.user.email,
+      reply_to: "makerspace@uottawa.ca",
+      bcc: "uottawa.makerepo@gmail.com",
+      subject:
+        if approved
+          "Votre approbation de la commande ##{@job_order.id} est enregistrée // Your approval of job order ##{@job_order.id} is recorded"
+        else
+          "Votre refus de la commande ##{@job_order.id} est enregistré // Your decline of job order ##{@job_order.id} is recorded"
+        end
+    )
+  end
+
   def send_job_completed(job_order_id, message)
     return unless JobOrder.where(id: job_order_id).present?
     @job_order = JobOrder.find(job_order_id)

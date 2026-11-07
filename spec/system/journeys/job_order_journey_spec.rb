@@ -181,6 +181,6 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
     expect(last_status.job_status.name).to eq("Waiting to be Processed")
     expect(last_status.user).to eq(user)
     expect(task.reload).to be_persisted
-    expect(deliver_mail).to be_empty
+    expect(deliver_mail.map(&:to)).to eq([["makerspace@uottawa.ca"], [user.email]])
   end
 end

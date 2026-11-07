@@ -1,0 +1,37 @@
+<% content_for :preheader do %>
+  MakerRepo - Confirmation // Confirmation
+<% end %>
+
+<% content_for :team_name do %>
+  The MakerRepo Team
+<% end %>
+
+<% content_for :why_received do %>
+  Vous avez reçu ce courriel parce que vous avez répondu au devis de votre commande de travail sur
+  <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+  <br>
+  You received this email because you responded to the quote of your job order on
+  <a href="https://makerepo.com" style="text-decoration: underline; color: #999999; font-size: 12px; text-align: center;">makerepo.com</a>.
+<% end %>
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Bonjour,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+  <% if @approved %>
+    Nous avons bien enregistré votre approbation du devis de la commande de travail #<%= @job_order.id %>. Le personnel du MakerRepo va maintenant s'en occuper.
+  <% else %>
+    Nous avons bien enregistré votre refus du devis de la commande de travail #<%= @job_order.id %>.
+  <% end %>
+  Pour toute question, écrivez à <a href="mailto:makerspace@uottawa.ca">makerspace@uottawa.ca</a> en indiquant le numéro de la commande.
+</p>
+
+<hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+  <% if @approved %>
+    We have recorded your approval of the quote for job order #<%= @job_order.id %>. MakerRepo staff will now process it.
+  <% else %>
+    We have recorded your decline of the quote for job order #<%= @job_order.id %>.
+  <% end %>
+  If you have any questions, email <a href="mailto:makerspace@uottawa.ca">makerspace@uottawa.ca</a> and include the job order number.
+</p>

@@ -137,20 +137,17 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @token = params[:token]
     @job_order = JobOrder.from_approval_token(@token)
     if @job_order
-      @status = if update_status(
-           params[:approved],
-           %i[user_approval sent_reminder],
-           :waiting_processed,
-           true,
-           :declined,
-           nil,
-           actor: @job_order.user,
-           approval_token: @token
-         )
-        true
-      else
-        false
-      end
+      @status = update_status(
+        params[:approved],
+        %i[user_approval sent_reminder],
+        :waiting_processed,
+        true,
+        :declined,
+        nil,
+        actor: @job_order.user,
+        approval_token: @token
+      )
+      notify_user_decision if @status
       render "job_orders/magic_approval_confirmation"
     else
       flash[:alert] = t("job_orders.alerts.error_accept_deny_order")
@@ -166,14 +163,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
          true,
          :declined,
          nil
-       ) && params[:approved] == "true"
-      JobOrderMailer.send_job_user_approval(@job_order.id).deliver_now
+       )
+      notify_user_decision
     end
 
-    respond_to do |format|
-      format.html { redirect_to job_order_path(@job_order.id) }
-      format.js { render "admin_row" }
-    end
+    render_row_action
   end
 
   # One query for the rows and their statuses, one for the users of the rows that name their actor
@@ -291,10 +285,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       end
     end
 
-    respond_to do |format|
-      format.html { redirect_to job_order_path(@job_order.id) }
-      format.js { render "admin_row" }
-    end
+    render_row_action
   end
 
   def paid
@@ -591,10 +582,26 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     if redirect_link.nil?
       result.ok?
     else
-      respond_to do |format|
-        format.html { redirect_to redirect_link }
-        format.js { render "admin_row" }
-      end
+      render_row_action(redirect_link)
     end
+  end
+
+  def render_row_action(redirect_link = job_order_path(@job_order.id))
+    respond_to do |format|
+      format.html { redirect_to redirect_link }
+      format.js { render "admin_row" }
+    end
+  end
+
+  # The customer approved or declined the quote (params[:approved], already applied by the transition): staff are
+  # told, and the customer gets a confirmation.
+  def notify_user_decision
+    approved = params[:approved] == "true"
+    if approved
+      JobOrderMailer.send_job_user_approval(@job_order.id).deliver_now
+    else
+      JobOrderMailer.send_job_user_declined(@job_order.id).deliver_now
+    end
+    JobOrderMailer.send_job_decision_confirmation(@job_order.id, approved).deliver_now
   end
 end

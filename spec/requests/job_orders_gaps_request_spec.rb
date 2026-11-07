@@ -202,7 +202,8 @@ RSpec.describe "JobOrders gaps", type: :request do
       perform_enqueued_jobs { patch job_order_user_approval_path(order), params: { approved: "true" } }
       expect(status_names(order)).to end_with("Waiting to be Processed")
       expect(order.job_order_statuses.last.user).to eq(staff)
-      expect(ActionMailer::Base.deliveries.last.subject).to eq("A user has approved a Job Order")
+      expect(ActionMailer::Base.deliveries.map(&:subject).first).to eq("A user has approved a Job Order")
+      expect(ActionMailer::Base.deliveries.last.to).to eq([order.user.email])
     end
 
     it "accepts the SENT_REMINDER state as an origin for a user approval" do
@@ -228,7 +229,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       session_login!(owner)
       perform_enqueued_jobs { patch job_order_user_approval_path(order), params: { approved: "true" } }
 
-      mail = ActionMailer::Base.deliveries.last
+      mail = ActionMailer::Base.deliveries.first
       expect(mail.subject).to eq("EXPEDITED: A user has approved a Job Order")
       expect(mail.to).to eq(["makerspace@uottawa.ca"])
       expect(mail.header["Importance"].to_s).to eq("high")
