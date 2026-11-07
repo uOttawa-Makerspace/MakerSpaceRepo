@@ -55,18 +55,23 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
       expect(response).to redirect_to(wizard_path_for(order, task, 1))
     end
 
-    # the numbering SQL uses the Postgres regexp "Task ([0-9]+)"
-    # against titles that actually are "Task #N" — the "#" never matches, so
-    # SUBSTRING returns NULL and the "highest existing number" is always 0.
-    # Numbering is therefore purely count-based (max(count) + 1): with a gapped
-    # "Task #1"/"Task #5" pair it happily produces "Task #3".
-    it "numbers from the row count — the 'highest Task #N' SQL never matches the # marker" do
+    it "numbers after the highest 'Task #N' even when there are gaps, and leaves existing titles alone" do
       order = order_with_task!
       order.job_tasks.create!(title: "Task #5")
       session_login!(owner)
 
       post job_order_job_tasks_path(order)
-      expect(order.reload.job_tasks.last.title).to eq("Task #3")
+      expect(order.reload.job_tasks.order(:id).pluck(:title)).to eq(["Task #1", "Task #5", "Task #6"])
+    end
+
+    it "ignores titles that are not 'Task #N' when numbering" do
+      order = make_job_order!(owner: owner)
+      order.job_tasks.destroy_all
+      order.job_tasks.create!(title: "Bracket")
+      session_login!(owner)
+
+      post job_order_job_tasks_path(order)
+      expect(order.reload.job_tasks.order(:id).pluck(:title)).to eq(["Bracket", "Task #1"])
     end
 
     it "starts at Task #1 on a taskless order" do

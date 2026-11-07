@@ -133,8 +133,8 @@ class JobTasksController < SessionsController
   end
 
   def create_next_task!
-    highest_numbered_task = @job_order.job_tasks.maximum("CAST(SUBSTRING(title FROM 'Task ([0-9]+)') AS INTEGER)") || 0
-    next_task_number = [highest_numbered_task, @job_order.job_tasks.count].max + 1
+    highest_numbered_task = @job_order.job_tasks.maximum("CAST(SUBSTRING(title FROM '^Task #([0-9]+)$') AS INTEGER)") || 0
+    next_task_number = highest_numbered_task + 1
     @job_order.job_tasks.create!(title: "Task ##{next_task_number}")
   end
 
