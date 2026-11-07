@@ -124,7 +124,7 @@ jobs:
       # Per-file runtimes from the previous run balance the parallel groups
       # (the first run, or a cache miss, falls back to balancing by file size).
       - name: Restore parallel runtime log
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: tmp/parallel_runtime_rspec.log
           key: parallel-runtime-${{ github.run_id }}
@@ -136,12 +136,30 @@ jobs:
       - name: Run RSpec (parallel)
         run: CI=1 COVERAGE=1 bin/parallel_rspec
 
+      # Saved even when the specs fail, so the next run still balances by runtime.
+      # Skipped when the run died before any spec wrote the log.
+      - name: Save parallel runtime log
+        if: always() && hashFiles('tmp/parallel_runtime_rspec.log') != ''
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: tmp/parallel_runtime_rspec.log
+          key: parallel-runtime-${{ github.run_id }}
+
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage
           path: coverage
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload accessibility report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: axe-report
+          path: tmp/axe
           if-no-files-found: ignore
           retention-days: 7
 
