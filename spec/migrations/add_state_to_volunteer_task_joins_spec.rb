@@ -120,7 +120,7 @@ RSpec.describe AddStateToVolunteerTaskJoins do
     actor = create(:user, :admin)
     id = join_for(volunteer, task, active: false)
     migrate
-    connection.execute("UPDATE volunteer_task_joins SET state = 'left', state_changed_by_id = #{actor.id} WHERE id = #{id}")
+    connection.execute("UPDATE volunteer_task_joins SET state = 'removed', state_changed_by_id = #{actor.id} WHERE id = #{id}")
 
     expect { migrate(:down) }.to raise_error(RuntimeError, /1 volunteer_task_joins row\(s\) have a recorded state_changed_by_id or the state 'left'/)
     expect(column?(:state)).to be(true)
