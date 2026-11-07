@@ -24,7 +24,7 @@ module BrowserAuthHelper
     visit "/robots.txt" # any cheap page on the app host, so the cookie can be set
     page.driver.browser.manage.add_cookie(name: SESSION_COOKIE, value: login_cookie_for(user, password), path: "/")
     visit root_path
-    expect(page).to have_css("nav.navbar") # authenticated shell rendered
+    expect_signed_in
   end
 
   # System specs about the login page itself: drives the real login view.
@@ -33,10 +33,17 @@ module BrowserAuthHelper
     fill_in "username_email", with: user.username
     fill_in "password", with: password
     find("input[type=submit]").click
-    expect(page).to have_css("nav.navbar") # authenticated shell rendered
+    expect_signed_in
   end
 
   private
+
+  # Only a signed-in user gets the sign-out form (inside the user dropdown, so hidden).
+  def expect_signed_in
+    return if page.has_css?("form[action='#{perform_logout_path}']", visible: :all)
+
+    raise "Not signed in: the page has no sign-out form (session cookie missing or rejected)"
+  end
 
   def login_cookie_for(user, password)
     http = ActionDispatch::Integration::Session.new(Rails.application)
