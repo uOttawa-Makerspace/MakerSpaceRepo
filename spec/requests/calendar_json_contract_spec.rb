@@ -10,7 +10,8 @@ require "rails_helper"
 #
 # Wire contract pinned here:
 #   - array of event objects, keys in construction order: id, title, start,
-#     end, color
+#     end, color, viewable (whether the viewer may open the booking's details:
+#     true for staff and admins, false for everyone else)
 #   - id: "booking_<booking.id>_<booking.sub_space_id>"
 #   - start/end: the stored timestamp wall, evaluated as UTC on readback and
 #     re-formatted in the app zone ("Eastern Time (US & Canada)") as
@@ -86,7 +87,8 @@ RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
           title: "Kappa - Session",
           start: "2027-04-01T06:00:00.000-04:00",
           end: "2027-04-01T07:00:00.000-04:00",
-          color: "#497979"
+          color: "#497979",
+          viewable: false
         }
       ].to_json
     )
@@ -98,10 +100,20 @@ RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
 
     body = JSON.parse(fetch)
     expect(body.size).to eq(1)
-    expect(body.first.keys).to eq(%w[id title start end color])
+    expect(body.first.keys).to eq(%w[id title start end color viewable])
     expect(body.first["title"]).to eq("P - D (Pending)")
     expect(body.first["start"]).to end_with(".000-04:00")
     expect(body.first["color"]).to eq("#FFA500")
+  end
+
+  it "tells staff and admins, but not regular users, that a booking can be opened" do
+    approved_booking(name: "V", description: "D")
+    staff = create(:user, :staff, booking_approval: true)
+
+    expect(JSON.parse(fetch(user: viewer)).first["viewable"]).to be(false)
+    expect(JSON.parse(fetch(user: owner)).first["viewable"]).to be(false)
+    expect(JSON.parse(fetch(user: staff)).first["viewable"]).to be(true)
+    expect(JSON.parse(fetch(user: admin)).first["viewable"]).to be(true)
   end
 
   it "hides other users' private bookings behind 'Space Booked'" do

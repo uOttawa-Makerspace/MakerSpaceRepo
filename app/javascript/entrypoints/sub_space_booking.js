@@ -314,6 +314,7 @@ document.addEventListener("turbo:load", function () {
 
   // ---- Edit (existing booking) ---------------------------------------------
   function editEvent(arg) {
+    if (!arg.event.extendedProps.viewable) return;
     document.getElementById("bookSave").style.display = "none";
     document.getElementById("bookUpdate").style.display = "block";
     document.getElementById("subspace").style.display = "block";

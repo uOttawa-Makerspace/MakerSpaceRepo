@@ -175,6 +175,7 @@ class SubSpaceBookingController < SessionsController
 
   def bookings
     current_user
+    @viewer_may_open_details = viewer_may_open_details
     @bookings = params[:room].present? ? feed_bookings.map { |booking| feed_event(booking) } : []
     # TODO: Allow search by recurring id
     render json: @bookings
@@ -491,6 +492,12 @@ class SubSpaceBookingController < SessionsController
   end
 
   private
+
+  # Only staff and admins may fetch a booking's details (get_sub_space_booking),
+  # so the calendar feed tells the page whether a click can open one.
+  def viewer_may_open_details
+    @user.admin? || @user.staff?
+  end
 
   # A booking for one occurrence, owned by the current user, whose past-date
   # check uses the request's single clock read.
@@ -863,7 +870,8 @@ class SubSpaceBookingController < SessionsController
       title: feed_title(booking),
       start: booking.start_time,
       end: booking.end_time,
-      color: booking.color(@user.id)
+      color: booking.color(@user.id),
+      viewable: @viewer_may_open_details
     }
   end
 

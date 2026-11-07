@@ -294,13 +294,28 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_css("#bookModal.show", visible: :all)
     end
 
-    # Example-wide allow: the refused lookup is logged by the browser (a 406 after the redirect); the example waits for the page's error toast so that entry cannot land in the next example.
-    it "shows 'Space Booked' to a user for somebody else's private booking, and opens nothing for staff-only data", js: true, skip_bullet: true, js_errors: :allow do
+    it "shows 'Space Booked' to a user for somebody else's private booking, and a click asks for nothing and shows no error", js: true, skip_bullet: true do
       open_calendar(user)
       expect(page).to have_css(".fc-timegrid-event", text: "Space Booked", visible: :all)
+      page.execute_script(<<~JS)
+        window.detailRequests = [];
+        const realFetch = window.fetch;
+        window.fetch = (url, ...rest) => { window.detailRequests.push(String(url)); return realFetch(url, ...rest); };
+      JS
       find(".fc-timegrid-event", text: "Space Booked", visible: :all).click
 
-      # the booking lookup is for staff and admins only, so the modal stays closed for a regular user
+      # the click handler runs synchronously, so a request would already be recorded
+      expect(page.evaluate_script("window.detailRequests")).to eq([])
+      expect(page).to have_no_css("#bookModal.show, #booking_toast.show", visible: :all)
+    end
+
+    # The browser logs the 500 itself, inside this example.
+    it "tells the admin when a booking's details cannot be loaded", js: true, skip_bullet: true, js_errors: :allow do
+      allow_any_instance_of(SubSpaceBookingController).to receive(:get_sub_space_booking) { |c| c.head :internal_server_error }
+      open_calendar(admin)
+      expect(page).to have_css(".fc-timegrid-event", text: "Team lab", visible: :all)
+      find(".fc-timegrid-event", text: "Team lab", visible: :all).click
+
       expect(page).to have_css("#booking_toast.show", text: "This booking could not be opened.", visible: :all)
       expect(page).to have_no_css("#bookModal.show", visible: :all)
     end
