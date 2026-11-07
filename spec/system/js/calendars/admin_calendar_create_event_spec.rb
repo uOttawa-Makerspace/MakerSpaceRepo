@@ -67,10 +67,10 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     page.evaluate_async_script(<<~JS)
       const done = arguments[0];
       document.addEventListener("turbo:load", () => setTimeout(done, 0), { once: true });
-      Turbo.visit("#{admin_users_path}");
+      Turbo.visit("#{admin_announcements_path}");
     JS
 
-    expect(page).to have_current_path(admin_users_path)
+    expect(page).to have_current_path(admin_announcements_path)
     expect(page.evaluate_script("window.sameDocument")).to be(true)
   end
 
