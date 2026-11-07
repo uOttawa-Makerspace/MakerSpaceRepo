@@ -12,7 +12,21 @@ module AccessibleNameHelper
     doc.css("input, select, textarea").reject { |el| named?(doc, el) }.map { |el| describe_field(el) }
   end
 
+  # Links and buttons that have no text, aria-label, aria-labelledby, title or image alt.
+  def unnamed_controls(html)
+    doc = Nokogiri::HTML(html)
+    doc.css("a[href], button").reject { |el| control_named?(doc, el) }.map { |el| el.to_html.squish[0, 120] }
+  end
+
   private
+
+  def control_named?(doc, el)
+    return true if %w[aria-label title].any? { |attr| el[attr].to_s.strip.present? }
+    return true if labelled_by_text?(doc, el["aria-labelledby"])
+
+    visible_text = el.xpath(".//text()[not(ancestor::*[@aria-hidden='true'])]").map(&:text).join.strip
+    visible_text.present? || el.css("img[alt]").any? { |img| img["alt"].to_s.strip.present? }
+  end
 
   def named?(doc, field)
     return true if UNNAMED_INPUT_TYPES.include?(field["type"].to_s.downcase)

@@ -87,6 +87,15 @@ RSpec.describe "Accessibility baseline", type: :request do
     end
   end
 
+  describe "link and button names" do
+    it "names the footer social links in English and French" do
+      get root_path
+      footer = Nokogiri::HTML(response.body).at_css("footer").to_html
+      expect(unnamed_controls(footer)).to be_empty
+      expect(Nokogiri::HTML(footer).css("a[aria-label]").pluck("aria-label")).to eq(%w[Facebook Instagram LinkedIn])
+    end
+  end
+
   describe "focus ring" do
     it "has no stylesheet rule that removes the outline" do
       offenders = stylesheet_files.select { |f| File.read(f).match?(/outline:\s*(none|0)\s*[;}]/) }

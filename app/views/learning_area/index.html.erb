@@ -53,7 +53,7 @@
                         <% learning_modules.map(&:subskill).uniq.compact.each do |subskill| %>
                             <% next if subskill.blank? %>
                             <div class="card h-100 border-1 shadow-sm">
-                                <%= link_to subskill_learning_area_index_path(subskill), class: 'learning-module-thumbnail-wrapper' do %>
+                                <%= link_to subskill_learning_area_index_path(subskill), class: 'learning-module-thumbnail-wrapper', aria: { label: subskill.to_s } do %>
                                     <%#= image_tag learning_module.photos.first, loading: 'lazy',
                                     class: "card-img-top learning-module-thumbnail",
                                     alt: learning_module.title if learning_module.photos_attachments.any? %>

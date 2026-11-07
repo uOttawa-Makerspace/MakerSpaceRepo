@@ -95,6 +95,9 @@ en:
       recently_updated: "Recently Updated"
       filter_by: "Filter by"
   footer:
+    facebook: "Facebook"
+    instagram: "Instagram"
+    linkedin: "LinkedIn"
     about: "About"
     tos: "Terms of Service"
     hours: "Hours of Operation"

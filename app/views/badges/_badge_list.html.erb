@@ -24,7 +24,7 @@
             <% end %>
         </p>
 
-            <a style="width: 150px;" class="mx-auto w-100!important d-block" target="_blank" href="<%= badge_path(badges.badge_param) %>">
+            <a style="width: 150px;" class="mx-auto w-100!important d-block" target="_blank" aria-label="<%= badges.training.localized_name %>" href="<%= badge_path(badges.badge_param) %>">
               <%= render "badge_icon", width: 150, height: 150, level: badges.level, name: badges.training.localized_name, skill: badges.training.skill_id %>
             </a>
           <% end %>

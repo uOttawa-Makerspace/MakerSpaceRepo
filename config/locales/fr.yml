@@ -125,6 +125,9 @@ fr:
       recently_updated: "Récemment mis à jour"
       filter_by: "Filtrer par"
   footer:
+    facebook: "Facebook"
+    instagram: "Instagram"
+    linkedin: "LinkedIn"
     about: "À propos"
     tos: "Conditions d'utilisation"
     hours: "Heures d'ouverture"

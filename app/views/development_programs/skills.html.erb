@@ -37,7 +37,7 @@
                             <% badge = current_user.highest_badge(training) %>
                             <% unless badge.nil? %>
                               <div class="col-md-3">
-                                <a style="width: 100px;" class="mx-auto w-100!important d-block" target="_blank" href="<%= badge_path(badge.badge_param) %>">
+                                <a style="width: 100px;" class="mx-auto w-100!important d-block" target="_blank" aria-label="<%= badge.training.localized_name %>" href="<%= badge_path(badge.badge_param) %>">
                                   <%= render "badges/badge_icon", width: 100, height: 100, margin: "auto", display: "block", level: badge.training_session.level, name: badge.training.localized_name, skill: badge.training_session.training.skill_id %>
                                 </a>
                               </div>

@@ -1,9 +1,25 @@
 en:
+  common:
+    close: "Close"
+    remove: "Remove"
+    approve: "Approve"
+    decline: "Decline"
+    sign_in: "Sign in"
+    sign_out: "Sign out"
+    shopping_cart: "Cart"
   semester:
     fall: "Fall"
     winter: "Winter"
     summer: "Spring-Summer"
 fr:
+  common:
+    close: "Fermer"
+    remove: "Retirer"
+    approve: "Approuver"
+    decline: "Refuser"
+    sign_in: "Enregistrer l'arrivée"
+    sign_out: "Enregistrer le départ"
+    shopping_cart: "Panier"
   semester:
     fall: "Automne"
     winter: "Hiver"
