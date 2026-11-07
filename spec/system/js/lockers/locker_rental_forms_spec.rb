@@ -20,8 +20,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
     let!(:locker_b) { create(:locker, specifier: "B2", locker_size: size_large, audience: "general", available: false) }
 
     before do
-      log_in_as(user)
-      visit new_locker_rental_path
+      log_in_as(user, to: new_locker_rental_path)
       expect(page).to have_select("locker_rental_requested_as")
       wait_for_app_js
     end
@@ -56,8 +55,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
 
     before do
       create(:locker, specifier: "S1", locker_size: size_small, audience: "gng")
-      log_in_as(user)
-      visit new_locker_rental_path
+      log_in_as(user, to: new_locker_rental_path)
       expect(page).to have_select("locker_rental_requested_as")
       wait_for_app_js
     end
@@ -93,8 +91,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
     let!(:colleague) { create(:user, :staff, name: "Sasha Staffer") }
 
     before do
-      log_in_as(staff_user)
-      visit assign_locker_locker_rentals_path
+      log_in_as(staff_user, to: assign_locker_locker_rentals_path)
       expect(page).to have_css("#locker_rental_rented_by_id.tomselected", visible: :all)
       wait_for_app_js
     end
@@ -159,8 +156,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
     let!(:rental) { create(:locker_rental, :general) }
 
     before do
-      log_in_as(staff_user)
-      visit locker_rental_path(rental)
+      log_in_as(staff_user, to: locker_rental_path(rental))
       expect(page).to have_text("Staff Actions")
       wait_for_app_js
     end
@@ -217,8 +213,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
     let!(:rental) { create(:locker_rental, :active, locker: old_locker) }
 
     it "ends the rental after confirmation" do
-      log_in_as(staff_user)
-      visit locker_rental_path(rental)
+      log_in_as(staff_user, to: locker_rental_path(rental))
       expect(page).to have_text("Staff Actions")
       accept_confirm { click_button "End Rental" }
       expect(page).to have_text("This locker request has been finished and cannot be re-enabled.")
@@ -226,8 +221,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
     end
 
     it "keeps the end date enabled in the move form of a dated rental" do
-      log_in_as(staff_user)
-      visit locker_rental_path(rental)
+      log_in_as(staff_user, to: locker_rental_path(rental))
       expect(page).to have_unchecked_field("indefinite_assign")
       expect(page).to have_field("owned_until_assign", disabled: false)
     end

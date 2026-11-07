@@ -17,8 +17,7 @@ RSpec.describe "Training module completion", type: :system do
   end
 
   it "takes a learner from the index through Start Module to Mark Completed" do
-    log_in_as(user)
-    visit learning_area_index_path
+    log_in_as(user, to: learning_area_index_path)
     expect(page).to have_css("nav.navbar")
     expect(page).to have_content("Laser Cutting EN")
     expect(page).to have_css("h6", text: "Kerf basics")
@@ -48,8 +47,7 @@ RSpec.describe "Training module completion", type: :system do
 
   it "shows the Edit link only to an admin" do
     admin = create(:user, :admin)
-    log_in_as(admin)
-    visit learning_area_path(learning_module.id)
+    log_in_as(admin, to: learning_area_path(learning_module.id))
     expect(page).to have_link("Edit", href: edit_learning_area_path(learning_module.id))
   end
 end

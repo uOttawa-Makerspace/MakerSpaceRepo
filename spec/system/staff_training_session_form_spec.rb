@@ -9,8 +9,7 @@ RSpec.describe "New training session form", type: :system do
   let(:space) { create(:space) }
 
   before do
-    log_in_as(admin)
-    visit new_staff_training_session_path(space_id: space.id)
+    log_in_as(admin, to: new_staff_training_session_path(space_id: space.id))
   end
 
   it "turns the instructor select into a searchable TomSelect" do

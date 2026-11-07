@@ -16,8 +16,7 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
 
   it "staff assign -> volunteer submits completion -> staff approve -> CC and hours credited" do
     as_actor(:staff) do
-      log_in_as(staff)
-      visit edit_volunteer_task_path(task)
+      log_in_as(staff, to: edit_volunteer_task_path(task))
       expect(page).to have_css("h1", text: "Edit Volunteer Task")
       tom_select volunteer.name, from: "volunteer_id"
       find("button[type=submit].btn-lg").click
@@ -31,8 +30,7 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
     expect(join.user_type).to eq("Volunteer")
 
     as_actor(:volunteer) do
-      log_in_as(volunteer)
-      visit volunteer_task_path(task)
+      log_in_as(volunteer, to: volunteer_task_path(task))
       expect(page).to have_text("You are assigned to this volunteer task!")
       accept_confirm { click_button "Submit Task as Complete" }
       expect(page).to have_text("You've sent a request. No further action is needed.")

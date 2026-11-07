@@ -30,8 +30,7 @@ RSpec.describe "Job Orders browser flow", type: :system do
   end
 
   it "guides the Ready-to-Make choice from landing to wizard step 1" do
-    log_in_as(user)
-    visit landing_job_orders_path
+    log_in_as(user, to: landing_job_orders_path)
 
     click_link "Start a Job Order"
     expect(page).to have_content("What kind of project are you starting?")
@@ -59,8 +58,7 @@ RSpec.describe "Job Orders browser flow", type: :system do
   end
 
   it "routes the Need-Design-Help choice straight into the design service step" do
-    log_in_as(user)
-    visit landing_job_orders_path
+    log_in_as(user, to: landing_job_orders_path)
     click_link "Start a Job Order"
 
     click_button "Get Design Help"

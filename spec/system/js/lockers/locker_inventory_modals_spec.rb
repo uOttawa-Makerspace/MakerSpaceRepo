@@ -13,8 +13,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
   let!(:l7) { create(:locker, specifier: "7", locker_size: size_small) }
 
   before do
-    log_in_as(admin)
-    visit lockers_path
+    log_in_as(admin, to: lockers_path)
     expect(page).to have_css("#locker_inventory_table")
     wait_for_app_js
   end

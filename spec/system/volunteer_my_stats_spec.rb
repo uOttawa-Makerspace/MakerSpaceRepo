@@ -10,8 +10,7 @@ RSpec.describe "Volunteer my stats quick jump", type: :system, skip_bullet: true
   let!(:training) { create(:training, name_en: "Laser Cutting") }
 
   before do
-    log_in_as(volunteer)
-    visit my_stats_volunteers_path
+    log_in_as(volunteer, to: my_stats_volunteers_path)
   end
 
   it "switches back to the skills tab when a certification is picked from another tab" do

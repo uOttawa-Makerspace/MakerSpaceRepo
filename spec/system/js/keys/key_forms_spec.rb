@@ -15,8 +15,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
 
   describe "new key form" do
     before do
-      log_in_as(admin)
-      visit new_admin_key_path
+      log_in_as(admin, to: new_admin_key_path)
       expect(page).to have_css("#space-select.tomselected", visible: :all)
     end
 
@@ -108,8 +107,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
     end
 
     before do
-      log_in_as(admin)
-      visit admin_key_assign_path(key_id: key.id)
+      log_in_as(admin, to: admin_key_assign_path(key_id: key.id))
       expect(page).to have_css("#key-request-select.tomselected", visible: :all)
     end
 
@@ -211,8 +209,7 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
 
   describe "moving between key pages with link clicks (a full page load)" do
     it "sets up the new key form's widgets when it is reached by a link from the key list" do
-      log_in_as(admin)
-      visit admin_keys_path
+      log_in_as(admin, to: admin_keys_path)
       wait_for_app_js
       click_link "Add a new Key"
       expect(page).to have_current_path(new_admin_key_path)
