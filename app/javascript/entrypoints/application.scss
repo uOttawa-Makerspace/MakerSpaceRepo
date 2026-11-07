@@ -16,6 +16,18 @@ $utilities: (
 @import "../stylesheets/shared/variables";
 @import "bootstrap/scss/bootstrap";
 
+// Orange used as text: a darker shade on light pages, a lighter one on the dark theme.
+:root {
+  --primary-text: #{$primary-text};
+}
+[data-bs-theme="dark"] {
+  --primary-text: #{$primary-text-dark};
+}
+.text-primary {
+  --bs-text-opacity: 1;
+  color: var(--primary-text) !important;
+}
+
 // =============================================================================
 // 2. Vendor Libraries
 // =============================================================================
@@ -94,7 +106,7 @@ a {
   font-weight: 700;
   color: $secondary;
   &:active {
-    color: #000;
+    color: #fff;
     background-color: $primary;
   }
   &:hover {
@@ -463,7 +475,7 @@ trix-toolbar .trix-button-group--file-tools {
     color: var(--bs-body-color) !important;
     &:not(.collapsed) {
       background-color: var(--bs-secondary-bg) !important;
-      color: var(--bs-primary) !important;
+      color: var(--primary-text) !important;
     }
   }
 

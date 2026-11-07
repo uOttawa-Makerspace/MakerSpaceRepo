@@ -1,11 +1,11 @@
 // ==========================================================================
 // 1. CEED Brand Color Palette
 // ==========================================================================
-$ceed-orange: #e24929;
+$ceed-orange: $primary;
 $ceed-orange-hover: #c4381b;
 
 .text-ceed-orange {
-  color: $ceed-orange !important;
+  color: var(--primary-text) !important;
 }
 .bg-ceed-orange {
   background-color: $ceed-orange !important;
@@ -32,7 +32,7 @@ $ceed-orange-hover: #c4381b;
 }
 
 .btn-outline-ceed {
-  color: $ceed-orange;
+  color: var(--primary-text);
   border: 1px solid $ceed-orange;
   background-color: transparent;
   transition: all 0.2s ease;
@@ -47,7 +47,7 @@ $ceed-orange-hover: #c4381b;
 }
 
 .hover-orange:hover {
-  color: $ceed-orange !important;
+  color: var(--primary-text) !important;
 }
 
 // ==========================================================================
@@ -72,7 +72,7 @@ section#volunteersIndex {
     border-radius: 50%;
     background-color: rgba(226, 73, 41, 0.12);
     border: 1px solid rgba(226, 73, 41, 0.25);
-    color: $ceed-orange;
+    color: var(--primary-text);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -236,7 +236,7 @@ section#volunteersIndex {
 // 3. Shared Components (Tasks & Requests)
 // ==========================================================================
 .page-title {
-  color: $ceed-orange;
+  color: var(--primary-text);
 }
 
 .status-tabs-wrapper {
@@ -255,7 +255,7 @@ section#volunteersIndex {
   height: 36px;
   border-radius: 50%;
   background-color: rgba(226, 73, 41, 0.15);
-  color: $ceed-orange;
+  color: var(--primary-text);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -300,7 +300,7 @@ section#volunteersIndex {
 
   &.multi .ts-control > div {
     background: rgba(226, 73, 41, 0.15);
-    color: $ceed-orange;
+    color: var(--primary-text);
     border: 1px solid rgba(226, 73, 41, 0.3);
     border-radius: 50rem;
     padding: 2px 8px;
@@ -308,7 +308,7 @@ section#volunteersIndex {
 
     .remove {
       border-left-color: rgba(226, 73, 41, 0.3);
-      color: $ceed-orange;
+      color: var(--primary-text);
     }
   }
 }
@@ -325,7 +325,7 @@ section#volunteersIndex {
     &.active,
     &:hover {
       background-color: rgba(226, 73, 41, 0.12);
-      color: $ceed-orange;
+      color: var(--primary-text);
     }
   }
 }

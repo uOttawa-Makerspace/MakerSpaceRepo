@@ -10,7 +10,7 @@ section#edit-user {
   min-height: calc(100vh - 65px);
 
   div.title {
-    color: var(--bs-primary, #366);
+    color: var(--primary-text);
     font-size: 2rem;
     padding-bottom: 0.5rem;
     text-align: center;
@@ -173,7 +173,7 @@ section#user-show-admin {
 
       i,
       span {
-        color: var(--bs-primary);
+        color: var(--primary-text);
         padding-right: 0.5rem;
         font-size: 1.25rem;
       }

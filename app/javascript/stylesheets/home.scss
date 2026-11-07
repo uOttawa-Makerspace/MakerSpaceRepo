@@ -169,7 +169,7 @@ section#home {
     border-radius: 15px;
     color: inherit;
     &:hover {
-      color: $primary;
+      color: var(--primary-text);
       border-color: $primary;
     }
     p {
