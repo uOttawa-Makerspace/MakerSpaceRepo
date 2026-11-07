@@ -386,20 +386,20 @@ RSpec.describe "Learning area", type: :request do
       end
     end
 
-    it "without data sets an alert and renders no template (204)" do
+    it "answers 400 without data and changes nothing" do
       sign_in_as(:admin)
+      before = orders
       put reorder_learning_area_index_path
-      expect(response).to have_http_status(:no_content)
-      expect(flash[:alert]).to eq("Unable to re-order the learning modules. Please try again later...")
+      expect(response).to have_http_status(:bad_request)
+      expect(orders).to eq(before)
     end
 
-    # an unknown id in data aborts the loop half-way, leaving a partial reorder
-    it "answers 404 on an unknown id after already reordering earlier entries" do
+    it "answers 404 on an unknown id and reorders nothing" do
       sign_in_as(:admin)
-      sorted = orders.values.sort
+      before = orders
       put reorder_learning_area_index_path, params: { data: [third.id, 0, learning_module.id] }
       expect(response).to have_http_status(:not_found)
-      expect(orders[third.id]).to eq(sorted[0])
+      expect(orders).to eq(before)
     end
   end
 
