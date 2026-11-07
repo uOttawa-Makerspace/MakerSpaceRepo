@@ -1,5 +1,5 @@
 require "rails_helper"
-require Rails.root.join("db/migrate/20261107100000_add_state_to_volunteer_task_joins")
+require Rails.root.join("db/migrate/20261107210000_add_state_to_volunteer_task_joins")
 
 # DDL is transactional in the test database, so each example takes the new columns off first (down on the
 # empty table) and the rollback restores the real schema afterwards.
