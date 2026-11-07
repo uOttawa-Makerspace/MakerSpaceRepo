@@ -16,7 +16,7 @@ class ChatMessagesController < SessionsController
     @job_order = JobOrder.not_deleted.find(params[:job_order_id])
     return head :forbidden unless can_access_order?(@job_order)
 
-    @chat_messages = @job_order.chat_messages.includes(:sender).order(created_at: :desc)
+    @chat_messages = @job_order.chat_messages.includes(:display_sender).order(created_at: :desc)
 
     render partial: 'chat_messages/message', collection: @chat_messages, as: :chat_message
   end

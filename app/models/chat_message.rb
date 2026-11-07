@@ -1,6 +1,10 @@
 class ChatMessage < ApplicationRecord
+  include DisplayUser
+
   belongs_to :job_order
   belongs_to :sender, class_name: 'User'
+  # display_sender shows who wrote a message even when the account was deleted; notifications keep using +sender+.
+  display_user_for :sender
 
   validates :message, presence: true
   validates :sender_id, presence: true

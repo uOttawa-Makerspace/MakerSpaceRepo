@@ -143,6 +143,18 @@ RSpec.describe "ChatMessages gaps", type: :request do
       expect(deliveries).to be_empty
     end
 
+    it "does not mail a participant whose account was deleted" do
+      gone = create(:user, :staff)
+      order = active_order!
+      ChatMessage.create!(job_order: order, sender: gone, message: "before leaving")
+      gone.soft_delete!
+      ActionMailer::Base.deliveries.clear
+      session_login!(owner)
+      perform_enqueued_jobs { post_message(order, "Anyone there?") }
+
+      expect(deliveries.flat_map(&:to)).not_to include(gone.email)
+    end
+
     it "does not mail a hard-coded user about their own message" do
       author = create(:user, :staff, id: 25)
       other = create(:user, :staff, id: 1607)

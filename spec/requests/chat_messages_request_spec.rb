@@ -58,6 +58,92 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
       expect(response.body).to include("(staff)")
     end
 
+    describe "senders" do
+      let(:admin) { create(:user, :admin) }
+      let(:order) { active_order!(owner_user: owner) }
+      let(:gone) { create(:user, :staff, name: "Jane Doe") }
+
+      def thread_as(viewer)
+        session_login!(viewer)
+        get chat_messages_path(job_order_id: order.id)
+        expect(response).to have_http_status(:ok)
+        response.body
+      end
+
+      it "labels the viewer's own messages You and others by name" do
+        ChatMessage.create!(job_order: order, sender: owner, message: "mine")
+        ChatMessage.create!(job_order: order, sender: staff, message: "theirs")
+        body = thread_as(owner)
+        expect(body).to include("You")
+        expect(body).to include(staff.name)
+        expect(body).not_to include("Unknown")
+        expect(body).not_to include("Deleted")
+      end
+
+      describe "when the sender's account was deleted" do
+        before do
+          ChatMessage.create!(job_order: order, sender: gone, message: "from a former staff member")
+          gone.soft_delete!
+        end
+
+        it "shows staff the real name marked as a deleted account" do
+          body = thread_as(staff)
+          expect(body).to include("Jane Doe (deleted account)")
+          expect(body).not_to include("Unknown")
+        end
+
+        it "shows admins the real name marked as a deleted account" do
+          expect(thread_as(admin)).to include("Jane Doe (deleted account)")
+        end
+
+        it "shows the customer a neutral Deleted user and not the name" do
+          body = thread_as(owner)
+          expect(body).to include("Deleted user")
+          expect(body).not_to include("Jane Doe")
+          expect(body).not_to include("Unknown")
+        end
+
+        it "marks the deleted account and names it neutrally in French" do
+          session_login!(staff)
+          get chat_messages_path(job_order_id: order.id, locale: "fr")
+          expect(response.body).to include("Jane Doe (compte supprimé)")
+          session_login!(owner)
+          get chat_messages_path(job_order_id: order.id, locale: "fr")
+          expect(response.body).to include("Utilisateur supprimé")
+          expect(response.body).not_to include("Jane Doe")
+        end
+
+        it "keeps the order page chat the same for staff and the customer" do
+          seed_job_order_message!
+          session_login!(staff)
+          get job_order_path(order)
+          expect(response.body).to include("Jane Doe (deleted account)")
+          session_login!(owner)
+          get job_order_path(order)
+          expect(response.body).to include("Deleted user")
+          expect(response.body).not_to include("Jane Doe")
+        end
+
+        it "does not run extra queries per deleted sender" do
+          others = create_list(:user, 3, :staff)
+          others.each { |u| ChatMessage.create!(job_order: order, sender: u, message: "m") }
+          session_login!(staff)
+          get chat_messages_path(job_order_id: order.id) # warm caches
+          counts = []
+          2.times do
+            queries = 0
+            counter = ->(*, payload) { queries += 1 unless payload[:name] == "SCHEMA" || payload[:cached] }
+            ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
+              get chat_messages_path(job_order_id: order.id)
+            end
+            counts << queries
+            others.each(&:soft_delete!)
+          end
+          expect(counts.last).to be <= counts.first
+        end
+      end
+    end
+
     it "forbids another user's order thread to a signed-in stranger" do
       order = active_order!(owner_user: owner)
       ChatMessage.create!(job_order: order, sender: staff, message: "internal staff note")
