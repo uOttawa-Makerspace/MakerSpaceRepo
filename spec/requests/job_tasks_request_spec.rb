@@ -505,6 +505,23 @@ RSpec.describe "JobTasks (HTTP contract)", type: :request do
         expect(flash[:alert]).to be_nil # :wrong_state: already submitted, a no-op
       end
 
+      it "submits an order with several tasks reading their job types in one query" do
+        order = order_with_task!
+        print_type = JobType.find_by!(name: "3D Print")
+        (2..5).each { |n| order.job_tasks.create!(title: "Task ##{n}", job_type: print_type) }
+        task = order.job_tasks.first
+        task.update!(job_type: print_type)
+        job_type_selects = []
+        callback = ->(*, payload) { job_type_selects << payload[:sql] if payload[:sql].match?(/\ASELECT .*FROM "job_types"/m) }
+
+        ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
+          patch job_order_job_task_path(order, task), params: { step: "4" }
+        end
+
+        expect(status_names(order)).to eq(["Draft", "Waiting for Staff Approval"])
+        expect(job_type_selects.size).to be <= 2 # the step's own task update, and one preload for the order's tasks
+      end
+
       it "says why, sends no mail and adds no row when the transition is refused (busy)" do
         order = order_with_task!
         task = order.job_tasks.first
