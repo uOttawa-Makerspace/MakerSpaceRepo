@@ -209,15 +209,12 @@ RSpec.describe JobOrder, type: :model do
       expect(JobOrder.without_drafts).not_to include(draft_last)
     end
 
-    # without_drafts does not filter deleted rows — callers must compose
-    # `.not_deleted` themselves (as JobOrdersController#admin does).
-    it "keeps soft-deleted orders (deletion is a separate composition)" do
+    it "leaves out soft-deleted orders" do
       submitted = create(:job_order, user: create(:user, :regular_user), is_deleted: true)
       travel(5.minutes) do
         submitted.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: submitted.user)
       end
-      expect(JobOrder.without_drafts).to include(submitted)
-      expect(JobOrder.not_deleted.without_drafts).not_to include(submitted)
+      expect(JobOrder.without_drafts).not_to include(submitted)
     end
   end
 

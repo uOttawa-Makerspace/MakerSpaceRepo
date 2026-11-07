@@ -19,11 +19,12 @@ class JobOrder < ApplicationRecord
 
   after_save :set_filename
 
-  # Orders whose latest status (the one rule, LATEST_STATUS_ID_SQL) exists and is not Draft. An order without a
-  # status is NULL <> id: excluded. JobStatus.draft raises JobStatus::Missing when Draft is not seeded.
-  scope :without_drafts, -> { where("#{LATEST_STATUS_ID_SQL} <> ?", JobStatus.draft.id) }
-
   scope :not_deleted, -> { where(is_deleted: false) }
+
+  # Orders that are not deleted and whose latest status (the one rule, LATEST_STATUS_ID_SQL) exists and is not
+  # Draft. An order without a status is NULL <> id: excluded. JobStatus.draft raises JobStatus::Missing when Draft
+  # is not seeded.
+  scope :without_drafts, -> { not_deleted.where("#{LATEST_STATUS_ID_SQL} <> ?", JobStatus.draft.id) }
 
   # emailed approve / pay links. Purpose-scoped (generates_token_for),
   # bound to the order and its owner, valid for 14 days. The approval link is
