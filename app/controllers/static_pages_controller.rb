@@ -24,24 +24,14 @@ class StaticPagesController < SessionsController
         end
 
       @volunteer_program_your_tasks =
-        begin
-          user
-            .volunteer_task_joins
-            .active
-            .order(updated_at: :desc)
-            .joins(:volunteer_task)
-            .includes(volunteer_task: :space)
-            .where(volunteer_task: { status: 'open' })
-            .limit(5)
-            .map do |task|
-              task_name = task.volunteer_task.title
-              space_name = task.volunteer_task.space.name
-              formatted_time = task.created_at.strftime('%H:%M')
-              [task_name, space_name, formatted_time, task.volunteer_task_id]
-            end
-        rescue StandardError
-          []
-        end
+        user
+          .volunteer_task_joins
+          .active
+          .joins(:volunteer_task)
+          .where(volunteer_tasks: { status: 'open' })
+          .order(updated_at: :desc)
+          .limit(5)
+          .pluck('volunteer_tasks.title', :volunteer_task_id)
 
       @user_skills =
         Certification

@@ -19,7 +19,7 @@
         <% else %>
         <h3><%= t('home.volunteer_program.your_tasks') %>:</h3>
         <ul class="list-unstyled list-box volunteer-task-list w-100 text-truncate">
-            <% @volunteer_program_your_tasks.each do |task_name, space_name, time_period, task_id| %>
+            <% @volunteer_program_your_tasks.each do |task_name, task_id| %>
                 <%= link_to volunteer_task_path(task_id) do %>
 
                     <li><i class="fa fa-circle"></i>
