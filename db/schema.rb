@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -797,7 +797,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.datetime "notified_of_cancellation_at"
     t.datetime "owned_until"
     t.datetime "paid_at"
-    t.string "preferred_locker"
     t.bigint "preferred_locker_id"
     t.bigint "rented_by_id"
     t.string "requested_as"
