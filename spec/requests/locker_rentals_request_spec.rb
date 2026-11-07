@@ -313,8 +313,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
           .to eq("New locker rentals are not currently accepted.")
       end
 
-      it "renders :new with 422 and the parked-error listing once one request already waits (the form is replaced by the blocked notice)" do
-        # 422 re-render shows blocked notice plus error list
+      it "renders :new with 422 and only the error list and form (no pending-request notice) once one request already waits" do
         reviewing_rental! # one-request-per-user rule trips the 2nd POST
 
         log_in!(owner)
@@ -326,8 +325,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(response.body).to include("Errors:")
         expect(response.body)
           .to include("Rented by already has a request under review")
-        # the pending notice replaced the form, so re-rendering :new shows it again
-        expect(response.body).not_to include('name="locker_rental[notes]"')
+        expect(response.body).not_to include("You have a pending request for a locker")
+        expect(response.body).to include('name="locker_rental[notes]"')
       end
 
       it "validates the GNG student field bundle on create" do
