@@ -79,12 +79,13 @@ class Key < ApplicationRecord
   # Takes the key back: returns it to inventory and closes its open transaction
   # in one database transaction. A held key with no open transaction is refused.
   def revoke!(deposit_return_date = nil)
-    raise StateError, "Only a held key can be revoked." unless status_held?
-
-    open_transaction = key_transactions.not_returned.order(created_at: :desc, id: :desc).first
-    raise StateError, "This key has no open transaction to close." if open_transaction.nil?
-
     transaction do
+      lock!
+      raise StateError, "Only a held key can be revoked." unless status_held?
+
+      open_transaction = key_transactions.not_returned.order(created_at: :desc, id: :desc).lock.first
+      raise StateError, "This key has no open transaction to close." if open_transaction.nil?
+
       update!(user_id: nil, status: :inventory)
       open_transaction.close!(deposit_return_date)
     end

@@ -6,6 +6,11 @@ class KeyRequest < ApplicationRecord
   enum :user_status, %i[student professor staff], prefix: true
   enum :status, %i[in_progress waiting_for_approval approved], prefix: true
 
+  # The owner may change a request only while it is still being filled in.
+  def editable_by_owner?
+    status_in_progress?
+  end
+
   # Only a request still being filled in can be submitted. A request already
   # waiting or approved is left as it is.
   def submit
