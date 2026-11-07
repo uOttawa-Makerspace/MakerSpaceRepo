@@ -153,16 +153,16 @@ RSpec.describe "ChatMessages gaps", type: :request do
     end
   end
 
-  # `respond_to:` (typo for reply_to:) becomes a custom header and no Reply-To is set.
+  # Replies stay on the order page: no Reply-To, and the sender's address is in no header.
   describe "ChatMessageMailer headers" do
-    it "has no reply-to, a respond_to header carrying the sender, and only the one recipient in To" do
+    it "has no reply-to, no respond_to header, and only the one recipient in To" do
       order = active_order!
       message = ChatMessage.create!(job_order: order, sender: staff, message: "hello")
       mail = ChatMessageMailer.new_message(message, owner.email)
       mail.deliver_now
 
       expect(mail.reply_to).to be_nil
-      expect(mail.header["respond_to"].to_s).to eq(staff.email)
+      expect(mail.header["respond_to"]).to be_nil
       expect(mail.to).to eq([owner.email])
     end
   end

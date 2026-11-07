@@ -27,6 +27,12 @@ RSpec.describe ChatMessageMailer, type: :mailer do
       expect(mail.header[:bcc]).to be_nil
     end
 
+    it "puts the sender's email address in no header" do
+      expect(mail.header[:respond_to]).to be_nil
+      expect(mail.header[:reply_to]).to be_nil
+      expect(mail.header.fields.map { |f| f.value.to_s }.join("\n")).not_to include(sender.email)
+    end
+
     it "assigns @chat_message in the mailer view" do
       expect(mail.body.encoded).to include("Hello, this is a test message")
     end
