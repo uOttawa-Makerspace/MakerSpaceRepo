@@ -126,3 +126,33 @@ fr:
               request_under_review: "a déjà une demande en attente de révision"
             state:
               cancelled_cannot_change: "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « Attendre le paiement » ou pour passer à « Actif » par le personnel"
+        order_item:
+          attributes:
+            proficient_project:
+              not_valid: "n'est pas valide"
+            order:
+              not_a_valid_order: "n'est pas une commande valide."
+        job_task:
+          attributes:
+            job_service:
+              not_available_for_task: "n'est pas disponible pour cette tâche"
+        pi_reader:
+          attributes:
+            pi_mac_address:
+              identifier_out_of_bounds: "doit contenir au plus %{maximum} caractères, sans espaces ni caractères de contrôle ou invisibles"
+        api_refresh_token:
+          attributes:
+            expires_at:
+              after_family_cap: "ne doit pas dépasser la limite de la famille de jetons"
+        help:
+          attributes:
+            base:
+              issue_submission_failed: "Erreur interne lors de la soumission du problème."
+        sub_space_booking:
+          attributes:
+            expiration_date:
+              start_not_before_end: "L'heure de début doit être antérieure à l'heure de fin"
+        volunteer_task:
+          attributes:
+            photos:
+              too_many: "ne peut pas dépasser 5 photos"

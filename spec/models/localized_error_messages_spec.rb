@@ -12,6 +12,14 @@ RSpec.describe "Localized model error messages" do
     end
   end
 
+  def messages_after_save(record, locale)
+    I18n.with_locale(locale) do
+      record.errors.clear
+      record.save
+      record.errors[:base]
+    end
+  end
+
   def expect_messages(record, attribute, english, french, context = nil)
     expect(messages(record, attribute, :en, context)).to include(english)
     expect(messages(record, attribute, :fr, context)).to include(french)
@@ -159,6 +167,49 @@ RSpec.describe "Localized model error messages" do
                       "cannot change from cancelled except back to awaiting payment, or to active by staff",
                       "ne peut pas passer de « Terminée » à un autre état, sauf pour revenir à « Attendre le paiement » ou pour passer à « Actif » par le personnel")
     end
+  end
+
+  it "localizes the order item messages" do
+    item = OrderItem.new(quantity: 1)
+    expect_messages(item, :proficient_project, "is not valid", "n'est pas valide")
+    expect_messages(item, :order, "is not a valid order.", "n'est pas une commande valide.")
+  end
+
+  it "localizes the job task service message" do
+    task = JobTask.new(job_service: create(:job_service))
+    expect_messages(task, :job_service, "is not available for this task", "n'est pas disponible pour cette tâche")
+  end
+
+  it "localizes the reader identifier message" do
+    reader = PiReader.new(pi_mac_address: "aa bb")
+    expect_messages(reader, :pi_mac_address,
+                    "must be at most 64 characters with no spaces, control or invisible characters",
+                    "doit contenir au plus 64 caractères, sans espaces ni caractères de contrôle ou invisibles")
+  end
+
+  it "localizes the refresh token expiry message" do
+    token = ApiRefreshToken.issue!(user)
+    token.expires_at = token.family_expires_at + 1.day
+    expect_messages(token, :expires_at, "must not be after the family cap",
+                    "ne doit pas dépasser la limite de la famille de jetons")
+  end
+
+  it "localizes the help submission message" do
+    allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: nil })
+    attrs = { name: "Pat", email: "pat@example.test", subject: "A long enough subject", comments: "Something broke" }
+    expect(messages_after_save(Help.new(attrs), :en)).to include("Internal error while submitting issue.")
+    expect(messages_after_save(Help.new(attrs), :fr)).to include("Erreur interne lors de la soumission du problème.")
+  end
+
+  it "localizes the booking time and volunteer photo messages" do
+    booking = SubSpaceBooking.new(start_time: Time.zone.parse("2027-03-03 10:00"), end_time: Time.zone.parse("2027-03-03 10:00"))
+    expect(I18n.with_locale(:en) { booking.valid?; booking.errors.full_messages })
+      .to include("Expiration date Start Time needs to be before end time")
+    expect(I18n.with_locale(:fr) { booking.valid?; booking.errors.full_messages })
+      .to include("Date d'expiration L'heure de début doit être antérieure à l'heure de fin")
+    task = create(:volunteer_task)
+    6.times { Photo.new(volunteer_task: task).save(validate: false) }
+    expect_messages(task, :photos, " can't exceed 5 photos", "ne peut pas dépasser 5 photos")
   end
 
   describe "staff and event calendars" do

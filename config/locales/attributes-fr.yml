@@ -31,6 +31,12 @@ fr:
         ics_url: Lien ICS
       staff_needed_calendar:
         space_id: Espace
+      job_task:
+        job_service: Service
+      pi_reader:
+        pi_mac_address: Adresse MAC
+      api_refresh_token:
+        expires_at: Expiration
       locker_rental:
         state: État
         locker: Casier
@@ -106,6 +112,7 @@ fr:
         description: Description
         start_time: Heure de début
         end_time: Heure de fin
+        expiration_date: Date d'expiration
       event:
         created_by: Créé par
         space: Espace
@@ -122,6 +129,8 @@ fr:
         images: Images
       order_item:
         files: Fichiers
+        proficient_project: Projet
+        order: Commande
         quantity: Quantité
       help:
         name: Nom

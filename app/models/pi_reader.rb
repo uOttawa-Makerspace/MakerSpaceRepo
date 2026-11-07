@@ -56,7 +56,7 @@ class PiReader < ApplicationRecord
   def identifier_within_bound
     return if pi_mac_address.blank? || self.class.tap_identifier(pi_mac_address)
 
-    errors.add(:pi_mac_address, "must be at most #{IDENTIFIER_MAX_LENGTH} characters with no spaces, control or invisible characters")
+    errors.add(:pi_mac_address, :identifier_out_of_bounds, maximum: IDENTIFIER_MAX_LENGTH)
   end
 
   def mac_address_not_registered

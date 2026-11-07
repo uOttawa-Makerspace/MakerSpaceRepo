@@ -25,6 +25,6 @@ class VolunteerTask < ApplicationRecord
   private
 
   def validate_photos
-    errors.add(:photos, " can't exceed 5 photos") if photos.count > 5
+    errors.add(:photos, :too_many) if photos.count > 5
   end
 end

@@ -218,7 +218,9 @@ class SubSpaceBooking < ApplicationRecord
 
   def end_time_after_start_time
     return unless start_time.present? && end_time.present? && start_time >= end_time
-      errors.add(:expiration_date, "Start Time needs to be before end time")
+      # expiration_date is not an attribute, so the message is translated here instead of by symbol (a symbol makes
+      # the error read the attribute's value).
+      errors.add(:expiration_date, I18n.t(:start_not_before_end, scope: %i[activerecord errors models sub_space_booking attributes expiration_date]))
     
   end
 
