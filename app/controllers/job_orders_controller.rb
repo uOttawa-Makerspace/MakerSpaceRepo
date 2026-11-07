@@ -78,7 +78,7 @@ class JobOrdersController < SessionsController
     flash.now[:notice] = t("job_orders.alerts.action_required_scroll_to_timeline") if [JobStatus.user_approval, 
 JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&.job_status) && @job_order.user_id == current_user.id
 
-    @tasks_missing_information = @job_order.job_tasks.select do |task|
+    @tasks_missing_information = @job_order.job_tasks.includes(job_type: :job_service_groups).select do |task|
       # job type is missing or job type has a service not chosen
       task.job_type.blank? || (task.job_type.job_service_groups.any? && task.job_service.blank?)
     end

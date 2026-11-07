@@ -219,6 +219,29 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         .to eq("#{I18n.t('job_orders.alerts.missing_info')} Task #1")
     end
 
+    it "reads the service groups of many tasks in one query when looking for missing information" do
+      order = make_job_order!(owner: owner, status_key: :staff_approval)
+      3.times do |i|
+        type = create(:job_type)
+        create(:job_service_group, job_type: type)
+        order.job_tasks.create!(title: "Task ##{i + 1}", job_type: type)
+      end
+      http_login!(owner)
+      tables = Hash.new(0)
+      subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+        %w[job_service_groups].each { |t| tables[t] += 1 if payload[:sql].match?(/FROM "#{t}"/) }
+      end
+      begin
+        get job_order_path(order)
+      ensure
+        ActiveSupport::Notifications.unsubscribe(subscriber)
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to eq("#{I18n.t('job_orders.alerts.missing_info')} Task #1, Task #2, Task #3")
+      expect(tables["job_service_groups"]).to eq(1)
+    end
+
     it "shows a draft order with no tasks without the Submit for Approval button" do
       order = make_job_order!(owner: owner, status_key: :draft)
       http_login!(owner)
