@@ -128,11 +128,12 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(GoogleCalendar::EventPushJob).not_to have_been_enqueued
     end
 
-    # Time.parse(nil) raises TypeError before any validation
-    it "answers 500 (TypeError) when the utc_* params are missing" do
-      post admin_events_path, params: { event: event_attrs.except(:utc_start_time, :utc_end_time) }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("TypeError")
+    it "redirects with an alert and creates nothing when the utc_* params are missing" do
+      expect do
+        post admin_events_path, params: { event: event_attrs.except(:utc_start_time, :utc_end_time) }
+      end.not_to change(Event, :count)
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end times are required.")
     end
   end
 
@@ -140,6 +141,14 @@ RSpec.describe "Admin events gaps", type: :request do
 
   describe "PATCH update" do
     before { log_in!(admin) }
+
+    it "redirects with an alert and keeps the record when the utc_* params are missing" do
+      event = create(:event, space: space, title: "Keep")
+      patch admin_event_path(event), params: { event: event_attrs(title: "Changed").except(:utc_start_time) }
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end times are required.")
+      expect(event.reload.title).to eq("Keep")
+    end
 
     it "flashes the validation failure of a non-recurring update and keeps the record" do
       event = create(:event, space: space, title: "Keep")
@@ -374,16 +383,20 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(event.reload.draft).to be(true)
     end
 
-    # Time.parse(nil) raises before the space guard
-    it "answers 500 for a batch publish without view dates" do
+    it "alerts for a batch publish without view dates and publishes nothing" do
+      draft = create(:event, :draft, space: space)
       patch publish_admin_events_path, params: { space_id: space.id }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("TypeError")
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end dates are required.")
+      expect(draft.reload.draft).to be(true)
     end
 
-    it "answers 500 for delete_drafts without view dates" do
+    it "alerts for delete_drafts without view dates and deletes nothing" do
+      draft = create(:event, :draft, space: space)
       delete delete_drafts_admin_events_path, params: { space_id: space.id }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end dates are required.")
+      expect(Event.exists?(draft.id)).to be(true)
     end
 
     it "delete_drafts alerts on a missing space id" do

@@ -1,6 +1,9 @@
 class Admin::EventsController < AdminAreaController
   layout "admin_area"
 
+  before_action :require_event_times, only: %i[create update]
+  before_action :require_view_dates, if: :view_range_action?
+
   def create
     participants = params[:staff_select].presence || []
 
@@ -375,6 +378,23 @@ class Admin::EventsController < AdminAreaController
   end
 
   private
+
+  def require_event_times
+    return if event_params.values_at(:utc_start_time, :utc_end_time).all?(&:present?)
+
+    redirect_back(fallback_location: admin_calendar_index_path, alert: "Start and end times are required.")
+  end
+
+  # delete_drafts, and publish when it publishes a whole range rather than one event
+  def view_range_action?
+    action_name == "delete_drafts" || (action_name == "publish" && params[:id].blank?)
+  end
+
+  def require_view_dates
+    return if params.values_at(:view_start_date, :view_end_date).all?(&:present?)
+
+    redirect_back(fallback_location: admin_calendar_index_path, alert: "Start and end dates are required.")
+  end
 
   # Excludes the occurrence from the series and creates it as its own event. Both happen in one
   # transaction, so a failure leaves the series as it was.
