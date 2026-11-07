@@ -174,11 +174,11 @@ RSpec.describe "Content pages (part 2)", type: :request do
     let(:admin) { create(:user, :admin) }
     let!(:ann) { create(:announcement, :staff, user: admin, description: "Staff news") }
 
-    it "redirects guests, regular users and staff to root" do
+    it "sends guests to login, regular users and staff to root" do
       %i[guest regular staff].each do |role|
         sign_in_as(role)
         get admin_announcements_path
-        expect(response).to redirect_to("/"), role.to_s
+        expect_admin_area_bounce(guest: role == :guest)
         expect { delete admin_announcement_path(ann) }.not_to change(Announcement, :count)
         patch admin_announcement_path(ann), params: { announcement: { description: "x" } }
         expect(ann.reload.description).to eq("Staff news")
