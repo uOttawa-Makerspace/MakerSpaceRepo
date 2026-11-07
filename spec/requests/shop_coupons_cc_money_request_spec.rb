@@ -372,13 +372,14 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
     let(:token) { verifier.generate(unlinked.id) }
 
     describe "GET /cc_moneys" do
-      it "is public: guests see the explainer plus a zero balance card" do
+      it "is public: guests see the explainer and a sign-in prompt, with no balance card" do
         get cc_moneys_path
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("What Are CC Points?")
-        # current_user is a blank User.new for guests, so the wallet card renders "0 CCs" and a Redeem button for visitors who are not signed in
-        expect(response.body).to include("Your CC Balance")
-        expect(response.body).to match(/0\s*<small/)
+        expect(response.body).not_to include("Your CC Balance")
+        expect(response.body).not_to include("Redeem Points")
+        expect(response.body).to include("Ready to Start Earning?")
+        expect(response.body).to include(%(href="#{login_path}"))
       end
 
       it "shows signed-in users their ledger balance (not the stale cache) and last 10 activities, without locking or writing" do
