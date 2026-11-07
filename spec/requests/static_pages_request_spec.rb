@@ -323,6 +323,23 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body).to include(user.name)
     end
 
+    it "lists a volunteer's active joins on open tasks with a link to each task, and leaves out closed ones" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      space = create(:space, name: "Task Lab")
+      open_task = create(:volunteer_task, space: space, title: "Sweep the workshop floor")
+      closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "closed")
+      [open_task, closed_task].each do |task|
+        create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer")
+      end
+
+      get root_path
+
+      expect(response.body).to include("Sweep the workshop floor")
+      expect(response.body).to include(%(href="#{volunteer_task_path(open_task.id)}"))
+      expect(response.body).not_to include("Archived chore")
+    end
+
     it "shows the staff resources card to staff only" do
       sign_in_as(:regular)
       get root_path
