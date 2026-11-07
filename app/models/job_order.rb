@@ -720,6 +720,17 @@ class JobOrder < ApplicationRecord
       [generate_line_item("Line Items Total", snapshot.line_items.sum { |li| li.price || 0 })]
   end
 
+  # The tasks the printable invoice lists, from the same snapshot as #total_price (so the lines and the total agree),
+  # with everything the invoice shows for them loaded: quote options and their names, and the job service and its
+  # group of the tasks that have a service line (only those are shown).
+  def invoice_tasks
+    snapshot = quote_snapshot
+    preload_option_names(snapshot)
+    with_service_line = snapshot.tasks.select { |task| task.job_task_quote&.service_total.to_f.positive? }
+    ActiveRecord::Associations::Preloader.new(records: with_service_line, associations: { job_service: :job_service_group }).call
+    snapshot.tasks
+  end
+
   def expedited?
     job_tasks
       .joins(job_task_options: :job_option)

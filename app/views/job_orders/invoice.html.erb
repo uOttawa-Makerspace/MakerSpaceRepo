@@ -174,7 +174,7 @@
       </td>
     </tr>
 
-    <% @job_order.job_tasks.each do |task| %>
+    <% @tasks.each do |task| %>
       <!-- Task Base Fee -->
       <% if task.job_task_quote&.price.to_f > 0 %>
         <tr class="item">

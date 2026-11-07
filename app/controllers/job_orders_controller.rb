@@ -361,6 +361,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   def invoice
+    @tasks = @job_order.invoice_tasks
     render layout: false
   end
 
