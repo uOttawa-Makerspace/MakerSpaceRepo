@@ -1,4 +1,8 @@
-// Shared accessibility rules. Imported last so they win ties with Bootstrap.
+@import "shared/variables";
+
+// Shared accessibility rules. Imported last so they win ties with Bootstrap
+// (settings.scss and get_involved.scss import Bootstrap again, which would
+// otherwise replace earlier rules of equal specificity).
 
 // Keyboard focus ring. Every ring colour below has at least 3:1 contrast
 // against the background it is drawn on (WCAG 2.2 SC 1.4.11, 2.4.7, 2.4.11).
@@ -46,4 +50,35 @@ main[tabindex="-1"]:focus {
   border: 2px solid #000;
   border-radius: 0.25rem;
   font-weight: 600;
+}
+
+// Text colours with enough contrast (WCAG 1.4.3, 4.5:1 for normal text).
+// Orange text: the dark orange on light pages, the light orange on the dark theme.
+.text-primary {
+  --bs-text-opacity: 1;
+  color: var(--primary-text) !important;
+}
+
+// Bootstrap's success and danger text colours (#198754, #dc3545) pass on white
+// but not on the dark page, so the dark theme uses Bootstrap's own lighter text
+// shades (#75b798 6.6:1 and #ea868f 6.1:1 on #212529). Success text on a pale
+// green tint uses the dark emphasis shade in both themes.
+[data-bs-theme="dark"] {
+  .text-success {
+    color: var(--bs-success-text-emphasis) !important;
+  }
+  .text-danger {
+    color: var(--bs-danger-text-emphasis) !important;
+  }
+  .btn-outline-success {
+    --bs-btn-color: var(--bs-success-text-emphasis);
+    --bs-btn-border-color: var(--bs-success-text-emphasis);
+  }
+  .btn-outline-danger {
+    --bs-btn-color: var(--bs-danger-text-emphasis);
+    --bs-btn-border-color: var(--bs-danger-text-emphasis);
+  }
+}
+.text-success:is(.bg-success-subtle, .bg-opacity-10) {
+  color: var(--bs-success-text-emphasis) !important;
 }

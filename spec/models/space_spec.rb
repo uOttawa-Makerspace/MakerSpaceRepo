@@ -25,6 +25,22 @@ RSpec.describe Space, type: :model do
     expect { Space.reflect_on_all_associations.each(&:klass) }.not_to raise_error
   end
 
+  describe "#assigned_color_text" do
+    def luminance(rgb)
+      linear = rgb.map { |c| c /= 255.0; c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055)**2.4 }
+      (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2])
+    end
+
+    it "gives every assigned colour a text colour with at least 4.5:1 contrast" do
+      (1..10).each do |id|
+        space = Space.new(id: id)
+        text = space.assigned_color_text == "#000" ? 0.0 : 1.0
+        bright, dark = [luminance(space.assigned_color), text].max, [luminance(space.assigned_color), text].min
+        expect((bright + 0.05) / (dark + 0.05)).to be >= 4.5, "space id #{id}"
+      end
+    end
+  end
+
   describe "validation" do
     context "name" do
       it do

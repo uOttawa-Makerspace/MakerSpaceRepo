@@ -27,12 +27,17 @@ select.trainer-training-course {
   letter-spacing: 0.05em;
   border-radius: 3px;
   background-color: #53be6a;
-  color: #fff;
+  color: #000;
   margin-bottom: 10px;
 
   &:hover {
     cursor: pointer;
     background-color: darken(#53be6a, 5%);
+  }
+
+  // Grey variant keeps white text (4.95:1 on the muted grey).
+  &.bg-secondary {
+    color: #fff;
   }
 }
 
@@ -94,7 +99,7 @@ table {
 
     .visit-button {
       background-color: #5f9ea0;
-      color: #fff;
+      color: #000;
     }
     .destroy-button {
       background-color: #a61e10;

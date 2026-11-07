@@ -4,7 +4,7 @@
   <% back_path = current_user.admin? ? admin_job_orders_path : job_orders_path %>
 
   <div class="mb-3">
-    <%= link_to back_path, class: "text-secondary", style: "opacity: 70%" do %>
+    <%= link_to back_path, class: "text-secondary" do %>
       <i class="fa fa-arrow-left me-1"></i> <%= t("job_orders.order.back") %>
     <% end %>
   </div>

@@ -19,6 +19,7 @@ $utilities: (
 // Orange used as text: a darker shade on light pages, a lighter one on the dark theme.
 :root {
   --primary-text: #{$primary-text};
+  --secondary-text: #{$secondary};
 }
 [data-bs-theme="dark"] {
   --primary-text: #{$primary-text-dark};
@@ -60,10 +61,6 @@ $utilities: (
       color: var(--bs-dropdown-link-disabled-color);
     }
   }
-}
-.text-primary {
-  --bs-text-opacity: 1;
-  color: var(--primary-text) !important;
 }
 
 // =============================================================================
@@ -512,7 +509,7 @@ trix-toolbar .trix-button-group--file-tools {
     background-color: var(--bs-tertiary-bg) !important;
     color: var(--bs-body-color) !important;
     &:not(.collapsed) {
-      background-color: var(--bs-secondary-bg) !important;
+      background-color: var(--bs-body-bg) !important;
       color: var(--primary-text) !important;
     }
   }

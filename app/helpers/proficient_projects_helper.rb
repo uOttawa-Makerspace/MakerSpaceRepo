@@ -41,13 +41,9 @@ module ProficientProjectsHelper
           .exists?
 
     if started
-      content_tag(:span, '🐥 Newbie', style: 'color: black; white-space: nowrap')
+      content_tag(:span, '🐥 Newbie', class: 'text-body text-nowrap')
     else
-      content_tag(
-        :span,
-        '🐣 Not Started',
-        style: 'color: gray; white-space: nowrap'
-      )
+      content_tag(:span, '🐣 Not Started', class: 'text-body-secondary text-nowrap')
     end
   end
 

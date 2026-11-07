@@ -152,6 +152,16 @@ class Space < ApplicationRecord
     colors[id % colors.size]
   end
 
+  # Black or white, whichever reads better on assigned_color (for filled buttons).
+  def assigned_color_text
+    linear = assigned_color.map do |c|
+      c /= 255.0
+      c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055)**2.4
+    end
+    luminance = (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2])
+    luminance > 0.179 ? "#000" : "#fff"
+  end
+
   def weekly_open_hours
     calendar = staff_needed_calendars.find_by(role: "open_hours")
     return [] if calendar.blank?

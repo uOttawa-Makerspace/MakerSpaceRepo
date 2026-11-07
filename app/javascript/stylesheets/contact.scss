@@ -4,7 +4,7 @@ section#contact-us {
   max-width: 60rem;
   margin-left: auto;
   margin-right: auto;
-  background-color: #fff;
+  background-color: var(--bs-body-bg);
   padding: 0 5% 2rem;
 
   div.title {
@@ -36,7 +36,7 @@ section#contact-us {
   }
 
   li {
-    color: $secondary;
+    color: var(--secondary-text);
     font-size: 0.9rem;
   }
 
