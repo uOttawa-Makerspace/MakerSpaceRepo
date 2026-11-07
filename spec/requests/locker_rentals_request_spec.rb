@@ -1537,7 +1537,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(flash[:alert]).to be_nil
     end
 
-    it "serves JSON with pending/active keys (no eager-serialized association payloads)", skip_bullet: true do
+    it "serves JSON with pending/active keys (no eager-serialized association payloads)" do
       tenant = create(:locker_rental, :reviewing)
       awaiting = create(:locker_rental, :await_payment)
 
@@ -1551,6 +1551,23 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(json["pending"].first.keys).to include("state", "rented_by_id", "notes")
       expect(json["pending"].first).not_to have_key("locker")
       expect(json["pending"].first).not_to have_key("rented_by")
+    end
+
+    it "serves the JSON with one query per list, however many rentals there are" do
+      preferred = create(:locker)
+      create(:locker_rental, :reviewing, preferred_locker: preferred)
+      log_in!(staff)
+      get admin_locker_rentals_path, as: :json
+      few = count_queries { get admin_locker_rentals_path, as: :json }
+
+      create_list(:locker_rental, 2, :reviewing)
+      create(:locker_rental, :reviewing, preferred_locker: create(:locker))
+      create_list(:locker_rental, 2, :await_payment)
+      many = count_queries { get admin_locker_rentals_path, as: :json }
+
+      expect(response.parsed_body.values.map(&:size)).to eq([4, 2])
+      expect(response.parsed_body["pending"].map { |r| r.dig("preferred_locker", "id") }.compact.size).to eq(2)
+      expect(many).to eq(few)
     end
 
     it "renders a pending request whose owner was soft-deleted (the association is unscoped from User's default scope)" do
