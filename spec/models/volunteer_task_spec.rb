@@ -151,6 +151,18 @@ RSpec.describe VolunteerTask, "#remove_user", type: :model do
     expect { task.remove_user(user.id, by: staff) }.not_to(change { done.reload.attributes })
   end
 
+  it "refuses, and writes nothing, when the join ended between the lookup and the change" do
+    join = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+    allow_any_instance_of(VolunteerTaskJoin).to receive(:with_lock).and_wrap_original do |original, *args, &block|
+      VolunteerTaskJoin.where(id: original.receiver.id).update_all(state: "left", active: false)
+      original.call(*args, &block)
+    end
+
+    expect(task.remove_user(user.id, by: staff)).to be(false)
+    expect(task.errors.full_messages).to eq(["The user to remove is not on this task."])
+    expect(join.reload.state_changed_by_id).to be_nil
+  end
+
   it "refuses a user with no joined row" do
     create(:volunteer_task_join, :not_active, volunteer_task: task, user: user)
 

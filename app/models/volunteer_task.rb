@@ -99,6 +99,9 @@ class VolunteerTask < ApplicationRecord
     refuse!("The #{label} to remove is not on this task.") if joins.empty?
     ending = by.id == user_id.to_i ? :left : :removed
     joins.each { |join| join.finish!(ending, by: by) }
+  rescue VolunteerTaskJoin::NotJoined
+    # Someone else ended a join between the lookup and the change: the user is no longer on the task.
+    refuse!("The #{label} to remove is not on this task.")
   end
 
   # The task's creator can only leave when another joined user can take over as creator.

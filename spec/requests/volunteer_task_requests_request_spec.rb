@@ -291,6 +291,17 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(vol_deliveries.map(&:subject)).to eq(["Your request was updated: Tour guide"])
       end
 
+      it "approves and pays when the join ended after the lookup, leaving that join as it is" do
+        join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
+        allow_any_instance_of(VolunteerTaskJoin).to receive(:with_lock).and_wrap_original do |original, *args, &block|
+          VolunteerTaskJoin.where(id: original.receiver.id).update_all(state: "left", active: false)
+          original.call(*args, &block)
+        end
+        expect { approve!("true") }.to change(CcMoney, :count).by(1).and change(VolunteerHour, :count).by(1)
+        expect(req.reload.approval).to be(true)
+        expect(join.reload).to have_attributes(state: "left", state_changed_by_id: nil)
+      end
+
       it "leaves a join that already ended as it was" do
         join = create(:volunteer_task_join, :left, volunteer_task: task, user: volunteer)
         expect { approve!("true") }.not_to(change { join.reload.attributes })
