@@ -13,7 +13,7 @@ class Admin::KeysController < AdminAreaController
                   revoke_key
                   history
                 ]
-  before_action :ensure_holder_has_approved_request, only: %i[create update]
+  before_action :refuse_hand_out_by_edit, only: %i[create update]
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
@@ -26,7 +26,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def create
-    @key = Key.new(key_params)
+    @key = Key.new(key_params.except(:user_id))
 
     if @key.save
       flash[:notice] = "Successfully created key."
@@ -57,7 +57,8 @@ class Admin::KeysController < AdminAreaController
   end
 
   def update
-    update_params = @key.status_held? ? key_params.except(:status) : key_params
+    update_params = key_params.except(:user_id)
+    update_params = update_params.except(:status) if @key.status_held?
 
     if @key.update(update_params)
       flash[:notice] = "The key was successfully updated."
@@ -158,24 +159,21 @@ class Admin::KeysController < AdminAreaController
     )
   end
 
-  # A key can only be given to a holder (user_id) whose key request is approved,
-  # on every path that sets it (assign_key checks the same rule).
-  def ensure_holder_has_approved_request
+  # Creating or editing a key never hands it out or takes it back: the holder
+  # and the held status are set only by Key#assign_to! and Key#revoke!, which
+  # also record the key transaction. A held key keeps ignoring a posted status.
+  def refuse_hand_out_by_edit
+    return unless hands_out_by_edit?
+
+    redirect_to admin_keys_path,
+                alert: "Use Assign and Revoke to give a key to a holder or take it back."
+  end
+
+  def hands_out_by_edit?
     holder_id = params.dig(:key, :user_id).presence
-    if holder_id.nil? && @key&.status_held? && params[:key]&.key?(:user_id)
-      redirect_to admin_keys_path,
-                  alert: "Use revoke to remove the holder of a held key." and return
-    end
-    return if holder_id.nil? || holder_id.to_s == @key&.user_id.to_s
+    return true if holder_id && holder_id.to_s != @key&.user_id.to_s
 
-    if @key&.status_held?
-      redirect_to admin_keys_path,
-                  alert: "Revoke the key before assigning it to another holder." and return
-    end
-
-    return if holder_approved?(User.find_by(id: holder_id))
-
-    redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE
+    params.dig(:key, :status) == "held" && !@key&.status_held?
   end
 
   def holder_approved?(user)
