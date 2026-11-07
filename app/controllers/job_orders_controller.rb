@@ -68,7 +68,7 @@ class JobOrdersController < SessionsController
     end
 
     @staff = User.staff
-    @message = JobOrderMessage.find_by(name: "processed")&.retrieve_message(@job_order.id)
+    @message = processed_message_text
 
     if current_user.id == @job_order.user_id
       @unread_messages = @job_order.chat_messages.unread(current_user)
@@ -402,6 +402,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   private
+
+  # The editable "processed" mail text for this order, blank when that row is missing.
+  def processed_message_text
+    JobOrderMessage.find_by(name: "processed")&.retrieve_message(@job_order.id)
+  end
 
   # The "new" page is also rendered again when create fails, so both actions need it.
   def set_entry_job_types
