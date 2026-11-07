@@ -117,6 +117,23 @@ RSpec.describe LockerRental, type: :model do
       expect(rental.cancelled_at).to be_present
     end
 
+    it "records cancelled_at once and keeps it through later saves of the cancelled rental" do
+      rental = create(:locker_rental, :active, owned_until: 1.month.from_now)
+      rental.update!(state: :cancelled)
+      recorded = rental.cancelled_at
+      travel_to(2.days.from_now) { rental.update!(contacted_for_clearance: true) }
+      expect(rental.reload.cancelled_at).to be_within(1.second).of(recorded)
+    end
+
+    it "records a new cancelled_at when a returned rental is cancelled again" do
+      rental = create(:locker_rental, :await_payment)
+      rental.update!(state: :cancelled)
+      first = rental.cancelled_at
+      rental.update!(state: :await_payment)
+      travel_to(2.days.from_now) { rental.update!(state: :cancelled) }
+      expect(rental.cancelled_at).to be > first + 1.day
+    end
+
     # staff or an admin may take a cancelled rental straight to active (cash paid at the desk)
     it "keeps a cancelled rental cancelled unless it goes to awaiting payment, or to active by staff or admin" do
       rental = create(:locker_rental, :active)
