@@ -1,7 +1,7 @@
 <h1 class="text-center">Expired locker rentals</h1>
-<% unless @expired_locker_rentals %>
-    <p class="text-center">There are no expired lockers. yay!</p>
-<% end %>
+<% if @expired_locker_rentals.none? %>
+    <p class="text-center"><%= t('lockers.no_expired_rentals') %></p>
+<% else %>
 <div class="container">
     <table data-datatable class="table table-striped">
         <thead class="table-primary">
@@ -27,3 +27,4 @@
         </tbody>
     </table>
 </div>
+<% end %>

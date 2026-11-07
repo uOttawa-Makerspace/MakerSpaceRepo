@@ -3,6 +3,7 @@ class LockerRentalsController < SessionsController
   before_action :signed_in
   # Also sets @locker_rental
   before_action :check_permission, except: %i[index new create]
+  before_action :refuse_renter_edits_beyond_state, only: :update
   layout 'staff_area', only: [:admin]
   layout 'admin_area', only: [:assign_locker]
 
@@ -115,14 +116,6 @@ class LockerRentalsController < SessionsController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
-    unless current_user.staff? || current_user == @locker_rental.rented_by
-      respond_to do |format|
-        format.html { redirect_to locker_rentals_path }
-        format.json { head :forbidden }
-      end
-      return
-    end
-
     if unknown_renter_username?
       respond_to do |format|
         format.html do
@@ -277,7 +270,25 @@ class LockerRentalsController < SessionsController
     # Always allow staff
     return if current_user.staff?
 
-    redirect_to locker_rentals_path
+    redirect_to locker_rentals_path, alert: t('lockers.access_denied')
+  end
+
+  # A renter may only change the state of their own rental (to cancel it). Any other field in the request is
+  # refused with a message instead of being dropped without a word.
+  def refuse_renter_edits_beyond_state
+    return if current_user.staff?
+    return if (renter_params_keys - %w[state]).empty?
+
+    message = t('lockers.renter_edit_refused')
+    respond_to do |format|
+      format.html { redirect_to @locker_rental, alert: message }
+      format.json { render json: { error: message }, status: :unprocessable_entity }
+    end
+  end
+
+  def renter_params_keys
+    fields = params[:locker_rental]
+    fields.respond_to?(:keys) ? fields.keys : []
   end
 
   def new_instance_attributes
@@ -336,9 +347,24 @@ class LockerRentalsController < SessionsController
   # id is sent it wins and the username is only the display text of the search box. A deleted or deactivated
   # user found by id (or by username) fails the rental's eligibility validation instead.
   def unknown_renter_username?
-    username = params.dig(:locker_rental, :rented_by_username)
-    current_user.staff? && username.present? && params.dig(:locker_rental, :rented_by_id).blank? &&
+    username = submitted_rental_field(:rented_by_username)
+    current_user.staff? && username.present? && submitted_rental_field(:rented_by_id).blank? &&
       !User.unscoped.exists?(username: username.to_s)
+  end
+
+  # The submitted locker_rental fields. Anything other than a hash of fields (a plain string, say) is
+  # answered like a missing parameter.
+  def locker_rental_fields
+    fields = params.require(:locker_rental)
+    raise ActionController::ParameterMissing, :locker_rental unless fields.is_a?(ActionController::Parameters)
+
+    fields
+  end
+
+  # One submitted field, or nil when there are no fields to read it from.
+  def submitted_rental_field(name)
+    fields = params[:locker_rental]
+    fields[name] if fields.is_a?(ActionController::Parameters)
   end
 
   def locker_rental_params
@@ -368,15 +394,12 @@ class LockerRentalsController < SessionsController
 
     if current_user.staff?
       admin_params =
-        params.require(:locker_rental).permit(
-          *common_permitted,
-          *staff_additional_permitted
-        )
+        locker_rental_fields.permit(*common_permitted, *staff_additional_permitted)
 
       # FIXME replace that search with a different one, return ID instead
       # If username is given (since search can do that)
       rented_by_user =
-        User.unscoped.find_by(username: params.dig(:locker_rental, :rented_by_username))
+        User.unscoped.find_by(username: submitted_rental_field(:rented_by_username))
       if rented_by_user
         # then convert to user id
         admin_params.reverse_merge!(rented_by_id: rented_by_user.id)
@@ -385,9 +408,9 @@ class LockerRentalsController < SessionsController
       admin_params
     elsif params[:id]
       # If updating, only allow cancellations
-      params.require(:locker_rental).permit(:state)
+      locker_rental_fields.permit(:state)
     else
-      params.require(:locker_rental).permit(*common_permitted)
+      locker_rental_fields.permit(*common_permitted)
     end
   end
 end
