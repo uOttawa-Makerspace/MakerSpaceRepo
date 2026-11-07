@@ -64,7 +64,11 @@ class Space < ApplicationRecord
       .order(sign_out_time: :desc)
       .map(&:user)
       .uniq
-      .then { |users| with_visit_history(users) }
+  end
+
+  # For tables that show each user's previous visit.
+  def signed_in_users_with_history
+    with_visit_history(signed_in_users)
   end
 
   def recently_signed_out_users
@@ -77,13 +81,16 @@ class Space < ApplicationRecord
         .map(&:user)
         .uniq
 
-    with_visit_history(
-      users
+    users
         .sort_by do |user|
           user.lab_sessions.where(space: self).last.sign_out_time
         end
         .reverse
-    )
+  end
+
+  # For tables that show each user's previous visit.
+  def recently_signed_out_users_with_history
+    with_visit_history(recently_signed_out_users)
   end
 
   def visible_lab_sessions
@@ -95,7 +102,7 @@ class Space < ApplicationRecord
   def with_visit_history(users)
     ActiveRecord::Associations::Preloader.new(
       records: users,
-      associations: [:lab_sessions, { latest_lab_session: :space }]
+      associations: [:lab_sessions]
     ).call
     users
   end

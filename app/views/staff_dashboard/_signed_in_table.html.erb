@@ -1,4 +1,4 @@
-<% space.signed_in_users.each do |user| %>
+<% space.signed_in_users_with_history.each do |user| %>
     <tr id="<%= return_no_waiver_id(user) %>" data-user-id=<%= user.id %>>
         <td>
             <%= link_to(tag.drop_username(user.name), user_url(user.username), class: "align-middle") %>

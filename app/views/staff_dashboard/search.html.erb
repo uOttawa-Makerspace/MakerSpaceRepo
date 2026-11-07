@@ -25,7 +25,7 @@
           <% signed_in = lab_sessions ? user.lab_sessions.max_by(&:sign_out_time).sign_out_time > Time.zone.now : false %>
 
           <td class="signed_in-cell" style="horizontal-alginment:center;">
-            <%= time_ago_in_words(user.lab_sessions.max_by(&:sign_out_time).sign_out_time) + " ago at #{user.latest_lab_session.space.name}" if lab_sessions %>
+            <%= last_seen_text(user) %>
           </td>
           <td class="status-cell">
             <%= lab_sessions && signed_in ? 'Signed In' : 'Signed Out' %>
@@ -66,7 +66,7 @@
         </tr>
       </thead>
       <tbody id="table-js-signed-in">
-        <% @space.signed_in_users.each do |user| %>
+        <% @space.signed_in_users_with_history.each do |user| %>
           <tr class="drop-rows">
             <td class="drop-username-cell">
               <%= link_to(tag.drop_username(user.name), user_url(user.username)) %>

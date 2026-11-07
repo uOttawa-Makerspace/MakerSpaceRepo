@@ -60,8 +60,8 @@ class StaffDashboardChannel < ApplicationCable::Channel
             .strict_loading
             .where(id: LabSession.active.where(space: space_id).select(:user_id))
             .includes(certifications: { training_session: %i[training user] })
-            .includes(:lab_sessions, latest_lab_session: :space),
-        signed_out_users: space.recently_signed_out_users
+            .includes(:lab_sessions),
+        signed_out_users: space.recently_signed_out_users_with_history
       }
     )
   end

@@ -9,12 +9,11 @@ class StaffDashboardController < StaffAreaController
     @signed_in_users = User
       .where(id: LabSession.active.where(space: @space).select(:user_id))
       .includes(certifications: {training_session: [:training, :user]})
-      .includes(:lab_sessions, latest_lab_session: :space)
-
-    @signed_out_users = @space.recently_signed_out_users
+      .includes(:lab_sessions)
 
     respond_to do |format|
       format.html do
+        @signed_out_users = @space.recently_signed_out_users_with_history
         load_table_context
         @printers_in_use =
           PrinterSession.order(created_at: :desc).where(in_use: true)
@@ -384,7 +383,7 @@ class StaffDashboardController < StaffAreaController
         @users =
           User
             .text_search(@query)
-            .includes(:lab_sessions, latest_lab_session: :space)
+            .includes(:lab_sessions)
             .order(:updated_at)
       end
       format.html
@@ -419,7 +418,7 @@ class StaffDashboardController < StaffAreaController
 
   # What the table partials (refresh_tables, the sign out JS response) read.
   def load_table_context
-    @users = User.order(id: :desc).limit(10)
+    @users = User.includes(:lab_sessions).order(id: :desc).limit(10)
     @certifications_on_space =
       proc do |user, space_id|
         user

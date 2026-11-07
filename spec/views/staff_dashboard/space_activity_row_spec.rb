@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-# The staff dashboard row names the space of the user's latest lab session, however the
-# database happens to return the user's sessions.
+# The staff dashboard row names the end and the space of the user's previous visit (the
+# second newest session), however the database happens to return the user's sessions.
 RSpec.describe "staff_dashboard/_space_activity_row", type: :view do
   let(:here) { create(:space, name: "Here Lab") }
   let(:elsewhere) { create(:space, name: "Elsewhere Lab") }
@@ -17,13 +17,13 @@ RSpec.describe "staff_dashboard/_space_activity_row", type: :view do
     )
   end
 
-  it "names the space of the latest session when an older session was rewritten after it" do
+  it "names the previous visit's space when it was rewritten after the newer session" do
     older = create(:lab_session, user: user, space: elsewhere, sign_in_time: 3.hours.ago, sign_out_time: 2.hours.ago)
     create(:lab_session, user: user, space: here, sign_in_time: 1.hour.ago, sign_out_time: 30.minutes.ago)
     # An update writes a new row version after the newer session's row, so the sessions
     # come back from the database with the older one last.
     older.update!(sign_out_time: 100.minutes.ago)
 
-    expect(render_row).to include("ago at Here Lab")
+    expect(render_row).to include("about 2 hours ago at Elsewhere Lab")
   end
 end

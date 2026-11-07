@@ -38,14 +38,29 @@ RSpec.describe "Staff dashboard last visit cells", type: :request do
       get "/staff_dashboard"
 
       expect(response).to have_http_status(:ok)
-      expect(cell_texts(response.body, "tr[data-user-id='#{visitor.id}'] td.align-middle")).to include(a_string_matching(/ago at Here Lab\z/))
+      expect(cell_texts(response.body, "tr[data-user-id='#{visitor.id}'] td.align-middle")).to include("about 5 hours ago at Elsewhere Lab")
     end
 
     it "names the latest session's space in the search signed-in table" do
       get "/staff_dashboard/search", params: { username: visitor.username }
 
       expect(response).to have_http_status(:ok)
-      expect(cell_texts(response.body, "td.sign_out_time-cell")).to include(a_string_matching(/ago at Here Lab\z/))
+      expect(cell_texts(response.body, "td.sign_out_time-cell")).to include("about 5 hours ago at Elsewhere Lab")
+    end
+  end
+
+  context "when the user has three visits in different spaces" do
+    before do
+      create(:lab_session, user: visitor, space: elsewhere, sign_in_time: 9.hours.ago, sign_out_time: 8.hours.ago)
+      create(:lab_session, user: visitor, space: space, sign_in_time: 6.hours.ago, sign_out_time: 5.hours.ago)
+      create(:lab_session, user: visitor, space: elsewhere, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+    end
+
+    it "shows the end and the space of the second newest visit, not the newest one's" do
+      get "/staff_dashboard/search", params: { username: visitor.username }
+
+      expect(cell_texts(response.body, "td.signed_in-cell")).to eq(["about 2 hours ago at Elsewhere Lab"])
+      expect(cell_texts(response.body, "td.sign_out_time-cell")).to include("about 5 hours ago at Here Lab")
     end
   end
 
@@ -88,7 +103,7 @@ RSpec.describe "Staff dashboard last visit cells", type: :request do
     it "names the latest session's space in the signed-in table" do
       get "/staff_dashboard/refresh_tables"
 
-      expect(cell_texts(json["signed_in"], "td.sign_out_time-cell")).to include(a_string_matching(/ago at Here Lab\z/))
+      expect(cell_texts(json["signed_in"], "td.sign_out_time-cell")).to include("about 5 hours ago at Elsewhere Lab")
     end
   end
 end
