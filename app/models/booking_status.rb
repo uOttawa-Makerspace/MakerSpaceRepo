@@ -1,5 +1,7 @@
 class BookingStatus < ApplicationRecord
-  has_many :sub_space_booking_statuses, dependent: :destroy
+  # A status that bookings still use cannot be destroyed; nothing is deleted or cleared.
+  has_many :sub_space_bookings, dependent: :restrict_with_error
+  has_many :sub_space_booking_statuses, dependent: :restrict_with_error
   validates :name, presence: true, uniqueness: true
 
   # The three reference rows, looked up by name each time they are needed. A
