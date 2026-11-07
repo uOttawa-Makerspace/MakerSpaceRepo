@@ -28,7 +28,7 @@
     <%= f.label :gender, class: 'form-label profile-label' %>
     <%= f.text_field :gender, class: 'profile-text' %>
 
-    <%= f.label :student_id, t('users.new.form.student_id'), class: 'form-label' %>
+    <%= f.label :student_id, t('users.new.form.student_id'), class: ['form-label', ('required' if @edit_admin_user.student?)] %>
     <%# No browser pattern: stored ids come in many lengths, and the model decides which are valid %>
     <%= f.text_field :student_id, { class: 'form-control', inputmode: 'numeric', autocomplete: 'off' } %>
     <br>

@@ -229,6 +229,18 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(student.reload.faculty).to eq("Law Society")
     end
 
+    it "refuses blanking a student's id, marks the field required for students only" do
+      student = create(:user, :regular_user, :student)
+      patch admin_user_path(student), params: { user: { student_id: "" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(student.reload.student_id).to be_present
+
+      get edit_admin_user_path(student)
+      expect(response.body).to match(/<label class="form-label required" for="user_student_id"/)
+      get edit_admin_user_path(target)
+      expect(response.body).not_to match(/<label class="form-label required" for="user_student_id"/)
+    end
+
     it "manage_roles renders" do
       get manage_roles_admin_users_path
       expect(response).to have_http_status(:ok)

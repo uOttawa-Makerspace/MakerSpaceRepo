@@ -199,6 +199,14 @@ RSpec.describe UsersController, type: :controller do
         )
       end
 
+      it "should not create a student without a student id, and creates one with it" do
+        student_params =
+          FactoryBot.attributes_for(:user, :regular_user, :student, password: "asa32A353#")
+        expect { post :create, params: { user: student_params.merge(student_id: "") } }.not_to change(User, :count)
+        expect(response).to have_http_status(422)
+        expect { post :create, params: { user: student_params } }.to change(User, :count).by(1)
+      end
+
       it "should not create the user with a username that is too long" do
         user_params =
           FactoryBot.attributes_for(
