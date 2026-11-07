@@ -253,6 +253,9 @@ class User < ApplicationRecord
   # Anchored so only digits pass. Checked when the id changes, so a stored id of
   # another length (older data) does not block saving other fields.
   validates :student_id,
+            presence: true,
+            if: :student_id_required?
+  validates :student_id,
             format: {
               with: /\A[0-9]{7,12}\z/,
               message: 'must be between 7 and 12 digits'
@@ -271,6 +274,8 @@ class User < ApplicationRecord
   # ============================================
 
   normalizes :email, with: ->(email) { email.strip.downcase }
+  # A blank form field means no id, so an older student row without one is not seen as changed.
+  normalizes :student_id, with: ->(student_id) { student_id.strip.presence }
 
   before_validation :translate_faculty
 
@@ -798,6 +803,12 @@ class User < ApplicationRecord
 
   def student?
     STUDENT_IDENTITIES.include?(identity)
+  end
+
+  # A student must give a student id when the account is created and when the identity
+  # or the id changes; an older student row without one stays saveable for other fields.
+  def student_id_required?
+    student? && (new_record? || identity_changed? || student_id_changed?)
   end
 
   def admin?

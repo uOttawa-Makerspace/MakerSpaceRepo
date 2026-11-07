@@ -716,9 +716,43 @@ RSpec.describe User, type: :model do
       expect(build(:user, **base, student_id: "123456")).not_to be_valid
       expect(build(:user, **base, student_id: "12345678901234")).not_to be_valid
       expect(build(:user, **base, student_id: "12345a789")).not_to be_valid
-      # student_id has allow_blank: true alongside presence: true, so the presence rule is dead and students can omit it
-      expect(build(:user, **base, student_id: "")).to be_valid
+      expect(build(:user, **base, student_id: "")).not_to be_valid
+      expect(build(:user, **base, student_id: nil)).not_to be_valid
       expect(build(:user, identity: "community_member", student_id: "abc")).to be_valid
+    end
+
+    it "a student must give a student id on create and when identity or id changes, but an older row without one stays saveable" do
+      base = { faculty: "Engineering", program: "X", year_of_study: 1 }
+      student = create(:user, identity: "undergrad", **base, student_id: "1234567")
+      student.update_columns(student_id: nil)
+      student = User.find(student.id)
+      expect(student.update(name: "Renamed Student")).to be(true)
+      student.student_id = ""
+      expect(student).to be_valid
+
+      student.update_columns(student_id: "1234567")
+      student = User.find(student.id)
+      student.student_id = " "
+      expect(student).not_to be_valid
+      expect(student.errors[:student_id]).to be_present
+
+      community = create(:user, identity: "community_member", student_id: nil)
+      community.identity = "grad"
+      community.assign_attributes(base)
+      expect(community).not_to be_valid
+      expect(community.errors[:student_id]).to be_present
+      community.student_id = "1234567"
+      expect(community).to be_valid
+    end
+
+    it "the missing student id error is the translated required message in English and French" do
+      student = build(:user, :student, student_id: "")
+      student.valid?
+      expect(student.errors[:student_id]).to eq(["This field is required."])
+      I18n.with_locale(:fr) do
+        student.valid?
+        expect(student.errors[:student_id]).to eq(["Ce champ est requis."])
+      end
     end
 
     it "gender and identity must come from their lists" do

@@ -87,6 +87,41 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
+  describe "student id is required for students" do
+    let(:student) { create(:user, :regular_user, :student) }
+
+    before { login!(student) }
+
+    it "refuses blanking the student id and keeps the stored one" do
+      patch user_path(student.username), params: { user: { student_id: "" } }
+      expect(flash[:alert]).to include("Student")
+      expect(student.reload.student_id).to be_present
+    end
+
+    it "lets a student row stored without an id save other fields, including when the form sends the id blank" do
+      student.update_columns(student_id: nil)
+      patch user_path(student.username), params: { user: { name: "Renamed" } }
+      expect(flash[:notice]).to eq("Profile updated successfully.")
+      patch user_path(student.username), params: { user: { name: "Again", student_id: "" } }
+      expect(flash[:notice]).to eq("Profile updated successfully.")
+      expect(student.reload.name).to eq("Again")
+    end
+
+    it "refuses switching to a student identity without an id" do
+      member = create(:user, :regular_user, identity: "community_member")
+      login!(member)
+      patch user_path(member.username),
+            params: { user: { identity: "undergrad", program: "X", faculty: "Engineering", year_of_study: 1 } }
+      expect(flash[:alert]).to include("Student")
+      expect(member.reload.identity).to eq("community_member")
+    end
+
+    it "shows the field as required in the profile form" do
+      get settings_profile_path
+      expect(response.body).to match(/<label class="form-label required" for="user_student_id"/)
+    end
+  end
+
   describe "GET /:username (show)" do
     it "guest: 200 public profile page" do
       get user_path(user.username)
