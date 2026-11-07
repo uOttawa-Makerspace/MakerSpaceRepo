@@ -398,7 +398,7 @@ namespace :users do
         .klass # Get model class and run a query to find duplicate
         .where(assoc.foreign_key => duplicated.id)
         .find_each do |foreign_record|
-          if assoc.name == :user_booking_approvals &&
+          if assoc.klass == UserBookingApproval &&
                foreign_record.identity.blank?
             foreign_record.identity = 'Other'
           end

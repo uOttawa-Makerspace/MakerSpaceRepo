@@ -147,7 +147,9 @@ class User < ApplicationRecord
   has_many :space_manager_joins, dependent: :destroy
   has_many :supervised_spaces, through: :space_manager_joins, source: :space
   has_many :spaces, through: :staff_spaces
-  has_many :user_booking_approvals, inverse_of: :staff
+  # Booking access requests this user made, and the ones this user (as staff) approved.
+  has_many :user_booking_approvals, inverse_of: :user
+  has_many :approved_booking_requests, class_name: 'UserBookingApproval', foreign_key: :staff_id, inverse_of: :staff
   has_many :printer_issues, inverse_of: :reporter
   has_many :locker_rentals, foreign_key: 'rented_by'
   has_many :staff_unavailabilities

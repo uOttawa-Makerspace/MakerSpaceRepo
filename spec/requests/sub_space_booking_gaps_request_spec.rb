@@ -195,16 +195,15 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(mail.to).to match_array(managed.space_managers.map(&:email))
     end
 
-    # the mail text says "made in <room> by <booking NAME>", not the user
-    it "names the booking title (not the user) in the needs-approval mail body" do
+    it "names the booker (not the booking title) in the needs-approval mail body" do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true,
                                 max_automatic_approval_hour: nil)
       log_in!(user)
       create_booking(room, name: "Robot Club")
       body = ActionMailer::Base.deliveries.last.body.encoded
-      expect(body).to include("A booking has been made in #{room.name} by Robot Club for Desc")
-      expect(body).not_to include(user.name)
+      expect(body).to include("A booking has been made in #{room.name} by #{user.name} for Desc")
+      expect(body).not_to include("Robot Club")
     end
 
     it "an auto-approved booking by a regular user delivers two mails: managers first, then the booker" do

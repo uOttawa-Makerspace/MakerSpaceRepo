@@ -1,5 +1,8 @@
 class SubSpaceBooking < ApplicationRecord
+  include DisplayUser
+
   belongs_to :user, optional: true
+  display_user_for :user
   belongs_to :approved_by, class_name: "User", optional: true
   belongs_to :sub_space
   belongs_to :recurring_booking, optional: true
