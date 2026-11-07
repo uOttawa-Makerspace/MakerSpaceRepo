@@ -234,6 +234,12 @@ class JobOrder < ApplicationRecord
     result
   end
 
+  # The tasks that still lack a job type or a required service, in creation order. Pass tasks already loaded with
+  # their job types and service groups to reuse them; by default they are loaded here.
+  def tasks_missing_information(tasks = job_tasks.reorder(:created_at, :id).includes(job_type: :job_service_groups))
+    tasks.select(&:missing_information?)
+  end
+
   # Digest of what the order's tasks ask to be made, read fresh: per non-blank task (id order) its job type, service
   # (and the service's name: a custom service can be renamed), options with their files, and its user and staff
   # files. A blank task (no type, service, options or files) is left out: it neither bills nor asks for anything.

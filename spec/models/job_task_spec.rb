@@ -62,5 +62,24 @@ RSpec.describe JobTask, type: :model do
       expect(task.user).to eq(owner)
     end
   end
-end
 
+  describe "#missing_information?" do
+    let(:order) { create(:job_order) }
+    let(:job_type) { create(:job_type) }
+
+    it "is true without a job type" do
+      expect(order.job_tasks.create!(title: "T")).to be_missing_information
+    end
+
+    it "is false for a job type that offers no services" do
+      expect(order.job_tasks.create!(title: "T", job_type: job_type)).not_to be_missing_information
+    end
+
+    it "is true when the job type offers services and none is chosen" do
+      group = create(:job_service_group, job_type: job_type)
+      expect(order.job_tasks.create!(title: "T", job_type: job_type)).to be_missing_information
+      service = create(:job_service, job_service_group: group)
+      expect(order.job_tasks.create!(title: "T", job_type: job_type, job_service: service)).not_to be_missing_information
+    end
+  end
+end

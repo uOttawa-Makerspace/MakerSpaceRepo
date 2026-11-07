@@ -220,10 +220,7 @@ class JobTasksController < SessionsController
     # transition! still decides; a stale "Draft" read just reaches it and gets a quiet :wrong_state.
     return unless @job_order.latest_status&.job_status_id == JobStatus.draft.id
 
-    @tasks_missing_information = @job_order.job_tasks.includes(job_type: :job_service_groups).select do |task|
-      task.job_type.blank? ||
-        (task.job_type.job_service_groups.any? && task.job_service.blank?)
-    end
+    @tasks_missing_information = @job_order.tasks_missing_information
     return if @tasks_missing_information.any?
 
     submitted = @job_order.transition!(from: JobStatus.draft, to: JobStatus.staff_approval, actor: current_user)

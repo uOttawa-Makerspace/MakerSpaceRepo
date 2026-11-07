@@ -637,4 +637,34 @@ RSpec.describe JobOrder, type: :model do
       end
     end
   end
+
+  describe "#tasks_missing_information" do
+    it "lists the tasks lacking a job type or a required service, oldest first" do
+      order = create(:job_order)
+      typed = create(:job_type)
+      group = create(:job_service_group, job_type: typed)
+      service = create(:job_service, job_service_group: group)
+      later = order.job_tasks.create!(title: "no type", created_at: 1.hour.ago)
+      earlier = order.job_tasks.create!(title: "no service", job_type: typed, created_at: 2.hours.ago)
+      order.job_tasks.create!(title: "complete", job_type: typed, job_service: service)
+
+      expect(order.tasks_missing_information).to eq([earlier, later])
+    end
+
+    it "loads job types and service groups once, whatever the number of tasks" do
+      order = create(:job_order)
+      3.times { order.job_tasks.create!(title: "T", job_type: create(:job_type)) }
+      queries = []
+      callback = ->(*, payload) { queries << payload[:sql] unless payload[:name] == "SCHEMA" }
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { order.tasks_missing_information }
+      expect(queries.size).to eq(3)
+    end
+
+    it "uses the tasks it is given" do
+      order = create(:job_order)
+      task = order.job_tasks.create!(title: "T")
+      expect(order.tasks_missing_information([task])).to eq([task])
+      expect(order.tasks_missing_information([])).to eq([])
+    end
+  end
 end

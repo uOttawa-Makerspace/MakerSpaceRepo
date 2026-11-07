@@ -12,6 +12,11 @@ class JobTask < ApplicationRecord
 
   after_save :set_filename
 
+  # True when the task has no job type, or its job type offers services and none is chosen.
+  def missing_information?
+    job_type.blank? || (job_type.job_service_groups.any? && job_service.blank?)
+  end
+
   has_many_attached :user_files
   validates :user_files,
             file_content_type: {
