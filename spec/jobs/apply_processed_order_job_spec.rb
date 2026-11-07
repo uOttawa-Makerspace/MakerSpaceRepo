@@ -352,13 +352,13 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
     it "sends no claim email for a claim that rolled back, and the retry sends it" do
       payload = cc_payload(email: "buyer@example.com").merge(id: 7104)
       allow(CcMoney).to receive(:create!).and_raise(ActiveRecord::LockWaitTimeout, "boom")
-      perform_enqueued_jobs(only: ActionMailer::MailDeliveryJob) { hook(payload) }
+      perform_enqueued_jobs(only: ApplicationMailer.delivery_job) { hook(payload) }
       expect_retry
       expect(deliveries).to be_empty
       expect(applied_orders.where(provider_ref: "7104")).to be_empty
 
       allow(CcMoney).to receive(:create!).and_call_original
-      perform_enqueued_jobs(only: ActionMailer::MailDeliveryJob) { hook(payload) }
+      perform_enqueued_jobs(only: ApplicationMailer.delivery_job) { hook(payload) }
       expect(CcMoney.where(linked: false).count).to eq(1)
       expect(deliveries.size).to eq(1)
     end

@@ -26,7 +26,7 @@ RSpec.describe "Owner changes: what counts, and how failures surface", type: :re
 
   def requote_mails
     ActiveJob::Base.queue_adapter.enqueued_jobs
-                   .select { |j| j[:job] == ActionMailer::MailDeliveryJob && j[:args].first(2) == %w[JobOrderMailer send_job_requote_needed] }
+                   .select { |j| j[:job] == ApplicationMailer.delivery_job && j[:args].first(2) == %w[JobOrderMailer send_job_requote_needed] }
   end
 
   # COMPLETED, with a current draft. Task #1: 3D Print + Polish option (quoted 4); Task #2: 3D Print.

@@ -344,8 +344,10 @@ class LockerRental < ApplicationRecord
     await_payment? || active?
   end
 
+  # Records when the rental was cancelled: at the moment its state becomes cancelled (or when a cancelled
+  # rental has no date yet), and left alone by later saves of an already cancelled rental.
   def set_cancellation_date
-    self.cancelled_at = DateTime.now
+    self.cancelled_at = Time.current if state_changed? || cancelled_at.nil?
   end
 
   # Mails for the LAST save of this record (a state change, or a move of an active rental), delivered after
