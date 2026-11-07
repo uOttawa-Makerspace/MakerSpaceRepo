@@ -8,6 +8,8 @@ class MembershipsController < SessionsController
   def index
     @membership_day = MembershipTier.find_by(title_en: "1 Day Membership") || MembershipTier.find_by(id: 1) || MembershipTier.first
     @membership_sem = MembershipTier.find_by(title_en: "1 Semester Membership") || MembershipTier.find_by(id: 2) || MembershipTier.second
+    # the price table compares two different tiers; with fewer than two there is nothing to compare
+    @show_prices = @membership_day.present? && @membership_sem.present? && @membership_day != @membership_sem
   end
 
   def your_memberships

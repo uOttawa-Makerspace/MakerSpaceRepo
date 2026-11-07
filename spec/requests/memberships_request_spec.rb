@@ -28,11 +28,23 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "500s on a fresh install with no tiers at all" do
+    it "renders without the price table on a fresh install with no tiers at all" do
       MembershipTier.delete_all
-      # the landing page dereferences the looked-up tiers without a nil guard, so it is a 500 until at least two tiers exist
       get memberships_path
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("<table")
+    end
+
+    it "renders without the price table when only one tier exists" do
+      get memberships_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("<table")
+    end
+
+    it "shows the price table when both tiers exist" do
+      create(:membership_tier, title_en: "1 Day Membership", duration: 1, internal_price: 5, external_price: 10)
+      get memberships_path
+      expect(response.body).to include("<table")
     end
 
     it "renders for a signed-in user" do

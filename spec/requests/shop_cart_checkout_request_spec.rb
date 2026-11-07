@@ -154,12 +154,12 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You do not have the required badges to do this project")
     end
 
-    it "does not persist an invalid quantity but STILL reports success" do
+    it "refuses an invalid quantity with the reason and no success message" do
       pp = pp_with_cc(10)
       expect { add_to_cart(pp, quantity: 0) }.not_to change(OrderItem, :count)
       expect(response).to redirect_to(carts_path)
-      # the invalid-quantity save is silently dropped yet the flash says it was added
-      expect(flash[:notice]).to eq("Successfully added item to cart")
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to include("could not be added").and include("Quantity must be greater than 0")
     end
 
     it "answers 404 for an unknown project" do
@@ -167,11 +167,25 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    it "answers 500 when the order_item param is missing entirely" do
-      # params[:order_item][:proficient_project_id] is dereferenced unguarded, so a bad POST is a 500 (NoMethodError), not a 400
+    it "redirects home with the missing-parameter message when the order_item param is absent" do
       post order_items_path, params: {}
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to include("order_item")
       expect(OrderItem.count).to eq(0)
+    end
+
+    it "redirects home with the missing-parameter message when the project id is absent or blank" do
+      [{ quantity: 1 }, { quantity: 1, proficient_project_id: "" }].each do |item|
+        expect { post order_items_path, params: { order_item: item } }.not_to change(OrderItem, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to include("proficient_project_id")
+      end
+    end
+
+    it "answers 400 with the missing-parameter message as JSON when the project id is absent" do
+      post order_items_path, params: { order_item: { quantity: 1 } }, as: :json
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body["error"]).to include("proficient_project_id")
     end
 
     it "sets session[:order_id] so a later request keeps that cart" do
@@ -740,14 +754,22 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(user.reload.wallet).to eq(60)
     end
 
-    it "checks out an empty cart: creates a Completed order of total 0 and no debit" do
-      expect { post orders_path }.to change(Order, :count).by(1).and change(CcMoney, :count).by(0)
-      expect(response).to redirect_to(orders_path)
-      # an empty cart can be "purchased", creating a Completed zero-value order
+    it "refuses to check out an empty cart: alert, no order, no debit" do
+      expect { post orders_path }.to change(Order, :count).by(0).and change(CcMoney, :count).by(0)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Your cart is empty.")
+      expect(flash[:notice]).to be_nil
+    end
+
+    it "refuses to check out a saved cart whose items were all removed: it stays open" do
+      pp = pp_with_cc(10)
+      add_to_cart(pp)
       order = user.orders.last
-      expect(order.order_status.name).to eq("Completed")
-      expect(order.total).to eq(0)
-      expect(order.order_items).to be_empty
+      order.order_items.destroy_all
+      expect { post orders_path }.not_to change(CcMoney, :count)
+      expect(flash[:alert]).to eq("Your cart is empty.")
+      expect(order.reload.order_status.name).to eq("In progress")
+      expect(session[:order_id]).to eq(order.id)
     end
 
     it "free items (cc 0) record a 0 cc_money row" do
@@ -806,11 +828,12 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(ProjectKit.count).to eq(0)
     end
 
-    it "a second POST right after checkout checks out an empty cart (no double debit)" do
+    it "a second POST right after checkout finds an empty new cart and is refused (no double debit)" do
       credit_cc!(user, 50)
       add_to_cart(pp_with_cc(10))
       post orders_path
-      expect { post orders_path }.to change(CcMoney, :count).by(0)
+      expect { post orders_path }.to change(CcMoney, :count).by(0).and change(Order, :count).by(0)
+      expect(flash[:alert]).to eq("Your cart is empty.")
       expect(user.reload.wallet).to eq(40)
     end
 
