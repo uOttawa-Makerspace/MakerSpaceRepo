@@ -137,6 +137,17 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response.body).not_to include("other task")
     end
 
+    it "does not offer a task the user was removed from, but still offers one they are on" do
+      removed = create(:volunteer_task, title: "removed task")
+      create(:volunteer_task_join, :not_active, volunteer_task: removed, user: owner)
+      active = create(:volunteer_task, title: "active task")
+      create(:volunteer_task_join, :active, volunteer_task: active, user: owner)
+      vol_login!(owner)
+      get new_volunteer_hour_path
+      expect(response.body).to include("active task")
+      expect(response.body).not_to include("removed task")
+    end
+
     it "redirects a user without volunteer access" do
       vol_sign_in_as(:regular)
       get new_volunteer_hour_path

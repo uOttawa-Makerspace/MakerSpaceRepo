@@ -98,6 +98,7 @@ class VolunteerHoursController < VolunteersController
     @volunteer_tasks =
       VolunteerTask
         .joins(:volunteer_task_joins)
+        .merge(VolunteerTaskJoin.active)
         .where("volunteer_task_joins.user_id = ?", current_user.id)
         .order(created_at: :desc)
         .pluck(:title, :id)
