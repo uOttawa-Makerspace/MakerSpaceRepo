@@ -120,6 +120,12 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       other = create(:locker, specifier: "D-2")
       patch locker_path(locker), params: { locker: { specifier: other.specifier } }
       expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("Specifier has already been taken")
+      expect(locker.reload.specifier).to eq("D-1")
+
+      patch locker_path(locker, format: :json), params: { locker: { specifier: other.specifier } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["specifier"]).to eq(["has already been taken"])
       expect(locker.reload.specifier).to eq("D-1")
     end
 
@@ -225,13 +231,12 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(response).to redirect_to(lockers_path(anchor: "productVariants"))
     end
 
-    it "POST create with invalid data silently creates nothing and still redirects" do
-      # result of LockerSize.create/update is ignored (silent failure)
+    it "POST create with invalid data creates nothing and redirects with the reasons" do
       expect do
         post locker_sizes_path, params: { locker_size: { size: "", shopify_gid: "" } }
       end.not_to change(LockerSize, :count)
       expect(response).to redirect_to(lockers_path(anchor: "productVariants"))
-      expect(flash[:alert]).to be_nil
+      expect(flash[:alert]).to include("Size")
     end
 
     it "PATCH update changes a size; DELETE destroys it" do
@@ -243,6 +248,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       patch locker_size_path(size), params: { locker_size: { size: "" } }
       expect(response).to redirect_to(lockers_path)
       expect(size.reload.size).to eq("Huge")
+      expect(flash[:alert]).to include("Size")
 
       expect { delete locker_size_path(size) }.to change(LockerSize, :count).by(-1)
       expect(response).to redirect_to(lockers_path)

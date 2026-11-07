@@ -61,8 +61,8 @@ module JsErrorCheck
     # the Bootstrap tooltip of a locker row note throws when the
     # row's hover text is rewritten after an inline save.
     { id: "js-error-12", path: %r{/lockers\z}, message: /bootstrap\.esm-[\w-]+\.js \d+:\d+ Uncaught TypeError: Cannot convert undefined or null to object/ },
-    # a refused inline locker save answers 500 and lockers.js logs the failure.
-    { id: "js-error-13", path: %r{/lockers\z}, message: %r{/lockers/\d+ - Failed to load resource: the server responded with a status of 500} },
+    # a refused inline locker save answers 422 and lockers.js logs the failure.
+    { id: "js-error-13", path: %r{/lockers\z}, message: %r{/lockers/\d+ - Failed to load resource: the server responded with a status of 422} },
     { id: "js-error-13", path: %r{/lockers\z}, message: /lockers-[\w-]+\.js \d+:\d+ Error: Failed to update (size|note\/details)/ },
     # the size dropdown of the single locker modal is built from options that
     # lack a display name when no size has a store variant.

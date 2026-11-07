@@ -3,13 +3,21 @@ class LockerSizesController < AdminAreaController
   prepend_before_action :signed_in
 
   def create
-    LockerSize.create(locker_size_params)
-    redirect_to lockers_path(anchor: 'productVariants')
+    size = LockerSize.new(locker_size_params)
+    if size.save
+      redirect_to lockers_path(anchor: 'productVariants')
+    else
+      redirect_to lockers_path(anchor: 'productVariants'), alert: size.errors.full_messages.to_sentence
+    end
   end
 
   def update
-    LockerSize.find(params[:id]).update(locker_size_params)
+    size = LockerSize.find(params[:id])
+    if size.update(locker_size_params)
       redirect_to lockers_path
+    else
+      redirect_to lockers_path, alert: size.errors.full_messages.to_sentence
+    end
   end
 
   def destroy

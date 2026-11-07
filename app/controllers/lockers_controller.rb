@@ -87,7 +87,13 @@ class LockersController < AdminAreaController
         format.json { head :no_content }
       end
     else
-      render :show, status: :unprocessable_content
+      respond_to do |format|
+        format.html do
+          flash.now[:alert] = @locker.errors.full_messages.to_sentence
+          render :show, status: :unprocessable_content
+        end
+        format.json { render json: @locker.errors, status: :unprocessable_content }
+      end
     end
   end
 
