@@ -28,7 +28,7 @@
                                    file_upload_suffix: 'file'
                                },
                                class: 'form-control',
-                               aria_label: 'Project Files / Fichiers du projet' %>
+                               aria: { label: 'Project Files / Fichiers du projet' } %>
         </div>
 
         <p class="file-upload-drop-message">
@@ -75,7 +75,7 @@
                                    accept: Photo::ALLOWED_CONTENT_TYPES.join(','),
                                    class: 'form-control',
                                    placeholder: 'Select pictures',
-                                   aria_label: 'Select Pictures / Selectionner des images' %>
+                                   aria: { label: 'Select Pictures / Selectionner des images' } %>
             </div>
 
             <p class="file-upload-drop-message">

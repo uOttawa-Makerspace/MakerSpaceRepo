@@ -2,6 +2,11 @@ en:
   common:
     close: "Close"
     remove: "Remove"
+    add: "Add"
+    save: "Save"
+    delete: "Delete"
+    previous: "Previous"
+    next: "Next"
     approve: "Approve"
     decline: "Decline"
     sign_in: "Sign in"
@@ -15,6 +20,11 @@ fr:
   common:
     close: "Fermer"
     remove: "Retirer"
+    add: "Ajouter"
+    save: "Enregistrer"
+    delete: "Supprimer"
+    previous: "Précédent"
+    next: "Suivant"
     approve: "Approuver"
     decline: "Refuser"
     sign_in: "Enregistrer l'arrivée"

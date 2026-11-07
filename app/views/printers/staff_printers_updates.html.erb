@@ -8,7 +8,7 @@
         <div class="modal-content">
           <div class="modal-header">
             <h1 class="modal-title" id="modal-title">Send print failed email</h1>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
           </div>
           <div class="modal-body">
             <%= render partial: 'printers/send_print_failed_form', locals: { sent_from: 'updates' } %>

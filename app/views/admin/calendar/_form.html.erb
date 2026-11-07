@@ -3,7 +3,7 @@
         <div class="modal-content" id="content">
             <div class="modal-header">
                 <h5 class="modal-title" id="eventModalLabel">Add Event</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
             </div>
             <div class="modal-body">
                 <%= form_with url: admin_events_path, scope: :event, local: false, html: { id: "eventForm", class: "useTurbo" } do |f| %>

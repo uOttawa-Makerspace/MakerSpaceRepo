@@ -5,7 +5,7 @@
       <%= form_with url: "/admin/events/copy", method: :post, local: false, html: { class: "useTurbo" } do |f| %>
         <div class="modal-header">
           <h5 class="modal-title" id="copyEventsModalLabel">Copy Published Events</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
         </div>
 
         <div class="modal-body">

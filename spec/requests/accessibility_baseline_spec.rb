@@ -88,11 +88,35 @@ RSpec.describe "Accessibility baseline", type: :request do
   end
 
   describe "link and button names" do
+    it "names the icon-only buttons on the home page, staff dashboard and volunteer hours" do
+      get root_path
+      expect(unnamed_controls(Nokogiri::HTML(response.body).at_css("main").to_html)).to be_empty
+    end
+
     it "names the footer social links in English and French" do
       get root_path
       footer = Nokogiri::HTML(response.body).at_css("footer").to_html
       expect(unnamed_controls(footer)).to be_empty
       expect(Nokogiri::HTML(footer).css("a[aria-label]").pluck("aria-label")).to eq(%w[Facebook Instagram LinkedIn])
+    end
+  end
+
+  describe "close buttons" do
+    it "names the close button of a flash message in English and French" do
+      post login_authentication_path, params: { username_email: "nobody", password: "wrong" }
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.css(".alert .btn-close").pluck("aria-label")).to eq(["Close"])
+      expect(unnamed_controls(doc.at_css(".alert").to_html)).to be_empty
+
+      get root_path(locale: "fr")
+      expect(I18n.t("common.close", locale: :fr)).to eq("Fermer")
+    end
+
+    it "gives every close button in the views a localized label" do
+      offenders = Dir[Rails.root.join("app/views/**/*.erb")].flat_map do |file|
+        File.read(file).scan(/^.*btn-close.*$/).reject { |tag| tag.include?("common.close") }.map { |tag| "#{File.basename(file)}: #{tag}" }
+      end
+      expect(offenders).to be_empty
     end
   end
 

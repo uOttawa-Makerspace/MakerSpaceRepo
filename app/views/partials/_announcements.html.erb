@@ -5,9 +5,9 @@
   <div class="alert <%= css %> text-center alert-dismissible fade show" role="alert">
     <b><%= label %></b> <%= description %>
     <% if signed_in? %>
-      <%= button_to '', dismiss_announcements_path(announcement_id: id), method: :put, class: 'btn-close', data: { 'bs-dismiss': 'alert' } %>
+      <%= button_to '', dismiss_announcements_path(announcement_id: id), method: :put, class: 'btn-close', aria: { label: t('common.close') }, data: { 'bs-dismiss': 'alert' } %>
     <% else %>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="<%= t('common.close') %>"></button>
     <% end %>
   </div>
 <% end %>

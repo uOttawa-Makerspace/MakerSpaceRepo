@@ -62,13 +62,13 @@
         <%= f.hidden_field :scorm_package, value: nil %>
         <div class="mb-3">
             <%= f.label :project_files, 'Project Files', class: 'form-label' %>
-            <%= f.file_field :project_files, multiple: true, class: 'form-control', aria_label: 'Project Files' %>
+            <%= f.file_field :project_files, multiple: true, class: 'form-control', aria: { label: 'Project Files' } %>
             <div id="file-container"></div>
         </div>
 
         <div class="mb-3">
             <%= f.label :videos, 'Videos', class: 'form-label' %>
-            <%= f.file_field :videos, multiple: true, class: 'form-control', aria_label: 'Videos' %>
+            <%= f.file_field :videos, multiple: true, class: 'form-control', aria: { label: 'Videos' } %>
 
             <div id="video-container" class="d-flex flex-column gap-1 mt-2">
                 <% @learning_module.videos.each do |video| %>
@@ -92,7 +92,7 @@
         <div class="mb-3">
             <%= f.label :photos, 'Gallery', class: 'form-label' %>
             <div class="input-group">
-                <%= f.file_field :photos, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures' %>
+                <%= f.file_field :photos, multiple: true, class: 'form-control image-upload', aria: { label: 'Select Pictures' } %>
                 <button class="btn btn-success" type="button" id="new-photo-input" aria-label="Add image input">
                     <i class="fa-solid fa-plus"></i>
                 </button>
@@ -153,7 +153,7 @@
            class: 'form-control',
            accept: '.zip',
            direct_upload: true,
-           aria_label: 'SCORM zip file', required: !@learning_module.scorm_package.attached? %>
+           aria: { label: 'SCORM zip file' }, required: !@learning_module.scorm_package.attached? %>
         <p class="form-text">Upload a valid SCORM <code>.zip</code> package.</p>
     </fieldset>
 

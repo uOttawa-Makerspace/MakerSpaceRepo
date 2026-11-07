@@ -69,7 +69,7 @@
             <%= text_field_tag 'staff_needed_calendar_name[]', snc.name, { class: 'form-control w-25', placeholder: 'Enter name...' } %>
             <%= text_field_tag 'staff_needed_calendar[]', snc.calendar_url, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
             <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours']], snc.role), class: "form-select w-25" %>
-            <button class="btn btn-danger snc-delete-button ms-2" type="button">
+            <button class="btn btn-danger snc-delete-button ms-2" type="button" aria-label="<%= t('common.delete') %>">
               <i class="fa fa-trash"></i>
             </button>
           </div>
@@ -85,7 +85,7 @@
       <%= text_field_tag 'staff_needed_calendar_name[]', nil, { class: 'form-control w-25', placeholder: 'Enter name...' } %>
       <%= text_field_tag 'staff_needed_calendar[]', nil, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
       <%= select_tag 'staff_needed_calendar_role[]', options_for_select([['No role', ''], ['Open Hours', 'open_hours']]), class: "form-select w-25" %>
-      <button class="btn btn-danger snc-delete-button ms-2" type="button">
+      <button class="btn btn-danger snc-delete-button ms-2" type="button" aria-label="<%= t('common.delete') %>">
         <i class="fa fa-trash"></i>
       </button>
     </div>
@@ -109,7 +109,7 @@
         <tr>
           <td><%= raspi.pi_mac_address %></td>
           <td><%= raspi.space.name %></td>
-          <td><%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: nil }), method: :patch, action: :update, path: '/', class: 'btn btn-default' %></td>
+          <td><%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: nil }), method: :patch, action: :update, path: '/', class: 'btn btn-default', aria: { label: t('common.remove') } %></td>
         </tr>
       <% end %>
     </table>
@@ -129,7 +129,7 @@
         <tr>
           <td><%= raspi.pi_mac_address %></td>
           <td>unknown</td>
-          <td><%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: @space.id }), method: :patch, action: :update, path: '/', class: 'btn btn-default' %></td>
+          <td><%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, admin_pi_reader_url(id: raspi.id, pi_reader_params: { space_id: @space.id }), method: :patch, action: :update, path: '/', class: 'btn btn-default', aria: { label: t('common.save') } %></td>
         </tr>
       <% end %>
     </table>
@@ -148,7 +148,7 @@
         <tr>
           <td><%= mac %></td>
           <td><%= time_ago_in_words(seen) %> ago</td>
-          <td><%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: mac, space_id: @space.id } }, method: :post, class: 'btn btn-default' %></td>
+          <td><%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: mac, space_id: @space.id } }, method: :post, class: 'btn btn-default', aria: { label: t('common.add') } %></td>
         </tr>
       <% end %>
     </table>

@@ -78,7 +78,7 @@
               <p class="alert alert-secondary mb-5" id="badge-acquired-text">No training will be acquired</p>      
 
               <%= label_tag :file, 'Project files', class: 'form-label' %>
-              <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control mb-5', aria_label: 'Project Files / Fichiers du projet' %>
+              <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control mb-5', aria: { label: 'Project Files / Fichiers du projet' } %>
               <div id="file-container">
 
                 <% @files.each do |f| %>
@@ -115,8 +115,8 @@
               <div class="mb-3 required">
               <%= label_tag :photo, 'Gallery', class: 'form-label' %>
                 <div class="input-group mb-3">
-                  <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
-                  <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+                  <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria: { label: 'Select Pictures / Selectionner des images' } %>
+                  <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input" aria-label="<%= t('common.add') %>">
                     <i class="fa fa-plus"></i>
                   </button>
                 </div>
