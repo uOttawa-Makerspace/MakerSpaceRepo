@@ -352,7 +352,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @statuses = JobStatus.where.not(name: "Draft")
     @job_types = JobType.all
 
-    @job_orders = JobOrder.without_drafts.includes(:job_services, job_order_statuses: :job_status).order(created_at: :desc)
+    @job_orders = JobOrder.without_drafts.includes(job_order_statuses: :job_status).order(created_at: :desc)
   end
 
   def settings

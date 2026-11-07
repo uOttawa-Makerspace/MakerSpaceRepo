@@ -51,6 +51,17 @@ RSpec.describe "Job order lists: status queries", type: :request do
     expect_flat(admin_job_orders_path, admin)
   end
 
+  it "does not load the services of the orders on admin, which the list never shows", skip_bullet: true do # other N+1s on this list are pinned
+    session_login!(admin)
+    orders!(2, owner: owner)
+    sqls = []
+    callback = ->(*, payload) { sqls << payload[:sql] if payload[:sql].include?("job_orders_services") }
+    ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { get admin_job_orders_path }
+
+    expect(response).to have_http_status(:ok)
+    expect(sqls).to eq([])
+  end
+
   it "re-reads the latest status on /pay with one LIMIT 1 query, never the whole history" do
     order = make_job_order!(owner: owner, status_key: :completed)
     task = order.job_tasks.create!(title: "Task #1")
