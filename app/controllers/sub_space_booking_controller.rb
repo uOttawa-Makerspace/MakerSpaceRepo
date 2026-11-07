@@ -844,7 +844,7 @@ class SubSpaceBookingController < SessionsController
       .joins(:user)
       .where(booking_status_id: [BookingStatus.approved.id, BookingStatus.pending.id])
       .includes(:user)
-      .order(:id)
+      .order(:start_time, :id)
   end
 
   def feed_event(booking)
