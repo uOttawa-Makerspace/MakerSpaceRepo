@@ -51,7 +51,7 @@ end %>
             <div>
                 <%= f.label :preferred_locker_id, 'You can request for a specific locker, if it is available (optional)', class: 'form-label' %>
                 <!-- Requirement: Depending on the user they can only request a certain set of lockers -->
-                <% preferrable_lockers = Locker.available(audience) %>
+                <% preferrable_lockers = Locker.available(audience).includes(:locker_size) %>
                 <%= f.select :preferred_locker_id, preferrable_lockers.order_by_specifier.map { |locker|
                     [locker.specifier, locker.id, {data: {size: locker.locker_size.size, staff_only: !locker.available }}]
                 }, { include_blank: '' }, { class: 'form-select' } %>

@@ -45,7 +45,7 @@ class LockerRentalsController < SessionsController
 
     # Only show available lockers matching the user's audience
     @locker_select_options =
-      Locker.available(audience).order_by_specifier.map do |locker|
+      Locker.available(audience).includes(:locker_size).order_by_specifier.map do |locker|
         [
           locker.specifier,
           locker.id,

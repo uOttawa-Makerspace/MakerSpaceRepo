@@ -253,8 +253,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
   end
 
   describe "models" do
-    # N+1 pinned
-    it "Locker.available excludes lockers with an active rental and filters by audience", skip_bullet: true do
+    it "Locker.available excludes lockers with an active rental and filters by audience" do
       free = create(:locker, audience: "gng")
       taken = create(:locker_rental, :active).locker
       reserved = create(:locker_rental, :await_payment).locker
@@ -263,6 +262,14 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(Locker.available("gng")).to include(free)
       expect(Locker.available("staff")).not_to include(free)
       expect(Locker.assigned).to contain_exactly(taken)
+    end
+
+    it "Locker.available does not load the sizes, which only the callers that render them preload" do
+      create_list(:locker, 3)
+
+      lockers = nil
+      expect(count_queries { lockers = Locker.available.to_a }).to eq(1)
+      expect(lockers.map { |locker| locker.association(:locker_size).loaded? }).to all(be(false))
     end
 
     it "validates Locker and LockerSize" do
