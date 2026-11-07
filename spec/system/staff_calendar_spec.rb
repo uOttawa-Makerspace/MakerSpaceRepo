@@ -31,7 +31,7 @@ RSpec.describe "Staff calendar", type: :system do
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
   def show_week_of_march_14
-    visit root_path
+    visit "/robots.txt" # only the origin's localStorage is needed
     page.execute_script("localStorage.fullCalendarDefaultDateStaffCalendar = '2027-03-16T12:00:00.000Z'")
     visit staff_my_calendar_index_path
   end

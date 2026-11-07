@@ -25,7 +25,7 @@ RSpec.describe "Admin calendar event types", type: :system do
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
   def show_admin_calendar(query = "")
-    visit root_path
+    visit "/robots.txt" # only the origin's localStorage is needed
     page.execute_script("localStorage.fullCalendarDefaultDateAdmin = '2027-03-16T12:00:00.000Z'")
     visit "#{admin_calendar_index_path}#{query}"
   end
