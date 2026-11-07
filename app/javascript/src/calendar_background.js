@@ -5,6 +5,13 @@ const BACKGROUND = new RegExp(
   "i",
 );
 
+const HEX_COLOUR = /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i;
+
+/** True for a #rgb or #rrggbb colour and nothing else. */
+export function isHexColour(colour) {
+  return typeof colour === "string" && HEX_COLOUR.test(colour);
+}
+
 /**
  * Sets the event's background from the server-built value: a hex colour, or the
  * staff colour gradient. Any other value is ignored, so the calendar's default

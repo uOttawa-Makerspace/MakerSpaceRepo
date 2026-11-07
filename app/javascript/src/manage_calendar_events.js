@@ -2,6 +2,7 @@ import { Collapse } from "bootstrap";
 import { RRule, RRuleSet, rrulestr, datetime } from "rrule";
 import TomSelect from "tom-select";
 
+import { isHexColour } from "./calendar_background";
 import { onPageLoad } from "./on_page";
 import {
   parseLocalDatetimeString,
@@ -300,7 +301,7 @@ onPageLoad("#eventModal", async () => {
       plugins: ["remove_button", "restore_on_backspace"],
       render: {
         option: (data, escape) => {
-          const color = escape(data.color || "#000");
+          const color = isHexColour(data.color) ? data.color : "#000";
           const unavailableDates = data.unavailableDates
             .split(",")
             .filter(Boolean);

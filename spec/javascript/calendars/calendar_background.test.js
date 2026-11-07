@@ -1,6 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { applyEventBackground } from "../../../app/javascript/src/calendar_background.js";
+import {
+  applyEventBackground,
+  isHexColour,
+} from "../../../app/javascript/src/calendar_background.js";
 
 function styled(background) {
   const el = document.createElement("div");
@@ -33,5 +36,26 @@ describe("applyEventBackground", () => {
     "linear-gradient(to right, #bbb 0.0%, #bbb 100.0%);\nposition:fixed",
   ])("ignores %j", (background) => {
     expect(styled(background)).toBeNull();
+  });
+});
+
+describe("isHexColour", () => {
+  it.each(["#fff", "#E6194B", "#3788d8"])("accepts %s", (colour) => {
+    expect(isHexColour(colour)).toBe(true);
+  });
+
+  it.each([
+    undefined,
+    null,
+    5,
+    "",
+    "red",
+    "#ff",
+    "#ffff",
+    "#gggggg",
+    "#fff;x",
+    "#fff\n",
+  ])("rejects %j", (colour) => {
+    expect(isHexColour(colour)).toBe(false);
   });
 });

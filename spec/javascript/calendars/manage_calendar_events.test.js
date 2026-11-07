@@ -243,6 +243,20 @@ describe("staff options", () => {
     );
   });
 
+  it("uses a staff colour in the option style only when it is a hex colour", async () => {
+    await load();
+    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
+    const render = tomInstances[0].config.render.option;
+    const escape = (s) => String(s);
+    const style = (color) =>
+      render({ text: "Ada", color, unavailableDates: "" }, escape).match(
+        /style="([^"]*)"/,
+      )[1];
+    expect(style("#e6194b")).toBe("color: #e6194b");
+    expect(style('red;background:url(x)"')).toBe("color: #000");
+    expect(style("red")).toBe("color: #000");
+  });
+
   it("rebuilds the repeat rule when the picker takes focus", async () => {
     await load();
     $("start_time_field").value = "2027-03-17T10:00";
