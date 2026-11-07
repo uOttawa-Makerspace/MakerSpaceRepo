@@ -68,9 +68,10 @@ class Key < ApplicationRecord
   # Hands the key to a holder: saves the key as held and records the deposit
   # transaction in one database transaction, so a failure changes nothing.
   def assign_to!(user, attributes, deposit_amount)
-    raise StateError, "Only a key in inventory can be assigned." unless status_inventory?
-
     transaction do
+      lock!
+      raise StateError, "Only a key in inventory can be assigned." unless status_inventory?
+
       update!(attributes.merge(user_id: user.id, status: :held))
       key_transactions.create!(user_id: user.id, deposit_amount: deposit_amount)
     end
