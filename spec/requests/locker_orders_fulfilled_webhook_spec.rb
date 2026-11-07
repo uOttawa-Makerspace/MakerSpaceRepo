@@ -10,11 +10,11 @@ RSpec.describe "Shopify orders_fulfilled webhook (cash lockers)", type: :request
 
   # The webhook stores the order and queues ApplyProcessedOrderJob; the job runs inline here, as the queue would.
   def deliver_paid(params, **opts)
-    perform_enqueued_jobs(only: [ApplyProcessedOrderJob, ActionMailer::MailDeliveryJob]) { signed_orders_paid(params, **opts) }
+    perform_enqueued_jobs(only: [ApplyProcessedOrderJob, ApplicationMailer.delivery_job]) { signed_orders_paid(params, **opts) }
   end
 
   def deliver_fulfilled(params, **opts)
-    perform_enqueued_jobs(only: [ApplyProcessedOrderJob, ActionMailer::MailDeliveryJob]) { signed_orders_fulfilled(params, **opts) }
+    perform_enqueued_jobs(only: [ApplyProcessedOrderJob, ApplicationMailer.delivery_job]) { signed_orders_fulfilled(params, **opts) }
   end
   let(:tag) { LockerRental.draft_order_operating_tag }
   let(:order_id) { 820_982_911_946_154_509 }

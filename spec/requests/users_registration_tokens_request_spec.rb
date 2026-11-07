@@ -429,7 +429,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
         patch reset_password_path, params: { email: user.email }
         expect(flash[:notice]).to eq("A reset link email has been sent to the email if the account exists.")
       end
-      expect(enqueued_jobs.count { |j| j["job_class"] == "ActionMailer::MailDeliveryJob" }).to eq(3)
+      expect(enqueued_jobs.count { |j| j["job_class"] == ApplicationMailer.delivery_job.name }).to eq(3)
     end
 
     it "does not count unknown addresses against anyone's budget and answers the same" do
