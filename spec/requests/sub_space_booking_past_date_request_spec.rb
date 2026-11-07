@@ -124,7 +124,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
            } }
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["errors"]).to eq(
-        ["Start time ne peut pas être dans le passé. Choisissez une heure de début à partir de maintenant."]
+        ["Heure de début ne peut pas être dans le passé. Choisissez une heure de début à partir de maintenant."]
       )
     end
   end
@@ -346,7 +346,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
         sub_space_booking: { start_time: "2026-11-20 10:00", end_time: "2026-12-05 11:00", name: "R", description: "D" }
       }
       expect(response.parsed_body["errors"])
-        .to eq(["End time ne peut plus être modifiée : cette réservation est déjà terminée."])
+        .to eq(["Heure de fin ne peut plus être modifiée : cette réservation est déjà terminée."])
     end
 
     # The duration/week limits use the model's minute-precision test, so
