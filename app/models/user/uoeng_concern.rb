@@ -59,7 +59,7 @@ module User::UoengConcern
 
       unless details
         TapBoxLog.log_no_queryable_identifier(user: self, card_number: card_number, space: space)
-        return false
+        return :unknown
       end
 
       is_fulltime_eng = details["student_this_semester"] && details["faculty"] == "GENIE"
@@ -117,14 +117,19 @@ module User::UoengConcern
       uoeng_unknown(e)
     end
 
-    # The answer must carry exactly the fields, with the types, that the
-    # eligibility check and the name comparison read.
+    # Every field the check reads may be missing or null, but when present it
+    # must have the expected type.
     def expected_uoeng_shape?(parsed)
-      return false unless parsed.is_a?(Hash)
+      parsed.is_a?(Hash) && uoeng_courses_shape?(parsed["courses_enrolled"]) && uoeng_scalar_shape?(parsed)
+    end
 
-      courses = parsed["courses_enrolled"]
-      courses.is_a?(Array) && courses.all?(String) &&
-        parsed.values_at("first_name", "last_name").all? { |part| part.nil? || part.is_a?(String) }
+    def uoeng_courses_shape?(courses)
+      courses.nil? || (courses.is_a?(Array) && courses.all?(String))
+    end
+
+    def uoeng_scalar_shape?(parsed)
+      [true, false, nil].include?(parsed["student_this_semester"]) &&
+        parsed.values_at("faculty", "first_name", "last_name").all? { |part| part.nil? || part.is_a?(String) }
     end
 
     def uoeng_http_failure(response, elapsed, card_number, space)
