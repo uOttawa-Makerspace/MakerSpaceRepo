@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_100100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1577,6 +1577,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.integer "user_id"
     t.index ["training_session_id"], name: "index_training_sessions_users_on_training_session_id"
     t.index ["user_id"], name: "index_training_sessions_users_on_user_id"
+  end
+
+  create_table "training_skill_list_changes", force: :cascade do |t|
+    t.bigint "training_id", null: false
+    t.string "column_name", null: false
+    t.text "old_value", null: false
+    t.text "new_value", null: false
+    t.datetime "changed_at", default: -> { "now()" }, null: false
+    t.datetime "restored_at"
+    t.index ["training_id", "column_name"], name: "index_training_skill_list_changes_on_training_and_column"
   end
 
   create_table "trainings", id: :serial, force: :cascade do |t|
