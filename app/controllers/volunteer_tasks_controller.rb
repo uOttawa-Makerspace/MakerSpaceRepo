@@ -48,7 +48,7 @@ class VolunteerTasksController < SessionsController
   def create
     @volunteer_task = VolunteerTask.new
     @volunteer_task.user_id = @user.try(:id)
-    if @volunteer_task.update_from_form(volunteer_task_params, **task_edit_params)
+    if @volunteer_task.update_from_form(volunteer_task_params, by: current_user, **task_edit_params)
       update_photos
       redirect_to volunteer_tasks_path, notice: "You've successfully created a new Volunteer Task"
     else
