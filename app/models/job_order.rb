@@ -482,17 +482,17 @@ class JobOrder < ApplicationRecord
     format("%.2f", BigDecimal((amount || 0).to_s).round(2))
   end
 
-  # Everything the quote is made of, loaded once per request and ordered by id: the tasks with their quotes and
-  # quote options, and the order's line items. ONE snapshot is read by #total_price, #quote_fingerprint and the
-  # draft's line items, so they cannot disagree within a request. The options' names (JobOption) are only needed
-  # for the draft's line titles, so they are preloaded onto the same rows when those are built
-  # (#shopify_draft_order_line_items), not for readers that never show them. reload (and so lock!)
-  # drops it.
+  # Everything the quote is made of, loaded once per request and ordered by id: the tasks with their quotes, and the
+  # order's line items. ONE snapshot is read by #total_price, #quote_fingerprint and the draft's line items, so they
+  # cannot disagree within a request. The quote options are only needed by the readers that add up or list the
+  # amounts, and the options' names (JobOption) only for the draft's line titles, so each is preloaded onto the same
+  # rows when those readers run (#preload_quote_options, #preload_option_names), not for readers that never use
+  # them (the price check). reload (and so lock!) drops it.
   QuoteSnapshot = Data.define(:tasks, :line_items)
 
   def quote_snapshot
     @quote_snapshot ||= QuoteSnapshot.new(
-      tasks: job_tasks.includes(job_task_quote: :job_task_quote_options).reorder(:id).to_a,
+      tasks: job_tasks.includes(:job_task_quote).reorder(:id).to_a,
       line_items: job_quote_line_items.reorder(:id).to_a
     )
   end
@@ -702,6 +702,7 @@ class JobOrder < ApplicationRecord
 
   def total_price
     snapshot = quote_snapshot
+    preload_quote_options(snapshot)
     tasks_total = snapshot.tasks.sum do |task|
       quote = task.job_task_quote
       next 0 if quote.nil?
@@ -867,7 +868,15 @@ class JobOrder < ApplicationRecord
     update_columns(shopify_draft_order_id: new_id, shopify_draft_order_fingerprint: quote_fingerprint)
   end
 
+  # Loads the quote options of the snapshot's quotes in one query (a no-op for quotes that already have them).
+  def preload_quote_options(snapshot)
+    ActiveRecord::Associations::Preloader.new(
+      records: snapshot.tasks.filter_map(&:job_task_quote), associations: :job_task_quote_options
+    ).call
+  end
+
   def preload_option_names(snapshot)
+    preload_quote_options(snapshot)
     quote_options = snapshot.tasks.flat_map { |task| task.job_task_quote&.job_task_quote_options.to_a }
     ActiveRecord::Associations::Preloader.new(records: quote_options, associations: :job_option).call
   end
@@ -876,6 +885,7 @@ class JobOrder < ApplicationRecord
   # { key: [task id, component], amount: BigDecimal, title: draft line title (only with titles:, which needs the
   # options' names preloaded, see #preload_option_names) }.
   def quote_lines(snapshot, titles: false)
+    preload_quote_options(snapshot)
     snapshot.tasks.flat_map do |task|
       quote = task.job_task_quote
       next [] if quote.nil?
