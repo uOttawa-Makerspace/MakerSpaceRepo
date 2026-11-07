@@ -162,6 +162,17 @@ RSpec.describe "Admin training area", type: :request do
           expect(training.reload).to have_attributes(list_of_skills_en: "Design,Safety", list_of_skills_fr: "Conception,Sécurité")
         end
 
+        it "leaves the stored skill lists alone when the request has no skill keys, and clears them for an empty selection" do
+          training.update!(list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          params = training_params(name_en: "Renamed EN")
+          params[:training].delete(:list_of_skills_en)
+          params[:training].delete(:list_of_skills_fr)
+          patch admin_training_path(training), params: params
+          expect(training.reload).to have_attributes(name_en: "Renamed EN", list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          patch admin_training_path(training), params: training_params(list_of_skills_en: [""], list_of_skills_fr: [""])
+          expect(training.reload).to have_attributes(list_of_skills_en: "", list_of_skills_fr: "")
+        end
+
         it "answers 400 and changes nothing when a skill list is not an array or training is not a hash" do
           patch admin_training_path(training), params: training_params(name_en: "Renamed EN", list_of_skills_fr: "x")
           expect(response).to have_http_status(:bad_request)
