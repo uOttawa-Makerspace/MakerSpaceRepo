@@ -48,14 +48,9 @@ class VolunteerTasksController < SessionsController
   def create
     @volunteer_task = VolunteerTask.new
     @volunteer_task.user_id = @user.try(:id)
-    if @volunteer_task.save_from_form(volunteer_task_params)
+    if @volunteer_task.update_from_form(volunteer_task_params, **task_edit_params)
       update_photos
-      if params[:certifications_id].present?
-        @volunteer_task.create_certifications(params[:certifications_id])
-      end
-      add_volunteer_join(@volunteer_task.id)
-      redirect_to volunteer_tasks_path
-      flash[:notice] = "You've successfully created a new Volunteer Task"
+      redirect_to volunteer_tasks_path, notice: "You've successfully created a new Volunteer Task"
     else
       redirect_to new_volunteer_task_path, alert: @volunteer_task.errors.full_messages.to_sentence
     end
@@ -154,14 +149,19 @@ class VolunteerTasksController < SessionsController
     task.volunteer_task_joins.active.pluck(:user_id)
   end
 
+  # The form's selects submit an empty value when nothing is chosen; those are not ids.
   def task_edit_params
     {
-      certification_ids: Array(params[:certifications_id]),
+      certification_ids: submitted_ids(:certifications_id),
       joins: {
-        add_staff: Array(params[:staff_id]), add_volunteers: Array(params[:volunteer_id]),
-        remove_staff: Array(params[:remove_staff_id]), remove_volunteers: Array(params[:remove_volunteer_id])
+        add_staff: submitted_ids(:staff_id), add_volunteers: submitted_ids(:volunteer_id),
+        remove_staff: submitted_ids(:remove_staff_id), remove_volunteers: submitted_ids(:remove_volunteer_id)
       }
     }
+  end
+
+  def submitted_ids(key)
+    Array(params[key]).compact_blank
   end
 
   def task_owner_or_staff
@@ -170,38 +170,6 @@ class VolunteerTasksController < SessionsController
 
     flash[:alert] = "You cannot access this area."
     redirect_to root_path
-  end
-
-  def add_volunteer_join(task_id)
-    @volunteer_task = VolunteerTask.find(task_id)
-    if params[:staff_id].present?
-      params[:staff_id] = [params[:staff_id]] unless params[:staff_id].is_a?(Array)
-      params[:staff_id].each do |staff_id|
-        @volunteer_task_join = VolunteerTaskJoin.new(
-          volunteer_task_id: @volunteer_task.id,
-          user_id: staff_id
-        )
-        if @volunteer_task_join.save
-          @volunteer_task_join.update(user_type: User.find(staff_id).role.capitalize)
-        else
-          flash[:error] = "The staff could not be added to this task, please try again later."
-        end
-      end
-    end
-    if params[:volunteer_id].present?
-      params[:volunteer_id] = [params[:volunteer_id]] unless params[:volunteer_id].is_a?(Array)
-      params[:volunteer_id].each do |volunteer_id|
-        @volunteer_task_join = VolunteerTaskJoin.new(
-          volunteer_task_id: @volunteer_task.id,
-          user_id: volunteer_id,
-          user_type: "Volunteer",
-          active: true
-        )
-        unless @volunteer_task_join.save
-          flash[:error] = "The volunteer could not be added to this task, please try again later."
-        end
-      end
-    end
   end
 
   def update_photos
