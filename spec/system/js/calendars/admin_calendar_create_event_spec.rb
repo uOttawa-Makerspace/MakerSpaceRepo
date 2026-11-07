@@ -43,8 +43,11 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     slot = find(".fc-timegrid-col[data-date='2027-03-18'] .fc-timegrid-col-frame", visible: :all)
     action = page.driver.browser.action.move_to(slot.native).click_and_hold.move_by(0, 60)
     action.perform
-    yield if block_given?
-    page.driver.browser.action.release.perform
+    begin
+      yield if block_given?
+    ensure
+      page.driver.browser.action.release.perform
+    end
   end
 
   def open_add_modal
