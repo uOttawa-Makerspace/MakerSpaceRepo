@@ -11,6 +11,8 @@ RSpec.describe "Admin keys", type: :request do
   let!(:supervisor) { create(:user, :admin) }
   let!(:key) { create(:key, :regular_key_type, :inventory_status, space: space, number: 11) }
 
+  let(:hand_out_refusal) { "Use Assign and Revoke to give a key to a holder or take it back." }
+
   def key_attrs(extra = {})
     { number: 21, space_id: space.id, key_type: "regular", status: "inventory" }.merge(extra)
   end
@@ -109,10 +111,18 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.reload.additional_info).to eq("Cage 3")
     end
 
-    it "redirects to the edit path on an invalid update" do
+    it "refuses to make an inventory key held by editing it" do
       patch admin_key_path(key), params: { key: { status: "held" } }
-      expect(flash[:alert]).to eq("Something went wrong while updating the key.")
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq(hand_out_refusal)
       expect(key.reload.status).to eq("inventory")
+      expect(KeyTransaction.count).to eq(0)
+    end
+
+    it "redirects to the edit path on an invalid update" do
+      patch admin_key_path(key), params: { key: { number: "" } }
+      expect(flash[:alert]).to eq("Something went wrong while updating the key.")
+      expect(key.reload.number).not_to eq("")
     end
 
     it "ignores a status change on a held key" do
@@ -121,48 +131,44 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.reload).to have_attributes(status: "held", additional_info: "n")
     end
 
-    # create/update cannot set a holder without an approved key request.
-    describe "setting user_id directly" do
+    # create/update never set a holder or the held status; Assign does, with the transaction.
+    describe "setting a holder or the held status directly" do
       let(:holder_attrs) { { user_id: holder.id, supervisor_id: supervisor.id, status: "held" } }
 
-      it "update is refused without an approved request" do
-        patch admin_key_path(key), params: { key: holder_attrs }
-        expect(flash[:alert]).to eq("The key holder must have an approved key request.")
-        expect(key.reload).to have_attributes(user_id: nil, status: "inventory")
+      before do
+        create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
       end
 
-      it "update is refused when the request is only waiting for approval" do
-        create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
+      it "update is refused even for a holder with an approved request" do
         patch admin_key_path(key), params: { key: holder_attrs }
+        expect(flash[:alert]).to eq(hand_out_refusal)
+        expect(key.reload).to have_attributes(user_id: nil, status: "inventory")
+        expect(KeyTransaction.count).to eq(0)
+      end
+
+      it "update is refused when only a holder is posted" do
+        patch admin_key_path(key), params: { key: { user_id: holder.id } }
+        expect(flash[:alert]).to eq(hand_out_refusal)
         expect(key.reload.user_id).to be_nil
       end
 
-      it "update is allowed with an approved request" do
-        create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
-        patch admin_key_path(key), params: { key: holder_attrs }
-        expect(flash[:notice]).to eq("The key was successfully updated.")
-        expect(key.reload).to have_attributes(user_id: holder.id, status: "held")
-      end
-
-      it "create is refused without an approved request" do
+      it "create is refused" do
         expect {
           post admin_keys_path, params: { key: key_attrs.merge(number: 77, **holder_attrs) }
         }.not_to change(Key, :count)
-        expect(flash[:alert]).to eq("The key holder must have an approved key request.")
+        expect(flash[:alert]).to eq(hand_out_refusal)
       end
 
-      it "create is allowed with an approved request" do
-        create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
+      it "create ignores a blank holder" do
         expect {
-          post admin_keys_path, params: { key: key_attrs.merge(number: 77, **holder_attrs) }
+          post admin_keys_path, params: { key: key_attrs.merge(number: 77, user_id: "") }
         }.to change(Key, :count).by(1)
-        expect(Key.last).to have_attributes(user_id: holder.id, status: "held")
       end
 
-      it "update cannot blank the holder of a held key (revoke_key is the path)" do
+      it "update refuses to blank the holder of a held key (revoke_key is the path)" do
         key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
         patch admin_key_path(key), params: { key: { user_id: "", additional_info: "n" } }
-        expect(flash[:alert]).to eq("Use revoke to remove the holder of a held key.")
+        expect(flash[:alert]).to eq(hand_out_refusal)
         expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
         expect(key.additional_info).not_to eq("n")
       end
@@ -172,14 +178,35 @@ RSpec.describe "Admin keys", type: :request do
         create(:key_request, :status_approved, :all_questions_answered, user: other, supervisor: supervisor, space: space)
         key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
         patch admin_key_path(key), params: { key: { user_id: other.id } }
-        expect(flash[:alert]).to eq("Revoke the key before assigning it to another holder.")
+        expect(flash[:alert]).to eq(hand_out_refusal)
         expect(key.reload.user_id).to eq(holder.id)
       end
 
-      it "leaves a held key's unchanged holder editable without re-checking" do
+      it "leaves a held key's unchanged holder editable" do
         key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
         patch admin_key_path(key), params: { key: { user_id: holder.id, additional_info: "n" } }
         expect(key.reload.additional_info).to eq("n")
+      end
+
+      it "update is refused when the held status is posted as its number" do
+        patch admin_key_path(key), params: { key: { status: Key.statuses[:held] } }, as: :json
+        expect(flash[:alert]).to eq(hand_out_refusal)
+        expect(key.reload.status).to eq("inventory")
+        expect(KeyTransaction.count).to eq(0)
+      end
+
+      it "create is refused for the held status with no holder" do
+        expect {
+          post admin_keys_path, params: { key: key_attrs.merge(number: 78, status: "held") }
+        }.not_to change(Key, :count)
+        expect(flash[:alert]).to eq(hand_out_refusal)
+      end
+
+      it "update ignores a held status posted for an already held key" do
+        key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
+        patch admin_key_path(key), params: { key: { status: "held", additional_info: "n" } }
+        expect(key.reload).to have_attributes(status: "held", user_id: holder.id, additional_info: "n")
+        expect(KeyTransaction.count).to eq(0)
       end
     end
 
@@ -234,6 +261,16 @@ RSpec.describe "Admin keys", type: :request do
       expect { patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id } } }.not_to change(KeyTransaction, :count)
       expect(flash[:alert]).to include("Something went wrong while trying to assign the key", "Deposit amount")
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil, supervisor_id: nil)
+    end
+
+    it "refuses with a message when a key in inventory still has an open transaction" do
+      KeyTransaction.create!(key: key, user: holder, deposit_amount: 5)
+      expect {
+        patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 25 }
+      }.not_to change(KeyTransaction, :count)
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to include("Something went wrong while trying to assign the key", "already has an open transaction")
+      expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
     end
 
     # Midday Eastern, so the server's UTC date and Date.current agree.

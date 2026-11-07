@@ -10,7 +10,7 @@ RSpec.describe Admin::KeyTransactionsController, type: :controller do
         space = create(:space)
 
         key = create(:key, :inventory_status, :regular_key_type, space_id: space.id, supervisor_id: admin.id)
-        5.times { create(:key_transaction, user_id: admin.id, key_id: key.id) }
+        5.times { create(:key_transaction, :returned, user_id: admin.id, key_id: key.id) }
 
         get :index
         expect(

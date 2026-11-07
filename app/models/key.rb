@@ -5,6 +5,8 @@ class Key < ApplicationRecord
   class StateError < StandardError
   end
 
+  HAND_OUT_REFUSAL = "Use Assign and Revoke to give a key to a holder or take it back."
+
   belongs_to :user, class_name: "User", optional: true
   belongs_to :supervisor, class_name: "User", optional: true
   belongs_to :space, optional: true
@@ -67,6 +69,25 @@ class Key < ApplicationRecord
   # The holder's key request, read for display on the admin key page, so a deleted holder's request shows too.
   def key_request
     display_user&.key_request
+  end
+
+  # Creating or editing a key never hands it out or takes it back: the holder and the held status
+  # are set only by assign_to! and revoke!, which also record the key transaction. Judged on the
+  # key as it would be saved, so any spelling of the status (name or number) counts.
+  def hands_out_by_edit?
+    status_changed?(to: "held") || user_id_changed?
+  end
+
+  # Saves an admin edit against the stored key, under the row lock, so a concurrent assign or
+  # revoke cannot slip in between the check and the save. A held key ignores a posted status.
+  def update_from_edit!(attributes)
+    transaction do
+      lock!
+      assign_attributes(status_held? ? attributes.except(:status) : attributes)
+      raise StateError, HAND_OUT_REFUSAL if hands_out_by_edit?
+
+      save!
+    end
   end
 
   # Hands the key to a holder: saves the key as held and records the deposit

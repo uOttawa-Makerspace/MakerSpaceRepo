@@ -90,7 +90,7 @@ RSpec.describe Key, type: :model do
 
     context "#get_latest_key_transaction" do
       it "should get the latest key transaction" do
-        create(:key_transaction, key_id: @key.id, user_id: @user.id)
+        create(:key_transaction, :returned, key_id: @key.id, user_id: @user.id)
         kt2 = create(:key_transaction, key_id: @key.id, user_id: @user.id)
 
         expect(@key.get_latest_key_transaction).to eq(kt2)
@@ -99,14 +99,14 @@ RSpec.describe Key, type: :model do
 
     context "#get_all_key_transactions" do
       it "should get all key transactions from the specified key" do
-        create(:key_transaction, key_id: @key.id, user_id: @user.id)
+        create(:key_transaction, :returned, key_id: @key.id, user_id: @user.id)
         create(:key_transaction, key_id: @key.id, user_id: @user.id)
 
         expect(@key.get_all_key_transactions.length).to eq(2)
       end
 
       it "should return nothing" do
-        create(:key_transaction, key_id: @key.id, user_id: @user.id)
+        create(:key_transaction, :returned, key_id: @key.id, user_id: @user.id)
         create(:key_transaction, key_id: @key.id, user_id: @user.id)
         otherKey =
           create(

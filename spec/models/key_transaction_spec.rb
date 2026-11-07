@@ -16,6 +16,25 @@ RSpec.describe KeyTransaction, type: :model do
         create(:key, :regular_key_type, :inventory_status, space_id: @space.id)
     end
 
+    context "open transaction validation" do
+      it "refuses a second open transaction for the same key" do
+        create(:key_transaction, key_id: @key.id, deposit_amount: 20, user_id: @user.id)
+        second = build(:key_transaction, key_id: @key.id, deposit_amount: 20, user_id: @user.id)
+        expect(second).not_to be_valid
+        expect(second.errors[:key_id]).to include("already has an open transaction")
+      end
+
+      it "allows a new open transaction once the earlier one is returned" do
+        create(:key_transaction, key_id: @key.id, deposit_amount: 20, user_id: @user.id, return_date: Date.current)
+        expect(build(:key_transaction, key_id: @key.id, deposit_amount: 20, user_id: @user.id)).to be_valid
+      end
+
+      it "lets an open transaction be closed" do
+        kt = create(:key_transaction, key_id: @key.id, deposit_amount: 20, user_id: @user.id)
+        expect { kt.close! }.not_to raise_error
+      end
+    end
+
     context "user validation" do
       it "should be valid since user is present" do
         kt =

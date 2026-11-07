@@ -672,6 +672,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["key_id"], name: "index_key_transactions_on_key_id"
+    t.index ["key_id"], name: "index_key_transactions_on_key_id_open", unique: true, where: "(return_date IS NULL)"
     t.index ["user_id"], name: "index_key_transactions_on_user_id"
   end
 
