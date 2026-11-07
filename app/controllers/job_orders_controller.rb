@@ -56,19 +56,19 @@ class JobOrdersController < SessionsController
 
   def show
     @job_order = JobOrder.find_by(id: params[:id], is_deleted: false)
-    @staff = User.staff
-    @message =
-      JobOrderMessage.find_by(name: "processed").retrieve_message(@job_order.id)
 
     if @job_order.nil?
       flash[:alert] = t("job_orders.alerts.job_order_not_found")
-      return redirect_to job_orders_path     
+      return redirect_to job_orders_path
     end
-    
+
     unless current_user.admin? || current_user.staff? || current_user.id == @job_order.user_id
       flash[:alert] = t("job_orders.alerts.no_permission")
       return redirect_to new_job_orders_path
     end
+
+    @staff = User.staff
+    @message = JobOrderMessage.find_by(name: "processed").retrieve_message(@job_order.id)
 
     if current_user.id == @job_order.user_id
       @unread_messages = @job_order.chat_messages.unread(current_user)

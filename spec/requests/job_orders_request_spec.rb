@@ -231,20 +231,18 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).to include("UrlGenerationError")
     end
 
-    # @message is dereferenced BEFORE the nil check, so the
-    # "job order not found" flash/redirect branch is dead code.
-    it "renders 500 (NoMethodError) for a missing or deleted order" do
+    it "redirects to the order list with a not-found message for a missing or deleted order" do
       order = order_with_task!(owner: owner)
       http_login!(owner)
 
       get job_order_path(id: 999_999_999)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
 
       order.update!(is_deleted: true)
       get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
     end
   end
 
