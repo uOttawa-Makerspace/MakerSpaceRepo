@@ -219,16 +219,23 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         .to eq("#{I18n.t('job_orders.alerts.missing_info')} Task #1")
     end
 
-    # the Submit-for-Approval button_to resolves
-    # job_order_job_task_path with @job_order.job_tasks.first == nil →
-    # UrlGenerationError → 500.
-    it "renders 500 (UrlGenerationError) for a DRAFT order with no tasks" do
+    it "shows a draft order with no tasks without the Submit for Approval button" do
       order = make_job_order!(owner: owner, status_key: :draft)
       http_login!(owner)
       get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("Action Controller: Exception caught")
-      expect(response.body).to include("UrlGenerationError")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Submit for Approval")
+    end
+
+    it "shows the Submit for Approval button for a complete draft order" do
+      order = order_with_task!(owner: owner)
+      seed_job_types!
+      complete_type = JobType.all.find { |type| type.job_service_groups.none? }
+      order.job_tasks.first.update!(job_type: complete_type)
+      http_login!(owner)
+      get job_order_path(order)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Submit for Approval")
     end
 
     it "redirects to the order list with a not-found message for a missing or deleted order" do

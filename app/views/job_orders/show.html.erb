@@ -18,7 +18,7 @@
         JobStatus.paid,
         JobStatus.picked_up].include?(@job_order.latest_status&.job_status) %>
         
-        <% if @job_order.latest_status&.job_status == JobStatus.draft && !@tasks_missing_information.any? %>
+        <% if @job_order.latest_status&.job_status == JobStatus.draft && @job_order.job_tasks.any? && !@tasks_missing_information.any? %>
           <%= button_to 'Submit for Approval', job_order_job_task_path(@job_order, @job_order.job_tasks.first, step: 4), method: :post, format: :js, class: 'btn btn-outline-primary', data: { confirm: 'Are you sure you want to submit this job order for staff approval?' } %>
         <% end %>
 
