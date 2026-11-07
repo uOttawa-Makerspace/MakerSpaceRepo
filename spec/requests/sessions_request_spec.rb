@@ -201,11 +201,14 @@ RSpec.describe "Sessions (HTTP contract)", type: :request do
   end
 
   describe "a failed login while already signed in" do
-    it "500s: the error re-render swaps @user for a blank User under a signed-in navbar" do
-      # a failed login POST from a still-signed-in browser re-renders :login with @user = User.new, so the navbar's signed-in links raise (500)
-      login!(create(:user, :regular_user))
+    it "re-renders login under the signed-in header and keeps the session" do
+      user = create(:user, :regular_user)
+      login!(user)
       post login_authentication_path, params: { username_email: "nobody", password: "x" }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(user.username)
+      get check_signed_in_path
+      expect(JSON.parse(response.body)["signed_in"]).to eq("true")
     end
   end
 
