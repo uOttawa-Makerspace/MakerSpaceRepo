@@ -3,26 +3,26 @@
 
     <h2 class="my-3">
       New
-      <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id), id: 'set_space_id', class: 'form-select fs-3 w-auto d-inline-block pe-0', onchange: 'setSpace()' %></strong>
+      <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id), id: 'set_space_id', aria: { label: 'Space' }, class: 'form-select fs-3 w-auto d-inline-block pe-0', onchange: 'setSpace()' %></strong>
       Training Session</h2>
 
     <%= form_for @new_training_session, url: { action: 'create', controller: 'staff/training_sessions' } do |f| %>
       <%= f.hidden_field :space_id, value: @space.id %>
       <div class="mb-3">
         <% label_tag 'training_id', class: 'form-label' %>
-        <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name_en ASC'), 'id', 'name_en'), prompt: 'Select training', class: 'form-control form-select', required: true %><br>
+        <%= select_tag 'training_id', options_from_collection_for_select(@space.trainings.order('name_en ASC'), 'id', 'name_en'), prompt: 'Select training', class: 'form-control form-select', aria: { label: 'Training' }, required: true %><br>
       </div>
       <div class="mb-3">
         <% label_tag 'level', class: 'form-label' %>
-        <%= select_tag 'level', options_for_select(@levels), prompt: 'Select level', class: 'form-control form-select', required: true %><br>
+        <%= select_tag 'level', options_for_select(@levels), prompt: 'Select level', class: 'form-control form-select', aria: { label: 'Level' }, required: true %><br>
       </div>
       <div class="mb-3">
         <% label_tag 'course', class: 'form-label' %>
-        <%= select_tag 'course', options_for_select(@course_names), prompt: 'Select course', class: 'form-control form-select', required: true %><br>
+        <%= select_tag 'course', options_for_select(@course_names), prompt: 'Select course', class: 'form-control form-select', aria: { label: 'Course' }, required: true %><br>
       </div>
       <% if @user.admin? %>
         <% label_tag 'user_id', class: 'form-label' %>
-        <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: %w[staff admin]).order('name ASC'), 'id', 'name'), prompt: 'Select instructor', class: 'form-control form-select', required: true %><br>
+        <%= select_tag 'user_id', options_from_collection_for_select(User.where(role: %w[staff admin]).order('name ASC'), 'id', 'name'), prompt: 'Select instructor', class: 'form-control form-select', aria: { label: 'Instructor' }, required: true %><br>
       <% end %>
     <br />
       <table class="staff-table table text-center table-striped" id="staff-users-table">

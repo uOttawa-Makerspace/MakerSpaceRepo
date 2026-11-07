@@ -18,10 +18,10 @@
               <%= f.trix_editor :description, placeholder: 'Description of the proficient project...', class: 'form-control mb-5', required: true %>
 
               <%= f.label :training_id, 'Category', class: 'form-label' %>
-              <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select mb-5', id: 'training_id_field' }) %>
+              <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select mb-5', id: 'training_id_field', aria: { label: 'Category' } }) %>
 
               <%= f.label :level, 'Level', class: 'form-label' %>
-              <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select mb-5', id: 'training_level_field' }) %>
+              <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select mb-5', id: 'training_level_field', aria: { label: 'Level' } }) %>
 
               <%= f.label :cc, 'Cc Points', class: 'form-label' %>
               <%= f.number_field(:cc, class: 'form-control mb-5') %>

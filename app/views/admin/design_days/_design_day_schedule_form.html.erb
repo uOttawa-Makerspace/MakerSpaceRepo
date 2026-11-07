@@ -25,7 +25,7 @@
             <%= fs.text_field :title_fr, placeholder: 'French title', class: 'form-control' %>
         </div>
         <div class="col-auto">
-            <%= fs.check_box :_destroy, class: 'btn-check', checked: false, autocomplete: 'off', include_hidden: false, data: { delete_template: '' } %>
+            <%= fs.check_box :_destroy, class: 'btn-check', aria: { label: t('common.delete') }, checked: false, autocomplete: 'off', include_hidden: false, data: { delete_template: '' } %>
             <%= fs.label :_destroy, class: 'btn btn-danger' do %>
                 <i class="fa-solid fa-trash"></i>
             <% end %>

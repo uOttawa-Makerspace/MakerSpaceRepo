@@ -212,7 +212,7 @@
                 <div class="mb-3 input-group">
                     <%= f.hidden_field :repository_id, value: @repository.id %>
                     <%= f.select(:project_proposal_id, @project_proposals, { prompt: t('repository.choose_proposal') },
-                                 { class: 'form-control', id: 'search_project_proposals' }) %>
+                                 { class: 'form-control', id: 'search_project_proposals', aria: { label: t('repository.choose_proposal') } }) %>
                     <%= f.submit t('repository.link_proj'), class: 'btn btn-primary' %>
                 </div>
             <% end %>
@@ -234,7 +234,7 @@
                     <%= f.label t('repository.rem_mem'), class: 'form-label' %>
                     <div class="mb-3 input-group">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
-                        <%= f.select(:owner_id, @repository.users.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
+                        <%= f.select(:owner_id, @repository.users.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove', aria: { label: t('repository.rem_mem') } }) %>
                         <%= f.submit t('repository.remove'), class: 'btn btn-danger' %>
                     </div>
                 <% end %>
@@ -246,7 +246,7 @@
                             <%= f.hidden_field :repository_id, value: @repository.id %>
                             <%= f.collection_select :owner_id, @repository.users, :id, :username,
                                 { prompt: t('repository.search_user') },
-                             { class: 'form-control', id: 'search_users_transfer' } %>
+                             { class: 'form-control', id: 'search_users_transfer', aria: { label: t('repository.search_user') } } %>
                             <br> </br>
                             <%= f.submit t('repository.transfer'), class: 'btn btn-warning' %>
                         </div>
@@ -265,7 +265,7 @@
         <%= form_with(url: comments_create_path, id: 'comment') do %>
             <div class="mb-3">
                 <%= hidden_field_tag :content %>
-                <trix-editor input="content"></trix-editor>
+                <trix-editor input="content" aria-label="Comment"></trix-editor>
             </div>
             <%= submit_tag t('repository.post_com'), class: 'btn btn-primary' %>
         <% end %>

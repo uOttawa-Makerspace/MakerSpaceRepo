@@ -13,10 +13,10 @@
             <%= f.trix_editor :description, placeholder: 'Description of the proficient project...', class: 'form-control mb-5', id: 'redactor', 'aria-label': 'Description (You can now input a wiki.makerepo.com link and the page will be displayed)' %>
 
             <div class="required"><%= f.label :training_id, 'Category', class: 'form-label' %></div>
-            <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select mb-5', id: 'training_id_field' }) %>
+            <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select mb-5', id: 'training_id_field', aria: { label: 'Category' } }) %>
 
             <div class="required"><%= f.label :level, 'Level', class: 'form-label' %></div>
-            <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select mb-5', id: 'training_level_field' }) %>
+            <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select mb-5', id: 'training_level_field', aria: { label: 'Level' } }) %>
 
             <%= f.label :cc, 'Cc Points', class: 'form-label' %>
             <%= f.number_field(:cc, class: 'form-control mb-5') %>

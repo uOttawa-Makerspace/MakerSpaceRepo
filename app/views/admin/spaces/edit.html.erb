@@ -20,7 +20,7 @@
     <%= form_for update_keycode_admin_spaces_path, url: { controller: 'admin/spaces', action: 'update_keycode' }, method: :patch do |f| %>
       <div class="input-group">
         <%= hidden_field_tag :space_id, @space.id %> <br>
-        <%= text_field_tag :keycode, @space.keycode, { class: 'form-control' } %>
+        <%= text_field_tag :keycode, @space.keycode, { class: 'form-control', aria: { label: 'Keycode' } } %>
         <%= f.submit 'Update Keycode', class: 'btn btn-primary', data: { confirm: 'Are your sure you want to update the keycode of the space?' } %>
       </div>
     <% end %>
@@ -32,7 +32,7 @@
       <%= form_for add_space_manager_admin_spaces_path, url: { controller: 'admin/spaces', action: 'add_space_manager' }, method: :patch do |f| %>
         <div class="input-group">
           <%= hidden_field_tag :space_id, @space.id %> <br>
-          <%= select_tag(:space_manager_id, options_for_select(@admin_options), class: 'form-control form-select', id: 'space-manager-select') %>
+          <%= select_tag(:space_manager_id, options_for_select(@admin_options), class: 'form-control form-select', id: 'space-manager-select', aria: { label: 'Space manager' }) %>
           <%= f.submit 'Add Space Manager', class: 'btn btn-primary', data: { confirm: 'Are you sure you want to add this admin as a space manager?' } %>
         </div>
       <% end %>
@@ -255,27 +255,27 @@
         <tr>
           <td>
             <%= form_tag admin_space_update_sub_space_path(space_id: @space.id, id: sub_space.id), method: :patch, class: 'input-group input-group-sm' do %>
-              <%= text_field_tag :name, sub_space.name, class: 'form-control', required: true %>
+              <%= text_field_tag :name, sub_space.name, class: 'form-control', aria: { label: 'Subspace name' }, required: true %>
               <%= submit_tag 'Rename', class: 'btn btn-outline-primary btn-sm', data: { confirm: 'Are you sure you want to rename this sub space?' } %>
             <% end %>
           </td>
           <td><%= button_to "#{sub_space.approval_required ? 'Enable' : 'Disable'} Automatic Booking Approval", admin_space_change_sub_space_approval_path(space_id: @space.id, id: sub_space.id), method: :put, action: :change_sub_space_approval, class: 'btn btn-primary btn-sm' %></td>
           <td>
             <%= form_tag admin_space_set_max_automatic_approval_hour_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_auto_approve_booking_duration, method: :patch, class: 'input-group' do %>
-              <%= select_tag(:auto_approve_hours, options_for_select((-1..24).to_a, sub_space.max_automatic_approval_hour || -1), class: 'form-select') %>
+              <%= select_tag(:auto_approve_hours, options_for_select((-1..24).to_a, sub_space.max_automatic_approval_hour || -1), class: 'form-select', aria: { label: 'Automatic approval hours' }) %>
               <%= submit_tag 'Set', class: 'btn btn-primary btn-sm' %>
             <% end %>
             <i>to disable the limit, use -1</i>
           <td>
             <%= form_tag admin_space_set_max_booking_duration_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
-              <%= select_tag(:max_hours, options_for_select((-1..24).to_a, sub_space.maximum_booking_duration || -1), class: 'form-select') %>
+              <%= select_tag(:max_hours, options_for_select((-1..24).to_a, sub_space.maximum_booking_duration || -1), class: 'form-select', aria: { label: 'Maximum booking hours' }) %>
               <%= submit_tag 'Set', class: 'btn btn-primary btn-sm' %>
             <% end %>
             <i>to disable the limit, use -1</i>
           </td>
           <td>
             <%= form_tag admin_space_set_max_booking_duration_path(space_id: @space.id, sub_space_id: sub_space.id), action: :set_max_booking_duration, method: :patch, class: 'input-group' do %>
-              <%= select_tag(:max_weekly_hours, options_for_select((-1..168).to_a, sub_space.maximum_booking_hours_per_week || -1), class: 'form-select') %>
+              <%= select_tag(:max_weekly_hours, options_for_select((-1..168).to_a, sub_space.maximum_booking_hours_per_week || -1), class: 'form-select', aria: { label: 'Maximum weekly booking hours' }) %>
               <%= submit_tag 'Set', class: 'btn btn-primary btn-sm' %>
             <% end %>
             <i>to disable the limit, use -1</i>
@@ -301,7 +301,7 @@
     <br>
     <%= form_for admin_spaces_path, action: :destroy, method: :delete do |f| %>
       <div class="mb-3 input-group">
-        <%= text_field_tag :admin_input, '', class: 'form-control' %>
+        <%= text_field_tag :admin_input, '', class: 'form-control', aria: { label: 'Space name to confirm' } %>
         <%= hidden_field_tag :id, @space.id %>
         <%= f.submit 'DESTROY', class: 'btn btn-danger', data: { confirm: 'Are your sure you want to completely DELETE this space and all related informaion?! Ok to confirm' } %>
       </div>

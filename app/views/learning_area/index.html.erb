@@ -82,7 +82,7 @@
                             </div>
                             <% if current_user.admin? %>
                                 <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input" type="checkbox" role="switch"
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggle-<%= training.id %>-<%= level %>"
                                            data-order="<%= training.name.parameterize %>-<%= level.parameterize %>">
                                     <label class="form-check-label small text-muted" for="toggle-<%= training.id %>-<%= level %>">
                                         <i class="fa fa-sort me-1"></i>Re-order

@@ -26,7 +26,7 @@
         </div>
         <div class="mb-3" style="display: <%= @key.key_type_regular? ? 'block' : 'none' %>;">
           <%= f.label :space_id, class: 'form-label' %>
-          <%= f.select :space_id, @space_select, { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select' } %>
+          <%= f.select :space_id, @space_select, { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select', aria: { label: 'Space' } } %>
         </div>
         <div class="mb-3" style="display: <%= @key.key_type_regular? ? 'none' : 'block' %>;">
           <%= f.label :custom_keycode, class: 'form-label' %>
@@ -38,7 +38,7 @@
         </div>
         <div class="mb-4">
           <%= f.label :supervisor_id, class: 'form-label' %>
-          <%= f.select :supervisor_id, User.where(role: 'admin').order(name: :asc).pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select' } %>
+          <%= f.select :supervisor_id, User.where(role: 'admin').order(name: :asc).pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select', aria: { label: 'Supervisor' } } %>
         </div>
         <div class="mb-5" id="notes-container" style="display: <%= @key.status_inventory? ? 'none' : 'block' %>;">
           <%= f.label :additional_info, 'Notes (Optional)', class: 'form-label' %>

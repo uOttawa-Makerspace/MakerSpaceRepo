@@ -80,6 +80,32 @@ RSpec.describe "Accessibility baseline", type: :request do
       end
     end
 
+    it "names the key request, key, space, printer, staff dashboard and training session selects" do
+      space = create(:space)
+      log_in!(create(:user, :admin, booking_approval: true))
+      pages = {
+        new_key_request_path => %w[space-select supervisor-select],
+        new_admin_key_path => %w[space-select supervisor-select],
+        edit_admin_space_path(space) => %w[space-manager-select auto_approve_hours max_hours max_weekly_hours keycode admin_input],
+        printers_path => %w[remove_printer printer_number],
+        staff_dashboard_index_path => %w[set_space_id user_dashboard_select],
+        new_staff_training_session_path(space_id: space.id) => %w[set_space_id training_id level course]
+      }
+      unnamed = pages.to_h do |path, ids|
+        get path
+        expect(response).to have_http_status(:ok), path
+        [path, unnamed_fields(response.body).filter_map { |field| field[/id="([^"]*)"/, 1] } & ids]
+      end
+      expect(unnamed.reject { |_path, ids| ids.empty? }).to eq({})
+    end
+
+    it "gives the Tom Select backed selects their own label, since the widget moves the label to its search box" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      get new_key_request_path
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.css("select#space-select, select#supervisor-select").map { |el| el["aria-label"] }).to eq(%w[Space Supervisor])
+    end
+
     it "gives the login modal its own field ids so labels do not clash with the sign-in page" do
       get login_path
       ids = Nokogiri::HTML(response.body).css("input[id]").pluck("id")

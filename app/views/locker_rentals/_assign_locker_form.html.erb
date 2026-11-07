@@ -12,7 +12,7 @@
               [label, u.id, { data: { role: (u.role.humanize if u.staff?) } }]
             },
             { include_blank: 'Search for a user by name or username...' },
-            { class: 'form-select', id: 'locker_rental_rented_by_id', required: true } %>
+            { class: 'form-select', id: 'locker_rental_rented_by_id', required: true, aria: { label: 'User' } } %>
     </div>
 
     <!-- Locker Dropdown -->
@@ -23,7 +23,7 @@
             ["##{locker.specifier}#{size_label}", locker.id, { data: { size: locker.locker_size&.size, staff_only: !locker.available } }]
           },
           { include_blank: 'Search for a locker...' },
-          { class: 'form-select', id: 'locker_rental_locker_id', required: true } %>
+          { class: 'form-select', id: 'locker_rental_locker_id', required: true, aria: { label: 'Locker' } } %>
     </div>
 
     <!-- Dates and Indefinite -->

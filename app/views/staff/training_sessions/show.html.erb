@@ -29,25 +29,25 @@
         <div>Trainer: <%= @staff.name %></div>
         <% if @user.admin? %>
           <% label_tag 'changed_params[user_id]', class: 'form-label' %>
-          <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: %w[staff admin]).order('name ASC'), 'id', 'name'), prompt: 'Change trainer', class: 'form-control' %>
+          <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: %w[staff admin]).order('name ASC'), 'id', 'name'), prompt: 'Change trainer', class: 'form-control', aria: { label: 'Change trainer' } %>
           <br />
         <% end %>
         <div>
           Training Type: <%= @current_training_session.training.localized_name %>
           <br />
           <% label_tag 'changed_params[training_id]', class: 'form-label' %>
-          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select((@current_training_session.space&.trainings || Training.all).order('name_en ASC'), 'id', 'name_en'), prompt: 'Change training', class: 'form-control' %>
+          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select((@current_training_session.space&.trainings || Training.all).order('name_en ASC'), 'id', 'name_en'), prompt: 'Change training', class: 'form-control', aria: { label: 'Change training' } %>
           <br />
           Level: <%= @current_training_session.level %>
           <br />
           <% label_tag 'changed_params[level]', class: 'form-label' %>
-          <%= select_tag 'changed_params[level]', options_for_select(@levels), prompt: 'Change level', class: 'form-control' %>
+          <%= select_tag 'changed_params[level]', options_for_select(@levels), prompt: 'Change level', class: 'form-control', aria: { label: 'Change level' } %>
           <br />
           <div>
             Course: <%= @current_training_session.course %>
           </div>
           <% label_tag 'changed_params[course]', class: 'form-label' %>
-          <%= select_tag 'changed_params[course]', options_for_select(@course_names), prompt: 'Change course', class: 'form-control' %>
+          <%= select_tag 'changed_params[course]', options_for_select(@course_names), prompt: 'Change course', class: 'form-control', aria: { label: 'Change course' } %>
           <br />
         </div>
         <br />
