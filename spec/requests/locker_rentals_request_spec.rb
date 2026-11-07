@@ -881,7 +881,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
             ActionMailer::Base.deliveries.clear
 
             perform_enqueued_jobs do
-              patch locker_rental_path(rental), params: { locker_rental: { state: target, locker_id: rental.locker_id } }
+              patch locker_rental_path(rental), params: { locker_rental: { state: target } }
             end
 
             if target == "cancelled"
@@ -933,19 +933,28 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         end
       end
 
-      it "accepts only :state for owners (notes edits silently dropped)" do
-        # owner notes edits are silently dropped
+      it "refuses an owner's edit of anything but the state, with a message, and changes nothing" do
         rental = reviewing_rental!(tenant: owner)
         log_in!(owner)
 
         patch locker_rental_path(rental),
               params: { locker_rental: { notes: "edited by owner!" } }
-
+        expect(response).to redirect_to(locker_rental_path(rental))
+        expect(flash[:alert]).to eq(I18n.t("lockers.renter_edit_refused"))
         expect(rental.reload.notes).not_to eq("edited by owner!")
-        # and the same POST with cancelled state succeeds only through state
+
         patch locker_rental_path(rental),
               params: { locker_rental: { notes: "edited by owner!", state: "cancelled" } }
+        expect(flash[:alert]).to eq(I18n.t("lockers.renter_edit_refused"))
         expect(rental.reload.notes).not_to eq("edited by owner!")
+        expect(rental.state).to eq("reviewing")
+
+        patch locker_rental_path(rental),
+              params: { locker_rental: { notes: "edited by owner!" } }, as: :json
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["error"]).to eq(I18n.t("lockers.renter_edit_refused"))
+
+        patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
         expect(rental.reload.state).to eq("cancelled")
       end
 

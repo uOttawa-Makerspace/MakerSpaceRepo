@@ -36,6 +36,7 @@ en:
     no_preferred_not_assigned: No preference, no locker assigned
     none: none
     access_denied: You do not have access to that page.
+    renter_edit_refused: You can only cancel your own request. Nothing was changed.
 
     submitted_on: Submitted on
     for: for
@@ -174,6 +175,7 @@ fr:
     no_preferred_not_assigned: Aucune préférence, aucun casier assigné
     none: aucun
     access_denied: Vous n'avez pas accès à cette page.
+    renter_edit_refused: Vous pouvez seulement annuler votre propre demande. Rien n'a été modifié.
 
     submitted_on: Soumise le
     for: par

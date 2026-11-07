@@ -3,6 +3,7 @@ class LockerRentalsController < SessionsController
   before_action :signed_in
   # Also sets @locker_rental
   before_action :check_permission, except: %i[index new create]
+  before_action :refuse_renter_edits_beyond_state, only: :update
   layout 'staff_area', only: [:admin]
   layout 'admin_area', only: [:assign_locker]
 
@@ -278,6 +279,24 @@ class LockerRentalsController < SessionsController
     return if current_user.staff?
 
     redirect_to locker_rentals_path, alert: t('lockers.access_denied')
+  end
+
+  # A renter may only change the state of their own rental (to cancel it). Any other field in the request is
+  # refused with a message instead of being dropped without a word.
+  def refuse_renter_edits_beyond_state
+    return if current_user.staff?
+    return if (renter_params_keys - %w[state]).empty?
+
+    message = t('lockers.renter_edit_refused')
+    respond_to do |format|
+      format.html { redirect_to @locker_rental, alert: message }
+      format.json { render json: { error: message }, status: :unprocessable_entity }
+    end
+  end
+
+  def renter_params_keys
+    fields = params[:locker_rental]
+    fields.respond_to?(:keys) ? fields.keys : []
   end
 
   def new_instance_attributes
