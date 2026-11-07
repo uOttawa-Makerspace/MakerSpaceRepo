@@ -137,20 +137,17 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @token = params[:token]
     @job_order = JobOrder.from_approval_token(@token)
     if @job_order
-      @status = if update_status(
-           params[:approved],
-           %i[user_approval sent_reminder],
-           :waiting_processed,
-           true,
-           :declined,
-           nil,
-           actor: @job_order.user,
-           approval_token: @token
-         )
-        true
-      else
-        false
-      end
+      @status = update_status(
+        params[:approved],
+        %i[user_approval sent_reminder],
+        :waiting_processed,
+        true,
+        :declined,
+        nil,
+        actor: @job_order.user,
+        approval_token: @token
+      )
+      notify_user_decision if @status
       render "job_orders/magic_approval_confirmation"
     else
       flash[:alert] = t("job_orders.alerts.error_accept_deny_order")
@@ -166,14 +163,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
          true,
          :declined,
          nil
-       ) && params[:approved] == "true"
-      JobOrderMailer.send_job_user_approval(@job_order.id).deliver_now
+       )
+      notify_user_decision
     end
 
-    respond_to do |format|
-      format.html { redirect_to job_order_path(@job_order.id) }
-      format.js { render "admin_row" }
-    end
+    render_row_action
   end
 
   # One query for the rows and their statuses, one for the users of the rows that name their actor (deleted accounts too: staff see who acted)
@@ -291,14 +285,17 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       end
     end
 
-    respond_to do |format|
-      format.html { redirect_to job_order_path(@job_order.id) }
-      format.js { render "admin_row" }
-    end
+    render_row_action
   end
 
+  # Marking an order paid tells the customer it is ready for pickup. Only the transition that actually moves the
+  # order from Completed to Paid sends it, so a second click, or the zero-total path in #processed, sends nothing more.
   def paid
-    update_status(params[:paid], :completed, :paid, false)
+    if update_status(params[:paid], :completed, :paid, false, nil, nil)
+      JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
+    end
+
+    render_row_action
   end
 
   def picked_up
@@ -534,11 +531,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   # The customer's comment on a quote or a decline, posted to the order chat. Only after the transition committed:
-  # the chat message's after_save notification enqueues a mail that a rolled-back transition must not send.
+  # posting the message mails the other participants, which a rolled-back transition must not do.
   def post_user_comment
     return if params[:user_comments].blank?
 
-    @job_order.chat_messages.create(message: params[:user_comments], sender: current_user)
+    @job_order.post_chat_message(params[:user_comments], current_user)
   end
 
   # The flash for a refused quote / decline. A paid order says so, decided from the status the operation read
@@ -591,10 +588,26 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     if redirect_link.nil?
       result.ok?
     else
-      respond_to do |format|
-        format.html { redirect_to redirect_link }
-        format.js { render "admin_row" }
-      end
+      render_row_action(redirect_link)
     end
+  end
+
+  def render_row_action(redirect_link = job_order_path(@job_order.id))
+    respond_to do |format|
+      format.html { redirect_to redirect_link }
+      format.js { render "admin_row" }
+    end
+  end
+
+  # The customer approved or declined the quote (params[:approved], already applied by the transition): staff are
+  # told, and the customer gets a confirmation.
+  def notify_user_decision
+    approved = params[:approved] == "true"
+    if approved
+      JobOrderMailer.send_job_user_approval(@job_order.id).deliver_now
+    else
+      JobOrderMailer.send_job_user_declined(@job_order.id).deliver_now
+    end
+    JobOrderMailer.send_job_decision_confirmation(@job_order.id, approved).deliver_now
   end
 end

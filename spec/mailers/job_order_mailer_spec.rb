@@ -175,6 +175,36 @@ RSpec.describe JobOrderMailer, type: :mailer do
     end
   end
 
+  describe ".send_job_user_declined" do
+    it "notifies the makerspace mailbox, with the EXPEDITED variant for expedited orders" do
+      described_class.send_job_user_declined(order.id).deliver_now
+      expect(delivered.last.to).to eq(["makerspace@uottawa.ca"])
+      expect(delivered.last.subject).to eq("A user has declined a Job Order")
+
+      expedite!
+      described_class.send_job_user_declined(order.id).deliver_now
+      expect(delivered.last.subject).to eq("EXPEDITED: A user has declined a Job Order")
+      expect(delivered.last.header["X-Priority"].to_s).to eq("1")
+    end
+  end
+
+  describe ".send_job_decision_confirmation" do
+    it "tells the customer in French and English that their approval was recorded" do
+      described_class.send_job_decision_confirmation(order.id, true).deliver_now
+      mail = delivered.last
+      expect(mail.to).to eq([owner.email])
+      expect(mail.subject).to include("Your approval of job order ##{order.id} is recorded")
+      expect(mail.body.encoded).to include("votre approbation").and include("your approval")
+    end
+
+    it "tells the customer in French and English that their decline was recorded" do
+      described_class.send_job_decision_confirmation(order.id, false).deliver_now
+      mail = delivered.last
+      expect(mail.subject).to include("Your decline of job order ##{order.id} is recorded")
+      expect(mail.body.encoded).to include("votre refus").and include("your decline")
+    end
+  end
+
   describe ".send_job_completed" do
     it "uses the default 'processed' message with the order id and quoted balance when no message is given" do
       order.job_tasks.first.build_job_task_quote(price: 12.5, service_price: 0, service_quantity: 0).save!

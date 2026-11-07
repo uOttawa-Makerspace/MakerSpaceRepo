@@ -7,7 +7,6 @@ RSpec.describe ChatMessageMailer, type: :mailer do
     let(:job_order) { create(:job_order) }
     let(:sender) { create(:user) }
     let(:recipient1) { create(:user) }
-    let(:recipient2) { create(:user) }
 
     let(:chat_message) do
       ChatMessage.create!(
@@ -17,14 +16,15 @@ RSpec.describe ChatMessageMailer, type: :mailer do
       )
     end
 
-    let(:mail) { described_class.new_message(chat_message, [recipient1, recipient2]) }
+    let(:mail) { described_class.new_message(chat_message, recipient1.email) }
 
     it "renders the subject" do
       expect(mail.subject).to eq("MakerRepo - Nouveau message // New message")
     end
 
-    it "sends to the recipients' emails" do
-      expect(mail.to).to match_array([recipient1.email, recipient2.email])
+    it "sends to the one recipient only" do
+      expect(mail.to).to eq([recipient1.email])
+      expect(mail.header[:bcc]).to be_nil
     end
 
     it "assigns @chat_message in the mailer view" do

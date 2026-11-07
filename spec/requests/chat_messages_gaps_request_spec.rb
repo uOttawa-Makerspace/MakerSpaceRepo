@@ -31,24 +31,35 @@ RSpec.describe "ChatMessages gaps", type: :request do
   end
 
   describe "notification recipients" do
-    # recipients are only the OTHER users who already posted on the
-    # order (plus hard-coded ids). Staff writing FIRST reaches nobody, so the
-    # customer is never told about the first staff message.
-    it "delivers nothing when staff posts the first message of an order thread" do
+    it "mails the owner when staff posts the first message of an order thread" do
       order = active_order!
       session_login!(staff)
       perform_enqueued_jobs { post_message(order, "Your quote is ready") }
 
       expect(order.chat_messages.pluck(:message)).to eq(["Your quote is ready"])
-      expect(deliveries).to be_empty
+      expect(deliveries.map(&:to)).to eq([[owner.email]])
     end
 
-    it "does not notify the assigned staff member when the customer writes first" do
+    it "mails the assigned staff member when the customer writes first" do
       order = active_order!
       order.update!(assigned_staff: staff)
       session_login!(owner)
       perform_enqueued_jobs { post_message(order, "Hi, a question") }
-      expect(deliveries).to be_empty
+      expect(deliveries.map(&:to)).to eq([[staff.email]])
+    end
+
+    it "mails the owner, the assigned staff and the earlier participants once each, never the author" do
+      order = active_order!
+      order.update!(assigned_staff: staff)
+      travel_to(2.hours.ago) { ChatMessage.create!(job_order: order, sender: other_staff, message: "s1") }
+      session_login!(other_staff)
+      perform_enqueued_jobs { post_message(order, "again") }
+      expect(deliveries.map(&:to)).to match_array([[owner.email], [staff.email]])
+
+      deliveries.clear
+      session_login!(staff)
+      perform_enqueued_jobs { post_message(order, "from the assigned staff") }
+      expect(deliveries.map(&:to)).to match_array([[owner.email], [other_staff.email]])
     end
 
     it "notifies every other earlier participant (distinct) once" do
@@ -60,22 +71,76 @@ RSpec.describe "ChatMessages gaps", type: :request do
       session_login!(staff)
       perform_enqueued_jobs { post_message(order, "from staff") }
 
-      expect(deliveries.size).to eq(1)
-      expect(deliveries.last.to).to match_array([owner.email, other_staff.email])
+      expect(deliveries.map(&:to)).to match_array([[owner.email], [other_staff.email]])
       expect(deliveries.last.subject).to eq("MakerRepo - Nouveau message // New message")
     end
 
-    # the user ids 25 and 1607 are hard-coded notification
-    # recipients; in any environment where those ids exist they are mailed on
+    # users 25 and 1607 are the default extra notification
+    # recipients (Setting.chat_extra_recipients); where those ids exist they are mailed on
     # every thread, even if they never took part.
-    it "always includes the users with the hard-coded ids 25 and 1607" do
+    it "always includes the users with the default extra recipients 25 and 1607" do
       hard_coded = [create(:user, :staff, id: 25), create(:user, :staff, id: 1607)]
       order = active_order!
       session_login!(owner)
       perform_enqueued_jobs { post_message(order, "Is anybody there?") }
 
-      expect(deliveries.size).to eq(1)
-      expect(deliveries.last.to).to match_array(hard_coded.map(&:email))
+      expect(deliveries.map(&:to)).to match_array(hard_coded.map { |user| [user.email] })
+    end
+
+    it "does not mail an earlier poster who is no longer staff, but still mails current staff and the owner" do
+      order = active_order!
+      travel_to(2.hours.ago) do
+        ChatMessage.create!(job_order: order, sender: other_staff, message: "s1")
+        ChatMessage.create!(job_order: order, sender: staff, message: "s2")
+        ChatMessage.create!(job_order: order, sender: owner, message: "o1")
+      end
+      other_staff.update!(role: "regular_user")
+      third = create(:user, :staff)
+      session_login!(third)
+      perform_enqueued_jobs { post_message(order, "new") }
+
+      expect(deliveries.map(&:to)).to match_array([[owner.email], [staff.email]])
+    end
+
+    it "still notifies the others when an earlier poster has been soft-deleted" do
+      order = active_order!
+      gone = create(:user, :staff)
+      travel_to(2.hours.ago) { ChatMessage.create!(job_order: order, sender: gone, message: "bye") }
+      gone.update_columns(deleted: true)
+      session_login!(staff)
+      perform_enqueued_jobs { post_message(order, "hello") }
+
+      expect(deliveries.map(&:to)).to eq([[owner.email]])
+    end
+
+    it "does not mail an assigned staff member who is no longer staff" do
+      order = active_order!
+      order.update!(assigned_staff: other_staff)
+      other_staff.update!(role: "regular_user")
+      session_login!(staff)
+      perform_enqueued_jobs { post_message(order, "hello") }
+
+      expect(deliveries.map(&:to)).to eq([[owner.email]])
+    end
+
+    it "mails the extra recipients saved in the setting instead of the default ones, ids and addresses alike" do
+      listed = create(:user, :staff)
+      Setting.set(Setting::CHAT_EXTRA_RECIPIENTS_KEY, "#{listed.id}, desk@example.com\n#{owner.email.upcase}")
+      create(:user, :staff, id: 25)
+      order = active_order!
+      session_login!(staff)
+      perform_enqueued_jobs { post_message(order, "Hello") }
+
+      expect(deliveries.map(&:to)).to match_array([[owner.email], [listed.email], ["desk@example.com"]])
+    end
+
+    it "mails nobody extra when the setting is saved empty" do
+      Setting.set(Setting::CHAT_EXTRA_RECIPIENTS_KEY, "")
+      create(:user, :staff, id: 25)
+      order = active_order!
+      session_login!(owner)
+      perform_enqueued_jobs { post_message(order, "Hello") }
+      expect(deliveries).to be_empty
     end
 
     it "does not mail a hard-coded user about their own message" do
@@ -88,18 +153,17 @@ RSpec.describe "ChatMessages gaps", type: :request do
     end
   end
 
-  # `respond_to:` (typo for reply_to:) becomes a custom header, no
-  # Reply-To is set, and every recipient is exposed in one To line.
+  # `respond_to:` (typo for reply_to:) becomes a custom header and no Reply-To is set.
   describe "ChatMessageMailer headers" do
-    it "has no reply-to, a respond_to header carrying the sender and all recipients in To" do
+    it "has no reply-to, a respond_to header carrying the sender, and only the one recipient in To" do
       order = active_order!
       message = ChatMessage.create!(job_order: order, sender: staff, message: "hello")
-      mail = ChatMessageMailer.new_message(message, [owner, other_staff])
+      mail = ChatMessageMailer.new_message(message, owner.email)
       mail.deliver_now
 
       expect(mail.reply_to).to be_nil
       expect(mail.header["respond_to"].to_s).to eq(staff.email)
-      expect(mail.to).to eq([owner.email, other_staff.email])
+      expect(mail.to).to eq([owner.email])
     end
   end
 
