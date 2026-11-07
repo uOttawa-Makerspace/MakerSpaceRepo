@@ -18,10 +18,6 @@
   }
 
   .nav-link {
-    [data-bs-theme="dark"] & {
-      --bs-nav-link-hover-color: #{$primary-text-dark};
-      --bs-nav-link-color: white;
-    }
     --bs-nav-link-hover-color: white;
     --bs-nav-link-color: white;
     font-weight: 700;
@@ -43,8 +39,9 @@
     --bs-btn-color: white;
     --bs-btn-hover-color: white;
 
-    [data-bs-theme="dark"] & {
-      --bs-btn-hover-color: #{$primary-text-dark};
+    &:hover,
+    &:focus-visible {
+      text-decoration: underline;
     }
   }
 
@@ -72,7 +69,7 @@
   &.navbar-staff .nav-link {
     color: white;
     &:hover {
-      color: $primary-text-dark;
+      color: white;
     }
     &.show {
       color: white;
