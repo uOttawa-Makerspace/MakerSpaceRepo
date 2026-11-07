@@ -23,6 +23,10 @@ class Training < ApplicationRecord
   translates :name, prefix: "localized_"
   translates :description, :list_of_skills
 
+  # Skill lists are stored as stripped names joined by ", " with no blank items.
+  SKILL_SEPARATOR = ", "
+  normalizes :list_of_skills_en, :list_of_skills_fr, with: ->(text) { Training.split_skills(text).join(SKILL_SEPARATOR) }
+
   validates :name_en, presence: true, uniqueness: true
   validates :name_fr, presence: true, uniqueness: true
 
@@ -46,16 +50,21 @@ class Training < ApplicationRecord
 
   # list_of_skills in the current language as an array of trimmed, non-empty skill names.
   def skill_list
-    list_of_skills.to_s.split(",").map(&:strip).compact_blank
+    Training.split_skills(list_of_skills)
+  end
+
+  # The skill names in a stored list: stripped, with blank items dropped.
+  def self.split_skills(text)
+    text.to_s.split(",").map(&:strip).compact_blank
   end
 
   ##
   # returns and array containing every skill ever listed
   def self.all_skills_en
-    Training.all.pluck(:list_of_skills_en).flat_map { |l| l&.split(',') }.uniq
+    pluck(:list_of_skills_en).flat_map { |l| split_skills(l) }.uniq
   end
 
   def self.all_skills_fr
-    Training.all.pluck(:list_of_skills_fr).flat_map { |l| l&.split(',') }.uniq
+    pluck(:list_of_skills_fr).flat_map { |l| split_skills(l) }.uniq
   end
 end

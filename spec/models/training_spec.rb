@@ -78,9 +78,9 @@ RSpec.describe Training, type: :model do
       expect(t.localized_name).to eq("Laseur")
       I18n.with_locale(:fr) do
         expect(t.description).to eq("Cuts")
-        expect(t.list_of_skills).to eq("a,b")
+        expect(t.list_of_skills).to eq("a, b")
       end
-      expect([t.description, t.list_of_skills]).to eq(["Cuts", "a,b"])
+      expect([t.description, t.list_of_skills]).to eq(["Cuts", "a, b"])
     end
 
     it "skill_list is the current language's list_of_skills as trimmed, non-empty names" do
@@ -96,7 +96,26 @@ RSpec.describe Training, type: :model do
       create(:training, list_of_skills_en: "a,b")
       create(:training, list_of_skills_en: "b,c")
       create(:training, list_of_skills_en: nil)
-      expect(Training.all_skills_en).to match_array(["a", "b", "c", nil])
+      create(:training, list_of_skills_en: " d ,, a")
+      expect(Training.all_skills_en).to match_array(%w[a b c d])
+      create(:training, list_of_skills_fr: "x,  y")
+      expect(Training.all_skills_fr).to match_array(%w[x y])
+    end
+
+    describe "stored skill lists" do
+      it "keep stripped names joined by one separator, with no blank items, in both languages" do
+        t = create(:training, list_of_skills_en: ",Design,  Safety ,, ", list_of_skills_fr: ", Conception,   Sécurité")
+        t.reload
+        expect(t.list_of_skills_en).to eq("Design, Safety")
+        expect(t.list_of_skills_fr).to eq("Conception, Sécurité")
+        t.update!(list_of_skills_en: "  ", list_of_skills_fr: nil)
+        expect(t.reload).to have_attributes(list_of_skills_en: "", list_of_skills_fr: nil)
+      end
+
+      it "split_skills strips names and drops blank items" do
+        expect(Training.split_skills(" a, b,,  c ,")).to eq(%w[a b c])
+        expect(Training.split_skills(nil)).to eq([])
+      end
     end
 
     it "learning_modules_completed returns only the user's Completed modules, optionally by level" do

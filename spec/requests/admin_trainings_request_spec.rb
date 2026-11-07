@@ -107,24 +107,24 @@ RSpec.describe "Admin training area", type: :request do
       end
 
       describe "POST create" do
-        it "persists the training, joins the skill lists and redirects with a notice" do
+        it "persists the training, stores the skill lists in one clean shape and redirects with a notice" do
           expect { post admin_trainings_path, params: training_params }.to change(Training, :count).by(1)
           expect(response).to redirect_to(admin_trainings_path)
           expect(flash[:notice]).to eq("Training added successfully!")
           t = Training.find_by!(name_en: "Laser Cutting")
           expect(t).to have_attributes(name_fr: "Découpe laser", skill_id: skill.id, has_badge: true)
           expect(t.spaces).to eq([space])
-          expect(t.list_of_skills_en).to eq("Design,Safety")
-          expect(t.list_of_skills_fr).to eq("Conception,Sécurité")
+          expect(t.list_of_skills_en).to eq("Design, Safety")
+          expect(t.list_of_skills_fr).to eq("Conception, Sécurité")
         end
 
-        it "stores the same comma separated shape in both languages, dropping blanks and padding" do
+        it "stores the same shape in both languages, dropping blanks and padding" do
           post admin_trainings_path,
                params: training_params(list_of_skills_en: ["", " Design ", "  ", "Safety"],
                                        list_of_skills_fr: ["Conception", " ", "Sécurité "])
           t = Training.find_by!(name_en: "Laser Cutting")
-          expect(t.list_of_skills_en).to eq("Design,Safety")
-          expect(t.list_of_skills_fr).to eq("Conception,Sécurité")
+          expect(t.list_of_skills_en).to eq("Design, Safety")
+          expect(t.list_of_skills_fr).to eq("Conception, Sécurité")
         end
 
         it "re-renders new with 422 and an alert when the name is missing" do
@@ -178,6 +178,17 @@ RSpec.describe "Admin training area", type: :request do
           expect(training.spaces).to eq([space])
         end
 
+        it "rewrites a skill list that was stored with padding and a leading blank, and preselects its names in the form" do
+          training.update_columns(list_of_skills_en: ",Design, Safety", list_of_skills_fr: ", Conception,   Sécurité")
+          get edit_admin_training_path(training)
+          doc = Nokogiri::HTML(response.body)
+          selected = ->(id) { doc.css("##{id} option[selected]").map { |o| o.text } }
+          expect(selected.call("training_list_of_skills_en")).to eq(%w[Design Safety])
+          expect(selected.call("training_list_of_skills_fr")).to eq(%w[Conception Sécurité])
+          patch admin_training_path(training), params: training_params(list_of_skills_en: ["", " Design ", "Safety"])
+          expect(training.reload).to have_attributes(list_of_skills_en: "Design, Safety", list_of_skills_fr: "Conception, Sécurité")
+        end
+
         it "replaces the spaces" do
           training.spaces << space
           other = create(:space)
@@ -194,7 +205,7 @@ RSpec.describe "Admin training area", type: :request do
 
         it "stores the skill lists without blanks or padding" do
           patch admin_training_path(training), params: training_params
-          expect(training.reload).to have_attributes(list_of_skills_en: "Design,Safety", list_of_skills_fr: "Conception,Sécurité")
+          expect(training.reload).to have_attributes(list_of_skills_en: "Design, Safety", list_of_skills_fr: "Conception, Sécurité")
         end
 
         it "leaves the stored skill lists alone when the request has no skill keys, and clears them for an empty selection" do
@@ -203,7 +214,7 @@ RSpec.describe "Admin training area", type: :request do
           params[:training].delete(:list_of_skills_en)
           params[:training].delete(:list_of_skills_fr)
           patch admin_training_path(training), params: params
-          expect(training.reload).to have_attributes(name_en: "Renamed EN", list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          expect(training.reload).to have_attributes(name_en: "Renamed EN", list_of_skills_en: "A, B", list_of_skills_fr: "C")
           patch admin_training_path(training), params: training_params(list_of_skills_en: [""], list_of_skills_fr: [""])
           expect(training.reload).to have_attributes(list_of_skills_en: "", list_of_skills_fr: "")
         end
@@ -214,7 +225,7 @@ RSpec.describe "Admin training area", type: :request do
                 params: { training: { name_en: "Renamed EN", list_of_skills_en: nil, list_of_skills_fr: nil } }.to_json,
                 headers: { "CONTENT_TYPE" => "application/json" }
           expect(response).to redirect_to(admin_trainings_path)
-          expect(training.reload).to have_attributes(name_en: "Renamed EN", list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          expect(training.reload).to have_attributes(name_en: "Renamed EN", list_of_skills_en: "A, B", list_of_skills_fr: "C")
         end
 
         it "answers 400 and changes nothing when a skill list is not an array or training is not a hash" do
