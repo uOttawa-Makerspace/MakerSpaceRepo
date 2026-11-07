@@ -304,19 +304,19 @@ class UsersController < SessionsController
     end
 
     if params[:new_email].present? and params[:confirm_new_email].present?
-      if params[:new_email] == params[:confirm_new_email]
-        if !User.find_by_email(params[:new_email]).present?
-          MsrMailer.email_confirmation_email(
-            params[:new_email],
-            @user,
-            @user.generate_email_change_token(params[:new_email])
-          ).deliver_now
-          flash[:notice] = 'A confirmation email has been sent to the new email'
-        else
-          flash[:alert] = 'This email is already used by a MakerRepo Account.'
-        end
-      else
+      if params[:new_email] != params[:confirm_new_email]
         flash[:alert] = "This confirmation email isn't matching the new email"
+      elsif (shape_error = User.email_shape_error(params[:new_email]))
+        flash[:alert] = shape_error
+      elsif User.find_by_email(params[:new_email]).present?
+        flash[:alert] = 'This email is already used by a MakerRepo Account.'
+      else
+        MsrMailer.email_confirmation_email(
+          params[:new_email],
+          @user,
+          @user.generate_email_change_token(params[:new_email])
+        ).deliver_now
+        flash[:notice] = 'A confirmation email has been sent to the new email'
       end
     else
       flash[

@@ -1109,4 +1109,16 @@ RSpec.describe User, type: :model do
       expect(Rfid.find(card.id).user_id).to be_nil
     end
   end
+
+  describe ".email_shape_error" do
+    it "names the problem for a malformed address, in the current locale" do
+      expect(User.email_shape_error("not-an-address")).to be_present
+      expect(I18n.with_locale(:fr) { User.email_shape_error("not-an-address") }).not_to include("translation missing")
+    end
+
+    it "accepts a well-formed address and does not apply the provider-typo hint" do
+      expect(User.email_shape_error("someone@example.com")).to be_nil
+      expect(User.email_shape_error("someone@gmial.com")).to be_nil
+    end
+  end
 end

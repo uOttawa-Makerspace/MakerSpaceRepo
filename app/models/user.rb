@@ -287,6 +287,14 @@ class User < ApplicationRecord
 
   # Every user row, soft-deleted ones included. For admin views and reports, which see everything;
   # the default scope keeps deleted users out of everything else.
+  # The shape error (in the current locale) when `address` could not be an
+  # email address, nil when it is acceptable. The provider-typo hint is not part of it.
+  def self.email_shape_error(address)
+    probe = new
+    EmailValidator.new(attributes: [:email], typo_check: false).validate_each(probe, :email, address)
+    probe.errors.full_messages_for(:email).to_sentence.presence
+  end
+
   def self.including_deleted
     unscope(where: :deleted)
   end

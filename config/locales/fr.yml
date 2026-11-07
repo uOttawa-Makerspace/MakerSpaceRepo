@@ -212,6 +212,7 @@ fr:
         sub_space_bookings: "réservations de sous-espaces"
       user:
         student_id: Numéro d'étudiant
+        email: Adresse courriel
     errors:
       models:
         user:
@@ -228,6 +229,7 @@ fr:
               confirmation: "Les mots de passe ne correspondent pas."
             email:
               taken: "Cette adresse courriel est déjà utilisée."
+              invalid: "n'est pas valide"
             how_heard_about_us:
               too_long: "Maximum de %{count} caractères."
             read_and_accepted_waiver_form:

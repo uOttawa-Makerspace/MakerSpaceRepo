@@ -106,6 +106,8 @@ class Admin::UsersController < AdminAreaController
     elsif new_email != confirm_new_email
       redirect_to edit_admin_user_path(@edit_admin_user),
                   alert: "This confirmation email isn't matching the new email"
+    elsif (shape_error = User.email_shape_error(new_email))
+      redirect_to edit_admin_user_path(@edit_admin_user), alert: shape_error
     # LOWER(email) matches legacy mixed-case rows and uses index_users_on_lowercase_email
     elsif User.unscoped.where("LOWER(email) = ?", new_email).where.not(id: @edit_admin_user.id).exists?
       redirect_to edit_admin_user_path(@edit_admin_user),

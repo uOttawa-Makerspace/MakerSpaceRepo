@@ -748,6 +748,19 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries).to be_empty
     end
 
+    it "refuses a malformed address before creating a token or sending anything, in either language" do
+      login!(user)
+      %i[en fr].each do |locale|
+        expect_any_instance_of(User).not_to receive(:generate_email_change_token)
+        post change_email_users_path(locale: locale), params: change_params.merge(new_email: "not-an-address", confirm_new_email: "not-an-address")
+        expect(response).to redirect_to(settings_admin_path)
+        expect(flash[:alert]).to eq(I18n.with_locale(locale) { User.email_shape_error("not-an-address") })
+        expect(flash[:alert]).to be_present
+        expect(flash[:alert]).not_to include("translation missing")
+      end
+      expect(deliveries).to be_empty
+    end
+
     it "already used" do
       login!(user)
       other = create(:user, :regular_user)

@@ -347,6 +347,18 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
+    it "refuses a malformed address before creating a token or sending anything, in either language" do
+      %i[en fr].each do |locale|
+        expect_any_instance_of(User).not_to receive(:generate_email_change_token)
+        patch change_email_admin_user_path(target, locale: locale), params: { new_email: "not-an-address", confirm_new_email: "not-an-address" }
+        expect(response).to redirect_to(edit_admin_user_path(target))
+        expect(flash[:alert]).to eq(I18n.with_locale(locale) { User.email_shape_error("not-an-address") })
+        expect(flash[:alert]).to be_present
+        expect(flash[:alert]).not_to include("translation missing")
+      end
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
     it "refuses a confirmation that does not match" do
       patch change_email_admin_user_path(target), params: { new_email: "a@example.com", confirm_new_email: "b@example.com" }
       expect(flash[:alert]).to eq("This confirmation email isn't matching the new email")
