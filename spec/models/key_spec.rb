@@ -137,4 +137,54 @@ RSpec.describe Key, type: :model do
       end
     end
   end
+
+  describe "assign and revoke" do
+    let(:space) { create(:space) }
+    let(:holder) { create(:user, :staff) }
+    let(:supervisor) { create(:user, :admin) }
+    let(:key) { create(:key, :regular_key_type, :inventory_status, space: space, number: 7) }
+    let(:attrs) { { supervisor_id: supervisor.id } }
+
+    it "assign_to! holds the key and records the transaction together" do
+      expect { key.assign_to!(holder, attrs, 20) }.to change(KeyTransaction, :count).by(1)
+      expect(key.reload).to have_attributes(status: "held", user_id: holder.id, supervisor_id: supervisor.id)
+      expect(key.key_transactions.last).to have_attributes(user_id: holder.id, deposit_amount: 20, return_date: nil)
+    end
+
+    it "assign_to! changes nothing when the transaction is invalid" do
+      expect { key.assign_to!(holder, attrs, nil) }.to raise_error(ActiveRecord::RecordInvalid)
+      expect(key.reload).to have_attributes(status: "inventory", user_id: nil, supervisor_id: nil)
+      expect(KeyTransaction.count).to eq(0)
+    end
+
+    it "assign_to! refuses a key that is not in inventory" do
+      key.update!(status: :lost)
+      expect { key.assign_to!(holder, attrs, 20) }.to raise_error(Key::StateError)
+      expect(KeyTransaction.count).to eq(0)
+    end
+
+    it "revoke! returns the key and closes the open transaction together" do
+      key.assign_to!(holder, attrs, 0)
+      key.revoke!
+      expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
+      expect(key.key_transactions.last).to have_attributes(return_date: Date.today, deposit_return_date: Time.zone.today)
+    end
+
+    it "revoke! refuses a held key with no open transaction and changes nothing" do
+      key.update!(status: :held, user: holder, supervisor: supervisor)
+      expect { key.revoke! }.to raise_error(Key::StateError, /no open transaction/)
+      expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
+    end
+
+    it "revoke! refuses a key that is not held" do
+      expect { key.revoke! }.to raise_error(Key::StateError, /Only a held key/)
+    end
+
+    it "revoke! rolls the key back when closing the transaction fails" do
+      key.assign_to!(holder, attrs, 0)
+      allow_any_instance_of(KeyTransaction).to receive(:close!).and_raise(ActiveRecord::RecordInvalid)
+      expect { key.revoke! }.to raise_error(ActiveRecord::RecordInvalid)
+      expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
+    end
+  end
 end

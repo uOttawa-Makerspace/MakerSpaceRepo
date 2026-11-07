@@ -1,4 +1,8 @@
 class Key < ApplicationRecord
+  # Raised when an assign or revoke is asked of a key in the wrong state.
+  class StateError < StandardError
+  end
+
   belongs_to :user, class_name: "User", optional: true
   belongs_to :supervisor, class_name: "User", optional: true
   belongs_to :space, optional: true
@@ -59,6 +63,31 @@ class Key < ApplicationRecord
 
   def key_request
     user&.key_request
+  end
+
+  # Hands the key to a holder: saves the key as held and records the deposit
+  # transaction in one database transaction, so a failure changes nothing.
+  def assign_to!(user, attributes, deposit_amount)
+    raise StateError, "Only a key in inventory can be assigned." unless status_inventory?
+
+    transaction do
+      update!(attributes.merge(user_id: user.id, status: :held))
+      key_transactions.create!(user_id: user.id, deposit_amount: deposit_amount)
+    end
+  end
+
+  # Takes the key back: returns it to inventory and closes its open transaction
+  # in one database transaction. A held key with no open transaction is refused.
+  def revoke!(deposit_return_date = nil)
+    raise StateError, "Only a held key can be revoked." unless status_held?
+
+    open_transaction = key_transactions.not_returned.order(created_at: :desc, id: :desc).first
+    raise StateError, "This key has no open transaction to close." if open_transaction.nil?
+
+    transaction do
+      update!(user_id: nil, status: :inventory)
+      open_transaction.close!(deposit_return_date)
+    end
   end
 
   def get_latest_key_transaction

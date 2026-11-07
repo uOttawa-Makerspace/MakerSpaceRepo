@@ -102,40 +102,19 @@ class Admin::KeysController < AdminAreaController
       redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE and return
     end
 
-    key_transaction =
-      KeyTransaction.new(
-        user_id: user.id,
-        key_id: @key.id,
-        deposit_amount: params[:deposit_amount]
-      )
-    if @key.status_inventory? &&
-         @key.update(key_params.merge(user_id: user.id, status: :held)) &&
-         key_transaction.save
-      redirect_to admin_keys_path, notice: "Successfully assigned key"
-    else
-      redirect_to admin_keys_path,
-                  alert: "Something went wrong while trying to assign the key"
-    end
+    @key.assign_to!(user, key_params, params[:deposit_amount])
+    redirect_to admin_keys_path, notice: "Successfully assigned key"
+  rescue ActiveRecord::RecordInvalid, Key::StateError => e
+    redirect_to admin_keys_path,
+                alert: failure_message("assign the key", e)
   end
 
   def revoke_key
-    if @key.status_held? && @key.update(user_id: nil, status: :inventory) &&
-         @key.get_latest_key_transaction.update(
-           return_date: Date.today,
-           # Set deposit return date to today if deposit is zero
-           deposit_return_date:
-             params[:deposit_return_date]&.to_date ||
-               (
-                 if @key.get_latest_key_transaction.deposit_amount.zero?
-                   Time.zone.today
-                 end
-               )
-         )
-      redirect_to admin_keys_path, notice: "Successfully revoked key"
-    else
-      redirect_to admin_keys_path,
-                  alert: "Something went wrong while trying to revoke the key"
-    end
+    @key.revoke!(params[:deposit_return_date]&.to_date)
+    redirect_to admin_keys_path, notice: "Successfully revoked key"
+  rescue ActiveRecord::RecordInvalid, Key::StateError => e
+    redirect_to admin_keys_path,
+                alert: failure_message("revoke the key", e)
   end
 
   def requests
@@ -201,6 +180,16 @@ class Admin::KeysController < AdminAreaController
 
   def holder_approved?(user)
     user&.key_request&.status_approved? || false
+  end
+
+  def failure_message(action, error)
+    detail =
+      if error.is_a?(ActiveRecord::RecordInvalid)
+        error.record.errors.full_messages.to_sentence
+      else
+        error.message
+      end
+    "Something went wrong while trying to #{action}: #{detail}"
   end
 
   def set_key
