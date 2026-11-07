@@ -191,6 +191,7 @@ fr:
         how_heard_about_us: "Comment avez-vous entendu parler de nous?"
         accept_waiver_html: "En cochant cette case, <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation."
   sessions:
+    already_signed_in: "Vous êtes déjà connecté."
     account_deactivated: "Ce compte a été désactivé. Veuillez communiquer avec %{support_email}."
     login:
       sign_in: "Connexion"

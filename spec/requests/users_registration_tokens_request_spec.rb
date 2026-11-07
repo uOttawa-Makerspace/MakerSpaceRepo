@@ -147,11 +147,24 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    it "works for a signed-in user too (no guest check on create)" do
-      # UsersController#create has no signed-in guard, unlike #new which redirects
+    it "sends a signed-in user home and creates no account" do
       login!(user)
-      expect { post users_path, params: { user: registration_params } }.to change(User, :count).by(1)
+      expect { post users_path, params: { user: registration_params } }.not_to change(User, :count)
       expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are already signed in.")
+      expect(deliveries).to be_empty
+    end
+
+    it "answers a signed-in json registration with 403 and creates no account" do
+      login!(user)
+      expect { post users_path, params: { user: registration_params }, as: :json }.not_to change(User, :count)
+      expect(response).to have_http_status(:forbidden)
+      expect(JSON.parse(response.body)["error"]).to eq("You are already signed in.")
+    end
+
+    it "words the refusal in French when the locale is French" do
+      login!(user)
+      I18n.with_locale(:fr) { expect(I18n.t("sessions.already_signed_in")).to eq("Vous êtes déjà connecté.") }
     end
 
     it "works for a guest (no session)" do
@@ -170,6 +183,7 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       login!(user)
       get new_user_path
       expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You are already signed in.")
     end
   end
 
