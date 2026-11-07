@@ -152,6 +152,18 @@ class Space < ApplicationRecord
     colors[id % colors.size]
   end
 
+  def assigned_color_hex
+    format("#%02x%02x%02x", *assigned_color)
+  end
+
+  # Black or white, whichever reads better on the assigned colour. White wins only when the colour's relative
+  # luminance is below the point where black and white give the same contrast ratio (about 0.179).
+  def assigned_color_text
+    linear = assigned_color.map { |c| c / 255.0 }.map { |c| c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055)**2.4 }
+    luminance = (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2])
+    luminance < 0.179 ? "#ffffff" : "#000000"
+  end
+
   def weekly_open_hours
     calendar = staff_needed_calendars.find_by(role: "open_hours")
     return [] if calendar.blank?

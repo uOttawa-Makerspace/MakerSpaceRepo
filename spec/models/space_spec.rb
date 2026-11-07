@@ -235,6 +235,16 @@ RSpec.describe Space, type: :model do
       expect(b.assigned_color).to eq(a.assigned_color)
     end
 
+    it "assigned_color_hex is the assigned colour as #rrggbb, and assigned_color_text is black or white for it" do
+      texts = (0..9).map do |id|
+        space = Space.new
+        space.id = id
+        [space.assigned_color_hex, space.assigned_color_text]
+      end
+      expect(texts.first).to eq(["#e6194b", "#000000"])
+      expect(texts.to_h).to include("#ffe119" => "#000000", "#4363d8" => "#ffffff", "#46f0f0" => "#000000")
+    end
+
     it "destroys sub spaces, staff spaces, shifts, calendars and manager joins with the space" do
       space = create(:space)
       create(:sub_space, space: space)
