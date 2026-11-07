@@ -13,7 +13,7 @@ class ExamsController < SessionsController
   before_action :only_owner_access, :only_open_exam, only: [:finish_exam]
 
   def index
-    @pagy, @exams = pagy(current_user.exams.order(category: :desc), limit: 50)
+    @pagy, @exams = pagy(current_user.exams.includes(:training).order(category: :desc), limit: 50)
   end
 
   def create_from_training
@@ -39,7 +39,7 @@ class ExamsController < SessionsController
     if @exam.status == Exam::STATUS[:not_started] && @exam.user.eql?(current_user)
       @exam.update(status: Exam::STATUS[:incomplete])
     end
-    @questions = @exam.questions
+    @questions = @exam.questions.includes(images_attachments: :blob, answers: :rich_text_description)
   end
 
   def destroy

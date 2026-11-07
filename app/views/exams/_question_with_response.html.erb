@@ -13,7 +13,7 @@
 </div>
 <hr>
 <form class="form-check text-start">
-  <% question.answers.randomize_answers.each do |a| %>
+  <% question.answers.shuffle.each do |a| %>
     <div class="form-check">
 
     <% if response.answer.eql?(a) %>
