@@ -44,6 +44,17 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       expect(booking.sub_space_booking_status_id).to eq(booking.sub_space_booking_status.id)
     end
 
+    it "saves nothing and reports when the status of the new booking cannot be saved" do
+      allow(BookingStatus).to receive(:approved).and_return(BookingStatus.new(id: -1, name: "Ghost"))
+      expect(Rails.error).to receive(:report)
+        .with(instance_of(ActiveRecord::RecordInvalid), hash_including(handled: true, context: { google_event_id: "evt-1" }))
+
+      described_class.process(c18_gcal_event)
+
+      expect(SubSpaceBooking.count).to eq(0)
+      expect(SubSpaceBookingStatus.count).to eq(0)
+    end
+
     # the past-date rule is for bookings made in the app. A full sync
     # lists past events too, and the mirror keeps them.
     it "mirrors an event that is already in the past" do
