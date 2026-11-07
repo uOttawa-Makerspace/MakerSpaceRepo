@@ -60,9 +60,7 @@
         <td><%= user.lab_sessions.where(space: space, created_at: 2.months.ago..DateTime.now).count %></td>
     <% end %>
     <td class="align-middle">
-        <% if user.lab_sessions.second_to_last.present? %>
-            <%= time_ago_in_words(user.lab_sessions.sort_by(&:sign_out_time).second_to_last&.sign_out_time) + " ago at #{user.lab_sessions.reorder(:id).last.space.name}" %>
-        <% end %>
+        <%= previous_visit_text(user) %>
     </td>
     <td class="align-middle dt-center">
         <% if local_assigns[:signed_out] %>

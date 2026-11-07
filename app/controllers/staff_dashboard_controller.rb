@@ -7,9 +7,9 @@ class StaffDashboardController < StaffAreaController
     # Strict loading because this is used in table views
     # FIXME: Temporarily disabled because of space 119
     @signed_in_users = User
+      .where(id: LabSession.active.where(space: @space).select(:user_id))
       .includes(certifications: {training_session: [:training, :user]})
-      .includes(:lab_sessions)
-      .where(lab_sessions: {sign_out_time: Time.zone.now.., space: @space })
+      .includes(:lab_sessions, latest_lab_session: :space)
 
     @signed_out_users = @space.recently_signed_out_users
 
@@ -384,7 +384,7 @@ class StaffDashboardController < StaffAreaController
         @users =
           User
             .text_search(@query)
-            .includes(lab_sessions: :space)
+            .includes(:lab_sessions, latest_lab_session: :space)
             .order(:updated_at)
       end
       format.html

@@ -64,6 +64,7 @@ class Space < ApplicationRecord
       .order(sign_out_time: :desc)
       .map(&:user)
       .uniq
+      .then { |users| with_visit_history(users) }
   end
 
   def recently_signed_out_users
@@ -76,18 +77,29 @@ class Space < ApplicationRecord
         .map(&:user)
         .uniq
 
-    users
+    with_visit_history(
+      users
         .sort_by do |user|
           user.lab_sessions.where(space: self).last.sign_out_time
         end
         .reverse
-    
+    )
   end
 
   def visible_lab_sessions
     lab_sessions.includes(:user).where(users: { deleted: false })
   end
   private :visible_lab_sessions
+
+  # The dashboard rows show each user's previous visit; load what they read in one go.
+  def with_visit_history(users)
+    ActiveRecord::Associations::Preloader.new(
+      records: users,
+      associations: [:lab_sessions, { latest_lab_session: :space }]
+    ).call
+    users
+  end
+  private :with_visit_history
 
     def create_popular_hours
       # Optimization: Prepare data in memory

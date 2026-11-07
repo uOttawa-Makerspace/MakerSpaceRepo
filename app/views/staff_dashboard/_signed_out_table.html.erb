@@ -22,7 +22,8 @@
                 <%= user.email %>
             </td>
             <td class="sign_out_time-cell align-middle" style="horizontal-alginment:center;">
-                <%= time_ago_in_words(user.lab_sessions.where(space: @space.id).max_by(&:sign_out_time).sign_out_time) + " ago at #{user.lab_sessions.where(space: @space.id).last.space.name}" if user.lab_sessions.where(space: @space.id).present? %>
+                <% here = user.latest_lab_session_in(@space) %>
+                <%= "#{time_ago_in_words(here.sign_out_time)} ago at #{here.space.name}" if here %>
             </td>
             <td class="action-cell align-middle">
                 <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button' %>

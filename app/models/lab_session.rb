@@ -20,6 +20,9 @@ class LabSession < ApplicationRecord
 
   scope :active, -> { where(sign_out_time: Time.zone.now..) }
 
+  # A user's newest session is the one created last (highest id), whichever space it was in.
+  scope :newest_first, -> { order(id: :desc) }
+
   def self.to_csv(attributes)
     CSV.generate { |csv| attributes.each { |row| csv << row } }
   end

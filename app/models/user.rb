@@ -113,6 +113,8 @@ class User < ApplicationRecord
            class_name: 'Certification',
            foreign_key: 'demotion_staff_id'
   has_many :lab_sessions
+  # The user's newest session in any space; preload it where many users are listed.
+  has_one :latest_lab_session, -> { newest_first }, class_name: "LabSession", inverse_of: :user
   has_many :project_proposals
   has_many :project_joins, dependent: :destroy
   has_many :printer_sessions, dependent: :destroy
@@ -967,6 +969,17 @@ class User < ApplicationRecord
 
   def location
     lab_sessions.last&.space&.name || 'no sign in yet'
+  end
+
+  # The user's newest session in one space.
+  def latest_lab_session_in(space)
+    lab_sessions.where(space: space).newest_first.first
+  end
+
+  # When the visit before the current one ended; nil for a first visit. Reads the loaded
+  # sessions so a listing of many users preloads them once.
+  def previous_visit_ended_at
+    lab_sessions.filter_map(&:sign_out_time).sort.second_to_last
   end
 
   # ============================================
