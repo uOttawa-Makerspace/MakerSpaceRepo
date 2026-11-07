@@ -68,7 +68,7 @@ class JobOrdersController < SessionsController
     end
 
     @staff = User.staff
-    @message = JobOrderMessage.find_by(name: "processed").retrieve_message(@job_order.id)
+    @message = JobOrderMessage.find_by(name: "processed")&.retrieve_message(@job_order.id)
 
     if current_user.id == @job_order.user_id
       @unread_messages = @job_order.chat_messages.unread(current_user)

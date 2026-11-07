@@ -320,14 +320,14 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response.body).to include("app/views/job_orders/_quote_modal.html.erb")
     end
 
-    # show dereferences the "processed" JobOrderMessage unconditionally
-    it "raises (500, NoMethodError) when the processed JobOrderMessage row is missing" do
+    it "renders the order page when the processed JobOrderMessage row is missing" do
       JobOrderMessage.where(name: "processed").delete_all
       order = order_with_task!(status_key: :staff_approval)
+      order.job_tasks.first.update!(job_type: JobType.find_by!(name: "3D Print"))
       session_login!(owner)
       get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Job Order ##{order.id}")
     end
 
     # the missing-info alert is flash.now, shown on the page that computed it only
