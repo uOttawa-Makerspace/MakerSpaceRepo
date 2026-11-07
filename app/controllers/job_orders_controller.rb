@@ -167,7 +167,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       notify_user_decision
     end
 
-    render_row_action
+    redirect_to job_order_path(@job_order.id)
   end
 
   # One query for the rows and their statuses, one for the users of the rows that name their actor (deleted accounts too: staff see who acted)
@@ -285,7 +285,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       end
     end
 
-    render_row_action
+    redirect_to job_order_path(@job_order.id)
   end
 
   # Marking an order paid tells the customer it is ready for pickup. Only the transition that actually moves the
@@ -295,7 +295,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
     end
 
-    render_row_action
+    redirect_to job_order_path(@job_order.id)
   end
 
   def picked_up
@@ -317,10 +317,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     else
       flash[:alert] = t(sent.message_key)
     end
-    respond_to do |format|
-      format.html { redirect_to job_order_path(@job_order.id) }
-      format.js { render "admin_row" }
-    end
+    redirect_to job_order_path(@job_order.id)
   end
 
   def destroy
@@ -594,14 +591,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     if redirect_link.nil?
       result.ok?
     else
-      render_row_action(redirect_link)
-    end
-  end
-
-  def render_row_action(redirect_link = job_order_path(@job_order.id))
-    respond_to do |format|
-      format.html { redirect_to redirect_link }
-      format.js { render "admin_row" }
+      redirect_to redirect_link
     end
   end
 

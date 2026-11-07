@@ -442,10 +442,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
     end
 
-    # format.js renders admin_row but points at _assign_staff,
-    # which dereferences @staff (nil outside the admin page) → Template::Error
-    # → 500.
-    it "responds 500 (ActionView::Template::Error, HTML debug page) to format.js on row actions" do
+    it "answers format.js on row actions with a redirect to the order page, as for html" do
       order = order_with_task!(owner: owner)
       advance_to!(order, :user_approval)
       http_login!(owner)
@@ -453,10 +450,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
             params: { approved: "true" },
             headers: { "ACCEPT" => "text/javascript" }
 
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.headers["Content-Type"]).to start_with("text/html")
-      expect(response.body).to include("Action Controller: Exception caught")
-      expect(response.body).to include("ActionView::Template::Error")
+      expect(response).to redirect_to(job_order_path(order))
+      expect(order.reload.latest_status.job_status).to eq(JobStatus.waiting_processed)
     end
   end
 

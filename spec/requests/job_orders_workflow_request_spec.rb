@@ -240,11 +240,11 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(order.job_order_statuses.last.user).to eq(admin)
     end
 
-    it "answers format.js with the 500 (ActionView::Template::Error)" do
+    it "answers format.js with a redirect to the order page, as for html" do
       patch job_order_processed_path(order), params: { completed: "true" },
                                              headers: { "ACCEPT" => "text/javascript" }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("ActionView::Template::Error")
+      expect(response).to redirect_to(job_order_path(order))
+      expect(status_names(order)).to end_with("Paid (Waiting for Pick-Up)")
     end
 
     # a zero-price order is auto-paid and ONLY the payment_succeeded

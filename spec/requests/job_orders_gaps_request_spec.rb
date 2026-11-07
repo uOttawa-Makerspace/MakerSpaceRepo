@@ -160,14 +160,13 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Your Job Order ##{completed.id} is now ready for pickup"])
     end
 
-    # the js format renders admin_row -> _assign_staff with a nil @staff
-    it "answers format.js on a transition with the same 500 (ActionView::Template::Error)" do
+    it "answers format.js on a transition with a redirect to the order page, as for html" do
       session_login!(staff)
       start = order_with_task!(status_key: :waiting_processed)
       patch job_order_start_processing_path(start), params: { start_processing: "true" },
                                                     headers: { "ACCEPT" => "text/javascript" }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("ActionView::Template::Error")
+      expect(response).to redirect_to(job_order_path(start))
+      expect(status_names(start)).to end_with("Currently being Processed")
     end
   end
 
