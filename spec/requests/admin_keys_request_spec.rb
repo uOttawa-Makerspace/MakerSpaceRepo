@@ -165,13 +165,15 @@ RSpec.describe "Admin keys", type: :request do
         }.to change(Key, :count).by(1)
       end
 
-    it "update keeps the holder of a held key when a blank holder is posted (revoke_key is the path)" do
-      key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
-      patch admin_key_path(key), params: { key: { user_id: "", additional_info: "n" } }
-      expect(key.reload).to have_attributes(status: "held", user_id: holder.id, additional_info: "n")
-    end
+      it "update refuses to blank the holder of a held key (revoke_key is the path)" do
+        key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
+        patch admin_key_path(key), params: { key: { user_id: "", additional_info: "n" } }
+        expect(flash[:alert]).to eq(hand_out_refusal)
+        expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
+        expect(key.additional_info).not_to eq("n")
+      end
 
-    it "update cannot move a held key to another holder (revoke then assign)" do
+      it "update cannot move a held key to another holder (revoke then assign)" do
         other = create(:user, :staff)
         create(:key_request, :status_approved, :all_questions_answered, user: other, supervisor: supervisor, space: space)
         key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
@@ -184,6 +186,27 @@ RSpec.describe "Admin keys", type: :request do
         key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
         patch admin_key_path(key), params: { key: { user_id: holder.id, additional_info: "n" } }
         expect(key.reload.additional_info).to eq("n")
+      end
+
+      it "update is refused when the held status is posted as its number" do
+        patch admin_key_path(key), params: { key: { status: Key.statuses[:held] } }, as: :json
+        expect(flash[:alert]).to eq(hand_out_refusal)
+        expect(key.reload.status).to eq("inventory")
+        expect(KeyTransaction.count).to eq(0)
+      end
+
+      it "create is refused for the held status with no holder" do
+        expect {
+          post admin_keys_path, params: { key: key_attrs.merge(number: 78, status: "held") }
+        }.not_to change(Key, :count)
+        expect(flash[:alert]).to eq(hand_out_refusal)
+      end
+
+      it "update ignores a held status posted for an already held key" do
+        key.update_columns(status: Key.statuses[:held], user_id: holder.id, supervisor_id: supervisor.id)
+        patch admin_key_path(key), params: { key: { status: "held", additional_info: "n" } }
+        expect(key.reload).to have_attributes(status: "held", user_id: holder.id, additional_info: "n")
+        expect(KeyTransaction.count).to eq(0)
       end
     end
 

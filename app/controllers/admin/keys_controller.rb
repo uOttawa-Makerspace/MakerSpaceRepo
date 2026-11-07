@@ -26,7 +26,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def create
-    @key = Key.new(key_params.except(:user_id))
+    @key = Key.new(key_params)
 
     if @key.save
       flash[:notice] = "Successfully created key."
@@ -57,7 +57,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def update
-    update_params = key_params.except(:user_id)
+    update_params = key_params
     update_params = update_params.except(:status) if @key.status_held?
 
     if @key.update(update_params)
@@ -169,11 +169,12 @@ class Admin::KeysController < AdminAreaController
                 alert: "Use Assign and Revoke to give a key to a holder or take it back."
   end
 
+  # Decided on the key as it would be saved, so any spelling of the status
+  # (name or number) is judged by the state it produces.
   def hands_out_by_edit?
-    holder_id = params.dig(:key, :user_id).presence
-    return true if holder_id && holder_id.to_s != @key&.user_id.to_s
-
-    params.dig(:key, :status) == "held" && !@key&.status_held?
+    candidate = @key ? Key.find(@key.id) : Key.new
+    candidate.assign_attributes(key_params)
+    candidate.status_changed?(to: "held") || candidate.user_id_changed?
   end
 
   def holder_approved?(user)
