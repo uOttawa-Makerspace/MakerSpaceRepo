@@ -99,10 +99,10 @@ RSpec.describe "Admin::ContactInfos (HTTP contract)", type: :request do
       expect(ContactInfo.order(:id).last.opening_hours.count).to eq(1)
     end
 
-    it "create without the contact_info param 500s (nil[] on the missing hash)" do
-      # create dereferences params[:contact_info][...] before strong params, so a missing hash is a 500, not the app's ParameterMissing redirect
+    it "create without the contact_info param redirects with the missing-parameter alert and creates nothing" do
       expect { post admin_contact_infos_path, params: {} }.not_to change(ContactInfo, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to include("contact_info")
     end
 
     it "update changes fields and redirects with notice" do
