@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_07_210000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_220000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1703,6 +1703,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_210000) do
   end
 
   add_check_constraint "volunteer_hours", "date_of_task IS NOT NULL", name: "volunteer_hours_date_of_task_present_check", validate: false
+
+  create_table "volunteer_task_join_state_changes", force: :cascade do |t|
+    t.bigint "volunteer_task_join_id", null: false
+    t.string "old_state", null: false
+    t.datetime "old_state_changed_at"
+    t.string "new_state", null: false
+    t.datetime "changed_at", default: -> { "now()" }, null: false
+    t.datetime "restored_at"
+    t.index ["volunteer_task_join_id"], name: "index_join_state_changes_on_join_id"
+  end
 
   create_table "volunteer_task_joins", id: :serial, force: :cascade do |t|
     t.boolean "active", default: true
