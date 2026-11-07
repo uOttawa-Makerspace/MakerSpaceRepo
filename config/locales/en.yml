@@ -180,6 +180,7 @@ en:
         training_sessions: "training sessions"
         volunteer_tasks: "volunteer tasks"
         sub_space_bookings: "sub space bookings"
+        users_with_current_space: "users with current space"
       user:
         student_id: "Student Number"
     errors:
