@@ -13,8 +13,7 @@ RSpec.describe "Locker inventory inline editing", type: :system, skip_bullet: tr
   let(:row) { "tr[data-locker-id='#{locker.id}']" }
 
   before do
-    log_in_as(admin)
-    visit lockers_path
+    log_in_as(admin, to: lockers_path)
     expect(page).to have_css("#locker_inventory_table")
     expect(page).to have_css("#{row} select.locker-variant-select.tomselected", visible: :all)
   end

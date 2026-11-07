@@ -19,8 +19,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
   let(:eastern) { ActiveSupport::TimeZone["Eastern Time (US & Canada)"] }
 
   def open_admin_panel(path = sub_space_booking_index_path(room: subspace.id, anchor: "booking-admin-tab"))
-    log_in_as(admin)
-    visit path
+    log_in_as(admin, to: path)
     expect(page).to have_css("#booking-admin-tab.active.show", visible: :all)
   end
 
@@ -32,8 +31,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
     let(:newcomer) { create(:user, :regular_user, name: "Nina Newcomer", booking_approval: false) }
 
     it "shows the supervisor list only for the Staff identity", js: true, skip_bullet: true do
-      log_in_as(newcomer)
-      visit sub_space_booking_index_path(room: subspace.id)
+      log_in_as(newcomer, to: sub_space_booking_index_path(room: subspace.id))
 
       expect(page).to have_css("#supervisor-select", visible: :hidden)
       choose "identity_staff"
@@ -46,8 +44,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
     end
 
     it "records a request with the identity and reason given", js: true, skip_bullet: true do
-      log_in_as(newcomer)
-      visit sub_space_booking_index_path(room: subspace.id)
+      log_in_as(newcomer, to: sub_space_booking_index_path(room: subspace.id))
       choose "identity_other"
       fill_in "comments", with: "Capstone laser cutting"
       click_button "Submit Request"
@@ -62,8 +59,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
 
   describe "the tabs" do
     it "switches between Book Room, My Bookings and Admin Panel without leaving the page", js: true, skip_bullet: true do
-      log_in_as(admin)
-      visit sub_space_booking_index_path(room: subspace.id)
+      log_in_as(admin, to: sub_space_booking_index_path(room: subspace.id))
 
       expect(page).to have_css("#booking-calendar-tab.active.show", visible: :all)
       find("#booking-tab-btn").click
@@ -77,15 +73,13 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
     end
 
     it "opens the tab named by the address anchor", js: true, skip_bullet: true do
-      log_in_as(admin)
-      visit "#{sub_space_booking_index_path(room: subspace.id)}#booking-tab"
+      log_in_as(admin, to: "#{sub_space_booking_index_path(room: subspace.id)}#booking-tab")
 
       expect(page).to have_css("#booking-tab.active.show", visible: :all)
     end
 
     it "opens the admin tab when a page parameter of one of its tables is given", js: true, skip_bullet: true do
-      log_in_as(admin)
-      visit "#{sub_space_booking_index_path(room: subspace.id)}&approved_page=1"
+      log_in_as(admin, to: "#{sub_space_booking_index_path(room: subspace.id)}&approved_page=1")
 
       expect(page).to have_css("#booking-admin-tab.active.show", visible: :all)
     end

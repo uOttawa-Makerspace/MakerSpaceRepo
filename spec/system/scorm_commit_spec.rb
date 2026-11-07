@@ -30,8 +30,7 @@ RSpec.describe "SCORM commits", type: :system, js_errors: :allow do
   end
 
   before do
-    log_in_as(user)
-    visit learning_area_path(scorm)
+    log_in_as(user, to: learning_area_path(scorm))
     expect(page).to have_css("iframe[data-learning-module-id='#{scorm.id}']")
     wait = Capybara.default_max_wait_time
     Timeout.timeout(wait) { sleep 0.05 until page.evaluate_script("typeof window.API_1484_11") == "object" }

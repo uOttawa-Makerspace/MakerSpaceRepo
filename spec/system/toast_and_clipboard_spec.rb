@@ -25,8 +25,7 @@ RSpec.describe "Toasts and copy buttons", type: :system do
     let(:staff) { create(:user, :staff, space: space) }
 
     before do
-      log_in_as(staff)
-      visit staff_dashboard_index_path
+      log_in_as(staff, to: staff_dashboard_index_path)
     end
 
     it "shows the server's error message in a Bootstrap toast" do
@@ -69,8 +68,7 @@ RSpec.describe "Toasts and copy buttons", type: :system do
     let!(:coupon) { create(:coupon_code, :claimed, user: user, code: "SAVE-1234") }
 
     before do
-      log_in_as(user)
-      visit discount_codes_path
+      log_in_as(user, to: discount_codes_path)
       record_clipboard_writes
     end
 
@@ -87,8 +85,7 @@ RSpec.describe "Toasts and copy buttons", type: :system do
     let!(:volunteer) { create(:user, :volunteer_with_volunteer_program, email: "vol-one@example.com") }
 
     before do
-      log_in_as(staff)
-      visit emails_volunteers_path
+      log_in_as(staff, to: emails_volunteers_path)
       record_clipboard_writes
     end
 

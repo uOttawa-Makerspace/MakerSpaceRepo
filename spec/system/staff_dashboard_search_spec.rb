@@ -21,8 +21,7 @@ RSpec.describe "Staff dashboard user picker", type: :system do
   end
 
   before do
-    log_in_as(staff)
-    visit staff_dashboard_index_path
+    log_in_as(staff, to: staff_dashboard_index_path)
   end
 
   it "Sign In signs the picked user in to the staff member's space" do

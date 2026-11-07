@@ -21,8 +21,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
   let(:eastern) { ActiveSupport::TimeZone["Eastern Time (US & Canada)"] }
 
   def open_calendar(who = user)
-    log_in_as(who)
-    visit sub_space_booking_index_path(room: subspace.id, start: "2027-03-16")
+    log_in_as(who, to: sub_space_booking_index_path(room: subspace.id, start: "2027-03-16"))
     expect(page).to have_css("#booked-calendar .fc-view")
   end
 

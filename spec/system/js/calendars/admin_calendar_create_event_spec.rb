@@ -23,8 +23,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
   def open_admin_calendar
-    log_in_as(admin)
-    show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
+    log_in_as(admin, to: admin_calendar_index_path, local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
     wait_for_admin_calendar_scripts
   end
@@ -32,8 +31,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
   # The page that could not load its staff data never becomes ready, so only
   # the calendar and the error alert are awaited.
   def open_admin_calendar_without_ready_wait
-    log_in_as(admin)
-    show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
+    log_in_as(admin, to: admin_calendar_index_path, local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
     expect(page).to have_css("#staff_load_error:not(.d-none)")
   end
@@ -79,8 +77,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
   end
 
   it "enables the Add Event button and marks the modal ready once the page script has attached its handlers", js: true, skip_bullet: true do
-    log_in_as(admin)
-    visit admin_calendar_index_path
+    log_in_as(admin, to: admin_calendar_index_path)
 
     expect(page).to have_css("#eventModal[data-ready='true']", visible: :all)
     expect(page).to have_button("+ Add Event", disabled: false)
@@ -88,8 +85,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
   it "tells the admin and keeps Add Event disabled when the staff availability cannot be loaded", js: true, js_errors: :allow, skip_bullet: true do
     allow_any_instance_of(Admin::CalendarController).to receive(:utc_unavailabilities_json) { |controller| controller.head :internal_server_error }
-    log_in_as(admin)
-    visit admin_calendar_index_path
+    log_in_as(admin, to: admin_calendar_index_path)
 
     expect(page).to have_css("#staff_load_error[role='alert']", text: "staff availability could not be loaded")
     expect(page).to have_button("+ Add Event", disabled: true)
@@ -384,8 +380,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     # the examples hold in any browser time zone. The page is loaded first
     # (the browser has to compute the instants) and loaded again afterwards.
     def unavailability_around_slot(rule_for: nil)
-      log_in_as(admin)
-      visit root_path
+      log_in_as(admin, to: root_path)
       from = browser_utc(slot_start) - 1.hour
       to = browser_utc(slot_end) + 1.hour
       attrs = { user: worker, title: "Class", start_time: from, end_time: to }

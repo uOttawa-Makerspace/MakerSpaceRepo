@@ -70,8 +70,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     expect(needs.map(&:to)).to eq([[manager.email]])
 
     as_actor(:admin) do
-      log_in_as(admin)
-      visit sub_space_booking_index_path(room: subspace.id)
+      log_in_as(admin, to: sub_space_booking_index_path(room: subspace.id))
       find("#booking-admin-tab-btn").click
       expect(page).to have_css("#pendingBody", text: "Robot team")
       within(:xpath, "//tr[.//strong[contains(.,'Robot team')] or contains(.,'Robot team')][.//button[contains(.,'Approve')]]") do
@@ -116,8 +115,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
     expect(bookings.map { |b| b.start_time.to_date }).to eq([day, day + 7, day + 14])
 
     as_actor(:admin) do
-      log_in_as(admin)
-      visit sub_space_booking_index_path(room: subspace.id)
+      log_in_as(admin, to: sub_space_booking_index_path(room: subspace.id))
       find("#booking-admin-tab-btn").click
       expect(page).to have_css("#pendingBody", text: "Club night")
       click_button title: "Approve All"

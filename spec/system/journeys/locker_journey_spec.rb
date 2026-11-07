@@ -23,8 +23,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
 
   def request_locker_as_user(note)
     as_actor(:user) do
-      log_in_as(user)
-      visit new_locker_rental_path
+      log_in_as(user, to: new_locker_rental_path)
       select "General request", from: "locker_rental_requested_as"
       fill_in "locker_rental_notes", with: note
       click_button "Submit request"
@@ -170,8 +169,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
 
   it "staff assigns a locker to a user from the admin assign form (no request)" do
     as_actor(:staff) do
-      log_in_as(staff)
-      visit assign_locker_locker_rentals_path
+      log_in_as(staff, to: assign_locker_locker_rentals_path)
       expect(page).to have_css("h1", text: "Assign locker to a user")
       select "#{user.name} (#{user.username})", from: "locker_rental_rented_by_id"
       select "#JB-2", from: "locker_rental_locker_id", match: :prefer_exact
@@ -184,8 +182,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     expect(rental.locker).to eq(locker_b)
     expect(mails_to(user.email).map(&:subject)).to eq(["Locker JB-2 has been assigned for you"])
     as_actor(:user) do
-      log_in_as(user)
-      visit locker_rentals_path
+      log_in_as(user, to: locker_rentals_path)
       expect(page).to have_text("Locker #JB-2")
     end
   end

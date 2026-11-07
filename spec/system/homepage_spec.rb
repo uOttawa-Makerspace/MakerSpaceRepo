@@ -81,8 +81,7 @@ RSpec.describe "Homepage", type: :system, skip_bullet: true do
 
   it "shows the same tiles plus the user chip to a signed-in regular user" do
     user = create(:user, :regular_user)
-    log_in_as(user)
-    visit root_path
+    log_in_as(user, to: root_path)
     expect_public_chrome
     expect(page).to have_css("nav.navbar", text: user.username)
     expect(page).to have_css("#home-hours", text: user.name)
@@ -104,8 +103,7 @@ RSpec.describe "Homepage", type: :system, skip_bullet: true do
 
   it "shows staff links to staff but not the admin settings link" do
     staff = create(:user, :staff)
-    log_in_as(staff)
-    visit root_path
+    log_in_as(staff, to: root_path)
     expect(page).to have_link(href: staff_dashboard_index_path)
     expect(page).to have_no_link(href: admin_settings_path)
   end

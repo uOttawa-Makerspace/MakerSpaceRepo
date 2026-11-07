@@ -9,8 +9,7 @@ RSpec.describe "Assign locker form", type: :system do
   let(:staff) { create(:user, :staff) }
 
   before do
-    log_in_as(staff)
-    visit assign_locker_locker_rentals_path
+    log_in_as(staff, to: assign_locker_locker_rentals_path)
   end
 
   it "disables and clears the end date while Indefinite is ticked" do

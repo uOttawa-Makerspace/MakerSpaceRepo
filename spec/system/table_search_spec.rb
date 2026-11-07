@@ -11,8 +11,7 @@ RSpec.describe "Table search box", type: :system, skip_bullet: true do
   let!(:second_note) { create(:announcement, :volunteer, description: "Bravo printer downtime") }
 
   before do
-    log_in_as(admin)
-    visit admin_announcements_path
+    log_in_as(admin, to: admin_announcements_path)
   end
 
   it "keeps only the rows containing the typed text and shows all rows again when cleared" do

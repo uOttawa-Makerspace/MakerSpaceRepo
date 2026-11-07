@@ -28,7 +28,7 @@ module CalendarJsHelpers
   end
 
   def show_week_of_march_14(storage_key, path)
-    visit root_path
+    visit "/robots.txt" # any page of the app origin will do: only its localStorage is needed
     page.execute_script("localStorage.#{storage_key} = '#{WEEK_MIDDAY}'")
     visit path
   end

@@ -28,8 +28,7 @@ RSpec.describe "Staff calendar: toolbar and events", type: :system do
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
   def open_calendar
-    log_in_as(staff)
-    show_week_of_march_14("fullCalendarDefaultDateStaffCalendar", staff_my_calendar_index_path)
+    log_in_as(staff, to: staff_my_calendar_index_path, local_storage: { fullCalendarDefaultDateStaffCalendar: CalendarJsHelpers::WEEK_MIDDAY })
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
     expect(page).to have_css(".fc-timegrid-event", text: "My shift", visible: :all)
   end
