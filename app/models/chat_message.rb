@@ -43,7 +43,7 @@ class ChatMessage < ApplicationRecord
     additional_recipients = User.where(id: [25, 1607])
     all_recipients = (recipients + additional_recipients).uniq - [sender]
 
-    ChatMessageMailer.new_message(self, all_recipients).deliver_later if all_recipients.any?
+    all_recipients.each { |user| ChatMessageMailer.new_message(self, user.email).deliver_later }
   end
 
   def recent_message_by_sender?

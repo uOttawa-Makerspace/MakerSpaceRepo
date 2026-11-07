@@ -60,8 +60,7 @@ RSpec.describe "ChatMessages gaps", type: :request do
       session_login!(staff)
       perform_enqueued_jobs { post_message(order, "from staff") }
 
-      expect(deliveries.size).to eq(1)
-      expect(deliveries.last.to).to match_array([owner.email, other_staff.email])
+      expect(deliveries.map(&:to)).to match_array([[owner.email], [other_staff.email]])
       expect(deliveries.last.subject).to eq("MakerRepo - Nouveau message // New message")
     end
 
@@ -74,8 +73,7 @@ RSpec.describe "ChatMessages gaps", type: :request do
       session_login!(owner)
       perform_enqueued_jobs { post_message(order, "Is anybody there?") }
 
-      expect(deliveries.size).to eq(1)
-      expect(deliveries.last.to).to match_array(hard_coded.map(&:email))
+      expect(deliveries.map(&:to)).to match_array(hard_coded.map { |user| [user.email] })
     end
 
     it "does not mail a hard-coded user about their own message" do
@@ -88,18 +86,17 @@ RSpec.describe "ChatMessages gaps", type: :request do
     end
   end
 
-  # `respond_to:` (typo for reply_to:) becomes a custom header, no
-  # Reply-To is set, and every recipient is exposed in one To line.
+  # `respond_to:` (typo for reply_to:) becomes a custom header and no Reply-To is set.
   describe "ChatMessageMailer headers" do
-    it "has no reply-to, a respond_to header carrying the sender and all recipients in To" do
+    it "has no reply-to, a respond_to header carrying the sender, and only the one recipient in To" do
       order = active_order!
       message = ChatMessage.create!(job_order: order, sender: staff, message: "hello")
-      mail = ChatMessageMailer.new_message(message, [owner, other_staff])
+      mail = ChatMessageMailer.new_message(message, owner.email)
       mail.deliver_now
 
       expect(mail.reply_to).to be_nil
       expect(mail.header["respond_to"].to_s).to eq(staff.email)
-      expect(mail.to).to eq([owner.email, other_staff.email])
+      expect(mail.to).to eq([owner.email])
     end
   end
 
