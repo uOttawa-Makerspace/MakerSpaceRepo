@@ -70,6 +70,8 @@ class JobOrder < ApplicationRecord
   #   :invalid_status_row  the status row did not validate or could not be written (no actor)
   #   :change_invalid      the caller's own writes did not validate; `error.message` holds the messages
   #   :order_missing       the order was deleted (hard, or soft) before the lock
+  #   :service_price_missing a task has a service line with no price (see #service_price_missing_error); `error`
+  #                        names the tasks
   #   :busy                a lock wait in the operation timed out (the order's row or a row the work locks);
   #                        nothing was changed, retry
   #   :not_deletable       (soft_delete! only) the actor may not delete an order in this status
@@ -85,7 +87,7 @@ class JobOrder < ApplicationRecord
     # Every other reason falls back to a generic one.
     REASONS_WITH_MESSAGE = %i[draft_not_voidable invalid_status_row order_missing busy].freeze
     # A status change also says when the order is not in a state that allows it.
-    STATUS_CHANGE_REASONS = (REASONS_WITH_MESSAGE + %i[wrong_state]).freeze
+    STATUS_CHANGE_REASONS = (REASONS_WITH_MESSAGE + %i[wrong_state service_price_missing]).freeze
     # A deadlock is shown as the same "try again" as a busy row.
     MESSAGE_REASON = { deadlock: :busy }.freeze
     GENERIC_MESSAGE = "job_orders.alerts.error_while_updating"
@@ -95,6 +97,11 @@ class JobOrder < ApplicationRecord
     def self.done(value = nil) = new(reason: nil, error: nil, status: nil, value: value)
     def self.refused(reason, error = nil) = new(reason: reason, error: error, status: nil, value: nil)
     def ok? = reason.nil?
+
+    # The values the refusal's message names (the tasks of :service_price_missing); none for any other reason.
+    def message_args
+      error.is_a?(ServicePriceMissing) ? { tasks: error.task_titles.to_sentence } : {}
+    end
 
     # The $0 path in #processed: the order was already moved to Completed, so "nothing was changed" would be
     # false. Its own messages say the order is Completed and why it could not be marked Paid.
@@ -107,6 +114,16 @@ class JobOrder < ApplicationRecord
     def message_key(scope = "job_orders.alerts.status_change", reasons: STATUS_CHANGE_REASONS, fallback: GENERIC_MESSAGE)
       key = MESSAGE_REASON.fetch(reason, reason)
       reasons.include?(key) ? "#{scope}.#{key}" : fallback
+    end
+  end
+
+  # A quote or a payment link was asked for while a task's service line has no price. Carries the tasks' titles.
+  class ServicePriceMissing < StandardError
+    attr_reader :task_titles
+
+    def initialize(task_titles)
+      @task_titles = task_titles
+      super("service price missing for: #{task_titles.join(', ')}")
     end
   end
 
@@ -145,9 +162,24 @@ class JobOrder < ApplicationRecord
       end
 
       apply_change(&changes) if changes
+      require_priced_services!(to)
       enter_status!(to, from: latest, actor: actor)
       TransitionResult.done
     end
+  end
+
+  # The statuses that put the quote in front of the customer (sent, reminded, approved) or lead to its payment
+  # link (Completed): an order may only enter them with every service line priced.
+  def self.priced_quote_status?(status)
+    [JobStatus.user_approval, JobStatus.sent_reminder, JobStatus.waiting_processed, JobStatus.completed].include?(status)
+  end
+
+  # The error that refuses to quote or bill the order: a task has a service line (a job service, or a service
+  # quantity above 0) but no service price. A price of 0 is a price (a free service); only a missing one (blank)
+  # is refused. nil when every service line is priced. The amounts are never changed.
+  def service_price_missing_error(snapshot = quote_snapshot)
+    tasks = snapshot.tasks.select(&:service_price_missing?)
+    ServicePriceMissing.new(tasks.map { |task| task.title.presence || "##{task.id}" }) if tasks.any?
   end
 
   # Who may open the order and use its chat: its owner, staff and admins.
@@ -390,6 +422,16 @@ class JobOrder < ApplicationRecord
   # busy row, order deleted, the send-back's status row not written) has already been reported by #refuse_from.
   # `status` is the caller's fresh #current_status (the default: read now), so the fast path does not read it again.
   def checkout_link(status = current_status)
+    service_price_refusal || serve_checkout_link(status)
+  end
+
+  # A refusal (nothing is created or served) while a task's service line has no price; nil otherwise.
+  def service_price_refusal
+    missing = service_price_missing_error
+    TransitionResult.refused(:service_price_missing, missing) if missing
+  end
+
+  def serve_checkout_link(status)
     # Lock-free fast path (the status is read fresh, #current_status: the cached #latest_status could serve an
     # invoice for a status that changed on another connection): a COMPLETED order whose stored draft is current (read without a lock) is served by one
     # fetch. A race with a change that voids the draft is safe: the void deletes it on Shopify, the fetch then finds
@@ -413,6 +455,7 @@ class JobOrder < ApplicationRecord
   rescue StaleDraftOrderError => e # the fast path's fetch (the locked path maps its own)
     refuse_from(e, :draft_not_voidable, "checkout_link")
   end
+  private :service_price_refusal, :serve_checkout_link
 
   # The one staleness rule: the stored draft is current only when its fingerprint equals the fingerprint
   # of the order's quote now. A draft without a fingerprint (legacy) is never current.
@@ -736,6 +779,8 @@ class JobOrder < ApplicationRecord
     refuse_from(e, :draft_not_voidable, label, report: report)
   rescue ChangeInvalid => e
     refuse_from(e, :change_invalid, label, report: report)
+  rescue ServicePriceMissing => e
+    refuse_from(e, :service_price_missing, label, report: report)
   rescue StatusRowInvalid => e
     refuse_from(e, :invalid_status_row, label, report: report)
   end
@@ -789,6 +834,16 @@ class JobOrder < ApplicationRecord
     outcome = DraftDeletion.delete(shopify_draft_order_id, paid: :refuse)
     update_column(:shopify_draft_order_id, nil)
     outcome
+  end
+
+  # Refuses (rolling the transition back) a destination that needs a priced quote while a service line has no
+  # price. The block's writes are in the database by now, so the snapshot is read again.
+  def require_priced_services!(to)
+    return unless self.class.priced_quote_status?(to)
+
+    @quote_snapshot = nil
+    missing = service_price_missing_error
+    raise missing if missing
   end
 
   # The caller's own writes, made inside the row lock: their validation failures are ChangeInvalid (nothing is

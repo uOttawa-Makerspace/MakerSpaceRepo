@@ -27,30 +27,11 @@ RSpec.describe JobTaskQuote, type: :model do
     end
   end
 
-  describe "#total_task_price" do
-    it "adds the service line and the per-option prices" do
+  describe "#service_total" do
+    it "multiplies the quantity by the price, counting a blank one as zero" do
       task = create(:job_order).job_tasks.create!(title: "Task #1")
-      quote = task.build_job_task_quote(price: 10, service_price: 3, service_quantity: 2)
-      quote.save!
-      option = JobOption.create!(name: "Expedited Resin", fee: 2)
-      quote.job_task_quote_options.create!(job_option: option, price: 1.5)
-      quote.job_task_quote_options.create!(job_option: JobOption.create!(name: "Polish", fee: 1), price: 0)
-      expect(quote.reload.job_task_quote_options.sum(&:price)).to eq(1.5)
-      expect(quote.total_task_price).to eq(17.5)
-    end
-
-    it "counts a missing service quantity or price as zero (Design Services quotes have no service line)" do
-      task = create(:job_order).job_tasks.create!(title: "Task #1")
-      quote = task.build_job_task_quote(price: 10)
-      quote.save!
-      expect(quote.reload.total_task_price).to eq(10)
-
-      quote.update!(service_quantity: 2)
-      expect(quote.reload.total_task_price).to eq(10)
-
-      quote.update!(service_quantity: nil, service_price: 3)
-      expect(quote.reload.total_task_price).to eq(10)
+      expect(task.build_job_task_quote(price: 10, service_price: 3, service_quantity: 2).service_total).to eq(6)
+      expect(task.build_job_task_quote(price: 10, service_price: nil, service_quantity: 2).service_total).to eq(0)
     end
   end
 end
-

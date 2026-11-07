@@ -82,4 +82,35 @@ RSpec.describe JobTask, type: :model do
       expect(order.job_tasks.create!(title: "T", job_type: job_type, job_service: service)).not_to be_missing_information
     end
   end
+
+  describe "#service_price_missing?" do
+    let(:order) { create(:job_order) }
+    let(:job_type) { create(:job_type) }
+    let(:service) { create(:job_service, job_service_group: create(:job_service_group, job_type: job_type)) }
+
+    def task_with(service: nil, **quote)
+      order.job_tasks.create!(title: "T", job_type: job_type, job_service: service).tap do |task|
+        task.create_job_task_quote!(price: 1, **quote) if quote.any?
+      end
+    end
+
+    it "is true for a job service with a blank price, or with no quote row" do
+      expect(task_with(service: service, service_price: nil, service_quantity: 1)).to be_service_price_missing
+      expect(task_with(service: service)).to be_service_price_missing
+    end
+
+    it "is true for a service quantity above 0 with a blank price, even without a job service" do
+      expect(task_with(service_price: nil, service_quantity: 2)).to be_service_price_missing
+    end
+
+    it "is false for a price of 0 (a free service) or any price" do
+      expect(task_with(service: service, service_price: 0, service_quantity: 2)).not_to be_service_price_missing
+      expect(task_with(service: service, service_price: 4, service_quantity: 2)).not_to be_service_price_missing
+    end
+
+    it "is false when the task has no service line" do
+      expect(task_with).not_to be_service_price_missing
+      expect(task_with(service_price: nil, service_quantity: 0)).not_to be_service_price_missing
+    end
+  end
 end

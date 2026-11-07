@@ -11,8 +11,4 @@ class JobTaskQuote < ApplicationRecord
   def service_total
     (service_quantity || 0) * (service_price || 0)
   end
-
-  def total_task_price
-    price + service_total + job_task_quote_options.sum(:price)
-  end
 end
