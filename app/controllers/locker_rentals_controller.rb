@@ -116,14 +116,6 @@ class LockerRentalsController < SessionsController
 
   def update
     @locker_rental = LockerRental.find(params[:id])
-    unless current_user.staff? || current_user == @locker_rental.rented_by
-      respond_to do |format|
-        format.html { redirect_to locker_rentals_path }
-        format.json { head :forbidden }
-      end
-      return
-    end
-
     if unknown_renter_username?
       respond_to do |format|
         format.html do

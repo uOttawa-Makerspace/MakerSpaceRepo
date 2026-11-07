@@ -972,6 +972,17 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(rental.reload.state).to eq("reviewing")
       end
 
+      it "redirects a stranger's JSON update too, without touching the rental" do
+        rental = reviewing_rental!(tenant: owner)
+        log_in!(other)
+
+        patch locker_rental_path(rental),
+              params: { locker_rental: { state: "cancelled" } },
+              as: :json
+        expect(response).to redirect_to(locker_rentals_path)
+        expect(rental.reload.state).to eq("reviewing")
+      end
+
       it "answers a JSON cancellation with 204 and no body" do
         rental = reviewing_rental!(tenant: owner)
         log_in!(owner)
