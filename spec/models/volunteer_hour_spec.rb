@@ -80,7 +80,54 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
   let(:user) { create(:user, :volunteer_with_volunteer_program) }
   let(:task) { create(:volunteer_task) }
 
-  it "requires a volunteer task that exists but does not limit total_time: negative hours are saved" do
+  describe "hand-logged hours (save_hand_logged)" do
+    def attrs(overrides = {})
+      { volunteer_task_id: task.id, date_of_task: Date.current, total_time: 2 }.merge(overrides)
+    end
+
+    it "saves hours above 0 and up to 24 on a past or current day" do
+      expect(VolunteerHour.new(user: user).save_hand_logged(attrs(total_time: 24))).to be(true)
+      expect(VolunteerHour.new(user: user).save_hand_logged(attrs(total_time: 0.01, date_of_task: 3.days.ago))).to be(true)
+    end
+
+    it "refuses 0, negative, over 24 and missing hours" do
+      [0, -1, 24.01, nil].each do |hours|
+        hour = VolunteerHour.new(user: user)
+        expect(hour.save_hand_logged(attrs(total_time: hours))).to be(false)
+        expect(hour.errors[:total_time]).to be_present
+      end
+    end
+
+    it "refuses a date after today" do
+      hour = VolunteerHour.new(user: user)
+      expect(hour.save_hand_logged(attrs(date_of_task: Date.current + 1))).to be(false)
+      expect(hour.errors[:date_of_task]).to eq(["cannot be in the future"])
+    end
+
+    it "checks each field only when it changes, so a stored 36 hour or 0 hour approved row stays editable" do
+      [36, 0].each do |stored|
+        row = create(:volunteer_hour, user: user, volunteer_task: task, approval: true, total_time: stored, date_of_task: 5.days.ago)
+        reloaded = VolunteerHour.find(row.id)
+        expect(reloaded.total_time).to eq(stored)
+        expect(reloaded.save_hand_logged(date_of_task: 4.days.ago, approval: false)).to be(true)
+        expect(reloaded.reload.total_time).to eq(stored)
+        expect(reloaded.save_hand_logged(total_time: 25)).to be(false)
+      end
+    end
+
+    it "leaves a stored future date alone while other fields change" do
+      row = VolunteerHour.new(user: user, volunteer_task: task, total_time: 1, date_of_task: Date.current + 30)
+      row.save!
+      expect(VolunteerHour.find(row.id).save_hand_logged(total_time: 2)).to be(true)
+    end
+  end
+
+  it "saves in the default context without the hand-logged limits (awards take the task's hours)" do
+    expect(VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 36, Time.current)).to be_persisted
+    expect(VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 0, Time.current)).to be_persisted
+  end
+
+  it "requires a volunteer task that exists but the default context does not limit total_time: negative hours are saved" do
     expect(VolunteerHour.new(user: user, volunteer_task_id: 0, total_time: -2)).not_to be_valid
     expect { VolunteerHour.create!(user: user, volunteer_task: task, total_time: -2, date_of_task: Date.current) }.to change(VolunteerHour, :count).by(1)
   end

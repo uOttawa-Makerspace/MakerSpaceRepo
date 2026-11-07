@@ -137,6 +137,17 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response.body).not_to include("other task")
     end
 
+    it "does not offer a task the user was removed from, but still offers one they are on" do
+      removed = create(:volunteer_task, title: "removed task")
+      create(:volunteer_task_join, :not_active, volunteer_task: removed, user: owner)
+      active = create(:volunteer_task, title: "active task")
+      create(:volunteer_task_join, :active, volunteer_task: active, user: owner)
+      vol_login!(owner)
+      get new_volunteer_hour_path
+      expect(response.body).to include("active task")
+      expect(response.body).not_to include("removed task")
+    end
+
     it "redirects a user without volunteer access" do
       vol_sign_in_as(:regular)
       get new_volunteer_hour_path
@@ -171,36 +182,32 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(VolunteerHour.last.approval).to be(true)
     end
 
-    # no range validation: negative and far-future hours are stored
-    it "accepts negative total_time and a far-future date_of_task" do
-      post volunteer_hours_path,
-           params: { volunteer_hour: { volunteer_task_id: task.id, date_of_task: "2999-01-01", total_time: -5 } }
-      expect(response).to redirect_to(volunteer_hours_path)
-      hour = VolunteerHour.last
-      expect(hour.total_time).to eq(-5)
-      expect(hour.date_of_task.year).to eq(2999)
+    {
+      "negative hours" => [{ total_time: -5 }, "Total time must be greater than 0"],
+      "zero hours" => [{ total_time: 0 }, "Total time must be greater than 0"],
+      "a non-numeric total_time" => [{ total_time: "abc" }, "Total time is not a number"],
+      "more than 24 hours" => [{ total_time: 24.5 }, "Total time must be less than or equal to 24"],
+      "a total_time beyond decimal(9,2)" => [{ total_time: 99_999_999_999 }, "Total time must be less than or equal to 24"],
+      "a future date" => [{ date_of_task: (Date.current + 1).to_s }, "Date of task cannot be in the future"],
+      "a far-future date" => [{ date_of_task: "2999-01-01" }, "Date of task cannot be in the future"]
+    }.each do |label, (overrides, message)|
+      it "refuses #{label}, stores nothing and says why" do
+        params = { volunteer_hour: hour_params[:volunteer_hour].merge(overrides) }
+        expect { post volunteer_hours_path, params: params }.not_to change(VolunteerHour, :count)
+        expect(response).to redirect_to(volunteer_hours_path)
+        expect(flash[:alert]).to eq(message)
+      end
+    end
+
+    it "accepts exactly 24 hours today" do
+      post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(total_time: 24, date_of_task: Date.current.to_s) }
+      expect(VolunteerHour.last.total_time).to eq(24)
     end
 
     it "rounds total_time to 2 decimals (decimal(9,2))" do
       post volunteer_hours_path,
            params: { volunteer_hour: { volunteer_task_id: task.id, date_of_task: "2024-03-01", total_time: 1.239 } }
       expect(VolunteerHour.last.total_time).to eq(1.24)
-    end
-
-    # non-numeric total_time silently becomes 0
-    it "stores 0 for a non-numeric total_time" do
-      post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, date_of_task: "2024-03-01", total_time: "abc" } }
-      expect(response).to redirect_to(volunteer_hours_path)
-      expect(VolunteerHour.last.total_time).to eq(0)
-    end
-
-    # over-range total_time raises ActiveRecord::RangeError (500) instead of a validation message
-    it "500s for a total_time beyond decimal(9,2)" do
-      expect do
-        post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, date_of_task: "2024-03-01", total_time: 99_999_999_999 } }
-      end.not_to change(VolunteerHour, :count)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(vol_error_text).to include("ActiveRecord::RangeError")
     end
 
     it "stores nothing and alerts without a date" do
@@ -353,12 +360,41 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You are not authorized access this area")
     end
 
-    it "500s for an out-of-range total_time" do
+    it "refuses an out-of-range total_time and keeps the hour" do
       hour = make_hour
       vol_login!(owner)
       patch volunteer_hour_path(hour), params: { volunteer_hour: { date_of_task: "2024-03-01", total_time: 99_999_999_999 } }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(flash[:alert]).to eq("Total time must be less than or equal to 24")
       expect(hour.reload.total_time).to eq(3)
+    end
+
+    it "refuses 0 hours and a future date on an edit" do
+      hour = make_hour
+      vol_login!(owner)
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 0, date_of_task: (Date.current + 2).to_s } }
+      expect(flash[:alert]).to eq("Total time must be greater than 0 and Date of task cannot be in the future")
+      expect(hour.reload.total_time).to eq(3)
+    end
+
+    # stored awards of 36 and 0 hours (from a task's own hours) stay readable and editable
+    [36, 0].each do |stored|
+      it "lets staff edit the date of an approved #{stored} hour row without touching its hours" do
+        hour = make_hour(approval: true, total_time: stored)
+        vol_login!(create(:user, :staff))
+        get edit_volunteer_hour_path(hour)
+        expect(response).to have_http_status(:ok)
+        patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: stored, date_of_task: "2024-03-02" } }
+        expect(flash[:notice]).to eq("Volunteer hour updated")
+        expect(hour.reload.total_time).to eq(stored)
+        expect(hour.date_of_task.to_date).to eq(Date.new(2024, 3, 2))
+      end
+    end
+
+    it "approves and rejects a stored 36 hour row" do
+      hour = make_hour(approval: nil, total_time: 36)
+      vol_login!(create(:user, :staff))
+      put update_approval_volunteer_hours_path(id: hour.id, approval: true)
+      expect(hour.reload.approval).to be(true)
     end
 
     it "404s for a missing id" do
