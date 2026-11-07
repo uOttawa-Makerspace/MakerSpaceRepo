@@ -9,7 +9,7 @@ class VolunteerHoursController < VolunteersController
 
   def index
     @user = current_user
-    scope = VolunteerHour.where(user_id: @user.id).order(created_at: :desc)
+    scope = VolunteerHour.where(user_id: @user.id).includes(:volunteer_task).order(created_at: :desc)
     @pagy, @user_volunteer_hours = pagy(scope, limit: 50)
     @total_hours =
       calculate_hours(@user_volunteer_hours.approved.pluck(:total_time))

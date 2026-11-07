@@ -88,8 +88,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_hours (index)" do
-    # N+1 pinned (view calls vh.volunteer_task per row)
-    it "lists only the signed-in user's hours and totals approved ones", skip_bullet: true do
+    it "lists only the signed-in user's hours and totals approved ones" do
       make_hour(approval: true, total_time: 2)
       make_hour(approval: true, total_time: 1.5)
       make_hour(approval: nil, total_time: 9)
