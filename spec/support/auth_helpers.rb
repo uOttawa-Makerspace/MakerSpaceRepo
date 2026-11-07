@@ -13,14 +13,39 @@ module AuthzTestHelper
 end
 
 module BrowserAuthHelper
-  # System specs: drive the real login view. Keeps look-and-feel tests honest
-  # (login page renders + session cookie is set by the app, not by us).
-  def log_in_as(user, password: "asa32A353#", path: login_path)
+  SESSION_COOKIE = "_MakerSpaceRepo_session"
+
+  # System specs: signs the user in without typing into the login form. The
+  # real login action runs in-process (same controller, same session cookie,
+  # same CSRF check as the form), then the cookie it issued is handed to the
+  # browser; this saves the login page load, the typing and the redirect
+  # round-trips. The form itself is covered by log_in_through_form below.
+  def log_in_as(user, password: "asa32A353#")
+    visit "/robots.txt" # any cheap page on the app host, so the cookie can be set
+    page.driver.browser.manage.add_cookie(name: SESSION_COOKIE, value: login_cookie_for(user, password), path: "/")
+    visit root_path
+    expect(page).to have_css("nav.navbar") # authenticated shell rendered
+  end
+
+  # System specs about the login page itself: drives the real login view.
+  def log_in_through_form(user, password: "asa32A353#", path: login_path)
     visit path
     fill_in "username_email", with: user.username
     fill_in "password", with: password
     find("input[type=submit]").click
     expect(page).to have_css("nav.navbar") # authenticated shell rendered
+  end
+
+  private
+
+  def login_cookie_for(user, password)
+    http = ActionDispatch::Integration::Session.new(Rails.application)
+    http.get login_path
+    token = Nokogiri::HTML(http.response.body).at_css("form[action='#{login_authentication_path}'] input[name=authenticity_token]")["value"]
+    http.post login_authentication_path, params: { username_email: user.username, password:, authenticity_token: token }
+    raise "sign-in failed (#{http.response.status})" unless http.response.redirect?
+
+    Rack::Utils.escape(http.cookies[SESSION_COOKIE]) # the jar holds the decoded value; the browser stores it as sent
   end
 end
 
