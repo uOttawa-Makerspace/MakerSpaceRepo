@@ -56,6 +56,28 @@ RSpec.describe "Learning area", type: :request do
     end
   end
 
+  describe "GET /learning_area (index) with a module that has no training" do
+    before { create(:learning_module, training: nil, title: "Orphan module") }
+
+    { "en" => "Other modules", "fr" => "Autres modules" }.each do |locale, heading|
+      it "lists it in a last group headed #{heading.inspect} (#{locale})" do
+        sign_in_as(:regular)
+        get learning_area_index_path(locale: locale)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Orphan module", heading)
+        expect(response.body.rindex(heading)).to be > response.body.index("Soldering basics")
+      end
+    end
+
+    it "renders the subskill page for such a module" do
+      create(:learning_module, training: nil, title: "Orphan sub", subskill: "orphans")
+      sign_in_as(:regular)
+      get subskill_learning_area_index_path("orphans")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("orphans")
+    end
+  end
+
   describe "GET /learning_area/:id (show)" do
     it "redirects a guest to login" do
       get learning_area_path(learning_module)

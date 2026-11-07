@@ -29,7 +29,7 @@ class LearningAreaController < DevelopmentProgramsController
         .includes(photos_attachments: :blob)
         .includes(:training)
         .group_by(&:training)
-        .sort_by { |training, _| training.name }
+        .sort_by { |training, _| [training ? 0 : 1, training&.name.to_s] }
         .to_h
         .transform_values do |modules|
           modules.sort_by { |m| LearningModule.levels.keys.index(m.level) }
