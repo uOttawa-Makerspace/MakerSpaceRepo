@@ -285,6 +285,51 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response).to redirect_to(job_orders_path)
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
     end
+
+    describe "task loading" do
+      def add_complete_task!(order, title)
+        group = create(:job_service_group)
+        service = create(:job_service, job_service_group: group)
+        option = create(:job_option)
+        task = order.job_tasks.create!(title: title, job_type: group.job_type, job_service: service)
+        task.job_task_options.create!(job_option: option)
+        task
+      end
+
+      def show_queries(order)
+        queries = []
+        counter = lambda do |*, payload|
+          queries << payload[:sql] if payload[:sql].match?(/FROM "(job_types|job_services|job_task_options)"|COUNT\(\*\) FROM "job_tasks"/)
+        end
+        ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { get job_order_path(order) }
+        queries
+      end
+
+      it "lists the tasks oldest first with their type and service" do
+        order = make_job_order!(owner: owner, status_key: :draft)
+        second = add_complete_task!(order, "Second task")
+        first = add_complete_task!(order, "First task")
+        first.update_columns(created_at: 2.days.ago) # rubocop:disable Rails/SkipsModelValidations
+        http_login!(owner)
+
+        get job_order_path(order)
+
+        expect(response.body.index("First task")).to be < response.body.index("Second task")
+        expect(response.body).to include(first.job_type.name, first.job_service.name, second.job_service.job_service_group.name)
+      end
+
+      it "runs the same number of type, service, option and count queries however many tasks the order has" do
+        order = make_job_order!(owner: owner, status_key: :draft)
+        add_complete_task!(order, "Task 1")
+        http_login!(owner)
+        show_queries(order) # warm up the schema cache
+        one_task = show_queries(order).size
+
+        3.times { |i| add_complete_task!(order, "More #{i}") }
+
+        expect(show_queries(order).size).to eq(one_task)
+      end
+    end
   end
 
   # ------------------------------------------------------- POST create

@@ -78,7 +78,8 @@ class JobOrdersController < SessionsController
     flash.now[:notice] = t("job_orders.alerts.action_required_scroll_to_timeline") if [JobStatus.user_approval, 
 JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&.job_status) && @job_order.user_id == current_user.id
 
-    @tasks_missing_information = @job_order.job_tasks.includes(job_type: :job_service_groups).select do |task|
+    @job_tasks = ordered_job_tasks_for_show
+    @tasks_missing_information = @job_tasks.select do |task|
       # job type is missing or job type has a service not chosen
       task.job_type.blank? || (task.job_type.job_service_groups.any? && task.job_service.blank?)
     end
@@ -402,6 +403,22 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   private
+
+  # The order's tasks in creation order with everything the order page reads, loaded once. The page shows the
+  # service and options only of tasks that have a job type, so those are preloaded for those tasks alone.
+  def ordered_job_tasks_for_show
+    tasks = @job_order.job_tasks.reorder(:created_at, :id).includes(
+      { job_type: :job_service_groups },
+      { job_task_options: { option_file_attachment: :blob } },
+      { user_files_attachments: :blob },
+      { staff_files_attachments: :blob }
+    ).to_a
+    ActiveRecord::Associations::Preloader.new(
+      records: tasks.select(&:job_type),
+      associations: [{ job_service: :job_service_group }, :job_options]
+    ).call
+    tasks
+  end
 
   # The editable "processed" mail text for this order, blank when that row is missing.
   def processed_message_text
