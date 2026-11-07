@@ -46,4 +46,14 @@ export default [
       "max-depth": ["error", 4],
     },
   },
+  {
+    files: ["spec/javascript/**/*.js"],
+    ...js.configs.recommended,
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: { ...globals.browser, ...globals.node, ...pageGlobals },
+    },
+    rules: { ...js.configs.recommended.rules },
+  },
 ];
