@@ -75,6 +75,7 @@ fr:
               blank: "Un sujet de formation est requis"
             user:
               blank: "Un formateur est requis"
+              must_be_staff: "doit faire partie du personnel"
             level:
               blank: "Un niveau est requis"
         project_requirement:

@@ -21,6 +21,8 @@ fr:
         year_of_study: Année d'études
         identity: Identité
         url: Site web
+      training_session:
+        user: Formateur
       locker_rental:
         state: État
         locker: Casier

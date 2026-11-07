@@ -75,6 +75,7 @@ en:
               blank: "A training subject is required"
             user:
               blank: "A trainer is required"
+              must_be_staff: "must be staff"
             level:
               blank: "A level is required"
         project_requirement:

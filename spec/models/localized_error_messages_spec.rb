@@ -103,6 +103,11 @@ RSpec.describe "Localized model error messages" do
     expect_messages(session, :training, "A training subject is required", "Un sujet de formation est requis")
     expect_messages(TrainingSession.new, :user, "A trainer is required", "Un formateur est requis")
     expect_messages(TrainingSession.new(level: ""), :level, "A level is required", "Un niveau est requis")
+    expect_messages(session, :user, "must be staff", "doit faire partie du personnel")
+    I18n.with_locale(:fr) do
+      session.valid?
+      expect(session.errors.full_messages).to include("Formateur doit faire partie du personnel")
+    end
   end
 
   it "localizes the project prerequisite message" do
