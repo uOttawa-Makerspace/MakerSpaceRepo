@@ -1610,6 +1610,21 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(many).to eq(few)
     end
 
+    it "serves each rental in the JSON with a fixed set of keys", skip_bullet: true do
+      preferred = create(:locker)
+      create(:locker_rental, :reviewing, preferred_locker: preferred)
+
+      log_in!(staff)
+      get admin_locker_rentals_path, as: :json
+
+      expect(response.parsed_body["pending"].first.keys).to match_array(%w[
+        cancelled_at contacted_for_clearance course_name_id created_at decided_by_id id locker_id notes
+        notified_of_cancellation_at owned_until paid_at preferred_locker preferred_locker_id rented_by_id
+        requested_as section_name sent_to_checkout_at shopify_draft_order_id specifier staff_notes state team_name updated_at
+      ])
+      expect(response.parsed_body["pending"].first["preferred_locker"]).to include("id" => preferred.id)
+    end
+
     it "renders a pending request whose owner was soft-deleted (the association is unscoped from User's default scope)" do
       tenant = create(:user)
       create(:locker_rental, :reviewing, rented_by: tenant)
