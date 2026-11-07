@@ -16,7 +16,7 @@ class OrdersController < DevelopmentProgramsController
     @pagy, @orders = pagy(user_orders_scope, limit: 20)
 
     if current_user.admin?
-      @pagy_all, @all_orders = pagy(Order.includes(:user, :order_status, order_items: :proficient_project)
+      @pagy_all, @all_orders = pagy(Order.includes(:display_user, :order_status, order_items: :proficient_project)
                                          .order(created_at: :desc), page_key: "page_all", limit: 20)
     end
   end

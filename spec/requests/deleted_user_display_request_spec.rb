@@ -155,4 +155,49 @@ RSpec.describe "Pages that show a deleted user", type: :request do
     end
   end
 
+  describe "orders (admin)" do
+    it "names a deleted customer on the all-orders list and does not link the profile" do
+      create(:order, :completed, user: gone)
+      delete_account!(gone)
+      sign_in!(admin)
+      get orders_path
+
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("goneperson (deleted account)")
+      expect(response.body).not_to include(user_path(username: "goneperson"))
+    end
+
+    it "does not list other customers' orders to a regular user" do
+      create(:order, :completed, user: gone)
+      delete_account!(gone)
+      sign_in!(create(:user))
+      get orders_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("goneperson")
+    end
+  end
+
+  describe "project proposal listings" do
+    let!(:proposal) { create(:project_proposal, :joined, :approved, user: gone, admin: gone_supervisor) }
+
+    before { delete_account!(gone, gone_supervisor) }
+
+    it "names the proposer and reviewer to an admin" do
+      sign_in!(admin)
+      get projects_assigned_project_proposals_path
+
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("goneperson (deleted account)", "gonesupervisor (deleted account)")
+      expect(response.body).not_to include(user_path(username: "goneperson"))
+    end
+
+    it "shows no proposer or reviewer to a regular user" do
+      sign_in!(create(:user))
+      get projects_assigned_project_proposals_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("goneperson", "gonesupervisor", "Gone Person")
+    end
+  end
 end
