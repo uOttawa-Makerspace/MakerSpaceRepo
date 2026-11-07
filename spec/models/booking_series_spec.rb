@@ -68,9 +68,9 @@ RSpec.describe BookingSeries do
     expect(series.map { |s, e| e - s }.uniq).to eq([90.minutes])
   end
 
-  it "is lazy-safe: first(n) stops without walking the series" do
+  it "returns an enumerator without a block, so first(n) stops without walking the series" do
     first_start = toronto("2027-01-31 10:00")
     series = described_class.new(first_start, first_start + 1.hour, Date.new(2099, 1, 1), "weekly")
-    expect(series.first(2).size).to eq(2)
+    expect(series.each.first(2).size).to eq(2)
   end
 end
