@@ -88,8 +88,8 @@
                 <ul class="list-unstyled mb-0">
                     <li class="mb-1"><b><%= t('project_proposal.possible_tech') %>:</b> <%= sanitize(@project_proposal.equipments) %></li>
                     <li class="mb-1"><b><%= t('project_proposal.project_type') %>:</b> <%= @project_proposal.project_type %></li>
-                    <li class="mb-1"><b><%= t('project_proposal.expected_budget') %>:</b> <%= @project_proposal.prototype_cost.present? ? "$#{@project_proposal.prototype_cost}" : 'Not available' %></li>
-                    <li class="mb-0"><b><%= t('project_proposal.expected_cost') %>:</b> <%= @project_proposal.project_cost.present? ? "$#{@project_proposal.project_cost}" : 'Not available' %></li>
+                    <li class="mb-1"><b><%= t('project_proposal.expected_budget') %>:</b> <%= @project_proposal.prototype_cost.present? ? number_to_currency(@project_proposal.prototype_cost, precision: 0) : 'Not available' %></li>
+                    <li class="mb-0"><b><%= t('project_proposal.expected_cost') %>:</b> <%= @project_proposal.project_cost.present? ? number_to_currency(@project_proposal.project_cost, precision: 0) : 'Not available' %></li>
                 </ul>
             </div>
         </div>
