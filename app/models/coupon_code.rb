@@ -4,6 +4,14 @@ class CouponCode < ApplicationRecord
   scope :unclaimed, -> { where(user_id: nil) }
   scope :claimed, -> { where.not(user_id: nil) }
 
+  # A coupon a user claimed was paid for in CC points and cannot be deleted (no refund exists). Unclaimed coupons
+  # can. Deleting the owning user still takes their coupons along.
+  before_destroy :refuse_deletion_once_claimed, unless: :destroyed_by_association
+
+  def claimed?
+    user_id.present?
+  end
+
   # Every coupon has a price, never negative (a coupon without a price could
   # not be claimed, and a negative one would make claim! fail). DB: NOT NULL + CHECK (cc_cost >= 0).
   # One rule: blank, non-numeric, fractional and negative are all refused with the same message.
@@ -57,5 +65,14 @@ class CouponCode < ApplicationRecord
 
   def title
     "$#{dollar_cost} off MakerStore"
+  end
+
+  private
+
+  def refuse_deletion_once_claimed
+    return unless claimed?
+
+    errors.add(:base, "A user has already claimed this coupon with CC points, so it cannot be deleted")
+    throw :abort
   end
 end

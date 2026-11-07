@@ -51,6 +51,18 @@ RSpec.describe CouponCode, type: :model do
     expect([c.reload.dollar_cost, c.cc_cost]).to eq([7, 49])
   end
 
+  it "can be destroyed while unclaimed" do
+    coupon = create(:coupon_code, :unclaimed)
+    expect { coupon.destroy }.to change(CouponCode, :count).by(-1)
+  end
+
+  it "cannot be destroyed once claimed" do
+    coupon = create(:coupon_code, :claimed, user: user)
+    expect(coupon.destroy).to be(false)
+    expect(coupon.errors.full_messages).to eq(["A user has already claimed this coupon with CC points, so it cannot be deleted"])
+    expect(CouponCode.exists?(coupon.id)).to be(true)
+  end
+
   it "is destroyed with its user" do
     create(:coupon_code, :claimed, user: user)
     expect { user.destroy }.to change(CouponCode, :count).by(-1)

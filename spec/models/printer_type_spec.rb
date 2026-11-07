@@ -7,7 +7,7 @@ RSpec.describe PrinterType, type: :model do
     it { should validate_uniqueness_of(:name) }
   end
 
-  it { should have_many(:printers).dependent(:destroy) }
+  it { should have_many(:printers).dependent(:restrict_with_error) }
   it { should have_many(:printer_sessions).through(:printers) }
 
   describe "scopes" do
