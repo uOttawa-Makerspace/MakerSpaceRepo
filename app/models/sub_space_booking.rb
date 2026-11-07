@@ -3,10 +3,10 @@ class SubSpaceBooking < ApplicationRecord
   belongs_to :approved_by, class_name: "User", optional: true
   belongs_to :sub_space
   belongs_to :recurring_booking, optional: true
-  # Set by save_with_status!, which every writer of a new booking uses. Optional here because the
-  # controller checks an occurrence before its status is chosen; the column may become NOT NULL later.
+  # A new booking must be saved with a status (see save_with_status!). Optional on the association
+  # because the column may still be empty on rows older than the status column.
   belongs_to :booking_status, optional: true
-  validates :booking_status, presence: true, if: :booking_status_id?
+  validates :booking_status, presence: true, on: :create
   # The status row the booking used to be linked to. It is still written with every status change
   # so the old table stays consistent until it is retired; nothing reads it.
   has_one :sub_space_booking_status,
@@ -83,13 +83,14 @@ class SubSpaceBooking < ApplicationRecord
     end
   end
 
-  # Gives every booking of the list the status, with the old status rows following. One statement per table.
+  # Gives every booking of the list the status, each through change_status!, so the old status rows follow.
   def self.change_status_of!(bookings, status)
-    ids = bookings.map(&:id)
-    transaction do
-      where(id: ids).update_all(booking_status_id: status.id)
-      SubSpaceBookingStatus.where(sub_space_booking_id: ids).update_all(booking_status_id: status.id)
-    end
+    transaction { bookings.each { |booking| booking.change_status!(status) } }
+  end
+
+  # Checks everything except the status, for a new booking whose status is chosen after the checks.
+  def valid_without_status?
+    valid?(:without_status)
   end
 
   # Destroys the booking together with its status, the one way a booking is

@@ -65,10 +65,28 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       expect(described_class.declined).to contain_exactly(booking)
     end
 
-    it "must exist when one is given" do
-      booking.booking_status_id = -1
-      expect(booking).not_to be_valid
-      expect(booking.errors[:booking_status]).to be_present
+    it "is required for a new booking, and must exist" do
+      new_booking = build(:sub_space_booking, booking_status: nil)
+      expect(new_booking).not_to be_valid
+      expect(new_booking.errors[:booking_status]).to be_present
+      new_booking.booking_status_id = -1
+      expect(new_booking).not_to be_valid
+    end
+
+    it "can be left out when only the other checks are wanted" do
+      new_booking = build(:sub_space_booking, booking_status: nil)
+      expect(new_booking.valid_without_status?).to be(true)
+      new_booking.name = nil
+      expect(new_booking.valid_without_status?).to be(false)
+    end
+
+    it "is not needed to save changes to a booking that has none" do
+      booking.update_column(:booking_status_id, nil)
+      expect(described_class.find(booking.id).update(name: "Renamed")).to be(true)
+    end
+
+    it "refuses a plain save of a new booking without a status" do
+      expect { build(:sub_space_booking, booking_status: nil).save! }.to raise_error(ActiveRecord::RecordInvalid)
     end
 
     describe "#save_with_status!" do
@@ -132,12 +150,29 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         expect(other.reload.booking_status).to eq(@pending_status)
         expect(legacy_status(other)).to eq(@pending_status)
       end
+
+      it "creates a missing old status row and repairs a mislinked one" do
+        missing, mislinked = create_list(:sub_space_booking, 2)
+        other = create(:sub_space_booking)
+        [missing, mislinked].each { |b| b.update_column(:sub_space_booking_status_id, nil) }
+        SubSpaceBookingStatus.where(sub_space_booking_id: missing.id).delete_all
+        mislinked.update_column(:sub_space_booking_status_id, other.sub_space_booking_status_id)
+        SubSpaceBookingStatus.where(sub_space_booking_id: mislinked.id).delete_all
+
+        described_class.change_status_of!([missing, mislinked].map { |b| described_class.find(b.id) }, @approved_status)
+
+        [missing, mislinked].each do |b|
+          expect(legacy_status(b)).to eq(@approved_status)
+          expect(b.reload.sub_space_booking_status_id).to eq(SubSpaceBookingStatus.find_by(sub_space_booking_id: b.id).id)
+        end
+        expect(legacy_status(other)).to eq(@pending_status)
+      end
     end
   end
 
   describe "validations" do
     it "needs name, description, start_time, end_time (i18n full messages)" do
-      blank = described_class.new(sub_space: nil)
+      blank = described_class.new(sub_space: nil, booking_status: @pending_status)
       expect(blank.valid?).to be(false)
       expect(blank.errors.full_messages).to eq(
         [
@@ -153,7 +188,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     # the error lands on :expiration_date
     it "rejects start >= end under the Expiration date message" do
       b = described_class.new(
-        sub_space: create(:sub_space),
+        sub_space: create(:sub_space), booking_status: @pending_status,
         name: "N", description: "D",
         start_time: DateTime.parse("2027-03-03 10:00"),
         end_time: DateTime.parse("2027-03-03 10:00")
@@ -170,7 +205,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
              start_time: DateTime.parse("2027-03-03 10:00"),
              end_time: DateTime.parse("2027-03-03 12:00"))
       overlapping = described_class.new(
-        sub_space: subspace, user: existing.user,
+        sub_space: subspace, user: existing.user, booking_status: @pending_status,
         name: "Over", description: "D",
         start_time: DateTime.parse("2027-03-03 11:00"),
         end_time: DateTime.parse("2027-03-03 12:00")
@@ -185,7 +220,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       let(:room) { create(:sub_space) }
 
       def fresh(start_time, end_time = start_time + 1.hour)
-        described_class.new(sub_space: room, name: "N", description: "D",
+        described_class.new(sub_space: room, booking_status: @pending_status, name: "N", description: "D",
                             start_time: start_time, end_time: end_time)
       end
 
@@ -378,7 +413,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       )
       expect(b.user).to be_nil
       expect(b.recurring_booking).to be_nil
-      expect(b).to be_valid
+      expect(b.valid_without_status?).to be(true)
     end
   end
 

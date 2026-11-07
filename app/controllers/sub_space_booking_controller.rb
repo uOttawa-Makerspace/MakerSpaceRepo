@@ -206,7 +206,7 @@ class SubSpaceBookingController < SessionsController
     end
 
     booking = new_occurrence(attrs, now)
-    booking.valid?
+    booking.valid_without_status?
     # A recurring series skips its past occurrences instead of failing, so a
     # past first occurrence is not an error yet (see book_series).
     booking.errors.delete(:start_time, :in_the_past) if recurring
@@ -569,7 +569,7 @@ class SubSpaceBookingController < SessionsController
   # returns nil when booked, or a failure ({ errors:, alert:, timeslot: }) for
   # the caller to render.
   def book_occurrence(booking, recurring_booking: nil, send_email: true)
-    return invalid_booking_failure(booking) unless booking.valid?
+    return invalid_booking_failure(booking) unless booking.valid_without_status?
 
     sub_space = booking.sub_space
 
@@ -780,7 +780,7 @@ class SubSpaceBookingController < SessionsController
   def apply_bulk_booking_status(bulk_status)
     booking_ids = []
     SubSpaceBooking.transaction do
-      pending = SubSpaceBooking.pending.where(id: params[:sub_space_booking_ids]).to_a
+      pending = SubSpaceBooking.pending.includes(sub_space_booking_status: :booking_status).where(id: params[:sub_space_booking_ids]).to_a
       booking_ids = pending.map(&:id)
 
       if bulk_status == "approve"

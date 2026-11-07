@@ -68,6 +68,17 @@ The locker notices migration must run before the first 8:30am run of the locker 
 
 Post-deploy step for this release (Google Calendar webhook): run `bin/rails runner 'GoogleCalendar::WebhookRegistrar.register!'` once, right after the deploy. Channels registered before this release have no token, and the webhook refuses their pushes (401) until they are re-registered; there is no grace period for them. The same applies whenever `secret_key_base` is rotated: every channel's token is derived from it, so every channel is refused until it is re-registered with the same command.
 
+### Deploy step: booking status column
+
+The release that adds `sub_space_bookings.booking_status_id` copies each booking's status into it when the migration runs, and from then on the app reads only that column. The `worker` container is separate from `web` and may still run the old code after the migration; old code writes a status only to the old status table (for example a booking mirrored from Google Calendar), which would leave the column empty or stale. So deploy in this order:
+
+1. Stop the worker: `docker compose -f docker-compose.production.yml stop worker`.
+2. Deploy as usual (`web` runs the migrations on boot). The migration stops, changing nothing and listing booking ids, if a booking does not have exactly one status row linked both ways; fix those rows first.
+3. Run `docker compose -f docker-compose.production.yml exec web bin/rails bookings:reconcile_statuses`. It copies the old status row into the column wherever they differ, prints each booking changed with the value it had, and never changes the old table. The status row wins, because after this release every writer updates both together, so a difference can only come from old code. It is safe to run again. It normally reports 0 changes when the worker was stopped first.
+4. Start the worker with the new code: `docker compose -f docker-compose.production.yml up -d worker`.
+
+Rolling the migration back removes only the new column; the old table is untouched.
+
 ### Failed and overdue job alerts
 
 The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:
