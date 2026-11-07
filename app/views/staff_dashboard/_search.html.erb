@@ -5,7 +5,7 @@
     <%= select_tag(:username, '', prompt: " Search for users to sign them in or out of #{@space.name.titleize}",
                    class: 'form-select',
                    id: 'user_dashboard_select',
-                   aria: { label: 'Search for users' },
+                   aria: { label: t('common.names.search_users') },
                    data: {user_search_bar: ''}) %>
     <%= form_with url: staff_dashboard_sign_in_users_path, method: :put, id: 'sign_in_user_fastsearch', style: 'display: contents' do %>
         <%= hidden_field_tag :username, nil, id: 'sign_in_user_fastsearch_username' %>

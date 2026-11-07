@@ -1,7 +1,7 @@
 <section class="page-contents">
   <br>
   <h2 class="text-center">Welcome to
-    <strong><%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name), prompt: @space.name, id: 'set_space_id', aria: { label: 'Space' }, class: 'form-select', onchange: 'setSpace()' %></strong>
+    <strong><%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name), prompt: @space.name, id: 'set_space_id', aria: { label: t('common.names.space') }, class: 'form-select', onchange: 'setSpace()' %></strong>
   </h2>
   <%= render 'search' %>
   <br />

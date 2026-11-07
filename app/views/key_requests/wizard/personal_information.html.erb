@@ -29,11 +29,11 @@
         </div>
         <div class="mb-3">
           <%= f.label :space_id, 'Department', class: 'form-label' %>
-          <%= f.select :space_id, Space.all.pluck(:name, :id), { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select', aria: { label: 'Space' } } %>
+          <%= f.select :space_id, Space.all.pluck(:name, :id), { prompt: 'Choose Space...' }, { class: 'form-control', id: 'space-select', aria: { label: t('common.names.space') } } %>
         </div>
         <div class="mb-3">
           <%= f.label :supervisor_id, class: 'form-label' %>
-          <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select', aria: { label: 'Supervisor' } } %>
+          <%= f.select :supervisor_id, User.where(role: 'admin').pluck(:name, :id), { prompt: 'Choose Supervisor...' }, { class: 'form-control', id: 'supervisor-select', aria: { label: t('common.names.supervisor') } } %>
         </div>
         <div class="mb-5">
           <%= f.label :user_status, 'Status', class: 'form-label' %>

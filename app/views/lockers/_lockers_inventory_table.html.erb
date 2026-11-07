@@ -52,7 +52,7 @@
                                 variant_data = variants[size.shopify_gid] || {}
                                 display_name = size.size.presence || variant_data[:title] || "Size ##{size.id}"
                                 [ display_name, size.id, { 'data-data' => variant_data.to_json } ]
-                            }, locker.locker_size&.id), class: 'form-select form-select-sm locker-variant-select', aria: { label: "Size of locker #{locker.specifier}" }, disabled: true, data: { locker_size_for: locker.id } %>
+                            }, locker.locker_size&.id), class: 'form-select form-select-sm locker-variant-select', aria: { label: t('common.names.locker_size_of', specifier: locker.specifier) }, disabled: true, data: { locker_size_for: locker.id } %>
 
                             <div class="spinner-border spinner-border-sm position-absolute top-0 end-0 m-2" style="z-index: 999" hidden>
                                 <span class="visually-hidden">Changing size...</span>
@@ -62,7 +62,7 @@
                     </td>
                     <td data-search="<%= locker.audience %> <%= locker.audience.humanize %>">
                         <%= select_tag 'locker[audience]', options_for_select([['General', 'general'], ['Staff', 'staff'], ['GNG', 'gng']], locker.audience),
-                              class: 'form-select form-select-sm locker-inline-edit', aria: { label: "Audience of locker #{locker.specifier}" }, disabled: true, data: { locker_id: locker.id } %>
+                              class: 'form-select form-select-sm locker-inline-edit', aria: { label: t('common.names.locker_audience_of', specifier: locker.specifier) }, disabled: true, data: { locker_id: locker.id } %>
                     </td>
                     <!-- Searchable by Name, Username, Student ID, and Email -->
                     <td data-search="<%= tenant ? "#{tenant.name} #{tenant.username} #{tenant.email} #{tenant.student_id}" : 'free unoccupied unassigned' %>">
@@ -104,7 +104,7 @@
                                 <div class="form-check form-switch m-0">
                                     <%= check_box_tag "contacted_#{current_rental.id}", '1', current_rental.contacted_for_clearance,
                                           class: 'form-check-input',
-                                          aria: { label: "Contacted for clearance, locker #{locker.specifier}" },
+                                          aria: { label: t('common.names.contacted_locker', specifier: locker.specifier) },
                                           onchange: 'this.form.requestSubmit()' %>
                                 </div>
                             <% end %>

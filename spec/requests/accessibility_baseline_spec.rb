@@ -107,6 +107,20 @@ RSpec.describe "Accessibility baseline", type: :request do
       expect(doc.css("select#space-select, select#supervisor-select").map { |el| el["aria-label"] }).to eq(%w[Space Supervisor])
     end
 
+    it "translates the names given to selects and fields" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      get new_key_request_path(locale: "fr")
+      labels = Nokogiri::HTML(response.body).css("select#space-select, select#supervisor-select").pluck("aria-label")
+      expect(labels).to eq(%w[Espace Superviseur])
+    end
+
+    it "keeps literal English names out of aria-label attributes added to form controls" do
+      offenders = Dir[Rails.root.join("app/views/**/*.erb")].flat_map do |file|
+        File.read(file).scan(/aria: \{ label: ["'][^"']*["'] \}/).map { |tag| "#{File.basename(file)}: #{tag}" }
+      end
+      expect(offenders).to be_empty
+    end
+
     it "gives the login modal its own field ids so labels do not clash with the sign-in page" do
       get login_path
       ids = Nokogiri::HTML(response.body).css("input[id]").pluck("id")

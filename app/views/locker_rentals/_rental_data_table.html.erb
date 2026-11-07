@@ -73,7 +73,7 @@
                                     <div class="form-check form-switch m-0">
                                         <%= check_box_tag :contacted, '1', rental.contacted_for_clearance,
                                               class: 'form-check-input',
-                                              aria: { label: 'Contacted for clearance' },
+                                              aria: { label: t('common.names.contacted') },
                                               onchange: 'this.form.requestSubmit()' %>
                                     </div>
                                 <% end %>

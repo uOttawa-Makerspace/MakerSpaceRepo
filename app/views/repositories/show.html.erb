@@ -265,7 +265,7 @@
         <%= form_with(url: comments_create_path, id: 'comment') do %>
             <div class="mb-3">
                 <%= hidden_field_tag :content %>
-                <trix-editor input="content" aria-label="Comment"></trix-editor>
+                <trix-editor input="content" aria-label="<%= t('common.names.comment') %>"></trix-editor>
             </div>
             <%= submit_tag t('repository.post_com'), class: 'btn btn-primary' %>
         <% end %>

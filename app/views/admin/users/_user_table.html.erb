@@ -44,7 +44,7 @@
   <td colspan="1">
     <%= form_tag set_role_admin_users_path, method: :patch, id: role_form_id do %>
       <div class="input-group">
-        <%= select_tag(:role, options_for_select(@roles.map { |r| [r.humanize, r] }), class: 'form-control form-select', aria: { label: 'Role' }) %>
+        <%= select_tag(:role, options_for_select(@roles.map { |r| [r.humanize, r] }), class: 'form-control form-select', aria: { label: t('common.names.role') }) %>
         <%= submit_tag 'Commit', id: 'change-button', class: 'btn btn-primary form-control' %>
       </div>
     <% end %>
