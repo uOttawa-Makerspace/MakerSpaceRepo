@@ -11,10 +11,13 @@
         <% end %>
         <div class="list-group mb-5">
             <% @learning_modules.each do |training, learning_modules| %>
-                <%= link_to "##{training.localized_name.parameterize}", class: 'list-group-item list-group-item-action' do %>
-                    <%= training.localized_name %>
-                    <br />
-                    <b><%= training.learning_modules_completed(current_user).count %> of <%= learning_modules.size %> completed</b>
+                <% group_name = training ? training.localized_name : t('learning_area.no_training') %>
+                <%= link_to "##{group_name.parameterize}", class: 'list-group-item list-group-item-action' do %>
+                    <%= group_name %>
+                    <% if training %>
+                        <br />
+                        <b><%= training.learning_modules_completed(current_user).count %> of <%= learning_modules.size %> completed</b>
+                    <% end %>
                 <% end %>
             <% end %>
         </div>
@@ -23,15 +26,17 @@
     <%# Displaying learning module cards %>
     <div class="col-lg-10">
         <% @learning_modules.each do |training, learning_modules| %>
-            <%# Top header of each training name %>
-            <div class="mb-5" id="<%= training.localized_name.parameterize %>">
+            <%# Top header of each training name; modules without a training form the last group %>
+            <% group_name = training ? training.localized_name : t('learning_area.no_training') %>
+            <% group_slug = training ? training.name.parameterize : 'no-training' %>
+            <div class="mb-5" id="<%= group_name.parameterize %>">
                 <div class="d-flex flex-wrap align-items-center justify-content-between border-bottom pb-2 mb-4">
                     <div>
-                        <h2 class="fs-4 d-inline"><%= training.localized_name %></h2>
+                        <h2 class="fs-4 d-inline"><%= group_name %></h2>
                         <%= link_to 'Top', '#', class: 'small' %>
                     </div>
                     <div class="d-flex align-items-center gap-3">
-                        <% levels_ordered(training).each do |level| %>
+                        <% (training ? levels_ordered(training) : []).each do |level| %>
                             <% modules_for_level = learning_modules.select { |m| m.level == level } %>
                             <span class="badge rounded-pill border <%= return_text_color(level) %>">
                                 <%= training.learning_modules_completed(current_user, level).count %>
@@ -40,7 +45,7 @@
                                 <%= level %>
                             </span>
                         <% end %>
-                        <%= training_status(training.id, current_user.id) %>
+                        <%= training_status(training.id, current_user.id) if training %>
                     </div>
                 </div>
 
@@ -73,25 +78,27 @@
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <div>
                                 <h2 class="d-inline fs-6 <%= return_text_color(level) %>"><%= level.humanize %></h2>
-                                <span class="text-muted">
-                                    <%= training.learning_modules_completed(current_user, level).count %>
-                                    of
-                                    <%= modules_by_level.size %>
-                                    completed
-                                </span>
+                                <% if training %>
+                                    <span class="text-muted">
+                                        <%= training.learning_modules_completed(current_user, level).count %>
+                                        of
+                                        <%= modules_by_level.size %>
+                                        completed
+                                    </span>
+                                <% end %>
                             </div>
                             <% if current_user.admin? %>
                                 <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="toggle-<%= training.id %>-<%= level %>"
-                                           data-order="<%= training.name.parameterize %>-<%= level.parameterize %>">
-                                    <label class="form-check-label small text-muted" for="toggle-<%= training.id %>-<%= level %>">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggle-<%= group_slug %>-<%= level %>"
+                                           data-order="<%= group_slug %>-<%= level.parameterize %>">
+                                    <label class="form-check-label small text-muted" for="toggle-<%= group_slug %>-<%= level %>">
                                         <i class="fa fa-sort me-1"></i>Re-order
                                     </label>
                                 </div>
                             <% end %>
                         </div>
 
-                        <div class="row row-cols-md-2 row-cols-lg-4 g-1" data-order-container="<%= training.name.parameterize %>-<%= level.parameterize %>">
+                        <div class="row row-cols-md-2 row-cols-lg-4 g-1" data-order-container="<%= group_slug %>-<%= level.parameterize %>">
                             <%= render partial: 'learning_module_card', collection: modules_by_level, as: :learning_module %>
                         </div>
                     </div>

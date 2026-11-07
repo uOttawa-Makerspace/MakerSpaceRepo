@@ -83,17 +83,11 @@ class LearningModule < ApplicationRecord
   scope :filter_by_level, ->(level) { where(level: level) }
   scope :ordered_by_level,
         -> do
-          order(
-            Arel.sql(
-              "CASE level
-                WHEN 'general'      THEN 0
-                WHEN 'beginner'     THEN 1
-                WHEN 'intermediate' THEN 2
-                WHEN 'advanced'     THEN 3
-                ELSE 0
-                END"
-            )
-          )
+          rank =
+            levels.values.each_with_index.reduce(Arel::Nodes::Case.new(arel_table[:level])) do |node, (value, i)|
+              node.when(value).then(i)
+            end
+          order(rank.else(0))
         end
 
   default_scope { order(:order) }

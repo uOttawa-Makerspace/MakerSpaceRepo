@@ -29,7 +29,7 @@ class LearningAreaController < DevelopmentProgramsController
         .includes(photos_attachments: :blob)
         .includes(:training)
         .group_by(&:training)
-        .sort_by { |training, _| training.name }
+        .sort_by { |training, _| [training ? 0 : 1, training&.name.to_s] }
         .to_h
         .transform_values do |modules|
           modules.sort_by { |m| LearningModule.levels.keys.index(m.level) }
@@ -54,7 +54,7 @@ class LearningAreaController < DevelopmentProgramsController
       redirect_to learning_area_path(@learning_module.id),
                   notice: 'Learning Module has been successfully created.'
     else
-      flash[:alert] = 'Something went wrong'
+      flash.now[:alert] = 'Something went wrong'
       render 'new', status: :unprocessable_content
     end
   end
@@ -144,32 +144,35 @@ class LearningAreaController < DevelopmentProgramsController
       )
     end
 
-    LearningModuleTrack
-      .for_user_and_module!(current_user, @learning_module)
-      .update(scorm_state: scorm_state_params)
+    # Params are checked before any row is written: a rejected commit stores nothing
+    scorm_state = scorm_state_params
+    LearningModuleTrack.transaction do
+      LearningModuleTrack
+        .for_user_and_module!(current_user, @learning_module)
+        .update(scorm_state: scorm_state)
+    end
 
     head :ok
   end
 
+  # The listed modules take the existing order values, lowest first, in the
+  # given sequence. An unknown id refuses the whole request (404) and nothing
+  # is reordered.
   def reorder
-    if params[:data].present?
-      lm_order =
-        LearningModule.where(id: params[:data]).order(:order).pluck(:order)
-      params[:data].each_with_index do |lm, i|
-        LearningModule.find(lm).update(order: lm_order[i])
-      end
+    ids = Array(params[:data]).uniq
+    return head :bad_request if ids.empty?
 
-      respond_to do |format|
-        format.html do
-          redirect_to learning_area_index_path,
-                      notice: 'Successfully reordered the learning modules!'
-        end
-        format.json { render json: { status: :ok } }
+    found = LearningModule.find(ids).index_by { |lm| lm.id.to_s }
+    modules = ids.map { |id| found.fetch(id.to_s) }
+    slots = modules.map(&:order).sort
+    LearningModule.transaction { modules.zip(slots) { |lm, slot| lm.update!(order: slot) } }
+
+    respond_to do |format|
+      format.html do
+        redirect_to learning_area_index_path,
+                    notice: 'Successfully reordered the learning modules!'
       end
-    else
-      flash[
-        :alert
-      ] = 'Unable to re-order the learning modules. Please try again later...'
+      format.json { render json: { status: :ok } }
     end
   end
 

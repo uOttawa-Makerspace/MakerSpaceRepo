@@ -56,6 +56,28 @@ RSpec.describe "Learning area", type: :request do
     end
   end
 
+  describe "GET /learning_area (index) with a module that has no training" do
+    before { create(:learning_module, training: nil, title: "Orphan module") }
+
+    { "en" => "Other modules", "fr" => "Autres modules" }.each do |locale, heading|
+      it "lists it in a last group headed #{heading.inspect} (#{locale})" do
+        sign_in_as(:regular)
+        get learning_area_index_path(locale: locale)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Orphan module", heading)
+        expect(response.body.rindex(heading)).to be > response.body.index("Soldering basics")
+      end
+    end
+
+    it "renders the subskill page for such a module" do
+      create(:learning_module, training: nil, title: "Orphan sub", subskill: "orphans")
+      sign_in_as(:regular)
+      get subskill_learning_area_index_path("orphans")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("orphans")
+    end
+  end
+
   describe "GET /learning_area/:id (show)" do
     it "redirects a guest to login" do
       get learning_area_path(learning_module)
@@ -102,13 +124,12 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # a module without a training makes the show page crash (500)
-    it "crashes with a 500 (nil.localized_name) when the module has no training" do
+    it "renders a module that has no training, without a training name" do
       orphan = create(:learning_module, training: nil, title: "Orphan")
       sign_in_as(:regular)
       get learning_area_path(orphan)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("undefined method 'localized_name' for nil")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Orphan")
     end
   end
 
@@ -269,11 +290,11 @@ RSpec.describe "Learning area", type: :request do
       expect(flash[:alert]).to include("learning_module")
     end
 
-    # failed saves use flash[] not flash.now[], so the alert shows on the NEXT page
-    it "shows the failure alert on the next request" do
+    it "shows the failure alert on the re-rendered form only, not on the next request" do
       post learning_area_index_path, params: valid_params(title: "")
-      get learning_area_index_path
       expect(response.body).to include("Something went wrong")
+      get learning_area_index_path
+      expect(response.body).not_to include("Something went wrong")
     end
 
     it "ignores unpermitted attributes such as order and scorm_status" do
@@ -387,20 +408,20 @@ RSpec.describe "Learning area", type: :request do
       end
     end
 
-    it "without data sets an alert and renders no template (204)" do
+    it "answers 400 without data and changes nothing" do
       sign_in_as(:admin)
+      before = orders
       put reorder_learning_area_index_path
-      expect(response).to have_http_status(:no_content)
-      expect(flash[:alert]).to eq("Unable to re-order the learning modules. Please try again later...")
+      expect(response).to have_http_status(:bad_request)
+      expect(orders).to eq(before)
     end
 
-    # an unknown id in data aborts the loop half-way, leaving a partial reorder
-    it "answers 404 on an unknown id after already reordering earlier entries" do
+    it "answers 404 on an unknown id and reorders nothing" do
       sign_in_as(:admin)
-      sorted = orders.values.sort
+      before = orders
       put reorder_learning_area_index_path, params: { data: [third.id, 0, learning_module.id] }
       expect(response).to have_http_status(:not_found)
-      expect(orders[third.id]).to eq(sorted[0])
+      expect(orders).to eq(before)
     end
   end
 
@@ -803,12 +824,10 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # the track row is created before the params are validated, so a rejected commit still leaves an empty track
-    it "answers 400 (BadRequest) when suspend_data exceeds 64,000 characters but still leaves an empty track" do
+    it "answers 400 (BadRequest) when suspend_data exceeds 64,000 characters and stores nothing" do
       log_in!(user)
       expect { commit(learning_module.id, state.merge("cmi.suspend_data" => "x" * 64_001)) }
-        .to change(LearningModuleTrack, :count).by(1)
-      expect(user.learning_module_tracks.last.scorm_state).to be_nil
+        .not_to change(LearningModuleTrack, :count)
       expect(response).to have_http_status(:bad_request)
       expect(error_text).to include("suspend_data exceeds 64k character limit")
     end
