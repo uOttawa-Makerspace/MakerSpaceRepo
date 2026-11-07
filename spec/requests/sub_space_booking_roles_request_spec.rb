@@ -474,6 +474,22 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
       expect(status_name(b1)).to eq("Approved")
     end
 
+    it "declines several bookings at once and sends no mail" do
+      b1 = pending_booking
+      b2 = pending_booking(start_time: DateTime.parse("2027-04-04 10:00"),
+                           end_time: DateTime.parse("2027-04-04 11:00"))
+      sign_in_as(:staff)
+
+      perform_enqueued_jobs do
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [b1.id, b2.id], bulk_status: "decline" }
+      end
+
+      expect([b1, b2].map { |b| status_name(b) }).to eq(%w[Declined Declined])
+      expect(SubSpaceBookingStatus.where(sub_space_booking_id: [b1.id, b2.id]).map { |r| r.booking_status.name }).to eq(%w[Declined Declined])
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
     it "ignores ids that do not exist and reports them as skipped (staff)" do
       sign_in_as(:staff)
       put bulk_approve_decline_sub_space_booking_index_path,

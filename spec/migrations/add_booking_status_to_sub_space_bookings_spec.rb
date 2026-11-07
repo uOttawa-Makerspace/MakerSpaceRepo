@@ -66,6 +66,17 @@ RSpec.describe AddBookingStatusToSubSpaceBookings, :booking_clock do
     expect(status_rows).to eq(statuses_before)
   end
 
+  it "creates the reconciliation record table, and down drops it with the column" do
+    old_shape_bookings
+    migrate(:up)
+    expect(connection.table_exists?(:booking_status_reconciliations)).to be(true)
+
+    migrate(:down)
+
+    expect(connection.table_exists?(:booking_status_reconciliations)).to be(false)
+    expect(column?).to be(false)
+  end
+
   it "leaves the column nullable" do
     old_shape_bookings
     migrate(:up)

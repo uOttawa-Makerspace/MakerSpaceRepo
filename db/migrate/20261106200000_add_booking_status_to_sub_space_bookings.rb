@@ -5,7 +5,8 @@
 #
 # Before copying, every booking must have exactly one status row, linked from the booking and
 # holding a status. If any does not, the migration stops (nothing is changed) and lists the booking ids.
-# down removes only the new column.
+# It also creates booking_status_reconciliations, where the bookings:reconcile_statuses task records every
+# column value it changes, so it can be put back. down drops that table and the new column; nothing else.
 class AddBookingStatusToSubSpaceBookings < ActiveRecord::Migration[8.1]
   PROBLEMS = <<~SQL.squish
     SELECT b.id FROM sub_space_bookings b
@@ -26,6 +27,12 @@ class AddBookingStatusToSubSpaceBookings < ActiveRecord::Migration[8.1]
     end
 
     add_reference :sub_space_bookings, :booking_status, foreign_key: true, index: true
+    create_table :booking_status_reconciliations do |t|
+      t.references :sub_space_booking, null: false, foreign_key: { on_delete: :cascade }
+      t.bigint :was_booking_status_id
+      t.bigint :now_booking_status_id, null: false
+      t.datetime :created_at, null: false
+    end
     execute <<~SQL.squish
       UPDATE sub_space_bookings b
       SET booking_status_id = s.booking_status_id
@@ -35,6 +42,7 @@ class AddBookingStatusToSubSpaceBookings < ActiveRecord::Migration[8.1]
   end
 
   def down
+    drop_table :booking_status_reconciliations
     remove_reference :sub_space_bookings, :booking_status, foreign_key: true, index: true
   end
 end

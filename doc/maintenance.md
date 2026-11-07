@@ -70,14 +70,14 @@ Post-deploy step for this release (Google Calendar webhook): run `bin/rails runn
 
 ### Deploy step: booking status column
 
-The release that adds `sub_space_bookings.booking_status_id` copies each booking's status into it when the migration runs, and from then on the app reads only that column. The `worker` container is separate from `web` and may still run the old code after the migration; old code writes a status only to the old status table (for example a booking mirrored from Google Calendar), which would leave the column empty or stale. So deploy in this order:
+The release that adds `sub_space_bookings.booking_status_id` copies each booking's status into it when the migration runs, and from then on the app reads only that column. Old code writes a status only to the old status table (the `worker` container, which is separate from `web`, may still run the old code; so may the old `web` container until compose has replaced it), which would leave the column empty or stale. So deploy in this order:
 
 1. Stop the worker: `docker compose -f docker-compose.production.yml stop worker`.
 2. Deploy as usual (`web` runs the migrations on boot). The migration stops, changing nothing and listing booking ids, if a booking does not have exactly one status row linked both ways; fix those rows first.
-3. Run `docker compose -f docker-compose.production.yml exec web bin/rails bookings:reconcile_statuses`. It copies the old status row into the column wherever they differ, prints each booking changed with the value it had, and never changes the old table. The status row wins, because after this release every writer updates both together, so a difference can only come from old code. It is safe to run again. It normally reports 0 changes when the worker was stopped first.
+3. Check that compose has replaced `web` and the old `web` container is stopped (`docker compose -f docker-compose.production.yml ps`), then run `docker compose -f docker-compose.production.yml exec web bin/rails bookings:reconcile_statuses`. It copies the old status row into the column wherever they differ, and records each change (booking, old value, new value) in `booking_status_reconciliations` in the same statement, and prints it. It never changes the old table. The status row wins, because after this release every writer updates both together, so a difference can only come from old code. It is safe to run again (a second run changes and records nothing) and normally reports 0 changes. It lists bookings that still have no status: those whose column is set but whose old status row is missing or linked to another booking are skipped, and the next status change of the booking creates or repairs the row.
 4. Start the worker with the new code: `docker compose -f docker-compose.production.yml up -d worker`.
 
-Rolling the migration back removes only the new column; the old table is untouched.
+To undo a reconcile, run `bin/rails bookings:restore_reconciled_statuses`: it puts each changed booking's column back to the recorded old value, newest change first, leaves a booking alone (and lists it) if its column has been changed since, and keeps the record. Rolling the migration back drops the new column and the record table; the old status table is untouched.
 
 ### Failed and overdue job alerts
 
