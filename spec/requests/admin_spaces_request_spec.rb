@@ -226,25 +226,32 @@ RSpec.describe "Admin spaces", type: :request do
         expect(space.reload.name).to eq("Gamma")
       end
 
-      # update_name with an invalid (blank/duplicate) name renders nothing: 204, no flash.
-      it "update_name answers 204 with no flash on a blank or duplicate name" do
+      it "update_name redirects back with the validation error on a blank or duplicate name" do
         create(:space, name: "Taken")
-        [ "", "Taken" ].each do |bad|
+        { "" => "A name is required for the space", "Taken" => "A space with that name already exists" }.each do |bad, message|
           post admin_space_update_name_path(space_id: space.id), params: { name: bad }
-          expect(response).to have_http_status(:no_content)
-          expect(flash.to_h).to eq({})
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq(message)
           expect(space.reload.name).to eq("Alpha")
         end
       end
 
-      # update_max_capacity computes nil-for-zero then ignores it; "0" is stored as 0, not "no limit".
-      it "update_max_capacity stores the raw value (0 is not turned into nil)" do
+      it "update_name gives the validation error in French" do
+        create(:space, name: "Taken")
+        post admin_space_update_name_path(space_id: space.id), params: { name: "Taken", locale: "fr" }
+        expect(flash[:alert]).to eq("Un espace portant ce nom existe déjà")
+      end
+
+      it "update_max_capacity stores a positive number, and 0 or blank as no limit" do
         post update_max_capacity_admin_spaces_path, params: { space_id: space.id, max_capacity: "12" }
         expect(response).to redirect_to(root_path)
         expect(flash[:notice]).to eq("Space Capacity updated!")
         expect(space.reload.max_capacity).to eq(12)
-        post update_max_capacity_admin_spaces_path, params: { space_id: space.id, max_capacity: "0" }
-        expect(space.reload.max_capacity).to eq(0)
+        [ "0", "" ].each do |no_limit|
+          post update_max_capacity_admin_spaces_path, params: { space_id: space.id, max_capacity: no_limit }
+          expect(space.reload.max_capacity).to be_nil
+          space.update!(max_capacity: 12)
+        end
       end
 
       it "update_keycode saves any string" do

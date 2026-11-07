@@ -113,17 +113,19 @@ class Admin::SpacesController < AdminAreaController
 
   def update_name
     @space = Space.find(params[:space_id])
-    return unless @space.update(name: params[:name])
+    if @space.update(name: params[:name])
       flash[:notice] = "Space Name updated !"
-      redirect_back(fallback_location: root_path)
-    
+    else
+      flash[:alert] = space_name_error
+    end
+    redirect_back(fallback_location: root_path)
   end
 
   def update_max_capacity
     @space = Space.find(params[:space_id])
     max_capacity = params[:max_capacity].to_i
     max_capacity = nil if max_capacity.zero? # 0 is no limit
-    if @space.update(max_capacity: params[:max_capacity])
+    if @space.update(max_capacity: max_capacity)
       flash[:notice] = "Space Capacity updated!"
     else
       flash[:alert] = "Failed to update space capacity."
@@ -324,6 +326,11 @@ class Admin::SpacesController < AdminAreaController
   end
 
   private
+
+  def space_name_error
+    kind = @space.errors.of_kind?(:name, :blank) ? "blank" : "taken"
+    t("admin.space_name.#{kind}")
+  end
 
   def space_params
     params.require(:space_params).permit(:name, :max_capacity, :keycode)
