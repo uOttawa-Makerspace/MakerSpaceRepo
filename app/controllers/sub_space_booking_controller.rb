@@ -167,8 +167,10 @@ class SubSpaceBookingController < SessionsController
     approval_failed(e)
   end
 
+  # Typeahead for the "grant access" picker: at most 30 non-deleted users whose name or username contains the
+  # query, as id and name. A blank or too short query lists nobody.
   def users
-    render json: User.all
+    render json: User.directory_search(params[:query]).order(:name, :id).as_json(only: %i[id name])
   end
 
   def bookings

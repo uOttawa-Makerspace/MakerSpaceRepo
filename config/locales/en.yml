@@ -220,6 +220,8 @@ en:
         blank: "This field is required."
         inclusion: "Selection is not valid."
   sub_space_booking:
+    picker:
+      min_length: "Type at least %{count} characters to search for a person."
     series:
       too_long: "A recurring booking can span at most %{days} days."
       partial: "Booked %{booked} of %{total} occurrences. Not booked: %{failed}."

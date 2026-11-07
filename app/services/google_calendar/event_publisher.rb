@@ -13,13 +13,15 @@ module GoogleCalendar
       "MTC" => "c_f6jqt6dcoj7iovfa88a52nh9c4@group.calendar.google.com",
       "Makerspace" => "c_g1bk6ctpenjeko2dourrr0h6pc@group.calendar.google.com"
     }.freeze
-    TEST_CALENDAR = "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
+    # The shared Google calendar that sub space bookings are written to, and where events of spaces not listed in
+    # CALENDARS go.
+    SHARED_CALENDAR = "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
     CONFLICT = 409
     NOT_FOUND = 404
     GONE = [NOT_FOUND, 410].freeze
 
     def self.calendar_id_for(space)
-      CALENDARS.fetch(space.name, TEST_CALENDAR)
+      CALENDARS.fetch(space.name, SHARED_CALENDAR)
     end
 
     def self.authorizer

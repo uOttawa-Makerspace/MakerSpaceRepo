@@ -250,6 +250,8 @@ fr:
         blank: "Ce champ est requis."
         inclusion: "Sélection non valide."
   sub_space_booking:
+    picker:
+      min_length: "Saisissez au moins %{count} caractères pour rechercher une personne."
     series:
       too_long: "Une réservation récurrente peut couvrir au plus %{days} jours."
       partial: "%{booked} occurrences sur %{total} réservées. Non réservées : %{failed}."

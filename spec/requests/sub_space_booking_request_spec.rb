@@ -1027,24 +1027,47 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
   describe "users / get_sub_space_booking / access requests" do
     let(:space) { create(:space) }
 
-    it "users JSON is admin/staff only and omits password and access_token" do
-      # `render json: User.all` now goes through User#serializable_hash,
-      # which excludes password and access_token.
+    it "users is refused to regular users" do
       log_in!(create(:user, :regular_user, booking_approval: true))
-      get users_sub_space_booking_index_path
+      get users_sub_space_booking_index_path, params: { query: "abc" }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert])
         .to eq("You must be an admin or staff to view this page.")
+    end
 
-      log_in!(create(:user, :admin, booking_approval: true))
-      create(:user, :regular_user, booking_approval: true)
-      get users_sub_space_booking_index_path
-      expect(response.status).to eq(200)
-      json = response.parsed_body
-      expect(json).to be_an(Array)
-      keys = json.map(&:keys).flatten
-      expect(keys).to include("email", "name")
-      expect(keys).not_to include("access_token", "password")
+    describe "users typeahead" do
+      before do
+        log_in!(create(:user, :staff, booking_approval: true))
+        create(:user, :regular_user, name: "Alice Anderson", username: "aanderson")
+        create(:user, :regular_user, name: "Bob Brown", username: "alicefan")
+        create(:user, :regular_user, name: "Carol Clark", username: "cclark")
+      end
+
+      def lookup(query)
+        get users_sub_space_booking_index_path, params: { query: query }
+        expect(response).to have_http_status(:ok)
+        response.parsed_body
+      end
+
+      it "returns only id and name of the users matching the query, ignoring case" do
+        json = lookup("ALICE")
+        expect(json.map(&:keys).uniq).to eq([%w[id name]])
+        expect(json.pluck("name")).to eq(["Alice Anderson", "Bob Brown"])
+      end
+
+      it "returns an empty list for a blank or missing query" do
+        expect(lookup("")).to eq([])
+        get users_sub_space_booking_index_path
+        expect(response.parsed_body).to eq([])
+      end
+
+      it "leaves out deleted users and caps the list" do
+        create(:user, :regular_user, name: "Alice Gone", deleted: true)
+        create_list(:user, 31, :regular_user, name: "Zed Match")
+        json = lookup("alice")
+        expect(json.pluck("name")).not_to include("Alice Gone")
+        expect(lookup("zed match").size).to eq(30)
+      end
     end
 
     it "get_sub_space_booking admins/staff only: 404 on unknown id" do
