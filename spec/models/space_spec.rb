@@ -20,6 +20,10 @@ RSpec.describe Space, type: :model do
     end
   end
 
+  it "has associations that all resolve to a class" do
+    expect { Space.reflect_on_all_associations.each(&:klass) }.not_to raise_error
+  end
+
   describe "validation" do
     context "name" do
       it do
