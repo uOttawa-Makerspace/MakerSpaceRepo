@@ -190,22 +190,41 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(walls_of("Edge")).to eq(["2026-12-01 12:00", "2026-12-08 12:00", "2026-12-15 12:00"])
     end
 
-    # a failed occurrence does not stop the series and the answer is
-    # 422. Changed: the mail now goes out for the first occurrence actually
-    # booked (before, a failed first attempt meant no mail at all).
-    it "mails for the first booked occurrence when an earlier one conflicts" do
+    # Past occurrences are skipped, so the first occurrence that is actually
+    # booked is the second one here: when it conflicts the whole series is
+    # refused, nothing is saved and no mail goes out.
+    it "refuses the series when the first bookable occurrence conflicts after a skipped past one" do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
       create(:sub_space_booking, sub_space: room, user: admin, name: "Grabber", blocking: true,
                                  start_time: Time.zone.parse("2026-12-08 10:30"),
                                  end_time: Time.zone.parse("2026-12-08 11:30"))
       log_in!(user)
+      post_series(start_on: "2026-11-17", end_on: "2026-12-15", name: "Refused", room: room)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["errors"]).to eq(["TimeSlot This time slot is already booked."])
+      expect(response.parsed_body["summary"]).to start_with("The series was not created")
+      expect(response.parsed_body).not_to have_key("booked")
+      expect(SubSpaceBooking.where(name: "Refused")).to be_empty
+      expect(RecurringBooking.count).to eq(0)
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    # a conflict on a later occurrence keeps the partial series and the answer
+    # is 422; the mail goes out once, for the first occurrence booked.
+    it "keeps a partial series and mails once when an occurrence after the first bookable one conflicts" do
+      managed = create(:space, :with_space_managers)
+      room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
+      create(:sub_space_booking, sub_space: room, user: admin, name: "Grabber", blocking: true,
+                                 start_time: Time.zone.parse("2026-12-15 10:30"),
+                                 end_time: Time.zone.parse("2026-12-15 11:30"))
+      log_in!(user)
       post_series(start_on: "2026-11-17", end_on: "2026-12-15", name: "Mailed", room: room)
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."],
-                                         "booked" => 1, "failed" => ["2026-12-08"],
-                                         "summary" => "Booked 1 of 2 occurrences. Not booked: 2026-12-08.")
-      expect(walls_of("Mailed")).to eq(["2026-12-15 10:00"])
+                                         "booked" => 1, "failed" => ["2026-12-15"],
+                                         "summary" => "Booked 1 of 2 occurrences. Not booked: 2026-12-15.")
+      expect(walls_of("Mailed")).to eq(["2026-12-08 10:00"])
       expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Booking needs approval"])
     end
   end

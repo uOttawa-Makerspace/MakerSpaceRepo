@@ -516,7 +516,8 @@ class SubSpaceBookingController < SessionsController
 
   # Books every occurrence that does not start in the past, all in one
   # RecurringBooking group, and renders once at the end. If the first
-  # occurrence cannot be booked, the series is refused and nothing is saved.
+  # occurrence that is not in the past cannot be booked, the series is refused
+  # and nothing is saved.
   # A later failed occurrence does not stop the rest (a partial series is
   # kept and reported). The mail goes out for the first occurrence actually
   # booked.
@@ -525,13 +526,13 @@ class SubSpaceBookingController < SessionsController
     booked = 0
     last_booked = nil
     failures = [] # [date, failure]
-    occurrences.each_with_index do |(start_time, end_time), index|
+    occurrences.each do |start_time, end_time|
       booking = new_occurrence(attrs.merge(start_time: start_time, end_time: end_time), now)
       next if SubSpaceBooking.start_in_past?(booking.start_time, now)
 
       failure = book_occurrence(booking, recurring_booking: recurring_booking, send_email: booked.zero?)
       if failure
-        return render_first_occurrence_refused(booking, failure) if index.zero?
+        return render_first_occurrence_refused(booking, failure) if booked.zero?
 
         failures << [booking.start_time.to_date.iso8601, failure]
       else
