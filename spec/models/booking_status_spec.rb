@@ -46,20 +46,33 @@ RSpec.describe BookingStatus, type: :model do
     expect(blank).not_to be_valid
   end
 
-  # dependent: :destroy deletes every linked status row
-  it "destroying a status nukes its linking rows (dependent: :destroy)" do
-    booking = create(:sub_space_booking)
-    link = SubSpaceBookingStatus.create!(
-      sub_space_booking: booking, booking_status: @pending
-    )
-    booking.update_column(:sub_space_booking_status_id, link.id)
-    # both the factory's status row and the manually added one point at Pending
-    expect(
-      SubSpaceBookingStatus.where(booking_status_id: @pending.id).count
-    ).to eq(2)
-    @pending.destroy
-    expect(SubSpaceBookingStatus.where(booking_status_id: @pending.id).count)
-      .to eq(0)
-    expect(SubSpaceBookingStatus.find_by(id: link.id)).to be_nil
+  describe "destroy" do
+    it "refuses while bookings use the status, and deletes nothing" do
+      booking = create(:sub_space_booking)
+      link_id = booking.sub_space_booking_status_id
+
+      expect(@pending.destroy).to be(false)
+
+      expect(@pending.errors[:base]).not_to be_empty
+      expect(described_class.exists?(@pending.id)).to be(true)
+      expect(SubSpaceBooking.exists?(booking.id)).to be(true)
+      expect(SubSpaceBookingStatus.exists?(link_id)).to be(true)
+    end
+
+    it "refuses while only a booking's status column uses it" do
+      booking = create(:sub_space_booking)
+      booking.update_columns(sub_space_booking_status_id: nil)
+      SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).delete_all
+
+      expect(@pending.destroy).to be(false)
+      expect(described_class.exists?(@pending.id)).to be(true)
+    end
+
+    it "destroys a status nothing uses" do
+      unused = described_class.create!(name: "Archived")
+
+      expect(unused.destroy).to be_truthy
+      expect(described_class.exists?(unused.id)).to be(false)
+    end
   end
 end

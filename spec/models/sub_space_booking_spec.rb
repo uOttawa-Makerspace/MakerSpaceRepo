@@ -385,21 +385,16 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       end
     end
 
-    # has_one :sub_space_booking_status (dependent: :destroy) deletes
-    # the STATUS row first, while sub_space_bookings.
-    # sub_space_booking_status_id still references it — PG 23503 raises and
-    # the booking SURVIVES, destroy is effectively a no-op. This is why the
-    # controller has a manual FK dance in destroy_booking (request-spec
-    # pinned).
-    it "destroy raises InvalidForeignKey and the row survives" do
+    # The status row refuses its own destroy while the booking points at it, so a plain destroy is
+    # refused and nothing is deleted; destroy_with_status! is the way to remove a booking.
+    it "destroy is refused and both rows survive" do
       booking = create(:sub_space_booking, name: "N", description: "D",
                        start_time: DateTime.parse("2027-03-03 10:00"),
                        end_time: DateTime.parse("2027-03-03 11:00"))
       status_row = described_class
                    .find(booking.id).sub_space_booking_status
 
-      expect { booking.destroy }
-        .to raise_error(ActiveRecord::InvalidForeignKey)
+      expect(booking.destroy).to be(false)
       expect(described_class.exists?(booking.id)).to be(true)
       expect(SubSpaceBookingStatus.exists?(status_row.id)).to be(true)
     end
