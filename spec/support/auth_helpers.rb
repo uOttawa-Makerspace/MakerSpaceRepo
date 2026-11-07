@@ -10,6 +10,17 @@ module AuthzTestHelper
     session[:user_id] = user.id
     user
   end
+
+  # The answer of an admin-only page: a guest is sent to the login page (with
+  # the page to come back to), anyone else signed in goes to the home page.
+  def expect_admin_area_bounce(guest:)
+    if guest
+      expect(response).to have_http_status(:found)
+      expect(URI.parse(response.location).path).to eq(login_path)
+    else
+      expect(response).to redirect_to("/")
+    end
+  end
 end
 
 module BrowserAuthHelper

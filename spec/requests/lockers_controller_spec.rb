@@ -21,11 +21,9 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
   end
 
   describe "access matrix" do
-    it "sends guests to / (ensure_admin runs before signed_in; no login redirect)" do
-      # unlike LockerRentals, guests are not
-      # sent to the login page here.
+    it "sends guests to the login page" do
       get lockers_path
-      expect(response).to redirect_to("/")
+      expect_admin_area_bounce(guest: true)
     end
 
     it "redirects non-admins (regular and staff) to / on lockers#index, with no flash" do

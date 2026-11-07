@@ -30,18 +30,18 @@ RSpec.describe "Admin::ContactInfos (HTTP contract)", type: :request do
 
         it "refuses every action and changes nothing" do
           get admin_contact_infos_path
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
           get new_admin_contact_info_path
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
           get edit_admin_contact_info_path(info)
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
           expect { post admin_contact_infos_path, params: valid_params }.not_to change(ContactInfo, :count)
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
           patch admin_contact_info_path(info), params: { contact_info: { name: "Hacked" } }
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
           expect(info.reload.name).to eq("Front Desk")
           expect { delete admin_contact_info_path(info) }.not_to change(ContactInfo, :count)
-          expect(response.location).to eq("http://www.example.com/")
+          expect_admin_area_bounce(guest: who.nil?)
         end
       end
     end

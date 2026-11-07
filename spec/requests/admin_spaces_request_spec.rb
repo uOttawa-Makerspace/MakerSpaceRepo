@@ -3,9 +3,9 @@
 require "rails_helper"
 
 # Characterization of Admin::SpacesController (chunk 14).
-# AdminAreaController#ensure_admin sends every non-admin (guest included:
-# current_user is User.new, never nil) to "/" with no flash. Redirects use
-# redirect_back, so without a Referer they land on root_path.
+# AdminAreaController#ensure_admin sends a guest to the login page and every
+# other non-admin to "/" with no flash. Redirects use redirect_back, so without
+# a Referer they land on root_path.
 
 RSpec.describe "Admin spaces", type: :request do
   include SpacesSpecHelpers
@@ -44,12 +44,12 @@ RSpec.describe "Admin spaces", type: :request do
     end
 
     %i[guest regular staff].each do |role|
-      it "bounces #{role} to / on every action and changes nothing" do
+      it "bounces #{role} on every action and changes nothing" do
         sign_in_as(role)
         calls.each do |name, call|
           before_state = snapshot
           instance_exec(&call)
-          expect(response).to redirect_to("/"), "#{name} as #{role}: #{response.status}"
+          expect_admin_area_bounce(guest: role == :guest)
           expect(flash.to_h).to eq({}), name.to_s
           expect(snapshot).to eq(before_state), name.to_s
         end

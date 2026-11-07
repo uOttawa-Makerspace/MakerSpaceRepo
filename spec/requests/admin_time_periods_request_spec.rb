@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# Admin::TimePeriodsController. Non-admins (guest included) are redirected to "/".
+# Admin::TimePeriodsController. Guests go to the login page, other non-admins to "/".
 
 RSpec.describe "Admin time periods", type: :request do
   include SpacesSpecHelpers

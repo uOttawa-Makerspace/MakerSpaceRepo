@@ -59,10 +59,10 @@ RSpec.describe "Admin report generator", type: :request do
       "GET generate_spreadsheet" => -> { get admin_report_generator_generate_spreadsheet_path, params: { type: "visitors" } }
     }.each do |label, call|
       %i[guest regular staff].each do |role|
-        it "#{label}: #{role} is redirected to / and gets no report" do
+        it "#{label}: #{role} is bounced and gets no report" do
           c18_sign_in(role)
           instance_exec(&call)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect(response.body).not_to include("Vera Visitor")
           expect(response.media_type).not_to include("xlsx")
         end

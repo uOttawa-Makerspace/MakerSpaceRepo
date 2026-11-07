@@ -1,8 +1,8 @@
 require "rails_helper"
 
 # Chunk 15: Admin::KeysController and Admin::KeyTransactionsController.
-# AdminAreaController gate: anyone who is not an admin (guests and staff
-# included) is redirected to "/" with no flash. Pins the whole chain:
+# AdminAreaController gate: a guest goes to the login page, anyone else
+# who is not an admin is redirected to "/" with no flash. Pins the whole chain:
 # key request (waiting) -> admin approve/deny -> key created -> assigned
 # (KeyTransaction with deposit) -> revoked (return date + deposit return).
 RSpec.describe "Admin keys", type: :request do
@@ -39,10 +39,10 @@ RSpec.describe "Admin keys", type: :request do
     }
     calls.each do |name, call|
       %i[guest regular staff volunteer].each do |role|
-        it "#{name}: #{role} is redirected to /" do
+        it "#{name}: #{role} is bounced" do
           sign_in_as(role)
           instance_exec(&call)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect(flash[:alert]).to be_nil
         end
       end

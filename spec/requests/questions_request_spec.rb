@@ -1,8 +1,9 @@
 require "rails_helper"
 
 # Chunk 12 characterization of QuestionsController (exam question bank).
-# Inherits AdminAreaController: every action is admin-only; guests, regular
-# users AND staff are redirected to "/" with no flash (ensure_admin).
+# Inherits AdminAreaController: every action is admin-only; guests go to
+# the login page; regular users AND staff are redirected to "/" with no flash
+# (ensure_admin).
 #
 # Creation rule worth knowing: the answer the admin marks correct is kept; when
 # no answer is marked (the new-question form has no flag) the first one is stored
@@ -41,11 +42,11 @@ RSpec.describe "Questions (admin question bank)", type: :request do
     end
 
     %i[guest regular staff volunteer].each do |role|
-      it "redirects a #{role} to / on every action and changes nothing" do
+      it "bounces a #{role} on every action and changes nothing" do
         sign_in_as(role)
         requests.each_value do |call|
           expect { instance_exec(&call) }.not_to change { [Question.count, Answer.count, question.reload.description] }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect(flash).to be_empty
         end
       end

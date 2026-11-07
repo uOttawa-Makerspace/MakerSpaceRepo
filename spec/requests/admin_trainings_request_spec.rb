@@ -4,8 +4,8 @@ require "rails_helper"
 #   Admin::TrainingsController          (catalogue CRUD)
 #   Admin::TrainingSessionsController   (list / reassign trainer / delete)
 #   Admin::CertificationsController     (demotion / reinstatement / delete)
-# All inherit AdminAreaController: non-admins (guest, regular, staff) are
-# redirected to "/" with no flash by `ensure_admin`.
+# All inherit AdminAreaController: a guest goes to the login page; regular
+# users and staff are redirected to "/" with no flash by `ensure_admin`.
 
 RSpec.describe "Admin training area", type: :request do
   let(:admin) { create(:user, :admin) }
@@ -26,20 +26,20 @@ RSpec.describe "Admin training area", type: :request do
 
     describe "role matrix" do
       %i[guest regular staff].each do |role|
-        it "redirects a #{role} to / on every action and changes nothing" do
+        it "bounces a #{role} on every action and changes nothing" do
           sign_in_as(role)
           get admin_trainings_path
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           get new_admin_training_path
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           get edit_admin_training_path(training)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect { post admin_trainings_path, params: training_params }.not_to change(Training, :count)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           patch admin_training_path(training), params: training_params(name_en: "Hacked")
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect { delete admin_training_path(training) }.not_to change(Training, :count)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect(training.reload.name_en).to eq("Existing EN")
           expect(flash).to be_empty
         end
@@ -215,14 +215,14 @@ RSpec.describe "Admin training area", type: :request do
 
     describe "role matrix" do
       %i[guest regular staff].each do |role|
-        it "redirects a #{role} to / and changes nothing" do
+        it "bounces a #{role} and changes nothing" do
           sign_in_as(role)
           get admin_training_sessions_path
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           patch admin_training_session_path(session_record), params: { training_session: { user_id: create(:user, :staff).id } }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect { delete session_path(session_record) }.not_to change(TrainingSession, :count)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect(session_record.reload.user).to eq(trainer)
         end
       end
@@ -342,14 +342,14 @@ RSpec.describe "Admin training area", type: :request do
 
     describe "role matrix" do
       %i[guest regular staff].each do |role|
-        it "redirects a #{role} to / and changes nothing" do
+        it "bounces a #{role} and changes nothing" do
           sign_in_as(role)
           get admin_certification_path(cert)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           get demotions_admin_certifications_path
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           patch admin_certification_path(cert), params: { certification: { active: "false", demotion_reason: "x" } }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect { delete admin_certification_path(cert) }.not_to change { Certification.unscoped.count }
           expect(cert.reload.active).to be(true)
           expect(student.reload.flagged).not_to be(true)

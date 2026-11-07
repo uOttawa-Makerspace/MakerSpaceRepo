@@ -49,24 +49,24 @@ RSpec.describe "Admin events gaps", type: :request do
 
         it "bounces create, update, delete_with_scope, publish, delete_drafts and copy to / and changes nothing" do
           post admin_events_path, params: { event: event_attrs(title: "Intruder") }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           patch admin_event_path(event), params: { event: event_attrs(title: "Hacked") }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           delete delete_with_scope_admin_event_path(event)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           patch publish_admin_event_path(draft)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           delete delete_drafts_admin_events_path, params: { space_id: space.id,
                                                             view_start_date: "2000-01-01",
                                                             view_end_date: "2100-01-01" }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           post copy_admin_events_path, params: { space_id: space.id }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           expect(Event.where(title: "Intruder")).to be_empty
           expect(event.reload.title).to eq("Untouched")
@@ -77,7 +77,7 @@ RSpec.describe "Admin events gaps", type: :request do
 
         it "bounces the json feed to /" do
           get json_admin_events_path(id: space.id)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
         end
       end
     end
