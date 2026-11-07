@@ -99,4 +99,60 @@ RSpec.describe "Pages that show a deleted user", type: :request do
     end
   end
 
+  describe "admin keys" do
+    let!(:key) do
+      create(:key, :regular_key_type, :held_status, space: space, user: gone, supervisor: gone_supervisor)
+    end
+    let!(:key_request) do
+      create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: gone, supervisor: gone_supervisor, space: space)
+    end
+
+    before do
+      create(:key_certification, user: gone)
+      delete_account!(gone, gone_supervisor)
+      sign_in!(admin)
+    end
+
+    it "lists the holder, supervisor and email of a deleted holder" do
+      get admin_keys_path
+
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("Gone Person (deleted account)", "Gone Supervisor (deleted account)", "gone.person@uottawa.ca")
+    end
+
+    it "shows the holder, supervisor, email and request on the key page" do
+      get admin_key_path(key)
+
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("Gone Person (deleted account)", "Gone Supervisor (deleted account)", "gone.person@uottawa.ca")
+      expect(page_text).to include("View Certifications")
+    end
+
+    it "lists the requester, supervisor and email on the requests page" do
+      get requests_admin_keys_path
+
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("Gone Person (deleted account)", "Gone Supervisor (deleted account)", "gone.person@uottawa.ca")
+    end
+
+    it "shows the requester, supervisor and email on the key request page" do
+      get key_request_path(key_request)
+
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("Gone Person (deleted account)", "Gone Supervisor (deleted account)", "gone.person@uottawa.ca")
+    end
+  end
+
+  describe "key request page for a non-admin" do
+    it "does not show another user's request to staff" do
+      key_request = create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: gone, supervisor: admin, space: space)
+      delete_account!(gone)
+      sign_in!(staff)
+      get key_request_path(key_request)
+
+      expect(response).to redirect_to(staff_dashboard_index_path)
+      expect(response.body).not_to include("Gone Person")
+    end
+  end
+
 end

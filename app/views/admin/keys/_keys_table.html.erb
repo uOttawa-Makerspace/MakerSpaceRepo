@@ -26,9 +26,9 @@
           <td>
             <%= key.key_type_regular? ? key.space.name : 'N/A' %>
           </td>
-          <td><%= link_to key.user.name, user_path(key.user.username), target: '_blank', rel: 'noopener' unless key.user.nil? %></td>
-          <td><%= link_to key.supervisor.name, user_path(key.supervisor.username), target: '_blank', rel: 'noopener' unless key.supervisor.nil? %></td>
-          <td><%= key.user&.email %></td>
+          <td><%= staff_user_link(key.display_user, target: '_blank', rel: 'noopener') %></td>
+          <td><%= staff_user_link(key.display_supervisor, target: '_blank', rel: 'noopener') %></td>
+          <td><%= key.display_user&.email %></td>
           <% if show_status %>
             <td>
               <%= key.status.humanize.capitalize %>
@@ -38,14 +38,15 @@
             </td>
           <% end %>
           <td>
-            <% if !key.key_request.nil? && !key.key_request.user.key_certification.nil? %>
-              <%= key.key_request.user.key_certification.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
-              <%= key.key_request.user.key_certification.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
+            <% certification = key.display_user&.key_certification %>
+            <% if certification %>
+              <%= certification.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
+              <%= certification.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
             <% else %>
               0/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
               0/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
             <% end %>
-            <% if key.user.present? %>
+            <% if key.display_user.present? %>
               <% if key.key_request.present? %>
                 <% if key.key_request.status_approved? %>
                   1/1 (form)

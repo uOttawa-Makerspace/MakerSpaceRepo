@@ -23,7 +23,7 @@ class KeyRequestsController < SessionsController
                   alert: "You don't have the permissions to view this"
     end
 
-    @key_certification = @key_request.user.key_certification
+    @key_certification = @key_request.display_user.key_certification
   end
 
   def new
