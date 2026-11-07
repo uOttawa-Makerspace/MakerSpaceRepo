@@ -57,6 +57,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       walk_wizard_as_user
       expect(page).to have_current_path(%r{\A/job_orders/\d+\z})
       expect(page).to have_content("Waiting for Staff Approval")
+      audit_accessibility("staff job order page")
       expect(page).to have_content("Client Files")
       expect(page).to have_content("Please print in grey") # wizard comment lands in the chat
       expect(page).to have_content("Support removal")

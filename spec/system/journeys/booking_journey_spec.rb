@@ -74,6 +74,7 @@ RSpec.describe "Journey: space booking", type: :system, skip_bullet: true do
       visit sub_space_booking_index_path(room: subspace.id)
       find("#booking-admin-tab-btn").click
       expect(page).to have_css("#pendingBody", text: "Robot team")
+      audit_accessibility("booking admin panel")
       within(:xpath, "//tr[.//strong[contains(.,'Robot team')] or contains(.,'Robot team')][.//button[contains(.,'Approve')]]") do
         click_button "Approve"
       end

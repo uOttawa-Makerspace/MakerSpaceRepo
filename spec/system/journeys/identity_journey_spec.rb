@@ -15,6 +15,7 @@ RSpec.describe "Journey: identity", type: :system, skip_bullet: true do
   it "register -> confirmation mail link -> log in -> edit profile" do
     visit new_user_path
     expect(page).to have_css("h1", text: "Create an account")
+    audit_accessibility("registration form")
     fill_in "user_name", with: "Jess Journey"
     fill_in "user_email", with: "jess.journey@example.com"
     fill_in "user_username", with: "jessjourney"
@@ -55,6 +56,7 @@ RSpec.describe "Journey: identity", type: :system, skip_bullet: true do
 
     visit settings_profile_path
     expect(page).to have_css("input#user_name[value='Jess Journey']")
+    audit_accessibility("profile settings")
     fill_in "user_name", with: "Jess Renamed"
     click_button "Save Changes"
     expect(page).to have_text("Profile updated successfully.")

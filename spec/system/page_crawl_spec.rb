@@ -62,6 +62,7 @@ RSpec.describe "Page crawl (browser, JS entrypoints)", type: :system, skip_bulle
       expect(page).to have_css("body")
       # let page scripts finish: Turbo + deferred modules mark the document loaded
       expect(page).to have_css("nav.navbar, body")
+      audit_accessibility
       errors = JsErrorCheck.collect(page)
       problems[path] = errors.map { |e| e[:message] } if errors.any?
     end
