@@ -439,7 +439,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
         patch job_order_user_approval_path(order), params: { approved: "true" }
       end.not_to change(JobOrderStatus, :count)
       expect(response).to redirect_to(job_order_path(order))
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
     end
 
     it "answers format.js on row actions with a redirect to the order page, as for html" do
@@ -672,15 +672,13 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
         end
 
-        # applying #{action} to a Draft flashes the generic update
-        # error; no guard rail explains WHY the transition was refused.
-        it "errors from an unexpected current status" do
+        it "says the order is not in a state that allows the change when the status is unexpected" do
           order = order_with_task!(owner: owner, status_key: :draft)
           expect do
             patch send("job_order_#{action}_path", order),
                   params: { flow.fetch(:ok_param) => "true" }
           end.not_to change(JobOrderStatus, :count)
-          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
         end
       end
     end

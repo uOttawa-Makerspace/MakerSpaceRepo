@@ -144,12 +144,12 @@ RSpec.describe "JobOrders gaps", type: :request do
     end
 
     # an order with no status rows is in no source state, so the
-    # transition is refused with the generic error (the status is read under the lock)
+    # transition is refused as a wrong state (the status is read under the lock)
     it "refuses a transition for an order with no status rows (no 500)" do
       session_login!(staff)
       statusless = create(:job_order, user: owner)
       patch job_order_start_processing_path(statusless), params: { start_processing: "true" }
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
       expect(statusless.reload.job_order_statuses).to be_empty
     end
 

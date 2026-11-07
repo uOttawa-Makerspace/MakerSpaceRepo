@@ -131,7 +131,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       expect(flash[:alert]).to start_with(I18n.t("job_orders.alerts.missing_info"))
 
       patch job_order_user_approval_path(order), params: { approved: "true" } # wrong state: no quote yet
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
       expect(status_names(order)).to eq(["Waiting for Staff Approval"])
     end
 
@@ -251,7 +251,8 @@ RSpec.describe "Job order transition failure contract", type: :request do
           expect(I18n.t(result.zero_order_message_key, locale: locale, raise: true)).to be_present
         end
       end
-      expect(JobOrder::TransitionResult.refused(:wrong_state).message_key).to eq("job_orders.alerts.error_while_updating")
+      expect(JobOrder::TransitionResult.refused(:wrong_state).message_key).to eq("job_orders.alerts.status_change.wrong_state")
+      expect(JobOrder::TransitionResult.refused(:link_spent).message_key).to eq("job_orders.alerts.error_while_updating")
       expect(JobOrder::TransitionResult.refused(:wrong_state).zero_order_message_key)
         .to eq("job_orders.alerts.zero_order_not_marked_paid.other")
     end

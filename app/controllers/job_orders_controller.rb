@@ -576,7 +576,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
                                       to: to_key && JobStatus.fetch(to_key),
                                       actor: actor, approval_token: approval_token)
              else
-               JobOrder::TransitionResult.refused(:wrong_state)
+               JobOrder::TransitionResult.refused(:nothing_asked)
              end
 
     if result.ok?

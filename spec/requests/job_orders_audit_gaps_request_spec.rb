@@ -85,7 +85,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
           end.not_to change(JobOrderStatus, :count)
 
           expect(status_names(order)).to eq([JobOrderSpecHelpers::JOB_STATUS_NAMES.fetch(state)])
-          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
           expect(flash[:notice]).to be_nil
           expect(ActionMailer::Base.deliveries).to be_empty
         end

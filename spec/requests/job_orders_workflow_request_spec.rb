@@ -228,7 +228,7 @@ RSpec.describe "JobOrders workflow", type: :request do
     it "does nothing from a wrong status" do
       draft = order_with_task!(status_key: :draft)
       patch job_order_processed_path(draft), params: { completed: "true" }
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
       expect(status_names(draft)).to eq(["Draft"])
     end
 
@@ -300,7 +300,7 @@ RSpec.describe "JobOrders workflow", type: :request do
       session_login!(staff)
       patch job_order_resend_quote_email_path(draft)
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
       expect(status_names(draft)).to eq(["Draft"])
       expect(deliveries).to be_empty
 
