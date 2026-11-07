@@ -40,16 +40,35 @@ end
 
 # Chunk 13 characterization.
 RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model do
-  it "has column defaults and no presence validations" do
-    task = VolunteerTask.create!
+  it "has column defaults and no presence validations once saved" do
+    task = VolunteerTask.new.tap { |t| t.save!(validate: false) }
     expect(task.attributes.values_at("title", "description", "status", "joins", "category", "cc"))
       .to eq(["", "", "open", 1, "Other", 0])
     expect(task.hours).to eq(0)
   end
 
-  it "accepts negative cc/hours/joins and arbitrary status" do
-    task = VolunteerTask.new(cc: -1, hours: -2, joins: -3, status: "whatever")
+  it "accepts negative cc/joins and arbitrary status" do
+    task = VolunteerTask.new(cc: -1, hours: 2, joins: -3, status: "whatever")
     expect(task).to be_valid
+  end
+
+  describe "hours" do
+    it "must be more than 0 on create and in the task form" do
+      [0, -2, nil].each do |hours|
+        expect(VolunteerTask.new(hours: hours)).not_to be_valid
+        expect(VolunteerTask.new(hours: hours).tap { |t| t.valid?(:task_form) }.errors[:hours]).to be_present
+      end
+      expect(VolunteerTask.new(hours: 0.5)).to be_valid
+    end
+
+    it "are not checked on a stored task with 0 or 36 hours outside the task form" do
+      zero = VolunteerTask.new(hours: 0).tap { |t| t.save!(validate: false) }
+      long = create(:volunteer_task, hours: 36)
+      expect(zero.update(status: "completed")).to be(true)
+      expect(long.update(title: "renamed")).to be(true)
+      expect(long.valid?(:task_form)).to be(true)
+      expect(zero.valid?(:task_form)).to be(false)
+    end
   end
 
   it "is invalid with more than 5 photos" do

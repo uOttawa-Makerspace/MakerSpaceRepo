@@ -21,9 +21,8 @@ class VolunteerHoursController < VolunteersController
   end
 
   def create
-    @volunteer_hour = VolunteerHour.new(volunteer_hour_params)
-    @volunteer_hour.user_id = @user.try(:id)
-    if @volunteer_hour.save
+    @volunteer_hour = VolunteerHour.new(user_id: @user.try(:id))
+    if @volunteer_hour.save_hand_logged(volunteer_hour_params)
       redirect_to volunteer_hours_path
       flash[:notice] = "You've successfully sent your volunteer working hours"
     else
@@ -55,10 +54,10 @@ class VolunteerHoursController < VolunteersController
 
   def update
     volunteer_hour = VolunteerHour.find(params[:id])
-    if volunteer_hour.update(volunteer_hour_params)
+    if volunteer_hour.save_hand_logged(volunteer_hour_params)
       flash[:notice] = "Volunteer hour updated"
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = volunteer_hour.errors.full_messages.to_sentence
     end
     define_redirect(current_user.role)
   end

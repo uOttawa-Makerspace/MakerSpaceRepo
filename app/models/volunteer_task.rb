@@ -11,6 +11,15 @@ class VolunteerTask < ApplicationRecord
   has_many :photos, dependent: :destroy
 
   validate :validate_photos
+  # The task forms save in the :task_form context: a task's hours must be more than 0 when it is
+  # created or edited there. Other updates (completing a task) and stored tasks are not checked.
+  validates :hours, numericality: { greater_than: 0 }, on: %i[create task_form]
+
+  # Sets the attributes and saves them from a task form (see the validations above).
+  def save_from_form(attributes)
+    assign_attributes(attributes)
+    save(context: :task_form)
+  end
 
   def delete_all_certifications
     require_trainings.destroy_all

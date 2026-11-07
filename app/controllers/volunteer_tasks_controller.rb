@@ -46,9 +46,9 @@ class VolunteerTasksController < SessionsController
   end
 
   def create
-    @volunteer_task = VolunteerTask.new(volunteer_task_params)
+    @volunteer_task = VolunteerTask.new
     @volunteer_task.user_id = @user.try(:id)
-    if @volunteer_task.save!
+    if @volunteer_task.save_from_form(volunteer_task_params)
       update_photos
       if params[:certifications_id].present?
         @volunteer_task.create_certifications(params[:certifications_id])
@@ -57,6 +57,8 @@ class VolunteerTasksController < SessionsController
       remove_volunteer_join(@volunteer_task.id)
       redirect_to volunteer_tasks_path
       flash[:notice] = "You've successfully created a new Volunteer Task"
+    else
+      redirect_to new_volunteer_task_path, alert: @volunteer_task.errors.full_messages.to_sentence
     end
   end
 
@@ -128,13 +130,15 @@ class VolunteerTasksController < SessionsController
 
   def update
     volunteer_task = VolunteerTask.find(params[:id])
-    volunteer_task.delete_all_certifications
-    if params[:certifications_id].present?
-      volunteer_task.create_certifications(params[:certifications_id])
+    volunteer_task.assign_attributes(volunteer_task_params)
+    unless volunteer_task.valid?(:task_form)
+      return redirect_to edit_volunteer_task_path(volunteer_task), alert: volunteer_task.errors.full_messages.to_sentence
     end
+
+    replace_certifications(volunteer_task)
     add_volunteer_join(volunteer_task.id)
     remove_volunteer_join(volunteer_task.id)
-    if volunteer_task.update(volunteer_task_params)
+    if volunteer_task.save(context: :task_form)
       update_photos
       flash[:notice] = "Volunteer task updated"
     else
@@ -155,6 +159,13 @@ class VolunteerTasksController < SessionsController
   end
 
   private
+
+  def replace_certifications(volunteer_task)
+    volunteer_task.delete_all_certifications
+    return if params[:certifications_id].blank?
+
+    volunteer_task.create_certifications(params[:certifications_id])
+  end
 
   def task_owner_or_staff
     task = VolunteerTask.find(params[:id])

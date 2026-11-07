@@ -167,13 +167,20 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
         .to eq([[other_staff.id, "Admin", true], [volunteer.id, "Volunteer", true]])
     end
 
-    # no validation on numbers/status/title: negative cc/hours, zero seats, blank title and arbitrary status are stored
-    it "stores negative cc/hours, zero seats, an empty title and a bogus status" do
-      post volunteer_tasks_path, params: task_params(title: "", cc: -50, hours: -3, joins: 0, status: "bogus")
+    # only the hours are validated: negative cc, zero seats, blank title and arbitrary status are stored
+    it "stores negative cc, zero seats, an empty title and a bogus status" do
+      post volunteer_tasks_path, params: task_params(title: "", cc: -50, hours: 3, joins: 0, status: "bogus")
       expect(response).to redirect_to(volunteer_tasks_path)
       created = VolunteerTask.last
       expect(created.attributes.values_at("title", "cc", "joins", "status")).to eq(["", -50, 0, "bogus"])
-      expect(created.hours).to eq(-3)
+    end
+
+    { 0 => "must be greater than 0", -3 => "must be greater than 0", "abc" => "is not a number", "" => "is not a number" }.each do |hours, reason|
+      it "refuses hours of #{hours.inspect} and creates nothing" do
+        expect { post volunteer_tasks_path, params: task_params(hours: hours) }.not_to change(VolunteerTask, :count)
+        expect(response).to redirect_to(new_volunteer_task_path)
+        expect(flash[:alert]).to eq("Hours #{reason}")
+      end
     end
 
     it "redirects to root with the missing-param message when volunteer_task is absent" do
@@ -197,6 +204,24 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(response).to redirect_to(volunteer_tasks_path)
       expect(flash[:notice]).to eq("Volunteer task updated")
       expect(task.reload.attributes.values_at("title", "cc")).to eq(["Renamed", 99])
+    end
+
+    it "refuses hours of 0, keeping the task, its required trainings and joins as they were" do
+      task.create_certifications([create(:training).id])
+      create(:volunteer_task_join, :active, volunteer_task: task)
+      patch volunteer_task_path(task), params: task_params(title: "Renamed", hours: 0)
+      expect(response).to redirect_to(edit_volunteer_task_path(task))
+      expect(flash[:alert]).to eq("Hours must be greater than 0")
+      expect(task.reload.attributes.values_at("title", "hours")).to eq(["Setup crew", 2])
+      expect(task.require_trainings.count).to eq(1)
+      expect(task.volunteer_task_joins.count).to eq(1)
+    end
+
+    it "edits the other fields of a stored 36 hour task" do
+      task.update!(hours: 36)
+      patch volunteer_task_path(task), params: task_params(title: "Renamed", hours: 36)
+      expect(flash[:notice]).to eq("Volunteer task updated")
+      expect(task.reload.attributes.values_at("title", "hours")).to eq(["Renamed", 36])
     end
 
     it "replaces required trainings, and clears them when certifications_id is absent" do
