@@ -347,9 +347,24 @@ class LockerRentalsController < SessionsController
   # id is sent it wins and the username is only the display text of the search box. A deleted or deactivated
   # user found by id (or by username) fails the rental's eligibility validation instead.
   def unknown_renter_username?
-    username = params.dig(:locker_rental, :rented_by_username)
-    current_user.staff? && username.present? && params.dig(:locker_rental, :rented_by_id).blank? &&
+    username = submitted_rental_field(:rented_by_username)
+    current_user.staff? && username.present? && submitted_rental_field(:rented_by_id).blank? &&
       !User.unscoped.exists?(username: username.to_s)
+  end
+
+  # The submitted locker_rental fields. Anything other than a hash of fields (a plain string, say) is
+  # answered like a missing parameter.
+  def locker_rental_fields
+    fields = params.require(:locker_rental)
+    raise ActionController::ParameterMissing, :locker_rental unless fields.is_a?(ActionController::Parameters)
+
+    fields
+  end
+
+  # One submitted field, or nil when there are no fields to read it from.
+  def submitted_rental_field(name)
+    fields = params[:locker_rental]
+    fields[name] if fields.is_a?(ActionController::Parameters)
   end
 
   def locker_rental_params
@@ -379,15 +394,12 @@ class LockerRentalsController < SessionsController
 
     if current_user.staff?
       admin_params =
-        params.require(:locker_rental).permit(
-          *common_permitted,
-          *staff_additional_permitted
-        )
+        locker_rental_fields.permit(*common_permitted, *staff_additional_permitted)
 
       # FIXME replace that search with a different one, return ID instead
       # If username is given (since search can do that)
       rented_by_user =
-        User.unscoped.find_by(username: params.dig(:locker_rental, :rented_by_username))
+        User.unscoped.find_by(username: submitted_rental_field(:rented_by_username))
       if rented_by_user
         # then convert to user id
         admin_params.reverse_merge!(rented_by_id: rented_by_user.id)
@@ -396,9 +408,9 @@ class LockerRentalsController < SessionsController
       admin_params
     elsif params[:id]
       # If updating, only allow cancellations
-      params.require(:locker_rental).permit(:state)
+      locker_rental_fields.permit(:state)
     else
-      params.require(:locker_rental).permit(*common_permitted)
+      locker_rental_fields.permit(*common_permitted)
     end
   end
 end

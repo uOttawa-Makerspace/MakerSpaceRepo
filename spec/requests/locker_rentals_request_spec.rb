@@ -983,6 +983,23 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(rental.reload.state).to eq("reviewing")
       end
 
+      it "answers a locker_rental sent as a plain string like any other missing parameter" do
+        rental = reviewing_rental!(tenant: owner)
+
+        [owner, staff].each do |user|
+          log_in!(user)
+
+          patch locker_rental_path(rental), params: { locker_rental: "cancelled" }
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to include("locker_rental")
+
+          patch locker_rental_path(rental), params: { locker_rental: "cancelled" }, as: :json
+          expect(response).to have_http_status(:bad_request)
+          expect(response.parsed_body["error"]).to include("locker_rental")
+          expect(rental.reload.state).to eq("reviewing")
+        end
+      end
+
       it "answers a JSON cancellation with 204 and no body" do
         rental = reviewing_rental!(tenant: owner)
         log_in!(owner)
