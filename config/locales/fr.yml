@@ -210,6 +210,7 @@ fr:
         training_sessions: "séances de formation"
         volunteer_tasks: "tâches de bénévolat"
         sub_space_bookings: "réservations de sous-espaces"
+        users_with_current_space: "utilisateurs dont c'est l'espace courant"
       user:
         student_id: Numéro d'étudiant
     errors:

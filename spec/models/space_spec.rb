@@ -9,13 +9,14 @@ RSpec.describe Space, type: :model do
     context "has_many" do
       it { should have_many(:pi_readers) }
       it { should have_many(:lab_sessions) }
-      it { should have_many(:users) }
+      it { should have_many(:staff).through(:staff_spaces) }
+      it { should have_many(:visitors).through(:lab_sessions) }
       it { should have_many(:training_sessions) }
       it { should have_many(:certifications) }
       it { should have_many(:volunteer_tasks) }
       it { should have_many(:popular_hours) }
       it { should have_many(:shadowing_hours) }
-      it { should have_many(:users) }
+      it { should have_many(:users_with_current_space).class_name("User") }
       it { should have_many(:staff_needed_calendars) }
     end
   end
@@ -168,6 +169,28 @@ RSpec.describe Space, type: :model do
       expect(I18n.with_locale(:fr) { space.deletion_refusals }).to eq(
         ["Impossible de supprimer l'enregistrement car il reste des tâches de bénévolat"]
       )
+    end
+
+    it "lists its staff, and the users who visited, through separate associations" do
+      space = create(:space)
+      staff = create(:user)
+      visitor = create(:user)
+      create(:staff_space, space: space, user: staff)
+      create(:lab_session, space: space, user: visitor)
+
+      expect(space.staff).to contain_exactly(staff)
+      expect(space.visitors).to contain_exactly(visitor)
+    end
+
+    it "refuses destroy while users still have it as their current space, and changes nothing" do
+      space = create(:space)
+      user = create(:user, space_id: space.id)
+
+      expect(space.destroy).to be(false)
+
+      expect(space.errors.full_messages).to eq(["Cannot delete record because dependent users with current space exist"])
+      expect(Space.exists?(space.id)).to be(true)
+      expect(user.reload.space_id).to eq(space.id)
     end
 
     it "defaults keycode to a blank string and has no capacity limit" do
