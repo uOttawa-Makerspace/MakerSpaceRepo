@@ -39,9 +39,9 @@ class ChatMessage < ApplicationRecord
   private
 
   def notification_emails
-    posters = job_order.chat_messages.includes(:sender).map(&:sender).select { |poster| job_order.accessible_by?(poster) }
-    participants = [job_order.user, job_order.assigned_staff, *posters]
-    emails = participants.compact.map(&:email) + extra_recipient_emails
+    posters = job_order.chat_messages.includes(:sender).map(&:sender)
+    participants = [job_order.user, job_order.assigned_staff, *posters].select { |user| job_order.accessible_by?(user) }
+    emails = participants.map(&:email) + extra_recipient_emails
     emails.uniq(&:downcase).reject { |email| email.casecmp?(sender.email) }
   end
 

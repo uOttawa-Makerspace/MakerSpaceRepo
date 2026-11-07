@@ -102,6 +102,27 @@ RSpec.describe "ChatMessages gaps", type: :request do
       expect(deliveries.map(&:to)).to match_array([[owner.email], [staff.email]])
     end
 
+    it "still notifies the others when an earlier poster has been soft-deleted" do
+      order = active_order!
+      gone = create(:user, :staff)
+      travel_to(2.hours.ago) { ChatMessage.create!(job_order: order, sender: gone, message: "bye") }
+      gone.update_columns(deleted: true)
+      session_login!(staff)
+      perform_enqueued_jobs { post_message(order, "hello") }
+
+      expect(deliveries.map(&:to)).to eq([[owner.email]])
+    end
+
+    it "does not mail an assigned staff member who is no longer staff" do
+      order = active_order!
+      order.update!(assigned_staff: other_staff)
+      other_staff.update!(role: "regular_user")
+      session_login!(staff)
+      perform_enqueued_jobs { post_message(order, "hello") }
+
+      expect(deliveries.map(&:to)).to eq([[owner.email]])
+    end
+
     it "mails the extra recipients saved in the setting instead of the default ones, ids and addresses alike" do
       listed = create(:user, :staff)
       Setting.set(Setting::CHAT_EXTRA_RECIPIENTS_KEY, "#{listed.id}, desk@example.com\n#{owner.email.upcase}")

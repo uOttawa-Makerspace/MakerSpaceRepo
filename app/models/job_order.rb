@@ -145,6 +145,8 @@ class JobOrder < ApplicationRecord
 
   # Who may open the order and use its chat: its owner, staff and admins.
   def accessible_by?(user)
+    return false if user.nil?
+
     user.admin? || user.staff? || user.id == user_id
   end
 
