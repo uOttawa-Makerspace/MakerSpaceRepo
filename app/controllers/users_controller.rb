@@ -153,8 +153,7 @@ class UsersController < SessionsController
       MsrMailer.email_changed_email(user, @old_email).deliver_now
       flash[:notice] = "The email has been updated to #{user.email} !"
     else
-      flash[:alert] =
-        'The email could not be updated, the address may already be used by another account. Please request a new change.'
+      flash[:alert] = email_update_failure_alert(user)
     end
     redirect_to root_path
   end
@@ -567,6 +566,14 @@ class UsersController < SessionsController
             end
     flash[:alert] = alert if alert
     alert.nil?
+  end
+
+  # The validation error when the address itself was refused, otherwise the
+  # address was taken by another account in the meantime.
+  def email_update_failure_alert(user)
+    reason = user.errors.full_messages_for(:email).to_sentence.presence ||
+             'the address may already be used by another account'
+    "The email could not be updated: #{reason}. Please request a new change."
   end
 
   # Applies the address; false (nothing changed) when it is rejected, e.g. taken

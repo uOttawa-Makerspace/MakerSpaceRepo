@@ -198,11 +198,13 @@ class User < ApplicationRecord
   validates :email,
             presence: true,
             on: :create,
-            uniqueness: { case_sensitive: false }
+            uniqueness: { case_sensitive: false },
+            email: true
 
-  # The format is checked whenever the address is set or changed, so existing
+  # A changed address must still have the shape of an address; the provider-typo
+  # hint is for sign-up only. Unchanged addresses are not checked, so existing
   # users with an odd stored address can still save other fields.
-  validates :email, email: true, if: :will_save_change_to_email?
+  validates :email, email: { typo_check: false }, on: :update, if: :will_save_change_to_email?
 
   validates :how_heard_about_us, 
             length: { maximum: 250 }

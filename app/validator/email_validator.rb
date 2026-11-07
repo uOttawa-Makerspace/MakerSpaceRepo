@@ -32,10 +32,10 @@ class EmailValidator < ActiveModel::EachValidator
   def validate_each(record, attribute, value)
     return if value.blank?
 
-    if value.match?(URI::MailTo::EMAIL_REGEXP)
-      suggest_known_domain(record, attribute, value.split("@").last)
-    else
+    if !value.match?(URI::MailTo::EMAIL_REGEXP)
       record.errors.add(attribute, :invalid)
+    elsif options.fetch(:typo_check, true)
+      suggest_known_domain(record, attribute, value.split("@").last)
     end
   end
 

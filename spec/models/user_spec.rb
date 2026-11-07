@@ -702,6 +702,10 @@ RSpec.describe User, type: :model do
       expect(u).not_to be_valid
       expect(u.errors[:email]).to be_present
 
+      u = create(:user)
+      u.email = "someone@mail.com"
+      expect(u).to be_valid
+
       stored = create(:user)
       stored.update_columns(email: "odd-stored-address")
       stored = User.find(stored.id)
