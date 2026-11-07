@@ -3,7 +3,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">Make a range of lockers</h3>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
             </div>
 
             <div class="modal-body">
@@ -14,12 +14,14 @@
                             Create new lockers ranging from
                         </span>
                         <div class="me-3">
+                            <%= f.label :range_start, 'First locker number', class: 'visually-hidden', for: 'newLockerRangeStart' %>
                             <%= f.number_field :range_start, class: 'form-control', id: 'newLockerRangeStart', required: true %>
                         </div>
                         <span class="me-3">
                             to
                         </span>
                         <div class="me-3">
+                            <%= f.label :range_end, 'Last locker number', class: 'visually-hidden', for: 'newLockerRangeEnd' %>
                             <%= f.number_field :range_end, class: 'form-control', id: 'newLockerRangeEnd', required: true %>
                         </div>
                     </div>
@@ -27,7 +29,7 @@
                         <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
                         <%= f.select :locker_size_id, @locker_sizes.map { |size|
                             [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
-                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select' } %>
+                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select', aria: { label: t('common.names.locker_size') } } %>
                         <%= f.submit class: 'btn btn-primary' %>
                     </div>
                 <% end %>
@@ -51,7 +53,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">Make a single lockers</h3>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
             </div>
 
             <div class="modal-body">
@@ -65,7 +67,7 @@
                         <%= f.label :locker_size_id, 'Change locker size', class: 'input-group-text' %>
                         <%= f.select :locker_size_id, @locker_sizes.map { |size|
                             [ size.size, size.id, { 'data-data' => @locker_product_info[:variants][size.shopify_gid].to_json } ]},
-                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select' } %>
+                         {include_blank: 'Select variant...'}, { class: 'form-select locker-variant-select', aria: { label: t('common.names.locker_size') } } %>
                     </div>
                     <%= f.submit class: 'btn btn-primary float-end' %>
                 <% end %>

@@ -9,7 +9,9 @@
           <%= hidden_field_tag :back_to, safe_back_to if safe_back_to.present? %>
           
           <div class="mb-3 attach">
+            <%= label_tag :username_email, t('sessions.login.username_or_email'), class: 'visually-hidden' %>
             <%= text_field_tag :username_email, params[:username_email], placeholder: t('sessions.login.username_or_email'), class: 'form-control' %>
+            <%= label_tag :password, t('sessions.login.password'), class: 'visually-hidden' %>
             <%= password_field_tag :password, nil, placeholder: t('sessions.login.password'), class: 'form-control' %>
           </div>
 

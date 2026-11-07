@@ -36,6 +36,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     visit admin_locker_rentals_path
     expect(page).to have_css("h1", text: "Locker Rentals")
     expect(page).to have_text("Requests")
+    audit_accessibility("admin locker rentals")
     within(:xpath, "//tr[.//a[normalize-space()='#{user.username}']]") { click_link "View" }
     expect(page).to have_current_path(locker_rental_path(rental))
   end

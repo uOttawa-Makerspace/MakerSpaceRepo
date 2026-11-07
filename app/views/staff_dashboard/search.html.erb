@@ -1,7 +1,7 @@
 <section class="page-contents">
   <br>
   <h2 class="text-center">Welcome to
-    <strong><%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name), prompt: @space.name, id: 'set_space_id', class: 'form-select', onchange: 'setSpace()' %></strong>
+    <strong><%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name), prompt: @space.name, id: 'set_space_id', aria: { label: t('common.names.space') }, class: 'form-select', onchange: 'setSpace()' %></strong>
   </h2>
   <%= render 'search' %>
   <br />
@@ -33,9 +33,9 @@
 
           <td class="action-cell">
             <% if lab_sessions && signed_in %>
-              <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button' %>
+              <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button', aria: { label: t('common.sign_out') } %>
             <% else %>
-              <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button' %>
+              <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button', aria: { label: t('common.sign_in') } %>
             <% end %>
           </td>
         </tr>
@@ -106,7 +106,7 @@
               <%= previous_visit_text(user) %>
             </td>
             <td class="action-cell">
-              <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button' %>
+              <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button', aria: { label: t('common.sign_out') } %>
             </td>
           </tr>
         <% end %>

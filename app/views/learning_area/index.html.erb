@@ -9,7 +9,7 @@
         <% if current_user.admin? %>
             <%= link_to 'New learning module', new_learning_area_path, class: 'btn btn-success d-block mb-3' %>
         <% end %>
-        <ul class="list-group mb-5">
+        <div class="list-group mb-5">
             <% @learning_modules.each do |training, learning_modules| %>
                 <%= link_to "##{training.localized_name.parameterize}", class: 'list-group-item list-group-item-action' do %>
                     <%= training.localized_name %>
@@ -17,7 +17,7 @@
                     <b><%= training.learning_modules_completed(current_user).count %> of <%= learning_modules.size %> completed</b>
                 <% end %>
             <% end %>
-        </ul>
+        </div>
     </div>
 
     <%# Displaying learning module cards %>
@@ -53,7 +53,7 @@
                         <% learning_modules.map(&:subskill).uniq.compact.each do |subskill| %>
                             <% next if subskill.blank? %>
                             <div class="card h-100 border-1 shadow-sm">
-                                <%= link_to subskill_learning_area_index_path(subskill), class: 'learning-module-thumbnail-wrapper' do %>
+                                <%= link_to subskill_learning_area_index_path(subskill), class: 'learning-module-thumbnail-wrapper', aria: { label: subskill.to_s } do %>
                                     <%#= image_tag learning_module.photos.first, loading: 'lazy',
                                     class: "card-img-top learning-module-thumbnail",
                                     alt: learning_module.title if learning_module.photos_attachments.any? %>
@@ -82,7 +82,7 @@
                             </div>
                             <% if current_user.admin? %>
                                 <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input" type="checkbox" role="switch"
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggle-<%= training.id %>-<%= level %>"
                                            data-order="<%= training.name.parameterize %>-<%= level.parameterize %>">
                                     <label class="form-check-label small text-muted" for="toggle-<%= training.id %>-<%= level %>">
                                         <i class="fa fa-sort me-1"></i>Re-order

@@ -85,4 +85,5 @@ group :test do
   gem "parallel_tests"
   gem "test-prof"
   gem "webmock"
+  gem "axe-core-rspec", "4.14.0"
 end

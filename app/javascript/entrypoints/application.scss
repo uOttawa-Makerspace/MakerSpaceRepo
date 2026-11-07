@@ -16,6 +16,56 @@ $utilities: (
 @import "../stylesheets/shared/variables";
 @import "bootstrap/scss/bootstrap";
 
+// Orange used as text: a darker shade on light pages, a lighter one on the dark theme.
+:root {
+  --primary-text: #{$primary-text};
+}
+[data-bs-theme="dark"] {
+  --primary-text: #{$primary-text-dark};
+  --secondary-text: #{$secondary-text-dark};
+  --bs-primary-text-emphasis: #{$primary-text-dark};
+
+  // Bootstrap draws these with the background shades; on the dark page they
+  // need the lighter text shades to stay readable.
+  .btn-outline-primary {
+    --bs-btn-color: #{$primary-text-dark};
+    --bs-btn-border-color: #{$primary-text-dark};
+  }
+  .btn-outline-secondary {
+    --bs-btn-color: #{$secondary-text-dark};
+    --bs-btn-border-color: #{$secondary-text-dark};
+  }
+  // Bootstrap bakes in a dark hover shade for .link-primary, so both states are
+  // set here: the text shade, and a lighter tint on hover and focus.
+  .link-primary {
+    color: var(--primary-text) !important;
+    &:hover,
+    &:focus {
+      color: #{tint-color($primary-text-dark, 20%)} !important;
+    }
+  }
+  .border-primary {
+    border-color: var(--primary-text) !important;
+  }
+  .text-secondary {
+    color: var(--secondary-text) !important;
+  }
+  // Muted colour for items. It is declared before the .dropdown-item rules
+  // below, so their hover, active and danger colours still win at equal
+  // specificity; disabled items get Bootstrap's disabled colour back.
+  .dropdown-item {
+    color: var(--secondary-text);
+    &.disabled,
+    &:disabled {
+      color: var(--bs-dropdown-link-disabled-color);
+    }
+  }
+}
+.text-primary {
+  --bs-text-opacity: 1;
+  color: var(--primary-text) !important;
+}
+
 // =============================================================================
 // 2. Vendor Libraries
 // =============================================================================
@@ -64,9 +114,6 @@ body {
   flex-direction: column;
   font-family: "Roboto", helvetica, sans-serif;
   overflow-x: hidden; // Prevent horizontal scrollbar on body
-  main {
-    flex: 1;
-  }
 }
 
 *[id] {
@@ -97,7 +144,7 @@ a {
   font-weight: 700;
   color: $secondary;
   &:active {
-    color: #000;
+    color: #fff;
     background-color: $primary;
   }
   &:hover {
@@ -290,13 +337,6 @@ u {
   width: 100%;
 }
 
-:focus {
-  outline: -webkit-focus-ring-color auto 1px;
-}
-a :focus {
-  outline-offset: 1px;
-}
-
 div.seperator {
   width: 100%;
   padding-top: 20px;
@@ -473,7 +513,7 @@ trix-toolbar .trix-button-group--file-tools {
     color: var(--bs-body-color) !important;
     &:not(.collapsed) {
       background-color: var(--bs-secondary-bg) !important;
-      color: var(--bs-primary) !important;
+      color: var(--primary-text) !important;
     }
   }
 
@@ -655,3 +695,4 @@ trix-toolbar .trix-button-group--file-tools {
 @import "../stylesheets/staff_availabilities";
 @import "../stylesheets/staff_dashboard";
 @import "../stylesheets/staff_spaces";
+@import "../stylesheets/accessibility";

@@ -31,7 +31,7 @@
                 <tr>
                   <th class="ps-3">
                     <div class="form-check">
-                      <%= check_box_tag :pending_bookings_select_all, '1', false, class: 'form-check-input' %>
+                      <%= check_box_tag :pending_bookings_select_all, '1', false, class: 'form-check-input', aria: { label: t('common.names.select_all_pending') } %>
                     </div>
                   </th>
                   <th>Room</th>
@@ -55,7 +55,7 @@
                   <tr>
                     <td class="ps-3">
                       <div class="form-check">
-                        <%= check_box_tag "sub_space_booking_ids[]", booking.id, false, id: "booking_#{booking.id}", class: 'form-check-input pending-booking-select', form: 'bulkApproveDeclineForm' %>
+                        <%= check_box_tag "sub_space_booking_ids[]", booking.id, false, id: "booking_#{booking.id}", class: 'form-check-input pending-booking-select', aria: { label: t('common.names.select_booking', id: booking.id) }, form: 'bulkApproveDeclineForm' %>
                       </div>
                     </td>
                     <td>
@@ -238,7 +238,7 @@
         <div class="card-body p-4 bg-body">
           <%= form_with url: approve_access_sub_space_booking_index_path, method: :put, class: 'mb-4' do |f| %>
             <div class="input-group">
-              <%= f.select :user_id, [], {}, { class: 'form-select', id: 'user_booking_select', data: { min_length: User::DIRECTORY_SEARCH_MIN_LENGTH, hint: t('sub_space_booking.picker.min_length', count: User::DIRECTORY_SEARCH_MIN_LENGTH) } } %>
+              <%= f.select :user_id, [], {}, { class: 'form-select', id: 'user_booking_select', aria: { label: t('common.names.user_to_permit') }, data: { min_length: User::DIRECTORY_SEARCH_MIN_LENGTH, hint: t('sub_space_booking.picker.min_length', count: User::DIRECTORY_SEARCH_MIN_LENGTH) } } %>
               <%= f.submit 'Permit Access', class: 'btn btn-primary fw-bold' %>
             </div>
           <% end %>
@@ -249,7 +249,7 @@
               <table class="table table-hover align-middle border border-secondary-subtle">
                 <thead class="table-secondary">
                   <tr>
-                    <th class="ps-3"><input type="checkbox" id="userRequestSelectAll" class="form-check-input" /></th>
+                    <th class="ps-3"><input type="checkbox" id="userRequestSelectAll" class="form-check-input" aria-label="<%= t('common.names.select_all_requests') %>" /></th>
                     <th>Name</th>
                     <th>Reason</th>
                     <th>Date</th>
@@ -259,7 +259,7 @@
                 <tbody>
                   <% UserBookingApproval.includes(:user).where(approved: false).find_each do |req| %>
                     <tr>
-                      <td class="ps-3"><%= check_box_tag 'user_booking_approval_ids[]', req.id, false, class: 'form-check-input user-request-select' %></td>
+                      <td class="ps-3"><%= check_box_tag 'user_booking_approval_ids[]', req.id, false, class: 'form-check-input user-request-select', aria: { label: t('common.names.select_access_request', id: req.id) } %></td>
                       <td>
                         <strong class="text-body-emphasis"><%= req.user.name %></strong><br>
                         <small class="text-body-secondary"><%= req.user.email %></small>

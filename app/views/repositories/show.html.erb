@@ -26,11 +26,11 @@
                                 <% if p.image.variable? %>
                                     <%= image_tag url_for(p.image.variant(:photo_slide_first)),
                                                 class: 'carousel-main-image',
-                                                alt: "#{@repository.title} — image #{i + 1}" %>
+                                                alt: t('common.names.titled_image_number', title: @repository.title, number: i + 1) %>
                                 <% else %>
                                     <%= image_tag url_for(p.image),
                                                 class: 'carousel-main-image',
-                                                alt: "#{@repository.title} — image #{i + 1}" %>
+                                                alt: t('common.names.titled_image_number', title: @repository.title, number: i + 1) %>
                                 <% end %>
                             </div>
                         </div>
@@ -59,9 +59,9 @@
                                 class="carousel-thumbnail active"
                                 data-bs-target="#repositoryCarousel"
                                 data-bs-slide-to="0"
-                                aria-label="Video">
+                                aria-label="<%= t('common.names.video') %>">
                             <img src="https://img.youtube.com/vi/<%= YoutubeID.from(@repository.youtube_link) %>/default.jpg"
-                                alt="Video thumbnail">
+                                alt="<%= t('common.names.video_thumbnail') %>">
                         </button>
                         <% slide_offset = 1 %>
                     <% end %>
@@ -71,9 +71,9 @@
                                 class="carousel-thumbnail <%= 'active' if i == 0 && !has_youtube %>"
                                 data-bs-target="#repositoryCarousel"
                                 data-bs-slide-to="<%= i + slide_offset %>"
-                                aria-label="Image <%= i + 1 %>">
+                                aria-label="<%= t('common.names.image_number', number: i + 1) %>">
                             <%= image_tag url_for(p.image.variable? ? p.image.variant(:photo_slide) : p.image),
-                                        alt: "Thumbnail #{i + 1}" %>
+                                        alt: t('common.names.thumbnail_number', number: i + 1) %>
                         </button>
                     <% end %>
                 </div>
@@ -212,7 +212,7 @@
                 <div class="mb-3 input-group">
                     <%= f.hidden_field :repository_id, value: @repository.id %>
                     <%= f.select(:project_proposal_id, @project_proposals, { prompt: t('repository.choose_proposal') },
-                                 { class: 'form-control', id: 'search_project_proposals' }) %>
+                                 { class: 'form-control', id: 'search_project_proposals', aria: { label: t('repository.choose_proposal') } }) %>
                     <%= f.submit t('repository.link_proj'), class: 'btn btn-primary' %>
                 </div>
             <% end %>
@@ -225,7 +225,7 @@
                     <%= f.label t('repository.add_member'), class: 'form-label' %>
                     <div class="mb-3 input-group">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
-                        <%= f.select(:owner_username, '', { prompt: t('repository.search_user') }, { class: 'form-control', data: {user_search_bar: ''} }) %>
+                        <%= f.select(:owner_username, '', { prompt: t('repository.search_user') }, { class: 'form-control', aria: { label: t('repository.search_user') }, data: {user_search_bar: ''} }) %>
                         <%= f.submit t('repository.add'), class: 'btn btn-success' %>
                     </div>
                 <% end %>
@@ -234,7 +234,7 @@
                     <%= f.label t('repository.rem_mem'), class: 'form-label' %>
                     <div class="mb-3 input-group">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
-                        <%= f.select(:owner_id, @repository.users.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove' }) %>
+                        <%= f.select(:owner_id, @repository.users.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove', aria: { label: t('repository.rem_mem') } }) %>
                         <%= f.submit t('repository.remove'), class: 'btn btn-danger' %>
                     </div>
                 <% end %>
@@ -246,7 +246,7 @@
                             <%= f.hidden_field :repository_id, value: @repository.id %>
                             <%= f.collection_select :owner_id, @repository.users, :id, :username,
                                 { prompt: t('repository.search_user') },
-                             { class: 'form-control', id: 'search_users_transfer' } %>
+                             { class: 'form-control', id: 'search_users_transfer', aria: { label: t('repository.search_user') } } %>
                             <br> </br>
                             <%= f.submit t('repository.transfer'), class: 'btn btn-warning' %>
                         </div>
@@ -265,7 +265,7 @@
         <%= form_with(url: comments_create_path, id: 'comment') do %>
             <div class="mb-3">
                 <%= hidden_field_tag :content %>
-                <trix-editor input="content"></trix-editor>
+                <trix-editor input="content" aria-label="<%= t('common.names.comment') %>"></trix-editor>
             </div>
             <%= submit_tag t('repository.post_com'), class: 'btn btn-primary' %>
         <% end %>

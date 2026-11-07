@@ -29,6 +29,7 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
   it "staff send exams -> trainee takes it and passes -> certification on the profile" do
     as_actor(:staff) do
       log_in_as(staff, to: staff_training_session_path(fx[:session]))
+      audit_accessibility("staff training session")
       accept_confirm { click_button "Send Exams" }
       expect(page).to have_current_path(%r{/staff_dashboard})
     end

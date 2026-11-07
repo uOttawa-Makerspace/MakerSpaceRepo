@@ -1,6 +1,6 @@
 <div data-id="<%= learning_module.id %>">
     <div class="card h-100 border-1 shadow-sm">
-        <%= link_to learning_area_path(learning_module.id), class: 'learning-module-thumbnail-wrapper' do %>
+        <%= link_to learning_area_path(learning_module.id), class: 'learning-module-thumbnail-wrapper', aria: { label: learning_module.title } do %>
             <% if learning_module.photos.attached? %>
                 <%= image_tag learning_module.photos.first,
                 loading: 'lazy',

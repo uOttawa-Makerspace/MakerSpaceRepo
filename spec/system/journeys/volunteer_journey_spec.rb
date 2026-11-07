@@ -32,6 +32,7 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
     as_actor(:volunteer) do
       log_in_as(volunteer, to: volunteer_task_path(task))
       expect(page).to have_text("You are assigned to this volunteer task!")
+      audit_accessibility("volunteer task")
       accept_confirm { click_button "Submit Task as Complete" }
       expect(page).to have_text("You've sent a request. No further action is needed.")
     end

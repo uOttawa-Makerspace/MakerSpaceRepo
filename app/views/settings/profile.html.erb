@@ -12,7 +12,7 @@
     <!-- AVATAR SECTION -->
     <div class="mb-4 d-flex align-items-center gap-3">
       <div class="position-relative">
-        <%= image_tag @user.display_avatar, class: 'rounded-circle object-fit-cover border', style: 'width: 80px; height: 80px;', alt: 'Avatar' %>
+        <%= image_tag @user.display_avatar, class: 'rounded-circle object-fit-cover border', style: 'width: 80px; height: 80px;', alt: t('common.names.avatar') %>
       </div>
       <div>
         <%= f.label :avatar, t('settings.profile.choose_image'), class: 'btn btn-sm btn-outline-secondary mb-1' %>

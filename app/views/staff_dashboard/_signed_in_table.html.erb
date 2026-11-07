@@ -63,7 +63,7 @@
             <%= previous_visit_text(user) %></td>
         </td>
         <td class="align-middle dt-center">
-            <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button' %>
+            <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_out_users, dropped_users: [user.username] }, method: :put, class: 'btn btn-default x-button', aria: { label: t('common.sign_out') } %>
         </td>
     </tr>
 <% end %>

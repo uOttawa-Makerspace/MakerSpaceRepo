@@ -24,7 +24,7 @@ section#developmentIndex {
     text-align: center;
     color: white;
     &:hover {
-      color: $primary;
+      color: var(--primary-text);
       outline: 2px solid $primary;
     }
     font-size: 2rem;
@@ -46,7 +46,7 @@ section#developmentIndex {
       max-width: 30%;
     }
     p {
-      color: $primary;
+      color: var(--primary-text);
       padding: 1rem;
       max-height: 100vh;
       font-size: 1.3rem;

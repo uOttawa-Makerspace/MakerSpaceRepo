@@ -18,6 +18,7 @@ RSpec.describe "Journey: key request", type: :system, skip_bullet: true do
     as_actor(:requester) do
       log_in_as(requester, to: new_key_request_path)
       expect(page).to have_text("Access Key Form - Personal Information")
+      audit_accessibility("key request form")
       fill_in "key_request_student_number", with: "300123456"
       fill_in "key_request_phone_number", with: "613-555-0100"
       fill_in "key_request_emergency_contact", with: "Pat Parent"

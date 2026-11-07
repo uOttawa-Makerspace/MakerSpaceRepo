@@ -20,10 +20,10 @@
         <div class="row mb-3">
           <div class="col-md-5">
             <%= f.select(:printer_id, printers.map { |p| [p.name, p.id] },
-                         { prompt: 'Choose Number...' }, { class: 'link_pp form-control form-select', id: 'options' }) %>
+                         { prompt: 'Choose Number...' }, { class: 'link_pp form-control form-select', id: 'options', aria: { label: t('common.names.printer') } }) %>
           </div>
           <div class="col-md-5">
-            <%= f.select(:user_id, @list_users, { prompt: 'Choose User...' }, { class: 'link_pp form-control form-select', id: pt.name.gsub(' ', '_') }) %>
+            <%= f.select(:user_id, @list_users, { prompt: 'Choose User...' }, { class: 'link_pp form-control form-select', id: pt.name.gsub(' ', '_'), aria: { label: t('common.names.user') } }) %>
           </div>
           <div class="col-md-2 justify-content-center align-self-center">
             <%= f.submit 'Submit', class: 'btn btn-secondary' %>

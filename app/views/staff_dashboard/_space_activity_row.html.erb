@@ -68,13 +68,13 @@
                 controller: :staff_dashboard,
                 action: :sign_in_users,
                 added_users: [user.username]
-            }, method: :put, class: 'btn btn-default check-button' %>
+            }, method: :put, class: 'btn btn-default check-button', aria: { label: t('common.sign_in') } %>
         <% else %>
             <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, {
                 controller: :staff_dashboard,
                 action: :sign_out_users,
                 dropped_users: [user.username]
-            }, method: :put, class: 'btn btn-default x-button' %>
+            }, method: :put, class: 'btn btn-default x-button', aria: { label: t('common.sign_out') } %>
         <% end %>
     </td>
 </tr>

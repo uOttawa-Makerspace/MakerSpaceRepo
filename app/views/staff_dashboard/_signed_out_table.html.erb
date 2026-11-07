@@ -26,7 +26,7 @@
                 <%= "#{time_ago_in_words(here.sign_out_time)} ago at #{here.space.name}" if here %>
             </td>
             <td class="action-cell align-middle">
-                <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button' %>
+                <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :staff_dashboard, action: :sign_in_users, added_users: [user.username] }, method: :put, class: 'btn btn-default check-button', aria: { label: t('common.sign_in') } %>
             </td>
         </tr>
     <% end %>

@@ -2,7 +2,7 @@
   <!-- Header & Breadcrumb -->
   <div class="row align-items-center justify-content-between mb-4 g-3">
     <div class="col-12 col-md-auto">
-      <nav aria-label="breadcrumb" class="mb-1">
+      <nav aria-label="<%= t('common.names.breadcrumb') %>" class="mb-1">
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteers_path, class: "text-decoration-none text-body-secondary" do %>
@@ -93,12 +93,12 @@
             <input type="text"
                    class="form-control"
                    placeholder="Search volunteers by name, email, task, cert..."
-                   aria-label="Search volunteers"
+                   aria-label="<%= t('common.names.search_volunteers') %>"
                    data-volunteer-search-target="input"
                    data-action="input->volunteer-search#filter">
             <button class="btn btn-outline-secondary border-secondary-subtle d-none"
                     type="button"
-                    title="Clear search"
+                    title="<%= t('common.names.clear_search') %>"
                     data-volunteer-search-target="clearButton"
                     data-action="click->volunteer-search#clear">
               <i class="fa-solid fa-xmark"></i>

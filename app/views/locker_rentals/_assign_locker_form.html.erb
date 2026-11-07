@@ -12,7 +12,7 @@
               [label, u.id, { data: { role: (u.role.humanize if u.staff?) } }]
             },
             { include_blank: 'Search for a user by name or username...' },
-            { class: 'form-select', id: 'locker_rental_rented_by_id', required: true } %>
+            { class: 'form-select', id: 'locker_rental_rented_by_id', required: true, aria: { label: t('common.names.user') } } %>
     </div>
 
     <!-- Locker Dropdown -->
@@ -23,12 +23,12 @@
             ["##{locker.specifier}#{size_label}", locker.id, { data: { size: locker.locker_size&.size, staff_only: !locker.available } }]
           },
           { include_blank: 'Search for a locker...' },
-          { class: 'form-select', id: 'locker_rental_locker_id', required: true } %>
+          { class: 'form-select', id: 'locker_rental_locker_id', required: true, aria: { label: t('common.names.locker') } } %>
     </div>
 
     <!-- Dates and Indefinite -->
     <div class="col-12 col-md-6">
-      <%= f.label :owned_until, 'End Date', class: 'form-label fw-bold text-body' %>
+      <%= f.label :owned_until, 'End Date', class: 'form-label fw-bold text-body', for: 'assign_owned_until' %>
       <%= f.date_field :owned_until, value: end_of_this_semester, class: 'form-control', id: 'assign_owned_until' %>
       <div class="form-check mt-2">
         <%= check_box_tag 'locker_rental[indefinite]', '1', false, class: 'form-check-input', id: 'assign_indefinite', data: { indefinite_target: 'assign_owned_until' } %>

@@ -3,7 +3,7 @@
         <div class="modal-content" id="content">
             <div class="modal-header">
                 <h5 class="modal-title" id="unavailabilityModalLabel">Add Unavailability</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
             </div>
             <%= form_with url: staff_unavailabilities_path, scope: :staff_unavailability, local: false, html: { class: "useTurbo", id: "unavailForm" }  do |f| %>
                 <div class="modal-body">

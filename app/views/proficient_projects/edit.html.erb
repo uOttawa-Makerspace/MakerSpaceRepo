@@ -18,10 +18,10 @@
               <%= f.trix_editor :description, placeholder: 'Description of the proficient project...', class: 'form-control mb-5', required: true %>
 
               <%= f.label :training_id, 'Category', class: 'form-label' %>
-              <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select mb-5', id: 'training_id_field' }) %>
+              <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select mb-5', id: 'training_id_field', aria: { label: t('common.names.category') } }) %>
 
               <%= f.label :level, 'Level', class: 'form-label' %>
-              <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select mb-5', id: 'training_level_field' }) %>
+              <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select mb-5', id: 'training_level_field', aria: { label: t('common.names.level') } }) %>
 
               <%= f.label :cc, 'Cc Points', class: 'form-label' %>
               <%= f.number_field(:cc, class: 'form-control mb-5') %>
@@ -78,7 +78,7 @@
               <p class="alert alert-secondary mb-5" id="badge-acquired-text">No training will be acquired</p>      
 
               <%= label_tag :file, 'Project files', class: 'form-label' %>
-              <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control mb-5', aria_label: 'Project Files / Fichiers du projet' %>
+              <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control mb-5', aria: { label: t('common.names.project_files') } %>
               <div id="file-container">
 
                 <% @files.each do |f| %>
@@ -115,8 +115,8 @@
               <div class="mb-3 required">
               <%= label_tag :photo, 'Gallery', class: 'form-label' %>
                 <div class="input-group mb-3">
-                  <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
-                  <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+                  <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria: { label: t('common.names.select_pictures') } %>
+                  <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input" aria-label="<%= t('common.add') %>">
                     <i class="fa fa-plus"></i>
                   </button>
                 </div>
@@ -133,7 +133,7 @@
                 <% @photos.each do |img| %>
                   <div class="image-item">
                     <span id="<%= img.id %>" class="image-remove"></span>
-                    <%= image_tag img.image, alt: 'Edit Proficient Project Picture' %>
+                    <%= image_tag img.image, alt: t('common.names.edit_project_picture') %>
                   </div>
                 <% end %>
                 <%= hidden_field_tag 'deleteimages' %>
