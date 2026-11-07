@@ -5,6 +5,12 @@ class SubSpaceBooking < ApplicationRecord
   belongs_to :recurring_booking, optional: true
   has_one :sub_space_booking_status,
           dependent: :destroy
+  # The status the booking's own column points at; empty only for a booking
+  # that was never given one.
+  belongs_to :current_status,
+             class_name: "SubSpaceBookingStatus",
+             foreign_key: :sub_space_booking_status_id,
+             optional: true
   validates :name, presence: true
   validates :description, presence: true
   validates :start_time, presence: true
@@ -187,9 +193,7 @@ class SubSpaceBooking < ApplicationRecord
     status =
       if blocking
         "blocking_booking"
-      elsif SubSpaceBookingStatus.find(
-            sub_space_booking_status_id
-          ).booking_status_id == BookingStatus.approved.id
+      elsif current_status.booking_status_id == BookingStatus.approved.id
         if user_id == current_user_id
           "your_confirmed_bookings"
         else

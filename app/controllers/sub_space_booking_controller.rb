@@ -175,45 +175,7 @@ class SubSpaceBookingController < SessionsController
 
   def bookings
     current_user
-    @bookings = []
-    if params[:room].present?
-      SubSpaceBooking
-        .where(sub_space_id: params[:room])
-        .joins(:user)
-        .find_each do |booking|
-          booking_status =
-            SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
-          unless booking_status.booking_status_id ==
-                   BookingStatus.approved.id ||
-                   booking_status.booking_status_id == BookingStatus.pending.id
-            next
-          end
-          title = "#{booking.name} - #{booking.description}"
-          title =
-            if @user.admin? || booking.user == @user || booking.public
-              title
-            else
-              booking.public ? title : "Space Booked"
-            end
-          title =
-            if booking_status.booking_status_id == BookingStatus.pending.id
-              title + " (Pending)"
-            else
-              title
-            end
-          title += " - #{booking.user.name}" if @user.admin? &&
-            booking.user != @user
-          title = "Space Blocked" if booking.blocking && !booking.public && (!@user.admin? || booking.user != @user)
-          event = {
-            id: "booking_" + booking.id.to_s + "_" + booking.sub_space_id.to_s,
-            title: title,
-            start: booking.start_time,
-            end: booking.end_time,
-            color: booking.color(@user.id)
-          }
-          @bookings << event
-        end
-    end
+    @bookings = params[:room].present? ? feed_bookings.map { |booking| feed_event(booking) } : []
     # TODO: Allow search by recurring id
     render json: @bookings
   end
@@ -882,6 +844,44 @@ class SubSpaceBookingController < SessionsController
     
     # Group them by recurring_booking_id
     @recurring_bookings_map = all_recurring_bookings.group_by(&:recurring_booking_id)
+  end
+
+  # The pending and approved bookings of the room, which are the ones the
+  # calendar shows. A booking without a status is neither, so it is not listed.
+  def feed_bookings
+    SubSpaceBooking
+      .where(sub_space_id: params[:room])
+      .joins(:user, :current_status)
+      .where(sub_space_booking_statuses: { booking_status_id: [BookingStatus.approved.id, BookingStatus.pending.id] })
+      .includes(:user, :current_status)
+      .order(:id)
+  end
+
+  def feed_event(booking)
+    {
+      id: "booking_#{booking.id}_#{booking.sub_space_id}",
+      title: feed_title(booking),
+      start: booking.start_time,
+      end: booking.end_time,
+      color: booking.color(@user.id)
+    }
+  end
+
+  def feed_title(booking)
+    return "Space Blocked" if blocked_for_viewer?(booking)
+
+    title = details_visible?(booking) ? "#{booking.name} - #{booking.description}" : "Space Booked"
+    title += " (Pending)" if booking.current_status.booking_status_id == BookingStatus.pending.id
+    title += " - #{booking.user.name}" if @user.admin? && booking.user != @user
+    title
+  end
+
+  def blocked_for_viewer?(booking)
+    booking.blocking && !booking.public && (!@user.admin? || booking.user != @user)
+  end
+
+  def details_visible?(booking)
+    @user.admin? || booking.user == @user || booking.public
   end
 
   def current_bookings(booking_status_id, page_key: "pending_page")

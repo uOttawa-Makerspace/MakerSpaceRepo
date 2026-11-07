@@ -1248,17 +1248,16 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(feed(admin).first["title"]).to eq("AdminOwn - D")
     end
 
-    # SubSpaceBookingStatus.find(nil) raises RecordNotFound (404)
-    # and takes the whole room feed down
-    it "answers 404 for the whole room when one booking has no status id" do
-      feed_booking(name: "Fine", description: "D")
+    it "lists the other bookings of the room when one booking has no status" do
+      fine = feed_booking(name: "Fine", description: "D")
       broken = feed_booking(name: "Broken", description: "D",
                             start_time: DateTime.parse("2027-04-04 10:00"),
                             end_time: DateTime.parse("2027-04-04 11:00"))
       broken.update_column(:sub_space_booking_status_id, nil)
       log_in!(user)
       get bookings_sub_space_booking_index_path, params: { room: subspace.id }
-      expect(response).to have_http_status(:not_found)
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body).map { |event| event["id"] }).to eq(["booking_#{fine.id}_#{subspace.id}"])
     end
   end
 end
