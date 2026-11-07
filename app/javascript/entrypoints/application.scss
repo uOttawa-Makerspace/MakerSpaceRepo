@@ -35,8 +35,14 @@ $utilities: (
     --bs-btn-color: #{$secondary-text-dark};
     --bs-btn-border-color: #{$secondary-text-dark};
   }
+  // Bootstrap bakes in a dark hover shade for .link-primary, so both states are
+  // set here: the text shade, and a lighter tint on hover and focus.
   .link-primary {
     color: var(--primary-text) !important;
+    &:hover,
+    &:focus {
+      color: #{tint-color($primary-text-dark, 20%)} !important;
+    }
   }
   .border-primary {
     border-color: var(--primary-text) !important;
@@ -44,10 +50,15 @@ $utilities: (
   .text-secondary {
     color: var(--secondary-text) !important;
   }
-  // Declared before the .dropdown-item rules below, so their hover, active and
-  // danger colours still win at equal specificity.
+  // Muted colour for items. It is declared before the .dropdown-item rules
+  // below, so their hover, active and danger colours still win at equal
+  // specificity; disabled items get Bootstrap's disabled colour back.
   .dropdown-item {
     color: var(--secondary-text);
+    &.disabled,
+    &:disabled {
+      color: var(--bs-dropdown-link-disabled-color);
+    }
   }
 }
 .text-primary {

@@ -70,15 +70,23 @@ RSpec.describe "Dark theme overrides" do
   let(:application) { Rails.root.join("app/javascript/entrypoints/application.scss").read }
   let(:dark_block) { application[/\[data-bs-theme="dark"\] \{\n  --primary-text:.*?\n\}\n/m] }
 
-  it "points Bootstrap's primary and secondary text-facing variables at the light shades" do
-    expect(dark_block).to be_present
-    %w[
-      --bs-primary-text-emphasis:\s*\#\{\$primary-text-dark\}
-      --bs-btn-color:\s*\#\{\$primary-text-dark\}
-      --bs-btn-border-color:\s*\#\{\$primary-text-dark\}
-      --bs-btn-color:\s*\#\{\$secondary-text-dark\}
-      --bs-btn-border-color:\s*\#\{\$secondary-text-dark\}
-      --secondary-text:\s*\#\{\$secondary-text-dark\}
-    ].each { |pattern| expect(dark_block).to match(/#{pattern}/) }
+  def rule(selector)
+    dark_block[/^  #{Regexp.escape(selector)} \{\n(.*?)^  \}/m, 1] || raise("no #{selector} rule in the dark block")
+  end
+
+  it "sets the root text variables to the light shades" do
+    expect(dark_block).to match(/^  --primary-text: #\{\$primary-text-dark\};/)
+    expect(dark_block).to match(/^  --secondary-text: #\{\$secondary-text-dark\};/)
+    expect(dark_block).to match(/^  --bs-primary-text-emphasis: #\{\$primary-text-dark\};/)
+  end
+
+  it "uses the light shades for each outline button" do
+    expect(rule(".btn-outline-primary")).to match(/--bs-btn-color: #\{\$primary-text-dark\};.*--bs-btn-border-color: #\{\$primary-text-dark\};/m)
+    expect(rule(".btn-outline-secondary")).to match(/--bs-btn-color: #\{\$secondary-text-dark\};.*--bs-btn-border-color: #\{\$secondary-text-dark\};/m)
+  end
+
+  it "sets both link-primary states and keeps disabled dropdown items disabled" do
+    expect(rule(".link-primary")).to match(/color: var\(--primary-text\) !important;.*&:hover,.*color: #\{tint-color/m)
+    expect(rule(".dropdown-item")).to match(/&:disabled \{\n\s+color: var\(--bs-dropdown-link-disabled-color\)/)
   end
 end
