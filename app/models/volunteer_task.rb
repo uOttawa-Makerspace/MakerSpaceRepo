@@ -27,13 +27,7 @@ class VolunteerTask < ApplicationRecord
     volunteer_hours.approved.exists? || cc_moneys.exists?
   end
 
-  # Sets the attributes and saves them from a task form (see the validations above).
-  def save_from_form(attributes)
-    assign_attributes(attributes)
-    save(context: :task_form)
-  end
-
-  # Applies a whole edit from the task form as one unit: the task's attributes, its required
+  # Applies a whole task form (a new task or an edit) as one unit: the task's attributes, its required
   # trainings and its joins. Any step that fails undoes every step, leaves the reason in errors and
   # returns false. `joins` takes :add_staff, :add_volunteers, :remove_staff and :remove_volunteers
   # (lists of user ids).

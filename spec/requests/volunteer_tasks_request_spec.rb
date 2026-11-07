@@ -183,6 +183,37 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       end
     end
 
+    it "ignores empty values from unselected form fields" do
+      training = create(:training)
+      post volunteer_tasks_path, params: task_params.merge(staff_id: "", volunteer_id: [""], certifications_id: ["", training.id])
+      expect(flash[:notice]).to eq("You've successfully created a new Volunteer Task")
+      expect(VolunteerTask.last.volunteer_task_joins).to be_empty
+      expect(VolunteerTask.last.require_trainings.pluck(:training_id)).to eq([training.id])
+    end
+
+    {
+      "an unknown required training" => [{ certifications_id: [0] }, "A required training does not exist."],
+      "an unknown staff lead" => [{ staff_id: 0 }, "The staff to add could not be found."],
+      "an unknown volunteer" => [{ volunteer_id: [0] }, "The volunteer to add could not be found."]
+    }.each do |label, (extra, message)|
+      it "refuses #{label} and creates no task, trainings or joins" do
+        good_training = create(:training)
+        params = task_params.merge(staff_id: create(:user, :admin).id, certifications_id: [good_training.id]).merge(extra)
+        counts = -> { [VolunteerTask.count, RequireTraining.count, VolunteerTaskJoin.count] }
+        expect { post volunteer_tasks_path, params: params }.not_to change(&counts)
+        expect(response).to redirect_to(new_volunteer_task_path)
+        expect(flash[:alert]).to eq(message)
+      end
+    end
+
+    it "creates the task, trainings and joins together" do
+      training = create(:training)
+      other_staff = create(:user, :admin)
+      expect do
+        post volunteer_tasks_path, params: task_params.merge(certifications_id: [training.id], staff_id: other_staff.id, volunteer_id: [volunteer.id])
+      end.to change(VolunteerTask, :count).by(1).and change(RequireTraining, :count).by(1).and change(VolunteerTaskJoin, :count).by(2)
+    end
+
     it "redirects to root with the missing-param message when volunteer_task is absent" do
       post volunteer_tasks_path, params: {}
       expect(response).to redirect_to(root_path)
