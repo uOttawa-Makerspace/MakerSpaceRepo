@@ -74,6 +74,11 @@ shared: &shared
     command: "GoogleCalendar::WebhookRegistrar.register!"
     schedule: every sunday at 3am
 
+  # Mails the maintenance address about failed and overdue background jobs, once each (JobAlert).
+  job_alerts:
+    class: JobAlertJob
+    schedule: every 5 minutes
+
 production:
   <<: *shared
 
