@@ -802,12 +802,10 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # the track row is created before the params are validated, so a rejected commit still leaves an empty track
-    it "answers 400 (BadRequest) when suspend_data exceeds 64,000 characters but still leaves an empty track" do
+    it "answers 400 (BadRequest) when suspend_data exceeds 64,000 characters and stores nothing" do
       log_in!(user)
       expect { commit(learning_module.id, state.merge("cmi.suspend_data" => "x" * 64_001)) }
-        .to change(LearningModuleTrack, :count).by(1)
-      expect(user.learning_module_tracks.last.scorm_state).to be_nil
+        .not_to change(LearningModuleTrack, :count)
       expect(response).to have_http_status(:bad_request)
       expect(error_text).to include("suspend_data exceeds 64k character limit")
     end

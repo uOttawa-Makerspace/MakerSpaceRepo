@@ -144,9 +144,13 @@ class LearningAreaController < DevelopmentProgramsController
       )
     end
 
-    LearningModuleTrack
-      .for_user_and_module!(current_user, @learning_module)
-      .update(scorm_state: scorm_state_params)
+    # Params are checked before any row is written: a rejected commit stores nothing
+    scorm_state = scorm_state_params
+    LearningModuleTrack.transaction do
+      LearningModuleTrack
+        .for_user_and_module!(current_user, @learning_module)
+        .update(scorm_state: scorm_state)
+    end
 
     head :ok
   end
