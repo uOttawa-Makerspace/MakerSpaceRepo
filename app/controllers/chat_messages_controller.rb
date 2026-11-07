@@ -25,7 +25,7 @@ class ChatMessagesController < SessionsController
 
   # Same audience as JobOrdersController#set_job_order: owner, staff or admin.
   def can_access_order?(order)
-    current_user.admin? || current_user.staff? || current_user.id == order.user_id
+    order.accessible_by?(current_user)
   end
 
   def chat_message_params

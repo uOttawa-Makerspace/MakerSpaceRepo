@@ -143,6 +143,11 @@ class JobOrder < ApplicationRecord
     end
   end
 
+  # Who may open the order and use its chat: its owner, staff and admins.
+  def accessible_by?(user)
+    user.admin? || user.staff? || user.id == user_id
+  end
+
   # Posts +text+ to the order's chat as +sender+ and, when it was saved, emails the other participants. Call it after
   # the transaction that caused the message has committed. Returns the message (check #persisted?).
   def post_chat_message(text, sender)

@@ -27,7 +27,7 @@ class ChatMessage < ApplicationRecord
   end
 
   # Emails everyone who should hear about this message, one email each: the order's owner, its assigned staff,
-  # everyone who has posted in the chat, and the extra recipients in Setting.chat_extra_recipients; never the
+  # everyone who has posted in the chat and can still open the order, and the extra recipients in Setting.chat_extra_recipients; never the
   # author, never twice. Called by whoever posts the message, after it is saved. Nothing goes out for a draft
   # order, or when the author already posted in this chat within the last hour.
   def notify_participants
@@ -39,7 +39,8 @@ class ChatMessage < ApplicationRecord
   private
 
   def notification_emails
-    participants = [job_order.user, job_order.assigned_staff, *job_order.chat_messages.includes(:sender).map(&:sender)]
+    posters = job_order.chat_messages.includes(:sender).map(&:sender).select { |poster| job_order.accessible_by?(poster) }
+    participants = [job_order.user, job_order.assigned_staff, *posters]
     emails = participants.compact.map(&:email) + extra_recipient_emails
     emails.uniq(&:downcase).reject { |email| email.casecmp?(sender.email) }
   end
