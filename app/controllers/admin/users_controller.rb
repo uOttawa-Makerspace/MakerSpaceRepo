@@ -24,6 +24,8 @@ class Admin::UsersController < AdminAreaController
 
   ASSIGNABLE_ROLES = %w[admin staff regular_user volunteer].freeze
 
+  LAST_SIGN_IN_SQL = "(SELECT MAX(lab_sessions.sign_in_time) FROM lab_sessions WHERE lab_sessions.user_id = users.id)"
+
   def index
     unless valid_sort_params?
       redirect_to admin_users_path, alert: "Invalid parameters!"
@@ -311,16 +313,19 @@ class Admin::UsersController < AdminAreaController
       params[:direction] = "desc"
     end
 
-    base_scope = User.includes(:lab_sessions)
+    @pagy, @users = pagy(order_users(User.all), limit: 20)
+  end
 
-    if (order_clause = safe_order_clause)
-      column, direction = order_clause
-      base_scope = base_scope.order(Arel.sql(column) => direction)
-    else
-      base_scope = base_scope.order(created_at: :desc)
-    end
+  # Orders a user list by the whitelisted sort column. "Signed in" sorts by each user's newest
+  # visit (users who never signed in count as oldest), so a user appears once however many
+  # visits they have and no lab_sessions rows are loaded.
+  def order_users(scope)
+    column, direction = safe_order_clause
+    return scope.order(created_at: :desc) unless column
+    return scope.order(Arel.sql(column) => direction) unless column == SORTABLE_COLUMNS["sign_in_time"]
 
-    @pagy, @users = pagy(base_scope, limit: 20)
+    nulls = direction == :asc ? "FIRST" : "LAST"
+    scope.order(Arel.sql("#{LAST_SIGN_IN_SQL} #{direction.to_s.upcase} NULLS #{nulls}"))
   end
 
   # SECURITY FIX: Safe join without user input in SQL string
@@ -351,14 +356,7 @@ class Admin::UsersController < AdminAreaController
               )
             end
 
-    if (order_clause = safe_order_clause)
-      column, direction = order_clause
-      scope = scope.order(Arel.sql(column) => direction)
-    else
-      scope = scope.order(created_at: :desc)
-    end
-
-    pagy(scope, limit: 20)
+    pagy(order_users(scope), limit: 20)
   end
 
   # ============================================
