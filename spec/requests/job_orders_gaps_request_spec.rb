@@ -419,13 +419,31 @@ RSpec.describe "JobOrders gaps", type: :request do
   describe "PATCH assign_staff corners" do
     let!(:order) { order_with_task!(status_key: :staff_approval) }
 
-    it "lets an admin assign a non-staff user" do
+    it "refuses to assign a non-staff user, with a message, and mails nobody" do
       session_login!(admin)
       perform_enqueued_jobs { patch job_order_assign_staff_path(order), params: { staff_id: other.id } }
 
-      expect(order.reload.assigned_staff).to eq(other)
-      expect(flash[:notice]).to eq("#{other.name} has been assigned to this job order.")
-      expect(ActionMailer::Base.deliveries.last.to).to eq([other.email])
+      expect(order.reload.assigned_staff).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_staff"))
+      expect(flash[:notice]).to be_nil
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "refuses to assign a deleted staff member" do
+      gone = create(:user, :staff)
+      gone.update_columns(deleted: true)
+      session_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: gone.id }
+
+      expect(order.reload.assigned_staff_id).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_staff"))
+    end
+
+    it "keeps the previous assignee when a non-staff user is refused" do
+      order.update!(assigned_staff: staff)
+      session_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: other.id }
+      expect(order.reload.assigned_staff).to eq(staff)
     end
 
     it "unassigns with a blank staff_id and says 'No staff'" do

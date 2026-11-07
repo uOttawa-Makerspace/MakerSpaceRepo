@@ -418,7 +418,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
         JobOrderMailer.staff_assigned(@job_order.id, @job_order.assigned_staff.id).deliver_later
       end
     else
-      flash[:alert] = t("job_orders.alerts.assign_staff_failed")
+      refusal = @job_order.errors.messages_for(:assigned_staff).to_sentence
+      flash[:alert] = refusal.presence || t("job_orders.alerts.assign_staff_failed")
     end
   end
 

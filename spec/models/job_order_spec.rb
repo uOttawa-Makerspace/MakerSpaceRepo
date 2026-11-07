@@ -17,6 +17,33 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
+  describe "assigned staff" do
+    let(:order) { create(:job_order, user: create(:user, :regular_user)) }
+
+    it "accepts a staff member or an admin, and no assignee" do
+      expect(order.update(assigned_staff: create(:user, :staff))).to be(true)
+      expect(order.update(assigned_staff: create(:user, :admin))).to be(true)
+      expect(order.update(assigned_staff: nil)).to be(true)
+    end
+
+    it "refuses a user who is not staff" do
+      expect(order.update(assigned_staff: create(:user, :regular_user))).to be(false)
+      expect(order.errors[:assigned_staff]).to eq([I18n.t("job_orders.alerts.assign_staff_not_staff")])
+    end
+
+    it "refuses a deleted staff member" do
+      gone = create(:user, :staff)
+      gone.update_columns(deleted: true)
+      expect(order.update(assigned_staff_id: gone.id)).to be(false)
+    end
+
+    it "stays editable for other fields when the assignee has since stopped being staff" do
+      order.update!(assigned_staff: create(:user, :staff))
+      order.assigned_staff.update_columns(role: "regular_user")
+      expect(order.reload.update(user_comments: "changed")).to be(true)
+    end
+  end
+
   describe "#total_price" do
     before { seed_job_types! }
 

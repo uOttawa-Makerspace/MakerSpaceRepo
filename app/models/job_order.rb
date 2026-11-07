@@ -15,6 +15,8 @@ class JobOrder < ApplicationRecord
   has_many :job_tasks, dependent: :destroy
   has_many :job_quote_line_items, dependent: :destroy
 
+  validate :assigned_staff_must_be_staff, if: :will_save_change_to_assigned_staff_id?
+
   after_save :set_filename
 
   # Orders whose latest status (the one rule, LATEST_STATUS_ID_SQL) exists and is not Draft. An order without a
@@ -675,6 +677,14 @@ class JobOrder < ApplicationRecord
   end
 
   private
+
+  # Only a newly chosen assignee is checked, so an order whose assignee has since lost the staff role (or been
+  # deleted: the default scope hides them) stays editable for its other fields.
+  def assigned_staff_must_be_staff
+    return if assigned_staff_id.nil? || assigned_staff&.staff?
+
+    errors.add(:assigned_staff, I18n.t("job_orders.alerts.assign_staff_not_staff"))
+  end
 
   # The one operation on a locked order (#transition!, #apply_owner_change!, #checkout_link, #soft_delete!,
   # #retire_stale_draft!): its own transaction (ApplicationRecord.own_transaction: every lock wait is bounded, and it

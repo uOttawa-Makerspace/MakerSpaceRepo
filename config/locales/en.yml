@@ -288,6 +288,7 @@ en:
       options_have_not_been_saved: "The options have not been saved successfully."
       job_order_not_found: "The Job Order hasn't been found."
       assign_staff_not_permitted: "Only an admin can assign another staff member to a job order."
+      assign_staff_not_staff: "Only a staff member or an admin can be assigned to a job order."
       assign_staff_failed: "The staff member could not be assigned to this job order."
       error_while_saving_step: "An error occurred while saving the Job Order Step. "
       job_order_submitted_for_approval: "Your job order has been submitted for staff approval!"
