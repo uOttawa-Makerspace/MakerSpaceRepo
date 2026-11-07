@@ -77,6 +77,10 @@ RSpec.configure do |config|
     end
   end
 
+  # Examples tagged :perform_jobs run their enqueued jobs (mail delivered with deliver_later) as they are
+  # enqueued, so they can assert the delivered mail.
+  config.around(:each, :perform_jobs) { |example| perform_enqueued_jobs { example.run } }
+
   # The status rows live in a transaction that is rolled back after every example: never carry a memoized
   # JobStatus row (JobStatus.draft ...) into the next one.
   config.before(:each) { JobStatus.reset_lookup_cache! }

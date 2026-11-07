@@ -1,10 +1,13 @@
 class BookingMailer < ApplicationMailer
+  # Receives the mails meant for a space's managers when the space has none.
+  MTC_MAILBOX = "mtc@uottawa.ca"
+
   def send_booking_needs_approval(booking_id)
     @booking = SubSpaceBooking.find(booking_id)
     @sub_space = SubSpace.find(@booking.sub_space_id)
-    @emails = get_emails(@booking.sub_space.space.id)
 
-    return if @emails.empty? || @sub_space.approval_required == false
+    return if @sub_space.approval_required == false
+    @emails = manager_emails(@booking.sub_space.space)
     @message =
       "A booking has been made in " + @sub_space.name + " by " + @booking.name +
         " for " + @booking.description + " on " +
@@ -17,9 +20,7 @@ class BookingMailer < ApplicationMailer
   def send_booking_automatically_approved(booking_id)
     @booking = SubSpaceBooking.find(booking_id)
     @sub_space = SubSpace.find(@booking.sub_space_id)
-    @emails = get_emails(@booking.sub_space.space.id)
-
-    return if @emails.empty?
+    @emails = manager_emails(@booking.sub_space.space)
     @message =
       "A booking has been made and automatically approved in " +
         @sub_space.name + " by " + @booking.name + " for " +
@@ -71,12 +72,17 @@ class BookingMailer < ApplicationMailer
 
   private
 
-  def get_emails(space_id)
-    emails = []
+  # The space managers' emails; the MTC mailbox, with the missing managers
+  # reported, when the space has none.
+  def manager_emails(space)
+    emails = space.space_managers.map(&:email)
+    return emails if emails.any?
 
-    space = Space.find(space_id)
-    space.space_managers.each { |sm| emails << sm.email }
-
-    emails
+    Rails.error.report(
+      RuntimeError.new("Booking mail for space #{space.id} (#{space.name}), which has no space managers; sent to #{MTC_MAILBOX}"),
+      handled: true,
+      severity: :warning
+    )
+    [MTC_MAILBOX]
   end
 end

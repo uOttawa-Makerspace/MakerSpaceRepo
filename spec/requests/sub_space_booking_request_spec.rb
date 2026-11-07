@@ -152,7 +152,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(booking.approved_by_id).to be_nil
     end
 
-    it "marks pending subspace bookings as Pending and emails the space managers" do
+    it "marks pending subspace bookings as Pending and emails the space managers", :perform_jobs do
       staffed_space = create(:space, :with_space_managers)
       ActionMailer::Base.deliveries.clear
       req = create(:sub_space, space: staffed_space, approval_required: true,
@@ -1108,7 +1108,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(UserBookingApproval.where(user: user).count).to eq(1)
     end
 
-    it "request_access identity 'JMTS' without a JMTS Space is saved, mailed to the default address and reported" do
+    it "request_access identity 'JMTS' without a JMTS Space is saved, mailed to the default address and reported", :perform_jobs do
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
       expect(Rails.error).to receive(:report).with(
@@ -1121,7 +1121,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq(["mtc@uottawa.ca"])
     end
 
-    it "request_access identity 'JMTS' with a JMTS Space that has no managers is mailed to the default address" do
+    it "request_access identity 'JMTS' with a JMTS Space that has no managers is mailed to the default address", :perform_jobs do
       create(:space, name: "JMTS")
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)

@@ -107,7 +107,7 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
 
   describe "PUT/request_access" do
     context "user requests booking access" do
-      it "creates a pending request when a reason is provided" do
+      it "creates a pending request when a reason is provided", :perform_jobs do
         expect {
           put :request_access,
               params: { identity: "Other", comments: "Need access" }
