@@ -42,8 +42,16 @@ en:
       create: "Create Training"
       update: "Update Training"
       delete: "Delete"
+    contact_infos:
+      errors_heading:
+        one: "%{count} error prevented this contact info from being saved:"
+        other: "%{count} errors prevented this contact info from being saved:"
 fr:
   admin:
+    contact_infos:
+      errors_heading:
+        one: "%{count} erreur a empêché l'enregistrement de cette fiche de contact :"
+        other: "%{count} erreurs ont empêché l'enregistrement de cette fiche de contact :"
     general: "Général"
     lockers: "Casiers"
     settings: "Préférences"

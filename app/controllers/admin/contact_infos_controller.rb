@@ -9,14 +9,17 @@ class Admin::ContactInfosController < AdminAreaController
   end
 
   def create
-    fields = params.require(:contact_info)
+    fields = contact_infos_params
     space = Space.find_by(id: fields[:space_id])
     fields[:name] = space ? space.name : fields[:space_id]
     fields[:space_id] = nil unless space
-    contact_info = ContactInfo.new(contact_infos_params)
-    if contact_info.save!
-      redirect_to admin_contact_infos_path
-      flash[:notice] = "You've successfully created a new Contact Info !"
+    @contact_info = ContactInfo.new(fields)
+    if @contact_info.save
+      redirect_to admin_contact_infos_path,
+                  notice: "You've successfully created a new Contact Info !"
+    else
+      @contact_info.opening_hours.build if @contact_info.opening_hours.blank?
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -45,8 +48,11 @@ class Admin::ContactInfosController < AdminAreaController
     redirect_to admin_contact_infos_path
   end
 
+  private
+
   def contact_infos_params
-    params.require(:contact_info).permit(
+    params.expect(
+      contact_info: [
       :name,
       :email,
       :address,
@@ -56,7 +62,7 @@ class Admin::ContactInfosController < AdminAreaController
       :space_id,
       # https://api.rubyonrails.org/classes/ActiveRecord/NestedAttributes/ClassMethods.html
       # neat stuff really
-      opening_hours_attributes: %i[
+      opening_hours_attributes: [%i[
         id
         target_en
         target_fr
@@ -85,7 +91,8 @@ class Admin::ContactInfosController < AdminAreaController
         saturday_closing
         saturday_closed_all_day
         _destroy
-      ]
+      ]]
+    ]
     )
   end
 end
