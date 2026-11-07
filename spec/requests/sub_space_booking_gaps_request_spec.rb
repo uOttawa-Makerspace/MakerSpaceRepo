@@ -1221,6 +1221,12 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
           pending_booking(user, name: "Seed#{day}", start_time: DateTime.parse("2027-06-#{day} 10:00"),
                                 end_time: DateTime.parse("2027-06-#{day} 11:00")).change_status!(status)
         end
+        series = RecurringBooking.create!
+        [24, 25].each do |day|
+          pending_booking(user, name: "Series#{day}", recurring_booking: series, approved_by: admin,
+                                start_time: DateTime.parse("2027-06-#{day} 10:00"),
+                                end_time: DateTime.parse("2027-06-#{day} 11:00"))
+        end
         get sub_space_booking_index_path # warm caches
         few = count_queries { get sub_space_booking_index_path }
 
@@ -1230,9 +1236,12 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
         end
         pending_booking(user, name: "MorePending", start_time: DateTime.parse("2027-06-23 10:00"),
                               end_time: DateTime.parse("2027-06-23 11:00"))
+        pending_booking(user, name: "Series26", recurring_booking: series, approved_by: admin,
+                              start_time: DateTime.parse("2027-06-26 10:00"),
+                              end_time: DateTime.parse("2027-06-26 11:00"))
         many = count_queries { get sub_space_booking_index_path }
 
-        expect(response.body).to include("More21", "More8", "More9", "MorePending")
+        expect(response.body).to include("More21", "More8", "More9", "MorePending", "Series24")
         expect(many).to eq(few)
       end
     end

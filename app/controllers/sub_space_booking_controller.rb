@@ -827,7 +827,7 @@ class SubSpaceBookingController < SessionsController
     # Use the same timestamp as the main query to avoid timing issues
     all_recurring_bookings = SubSpaceBooking
       .pending
-      .includes(:approved_by, :user, sub_space: :space)
+      .includes(:user, sub_space: :space)
       .where(recurring_booking_id: recurring_ids)
       .where('sub_space_bookings.end_time > ?', @current_time)
       .order(start_time: :asc)
