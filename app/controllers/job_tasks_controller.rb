@@ -62,7 +62,7 @@ class JobTasksController < SessionsController
 
     # The wizard's comments are posted to the order chat once the change has committed. They change neither the bill
     # nor the work, so they never send a quoted order back to staff.
-    @job_order.chat_messages.create(message: params[:comments], sender: current_user) if params[:comments].present?
+    @job_order.post_chat_message(params[:comments], current_user) if params[:comments].present?
 
     # Don't do default next step behaviour for oddball cases
     return redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1) if params[:add_another] == "true"

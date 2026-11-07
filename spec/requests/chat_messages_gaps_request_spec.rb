@@ -31,24 +31,35 @@ RSpec.describe "ChatMessages gaps", type: :request do
   end
 
   describe "notification recipients" do
-    # recipients are only the OTHER users who already posted on the
-    # order (plus hard-coded ids). Staff writing FIRST reaches nobody, so the
-    # customer is never told about the first staff message.
-    it "delivers nothing when staff posts the first message of an order thread" do
+    it "mails the owner when staff posts the first message of an order thread" do
       order = active_order!
       session_login!(staff)
       perform_enqueued_jobs { post_message(order, "Your quote is ready") }
 
       expect(order.chat_messages.pluck(:message)).to eq(["Your quote is ready"])
-      expect(deliveries).to be_empty
+      expect(deliveries.map(&:to)).to eq([[owner.email]])
     end
 
-    it "does not notify the assigned staff member when the customer writes first" do
+    it "mails the assigned staff member when the customer writes first" do
       order = active_order!
       order.update!(assigned_staff: staff)
       session_login!(owner)
       perform_enqueued_jobs { post_message(order, "Hi, a question") }
-      expect(deliveries).to be_empty
+      expect(deliveries.map(&:to)).to eq([[staff.email]])
+    end
+
+    it "mails the owner, the assigned staff and the earlier participants once each, never the author" do
+      order = active_order!
+      order.update!(assigned_staff: staff)
+      travel_to(2.hours.ago) { ChatMessage.create!(job_order: order, sender: other_staff, message: "s1") }
+      session_login!(other_staff)
+      perform_enqueued_jobs { post_message(order, "again") }
+      expect(deliveries.map(&:to)).to match_array([[owner.email], [staff.email]])
+
+      deliveries.clear
+      session_login!(staff)
+      perform_enqueued_jobs { post_message(order, "from the assigned staff") }
+      expect(deliveries.map(&:to)).to match_array([[owner.email], [other_staff.email]])
     end
 
     it "notifies every other earlier participant (distinct) once" do
@@ -64,16 +75,36 @@ RSpec.describe "ChatMessages gaps", type: :request do
       expect(deliveries.last.subject).to eq("MakerRepo - Nouveau message // New message")
     end
 
-    # the user ids 25 and 1607 are hard-coded notification
-    # recipients; in any environment where those ids exist they are mailed on
+    # users 25 and 1607 are the default extra notification
+    # recipients (Setting.chat_extra_recipients); where those ids exist they are mailed on
     # every thread, even if they never took part.
-    it "always includes the users with the hard-coded ids 25 and 1607" do
+    it "always includes the users with the default extra recipients 25 and 1607" do
       hard_coded = [create(:user, :staff, id: 25), create(:user, :staff, id: 1607)]
       order = active_order!
       session_login!(owner)
       perform_enqueued_jobs { post_message(order, "Is anybody there?") }
 
       expect(deliveries.map(&:to)).to match_array(hard_coded.map { |user| [user.email] })
+    end
+
+    it "mails the extra recipients saved in the setting instead of the default ones, ids and addresses alike" do
+      listed = create(:user, :staff)
+      Setting.set(Setting::CHAT_EXTRA_RECIPIENTS_KEY, "#{listed.id}, desk@example.com\n#{owner.email.upcase}")
+      create(:user, :staff, id: 25)
+      order = active_order!
+      session_login!(staff)
+      perform_enqueued_jobs { post_message(order, "Hello") }
+
+      expect(deliveries.map(&:to)).to match_array([[owner.email], [listed.email], ["desk@example.com"]])
+    end
+
+    it "mails nobody extra when the setting is saved empty" do
+      Setting.set(Setting::CHAT_EXTRA_RECIPIENTS_KEY, "")
+      create(:user, :staff, id: 25)
+      order = active_order!
+      session_login!(owner)
+      perform_enqueued_jobs { post_message(order, "Hello") }
+      expect(deliveries).to be_empty
     end
 
     it "does not mail a hard-coded user about their own message" do

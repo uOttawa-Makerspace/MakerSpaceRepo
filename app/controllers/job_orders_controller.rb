@@ -534,11 +534,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   # The customer's comment on a quote or a decline, posted to the order chat. Only after the transition committed:
-  # the chat message's after_save notification enqueues a mail that a rolled-back transition must not send.
+  # posting the message mails the other participants, which a rolled-back transition must not do.
   def post_user_comment
     return if params[:user_comments].blank?
 
-    @job_order.chat_messages.create(message: params[:user_comments], sender: current_user)
+    @job_order.post_chat_message(params[:user_comments], current_user)
   end
 
   # The flash for a refused quote / decline. A paid order says so, decided from the status the operation read

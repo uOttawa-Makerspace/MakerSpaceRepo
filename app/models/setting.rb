@@ -21,6 +21,16 @@ class Setting < ApplicationRecord
     claimable.update_all(value: value, updated_at: Time.current).positive?
   end
 
+  CHAT_EXTRA_RECIPIENTS_KEY = "chat_message_extra_recipients"
+  # Users 25 and 1607, the people who have always been mailed about every chat message.
+  CHAT_EXTRA_RECIPIENTS_DEFAULT = "25,1607"
+
+  # The user ids and email addresses mailed about every chat message besides the order's own participants: a list
+  # separated by commas, spaces or new lines. Until the setting is saved it is the default; saved empty it is none.
+  def self.chat_extra_recipients
+    (get(CHAT_EXTRA_RECIPIENTS_KEY) || CHAT_EXTRA_RECIPIENTS_DEFAULT).split(/[\s,;]+/).reject(&:empty?)
+  end
+
   def self.maintenance_email
     get("maintenance_notification_email")
   end

@@ -12,6 +12,22 @@ RSpec.describe Setting, type: :model do
     expect(dup.errors[:key]).to include("has already been taken")
   end
 
+  describe ".chat_extra_recipients" do
+    it "defaults to users 25 and 1607 until the setting is saved" do
+      expect(Setting.chat_extra_recipients).to eq(%w[25 1607])
+    end
+
+    it "splits ids and addresses on commas, spaces and new lines" do
+      Setting.set(Setting::CHAT_EXTRA_RECIPIENTS_KEY, "7, a@example.com\nb@example.com  9")
+      expect(Setting.chat_extra_recipients).to eq(%w[7 a@example.com b@example.com 9])
+    end
+
+    it "is empty when saved empty" do
+      Setting.set(Setting::CHAT_EXTRA_RECIPIENTS_KEY, "")
+      expect(Setting.chat_extra_recipients).to eq([])
+    end
+  end
+
   describe ".get / .set" do
     it "returns nil for an unknown key" do
       expect(Setting.get("missing")).to be_nil

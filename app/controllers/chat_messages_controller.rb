@@ -6,11 +6,9 @@ class ChatMessagesController < SessionsController
     return head :not_found unless order
     return head :forbidden unless can_access_order?(order)
 
-    @chat_message = ChatMessage.new(chat_message_params)
-    @chat_message.job_order = order
-    @chat_message.sender = current_user
+    @chat_message = order.post_chat_message(chat_message_params[:message], current_user)
 
-    return if @chat_message.save
+    return if @chat_message.persisted?
       flash[:error] = "Failed to send message: #{@chat_message.errors.full_messages.join(', ')}"    
   end
 

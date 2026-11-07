@@ -130,6 +130,18 @@ docker compose -f docker-compose.production.yml exec web bin/rails "popular_hour
 
 Restoring returns the rows to how they were at the snapshot, so it also drops any samples the hourly task folded in since.
 
+## Job order chat: extra notification recipients
+
+Every chat message on a job order is emailed, one email per person, to the order's owner, its assigned staff and everyone who has posted in that chat (never to its author). Besides those, the setting `chat_message_extra_recipients` lists extra people who are mailed about every message: user ids and plain email addresses, separated by commas, spaces or new lines. Until the setting is saved it holds the users who were always mailed (`25,1607`). In a Rails console:
+
+```ruby
+Setting.get("chat_message_extra_recipients")                       # nil means the default is in use
+Setting.set("chat_message_extra_recipients", "25, 1607, desk@example.com")
+Setting.set("chat_message_extra_recipients", "")                    # nobody extra
+```
+
+The change applies to the next message. A user id that no longer exists is skipped.
+
 ## Repository zip cache
 
 Repository downloads are cached as zips in `tmp/repository_zips`. The cache is limited by `REPOSITORY_ZIP_CACHE_MAX_BYTES` (default 5 GB), the filesystem keeps `REPOSITORY_ZIP_MIN_FREE_BYTES` free (default 5 GB), and a zip larger than `REPOSITORY_ZIP_MAX_CACHED_ZIP_BYTES` (default 1 GB) is streamed instead of kept. An hourly job trims the cache (least recently used first) and removes partial zips older than an hour. Everything in `tmp/repository_zips` can be deleted at any time; zips are rebuilt on demand.
