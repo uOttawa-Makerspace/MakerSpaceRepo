@@ -10,8 +10,8 @@
 #
 # Each item is claimed with Setting.claim under a key made of its kind and id before the mail goes, so a second
 # run, or two at once, mails nobody twice. If the mail cannot be sent the claims are given back and the error
-# is raised, so the next run tries again. The mail names the job class, queue, error class and the first line of
-# the message, and ids; never the job's arguments.
+# is raised, so the next run tries again. The mail names the job class, queue, error class and ids, never the
+# job's arguments or the error message (it can name people; the queue dashboard shows it to admins).
 class JobAlert
   Item = Data.define(:key, :kind, :job_id, :class_name, :queue_name, :detail)
 
@@ -19,7 +19,6 @@ class JobAlert
   CLAIMED_OVERDUE_AFTER = 1.hour
   LOOKBACK = 1.day
   BATCH = 50
-  MESSAGE_LENGTH = 200
   SENT = "sent"
 
   def initialize(now: Time.current)
@@ -46,7 +45,7 @@ class JobAlert
 
   def failed_items
     SolidQueue::FailedExecution.where(created_at: window_start..).includes(:job).order(:id).map do |failure|
-      item("failed:#{failure.id}", "failed", failure.job, "#{failure.exception_class}: #{first_line(failure.message)}")
+      item("failed:#{failure.id}", "failed", failure.job, failure.exception_class.to_s)
     end
   end
 
@@ -71,10 +70,6 @@ class JobAlert
 
   def window_start
     @now - LOOKBACK
-  end
-
-  def first_line(message)
-    message.to_s.lines.first.to_s.strip.truncate(MESSAGE_LENGTH)
   end
 
   def deliver(items, recipient)

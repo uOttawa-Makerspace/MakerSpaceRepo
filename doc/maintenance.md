@@ -72,7 +72,7 @@ Post-deploy step for this release (Google Calendar webhook): run `bin/rails runn
 
 The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:
 
-- a failed execution (job class, queue, error class, the first line of the error message cut to 200 characters, and ids);
+- a failed execution (job class, queue, error class and ids; never the error message, which is in the queue dashboard);
 - a scheduled execution still waiting 15 minutes after it was due (the dispatcher is not running);
 - a claimed execution that has been running for more than an hour (the job is probably hung).
 

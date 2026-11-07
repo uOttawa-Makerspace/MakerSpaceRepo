@@ -87,7 +87,8 @@ RSpec.describe JobAlert do
     expect(ActionMailer::Base.deliveries.size).to eq(1)
     mail = ActionMailer::Base.deliveries.first
     expect(mail.to).to eq(["maintenance@example.com"])
-    expect(bodies.first).to include("ExportJob", "background", "RuntimeError", "boom")
+    expect(bodies.first).to include("ExportJob", "background", "RuntimeError")
+    expect(bodies.first).not_to include("boom")
   end
 
   it "mails a failure that arrives later without repeating the earlier one" do
@@ -151,22 +152,14 @@ RSpec.describe JobAlert do
     expect(bodies.first).not_to include("BusyJob")
   end
 
-  it "keeps job arguments and everything after the first line of the message out of the mail" do
-    fail_job(error: { exception_class: "ActiveRecord::RecordInvalid",
-                      message: "Validation failed\nDETAIL: Key (email)=(#{secret}) already exists",
-                      backtrace: ["app/jobs/x.rb:1 #{secret}"] })
+  it "keeps job arguments and the error message, even one holding an email address, out of the mail" do
+    bounce = "550 5.1.1 <#{secret}>: Recipient address rejected"
+    fail_job(error: { exception_class: "Net::SMTPFatalError", message: bounce, backtrace: ["x.rb:1 #{secret}"] })
 
     run
-    expect(bodies.first).to include("ActiveRecord::RecordInvalid", "Validation failed")
-    expect(bodies.first).not_to include(secret)
+    expect(bodies.first).to include("Net::SMTPFatalError")
+    expect(bodies.first).not_to include(secret, "Recipient address rejected")
     expect(ActionMailer::Base.deliveries.first.to_s).not_to include(secret)
-  end
-
-  it "truncates a long message" do
-    fail_job(error: { exception_class: "RuntimeError", message: "x" * 1000 })
-
-    run
-    expect(bodies.first).not_to include("x" * 250)
   end
 
   it "mails at most one batch and the rest on the next run" do
