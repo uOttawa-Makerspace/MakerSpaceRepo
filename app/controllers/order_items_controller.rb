@@ -17,7 +17,7 @@ class OrderItemsController < DevelopmentProgramsController
   def create
     @order = current_order
     proficient_project =
-      ProficientProject.find(params[:order_item][:proficient_project_id])
+      ProficientProject.find(order_item_params[:proficient_project_id])
     if current_user.has_requirements?(proficient_project.training_requirements)
       @order.change_items! do |cart|
         @order = cart

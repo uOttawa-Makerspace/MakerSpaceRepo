@@ -167,10 +167,10 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    it "answers 500 when the order_item param is missing entirely" do
-      # params[:order_item][:proficient_project_id] is dereferenced unguarded, so a bad POST is a 500 (NoMethodError), not a 400
+    it "redirects home with the missing-parameter message when the order_item param is absent" do
       post order_items_path, params: {}
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to include("order_item")
       expect(OrderItem.count).to eq(0)
     end
 
