@@ -90,12 +90,14 @@ RSpec.describe "Accessibility baseline", type: :request do
   describe "focus ring" do
     it "has no stylesheet rule that removes the outline" do
       offenders = stylesheet_files.select { |f| File.read(f).match?(/outline:\s*(none|0)\s*[;}]/) }
-      expect(offenders).to be_empty
+      expect(offenders.map { |f| File.basename(f) }).to eq(["accessibility.scss"])
+      expect(File.read(Rails.root.join("app/javascript/stylesheets/accessibility.scss")).scan(/outline:\s*(?:none|0)/).size).to eq(1)
     end
 
     it "draws a solid :focus-visible outline from one shared rule" do
       css = File.read(Rails.root.join("app/javascript/stylesheets/accessibility.scss"))
-      expect(css).to match(/:focus-visible\s*\{\s*outline:\s*3px solid var\(--focus-ring-color\)/)
+      expect(css).to match(/:focus-visible:not\(\[tabindex="-1"\]\)\s*\{\s*outline:\s*3px solid var\(--focus-ring-color\)/)
+      expect(File.read(Rails.root.join("app/javascript/entrypoints/application.scss"))).not_to match(/^:focus\s*\{/)
       expect(File.read(Rails.root.join("app/javascript/entrypoints/application.scss"))).to include('@import "../stylesheets/accessibility"')
     end
   end

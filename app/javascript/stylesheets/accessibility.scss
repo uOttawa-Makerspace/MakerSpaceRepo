@@ -18,22 +18,20 @@ footer {
   --focus-ring-color: #fff;
 }
 
-// :focus-visible leaves the mouse-click look unchanged. The :is() list gives
-// this rule the specificity needed to replace Bootstrap's `outline: 0` on
-// .form-control:focus and .btn:focus-visible. Programmatic focus targets
-// (tabindex="-1", such as the main content after the skip link) get no ring.
-:is(
-    a,
-    button,
-    input,
-    select,
-    textarea,
-    summary,
-    [tabindex],
-    [role="button"]
-  ):not([tabindex="-1"]):focus-visible {
+// :focus-visible shows the ring for keyboard focus only, so a mouse click looks
+// as before. The :not() gives this rule the specificity needed to replace
+// Bootstrap's zero outline on .form-control:focus and .btn:focus-visible. It
+// applies to every element, so none is left without a ring. Programmatic focus
+// targets (tabindex="-1", such as the main content after the skip link) get no ring.
+:focus-visible:not([tabindex="-1"]) {
   outline: 3px solid var(--focus-ring-color);
   outline-offset: 2px;
+}
+
+// The main content is only a programmatic focus target (skip link, fragment
+// jumps). It is not a control, so it shows no ring, including the browser default.
+main[tabindex="-1"]:focus {
+  outline: none;
 }
 
 // Skip link: hidden until it takes keyboard focus, then pinned top-left.

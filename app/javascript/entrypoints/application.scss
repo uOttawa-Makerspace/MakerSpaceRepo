@@ -64,9 +64,6 @@ body {
   flex-direction: column;
   font-family: "Roboto", helvetica, sans-serif;
   overflow-x: hidden; // Prevent horizontal scrollbar on body
-  main {
-    flex: 1;
-  }
 }
 
 *[id] {
@@ -288,13 +285,6 @@ u {
 }
 .youtube-embed {
   width: 100%;
-}
-
-:focus {
-  outline: -webkit-focus-ring-color auto 1px;
-}
-a :focus {
-  outline-offset: 1px;
 }
 
 div.seperator {

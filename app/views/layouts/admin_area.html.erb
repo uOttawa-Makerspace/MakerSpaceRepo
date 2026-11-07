@@ -22,7 +22,7 @@
     <%= render 'layouts/header', with_admin: true %>
     <%= render partial: 'partials/announcements' %>
 
-    <main class="main" id="main-content" tabindex="-1">
+    <main class="main flex-grow-1" id="main-content" tabindex="-1">
       <%= yield(:before_container) %>
       <div class="container mt-3">
         <div class="flash" id="flash">
