@@ -324,8 +324,8 @@ class Admin::UsersController < AdminAreaController
     return scope.order(created_at: :desc) unless column
     return scope.order(Arel.sql(column) => direction) unless column == SORTABLE_COLUMNS["sign_in_time"]
 
-    nulls = direction == :asc ? "FIRST" : "LAST"
-    scope.order(Arel.sql("#{LAST_SIGN_IN_SQL} #{direction.to_s.upcase} NULLS #{nulls}"))
+    ordering = Arel.sql(LAST_SIGN_IN_SQL).public_send(direction)
+    scope.order(direction == :asc ? ordering.nulls_first : ordering.nulls_last)
   end
 
   # SECURITY FIX: Safe join without user input in SQL string
