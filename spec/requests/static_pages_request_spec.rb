@@ -369,6 +369,21 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body.scan("list-header").size).to eq(1)
     end
 
+    it "leaves out a stored shadowing shift that has no start or end time" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      start_time = Time.zone.parse("2030-01-07 10:00")
+      create(:shadowing_hour, user: user, start_time: start_time, end_time: start_time + 3.hours)
+      create(:shadowing_hour, user: user).update_column(:end_time, nil)
+      create(:shadowing_hour, user: user).update_column(:start_time, nil)
+      create(:shadowing_hour, user: user).update_columns(start_time: nil, end_time: nil)
+
+      get root_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan("10:00 - 13:00").size).to eq(1)
+    end
+
     it "leaves out inactive joins and shows at most five tasks, newest first" do
       user = sign_in_as(:regular)
       user.programs.create!(program_type: Program::VOLUNTEER)

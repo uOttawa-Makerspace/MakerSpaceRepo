@@ -4,6 +4,14 @@ class ShadowingHour < ApplicationRecord
   belongs_to :space, optional: true
   display_user_for :user
 
+  # The columns allow NULL and older rows may lack a time, so those rows stay
+  # editable for other fields: both times are required for a new row, or when
+  # either time is being changed.
+  validates :start_time, :end_time, presence: true, if: :times_required?
+
+  # Rows with both times stored; the only ones that can be shown as a shift.
+  scope :complete, -> { where.not(start_time: nil).where.not(end_time: nil) }
+
   def self.authorizer
     scope = "https://www.googleapis.com/auth/calendar"
 
@@ -111,5 +119,11 @@ class ShadowingHour < ApplicationRecord
     end
 
     return response
+  end
+
+  private
+
+  def times_required?
+    new_record? || start_time_changed? || end_time_changed?
   end
 end

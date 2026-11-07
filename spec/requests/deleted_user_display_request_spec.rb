@@ -252,7 +252,7 @@ RSpec.describe "Pages that show a deleted user", type: :request do
       status = JobOrderStatus.new(user_id: gone.id)
       order = create(:order, user: create(:user)).tap { |o| o.update_columns(user_id: gone.id) }
       log = TapBoxLog.log!(event_type: TapBoxLog::INFO, message: "x", user: gone)
-      shift = ShadowingHour.create!(user: gone, space: space)
+      shift = ShadowingHour.create!(user: gone, space: space, start_time: 1.day.from_now, end_time: 1.day.from_now + 1.hour)
       proposal = create(:project_proposal, user: gone, admin: gone_supervisor)
 
       expect([status, Order.find(order.id), log.reload, shift.reload, proposal.reload].map(&:user)).to all(be_nil)

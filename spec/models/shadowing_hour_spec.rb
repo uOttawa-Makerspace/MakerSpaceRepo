@@ -4,8 +4,41 @@ RSpec.describe ShadowingHour, type: :model do
   it { should belong_to(:user).without_validating_presence }
   it { should belong_to(:space).without_validating_presence }
 
-  it "has no validations (an empty row saves)" do
-    expect { ShadowingHour.create! }.to change(ShadowingHour, :count).by(1)
+  describe "times" do
+    let(:start_time) { Time.zone.parse("2030-01-07 10:00") }
+
+    it "are both required on a new row" do
+      expect(ShadowingHour.new(end_time: start_time)).not_to be_valid
+      expect(ShadowingHour.new(start_time: start_time)).not_to be_valid
+      expect(ShadowingHour.new(start_time: start_time, end_time: start_time + 1.hour)).to be_valid
+    end
+
+    it "keep a stored row without times editable for its other fields" do
+      shift = create(:shadowing_hour)
+      shift.update_columns(start_time: nil, end_time: nil)
+
+      expect(shift.reload.update(event_id: "evt-1")).to be(true)
+    end
+
+    it "cannot be cleared on a stored row" do
+      expect(create(:shadowing_hour).update(end_time: nil)).to be(false)
+    end
+
+    it "are both needed once either one is changed on a row that has none" do
+      shift = create(:shadowing_hour)
+      shift.update_columns(start_time: nil, end_time: nil)
+
+      expect(shift.reload.update(start_time: start_time)).to be(false)
+      expect(shift.update(start_time: start_time, end_time: start_time + 1.hour)).to be(true)
+    end
+  end
+
+  it "lists only rows that have both times as complete" do
+    whole = create(:shadowing_hour)
+    create(:shadowing_hour).update_column(:end_time, nil)
+    create(:shadowing_hour).update_column(:start_time, nil)
+
+    expect(ShadowingHour.complete).to contain_exactly(whole)
   end
 
   # Chunk 13: Google Calendar is faked at the service boundary.

@@ -169,9 +169,9 @@ class StaticPagesController < SessionsController
   private
 
   # [space name or nil, "Monday 10:00 - 13:00"] per shadowing shift; a shift
-  # without a space has no name.
+  # without a space has no name, and a stored shift missing a time is left out.
   def shadowing_shift_entries(user)
-    user.shadowing_hours.includes(:space).map do |hours|
+    user.shadowing_hours.complete.includes(:space).map do |hours|
       end_time = hours.end_time.strftime('%H:%M')
       formatted_time = "#{I18n.l hours.start_time, format: '%A %H:%M'} - #{end_time}"
       [hours.space&.name, formatted_time]
