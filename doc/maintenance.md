@@ -68,6 +68,22 @@ The locker notices migration must run before the first 8:30am run of the locker 
 
 Post-deploy step for this release (Google Calendar webhook): run `bin/rails runner 'GoogleCalendar::WebhookRegistrar.register!'` once, right after the deploy. Channels registered before this release have no token, and the webhook refuses their pushes (401) until they are re-registered; there is no grace period for them. The same applies whenever `secret_key_base` is rotated: every channel's token is derived from it, so every channel is refused until it is re-registered with the same command.
 
+### Failed and overdue job alerts
+
+The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:
+
+- a failed execution (job class, queue, error class, the first line of the error message cut to 200 characters, and ids);
+- a scheduled execution still waiting 15 minutes after it was due (the dispatcher is not running);
+- a claimed execution that has been running for more than an hour (the job is probably hung).
+
+Only the last 24 hours are looked at, and at most 50 items go in one mail (the rest follow on the next run), so setting the address does not mail the whole history. Job arguments are never in the mail. With no address set nothing is mailed and nothing is marked as reported, so the alerts start when an address is set. The mail points at the queue dashboard (`/solid_queue`), where a failed job is retried or discarded.
+
+Each item is marked as reported by a `settings` row, `job_alert:failed:<failed execution id>`, `job_alert:overdue:scheduled:<job id>` or `job_alert:overdue:claimed:<job id>`, with the value `sent`, so running twice, or two runs at once, mails nobody twice. A job that fails again after a retry is a new failed execution and is reported again. If the mail cannot be sent, the marks are removed and the task fails; the next run tries again. The rows are tiny and never pruned.
+
+- To silence the alerts, clear the maintenance address (printer issues page), or remove the `job_alerts` entry from `config/recurring.yml`.
+- To report an item again, delete its row: `Setting.where(key: "job_alert:failed:123").delete_all`. To report everything in the last 24 hours again: `Setting.where("key LIKE 'job_alert:%'").delete_all`.
+- To mark the current failures as reported without mailing them, insert their rows first (`SolidQueue::FailedExecution.pluck(:id).each { |id| Setting.claim("job_alert:failed:#{id}", "sent") }`) and then set the address.
+
 ### Bulk mail tasks run by hand
 
 `rake "update_profile:send_emails"` (profile update request, once per year, BCC groups of 498) and `rake confirmed_users:remind` (confirmation reminder, once per day, one user at a time) record their progress in the `settings` table, so running one again in the same period mails nobody and an interrupted run continues where it stopped. Each task prints how many groups or users it mailed. See [sign-up](flows/sign-up.md) and [profile and account deletion](flows/profile-and-account-deletion.md).
