@@ -406,24 +406,33 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).to include("New Entry", edit_faq_path(faq1))
     end
 
-    it "redirects non-admins (guest, regular, staff) to root for every write action" do
+    it "sends a guest to the login page and other non-admins to root for every write action" do
       %i[guest regular staff].each do |role|
         sign_in_as(role)
         [
           -> { get new_faq_path }, -> { get edit_faq_path(faq1) },
           -> { post faqs_path, params: valid_params },
           -> { patch faq_path(faq1), params: { faq: { title_en: "hacked" } } },
-          -> { delete faq_path(faq1) },
-          -> { put reorder_faqs_path, params: { data: [faq2.id, faq1.id] }, as: :json }
+          -> { delete faq_path(faq1) }
         ].each do |call|
           instance_exec(&call)
-          expect(response).to redirect_to("/"), role.to_s
+          expect_admin_area_bounce(guest: role == :guest)
         end
+        put reorder_faqs_path, params: { data: [faq2.id, faq1.id] }, as: :json
+        expect(response).to role == :guest ? have_http_status(:unauthorized) : redirect_to("/")
         expect(Faq.count).to eq(2)
         expect(faq1.reload.title_en).to eq("First?")
         expect(faq1.order).to eq(1)
         post logout_path
       end
+    end
+
+    it "answers a guest script or JSON write request with 401" do
+      post faqs_path, params: valid_params, as: :json
+      expect(response).to have_http_status(:unauthorized)
+      get new_faq_path, xhr: true, headers: { "Accept" => "text/javascript" }
+      expect(response).to have_http_status(:unauthorized)
+      expect(Faq.count).to eq(2)
     end
 
     it "lets an admin create (renders a fresh form, 200), update, and delete" do
