@@ -122,11 +122,20 @@ RSpec.describe AddStateToVolunteerTaskJoins do
     migrate
     connection.execute("UPDATE volunteer_task_joins SET state = 'left', state_changed_by_id = #{actor.id} WHERE id = #{id}")
 
-    expect { migrate(:down) }.to raise_error(RuntimeError, /1 volunteer_task_joins row\(s\) have a recorded state_changed_by_id/)
+    expect { migrate(:down) }.to raise_error(RuntimeError, /1 volunteer_task_joins row\(s\) have a recorded state_changed_by_id or the state 'left'/)
     expect(column?(:state)).to be(true)
 
     connection.execute("UPDATE volunteer_task_joins SET state_changed_by_id = NULL WHERE id = #{id}")
     expect { migrate(:down) }.not_to raise_error
+  end
+
+  it "refuses to roll back while a join is 'left', even with no actor (the user was deleted)" do
+    id = join_for(volunteer, task, active: false)
+    migrate
+    connection.execute("UPDATE volunteer_task_joins SET state = 'left' WHERE id = #{id}")
+
+    expect { migrate(:down) }.to raise_error(RuntimeError, /1 volunteer_task_joins row\(s\).*'left'/)
+    expect(column?(:state)).to be(true)
   end
 
   it "does not block a roll back for a join closed after the migration (active false, state joined)" do
