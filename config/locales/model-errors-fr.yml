@@ -156,3 +156,23 @@ fr:
           attributes:
             photos:
               too_many: "ne peut pas dépasser 5 photos"
+        learning_module:
+          attributes:
+            title:
+              blank: "Un titre est requis."
+              taken: "Ce titre existe déjà"
+        proficient_project:
+          attributes:
+            title:
+              blank: "Un titre est requis."
+              taken: "Ce titre existe déjà"
+        repository:
+          attributes:
+            title:
+              blank: "Le titre du projet est requis."
+              taken: "Le titre du projet est déjà utilisé."
+            password:
+              blank: "Un mot de passe est requis pour les projets privés"
+            photos:
+              too_long: "Doit avoir entre 1 et 5 photos"
+              too_short: "Doit avoir entre 1 et 5 photos"

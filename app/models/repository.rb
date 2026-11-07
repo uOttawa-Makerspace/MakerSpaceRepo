@@ -63,30 +63,18 @@ class Repository < ApplicationRecord
     ]
   end
 
-  validates :title,
-            presence: {
-              message: 'Project title is required.'
-            },
-            uniqueness: {
-              message: 'Project title is already in use.',
-              scope: :user_id # :owner
-            }
+  validates :title, presence: true, uniqueness: { scope: :user_id } # :owner
 
   validates :share_type, inclusion: { in: %w[public private], message: '' }
 
-  validates :password,
-            presence: {
-              message: 'Password is required for private projects'
-            },
-            if: :private?
+  validates :password, presence: true, if: :private?
 
   # This seems to work fine for limiting association counts.
   # Max 5 gallery photos per repository.
   validates :photos,
             length: {
               maximum: 10,
-              minimum: 1,
-              message: 'Must have between 1 and 5 photos'
+              minimum: 1
             }
 
   # validates :category,

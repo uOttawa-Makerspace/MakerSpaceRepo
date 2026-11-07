@@ -212,6 +212,31 @@ RSpec.describe "Localized model error messages" do
     expect_messages(task, :photos, " can't exceed 5 photos", "ne peut pas dépasser 5 photos")
   end
 
+  describe "titles and projects" do
+    it "localizes the learning module title messages" do
+      existing = create(:learning_module)
+      expect_messages(LearningModule.new(title: ""), :title, "A title is required.", "Un titre est requis.")
+      expect_messages(LearningModule.new(title: existing.title, training: existing.training), :title,
+                      "Title already exists", "Ce titre existe déjà")
+    end
+
+    it "localizes the proficient project title messages" do
+      existing = create(:proficient_project)
+      expect_messages(ProficientProject.new(title: ""), :title, "A title is required.", "Un titre est requis.")
+      expect_messages(ProficientProject.new(title: existing.title), :title, "Title already exists", "Ce titre existe déjà")
+    end
+
+    it "localizes the repository title, password and photo messages" do
+      existing = create(:repository)
+      expect_messages(Repository.new(title: ""), :title, "Project title is required.", "Le titre du projet est requis.")
+      expect_messages(Repository.new(title: existing.title, user_id: existing.user_id), :title,
+                      "Project title is already in use.", "Le titre du projet est déjà utilisé.")
+      expect_messages(Repository.new(share_type: "private"), :password,
+                      "Password is required for private projects", "Un mot de passe est requis pour les projets privés")
+      expect_messages(Repository.new, :photos, "Must have between 1 and 5 photos", "Doit avoir entre 1 et 5 photos")
+    end
+  end
+
   describe "staff and event calendars" do
     let(:weekly) { "FREQ=WEEKLY;INTERVAL=1" }
     let(:later) { 2.days.from_now.change(usec: 0) }

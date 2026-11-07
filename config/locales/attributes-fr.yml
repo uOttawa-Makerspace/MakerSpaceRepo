@@ -37,6 +37,14 @@ fr:
         pi_mac_address: Adresse MAC
       api_refresh_token:
         expires_at: Expiration
+      learning_module:
+        title: Titre
+      proficient_project:
+        title: Titre
+      repository:
+        title: Titre
+        password: Mot de passe
+        photos: Photos
       locker_rental:
         state: État
         locker: Casier
