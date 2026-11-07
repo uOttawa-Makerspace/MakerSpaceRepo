@@ -102,13 +102,12 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # a module without a training makes the show page crash (500)
-    it "crashes with a 500 (nil.localized_name) when the module has no training" do
+    it "renders a module that has no training, without a training name" do
       orphan = create(:learning_module, training: nil, title: "Orphan")
       sign_in_as(:regular)
       get learning_area_path(orphan)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("undefined method 'localized_name' for nil")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Orphan")
     end
   end
 
