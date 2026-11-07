@@ -740,14 +740,22 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(user.reload.wallet).to eq(60)
     end
 
-    it "checks out an empty cart: creates a Completed order of total 0 and no debit" do
-      expect { post orders_path }.to change(Order, :count).by(1).and change(CcMoney, :count).by(0)
-      expect(response).to redirect_to(orders_path)
-      # an empty cart can be "purchased", creating a Completed zero-value order
+    it "refuses to check out an empty cart: alert, no order, no debit" do
+      expect { post orders_path }.to change(Order, :count).by(0).and change(CcMoney, :count).by(0)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Your cart is empty.")
+      expect(flash[:notice]).to be_nil
+    end
+
+    it "refuses to check out a saved cart whose items were all removed: it stays open" do
+      pp = pp_with_cc(10)
+      add_to_cart(pp)
       order = user.orders.last
-      expect(order.order_status.name).to eq("Completed")
-      expect(order.total).to eq(0)
-      expect(order.order_items).to be_empty
+      order.order_items.destroy_all
+      expect { post orders_path }.not_to change(CcMoney, :count)
+      expect(flash[:alert]).to eq("Your cart is empty.")
+      expect(order.reload.order_status.name).to eq("In progress")
+      expect(session[:order_id]).to eq(order.id)
     end
 
     it "free items (cc 0) record a 0 cc_money row" do
@@ -806,11 +814,12 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(ProjectKit.count).to eq(0)
     end
 
-    it "a second POST right after checkout checks out an empty cart (no double debit)" do
+    it "a second POST right after checkout finds an empty new cart and is refused (no double debit)" do
       credit_cc!(user, 50)
       add_to_cart(pp_with_cc(10))
       post orders_path
-      expect { post orders_path }.to change(CcMoney, :count).by(0)
+      expect { post orders_path }.to change(CcMoney, :count).by(0).and change(Order, :count).by(0)
+      expect(flash[:alert]).to eq("Your cart is empty.")
       expect(user.reload.wallet).to eq(40)
     end
 
