@@ -96,10 +96,6 @@ RSpec.describe "Admin calendar contract", type: :request do
       )
     end
 
-    # StaffSpace#before_create :create_color OVERWRITES any color
-    # passed to create! — generate_color picks the first global palette
-    # entry not yet taken in the space, so a brand-new StaffSpace always
-    # gets "#e6194b" (palette x 22 colors) regardless of what we assign.
     it "shares UNAVAILABILITY entries under the staff + literal wall re-zoned" do
       staff_space!
       unavailability
@@ -113,8 +109,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(staff_entry.keys)
         .to eq(%w[id name color unavailabilities])
       expect(staff_entry["id"]).to eq(staff.id)
-      # not the "#3788d8" the helper assigned — see note above
-      expect(staff_entry["color"]).to eq("#e6194b")
+      expect(staff_entry["color"]).to eq("#3788d8")
 
       event = staff_entry["unavailabilities"].first
       expect(event["title"]).to eq("🚫 #{staff.name} - Doctor")
