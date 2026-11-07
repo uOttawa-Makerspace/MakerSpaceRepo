@@ -8,7 +8,7 @@
         <ul class="list-unstyled list-box shadowing-list">
             <% @volunteer_program_shadowing_scheduled.each do |space_name, time_period| %>
             <li style="border-color:orange">
-                <span class="list-header"><%= space_name %></span><br /><%= time_period %>
+                <% if space_name %><span class="list-header"><%= space_name %></span><br /><% end %><%= time_period %>
             </li>
             <% end %>
         </ul>

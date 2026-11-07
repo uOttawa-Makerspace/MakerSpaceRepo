@@ -352,6 +352,23 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body).to include("Remote paperwork")
     end
 
+    it "lists a volunteer's shadowing shifts with the space name, and shows a shift without a space by its time alone" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      space = create(:space, name: "Brunsfield Centre")
+      start_time = Time.zone.parse("2030-01-07 10:00")
+      create(:shadowing_hour, user: user, space: space, start_time: start_time, end_time: start_time + 3.hours)
+      create(:shadowing_hour, user: user, space: nil, start_time: start_time + 1.day, end_time: start_time + 1.day + 3.hours)
+
+      get root_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Brunsfield Centre")
+      expect(response.body.scan("shadowing-list").size).to eq(1)
+      expect(response.body.scan("10:00 - 13:00").size).to eq(2)
+      expect(response.body.scan("list-header").size).to eq(1)
+    end
+
     it "leaves out inactive joins and shows at most five tasks, newest first" do
       user = sign_in_as(:regular)
       user.programs.create!(program_type: Program::VOLUNTEER)
