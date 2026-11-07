@@ -26,7 +26,7 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
       expect(page).to have_text("Volunteer task updated")
     end
     join = VolunteerTaskJoin.find_by!(volunteer_task: task, user: volunteer)
-    expect(join.active).to be(true)
+    expect(join.state).to eq("joined")
     expect(join.user_type).to eq("Volunteer")
 
     as_actor(:volunteer) do
@@ -48,6 +48,7 @@ RSpec.describe "Journey: volunteer task", type: :system, skip_bullet: true do
       expect(page).to have_text("Task request updated")
     end
     expect(request.reload.approval).to be(true)
+    expect(join.reload).to have_attributes(state: "completed", active: false, state_changed_by_id: staff.id)
     expect(CcMoney.where(user: volunteer).sum(:cc)).to eq(10)
     expect(VolunteerHour.where(user: volunteer, volunteer_task: task).pluck(:total_time, :approval)).to eq([[5.0, true]])
     updated = deliver_mail.find { |m| m.subject == "Your request was updated: Stocktake" }
