@@ -686,6 +686,35 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     end
   end
 
+  describe "PATCH /job_orders/:id/paid mail" do
+    before { http_login!(staff) }
+
+    it "sends the ready-for-pickup mail to the owner once, and not again when marked paid twice" do
+      order = order_with_task!(owner: owner, status_key: :completed)
+      2.times { patch job_order_paid_path(order), params: { paid: "true" } }
+
+      expect(status_names(order).count("Paid (Waiting for Pick-Up)")).to eq(1)
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      mail = ActionMailer::Base.deliveries.last
+      expect(mail.subject).to eq("Your Job Order ##{order.id} is now ready for pickup")
+      expect(mail.to).to eq([owner.email])
+    end
+
+    it "sends nothing when the order is not completed" do
+      order = order_with_task!(owner: owner, status_key: :being_processed)
+      patch job_order_paid_path(order), params: { paid: "true" }
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "sends nothing more when a zero-total order was already paid by the processed step" do
+      order = order_with_task!(owner: owner, status_key: :being_processed)
+      order.job_tasks.first.build_job_task_quote(price: 0).save!
+      patch job_order_processed_path(order), params: { completed: "true" }
+      patch job_order_paid_path(order), params: { paid: "true" }
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+    end
+  end
+
   describe "PATCH /job_orders/:id/processed special predicates" do
     before { http_login!(staff) }
 

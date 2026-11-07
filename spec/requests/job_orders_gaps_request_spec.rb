@@ -153,11 +153,11 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(statusless.reload.job_order_statuses).to be_empty
     end
 
-    it "marks a paid transition without sending any mail" do
+    it "marks a paid transition and mails the customer that the order is ready for pickup" do
       session_login!(staff)
       completed = order_with_task!(status_key: :completed)
       perform_enqueued_jobs { patch job_order_paid_path(completed), params: { paid: "true" } }
-      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Your Job Order ##{completed.id} is now ready for pickup"])
     end
 
     # the js format renders admin_row -> _assign_staff with a nil @staff

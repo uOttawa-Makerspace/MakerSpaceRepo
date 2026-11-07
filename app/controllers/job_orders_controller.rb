@@ -288,8 +288,14 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     render_row_action
   end
 
+  # Marking an order paid tells the customer it is ready for pickup. Only the transition that actually moves the
+  # order from Completed to Paid sends it, so a second click, or the zero-total path in #processed, sends nothing more.
   def paid
-    update_status(params[:paid], :completed, :paid, false)
+    if update_status(params[:paid], :completed, :paid, false, nil, nil)
+      JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
+    end
+
+    render_row_action
   end
 
   def picked_up
