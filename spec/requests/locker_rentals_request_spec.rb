@@ -953,6 +953,10 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body["error"]).to eq(I18n.t("lockers.renter_edit_refused"))
 
+        patch locker_rental_path(rental), params: { notes: "edited by owner!" }
+        expect(flash[:alert]).not_to eq(I18n.t("lockers.renter_edit_refused"))
+        expect(rental.reload.state).to eq("reviewing")
+
         patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
         expect(rental.reload.state).to eq("cancelled")
       end
