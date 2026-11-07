@@ -120,8 +120,13 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
   end
 
   it "records nothing for a booking that already agrees" do
+    agreeing = create(:sub_space_booking)
+    agreeing.change_status!(approved)
+
     run("bookings:reconcile_statuses")
-    expect(records.map(&:first)).not_to include(create(:sub_space_booking).id)
+
+    expect(records.map(&:first)).to eq([empty.id, stale.id])
+    expect(records.map(&:first)).not_to include(agreeing.id)
   end
 
   it "puts the column back exactly, keeps the record and the old status rows, and can run twice" do
@@ -151,9 +156,35 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
     expect(empty.reload.booking_status_id).to be_nil
   end
 
-  it "is removed with the booking" do
+  it "marks each record restored in the restore itself, prints it, and a second restore does nothing" do
+    run("bookings:reconcile_statuses")
+
+    output = run("bookings:restore_reconciled_statuses")
+
+    expect(output).to include("booking #{empty.id}: booking_status_id #{approved.id} -> nil")
+    expect(output).to include("booking #{stale.id}: booking_status_id #{declined.id} -> #{pending.id}")
+    expect(SubSpaceBooking.connection.select_value("SELECT COUNT(*) FROM booking_status_reconciliations WHERE restored_at IS NULL").to_i).to eq(0)
+    expect(run("bookings:restore_reconciled_statuses")).to include("0 booking(s) restored")
+  end
+
+  it "restores a booking reconciled twice to its first value, newest change first" do
+    run("bookings:reconcile_statuses")
+    SubSpaceBookingStatus.find_by(sub_space_booking_id: stale.id).update_columns(booking_status_id: approved.id)
+    run("bookings:reconcile_statuses")
+    expect(records.select { |r| r.first == stale.id }).to eq([[stale.id, pending.id, declined.id], [stale.id, declined.id, approved.id]])
+
+    expect(run("bookings:restore_reconciled_statuses")).to include("3 booking(s) restored")
+
+    expect(stale.reload.booking_status).to eq(pending)
+    expect(empty.reload.booking_status_id).to be_nil
+  end
+
+  it "keeps the record when a booking is deleted, and lists it as gone on restore" do
     run("bookings:reconcile_statuses")
     empty.destroy_with_status!
-    expect(records.map(&:first)).to eq([stale.id])
+
+    expect(records.map(&:first)).to eq([empty.id, stale.id])
+    output = run("bookings:restore_reconciled_statuses")
+    expect(output).to include("1 booking(s) restored").and include("booking gone (booking ids: #{empty.id})")
   end
 end

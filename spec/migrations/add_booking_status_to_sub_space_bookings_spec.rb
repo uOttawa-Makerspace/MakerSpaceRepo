@@ -77,6 +77,27 @@ RSpec.describe AddBookingStatusToSubSpaceBookings, :booking_clock do
     expect(column?).to be(false)
   end
 
+  it "refuses to go down while the record table has rows, and changes nothing" do
+    old_shape_bookings
+    migrate(:up)
+    connection.execute(<<~SQL.squish)
+      INSERT INTO booking_status_reconciliations (sub_space_booking_id, was_booking_status_id, now_booking_status_id, created_at)
+      VALUES (1, NULL, #{approved.id}, now())
+    SQL
+
+    expect { migrate(:down) }.to raise_error(/export the table.*Nothing was changed/m)
+
+    expect(column?).to be(true)
+    expect(connection.select_value("SELECT COUNT(*) FROM booking_status_reconciliations").to_i).to eq(1)
+  end
+
+  it "keeps no foreign key on the record table" do
+    old_shape_bookings
+    migrate(:up)
+
+    expect(connection.foreign_keys(:booking_status_reconciliations)).to be_empty
+  end
+
   it "leaves the column nullable" do
     old_shape_bookings
     migrate(:up)

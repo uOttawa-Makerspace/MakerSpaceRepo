@@ -110,6 +110,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   create_table "booking_status_reconciliations", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "now_booking_status_id", null: false
+    t.datetime "restored_at"
     t.bigint "sub_space_booking_id", null: false
     t.bigint "was_booking_status_id"
     t.index ["sub_space_booking_id"], name: "index_booking_status_reconciliations_on_sub_space_booking_id"
@@ -1767,7 +1768,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   add_foreign_key "announcements", "users"
   add_foreign_key "answers", "questions"
   add_foreign_key "api_refresh_tokens", "users", on_delete: :cascade
-  add_foreign_key "booking_status_reconciliations", "sub_space_bookings", on_delete: :cascade
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "project_proposals"
   add_foreign_key "categories", "repositories"

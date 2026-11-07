@@ -17,7 +17,7 @@ namespace :bookings do
         WHERE s.booking_status_id IS NOT NULL AND b.booking_status_id IS DISTINCT FROM s.booking_status_id
       ), recorded AS (
         INSERT INTO booking_status_reconciliations (sub_space_booking_id, was_booking_status_id, now_booking_status_id, created_at)
-        SELECT id, was_id, now_id, now() FROM todo RETURNING sub_space_booking_id
+        SELECT id, was_id, now_id, now() FROM todo ORDER BY id RETURNING sub_space_booking_id
       ), updated AS (
         UPDATE sub_space_bookings b SET booking_status_id = todo.now_id FROM todo WHERE b.id = todo.id RETURNING b.id
       )
@@ -30,27 +30,36 @@ namespace :bookings do
     puts "#{unmatched.size} booking(s) still without a status (ids: #{unmatched.join(', ')})" if unmatched.any?
   end
 
-  desc "Put booking_status_id back to the value each reconcile_statuses change replaced, newest change first. " \
-       "A booking whose column was changed since is left alone and listed. The record is kept."
+  desc "Put booking_status_id back to the value each reconcile_statuses change replaced, newest change first, " \
+       "and mark each record restored in the same statement. A booking whose column was changed since (compared " \
+       "by value) or that no longer exists is left alone and listed. Running it again restores nothing more."
   task restore_reconciled_statuses: :environment do
     connection = SubSpaceBooking.connection
     records = connection.select_rows(
-      "SELECT id, sub_space_booking_id, was_booking_status_id, now_booking_status_id " \
-      "FROM booking_status_reconciliations ORDER BY id DESC"
+      "SELECT r.id, r.sub_space_booking_id, r.was_booking_status_id, r.now_booking_status_id, " \
+      "EXISTS (SELECT 1 FROM sub_space_bookings b WHERE b.id = r.sub_space_booking_id) " \
+      "FROM booking_status_reconciliations r WHERE r.restored_at IS NULL ORDER BY r.id DESC"
     )
-    left = []
+    gone = []
+    changed_since = []
     restored = 0
-    records.each do |_id, booking_id, was, now|
-      done = connection.exec_update(
-        "UPDATE sub_space_bookings SET booking_status_id = $1 WHERE id = $2 AND booking_status_id = $3",
-        "restore", [was, booking_id, now]
-      )
-      restored += done
-      left << booking_id if done.zero? && !connection.select_value(
-        "SELECT 1 FROM sub_space_bookings WHERE id = #{booking_id.to_i} AND booking_status_id IS NOT DISTINCT FROM #{was.nil? ? 'NULL' : was.to_i}"
-      )
+    records.each do |id, booking_id, was, now, exists|
+      done = connection.exec_update(<<~SQL.squish, "restore", [was, booking_id, now, id])
+        WITH restored AS (
+          UPDATE sub_space_bookings SET booking_status_id = $1 WHERE id = $2 AND booking_status_id = $3 RETURNING id
+        )
+        UPDATE booking_status_reconciliations SET restored_at = now()
+        WHERE id = $4 AND EXISTS (SELECT 1 FROM restored)
+      SQL
+      if done.positive?
+        restored += done
+        puts "booking #{booking_id}: booking_status_id #{now} -> #{was.inspect}"
+      else
+        (exists ? changed_since : gone) << booking_id
+      end
     end
     puts "#{restored} booking(s) restored"
-    puts "#{left.size} record(s) left alone because the column no longer holds the recorded value (booking ids: #{left.uniq.join(', ')})" if left.any?
+    puts "#{changed_since.size} record(s) left alone, the column no longer holds the recorded value (booking ids: #{changed_since.uniq.join(', ')})" if changed_since.any?
+    puts "#{gone.size} record(s) left alone, booking gone (booking ids: #{gone.uniq.join(', ')})" if gone.any?
   end
 end
