@@ -72,7 +72,23 @@ module AxeAudit
     end
   end
 
+  # Visible markers the app and its libraries show while content is still being
+  # filled in: Turbo's busy attributes and progress bar, DataTables processing,
+  # the Bootstrap spinner and the calendar pages' #spinner_container.
+  LOADING_MARKERS = "[aria-busy='true'], turbo-frame[busy], .turbo-progress-bar, .dataTables_processing, " \
+                    ".spinner-border, #spinner_container"
+
+  # Waits (Capybara waiting, no sleeping) until the page has finished loading and
+  # no loading marker is visible, so the audit never sees a half-rendered page.
+  def wait_for_page_settled
+    page.document.synchronize do
+      raise Capybara::ExpectationNotMet, "document still loading" unless page.evaluate_script("document.readyState") == "complete"
+    end
+    expect(page).to have_no_css(LOADING_MARKERS)
+  end
+
   def audit_accessibility(label = nil)
+    wait_for_page_settled
     path = URI.parse(page.current_url).request_uri
     found = AxeAudit.record(AxeAudit.run(page), path, label)
     return if found.empty? || !AxeAudit.strict?

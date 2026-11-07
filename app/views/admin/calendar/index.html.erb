@@ -60,9 +60,11 @@
         <div id="calendar" class="col-md-9 w-md-100" style="zoom: 1;"></div>
     </div>
 </section>
+<% if @spaces.any? %>
 <div id="spinner_container">
     <div id='spinner' class="spinner-border" role="status"></div>
 </div>
+<% end %>
 
 <%= render 'colors' %>
 
