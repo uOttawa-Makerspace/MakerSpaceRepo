@@ -30,7 +30,14 @@ RSpec.describe "Locale files" do
   end
 
   def translated_keys(locale)
-    definitions.fetch(locale).keys.reject { |key| library_namespaces.include?(key.split(".").first) }
+    definitions.fetch(locale).filter_map do |key, by_file|
+      next if library_namespaces.include?(key.split(".").first)
+      # Rails' own defaults (defaults-<locale>.yml) and French attribute names (attributes-fr.yml; English
+      # humanizes the attribute) have no counterpart file in English.
+      next if by_file.keys.all? { |file| file.start_with?("defaults-", "attributes-") }
+
+      key
+    end
   end
 
   it "has an English and a French locale, and no other" do
@@ -47,7 +54,7 @@ RSpec.describe "Locale files" do
 
   it "has no blank value in any locale" do
     blank = definitions.flat_map do |locale, keys|
-      keys.flat_map { |key, by_file| by_file.select { |_, v| v.nil? || v.to_s.strip.empty? }.keys.map { |f| "#{locale} #{key} (#{f})" } }
+      keys.flat_map { |key, by_file| by_file.reject { |f, _| f.start_with?("defaults-") }.select { |_, v| v.nil? || v.to_s.strip.empty? }.keys.map { |f| "#{locale} #{key} (#{f})" } }
     end
 
     expect(blank).to be_empty, "blank values:\n#{blank.join("\n")}"

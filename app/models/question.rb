@@ -30,6 +30,6 @@ class Question < ApplicationRecord
 
   def exactly_one_correct_answer
     return if answers.to_a.count(&:correct) == 1
-    errors.add(:base, "A question must have exactly one correct answer")
+    errors.add(:base, :one_correct_answer)
   end
 end

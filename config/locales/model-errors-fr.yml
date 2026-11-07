@@ -1,0 +1,95 @@
+# Custom validation messages of the models, keyed by error type (activerecord.errors.models.<model>.attributes.<attribute>.<type>,
+# or activerecord.errors.models.<model>.<type> when several attributes share a message).
+fr:
+  activerecord:
+    errors:
+      models:
+        key_request:
+          attributes:
+            user:
+              blank: "Un utilisateur est requis"
+            supervisor:
+              blank: "Un superviseur est requis"
+            space:
+              blank: "Un espace est requis"
+            user_status:
+              blank: "Un statut d'utilisateur est requis"
+          invalid_phone: "n'accepte que des chiffres, des parenthèses, des tirets, des espaces, des points et le signe +"
+          student_number_and_emergency_contact_required: "le numéro d'étudiant et le contact d'urgence sont requis"
+          rules_not_accepted: "Vous devez accepter toutes les règles et politiques"
+          question_required: "La question %{question_number} est requise"
+        key:
+          attributes:
+            user:
+              blank: "Un utilisateur est requis si la clé est détenue"
+            supervisor:
+              blank: "Un superviseur est requis si la clé est détenue"
+            space:
+              blank: "Un espace est requis"
+            number:
+              blank: "Un numéro de clé est requis"
+              taken: "Une clé porte déjà ce numéro"
+            custom_keycode:
+              blank: "Un code de clé est requis"
+        coupon_code:
+          attributes:
+            cc_cost:
+              invalid_cc_cost: "doit être un nombre de points CC (0 ou plus)"
+        program:
+          attributes:
+            user:
+              blank: "Un utilisateur est requis."
+              taken: "Un utilisateur ne peut se joindre à un programme qu'une seule fois"
+            program_type:
+              blank: "Le type de programme est requis. Soit « Volunteer Program », « Development Program » ou « Teams Program »"
+        rfid:
+          attributes:
+            card_number:
+              blank: "Le numéro de carte est requis."
+        team:
+          attributes:
+            name:
+              blank: "Un nom d'équipe est requis."
+        certification:
+          attributes:
+            user:
+              blank: "Un utilisateur est requis."
+            level:
+              inclusion: "Un niveau est requis."
+        space:
+          attributes:
+            name:
+              blank: "Un nom est requis pour l'espace"
+              taken: "Cet espace existe déjà"
+        sub_space:
+          attributes:
+            name:
+              blank: "Un nom est requis pour l'espace"
+        require_training:
+          attributes:
+            training_id:
+              blank: "Une formation doit être sélectionnée"
+        training_session:
+          attributes:
+            training:
+              blank: "Un sujet de formation est requis"
+            user:
+              blank: "Un formateur est requis"
+            level:
+              blank: "Un niveau est requis"
+        project_requirement:
+          attributes:
+            proficient_project_id:
+              taken: "Ce projet est déjà un préalable"
+        time_period:
+          attributes:
+            end_date:
+              before_start_date: "ne doit pas être antérieure à la date de début"
+        space_manager_join:
+          attributes:
+            base:
+              must_be_admin: "L'utilisateur doit être administrateur"
+        question:
+          attributes:
+            base:
+              one_correct_answer: "Une question doit avoir exactement une bonne réponse"

@@ -32,6 +32,6 @@ class TimePeriod < ApplicationRecord
   def end_date_not_before_start_date
     return if start_date.blank? || end_date.blank?
 
-    errors.add(:end_date, "must not be before the start date") if end_date < start_date
+    errors.add(:end_date, :before_start_date) if end_date < start_date
   end
 end
