@@ -116,11 +116,14 @@ RSpec.describe "Key certifications", type: :request do
       expect(key_cert.reload.pdf_file_3).to be_attached
     end
 
-    # file_number is interpolated into `send("pdf_file_#{n}")`; an out-of-range number raises NoMethodError (500) instead of a message
-    it "answers 500 for an out-of-range file number" do
+    it "alerts instead of failing for a file number outside the ten slots" do
       log_in!(owner)
-      delete destroy_pdf_key_certification_path(key_cert, file_number: 99)
-      expect(response).to have_http_status(:internal_server_error)
+      [99, 0, -1].each do |number|
+        delete destroy_pdf_key_certification_path(key_cert, file_number: number)
+        expect(response).to have_http_status(:found)
+        expect(flash[:alert]).to eq("Couldn't find attached file")
+      end
+      expect(key_cert.reload.pdf_file_3).to be_attached
     end
   end
 end

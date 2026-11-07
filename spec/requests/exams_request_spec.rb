@@ -322,12 +322,10 @@ RSpec.describe "Exams", type: :request do
       expect(response).to have_http_status(:internal_server_error)
     end
 
-    # the response is saved BEFORE the format check, so an HTML post stores the answer and then 500s (UnknownFormat)
-    it "stores the answer and then fails with UnknownFormat for a non-JS request" do
+    it "stores the answer and answers 204 whatever the request format" do
       log_in!(student)
       expect { post_answer(entry[:correct], format: :html) }.to change(ExamResponse, :count).by(1)
-      expect(response).to have_http_status(:not_acceptable).or have_http_status(:internal_server_error)
-      expect(error_text).to include("ActionController::UnknownFormat")
+      expect(response).to have_http_status(:no_content)
     end
 
     # answers are rejected (403) once the exam is graded

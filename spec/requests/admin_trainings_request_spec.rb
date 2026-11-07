@@ -79,9 +79,17 @@ RSpec.describe "Admin training area", type: :request do
           t = Training.find_by!(name_en: "Laser Cutting")
           expect(t).to have_attributes(name_fr: "Découpe laser", skill_id: skill.id, has_badge: true)
           expect(t.spaces).to eq([space])
-          # EN skills are joined with "," but FR skills with ", " and the blank select option is kept
-          expect(t.list_of_skills_en).to eq(",Design,Safety")
-          expect(t.list_of_skills_fr).to eq(", Conception, Sécurité")
+          expect(t.list_of_skills_en).to eq("Design,Safety")
+          expect(t.list_of_skills_fr).to eq("Conception,Sécurité")
+        end
+
+        it "stores the same comma separated shape in both languages, dropping blanks and padding" do
+          post admin_trainings_path,
+               params: training_params(list_of_skills_en: ["", " Design ", "  ", "Safety"],
+                                       list_of_skills_fr: ["Conception", " ", "Sécurité "])
+          t = Training.find_by!(name_en: "Laser Cutting")
+          expect(t.list_of_skills_en).to eq("Design,Safety")
+          expect(t.list_of_skills_fr).to eq("Conception,Sécurité")
         end
 
         it "re-renders new with 422 and an alert when the name is missing" do
@@ -107,24 +115,22 @@ RSpec.describe "Admin training area", type: :request do
           expect(t.list_of_skills_fr).to be_nil
         end
 
-        # list_of_skills_* must be an array; a plain string (API client) is a 500 (String#join)
-        it "answers 500 when list_of_skills_en is a string" do
+        it "answers 400 and stores nothing when a skill list is not an array" do
           expect { post admin_trainings_path, params: training_params(list_of_skills_en: "Design,Safety") }
             .not_to change(Training, :count)
-          expect(response).to have_http_status(:internal_server_error)
+          expect(response).to have_http_status(:bad_request)
         end
 
-        # training_params permits :training_level but the column does not exist: sending it is a 500
-        it "answers 500 (UnknownAttributeError) when training_level is submitted" do
+        it "ignores a training_level parameter, which is not an attribute of a training" do
           expect { post admin_trainings_path, params: training_params(training_level: "Beginner") }
-            .not_to change(Training, :count)
-          expect(response).to have_http_status(:internal_server_error)
-          expect(error_text).to include("training_level")
+            .to change(Training, :count).by(1)
+          expect(response).to redirect_to(admin_trainings_path)
         end
 
-        it "answers 500 (serialize_skills indexes params[:training] before require) when the training key is absent" do
+        it "refuses a request without the training key like any missing parameter" do
           post admin_trainings_path, params: {}
-          expect(response).to have_http_status(:internal_server_error)
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to include("param is missing")
         end
       end
 
@@ -148,6 +154,39 @@ RSpec.describe "Admin training area", type: :request do
           patch admin_training_path(training), params: training_params(name_fr: "")
           expect(response).to have_http_status(:unprocessable_content)
           expect(flash[:alert]).to eq("Input is invalid")
+          expect(training.reload.name_en).to eq("Existing EN")
+        end
+
+        it "stores the skill lists without blanks or padding" do
+          patch admin_training_path(training), params: training_params
+          expect(training.reload).to have_attributes(list_of_skills_en: "Design,Safety", list_of_skills_fr: "Conception,Sécurité")
+        end
+
+        it "leaves the stored skill lists alone when the request has no skill keys, and clears them for an empty selection" do
+          training.update!(list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          params = training_params(name_en: "Renamed EN")
+          params[:training].delete(:list_of_skills_en)
+          params[:training].delete(:list_of_skills_fr)
+          patch admin_training_path(training), params: params
+          expect(training.reload).to have_attributes(name_en: "Renamed EN", list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          patch admin_training_path(training), params: training_params(list_of_skills_en: [""], list_of_skills_fr: [""])
+          expect(training.reload).to have_attributes(list_of_skills_en: "", list_of_skills_fr: "")
+        end
+
+        it "treats a null skill list like an absent one" do
+          training.update!(list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          patch admin_training_path(training),
+                params: { training: { name_en: "Renamed EN", list_of_skills_en: nil, list_of_skills_fr: nil } }.to_json,
+                headers: { "CONTENT_TYPE" => "application/json" }
+          expect(response).to redirect_to(admin_trainings_path)
+          expect(training.reload).to have_attributes(name_en: "Renamed EN", list_of_skills_en: "A,B", list_of_skills_fr: "C")
+        end
+
+        it "answers 400 and changes nothing when a skill list is not an array or training is not a hash" do
+          patch admin_training_path(training), params: training_params(name_en: "Renamed EN", list_of_skills_fr: "x")
+          expect(response).to have_http_status(:bad_request)
+          patch admin_training_path(training), params: { training: "x" }
+          expect(response).to have_http_status(:bad_request)
           expect(training.reload.name_en).to eq("Existing EN")
         end
 
