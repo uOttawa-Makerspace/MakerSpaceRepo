@@ -5,6 +5,8 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 
 import { Tooltip } from "bootstrap";
 
+import { applyEventBackground } from "../src/calendar_background.js";
+
 document.addEventListener("turbo:load", async () => {
   const calendarEl = document.getElementById("calendar");
   let onlyShowMyShifts = false;
@@ -79,13 +81,7 @@ document.addEventListener("turbo:load", async () => {
       });
 
       // add user color bg gradient
-      if (info.event.extendedProps.background) {
-        info.el.setAttribute(
-          "style",
-          `
-          background: ${info.event.extendedProps.background}`,
-        );
-      }
+      applyEventBackground(info.el, info.event.extendedProps.background);
     },
     initialDate: localStorage.fullCalendarDefaultDateStaffCalendar,
     datesSet: (info) => {
