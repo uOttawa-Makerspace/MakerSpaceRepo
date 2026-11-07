@@ -1,8 +1,8 @@
 class Admin::EventsController < AdminAreaController
   layout "admin_area"
 
-  before_action :require_event_times, only: %i[create update]
-  before_action :require_view_dates, if: :view_range_action?
+  before_action :parse_event_times, only: %i[create update]
+  before_action :parse_view_range, if: :view_range_action?
 
   def create
     participants = params[:staff_select].presence || []
@@ -17,8 +17,8 @@ class Admin::EventsController < AdminAreaController
       title: title,
       description: event_params[:description],
       # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-      start_time: Time.parse(event_params[:utc_start_time]).utc,
-      end_time: Time.parse(event_params[:utc_end_time]).utc,
+      start_time: @start_time,
+      end_time: @end_time,
       recurrence_rule: event_params[:recurrence_rule].presence,
       created_by_id: current_user.id,
       space_id: event_params[:space_id],
@@ -71,8 +71,8 @@ class Admin::EventsController < AdminAreaController
         title: title,
         description: event_params[:description],
         # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-        start_time: Time.parse(event_params[:utc_start_time]).utc,
-        end_time: Time.parse(event_params[:utc_end_time]).utc,
+        start_time: @start_time,
+        end_time: @end_time,
         recurrence_rule: event_params[:recurrence_rule].presence,
         created_by_id: current_user.id,
         space_id: event_params[:space_id],
@@ -103,9 +103,9 @@ class Admin::EventsController < AdminAreaController
     when "all"
       old_date_new_time_start = helpers.combine_date_and_time(
         @event.start_time.utc, 
-        Time.parse(event_params[:utc_start_time]).utc
+        @start_time
       )
-      duration = (Time.parse(event_params[:utc_end_time]).utc - Time.parse(event_params[:utc_start_time]).utc).to_i
+      duration = (@end_time - @start_time).to_i
       old_date_new_time_end = old_date_new_time_start + duration
 
       old_rrule, old_dtstart, old_extra_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
@@ -179,12 +179,11 @@ class Admin::EventsController < AdminAreaController
 
     case scope
     when "single"
-      if params[:start_date].blank?
-        return redirect_back(fallback_location: admin_calendar_index_path, alert: "Start date is required.")
-      end
-      
+      occurrence_start = parse_time(params[:start_date])
+      return redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.start_date_required")) unless occurrence_start
+
       rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
-      exdate = Time.parse(params[:start_date]).utc.strftime("%Y%m%dT%H%M%SZ")
+      exdate = occurrence_start.strftime("%Y%m%dT%H%M%SZ")
       
       rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @event.start_time)
       recurrence_lines = [
@@ -198,12 +197,11 @@ class Admin::EventsController < AdminAreaController
       redirect_back(fallback_location: admin_calendar_index_path, notice: "This occurrence deleted.")
       
     when "following"
-      if params[:start_date].blank?
-        return redirect_back(fallback_location: admin_calendar_index_path, alert: "Start date is required.")
-      end
-      
+      occurrence_start = parse_time(params[:start_date])
+      return redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.start_date_required")) unless occurrence_start
+
       rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
-      previous_day = Time.parse(params[:start_date]).utc - 24.hours
+      previous_day = occurrence_start - 24.hours
       rrule_line = "#{helpers.remove_until_from_rrule(rrule_line)};UNTIL=#{previous_day.strftime("%Y%m%dT%H%M%SZ")}"
       
       rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @event.start_time)
@@ -293,15 +291,13 @@ class Admin::EventsController < AdminAreaController
 
   def publish
     if params[:id].blank?
-      start_date = Time.parse(params[:view_start_date]).utc
-      end_date = Time.parse(params[:view_end_date]).utc
       space_id = params[:space_id]
       return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
 
       updated_count = 0
       failures = []
 
-      Event.where(space_id: space_id, start_time: start_date..end_date, draft: true).find_each do |event|
+      Event.where(space_id: space_id, start_time: @view_start..@view_end, draft: true).find_each do |event|
         if event.update(draft: false)
           event.push_to_google_later
           updated_count += 1
@@ -326,12 +322,10 @@ class Admin::EventsController < AdminAreaController
   end
 
   def delete_drafts
-    start_date = Time.parse(params[:view_start_date]).utc
-    end_date = Time.parse(params[:view_end_date]).utc
     space_id = params[:space_id]
     return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
 
-    draft_events = Event.where(space_id: space_id, start_time: start_date..end_date, draft: true, recurrence_rule: [nil, ""]).includes(:space).to_a
+    draft_events = Event.where(space_id: space_id, start_time: @view_start..@view_end, draft: true, recurrence_rule: [nil, ""]).includes(:space).to_a
     draft_events.each { |event| destroy_event(event) }
     deleted_count = draft_events.size
         
@@ -379,10 +373,13 @@ class Admin::EventsController < AdminAreaController
 
   private
 
-  def require_event_times
-    return if event_params.values_at(:utc_start_time, :utc_end_time).all?(&:present?)
+  # Parses the posted start and end times once; a missing or unparsable value answers with an alert.
+  def parse_event_times
+    @start_time = parse_time(event_params[:utc_start_time])
+    @end_time = parse_time(event_params[:utc_end_time])
+    return if @start_time && @end_time
 
-    redirect_back(fallback_location: admin_calendar_index_path, alert: "Start and end times are required.")
+    redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.times_required"))
   end
 
   # delete_drafts, and publish when it publishes a whole range rather than one event
@@ -390,17 +387,26 @@ class Admin::EventsController < AdminAreaController
     action_name == "delete_drafts" || (action_name == "publish" && params[:id].blank?)
   end
 
-  def require_view_dates
-    return if params.values_at(:view_start_date, :view_end_date).all?(&:present?)
+  def parse_view_range
+    @view_start = parse_time(params[:view_start_date])
+    @view_end = parse_time(params[:view_end_date])
+    return if @view_start && @view_end
 
-    redirect_back(fallback_location: admin_calendar_index_path, alert: "Start and end dates are required.")
+    redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.dates_required"))
+  end
+
+  # The time in UTC, or nil when the value is blank or not a time.
+  def parse_time(value)
+    Time.parse(value.to_s).utc
+  rescue ArgumentError
+    nil
   end
 
   # Excludes the occurrence from the series and creates it as its own event. Both happen in one
   # transaction, so a failure leaves the series as it was.
   def update_this_occurrence(title, participants)
     exclusion_start_time = helpers.combine_date_and_time(
-      Time.parse(event_params[:utc_start_time]).utc,
+      @start_time,
       @event.start_time.utc
     )
     updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
@@ -463,8 +469,8 @@ class Admin::EventsController < AdminAreaController
       title: title,
       description: event_params[:description],
       # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-      start_time: Time.parse(event_params[:utc_start_time]).utc,
-      end_time: Time.parse(event_params[:utc_end_time]).utc,
+      start_time: @start_time,
+      end_time: @end_time,
       recurrence_rule: nil,
       created_by_id: current_user.id,
       space_id: event_params[:space_id],

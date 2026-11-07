@@ -255,6 +255,10 @@ fr:
           has_many: "Impossible de supprimer l'enregistrement car il reste des %{record}"
         blank: "Ce champ est requis."
         inclusion: "Sélection non valide."
+  admin_events:
+    times_required: "Les heures de début et de fin sont requises."
+    dates_required: "Les dates de début et de fin sont requises."
+    start_date_required: "La date de début est requise."
   sub_space_booking:
     picker:
       min_length: "Saisissez au moins %{count} caractères pour rechercher une personne."

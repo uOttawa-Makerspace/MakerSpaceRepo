@@ -225,6 +225,10 @@ en:
           has_many: "Cannot delete record because dependent %{record} exist"
         blank: "This field is required."
         inclusion: "Selection is not valid."
+  admin_events:
+    times_required: "Start and end times are required."
+    dates_required: "Start and end dates are required."
+    start_date_required: "Start date is required."
   sub_space_booking:
     picker:
       min_length: "Type at least %{count} characters to search for a person."
