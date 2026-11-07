@@ -251,7 +251,8 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       new_volunteer = create(:user, :volunteer_with_volunteer_program)
       patch volunteer_task_path(task),
             params: task_params.merge(volunteer_id: [new_volunteer.id], remove_volunteer_id: [gone.user_id])
-      expect(task.volunteer_task_joins.pluck(:user_id)).to contain_exactly(keep.user_id, new_volunteer.id)
+      expect(task.volunteer_task_joins.active.pluck(:user_id)).to contain_exactly(keep.user_id, new_volunteer.id)
+      expect(gone.reload.active).to be(false)
     end
 
     describe "a refused edit changes nothing" do
@@ -306,6 +307,61 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       end
     end
 
+    it "keeps a removed user's joins as inactive history and touches no other row" do
+      history = create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+      current = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
+      other = create(:volunteer_task_join, :active, volunteer_task: task)
+      old_stamp = history.reload.updated_at
+      expect do
+        patch volunteer_task_path(task), params: task_params.merge(remove_volunteer_id: [volunteer.id])
+      end.not_to change(VolunteerTaskJoin, :count)
+      expect(flash[:notice]).to eq("Volunteer task updated")
+      expect(current.reload.active).to be(false)
+      expect(other.reload.active).to be(true)
+      expect(history.reload.attributes.values_at("active", "updated_at")).to eq([false, old_stamp])
+    end
+
+    it "treats a user with only inactive joins as not on the task" do
+      create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+      patch volunteer_task_path(task), params: task_params.merge(remove_volunteer_id: [volunteer.id])
+      expect(flash[:alert]).to eq("The volunteer to remove is not on this task.")
+      expect(task.volunteer_task_joins.count).to eq(1)
+    end
+
+    it "deactivates the creator's joins when handing the task over" do
+      other = create(:user, :admin)
+      task.update!(user_id: staff.id)
+      old = create(:volunteer_task_join, :not_active, volunteer_task: task, user: staff)
+      mine = create(:volunteer_task_join, volunteer_task: task, user: staff, user_type: "Staff")
+      create(:volunteer_task_join, :not_active, volunteer_task: task, user: other)
+      create(:volunteer_task_join, volunteer_task: task, user: other, user_type: "Admin")
+      patch volunteer_task_path(task), params: task_params.merge(remove_staff_id: [staff.id])
+      expect(task.reload.user_id).to eq(other.id)
+      expect([old, mine].map { |j| j.reload.active }).to eq([false, false])
+      expect(task.volunteer_task_joins.count).to eq(4)
+    end
+
+    it "lists only active joins on the edit and show pages, and offers a removed user again" do
+      gone = create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+      kept = create(:volunteer_task_join, :active, volunteer_task: task, user: create(:user, :volunteer_with_volunteer_program))
+      get edit_volunteer_task_path(task)
+      expect(ivar(:@volunteers_in_task)).to contain_exactly(kept.user)
+      expect(ivar(:@volunteers_available)).to include(gone.user)
+      get volunteer_task_path(task)
+      expect(ivar(:@volunteers_in_task).map(&:last)).to eq([kept.user_id])
+      expect(ivar(:@volunteers).map(&:last)).to include(gone.user_id)
+    end
+
+    it "shows the failing record's message when a join cannot be saved" do
+      allow_any_instance_of(VolunteerTaskJoin).to receive(:save!) do |join|
+        join.errors.add(:base, "Join is invalid")
+        raise ActiveRecord::RecordInvalid, join
+      end
+      patch volunteer_task_path(task), params: task_params(title: "Renamed").merge(volunteer_id: [volunteer.id])
+      expect(flash[:alert]).to eq("Join is invalid")
+      expect(task.reload.title).to eq("Setup crew")
+    end
+
     it "hands the task to another joined user when the creator is removed" do
       other = create(:user, :admin)
       task.update!(user_id: staff.id)
@@ -314,7 +370,8 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       patch volunteer_task_path(task), params: task_params.merge(remove_staff_id: [staff.id])
       expect(response).to redirect_to(volunteer_tasks_path)
       expect(task.reload.user_id).to eq(other.id)
-      expect(task.volunteer_task_joins.pluck(:user_id)).to eq([other.id])
+      expect(task.volunteer_task_joins.active.pluck(:user_id)).to eq([other.id])
+      expect(task.volunteer_task_joins.count).to eq(2)
     end
 
     it "404s for a missing task" do

@@ -48,7 +48,8 @@ class VolunteerTask < ApplicationRecord
       Array(joins[:remove_volunteers]).each { |user_id| remove_join(user_id, "volunteer") }
     end
     true
-  rescue ActiveRecord::RecordInvalid
+  rescue ActiveRecord::RecordInvalid => e
+    errors.add(:base, e.record.errors.full_messages.to_sentence) unless e.record.equal?(self)
     false
   rescue EditRefused => e
     errors.add(:base, e.message)
@@ -86,16 +87,17 @@ class VolunteerTask < ApplicationRecord
     end
   end
 
+  # A removed user's joins are kept as history and marked inactive.
   def remove_join(user_id, label)
-    joins = volunteer_task_joins.where(user_id: user_id)
+    joins = volunteer_task_joins.active.where(user_id: user_id)
     refuse!("The #{label} to remove is not on this task.") if joins.empty?
-    joins.destroy_all
+    joins.update_all(active: false, updated_at: Time.current)
   end
 
   # The task's creator can only leave when another joined user can take over as creator.
   def remove_staff(user_id)
     if self.user_id == user_id.to_i
-      successor = volunteer_task_joins.where.not(user_id: user_id).order(:id).first
+      successor = volunteer_task_joins.active.where.not(user_id: user_id).order(:id).first
       refuse!("There must be at least one staff member assigned to this task.") unless successor
       update!(user_id: successor.user_id)
     end

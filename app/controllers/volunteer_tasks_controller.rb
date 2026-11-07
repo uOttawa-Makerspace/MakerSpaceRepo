@@ -82,15 +82,15 @@ class VolunteerTasksController < SessionsController
     if current_user.staff?
       @volunteers = User.joins(:programs)
                         .where(programs: { program_type: Program::VOLUNTEER })
-                        .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+                        .where.not(id: active_user_ids(@volunteer_task))
                         .pluck(:name, :id)
       @staff = User.where(role: %w[staff admin])
-                   .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+                   .where.not(id: active_user_ids(@volunteer_task))
                    .pluck(:name, :id)
       @volunteers_in_task = User.joins(:programs)
-                                .where(programs: { program_type: Program::VOLUNTEER }, id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+                                .where(programs: { program_type: Program::VOLUNTEER }, id: active_user_ids(@volunteer_task))
                                 .pluck(:name, :id)
-      @staff_in_task = User.where(role: %w[staff admin], id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+      @staff_in_task = User.where(role: %w[staff admin], id: active_user_ids(@volunteer_task))
                            .pluck(:name, :id)
     end
   end
@@ -115,16 +115,16 @@ class VolunteerTasksController < SessionsController
     @tasks_categories = %w[Events Projects Supervising Workshops Other]
     @certifications = Training.all
     @volunteers_in_task = User.where(
-      id: VolunteerTaskJoin.where(volunteer_task_id: @volunteer_task.id, user_type: "Volunteer").pluck(:user_id)
+      id: @volunteer_task.volunteer_task_joins.active.where(user_type: "Volunteer").pluck(:user_id)
     )
     @staff_in_task = User.where(
-      id: VolunteerTaskJoin.where(volunteer_task_id: @volunteer_task.id).where.not(user_type: "Volunteer").pluck(:user_id)
+      id: @volunteer_task.volunteer_task_joins.active.where.not(user_type: "Volunteer").pluck(:user_id)
     )
     @staff_available = User.where(role: %w[staff admin])
-                           .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+                           .where.not(id: active_user_ids(@volunteer_task))
     @volunteers_available = User.joins(:programs)
                                 .where(programs: { program_type: Program::VOLUNTEER })
-                                .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+                                .where.not(id: active_user_ids(@volunteer_task))
   end
 
   def update
@@ -149,6 +149,10 @@ class VolunteerTasksController < SessionsController
   end
 
   private
+
+  def active_user_ids(task)
+    task.volunteer_task_joins.active.pluck(:user_id)
+  end
 
   def task_edit_params
     {
