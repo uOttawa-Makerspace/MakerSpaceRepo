@@ -14,8 +14,6 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
   let!(:stm126) { create(:sub_space, name: "STM 126", space: space) }
   let!(:creator) { create(:user, :regular_user, email: "creator@example.test") }
 
-  before { stub_const("BookingStatus::APPROVED", approved) }
-
   def booking_for(id)
     SubSpaceBooking.find_by(google_booking_id: id)
   end
@@ -44,6 +42,17 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       )
       expect(booking.sub_space_booking_status.booking_status).to eq(approved)
       expect(booking.sub_space_booking_status_id).to eq(booking.sub_space_booking_status.id)
+    end
+
+    it "saves nothing and reports when the status of the new booking cannot be saved" do
+      allow(BookingStatus).to receive(:approved).and_return(BookingStatus.new(id: -1, name: "Ghost"))
+      expect(Rails.error).to receive(:report)
+        .with(instance_of(ActiveRecord::RecordInvalid), hash_including(handled: true, context: { google_event_id: "evt-1" }))
+
+      described_class.process(c18_gcal_event)
+
+      expect(SubSpaceBooking.count).to eq(0)
+      expect(SubSpaceBookingStatus.count).to eq(0)
     end
 
     # the past-date rule is for bookings made in the app. A full sync

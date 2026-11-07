@@ -26,13 +26,19 @@ module GoogleCalendar
       end
     end
 
-    # One transaction for the booking and its status. Two syncs of the same event cannot both insert it: the
+    # One transaction for the booking and its status; a failed write rolls both back and is reported. Two syncs of the same event cannot both insert it: the
     # unique index on google_booking_id makes the later one wait for the earlier commit and then fail, and it
     # runs again to update the booking the earlier one created.
     def self.upsert_ss_booking(event, sub_space)
-      SubSpaceBooking.transaction { save_mirrored_booking(event, sub_space) }
+      save_in_transaction(event, sub_space)
     rescue ActiveRecord::RecordNotUnique
+      save_in_transaction(event, sub_space)
+    end
+
+    def self.save_in_transaction(event, sub_space)
       SubSpaceBooking.transaction { save_mirrored_booking(event, sub_space) }
+    rescue ActiveRecord::RecordInvalid => e
+      report(e, event)
     end
 
     def self.save_mirrored_booking(event, sub_space)
@@ -53,19 +59,14 @@ module GoogleCalendar
       # A mirror of an event that already exists in Google, so the past-date
       # rule for bookings made in the app does not apply.
       booking.allow_past_start = true
-      unless booking.save
-        report(ActiveRecord::RecordInvalid.new(booking), event)
-        return
-      end
+      booking.save!
 
       return if booking.sub_space_booking_status_id.present?
-      status = SubSpaceBookingStatus.new(
+      status = SubSpaceBookingStatus.create!(
         sub_space_booking_id: booking.id,
-        booking_status_id: BookingStatus::APPROVED.id
+        booking_status_id: BookingStatus.approved.id
       )
-      status.save
-
-      booking.update(sub_space_booking_status_id: status.id)
+      booking.update!(sub_space_booking_status_id: status.id)
     end
 
     # A timed event has a date_time. An all-day event has only a date (the end date is exclusive in Google's

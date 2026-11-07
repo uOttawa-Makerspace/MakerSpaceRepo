@@ -43,16 +43,7 @@ class Admin::SpacesController < AdminAreaController
   def delete_sub_space
     if params[:id].present?
       subspace = SubSpace.find(params[:id])
-      SubSpaceBooking
-        .where(sub_space: subspace)
-        .each do |booking|
-          status =
-            SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
-          status.update(sub_space_booking_id: nil)
-          booking.update(sub_space_booking_status_id: nil)
-          status.destroy
-          booking.destroy
-        end
+      SubSpaceBooking.where(sub_space: subspace).find_each(&:destroy_with_status!)
       if subspace.delete
         flash[:notice] = "Sub Space deleted!"
       else

@@ -5,6 +5,12 @@ class SubSpaceBooking < ApplicationRecord
   belongs_to :recurring_booking, optional: true
   has_one :sub_space_booking_status,
           dependent: :destroy
+  # The status the booking's own column points at; empty only for a booking
+  # that was never given one.
+  belongs_to :current_status,
+             class_name: "SubSpaceBookingStatus",
+             foreign_key: :sub_space_booking_status_id,
+             optional: true
   validates :name, presence: true
   validates :description, presence: true
   validates :start_time, presence: true
@@ -49,6 +55,20 @@ class SubSpaceBooking < ApplicationRecord
           where("(sub_space_bookings.start_time, sub_space_bookings.end_time) OVERLAPS (?, ?)",
                 start_time, end_time)
         }
+
+  # Destroys the booking together with its status, the one way a booking is
+  # removed. The booking and its status row reference each other, so both links
+  # are cleared before either row goes; a booking without a status is simply
+  # destroyed. All or nothing.
+  def destroy_with_status!
+    transaction do
+      status = sub_space_booking_status
+      status&.update_column(:sub_space_booking_id, nil)
+      update_column(:sub_space_booking_status_id, nil)
+      status&.destroy!
+      destroy!
+    end
+  end
 
   # FIXME: THIS DOESNT REALLY WORK FOR ICS TO MAKERROOM AND BREAKS THE GCAL INTEGRATION
   # before_save :upsert_google_booking,
@@ -173,9 +193,7 @@ class SubSpaceBooking < ApplicationRecord
     status =
       if blocking
         "blocking_booking"
-      elsif SubSpaceBookingStatus.find(
-            sub_space_booking_status_id
-          ).booking_status_id == BookingStatus::APPROVED.id
+      elsif current_status.booking_status_id == BookingStatus.approved.id
         if user_id == current_user_id
           "your_confirmed_bookings"
         else
