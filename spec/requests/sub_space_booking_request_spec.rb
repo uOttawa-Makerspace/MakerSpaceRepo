@@ -34,7 +34,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
   end
 
   def status_name(booking)
-    booking.reload.sub_space_booking_status.booking_status.name
+    booking.reload.booking_status.name
   end
 
   # Raw wall clock stored in Postgres for `timestamp without time zone`.
@@ -46,10 +46,9 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     )
   end
 
-  # Booking factory hooks a Pending status row after create; override it.
+  # Booking factory creates a Pending booking; give it the wanted status.
   def set_booking_status!(booking, status_row)
-    booking.sub_space_booking_status
-           .update!(booking_status_id: status_row.id)
+    booking.change_status!(status_row)
     booking
   end
 
@@ -164,7 +163,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
              end_time: "2027-03-03 11:00", name: "N", description: "D"
            } }
       expect(response.status).to eq(204)
-      expect(SubSpaceBooking.find_by(name: "N").sub_space_booking_status
+      expect(SubSpaceBooking.find_by(name: "N")
               .booking_status.name).to eq("Pending")
       expect(ActionMailer::Base.deliveries.size).to eq(1)
       mail = ActionMailer::Base.deliveries.last
@@ -763,7 +762,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(response.status).to eq(200)
       expect(response.parsed_body).to eq("status" => "ok")
       expect(booking.reload.name).to eq("Json")
-      expect(booking.reload.sub_space_booking_status.booking_status.name)
+      expect(booking.reload.booking_status.name)
         .to eq("Pending") # stays pending when updated
     end
 

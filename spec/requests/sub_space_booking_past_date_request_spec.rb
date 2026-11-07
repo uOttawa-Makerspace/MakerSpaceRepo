@@ -44,12 +44,12 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
     booking = create(:sub_space_booking, sub_space: subspace, user: owner, name: "Existing",
                                          start_time: Time.zone.parse(start_time),
                                          end_time: Time.zone.parse(end_time))
-    booking.sub_space_booking_status.update!(booking_status_id: status.id)
+    booking.change_status!(status)
     booking
   end
 
   def status_name(booking)
-    booking.reload.sub_space_booking_status.booking_status.name
+    booking.reload.booking_status.name
   end
 
   describe "POST create" do

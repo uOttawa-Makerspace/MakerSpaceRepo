@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -105,6 +105,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.datetime "created_at", precision: nil, null: false
     t.string "name"
     t.datetime "updated_at", precision: nil, null: false
+  end
+
+  create_table "booking_status_reconciliations", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "now_booking_status_id", null: false
+    t.datetime "restored_at"
+    t.bigint "sub_space_booking_id", null: false
+    t.bigint "was_booking_status_id"
+    t.index ["sub_space_booking_id"], name: "index_booking_status_reconciliations_on_sub_space_booking_id"
   end
 
   create_table "booking_statuses", force: :cascade do |t|
@@ -1461,6 +1470,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.datetime "approved_at"
     t.bigint "approved_by_id"
     t.boolean "blocking", default: false
+    t.bigint "booking_status_id"
     t.datetime "created_at", null: false
     t.string "description"
     t.datetime "end_time", precision: nil
@@ -1474,6 +1484,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["approved_by_id"], name: "index_sub_space_bookings_on_approved_by_id"
+    t.index ["booking_status_id"], name: "index_sub_space_bookings_on_booking_status_id"
     t.index ["google_booking_id"], name: "index_sub_space_bookings_on_google_booking_id", unique: true, where: "((google_booking_id IS NOT NULL) AND ((google_booking_id)::text <> ''::text))"
     t.index ["recurring_booking_id"], name: "index_sub_space_bookings_on_recurring_booking_id"
     t.index ["sub_space_booking_status_id"], name: "index_sub_space_bookings_on_sub_space_booking_status_id"
@@ -1920,6 +1931,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
   add_foreign_key "staff_unavailabilities", "users"
   add_foreign_key "sub_space_booking_statuses", "booking_statuses"
   add_foreign_key "sub_space_booking_statuses", "sub_space_bookings", on_delete: :cascade
+  add_foreign_key "sub_space_bookings", "booking_statuses"
   add_foreign_key "sub_space_bookings", "recurring_bookings"
   add_foreign_key "sub_space_bookings", "sub_space_booking_statuses"
   add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade

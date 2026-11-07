@@ -59,14 +59,11 @@ module GoogleCalendar
       # A mirror of an event that already exists in Google, so the past-date
       # rule for bookings made in the app does not apply.
       booking.allow_past_start = true
-      booking.save!
-
-      return if booking.sub_space_booking_status_id.present?
-      status = SubSpaceBookingStatus.create!(
-        sub_space_booking_id: booking.id,
-        booking_status_id: BookingStatus.approved.id
-      )
-      booking.update!(sub_space_booking_status_id: status.id)
+      if booking.booking_status_id.present?
+        booking.save!
+      else
+        booking.save_with_status!(BookingStatus.approved)
+      end
     end
 
     # A timed event has a date_time. An all-day event has only a date (the end date is exclusive in Google's

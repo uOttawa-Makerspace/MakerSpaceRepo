@@ -47,7 +47,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   def status_name(booking)
-    booking.reload.sub_space_booking_status.booking_status.name
+    booking.reload.booking_status.name
   end
 
   def pending_booking(user = owner, **attrs)
@@ -55,7 +55,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
                      { sub_space: subspace, user: user,
                        start_time: DateTime.parse("2027-04-03 10:00"),
                        end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs))
-    booking.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+    booking.change_status!(@pending_status)
     booking
   end
 
@@ -317,7 +317,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
 
     it "lets an admin edit and update an APPROVED booking (owners cannot)" do
       approved = pending_booking
-      approved.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      approved.change_status!(@approved_status)
       sign_in_as(:admin)
       get sub_space_booking_edit_path(sub_space_booking_id: approved.id)
       expect(response).to have_http_status(:ok)
@@ -332,7 +332,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
 
     it "lets the owner edit a DECLINED booking (only PENDING-by-others and APPROVED are blocked)" do
       declined = pending_booking
-      declined.sub_space_booking_status.update!(booking_status_id: @declined_status.id)
+      declined.change_status!(@declined_status)
       log_in!(owner)
       get sub_space_booking_edit_path(sub_space_booking_id: declined.id)
       expect(response).to have_http_status(:ok)
@@ -472,6 +472,22 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
       expect(flash[:notice]).to eq("Bookings declined successfully.")
       expect(status_name(b3)).to eq("Declined")
       expect(status_name(b1)).to eq("Approved")
+    end
+
+    it "declines several bookings at once and sends no mail" do
+      b1 = pending_booking
+      b2 = pending_booking(start_time: DateTime.parse("2027-04-04 10:00"),
+                           end_time: DateTime.parse("2027-04-04 11:00"))
+      sign_in_as(:staff)
+
+      perform_enqueued_jobs do
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [b1.id, b2.id], bulk_status: "decline" }
+      end
+
+      expect([b1, b2].map { |b| status_name(b) }).to eq(%w[Declined Declined])
+      expect(SubSpaceBookingStatus.where(sub_space_booking_id: [b1.id, b2.id]).map { |r| r.booking_status.name }).to eq(%w[Declined Declined])
+      expect(ActionMailer::Base.deliveries).to be_empty
     end
 
     it "ignores ids that do not exist and reports them as skipped (staff)" do

@@ -273,18 +273,18 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
         booking_ids = SubSpaceBooking.order(:id).pluck(:id)
         # a regular user cannot bulk approve; staff can
         statuses_before =
-          SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.sub_space_booking_status.booking_status_id }
+          SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.booking_status_id }
         %w[approve decline].each do |bulk_status|
           put :bulk_approve_decline,
               params: { bulk_status: bulk_status, sub_space_booking_ids: booking_ids }
           expect(response).to redirect_to(root_path)
         end
         expect(
-          SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.sub_space_booking_status.booking_status_id }
+          SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.booking_status_id }
         ).to eq(statuses_before)
         @user.update_column(:role, "staff")
         SubSpaceBooking.where(id: booking_ids).each do |b|
-          b.sub_space_booking_status.update!(booking_status_id: BookingStatus.pending.id)
+          b.change_status!(BookingStatus.pending)
         end
         # approve first two
         first_two_ids = booking_ids.first(2)
@@ -297,7 +297,6 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
           expect(
             SubSpaceBooking
               .find(b_id)
-              .sub_space_booking_status
               .booking_status_id
           ).to eq(BookingStatus.approved.id)
 
@@ -311,7 +310,6 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
           expect(
             SubSpaceBooking
               .find(last_id)
-              .sub_space_booking_status
               .booking_status_id
           ).to eq(BookingStatus.declined.id)
         end
