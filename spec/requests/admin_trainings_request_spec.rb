@@ -49,12 +49,47 @@ RSpec.describe "Admin training area", type: :request do
     context "as admin" do
       before { log_in!(admin) }
 
-      # N+1 pinned
-      it "lists the trainings ordered by English name", skip_bullet: true do
+      it "lists the trainings ordered by English name" do
         create(:training, name_en: "AAA Training", name_fr: "AAA FR")
         get admin_trainings_path
         expect(response).to have_http_status(:ok)
         expect(response.body.index("AAA Training")).to be < response.body.index("Existing EN")
+      end
+
+      it "reads each training's skill in a constant number of queries" do
+        get admin_trainings_path # warm up
+        few = selects_on("skills") { get admin_trainings_path }
+        3.times { create(:training) }
+        many = selects_on("skills") { get admin_trainings_path }
+
+        expect(response).to have_http_status(:ok)
+        expect(many.size).to eq(few.size)
+      end
+
+      it "shows each space's session and certification counts, reading them in a constant number of queries" do
+        stock = lambda do |trained, in_space, sessions:, certifications:|
+          trained.spaces << in_space unless trained.spaces.include?(in_space)
+          sessions.times { create(:training_session, training: trained, space: in_space) }
+          certifications.times do
+            create(:certification, training: trained, training_session: create(:training_session, training: trained, space: in_space))
+          end
+        end
+
+        other_space = create(:space, name: "Zed Space")
+        stock.call(training, space, sessions: 2, certifications: 1)
+        stock.call(training, other_space, sessions: 1, certifications: 0)
+        get admin_trainings_path # warm up
+        tables = %w[spaces training_sessions certifications]
+        few = selects_on(*tables) { get admin_trainings_path }
+        3.times { stock.call(create(:training), create(:space), sessions: 1, certifications: 1) }
+        many = selects_on(*tables) { get admin_trainings_path }
+
+        row = response.body[%r{<tr>\s*<td>#{skill.name}</td>\s*<td>Existing EN</td>.*?</tr>}m]
+        cells = row.scan(%r{<td>(.*?)</td>}m).flatten.map { |cell| cell.gsub(/<[^>]+>/, " ").split }
+        expect(cells[2]).to eq([space.name, "Zed", "Space"])
+        expect(cells[3]).to eq(%w[3 1])
+        expect(cells[4]).to eq(%w[1 0])
+        expect(many.size).to eq(few.size)
       end
 
       it "renders the new and edit forms" do
@@ -279,8 +314,22 @@ RSpec.describe "Admin training area", type: :request do
           expect(listed_ids).to eq([session_record.id])
         end
 
-        # N+1 pinned
-        it "widens the window with date_range=1_year", skip_bullet: true do
+        it "reads the training, trainer, certifications and users of the sessions in a constant number of queries" do
+          tables = %w[trainings certifications users training_sessions_users]
+          2.times { create(:training_session, user: trainer, users: [create(:user, :regular_user)]) }
+          get admin_training_sessions_path # warm up
+          few = selects_on(*tables) { get admin_training_sessions_path }
+          3.times do
+            seshs = create(:training_session, user: create(:user, :staff), users: [create(:user, :regular_user)])
+            create(:certification, training_session: seshs, training: seshs.training)
+          end
+          many = selects_on(*tables) { get admin_training_sessions_path }
+
+          expect(listed_ids.size).to eq(6)
+          expect(many.size).to eq(few.size)
+        end
+
+        it "widens the window with date_range=1_year" do
           old = create(:training_session, user: trainer)
           old.update_columns(created_at: 40.days.ago)
           get admin_training_sessions_path(date_range: "1_year")

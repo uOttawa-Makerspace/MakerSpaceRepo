@@ -23,6 +23,11 @@ class Exam < ApplicationRecord
     (exam_responses_right * 100.0 / all_questions).round
   end
 
+  # The responses recorded for this exam, keyed by the id of the question they answer.
+  def responses_by_question_id
+    exam_responses.select("exam_responses.*, exam_questions.question_id AS question_id").index_by(&:question_id)
+  end
+
   # An exam accepts answers and can be finished only until it is graded or expires.
   def open_for_answers?
     ungraded? && !expired?

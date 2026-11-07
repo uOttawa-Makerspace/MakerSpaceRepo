@@ -375,8 +375,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "PATCH /admin/users/set_role" do
     before { login!(admin) }
 
-    # N+1 pinned
-    it "changes roles for several users, redirecting back (html)", skip_bullet: true do
+    it "changes roles for several users, redirecting back (html)" do
       other = create(:user, :regular_user)
       patch set_role_admin_users_path,
             params: { role: "staff", user_ids: [target.id, other.id] },
@@ -384,6 +383,21 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to redirect_to("http://www.example.com/admin/users/manage_roles")
       expect(target.reload.role).to eq("staff")
       expect(other.reload.role).to eq("staff")
+    end
+
+    it "changes the roles of any number of users in a constant number of queries" do
+      change = lambda do |count|
+        users = create_list(:user, count, :regular_user)
+        selects_on("active_storage_attachments", "users") do
+          patch set_role_admin_users_path, params: { role: "staff", user_ids: users.map(&:id) }
+        end
+      end
+      change.call(1) # warm up
+      few = change.call(2)
+      many = change.call(5)
+
+      expect(User.where(role: "staff").count).to be >= 8
+      expect(many.size).to eq(few.size)
     end
 
     it "json: head 200" do

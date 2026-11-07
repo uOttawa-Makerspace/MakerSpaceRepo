@@ -17,7 +17,7 @@
 <hr>
 
 <div class="text-start">
-  <% @question.answers.randomize_answers.each do |a| %>
+  <% @question.answers.shuffle.each do |a| %>
     <% if a.correct %>
       <div class="correct-answers"><%= a.description %></div>
     <% else %>

@@ -7,7 +7,11 @@ class Admin::TrainingsController < AdminAreaController
   before_action :require_training_params, only: %i[create update]
 
   def index
-    @trainings = Training.all.order(:name_en)
+    @trainings = Training.includes(:skill).order(:name_en)
+    @spaces_by_training = spaces_by_training
+    @session_counts = TrainingSession.reorder(nil).group(:training_id, :space_id).count
+    @certification_counts =
+      Certification.joins(:training_session).group("training_sessions.training_id", "training_sessions.space_id").count
   end
 
   def new
@@ -54,6 +58,10 @@ class Admin::TrainingsController < AdminAreaController
   end
 
   private
+
+  def spaces_by_training
+    Space.joins(:trainings).order(:name).select("spaces.*, spaces_trainings.training_id AS training_id").group_by(&:training_id)
+  end
 
   def training_params
     params
