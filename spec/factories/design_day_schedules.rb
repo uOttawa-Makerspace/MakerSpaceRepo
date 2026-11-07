@@ -1,20 +1,16 @@
 FactoryBot.define do
   factory :design_day_schedule do
-    start do
-      Faker::Time.between from: Time.zone.now.beginning_of_day, to: Time.zone.now.end_of_day
-    end
+    start { Time.zone.now.beginning_of_day + 9.hours }
 
-    # FIXME: end is a reserved keyword
-    add_attribute(:end) do
-      Faker::Time.between from: Time.zone.now.beginning_of_day, to: Time.zone.now.end_of_day
-    end
+    # end is a reserved word in Ruby, hence add_attribute
+    add_attribute(:end) { Time.zone.now.beginning_of_day + 10.hours }
 
-    ordering { Faker::Number.between from: 0, to: 20 }
+    ordering { 0 }
 
     design_day
 
     title_en { Faker::Alphanumeric.alphanumeric number: 12 }
     title_fr { Faker::Alphanumeric.alphanumeric number: 12 }
-    event_for { DesignDaySchedule.event_fors.values.sample }
+    event_for { :student }
   end
 end
