@@ -127,21 +127,19 @@ RSpec.describe "Bookings feed JSON contract", :booking_clock, type: :request do
       .to include("title" => "Space Blocked", "color" => "#ABABABFF")
   end
 
-  # N+1 pinned
-  it "row order: ASC by id for rows fetched with find_each (NOT start order)", skip_bullet: true do
-    b1 = approved_booking(name: "First", description: "Brief",
-                          start_time: DateTime.parse("2027-04-02 10:00"),
-                          end_time: DateTime.parse("2027-04-02 11:00"))
-    b2 = approved_booking(name: "Second", description: "Brief",
-                          start_time: DateTime.parse("2027-04-01 09:00"),
-                          end_time: DateTime.parse("2027-04-01 10:00"))
+  it "lists bookings by start time, then id, whatever order they were created in" do
+    late = approved_booking(name: "Late", description: "Brief",
+                            start_time: DateTime.parse("2027-04-02 10:00"),
+                            end_time: DateTime.parse("2027-04-02 11:00"))
+    early = approved_booking(name: "Early", description: "Brief",
+                             start_time: DateTime.parse("2027-04-01 09:00"),
+                             end_time: DateTime.parse("2027-04-01 10:00"))
+    tie = approved_booking(name: "Tie", description: "Brief",
+                           start_time: DateTime.parse("2027-04-02 10:00"),
+                           end_time: DateTime.parse("2027-04-02 12:00"))
     body = JSON.parse(fetch)
-    expect(body.map { |e| e["start"] })
-      .to eq(["2027-04-02T06:00:00.000-04:00", "2027-04-01T05:00:00.000-04:00"])
-    # no ORDER clause on find_each — the feed comes back in
-    # insertion (id) order, not sorted by start_time.
     expect(body.map { |e| e["id"] })
-      .to eq(["booking_#{b1.id}_#{subspace.id}", "booking_#{b2.id}_#{subspace.id}"])
+      .to eq([early, late, tie].map { |b| "booking_#{b.id}_#{subspace.id}" })
   end
 
   it "includes the admin name suffix for admin pending views" do
