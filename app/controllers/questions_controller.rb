@@ -49,9 +49,11 @@ class QuestionsController < AdminAreaController
   end
 
   def show
+    preload_answer_texts
   end
 
   def edit
+    preload_answer_texts
     if params[:n_answers].present? &&
          params[:n_answers].to_i > @question.answers.count
       (params[:n_answers].to_i - @question.answers.count).times do
@@ -117,6 +119,13 @@ class QuestionsController < AdminAreaController
 
   def set_question
     @question = Question.find(params[:id])
+  end
+
+  def preload_answer_texts
+    ActiveRecord::Associations::Preloader.new(
+      records: [@question],
+      associations: { answers: :rich_text_description }
+    ).call
   end
 
   def set_levels
