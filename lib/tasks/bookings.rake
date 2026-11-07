@@ -42,8 +42,15 @@ namespace :bookings do
     )
     gone = []
     changed_since = []
+    blocked = []
     restored = 0
+    left_alone = []
     records.each do |id, booking_id, was, now, exists|
+      # an older change of a booking is not undone once a newer one was left alone: the booking changed after it
+      if left_alone.include?(booking_id)
+        blocked << booking_id
+        next
+      end
       done = connection.exec_update(<<~SQL.squish, "restore", [was, booking_id, now, id])
         WITH restored AS (
           UPDATE sub_space_bookings SET booking_status_id = $1 WHERE id = $2 AND booking_status_id = $3 RETURNING id
@@ -56,10 +63,12 @@ namespace :bookings do
         puts "booking #{booking_id}: booking_status_id #{now} -> #{was.inspect}"
       else
         (exists ? changed_since : gone) << booking_id
+        left_alone << booking_id
       end
     end
     puts "#{restored} booking(s) restored"
     puts "#{changed_since.size} record(s) left alone, the column no longer holds the recorded value (booking ids: #{changed_since.uniq.join(', ')})" if changed_since.any?
+    puts "#{blocked.size} record(s) left alone, a newer change of the booking was left alone (booking ids: #{blocked.uniq.join(', ')})" if blocked.any?
     puts "#{gone.size} record(s) left alone, booking gone (booking ids: #{gone.uniq.join(', ')})" if gone.any?
   end
 end

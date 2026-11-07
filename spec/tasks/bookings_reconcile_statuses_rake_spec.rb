@@ -179,6 +179,22 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
     expect(empty.reload.booking_status_id).to be_nil
   end
 
+  it "does not undo an older change of a booking once a newer one was left alone" do
+    run("bookings:reconcile_statuses")
+    SubSpaceBookingStatus.find_by(sub_space_booking_id: stale.id).update_columns(booking_status_id: approved.id)
+    run("bookings:reconcile_statuses")
+    stale.change_status!(declined)
+
+    output = run("bookings:restore_reconciled_statuses")
+
+    expect(stale.reload.booking_status).to eq(declined)
+    expect(output).to include("1 booking(s) restored")
+    expect(output).to include("1 record(s) left alone, the column no longer holds the recorded value (booking ids: #{stale.id})")
+    expect(output).to include("1 record(s) left alone, a newer change of the booking was left alone (booking ids: #{stale.id})")
+    unrestored = SubSpaceBooking.connection.select_values("SELECT sub_space_booking_id FROM booking_status_reconciliations WHERE restored_at IS NULL")
+    expect(unrestored).to eq([stale.id, stale.id])
+  end
+
   it "keeps the record when a booking is deleted, and lists it as gone on restore" do
     run("bookings:reconcile_statuses")
     empty.destroy_with_status!
