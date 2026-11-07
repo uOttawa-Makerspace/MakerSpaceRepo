@@ -238,7 +238,13 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       create_booking(room)
 
       expect(response).to have_http_status(:no_content)
-      expect(status_name(SubSpaceBooking.find_by!(name: "Fresh"))).to eq("Pending")
+      booking = SubSpaceBooking.find_by!(name: "Fresh")
+      expect(status_name(booking)).to eq("Pending")
+
+      # the failure only surfaces when the queued job runs, and leaves the booking as it was
+      expect { perform_enqueued_jobs }.to raise_error(Net::SMTPFatalError)
+      expect(SubSpaceBooking.find_by!(name: "Fresh")).to eq(booking)
+      expect(status_name(booking.reload)).to eq("Pending")
     end
 
     it "queues the needs-approval mail instead of delivering it in the request", perform_jobs: false do
