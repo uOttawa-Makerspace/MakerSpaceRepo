@@ -133,7 +133,8 @@ RSpec.describe TrainingSession, type: :model do
     it "requires a staff/admin trainer, training, level and space" do
       ts = TrainingSession.new(user: create(:user, :regular_user), level: "")
       expect(ts).not_to be_valid
-      expect(ts.errors[:string]).to include("user must be staff")
+      expect(ts.errors[:user]).to include("must be staff")
+      expect(ts.errors.full_messages).to include("User must be staff")
       expect(ts.errors[:training]).to include("A training subject is required")
       expect(ts.errors[:level]).to include("A level is required")
       expect(ts.errors[:space]).to be_present

@@ -21,6 +21,41 @@ fr:
         year_of_study: Année d'études
         identity: Identité
         url: Site web
+      training_session:
+        user: Formateur
+      staff_unavailability:
+        start_time: Heure de début
+        end_time: Heure de fin
+        recurrence_rule: Règle de récurrence
+      staff_external_unavailability:
+        ics_url: Lien ICS
+      staff_needed_calendar:
+        space_id: Espace
+      job_task:
+        job_service: Service
+      pi_reader:
+        pi_mac_address: Adresse MAC
+      api_refresh_token:
+        expires_at: Expiration
+      learning_module:
+        title: Titre
+      proficient_project:
+        title: Titre
+      repository:
+        title: Titre
+        password: Mot de passe
+        photos: Photos
+      key_certification:
+        pdf_file_1: Fichier PDF 1
+        pdf_file_2: Fichier PDF 2
+        pdf_file_3: Fichier PDF 3
+        pdf_file_4: Fichier PDF 4
+        pdf_file_5: Fichier PDF 5
+        pdf_file_6: Fichier PDF 6
+        pdf_file_7: Fichier PDF 7
+        pdf_file_8: Fichier PDF 8
+        pdf_file_9: Fichier PDF 9
+        pdf_file_10: Fichier PDF 10
       locker_rental:
         state: État
         locker: Casier
@@ -40,6 +75,7 @@ fr:
       volunteer_hour:
         volunteer_task: Tâche de bénévolat
         date_of_task: Date de la tâche
+        total_time: Nombre d'heures
       volunteer_task:
         photos: Photos
       job_service:
@@ -96,6 +132,7 @@ fr:
         description: Description
         start_time: Heure de début
         end_time: Heure de fin
+        expiration_date: Date d'expiration
       event:
         created_by: Créé par
         space: Espace
@@ -112,6 +149,8 @@ fr:
         images: Images
       order_item:
         files: Fichiers
+        proficient_project: Projet
+        order: Commande
         quantity: Quantité
       help:
         name: Nom

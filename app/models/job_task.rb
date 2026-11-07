@@ -95,6 +95,6 @@ class JobTask < ApplicationRecord
       else
         job_type_id.present? && job_service.job_service_group&.job_type_id == job_type_id
       end
-    errors.add(:job_service, "is not available for this task") unless allowed
+    errors.add(:job_service, :not_available_for_task) unless allowed
   end
 end

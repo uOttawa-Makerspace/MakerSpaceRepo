@@ -88,7 +88,7 @@ class KeyCertification < ApplicationRecord
       file_param = "pdf_file_#{i}"
       if self.send(file_param).attached? &&
            !self.send(file_param).content_type.in?(%w[application/pdf])
-        errors.add(file_param.to_sym, "must be a PDF file")
+        errors.add(file_param.to_sym, :not_a_pdf)
       end
     end
   end

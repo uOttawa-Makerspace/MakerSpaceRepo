@@ -7,6 +7,6 @@ class StaffExternalUnavailability < ApplicationRecord
   private
 
   def ics_url_is_fetchable
-    errors.add(:ics_url, "must be an http or https link") unless IcsFetcher.fetchable_url?(ics_url)
+    errors.add(:ics_url, :not_http_link) unless IcsFetcher.fetchable_url?(ics_url)
   end
 end

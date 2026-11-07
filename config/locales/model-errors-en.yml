@@ -75,6 +75,7 @@ en:
               blank: "A training subject is required"
             user:
               blank: "A trainer is required"
+              must_be_staff: "must be staff"
             level:
               blank: "A level is required"
         project_requirement:
@@ -93,3 +94,97 @@ en:
           attributes:
             base:
               one_correct_answer: "A question must have exactly one correct answer"
+        staff_unavailability:
+          attributes:
+            start_time:
+              before_end_time: "must be before the end time"
+            recurrence_rule:
+              weekly_needs_days: "must include days of the week when using weekly frequency"
+        event:
+          attributes:
+            start_time:
+              before_end_time: "must be before the end time"
+            recurrence_rule:
+              weekly_needs_days: "must include days of the week when using weekly frequency"
+        staff_external_unavailability:
+          attributes:
+            ics_url:
+              not_http_link: "must be an http or https link"
+        staff_needed_calendar:
+          attributes:
+            space_id:
+              taken: "can only have one open_hours calendar"
+        quick_access_link:
+          attributes:
+            path:
+              taken: "You already have a quick access link to that location"
+              points_to_user: "cannot point to a user"
+              not_a_valid_path: "must be a valid path"
+        locker_rental:
+          attributes:
+            rented_by:
+              request_under_review: "already has a request under review"
+            state:
+              cancelled_cannot_change: "cannot change from cancelled except back to awaiting payment, or to active by staff"
+        order_item:
+          attributes:
+            proficient_project:
+              not_valid: "is not valid"
+            order:
+              not_a_valid_order: "is not a valid order."
+        job_task:
+          attributes:
+            job_service:
+              not_available_for_task: "is not available for this task"
+        pi_reader:
+          attributes:
+            pi_mac_address:
+              identifier_out_of_bounds: "must be at most %{maximum} characters with no spaces, control or invisible characters"
+        api_refresh_token:
+          attributes:
+            expires_at:
+              after_family_cap: "must not be after the family cap"
+        help:
+          attributes:
+            base:
+              issue_submission_failed: "Internal error while submitting issue."
+        volunteer_task:
+          attributes:
+            photos:
+              too_many: " can't exceed 5 photos"
+        learning_module:
+          attributes:
+            title:
+              blank: "A title is required."
+              taken: "Title already exists"
+        proficient_project:
+          attributes:
+            title:
+              blank: "A title is required."
+              taken: "Title already exists"
+        repository:
+          attributes:
+            title:
+              blank: "Project title is required."
+              taken: "Project title is already in use."
+            password:
+              blank: "Password is required for private projects"
+            photos:
+              too_long: "Must have between 1 and 5 photos"
+              too_short: "Must have between 1 and 5 photos"
+        user:
+          attributes:
+            name:
+              special_html_characters: "must not contain special HTML characters"
+            student_id:
+              wrong_digit_count: "must be between 7 and 12 digits"
+            url:
+              not_a_web_address: "must be a valid URL starting with http:// or https://"
+            username:
+              reserved: "is reserved"
+        key_certification:
+          not_a_pdf: "must be a PDF file"
+      upload_type_unreadable: "unreadable"
+      messages:
+        upload_too_large: "%{filename} is too large (maximum is %{max_size})"
+        upload_type_not_allowed: "%{filename} has a file type that is not allowed (%{detected_type})"

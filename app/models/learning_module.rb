@@ -75,7 +75,7 @@ class LearningModule < ApplicationRecord
 
   has_many :learning_module_tracks, dependent: :destroy
 
-  validates :title, presence: { message: 'A title is required.' }
+  validates :title, presence: true
   validate :uniqueness
   before_save :capitalize_title
   before_create :set_order
@@ -207,7 +207,7 @@ class LearningModule < ApplicationRecord
          .where(title: self.title, training_id: self.training_id)
          .where.not(id: self.id)
          .count > 0
-      self.errors.add(:title, 'Title already exists')
+      errors.add(:title, :taken)
     end
   end
 

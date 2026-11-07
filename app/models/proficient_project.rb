@@ -28,13 +28,7 @@ class ProficientProject < ApplicationRecord
   # too; the column is an integer, so a fraction would be silently truncated).
   validates :cc, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
 
-  validates :title,
-            presence: {
-              message: "A title is required."
-            },
-            uniqueness: {
-              message: "Title already exists"
-            }
+  validates :title, presence: true, uniqueness: true
   before_save :capitalize_title
   
 

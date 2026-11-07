@@ -248,7 +248,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         b = fresh(1.day.ago)
         b.valid?
         expect(I18n.with_locale(:fr) { b.errors.full_messages }).to eq(
-          ["Start time ne peut pas être dans le passé. Choisissez une heure de début à partir de maintenant."]
+          ["Heure de début ne peut pas être dans le passé. Choisissez une heure de début à partir de maintenant."]
         )
       end
 
@@ -298,7 +298,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
             ["End time cannot be in the past for a booking that has already started. Pick an end time after now."]
           )
           expect(I18n.with_locale(:fr) { booking.errors.full_messages }).to eq(
-            ["End time ne peut pas être dans le passé pour une réservation déjà commencée. " \
+            ["Heure de fin ne peut pas être dans le passé pour une réservation déjà commencée. " \
              "Choisissez une heure de fin après maintenant."]
           )
         end
@@ -348,7 +348,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         expect(described_class.past_start_message)
           .to eq("Start time cannot be in the past. Pick a start time from now on.")
         expect(I18n.with_locale(:fr) { described_class.past_start_message })
-          .to eq("Start time ne peut pas être dans le passé. Choisissez une heure de début à partir de maintenant.")
+          .to eq("Heure de début ne peut pas être dans le passé. Choisissez une heure de début à partir de maintenant.")
       end
 
       # The start and the end are both judged against the current minute.

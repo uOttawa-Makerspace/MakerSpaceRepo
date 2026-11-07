@@ -74,7 +74,7 @@ class TrainingSession < ApplicationRecord
           end
         }
   def is_staff
-    errors.add(:string, "user must be staff") unless user&.staff?
+    errors.add(:user, :must_be_staff) unless user&.staff?
   end
 
   def completed?

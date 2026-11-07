@@ -185,7 +185,7 @@ class User < ApplicationRecord
             length: { maximum: 50 },
             format: {
               without: /[<>&"]/,
-              message: 'must not contain special HTML characters'
+              message: :special_html_characters
             }
 
   validates :username,
@@ -265,14 +265,14 @@ class User < ApplicationRecord
   validates :student_id,
             format: {
               with: /\A[0-9]{7,12}\z/,
-              message: 'must be between 7 and 12 digits'
+              message: :wrong_digit_count
             },
             allow_blank: true,
             if: -> { student? && student_id_changed? }
   validates :url,
             format: {
               with: %r{\Ahttps?://[^\s<>"'{}|\\^`]+\z}i,
-              message: 'must be a valid URL starting with http:// or https://'
+              message: :not_a_web_address
             },
             allow_blank: true
 
@@ -1140,7 +1140,7 @@ class User < ApplicationRecord
   private
 
   def username_not_reserved
-    errors.add(:username, 'is reserved') if ReservedUsernames.include?(username)
+    errors.add(:username, :reserved) if ReservedUsernames.include?(username)
   end
 
   # ============================================
