@@ -161,15 +161,28 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
     end
   end
 
+  describe "notification recipient" do
+    it "ignores staff whose join was removed" do
+      gone = create(:user, :staff)
+      current = create(:user, :staff)
+      create(:volunteer_task_join, volunteer_task: task, user: current, user_type: "Staff")
+      create(:volunteer_task_join, :not_active, volunteer_task: task, user: gone, user_type: "Staff")
+      vol_login!(volunteer)
+      join!(join_params)
+      expect(vol_deliveries.map(&:to)).to contain_exactly([current.email], [volunteer.email])
+    end
+  end
+
   describe "POST /volunteer_task_joins/remove" do
     let!(:join) { create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer) }
     let(:remove_params) { { volunteer_task_join: { user_id: volunteer.id, volunteer_task_id: task.id } } }
 
-    it "lets the volunteer leave: destroys the join, notice, redirect back, no email" do
+    it "lets the volunteer leave: marks the join inactive, notice, redirect back, no email" do
       vol_login!(volunteer)
       expect do
         perform_enqueued_jobs { post remove_volunteer_task_joins_path, params: remove_params, headers: { "HTTP_REFERER" => volunteer_task_url(task) } }
-      end.to change(VolunteerTaskJoin, :count).by(-1)
+      end.not_to change(VolunteerTaskJoin, :count)
+      expect(join.reload.active).to be(false)
       expect(response).to redirect_to(volunteer_task_url(task))
       expect(flash[:notice]).to eq("User was removed from the Volunteer Task")
       expect(vol_deliveries).to be_empty
@@ -180,7 +193,8 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       post remove_volunteer_task_joins_path, params: remove_params
       vol_login!(other_volunteer)
       post volunteer_task_joins_path, params: join_params
-      expect(task.volunteer_task_joins.pluck(:user_id)).to eq([other_volunteer.id])
+      expect(task.volunteer_task_joins.active.pluck(:user_id)).to eq([other_volunteer.id])
+      expect(task.volunteer_task_joins.pluck(:user_id)).to contain_exactly(volunteer.id, other_volunteer.id)
     end
 
     # remove needs sign-in, and the target must be the caller or the caller must be staff
@@ -202,19 +216,46 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
 
     it "lets staff remove anyone" do
       vol_login!(create(:user, :staff))
-      expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.to change { join.reload.active }.to(false)
       expect(flash[:notice]).to eq("User was removed from the Volunteer Task")
     end
 
     it "lets an admin remove anyone" do
       vol_login!(create(:user, :admin))
-      expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.to change { join.reload.active }.to(false)
     end
 
-    it "destroys only one join when duplicates exist" do
-      create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
+    it "marks every active join of the user inactive and leaves other rows alone" do
+      second = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
+      old = create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+      other = create(:volunteer_task_join, :active, volunteer_task: task, user: other_volunteer)
       vol_login!(volunteer)
-      expect { post remove_volunteer_task_joins_path, params: remove_params }.to change(VolunteerTaskJoin, :count).by(-1)
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)
+      expect([join, second, old, other].map { |j| j.reload.active }).to eq([false, false, false, true])
+    end
+
+    it "refuses a user with no active join and changes nothing" do
+      join.update!(active: false)
+      vol_login!(volunteer)
+      expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change { join.reload.updated_at }
+      expect(flash[:alert]).to eq("The user to remove is not on this task.")
+      expect(flash[:notice]).to be_nil
+    end
+
+    it "refuses removing the creator when nobody else is joined, and hands the task over once someone is" do
+      creator = create(:user, :staff)
+      task.update!(user: creator)
+      join.update!(active: false)
+      creator_join = create(:volunteer_task_join, :active_not_volunteer, volunteer_task: task, user: creator)
+      vol_login!(creator)
+      params = { volunteer_task_join: { user_id: creator.id, volunteer_task_id: task.id } }
+      post remove_volunteer_task_joins_path, params: params
+      expect(flash[:alert]).to eq("There must be at least one staff member assigned to this task.")
+      expect([creator_join.reload.active, task.reload.user_id]).to eq([true, creator.id])
+
+      join.update!(active: true)
+      post remove_volunteer_task_joins_path, params: params
+      expect([creator_join.reload.active, task.reload.user_id]).to eq([false, volunteer.id])
     end
 
     it "redirects with the missing-param alert instead of a 500 when the volunteer_task_join param is missing" do
@@ -231,10 +272,17 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(response).to redirect_to(root_path)
     end
 
-    it "404s when no such join exists" do
+    it "refuses a user who never joined the task, with a message" do
       vol_login!(other_volunteer)
       post remove_volunteer_task_joins_path,
            params: { volunteer_task_join: { user_id: other_volunteer.id, volunteer_task_id: task.id } }
+      expect(flash[:alert]).to eq("The user to remove is not on this task.")
+    end
+
+    it "404s when the task does not exist" do
+      vol_login!(other_volunteer)
+      post remove_volunteer_task_joins_path,
+           params: { volunteer_task_join: { user_id: other_volunteer.id, volunteer_task_id: 999_999 } }
       expect(response).to have_http_status(:not_found)
     end
   end

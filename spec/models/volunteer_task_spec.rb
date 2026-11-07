@@ -121,3 +121,23 @@ RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model d
     expect(RequireTraining.where(volunteer_task_id: task.id).count).to eq(0)
   end
 end
+
+RSpec.describe VolunteerTask, "#remove_user", type: :model do
+  let(:task) { create(:volunteer_task) }
+  let(:user) { create(:user, :volunteer) }
+
+  it "marks the user's active joins inactive and keeps every row" do
+    first = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+    second = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+
+    expect(task.remove_user(user.id)).to be(true)
+    expect(VolunteerTaskJoin.where(id: [first.id, second.id]).pluck(:active)).to eq([false, false])
+  end
+
+  it "refuses a user with no active join" do
+    create(:volunteer_task_join, :not_active, volunteer_task: task, user: user)
+
+    expect(task.remove_user(user.id)).to be(false)
+    expect(task.errors.full_messages).to eq(["The user to remove is not on this task."])
+  end
+end

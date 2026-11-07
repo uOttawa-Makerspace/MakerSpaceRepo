@@ -25,6 +25,7 @@ class VolunteerTaskJoinsController < SessionsController
         staff_join =
           volunteer_task
             .volunteer_task_joins
+            .active
             .where(
               "volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?",
               "Staff",
@@ -59,15 +60,11 @@ class VolunteerTaskJoinsController < SessionsController
       flash[:alert] = "You are not authorized to remove this user from the task."
       return redirect_back(fallback_location: root_path)
     end
-    volunteer_join =
-      VolunteerTaskJoin.find_by!(
-        user_id: user_id,
-        volunteer_task_id: volunteer_task_id
-      )
-    if volunteer_join.destroy
+    volunteer_task = VolunteerTask.find(volunteer_task_id)
+    if volunteer_task.remove_user(user_id)
       flash[:notice] = "User was removed from the Volunteer Task"
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = volunteer_task.errors.full_messages.to_sentence
     end
     redirect_back(fallback_location: root_path)
   end

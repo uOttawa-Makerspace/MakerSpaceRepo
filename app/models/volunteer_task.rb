@@ -56,6 +56,17 @@ class VolunteerTask < ApplicationRecord
     false
   end
 
+  # Removes one user from the task on its own (the task page's remove forms, or a user leaving):
+  # the same removal as the edit form, with the same creator handover. Returns false and leaves the
+  # reason in errors when the user is not on the task or is the creator with nobody to take over.
+  def remove_user(user_id)
+    transaction { remove_staff(user_id, "user") }
+    true
+  rescue EditRefused => e
+    errors.add(:base, e.message)
+    false
+  end
+
   def delete_all_certifications
     require_trainings.destroy_all
   end
@@ -95,13 +106,13 @@ class VolunteerTask < ApplicationRecord
   end
 
   # The task's creator can only leave when another joined user can take over as creator.
-  def remove_staff(user_id)
+  def remove_staff(user_id, label = "staff")
     if self.user_id == user_id.to_i
       successor = volunteer_task_joins.active.where.not(user_id: user_id).order(:id).first
       refuse!("There must be at least one staff member assigned to this task.") unless successor
       update!(user_id: successor.user_id)
     end
-    remove_join(user_id, "staff")
+    remove_join(user_id, label)
   end
 
   def refuse_deletion_while_awarded
