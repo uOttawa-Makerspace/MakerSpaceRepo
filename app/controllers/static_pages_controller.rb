@@ -16,32 +16,17 @@ class StaticPagesController < SessionsController
     # User-specific data (Only run when a user is signed in)
     user = current_user || @user
     if user
-      @volunteer_program_shadowing_scheduled =
-        user.shadowing_hours.includes(:space).map do |hours|
-          end_time = hours.end_time.strftime('%H:%M')
-          formatted_time = "#{I18n.l hours.start_time, format: '%A %H:%M'} - #{end_time}"
-          [hours.space.name, formatted_time]
-        end
+      @volunteer_program_shadowing_scheduled = shadowing_shift_entries(user)
 
       @volunteer_program_your_tasks =
-        begin
-          user
-            .volunteer_task_joins
-            .active
-            .order(updated_at: :desc)
-            .joins(:volunteer_task)
-            .includes(volunteer_task: :space)
-            .where(volunteer_task: { status: 'open' })
-            .limit(5)
-            .map do |task|
-              task_name = task.volunteer_task.title
-              space_name = task.volunteer_task.space.name
-              formatted_time = task.created_at.strftime('%H:%M')
-              [task_name, space_name, formatted_time, task.volunteer_task_id]
-            end
-        rescue StandardError
-          []
-        end
+        user
+          .volunteer_task_joins
+          .active
+          .joins(:volunteer_task)
+          .where(volunteer_tasks: { status: 'open' })
+          .order(updated_at: :desc)
+          .limit(5)
+          .pluck('volunteer_tasks.title', :volunteer_task_id)
 
       @user_skills =
         Certification
@@ -182,6 +167,16 @@ class StaticPagesController < SessionsController
   end
 
   private
+
+  # [space name or nil, "Monday 10:00 - 13:00"] per shadowing shift; a shift
+  # without a space has no name.
+  def shadowing_shift_entries(user)
+    user.shadowing_hours.includes(:space).map do |hours|
+      end_time = hours.end_time.strftime('%H:%M')
+      formatted_time = "#{I18n.l hours.start_time, format: '%A %H:%M'} - #{end_time}"
+      [hours.space&.name, formatted_time]
+    end
+  end
 
   # The same answer whether or not the address belongs to an account, and when throttled.
   def reset_password_response

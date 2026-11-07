@@ -340,6 +340,63 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body).not_to include("Archived chore")
     end
 
+    it "lists a volunteer's open task that has no space" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      task = create(:volunteer_task, space: nil, title: "Remote paperwork")
+      create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer")
+
+      get root_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Remote paperwork")
+    end
+
+    it "lists a volunteer's shadowing shifts with the space name, and shows a shift without a space by its time alone" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      space = create(:space, name: "Brunsfield Centre")
+      start_time = Time.zone.parse("2030-01-07 10:00")
+      create(:shadowing_hour, user: user, space: space, start_time: start_time, end_time: start_time + 3.hours)
+      create(:shadowing_hour, user: user, space: nil, start_time: start_time + 1.day, end_time: start_time + 1.day + 3.hours)
+
+      get root_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Brunsfield Centre")
+      expect(response.body.scan("shadowing-list").size).to eq(1)
+      expect(response.body.scan("10:00 - 13:00").size).to eq(2)
+      expect(response.body.scan("list-header").size).to eq(1)
+    end
+
+    it "leaves out inactive joins and shows at most five tasks, newest first" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      space = create(:space)
+      6.times do |i|
+        task = create(:volunteer_task, space: space, title: "Chore number #{i}")
+        create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer",
+                                     updated_at: i.hours.ago)
+      end
+      dropped = create(:volunteer_task, space: space, title: "Dropped chore")
+      create(:volunteer_task_join, volunteer_task: dropped, user: user, active: false, user_type: "Volunteer")
+
+      get root_path
+
+      expect(response.body).to include("Chore number 0", "Chore number 4")
+      expect(response.body).not_to include("Chore number 5")
+      expect(response.body).not_to include("Dropped chore")
+    end
+
+    it "does not hide a failing task query behind an empty list" do
+      sign_in_as(:regular)
+      allow_any_instance_of(User).to receive(:volunteer_task_joins).and_raise(ActiveRecord::StatementInvalid)
+
+      get root_path
+
+      expect(response).to have_http_status(:internal_server_error)
+    end
+
     it "shows the staff resources card to staff only" do
       sign_in_as(:regular)
       get root_path
