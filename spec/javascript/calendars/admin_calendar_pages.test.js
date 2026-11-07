@@ -1,12 +1,16 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("flatpickr", () => ({}));
 
 // the page script uses the global the flatpickr bundle defines
-const destroy = vi.fn();
-const flatpickr = vi.fn(() => ({ flatpickr: () => ({ destroy }) }));
-vi.stubGlobal("flatpickr", flatpickr);
+let destroy;
+let flatpickr;
+beforeEach(() => {
+  destroy = vi.fn();
+  flatpickr = vi.fn(() => ({ flatpickr: () => ({ destroy }) }));
+  vi.stubGlobal("flatpickr", flatpickr);
+});
 vi.mock("../../../app/javascript/src/fullcalendar_setup_admin", () => ({}));
 vi.mock("../../../app/javascript/src/manage_calendar_events", () => ({}));
 vi.mock("../../../app/javascript/src/calendar_helper", () => ({

@@ -222,7 +222,6 @@ describe("page helpers", () => {
     vi.advanceTimersByTime(1);
     expect(fn).toHaveBeenCalledTimes(1);
     expect(fn).toHaveBeenCalledWith(2);
-    vi.useRealTimers();
   });
 
   it("debounce with immediate runs the first call at once and then waits", () => {
@@ -235,7 +234,6 @@ describe("page helpers", () => {
     expect(fn).toHaveBeenCalledWith("a");
     vi.advanceTimersByTime(100);
     expect(fn).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
   });
 
   it("examResponse posts the chosen answer", async () => {

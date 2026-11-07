@@ -5,6 +5,11 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
+    setupFiles: ["spec/javascript/setup.js"],
+    globalSetup: ["spec/javascript/global_setup.js"],
+    // stubs and fake timers from one example never reach the next
+    unstubGlobals: true,
+    restoreMocks: true,
     include: ["spec/javascript/**/*.test.{js,ts}"],
   },
 });

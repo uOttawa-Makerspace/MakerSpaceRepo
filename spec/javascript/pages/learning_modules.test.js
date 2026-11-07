@@ -202,7 +202,6 @@ describe("save button", () => {
     expect($("waiting-save-button").innerHTML).toContain(
       "Saving (Please wait)",
     );
-    vi.useRealTimers();
   });
 
   it("leaves the button alone when the form is invalid", async () => {
@@ -213,7 +212,6 @@ describe("save button", () => {
     submit();
     vi.advanceTimersByTime(0);
     expect($("waiting-save-button").disabled).toBe(false);
-    vi.useRealTimers();
   });
 
   it("copes with a form without the button", async () => {

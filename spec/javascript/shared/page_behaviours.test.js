@@ -255,7 +255,6 @@ describe("effects", () => {
     tile.dispatchEvent(new Event("mouseleave"));
     vi.advanceTimersByTime(2000);
     expect(Number($("a").style.opacity)).toBeGreaterThanOrEqual(1);
-    vi.useRealTimers();
   });
 
   it("leaves a tile with fewer than two children alone", () => {
@@ -266,7 +265,6 @@ describe("effects", () => {
       .dispatchEvent(new Event("mouseenter"));
     vi.advanceTimersByTime(2000);
     expect($("a").style.opacity).toBe("");
-    vi.useRealTimers();
   });
 
   it("shows the spinner once the report form is submitted", () => {
@@ -280,7 +278,6 @@ describe("effects", () => {
     expect(document.querySelector(".spinner").style.display).toBe(
       "inline-block",
     );
-    vi.useRealTimers();
   });
 
   it("shows and hides the sort filter from its header", () => {
@@ -292,6 +289,5 @@ describe("effects", () => {
     expect($("sort-filter").style.display).toBe("none");
     $("filter-header").click();
     expect($("sort-filter").style.display).toBe("block");
-    vi.useRealTimers();
   });
 });

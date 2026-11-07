@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 const selects = [];
 vi.mock("tom-select", () => ({
@@ -95,7 +95,7 @@ describe("past experience links", () => {
 });
 
 describe("submit checks", () => {
-  const editors = (background, description) => `
+  const editors = () => `
     <form id="new_project_proposal">
       <div><trix-editor input="project_proposal_client_background"></trix-editor></div>
       <div><trix-editor input="project_proposal_description"></trix-editor></div>

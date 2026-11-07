@@ -152,7 +152,6 @@ describe("clipboard", () => {
     expect(btn.textContent).toBe("Copied!");
     vi.advanceTimersByTime(2000);
     expect(btn.textContent).toBe("Copy");
-    vi.useRealTimers();
   });
 
   it("copyField says Failed when copying is refused", async () => {

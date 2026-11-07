@@ -191,7 +191,6 @@ describe("inline size editing", () => {
     expect($(".spinner-border").hidden).toBe(true);
     await vi.advanceTimersByTimeAsync(1500);
     expect($(".fa-check").hidden).toBe(true);
-    vi.useRealTimers();
   });
 
   it("marks the select invalid for a while when the save fails", async () => {
@@ -205,7 +204,6 @@ describe("inline size editing", () => {
     expect($(".spinner-border").hidden).toBe(true);
     await vi.advanceTimersByTimeAsync(3000);
     expect($("select").classList.contains("is-invalid")).toBe(false);
-    vi.useRealTimers();
   });
 
   it("disables the decorated select while saving and re-enables it when editing is on", async () => {
@@ -260,7 +258,6 @@ describe("inline note editing", () => {
 
     await vi.advanceTimersByTimeAsync(1500);
     expect(input.classList.contains("is-valid")).toBe(false);
-    vi.useRealTimers();
   });
 
   it("says 'No note' on the tooltip of a cleared note", async () => {
