@@ -221,26 +221,19 @@ RSpec.describe "Admin keys", type: :request do
     it "refuses to assign a key that is not in inventory" do
       key.update!(status: :lost)
       expect { patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id }, deposit_amount: 25 } }.not_to change(KeyTransaction, :count)
-      expect(flash[:alert]).to eq("Something went wrong while trying to assign the key")
+      expect(flash[:alert]).to start_with("Something went wrong while trying to assign the key")
     end
 
     it "refuses to assign without a supervisor (held keys require one) and leaves the key unchanged" do
       expect { patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id }, deposit_amount: 25 } }.not_to change(KeyTransaction, :count)
-      expect(flash[:alert]).to eq("Something went wrong while trying to assign the key")
+      expect(flash[:alert]).to start_with("Something went wrong while trying to assign the key")
       expect(key.reload.status).to eq("inventory")
     end
 
-    it "refuses to assign without a deposit amount" do
+    it "refuses to assign without a deposit amount, leaving the key and transactions unchanged" do
       expect { patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id } } }.not_to change(KeyTransaction, :count)
-      expect(flash[:alert]).to eq("Something went wrong while trying to assign the key")
-    end
-
-    # assign_key updates the key to held before saving the transaction (no DB transaction), so a failed KeyTransaction save leaves a held key without a transaction
-    it "leaves the key held when the transaction fails to save" do
-      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id } }
-      expect(flash[:alert]).to eq("Something went wrong while trying to assign the key")
-      expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
-      expect(KeyTransaction.where(key: key)).to be_empty
+      expect(flash[:alert]).to include("Something went wrong while trying to assign the key", "Deposit amount")
+      expect(key.reload).to have_attributes(status: "inventory", user_id: nil, supervisor_id: nil)
     end
 
     # Midday Eastern, so the server's UTC date and Date.current agree.
@@ -279,7 +272,22 @@ RSpec.describe "Admin keys", type: :request do
 
     it "refuses to revoke a key that is not held" do
       patch admin_key_revoke_key_path(key)
-      expect(flash[:alert]).to eq("Something went wrong while trying to revoke the key")
+      expect(flash[:alert]).to eq("Something went wrong while trying to revoke the key: Only a held key can be revoked.")
+    end
+
+    it "refuses to revoke a held key with no open transaction, changing nothing" do
+      key.update!(status: :held, user: holder, supervisor: supervisor)
+      expect { patch admin_key_revoke_key_path(key) }.not_to change(KeyTransaction, :count)
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("Something went wrong while trying to revoke the key: This key has no open transaction to close.")
+      expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
+    end
+
+    it "revoke closes the transaction and returns the key in one step" do
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 30 }
+      patch admin_key_revoke_key_path(key)
+      expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
+      expect(KeyTransaction.where(key: key).not_returned).to be_empty
     end
 
     # assign_key does User.find(params[:key][:user_id]) so a missing/unknown user is a RecordNotFound (404) instead of a flash alert

@@ -184,6 +184,36 @@ RSpec.describe "Key requests", type: :request do
       expect(kr.reload.status).to eq("waiting_for_approval")
     end
 
+    %i[approved waiting_for_approval].each do |status|
+      context "when #{status}" do
+        before { kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true, status: status)) }
+
+        (1..6).each do |step|
+          it "refuses an owner PATCH of step #{step} and changes nothing" do
+            patch key_request_steps_path(key_request_id: kr.id, step: step), params: { key_request: { supervisor_id: staff.id, phone_number: "613-555-4444" } }
+            expect(response).to redirect_to(key_request_path(kr.id))
+            expect(flash[:alert]).to start_with("This key request is already")
+            expect(kr.reload).to have_attributes(status: status.to_s, supervisor_id: supervisor.id)
+            expect(kr.phone_number).not_to eq("613-555-4444")
+          end
+        end
+
+        it "does not show the edit link on the request page" do
+          get key_request_path(kr.id)
+          expect(response.body).not_to include("Edit Request")
+        end
+      end
+    end
+
+    it "lets the owner edit again after an admin denies the request" do
+      kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true, status: :waiting_for_approval))
+      kr.update!(status: :in_progress)
+      patch key_request_steps_path(key_request_id: kr.id, step: 1), params: { key_request: { phone_number: "613-555-4444" } }
+      expect(kr.reload.phone_number).to eq("613-555-4444")
+      get key_request_path(kr.id)
+      expect(response.body).to include("Edit Request")
+    end
+
     # :status is not permitted on steps, so the requester cannot self-approve
     it "ignores status=approved from the owner (no self-approval)" do
       kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true))

@@ -3,6 +3,7 @@ class KeyRequestsController < SessionsController
   before_action :check_key_request, only: %i[new create]
   before_action :set_key_request, only: %i[show steps update_steps]
   before_action :ensure_request_owner, only: %i[steps update_steps]
+  before_action :ensure_editable, only: %i[steps update_steps]
 
   def index
     if @user.key_request.nil?
@@ -107,13 +108,23 @@ class KeyRequestsController < SessionsController
   end
 
   def submit_key_request
-    if @key_request.update(status: :waiting_for_approval)
+    if @key_request.submit
       redirect_to key_request_path(@key_request.id),
                   notice:
                     "You have successfully submitted the key request form, please wait a few days for an admin to review your form."
     else
       redirect_to_first_step "There was an error when submitting your key request form. Please make sure you fill in all the required fields."
     end
+  end
+
+  # Once submitted, a request is changed only by an admin sending it back
+  # (deny returns it to in progress).
+  def ensure_editable
+    return if @key_request.editable_by_owner?
+
+    state = @key_request.status_approved? ? "approved" : "submitted and waiting for approval"
+    redirect_to key_request_path(@key_request.id),
+                alert: "This key request is already #{state}, so it cannot be edited. An admin must send it back before you can change it."
   end
 
   def redirect_to_first_step(alert)
