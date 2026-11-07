@@ -219,6 +219,7 @@ en:
             end_time:
               in_the_past: "cannot be in the past for a booking that has already started. Pick an end time after now."
               booking_ended: "cannot be changed: this booking has already ended."
+              before_start: "must be after the start time."
       messages:
         restrict_dependent_destroy:
           has_many: "Cannot delete record because dependent %{record} exist"

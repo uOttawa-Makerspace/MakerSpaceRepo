@@ -185,8 +185,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       )
     end
 
-    # the error lands on :expiration_date
-    it "rejects start >= end under the Expiration date message" do
+    it "rejects start >= end with an error on the end time" do
       b = described_class.new(
         sub_space: create(:sub_space), booking_status: @pending_status,
         name: "N", description: "D",
@@ -194,8 +193,12 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
         end_time: DateTime.parse("2027-03-03 10:00")
       )
       expect(b).not_to be_valid
-      expect(b.errors.full_messages)
-        .to eq(["Expiration date Start Time needs to be before end time"])
+      expect(b.errors.full_messages).to eq(["End time must be after the start time."])
+      expect(b.errors.where(:end_time, :before_start)).to be_present
+      I18n.with_locale(:fr) do
+        b.valid?
+        expect(b.errors.full_messages.first).to include("doit être après l'heure de début.")
+      end
     end
 
     # no overlap validation
