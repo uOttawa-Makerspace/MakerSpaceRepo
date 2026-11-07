@@ -17,10 +17,13 @@ class SessionsController < ApplicationController
   INVALID_CREDENTIALS_MESSAGE = "Incorrect username, email or password."
   
   def login_authentication
-    @user = sign_in(params[:username_email], params[:password])
+    signed_in_user = sign_in(params[:username_email], params[:password])
+    # A refused attempt leaves whoever is already signed in as the current user (the
+    # page header is drawn for them); a guest stays a blank User.
+    @user = signed_in_user || current_user
 
     respond_to do |format|
-      if @user
+      if signed_in_user
         @user.update(last_signed_in_time: DateTime.now)
         format.html { redirect_to(safe_back_to || root_path) }
         format.json do
@@ -31,7 +34,6 @@ class SessionsController < ApplicationController
                  }
         end
       elsif @sign_in_refusal == :locked
-        @user = User.new
         locked_user = User.username_or_email(params[:username_email])
         format.html do
           flash.now[:alert] = ActionController::Base.helpers.sanitize("""
@@ -50,7 +52,6 @@ class SessionsController < ApplicationController
                  status: :unprocessable_content
         end
       elsif @sign_in_refusal == :unconfirmed
-        @user = User.new
         format.html do
           flash.now[
             :alert
@@ -61,7 +62,6 @@ class SessionsController < ApplicationController
           render json: "Account not confirmed", status: :unprocessable_content
         end
       elsif @sign_in_refusal == :inactive
-        @user = User.new
         # :inactive is the refusal's name in the CredentialAuthenticator contract (kept, with the API
         # code account_inactive); it means deactivated (users.deactivated_at).
         inactive_message = I18n.t("sessions.account_deactivated", support_email: SUPPORT_EMAIL)
@@ -75,7 +75,6 @@ class SessionsController < ApplicationController
         end
       else
         # An unknown account and a wrong password get the same answer.
-        @user = User.new
         format.html do
           flash.now[:alert] = INVALID_CREDENTIALS_MESSAGE
           render :login, status: :unprocessable_content

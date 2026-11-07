@@ -43,6 +43,8 @@ class UsersController < SessionsController
 
   SIGN_UP_THROTTLED_MESSAGE = 'Too many sign-up attempts, please try again later.'
 
+  before_action :refuse_when_signed_in, only: %i[new create]
+
   rate_limit to: 30, within: 1.hour, only: :create, name: 'sign-up-ip',
              by: -> { request.remote_ip }, with: -> { sign_up_throttled }
 
@@ -60,17 +62,10 @@ class UsersController < SessionsController
       hash = @new_user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(@new_user, hash).deliver_later
       
-      respond_to do |format| 
-        format.html do
-          redirect_to root_path,
-                      notice:
-                      'Account has been created, please look in your emails to confirm your email address.'
-        end
-        format.json do
-          render json:
-                 'Account has been created, please look in your emails to confirm your email address.',
-                 status: :unprocessable_content
-        end
+      message = I18n.t('sessions.account_created')
+      respond_to do |format|
+        format.html { redirect_to root_path, notice: message }
+        format.json { render json: { message: message }, status: :created }
       end
     else
       respond_to do |format| 
@@ -190,7 +185,6 @@ class UsersController < SessionsController
   end
 
   def new
-    redirect_to root_path if signed_in?
     @new_user = User.new
   end
 
@@ -525,6 +519,17 @@ class UsersController < SessionsController
     fields = params[:user]
     email = fields.is_a?(ActionController::Parameters) ? fields[:email].to_s.strip.downcase : ''
     email.length > 254 ? '' : email
+  end
+
+  # Registering is for guests: a signed-in visitor is sent home (JSON clients get a 403).
+  def refuse_when_signed_in
+    return unless signed_in?
+
+    message = I18n.t('sessions.already_signed_in')
+    respond_to do |format|
+      format.html { redirect_to root_path, alert: message }
+      format.json { render json: { error: message }, status: :forbidden }
+    end
   end
 
   def sign_up_throttled
