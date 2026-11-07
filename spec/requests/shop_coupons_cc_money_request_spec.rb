@@ -349,12 +349,18 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
           .to eq({ "code" => "ABC2", "cc_cost" => 60, "dollar_cost" => 6 })
       end
 
-      it "deletes a coupon, even one a user already paid for" do
-        claimed = create(:coupon_code, :claimed, user: other)
-        # deleting a claimed coupon silently destroys what the user spent cc on, with no refund
-        expect { delete coupon_code_path(claimed) }.to change(CouponCode, :count).by(-1)
+      it "deletes an unclaimed coupon" do
+        expect { delete coupon_code_path(coupon) }.to change(CouponCode, :count).by(-1)
         expect(response).to redirect_to(coupon_codes_path)
         expect(flash[:notice]).to eq("Coupon code was successfully deleted.")
+      end
+
+      it "refuses to delete a coupon a user already paid for, and says why" do
+        claimed = create(:coupon_code, :claimed, user: other)
+        expect { delete coupon_code_path(claimed) }.not_to change(CouponCode, :count)
+        expect(response).to redirect_to(coupon_codes_path)
+        expect(flash[:alert]).to eq("A user has already claimed this coupon with CC points, so it cannot be deleted")
+        expect(claimed.reload.user).to eq(other)
       end
 
       it "404s for an unknown id" do
