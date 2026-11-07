@@ -74,6 +74,8 @@ RSpec.describe "Pages that show a deleted user", type: :request do
       expect(response).to have_http_status(:ok)
       expect(page_text).to include("Gone Person (deleted account)", "gone.person@uottawa.ca")
       expect(response.body).to include("cancel Gone Person (deleted account)&#39;s shadowing shift")
+      name = Nokogiri::HTML(response.body).at_css("span.fw-bold.text-body-emphasis.d-block.lh-sm.small")
+      expect(name.text).to eq("Gone Person (deleted account)")
       expect(response.body).not_to include(user_path(username: "goneperson"))
     end
 

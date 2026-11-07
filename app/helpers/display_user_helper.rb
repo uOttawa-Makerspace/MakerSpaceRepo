@@ -12,11 +12,14 @@ module DisplayUserHelper
     user.deleted? ? t("users.deleted_account", name: label) : label
   end
 
-  # A link to the profile; a deleted account's profile is for admins only, so it is plain text.
+  # A link to the profile; a deleted account's profile is for admins only, so it is plain text
+  # (in a span carrying the same class, when one is given, so it looks like the live links).
   def staff_user_link(user, attribute: :name, titleize: false, **options)
     return if user.nil?
 
     label = staff_user_name(user, attribute: attribute, titleize: titleize)
-    user.deleted? ? label : link_to(label, user_path(user.username), **options)
+    return link_to(label, user_path(user.username), **options) unless user.deleted?
+
+    options[:class] ? content_tag(:span, label, class: options[:class]) : label
   end
 end
