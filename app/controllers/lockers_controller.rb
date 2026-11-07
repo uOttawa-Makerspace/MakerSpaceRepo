@@ -48,7 +48,7 @@ class LockersController < AdminAreaController
       flash[:notice] = "Created locker ##{@locker.specifier}"
       redirect_to @locker
     else
-      flash[:alert] = @locker.errors.full_messages.to_sentence.to_s
+      flash.now[:alert] = @locker.errors.full_messages.to_sentence
       render :index, status: :unprocessable_entity
     end
   end

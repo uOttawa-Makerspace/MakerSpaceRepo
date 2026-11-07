@@ -107,6 +107,15 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(flash[:alert]).to eq("Specifier has already been taken")
     end
 
+    it "POST create with a duplicate specifier does not show its alert on the next page" do
+      existing = create(:locker, specifier: "C-3")
+      post lockers_path, params: { locker: { specifier: "C-3", locker_size_id: existing.locker_size_id } }
+      expect(response.body).to include("Specifier has already been taken")
+
+      get lockers_path
+      expect(response.body).not_to include("Specifier has already been taken")
+    end
+
     it "PATCH update changes notes (HTML redirect, JSON 204) and 422s when invalid" do
       locker = create(:locker, specifier: "D-1")
       patch locker_path(locker), params: { locker: { notes: "dented" } }
