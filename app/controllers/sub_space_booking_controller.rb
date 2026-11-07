@@ -879,7 +879,7 @@ class SubSpaceBookingController < SessionsController
     scope = SubSpaceBooking
               .where(booking_status_id: booking_status_id)
               .where("sub_space_bookings.end_time > ?", @current_time)
-              .includes(:approved_by, :user, :recurring_booking, sub_space: :space)
+              .includes(:user, sub_space: :space)
               .order(start_time: :asc)
 
     pagy(scope, page_key: page_key, limit: 15)
@@ -889,7 +889,7 @@ class SubSpaceBookingController < SessionsController
     scope = SubSpaceBooking
               .where(booking_status_id: booking_status_id)
               .where("sub_space_bookings.end_time < ?", @current_time)
-              .includes(:approved_by, :user, :recurring_booking, sub_space: :space)
+              .includes(:user, sub_space: :space)
               .order(start_time: :desc)
 
     pagy(scope, page_key: page_key, limit: 15)

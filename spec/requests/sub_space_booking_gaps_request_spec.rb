@@ -1214,8 +1214,30 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(many).to eq(few)
     end
 
-    # Unused eager load pinned
-    it "partitions the admin panel into current and past lists by end time", skip_bullet: true do
+    it "runs the same number of queries for the admin panel however many bookings it lists" do
+      travel_to(Time.zone.local(2027, 6, 15, 12, 0)) do
+        log_in!(admin)
+        [[20, @approved_status], [10, @declined_status]].each do |day, status|
+          pending_booking(user, name: "Seed#{day}", start_time: DateTime.parse("2027-06-#{day} 10:00"),
+                                end_time: DateTime.parse("2027-06-#{day} 11:00")).change_status!(status)
+        end
+        get sub_space_booking_index_path # warm caches
+        few = count_queries { get sub_space_booking_index_path }
+
+        [[21, @approved_status], [22, @approved_status], [8, @approved_status], [9, @declined_status]].each do |day, status|
+          pending_booking(user, name: "More#{day}", start_time: DateTime.parse("2027-06-#{format('%02d', day)} 10:00"),
+                                end_time: DateTime.parse("2027-06-#{format('%02d', day)} 11:00")).change_status!(status)
+        end
+        pending_booking(user, name: "MorePending", start_time: DateTime.parse("2027-06-23 10:00"),
+                              end_time: DateTime.parse("2027-06-23 11:00"))
+        many = count_queries { get sub_space_booking_index_path }
+
+        expect(response.body).to include("More21", "More8", "More9", "MorePending")
+        expect(many).to eq(few)
+      end
+    end
+
+    it "partitions the admin panel into current and past lists by end time" do
       travel_to(Time.zone.local(2027, 6, 15, 12, 0)) do
         log_in!(admin)
         pending_booking(user, name: "FuturePending", start_time: DateTime.parse("2027-06-20 10:00"),
