@@ -66,6 +66,32 @@ RSpec.describe "Admin training area", type: :request do
         expect(many.size).to eq(few.size)
       end
 
+      it "shows each space's session and certification counts, reading them in a constant number of queries" do
+        stock = lambda do |trained, in_space, sessions:, certifications:|
+          trained.spaces << in_space unless trained.spaces.include?(in_space)
+          sessions.times { create(:training_session, training: trained, space: in_space) }
+          certifications.times do
+            create(:certification, training: trained, training_session: create(:training_session, training: trained, space: in_space))
+          end
+        end
+
+        other_space = create(:space, name: "Zed Space")
+        stock.call(training, space, sessions: 2, certifications: 1)
+        stock.call(training, other_space, sessions: 1, certifications: 0)
+        get admin_trainings_path # warm up
+        tables = %w[spaces training_sessions certifications]
+        few = selects_on(*tables) { get admin_trainings_path }
+        3.times { stock.call(create(:training), create(:space), sessions: 1, certifications: 1) }
+        many = selects_on(*tables) { get admin_trainings_path }
+
+        row = response.body[%r{<tr>\s*<td>#{skill.name}</td>\s*<td>Existing EN</td>.*?</tr>}m]
+        cells = row.scan(%r{<td>(.*?)</td>}m).flatten.map { |cell| cell.gsub(/<[^>]+>/, " ").split }
+        expect(cells[2]).to eq([space.name, "Zed", "Space"])
+        expect(cells[3]).to eq(%w[3 1])
+        expect(cells[4]).to eq(%w[1 0])
+        expect(many.size).to eq(few.size)
+      end
+
       it "renders the new and edit forms" do
         get new_admin_training_path
         expect(response).to have_http_status(:ok)
