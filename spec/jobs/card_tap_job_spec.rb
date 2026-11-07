@@ -41,6 +41,13 @@ RSpec.describe CardTapJob, type: :job do
     expect(TapBoxLog.where(event_type: "error").last).to have_attributes(user_id: user.id, space_id: space.id, card_number: rfid.card_number)
   end
 
+  it "still broadcasts the modal and does not fail when the membership check could not get an answer" do
+    allow_any_instance_of(User).to receive(:validate_uoeng_membership).and_return(:unknown)
+    expect { described_class.perform_now(rfid, space.id) }
+      .to have_broadcasted_to("space_event_#{space.id}").with(a_hash_including("add_user"))
+    expect(TapBoxLog.where(event_type: "error")).to be_empty
+  end
+
   it "logs an error row but still broadcasts the modal when the Faculty membership tier is missing" do
     MembershipTier.where(title_en: "Faculty membership").destroy_all
     expect { described_class.perform_now(rfid, space.id) }
