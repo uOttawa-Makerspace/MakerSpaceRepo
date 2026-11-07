@@ -27,29 +27,29 @@ class EmailValidator < ActiveModel::EachValidator
     distance_matrix[a_magnitude][b_magnitude]
   end
 
+  CHECK_DOMAINS = %w[gmail.com yahoo.com hotmail.com outlook.com uottawa.ca].freeze
+
   def validate_each(record, attribute, value)
     return if value.blank?
 
-    email = value.split("@")
-    return if email.size != 2
+    if value.match?(URI::MailTo::EMAIL_REGEXP)
+      suggest_known_domain(record, attribute, value.split("@").last)
+    else
+      record.errors.add(attribute, :invalid)
+    end
+  end
 
-    domain = email[1]
+  private
+
+  # A domain seen twice before is trusted; otherwise one within 1 to 3 edits of a
+  # well-known provider is reported as a probable typo.
+  def suggest_known_domain(record, attribute, domain)
     seen = Rails.cache.read("email_domain_#{domain}")
     return if seen && seen > 1
-    seen = seen.nil? ? 1 : seen + 1
-    Rails.cache.write("email_domain_#{domain}", seen, expires_in: 1.day)
+    Rails.cache.write("email_domain_#{domain}", seen.to_i + 1, expires_in: 1.day)
 
-    check_domains = %w[gmail.com yahoo.com hotmail.com outlook.com uottawa.ca]
-    check_domains.each do |correct_domain|
-      return if domain == correct_domain
-      distance = levenshtein_distance(domain, correct_domain)
-      if 1 <= distance && distance <= 3
-        record.errors.add(
-          attribute,
-          "Check your email domain. Did you mean #{correct_domain}?"
-        )
-        return
-      end
-    end
+    return if CHECK_DOMAINS.include?(domain)
+    correct_domain = CHECK_DOMAINS.find { |known| levenshtein_distance(domain, known).between?(1, 3) }
+    record.errors.add(attribute, "Check your email domain. Did you mean #{correct_domain}?") if correct_domain
   end
 end

@@ -198,8 +198,11 @@ class User < ApplicationRecord
   validates :email,
             presence: true,
             on: :create,
-            uniqueness: { case_sensitive: false },
-            email: true
+            uniqueness: { case_sensitive: false }
+
+  # The format is checked whenever the address is set or changed, so existing
+  # users with an odd stored address can still save other fields.
+  validates :email, email: true, if: :will_save_change_to_email?
 
   validates :how_heard_about_us, 
             length: { maximum: 250 }

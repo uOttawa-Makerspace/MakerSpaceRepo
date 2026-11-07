@@ -686,15 +686,28 @@ RSpec.describe User, type: :model do
       expect(u.email).to eq("mixed@example.com")
     end
 
-    it "email format is checked on create only, and the format check is lenient" do
-      # the `email: true` validator accepts addresses without an @ (e.g. "not-an-email") and no email rule runs on update
-      expect(build(:user, email: "not-an-email")).to be_valid
+    it "rejects an email that is not an address, on create" do
+      %w[not-an-email a@ @b.ca a@@b.ca].each do |bad|
+        user = build(:user, email: bad)
+        expect(user).not_to be_valid, "expected #{bad.inspect} to be rejected"
+        expect(user.errors[:email]).to be_present
+      end
       expect(build(:user, email: "")).not_to be_valid
+      expect(build(:user, email: "first.last+tag@uottawa.ca")).to be_valid
+    end
+
+    it "checks the email format on update only when the email changes" do
       u = create(:user)
       u.email = "not-an-email"
-      expect(u).to be_valid
-      u.email = ""
-      expect(u).to be_valid
+      expect(u).not_to be_valid
+      expect(u.errors[:email]).to be_present
+
+      stored = create(:user)
+      stored.update_columns(email: "odd-stored-address")
+      stored = User.find(stored.id)
+      stored.name = "Renamed"
+      expect(stored).to be_valid
+      expect(stored.save).to be true
     end
 
     it "the waiver is required on create only" do
