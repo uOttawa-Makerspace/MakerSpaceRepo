@@ -8,7 +8,7 @@
   <% if @question.images.attached? %>
     <% @question.images.each do |img| %>
       <a href="#">
-        <%= image_tag(img, alt: 'Image related question', style: 'border:1px solid #021a40;', class: 'd-inline-block mx-auto') %>
+        <%= image_tag(img, alt: t('common.names.question_image'), style: 'border:1px solid #021a40;', class: 'd-inline-block mx-auto') %>
       </a>
     <% end %>
   <% end %>

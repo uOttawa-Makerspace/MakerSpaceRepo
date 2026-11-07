@@ -133,7 +133,7 @@
                 <% @photos.each do |img| %>
                   <div class="image-item">
                     <span id="<%= img.id %>" class="image-remove"></span>
-                    <%= image_tag img.image, alt: 'Edit Proficient Project Picture' %>
+                    <%= image_tag img.image, alt: t('common.names.edit_project_picture') %>
                   </div>
                 <% end %>
                 <%= hidden_field_tag 'deleteimages' %>

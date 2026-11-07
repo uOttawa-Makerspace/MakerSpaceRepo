@@ -26,11 +26,11 @@
                                 <% if p.image.variable? %>
                                     <%= image_tag url_for(p.image.variant(:photo_slide_first)),
                                                 class: 'carousel-main-image',
-                                                alt: "#{@repository.title} — image #{i + 1}" %>
+                                                alt: t('common.names.titled_image_number', title: @repository.title, number: i + 1) %>
                                 <% else %>
                                     <%= image_tag url_for(p.image),
                                                 class: 'carousel-main-image',
-                                                alt: "#{@repository.title} — image #{i + 1}" %>
+                                                alt: t('common.names.titled_image_number', title: @repository.title, number: i + 1) %>
                                 <% end %>
                             </div>
                         </div>
@@ -59,9 +59,9 @@
                                 class="carousel-thumbnail active"
                                 data-bs-target="#repositoryCarousel"
                                 data-bs-slide-to="0"
-                                aria-label="Video">
+                                aria-label="<%= t('common.names.video') %>">
                             <img src="https://img.youtube.com/vi/<%= YoutubeID.from(@repository.youtube_link) %>/default.jpg"
-                                alt="Video thumbnail">
+                                alt="<%= t('common.names.video_thumbnail') %>">
                         </button>
                         <% slide_offset = 1 %>
                     <% end %>
@@ -71,9 +71,9 @@
                                 class="carousel-thumbnail <%= 'active' if i == 0 && !has_youtube %>"
                                 data-bs-target="#repositoryCarousel"
                                 data-bs-slide-to="<%= i + slide_offset %>"
-                                aria-label="Image <%= i + 1 %>">
+                                aria-label="<%= t('common.names.image_number', number: i + 1) %>">
                             <%= image_tag url_for(p.image.variable? ? p.image.variant(:photo_slide) : p.image),
-                                        alt: "Thumbnail #{i + 1}" %>
+                                        alt: t('common.names.thumbnail_number', number: i + 1) %>
                         </button>
                     <% end %>
                 </div>

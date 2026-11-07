@@ -59,7 +59,7 @@
                   <% end %>
                 </td>
                 <td>
-                  <div class="btn-group text-nowrap" role="group" aria-label="Printer actions">
+                  <div class="btn-group text-nowrap" role="group" aria-label="<%= t('common.names.printer_actions') %>">
                     <% unless last_session.nil? %>
                     <button type="button" class="btn btn-danger btn-block print-failed-button" data-bs-toggle="modal" data-bs-target="#printFailedModal"
                             data-username="<%= last_session.user.username %>" data-printer-number="<%= printer_id %>">Notify failed</button>

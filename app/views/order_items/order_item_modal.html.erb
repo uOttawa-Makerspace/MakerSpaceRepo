@@ -29,7 +29,7 @@
                 <% if images.length > 0 %>
                     <div id="photo-slide">
                         <% images.each do |i| %>
-                            <%= image_tag i, alt: 'User Attached Image' %>
+                            <%= image_tag i, alt: t('common.names.user_attached_image') %>
                         <% end %>
                     </div>
                 <% end %>

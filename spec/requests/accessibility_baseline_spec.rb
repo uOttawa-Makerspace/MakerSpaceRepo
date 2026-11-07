@@ -16,6 +16,19 @@ RSpec.describe "Accessibility baseline", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
+  # Every aria-label (in any Ruby or HTML spelling) whose value still holds literal words once ERB output and string
+  # interpolation are removed, so a name built only from t(...) or a variable passes.
+  def literal_accessible_names(source)
+    ruby_value = /(["'])((?:\#\{[^}]*\}|(?!\1).)*)\1/m
+    forms = [
+      /aria:\s*\{[^{}]*?\blabel:\s*#{ruby_value}/m,
+      /["']aria-label["']\s*(?::|=>)\s*#{ruby_value}/
+    ]
+    found = forms.flat_map { |form| source.scan(form).map { |_quote, value| value.gsub(/\#\{[^}]*\}/, "") } }
+    found += source.scan(/\baria-label="([^"]*)"/).flatten.map { |value| value.gsub(/<%.*?%>/m, "") }
+    found.grep(/\p{L}/)
+  end
+
   def stylesheet_files
     Dir[Rails.root.join("app/javascript/{stylesheets,entrypoints}/**/*.scss")]
   end
@@ -114,11 +127,42 @@ RSpec.describe "Accessibility baseline", type: :request do
       expect(labels).to eq(%w[Espace Superviseur])
     end
 
-    it "keeps literal English names out of aria-label attributes added to form controls" do
+    it "translates the navbar toggler and the user selection names" do
+      get root_path(locale: "fr")
+      expect(Nokogiri::HTML(response.body).css("button.navbar-toggler").pluck("aria-label")).to include("Basculer la navigation")
+      log_in!(create(:user, :admin))
+      get admin_users_path(locale: "fr")
+      expect(Nokogiri::HTML(response.body).at_css("input#select-all")["aria-label"]).to eq("Sélectionner tous les utilisateurs")
+    end
+
+    it "keeps literal English aria-labels out of the views" do
       offenders = Dir[Rails.root.join("app/views/**/*.erb")].flat_map do |file|
-        File.read(file).scan(/aria: \{ label: ["'][^"']*["'] \}/).map { |tag| "#{File.basename(file)}: #{tag}" }
+        literal_accessible_names(File.read(file)).map { |tag| "#{file.delete_prefix("#{Rails.root}/")}: #{tag}" }
       end
       expect(offenders).to be_empty
+    end
+
+    it "recognises every literal form of an accessible name and lets translated ones through" do
+      literal = [
+        %(aria: { label: 'Close' }),
+        %(aria: { label: "Select \#{user.username}", hidden: true }),
+        %(aria: {\n  expanded: false,\n  label: 'Close'\n}),
+        %('aria-label': 'Select all'),
+        %('aria-label' => "Confirm, total \#{total} CC"),
+        %(aria-label="Toggle navigation"),
+        %(aria-label="Image <%= i + 1 %>")
+      ]
+      translated = [
+        %(aria: { label: t('common.close') }),
+        %(aria: { label: "\#{t('common.names.select')} \#{user.username}" }),
+        %('aria-label': t('common.close')),
+        %('aria-label': Repository.human_attribute_name(:description)),
+        %(aria-label="<%= t('common.close') %>"),
+        %(aria-label="<%= t('common.names.image', number: i + 1) %>"),
+        %(aria: { label: subskill.to_s })
+      ]
+      expect(literal.reject { |source| literal_accessible_names(source).any? }).to eq([])
+      expect(translated.select { |source| literal_accessible_names(source).any? }).to eq([])
     end
 
     it "gives the login modal its own field ids so labels do not clash with the sign-in page" do
