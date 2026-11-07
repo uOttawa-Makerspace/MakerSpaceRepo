@@ -4,7 +4,7 @@ class Admin::TrainingsController < AdminAreaController
   before_action :set_skills, only: %i[new edit update create]
 
   def index
-    @trainings = Training.all.order(:name_en)
+    @trainings = Training.includes(:skill).order(:name_en)
   end
 
   def new

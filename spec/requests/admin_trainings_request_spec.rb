@@ -49,12 +49,21 @@ RSpec.describe "Admin training area", type: :request do
     context "as admin" do
       before { log_in!(admin) }
 
-      # N+1 pinned
-      it "lists the trainings ordered by English name", skip_bullet: true do
+      it "lists the trainings ordered by English name" do
         create(:training, name_en: "AAA Training", name_fr: "AAA FR")
         get admin_trainings_path
         expect(response).to have_http_status(:ok)
         expect(response.body.index("AAA Training")).to be < response.body.index("Existing EN")
+      end
+
+      it "reads each training's skill in a constant number of queries" do
+        get admin_trainings_path # warm up
+        few = selects_on("skills") { get admin_trainings_path }
+        3.times { create(:training) }
+        many = selects_on("skills") { get admin_trainings_path }
+
+        expect(response).to have_http_status(:ok)
+        expect(many.size).to eq(few.size)
       end
 
       it "renders the new and edit forms" do
@@ -240,8 +249,22 @@ RSpec.describe "Admin training area", type: :request do
           expect(listed_ids).to eq([session_record.id])
         end
 
-        # N+1 pinned
-        it "widens the window with date_range=1_year", skip_bullet: true do
+        it "reads the training, trainer, certifications and users of the sessions in a constant number of queries" do
+          tables = %w[trainings certifications users training_sessions_users]
+          2.times { create(:training_session, user: trainer, users: [create(:user, :regular_user)]) }
+          get admin_training_sessions_path # warm up
+          few = selects_on(*tables) { get admin_training_sessions_path }
+          3.times do
+            seshs = create(:training_session, user: create(:user, :staff), users: [create(:user, :regular_user)])
+            create(:certification, training_session: seshs, training: seshs.training)
+          end
+          many = selects_on(*tables) { get admin_training_sessions_path }
+
+          expect(listed_ids.size).to eq(6)
+          expect(many.size).to eq(few.size)
+        end
+
+        it "widens the window with date_range=1_year" do
           old = create(:training_session, user: trainer)
           old.update_columns(created_at: 40.days.ago)
           get admin_training_sessions_path(date_range: "1_year")
