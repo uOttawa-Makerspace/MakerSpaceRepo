@@ -57,6 +57,17 @@ RSpec.describe CleanTrainingSkillLists do
     expect(records.first).to eq([t.id, "list_of_skills_en", " , ,", "", false])
   end
 
+  it "drops an item holding only a no-break space, exactly as the model does, and down restores it" do
+    nbsp = "\u00a0"
+    old = "a,#{nbsp},b"
+    t = make(old, nil)
+    migrate
+    expect(values(t)).to eq(["a, b", nil])
+    expect(values(t).first).to eq(Training.split_skills(old).join(Training::SKILL_SEPARATOR))
+    migrate(:down)
+    expect(values(t)).to eq([old, nil])
+  end
+
   it "changes nothing the second time" do
     make(",a,b", nil)
     migrate

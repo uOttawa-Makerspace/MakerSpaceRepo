@@ -49,7 +49,7 @@ class CleanTrainingSkillLists < ActiveRecord::Migration[8.1]
   private
 
   def clean_list(text)
-    text.split(",").map(&:strip).reject(&:empty?).join(", ")
+    text.split(",").map(&:strip).compact_blank.join(", ")
   end
 
   def current_value(training_id, column)
