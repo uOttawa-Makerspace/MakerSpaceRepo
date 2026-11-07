@@ -1,14 +1,9 @@
 FactoryBot.define do
   factory :design_day do
-    day do
-      Faker::Date.between(
-        from: Time.zone.today - 5.years,
-        to: Time.zone.today + 5.years
-      )
-    end
-    is_live { Faker::Boolean.boolean }
+    day { Date.new(2026, 3, 14) }
+    is_live { true }
     sheet_key { Faker::Alphanumeric.alphanumeric number: 44 }
-    show_floorplans { Faker::Boolean.boolean }
+    show_floorplans { true }
 
     after(:build) do |day|
       day.floorplans.attach(
