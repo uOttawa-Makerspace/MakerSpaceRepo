@@ -200,4 +200,63 @@ RSpec.describe "Pages that show a deleted user", type: :request do
       expect(response.body).not_to include("goneperson", "gonesupervisor", "Gone Person")
     end
   end
+
+  describe "certification counts in the key list" do
+    let(:staff_files) { KeyCertification::NUMBER_OF_STAFF_FILES }
+
+    before do
+      allow_any_instance_of(KeyCertification).to receive(:get_key_certs_attached).and_return(7)
+      sign_in!(admin)
+    end
+
+    it "shows no counts for a holder with a certification but no key request" do
+      create(:key, :regular_key_type, :held_status, space: space, user: gone, supervisor: admin)
+      create(:key_certification, user: gone)
+      get admin_keys_path
+
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("0/#{staff_files} (staff)")
+      expect(page_text).not_to include("7/#{staff_files} (staff)")
+    end
+
+    it "shows the counts of a deleted holder who has a key request" do
+      create(:key, :regular_key_type, :held_status, space: space, user: gone, supervisor: admin)
+      create(:key_request, :status_approved, :all_questions_answered, user: gone, supervisor: admin, space: space)
+      create(:key_certification, user: gone)
+      delete_account!(gone)
+      get admin_keys_path
+
+      expect(page_text).to include("7/#{staff_files} (staff)")
+    end
+  end
+
+  describe "the real associations" do
+    before { delete_account!(gone, gone_supervisor) }
+
+    it "hide a deleted account while the display associations return it" do
+      key = create(:key, :regular_key_type, space: space, user: gone, supervisor: gone_supervisor)
+      key_request = create(:key_request, :all_questions_answered, user: gone, supervisor: gone_supervisor, space: space)
+
+      [key, key_request].each do |record|
+        reloaded = record.class.find(record.id)
+        expect(reloaded.user).to be_nil
+        expect(reloaded.supervisor).to be_nil
+        expect(reloaded.display_user).to eq(gone)
+        expect(reloaded.display_supervisor).to eq(gone_supervisor)
+      end
+    end
+
+    it "hide a deleted account on the other records too" do
+      status = JobOrderStatus.new(user_id: gone.id)
+      order = create(:order, user: create(:user)).tap { |o| o.update_columns(user_id: gone.id) }
+      log = TapBoxLog.log!(event_type: TapBoxLog::INFO, message: "x", user: gone)
+      shift = ShadowingHour.create!(user: gone, space: space)
+      proposal = create(:project_proposal, user: gone, admin: gone_supervisor)
+
+      expect([status, Order.find(order.id), log.reload, shift.reload, proposal.reload].map(&:user)).to all(be_nil)
+      expect([status, Order.find(order.id), log.reload, shift.reload, proposal.reload].map(&:display_user)).to all(eq(gone))
+      expect(proposal.admin).to be_nil
+      expect(proposal.display_admin).to eq(gone_supervisor)
+    end
+  end
 end

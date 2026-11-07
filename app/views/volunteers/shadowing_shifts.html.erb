@@ -246,13 +246,8 @@
                             <%= staff_user_name(s.display_user)&.first&.upcase || "V" %>
                           </div>
                           <div>
-                            <% if s.display_user&.deleted? %>
-                              <span class="fw-bold text-body-emphasis d-block lh-sm small"><%= staff_user_name(s.display_user) %></span>
-                              <span class="text-body-secondary small"><%= s.display_user.email %></span>
-                            <% elsif s.display_user %>
-                              <%= link_to user_path(s.display_user.username), class: "fw-bold text-body-emphasis text-decoration-none d-block lh-sm small" do %>
-                                <%= s.display_user.name.titleize %>
-                              <% end %>
+                            <% if s.display_user %>
+                              <%= staff_user_link(s.display_user, titleize: true, class: "fw-bold text-body-emphasis text-decoration-none d-block lh-sm small") %>
                               <span class="text-body-secondary small"><%= s.display_user.email %></span>
                             <% else %>
                               <span class="text-body-secondary small fst-italic">Unassigned User</span>
