@@ -573,10 +573,8 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(text).to include("Total: CAD $25.50")
     end
 
-    # the parts line is only printed when the task has a job service,
-    # but the total always includes service_price * service_quantity, so the
-    # printed lines can fail to add up to the printed total.
-    it "omits the parts line for a task without a service although the total includes it" do
+    # The service line is itemised whenever it counts toward the total, with or without a job service.
+    it "itemises the service amount for a task without a service, matching the total" do
       order = order_with_task!(status_key: :completed)
       order.job_tasks.first.build_job_task_quote(price: 10, service_price: 3, service_quantity: 2).save!
       session_login!(owner)
@@ -584,8 +582,19 @@ RSpec.describe "JobOrders gaps", type: :request do
 
       text = Capybara.string(response.body).text.squish
       expect(text).to include("Task #1 - Base Fee CAD $10.00")
-      expect(text).not_to include("CAD $6.00")
+      expect(text).to include("Task #1 - Service - 2.0 unit CAD $6.00")
       expect(text).to include("Total: CAD $16.00")
+    end
+
+    it "prints no service line when the service amount is zero" do
+      order = order_with_task!(status_key: :completed)
+      order.job_tasks.first.build_job_task_quote(price: 10, service_price: 3, service_quantity: 0).save!
+      session_login!(owner)
+      get job_order_invoice_path(order)
+
+      text = Capybara.string(response.body).text.squish
+      expect(text).not_to include("Task #1 - Service")
+      expect(text).to include("Total: CAD $10.00")
     end
 
     it "redirects invoice requests for a soft-deleted order to new with no_permission" do

@@ -188,17 +188,18 @@
       <% end %>
 
       <!-- Task Service -->
-      <% if task.job_service && task.job_task_quote&.service_price.to_f > 0 %>
+      <% service_total = task.job_task_quote ? task.job_task_quote.service_total : 0 %>
+      <% if service_total > 0 %>
         <tr class="item">
           <td>
-            <%= task.title %> - <%= task.job_service.name %>
-            <% if task.job_service.job_service_group %>
+            <%= task.title %> - <%= task.job_service&.name || "Service" %>
+            <% if task.job_service&.job_service_group %>
               (<%= task.job_service.job_service_group.name %>)
             <% end %>
-            - <%= "#{task.job_task_quote.service_quantity || 0} #{task.job_service.unit.presence || 'unit'}" %>
+            - <%= "#{task.job_task_quote.service_quantity || 0} #{task.job_service&.unit.presence || 'unit'}" %>
           </td>
           <td>
-            CAD <%= number_to_currency((task.job_task_quote.service_price || 0) * (task.job_task_quote.service_quantity || 0)) %>
+            CAD <%= number_to_currency(service_total) %>
           </td>
         </tr>
       <% end %>
