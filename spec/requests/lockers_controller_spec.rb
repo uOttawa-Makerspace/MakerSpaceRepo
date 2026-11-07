@@ -155,8 +155,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(flash[:alert]).to eq("Range end must be larger than range start")
     end
 
-    # N+1 pinned
-    it "PATCH bulk_edit updates or deletes the selected ids", skip_bullet: true do
+    it "PATCH bulk_edit updates or deletes the selected ids" do
       a = create(:locker)
       b = create(:locker)
       patch bulk_edit_lockers_path, params: { id: [a.id, b.id], locker: { notes: "bulk" } }

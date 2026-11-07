@@ -116,6 +116,7 @@ class LockersController < AdminAreaController
       # Update button was clicked
       Locker
         .where(id: params[:id])
+        .includes(:locker_size)
         .find_each { |locker| locker.update(locker_params) }
 
       flash[:notice] = 'Lockers updated'
