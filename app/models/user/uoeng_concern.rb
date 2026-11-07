@@ -76,7 +76,7 @@ module User::UoengConcern
 
     # The parsed answer (a Hash), false when the user cannot be looked up, or
     # :unknown when the upstream timed out, refused, answered with a non-200
-    # status or sent something that is not a JSON object.
+    # status or sent a body that does not have the expected shape.
     def uoeng_details(card_number: nil, space: nil)
       creds = Rails.application.credentials.dig(Rails.env.to_sym, :uoeng) || {}
 
@@ -101,7 +101,7 @@ module User::UoengConcern
       return uoeng_http_failure(response, elapsed, card_number, space) if response.status != 200
 
       parsed = JSON.parse(response.body)
-      raise JSON::ParserError, "expected a JSON object" unless parsed.is_a?(Hash)
+      raise JSON::ParserError, "unexpected answer shape" unless expected_uoeng_shape?(parsed)
 
       detect_student_id_mismatch(parsed, card_number, space)
       parsed
@@ -115,6 +115,16 @@ module User::UoengConcern
     rescue Excon::Error => e
       TapBoxLog.log_engineering_check_error(user: self, exception: e, card_number: card_number, space: space)
       uoeng_unknown(e)
+    end
+
+    # The answer must carry exactly the fields, with the types, that the
+    # eligibility check and the name comparison read.
+    def expected_uoeng_shape?(parsed)
+      return false unless parsed.is_a?(Hash)
+
+      courses = parsed["courses_enrolled"]
+      courses.is_a?(Array) && courses.all?(String) &&
+        parsed.values_at("first_name", "last_name").all? { |part| part.nil? || part.is_a?(String) }
     end
 
     def uoeng_http_failure(response, elapsed, card_number, space)

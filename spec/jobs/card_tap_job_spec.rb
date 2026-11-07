@@ -48,6 +48,16 @@ RSpec.describe CardTapJob, type: :job do
     expect(TapBoxLog.where(event_type: "error")).to be_empty
   end
 
+  it "still broadcasts the modal when the upstream answer has an unexpected shape" do
+    user.update!(student_id: "300000009")
+    allow(Rails.env).to receive(:test?).and_return(false)
+    allow(Rails.application.credentials).to receive(:dig).and_call_original
+    allow(Rails.application.credentials).to receive(:dig).with(:test, :uoeng).and_return(query_by_id: "https://uoeng.example.test/by_id/", student_information_key: "k")
+    stub_request(:get, %r{uoeng.example.test}).to_return(status: 200, body: { "courses_enrolled" => "GNG1103" }.to_json)
+    expect { described_class.perform_now(rfid, space.id) }
+      .to have_broadcasted_to("space_event_#{space.id}").with(a_hash_including("add_user"))
+  end
+
   it "logs an error row but still broadcasts the modal when the Faculty membership tier is missing" do
     MembershipTier.where(title_en: "Faculty membership").destroy_all
     expect { described_class.perform_now(rfid, space.id) }

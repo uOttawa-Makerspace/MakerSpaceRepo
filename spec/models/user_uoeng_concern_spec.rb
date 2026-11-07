@@ -65,7 +65,7 @@ RSpec.describe User::UoengConcern, type: :model do
     let(:api_base) { "https://uoeng.example.test" }
     let(:id_url) { %r{\A#{api_base}/by_id/} }
     let(:email_url) { %r{\A#{api_base}/by_email/} }
-    let(:genie) { { "student_this_semester" => true, "faculty" => "GENIE", "first_name" => "Ann", "last_name" => "B" } }
+    let(:genie) { { "student_this_semester" => true, "faculty" => "GENIE", "courses_enrolled" => [], "first_name" => "Ann", "last_name" => "B" } }
     let(:not_engineering) { { "student_this_semester" => true, "faculty" => "ARTS", "courses_enrolled" => [] } }
 
     before do
@@ -107,12 +107,12 @@ RSpec.describe User::UoengConcern, type: :model do
     end
 
     it "queries by student id when present, by email for @uottawa.ca otherwise, and gives up on others" do
-      id_request = stub_api(body: { "faculty" => "ARTS" })
+      id_request = stub_api(body: { "faculty" => "ARTS", "courses_enrolled" => [] })
       eng.validate_uoeng_membership
       expect(id_request).to have_been_requested.with { |req| req.uri.to_s.include?("300000001") }
 
       no_id = create(:user, :regular_user, email: "someone@uottawa.ca")
-      email_request = stub_api(email_url, body: { "faculty" => "ARTS" })
+      email_request = stub_api(email_url, body: { "faculty" => "ARTS", "courses_enrolled" => [] })
       no_id.validate_uoeng_membership
       expect(email_request).to have_been_requested
 
@@ -122,13 +122,13 @@ RSpec.describe User::UoengConcern, type: :model do
     end
 
     it "logs a student-id mismatch but still evaluates the details" do
-      stub_api(body: { "student_number" => "999999999", "student_this_semester" => true, "faculty" => "GENIE" })
+      stub_api(body: { "student_number" => "999999999", "student_this_semester" => true, "faculty" => "GENIE", "courses_enrolled" => [] })
       expect(eng.validate_uoeng_membership).to be_a(Membership)
       expect(logs.map(&:event_type)).to include(TapBoxLog::WARNING)
     end
 
     it "logs a name mismatch" do
-      stub_api(body: { "first_name" => "Zzyzx", "last_name" => "Q", "student_this_semester" => true, "faculty" => "GENIE" })
+      stub_api(body: { "first_name" => "Zzyzx", "last_name" => "Q", "student_this_semester" => true, "faculty" => "GENIE", "courses_enrolled" => [] })
       eng.validate_uoeng_membership
       expect(logs.map(&:event_type)).to include(TapBoxLog::WARNING)
     end
@@ -142,7 +142,14 @@ RSpec.describe User::UoengConcern, type: :model do
         "a 500 answer" => -> { stub_api(status: 500, body: genie) },
         "a 404 answer" => -> { stub_api(status: 404, body: "not found") },
         "malformed JSON" => -> { stub_api(body: "<html>nope</html>") },
-        "a JSON answer that is not an object" => -> { stub_api(body: "null") }
+        "a JSON answer that is not an object" => -> { stub_api(body: "null") },
+        "a JSON array answer" => -> { stub_api(body: [nil]) },
+        "courses_enrolled as a string" => -> { stub_api(body: genie.merge("courses_enrolled" => "GNG1103")) },
+        "courses_enrolled as [null]" => -> { stub_api(body: genie.merge("courses_enrolled" => [nil])) },
+        "courses_enrolled with non-string entries" => -> { stub_api(body: genie.merge("courses_enrolled" => [1103, { "a" => 1 }])) },
+        "a missing courses_enrolled" => -> { stub_api(body: genie.except("courses_enrolled")) },
+        "a wrong-typed first_name" => -> { stub_api(body: genie.merge("first_name" => ["Ann"])) },
+        "a wrong-typed last_name" => -> { stub_api(body: genie.merge("last_name" => 5)) }
       }.each do |failure, arrange|
         it "keeps the stored membership and reports the result as unknown on #{failure}" do
           instance_exec(&arrange)
