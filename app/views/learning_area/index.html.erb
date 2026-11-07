@@ -9,7 +9,7 @@
         <% if current_user.admin? %>
             <%= link_to 'New learning module', new_learning_area_path, class: 'btn btn-success d-block mb-3' %>
         <% end %>
-        <ul class="list-group mb-5">
+        <div class="list-group mb-5">
             <% @learning_modules.each do |training, learning_modules| %>
                 <%= link_to "##{training.localized_name.parameterize}", class: 'list-group-item list-group-item-action' do %>
                     <%= training.localized_name %>
@@ -17,7 +17,7 @@
                     <b><%= training.learning_modules_completed(current_user).count %> of <%= learning_modules.size %> completed</b>
                 <% end %>
             <% end %>
-        </ul>
+        </div>
     </div>
 
     <%# Displaying learning module cards %>

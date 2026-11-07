@@ -29,8 +29,8 @@
                         <li><a href="<%= link %>"><i class="fa fa-square text-secondary"></i> <%= proj_name %></a></li>
                     <% end %>
                 <% rescue %>
-                    <p><%= t('home.shortcuts.no_recently_opened') %></p>
-                    <%= link_to t('home.shortcuts.explore_more'), explore_path %>
+                    <li><p><%= t('home.shortcuts.no_recently_opened') %></p></li>
+                    <li><%= link_to t('home.shortcuts.explore_more'), explore_path %></li>
                 <% end %>
             </ul>
         <% else %>

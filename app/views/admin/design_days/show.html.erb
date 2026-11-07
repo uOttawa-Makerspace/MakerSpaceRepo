@@ -63,7 +63,7 @@
                         <% end %>
                         <% @design_day.floorplans.each do |image| %>
                             <div class="d-flex align-items-center gap-2 mb-3">
-                                <%= image_tag image, style: 'height: 60px;' %>
+                                <%= image_tag image, style: 'height: 60px;', alt: image.blob.metadata['floorplan_title'].presence || image.filename.to_s %>
                                 <%= text_field_tag "design_day[floorplan_title][]", image.blob.metadata['floorplan_title'], class: 'form-control', aria: { label: 'Floorplan title' } %>
                                 <% if image.persisted? %>
                                     <%= f.hidden_field :floorplans, multiple: true, value: image.signed_id %>

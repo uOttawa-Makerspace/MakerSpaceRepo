@@ -127,6 +127,29 @@ RSpec.describe "Accessibility baseline", type: :request do
     end
   end
 
+  describe "markup structure" do
+    it "names the cart link by its visible count" do
+      log_in!(create(:user))
+      get learning_area_index_path
+      cart = Nokogiri::HTML(response.body).at_css("a[href='#{carts_path}']")
+      expect(cart["aria-label"]).to be_nil
+      expect(cart.text.squish).to eq("Cart 0")
+    end
+
+    it "keeps list items inside lists on the home page" do
+      log_in!(create(:user))
+      get root_path
+      expect(Nokogiri::HTML(response.body).css("ul > :not(li), ol > :not(li)").map(&:name)).to be_empty
+    end
+
+    it "uses a division, not a list, for the learning area index links" do
+      log_in!(create(:user))
+      get learning_area_index_path
+      expect(response).to have_http_status(:ok)
+      expect(Nokogiri::HTML(response.body).css("ul.list-group")).to be_empty
+    end
+  end
+
   describe "close buttons" do
     it "names the close button of a flash message in English and French" do
       post login_authentication_path, params: { username_email: "nobody", password: "wrong" }
