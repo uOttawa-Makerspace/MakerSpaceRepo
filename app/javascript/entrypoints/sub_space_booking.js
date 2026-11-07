@@ -292,6 +292,26 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("book-name")?.focus();
   }
 
+  // The booking lookup answers JSON only to staff; anything else (a refusal
+  // redirected to an HTML page, a server error) is reported, not parsed.
+  function fetchBooking(id) {
+    return fetch(`/sub_space_booking/get_sub_space_booking?id=${id}`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    }).then((r) => {
+      const json = r.headers.get("content-type")?.includes("json");
+      if (!r.ok || !json)
+        throw new Error(`Booking lookup failed (${r.status})`);
+      return r.json();
+    });
+  }
+
+  function showBookingLoadError() {
+    showToast("Booking unavailable", "This booking could not be opened.");
+  }
+
   // ---- Edit (existing booking) ---------------------------------------------
   function editEvent(arg) {
     document.getElementById("bookSave").style.display = "none";
@@ -304,37 +324,27 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("book-recurring").style.display = "none";
     document.getElementById("book-recurring-label").style.display = "none";
 
-    fetch(
-      `/sub_space_booking/get_sub_space_booking?id=${arg.event.id.split("_")[1]}`,
-      {
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      },
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        document.getElementById("book-name").value = data.name;
-        document.getElementById("book-description").value = data.description;
-        start_picker.setDate(Date.parse(data.start_time.slice(0, -6)));
-        end_picker.setDate(Date.parse(data.end_time.slice(0, -6)));
-        document.getElementById("book-recurring").checked = false;
+    fetchBooking(arg.event.id.split("_")[1]).then((data) => {
+      document.getElementById("book-name").value = data.name;
+      document.getElementById("book-description").value = data.description;
+      start_picker.setDate(Date.parse(data.start_time.slice(0, -6)));
+      end_picker.setDate(Date.parse(data.end_time.slice(0, -6)));
+      document.getElementById("book-recurring").checked = false;
 
-        const blockingEl = document.getElementById("book-blocking");
-        if (blockingEl) blockingEl.checked = data.blocking;
+      const blockingEl = document.getElementById("book-blocking");
+      if (blockingEl) blockingEl.checked = data.blocking;
 
-        const isRecurring = data.recurring_booking_id != null;
-        document.getElementById("bookDelete").style.display = isRecurring
-          ? "none"
-          : "block";
-        document.getElementById("bookDeleteRecurringDropdown").style.display =
-          isRecurring ? "block" : "none";
+      const isRecurring = data.recurring_booking_id != null;
+      document.getElementById("bookDelete").style.display = isRecurring
+        ? "none"
+        : "block";
+      document.getElementById("bookDeleteRecurringDropdown").style.display =
+        isRecurring ? "block" : "none";
 
-        document.getElementById("subspace").value = data.sub_space_id;
-        toggleRecurring();
-        openModal();
-      });
+      document.getElementById("subspace").value = data.sub_space_id;
+      toggleRecurring();
+      openModal();
+    }, showBookingLoadError);
   }
 
   // ---- Flatpickr instances -------------------------------------------------

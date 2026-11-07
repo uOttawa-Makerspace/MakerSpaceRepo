@@ -294,13 +294,14 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(page).to have_css("#bookModal.show", visible: :all)
     end
 
-    # Example-wide allow: the refused lookup may or may not be logged before the example ends.
+    # Example-wide allow: the refused lookup is logged by the browser (a 406 after the redirect); the example waits for the page's error toast so that entry cannot land in the next example.
     it "shows 'Space Booked' to a user for somebody else's private booking, and opens nothing for staff-only data", js: true, skip_bullet: true, js_errors: :allow do
       open_calendar(user)
       expect(page).to have_css(".fc-timegrid-event", text: "Space Booked", visible: :all)
       find(".fc-timegrid-event", text: "Space Booked", visible: :all).click
 
       # the booking lookup is for staff and admins only, so the modal stays closed for a regular user
+      expect(page).to have_css("#booking_toast.show", text: "This booking could not be opened.", visible: :all)
       expect(page).to have_no_css("#bookModal.show", visible: :all)
     end
   end
