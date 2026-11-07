@@ -78,4 +78,56 @@ RSpec.describe "Admin::Users sorting by last sign in", type: :request do
       expect(listed_usernames).to eq(%w[sortnever sortonce sortmany])
     end
   end
+
+  # More users than fit on one page that all tie on the sort value: every user must appear on
+  # exactly one page and repeated requests must return the same order.
+  describe "paging through users that tie on the sort value" do
+    let(:tied_time) { Time.zone.local(2026, 1, 15, 12, 0, 0) }
+    let(:tied_names) { Array.new(25) { |i| format("tiepage%02d", i) } }
+
+    before do
+      travel_to(tied_time) do
+        tied_names.each { |n| create(:user, :regular_user, username: n, name: "Tie Page") }
+      end
+      travel_back
+    end
+
+    def page_usernames(path_helper, page, **params)
+      get public_send(path_helper, **params, page: page)
+      expect(response).to have_http_status(:ok)
+      response.body.scan(/>(tiepage\d\d)</).flatten
+    end
+
+    def expect_stable_paging(path_helper, **params)
+      first = [1, 2].map { |pg| page_usernames(path_helper, pg, **params) }
+      second = [1, 2].map { |pg| page_usernames(path_helper, pg, **params) }
+      expect(first.flatten).to match_array(tied_names)
+      expect(first.flatten.uniq.size).to eq(tied_names.size)
+      expect(second).to eq(first)
+    end
+
+    {
+      "the default order" => {},
+      "created_at" => { sort: "created_at", direction: "asc" },
+      "name" => { sort: "name", direction: "desc" },
+      "newest sign in" => { sort: "lab_sessions.sign_in_time", direction: "desc" }
+    }.each do |label, params|
+      it "lists every user once across pages ordered by #{label}" do
+        expect_stable_paging(:admin_users_path, **params)
+      end
+
+      it "finds every match once across pages ordered by #{label}" do
+        expect_stable_paging(:search_admin_users_path, **params.merge(q: "tiepage"))
+      end
+    end
+
+    it "lists every signed-in user once across pages" do
+      users = User.where(username: tied_names)
+      users.each do |u|
+        create(:lab_session, user: u, space: space, sign_in_time: tied_time, sign_out_time: 1.day.from_now)
+      end
+      expect_stable_paging(:admin_users_path, p: "signed_in_users")
+      expect_stable_paging(:admin_users_path, p: "signed_in_users", sort: "name", direction: "asc")
+    end
+  end
 end

@@ -298,9 +298,9 @@ class Admin::UsersController < AdminAreaController
 
     if (order_clause = safe_order_clause)
       column, direction = order_clause
-      @users_temp = @users_temp.order(column => direction)
+      @users_temp = @users_temp.order(column => direction, "lab_sessions.id" => direction)
     else
-      @users_temp = @users_temp.order(lab_sessions: { sign_in_time: :desc })
+      @users_temp = @users_temp.order(lab_sessions: { sign_in_time: :desc, id: :desc })
     end
 
     @pagy, @users_temp = pagy(@users_temp.includes(:user), limit: 20)
@@ -319,13 +319,15 @@ class Admin::UsersController < AdminAreaController
   # Orders a user list by the whitelisted sort column. "Signed in" sorts by each user's newest
   # visit (users who never signed in count as oldest), so a user appears once however many
   # visits they have and no lab_sessions rows are loaded.
+  # Ties are broken by users.id, in the sort direction, so every page of a paginated list is
+  # stable and no user repeats or is skipped between pages.
   def order_users(scope)
     column, direction = safe_order_clause
-    return scope.order(created_at: :desc) unless column
-    return scope.order(Arel.sql(column) => direction) unless column == SORTABLE_COLUMNS["sign_in_time"]
+    return scope.order(created_at: :desc, id: :desc) unless column
+    return scope.order(Arel.sql(column) => direction, id: direction) unless column == SORTABLE_COLUMNS["sign_in_time"]
 
     ordering = Arel.sql(LAST_SIGN_IN_SQL).public_send(direction)
-    scope.order(direction == :asc ? ordering.nulls_first : ordering.nulls_last)
+    scope.order(direction == :asc ? ordering.nulls_first : ordering.nulls_last, id: direction)
   end
 
   # SECURITY FIX: Safe join without user input in SQL string
