@@ -175,7 +175,7 @@ class SubSpaceBooking < ApplicationRecord
         "blocking_booking"
       elsif SubSpaceBookingStatus.find(
             sub_space_booking_status_id
-          ).booking_status_id == BookingStatus::APPROVED.id
+          ).booking_status_id == BookingStatus.approved.id
         if user_id == current_user_id
           "your_confirmed_bookings"
         else

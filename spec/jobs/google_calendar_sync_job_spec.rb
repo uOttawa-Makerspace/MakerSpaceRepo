@@ -21,7 +21,6 @@ RSpec.describe GoogleCalendarSyncJob, type: :job do
   let!(:creator) { create(:user, :regular_user, email: "creator@example.test") }
 
   before do
-    stub_const("BookingStatus::APPROVED", approved)
     allow(SubSpaceBooking).to receive(:authorizer).and_return(authorizer)
   end
 

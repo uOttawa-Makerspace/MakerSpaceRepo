@@ -15,9 +15,6 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
     ActionMailer::Base.deliveries.clear
   end
 
@@ -538,7 +535,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
     # the middle (here the status, whose booking status does not exist, fails
     # to save) rolls the booking back: no booking is left without a status.
     it "leaves no booking behind when its status cannot be saved" do
-      stub_const("BookingStatus::APPROVED", BookingStatus.new(id: -1, name: "Ghost"))
+      allow(BookingStatus).to receive(:approved).and_return(BookingStatus.new(id: -1, name: "Ghost"))
       log_in!(user)
       create_booking(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00", name: "Orphan")
       expect(response).to have_http_status(:unprocessable_content)

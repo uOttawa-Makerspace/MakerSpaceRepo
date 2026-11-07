@@ -2,9 +2,9 @@ require "rails_helper"
 require "rspec/mocks/standalone"
 RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
   before(:each) do
-    stub_const("BookingStatus::PENDING", create(:booking_status, :pending))
-    stub_const("BookingStatus::APPROVED", create(:booking_status, :approved))
-    stub_const("BookingStatus::DECLINED", create(:booking_status, :rejected))
+    create(:booking_status, :pending)
+    create(:booking_status, :approved)
+    create(:booking_status, :rejected)
   end
   before(:each) do
     @space = create(:space)
@@ -284,7 +284,7 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
         ).to eq(statuses_before)
         @user.update_column(:role, "staff")
         SubSpaceBooking.where(id: booking_ids).each do |b|
-          b.sub_space_booking_status.update!(booking_status_id: BookingStatus::PENDING.id)
+          b.sub_space_booking_status.update!(booking_status_id: BookingStatus.pending.id)
         end
         # approve first two
         first_two_ids = booking_ids.first(2)
@@ -299,7 +299,7 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
               .find(b_id)
               .sub_space_booking_status
               .booking_status_id
-          ).to eq(BookingStatus::APPROVED.id)
+          ).to eq(BookingStatus.approved.id)
 
           #decline the last one
           last_id = booking_ids.last
@@ -313,7 +313,7 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
               .find(last_id)
               .sub_space_booking_status
               .booking_status_id
-          ).to eq(BookingStatus::DECLINED.id)
+          ).to eq(BookingStatus.declined.id)
         end
       end
     end

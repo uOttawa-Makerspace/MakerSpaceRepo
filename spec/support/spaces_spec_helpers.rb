@@ -25,15 +25,11 @@ module SpacesSpecHelpers
     user
   end
 
-  # BookingStatus::* constants are resolved once at boot against an empty test
-  # DB, so point them at real rows (same pattern as the bookings specs).
+  # The Pending/Approved/Declined rows the booking code looks up by name.
   def seed_booking_statuses!
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
   end
 
   # Builds a minimal iCalendar document. Each event is a hash with :uid,

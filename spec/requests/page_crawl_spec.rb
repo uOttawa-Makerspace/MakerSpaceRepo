@@ -37,11 +37,7 @@ RSpec.describe "Page crawl (request level)", type: :request, skip_bullet: true d
     stub_shopify_admin!
     allow(LockerOption).to receive(:locker_product_info).and_return({ variants: {} })
     world = PageCrawl::World.new(self)
-    if (pending, approved, declined = world.records[:booking_statuses])
-      stub_const("BookingStatus::PENDING", pending)
-      stub_const("BookingStatus::APPROVED", approved)
-      stub_const("BookingStatus::DECLINED", declined)
-    end
+
     log_in_persona(role)
     visited = {}
     skipped = {}

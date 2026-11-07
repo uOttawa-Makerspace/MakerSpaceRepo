@@ -14,8 +14,6 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
   let!(:stm126) { create(:sub_space, name: "STM 126", space: space) }
   let!(:creator) { create(:user, :regular_user, email: "creator@example.test") }
 
-  before { stub_const("BookingStatus::APPROVED", approved) }
-
   def booking_for(id)
     SubSpaceBooking.find_by(google_booking_id: id)
   end

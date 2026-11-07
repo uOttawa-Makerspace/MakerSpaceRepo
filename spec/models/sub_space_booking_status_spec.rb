@@ -12,9 +12,6 @@ RSpec.describe SubSpaceBookingStatus, type: :model do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
   end
 
   it "requires a booking_status (belongs_to without optional)" do

@@ -61,7 +61,7 @@ module GoogleCalendar
       return if booking.sub_space_booking_status_id.present?
       status = SubSpaceBookingStatus.new(
         sub_space_booking_id: booking.id,
-        booking_status_id: BookingStatus::APPROVED.id
+        booking_status_id: BookingStatus.approved.id
       )
       status.save
 

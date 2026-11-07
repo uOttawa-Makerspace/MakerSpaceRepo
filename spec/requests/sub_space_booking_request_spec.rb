@@ -7,10 +7,8 @@ require "rails_helper"
 # Pins CURRENT observable behavior in the devcontainer test env:
 #  - real login POST (the shipped sign_in_via_session shim doesn't work for
 #    type: :request — see spec/support/auth_helpers.rb + repositories.rb:3)
-#  - BookingStatus::PENDING/APPROVED/DECLINED are nil when the app boots
-#    (BookingStatus.rb finds rows at boot; test DB is empty) → each example
-#    creates rows and stubs the constants, mirroring
-#    spec/controllers/subspace_bookings_controller_spec.rb.
+#  - each example creates the Pending/Approved/Declined rows the booking code
+#    looks up by name.
 #  - Raw wall-time storage: the column is `timestamp without time zone`. The
 #    model string/DateTime-cast rounds by the TEST DB's default (UTC), while
 #    the controller creates bookings with raw string params. Values are
@@ -22,9 +20,6 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
   end
 
   # ---------------------------------------------------------------- helpers

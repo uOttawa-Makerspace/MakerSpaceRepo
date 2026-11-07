@@ -18,7 +18,7 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
   end
 
   before do
-    stub_const("BookingStatus::PENDING", create(:booking_status, :pending))
+    create(:booking_status, :pending)
     ActionMailer::Base.deliveries.clear
   end
 

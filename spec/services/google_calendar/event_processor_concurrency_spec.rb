@@ -14,8 +14,6 @@ RSpec.describe GoogleCalendar::EventProcessor, "under concurrency", :booking_clo
   let!(:stm124) { create(:sub_space, name: "STM 124", space: space) }
   let!(:creator) { create(:user, :regular_user, email: "creator@example.test") }
 
-  before { stub_const("BookingStatus::APPROVED", approved) }
-
   after do
     ids = SubSpaceBooking.where(google_booking_id: "race-evt").pluck(:id)
     SubSpaceBooking.where(id: ids).update_all(sub_space_booking_status_id: nil)
