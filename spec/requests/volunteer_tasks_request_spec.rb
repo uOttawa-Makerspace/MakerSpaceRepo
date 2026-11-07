@@ -281,30 +281,39 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   describe "DELETE /volunteer_tasks/:id" do
     before { vol_login!(staff) }
 
-    it "destroys the task, its required trainings, joins, requests, hours and CC money" do
+    it "destroys a task with nothing awarded, with its required trainings, joins, requests and pending hours" do
       task.create_certifications([create(:training).id])
       create(:volunteer_task_join, :active, volunteer_task: task)
       create(:volunteer_task_request, :approved, volunteer_task: task)
-      create(:volunteer_hour, :approved1, volunteer_task: task)
-      create(:cc_money, volunteer_task: task)
+      create(:volunteer_hour, :not_processed, volunteer_task: task)
       expect { delete volunteer_task_path(task) }.to change(VolunteerTask, :count).by(-1)
       expect(response).to redirect_to(volunteer_tasks_path)
       expect(flash[:notice]).to eq("Volunteer Task Deleted")
-      expect([RequireTraining, VolunteerTaskJoin, VolunteerTaskRequest, VolunteerHour, CcMoney].map { |m| m.where(volunteer_task_id: task.id).count })
-        .to eq([0, 0, 0, 0, 0])
+      expect([RequireTraining, VolunteerTaskJoin, VolunteerTaskRequest, VolunteerHour].map { |m| m.where(volunteer_task_id: task.id).count })
+        .to eq([0, 0, 0, 0])
     end
 
-    # deleting a task destroys approved hours and CC money already awarded, and the wallet is not recomputed
-    it "wipes awarded hours and leaves a stale wallet" do
+    # awarded hours and CC are kept: the delete is refused with a message and nothing changes
+    it "refuses to delete a task with awarded hours and CC, keeping every row and the wallet" do
       awardee = create(:user, :volunteer_with_volunteer_program)
+      task.create_certifications([create(:training).id])
+      create(:volunteer_task_join, :active, volunteer_task: task)
       create(:volunteer_hour, :approved1, user: awardee, volunteer_task: task)
       create(:cc_money, user: awardee, volunteer_task: task, cc: 40)
       awardee.update_wallet
+      counts = -> { [VolunteerTask, RequireTraining, VolunteerTaskJoin, VolunteerHour, CcMoney].map(&:count) }
+      expect { delete volunteer_task_path(task) }.not_to change(&counts)
+      expect(response).to redirect_to(volunteer_tasks_path)
+      expect(flash[:alert]).to eq("This task has approved hours or CC awarded and cannot be deleted.")
+      expect(awardee.get_total_hours).to eq(10)
+      expect(awardee.get_total_cc).to eq(40)
       expect(awardee.reload.wallet).to eq(40)
-      delete volunteer_task_path(task)
-      expect(awardee.get_total_hours).to eq(0)
-      expect(awardee.get_total_cc).to eq(0)
-      expect(awardee.reload.wallet).to eq(40)
+    end
+
+    it "refuses to delete a task with only a CC money row" do
+      create(:cc_money, volunteer_task: task)
+      expect { delete volunteer_task_path(task) }.not_to change(VolunteerTask, :count)
+      expect(flash[:alert]).to include("cannot be deleted")
     end
 
     it "404s for a missing task" do

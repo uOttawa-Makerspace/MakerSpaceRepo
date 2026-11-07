@@ -71,6 +71,33 @@ RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model d
     end
   end
 
+  describe "deletion once hours or CC were awarded" do
+    let(:task) { create(:volunteer_task) }
+
+    it "is allowed when nothing is awarded, even with pending and rejected hours" do
+      create(:volunteer_hour, :not_processed, volunteer_task: task)
+      create(:volunteer_hour, :not_approved1, volunteer_task: task)
+      create(:volunteer_task_join, :active, volunteer_task: task)
+      expect(task.awarded?).to be(false)
+      expect { task.destroy }.to change(VolunteerTask, :count).by(-1)
+    end
+
+    it "is refused while an approved hour row exists, and nothing is removed" do
+      create(:volunteer_hour, :approved1, volunteer_task: task)
+      create(:volunteer_task_join, :active, volunteer_task: task)
+      task.create_certifications([create(:training).id])
+      expect(task.awarded?).to be(true)
+      expect { expect(task.destroy).to be(false) }.not_to change { [VolunteerTask, VolunteerHour, VolunteerTaskJoin, RequireTraining].map(&:count) }
+      expect(task.errors[:base]).to eq(["This task has approved hours or CC awarded and cannot be deleted."])
+    end
+
+    it "is refused while a CC money row exists, even for 0 CC" do
+      create(:cc_money, volunteer_task: task, cc: 0)
+      expect(task.awarded?).to be(true)
+      expect { expect(task.destroy).to be(false) }.not_to change { [VolunteerTask, CcMoney].map(&:count) }
+    end
+  end
+
   it "is invalid with more than 5 photos" do
     task = create(:volunteer_task)
     6.times { Photo.new(volunteer_task: task).save(validate: false) }
@@ -84,14 +111,13 @@ RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model d
     expect(task).to be_valid
   end
 
-  it "destroy cascades to hours, joins, requests, CC money, photos and require_trainings" do
+  it "destroy cascades to hours, joins, requests, photos and require_trainings when nothing was awarded" do
     task = create(:volunteer_task, :with_certifications)
-    create(:volunteer_hour, :approved1, volunteer_task: task)
+    create(:volunteer_hour, :not_processed, volunteer_task: task)
     create(:volunteer_task_join, :active, volunteer_task: task)
     create(:volunteer_task_request, :approved, volunteer_task: task)
-    create(:cc_money, volunteer_task: task)
     Photo.new(volunteer_task: task).save(validate: false)
-    expect { task.destroy }.to change { [VolunteerHour, VolunteerTaskJoin, VolunteerTaskRequest, CcMoney, Photo].sum(&:count) }.by(-5)
+    expect { task.destroy }.to change { [VolunteerHour, VolunteerTaskJoin, VolunteerTaskRequest, Photo].sum(&:count) }.by(-4)
     expect(RequireTraining.where(volunteer_task_id: task.id).count).to eq(0)
   end
 end

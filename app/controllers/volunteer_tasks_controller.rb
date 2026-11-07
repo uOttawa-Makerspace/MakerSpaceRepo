@@ -149,11 +149,10 @@ class VolunteerTasksController < SessionsController
 
   def destroy
     volunteer_task = VolunteerTask.find(params[:id])
-    volunteer_task.delete_all_certifications
     if volunteer_task.destroy
       flash[:notice] = "Volunteer Task Deleted"
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = volunteer_task.errors.full_messages.to_sentence.presence || "Something went wrong"
     end
     redirect_to volunteer_tasks_path
   end
