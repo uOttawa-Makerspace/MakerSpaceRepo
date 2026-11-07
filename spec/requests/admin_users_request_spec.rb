@@ -8,7 +8,7 @@ require "rails_helper"
 # Chunk 9 "Identity".
 #
 # Every action sits behind AdminAreaController#ensure_admin, which redirects
-# any non-admin (guests included) to "/" with no flash; there are no
+# a guest to the login page and any other non-admin to "/" with no flash; there are no
 # per-action staff exceptions. Impersonation does not exist in this app.
 
 RSpec.describe "Admin::Users (HTTP contract)", type: :request do
@@ -27,6 +27,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   end
 
   def as(role)
+    @guest = role == :guest
     case role
     when :guest then nil
     when :regular then login!(regular)
@@ -39,8 +40,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   NON_ADMINS = %i[guest regular volunteer staff].freeze
 
   def expect_bounced
-    expect(response).to have_http_status(:found)
-    expect(response.location).to eq("http://www.example.com/")
+    expect_admin_area_bounce(guest: @guest)
     expect(flash[:alert]).to be_nil
   end
 

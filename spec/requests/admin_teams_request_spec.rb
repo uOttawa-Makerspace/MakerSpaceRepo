@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# Admin::TeamsController (teams + memberships). Non-admins bounce to "/".
+# Admin::TeamsController (teams + memberships). Guests go to the login page, other non-admins to "/".
 # Note: there is no destroy route/action for teams.
 
 RSpec.describe "Admin teams", type: :request do

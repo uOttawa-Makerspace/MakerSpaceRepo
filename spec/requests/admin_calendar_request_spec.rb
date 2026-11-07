@@ -254,15 +254,15 @@ RSpec.describe "Admin calendar contract", type: :request do
   # --------------------------------------------------------- chunk 11 additions
 
   describe "role matrix" do
-    it "bounces guests and staff everywhere (redirect to /)" do
+    it "sends guests to the login page and staff to / everywhere" do
       [nil, :staff].each do |role|
         log_in!(create(:user, role, booking_approval: true)) if role
         get admin_calendar_index_path
-        expect(response).to redirect_to("/")
+        expect_admin_area_bounce(guest: role.nil?)
         get unavailabilities_json_admin_calendar_index_path(id: space.id)
-        expect(response).to redirect_to("/")
+        expect_admin_area_bounce(guest: role.nil?)
         post update_color_admin_calendar_index_path, params: { user_id: staff.id, color: "#ff0000" }
-        expect(response).to redirect_to("/")
+        expect_admin_area_bounce(guest: role.nil?)
       end
     end
   end

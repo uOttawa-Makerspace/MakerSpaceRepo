@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class FaqsController < SessionsController
+  include AdminOnly
+
   before_action :no_container, only: :index
   before_action :ensure_admin, except: :index
 
@@ -74,9 +76,5 @@ class FaqsController < SessionsController
       :body_fr,
       :order
     )
-  end
-
-  def ensure_admin
-    redirect_to "/" and return unless current_user.admin?
   end
 end

@@ -67,7 +67,11 @@ module SpacesSpecHelpers
     calls.each do |name, call|
       before_state = state.call
       instance_exec(&call)
-      expect(response).to redirect_to(to), "#{name} as #{role}: #{response.status}"
+      if role == :guest
+        expect_admin_area_bounce(guest: true)
+      else
+        expect(response).to redirect_to(to), "#{name} as #{role}: #{response.status}"
+      end
       expect(flash[:alert]).to eq(flash_alert), name.to_s
       expect(state.call).to eq(before_state), name.to_s
     end
