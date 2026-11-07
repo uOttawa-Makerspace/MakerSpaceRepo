@@ -15,6 +15,38 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     @declined_status = create(:booking_status, :rejected)
   end
 
+  describe "#destroy_with_status!" do
+    it "destroys the booking and its status row" do
+      booking = create(:sub_space_booking)
+      status_id = booking.sub_space_booking_status_id
+
+      booking.destroy_with_status!
+
+      expect(described_class.exists?(booking.id)).to be(false)
+      expect(SubSpaceBookingStatus.exists?(status_id)).to be(false)
+    end
+
+    it "destroys a booking that has no status" do
+      booking = create(:sub_space_booking)
+      booking.update_column(:sub_space_booking_status_id, nil)
+      SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).delete_all
+
+      expect { described_class.find(booking.id).destroy_with_status! }
+        .to change(described_class, :count).by(-1)
+    end
+
+    it "leaves the booking and its status linked when the destroy fails" do
+      booking = create(:sub_space_booking)
+      status_id = booking.sub_space_booking_status_id
+      allow_any_instance_of(described_class).to receive(:destroy!).and_raise(ActiveRecord::RecordNotDestroyed)
+
+      expect { described_class.find(booking.id).destroy_with_status! }.to raise_error(ActiveRecord::RecordNotDestroyed)
+
+      expect(booking.reload.sub_space_booking_status_id).to eq(status_id)
+      expect(SubSpaceBookingStatus.find(status_id).sub_space_booking_id).to eq(booking.id)
+    end
+  end
+
   describe "validations" do
     it "needs name, description, start_time, end_time (i18n full messages)" do
       blank = described_class.new(sub_space: nil)

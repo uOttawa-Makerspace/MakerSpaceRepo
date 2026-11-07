@@ -50,6 +50,20 @@ class SubSpaceBooking < ApplicationRecord
                 start_time, end_time)
         }
 
+  # Destroys the booking together with its status, the one way a booking is
+  # removed. The booking and its status row reference each other, so both links
+  # are cleared before either row goes; a booking without a status is simply
+  # destroyed. All or nothing.
+  def destroy_with_status!
+    transaction do
+      status = sub_space_booking_status
+      status&.update_column(:sub_space_booking_id, nil)
+      update_column(:sub_space_booking_status_id, nil)
+      status&.destroy!
+      destroy!
+    end
+  end
+
   # FIXME: THIS DOESNT REALLY WORK FOR ICS TO MAKERROOM AND BREAKS THE GCAL INTEGRATION
   # before_save :upsert_google_booking,
   #   if: ->(sub_space_booking) {[10, 11].include?(sub_space_booking.sub_space_id)}

@@ -485,7 +485,7 @@ class SubSpaceBookingController < SessionsController
 
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     subspaceName = booking.sub_space.name
-    destroy_booking(booking)
+    booking.destroy_with_status!
     redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
                 notice: "Booking for #{subspaceName} deleted successfully."
   end
@@ -516,7 +516,7 @@ class SubSpaceBookingController < SessionsController
       ) # endless range
     # Is a transaction necessary here?
     ActiveRecord::Base.transaction do
-      remaining_bookings.each { |remaining| destroy_booking(remaining) }
+      remaining_bookings.each(&:destroy_with_status!)
     end
     redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
                 notice:
@@ -882,19 +882,6 @@ class SubSpaceBookingController < SessionsController
     
     # Group them by recurring_booking_id
     @recurring_bookings_map = all_recurring_bookings.group_by(&:recurring_booking_id)
-  end
-
-  def destroy_booking(booking)
-    # FIXME: This is a one to one relation, so we have to unset
-    # the relation before deleting to avoid foreign key issues.
-    # Status should be a column in SubSpaceBooking, not in a separate table
-    status = booking.sub_space_booking_status
-    status.sub_space_booking_id = nil
-    status.save
-    booking.sub_space_booking_status_id = nil
-    booking.save
-    status.destroy!
-    booking.destroy!
   end
 
   def current_bookings(booking_status_id, page_key: "pending_page")

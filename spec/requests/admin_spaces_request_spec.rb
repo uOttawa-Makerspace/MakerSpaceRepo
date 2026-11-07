@@ -208,14 +208,13 @@ RSpec.describe "Admin spaces", type: :request do
         expect(SubSpaceBookingStatus.exists?(status_id)).to be(false)
       end
 
-      # delete_sub_space raises (404) for a booking with a nil status id and deletes nothing.
-      it "delete_sub_space 404s and keeps the room when a booking has no status" do
+      it "delete_sub_space removes the room and a booking that has no status" do
         booking = create(:sub_space_booking, sub_space: room)
         booking.update_column(:sub_space_booking_status_id, nil)
         delete admin_space_delete_sub_space_path(space_id: space.id, id: room.id)
-        expect(response).to have_http_status(:not_found)
-        expect(SubSpace.exists?(room.id)).to be(true)
-        expect(SubSpaceBooking.exists?(booking.id)).to be(true)
+        expect(flash[:notice]).to eq("Sub Space deleted!")
+        expect(SubSpace.exists?(room.id)).to be(false)
+        expect(SubSpaceBooking.exists?(booking.id)).to be(false)
       end
     end
 
