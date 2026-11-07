@@ -155,11 +155,4 @@ class Admin::CalendarController < AdminAreaController
       render json: { status: "error", error: "An error occurred, try again later." }, status: :unprocessable_entity
     end
   end
-
-
-  private
-
-  def set_default_space
-    @space_id = current_user.space_id || Space.first.id
-  end
 end
