@@ -226,15 +226,20 @@ RSpec.describe "Admin spaces", type: :request do
         expect(space.reload.name).to eq("Gamma")
       end
 
-      # update_name with an invalid (blank/duplicate) name renders nothing: 204, no flash.
-      it "update_name answers 204 with no flash on a blank or duplicate name" do
+      it "update_name redirects back with the validation error on a blank or duplicate name" do
         create(:space, name: "Taken")
-        [ "", "Taken" ].each do |bad|
+        { "" => "A name is required for the space", "Taken" => "A space with that name already exists" }.each do |bad, message|
           post admin_space_update_name_path(space_id: space.id), params: { name: bad }
-          expect(response).to have_http_status(:no_content)
-          expect(flash.to_h).to eq({})
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq(message)
           expect(space.reload.name).to eq("Alpha")
         end
+      end
+
+      it "update_name gives the validation error in French" do
+        create(:space, name: "Taken")
+        post admin_space_update_name_path(space_id: space.id), params: { name: "Taken", locale: "fr" }
+        expect(flash[:alert]).to eq("Un espace portant ce nom existe déjà")
       end
 
       it "update_max_capacity stores a positive number, and 0 or blank as no limit" do

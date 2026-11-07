@@ -12,6 +12,9 @@ en:
     skills: "Skills"
     questions: "Questions"
     spaces: "Spaces"
+    space_name:
+      blank: "A name is required for the space"
+      taken: "A space with that name already exists"
     contact: "Contact"
     staff_management: "Staff Management"
     roles: "Roles"
@@ -55,6 +58,9 @@ fr:
     skills: "Compétences"
     questions: "Questions"
     spaces: "Espaces"
+    space_name:
+      blank: "Un nom est requis pour l'espace"
+      taken: "Un espace portant ce nom existe déjà"
     contact: "Contact"
     staff_management: "Gestion du Personnel"
     roles: "Rôles"

@@ -113,10 +113,12 @@ class Admin::SpacesController < AdminAreaController
 
   def update_name
     @space = Space.find(params[:space_id])
-    return unless @space.update(name: params[:name])
+    if @space.update(name: params[:name])
       flash[:notice] = "Space Name updated !"
-      redirect_back(fallback_location: root_path)
-    
+    else
+      flash[:alert] = space_name_error
+    end
+    redirect_back(fallback_location: root_path)
   end
 
   def update_max_capacity
