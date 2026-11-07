@@ -5,7 +5,7 @@ FactoryBot.define do
     # end is a reserved word in Ruby, hence add_attribute
     add_attribute(:end) { Time.zone.now.beginning_of_day + 10.hours }
 
-    ordering { 0 }
+    sequence(:ordering) { |n| n }
 
     design_day
 
