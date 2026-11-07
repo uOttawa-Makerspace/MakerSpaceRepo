@@ -30,8 +30,7 @@ class RestoreMissingJobOrderServicesAsTasks < ActiveRecord::Migration[8.1]
   RECORD = "job_task_restorations"
 
   def up
-    create_table RECORD, id: false, if_not_exists: true do |t|
-      t.bigint :job_task_id, null: false, primary_key: true
+    create_table RECORD, primary_key: :job_task_id, id: :bigint, default: nil, if_not_exists: true do |t|
       t.bigint :job_task_quote_id
       t.jsonb :task_row, null: false
       t.jsonb :quote_row
