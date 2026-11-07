@@ -969,6 +969,23 @@ class User < ApplicationRecord
     lab_sessions.last&.space&.name || 'no sign in yet'
   end
 
+  # The user's newest session in any space, from the loaded sessions so a listing of
+  # many users preloads them once.
+  def latest_lab_session
+    lab_sessions.max_by(&:id)
+  end
+
+  # The user's newest session in one space.
+  def latest_lab_session_in(space)
+    lab_sessions.where(space: space).newest_first.first
+  end
+
+  # The visit before the newest one; nil for a first visit. Reads the loaded sessions so
+  # a listing of many users preloads them once.
+  def previous_lab_session
+    lab_sessions.sort_by(&:id).second_to_last
+  end
+
   # ============================================
   # Instance Methods - Certifications & Training
   # ============================================
