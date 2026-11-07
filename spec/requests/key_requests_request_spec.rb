@@ -184,6 +184,22 @@ RSpec.describe "Key requests", type: :request do
       expect(kr.reload.status).to eq("waiting_for_approval")
     end
 
+    it "re-opening and submitting the last step leaves an approved request approved" do
+      kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true, status: :approved))
+      patch key_request_steps_path(key_request_id: kr.id, step: 6)
+      expect(response).to redirect_to(key_request_path(kr.id))
+      expect(flash[:notice]).to eq("This key request is already approved; its status was not changed.")
+      expect(kr.reload.status).to eq("approved")
+    end
+
+    it "submitting the last step again leaves a waiting request waiting" do
+      kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true, status: :waiting_for_approval))
+      patch key_request_steps_path(key_request_id: kr.id, step: 6)
+      expect(response).to redirect_to(key_request_path(kr.id))
+      expect(flash[:notice]).to eq("This key request is already submitted and waiting for approval; its status was not changed.")
+      expect(kr.reload.status).to eq("waiting_for_approval")
+    end
+
     # :status is not permitted on steps, so the requester cannot self-approve
     it "ignores status=approved from the owner (no self-approval)" do
       kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true))

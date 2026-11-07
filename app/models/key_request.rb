@@ -6,6 +6,12 @@ class KeyRequest < ApplicationRecord
   enum :user_status, %i[student professor staff], prefix: true
   enum :status, %i[in_progress waiting_for_approval approved], prefix: true
 
+  # Only a request still being filled in can be submitted. A request already
+  # waiting or approved is left as it is.
+  def submit
+    status_in_progress? && update(status: :waiting_for_approval)
+  end
+
   NUMBER_OF_QUESTIONS = 14
   QUESTIONS = [
     "The university of Ottawa's Emergency number is the following:",

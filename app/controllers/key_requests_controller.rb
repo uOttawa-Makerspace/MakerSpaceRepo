@@ -107,13 +107,21 @@ class KeyRequestsController < SessionsController
   end
 
   def submit_key_request
-    if @key_request.update(status: :waiting_for_approval)
+    return redirect_already_submitted unless @key_request.status_in_progress?
+
+    if @key_request.submit
       redirect_to key_request_path(@key_request.id),
                   notice:
                     "You have successfully submitted the key request form, please wait a few days for an admin to review your form."
     else
       redirect_to_first_step "There was an error when submitting your key request form. Please make sure you fill in all the required fields."
     end
+  end
+
+  def redirect_already_submitted
+    state = @key_request.status_approved? ? "approved" : "submitted and waiting for approval"
+    redirect_to key_request_path(@key_request.id),
+                notice: "This key request is already #{state}; its status was not changed."
   end
 
   def redirect_to_first_step(alert)
