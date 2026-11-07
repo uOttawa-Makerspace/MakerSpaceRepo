@@ -365,6 +365,8 @@ fr:
       please_upload_valid_file_type: "Vérifiez que vous avez téléversé un type de fichier valide."
       options_have_not_been_saved: "Les options n'ont pas été enregistrées avec succès."
       job_order_not_found: "La commande n'a pas été trouvée"
+      assign_staff_not_permitted: "Seul un administrateur peut assigner un autre membre du personnel à une commande."
+      assign_staff_failed: "Le membre du personnel n'a pas pu être assigné à cette commande."
       error_while_saving_step: "Une erreur s'est produite lors de l'enregistrement de l'étape de commande.  "
       job_order_submitted_for_approval: "Votre commande a été soumise à l'approbation du personnel !"
       job_order_updated: "Votre commande a été mise a jour !"

@@ -338,19 +338,12 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
 
   def assign_staff
     @job_order = JobOrder.find_by(id: params[:job_order_id], is_deleted: false)
-    if @job_order.present? && (@user.admin? || @user.id == params[:staff_id].to_i)
-      @job_order.assigned_staff_id = params[:staff_id]
-      if @job_order.save
-        flash[:notice] = "#{@job_order.assigned_staff&.name || "No staff"} has been assigned to this job order."
-
-        if @job_order.assigned_staff.present? && @user.admin? && @job_order.assigned_staff != @user
-          JobOrderMailer.staff_assigned(@job_order.id, @job_order.assigned_staff.id).deliver_later
-        end
-      else
-        flash[:alert] = "#{@job_order.assigned_staff.name} could not be assigned to this job order."
-      end
+    if @job_order.nil?
+      flash[:alert] = t("job_orders.alerts.job_order_not_found")
+    elsif !(@user.admin? || @user.id == params[:staff_id].to_i)
+      flash[:alert] = t("job_orders.alerts.assign_staff_not_permitted")
     else
-      flash[:alert] = "#{@job_order.assigned_staff.name} could not be assigned to this job order."
+      save_staff_assignment
     end
     redirect_back(fallback_location: job_orders_path)
   end
@@ -417,6 +410,19 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   def set_entry_job_types
     @ready_to_make_type = JobType.ready_to_make
     @design_services_type = JobType.design_services
+  end
+
+  def save_staff_assignment
+    @job_order.assigned_staff_id = params[:staff_id]
+    if @job_order.save
+      flash[:notice] = "#{@job_order.assigned_staff&.name || "No staff"} has been assigned to this job order."
+
+      if @job_order.assigned_staff.present? && @user.admin? && @job_order.assigned_staff != @user
+        JobOrderMailer.staff_assigned(@job_order.id, @job_order.assigned_staff.id).deliver_later
+      end
+    else
+      flash[:alert] = t("job_orders.alerts.assign_staff_failed")
+    end
   end
 
   def set_job_order

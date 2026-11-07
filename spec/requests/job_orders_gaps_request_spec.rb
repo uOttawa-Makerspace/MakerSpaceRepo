@@ -444,13 +444,18 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response).to redirect_to(admin_job_orders_url)
     end
 
-    # the else branch dereferences the (nil) assigned staff
-    it "500s (NoMethodError) when staff assigns someone else, and assigns nothing" do
+    it "refuses when staff assigns someone else, with a message, and assigns nothing" do
       session_login!(staff)
       patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_permitted"))
       expect(order.reload.assigned_staff).to be_nil
+    end
+
+    it "lets staff assign themselves" do
+      session_login!(staff)
+      patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      expect(order.reload.assigned_staff).to eq(staff)
     end
 
     it "sends the EXPEDITED subject and priority headers to the assigned staff member" do

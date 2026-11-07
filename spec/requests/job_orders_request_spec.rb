@@ -862,24 +862,39 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     end
 
     # the else-flash dereferences @job_order.assigned_staff.name
-    # with no assigned staff → NoMethodError → 500 instead of a friendly flash.
-    it "renders 500 (NoMethodError) when a non-admin staff member tries to assign someone else" do
+    it "refuses with a message when a non-admin staff member tries to assign someone else" do
       order = order_with_task!(owner: owner)
       http_login!(staff)
       patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_permitted"))
       expect(order.reload.assigned_staff).to be_nil
     end
 
-    # an unknown job order takes the same else branch,
-    # @job_order is nil. (The route's key is job_order_id.)
-    it "renders 500 (NoMethodError) for an unknown job order id" do
+    # The route's key is job_order_id.
+    it "redirects with a not-found message for an unknown job order id" do
       http_login!(staff)
       patch job_order_assign_staff_path(job_order_id: 999_999_999),
             params: { staff_id: staff.id }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+    end
+
+    it "refuses a soft-deleted order with a not-found message" do
+      order = order_with_task!(owner: owner)
+      order.update!(is_deleted: true)
+      http_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+      expect(order.reload.assigned_staff).to be_nil
+    end
+
+    it "says the assignment failed when the order cannot be saved" do
+      order = order_with_task!(owner: owner)
+      allow_any_instance_of(JobOrder).to receive(:save).and_return(false) # rubocop:disable RSpec/AnyInstance
+      http_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_failed"))
     end
   end
 
