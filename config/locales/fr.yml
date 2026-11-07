@@ -475,6 +475,7 @@ fr:
       submit_for_approval: "Soumettre pour approbation"
       submit_for_approval_confirm: "Voulez-vous vraiment soumettre cette commande à l'approbation du personnel ?"
       job_order: "Commande"
+      no_job_type: "Aucun type de tâche"
       client_information: "Informations du client"
       name: "Nom"
       email: "Courriel"

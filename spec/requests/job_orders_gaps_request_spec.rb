@@ -309,15 +309,25 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(order.chat_messages.first.reload.is_read).to be(false)
     end
 
-    # staff see the quote modal on show, which calls
-    # `task.job_type.name` for every task; a task without a job type crashes it.
-    it "500s (NoMethodError) for staff when a task has no job type" do
+    # The quote modal sits on the order page for staff; a task without a job type
+    # shows neutral text instead of a type name.
+    it "renders the order page and quote modal for staff and admin when a task has no job type" do
+      order = order_with_task!(status_key: :staff_approval)
+      [staff, admin].each do |viewer|
+        session_login!(viewer)
+        get job_order_path(order)
+        expect(response).to have_http_status(:ok)
+        modal = Capybara.string(response.body).find("#quote-modal-rendered")
+        expect(modal.text.squish).to include("Task #1 No job type")
+      end
+    end
+
+    it "words the missing job type in French for a French-speaking viewer" do
       order = order_with_task!(status_key: :staff_approval)
       session_login!(staff)
-      get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("undefined method 'name' for nil")
-      expect(response.body).to include("app/views/job_orders/_quote_modal.html.erb")
+      get job_order_path(order, locale: "fr")
+      expect(response).to have_http_status(:ok)
+      expect(Capybara.string(response.body).find("#quote-modal-rendered").text.squish).to include("Task #1 Aucun type de tâche")
     end
 
     it "renders the order page when the processed JobOrderMessage row is missing" do

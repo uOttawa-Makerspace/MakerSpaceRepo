@@ -23,7 +23,7 @@
 <td>
   <% jo.job_tasks.each_with_index do |task, i| %>
     <%= " ," if i != 0 %>
-    <%= task.job_type&.name || "Unselected" %>
+    <%= task.job_type&.name || t("job_orders.order.no_job_type") %>
   <% end %>
 </td>
 <td><%= jo.latest_status.job_status.name %></td>

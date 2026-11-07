@@ -397,6 +397,7 @@ en:
       submit_for_approval: "Submit for Approval"
       submit_for_approval_confirm: "Are you sure you want to submit this job order for staff approval?"
       job_order: "Job Order"
+      no_job_type: "No job type"
       client_information: "Client Information"
       name: "Name"
       email: "Email"
