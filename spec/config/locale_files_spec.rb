@@ -32,8 +32,9 @@ RSpec.describe "Locale files" do
   def translated_keys(locale)
     definitions.fetch(locale).filter_map do |key, by_file|
       next if library_namespaces.include?(key.split(".").first)
-      # Rails' own defaults, translated in defaults-<locale>.yml, have no counterpart file in English.
-      next if by_file.keys.all? { |file| file.start_with?("defaults-") }
+      # Rails' own defaults (defaults-<locale>.yml) and French attribute names (attributes-fr.yml; English
+      # humanizes the attribute) have no counterpart file in English.
+      next if by_file.keys.all? { |file| file.start_with?("defaults-", "attributes-") }
 
       key
     end
