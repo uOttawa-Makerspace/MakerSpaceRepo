@@ -35,6 +35,22 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
         log_in!(user)
         get lockers_path
         expect(response).to redirect_to("/")
+        expect(flash[:alert]).to be_nil
+      end
+    end
+
+    it "redirects non-admins on every lockers action, with no flash, and changes nothing" do
+      locker = create(:locker)
+      size = create(:locker_size)
+      [regular, staff].each do |user|
+        log_in!(user)
+        expect { post lockers_path, params: { locker: { specifier: "Z-1", locker_size_id: size.id } } }
+          .not_to change(Locker, :count)
+        expect(response).to redirect_to("/")
+        expect(flash[:alert]).to be_nil
+        expect { delete locker_path(locker) }.not_to change(Locker, :count)
+        expect(response).to redirect_to("/")
+        expect(flash[:alert]).to be_nil
       end
     end
 

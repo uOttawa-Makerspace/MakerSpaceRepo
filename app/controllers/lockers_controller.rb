@@ -3,13 +3,6 @@ class LockersController < AdminAreaController
   prepend_before_action :signed_in
   before_action :locker_queries, only: %i[show create create_multiple update]
 
-  before_action do
-    unless current_user.staff?
-      flash[:alert] = 'You cannot access this area'
-      redirect_back(fallback_location: root_path)
-    end
-  end
-
   helper_method :rental_state_icon
 
   def index
