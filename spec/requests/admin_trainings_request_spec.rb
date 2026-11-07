@@ -173,6 +173,15 @@ RSpec.describe "Admin training area", type: :request do
           expect(training.reload).to have_attributes(list_of_skills_en: "", list_of_skills_fr: "")
         end
 
+        it "treats a null skill list like an absent one" do
+          training.update!(list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          patch admin_training_path(training),
+                params: { training: { name_en: "Renamed EN", list_of_skills_en: nil, list_of_skills_fr: nil } }.to_json,
+                headers: { "CONTENT_TYPE" => "application/json" }
+          expect(response).to redirect_to(admin_trainings_path)
+          expect(training.reload).to have_attributes(name_en: "Renamed EN", list_of_skills_en: "A,B", list_of_skills_fr: "C")
+        end
+
         it "answers 400 and changes nothing when a skill list is not an array or training is not a hash" do
           patch admin_training_path(training), params: training_params(name_en: "Renamed EN", list_of_skills_fr: "x")
           expect(response).to have_http_status(:bad_request)

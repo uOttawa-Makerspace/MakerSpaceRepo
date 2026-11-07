@@ -84,9 +84,9 @@ class Admin::TrainingsController < AdminAreaController
   end
 
   # Stored as one comma separated string, without blanks or padding. A list
-  # that is not in the request is left as it is.
+  # that is absent or null in the request is left as it is.
   def skill_lists
-    SKILL_LIST_KEYS.select { |key| params[:training].key?(key) }.to_h do |key|
+    SKILL_LIST_KEYS.select { |key| !params[:training][key].nil? }.to_h do |key|
       [key, params[:training][key].map(&:strip).compact_blank.join(",")]
     end
   end
