@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1711,8 +1711,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
     t.integer "user_id"
     t.string "user_type", default: "Volunteer"
     t.integer "volunteer_task_id"
+    t.string "state", default: "joined", null: false
+    t.datetime "state_changed_at"
+    t.bigint "state_changed_by_id"
+    t.index ["state_changed_by_id"], name: "index_volunteer_task_joins_on_state_changed_by_id"
     t.index ["user_id"], name: "index_volunteer_task_joins_on_user_id"
+    t.index ["volunteer_task_id", "state"], name: "index_volunteer_task_joins_on_volunteer_task_id_and_state"
     t.index ["volunteer_task_id"], name: "index_volunteer_task_joins_on_volunteer_task_id"
+    t.check_constraint "state::text = ANY (ARRAY['joined'::character varying, 'completed'::character varying, 'left'::character varying, 'removed'::character varying]::text[])", name: "volunteer_task_joins_state_check"
   end
 
   create_table "volunteer_task_requests", id: :serial, force: :cascade do |t|
@@ -1962,6 +1968,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_200000) do
   add_foreign_key "volunteer_hours", "users"
   add_foreign_key "volunteer_hours", "volunteer_tasks"
   add_foreign_key "volunteer_task_joins", "users"
+  add_foreign_key "volunteer_task_joins", "users", column: "state_changed_by_id", on_delete: :nullify
   add_foreign_key "volunteer_task_joins", "volunteer_tasks"
   add_foreign_key "volunteer_task_requests", "users"
   add_foreign_key "volunteer_task_requests", "volunteer_tasks"
