@@ -1,9 +1,9 @@
 FactoryBot.define do
   factory :key_request do
-    student_number { Faker::Number.number(digits: 9) }
-    phone_number { Faker::Number.number(digits: 10) }
+    student_number { "300000001" }
+    phone_number { "6135550100" }
     emergency_contact { Faker::Name.name }
-    emergency_contact_phone_number { Faker::Number.number(digits: 10) }
+    emergency_contact_phone_number { "6135550100" }
     read_lab_rules { true }
     read_policies { true }
     read_agreement { true }

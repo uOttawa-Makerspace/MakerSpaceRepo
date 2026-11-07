@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :key_transaction do
-    deposit_amount { Faker::Number.number(digits: 2) }
+    deposit_amount { 20 }
 
     trait :returned do
       return_date { Date.today }
