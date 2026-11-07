@@ -64,6 +64,25 @@ RSpec.describe AddStateToVolunteerTaskJoins do
     expect(connection.select_values("SELECT state_changed_by_id FROM volunteer_task_joins").compact).to be_empty
   end
 
+  it "uses any approved request of a pair with several requests, and handles a join without a user" do
+    mixed = join_for(volunteer, task, active: false)
+    request_for(volunteer, task, false)
+    request_for(volunteer, task, nil)
+    request_for(volunteer, task, true)
+    rejected_only = join_for(volunteer, other_task, active: false)
+    request_for(volunteer, other_task, false)
+    request_for(volunteer, other_task, nil)
+    no_user = connection.select_value(<<~SQL.squish).to_i
+      INSERT INTO volunteer_task_joins (user_id, volunteer_task_id, active, created_at, updated_at)
+      VALUES (NULL, #{task.id}, FALSE, NOW(), NOW()) RETURNING id
+    SQL
+    migrate
+
+    expect(row(mixed)["state"]).to eq("completed")
+    expect(row(rejected_only)["state"]).to eq("removed")
+    expect(row(no_user)["state"]).to eq("removed")
+  end
+
   it "makes the database refuse a state outside the four values" do
     migrate
     id = join_for(volunteer, task, active: true)
@@ -97,19 +116,26 @@ RSpec.describe AddStateToVolunteerTaskJoins do
     expect(column?(:state)).to be(true)
   end
 
-  it "refuses to roll back once a join has an actor or a state that disagrees with active" do
+  it "refuses to roll back once a join has a recorded actor" do
     actor = create(:user, :admin)
-    id = join_for(volunteer, task, active: true)
+    id = join_for(volunteer, task, active: false)
     migrate
     connection.execute("UPDATE volunteer_task_joins SET state = 'left', state_changed_by_id = #{actor.id} WHERE id = #{id}")
 
-    expect { migrate(:down) }.to raise_error(RuntimeError, /1 volunteer_task_joins row\(s\) have a recorded actor/)
+    expect { migrate(:down) }.to raise_error(RuntimeError, /1 volunteer_task_joins row\(s\) have a recorded state_changed_by_id/)
     expect(column?(:state)).to be(true)
 
     connection.execute("UPDATE volunteer_task_joins SET state_changed_by_id = NULL WHERE id = #{id}")
-    expect { migrate(:down) }.to raise_error(RuntimeError, /disagrees with active/)
-
-    connection.execute("UPDATE volunteer_task_joins SET active = FALSE WHERE id = #{id}")
     expect { migrate(:down) }.not_to raise_error
+  end
+
+  it "does not block a roll back for a join closed after the migration (active false, state joined)" do
+    id = join_for(volunteer, task, active: true)
+    migrate
+    connection.execute("UPDATE volunteer_task_joins SET active = FALSE WHERE id = #{id}")
+
+    expect { migrate(:down) }.not_to raise_error
+    expect(column?(:state)).to be(false)
+    expect(connection.select_value("SELECT active FROM volunteer_task_joins WHERE id = #{id}")).to be(false)
   end
 end

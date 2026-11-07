@@ -1716,8 +1716,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_07_210000) do
     t.bigint "state_changed_by_id"
     t.index ["state_changed_by_id"], name: "index_volunteer_task_joins_on_state_changed_by_id"
     t.index ["user_id"], name: "index_volunteer_task_joins_on_user_id"
-    t.index ["volunteer_task_id", "state"], name: "index_volunteer_task_joins_on_volunteer_task_id_and_state"
     t.index ["volunteer_task_id"], name: "index_volunteer_task_joins_on_volunteer_task_id"
+    t.index ["volunteer_task_id", "state"], name: "index_volunteer_task_joins_on_volunteer_task_id_and_state"
     t.check_constraint "state::text = ANY (ARRAY['joined'::character varying, 'completed'::character varying, 'left'::character varying, 'removed'::character varying]::text[])", name: "volunteer_task_joins_state_check"
   end
 
