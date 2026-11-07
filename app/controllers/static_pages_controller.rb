@@ -21,7 +21,7 @@ class StaticPagesController < SessionsController
       @volunteer_program_your_tasks =
         user
           .volunteer_task_joins
-          .active
+          .joined
           .joins(:volunteer_task)
           .where(volunteer_tasks: { status: 'open' })
           .order(updated_at: :desc)

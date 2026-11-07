@@ -330,7 +330,7 @@ RSpec.describe "Static pages", type: :request do
       open_task = create(:volunteer_task, space: space, title: "Sweep the workshop floor")
       closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "closed")
       [open_task, closed_task].each do |task|
-        create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer")
+        create(:volunteer_task_join, :active, volunteer_task: task, user: user, user_type: "Volunteer")
       end
 
       get root_path
@@ -344,7 +344,7 @@ RSpec.describe "Static pages", type: :request do
       user = sign_in_as(:regular)
       user.programs.create!(program_type: Program::VOLUNTEER)
       task = create(:volunteer_task, space: nil, title: "Remote paperwork")
-      create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer")
+      create(:volunteer_task_join, :active, volunteer_task: task, user: user, user_type: "Volunteer")
 
       get root_path
 
@@ -375,11 +375,11 @@ RSpec.describe "Static pages", type: :request do
       space = create(:space)
       6.times do |i|
         task = create(:volunteer_task, space: space, title: "Chore number #{i}")
-        create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer",
+        create(:volunteer_task_join, :active, volunteer_task: task, user: user, user_type: "Volunteer",
                                      updated_at: i.hours.ago)
       end
       dropped = create(:volunteer_task, space: space, title: "Dropped chore")
-      create(:volunteer_task_join, volunteer_task: dropped, user: user, active: false, user_type: "Volunteer")
+      create(:volunteer_task_join, :not_active, volunteer_task: dropped, user: user, user_type: "Volunteer")
 
       get root_path
 

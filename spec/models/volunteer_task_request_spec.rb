@@ -96,14 +96,14 @@ RSpec.describe VolunteerTaskRequest, "status, join lookup and search", type: :mo
   describe "#volunteer_task_join" do
     let(:req) { create(:volunteer_task_request) }
 
-    it "returns the LAST active join of the requester on the task" do
-      create(:volunteer_task_join, volunteer_task: req.volunteer_task, user: req.user, active: true)
-      newest = create(:volunteer_task_join, volunteer_task: req.volunteer_task, user: req.user, active: true)
-      create(:volunteer_task_join, volunteer_task: req.volunteer_task, user: req.user, active: false)
+    it "returns the LAST joined join of the requester on the task" do
+      create(:volunteer_task_join, :active, volunteer_task: req.volunteer_task, user: req.user)
+      newest = create(:volunteer_task_join, :active, volunteer_task: req.volunteer_task, user: req.user)
+      create(:volunteer_task_join, :completed, volunteer_task: req.volunteer_task, user: req.user)
       expect(req.volunteer_task_join).to eq(newest)
     end
 
-    it "is nil without an active join, or without a task" do
+    it "is nil without a joined join, or without a task" do
       expect(req.volunteer_task_join).to be_nil
       expect(VolunteerTaskRequest.new.volunteer_task_join).to be_nil
     end

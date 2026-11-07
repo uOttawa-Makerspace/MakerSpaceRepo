@@ -9,9 +9,9 @@
   <div class="row g-3 g-md-4 task-cards-container">
     <% volunteer_tasks.each do |vt| %>
       <%
-        active_joins = vt.volunteer_task_joins.select(&:active)
-        assigned_volunteers = active_joins.select { |j| j.user_type == "Volunteer" }
-        responsible_staff = active_joins.select { |j| %w[Staff Admin].include?(j.user_type) }
+        joined_joins = vt.volunteer_task_joins.select(&:joined?)
+        assigned_volunteers = joined_joins.select { |j| j.user_type == "Volunteer" }
+        responsible_staff = joined_joins.select { |j| %w[Staff Admin].include?(j.user_type) }
         cert_names = vt.require_trainings.map { |r| r.training&.localized_name }.compact.join(', ')
         searchable_text = "#{vt.title} #{vt.category} #{vt.space.try(:name)} #{vt.description} #{cert_names}".downcase
       %>

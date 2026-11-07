@@ -9,7 +9,7 @@ class VolunteerTaskJoinsController < SessionsController
   def create
     volunteer_join = VolunteerTaskJoin.new(volunteer_task_joins_params)
     volunteer_task = volunteer_join.volunteer_task
-    if volunteer_task.volunteer_task_joins.active.user_type_volunteer.count <
+    if volunteer_task.volunteer_task_joins.joined.user_type_volunteer.count <
          volunteer_task.joins || current_user.staff?
       volunteer_join.user_id =
         if current_user.staff?
@@ -25,7 +25,7 @@ class VolunteerTaskJoinsController < SessionsController
         staff_join =
           volunteer_task
             .volunteer_task_joins
-            .active
+            .joined
             .where(
               "volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?",
               "Staff",
@@ -61,7 +61,7 @@ class VolunteerTaskJoinsController < SessionsController
       return redirect_back(fallback_location: root_path)
     end
     volunteer_task = VolunteerTask.find(volunteer_task_id)
-    if volunteer_task.remove_user(user_id)
+    if volunteer_task.remove_user(user_id, by: current_user)
       flash[:notice] = "User was removed from the Volunteer Task"
     else
       flash[:alert] = volunteer_task.errors.full_messages.to_sentence

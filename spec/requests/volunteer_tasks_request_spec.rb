@@ -282,8 +282,8 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       new_volunteer = create(:user, :volunteer_with_volunteer_program)
       patch volunteer_task_path(task),
             params: task_params.merge(volunteer_id: [new_volunteer.id], remove_volunteer_id: [gone.user_id])
-      expect(task.volunteer_task_joins.active.pluck(:user_id)).to contain_exactly(keep.user_id, new_volunteer.id)
-      expect(gone.reload.active).to be(false)
+      expect(task.volunteer_task_joins.joined.pluck(:user_id)).to contain_exactly(keep.user_id, new_volunteer.id)
+      expect(gone.reload).to have_attributes(active: false, state: "removed", state_changed_by_id: staff.id)
     end
 
     describe "a refused edit changes nothing" do
@@ -347,8 +347,8 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
         patch volunteer_task_path(task), params: task_params.merge(remove_volunteer_id: [volunteer.id])
       end.not_to change(VolunteerTaskJoin, :count)
       expect(flash[:notice]).to eq("Volunteer task updated")
-      expect(current.reload.active).to be(false)
-      expect(other.reload.active).to be(true)
+      expect(current.reload).to have_attributes(active: false, state: "removed", state_changed_by_id: staff.id)
+      expect(other.reload.state).to eq("joined")
       expect(history.reload.attributes.values_at("active", "updated_at")).to eq([false, old_stamp])
     end
 
@@ -369,6 +369,7 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       patch volunteer_task_path(task), params: task_params.merge(remove_staff_id: [staff.id])
       expect(task.reload.user_id).to eq(other.id)
       expect([old, mine].map { |j| j.reload.active }).to eq([false, false])
+      expect(mine.state).to eq("left")
       expect(task.volunteer_task_joins.count).to eq(4)
     end
 

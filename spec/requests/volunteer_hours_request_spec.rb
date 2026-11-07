@@ -155,7 +155,10 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   describe "POST /volunteer_hours (create)" do
-    before { vol_login!(owner) }
+    before do
+      create(:volunteer_task_join, :active, user: owner, volunteer_task: task)
+      vol_login!(owner)
+    end
 
     it "persists an unprocessed hour for the current user and redirects with a notice" do
       expect { post volunteer_hours_path, params: hour_params }.to change(VolunteerHour, :count).by(1)
@@ -176,7 +179,9 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
     end
 
     it "keeps approval for a staff member creating an hour" do
-      vol_login!(create(:user, :staff))
+      staff = create(:user, :staff)
+      create(:volunteer_task_join, :active, user: staff, volunteer_task: task)
+      vol_login!(staff)
       post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(approval: true) }
       expect(VolunteerHour.last.approval).to be(true)
     end
@@ -232,9 +237,38 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(flash[:alert]).to include("Volunteer task")
     end
 
-    it "does not require the user to have joined the task" do
-      expect { post volunteer_hours_path, params: hour_params }.to change(VolunteerHour, :count).by(1)
-      expect(owner.volunteer_task_joins).to be_empty
+    it "refuses a task the user never joined, stores nothing and says why" do
+      other = create(:volunteer_task)
+      expect do
+        post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(volunteer_task_id: other.id) }
+      end.not_to change(VolunteerHour, :count)
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to eq("Volunteer task is not a task this volunteer is on or has completed")
+    end
+
+    it "refuses a task the user left or was removed from" do
+      %i[left not_active].each do |trait|
+        ended = create(:volunteer_task)
+        create(:volunteer_task_join, trait, user: owner, volunteer_task: ended)
+        expect do
+          post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(volunteer_task_id: ended.id) }
+        end.not_to change(VolunteerHour, :count)
+        expect(flash[:alert]).to include("Volunteer task")
+      end
+    end
+
+    it "accepts a task the user has completed" do
+      done = create(:volunteer_task)
+      create(:volunteer_task_join, :completed, user: owner, volunteer_task: done)
+      expect do
+        post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(volunteer_task_id: done.id) }
+      end.to change(VolunteerHour, :count).by(1)
+    end
+
+    it "refuses a task for a staff member who has not joined it, even though staff may edit others' hours" do
+      vol_login!(create(:user, :staff))
+      expect { post volunteer_hours_path, params: hour_params }.not_to change(VolunteerHour, :count)
+      expect(flash[:alert]).to include("Volunteer task")
     end
 
     it "ignores a user_id param (hours always belong to the submitter)" do
@@ -269,6 +303,25 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "lists the owner's joined and completed tasks and the hour's own task, not other tasks, even for staff" do
+      on = create(:volunteer_task, title: "owner on task")
+      create(:volunteer_task_join, :active, user: owner, volunteer_task: on)
+      done = create(:volunteer_task, title: "owner completed task")
+      create(:volunteer_task_join, :completed, user: owner, volunteer_task: done)
+      left = create(:volunteer_task, title: "owner left task")
+      create(:volunteer_task_join, :left, user: owner, volunteer_task: left)
+      gone = create(:volunteer_task, title: "owner removed task")
+      create(:volunteer_task_join, :not_active, user: owner, volunteer_task: gone)
+      create(:volunteer_task, title: "unrelated task")
+      hour = make_hour
+      [owner, create(:user, :staff)].each do |viewer|
+        vol_login!(viewer)
+        get edit_volunteer_hour_path(hour)
+        options = Capybara.string(response.body).all("select#volunteer_hour_volunteer_task_id option").map(&:text)
+        expect(options).to contain_exactly("owner on task", "owner completed task", "booth")
+      end
+    end
+
     it "renders for staff on someone else's hour" do
       hour = make_hour
       vol_login!(create(:user, :staff))
@@ -276,14 +329,6 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "offers every task in the edit form's task picker" do
-      create(:volunteer_task, title: "unrelated task")
-      hour = make_hour
-      vol_login!(owner)
-      get edit_volunteer_hour_path(hour)
-      options = Capybara.string(response.body).all("select#volunteer_hour_volunteer_task_id option").map(&:text)
-      expect(options).to contain_exactly("unrelated task", "booth")
-    end
 
     it "refuses another volunteer with an alert and redirect to their own list" do
       hour = make_hour
@@ -345,6 +390,36 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 2, approval: false } }
       expect(hour.reload.total_time).to eq(2)
       expect(hour.approval).to be(false)
+    end
+
+    it "refuses a new task the owner is not on, whoever submits it, and keeps the hour" do
+      other = create(:volunteer_task)
+      hour = make_hour
+      vol_login!(owner)
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { volunteer_task_id: other.id } }
+      expect(flash[:alert]).to eq("Volunteer task is not a task this volunteer is on or has completed")
+      vol_login!(create(:user, :staff))
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { volunteer_task_id: other.id } }
+      expect(flash[:alert]).to eq("Volunteer task is not a task this volunteer is on or has completed")
+      expect(hour.reload.volunteer_task_id).to eq(task.id)
+    end
+
+    it "lets staff move an hour to a task its owner is on, though staff are not on it" do
+      other = create(:volunteer_task)
+      create(:volunteer_task_join, :active, user: owner, volunteer_task: other)
+      hour = make_hour
+      vol_login!(create(:user, :staff))
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { volunteer_task_id: other.id } }
+      expect(flash[:notice]).to eq("Volunteer hour updated")
+      expect(hour.reload.volunteer_task_id).to eq(other.id)
+    end
+
+    it "lets the owner edit the other fields of an hour whose task they have left" do
+      hour = make_hour
+      vol_login!(owner)
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { volunteer_task_id: task.id, total_time: 4 } }
+      expect(flash[:notice]).to eq("Volunteer hour updated")
+      expect(hour.reload.total_time).to eq(4)
     end
 
     it "redirects staff/admin to the requests page" do

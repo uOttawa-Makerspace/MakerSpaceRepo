@@ -30,16 +30,16 @@ class VolunteerTask < ApplicationRecord
   # Applies a whole task form (a new task or an edit) as one unit: the task's attributes, its required
   # trainings and its joins. Any step that fails undoes every step, leaves the reason in errors and
   # returns false. `joins` takes :add_staff, :add_volunteers, :remove_staff and :remove_volunteers
-  # (lists of user ids).
-  def update_from_form(attributes, certification_ids: [], joins: {})
+  # (lists of user ids). `by` is the user making the edit.
+  def update_from_form(attributes, by:, certification_ids: [], joins: {})
     transaction do
       assign_attributes(attributes)
       save!(context: :task_form)
       replace_certifications(certification_ids)
       add_joins(joins[:add_staff], "staff", staff: true)
       add_joins(joins[:add_volunteers], "volunteer", staff: false)
-      Array(joins[:remove_staff]).each { |user_id| remove_staff(user_id) }
-      Array(joins[:remove_volunteers]).each { |user_id| remove_join(user_id, "volunteer") }
+      Array(joins[:remove_staff]).each { |user_id| remove_staff(user_id, by: by) }
+      Array(joins[:remove_volunteers]).each { |user_id| remove_join(user_id, "volunteer", by: by) }
     end
     true
   rescue ActiveRecord::RecordInvalid => e
@@ -53,8 +53,8 @@ class VolunteerTask < ApplicationRecord
   # Removes one user from the task on its own (the task page's remove forms, or a user leaving):
   # the same removal as the edit form, with the same creator handover. Returns false and leaves the
   # reason in errors when the user is not on the task or is the creator with nobody to take over.
-  def remove_user(user_id)
-    transaction { remove_staff(user_id, "user") }
+  def remove_user(user_id, by:)
+    transaction { remove_staff(user_id, "user", by: by) }
     true
   rescue EditRefused => e
     errors.add(:base, e.message)
@@ -92,21 +92,23 @@ class VolunteerTask < ApplicationRecord
     end
   end
 
-  # A removed user's joins are kept as history and marked inactive.
-  def remove_join(user_id, label)
-    joins = volunteer_task_joins.active.where(user_id: user_id)
+  # A removed user's joins are kept as history: left when the user ends their own, removed when someone
+  # else does.
+  def remove_join(user_id, label, by:)
+    joins = volunteer_task_joins.joined.where(user_id: user_id).to_a
     refuse!("The #{label} to remove is not on this task.") if joins.empty?
-    joins.update_all(active: false, updated_at: Time.current)
+    ending = by.id == user_id.to_i ? :left : :removed
+    joins.each { |join| join.finish!(ending, by: by) }
   end
 
   # The task's creator can only leave when another joined user can take over as creator.
-  def remove_staff(user_id, label = "staff")
+  def remove_staff(user_id, label = "staff", by:)
     if self.user_id == user_id.to_i
-      successor = volunteer_task_joins.active.where.not(user_id: user_id).order(:id).first
+      successor = volunteer_task_joins.joined.where.not(user_id: user_id).order(:id).first
       refuse!("There must be at least one staff member assigned to this task.") unless successor
       update!(user_id: successor.user_id)
     end
-    remove_join(user_id, label)
+    remove_join(user_id, label, by: by)
   end
 
   def refuse_deletion_while_awarded

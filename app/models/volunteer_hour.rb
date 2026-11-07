@@ -18,6 +18,11 @@ class VolunteerHour < ApplicationRecord
   validate :date_of_task_not_in_future,
            on: :hand_logged,
            if: -> { date_of_task.present? && (new_record? || will_save_change_to_date_of_task?) }
+  # The task of a hand-logged hour must be one its owner is on or has completed (checked when the task is
+  # new or changed, so a stored hour keeps its task while its other fields are edited).
+  validate :volunteer_task_worked_on,
+           on: :hand_logged,
+           if: -> { volunteer_task.present? && (new_record? || will_save_change_to_volunteer_task_id?) }
   scope :approved, -> { where(approval: true) }
   scope :rejected, -> { where(approval: false) }
   scope :not_processed, -> { where(approval: nil) }
@@ -49,6 +54,12 @@ class VolunteerHour < ApplicationRecord
   end
 
   private
+
+  def volunteer_task_worked_on
+    return if VolunteerTaskJoin.worked_on.exists?(user_id: user_id, volunteer_task_id: volunteer_task_id)
+
+    errors.add(:volunteer_task_id, :not_joined)
+  end
 
   def date_of_task_not_in_future
     errors.add(:date_of_task, "cannot be in the future") if date_of_task.to_date > Date.current

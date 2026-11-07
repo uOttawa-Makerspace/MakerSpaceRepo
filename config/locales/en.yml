@@ -208,6 +208,10 @@ en:
               too_long: "Maximum of %{count} characters."
             read_and_accepted_waiver_form:
               inclusion: "You must accept the terms of the waiver."
+        volunteer_hour:
+          attributes:
+            volunteer_task_id:
+              not_joined: "is not a task this volunteer is on or has completed"
         locker_rental:
           attributes:
             rented_by:

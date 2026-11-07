@@ -33,8 +33,7 @@ class VolunteerHoursController < VolunteersController
 
   def edit
     @volunteer_hour = VolunteerHour.find(params[:id])
-    @volunteer_tasks =
-      VolunteerTask.all.order(created_at: :desc).pluck(:title, :id)
+    @volunteer_tasks = task_options_for(@volunteer_hour.user_id, @volunteer_hour.volunteer_task_id)
     @hour = @volunteer_hour.total_time.floor
     @minutes = ((@volunteer_hour.total_time % 1) * 60).to_i
   end
@@ -95,13 +94,17 @@ class VolunteerHoursController < VolunteersController
 
   def load_new_hour_form
     @new_volunteer_hour = VolunteerHour.new
-    @volunteer_tasks =
-      VolunteerTask
-        .joins(:volunteer_task_joins)
-        .merge(VolunteerTaskJoin.active)
-        .where("volunteer_task_joins.user_id = ?", current_user.id)
-        .order(created_at: :desc)
-        .pluck(:title, :id)
+    @volunteer_tasks = task_options_for(current_user.id)
+  end
+
+  # Title and id of the tasks the user is on or has completed, plus the task an existing hour already has.
+  def task_options_for(user_id, current_task_id = nil)
+    worked_on = VolunteerTaskJoin.worked_on.where(user_id: user_id).select(:volunteer_task_id)
+    VolunteerTask
+      .where(id: worked_on)
+      .or(VolunteerTask.where(id: current_task_id))
+      .order(created_at: :desc)
+      .pluck(:title, :id)
   end
 
   def volunteer_hour_params

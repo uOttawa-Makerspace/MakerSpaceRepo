@@ -205,8 +205,8 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You must be assigned to this task to submit it.")
     end
 
-    it "refuses a user whose join is no longer active" do
-      create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+    it "refuses a user whose join has ended" do
+      %i[completed left not_active].each { |trait| create(:volunteer_task_join, trait, volunteer_task: task, user: volunteer) }
       vol_login!(volunteer)
       expect { request! }.not_to change(VolunteerTaskRequest, :count)
     end
@@ -252,7 +252,9 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
     end
 
     context "approving as staff" do
-      before { vol_login!(create(:user, :staff)) }
+      let(:staff) { create(:user, :staff) }
+
+      before { vol_login!(staff) }
 
       it "dates the created hour with the completion request's created_at, not the approval time" do
         reported = Time.zone.parse("2026-02-10 14:00")
@@ -261,13 +263,14 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(VolunteerHour.last.date_of_task).to eq(reported)
       end
 
-      it "approves, deactivates the join, creates CC money + approved hours, updates the wallet and emails the requester" do
+      it "approves, completes the join, creates CC money + approved hours, updates the wallet and emails the requester" do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
         approve!("true")
         expect(response).to redirect_to(volunteer_task_requests_path)
         expect(flash[:notice]).to eq("Task request updated")
         expect(req.reload.approval).to be(true)
-        expect(join.reload.active).to be(false)
+        expect(join.reload).to have_attributes(active: false, state: "completed", state_changed_by_id: staff.id)
+        expect(join.state_changed_at).to be_within(1.minute).of(Time.current)
 
         money = CcMoney.last
         expect([money.user_id, money.volunteer_task_id, money.cc]).to eq([volunteer.id, task.id, 12])
@@ -284,8 +287,14 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
         expect { approve!("false") }.not_to change { [CcMoney.count, VolunteerHour.count] }
         expect(req.reload.approval).to be(false)
-        expect(join.reload.active).to be(true)
+        expect(join.reload).to have_attributes(active: true, state: "joined", state_changed_by_id: nil)
         expect(vol_deliveries.map(&:subject)).to eq(["Your request was updated: Tour guide"])
+      end
+
+      it "leaves a join that already ended as it was" do
+        join = create(:volunteer_task_join, :left, volunteer_task: task, user: volunteer)
+        expect { approve!("true") }.not_to(change { join.reload.attributes })
+        expect(req.reload.approval).to be(true)
       end
 
       # approving an already-approved request is a no-op (no second award, no second email)
@@ -325,7 +334,7 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
         put update_approval_volunteer_task_requests_path, params: { id: req.id }
         expect(req.reload.approval).to be_nil
-        expect(join.reload.active).to be(true)
+        expect(join.reload.state).to eq("joined")
         expect(response).to redirect_to(volunteer_task_requests_path)
       end
 
