@@ -18,19 +18,13 @@ class Key < ApplicationRecord
   enum :key_type, %i[regular sub_master keycard], prefix: true
 
   validates :user,
-            presence: {
-              message: "A user is required if the key is held"
-            },
+            presence: true,
             if: :status_held?
   validates :supervisor,
-            presence: {
-              message: "A supervisor is required if the key is held"
-            },
+            presence: true,
             if: :status_held?
   validates :space,
-            presence: {
-              message: "A space is required"
-            },
+            presence: true,
             if: :key_type_regular?
   # validates :key_request,
   #           presence: {
@@ -39,29 +33,21 @@ class Key < ApplicationRecord
   #           if: :status_held?
 
   validates :number,
-            presence: {
-              message: "A key number is required"
-            },
+            presence: true,
             uniqueness: {
-              scope: :space_id,
-              message: "A key already has that number"
+              scope: :space_id
             },
             unless: -> { space.nil? }
 
   validates :number,
-            presence: {
-              message: "A key number is required"
-            },
+            presence: true,
             uniqueness: {
-              scope: :key_type,
-              message: "A key already has that number"
+              scope: :key_type
             },
             unless: :key_type_regular?
 
   validates :custom_keycode,
-            presence: {
-              message: "A keycode is required"
-            },
+            presence: true,
             unless: :key_type_regular?
 
   # The holder's key request, read for display on the admin key page, so a deleted holder's request shows too.

@@ -10,13 +10,13 @@ class Certification < ApplicationRecord
   has_one :training, through: :training_session
   has_one :proficient_project, through: :proficient_project_session
 
-  validates :user, presence: { message: "A user is required." }
+  validates :user, presence: true
   # The random token in the public badge link; set once at creation and never changed.
   attr_readonly :share_token
   before_validation :assign_share_token, on: :create
   validates :share_token, presence: true, on: :create
 
-  validates :level, inclusion: { in: %w[Beginner Intermediate Advanced], message: "A level is required."}
+  validates :level, inclusion: { in: %w[Beginner Intermediate Advanced] }
 
   default_scope -> { where(active: true) }
   scope :between_dates_picked,

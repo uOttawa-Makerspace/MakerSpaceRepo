@@ -5,7 +5,7 @@ class Rfid < ApplicationRecord
   belongs_to :user, optional: true
   scope :recent_unset, -> { where(user: nil).order("updated_at desc") }
   # Uniqueness is the unique index's job (find_or_create_card handles the conflict).
-  validates :card_number, presence: { message: "Card number is required." }
+  validates :card_number, presence: true
 
   # Nothing defines a card number format (readers store whatever string they
   # send, unnormalised), so this is a sanity bound shared by the phone endpoints:

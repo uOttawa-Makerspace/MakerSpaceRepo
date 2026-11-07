@@ -1,0 +1,95 @@
+# Custom validation messages of the models, keyed by error type (activerecord.errors.models.<model>.attributes.<attribute>.<type>,
+# or activerecord.errors.models.<model>.<type> when several attributes share a message).
+en:
+  activerecord:
+    errors:
+      models:
+        key_request:
+          attributes:
+            user:
+              blank: "A user is required"
+            supervisor:
+              blank: "A supervisor is required"
+            space:
+              blank: "A space is required"
+            user_status:
+              blank: "A user status is required"
+          invalid_phone: "only allows numbers, parentheses, dashes, spaces, dots, and +"
+          student_number_and_emergency_contact_required: "student number and emergency contact is required"
+          rules_not_accepted: "You must agree to all the rules and policies"
+          question_required: "Question %{question_number} is required"
+        key:
+          attributes:
+            user:
+              blank: "A user is required if the key is held"
+            supervisor:
+              blank: "A supervisor is required if the key is held"
+            space:
+              blank: "A space is required"
+            number:
+              blank: "A key number is required"
+              taken: "A key already has that number"
+            custom_keycode:
+              blank: "A keycode is required"
+        coupon_code:
+          attributes:
+            cc_cost:
+              invalid_cc_cost: "must be a number of CC points (0 or more)"
+        program:
+          attributes:
+            user:
+              blank: "A user is required."
+              taken: "An user can only join a program once"
+            program_type:
+              blank: "The type of the program is required. Either 'Volunteer Program', 'Development Program', or 'Teams Program'"
+        rfid:
+          attributes:
+            card_number:
+              blank: "Card number is required."
+        team:
+          attributes:
+            name:
+              blank: "A team name is required."
+        certification:
+          attributes:
+            user:
+              blank: "A user is required."
+            level:
+              inclusion: "A level is required."
+        space:
+          attributes:
+            name:
+              blank: "A name is required for the space"
+              taken: "Space already exists"
+        sub_space:
+          attributes:
+            name:
+              blank: "A name is required for the space"
+        require_training:
+          attributes:
+            training_id:
+              blank: "A training must be selected"
+        training_session:
+          attributes:
+            training:
+              blank: "A training subject is required"
+            user:
+              blank: "A trainer is required"
+            level:
+              blank: "A level is required"
+        project_requirement:
+          attributes:
+            proficient_project_id:
+              taken: "This project is already a pre-requisite"
+        time_period:
+          attributes:
+            end_date:
+              before_start_date: "must not be before the start date"
+        space_manager_join:
+          attributes:
+            base:
+              must_be_admin: "User must be an admin"
+        question:
+          attributes:
+            base:
+              one_correct_answer: "A question must have exactly one correct answer"

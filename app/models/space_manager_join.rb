@@ -8,6 +8,6 @@ class SpaceManagerJoin < ApplicationRecord
   private
 
   def is_admin
-    errors.add(:base, "User must be an admin") if user.present? && !user.admin?
+    errors.add(:base, :must_be_admin) if user.present? && !user.admin?
   end
 end

@@ -36,12 +36,8 @@ class Space < ApplicationRecord
   after_create :create_popular_hours, unless: -> { Rails.env.test? }
 
   validates :name,
-            presence: {
-              message: "A name is required for the space"
-            },
-            uniqueness: {
-              message: "Space already exists"
-            }
+            presence: true,
+            uniqueness: true
 
   # The history this space still has, as the associations that block its deletion. Empty when it can be deleted.
   def blocking_history
