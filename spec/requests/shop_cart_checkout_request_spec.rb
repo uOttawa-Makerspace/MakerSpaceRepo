@@ -174,6 +174,20 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(OrderItem.count).to eq(0)
     end
 
+    it "redirects home with the missing-parameter message when the project id is absent or blank" do
+      [{ quantity: 1 }, { quantity: 1, proficient_project_id: "" }].each do |item|
+        expect { post order_items_path, params: { order_item: item } }.not_to change(OrderItem, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to include("proficient_project_id")
+      end
+    end
+
+    it "answers 400 with the missing-parameter message as JSON when the project id is absent" do
+      post order_items_path, params: { order_item: { quantity: 1 } }, as: :json
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body["error"]).to include("proficient_project_id")
+    end
+
     it "sets session[:order_id] so a later request keeps that cart" do
       add_to_cart(pp_with_cc(10))
       order = user.orders.last

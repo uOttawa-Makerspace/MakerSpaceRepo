@@ -16,8 +16,10 @@ class OrderItemsController < DevelopmentProgramsController
   # removed during a checkout can never land in (or vanish from) an order already paid for.
   def create
     @order = current_order
+    # A missing or blank project id is a missing parameter (answered by the app-wide handler);
+    # an id that matches no project stays a not-found.
     proficient_project =
-      ProficientProject.find(order_item_params[:proficient_project_id])
+      ProficientProject.find(order_item_params.require(:proficient_project_id))
     if current_user.has_requirements?(proficient_project.training_requirements)
       @order.change_items! do |cart|
         @order = cart
