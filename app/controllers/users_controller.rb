@@ -62,17 +62,10 @@ class UsersController < SessionsController
       hash = @new_user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(@new_user, hash).deliver_later
       
-      respond_to do |format| 
-        format.html do
-          redirect_to root_path,
-                      notice:
-                      'Account has been created, please look in your emails to confirm your email address.'
-        end
-        format.json do
-          render json:
-                 'Account has been created, please look in your emails to confirm your email address.',
-                 status: :unprocessable_content
-        end
+      message = I18n.t('sessions.account_created')
+      respond_to do |format|
+        format.html { redirect_to root_path, notice: message }
+        format.json { render json: { message: message }, status: :created }
       end
     else
       respond_to do |format| 

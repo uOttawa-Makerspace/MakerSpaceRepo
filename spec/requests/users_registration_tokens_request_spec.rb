@@ -66,13 +66,16 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(deliveries.first.body.to_s).to include("/confirm?token=")
     end
 
-    it "json: success is answered with status 422 (!) and a plain string" do
-      # JSON registration success responds 422 unprocessable_content
-      post users_path, params: { user: registration_params }, as: :json
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(response.body).to eq(
-        "Account has been created, please look in your emails to confirm your email address."
+    it "json: success is answered with 201 and a message" do
+      expect { post users_path, params: { user: registration_params }, as: :json }.to change(User, :count).by(1)
+      expect(response).to have_http_status(:created)
+      expect(JSON.parse(response.body)).to eq(
+        "message" => "Account has been created, please look in your emails to confirm your email address."
       )
+    end
+
+    it "has the success message in French too" do
+      I18n.with_locale(:fr) { expect(I18n.t("sessions.account_created")).to include("Votre compte a été créé") }
     end
 
     it "a username that is a route name is refused with a message and nothing is created" do
