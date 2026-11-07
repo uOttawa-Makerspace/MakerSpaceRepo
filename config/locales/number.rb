@@ -17,6 +17,10 @@
       day_ordinal: ->(_key, options) { options[:number] == 1 ? "1er" : options[:number].to_s }
     },
     number: {
+      # "1 234,50": comma decimal separator, no-break space between thousands.
+      format: { separator: ",", delimiter: "\u00A0" },
+      # "58,50 $": the symbol follows the amount, joined by a no-break space so the two never wrap apart.
+      currency: { format: { format: "%n\u00A0%u", unit: "$", separator: ",", delimiter: "\u00A0" } },
       nth: {
         # "1er", "2e", "3e". Words that need the feminine ("1re année") spell that out in their own
         # translation instead of using the ordinal.

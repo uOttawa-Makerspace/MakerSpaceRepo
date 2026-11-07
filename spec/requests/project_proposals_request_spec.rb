@@ -94,6 +94,14 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response.body).to include("Approved One")
     end
 
+    it "writes the budget as $1500 in English and 1 500 $ in French" do
+      approved.update_columns(prototype_cost: 1500, project_cost: 20)
+      get project_proposal_path(approved.slug, locale: "en")
+      expect(response.body).to include("$1,500").and include("$20")
+      get project_proposal_path(approved.slug, locale: "fr")
+      expect(response.body).to include("1\u00A0500\u00A0$").and include("20\u00A0$")
+    end
+
     it "finds a proposal by slug or by id" do
       get project_proposal_path(approved.id)
       expect(response).to have_http_status(:ok)
