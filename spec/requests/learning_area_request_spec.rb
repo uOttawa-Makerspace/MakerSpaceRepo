@@ -268,11 +268,11 @@ RSpec.describe "Learning area", type: :request do
       expect(flash[:alert]).to include("learning_module")
     end
 
-    # failed saves use flash[] not flash.now[], so the alert shows on the NEXT page
-    it "shows the failure alert on the next request" do
+    it "shows the failure alert on the re-rendered form only, not on the next request" do
       post learning_area_index_path, params: valid_params(title: "")
-      get learning_area_index_path
       expect(response.body).to include("Something went wrong")
+      get learning_area_index_path
+      expect(response.body).not_to include("Something went wrong")
     end
 
     it "ignores unpermitted attributes such as order and scorm_status" do

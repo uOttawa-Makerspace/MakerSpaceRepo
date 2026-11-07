@@ -54,7 +54,7 @@ class LearningAreaController < DevelopmentProgramsController
       redirect_to learning_area_path(@learning_module.id),
                   notice: 'Learning Module has been successfully created.'
     else
-      flash[:alert] = 'Something went wrong'
+      flash.now[:alert] = 'Something went wrong'
       render 'new', status: :unprocessable_content
     end
   end
