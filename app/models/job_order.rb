@@ -174,8 +174,8 @@ class JobOrder < ApplicationRecord
     [JobStatus.user_approval, JobStatus.sent_reminder, JobStatus.waiting_processed, JobStatus.completed].include?(status)
   end
 
-  # The error that refuses to quote or bill the order: a task has a service line (a job service, or a service
-  # quantity above 0) but no service price. A price of 0 is a price (a free service); only a missing one (blank)
+  # The error that refuses to quote or bill the order: a task has a service line (a job service) but no
+  # service price. A price of 0 is a price (a free service); only a missing one (blank)
   # is refused. nil when every service line is priced. The amounts are never changed.
   def service_price_missing_error(snapshot = quote_snapshot)
     tasks = snapshot.tasks.select(&:service_price_missing?)
