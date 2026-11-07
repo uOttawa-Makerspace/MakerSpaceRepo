@@ -276,6 +276,15 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "offers every task in the edit form's task picker" do
+      create(:volunteer_task, title: "unrelated task")
+      hour = make_hour
+      vol_login!(owner)
+      get edit_volunteer_hour_path(hour)
+      options = Capybara.string(response.body).all("select#volunteer_hour_volunteer_task_id option").map(&:text)
+      expect(options).to contain_exactly("unrelated task", "booth")
+    end
+
     it "refuses another volunteer with an alert and redirect to their own list" do
       hour = make_hour
       vol_login!(other_volunteer)
