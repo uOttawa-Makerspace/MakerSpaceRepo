@@ -8,14 +8,14 @@ class Space < ApplicationRecord
   has_many :key_requests, dependent: :nullify
   has_many :walk_in_safety_sheets
   has_many :lab_sessions
-  has_many :visitors, through: :lab_sessions, source: :user
+  has_many :visitors, -> { distinct }, through: :lab_sessions, source: :user
   has_and_belongs_to_many :trainings
   has_many :training_sessions
   has_many :certifications, through: :training_sessions
   has_many :volunteer_tasks
   has_many :popular_hours, dependent: :destroy
   has_many :shadowing_hours
-  has_many :users_with_current_space, class_name: "User"
+  has_many :users_with_current_space, -> { including_deleted }, class_name: "User"
   has_many :staff_spaces, dependent: :destroy
   has_many :shifts, dependent: :destroy
   has_many :sub_spaces, dependent: :destroy

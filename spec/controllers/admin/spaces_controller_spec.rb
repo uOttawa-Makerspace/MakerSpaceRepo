@@ -177,6 +177,18 @@ RSpec.describe Admin::SpacesController, type: :controller do
           expect(holder.reload.space_id).to eq(target.id)
         end
 
+        it "refuses while a soft-deleted user still has the space as their current space" do
+          target = create(:space)
+          holder = create(:user, space_id: target.id)
+          holder.update_columns(deleted: true)
+
+          delete :destroy, params: { id: target.id, space_id: target.id, admin_input: target.name.upcase }
+
+          expect(flash[:alert]).to eq("Cannot delete record because dependent users with current space exist")
+          expect(Space.exists?(target.id)).to be(true)
+          expect(User.including_deleted.find(holder.id).space_id).to eq(target.id)
+        end
+
         it "refuses at the second admin's confirmation through the model's errors and clears the request" do
           target = create(:space)
           target.update_columns(destroy_admin_id: second_admin.id)

@@ -182,6 +182,26 @@ RSpec.describe Space, type: :model do
       expect(space.visitors).to contain_exactly(visitor)
     end
 
+    it "lists a visitor once however many sessions they had" do
+      space = create(:space)
+      visitor = create(:user)
+      create(:lab_session, space: space, user: visitor)
+      create(:lab_session, space: space, user: visitor)
+
+      expect(space.visitors.to_a).to eq([visitor])
+    end
+
+    it "refuses destroy while a soft-deleted user still has it as their current space, and changes nothing" do
+      space = create(:space)
+      user = create(:user, space_id: space.id)
+      user.update_columns(deleted: true)
+
+      expect(space.destroy).to be(false)
+
+      expect(space.errors.full_messages).to eq(["Cannot delete record because dependent users with current space exist"])
+      expect(User.including_deleted.find(user.id).space_id).to eq(space.id)
+    end
+
     it "refuses destroy while users still have it as their current space, and changes nothing" do
       space = create(:space)
       user = create(:user, space_id: space.id)
