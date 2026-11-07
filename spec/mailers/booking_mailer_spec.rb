@@ -52,12 +52,19 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(delivered.size).to eq(1)
     end
 
-    # no managers means no mail and no warning
-    it "sends nothing when the space has no managers" do
+    it "goes to the MTC mailbox, and reports the missing managers, when the space has none" do
       lonely = create(:sub_space, space: create(:space), approval_required: true)
       lonely_booking = create(:sub_space_booking, sub_space: lonely, user: booker)
+      expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(handled: true, severity: :warning))
       described_class.send_booking_needs_approval(lonely_booking.id).deliver_now
-      expect(delivered).to be_empty
+      expect(delivered.size).to eq(1)
+      expect(delivered.last.to).to eq(["mtc@uottawa.ca"])
+      expect(delivered.last.subject).to eq("Booking needs approval")
+    end
+
+    it "reports nothing when the space has managers" do
+      expect(Rails.error).not_to receive(:report)
+      described_class.send_booking_needs_approval(booking.id).deliver_now
     end
 
     it "sends nothing when the sub space does not require approval" do
@@ -82,10 +89,13 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(mail.body.encoded).to include("on March 03, 2027 10:00 to March 03, 2027 11:30")
     end
 
-    it "sends nothing when the space has no managers" do
+    it "goes to the MTC mailbox, and reports the missing managers, when the space has none" do
       lonely_booking = create(:sub_space_booking, sub_space: create(:sub_space, space: create(:space)), user: booker)
+      expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(handled: true, severity: :warning))
       described_class.send_booking_automatically_approved(lonely_booking.id).deliver_now
-      expect(delivered).to be_empty
+      expect(delivered.size).to eq(1)
+      expect(delivered.last.to).to eq(["mtc@uottawa.ca"])
+      expect(delivered.last.subject).to eq("Booking automatically approved.")
     end
   end
 

@@ -91,7 +91,7 @@ class SubSpaceBookingController < SessionsController
         BookingMailer.send_booking_approval_request_sent(
           booking_approval.id,
           emails
-        ).deliver_now
+        ).deliver_later
 
         flash[:notice] = "Access request submitted successfully."
       else
@@ -635,14 +635,14 @@ class SubSpaceBookingController < SessionsController
 
   def send_booking_created_mail(booking)
     if booking.pending?
-      BookingMailer.send_booking_needs_approval(booking.id).deliver_now
+      BookingMailer.send_booking_needs_approval(booking.id).deliver_later
     elsif booking.approved?
       # Send appropriate confirmation for approved bookings
       if current_user.admin?
-        BookingMailer.send_booking_approved(booking.id).deliver_now
+        BookingMailer.send_booking_approved(booking.id).deliver_later
       else
-        BookingMailer.send_booking_automatically_approved(booking.id).deliver_now
-        BookingMailer.send_booking_approved(booking.id).deliver_now
+        BookingMailer.send_booking_automatically_approved(booking.id).deliver_later
+        BookingMailer.send_booking_approved(booking.id).deliver_later
       end
     end
   end
@@ -745,7 +745,7 @@ class SubSpaceBookingController < SessionsController
     when "JMTS" then jmts_access_request_recipients
     when "Staff" then staff_access_request_recipients
     when "GNG" then ["makerlab@uottawa.ca"]
-    else ["mtc@uottawa.ca"]
+    else [BookingMailer::MTC_MAILBOX]
     end
   end
 
@@ -759,7 +759,7 @@ class SubSpaceBookingController < SessionsController
       )
     end
     emails = jmts ? jmts.space_managers.map(&:email) : []
-    emails.empty? ? ["mtc@uottawa.ca"] : emails
+    emails.empty? ? [BookingMailer::MTC_MAILBOX] : emails
   end
 
   # Returns nil (after setting the alert) when no staff supervisor was chosen.

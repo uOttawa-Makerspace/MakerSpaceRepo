@@ -154,7 +154,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(SubSpaceBooking.where(name: "Series").distinct.pluck(:recurring_booking_id).compact.size).to eq(1)
     end
 
-    it "mails once, for the first occurrence that is booked" do
+    it "mails once, for the first occurrence that is booked", :perform_jobs do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
       log_in!(user)
@@ -212,7 +212,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
 
     # a conflict on a later occurrence keeps the partial series and the answer
     # is 422; the mail goes out once, for the first occurrence booked.
-    it "keeps a partial series and mails once when an occurrence after the first bookable one conflicts" do
+    it "keeps a partial series and mails once when an occurrence after the first bookable one conflicts", :perform_jobs do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
       create(:sub_space_booking, sub_space: room, user: admin, name: "Grabber", blocking: true,

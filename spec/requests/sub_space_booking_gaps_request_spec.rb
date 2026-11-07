@@ -181,7 +181,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
   end
 
-  describe "POST create mails" do
+  describe "POST create mails", :perform_jobs do
     it "a pending booking mails the space managers only" do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true,
@@ -228,37 +228,50 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(ActionMailer::Base.deliveries.last.to).to eq([admin.email])
     end
 
-    # with no space managers the needs-approval mail is silently
-    # skipped, so a Pending booking waits with nobody notified.
-    # mails are sent with deliver_now inside the request, so an SMTP
-    # failure turns into a 500 AFTER the booking and its status were saved.
-    it "answers 500 when delivery fails, but the booking is already saved" do
+    # The mails are queued after the booking is saved, so a delivery failure
+    # neither fails the request nor undoes the booking.
+    it "answers 204 and keeps the booking when mail delivery fails", perform_jobs: false do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
       allow_any_instance_of(Mail::TestMailer).to receive(:deliver!).and_raise(Net::SMTPFatalError, "550 rejected")
       log_in!(user)
       create_booking(room)
 
-      expect(response).to have_http_status(:internal_server_error)
-      expect(status_name(SubSpaceBooking.find_by!(name: "Fresh"))).to eq("Pending")
+      expect(response).to have_http_status(:no_content)
+      booking = SubSpaceBooking.find_by!(name: "Fresh")
+      expect(status_name(booking)).to eq("Pending")
+
+      # the failure only surfaces when the queued job runs, and leaves the booking as it was
+      expect { perform_enqueued_jobs }.to raise_error(Net::SMTPFatalError)
+      expect(SubSpaceBooking.find_by!(name: "Fresh")).to eq(booking)
+      expect(status_name(booking.reload)).to eq("Pending")
     end
 
-    it "sends nothing for a pending booking when the space has no managers" do
+    it "queues the needs-approval mail instead of delivering it in the request", perform_jobs: false do
+      managed = create(:space, :with_space_managers)
+      room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
+      log_in!(user)
+      expect { create_booking(room) }.to have_enqueued_mail(BookingMailer, :send_booking_needs_approval)
+    end
+
+    it "mails the MTC mailbox and reports the missing managers for a pending booking in a space without managers" do
       room = create(:sub_space, space: space, approval_required: true,
                                 max_automatic_approval_hour: nil)
+      expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(severity: :warning))
       log_in!(user)
       create_booking(room)
 
       expect(response).to have_http_status(:no_content)
       expect(status_name(SubSpaceBooking.find_by!(name: "Fresh"))).to eq("Pending")
-      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq(["mtc@uottawa.ca"])
     end
 
-    it "sends only the booker's approved mail for an auto-approved booking in a space without managers" do
+    it "mails the MTC mailbox, then the booker, for an auto-approved booking in a space without managers" do
+      expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(severity: :warning))
       log_in!(user)
       create_booking(subspace)
-      expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Booking approved"])
-      expect(ActionMailer::Base.deliveries.last.to).to eq([user.email])
+      expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Booking automatically approved.", "Booking approved"])
+      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([["mtc@uottawa.ca"], [user.email]])
     end
   end
 
@@ -373,7 +386,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(walls_of("LaterOnly")).to eq(%w[2027-02-03 2027-02-17])
     end
 
-    it "mails only for the first occurrence of a pending series" do
+    it "mails only for the first occurrence of a pending series", :perform_jobs do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true,
                                 max_automatic_approval_hour: nil)
@@ -773,7 +786,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
   # ------------------------------------------------------------ access requests
 
-  describe "request_access routing" do
+  describe "request_access routing", :perform_jobs do
     let(:applicant) { create(:user, :regular_user, booking_approval: false) }
 
     before do
