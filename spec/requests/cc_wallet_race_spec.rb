@@ -144,7 +144,7 @@ RSpec.describe "CC wallet races", type: :request do
     expect(@second_waited).to be(true)
   end
 
-  it "checkout's lock waits are bounded too: a wallet held elsewhere past the timeout raises LockWaitTimeout fast" do
+  it "checkout's lock waits are bounded too: a wallet held elsewhere past the timeout raises LockWaitTimeout" do
     stub_const("ApplicationRecord::LOCK_TIMEOUT", "200ms")
     credit_cc!(user, 100)
     cart = in_progress_order(project_one)
@@ -154,16 +154,18 @@ RSpec.describe "CC wallet races", type: :request do
       User.transaction do
         User.where(id: user.id).lock(User::GUARD_LOCK_MODE).take
         locked << true
-        release.pop(timeout: 3)
+        release.pop(timeout: ThreadPause::PARKED_TIMEOUT) # held until the checkout has given up
       end
     end
-    ThreadPause.await(locked)
-    started = Time.current
-    expect { Order.checkout!(cart, user) }.to raise_error(ActiveRecord::LockWaitTimeout)
-    waited = Time.current - started
-    release << true
+    begin
+      ThreadPause.await(locked)
+      expect { Order.checkout!(cart, user) }.to raise_error(ActiveRecord::LockWaitTimeout)
+      # the timeout fired while the holder had not released: the wait was cut short by the lock timeout, not by the lock being freed
+      expect(holder).to be_alive
+    ensure
+      release << true
+    end
     expect(holder.value).not_to be_a(StandardError)
-    expect(waited).to be < 2
     expect(cart.reload.order_status.name).to eq("In progress")
     expect(debits).to be_empty
   end

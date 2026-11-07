@@ -31,6 +31,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
     log_in_as(admin)
     show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
+    wait_for_admin_calendar_scripts
   end
 
   def open_event(title, index: 0)

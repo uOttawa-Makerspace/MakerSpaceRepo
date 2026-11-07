@@ -14,6 +14,13 @@ module CalendarJsHelpers
     Time.iso8601(iso).utc
   end
 
+  # The admin calendar page attaches its event modal's handlers once the
+  # script's own fetch has returned, which can be after the calendar title is
+  # drawn. It then marks the modal ready (and enables "+ Add Event").
+  def wait_for_admin_calendar_scripts
+    expect(page).to have_css("#eventModal[data-ready='true']", visible: :all)
+  end
+
   # Types into a datetime-local field the way a person would (Capybara fires
   # input and change for it).
   def fill_datetime(field, local_value)

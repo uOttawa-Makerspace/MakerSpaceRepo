@@ -26,6 +26,28 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     log_in_as(admin)
     show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
+    wait_for_admin_calendar_scripts
+  end
+
+  # The page that could not load its staff data never becomes ready, so only
+  # the calendar and the error alert are awaited.
+  def open_admin_calendar_without_ready_wait
+    log_in_as(admin)
+    show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
+    expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
+    expect(page).to have_css("#staff_load_error:not(.d-none)")
+  end
+
+  # Drags down a Thursday slot; the block runs while the button is still held.
+  def drag_a_range
+    slot = find(".fc-timegrid-col[data-date='2027-03-18'] .fc-timegrid-col-frame", visible: :all)
+    action = page.driver.browser.action.move_to(slot.native).click_and_hold.move_by(0, 60)
+    action.perform
+    begin
+      yield if block_given?
+    ensure
+      page.driver.browser.action.release.perform
+    end
   end
 
   def open_add_modal
@@ -37,6 +59,60 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
   def confirm_modal_hidden
     expect(page).to have_no_css("#eventModal.show")
+  end
+
+  it "enables the Add Event button and marks the modal ready once the page script has attached its handlers", js: true, skip_bullet: true do
+    log_in_as(admin)
+    visit admin_calendar_index_path
+
+    expect(page).to have_css("#eventModal[data-ready='true']", visible: :all)
+    expect(page).to have_button("+ Add Event", disabled: false)
+  end
+
+  it "tells the admin and keeps Add Event disabled when the staff availability cannot be loaded", js: true, js_errors: :allow, skip_bullet: true do
+    allow_any_instance_of(Admin::CalendarController).to receive(:utc_unavailabilities_json) { |controller| controller.head :internal_server_error }
+    log_in_as(admin)
+    visit admin_calendar_index_path
+
+    expect(page).to have_css("#staff_load_error[role='alert']", text: "staff availability could not be loaded")
+    expect(page).to have_button("+ Add Event", disabled: true)
+    expect(page).to have_no_css("#eventModal[data-ready]", visible: :all)
+  end
+
+  context "when the staff availability cannot be loaded" do
+    before do
+      allow_any_instance_of(Admin::CalendarController).to receive(:utc_unavailabilities_json) { |controller| controller.head :internal_server_error }
+      create(:event, space: space, title: "Open lab", event_type: "other", draft: false,
+                     start_time: Time.utc(2027, 3, 16, 14), end_time: Time.utc(2027, 3, 16, 15))
+      open_admin_calendar_without_ready_wait
+    end
+
+    it "does not open the modal when an event is clicked", js: true, js_errors: :allow, skip_bullet: true do
+      page.find(".fc-timegrid-event", text: "Open lab", visible: :all).click
+
+      expect(page).to have_css("#staff_load_error[role='alert']")
+      expect(page).to have_no_css("#eventModal.show", visible: :all)
+      expect(page).to have_css("#eventModalLabel", text: "Add Event", visible: :all)
+    end
+
+    it "ignores a dragged range: no modal, an untouched form and no lingering highlight", js: true, js_errors: :allow, skip_bullet: true do
+      drag_a_range do
+        # mid-drag: FullCalendar is tracking the selection, so the drag does reach it
+        expect(page).to have_css(".fc-highlight")
+      end
+
+      expect(page).to have_no_css(".fc-highlight")
+      expect(page).to have_no_css("#eventModal.show", visible: :all)
+      expect(find("#start_time_field", visible: :all).value).to eq("")
+    end
+  end
+
+  it "opens the modal with the dragged start time once the page is ready", js: true, skip_bullet: true do
+    open_admin_calendar
+    drag_a_range
+
+    expect(page).to have_css("#eventModal.show")
+    expect(field_value("start_time_field")).to start_with("2027-03-18T")
   end
 
   it "opens the add modal with a draft save button, one-hour default times and no type chosen", js: true, skip_bullet: true do
@@ -308,6 +384,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     def start_modal_with_slot
       show_week_of_march_14("fullCalendarDefaultDateAdmin", admin_calendar_index_path)
       expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
+      wait_for_admin_calendar_scripts
       open_add_modal
       fill_datetime("start_time_field", slot_start)
       fill_datetime("end_time_field", slot_end)

@@ -62,10 +62,10 @@ const staffFeed = [
   { id: 2, name: "Bob", color: "#00ff00", unavailabilities: [] },
 ];
 
-async function load(feed = staffFeed) {
+async function load(feed = staffFeed, response = {}) {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => ({ json: async () => feed })),
+    vi.fn(async () => ({ ok: true, json: async () => feed, ...response })),
   );
   document.dispatchEvent(new Event("turbo:load"));
   await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
@@ -86,6 +86,7 @@ const unavailableDates = (name) =>
 
 beforeEach(async () => {
   document.body.innerHTML = EVENT_MODAL_HTML;
+  $("addEventButton").disabled = true; // the page renders it disabled
   tomInstances.length = 0;
   collapseHide.mockClear();
 });
@@ -96,6 +97,72 @@ describe("loading", () => {
     expect(fetch).toHaveBeenCalledWith(
       "/admin/calendar/utc_unavailabilities_json/7",
     );
+  });
+});
+
+describe("when the staff data cannot be loaded", () => {
+  it("shows the error and keeps the add button disabled for a failed response", async () => {
+    await load(staffFeed, { ok: false });
+
+    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
+    expect($("addEventButton").disabled).toBe(true);
+    expect($("eventModal").dataset.ready).toBeUndefined();
+  });
+
+  it("shows the error for a network failure", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("offline");
+      }),
+    );
+    document.dispatchEvent(new Event("turbo:load"));
+    await vi.waitFor(() =>
+      expect($("staff_load_error").classList.contains("d-none")).toBe(false),
+    );
+
+    expect($("addEventButton").disabled).toBe(true);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+});
+
+describe("a page restored from the Turbo cache", () => {
+  it("is not ready when the load then fails", async () => {
+    $("eventModal").dataset.ready = "true";
+    $("addEventButton").disabled = false;
+
+    await load(staffFeed, { ok: false });
+
+    expect($("eventModal").dataset.ready).toBeUndefined();
+    expect($("addEventButton").disabled).toBe(true);
+    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
+  });
+
+  it("is reset before Turbo caches the page", () => {
+    $("eventModal").dataset.ready = "true";
+    $("addEventButton").disabled = false;
+
+    document.dispatchEvent(new Event("turbo:before-cache"));
+
+    expect($("eventModal").dataset.ready).toBeUndefined();
+    expect($("addEventButton").disabled).toBe(true);
+  });
+});
+
+describe("a successful load after a failed one", () => {
+  it("hides the error again and enables the add button", async () => {
+    await load(staffFeed, { ok: false });
+    expect($("staff_load_error").classList.contains("d-none")).toBe(false);
+
+    await load();
+
+    expect($("staff_load_error").classList.contains("d-none")).toBe(true);
+    expect($("addEventButton").disabled).toBe(false);
+    expect($("eventModal").dataset.ready).toBe("true");
   });
 });
 

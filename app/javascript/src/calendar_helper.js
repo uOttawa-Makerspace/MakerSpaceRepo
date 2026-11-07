@@ -368,7 +368,18 @@ export function addEventClick() {
   toggleFormMode("shift");
 }
 
+// manage_calendar_events.js marks the modal ready once its handlers are
+// attached; until then (or after a failed load) no entry point may open it.
+export function eventModalReady() {
+  return document.getElementById("eventModal")?.dataset.ready === "true";
+}
+
 export function eventClick(eventImpl) {
+  if (!eventModalReady()) return;
+  openEventForEditing(eventImpl);
+}
+
+function openEventForEditing(eventImpl) {
   const event = eventImpl._def;
   const id = eventImpl.id.replace("event-", "");
   const isUnavailability = event.extendedProps.eventType === "unavailability";
@@ -622,6 +633,11 @@ export function eventClick(eventImpl) {
 }
 
 export function eventCreate(info) {
+  if (!eventModalReady()) {
+    info.view.calendar.unselect(); // drop the highlight of the dragged range
+    return;
+  }
+
   document.getElementById("start_time_field").value = toLocalDatetimeString(
     new Date(info.startStr),
   );

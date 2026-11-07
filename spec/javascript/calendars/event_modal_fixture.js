@@ -2,6 +2,7 @@
 // calendar scripts read or write, with the same ids and classes.
 export const EVENT_MODAL_HTML = `
 <button type="button" id="addEventButton"></button>
+<div id="staff_load_error" class="d-none" role="alert"></div>
 <input type="hidden" id="space_id" value="7">
 <div id="content">
 <div class="modal fade" id="eventModal">

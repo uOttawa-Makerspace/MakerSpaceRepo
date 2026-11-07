@@ -40,6 +40,7 @@ function fcEvent(overrides = {}) {
 
 beforeEach(() => {
   document.body.innerHTML = EVENT_MODAL_HTML;
+  $("eventModal").dataset.ready = "true";
   shown.length = 0;
   vi.restoreAllMocks();
   vi.stubGlobal(
@@ -464,5 +465,40 @@ describe("eventCreate", () => {
       toLocalDatetimeString(new Date("2027-03-17T12:00:00-04:00")),
     );
     expect($("save_button").value).toBe("Save Draft");
+  });
+});
+
+describe("before the modal is ready", () => {
+  beforeEach(() => {
+    delete $("eventModal").dataset.ready;
+  });
+
+  it("does not open the modal for a clicked event", () => {
+    eventClick(fcEvent());
+
+    expect(shown).toEqual([]);
+    expect($("eventModalLabel").textContent).not.toBe("Edit Event");
+  });
+
+  it("does not touch the form or click Add Event for a dragged range", () => {
+    const click = vi.fn();
+    const unselect = vi.fn();
+    $("addEventButton").addEventListener("click", click);
+    eventCreate({
+      startStr: "2027-03-17T10:00:00-04:00",
+      endStr: "2027-03-17T12:00:00-04:00",
+      view: { calendar: { unselect } },
+    });
+
+    expect(click).not.toHaveBeenCalled();
+    expect($("start_time_field").value).toBe("");
+    expect(unselect).toHaveBeenCalledTimes(1);
+  });
+
+  it("works again once the modal is marked ready", () => {
+    $("eventModal").dataset.ready = "true";
+    eventClick(fcEvent());
+
+    expect(shown).toEqual(["eventModal"]);
   });
 });
