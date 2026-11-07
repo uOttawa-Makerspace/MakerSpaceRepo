@@ -570,7 +570,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_100000) do
     t.index ["job_task_id"], name: "index_job_task_quotes_on_job_task_id"
   end
 
-  create_table "job_task_restorations", primary_key: "job_task_id", force: :cascade do |t|
+  create_table "job_task_restorations", primary_key: "job_task_id", id: :bigint, default: nil, force: :cascade do |t|
     t.datetime "archived_at", default: -> { "now()" }, null: false
     t.bigint "job_task_quote_id"
     t.jsonb "quote_row"
