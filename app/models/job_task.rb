@@ -17,11 +17,11 @@ class JobTask < ApplicationRecord
     job_type.blank? || (job_type.job_service_groups.any? && job_service.blank?)
   end
 
-  # True when the task has a service line (a job service, or a service quantity above 0) whose price is missing.
-  # A price of 0 is a price; blank is not.
+  # True when the task has a service line (a job service) whose price is missing. A price of 0 is a price; blank
+  # is not. The service quantity does not count as a service line: a quote row starts with quantity 1 by default,
+  # and the quote form only offers the service fields for a task that has a job service.
   def service_price_missing?
-    service_line = job_service_id.present? || job_task_quote&.service_quantity.to_f.positive?
-    service_line && job_task_quote&.service_price.nil?
+    job_service_id.present? && job_task_quote&.service_price.nil?
   end
 
   has_many_attached :user_files

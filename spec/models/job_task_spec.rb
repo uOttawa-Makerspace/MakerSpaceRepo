@@ -99,18 +99,14 @@ RSpec.describe JobTask, type: :model do
       expect(task_with(service: service)).to be_service_price_missing
     end
 
-    it "is true for a service quantity above 0 with a blank price, even without a job service" do
-      expect(task_with(service_price: nil, service_quantity: 2)).to be_service_price_missing
-    end
-
     it "is false for a price of 0 (a free service) or any price" do
       expect(task_with(service: service, service_price: 0, service_quantity: 2)).not_to be_service_price_missing
       expect(task_with(service: service, service_price: 4, service_quantity: 2)).not_to be_service_price_missing
     end
 
-    it "is false when the task has no service line" do
+    it "is false when the task has no job service, whatever the quantity (a new quote row defaults to 1)" do
       expect(task_with).not_to be_service_price_missing
-      expect(task_with(service_price: nil, service_quantity: 0)).not_to be_service_price_missing
+      expect(task_with(service_price: nil, service_quantity: 1)).not_to be_service_price_missing
     end
   end
 end

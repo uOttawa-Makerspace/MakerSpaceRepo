@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-# A task with a service line (a job service, or a service quantity above 0) must have a service price before its
+# A task with a service line (a job service) must have a service price before its
 # quote is sent, reminded, approved or paid. A price of 0 is a price (a free service); a blank one is refused with a
 # message naming the task, and no amount, status, mail or Shopify call changes.
 RSpec.describe "Job order quotes with a missing service price", type: :request do
@@ -85,16 +85,6 @@ RSpec.describe "Job order quotes with a missing service price", type: :request d
       expect(flash[:alert]).to be_nil
       expect(task.reload.job_task_quote.service_price).to be_nil
       expect(status_names(order).last).to eq("Waiting for User Approval")
-    end
-
-    it "refuses a service quantity above 0 with no price on a task without a job service" do
-      order = make_job_order!(owner: owner, status_key: :staff_approval)
-      task = order.job_tasks.create!(title: "Design")
-
-      patch job_order_quote_path(order), params: quote_params(task, service_price: "")
-
-      expect(flash[:alert]).to eq(refusal("Design"))
-      expect(status_names(order)).to eq(["Waiting for Staff Approval"])
     end
   end
 
