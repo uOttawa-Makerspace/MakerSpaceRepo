@@ -6,6 +6,12 @@ class KeyTransaction < ApplicationRecord
   validates :key, presence: true
   validates :deposit_amount, presence: true
 
+  # A key has at most one open transaction. Key#assign_to! holds the key's row lock while it checks, and the
+  # partial unique index on open transactions is the final guarantee.
+  validates :key_id,
+            uniqueness: { conditions: -> { not_returned }, message: "already has an open transaction" },
+            if: -> { return_date.nil? }
+
   scope :returned, -> { where.not(return_date: nil) }
   scope :not_returned, -> { where(return_date: nil) }
   scope :awaiting_deposit_return,

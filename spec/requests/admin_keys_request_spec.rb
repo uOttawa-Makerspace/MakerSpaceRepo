@@ -236,6 +236,16 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil, supervisor_id: nil)
     end
 
+    it "refuses with a message when a key in inventory still has an open transaction" do
+      KeyTransaction.create!(key: key, user: holder, deposit_amount: 5)
+      expect {
+        patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 25 }
+      }.not_to change(KeyTransaction, :count)
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to include("Something went wrong while trying to assign the key", "already has an open transaction")
+      expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
+    end
+
     # Midday Eastern, so the server's UTC date and Date.current agree.
     it "revokes a held key: back to inventory, return date set and zero deposit marked returned" do
       travel_to(Time.zone.now.change(hour: 12))
