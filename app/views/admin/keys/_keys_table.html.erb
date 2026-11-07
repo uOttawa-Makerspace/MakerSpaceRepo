@@ -38,7 +38,7 @@
             </td>
           <% end %>
           <td>
-            <% certification = key.display_user&.key_certification %>
+            <% certification = key.key_request && key.display_user.key_certification %>
             <% if certification %>
               <%= certification.get_key_certs_attached %>/<%= KeyCertification::NUMBER_OF_STAFF_FILES %> (staff)<br>
               <%= certification.get_supervisor_certs_attached %>/<%= KeyCertification::NUMBER_OF_SUPERVISOR_FILES %> (supervisor)
