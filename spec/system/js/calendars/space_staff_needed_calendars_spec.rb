@@ -10,8 +10,7 @@ RSpec.describe "Space settings: staff needed calendars", type: :system do
   let!(:admin) { create(:user, :admin, space_id: space.id) }
 
   def open_settings
-    log_in_as(admin)
-    visit edit_admin_space_path(space)
+    log_in_as(admin, to: edit_admin_space_path(space))
     expect(page).to have_css("#new-snc")
   end
 

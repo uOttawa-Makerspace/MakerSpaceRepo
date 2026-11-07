@@ -20,10 +20,15 @@ module BrowserAuthHelper
   # same CSRF check as the form), then the cookie it issued is handed to the
   # browser; this saves the login page load, the typing and the redirect
   # round-trips. The form itself is covered by log_in_through_form below.
-  def log_in_as(user, password: "asa32A353#")
+  #
+  # `to:` is the page to land on (checked for the signed-in header); local_storage
+  # entries are written on the cheap page before that load, so a page script can
+  # read them as it starts.
+  def log_in_as(user, password: "asa32A353#", to: root_path, local_storage: {})
     visit "/robots.txt" # any cheap page on the app host, so the cookie can be set
     page.driver.browser.manage.add_cookie(name: SESSION_COOKIE, value: login_cookie_for(user, password), path: "/")
-    visit root_path
+    local_storage.each { |key, value| page.execute_script("localStorage.setItem(arguments[0], arguments[1])", key.to_s, value) }
+    visit to
     expect_signed_in
   end
 
