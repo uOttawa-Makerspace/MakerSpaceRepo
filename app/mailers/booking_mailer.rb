@@ -6,7 +6,7 @@ class BookingMailer < ApplicationMailer
 
     return if @emails.empty? || @sub_space.approval_required == false
     @message =
-      "A booking has been made in " + @sub_space.name + " by " + @booking.name +
+      "A booking has been made in " + @sub_space.name + " by " + booker_name +
         " for " + @booking.description + " on " +
         @booking.start_time.to_formatted_s(:long) + " to " +
         @booking.end_time.to_formatted_s(:long) +
@@ -22,7 +22,7 @@ class BookingMailer < ApplicationMailer
     return if @emails.empty?
     @message =
       "A booking has been made and automatically approved in " +
-        @sub_space.name + " by " + @booking.name + " for " +
+        @sub_space.name + " by " + booker_name + " for " +
         @booking.description + " on " +
         @booking.start_time.to_formatted_s(:long) + " to " +
         @booking.end_time.to_formatted_s(:long) +
@@ -78,5 +78,13 @@ class BookingMailer < ApplicationMailer
     space.space_managers.each { |sm| emails << sm.email }
 
     emails
+  end
+
+  # The booker's name, marked when the account is deleted; the booking title when it has no user.
+  def booker_name
+    user = @booking.display_user
+    return @booking.name if user.nil?
+
+    user.deleted? ? I18n.t("users.deleted_account", name: user.name) : user.name
   end
 end
