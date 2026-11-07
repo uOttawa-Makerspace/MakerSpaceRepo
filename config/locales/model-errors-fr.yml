@@ -176,3 +176,13 @@ fr:
             photos:
               too_long: "Doit avoir entre 1 et 5 photos"
               too_short: "Doit avoir entre 1 et 5 photos"
+        user:
+          attributes:
+            name:
+              special_html_characters: "ne doit pas contenir de caractères HTML spéciaux"
+            student_id:
+              wrong_digit_count: "doit contenir entre 7 et 12 chiffres"
+            url:
+              not_a_web_address: "doit être une adresse URL valide commençant par http:// ou https://"
+            username:
+              reserved: "est réservé"

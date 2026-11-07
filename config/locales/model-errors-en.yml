@@ -176,3 +176,13 @@ en:
             photos:
               too_long: "Must have between 1 and 5 photos"
               too_short: "Must have between 1 and 5 photos"
+        user:
+          attributes:
+            name:
+              special_html_characters: "must not contain special HTML characters"
+            student_id:
+              wrong_digit_count: "must be between 7 and 12 digits"
+            url:
+              not_a_web_address: "must be a valid URL starting with http:// or https://"
+            username:
+              reserved: "is reserved"

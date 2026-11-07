@@ -212,6 +212,21 @@ RSpec.describe "Localized model error messages" do
     expect_messages(task, :photos, " can't exceed 5 photos", "ne peut pas dépasser 5 photos")
   end
 
+  describe User do
+    it "localizes the name, student number, web address and reserved name messages" do
+      account = build(:user, name: "<b>", student_id: "12", identity: "undergrad", faculty: "Engineering", program: "X", year_of_study: 1, url: "ftp://x", username: "admin")
+      expect_messages(account, :name, "must not contain special HTML characters", "ne doit pas contenir de caractères HTML spéciaux")
+      expect_messages(account, :student_id, "must be between 7 and 12 digits", "doit contenir entre 7 et 12 chiffres")
+      expect_messages(account, :url, "must be a valid URL starting with http:// or https://",
+                      "doit être une adresse URL valide commençant par http:// ou https://")
+      expect_messages(account, :username, "is reserved", "est réservé")
+      I18n.with_locale(:fr) do
+        account.valid?
+        expect(account.errors.full_messages).to include("Nom d'utilisateur est réservé", "Site web doit être une adresse URL valide commençant par http:// ou https://")
+      end
+    end
+  end
+
   describe "titles and projects" do
     it "localizes the learning module title messages" do
       existing = create(:learning_module)
