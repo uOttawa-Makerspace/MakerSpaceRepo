@@ -45,6 +45,17 @@ fr:
         title: Titre
         password: Mot de passe
         photos: Photos
+      key_certification:
+        pdf_file_1: Fichier PDF 1
+        pdf_file_2: Fichier PDF 2
+        pdf_file_3: Fichier PDF 3
+        pdf_file_4: Fichier PDF 4
+        pdf_file_5: Fichier PDF 5
+        pdf_file_6: Fichier PDF 6
+        pdf_file_7: Fichier PDF 7
+        pdf_file_8: Fichier PDF 8
+        pdf_file_9: Fichier PDF 9
+        pdf_file_10: Fichier PDF 10
       locker_rental:
         state: État
         locker: Casier

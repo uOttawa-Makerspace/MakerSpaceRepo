@@ -212,6 +212,36 @@ RSpec.describe "Localized model error messages" do
     expect_messages(task, :photos, " can't exceed 5 photos", "ne peut pas dépasser 5 photos")
   end
 
+  describe "uploaded files" do
+    include ContentSpecHelpers
+
+    let(:png) { "\x89PNG\r\n\x1a\n".b + ("\x00" * 40) }
+
+    it "localizes the file size message" do
+      stub_const("User::MAX_AVATAR_SIZE", 10)
+      account = create(:user)
+      account.avatar = content_named_upload("big.png", content: png, type: "image/png")
+      expect(messages(account, :avatar, :en)).to include("big.png is too large (maximum is 10 Bytes)")
+      expect(messages(account, :avatar, :fr).join).to match(/big\.png est trop volumineux \(maximum : 10 /)
+    end
+
+    it "localizes the file type message" do
+      other = create(:project_proposal)
+      other.project_files.attach(content_named_upload("tiny.txt", content: "just text"))
+      blob = other.project_files.first.blob
+      account = create(:user)
+      account.avatar = blob.signed_id
+      expect(messages(account, :avatar, :en).join).to include("has a file type that is not allowed (")
+      expect(messages(account, :avatar, :fr).join).to include("a un type de fichier non autorisé (")
+    end
+
+    it "localizes the PDF message of a key certification" do
+      certification = build(:key_certification, user_id: user.id)
+      certification.pdf_file_1.attach(fixture_file_upload(Rails.root.join("spec/support/assets", "avatar.png"), "image/png"))
+      expect_messages(certification, :pdf_file_1, "must be a PDF file", "doit être un fichier PDF")
+    end
+  end
+
   describe User do
     it "localizes the name, student number, web address and reserved name messages" do
       account = build(:user, name: "<b>", student_id: "12", identity: "undergrad", faculty: "Engineering", program: "X", year_of_study: 1, url: "ftp://x", username: "admin")

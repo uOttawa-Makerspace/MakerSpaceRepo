@@ -186,3 +186,9 @@ fr:
               not_a_web_address: "doit être une adresse URL valide commençant par http:// ou https://"
             username:
               reserved: "est réservé"
+        key_certification:
+          not_a_pdf: "doit être un fichier PDF"
+      upload_type_unreadable: "illisible"
+      messages:
+        upload_too_large: "%{filename} est trop volumineux (maximum : %{max_size})"
+        upload_type_not_allowed: "%{filename} a un type de fichier non autorisé (%{detected_type})"
