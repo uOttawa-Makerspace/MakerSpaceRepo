@@ -447,8 +447,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(SubSpaceBookingController::SERIES_MAX_DAYS).to eq(365)
       expect(SubSpaceBookingController.const_defined?(:SERIES_MAX_OCCURRENCES)).to be(false)
       log_in!(user)
-      expect_any_instance_of(SubSpaceBookingController)
-        .to receive(:series_occurrences).once.and_call_original
+      expect(BookingSeries).to receive(:new).once.and_call_original
       post_json_series(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
                        recurring_end: "2026-12-16", name: "Once")
       expect(response).to have_http_status(:no_content)
@@ -456,8 +455,8 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
     end
 
     # Round 3: each end is its start plus the first occurrence's duration, so
-    # a month-end clamp cannot put an end before its start. The start
-    # drift (each start advances the previous one) is kept.
+    # a month-end clamp cannot put an end before its start. Each start is the
+    # n-th month after the first, clamped to the month end.
     it "keeps every monthly occurrence's duration around month-end (22:00 Jan 30 to 01:00 Jan 31)" do
       log_in!(user)
       post_json_series(start_time: "2027-01-30 22:00", end_time: "2027-01-31 01:00",
@@ -465,7 +464,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(response).to have_http_status(:no_content)
       rows = SubSpaceBooking.where(name: "MonthEnd").order(:start_time)
       expect(rows.map { |b| b.start_time.in_time_zone.strftime("%Y-%m-%d %H:%M") }).to eq(
-        ["2027-01-30 22:00", "2027-02-28 22:00", "2027-03-28 22:00", "2027-04-28 22:00", "2027-05-28 22:00"]
+        ["2027-01-30 22:00", "2027-02-28 22:00", "2027-03-30 22:00", "2027-04-30 22:00"]
       )
       expect(rows.map { |b| b.end_time - b.start_time }).to all(eq(3.hours))
     end

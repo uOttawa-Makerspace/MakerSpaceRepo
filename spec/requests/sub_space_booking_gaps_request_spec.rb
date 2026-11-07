@@ -281,21 +281,20 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       SubSpaceBooking.where(name: name).order(:start_time).map { |b| raw_wall(b)[0..9] }
     end
 
-    # the loop books `start + recurrence` while `start < recurring_end`,
-    # so a series ending mid-period overshoots recurring_end by one occurrence.
-    it "books one occurrence PAST recurring_end when the end falls mid-period" do
+    # recurring_end is the last day an occurrence may fall on.
+    it "stops at the last occurrence on or before recurring_end when the end falls mid-period" do
       post_series(name: "Over", end_on: "2027-02-16")
       expect(response).to have_http_status(:no_content)
-      expect(walls_of("Over")).to eq(%w[2027-02-03 2027-02-10 2027-02-17])
+      expect(walls_of("Over")).to eq(%w[2027-02-03 2027-02-10])
     end
 
     # a series may span at most 365 days (with
     # weekly the densest, at most 54 occurrences).
-    # A full year is still allowed (with the overshoot, 54 weekly occurrences).
+    # A full year is still allowed (53 weekly occurrences).
     it "allows a series of exactly a year, and refuses one day more with a 422 (en and fr)" do
       post_series(name: "Year", end_on: "2028-02-03")
       expect(response).to have_http_status(:no_content)
-      expect(SubSpaceBooking.where(name: "Year").count).to eq(54)
+      expect(SubSpaceBooking.where(name: "Year").count).to eq(53)
 
       post_series(name: "TooLong", end_on: "2028-02-04")
       expect(response).to have_http_status(:unprocessable_content)

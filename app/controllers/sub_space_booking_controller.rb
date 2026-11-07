@@ -229,7 +229,7 @@ class SubSpaceBookingController < SessionsController
         render_booking_failure(errors: ["Recurring #{message}"], alert: message)
         return
       end
-      book_series(attrs, series_occurrences(booking, end_date), now)
+      book_series(attrs, BookingSeries.new(booking.start_time, booking.end_time, end_date, params[:sub_space_booking][:recurring_frequency]), now)
     else
       failure = book_occurrence(booking)
       if failure
@@ -512,30 +512,6 @@ class SubSpaceBookingController < SessionsController
     Date.parse(raw.to_s) if raw.present?
   rescue Date::Error
     nil
-  end
-
-  # The [start, end] of every occurrence of the series, generated lazily, once.
-  # Every start derives from the first occurrence's zoned start and advances in
-  # Time.zone, so it keeps the first one's Toronto wall clock, across DST too.
-  # Each start advances the previous one (so a monthly series drifts after a
-  # clamped day, kept), and the loop runs while the previous start is
-  # before recurring_end, so a series ending mid-period overshoots it by one
-  # occurrence. Each end is its start plus the first occurrence's
-  # duration, so a clamped month can never put an end before its start.
-  def series_occurrences(first, end_date)
-    recurrence =
-      params[:sub_space_booking][:recurring_frequency] == "weekly" ? 7.days : 1.month
-    series_end = Time.zone.local(end_date.year, end_date.month, end_date.day)
-    duration = first.end_time - first.start_time
-
-    Enumerator.new do |yielder|
-      start_time = first.start_time
-      yielder << [start_time, start_time + duration]
-      while start_time < series_end
-        start_time += recurrence
-        yielder << [start_time, start_time + duration]
-      end
-    end
   end
 
   # Books every occurrence that does not start in the past, all in one
