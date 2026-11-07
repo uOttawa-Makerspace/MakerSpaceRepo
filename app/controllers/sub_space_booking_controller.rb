@@ -229,7 +229,7 @@ class SubSpaceBookingController < SessionsController
         render_booking_failure(errors: ["Recurring #{message}"], alert: message)
         return
       end
-      book_series(attrs, series_occurrences(booking, end_date), now)
+      book_series(attrs, BookingSeries.new(booking.start_time, booking.end_time, end_date, params[:sub_space_booking][:recurring_frequency]), now)
     else
       failure = book_occurrence(booking)
       if failure
@@ -514,34 +514,13 @@ class SubSpaceBookingController < SessionsController
     nil
   end
 
-  # The [start, end] of every occurrence of the series, generated lazily, once.
-  # Every start derives from the first occurrence's zoned start and advances in
-  # Time.zone, so it keeps the first one's Toronto wall clock, across DST too.
-  # Each start advances the previous one (so a monthly series drifts after a
-  # clamped day, kept), and the loop runs while the previous start is
-  # before recurring_end, so a series ending mid-period overshoots it by one
-  # occurrence. Each end is its start plus the first occurrence's
-  # duration, so a clamped month can never put an end before its start.
-  def series_occurrences(first, end_date)
-    recurrence =
-      params[:sub_space_booking][:recurring_frequency] == "weekly" ? 7.days : 1.month
-    series_end = Time.zone.local(end_date.year, end_date.month, end_date.day)
-    duration = first.end_time - first.start_time
-
-    Enumerator.new do |yielder|
-      start_time = first.start_time
-      yielder << [start_time, start_time + duration]
-      while start_time < series_end
-        start_time += recurrence
-        yielder << [start_time, start_time + duration]
-      end
-    end
-  end
-
   # Books every occurrence that does not start in the past, all in one
-  # RecurringBooking group, and renders once at the end. A failed occurrence
-  # does not stop the rest. The mail goes out for the first occurrence
-  # actually booked.
+  # RecurringBooking group, and renders once at the end. If the first
+  # occurrence that is not in the past cannot be booked, the series is refused
+  # and nothing is saved.
+  # A later failed occurrence does not stop the rest (a partial series is
+  # kept and reported). The mail goes out for the first occurrence actually
+  # booked.
   def book_series(attrs, occurrences, now)
     recurring_booking = RecurringBooking.new
     booked = 0
@@ -553,6 +532,8 @@ class SubSpaceBookingController < SessionsController
 
       failure = book_occurrence(booking, recurring_booking: recurring_booking, send_email: booked.zero?)
       if failure
+        return render_first_occurrence_refused(booking, failure) if booked.zero?
+
         failures << [booking.start_time.to_date.iso8601, failure]
       else
         booked += 1
@@ -560,6 +541,10 @@ class SubSpaceBookingController < SessionsController
       end
     end
 
+    render_series_result(failures, booked, last_booked)
+  end
+
+  def render_series_result(failures, booked, last_booked)
     if failures.any?
       render_series_failure(failures, booked)
     elsif booked.zero? # every occurrence was in the past
@@ -681,6 +666,21 @@ class SubSpaceBookingController < SessionsController
         render json: { errors: failure[:errors] }, status: :unprocessable_content
       end
       format.html { redirect_to booking_calendar_path, alert: failure[:alert] }
+    end
+  end
+
+  # The first occurrence failed, so no occurrence was booked: 422 with the
+  # failure's errors, as for a single booking, and a message that says the
+  # series was not created.
+  def render_first_occurrence_refused(booking, failure)
+    summary = I18n.t("sub_space_booking.series.first_failed",
+                     date: booking.start_time.to_date.iso8601, reason: failure[:alert])
+    respond_to do |format|
+      format.json do
+        flash[:alert] = summary
+        render json: { errors: failure[:errors], summary: summary }, status: :unprocessable_content
+      end
+      format.html { redirect_to booking_calendar_path, alert: summary }
     end
   end
 

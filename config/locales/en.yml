@@ -226,6 +226,7 @@ en:
     series:
       too_long: "A recurring booking can span at most %{days} days."
       partial: "Booked %{booked} of %{total} occurrences. Not booked: %{failed}."
+      first_failed: "The series was not created because the first occurrence, %{date}, could not be booked. %{reason}"
   saml:
     login:
       sign_in: "Sign In"

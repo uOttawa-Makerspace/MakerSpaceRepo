@@ -451,8 +451,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         .to eq(3)
     end
 
-    # each occurrence advances from the previous one, so the day drifts
-    it "monthly series clamps day-of-month (Jan 31 → Feb 28 ...) and drifts" do
+    # each occurrence is the n-th month after the first, clamped to the month end
+    it "monthly series clamps short months and returns to the 31st (Jan 31, Feb 28, Mar 31 ...)" do
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {
              sub_space_id: subspace.id, start_time: "2027-01-31 10:00",
@@ -464,8 +464,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       walls = SubSpaceBooking.where(name: "Monthly").order(:start_time)
                              .map { |b| raw_utc_wall(b)[0..9] }
       expect(walls).to eq(
-        ["2027-01-31", "2027-02-28", "2027-03-28", "2027-04-28",
-         "2027-05-28", "2027-06-28"]
+        ["2027-01-31", "2027-02-28", "2027-03-31", "2027-04-30",
+         "2027-05-31"]
       )
     end
 

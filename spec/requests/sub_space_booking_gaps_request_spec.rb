@@ -281,21 +281,20 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       SubSpaceBooking.where(name: name).order(:start_time).map { |b| raw_wall(b)[0..9] }
     end
 
-    # the loop books `start + recurrence` while `start < recurring_end`,
-    # so a series ending mid-period overshoots recurring_end by one occurrence.
-    it "books one occurrence PAST recurring_end when the end falls mid-period" do
+    # recurring_end is the last day an occurrence may fall on.
+    it "stops at the last occurrence on or before recurring_end when the end falls mid-period" do
       post_series(name: "Over", end_on: "2027-02-16")
       expect(response).to have_http_status(:no_content)
-      expect(walls_of("Over")).to eq(%w[2027-02-03 2027-02-10 2027-02-17])
+      expect(walls_of("Over")).to eq(%w[2027-02-03 2027-02-10])
     end
 
     # a series may span at most 365 days (with
     # weekly the densest, at most 54 occurrences).
-    # A full year is still allowed (with the overshoot, 54 weekly occurrences).
+    # A full year is still allowed (53 weekly occurrences).
     it "allows a series of exactly a year, and refuses one day more with a 422 (en and fr)" do
       post_series(name: "Year", end_on: "2028-02-03")
       expect(response).to have_http_status(:no_content)
-      expect(SubSpaceBooking.where(name: "Year").count).to eq(54)
+      expect(SubSpaceBooking.where(name: "Year").count).to eq(53)
 
       post_series(name: "TooLong", end_on: "2028-02-04")
       expect(response).to have_http_status(:unprocessable_content)
@@ -338,19 +337,40 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(SubSpaceBooking.find_by!(name: "FormString").recurring_booking_id).to be_nil
     end
 
-    # when the FIRST occurrence conflicts, the series carries on
-    # and books the rest. The 422 now says so: how many were booked and the
-    # dates that were not, and no success notice is set.
-    it "still creates the later occurrences when the first one conflicts (422 with a partial series)" do
+    # When the first occurrence cannot be booked the whole series is refused:
+    # nothing is saved, no mail is sent, and one 422 says why.
+    it "refuses the whole series when the first occurrence conflicts" do
       blocking_row(subspace, "2027-02-03 10:30", "2027-02-03 11:30")
-      post_series(name: "NoFirst")
+      expect { post_series(name: "NoFirst") }.not_to change(SubSpaceBooking.where(name: "NoFirst"), :count)
+      message = "The series was not created because the first occurrence, 2027-02-03, could not be booked. " \
+                "This time slot is already booked."
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."],
-                                         "booked" => 2, "failed" => ["2027-02-03"],
-                                         "summary" => "Booked 2 of 3 occurrences. Not booked: 2027-02-03.")
+                                         "summary" => message)
+      expect(flash[:alert]).to eq(message)
       expect(flash[:notice]).to be_nil
-      expect(flash[:alert]).to eq("Booked 2 of 3 occurrences. Not booked: 2027-02-03.")
-      expect(walls_of("NoFirst")).to eq(%w[2027-02-10 2027-02-17])
+      expect(RecurringBooking.count).to eq(0)
+    end
+
+    it "answers the refused series in French" do
+      blocking_row(subspace, "2027-02-03 10:30", "2027-02-03 11:30")
+      post sub_space_booking_index_path(locale: "fr"), as: :json,
+           params: { sub_space_booking: {
+             sub_space_id: subspace.id, start_time: "2027-02-03 10:00", end_time: "2027-02-03 11:00",
+             name: "NoFirstFr", description: "D", recurring: true, recurring_frequency: "weekly",
+             recurring_end: "2027-02-17"
+           } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["summary"]).to start_with("La série n'a pas été créée")
+      expect(SubSpaceBooking.where(name: "NoFirstFr")).to be_empty
+    end
+
+    it "keeps a partial series when only a later occurrence conflicts" do
+      blocking_row(subspace, "2027-02-10 10:30", "2027-02-10 11:30")
+      post_series(name: "LaterOnly")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to include("booked" => 2, "failed" => ["2027-02-10"])
+      expect(walls_of("LaterOnly")).to eq(%w[2027-02-03 2027-02-17])
     end
 
     it "mails only for the first occurrence of a pending series" do
