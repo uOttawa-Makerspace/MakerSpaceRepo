@@ -38,5 +38,19 @@ RSpec.describe ChatMessageMailer, type: :mailer do
     it "assigns @sender in the mailer view" do
       expect(mail.body.encoded).to include(sender.name) if sender.respond_to?(:name)
     end
+
+    describe "when the sender's account was deleted before delivery" do
+      before do
+        chat_message
+        sender.soft_delete!
+      end
+
+      it "still delivers, naming the sender neutrally in both languages" do
+        body = described_class.new_message(chat_message.reload, recipient1.email).body.encoded
+        expect(body).to include("from Deleted user")
+        expect(body).to include("de la part de Utilisateur supprimé")
+        expect(body).not_to include(sender.name)
+      end
+    end
   end
 end

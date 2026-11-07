@@ -17,7 +17,7 @@
 <!-- French Content -->
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Bonjour,</p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  Vous avez reçu un nouveau message concernant votre commande de travail #<%= @job_order.id %> de la part de <%= @sender.name %>.
+  Vous avez reçu un nouveau message concernant votre commande de travail #<%= @job_order.id %> de la part de <%= @sender_name[:fr] %>.
 </p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
   Message :<br/>
@@ -46,7 +46,7 @@
 <!-- English Content -->
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  You have received a new message regarding your Job Order #<%= @job_order.id %> from <%= @sender.name %>.
+  You have received a new message regarding your Job Order #<%= @job_order.id %> from <%= @sender_name[:en] %>.
 </p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
   Message:<br/>
