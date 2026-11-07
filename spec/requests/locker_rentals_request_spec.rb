@@ -1587,13 +1587,20 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response).to redirect_to(locker_rentals_path)
     end
 
-    it "renders an empty table for staff when nothing is expired (the 'no expired' paragraph can never render)" do
-      # the "no expired" paragraph can never render
+    it "says so, with no table, when nothing is expired" do
       log_in!(staff)
       get expired_locker_rentals_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Expired locker rentals")
-      expect(response.body).not_to include("There are no expired lockers")
+      expect(response.body).to include(I18n.t("lockers.no_expired_rentals"))
+      expect(response.body).not_to include("<table")
+    end
+
+    it "does not say there are none when there are expired rentals" do
+      create(:locker_rental, :active, owned_until: 1.week.ago)
+      log_in!(staff)
+      get expired_locker_rentals_path
+      expect(response.body).not_to include(I18n.t("lockers.no_expired_rentals"))
     end
   end
 

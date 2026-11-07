@@ -37,6 +37,7 @@ en:
     none: none
     access_denied: You do not have access to that page.
     renter_edit_refused: You can only cancel your own request. Nothing was changed.
+    no_expired_rentals: There are no expired lockers.
 
     submitted_on: Submitted on
     for: for
@@ -176,6 +177,7 @@ fr:
     none: aucun
     access_denied: Vous n'avez pas accès à cette page.
     renter_edit_refused: Vous pouvez seulement annuler votre propre demande. Rien n'a été modifié.
+    no_expired_rentals: Aucun casier n'est expiré.
 
     submitted_on: Soumise le
     for: par
