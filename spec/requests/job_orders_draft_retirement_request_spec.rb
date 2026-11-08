@@ -74,7 +74,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       patch job_order_quote_path(order),
             params: { approved: "false", user_comments: "no", job_order: { staff_comments: "" } }
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.draft_not_voidable"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.draft_not_voidable", reference: error_reference))
       expect(status_names(order)).to eq(before)
       expect(order.reload.shopify_draft_order_id).to eq(draft_id)
       expect(order.chat_messages).to be_empty
@@ -130,7 +130,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       session_login!(staff)
       patch job_order_paid_path(order), params: { paid: "true" }
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.draft_not_voidable"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.draft_not_voidable", reference: error_reference))
       expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
       expect(order.reload.shopify_draft_order_id).to eq(draft_id)
     end
@@ -157,7 +157,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       session_login!(staff)
       patch job_order_paid_path(order), params: { paid: "true" }
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.draft_not_voidable"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.draft_not_voidable", reference: error_reference))
       expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
     end
 
@@ -167,7 +167,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       session_login!(staff)
       patch job_order_quote_path(order), params: { approved: "false", job_order: { staff_comments: "" } }
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.draft_not_voidable"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.draft_not_voidable", reference: error_reference))
       expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
       expect(order.reload.shopify_draft_order_id).to eq(draft_id)
     end

@@ -131,7 +131,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       expect(flash[:alert]).to start_with(I18n.t("job_orders.alerts.missing_info"))
 
       patch job_order_user_approval_path(order), params: { approved: "true" } # wrong state: no quote yet
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
       expect(status_names(order)).to eq(["Waiting for Staff Approval"])
     end
 
@@ -164,7 +164,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
 
       expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
       expect(flash[:notice]).to be_nil
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.zero_order_not_marked_paid.draft_not_voidable"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.zero_order_not_marked_paid.draft_not_voidable", reference: error_reference))
       expect(flash[:alert]).to include("is Completed").and include("could not be marked Paid")
       expect(flash[:alert]).not_to match(/nothing was changed/i)
       expect(ActionMailer::Base.deliveries).to be_empty
@@ -244,14 +244,15 @@ RSpec.describe "Job order transition failure contract", type: :request do
     end
 
     it "has en and fr messages for every reason with its own message, and the generic ones for the rest" do
-      (JobOrder::TransitionResult::REASONS_WITH_MESSAGE + %i[wrong_state link_spent]).each do |reason|
+      JobOrder::TransitionResult::REASONS_WITH_MESSAGE.each do |reason|
         result = JobOrder::TransitionResult.refused(reason)
         %i[en fr].each do |locale|
-          expect(I18n.t(result.message_key, locale: locale, raise: true)).to be_present
-          expect(I18n.t(result.zero_order_message_key, locale: locale, raise: true)).to be_present
+          expect(I18n.t(result.message_key, locale: locale, reference: "ab12cd34", raise: true)).to be_present
+          expect(I18n.t(result.zero_order_message_key, locale: locale, reference: "ab12cd34", raise: true)).to be_present
         end
       end
-      expect(JobOrder::TransitionResult.refused(:wrong_state).message_key).to eq("job_orders.alerts.error_while_updating")
+      expect(JobOrder::TransitionResult.refused(:change_invalid).message_key).to eq("errors.generic.unexpected")
+      expect(JobOrder::TransitionResult.refused(:wrong_state).message_key).to eq("job_orders.alerts.status_change.wrong_state")
       expect(JobOrder::TransitionResult.refused(:wrong_state).zero_order_message_key)
         .to eq("job_orders.alerts.zero_order_not_marked_paid.other")
     end

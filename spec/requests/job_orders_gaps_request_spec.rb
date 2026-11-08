@@ -139,7 +139,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       session_login!(staff)
       start = order_with_task!(status_key: :waiting_processed)
       patch job_order_start_processing_path(start)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.not_requested"))
       expect(status_names(start)).to eq(["Waiting to be Processed"])
     end
 
@@ -149,7 +149,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       session_login!(staff)
       statusless = create(:job_order, user: owner)
       patch job_order_start_processing_path(statusless), params: { start_processing: "true" }
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
       expect(statusless.reload.job_order_statuses).to be_empty
     end
 
@@ -218,7 +218,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       session_login!(owner)
       [nil, "maybe"].each do |value|
         patch job_order_user_approval_path(order), params: { approved: value }.compact
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.not_requested"))
       end
       expect(status_names(order)).to eq(["Waiting for User Approval"])
     end
@@ -354,7 +354,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       end.not_to change(JobOrder, :count)
 
       expect(response).to have_http_status(:ok)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_trying_to_create"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.job_orders.create_failed"))
       expect(response.body).to include(I18n.t("job_orders.new.title"))
     end
 
@@ -444,12 +444,11 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response).to redirect_to(admin_job_orders_url)
     end
 
-    # the else branch dereferences the (nil) assigned staff
-    it "500s (NoMethodError) when staff assigns someone else, and assigns nothing" do
+    it "tells staff only an admin can assign someone else, and assigns nothing" do
       session_login!(staff)
       patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_not_allowed"))
       expect(order.reload.assigned_staff).to be_nil
     end
 

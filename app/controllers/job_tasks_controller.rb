@@ -100,8 +100,8 @@ class JobTasksController < SessionsController
     case result.reason
     when :change_invalid then invalid_change(result.error.message)
     when :wrong_state then refuse_change(t("job_orders.alerts.paid_order_cannot_change"))
-    when :draft_not_voidable then refuse_change(t("job_orders.alerts.owner_change_draft_order_failed"))
-    when :invalid_status_row then refuse_change(t("job_orders.alerts.send_back_failed"))
+    when :draft_not_voidable then refuse_change(t("job_orders.alerts.owner_change_draft_order_failed", reference: error_reference))
+    when :invalid_status_row then refuse_change(t("job_orders.alerts.send_back_failed", reference: error_reference))
     when :order_missing then refuse_change(t("job_orders.alerts.owner_change_order_missing"), to: job_orders_path)
     else refuse_change(t("job_orders.alerts.owner_change_busy")) # busy, deadlock: nothing was changed, retry
     end
@@ -231,7 +231,7 @@ class JobTasksController < SessionsController
     # say or send; the task update itself succeeded. Any other refusal is said, with the messages of
     # JobOrdersController#update_status.
     unless submitted.ok?
-      flash[:alert] = t(submitted.message_key) unless submitted.reason == :wrong_state
+      flash[:alert] = t(submitted.message_key, reference: error_reference) unless submitted.reason == :wrong_state
       return
     end
 

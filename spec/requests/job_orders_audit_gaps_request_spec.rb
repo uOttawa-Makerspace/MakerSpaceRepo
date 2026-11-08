@@ -85,7 +85,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
           end.not_to change(JobOrderStatus, :count)
 
           expect(status_names(order)).to eq([JobOrderSpecHelpers::JOB_STATUS_NAMES.fetch(state)])
-          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
           expect(flash[:notice]).to be_nil
           expect(ActionMailer::Base.deliveries).to be_empty
         end
@@ -149,7 +149,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
           expect do
             post job_orders_path, params: { job_order: { user_files: [file.call] }, redirect_step: "1" }
           end.not_to change(JobOrder, :count), label
-          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_trying_to_create")), label
+          expect(flash[:alert]).to start_with(I18n.t("errors.job_orders.create_failed")), label
         end
       end
     end
@@ -282,7 +282,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       allow_any_instance_of(JobOrder).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
       requote!(order, task, 55)
 
-      expect(flash[:alert]).to start_with(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.job_orders.quote_invalid"))
       expect(shopify.calls).to be_empty
       expect(order.reload.total_price).to eq(BigDecimal("29.99"))
       expect(status_names(order)).to eq(statuses_before)
@@ -303,10 +303,17 @@ RSpec.describe "JobOrders audit gaps", type: :request do
     it "keeps the quote committed (and no dangling draft id) when the email fails after the draft was deleted" do
       order, task = order_with_draft!
       allow(JobOrderMailer).to receive(:send_job_quote).and_raise(Net::SMTPFatalError, "smtp down")
+      allow(Rails.error).to receive(:report)
 
       requote!(order, task, 55)
       expect(response).to redirect_to(job_order_path(order.id))
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_saved_email_failed"))
+      reference = response.request.request_id.first(8)
+      expect(Rails.error).to have_received(:report).with(
+        an_instance_of(Net::SMTPFatalError),
+        hash_including(handled: true, context: hash_including(job_order_id: order.id, reference: reference))
+      )
+      expect(flash[:alert]).not_to include("smtp down")
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_saved_email_failed", reference: response.request.request_id.first(8)))
 
       expect(shopify_ops).to eq(%w[draftOrderDelete])
       order.reload
@@ -440,7 +447,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         requote!(order, task, 55)
 
         expect(response).to redirect_to(job_order_path(order.id))
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed", reference: error_reference))
         expect(order.reload.total_price).to eq(BigDecimal("29.99"))
         expect(status_names(order)).to eq(statuses_before)
         expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
@@ -489,7 +496,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         shopify.delete_user_errors = [{ "field" => "id", "message" => "cannot delete a completed draft order" }]
         requote!(order, task, 55)
 
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed", reference: error_reference))
         expect(shopify_ops).to eq(%w[draftOrderDelete getDraftOrder])
         expect(order.reload.total_price).to eq(BigDecimal("29.99"))
         expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
@@ -503,7 +510,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         end
         requote!(order, task, 55)
 
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed", reference: error_reference))
         expect(order.reload.total_price).to eq(BigDecimal("29.99"))
         expect(order.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
       end

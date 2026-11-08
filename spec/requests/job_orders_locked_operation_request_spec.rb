@@ -347,7 +347,7 @@ RSpec.describe "Job order locked operations", type: :request do
       patch job_order_quote_path(quoted_for_chat), params: { approved: "true", user_comments: "new price",
                                                              job_order: { staff_comments: "" } }
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.requote_draft_order_failed", reference: error_reference))
       expect(ChatMessage.where(job_order_id: quoted_for_chat.id).pluck(:message)).to eq(["hello"])
       expect(jobs).to be_empty
     end
@@ -385,7 +385,7 @@ RSpec.describe "Job order locked operations", type: :request do
                                                    job_order: { staff_comments: "" } }
 
       expect(response).to redirect_to(job_order_path(order.id))
-      expect(flash[:alert]).to start_with(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.job_orders.quote_invalid"))
       expect(flash[:alert]).to include("&lt;script&gt;alert(1)&lt;/script&gt; is not a price")
       expect(flash[:alert]).not_to include("<script>")
       expect(Rails.logger).to have_received(:info).with(/change_invalid.*is not a price/).once
@@ -451,7 +451,7 @@ RSpec.describe "Job order locked operations", type: :request do
       delete job_order_path(order)
 
       expect(response).to redirect_to(job_order_path(order))
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.draft_not_voidable"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.draft_not_voidable", reference: error_reference))
       expect(order.reload.is_deleted).to be(false)
       expect(order.shopify_draft_order_id).to eq(draft_id)
     end
@@ -463,7 +463,7 @@ RSpec.describe "Job order locked operations", type: :request do
       session_login!(admin)
       delete job_order_path(order)
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.draft_not_voidable"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.delete_refused.draft_not_voidable", reference: error_reference))
       expect(order.reload.is_deleted).to be(false)
     end
 

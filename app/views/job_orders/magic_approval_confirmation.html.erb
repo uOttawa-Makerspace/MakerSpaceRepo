@@ -4,9 +4,9 @@
     <h1>Thank You for Approving/Denying the Job Order!</h1>
   <% else %>
     <i class="fa fa-times-circle fa-5x mb-3 text-danger"></i>
-    <h1>An error occured while trying to Approve/Deny the Job Order...</h1>
+    <h1><%= t("errors.job_orders.approval_failed_title") %></h1>
 
-    <h2>Please try again later.</h2>
+    <h2><%= @refusal %></h2>
   <% end %>
   <hr>
   <p>
