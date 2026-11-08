@@ -59,7 +59,7 @@ class Admin::TrainingSessionsController < AdminAreaController
   end
 
   def destroy
-    flash_write(@training_session, "training_sessions.not_deleted", "Deleted Successfully") { @training_session.destroy }
+    flash_write(@training_session, "training_sessions.not_deleted", "Deleted Successfully", destroy: true) { @training_session.destroy }
     redirect_back(fallback_location: root_path)
   end
 

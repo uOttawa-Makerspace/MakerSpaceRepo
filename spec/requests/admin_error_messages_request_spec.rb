@@ -305,6 +305,19 @@ RSpec.describe "Admin error messages", type: :request do
       expect(flash[:alert]).to start_with("La clé n'a pas été attribuée.")
     end
 
+    it "labels staff whose request form awaits approval on the assign page" do
+      create(:key_request, :status_waiting_for_approval, :all_questions_answered,
+             user: create(:user, :staff, name: "Waiting Holder"), supervisor: create(:user, :admin), space: space)
+      get admin_key_assign_path(key)
+      expect(response.body).to include("Waiting Holder")
+      expect(response.body).to include("Request form awaiting approval")
+    end
+
+    it "refuses a holder without any key request" do
+      patch admin_key_assign_key_path(key), params: { key: { user_id: create(:user, :staff).id } }
+      expect(flash[:alert]).to eq("The key holder must have an approved key request.")
+    end
+
     it "says which revoke was refused, in French" do
       patch admin_key_revoke_key_path(key), params: { locale: "fr" }
       expect(flash[:alert]).to start_with("La clé n'a pas été retirée.")
@@ -337,6 +350,14 @@ RSpec.describe "Admin error messages", type: :request do
       patch admin_pi_reader_path(reader), params: { pi_reader_params: { pi_location: "Bench" }, locale: "fr" }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq("Le lecteur n'a pas été modifié. Refused for the spec")
+    end
+
+    it "says the space is gone when the update points at a missing space, in French too" do
+      patch admin_pi_reader_path(reader), params: { pi_reader_params: { space_id: 0 } }
+      expect(flash[:alert]).to eq("The reader was not updated. A record it refers to no longer exists. Reload the page and try again.")
+      expect(response).to redirect_to(root_path)
+      patch admin_pi_reader_path(reader), params: { pi_reader_params: { space_id: 0 }, locale: "fr" }
+      expect(flash[:alert]).to start_with("Le lecteur n'a pas été modifié. Un élément auquel il fait référence")
     end
 
     it "names the reader that was not registered" do

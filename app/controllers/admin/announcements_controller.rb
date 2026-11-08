@@ -38,7 +38,7 @@ class Admin::AnnouncementsController < AdminAreaController
 
   def destroy
     announcement = Announcement.find(params[:id])
-    flash_write(announcement, "announcements.not_deleted", "Announcement Deleted") { announcement.destroy }
+    flash_write(announcement, "announcements.not_deleted", "Announcement Deleted", destroy: true) { announcement.destroy }
     redirect_to admin_announcements_path
   end
 

@@ -67,7 +67,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def destroy
-    flash_write(@key, "keys.not_deleted", "Successfully deleted key.") { @key.destroy }
+    flash_write(@key, "keys.not_deleted", "Successfully deleted key.", destroy: true) { @key.destroy }
     redirect_to admin_keys_path
   end
 
@@ -142,7 +142,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def holder_approved?(user)
-    user&.key_request&.status_approved? || false
+    user.key_request&.status_approved? || false
   end
 
   # Only a request that is still waiting can be approved or denied.

@@ -25,6 +25,7 @@ en:
         text: "An unexpected error stopped this page. Please try again. If it keeps happening, contact the makerspace staff and quote the reference below."
     admin:
       still_in_use: "Other records still use it, so it was left as it is."
+      record_missing: "A record it refers to no longer exists. Reload the page and try again."
       time_periods:
         not_created: "The time period was not created."
         not_updated: "The time period was not updated."

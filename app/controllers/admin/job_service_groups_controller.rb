@@ -20,7 +20,7 @@ class Admin::JobServiceGroupsController < AdminAreaController
   end
 
   def destroy
-    flash_write(@job_service_group, "job_service_groups.not_deleted", "The Service Group has been deleted successfully") { @job_service_group.destroy }
+    flash_write(@job_service_group, "job_service_groups.not_deleted", "The Service Group has been deleted successfully", destroy: true) { @job_service_group.destroy }
     redirect_to settings_job_orders_path
   end
 

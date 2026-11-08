@@ -20,7 +20,7 @@ class Admin::JobOptionsController < AdminAreaController
   end
 
   def destroy
-    flash_write(@job_option, "job_options.not_deleted", "The option has been deleted successfully") { @job_option.destroy }
+    flash_write(@job_option, "job_options.not_deleted", "The option has been deleted successfully", destroy: true) { @job_option.destroy }
     redirect_to settings_job_orders_path
   end
 

@@ -34,7 +34,7 @@ class Admin::TimePeriodsController < AdminAreaController
 
   def destroy
     time_period = TimePeriod.find(params[:id])
-    flash_write(time_period, "time_periods.not_deleted", "Time Period Deleted") { time_period.destroy }
+    flash_write(time_period, "time_periods.not_deleted", "Time Period Deleted", destroy: true) { time_period.destroy }
     redirect_to admin_time_periods_path
   end
 

@@ -42,7 +42,7 @@ class Admin::SettingsController < AdminAreaController
 
   def remove_course
     @course = CourseName.find(params[:id])
-    flash_write(@course, "settings.course_not_removed", "Course removed successfully") { @course.destroy }
+    flash_write(@course, "settings.course_not_removed", "Course removed successfully", destroy: true) { @course.destroy }
     redirect_to admin_settings_path
   end
 

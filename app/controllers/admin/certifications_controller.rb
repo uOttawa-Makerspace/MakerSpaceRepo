@@ -38,7 +38,7 @@ class Admin::CertificationsController < AdminAreaController
   end
 
   def destroy
-    flash_write(@cert, "certifications.not_deleted", "Certification deleted. This action can't be undone") { @cert.destroy }
+    flash_write(@cert, "certifications.not_deleted", "Certification deleted. This action can't be undone", destroy: true) { @cert.destroy }
     redirect_to demotions_admin_certifications_path
   end
 

@@ -36,7 +36,7 @@ class Admin::ContactInfosController < AdminAreaController
 
   def destroy
     contact_info = ContactInfo.find(params[:id])
-    flash_write(contact_info, "contact_infos.not_deleted", "Contact Info Deleted") { contact_info.destroy }
+    flash_write(contact_info, "contact_infos.not_deleted", "Contact Info Deleted", destroy: true) { contact_info.destroy }
     redirect_to admin_contact_infos_path
   end
 
