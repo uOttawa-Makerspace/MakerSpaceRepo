@@ -1,5 +1,6 @@
 import TomSelect from "tom-select";
 import { csrfHeaders } from "../src/csrf";
+import { reportFailure, requestJson } from "../src/request_error";
 
 let prev_anchor = "";
 document.addEventListener("turbo:submit-start", function () {
@@ -133,23 +134,18 @@ document.addEventListener("turbo:load", function () {
         const formData = new FormData();
         formData.append(e.target.id, uploadedFile);
 
-        fetch(url, {
+        requestJson(url, {
           method: "PATCH",
           headers: csrfHeaders({ Accept: "application/json" }),
           body: formData,
         })
-          .then((response) => {
-            if (response.ok) {
-              document.getElementById(e.target.id + "_show").style.display =
-                "none";
-              document.getElementById(e.target.id + "_hide").style.display =
-                "block";
-            }
+          .then(() => {
+            document.getElementById(e.target.id + "_show").style.display =
+              "none";
+            document.getElementById(e.target.id + "_hide").style.display =
+              "block";
           })
-          .catch((err) => {
-            console.error(err);
-            alert("Something went wrong uploading");
-          });
+          .catch(reportFailure);
       } else {
         alert("Please attach a pdf file only");
       }

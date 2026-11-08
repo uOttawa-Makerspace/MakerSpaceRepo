@@ -1,4 +1,5 @@
 import TomSelect from "tom-select";
+import { reportFailure, requestJson } from "../src/request_error";
 
 const el = document.getElementById("new_staff_select");
 if (el && !el.tomselect) {
@@ -14,8 +15,11 @@ if (el && !el.tomselect) {
 
     load(query, callback) {
       if (query.length < 2) return callback();
-      fetch(`/repositories/populate_users?search=${encodeURIComponent(query)}`)
-        .then((r) => r.json())
+      requestJson(
+        `/repositories/populate_users?search=${encodeURIComponent(query)}`,
+        undefined,
+        { requireBody: true },
+      )
         .then((data) =>
           callback(
             data.users.map((u) => ({
@@ -24,7 +28,10 @@ if (el && !el.tomselect) {
             })),
           ),
         )
-        .catch(() => callback());
+        .catch((error) => {
+          reportFailure(error);
+          callback();
+        });
     },
     shouldLoad: (query) => query.length >= 2,
 

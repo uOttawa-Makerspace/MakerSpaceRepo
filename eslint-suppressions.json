@@ -17,12 +17,6 @@
   "app/javascript/entrypoints/application.js": {
     "complexity": {
       "count": 1
-    },
-    "no-empty": {
-      "count": 1
-    },
-    "no-unused-vars": {
-      "count": 1
     }
   },
   "app/javascript/entrypoints/calendar.js": {

@@ -1,11 +1,12 @@
 import Sortable from "sortablejs";
 import { csrfHeaders } from "../src/csrf";
+import { reportFailure, requestJson } from "../src/request_error";
 
 document.addEventListener("turbo:load", () => {
   // On sort, POST to reorder
   function commitOrder(evt) {
     const reorderData = [...evt.to.children].map((i) => i.dataset.faqId);
-    fetch("/faq/reorder", {
+    requestJson("/faq/reorder", {
       method: "PUT",
       headers: csrfHeaders({
         Accept: "application/json",
@@ -15,9 +16,7 @@ document.addEventListener("turbo:load", () => {
         data: reorderData,
         format: "json",
       }),
-    }).catch((error) => {
-      console.log("Error reordering: " + error.message);
-    });
+    }).catch(reportFailure);
   }
 
   const faqList = document.querySelector("#faqAccordion");
