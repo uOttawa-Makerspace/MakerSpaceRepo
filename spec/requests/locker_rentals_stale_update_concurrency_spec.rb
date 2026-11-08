@@ -129,7 +129,6 @@ RSpec.describe "LockerRentals update racing a payment webhook", type: :request d
     held = create(:locker_payment, :held, locker_rental: LockerRental.find(rental.id), shopify_order_id: "ser-1")
     paused = Queue.new
     resume = Queue.new
-    finished_at = nil
     released_at = nil
     settler = Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do

@@ -228,9 +228,11 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
 
     around do |example|
       saved = context_ivars.to_h { |iv| [iv, ShopifyAPI::Context.instance_variable_get(iv)] }
-      example.run
-    ensure
-      saved.each { |iv, v| ShopifyAPI::Context.instance_variable_set(iv, v) }
+      begin
+        example.run
+      ensure
+        saved.each { |iv, v| ShopifyAPI::Context.instance_variable_set(iv, v) }
+      end
     end
 
     it "posts the draft order to /admin/api/<configured version>/graphql.json" do

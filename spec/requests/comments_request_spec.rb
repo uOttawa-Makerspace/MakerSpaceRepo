@@ -284,8 +284,8 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
   describe "comments on the repository page" do
     # N+1 pinned
     it "orders by score by default and by recency with comment_filter=newest; 5 per page", skip_bullet: true do
-      low = create(:comment, repository: repo, user: author, content: "LOWCOMMENT", upvote: 0, created_at: 1.day.ago)
-      high = create(:comment, repository: repo, user: author, content: "HIGHCOMMENT", upvote: 9, created_at: 2.days.ago)
+      create(:comment, repository: repo, user: author, content: "LOWCOMMENT", upvote: 0, created_at: 1.day.ago)
+      create(:comment, repository: repo, user: author, content: "HIGHCOMMENT", upvote: 9, created_at: 2.days.ago)
       get repository_path(owner.username, repo.id)
       expect(response.body.index("HIGHCOMMENT")).to be < response.body.index("LOWCOMMENT")
       get repository_path(owner.username, repo.id, comment_filter: "newest")

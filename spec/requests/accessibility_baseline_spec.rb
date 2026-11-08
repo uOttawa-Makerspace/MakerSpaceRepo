@@ -19,7 +19,7 @@ RSpec.describe "Accessibility baseline", type: :request do
   # Every aria-label (in any Ruby or HTML spelling) whose value still holds literal words once ERB output and string
   # interpolation are removed, so a name built only from t(...) or a variable passes.
   def literal_accessible_names(source)
-    ruby_value = /(["'])((?:\#\{[^}]*\}|(?!\1).)*)\1/m
+    ruby_value = /(["'])((?>\#\{[^}]*\}|(?!\1).)*+)\1/m
     forms = [
       /aria:\s*\{[^{}]*?\blabel:\s*#{ruby_value}/m,
       /["']aria-label["']\s*(?::|=>)\s*#{ruby_value}/

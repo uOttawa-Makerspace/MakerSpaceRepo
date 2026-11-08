@@ -166,8 +166,7 @@ RSpec.describe Admin::KeysController, type: :controller do
       end
 
       it "should update the key but not the status" do
-        kr =
-          create(
+        create(
             :key_request,
             :status_approved,
             :all_questions_answered,

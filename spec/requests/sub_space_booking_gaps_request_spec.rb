@@ -1185,8 +1185,8 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
 
     it "lists the user's own bookings newest first" do
-      older = pending_booking(user, name: "OlderMine")
-      newer = pending_booking(user, name: "NewerMine", start_time: DateTime.parse("2027-05-03 10:00"),
+      pending_booking(user, name: "OlderMine")
+      pending_booking(user, name: "NewerMine", start_time: DateTime.parse("2027-05-03 10:00"),
                                     end_time: DateTime.parse("2027-05-03 11:00"))
       pending_booking(create(:user, :regular_user, booking_approval: true), name: "NotMine")
       log_in!(user)

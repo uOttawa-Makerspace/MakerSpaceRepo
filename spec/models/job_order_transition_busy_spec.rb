@@ -25,6 +25,7 @@ RSpec.describe JobOrder, "transition! lock wait", type: :model do
     stub_const("ApplicationRecord::LOCK_TIMEOUT", "200ms")
     locked = Queue.new
     release = Queue.new
+    result = nil
     holder = Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do
         JobOrder.transaction do

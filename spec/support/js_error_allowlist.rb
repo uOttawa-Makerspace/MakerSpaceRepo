@@ -23,7 +23,7 @@ module JsErrorCheck
     # (Cloudflare Turnstile, UserWay widget). The system browser resolves no
     # external host (see --host-resolver-rules in system.rb), so each logs a
     # DNS failure. Extend the host list only with the same kind of resource.
-    { id: "js-error-04", path: %r{https://(challenges\.cloudflare\.com|cdn\.userway\.org|www\.youtube\.com)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
+    { id: "js-error-04", path: %r{\Ahttps://(challenges\.cloudflare\.com|cdn\.userway\.org|www\.youtube\.com)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
     # Found by the browser crawl (spec/system/page_crawl_spec.rb).
     # the 500s of the printers route (printers without sessions) break the
     # printer pages' fetch + JSON parse.

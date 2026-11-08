@@ -557,7 +557,7 @@ RSpec.describe User, type: :model do
 
       it "should be false" do
         user = create(:user, :regular_user)
-        cert = create(:certification, :basic_training, user_id: user.id, level: "Beginner")
+        create(:certification, :basic_training, user_id: user.id, level: "Beginner")
         create(:training_requirement, :"3d_printing", level: "Beginner")
         expect(user.has_requirements?(TrainingRequirement.all)).to be_falsey
       end
