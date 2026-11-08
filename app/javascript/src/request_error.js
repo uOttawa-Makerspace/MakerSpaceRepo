@@ -18,3 +18,27 @@ export function serverError(body, fallback) {
     ? `${message} [${reference}]`
     : message;
 }
+
+// An error whose message is already translated text for the user, never a browser exception message.
+export class RequestFailed extends Error {}
+
+// Sends the request and reads the whole answer: { ok, contentType, text }. When the request or the reading of
+// its body fails (server unreachable, connection dropped), throws a RequestFailed carrying `networkText`.
+export async function requestResult(input, init, networkText) {
+  try {
+    const response = await fetch(input, init);
+    return {
+      ok: response.ok,
+      contentType: response.headers?.get("content-type") ?? "",
+      text: await response.text(),
+    };
+  } catch {
+    throw new RequestFailed(networkText);
+  }
+}
+
+// The text to show for any error caught by a caller of requestResult: its own message when it is a
+// RequestFailed, otherwise `fallback`.
+export function failureText(error, fallback) {
+  return error instanceof RequestFailed ? error.message : fallback;
+}

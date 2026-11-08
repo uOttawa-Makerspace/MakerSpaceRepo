@@ -37,6 +37,7 @@ const PAGE = `
 <div id="end-date-validation"></div><div id="bookDeleteRecurringDropdown"></div>
 <button id="bookCancel"></button><button id="bookClose"></button><button id="bookSave"></button>
 <button id="bookUpdate"></button><button id="bookDelete"></button>
+<div id="subspace"></div><div id="subspace_header"></div><h5 id="bookingModalLabel"></h5><label id="book-recurring-label"></label>
 <button id="bookRecurringDeleteOne"></button><button id="bookRecurringDeleteRest"></button>`;
 
 const toast = () => document.getElementById("toast_text").innerText;
@@ -133,5 +134,44 @@ describe("a failed calendar feed", () => {
     expect(toast()).toBe("Bookings not loaded");
     await feedFailure(undefined);
     expect(toast()).toBe("Bookings not loaded");
+  });
+});
+
+describe("a failed booking lookup", () => {
+  const open = async (response) => {
+    global.fetch = vi.fn(() =>
+      response instanceof Error
+        ? Promise.reject(response)
+        : Promise.resolve(response),
+    );
+    calendarOptions.eventClick({
+      event: { id: "b_7", extendedProps: { viewable: true } },
+    });
+    await settle();
+  };
+
+  it("shows the translated network text, never the browser's message", async () => {
+    await open(new TypeError("Failed to fetch"));
+    expect(title()).toBe("Booking unavailable");
+    expect(toast()).toBe("Server unreachable");
+  });
+
+  it("shows the server's reason with its reference", async () => {
+    await open({
+      ok: false,
+      headers: { get: () => "application/json" },
+      text: async () =>
+        JSON.stringify({ error: "Not allowed.", reference: "aa11bb22" }),
+    });
+    expect(toast()).toBe("Not allowed. [aa11bb22]");
+  });
+
+  it("falls back to the translated text for an answer that is not JSON", async () => {
+    await open({
+      ok: true,
+      headers: { get: () => "text/html" },
+      text: async () => "<html></html>",
+    });
+    expect(toast()).toBe("Could not open it");
   });
 });

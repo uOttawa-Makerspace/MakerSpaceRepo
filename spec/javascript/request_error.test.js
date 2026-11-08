@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { parseBody, serverError } from "../../app/javascript/src/request_error";
+import { describe, expect, it, vi } from "vitest";
+import {
+  failureText,
+  parseBody,
+  RequestFailed,
+  requestResult,
+  serverError,
+} from "../../app/javascript/src/request_error";
 
 describe("parseBody", () => {
   it("returns the parsed JSON", () => {
@@ -38,5 +44,49 @@ describe("serverError", () => {
     expect(serverError({ errors: ["x"] }, "fallback")).toBe("fallback");
     expect(serverError({ error: "" }, "fallback")).toBe("fallback");
     expect(serverError({ error: 500 }, "fallback")).toBe("fallback");
+  });
+});
+
+describe("requestResult", () => {
+  it("reads the whole answer", async () => {
+    global.fetch = vi.fn(async () => ({
+      ok: false,
+      headers: { get: () => "application/json" },
+      text: async () => "{}",
+    }));
+    expect(await requestResult("/x", {}, "network")).toEqual({
+      ok: false,
+      contentType: "application/json",
+      text: "{}",
+    });
+  });
+
+  it("turns a rejected fetch into the translated text", async () => {
+    global.fetch = vi.fn(() =>
+      Promise.reject(new TypeError("Failed to fetch")),
+    );
+    await expect(requestResult("/x", {}, "network")).rejects.toThrow("network");
+  });
+
+  it("turns a body that cannot be read into the translated text", async () => {
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      headers: { get: () => "" },
+      text: () => Promise.reject(new TypeError("terminated")),
+    }));
+    await expect(requestResult("/x", {}, "network")).rejects.toBeInstanceOf(
+      RequestFailed,
+    );
+  });
+});
+
+describe("failureText", () => {
+  it("uses the translated message of a RequestFailed and the fallback for anything else", () => {
+    expect(failureText(new RequestFailed("translated"), "fallback")).toBe(
+      "translated",
+    );
+    expect(failureText(new TypeError("Failed to fetch"), "fallback")).toBe(
+      "fallback",
+    );
   });
 });

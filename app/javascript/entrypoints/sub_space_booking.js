@@ -6,7 +6,13 @@ import TomSelect from "tom-select";
 import "flatpickr";
 import { Toast } from "bootstrap";
 import { csrfHeaders } from "../src/csrf";
-import { parseBody, serverError } from "../src/request_error";
+import {
+  failureText,
+  parseBody,
+  RequestFailed,
+  requestResult,
+  serverError,
+} from "../src/request_error";
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 
@@ -301,24 +307,27 @@ document.addEventListener("turbo:load", function () {
 
   // The booking lookup answers JSON only to staff; anything else (a refusal
   // redirected to an HTML page, a server error) is shown as the server's reason, not parsed.
-  function fetchBooking(id) {
-    return fetch(`/sub_space_booking/get_sub_space_booking?id=${id}`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
+  async function fetchBooking(id) {
+    const { ok, contentType, text } = await requestResult(
+      `/sub_space_booking/get_sub_space_booking?id=${id}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
       },
-    }).then(async (r) => {
-      if (r.ok && r.headers.get("content-type")?.includes("json"))
-        return r.json();
-      const body = parseBody(await r.text());
-      throw new Error(serverError(body, bookingText("unavailable")));
-    });
+      bookingText("network"),
+    );
+    if (ok && contentType.includes("json")) return parseBody(text);
+    throw new RequestFailed(
+      serverError(parseBody(text), bookingText("unavailable")),
+    );
   }
 
   function showBookingLoadError(error) {
     showToast(
       bookingText("unavailableTitle"),
-      error?.message || bookingText("unavailable"),
+      failureText(error, bookingText("unavailable")),
     );
   }
 
@@ -514,8 +523,7 @@ document.addEventListener("turbo:load", function () {
 
   // ---- Shared fetch handler -----------------------------------------------
   function makeRequest(request, triggerBtn) {
-    fetch(request)
-      .then((r) => r.text().then((text) => ({ ok: r.ok, text })))
+    requestResult(request, undefined, bookingText("network"))
       .then(({ ok, text }) => {
         const parsed = parseBody(text);
 
@@ -580,9 +588,12 @@ document.addEventListener("turbo:load", function () {
           if (parsed === null) window.location.reload();
         }
       })
-      .catch(() => {
+      .catch((error) => {
         triggerBtn?.removeAttribute("disabled");
-        showToast(bookingText("failedTitle"), bookingText("network"));
+        showToast(
+          bookingText("failedTitle"),
+          failureText(error, bookingText("noReason")),
+        );
       });
   }
 
