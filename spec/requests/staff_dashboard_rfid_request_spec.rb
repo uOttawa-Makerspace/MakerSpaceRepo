@@ -212,9 +212,9 @@ RSpec.describe "Staff dashboard RFID link/unlink", type: :request do
       allow(Rfid).to receive(:unlink_card!).and_raise(Rfid::OwnerChanging)
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, as: :json
       expect(response).to have_http_status(:conflict)
-      expect(body).to eq("status" => "error", "error" => "card is changing, try again")
+      expect(body).to eq("status" => "error", "error" => "This card is being changed by someone else right now. Try again in a moment.")
       put staff_dashboard_unlink_rfid_path, params: { card_number: card.card_number }, headers: { "HTTP_REFERER" => "http://www.example.com/anywhere" }
-      expect(flash[:alert]).to eq("card is changing, try again")
+      expect(flash[:alert]).to eq("This card is being changed by someone else right now. Try again in a moment.")
       expect(card.reload.user_id).to eq(owner.id)
     end
 
