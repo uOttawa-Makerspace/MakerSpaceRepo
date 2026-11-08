@@ -18,8 +18,19 @@ RSpec.describe "Stylesheet imports" do
 end
 
 RSpec.describe "Links in running text" do
-  it "are underlined so colour is not the only cue" do
-    rules = Rails.root.join("app/javascript/stylesheets/accessibility.scss").read
-    expect(rules).to match(/^:is\(p, li, td\)\s+a:not\([^)]*\) \{\s*text-decoration: underline;/)
+  let(:rule) { compiled_css[/(?<=\})main :is\(p,li,td\) a:not\([^{]*\)\{text-decoration:underline\}/] }
+
+  it "are underlined in page content so colour is not the only cue" do
+    expect(rule).to be_present
+  end
+
+  it "leave buttons, badges and navigation, pagination and tag links alone" do
+    %w[.btn .badge .page-link nav .nav .tags .pagination .apple_pagination .breadcrumb .dropdown-menu .list-group].each do |skipped|
+      expect(rule).to include(skipped)
+    end
+  end
+
+  it "does not reach the footer or the navbars, which sit outside main" do
+    expect(rule).to start_with("main ")
   end
 end

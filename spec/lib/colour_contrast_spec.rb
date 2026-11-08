@@ -67,23 +67,54 @@ RSpec.describe "Theme colour contrast" do
   end
 
   it "draws the home tile hover in the brand orange with text that counts as large" do
-    tile = styles.join("static_pages.scss").read
-    expect(tile).to match(/&:active\s*\{[^}]*background:\s*\$primary;/m)
-    expect(tile).to match(/font-weight: lighter;\s*font-size: 1\.75rem;/)
-    expect(tile).to match(/max-width: 575\.98px\) \{\s*font-size: 1\.25rem;\s*font-weight: 700;/)
+    expect(compiled_css).to match(/\.platform-item \.overlay:active\{[^}]*background:\s*#e24829/)
+    expect(compiled_css).to match(/font-size:\s*1\.75rem;\s*font-weight:\s*lighter/)
+    expect(compiled_css).to match(/@media \(width<=575\.98px\)\{[^{]*\.overlay\{font-size:\s*1\.25rem;\s*font-weight:\s*700\}/)
     expect(ratio("#ffffff", variables.fetch("primary"))).to be >= 3.0
   end
 
+  it "keeps the brand orange" do
+    expect(variables.fetch("primary")).to eq("#e24829")
+  end
+
   it "makes white text on the orange fill bold and at least 14pt" do
-    rules = styles.join("accessibility.scss").read
     size = variables_file[/^\$large-text-size:\s*([\d.]+)rem;/, 1].to_f * 16
     expect(size).to be >= 18.66
-    expect(rules).to match(/max-width: 1199\.98px\) \{\s*:root:not\(\[data-bs-theme="dark"\]\) \.navbar:not\(\.navbar-staff\) \{\s*\.nav-link,\s*\.btn\.btn-link \{\s*font-weight: 700;\s*font-size: \$large-text-size;/)
-    expect(rules).to match(/\.btn\.btn-primary,\s*\.btn\.btn-outline-primary \{\s*--bs-btn-font-weight: 700;\s*--bs-btn-font-size: #\{\$large-text-size\};.*?\n\s*font-size: \$large-text-size;/m)
-    expect(rules).to match(/\.btn\.btn-outline-primary \{\s*--bs-btn-color: var\(--primary-text\);/)
-    expect(rules).to match(/\.nav-pills \.nav-link \{\s*font-size: \$large-text-size;\s*&\.active,\s*\.show > & \{\s*font-weight: 700 !important;/)
-    expect(rules).to match(/\.fc \.fc-button-primary \{\s*font-weight: 700;\s*font-size: \$large-text-size;/)
-    expect(rules).to match(/\.badge:is\(\.bg-primary, \.text-bg-primary, \.cert-badge\) \{\s*font-weight: 700;\s*font-size: \$large-text-size;/)
+    navbar = ':root:not([data-bs-theme=dark]) .navbar:not(.navbar-staff) .nav-link'
+    {
+      navbar => { "font-weight" => "700", "font-size" => "1.167rem" },
+      ".btn:is(.btn-primary,.btn-outline-primary)" => { "--bs-btn-font-weight" => "700" },
+      ".btn:is(.btn-primary,.btn-outline-primary):not(.btn-lg)" => { "--bs-btn-font-size" => "1.167rem" },
+      ".badge:is(.bg-primary,.text-bg-primary,.cert-badge)" => { "font-weight" => "700", "font-size" => "1.167rem" },
+      ".fc .fc-button-primary" => { "font-weight" => "700", "font-size" => "1.167rem" },
+      ".nav-pills .nav-link" => { "font-size" => "1.167rem" },
+      ".nav-pills .nav-link.active" => { "font-weight" => "700!important" },
+      ".nav-pills .show>.nav-link" => { "font-weight" => "700!important" }
+    }.each do |selector, expected|
+      expect(css_declarations(selector)).to include(expected), "#{selector} lacks #{expected}"
+    end
+  end
+
+  it "leaves large buttons at their own size and small buttons at their own height" do
+    expect(compiled_css).not_to match(/\.btn-lg:is\(\.btn-primary/)
+    expect(css_declarations(".btn-lg")).to include("--bs-btn-font-size" => "1.25rem")
+    expect(css_declarations(".btn-sm:is(.btn-primary,.btn-outline-primary)")).to include("--bs-btn-line-height" => "1.125")
+    expect(css_declarations(".input-group-sm>.btn:is(.btn-primary,.btn-outline-primary)")).to include("font-size" => "1.167rem", "line-height" => "1.125")
+  end
+
+  it "wraps the calendar toolbar on phones so its larger buttons stay on screen" do
+    expect(compiled_css).to match(/@media \(width<=575\.98px\)\{\.fc \.fc-header-toolbar\{[^}]*flex-wrap:\s*wrap/)
+  end
+
+  it "draws outline buttons in the darker text orange at rest" do
+    expect(css_declarations(".btn.btn-outline-primary")).to include("--bs-btn-color" => "var(--primary-text)")
+  end
+
+  it "expands the main navbar only from 1600px, where its 14pt links fit" do
+    expect(compiled_css).to match(/@media \(width>=1600px\)\{\.navbar-expand-xxxl\{/)
+    header = Rails.root.join("app/views/layouts/_header.html.erb").read
+    expect(header).to include("navbar-expand-xxxl")
+    expect(header).not_to match(/navbar-expand-xl|d-xl-|px-xl-/)
   end
 end
 
