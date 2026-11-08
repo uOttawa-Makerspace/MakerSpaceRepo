@@ -162,12 +162,7 @@ class RepositoriesController < SessionsController
   end
 
   def update
-    @repository.categories.destroy_all
-    @repository.equipments.destroy_all
-    update_password
-    if @repository.update(repository_params.except(:categories, :equipments))
-      create_categories
-      create_equipments
+    if save_with_categories_and_equipments
       flash[:notice] = "Project updated successfully!"
       redirect_to repository_path(
                     @repository.user_username,
@@ -485,15 +480,33 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def update_password
-    if repository_params[:share_type].eql?("public")
-      @repository.password = nil
-      @repository.save
-    else
-      if params[:password].present?
-        pass = params[:password].join("")
-        @repository.update(password: BCrypt::Password.create(pass))
-      end
+  # The edit is validated and saved first; categories and equipment are replaced only once it has saved, in the
+  # same transaction, so a refused edit leaves them as they were.
+  def save_with_categories_and_equipments
+    Repository.transaction do
+      next false unless @repository.update(repository_params.except(:categories, :equipments).merge(password_attributes))
+
+      @repository.categories.destroy_all
+      @repository.equipments.destroy_all
+      create_categories
+      create_equipments
+      true
     end
+  end
+
+  # A public share type clears the password; a private one changes it only when a new one is sent.
+  def password_attributes
+    if repository_params[:share_type].eql?("public")
+      { password: nil }
+    elsif params[:password].present?
+      { password: BCrypt::Password.create(params[:password].join("")) }
+    else
+      {}
+    end
+  end
+
+  def update_password
+    attributes = password_attributes
+    @repository.update(attributes) if attributes.any?
   end
 end
