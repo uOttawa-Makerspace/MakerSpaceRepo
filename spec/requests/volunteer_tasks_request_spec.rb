@@ -159,12 +159,13 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(VolunteerTask.last.require_trainings.pluck(:training_id)).to match_array(trainings.map(&:id))
     end
 
-    it "joins listed staff (typed by role) and volunteers (typed Volunteer, active)" do
+    it "joins listed staff (typed by role) and volunteers (typed Volunteer, joined)" do
       other_staff = create(:user, :admin)
       post volunteer_tasks_path, params: task_params.merge(staff_id: other_staff.id, volunteer_id: [volunteer.id])
       joins = VolunteerTask.last.volunteer_task_joins.order(:id)
       expect(joins.map { |j| [j.user_id, j.user_type, j.active] })
         .to eq([[other_staff.id, "Admin", true], [volunteer.id, "Volunteer", true]])
+      expect(joins.map { |j| [j.state, j.state_changed_at, j.state_changed_by_id] }).to eq([["joined", nil, nil]] * 2)
     end
 
     # only the hours are validated: negative cc, zero seats, blank title and arbitrary status are stored
