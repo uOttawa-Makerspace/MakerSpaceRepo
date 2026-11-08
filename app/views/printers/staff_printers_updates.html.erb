@@ -42,14 +42,14 @@
             <tr>
               <% printer = Printer.find(printer_id) %>
               <td><%= printer.name %></td>
-              <% if last_session.nil? %>
-                <% 3.times do %>
-                  <td>-------</td>
-                <% end %>
+              <% if last_session.nil? || !last_session.in_use? %>
+                <td>-------</td>
+                <td>-------</td>
+                <td>No</td>
               <% else %>
                 <td><%= link_to last_session.user.username, user_path(last_session.user.username) %></td>
                 <td><%= last_session&.created_at&.strftime('%a, %d %b %Y at %I:%M%p') %></td>
-                <td><%= last_session.in_use? ? 'Yes' : 'No' %></td>
+                <td>Yes</td>
               <% end %>
                 <td>
                   <i class="fa <%= printer.maintenance ? 'fa-check text-success' : 'fa-times text-danger' %>"></i> <%= printer.maintenance ? 'Yes' : 'No' %>
