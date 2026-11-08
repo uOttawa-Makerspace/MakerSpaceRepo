@@ -32,21 +32,13 @@ class Admin::AnnouncementsController < AdminAreaController
 
   def update
     announcement = Announcement.find(params[:id])
-    if announcement.update(announcement_params)
-      flash[:notice] = "Announcement updated"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    flash_write(announcement, "announcements.not_updated", "Announcement updated") { announcement.update(announcement_params) }
     redirect_to admin_announcements_path
   end
 
   def destroy
     announcement = Announcement.find(params[:id])
-    if announcement.destroy
-      flash[:notice] = "Announcement Deleted"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    flash_write(announcement, "announcements.not_deleted", "Announcement Deleted") { announcement.destroy }
     redirect_to admin_announcements_path
   end
 

@@ -23,3 +23,36 @@ fr:
       unexpected:
         title: "Une erreur s'est produite de notre côté"
         text: "Une erreur inattendue a interrompu cette page. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence ci-dessous."
+    admin:
+      still_in_use: "D'autres éléments l'utilisent encore, il a donc été laissé tel quel."
+      time_periods:
+        not_created: "La période n'a pas été créée."
+        not_updated: "La période n'a pas été modifiée."
+        not_deleted: "La période n'a pas été supprimée."
+      contact_infos:
+        not_updated: "Les coordonnées n'ont pas été modifiées."
+        not_deleted: "Les coordonnées n'ont pas été supprimées."
+      announcements:
+        not_updated: "L'annonce n'a pas été modifiée."
+        not_deleted: "L'annonce n'a pas été supprimée."
+      training_sessions:
+        not_updated: "La séance de formation n'a pas été modifiée."
+        not_deleted: "La séance de formation n'a pas été supprimée."
+      certifications:
+        not_updated: "La certification n'a pas été modifiée."
+        not_deleted: "La certification n'a pas été supprimée."
+      job_types:
+        not_created: "Le type de travail n'a pas été créé."
+        not_updated: "Le type de travail n'a pas été modifié."
+      job_services:
+        not_created: "Le service n'a pas été créé."
+        not_updated: "Le service n'a pas été modifié."
+        not_deleted: "Le service n'a pas été supprimé."
+      job_options:
+        not_created: "L'option n'a pas été créée."
+        not_updated: "L'option n'a pas été modifiée."
+        not_deleted: "L'option n'a pas été supprimée."
+      job_service_groups:
+        not_created: "Le groupe de services n'a pas été créé."
+        not_updated: "Le groupe de services n'a pas été modifié."
+        not_deleted: "Le groupe de services n'a pas été supprimé."

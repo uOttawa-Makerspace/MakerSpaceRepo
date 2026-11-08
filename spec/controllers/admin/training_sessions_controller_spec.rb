@@ -40,7 +40,7 @@ RSpec.describe Admin::TrainingSessionsController, type: :controller do
         expect(TrainingSession.find(@training_session.id).user.id).not_to eq(
           user.id
         )
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq("The training session was not updated. User must be staff")
         expect(response).to redirect_to root_path
       end
 

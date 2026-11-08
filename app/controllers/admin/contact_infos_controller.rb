@@ -30,21 +30,13 @@ class Admin::ContactInfosController < AdminAreaController
 
   def update
     contact_info = ContactInfo.find(params[:id])
-    if contact_info.update(contact_infos_params)
-      flash[:notice] = "Contact Info updated"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    flash_write(contact_info, "contact_infos.not_updated", "Contact Info updated") { contact_info.update(contact_infos_params) }
     redirect_to admin_contact_infos_path
   end
 
   def destroy
     contact_info = ContactInfo.find(params[:id])
-    if contact_info.destroy
-      flash[:notice] = "Contact Info Deleted"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    flash_write(contact_info, "contact_infos.not_deleted", "Contact Info Deleted") { contact_info.destroy }
     redirect_to admin_contact_infos_path
   end
 

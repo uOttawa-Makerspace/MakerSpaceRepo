@@ -7,11 +7,7 @@ class Admin::JobServiceGroupsController < AdminAreaController
 
   def create
     @job_service_group = JobServiceGroup.new(job_service_group_params)
-    if @job_service_group.save
-      flash[:notice] = "The Service Group has been created!"
-    else
-      flash[:alert] = "There was an error while creating the Service Group."
-    end
+    flash_write(@job_service_group, "job_service_groups.not_created", "The Service Group has been created!") { @job_service_group.save }
     redirect_to settings_job_orders_path
   end
 
@@ -19,20 +15,12 @@ class Admin::JobServiceGroupsController < AdminAreaController
   end
 
   def update
-    if @job_service_group.update(job_service_group_params)
-      flash[:notice] = "The Service Group has been updated"
-    else
-      flash[:alert] = "Something went wrong while updating the Service Group"
-    end
+    flash_write(@job_service_group, "job_service_groups.not_updated", "The Service Group has been updated") { @job_service_group.update(job_service_group_params) }
     redirect_to settings_job_orders_path
   end
 
   def destroy
-    if @job_service_group.destroy
-      flash[:notice] = "The Service Group has been deleted successfully"
-    else
-      flash[:alert] = "An error occurred while deleting the Service Group."
-    end
+    flash_write(@job_service_group, "job_service_groups.not_deleted", "The Service Group has been deleted successfully") { @job_service_group.destroy }
     redirect_to settings_job_orders_path
   end
 

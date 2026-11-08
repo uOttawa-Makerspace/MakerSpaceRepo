@@ -23,3 +23,36 @@ en:
       unexpected:
         title: "Something went wrong on our side"
         text: "An unexpected error stopped this page. Please try again. If it keeps happening, contact the makerspace staff and quote the reference below."
+    admin:
+      still_in_use: "Other records still use it, so it was left as it is."
+      time_periods:
+        not_created: "The time period was not created."
+        not_updated: "The time period was not updated."
+        not_deleted: "The time period was not deleted."
+      contact_infos:
+        not_updated: "The contact information was not updated."
+        not_deleted: "The contact information was not deleted."
+      announcements:
+        not_updated: "The announcement was not updated."
+        not_deleted: "The announcement was not deleted."
+      training_sessions:
+        not_updated: "The training session was not updated."
+        not_deleted: "The training session was not deleted."
+      certifications:
+        not_updated: "The certification was not updated."
+        not_deleted: "The certification was not deleted."
+      job_types:
+        not_created: "The job type was not created."
+        not_updated: "The job type was not updated."
+      job_services:
+        not_created: "The service was not created."
+        not_updated: "The service was not updated."
+        not_deleted: "The service was not deleted."
+      job_options:
+        not_created: "The option was not created."
+        not_updated: "The option was not updated."
+        not_deleted: "The option was not deleted."
+      job_service_groups:
+        not_created: "The service group was not created."
+        not_updated: "The service group was not updated."
+        not_deleted: "The service group was not deleted."
