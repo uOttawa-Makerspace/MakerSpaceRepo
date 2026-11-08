@@ -38,8 +38,10 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "signs the same user out again" do
       tap_card
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       tap_card
       expect(body[:success]).to eq("RFID sign out")
+      travel(1.second) # time is frozen after travel: let the sign out time pass
       expect(LabSession.where(user: owner).active).to be_empty
     end
 
@@ -62,6 +64,7 @@ RSpec.describe "RFID endpoints", type: :request do
       tap_card_with(mac: pi_reader.pi_mac_address.upcase.tr(":", "-"))
       expect(LabSession.where(user: owner).last.mac_address).to eq(pi_reader.pi_mac_address)
       expect(TapBoxLog.where(event_type: [TapBoxLog::CARD_TAP, TapBoxLog::SIGN_IN]).pluck(:mac_address).uniq).to eq([pi_reader.pi_mac_address])
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       tap_card_with(mac: pi_reader.pi_mac_address.upcase)
       expect(TapBoxLog.where(event_type: TapBoxLog::SIGN_OUT).last.mac_address).to eq(pi_reader.pi_mac_address)
     end
@@ -135,6 +138,7 @@ RSpec.describe "RFID endpoints", type: :request do
     it "returns only the success string, for sign in and sign out" do
       tap_card
       expect(body).to eq(success: "RFID sign in")
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       tap_card
       expect(body).to eq(success: "RFID sign out")
     end
@@ -158,6 +162,7 @@ RSpec.describe "RFID endpoints", type: :request do
         expect { tap_as(bearer(user)) }.to change { LabSession.where(user: owner, space: space).active.count }.from(0).to(1)
         expect(response).to have_http_status(:ok)
         expect(body[:success]).to eq("RFID sign in")
+        travel(RfidTap::REPEAT_WINDOW + 1.second)
         tap_as(bearer(user))
         expect(body[:success]).to eq("RFID sign out")
       end
@@ -242,7 +247,9 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "ends the session and logs sign_out on the second tap" do
       tap_card
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       expect { tap_card }.to change { TapBoxLog.where(event_type: TapBoxLog::SIGN_OUT).count }.by(1)
+      travel(1.second) # time is frozen after travel: let the sign out time pass
       expect(LabSession.where(user: owner).active).to be_empty
     end
 
@@ -251,6 +258,7 @@ RSpec.describe "RFID endpoints", type: :request do
       headers = { "Authorization" => "Bearer #{staff.token}" }
       post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id.to_s }, headers: headers, as: :json
       expect(body[:success]).to eq("RFID sign in")
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id.to_s }, headers: headers, as: :json
       expect(body[:success]).to eq("RFID sign out")
     end
@@ -307,6 +315,7 @@ RSpec.describe "RFID endpoints", type: :request do
 
     it "broadcasts a table update (and no modal) to the signed-in table stream on sign out" do
       tap_card
+      travel(RfidTap::REPEAT_WINDOW + 1.second)
       expect { tap_card }.to have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
       expect { tap_card }.not_to have_broadcasted_to("space_event_#{space.id}")
     end

@@ -4,7 +4,8 @@ require 'rails_helper'
 
 RSpec.describe RfidController, type: :controller do
   # Essential for testing sidekiq/active_job logic with queue_adapter = :test
-  include ActiveJob::TestHelper 
+  include ActiveJob::TestHelper
+  include ActiveSupport::Testing::TimeHelpers
 
   before :each do
     @user = create(:user, :regular_user)
@@ -111,6 +112,7 @@ RSpec.describe RfidController, type: :controller do
         )
         
         # Sign Out
+        travel(RfidTap::REPEAT_WINDOW + 1.second)
         post :card_number, params: rfid_params, format: :json
         expect(JSON.parse(response.body, symbolize_names: true)).to eq(
           { success: 'RFID sign out' }
@@ -138,6 +140,7 @@ RSpec.describe RfidController, type: :controller do
           mac_address: sign_out_pi.pi_mac_address
         }
         
+        travel(RfidTap::REPEAT_WINDOW + 1.second)
         post :card_number, params: sign_out_rfid_params, format: :json
         expect(JSON.parse(response.body, symbolize_names: true)).to eq(
           { success: 'RFID sign out' }
@@ -222,8 +225,10 @@ RSpec.describe RfidController, type: :controller do
         user.update(faculty: 'Social Sciences')
 
         # 3. Sign Out
+        travel(RfidTap::REPEAT_WINDOW + 1.second)
         post :card_number, params: @rfid_params
         expect(response).to have_http_status :success
+        travel(1.second) # time is frozen after travel: let the sign out time pass
 
         # 4. Sign In Again (Revoke Membership)
         perform_enqueued_jobs do

@@ -6,6 +6,10 @@
 # Api::V1::RfidTapsController (phone NFC tap). The callers authenticate, rate
 # limit, resolve the space and render; this object never touches the request.
 class RfidTap
+  # A second tap of the same card in the same space this soon after the session
+  # started is ignored (answered as already signed in) rather than signing out.
+  REPEAT_WINDOW = 60.seconds
+
   # outcome: :sign_in / :sign_out (card linked, session toggled), :unlinked_card
   # (known card with no owner yet), :new_card (unknown card stored), :invalid_card
   # (blank card number, nothing stored).
@@ -64,35 +68,67 @@ class RfidTap
 
   private
 
+  # What one toggle did, for the work that happens after it commits: outcome is
+  # :sign_in, :sign_out or :repeat (a repeat tap, nothing changed);
+  # left_space_ids / previous_space_id describe a space switch.
+  Toggle = Struct.new(:outcome, :left_space_ids, :previous_space_id)
+
+  # The user row is locked for the toggle, so two taps of one user (two readers,
+  # a double tap) run one after the other and the second sees the first's session.
+  # Logs, broadcasts and the membership job run after the transaction commits.
   def check_session(rfid)
-    active_sessions = rfid.user.lab_sessions.active
-
-    if active_sessions.present?
-      previous_space_ids = active_sessions.pluck(:space_id).uniq
-      last_active_location = active_sessions.last.space_id
-
-      if last_active_location != @space_id
-        # Sign out of all spaces and sign in here together: a failure leaves
-        # the user signed in where they were.
-        LabSession.transaction do
-          active_sessions.sign_out_session
-          LabSession.create_session(user: rfid.user, mac_address: @mac_address, space_id: @space_id)
-        end
-        previous_space = Space.find_by(id: last_active_location)
-        TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: @space, mac_address: @mac_address, previous_space: previous_space)
-        # The spaces the user left drop them from their tables
-        (previous_space_ids - [@space_id]).each { |space_id| StaffDashboardChannel.send_tap_out rfid.user, space_id }
-        signed_in(rfid)
-      else
-        active_sessions.sign_out_session
-        TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: @space, mac_address: @mac_address)
-        StaffDashboardChannel.send_tap_out rfid.user, @space_id
-        Result.new(:sign_out)
-      end
-    else
-      LabSession.create_session(user: rfid.user, mac_address: @mac_address, space_id: @space_id)
-      signed_in(rfid)
+    toggle = User.transaction do
+      rfid.user.lock!
+      toggle_session(rfid.user)
     end
+    finish_toggle(rfid, toggle)
+  end
+
+  def toggle_session(user)
+    active_sessions = user.lab_sessions.active
+    newest = active_sessions.last
+
+    if newest.nil?
+      open_session(user)
+      Toggle.new(:sign_in, [], nil)
+    elsif newest.space_id != @space_id
+      # Sign out of all spaces and sign in here together: a failure leaves
+      # the user signed in where they were.
+      left_space_ids = active_sessions.pluck(:space_id).uniq - [@space_id]
+      active_sessions.sign_out_session
+      open_session(user)
+      Toggle.new(:sign_in, left_space_ids, newest.space_id)
+    elsif newest.sign_in_time > REPEAT_WINDOW.ago
+      Toggle.new(:repeat, [], nil)
+    else
+      active_sessions.sign_out_session
+      Toggle.new(:sign_out, [], nil)
+    end
+  end
+
+  def open_session(user)
+    LabSession.create_session(user: user, mac_address: @mac_address, space_id: @space_id)
+  end
+
+  def finish_toggle(rfid, toggle)
+    case toggle.outcome
+    when :sign_out
+      TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: @space, mac_address: @mac_address)
+      StaffDashboardChannel.send_tap_out rfid.user, @space_id
+      Result.new(:sign_out)
+    when :sign_in
+      announce_space_switch(rfid, toggle) if toggle.previous_space_id
+      signed_in(rfid)
+    else
+      Result.new(:sign_in)
+    end
+  end
+
+  def announce_space_switch(rfid, toggle)
+    previous_space = Space.find_by(id: toggle.previous_space_id)
+    TapBoxLog.log_sign_out(user: rfid.user, card_number: rfid.card_number, space: @space, mac_address: @mac_address, previous_space: previous_space)
+    # The spaces the user left drop them from their tables
+    toggle.left_space_ids.each { |space_id| StaffDashboardChannel.send_tap_out rfid.user, space_id }
   end
 
   # After the new session exists: log it, queue the membership check and the
