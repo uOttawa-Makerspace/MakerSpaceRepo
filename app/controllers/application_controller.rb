@@ -3,6 +3,7 @@
 class ApplicationController < ActionController::Base
   include RateLimitStore
   include ErrorReporting
+  include FlashWrite
   include RequestLocale
   rescue_from ActionController::ParameterMissing, with: :parameter_missing
   rescue_from ActiveRecord::RecordNotFound, with: :record_not_found

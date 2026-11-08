@@ -11,6 +11,72 @@ fr:
       not_found: "Cette page ou cet élément est introuvable. Il a peut-être été supprimé, ou le lien est erroné."
       unprocessable: "Votre demande n'a pas pu être traitée. Rechargez la page et réessayez."
       parameter_missing: "Il manque des informations obligatoires dans le formulaire (%{param}). Rechargez la page et réessayez."
+    training:
+      project_requirement_not_added: "Le projet requis n'a pas été ajouté."
+      exam_not_deleted: "L'examen n'a pas été supprimé."
+      question_not_updated: "La question n'a pas été modifiée."
+      question_not_deleted: "La question n'a pas été supprimée."
+      required_training_not_added: "La formation requise n'a pas été ajoutée à cette tâche de bénévolat."
+      required_training_missing: "Cette formation n'est pas requise par cette tâche de bénévolat, donc rien n'a été retiré."
+    comments:
+      not_posted: "Le commentaire n'a pas été publié."
+      not_deleted: "Le commentaire n'a pas été supprimé."
+      not_yours: "Seuls l'auteur d'un commentaire et les administrateurs peuvent le supprimer."
+    development_programs:
+      not_joined: "Vous n'avez pas rejoint le programme de développement."
+    announcements:
+      not_updated: "L'annonce n'a pas été modifiée."
+      not_deleted: "L'annonce n'a pas été supprimée."
+    makes:
+      not_created: "La réalisation n'a pas été enregistrée."
+    videos:
+      not_uploaded: "La vidéo n'a pas été téléversée."
+    learning_area:
+      not_created: "Le module d'apprentissage n'a pas été créé."
+      not_updated: "Le module d'apprentissage n'a pas été modifié."
+      not_started: "Le module d'apprentissage n'a pas été commencé."
+      not_started_yet: "Commencez le module d'apprentissage avant de le marquer comme terminé."
+      not_completed: "Le module d'apprentissage n'a pas été marqué comme terminé."
+    printers:
+      printer_and_user_required: "Veuillez ajouter l'imprimante et l'utilisateur."
+      printer_not_found: "Cette imprimante n'existe plus. Rechargez la page et choisissez de nouveau une imprimante."
+      user_not_found: "Cet utilisateur n'existe plus. Choisissez de nouveau un utilisateur."
+      session_not_created: "L'imprimante n'a pas été associée à l'utilisateur."
+      issue_not_created: "Le problème d'imprimante n'a pas été créé."
+      issue_not_updated: "Le problème d'imprimante n'a pas été modifié."
+      issue_not_deleted: "Le problème d'imprimante n'a pas été supprimé."
+      notification_not_sent: "Le problème d'imprimante a été créé, mais le courriel de notification à l'équipe d'entretien n'a pas pu être mis en file d'attente, il n'a donc pas été envoyé."
+    help:
+      not_received: "Votre demande n'a pas été soumise."
+      copy_not_sent: "Votre demande a été soumise, mais le courriel de confirmation n'a pas pu être mis en file d'attente, vous ne recevrez donc pas de copie."
+    users:
+      password_not_saved: "Votre nouveau mot de passe n'a pas pu être enregistré en raison d'un problème de notre côté. Rien n'a été modifié. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence %{reference}."
+      programs_not_updated: "Les programmes n'ont pas été modifiés."
+      programs_staff_only: "Seuls le personnel et les administrateurs peuvent modifier les programmes d'un utilisateur."
+    repositories:
+      not_updated: "Le projet n'a pas été modifié."
+      proposal_not_linked: "Le projet n'a pas été lié à la proposition de projet."
+      member_not_added: "L'utilisateur n'a pas été ajouté au dépôt."
+      member_not_removed: "L'utilisateur n'a pas été retiré du dépôt."
+      ownership_not_transferred: "La propriété du dépôt n'a pas été transférée."
+    proposals:
+      photos_unreadable: "La proposition de projet n'a pas été enregistrée parce qu'une photo n'a pas pu être lue comme une image. Vérifiez que chaque photo est un fichier image valide et réessayez."
+      not_created: "La proposition de projet n'a pas été créée."
+      not_updated: "La proposition de projet n'a pas été modifiée."
+      revision_not_created: "La révision n'a pas été créée."
+      revision_source_missing: "La proposition de projet à copier pour une révision est introuvable."
+      already_joined: "Vous participez déjà à ce projet."
+    project_kits:
+      not_created: "La trousse n'a pas été créée."
+      not_deleted: "La trousse n'a pas été supprimée."
+    key_requests:
+      not_created: "La demande de clé n'a pas été commencée."
+      step_not_saved: "Cette étape de la demande de clé n'a pas été enregistrée."
+      not_submitted: "La demande de clé n'a pas été soumise. Remplissez tous les champs obligatoires."
+      already_submitted: "Cette demande de clé a déjà été soumise, elle ne peut donc pas l'être de nouveau."
+    memberships:
+      not_created: "L'adhésion n'a pas été créée."
+      checkout_failed: "Votre adhésion n'a pas pu être mise en place parce que la page de paiement n'a pas pu être créée. Rien n'a été facturé. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence %{reference}."
     pages:
       reference: "Référence :"
       home: "Retour à la page d'accueil"

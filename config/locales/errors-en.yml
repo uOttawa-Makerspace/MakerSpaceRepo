@@ -11,6 +11,72 @@ en:
       not_found: "That page or record could not be found. It may have been removed, or the link may be wrong."
       unprocessable: "Your request could not be processed. Reload the page and try again."
       parameter_missing: "The form is missing required information (%{param}). Reload the page and try again."
+    training:
+      project_requirement_not_added: "The required project was not added."
+      exam_not_deleted: "The exam was not deleted."
+      question_not_updated: "The question was not updated."
+      question_not_deleted: "The question was not deleted."
+      required_training_not_added: "The required training was not added to this volunteer task."
+      required_training_missing: "That training is not required by this volunteer task, so nothing was removed."
+    comments:
+      not_posted: "The comment was not posted."
+      not_deleted: "The comment was not deleted."
+      not_yours: "Only the author of a comment or an admin can delete it."
+    development_programs:
+      not_joined: "You did not join the Development Program."
+    announcements:
+      not_updated: "The announcement was not updated."
+      not_deleted: "The announcement was not deleted."
+    makes:
+      not_created: "The make was not saved."
+    videos:
+      not_uploaded: "The video was not uploaded."
+    learning_area:
+      not_created: "The learning module was not created."
+      not_updated: "The learning module was not updated."
+      not_started: "The learning module was not started."
+      not_started_yet: "Start the learning module before marking it as completed."
+      not_completed: "The learning module was not marked as completed."
+    printers:
+      printer_and_user_required: "Please add both printer and user."
+      printer_not_found: "That printer no longer exists. Reload the page and choose a printer again."
+      user_not_found: "That user no longer exists. Choose a user again."
+      session_not_created: "The printer was not linked to the user."
+      issue_not_created: "The printer issue was not created."
+      issue_not_updated: "The printer issue was not updated."
+      issue_not_deleted: "The printer issue was not deleted."
+      notification_not_sent: "The printer issue was created, but the maintenance notification email could not be queued, so it was not sent."
+    help:
+      not_received: "Your issue was not submitted."
+      copy_not_sent: "Your issue was submitted, but the confirmation email could not be queued, so you will not receive a copy."
+    users:
+      password_not_saved: "Your new password could not be saved because of a problem on our side. Nothing was changed. Please try again. If it keeps happening, contact the makerspace staff and quote reference %{reference}."
+      programs_not_updated: "The programs were not updated."
+      programs_staff_only: "Only staff and admins can change a user's programs."
+    repositories:
+      not_updated: "The project was not updated."
+      proposal_not_linked: "The project was not linked to the project proposal."
+      member_not_added: "The user was not added to the repository."
+      member_not_removed: "The user was not removed from the repository."
+      ownership_not_transferred: "The ownership of the repository was not transferred."
+    proposals:
+      photos_unreadable: "The project proposal was not saved because a photo could not be read as an image. Check that every photo is a valid image file and try again."
+      not_created: "The project proposal was not created."
+      not_updated: "The project proposal was not updated."
+      revision_not_created: "The revision was not created."
+      revision_source_missing: "The project proposal to copy for a revision could not be found."
+      already_joined: "You already joined this project."
+    project_kits:
+      not_created: "The kit was not created."
+      not_deleted: "The kit was not deleted."
+    key_requests:
+      not_created: "The key request was not started."
+      step_not_saved: "This step of the key request was not saved."
+      not_submitted: "The key request was not submitted. Fill in every required field."
+      already_submitted: "This key request was already submitted, so it cannot be submitted again."
+    memberships:
+      not_created: "The membership was not created."
+      checkout_failed: "Your membership could not be set up because the payment page could not be created. Nothing was charged. Please try again. If it keeps happening, contact the makerspace staff and quote reference %{reference}."
     pages:
       reference: "Reference:"
       home: "Back to the home page"
