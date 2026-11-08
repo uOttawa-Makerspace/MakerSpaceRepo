@@ -26,8 +26,9 @@ onPageLoad("#addEventButton", () => {
 });
 
 function updateColor(userId, color) {
-  const notSaved = document.querySelector("[data-color-not-saved]").dataset
-    .colorNotSaved;
+  const notSaved = /** @type {HTMLElement} */ (
+    document.querySelector("[data-color-not-saved]")
+  ).dataset.colorNotSaved;
 
   fetch("/admin/calendar/update_color", {
     method: "POST",
