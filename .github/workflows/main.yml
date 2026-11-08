@@ -77,7 +77,8 @@ jobs:
           bundler-cache: true
 
       - name: Check libvips loads
-        run: bundle exec ruby -e 'require "vips"; puts "libvips #{Vips.version_string}"'
+        run: |
+          bundle exec ruby -e 'require "vips"; puts "libvips " + Vips.version_string'
 
       - name: Setup Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
