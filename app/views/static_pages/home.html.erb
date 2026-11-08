@@ -17,7 +17,7 @@
   <div class="container-fluid">
     <%= render 'partials/announcements' %>
 
-    <div class="row g-0">
+    <div class="row g-3">
       <% cache [*home_cache_key, :left_and_middle], expires_in: 10.minutes do %>
       <!-- Left column -->
       <div class="col-xl-3 order-xl-0 order-1 offcanvas-xl offcanvas-start" id="offcanvas-shortcuts" aria-labelledby="shortcutsOffcanvasLabel">

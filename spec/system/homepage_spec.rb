@@ -74,6 +74,9 @@ RSpec.describe "Homepage", type: :system, skip_bullet: true do
   it "shows the public chrome and tiles to a guest, with a sign-in entry and no user cards" do
     visit root_path
     expect_public_chrome
+    # The three columns have a gutter between them, so the cards do not touch.
+    expect(page).to have_css(".row.g-3 > #offcanvas-shortcuts", visible: :all)
+    expect(page).to have_no_css(".row.g-0 > #offcanvas-shortcuts", visible: :all)
     expect(page).to have_css("a.nav-link", text: /sign in/i, visible: :all)
     expect(page).to have_no_css("#home-user-info")
     expect(page).to have_no_text("Staff Resources")
