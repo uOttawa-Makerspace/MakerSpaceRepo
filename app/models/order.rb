@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class Order < ApplicationRecord
+  include DisplayUser
   IN_PROGRESS = "In progress"
   COMPLETED = "Completed"
   # The order-row lock shared by checkout and every cart change.
@@ -8,6 +9,7 @@ class Order < ApplicationRecord
   before_validation :set_order_status, on: :create
 
   belongs_to :user, optional: true
+  display_user_for :user
   belongs_to :order_status, optional: true
 
   has_many :order_items, dependent: :destroy
@@ -104,16 +106,14 @@ class Order < ApplicationRecord
   #   :invalid            the order did not save (nothing written)
   # Raises CcMoney::InsufficientBalance (or CcMoney::InvalidAmount for a negative price
   # snapshot) with everything rolled back. Kit mails are NOT sent here: the caller sends them
-  # after the commit, for the returned kit_project_ids. A new (unsaved) order is the empty-cart
-  # case: nothing to lock, it is saved as a Completed zero-value order as before.
+  # after the commit, for the returned kit_project_ids. A cart with no items (a new,
+  # unsaved order included) is refused as :empty and nothing is written.
   def self.checkout!(order, user)
     own_transaction("Order.checkout!") do
       payer = CcMoney.lock_wallet!(user) # the user row first (house lock order)
-      if order.persisted?
-        order = lock(CART_LOCK_MODE).find(order.id)
-        next [:already_completed, order, []] if order.order_status&.name == COMPLETED
-        next [:not_open, order, []] unless order.order_status&.name == IN_PROGRESS
-      end
+      order = lock(CART_LOCK_MODE).find(order.id) if order.persisted?
+      blocker = checkout_blocker(order)
+      next [blocker, order, []] if blocker
 
       lines, total = order.checkout_lines # the one preload + validation, under the lock
       next [:invalid_items, order, []] if lines.nil?
@@ -135,6 +135,18 @@ class Order < ApplicationRecord
       [:completed, order, kit_project_ids]
     end
   end
+
+  # Why a (locked) cart cannot be checked out, or nil: :already_completed (a concurrent submit of
+  # the same cart completed it), :not_open (any other status) or :empty (nothing to buy).
+  def self.checkout_blocker(order)
+    if order.persisted?
+      status = order.order_status&.name
+      return :already_completed if status == COMPLETED
+      return :not_open unless status == IN_PROGRESS
+    end
+    :empty if order.cart_items.empty?
+  end
+  private_class_method :checkout_blocker
 
   private
 

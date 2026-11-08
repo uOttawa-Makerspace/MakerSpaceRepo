@@ -12,9 +12,6 @@ RSpec.describe SubSpaceBookingStatus, type: :model do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
   end
 
   it "requires a booking_status (belongs_to without optional)" do
@@ -41,5 +38,37 @@ RSpec.describe SubSpaceBookingStatus, type: :model do
     # approved row would only surface through the id column.
     expect(booking.reload.sub_space_booking_status.booking_status.name)
       .to eq("Pending")
+  end
+
+  describe "destroy" do
+    it "refuses while the booking points at it, and keeps the booking" do
+      booking = create(:sub_space_booking)
+      status = booking.sub_space_booking_status
+
+      expect(status.destroy).to be(false)
+
+      expect(status.errors[:base]).not_to be_empty
+      expect(described_class.exists?(status.id)).to be(true)
+      expect(SubSpaceBooking.exists?(booking.id)).to be(true)
+    end
+
+    it "keeps the booking when a status row nothing points at is destroyed" do
+      booking = create(:sub_space_booking)
+      extra = described_class.create!(sub_space_booking: booking, booking_status: @approved_status)
+
+      expect(extra.destroy).to be_truthy
+
+      expect(SubSpaceBooking.exists?(booking.id)).to be(true)
+    end
+
+    it "still goes with its booking through destroy_with_status!" do
+      booking = create(:sub_space_booking)
+      status_id = booking.sub_space_booking_status_id
+
+      booking.destroy_with_status!
+
+      expect(described_class.exists?(status_id)).to be(false)
+      expect(SubSpaceBooking.exists?(booking.id)).to be(false)
+    end
   end
 end

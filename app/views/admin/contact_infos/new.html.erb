@@ -1,4 +1,14 @@
 <section>
+  <% if @contact_info.errors.any? %>
+    <div id="error_explanation" class="container">
+      <h2><%= t('admin.contact_infos.errors_heading', count: @contact_info.errors.count) %></h2>
+      <ul>
+        <% @contact_info.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
   <h2 class="text-center py-3 fw-bold">Create a new Contact Info</h2>
   <div class="container my-3">
     <div class="row">

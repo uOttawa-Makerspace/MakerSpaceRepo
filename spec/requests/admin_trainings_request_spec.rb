@@ -4,8 +4,8 @@ require "rails_helper"
 #   Admin::TrainingsController          (catalogue CRUD)
 #   Admin::TrainingSessionsController   (list / reassign trainer / delete)
 #   Admin::CertificationsController     (demotion / reinstatement / delete)
-# All inherit AdminAreaController: non-admins (guest, regular, staff) are
-# redirected to "/" with no flash by `ensure_admin`.
+# All inherit AdminAreaController: a guest goes to the login page; regular
+# users and staff are redirected to "/" with no flash by `ensure_admin`.
 
 RSpec.describe "Admin training area", type: :request do
   let(:admin) { create(:user, :admin) }
@@ -26,20 +26,20 @@ RSpec.describe "Admin training area", type: :request do
 
     describe "role matrix" do
       %i[guest regular staff].each do |role|
-        it "redirects a #{role} to / on every action and changes nothing" do
+        it "bounces a #{role} on every action and changes nothing" do
           sign_in_as(role)
           get admin_trainings_path
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           get new_admin_training_path
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           get edit_admin_training_path(training)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect { post admin_trainings_path, params: training_params }.not_to change(Training, :count)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           patch admin_training_path(training), params: training_params(name_en: "Hacked")
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect { delete admin_training_path(training) }.not_to change(Training, :count)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect(training.reload.name_en).to eq("Existing EN")
           expect(flash).to be_empty
         end
@@ -49,12 +49,47 @@ RSpec.describe "Admin training area", type: :request do
     context "as admin" do
       before { log_in!(admin) }
 
-      # N+1 pinned
-      it "lists the trainings ordered by English name", skip_bullet: true do
+      it "lists the trainings ordered by English name" do
         create(:training, name_en: "AAA Training", name_fr: "AAA FR")
         get admin_trainings_path
         expect(response).to have_http_status(:ok)
         expect(response.body.index("AAA Training")).to be < response.body.index("Existing EN")
+      end
+
+      it "reads each training's skill in a constant number of queries" do
+        get admin_trainings_path # warm up
+        few = selects_on("skills") { get admin_trainings_path }
+        3.times { create(:training) }
+        many = selects_on("skills") { get admin_trainings_path }
+
+        expect(response).to have_http_status(:ok)
+        expect(many.size).to eq(few.size)
+      end
+
+      it "shows each space's session and certification counts, reading them in a constant number of queries" do
+        stock = lambda do |trained, in_space, sessions:, certifications:|
+          trained.spaces << in_space unless trained.spaces.include?(in_space)
+          sessions.times { create(:training_session, training: trained, space: in_space) }
+          certifications.times do
+            create(:certification, training: trained, training_session: create(:training_session, training: trained, space: in_space))
+          end
+        end
+
+        other_space = create(:space, name: "Zed Space")
+        stock.call(training, space, sessions: 2, certifications: 1)
+        stock.call(training, other_space, sessions: 1, certifications: 0)
+        get admin_trainings_path # warm up
+        tables = %w[spaces training_sessions certifications]
+        few = selects_on(*tables) { get admin_trainings_path }
+        3.times { stock.call(create(:training), create(:space), sessions: 1, certifications: 1) }
+        many = selects_on(*tables) { get admin_trainings_path }
+
+        row = response.body[%r{<tr>\s*<td>#{skill.name}</td>\s*<td>Existing EN</td>.*?</tr>}m]
+        cells = row.scan(%r{<td>(.*?)</td>}m).flatten.map { |cell| cell.gsub(/<[^>]+>/, " ").split }
+        expect(cells[2]).to eq([space.name, "Zed", "Space"])
+        expect(cells[3]).to eq(%w[3 1])
+        expect(cells[4]).to eq(%w[1 0])
+        expect(many.size).to eq(few.size)
       end
 
       it "renders the new and edit forms" do
@@ -79,9 +114,17 @@ RSpec.describe "Admin training area", type: :request do
           t = Training.find_by!(name_en: "Laser Cutting")
           expect(t).to have_attributes(name_fr: "Découpe laser", skill_id: skill.id, has_badge: true)
           expect(t.spaces).to eq([space])
-          # EN skills are joined with "," but FR skills with ", " and the blank select option is kept
-          expect(t.list_of_skills_en).to eq(",Design,Safety")
-          expect(t.list_of_skills_fr).to eq(", Conception, Sécurité")
+          expect(t.list_of_skills_en).to eq("Design,Safety")
+          expect(t.list_of_skills_fr).to eq("Conception,Sécurité")
+        end
+
+        it "stores the same comma separated shape in both languages, dropping blanks and padding" do
+          post admin_trainings_path,
+               params: training_params(list_of_skills_en: ["", " Design ", "  ", "Safety"],
+                                       list_of_skills_fr: ["Conception", " ", "Sécurité "])
+          t = Training.find_by!(name_en: "Laser Cutting")
+          expect(t.list_of_skills_en).to eq("Design,Safety")
+          expect(t.list_of_skills_fr).to eq("Conception,Sécurité")
         end
 
         it "re-renders new with 422 and an alert when the name is missing" do
@@ -107,24 +150,22 @@ RSpec.describe "Admin training area", type: :request do
           expect(t.list_of_skills_fr).to be_nil
         end
 
-        # list_of_skills_* must be an array; a plain string (API client) is a 500 (String#join)
-        it "answers 500 when list_of_skills_en is a string" do
+        it "answers 400 and stores nothing when a skill list is not an array" do
           expect { post admin_trainings_path, params: training_params(list_of_skills_en: "Design,Safety") }
             .not_to change(Training, :count)
-          expect(response).to have_http_status(:internal_server_error)
+          expect(response).to have_http_status(:bad_request)
         end
 
-        # training_params permits :training_level but the column does not exist: sending it is a 500
-        it "answers 500 (UnknownAttributeError) when training_level is submitted" do
+        it "ignores a training_level parameter, which is not an attribute of a training" do
           expect { post admin_trainings_path, params: training_params(training_level: "Beginner") }
-            .not_to change(Training, :count)
-          expect(response).to have_http_status(:internal_server_error)
-          expect(error_text).to include("training_level")
+            .to change(Training, :count).by(1)
+          expect(response).to redirect_to(admin_trainings_path)
         end
 
-        it "answers 500 (serialize_skills indexes params[:training] before require) when the training key is absent" do
+        it "refuses a request without the training key like any missing parameter" do
           post admin_trainings_path, params: {}
-          expect(response).to have_http_status(:internal_server_error)
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to include("param is missing")
         end
       end
 
@@ -148,6 +189,39 @@ RSpec.describe "Admin training area", type: :request do
           patch admin_training_path(training), params: training_params(name_fr: "")
           expect(response).to have_http_status(:unprocessable_content)
           expect(flash[:alert]).to eq("Input is invalid")
+          expect(training.reload.name_en).to eq("Existing EN")
+        end
+
+        it "stores the skill lists without blanks or padding" do
+          patch admin_training_path(training), params: training_params
+          expect(training.reload).to have_attributes(list_of_skills_en: "Design,Safety", list_of_skills_fr: "Conception,Sécurité")
+        end
+
+        it "leaves the stored skill lists alone when the request has no skill keys, and clears them for an empty selection" do
+          training.update!(list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          params = training_params(name_en: "Renamed EN")
+          params[:training].delete(:list_of_skills_en)
+          params[:training].delete(:list_of_skills_fr)
+          patch admin_training_path(training), params: params
+          expect(training.reload).to have_attributes(name_en: "Renamed EN", list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          patch admin_training_path(training), params: training_params(list_of_skills_en: [""], list_of_skills_fr: [""])
+          expect(training.reload).to have_attributes(list_of_skills_en: "", list_of_skills_fr: "")
+        end
+
+        it "treats a null skill list like an absent one" do
+          training.update!(list_of_skills_en: "A,B", list_of_skills_fr: "C")
+          patch admin_training_path(training),
+                params: { training: { name_en: "Renamed EN", list_of_skills_en: nil, list_of_skills_fr: nil } }.to_json,
+                headers: { "CONTENT_TYPE" => "application/json" }
+          expect(response).to redirect_to(admin_trainings_path)
+          expect(training.reload).to have_attributes(name_en: "Renamed EN", list_of_skills_en: "A,B", list_of_skills_fr: "C")
+        end
+
+        it "answers 400 and changes nothing when a skill list is not an array or training is not a hash" do
+          patch admin_training_path(training), params: training_params(name_en: "Renamed EN", list_of_skills_fr: "x")
+          expect(response).to have_http_status(:bad_request)
+          patch admin_training_path(training), params: { training: "x" }
+          expect(response).to have_http_status(:bad_request)
           expect(training.reload.name_en).to eq("Existing EN")
         end
 
@@ -182,13 +256,12 @@ RSpec.describe "Admin training area", type: :request do
         end
       end
 
-      # the skill_search / add_skill / skills routes were removed; the paths now fall to
-      # the resource's show route, which the controller does not implement.
+      # the skill_search / add_skill / skills routes were removed and the resource has no show route.
       %w[skill_search add_skill skills].each do |name|
         it "/admin/trainings/#{name} answers 404 (no route of its own)" do
           get "/admin/trainings/#{name}"
           expect(response).to have_http_status(:not_found)
-          expect(error_text).to include("AbstractController::ActionNotFound")
+          expect(error_text).to include("No route matches")
         end
       end
 
@@ -216,14 +289,14 @@ RSpec.describe "Admin training area", type: :request do
 
     describe "role matrix" do
       %i[guest regular staff].each do |role|
-        it "redirects a #{role} to / and changes nothing" do
+        it "bounces a #{role} and changes nothing" do
           sign_in_as(role)
           get admin_training_sessions_path
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           patch admin_training_session_path(session_record), params: { training_session: { user_id: create(:user, :staff).id } }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect { delete session_path(session_record) }.not_to change(TrainingSession, :count)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect(session_record.reload.user).to eq(trainer)
         end
       end
@@ -241,8 +314,22 @@ RSpec.describe "Admin training area", type: :request do
           expect(listed_ids).to eq([session_record.id])
         end
 
-        # N+1 pinned
-        it "widens the window with date_range=1_year", skip_bullet: true do
+        it "reads the training, trainer, certifications and users of the sessions in a constant number of queries" do
+          tables = %w[trainings certifications users training_sessions_users]
+          2.times { create(:training_session, user: trainer, users: [create(:user, :regular_user)]) }
+          get admin_training_sessions_path # warm up
+          few = selects_on(*tables) { get admin_training_sessions_path }
+          3.times do
+            seshs = create(:training_session, user: create(:user, :staff), users: [create(:user, :regular_user)])
+            create(:certification, training_session: seshs, training: seshs.training)
+          end
+          many = selects_on(*tables) { get admin_training_sessions_path }
+
+          expect(listed_ids.size).to eq(6)
+          expect(many.size).to eq(few.size)
+        end
+
+        it "widens the window with date_range=1_year" do
           old = create(:training_session, user: trainer)
           old.update_columns(created_at: 40.days.ago)
           get admin_training_sessions_path(date_range: "1_year")
@@ -343,14 +430,14 @@ RSpec.describe "Admin training area", type: :request do
 
     describe "role matrix" do
       %i[guest regular staff].each do |role|
-        it "redirects a #{role} to / and changes nothing" do
+        it "bounces a #{role} and changes nothing" do
           sign_in_as(role)
           get admin_certification_path(cert)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           get demotions_admin_certifications_path
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           patch admin_certification_path(cert), params: { certification: { active: "false", demotion_reason: "x" } }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect { delete admin_certification_path(cert) }.not_to change { Certification.unscoped.count }
           expect(cert.reload.active).to be(true)
           expect(student.reload.flagged).not_to be(true)

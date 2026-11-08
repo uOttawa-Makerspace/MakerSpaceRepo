@@ -7,7 +7,7 @@
                 <p><%= link_to t('home.badges.no_badges_anchor'), development_programs_path %></p>
             <% else %>
             <% @user.certifications.each do |badge| %>
-                <a target="_blank" href="./badges/<%= badge.id %>">
+                <a target="_blank" href="<%= badge_path(badge.badge_param) %>">
                     <%= render "badges/badge_icon", width: 75, height: 75, margin: "auto", display: "block", level: badge.level, name: badge.training.localized_name, skill: badge.get_skill_id %>
                 </a>
             <% end end %>

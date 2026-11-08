@@ -17,14 +17,13 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     LockerOption.lockers_enabled = true
     allow(LockerOption).to receive(:locker_product_info).and_return({ variants: {} })
     stub_shopify_admin!
-    allow_any_instance_of(CustomWebhooksController).to receive(:draft_order_metafields).and_return(nil)
+    allow_any_instance_of(ShopOrderApplier).to receive(:draft_order_metafields).and_return(nil)
     ActionMailer::Base.deliveries.clear
   end
 
   def request_locker_as_user(note)
     as_actor(:user) do
-      log_in_as(user)
-      visit new_locker_rental_path
+      log_in_as(user, to: new_locker_rental_path)
       select "General request", from: "locker_rental_requested_as"
       fill_in "locker_rental_notes", with: note
       click_button "Submit request"
@@ -37,6 +36,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     visit admin_locker_rentals_path
     expect(page).to have_css("h1", text: "Locker Rentals")
     expect(page).to have_text("Requests")
+    audit_accessibility("admin locker rentals")
     within(:xpath, "//tr[.//a[normalize-space()='#{user.username}']]") { click_link "View" }
     expect(page).to have_current_path(locker_rental_path(rental))
   end
@@ -83,6 +83,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
                              metafields: [{ namespace: "makerepo", key: "locker_db_reference", value: rental.id.to_s }] },
                            shopify_signed: true)
     expect(res.code).to eq("200")
+    perform_enqueued_jobs(only: ApplyProcessedOrderJob) # the queue applies the stored order
 
     as_actor(:user) do
       visit locker_rentals_path
@@ -169,8 +170,7 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
 
   it "staff assigns a locker to a user from the admin assign form (no request)" do
     as_actor(:staff) do
-      log_in_as(staff)
-      visit assign_locker_locker_rentals_path
+      log_in_as(staff, to: assign_locker_locker_rentals_path)
       expect(page).to have_css("h1", text: "Assign locker to a user")
       select "#{user.name} (#{user.username})", from: "locker_rental_rented_by_id"
       select "#JB-2", from: "locker_rental_locker_id", match: :prefer_exact
@@ -183,13 +183,12 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     expect(rental.locker).to eq(locker_b)
     expect(mails_to(user.email).map(&:subject)).to eq(["Locker JB-2 has been assigned for you"])
     as_actor(:user) do
-      log_in_as(user)
-      visit locker_rentals_path
+      log_in_as(user, to: locker_rentals_path)
       expect(page).to have_text("Locker #JB-2")
     end
   end
 
-  it "pinned: plain Assign Now makes an indefinite rental and the user's locker index 500s" do
+  it "pinned: plain Assign Now makes an indefinite rental and the user's locker index lists it as indefinite" do
     rental = request_locker_as_user("Indefinite by default")
     as_actor(:staff) do
       log_in_as(staff)
@@ -205,11 +204,10 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     expect(rental.owned_until).to be_nil
 
     as_actor(:user) do
-      # index.html.erb calls owned_until.to_date on an active
-      # rental with no end date: the whole page 500s for the renter.
+      # an active rental with no end date is listed as indefinite
       visit locker_rentals_path
-      expect(page).to have_no_css("nav.navbar")
-      expect(page).to have_text("NoMethodError in LockerRentals#index")
+      expect(page).to have_css("nav.navbar")
+      expect(page).to have_text("Indefinite")
       # the detail page still renders it
       visit locker_rental_path(rental)
       expect(page).to have_text(/indefinite rental/i)

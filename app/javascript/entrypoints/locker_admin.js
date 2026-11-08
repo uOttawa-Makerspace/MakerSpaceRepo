@@ -1,3 +1,5 @@
+import { Tooltip } from "bootstrap";
+
 // app/javascript/locker_admin.js
 document.addEventListener("turbo:load", () => {
   // Initialize Bootstrap tooltips for the notes hover bubbles
@@ -5,7 +7,7 @@ document.addEventListener("turbo:load", () => {
     '[data-bs-toggle="tooltip"]',
   );
   if (tooltipTriggerList.length > 0) {
-    tooltipTriggerList.forEach((el) => new bootstrap.Tooltip(el));
+    tooltipTriggerList.forEach((el) => new Tooltip(el));
   }
 
   // Inline editing toggle logic

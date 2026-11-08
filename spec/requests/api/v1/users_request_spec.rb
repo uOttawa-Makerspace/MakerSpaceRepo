@@ -160,9 +160,16 @@ RSpec.describe "/api/v1/users", type: :request do
       expect(error["code"]).to eq("not_found")
     end
 
-    it "lets staff open a soft-deleted user, like the legacy profile" do
+    it "404s a soft-deleted user for staff, like a missing user" do
       target.soft_delete!
       api_get "/api/v1/users/#{target.username}", as: staff
+      expect(response).to have_http_status(:not_found)
+      expect(error["code"]).to eq("not_found")
+    end
+
+    it "lets an admin open a soft-deleted user, like the legacy profile" do
+      target.soft_delete!
+      api_get "/api/v1/users/#{target.username}", as: admin
       expect(response).to have_http_status(:ok)
     end
 

@@ -50,6 +50,8 @@ vendor/bundle
 
 # Documentation and CI/Docker meta files
 *.md
+# the release notes written by CI for the /changelog page
+!CHANGELOG.md
 Dockerfile*
 docker-compose*.yml
 .dockerignore

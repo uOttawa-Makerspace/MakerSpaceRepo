@@ -1,6 +1,8 @@
 class LearningAreaController < DevelopmentProgramsController
-  include ActiveStorage::Streaming
-  before_action :only_admin_access, only: %i[new create edit update destroy reorder]
+  # Package scripts are static files loaded by <script> tags, not dynamic
+  # responses; the cross-origin JavaScript check would answer them 422.
+  skip_after_action :verify_same_origin_request, only: :serve_scorm_asset, raise: false
+  before_action :only_admin_access, only: %i[new create edit update destroy reorder retry_scorm]
   before_action :set_learning_module,
                 only: %i[
                   show
@@ -10,7 +12,11 @@ class LearningAreaController < DevelopmentProgramsController
                   scorm_launch
                   serve_scorm_asset
                   scorm_commit
+                  retry_scorm
                 ]
+
+  # A byte-range answer covers at most this much
+  SCORM_RANGE_WINDOW = 5.megabytes
 
   before_action :form_training_data, only: %i[new edit create update]
   before_action :with_development_header
@@ -23,7 +29,7 @@ class LearningAreaController < DevelopmentProgramsController
         .includes(photos_attachments: :blob)
         .includes(:training)
         .group_by(&:training)
-        .sort_by { |training, _| training.name }
+        .sort_by { |training, _| [training ? 0 : 1, training&.name.to_s] }
         .to_h
         .transform_values do |modules|
           modules.sort_by { |m| LearningModule.levels.keys.index(m.level) }
@@ -48,7 +54,7 @@ class LearningAreaController < DevelopmentProgramsController
       redirect_to learning_area_path(@learning_module.id),
                   notice: 'Learning Module has been successfully created.'
     else
-      flash[:alert] = 'Something went wrong'
+      flash.now[:alert] = 'Something went wrong'
       render 'new', status: :unprocessable_content
     end
   end
@@ -100,56 +106,171 @@ class LearningAreaController < DevelopmentProgramsController
   end
 
   def serve_scorm_asset
-    return head :not_found unless @learning_module.scorm_ready?
+    return scorm_refusal(:not_found) unless @learning_module.scorm_ready?
 
-    # Reconstruct blob key from request path and stored prefix
-    key = "#{@learning_module.scorm_prefix}/#{params[:path]}"
+    # Reconstruct blob key from request path and stored prefix. Stored names
+    # are NFC, so a link written in another normalization form still finds them.
+    path = params[:path].to_s
+    return scorm_refusal(:not_found) unless path.valid_encoding?
+
+    path = path.unicode_normalize(:nfc)
+    key = "#{@learning_module.scorm_prefix}/#{path}"
     blob = @learning_module.scorm_package_files.blobs.find_by(key: key)
-    return head :not_found unless blob
+    return scorm_refusal(:not_found) unless blob
 
-    # ActiveStorage's send_blob_stream / proxying automatically handles HTTP Byte-Range (206) requests for video/audio
-    ext = File.extname(params[:path] || blob.filename.to_s)
+    ext = File.extname(path.presence || blob.filename.to_s)
     content_type = Rack::Mime.mime_type(ext, blob.content_type || 'application/octet-stream')
 
-    # Instruct Cloudflare and the browser to cache this asset at the edge for 1 year
-    expires_in 1.year, public: true
+    stream_scorm_blob blob, content_type
+  end
 
-    # Use send_blob_stream for both local and cloud storage (handles HTTP 206 range requests automatically)
-    send_blob_stream blob, type: content_type, disposition: :inline
+  def retry_scorm
+    if @learning_module.retry_scorm_extraction
+      notice = 'SCORM extraction has been queued again.'
+    else
+      alert = 'SCORM extraction is not retryable right now.'
+    end
+    redirect_to edit_learning_area_path(@learning_module.id), notice:, alert:
   end
 
   def scorm_commit
-    current_user
-      .learning_module_tracks
-      .find_or_create_by!(learning_module_id: params[:id])
-      .update(scorm_state: scorm_state_params)
+    # Progress is only reported by the module's own package once it has been extracted
+    unless @learning_module.scorm_trackable?
+      return(
+        render json: {
+                 error: 'SCORM package not ready'
+               },
+               status: :unprocessable_entity
+      )
+    end
+
+    # Params are checked before any row is written: a rejected commit stores nothing
+    scorm_state = scorm_state_params
+    LearningModuleTrack.transaction do
+      LearningModuleTrack
+        .for_user_and_module!(current_user, @learning_module)
+        .update(scorm_state: scorm_state)
+    end
 
     head :ok
   end
 
+  # The listed modules take the existing order values, lowest first, in the
+  # given sequence. An unknown id refuses the whole request (404) and nothing
+  # is reordered.
   def reorder
-    if params[:data].present?
-      lm_order =
-        LearningModule.where(id: params[:data]).order(:order).pluck(:order)
-      params[:data].each_with_index do |lm, i|
-        LearningModule.find(lm).update(order: lm_order[i])
-      end
+    ids = Array(params[:data]).uniq
+    return head :bad_request if ids.empty?
 
-      respond_to do |format|
-        format.html do
-          redirect_to learning_area_index_path,
-                      notice: 'Successfully reordered the learning modules!'
-        end
-        format.json { render json: { status: :ok } }
+    found = LearningModule.find(ids).index_by { |lm| lm.id.to_s }
+    modules = ids.map { |id| found.fetch(id.to_s) }
+    slots = modules.map(&:order).sort
+    LearningModule.transaction { modules.zip(slots) { |lm, slot| lm.update!(order: slot) } }
+
+    respond_to do |format|
+      format.html do
+        redirect_to learning_area_index_path,
+                    notice: 'Successfully reordered the learning modules!'
       end
-    else
-      flash[
-        :alert
-      ] = 'Unable to re-order the learning modules. Please try again later...'
+      format.json { render json: { status: :ok } }
     end
   end
 
   private
+
+  # A minimal answer: no success headers are set before the content is known
+  # to be readable, so there is nothing to clear.
+  def scorm_refusal(status, headers = {})
+    headers.each { |name, value| response.headers[name] = value }
+    response.cache_control.replace(no_store: true)
+    head status
+  end
+
+  # ActiveStorage's send_blob_stream serves html, scripts and styles as a
+  # download, which package content must not be, so the type, inline
+  # disposition and byte ranges (RFC 9110) are handled here. The response is a
+  # plain body with an exact Content-Length, not a live stream.
+  def stream_scorm_blob(blob, content_type)
+    # A cached copy is confirmed before anything is read from storage
+    if request.etag_matches?(scorm_etag(blob))
+      set_scorm_validators(blob)
+      return head :not_modified
+    end
+
+    size = blob.byte_size
+    range = scorm_byte_range(request.headers['Range'], size)
+    if range == :unsatisfiable
+      return scorm_refusal(:range_not_satisfiable, 'Content-Range' => "bytes */#{size}")
+    end
+
+    # A whole file is read in 1 MB ranged slices too: media players ask for
+    # ranges anyway, so one code path serves both.
+    sent = range || (size.positive? ? 0..(size - 1) : nil)
+    body = []
+    # HEAD reads nothing from storage, so a missing file still answers 200 there
+    if sent && !request.head?
+      begin
+        body = ScormAssetBody.open(blob, sent)
+      rescue ActiveStorage::FileNotFoundError
+        return scorm_refusal(:not_found)
+      rescue StandardError => e
+        Rails.error.report(e, handled: true, context: { blob_id: blob.id })
+        return scorm_refusal(:internal_server_error)
+      end
+    end
+
+    set_scorm_headers(blob, content_type, sent, range)
+    self.response_body = body
+  end
+
+  def set_scorm_headers(blob, content_type, sent, range)
+    response.headers['Content-Type'] = content_type
+    response.headers['Content-Disposition'] =
+      ActionDispatch::Http::ContentDisposition.format(disposition: 'inline', filename: blob.filename.sanitized)
+    response.headers['Accept-Ranges'] = 'bytes'
+    response.headers['Content-Length'] = (sent ? sent.size : 0).to_s
+    set_scorm_validators(blob)
+    if range
+      response.headers['Content-Range'] = "bytes #{range.begin}-#{range.end}/#{blob.byte_size}"
+      self.status = :partial_content
+    end
+  end
+
+  # A validator of our own keeps Rack::ETag from reading the body to make one
+  def scorm_etag(blob)
+    %("#{blob.checksum}")
+  end
+
+  # The route needs a signed-in user, so shared caches must not keep it
+  def set_scorm_validators(blob)
+    response.headers['ETag'] = scorm_etag(blob)
+    expires_in 1.year, public: false
+  end
+
+  # The single satisfiable range to send (clamped to the window), :unsatisfiable,
+  # or nil when the header is absent or to be ignored (other unit, malformed,
+  # reversed, several ranges, empty file) and the whole file is sent.
+  def scorm_byte_range(header, size)
+    match = /\Abytes=(\d*)-(\d*)\z/i.match(header.to_s.strip)
+    return if match.nil? || size.zero?
+
+    first, last = match[1], match[2]
+    if first.empty?
+      return if last.empty?
+      return :unsatisfiable if last.to_i.zero?
+
+      start = [size - last.to_i, 0].max
+      stop = size - 1
+    else
+      start = first.to_i
+      stop = last.empty? ? size - 1 : last.to_i
+      return if stop < start
+      return :unsatisfiable if start >= size
+
+      stop = [stop, size - 1].min
+    end
+    start..[stop, start + SCORM_RANGE_WINDOW - 1].min
+  end
 
   def only_admin_access
     return if current_user.admin?
@@ -194,6 +315,7 @@ class LearningAreaController < DevelopmentProgramsController
     params
       .permit(
         :'cmi.completion_status',
+        :'cmi.core.lesson_status',
         :'cmi.exit',
         :'cmi.location',
         :'cmi.progress_measure',

@@ -63,6 +63,7 @@
         </div>
       </div>
     </div>
+    <% if @show_prices %>
     <div class="text-center" style="margin-top: 5rem;">
       <h3 class="fs-2 text-primary fw-bold text-uppercase"><%= t('memberships.index.prices') %></h3>
     <table class="table fs-2" style="margin-top: 2rem;">
@@ -91,6 +92,7 @@
       </tbody>
     </table>
     </div>
+    <% end %>
 
     <div class="text-center" style="margin-top: 5rem; margin-bottom: 1rem;">
       <h3 class="fs-2 text-primary fw-bold text-uppercase"><%= t('memberships.index.more_info') %></h3>

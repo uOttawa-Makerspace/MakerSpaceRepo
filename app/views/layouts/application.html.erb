@@ -45,8 +45,9 @@
     <meta name="description" content="MakerRepo is the uOttawa Makerspace's platform. Share and download projects for 3D printers, CNCs, Arduino and much more!" />
   </head>
   <body class="<%= controller_name %> <%= action_name %> <%= "#{controller_name}_#{action_name}" %> <%= controller_path.tr('/', '_') %> <%= 'admin' if controller_path.start_with?('admin') %> <%= 'staff' if controller_path.start_with?('staff') %>">
+    <%= render 'layouts/skip_link' %>
     <%= render 'layouts/header', with_volunteer: @with_volunteer_header, with_development: @with_development_header %>
-    <main <% unless @no_container || provide(:no_container) %> class="container-lg" <% end %>>
+    <main id="main-content" tabindex="-1" class="flex-grow-1<%= " container-lg" unless @no_container || provide(:no_container) %>">
       <div class="flash" id="flash" style="padding-left: 20px; padding-right: 20px; z-index: 100;">
         <%= render 'layouts/flash' %>
       </div>

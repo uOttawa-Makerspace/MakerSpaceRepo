@@ -16,10 +16,13 @@ class Admin::TimePeriodsController < AdminAreaController
   end
 
   def create
-    time_period = TimePeriod.new(time_period_params)
-    if time_period.save!
+    @time_period = TimePeriod.new(time_period_params)
+    if @time_period.save
       redirect_to admin_time_periods_path
       flash[:notice] = "You have successfully created a new time period!"
+    else
+      flash.now[:alert] = @time_period.errors.full_messages.to_sentence
+      render :new, status: :unprocessable_content
     end
   end
 

@@ -136,24 +136,18 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def update_external_unavailabilities
-    StaffExternalUnavailability.where(user_id: current_user.id).destroy_all
+    calendars = Array(params[:external_calendar]).compact_blank.map(&:to_s)
+    records = calendars.map { |url| StaffExternalUnavailability.new(user_id: current_user.id, ics_url: url) }
 
-    if params[:external_calendar].blank?
-      return redirect_to staff_unavailabilities_path, notice: "External calendar links updated."
+    # Nothing is replaced unless every link is usable.
+    if (invalid = records.find(&:invalid?))
+      return redirect_to staff_unavailabilities_path,
+                         alert: "#{invalid.ics_url.truncate(80)} is not an http or https link. Nothing was changed."
     end
 
-    calendars = if params[:external_calendar].is_a?(Array)
-      params[:external_calendar].compact
-    else
-      [params[:external_calendar]].compact
-    end
-
-    calendars.each do |calendar|
-      next if calendar.blank?
-      StaffExternalUnavailability.create(
-        ics_url: calendar,
-        user_id: current_user.id
-      )
+    StaffExternalUnavailability.transaction do
+      StaffExternalUnavailability.where(user_id: current_user.id).destroy_all
+      records.each(&:save!)
     end
 
     redirect_to staff_unavailabilities_path, notice: "External calendar links updated."

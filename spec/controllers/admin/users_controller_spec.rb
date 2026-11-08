@@ -74,7 +74,7 @@ RSpec.describe Admin::UsersController, type: :controller do
           pi_location: @space.name
         )
         Rfid.create(card_number: "abc", user_id: @admin.id)
-        @admin.pword = "password"
+        @admin.pword = "Xk3#vbN9!qLw"
         @admin.save!
         session[:token_version] = @admin.token_version # pword= bumped it
       end
@@ -83,7 +83,7 @@ RSpec.describe Admin::UsersController, type: :controller do
         @user = create(:user, :regular_user)
         count = User.count
         diff = User.unscoped.count - count
-        delete :delete_user, params: { id: @user.id, password: "password" }
+        delete :delete_user, params: { id: @user.id, password: "Xk3#vbN9!qLw" }
         expect(flash[:notice]).to eq("User flagged as deleted")
         expect(User.unscoped.count).to eq(User.count + diff + 1)
         expect(User.count).to eq(count - 1)
@@ -118,7 +118,7 @@ RSpec.describe Admin::UsersController, type: :controller do
         @repo = create(:repository, user_id: @user.id)
         @repo.users << @user
         expect(Repository.count).to eq(1)
-        delete :delete_user, params: { id: @user.id, password: "password" }
+        delete :delete_user, params: { id: @user.id, password: "Xk3#vbN9!qLw" }
         expect(Repository.unscoped.count).to eq(1)
         expect(Repository.count).to eq(0)
       end

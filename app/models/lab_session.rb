@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class LabSession < ApplicationRecord
-  belongs_to :user, optional: true
+  # A visit belongs to its user even after the account was soft-deleted: the history stays complete.
+  belongs_to :user, -> { including_deleted }, optional: true
   belongs_to :space, optional: true
 
   scope :between_dates_picked,
@@ -19,6 +20,9 @@ class LabSession < ApplicationRecord
 
   scope :active, -> { where(sign_out_time: Time.zone.now..) }
 
+  # A user's newest session is the one created last (highest id), whichever space it was in.
+  scope :newest_first, -> { order(id: :desc) }
+
   def self.to_csv(attributes)
     CSV.generate { |csv| attributes.each { |row| csv << row } }
   end
@@ -29,9 +33,9 @@ class LabSession < ApplicationRecord
     end
   end
 
-  # Create a session for a user in a space.
+  # Create a session for a user in a space; raises when it cannot be saved.
   def self.create_session(user:, mac_address:, space_id:)
-    LabSession.create(
+    LabSession.create!(
       user: user,
       sign_in_time: Time.zone.now,
       sign_out_time: Time.zone.now + 6.hours,

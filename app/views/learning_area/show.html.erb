@@ -7,7 +7,9 @@
             <span class="badge rounded-pill border <%= return_text_color(@learning_module.level) %>">
                 <%= @learning_module.level.humanize %>
             </span>
-            <span class="ms-2"><%= @learning_module.training.localized_name %></span>
+            <% if @learning_module.training %>
+                <span class="ms-2"><%= @learning_module.training.localized_name %></span>
+            <% end %>
         </p>
 
         <% if @learning_module.scorm_package.attached? %>

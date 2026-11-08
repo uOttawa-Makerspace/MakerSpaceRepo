@@ -4,7 +4,7 @@ require "rails_helper"
 require Rails.root.join("lib/shopify_context")
 
 # ShopifyContext.ensure_setup! is the single place that calls ShopifyAPI::Context.setup
-# (boot initializer, ShopifyConcern, ShopifyService, ShopifyCartConcern). Credentials come
+# (boot initializer, ShopifyConcern, ShopifyService). Credentials come
 # from spec/support/shopify_http_helpers.rb's fake config (shpat_test_fake, fake-shop, 2025-01).
 RSpec.describe ShopifyContext, :shopify_context do
   include ActiveSupport::Testing::TimeHelpers
@@ -310,7 +310,7 @@ RSpec.describe ShopifyContext, :shopify_context do
       expect(ShopifyAPI::Context.api_version).to eq("2025-01")
     end
 
-    it "is what ShopifyService, the draft client and ShopifyCartConcern delegate to" do
+    it "is what ShopifyService, and the draft client delegate to" do
       sentinel = Object.new
       allow(described_class).to receive(:start_session!).and_return(sentinel)
       expect(ShopifyService.start_shopify_session).to equal(sentinel)
@@ -318,7 +318,6 @@ RSpec.describe ShopifyContext, :shopify_context do
       allow(ShopifyAPI::Context).to receive(:active_session).and_return(sentinel)
       expect(ShopifyAPI::Clients::Graphql::Admin).to receive(:new).with(session: sentinel)
       ShopifyConcern::DraftOrders.client
-      expect(Class.new { include ShopifyCartConcern }.start_shopify_session).to equal(sentinel)
     end
 
     it "ShopifyService digs: a missing shopify section raises NotConfigured, not NoMethodError" do
@@ -374,12 +373,12 @@ RSpec.describe ShopifyContext, :shopify_context do
       allow(ShopifyAPI::Context).to receive(:setup).and_wrap_original do |original, **args|
         calls.increment
         entered << :in
-        release.pop # hold the first setup open until the second thread has had every chance to race in
+        release.pop(timeout: ThreadPause::PARKED_TIMEOUT) # hold the first setup open until the second thread has had every chance to race in
         original.call(**args)
       end
 
       first = Thread.new { described_class.ensure_setup! }
-      entered.pop # first thread is inside Context.setup, Context still cold
+      ThreadPause.await(entered) # first thread is inside Context.setup, Context still cold
       second = Thread.new { described_class.ensure_setup! }
       deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 0.5
       sleep 0.01 until second.status == "sleep" && (calls.value > 1 || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline)

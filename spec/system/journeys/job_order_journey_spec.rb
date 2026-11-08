@@ -24,8 +24,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
   end
 
   def walk_wizard_as_user
-    log_in_as(user)
-    visit landing_job_orders_path
+    log_in_as(user, to: landing_job_orders_path)
     click_link "Start a Job Order"
     click_button "Start Production"
     expect(page).to have_current_path(%r{\A/job_orders/\d+/task/\d+/edit\z}, ignore_query: true)
@@ -57,6 +56,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       walk_wizard_as_user
       expect(page).to have_current_path(%r{\A/job_orders/\d+\z})
       expect(page).to have_content("Waiting for Staff Approval")
+      audit_accessibility("staff job order page")
       expect(page).to have_content("Client Files")
       expect(page).to have_content("Please print in grey") # wizard comment lands in the chat
       expect(page).to have_content("Support removal")
@@ -75,8 +75,7 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
 
     # staff approve with a quote
     as_actor(:staff) do
-      log_in_as(staff)
-      visit admin_job_orders_path
+      log_in_as(staff, to: admin_job_orders_path)
       expect(page).to have_css("table", text: user.name)
       visit job_order_path(order)
       expect(page).to have_content("Waiting for Staff Approval")
@@ -181,6 +180,6 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
     expect(last_status.job_status.name).to eq("Waiting to be Processed")
     expect(last_status.user).to eq(user)
     expect(task.reload).to be_persisted
-    expect(deliver_mail).to be_empty
+    expect(deliver_mail.map(&:to)).to eq([["makerspace@uottawa.ca"], [user.email]])
   end
 end

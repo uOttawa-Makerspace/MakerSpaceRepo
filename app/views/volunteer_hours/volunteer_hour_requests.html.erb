@@ -43,7 +43,7 @@
               </td>
 
               <td>
-                <%= vh.date_of_task.strftime('%m/%e/%Y (%b)') %>
+                <%= vh.date_of_task&.strftime('%m/%e/%Y (%b)') %>
               </td>
 
               <td>
@@ -51,8 +51,8 @@
               </td>
 
               <td class="action-cell">
-                <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :volunteer_hours, action: :update_approval, id: vh.id, approval: false }, method: :put, class: 'btn btn-default x-button' %>
-                <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :volunteer_hours, action: :update_approval, id: vh.id, approval: true }, method: :put, class: 'btn btn-default check-button' %>
+                <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :volunteer_hours, action: :update_approval, id: vh.id, approval: false }, method: :put, class: 'btn btn-default x-button', aria: { label: t('common.decline') } %>
+                <%= button_to '<i class="fa-solid fa-check"></i>'.html_safe, { controller: :volunteer_hours, action: :update_approval, id: vh.id, approval: true }, method: :put, class: 'btn btn-default check-button', aria: { label: t('common.approve') } %>
               </td>
 
               <td class="action-cell">
@@ -112,7 +112,7 @@
               </td>
 
               <td>
-                <%= vh.date_of_task.strftime('%m/%e/%Y (%b)') %>
+                <%= vh.date_of_task&.strftime('%m/%e/%Y (%b)') %>
               </td>
 
               <td>

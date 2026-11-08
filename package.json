@@ -2,7 +2,11 @@
   "scripts": {
     "prettier:format": "prettier --write .",
     "prettier:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint:js": "eslint .",
+    "typecheck:js": "node bin/js-typecheck",
+    "test:js": "vitest run",
+    "coverage:js:report": "nyc report --temp-dir tmp/js-coverage --reporter=text-summary --reporter=json-summary --reporter=html --report-dir tmp/js-coverage-report"
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
@@ -16,7 +20,6 @@
     "@fullcalendar/rrule": "6.1.20",
     "@fullcalendar/timegrid": "6.1.20",
     "@hotwired/stimulus": "^3.1.0",
-    "@hotwired/turbo": "^8.0.21",
     "@hotwired/turbo-rails": "^8.0.20",
     "@popperjs/core": "^2.11.8",
     "@rails/actioncable": "^8.1.100",
@@ -25,7 +28,6 @@
     "bootstrap": "^5.3.8",
     "chart.js": "^4.5.1",
     "chartkick": "^5.0.1",
-    "clipboard": "^2.0.6",
     "datatables.net-bs5": "^2.3.6",
     "datatables.net-select-bs5": "^3.1.3",
     "flatpickr": "^4.6.13",
@@ -36,17 +38,23 @@
     "scorm-again": "^3.0.3",
     "sortablejs": "^1.15.7",
     "stimulus-vite-helpers": "^3.1.0",
-    "toastr": "^2.1.4",
     "tom-select": "^2.6.2",
     "trix": "^2.1.19"
   },
   "devDependencies": {
-    "@prettier/plugin-ruby": "^4.0.4",
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "happy-dom": "20.14.6",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "nyc": "18.0.0",
     "prettier": "^3.7.4",
+    "typescript": "7.0.2",
     "vite": "^8.0.0",
-    "vite-plugin-ruby": "^5.2.5"
+    "vite-plugin-istanbul": "9.0.1",
+    "vite-plugin-ruby": "^5.2.5",
+    "vitest": "5.0.5"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

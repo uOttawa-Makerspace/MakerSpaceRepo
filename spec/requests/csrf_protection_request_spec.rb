@@ -321,7 +321,8 @@ RSpec.describe "CSRF protection", type: :request do
 
     it "Google Calendar push notification" do
       GoogleCalendarChannel.create!(channel_id: "chan-c", resource_id: "res-c", expires_at: 1.week.from_now)
-      headers = { "X-Goog-Channel-Id" => "chan-c", "X-Goog-Resource-Id" => "res-c", "X-Goog-Resource-State" => "exists" }
+      headers = { "X-Goog-Channel-Id" => "chan-c", "X-Goog-Resource-Id" => "res-c", "X-Goog-Resource-State" => "exists",
+                  "X-Goog-Channel-Token" => GoogleCalendarChannel.token_for("chan-c") }
       expect { post "/google/calendar/webhook", headers: headers, without_csrf_token: true }
         .to have_enqueued_job(GoogleCalendarSyncJob)
       expect(response).to have_http_status(:ok)

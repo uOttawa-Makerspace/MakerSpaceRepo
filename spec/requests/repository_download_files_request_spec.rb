@@ -4,7 +4,7 @@ require "rails_helper"
 
 # Chunk 16: RepositoriesController#download_files (zip of repo_files).
 #
-# Gates: check_auth only (guests allowed for public repos). Zips are cached at
+# Gates: signed in, then check_auth (the password for private repos). Zips are cached at
 # tmp/repository_zips/makerepo_<id>.zip and re-used while newer than
 # repository.updated_at; Repository#clear_zip_cache deletes it after_commit on
 # update/destroy.
@@ -30,7 +30,13 @@ RSpec.describe "Repository zip download", type: :request do
     get download_files_repositories_path(user_username, r.id)
   end
 
-  after { FileUtils.rm_f(repo.zip_path) }
+  # Each example has its own cache directory (parallel processes would otherwise share zips of the same id).
+  let(:cache_dir) { Pathname(Dir.mktmpdir("repository_zips")) }
+  before { allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir) }
+  after { FileUtils.rm_rf(cache_dir.to_s) }
+
+  # Downloads need a signed-in user; most examples are the owner.
+  before { content_login!(owner) }
 
   it "redirects with an alert when the repository has no files" do
     download
@@ -39,9 +45,11 @@ RSpec.describe "Repository zip download", type: :request do
   end
 
   # N+1 pinned
-  it "serves a zip of every file to a guest for a public repository", skip_bullet: true do
+  it "serves a zip of every file to a signed-in user for a public repository", skip_bullet: true do
     add_file("a.txt", content: "AAA")
     add_file("b.txt", content: "BBB")
+    delete perform_logout_path
+    content_sign_in_as(:regular)
     download
     expect(response).to have_http_status(:ok)
     expect(response.media_type).to eq("application/zip")
@@ -123,10 +131,11 @@ RSpec.describe "Repository zip download", type: :request do
     expect(zip_entries).to eq("kept.txt" => "K")
   end
 
-  it "ignores the username segment of the URL" do
+  it "sends a link with another username to the owner's address" do
     add_file("a.txt")
     download(user_username: "someone-else")
-    expect(response).to have_http_status(:ok)
+    expect(response).to have_http_status(:found)
+    expect(response.location).to include("/#{repo.user_username}/")
   end
 
   it "404s for an unknown or soft-deleted repository" do
@@ -140,13 +149,17 @@ RSpec.describe "Repository zip download", type: :request do
     let!(:secret) { create(:repository, :private, owner: owner, title: "Hush", users: [owner]) }
     before { add_file("s.txt", content: "S", repository: secret) }
 
-    it "redirects a guest and a stranger to the password page with 'Password required'" do
-      download(secret)
-      expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
-      expect(flash[:alert]).to eq("Password required")
+    it "redirects a stranger to the password page with 'Password required'" do
       content_sign_in_as(:regular)
       download(secret)
       expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      expect(flash[:alert]).to eq("Password required")
+    end
+
+    it "sends a guest to sign in before the password page" do
+      delete perform_logout_path
+      download(secret)
+      expect(response).to redirect_to(login_path(back_to: download_files_repositories_path(owner.username, secret.id)))
     end
 
     it "serves the zip to the owner, staff and admin" do
@@ -170,6 +183,120 @@ RSpec.describe "Repository zip download", type: :request do
       post pass_authenticate_repository_path(owner.username, secret.id), params: { password: "pw" }
       download(secret)
       expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe "signing in" do
+    it "sends a guest to the login page with a message and the way back" do
+      add_file("a.txt")
+      delete perform_logout_path
+      download
+      expect(response).to redirect_to(login_path(back_to: download_files_repositories_path(owner.username, repo.id)))
+      expect(flash[:alert]).to eq("Sign in to download this repository.")
+    end
+
+    it "keeps the repository page public and labels the link for a guest" do
+      add_file("a.txt")
+      delete perform_logout_path
+      get repository_path(owner.username, repo.slug)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Sign in to download")
+    end
+  end
+
+  describe "rate limit" do
+    before do
+      add_file("a.txt")
+      allow(Repository::ZipCache).to receive(:free_bytes).and_return(100 * Repository::ZipCache::GIGABYTE)
+    end
+
+    it "answers 429 after 20 downloads an hour for a user" do
+      20.times { download }
+      expect(response).to have_http_status(:ok)
+      download
+      expect(response).to have_http_status(:too_many_requests)
+      expect(response.body).to include("Too many downloads")
+    end
+
+    it "counts per address too" do
+      RateLimitCounter.increment("rate-limit:repositories:download-ip:127.0.0.1", 20, expires_in: 1.hour)
+      download
+      expect(response).to have_http_status(:too_many_requests)
+    end
+
+    %i[staff admin].each do |role|
+      it "does not limit #{role}" do
+        delete perform_logout_path
+        content_sign_in_as(role)
+        22.times { download }
+        expect(response).to have_http_status(:ok)
+      end
+    end
+  end
+
+  describe "cache" do
+    before { add_file("a.txt", content: "v1") }
+
+    it "serves a valid cached zip without building again and marks it used" do
+      download
+      old = Time.at(1_000_000)
+      File.utime(old, File.mtime(repo.zip_path), repo.zip_path)
+      expect_any_instance_of(Repository::ZipCache).not_to receive(:build)
+      download
+      expect(response).to have_http_status(:ok)
+      expect(File.atime(repo.zip_path)).to be > old + 1.day
+    end
+
+    it "streams the zip, reports, and writes nothing when the cache is empty and the disk is below the floor" do
+      allow(Repository::ZipCache).to receive(:free_bytes).and_return(0)
+      expect(Rails.error).to receive(:report).with(anything, hash_including(severity: :warning, handled: true))
+      download
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("application/zip")
+      expect(response.headers["Content-Disposition"]).to include("zip-me-#{repo.id}.zip")
+      expect(zip_entries).to eq("a.txt" => "v1")
+      expect(Dir.glob(cache_dir.join("*").to_s)).to be_empty
+    end
+
+    it "leaves no partial file when the build fails" do
+      allow_any_instance_of(ActiveStorage::Blob).to receive(:download).and_raise(IOError, "boom")
+      download
+      expect(response).to have_http_status(:internal_server_error)
+      expect(Dir.glob(cache_dir.join("*").to_s)).to be_empty
+    end
+
+    it "skips a file that vanishes from storage between the check and the download" do
+      gone = add_file("gone.txt")
+      allow_any_instance_of(ActiveStorage::Blob).to receive(:download).and_wrap_original do |m, *args, &blk|
+        raise ActiveStorage::FileNotFoundError if m.receiver.id == gone.file.blob.id
+
+        m.call(*args, &blk)
+      end
+      download
+      expect(response).to have_http_status(:ok)
+      expect(zip_entries).to eq("a.txt" => "v1")
+    end
+
+    it "streams a zip that is too large to cache without keeping it" do
+      stub_const("ENV", ENV.to_h.merge("REPOSITORY_ZIP_MAX_CACHED_ZIP_BYTES" => "10"))
+      expect(Rails.error).not_to receive(:report)
+      download
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("application/zip")
+      expect(response.headers["Content-Disposition"]).to include("zip-me-#{repo.id}.zip")
+      expect(zip_entries).to eq("a.txt" => "v1")
+      expect(Dir.glob(cache_dir.join("*").to_s)).to be_empty
+    end
+
+    it "skips a file missing from storage on the streamed path and redirects when none is left" do
+      stub_const("ENV", ENV.to_h.merge("REPOSITORY_ZIP_MAX_CACHED_ZIP_BYTES" => "10"))
+      gone = add_file("gone.txt")
+      gone.file.blob.service.delete(gone.file.blob.key)
+      download
+      expect(zip_entries).to eq("a.txt" => "v1")
+      RepoFile.where(repository: repo).find_each { |f| f.file.blob.service.delete(f.file.blob.key) }
+      download
+      expect(response).to redirect_to(repository_path(owner.username, repo.slug))
     end
   end
 end

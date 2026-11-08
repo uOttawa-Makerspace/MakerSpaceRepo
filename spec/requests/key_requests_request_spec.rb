@@ -147,6 +147,22 @@ RSpec.describe "Key requests", type: :request do
       expect(flash[:alert]).to eq("An error occured while saving the key request at step 3: Failed to update key request")
     end
 
+    it "a GET never writes: submitted fields are ignored and step 6 does not submit" do
+      kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true))
+      get key_request_steps_path(key_request_id: kr.id, step: 2), params: { key_request: { phone_number: "613-555-9999" } }
+      expect(response).to have_http_status(:ok)
+      expect(kr.reload.phone_number).not_to eq("613-555-9999")
+      get key_request_steps_path(key_request_id: kr.id, step: 6)
+      expect(response).to redirect_to(key_request_steps_path(key_request_id: kr.id, step: 5))
+      expect(kr.reload.status).to eq("in_progress")
+    end
+
+    it "the wizard forms submit with PATCH" do
+      get key_request_steps_path(key_request_id: kr.id, step: 3)
+      form = Nokogiri::HTML(response.body).at_css("form[action='#{key_request_steps_path(key_request_id: kr.id)}']")
+      expect(form.at_css("input[name='_method']")["value"]).to eq("patch")
+    end
+
     it "redirects an out-of-range step back to step 1" do
       get key_request_steps_path(key_request_id: kr.id, step: 9)
       expect(response).to redirect_to(key_request_steps_path(key_request_id: kr.id, step: 1))
@@ -154,7 +170,7 @@ RSpec.describe "Key requests", type: :request do
     end
 
     it "does not submit step 6 until every question is answered" do
-      get key_request_steps_path(key_request_id: kr.id, step: 6)
+      patch key_request_steps_path(key_request_id: kr.id, step: 6)
       expect(response).to redirect_to(key_request_steps_path(key_request_id: kr.id, step: 1))
       expect(flash[:alert]).to eq("There was an error when submitting your key request form. Please make sure you fill in all the required fields.")
       expect(kr.reload.status).to eq("in_progress")
@@ -162,10 +178,40 @@ RSpec.describe "Key requests", type: :request do
 
     it "submits at step 6 once complete, moving to waiting_for_approval" do
       kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true))
-      get key_request_steps_path(key_request_id: kr.id, step: 6)
+      patch key_request_steps_path(key_request_id: kr.id, step: 6)
       expect(response).to redirect_to(key_request_path(kr.id))
       expect(flash[:notice]).to start_with("You have successfully submitted the key request form")
       expect(kr.reload.status).to eq("waiting_for_approval")
+    end
+
+    %i[approved waiting_for_approval].each do |status|
+      context "when #{status}" do
+        before { kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true, status: status)) }
+
+        (1..6).each do |step|
+          it "refuses an owner PATCH of step #{step} and changes nothing" do
+            patch key_request_steps_path(key_request_id: kr.id, step: step), params: { key_request: { supervisor_id: staff.id, phone_number: "613-555-4444" } }
+            expect(response).to redirect_to(key_request_path(kr.id))
+            expect(flash[:alert]).to start_with("This key request is already")
+            expect(kr.reload).to have_attributes(status: status.to_s, supervisor_id: supervisor.id)
+            expect(kr.phone_number).not_to eq("613-555-4444")
+          end
+        end
+
+        it "does not show the edit link on the request page" do
+          get key_request_path(kr.id)
+          expect(response.body).not_to include("Edit Request")
+        end
+      end
+    end
+
+    it "lets the owner edit again after an admin denies the request" do
+      kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true, status: :waiting_for_approval))
+      kr.update!(status: :in_progress)
+      patch key_request_steps_path(key_request_id: kr.id, step: 1), params: { key_request: { phone_number: "613-555-4444" } }
+      expect(kr.reload.phone_number).to eq("613-555-4444")
+      get key_request_path(kr.id)
+      expect(response.body).to include("Edit Request")
     end
 
     # :status is not permitted on steps, so the requester cannot self-approve

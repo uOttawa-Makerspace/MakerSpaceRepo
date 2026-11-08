@@ -34,9 +34,24 @@ RSpec.describe JobStatus, type: :model do
       I18n.with_locale(:fr) { expect(status.t_name).to eq("Brouillon") }
     end
 
-    it "returns nil under fr when the French name is missing" do
-      status.update!(name_fr: nil)
-      I18n.with_locale(:fr) { expect(status.t_name).to be_nil }
+    it "falls back to the English name under fr when the French name is missing or blank" do
+      [nil, ""].each do |blank|
+        status.update!(name_fr: blank)
+        I18n.with_locale(:fr) { expect(status.t_name).to eq("Draft") }
+      end
+    end
+  end
+
+  describe "#t_description" do
+    let(:status) { create(:job_status, name: "Draft", description: "Being written", description_fr: "En rédaction") }
+
+    it "reads the English column by default and description_fr under fr, with fallback" do
+      expect(status.t_description).to eq("Being written")
+      I18n.with_locale(:fr) { expect(status.t_description).to eq("En rédaction") }
+      status.update!(description_fr: "")
+      I18n.with_locale(:fr) { expect(status.t_description).to eq("Being written") }
+      status.update!(description: nil, description_fr: "En rédaction")
+      expect(status.t_description).to eq("En rédaction")
     end
   end
 

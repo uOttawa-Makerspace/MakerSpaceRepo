@@ -1,0 +1,13 @@
+<% provide(:title, 'Unlock your account') %>
+
+<div class="container py-5" style="max-width: 36rem;">
+  <h2 class="mb-3">Unlock your account</h2>
+  <p>Press the button to unlock your account so you can sign in again.</p>
+  <p class="text-muted small">Nothing changes until you press the button.</p>
+
+  <div class="d-flex gap-2">
+    <%= button_to 'Unlock my account', unlock_account_users_path,
+                  params: { token: params[:token] }, method: :post, class: 'btn btn-primary' %>
+    <%= link_to 'Cancel', root_path, class: 'btn btn-outline-secondary' %>
+  </div>
+</div>

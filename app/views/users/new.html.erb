@@ -26,6 +26,9 @@
           <div class="mb-3">
             <%= form.label :username, t('users.new.form.username'), class: 'required' %>
             <%= form.text_field :username, class: 'form-control', required: true %>
+            <% @new_user.errors.full_messages_for(:username).each do |err| %>
+              <div class="text-danger small mt-1"><%= err %></div>
+            <% end %>
           </div>
 
           <div class="mb-3">

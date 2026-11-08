@@ -3,6 +3,14 @@
 <section class="border">
     <div class="col-lg-7 mx-auto my-3">
         <h1 class="text-center mb-4">Edit Learning Module</h1>
+        <%# Outside the edit form: the retry is a form of its own %>
+        <% if @learning_module.persisted? && @learning_module.scorm_package.attached? %>
+            <% if @learning_module.scorm_failed? || @learning_module.scorm_stalled? %>
+                <%= render 'scorm_problem', learning_module: @learning_module %>
+            <% else %>
+                <p class="mb-2">SCORM package status: <strong><%= @learning_module.scorm_status.humanize %></strong></p>
+            <% end %>
+        <% end %>
         <%= render 'form' %>
     </div>
 </section>

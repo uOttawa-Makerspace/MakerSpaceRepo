@@ -203,7 +203,7 @@ RSpec.describe AnnouncementsController, type: :controller do
     end
 
     context "logged as staff" do
-      it "should return 200 response" do
+      it "keeps a volunteer announcement in the volunteer audience" do
         session[:user_id] = @staff.id
         patch :update,
               params: {
@@ -212,11 +212,10 @@ RSpec.describe AnnouncementsController, type: :controller do
                   public_goal: "staff"
                 }
               }
-        expect(response).to redirect_to announcements_path
+        expect(response).to redirect_to new_announcement_path
         expect(Announcement.find(@announcement_volunteer.id).public_goal).to eq(
-          "staff"
+          "volunteer"
         )
-        expect(flash[:notice]).to eq("Announcement updated")
       end
 
       it "should redirect and not update" do

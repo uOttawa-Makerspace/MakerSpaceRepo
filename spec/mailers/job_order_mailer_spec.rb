@@ -139,12 +139,12 @@ RSpec.describe JobOrderMailer, type: :mailer do
       end
 
       it "shows the French per-task prices, option, line items and Total général" do
-        expect(french).to include("- Print A : CAD $32.00 (frais de base de $20.00 plus 4.0 unité × $3.00 )")
-        expect(french).to include("• Polish : CAD $7.25")
-        expect(french).to include("- Print B : CAD $15.50 (frais de base de $15.50 plus 0.0 unité × $0.00 )")
+        expect(french).to include("- Print A : CAD 32,00 $ (frais de base de 20,00 $ plus 4.0 unité × 3,00 $ )")
+        expect(french).to include("• Polish : CAD 7,25 $")
+        expect(french).to include("- Print B : CAD 15,50 $ (frais de base de 15,50 $ plus 0.0 unité × 0,00 $ )")
         expect(french).to include("- Task #1 : Prix en attente")
-        expect(french).to include("Articles détaillés : - Rush: CAD $2.50 - Setup: CAD $1.25")
-        expect(french).to include("Total général : CAD $58.50")
+        expect(french).to include("Articles détaillés : - Rush: CAD 2,50 $ - Setup: CAD 1,25 $")
+        expect(french).to include("Total général : CAD 58,50 $")
       end
     end
 
@@ -172,6 +172,36 @@ RSpec.describe JobOrderMailer, type: :mailer do
       described_class.send_job_user_approval(order.id).deliver_now
       expect(delivered.last.subject).to eq("EXPEDITED: A user has approved a Job Order")
       expect(delivered.last.header["X-Priority"].to_s).to eq("1")
+    end
+  end
+
+  describe ".send_job_user_declined" do
+    it "notifies the makerspace mailbox, with the EXPEDITED variant for expedited orders" do
+      described_class.send_job_user_declined(order.id).deliver_now
+      expect(delivered.last.to).to eq(["makerspace@uottawa.ca"])
+      expect(delivered.last.subject).to eq("A user has declined a Job Order")
+
+      expedite!
+      described_class.send_job_user_declined(order.id).deliver_now
+      expect(delivered.last.subject).to eq("EXPEDITED: A user has declined a Job Order")
+      expect(delivered.last.header["X-Priority"].to_s).to eq("1")
+    end
+  end
+
+  describe ".send_job_decision_confirmation" do
+    it "tells the customer in French and English that their approval was recorded" do
+      described_class.send_job_decision_confirmation(order.id, true).deliver_now
+      mail = delivered.last
+      expect(mail.to).to eq([owner.email])
+      expect(mail.subject).to include("Your approval of job order ##{order.id} is recorded")
+      expect(mail.body.encoded).to include("votre approbation").and include("your approval")
+    end
+
+    it "tells the customer in French and English that their decline was recorded" do
+      described_class.send_job_decision_confirmation(order.id, false).deliver_now
+      mail = delivered.last
+      expect(mail.subject).to include("Your decline of job order ##{order.id} is recorded")
+      expect(mail.body.encoded).to include("votre refus").and include("your decline")
     end
   end
 

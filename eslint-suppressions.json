@@ -1,0 +1,222 @@
+{
+  "app/javascript/controllers/volunteer_search_controller.js": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/add_new_staff.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/admin_training_sessions.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/application.js": {
+    "complexity": {
+      "count": 1
+    },
+    "no-empty": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/calendar.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/cdel_reports.js": {
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "app/javascript/entrypoints/design_days.js": {
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "app/javascript/entrypoints/discount_codes.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/fullcalendar_setup_homepage.js": {
+    "complexity": {
+      "count": 2
+    }
+  },
+  "app/javascript/entrypoints/job_orders.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/job_orders_wizard.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/keys.js": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/learning_modules.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/locker_rentals.js": {
+    "no-unused-vars": {
+      "count": 6
+    }
+  },
+  "app/javascript/entrypoints/lockers.js": {
+    "complexity": {
+      "count": 2
+    }
+  },
+  "app/javascript/entrypoints/printer_issues.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/project_proposals.js": {
+    "no-unused-vars": {
+      "count": 3
+    },
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/repositories.js": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/staff_dashboard.js": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/staff_printers.js": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/sub_space_booking.js": {
+    "complexity": {
+      "count": 2
+    }
+  },
+  "app/javascript/entrypoints/users.js": {
+    "complexity": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 3
+    }
+  },
+  "app/javascript/entrypoints/volunteer_hours.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/entrypoints/volunteer_tasks.js": {
+    "complexity": {
+      "count": 2
+    }
+  },
+  "app/javascript/src/accordion-load.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/src/calendar_helper.js": {
+    "complexity": {
+      "count": 6
+    },
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "app/javascript/src/effects.js": {
+    "no-unused-vars": {
+      "count": 6
+    }
+  },
+  "app/javascript/src/file_upload.js": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/javascript/src/fullcalendar_setup_admin.js": {
+    "complexity": {
+      "count": 2
+    },
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "app/javascript/src/header.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/src/manage_calendar_events.js": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 5
+    },
+    "no-unused-vars": {
+      "count": 4
+    }
+  },
+  "app/javascript/src/manage_unavailabilities.js": {
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "app/javascript/src/photo_gallery.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/src/scorm_commit_service.js": {
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "app/javascript/src/settings.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/javascript/src/sorting.js": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 1
+    }
+  },
+  "app/javascript/src/unavailabilities_helpers.js": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/javascript/src/validation.js": {
+    "complexity": {
+      "count": 2
+    }
+  }
+}

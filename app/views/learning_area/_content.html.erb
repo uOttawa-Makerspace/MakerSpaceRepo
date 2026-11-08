@@ -57,7 +57,7 @@
         <% learning_module.photos.each do |photo| %>
             <div class="bg-dark rounded border" style="width: 80px; height: 80px;">
                 <%= image_tag photo,
-                              alt: 'Gallery photo',
+                              alt: t('common.names.gallery_photo'),
                               class: 'rounded',
                               style: 'width: 80px; height: 80px; object-fit: cover; cursor: pointer;',
                               loading: 'lazy' %>

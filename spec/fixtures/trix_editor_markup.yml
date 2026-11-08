@@ -1,0 +1,30 @@
+---
+builder_class:
+  <input type="hidden" name="faq[body_en]" id="faq_body_en_trix_input_faq"
+  value="&lt;div&gt;Hello &amp;amp; &lt;strong&gt;welcome&lt;/strong&gt; &quot;q&quot;&lt;/div&gt;"
+  autocomplete="off" /><trix-editor class="formatted_content trix-content form-control"
+  input="faq_body_en_trix_input_faq" id="faq_body_en"></trix-editor>
+builder_style_required:
+  '<input type="hidden" name="faq[body_fr]" id="faq_body_fr_trix_input_faq"
+  autocomplete="off" /><trix-editor class="formatted_content trix-content form-control"
+  input="faq_body_fr_trix_input_faq" style="height: auto!important;" required="required"
+  id="faq_body_fr"></trix-editor>'
+builder_placeholder_id_aria:
+  <input type="hidden" name="faq[body_en]" id="redactor_trix_input_faq"
+  value="&lt;div&gt;Hello &amp;amp; &lt;strong&gt;welcome&lt;/strong&gt; &quot;q&quot;&lt;/div&gt;"
+  autocomplete="off" /><trix-editor class="formatted_content trix-content form-control
+  mb-5" input="redactor_trix_input_faq" placeholder="Description..." id="redactor"
+  aria-label="Description"></trix-editor>
+fields_for:
+  '<input type="hidden" name="faq[nested][body_en]" id="faq_nested_body_en_trix_input_faq"
+  value="&lt;div&gt;Hello &amp;amp; &lt;strong&gt;welcome&lt;/strong&gt; &quot;q&quot;&lt;/div&gt;"
+  autocomplete="off" /><trix-editor class="formatted_content trix-content repo form-control"
+  input="faq_nested_body_en_trix_input_faq" style="height: auto!important;" id="faq_nested_body_en"></trix-editor>'
+tag_print_failed:
+  <input type="hidden" name="print_failed_message[staff_notes]" id="trix_input_1"
+  value="" autocomplete="off" /><trix-editor class="formatted_content trix-content
+  form-control" input="trix_input_1" id="print_failed_message_staff_notes"></trix-editor>
+tag_value_and_class_array:
+  <input type="hidden" name="note" id="trix_input_2" value="&lt;p&gt;x&lt;/p&gt;"
+  autocomplete="off" /><trix-editor class="formatted_content trix-content a b" input="trix_input_2"
+  placeholder="p"></trix-editor>

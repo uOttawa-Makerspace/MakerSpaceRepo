@@ -3,8 +3,10 @@ import "../src/fullcalendar_setup_admin";
 import "../src/manage_calendar_events";
 import "flatpickr";
 import { csrfHeaders } from "../src/csrf";
+import { onPageLoad } from "../src/on_page";
+import { showToast } from "../src/toast";
 
-document.addEventListener("turbo:load", () => {
+onPageLoad("#addEventButton", () => {
   document
     .getElementById("addEventButton")
     .addEventListener("click", addEventClick);
@@ -24,6 +26,10 @@ document.addEventListener("turbo:load", () => {
 });
 
 function updateColor(userId, color) {
+  const notSaved = /** @type {HTMLElement} */ (
+    document.querySelector("[data-color-not-saved]")
+  ).dataset.colorNotSaved;
+
   fetch("/admin/calendar/update_color", {
     method: "POST",
     headers: csrfHeaders({
@@ -36,16 +42,18 @@ function updateColor(userId, color) {
       format: "json",
     }),
   })
-    .then((res) => {
-      // Yippee!
+    .then(async (res) => {
+      if (res.ok) return;
+      const body = await res.json().catch(() => ({}));
+      showToast(body.error ? `${notSaved} ${body.error}` : notSaved, {
+        type: "error",
+      });
     })
-    .catch((error) => {
-      console.error("An error occurred: " + error.message);
-    });
+    .catch(() => showToast(notSaved, { type: "error" }));
 }
 
 /* For the event modal */
-document.addEventListener("turbo:load", () => {
+onPageLoad("#addEventButton", () => {
   const fp1 = flatpickr("#source_range", {
     mode: "range",
     dateFormat: "Y-m-d",

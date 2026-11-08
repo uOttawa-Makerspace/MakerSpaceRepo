@@ -13,10 +13,8 @@ RSpec.describe "Page crawl (request level)", type: :request, skip_bullet: true d
   # route (path spec) => { role => short reason }
   ALL = PageCrawl::ROLES
   KNOWN_500 = {
-    "/memberships" => ALL.index_with { "no_tier_row" }, # no day-pass membership tier row in the world
     "/printers/last_user_assigned_to_printer" => %i[staff admin].index_with { "printer_without_session" },
     "/staff/my_calendar" => %i[staff admin].index_with { "my_calendar_500" },
-    "/staff_dashboard/refresh_tables" => %i[staff admin].index_with { "refresh_tables_500" },
     "/admin/uni_programs/current_programs" => { admin: "current_programs_500" }
   }.freeze
 
@@ -38,11 +36,7 @@ RSpec.describe "Page crawl (request level)", type: :request, skip_bullet: true d
     stub_shopify_admin!
     allow(LockerOption).to receive(:locker_product_info).and_return({ variants: {} })
     world = PageCrawl::World.new(self)
-    if (pending, approved, declined = world.records[:booking_statuses])
-      stub_const("BookingStatus::PENDING", pending)
-      stub_const("BookingStatus::APPROVED", approved)
-      stub_const("BookingStatus::DECLINED", declined)
-    end
+
     log_in_persona(role)
     visited = {}
     skipped = {}

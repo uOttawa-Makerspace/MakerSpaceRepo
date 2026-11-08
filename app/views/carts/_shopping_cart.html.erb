@@ -54,7 +54,7 @@
           <li class="d-flex justify-content-between py-3"><strong class="text-muted">Total</strong>
             <h5 class="fw-bold"><%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs hidden', id: 'myCcBlack' %><%= cart_total %></h5>
           </li>
-        <%= button_to 'Confirm order', orders_path, action: :create, method: :post, class: 'btn btn-primary rounded-pill py-2 d-block w-100', 'aria-label': "Confirm order, the total is #{cart_total} CC", data: { confirm: 'Are you sure you want to proceed with the order ?' } %>
+        <%= button_to 'Confirm order', orders_path, action: :create, method: :post, class: 'btn btn-primary rounded-pill py-2 d-block w-100', 'aria-label': t('common.names.confirm_order_total', total: cart_total), data: { confirm: 'Are you sure you want to proceed with the order ?' } %>
           <% else %>
           <li class="py-3 text-danger"><strong>Remove the items marked as no longer available to see your total and check out.</strong></li>
           <% end %>

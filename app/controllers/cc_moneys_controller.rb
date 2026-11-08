@@ -4,10 +4,10 @@ class CcMoneysController < SessionsController
   before_action :set_verifier, only: %i[link_cc_to_user redeem]
 
   def index
-    if current_user
+    if signed_in?
       # A page view only reads: the balance is the ledger sum (uncached), no lock and no cache
       # write (the cached users.wallet is written only by spends and credits).
-      @user_wallet = current_user.persisted? ? CcMoney.uncached { current_user.get_total_cc } : 0
+      @user_wallet = CcMoney.uncached { current_user.get_total_cc }
       @cc_activities = current_user.cc_moneys.order(created_at: :desc).limit(10)
     end
   end

@@ -29,11 +29,8 @@ class Membership < ApplicationRecord
   end
 
   def checkout_link
-    # Special case to prevent people from triggering shopify calls for a faculty membership
-    if membership_tier.title_en.downcase.include?('faculty')
-      flash[:notice] = "Money can buy a lot of things, but not this one."
-      return '/'
-    end
+    # Faculty memberships never trigger Shopify calls
+    return '/' if faculty?
     shopify_draft_order['invoiceUrl']
   end
 

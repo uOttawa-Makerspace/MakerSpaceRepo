@@ -1,9 +1,6 @@
 class Admin::JobTypesController < AdminAreaController
   before_action :set_job_type, only: %i[edit update]
 
-  def index
-  end
-
   def new
     @job_type = JobType.new
   end

@@ -49,24 +49,24 @@ RSpec.describe "Admin events gaps", type: :request do
 
         it "bounces create, update, delete_with_scope, publish, delete_drafts and copy to / and changes nothing" do
           post admin_events_path, params: { event: event_attrs(title: "Intruder") }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           patch admin_event_path(event), params: { event: event_attrs(title: "Hacked") }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           delete delete_with_scope_admin_event_path(event)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           patch publish_admin_event_path(draft)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           delete delete_drafts_admin_events_path, params: { space_id: space.id,
                                                             view_start_date: "2000-01-01",
                                                             view_end_date: "2100-01-01" }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           post copy_admin_events_path, params: { space_id: space.id }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
 
           expect(Event.where(title: "Intruder")).to be_empty
           expect(event.reload.title).to eq("Untouched")
@@ -77,7 +77,7 @@ RSpec.describe "Admin events gaps", type: :request do
 
         it "bounces the json feed to /" do
           get json_admin_events_path(id: space.id)
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: trait.nil?)
         end
       end
     end
@@ -125,14 +125,28 @@ RSpec.describe "Admin events gaps", type: :request do
 
     it "does not push a draft to Google Calendar" do
       post admin_events_path, params: { event: event_attrs }
-      expect(Event).not_to have_received(:upsert_event)
+      expect(GoogleCalendar::EventPushJob).not_to have_been_enqueued
     end
 
-    # Time.parse(nil) raises TypeError before any validation
-    it "answers 500 (TypeError) when the utc_* params are missing" do
-      post admin_events_path, params: { event: event_attrs.except(:utc_start_time, :utc_end_time) }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("TypeError")
+    it "redirects with an alert and creates nothing when the utc_* params are missing" do
+      expect do
+        post admin_events_path, params: { event: event_attrs.except(:utc_start_time, :utc_end_time) }
+      end.not_to change(Event, :count)
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end times are required.")
+    end
+
+    it "answers an unparsable time in the chosen language" do
+      post admin_events_path, params: { locale: "fr", event: event_attrs(utc_end_time: "not a time") }
+      expect(flash[:alert]).to eq("Les heures de début et de fin sont requises.")
+    end
+
+    it "redirects with an alert and creates nothing when a time cannot be parsed" do
+      expect do
+        post admin_events_path, params: { event: event_attrs(utc_end_time: "not a time") }
+      end.not_to change(Event, :count)
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end times are required.")
     end
   end
 
@@ -140,6 +154,22 @@ RSpec.describe "Admin events gaps", type: :request do
 
   describe "PATCH update" do
     before { log_in!(admin) }
+
+    it "redirects with an alert and keeps the record when the utc_* params are missing" do
+      event = create(:event, space: space, title: "Keep")
+      patch admin_event_path(event), params: { event: event_attrs(title: "Changed").except(:utc_start_time) }
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end times are required.")
+      expect(event.reload.title).to eq("Keep")
+    end
+
+    it "redirects with an alert and keeps the record when a time cannot be parsed" do
+      event = create(:event, space: space, title: "Keep")
+      patch admin_event_path(event), params: { event: event_attrs(title: "Changed", utc_start_time: "99:99 tomorrow") }
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end times are required.")
+      expect(event.reload.title).to eq("Keep")
+    end
 
     it "flashes the validation failure of a non-recurring update and keeps the record" do
       event = create(:event, space: space, title: "Keep")
@@ -176,8 +206,7 @@ RSpec.describe "Admin events gaps", type: :request do
     it "pushes a published event to Google Calendar after updating" do
       event = create(:event, space: space)
       patch admin_event_path(event), params: { event: event_attrs }
-      # the before_save callback AND the controller both upsert
-      expect(Event).to have_received(:upsert_event).with(event).at_least(:twice)
+      expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id).exactly(:once)
     end
 
     context "recurring event, scope 'all'" do
@@ -243,14 +272,33 @@ RSpec.describe "Admin events gaps", type: :request do
         expect(series.reload.event_assignments).to be_empty
       end
 
-      # the master already carries the EXDATE when Event.create! raises
-      it "leaves the master modified and answers 422 (unhandled RecordInvalid) when the replacement is invalid" do
+      it "answers 422 and leaves the series unchanged when the replacement is invalid" do
         patch admin_event_path(series),
               params: { update_scope: "this",
                         event: event_attrs(utc_start_time: "2025-05-12 18:00",
                                            utc_end_time: "2025-05-12 17:00") }
         expect(response).to have_http_status(:unprocessable_content)
-        expect(series.reload.recurrence_rule).to end_with("EXDATE:20250512T150000Z")
+        expect(series.reload.recurrence_rule).to eq(series_rule)
+        expect(Event.count).to eq(1)
+      end
+
+      it "queues no Google job when the replacement is invalid" do
+        series
+        patch admin_event_path(series),
+              params: { update_scope: "this",
+                        event: event_attrs(utc_start_time: "2025-05-12 18:00",
+                                           utc_end_time: "2025-05-12 17:00") }
+        expect(GoogleCalendar::EventPushJob).not_to have_been_enqueued
+        expect(GoogleCalendar::EventDeleteJob).not_to have_been_enqueued
+      end
+
+      it "flashes the error and changes nothing when the series itself cannot be updated" do
+        allow_any_instance_of(Event).to receive(:update).and_return(false)
+        patch admin_event_path(series),
+              params: { update_scope: "this",
+                        event: event_attrs(utc_start_time: "2025-05-12 17:00", utc_end_time: "2025-05-12 18:00") }
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to start_with("Failed to update event:")
         expect(Event.count).to eq(1)
       end
     end
@@ -284,6 +332,19 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(series.reload.recurrence_rule).to eq(
         "DTSTART:20250505T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5;UNTIL=20250518T150000Z"
       )
+    end
+
+    it "single: an unparsable start_date is answered like a missing one and keeps the series" do
+      delete delete_with_scope_admin_event_path(series), params: { scope: "single", start_date: "not a date" }
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start date is required.")
+      expect(series.reload.recurrence_rule).to eq(series_rule)
+    end
+
+    it "following: an unparsable start_date is answered like a missing one and keeps the series" do
+      delete delete_with_scope_admin_event_path(series), params: { scope: "following", start_date: "not a date" }
+      expect(flash[:alert]).to eq("Start date is required.")
+      expect(series.reload.recurrence_rule).to eq(series_rule)
     end
 
     it "following: needs a start_date" do
@@ -356,16 +417,37 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(event.reload.draft).to be(true)
     end
 
-    # Time.parse(nil) raises before the space guard
-    it "answers 500 for a batch publish without view dates" do
+    it "alerts for a batch publish without view dates and publishes nothing" do
+      draft = create(:event, :draft, space: space)
       patch publish_admin_events_path, params: { space_id: space.id }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(response.body).to include("TypeError")
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end dates are required.")
+      expect(draft.reload.draft).to be(true)
     end
 
-    it "answers 500 for delete_drafts without view dates" do
+    it "alerts for a batch publish with an unparsable view date and publishes nothing" do
+      draft = create(:event, :draft, space: space)
+      patch publish_admin_events_path, params: { space_id: space.id, view_start_date: "x", view_end_date: "2027-04-02" }
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end dates are required.")
+      expect(draft.reload.draft).to be(true)
+    end
+
+    it "alerts for delete_drafts with an unparsable view date and deletes nothing" do
+      draft = create(:event, :draft, space: space)
+      delete delete_drafts_admin_events_path,
+             params: { space_id: space.id, view_start_date: "2027-04-01", view_end_date: "garbage" }
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end dates are required.")
+      expect(Event.exists?(draft.id)).to be(true)
+    end
+
+    it "alerts for delete_drafts without view dates and deletes nothing" do
+      draft = create(:event, :draft, space: space)
       delete delete_drafts_admin_events_path, params: { space_id: space.id }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(admin_calendar_index_path)
+      expect(flash[:alert]).to eq("Start and end dates are required.")
+      expect(Event.exists?(draft.id)).to be(true)
     end
 
     it "delete_drafts alerts on a missing space id" do
@@ -404,7 +486,7 @@ RSpec.describe "Admin events gaps", type: :request do
       copy = Event.where(title: "Source").where.not(id: source.id).first
       expect(copy.draft).to be(true)
       expect(copy.description).to eq("Orig")
-      expect(copy.google_event_id).to eq("")
+      expect(copy.google_event_id).to be_nil
       expect(copy.event_assignments.pluck(:user_id)).to eq([staff.id])
       # target date (Eastern midnight) + the original offset into the Eastern day:
       # 14:00 UTC on Apr 5 is 10:00 EDT, so the copy is 10:00 EDT on May 3
@@ -412,6 +494,46 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(copy.end_time).to eq(Time.utc(2027, 5, 3, 15, 30))
       expect(Event.where(title: %w[SkippedDraft SkippedRecurring Outside]).count).to eq(3)
       expect(outside.reload.start_time).to eq(Time.utc(2027, 4, 20, 14, 0))
+    end
+
+    # The app's zone is Eastern; clocks went forward on 2027-03-14 at 02:00. A copy keeps its wall clock time
+    # whether the source day or the target day is the day of the change.
+    it "keeps the wall clock time when copying from the day clocks go forward to a normal day" do
+      source = create(:event, space: space, title: "DstSource",
+                              start_time: Time.utc(2027, 3, 14, 14, 0), end_time: Time.utc(2027, 3, 14, 15, 0))
+      post copy_admin_events_path,
+           params: { space_id: space.id, source_range: "2027-03-14 to 2027-03-14", target_date: "2027-03-21" }
+      copy = Event.where(title: "DstSource").where.not(id: source.id).first
+      expect(copy.start_time).to eq(Time.utc(2027, 3, 21, 14, 0)) # 10:00 EDT
+      expect(copy.end_time).to eq(Time.utc(2027, 3, 21, 15, 0))
+    end
+
+    it "keeps the wall clock time when copying onto the day clocks go forward" do
+      source = create(:event, space: space, title: "DstTarget",
+                              start_time: Time.utc(2027, 3, 7, 15, 0), end_time: Time.utc(2027, 3, 7, 16, 0))
+      post copy_admin_events_path,
+           params: { space_id: space.id, source_range: "2027-03-07 to 2027-03-07", target_date: "2027-03-14" }
+      copy = Event.where(title: "DstTarget").where.not(id: source.id).first
+      expect(copy.start_time).to eq(Time.utc(2027, 3, 14, 14, 0)) # 10:00 EDT (source was 10:00 EST)
+    end
+
+    it "copies nothing when one of the events cannot be saved" do
+      create(:event, space: space, title: "First",
+                     start_time: Time.utc(2027, 4, 5, 14, 0), end_time: Time.utc(2027, 4, 5, 15, 0))
+      create(:event, space: space, title: "Second",
+                     start_time: Time.utc(2027, 4, 6, 14, 0), end_time: Time.utc(2027, 4, 6, 15, 0))
+      calls = 0
+      allow_any_instance_of(Event).to receive(:save!).and_wrap_original do |original, *args|
+        calls += 1
+        raise ActiveRecord::RecordInvalid, original.receiver if calls == 2
+
+        original.call(*args)
+      end
+      expect do
+        post copy_admin_events_path,
+             params: { space_id: space.id, source_range: "2027-04-05 to 2027-04-11", target_date: "2027-05-03" }
+      end.not_to change(Event, :count)
+      expect(flash[:alert]).to start_with("Error copying events: ")
     end
 
     it "rescues an unparsable range into an error alert" do

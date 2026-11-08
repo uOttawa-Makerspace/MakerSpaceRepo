@@ -24,17 +24,4 @@ RSpec.describe Answer, type: :model do
       it { should have_many(:exam_responses) }
     end
   end
-
-  describe "Scopes" do
-    before :each do
-      create_list(:answer, 4)
-    end
-
-    context "#randomize_answers" do
-      it "should randomize order of answers" do
-        answers = Answer.all
-        expect(answers.randomize_answers).to match_array(answers)
-      end
-    end
-  end
 end

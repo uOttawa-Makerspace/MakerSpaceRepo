@@ -7,10 +7,8 @@ require "rails_helper"
 # Pins CURRENT observable behavior in the devcontainer test env:
 #  - real login POST (the shipped sign_in_via_session shim doesn't work for
 #    type: :request — see spec/support/auth_helpers.rb + repositories.rb:3)
-#  - BookingStatus::PENDING/APPROVED/DECLINED are nil when the app boots
-#    (BookingStatus.rb finds rows at boot; test DB is empty) → each example
-#    creates rows and stubs the constants, mirroring
-#    spec/controllers/subspace_bookings_controller_spec.rb.
+#  - each example creates the Pending/Approved/Declined rows the booking code
+#    looks up by name.
 #  - Raw wall-time storage: the column is `timestamp without time zone`. The
 #    model string/DateTime-cast rounds by the TEST DB's default (UTC), while
 #    the controller creates bookings with raw string params. Values are
@@ -22,9 +20,6 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
   end
 
   # ---------------------------------------------------------------- helpers
@@ -39,7 +34,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
   end
 
   def status_name(booking)
-    booking.reload.sub_space_booking_status.booking_status.name
+    booking.reload.booking_status.name
   end
 
   # Raw wall clock stored in Postgres for `timestamp without time zone`.
@@ -51,10 +46,9 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     )
   end
 
-  # Booking factory hooks a Pending status row after create; override it.
+  # Booking factory creates a Pending booking; give it the wanted status.
   def set_booking_status!(booking, status_row)
-    booking.sub_space_booking_status
-           .update!(booking_status_id: status_row.id)
+    booking.change_status!(status_row)
     booking
   end
 
@@ -158,7 +152,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(booking.approved_by_id).to be_nil
     end
 
-    it "marks pending subspace bookings as Pending and emails the space managers" do
+    it "marks pending subspace bookings as Pending and emails the space managers", :perform_jobs do
       staffed_space = create(:space, :with_space_managers)
       ActionMailer::Base.deliveries.clear
       req = create(:sub_space, space: staffed_space, approval_required: true,
@@ -169,7 +163,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
              end_time: "2027-03-03 11:00", name: "N", description: "D"
            } }
       expect(response.status).to eq(204)
-      expect(SubSpaceBooking.find_by(name: "N").sub_space_booking_status
+      expect(SubSpaceBooking.find_by(name: "N")
               .booking_status.name).to eq("Pending")
       expect(ActionMailer::Base.deliveries.size).to eq(1)
       mail = ActionMailer::Base.deliveries.last
@@ -191,7 +185,6 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       )
     end
 
-    # the time-order error is attached to :expiration_date
     it "rejects end_time <= start_time" do
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {
@@ -200,8 +193,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
            } }
       expect(response.status).to eq(422)
       expect(response.parsed_body)
-        .to eq("errors" =>
-               ["Expiration date Start Time needs to be before end time"])
+        .to eq("errors" => ["End time must be after the start time."])
     end
 
     it "needs a real sub space" do
@@ -456,8 +448,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         .to eq(3)
     end
 
-    # each occurrence advances from the previous one, so the day drifts
-    it "monthly series clamps day-of-month (Jan 31 → Feb 28 ...) and drifts" do
+    # each occurrence is the n-th month after the first, clamped to the month end
+    it "monthly series clamps short months and returns to the 31st (Jan 31, Feb 28, Mar 31 ...)" do
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {
              sub_space_id: subspace.id, start_time: "2027-01-31 10:00",
@@ -469,8 +461,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       walls = SubSpaceBooking.where(name: "Monthly").order(:start_time)
                              .map { |b| raw_utc_wall(b)[0..9] }
       expect(walls).to eq(
-        ["2027-01-31", "2027-02-28", "2027-03-28", "2027-04-28",
-         "2027-05-28", "2027-06-28"]
+        ["2027-01-31", "2027-02-28", "2027-03-31", "2027-04-30",
+         "2027-05-31"]
       )
     end
 
@@ -587,7 +579,8 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         "title" => "Laser Safety - Laser 101",
         "start" => "2027-04-03T06:00:00.000-04:00",
         "end" => "2027-04-03T07:00:00.000-04:00",
-        "color" => "#497979" # somebody else's confirmed booking
+        "color" => "#497979", # somebody else's confirmed booking
+        "viewable" => false # a regular user cannot open booking details
       )
     end
 
@@ -767,7 +760,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(response.status).to eq(200)
       expect(response.parsed_body).to eq("status" => "ok")
       expect(booking.reload.name).to eq("Json")
-      expect(booking.reload.sub_space_booking_status.booking_status.name)
+      expect(booking.reload.booking_status.name)
         .to eq("Pending") # stays pending when updated
     end
 
@@ -1027,24 +1020,47 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
   describe "users / get_sub_space_booking / access requests" do
     let(:space) { create(:space) }
 
-    it "users JSON is admin/staff only and omits password and access_token" do
-      # `render json: User.all` now goes through User#serializable_hash,
-      # which excludes password and access_token.
+    it "users is refused to regular users" do
       log_in!(create(:user, :regular_user, booking_approval: true))
-      get users_sub_space_booking_index_path
+      get users_sub_space_booking_index_path, params: { query: "abc" }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert])
         .to eq("You must be an admin or staff to view this page.")
+    end
 
-      log_in!(create(:user, :admin, booking_approval: true))
-      create(:user, :regular_user, booking_approval: true)
-      get users_sub_space_booking_index_path
-      expect(response.status).to eq(200)
-      json = response.parsed_body
-      expect(json).to be_an(Array)
-      keys = json.map(&:keys).flatten
-      expect(keys).to include("email", "name")
-      expect(keys).not_to include("access_token", "password")
+    describe "users typeahead" do
+      before do
+        log_in!(create(:user, :staff, booking_approval: true))
+        create(:user, :regular_user, name: "Alice Anderson", username: "aanderson")
+        create(:user, :regular_user, name: "Bob Brown", username: "alicefan")
+        create(:user, :regular_user, name: "Carol Clark", username: "cclark")
+      end
+
+      def lookup(query)
+        get users_sub_space_booking_index_path, params: { query: query }
+        expect(response).to have_http_status(:ok)
+        response.parsed_body
+      end
+
+      it "returns only id and name of the users matching the query, ignoring case" do
+        json = lookup("ALICE")
+        expect(json.map(&:keys).uniq).to eq([%w[id name]])
+        expect(json.pluck("name")).to eq(["Alice Anderson", "Bob Brown"])
+      end
+
+      it "returns an empty list for a blank or missing query" do
+        expect(lookup("")).to eq([])
+        get users_sub_space_booking_index_path
+        expect(response.parsed_body).to eq([])
+      end
+
+      it "leaves out deleted users and caps the list" do
+        create(:user, :regular_user, name: "Alice Gone", deleted: true)
+        create_list(:user, 31, :regular_user, name: "Zed Match")
+        json = lookup("alice")
+        expect(json.pluck("name")).not_to include("Alice Gone")
+        expect(lookup("zed match").size).to eq(30)
+      end
     end
 
     it "get_sub_space_booking admins/staff only: 404 on unknown id" do
@@ -1090,14 +1106,27 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(UserBookingApproval.where(user: user).count).to eq(1)
     end
 
-    it "request_access identity 'JMTS' without a JMTS Space 500s" do
-      # `Space.find_by(name: "JMTS").space_managers` — nil receiver.
+    it "request_access identity 'JMTS' without a JMTS Space is saved, mailed to the default address and reported", :perform_jobs do
+      user = create(:user, :regular_user, booking_approval: false)
+      log_in!(user)
+      expect(Rails.error).to receive(:report).with(
+        having_attributes(message: a_string_including('no space named "JMTS"')), anything
+      )
+      put request_access_sub_space_booking_index_path,
+          params: { comments: "j", identity: "JMTS" }
+      expect(flash[:notice]).to eq("Access request submitted successfully.")
+      expect(UserBookingApproval.find_by(user: user).identity).to eq("JMTS")
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq(["mtc@uottawa.ca"])
+    end
+
+    it "request_access identity 'JMTS' with a JMTS Space that has no managers is mailed to the default address", :perform_jobs do
+      create(:space, name: "JMTS")
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
       put request_access_sub_space_booking_index_path,
           params: { comments: "j", identity: "JMTS" }
-      expect(response.status).to eq(500)
-      expect(UserBookingApproval.find_by(user: user)).not_to be_nil
+      expect(flash[:notice]).to eq("Access request submitted successfully.")
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq(["mtc@uottawa.ca"])
     end
 
     it "request_access identity 'JMTS' with a JMTS Space submits fine" do
@@ -1110,18 +1139,23 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(UserBookingApproval.find_by(user: user).identity).to eq("JMTS")
     end
 
-    it "request_access identity 'Staff' needs a resolvable supervisor" do
+    it "request_access identity 'Staff' without a supervisor saves nothing and lets the user retry" do
       user = create(:user, :regular_user, booking_approval: false)
       log_in!(user)
       put request_access_sub_space_booking_index_path,
           params: { comments: "hey", identity: "Staff" }
-      expect(response.status).to eq(404)
-      # the UBA row is saved BEFORE the supervisor lookup 404s, so the
-      # request exists (staff_id nil) but no notification email went out.
-      uba = UserBookingApproval.find_by(user: user)
-      expect(uba.identity).to eq("Staff")
-      expect(uba.staff_id).to be_nil
-      expect(uba.approved).to be(false)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Please choose a staff member as your supervisor.")
+      expect(UserBookingApproval.find_by(user: user)).to be_nil
+      expect(ActionMailer::Base.deliveries).to be_empty
+
+      supervisor = create(:user, :admin)
+      perform_enqueued_jobs do
+        put request_access_sub_space_booking_index_path,
+            params: { comments: "hey", identity: "Staff", supervisor: supervisor.id }
+      end
+      expect(flash[:notice]).to eq("Access request submitted successfully.")
+      expect(ActionMailer::Base.deliveries.flat_map(&:to)).to include(supervisor.email)
     end
 
     it "request_access identity 'Staff' with a supervisor id submits" do

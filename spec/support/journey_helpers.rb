@@ -110,18 +110,35 @@ module JourneyHelpers
   # and swapping in the widget moves the layout: choosing on the native select
   # and clicking on races it (the click lands on whatever slid under it). Wait
   # for the widget, then choose through it, the way a user does.
+  # `exact: false` matches the option by part of its rendered text (a list that
+  # decorates its entries with sizes or badges).
+  # With `search:` the text is typed first. Tom Select re-renders its list a
+  # moment after the typing (its refresh is throttled), and the re-render moves
+  # the option up a row: a click at the option's old position is silently lost.
+  # So the click waits until the list has been narrowed to entries containing
+  # the typed text.
   # The pick is confirmed on the hidden native select (what the form submits),
   # and the dropdown must be closed before returning: it overlays the form.
-  def tom_select(option_text, from:)
+  def tom_select(option_text, from:, search: nil, exact: true)
     native = find(:select, from, visible: :all)
     wait_until("##{native[:id]} not yet a Tom Select") { native[:class].to_s.split.include?("tomselected") }
     wrapper = native.find(:xpath, "following-sibling::div[contains(@class, 'ts-wrapper')][1]")
-    input = wrapper.find(".ts-control input")
-    input.click # the input, not the control: its centre can hold an existing item's "×"
-    wrapper.find(".ts-dropdown .option", text: option_text, exact_text: true).click
+    control = wrapper.find(".ts-control")
+    input = control.find("input", visible: :all)
+    # the input, not the control: its centre can hold an existing item's "×"; a single select
+    # that already has an item keeps its input hidden, so then the control opens it
+    (input.visible? ? input : control).click
+    if search
+      expect(wrapper).to have_css(".ts-control input:focus") # typing goes to the picker only once it has the focus
+      input.send_keys(search)
+      unmatched = Regexp.new("\\A(?!.*#{Regexp.escape(search)})", Regexp::IGNORECASE | Regexp::MULTILINE)
+      expect(wrapper).to have_no_css(".ts-dropdown .option", text: unmatched)
+    end
+    wrapper.find(".ts-dropdown .option", text: option_text, exact_text: exact).click
     page.document.synchronize do
       selected = native.all("option", visible: :all).select(&:selected?).map(&:text)
-      raise Capybara::ExpectationNotMet, "#{option_text.inspect} not selected in ##{native[:id]}" unless selected.include?(option_text)
+      chosen = exact ? selected.include?(option_text) : selected.any? { |text| text.include?(option_text) }
+      raise Capybara::ExpectationNotMet, "#{option_text.inspect} not selected in ##{native[:id]}" unless chosen
     end
     input.send_keys(:escape)
     expect(wrapper).to have_no_css(".ts-dropdown", visible: true)

@@ -1,5 +1,14 @@
-$primary: #e24829;
-$secondary: #868686;
+// Brand orange, tuned for contrast (WCAG AA). $primary sits behind white text
+// (navbar, buttons, badges): 5.11:1. $primary-text is the orange used as text on
+// light backgrounds: 5.23:1 on white. $primary-text-dark is the text orange on
+// the dark theme (#212529): 5.48:1. $secondary is muted grey text and the
+// background of white-on-grey controls: 4.95:1 on white, 4.58:1 on $tertiary.
+$primary: #c93a1e;
+$primary-text: #c43c1f;
+$primary-text-dark: #ff6b4a;
+$secondary: #707070;
+// Muted grey text on the dark theme: 5.90:1 on #212529, 5.09:1 on #2b3035.
+$secondary-text-dark: #a0a0a0;
 $tertiary: #f7f7f7;
 $ceed-maroon: #8f001a;
 $ceed-maroon-rgb: 143, 0, 26;
@@ -35,6 +44,7 @@ $ceed-maroon-rgb: 143, 0, 26;
 $body-top-padding: 4rem; // equivalent to navbar height
 $input-border-radius: 0.25rem !default;
 
-$link-color-dark: $primary;
+$link-color: $primary-text;
+$link-color-dark: $primary-text-dark;
 $link-hover-color-dark: white;
 $link-hover-color: black;

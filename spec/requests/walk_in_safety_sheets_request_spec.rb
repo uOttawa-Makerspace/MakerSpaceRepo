@@ -184,7 +184,7 @@ RSpec.describe "Walk-in safety sheets", type: :request do
 
     it "has no destroy or edit action for anybody" do
       log_in!(owner)
-      get edit_walk_in_safety_sheet_path(sheet)
+      get "/walk_in_safety_sheets/#{sheet.id}/edit"
       expect(response).to have_http_status(:not_found)
       delete walk_in_safety_sheet_path(sheet)
       expect(response).to have_http_status(:not_found).or have_http_status(:method_not_allowed)

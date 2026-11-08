@@ -8,7 +8,7 @@ require "rails_helper"
 # Chunk 9 "Identity".
 #
 # Every action sits behind AdminAreaController#ensure_admin, which redirects
-# any non-admin (guests included) to "/" with no flash; there are no
+# a guest to the login page and any other non-admin to "/" with no flash; there are no
 # per-action staff exceptions. Impersonation does not exist in this app.
 
 RSpec.describe "Admin::Users (HTTP contract)", type: :request do
@@ -27,6 +27,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   end
 
   def as(role)
+    @guest = role == :guest
     case role
     when :guest then nil
     when :regular then login!(regular)
@@ -39,8 +40,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   NON_ADMINS = %i[guest regular volunteer staff].freeze
 
   def expect_bounced
-    expect(response).to have_http_status(:found)
-    expect(response.location).to eq("http://www.example.com/")
+    expect_admin_area_bounce(guest: @guest)
     expect(flash[:alert]).to be_nil
   end
 
@@ -153,10 +153,17 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("Invalid parameters!")
     end
 
-    it "search with at least one hit 500s: the view calls kaminari's total_pages on a pagy result" do
-      # Admin::Users#search view calls `total_pages` (Kaminari API) but the controller paginates with Pagy, so every search that returns at least one user raises (500)
+    it "search with at least one hit renders the result" do
       get search_admin_users_path(q: target.username, filter: "Username")
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(target.username)
+    end
+
+    it "search shows when a hit last signed in" do
+      create(:lab_session, user: target, sign_in_time: 3.hours.ago, sign_out_time: 2.hours.ago)
+      get search_admin_users_path(q: target.username, filter: "Username")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("about 3 hours ago")
     end
 
     it "search with no hit renders 200 (empty), and soft-deleted users are never hits" do
@@ -187,6 +194,14 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "edit refuses a username that is a route name and shows why" do
+      old = target.username
+      patch admin_user_path(target), params: { user: { username: "Admin" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("is reserved")
+      expect(target.reload.username).to eq(old)
+    end
+
     it "edit keeps stored values the form's options do not list (legacy faculty, long student id)" do
       target.update_columns(faculty: "Common Law", student_id: "1234567890123")
       get edit_admin_user_path(target)
@@ -196,6 +211,34 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(student_id["value"]).to eq("1234567890123")
       expect(student_id["pattern"]).to be_nil
       expect(student_id["maxlength"]).to be_nil
+    end
+
+    it "edit form saves another field for a user with a legacy faculty and a long student id, and still refuses new invalid values" do
+      student = create(:user, :regular_user, :student)
+      student.update_columns(faculty: "Law Society", student_id: "1234567890123")
+      patch admin_user_path(student),
+            params: { user: { name: "Renamed", faculty: "Law Society", student_id: "1234567890123" } }
+      expect(response).to redirect_to(edit_admin_user_path(student))
+      student.reload
+      expect([student.name, student.faculty, student.student_id]).to eq(["Renamed", "Law Society", "1234567890123"])
+
+      patch admin_user_path(student), params: { user: { faculty: "Made Up" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      patch admin_user_path(student), params: { user: { student_id: "123" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(student.reload.faculty).to eq("Law Society")
+    end
+
+    it "refuses blanking a student's id, marks the field required for students only" do
+      student = create(:user, :regular_user, :student)
+      patch admin_user_path(student), params: { user: { student_id: "" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(student.reload.student_id).to be_present
+
+      get edit_admin_user_path(student)
+      expect(response.body).to match(/<label class="form-label required" for="user_student_id"/)
+      get edit_admin_user_path(target)
+      expect(response.body).not_to match(/<label class="form-label required" for="user_student_id"/)
     end
 
     it "manage_roles renders" do
@@ -245,6 +288,49 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       patch admin_user_path(target), params: { user: { gender: "Male", rfid: rfid.id } }
       expect(rfid.reload.user_id).to eq(target.id)
     end
+
+    it "replaces the user's card by unlinking the old one, which stays as an unlinked row" do
+      old = Rfid.create!(card_number: "old#{SecureRandom.hex(3)}", user: target)
+      fresh = Rfid.create!(card_number: "new#{SecureRandom.hex(3)}")
+      expect do
+        patch admin_user_path(target), params: { user: { gender: "Male", rfid: fresh.id } }
+      end.not_to change(Rfid, :count)
+      expect(fresh.reload.user_id).to eq(target.id)
+      expect(Rfid.find(old.id).user_id).to be_nil
+    end
+
+    it "keeps the old card's mac_address when the acting admin has no assigned space" do
+      admin.update_columns(space_id: nil)
+      old = Rfid.create!(card_number: "old#{SecureRandom.hex(3)}", user: target, mac_address: "aa:aa:aa:aa:aa:aa")
+      fresh = Rfid.create!(card_number: "new#{SecureRandom.hex(3)}")
+      patch admin_user_path(target), params: { user: { gender: "Male", rfid: fresh.id } }
+      expect(old.reload.user_id).to be_nil
+      expect(old.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "re-renders a refused assign with the submitted edits, unsaved, next to the reason" do
+      holder = create(:user, :regular_user)
+      taken = Rfid.create!(card_number: "taken#{SecureRandom.hex(3)}", user: holder)
+      patch admin_user_path(target), params: { user: { name: "Edited Name", username: "typed_new_name", rfid: taken.id } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Edited Name")
+      expect(response.body).to include("Editing user: #{target.username}")
+      expect(response.body).to include('value="typed_new_name"')
+      expect(response.body).not_to include("Editing user: typed_new_name")
+      expect(target.reload.name).not_to eq("Edited Name")
+    end
+
+    it "refuses a card another user holds, keeps the old card and re-renders with the reason" do
+      old = Rfid.create!(card_number: "old#{SecureRandom.hex(3)}", user: target)
+      holder = create(:user, :regular_user)
+      taken = Rfid.create!(card_number: "taken#{SecureRandom.hex(3)}", user: holder)
+      patch admin_user_path(target), params: { user: { gender: "Female", rfid: taken.id } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash.now[:alert]).to eq("RFID card is already linked to another user")
+      expect(target.reload.gender).to eq("Male")
+      expect(old.reload.user_id).to eq(target.id)
+      expect(taken.reload.user_id).to eq(holder.id)
+    end
   end
 
   describe "PATCH /admin/users/:id/change_email" do
@@ -273,6 +359,18 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
+    it "refuses a malformed address before creating a token or sending anything, in either language" do
+      %i[en fr].each do |locale|
+        expect_any_instance_of(User).not_to receive(:generate_email_change_token)
+        patch change_email_admin_user_path(target, locale: locale), params: { new_email: "not-an-address", confirm_new_email: "not-an-address" }
+        expect(response).to redirect_to(edit_admin_user_path(target))
+        expect(flash[:alert]).to eq(I18n.with_locale(locale) { User.email_shape_error("not-an-address") })
+        expect(flash[:alert]).to be_present
+        expect(flash[:alert]).not_to include("translation missing")
+      end
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
     it "refuses a confirmation that does not match" do
       patch change_email_admin_user_path(target), params: { new_email: "a@example.com", confirm_new_email: "b@example.com" }
       expect(flash[:alert]).to eq("This confirmation email isn't matching the new email")
@@ -289,8 +387,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "PATCH /admin/users/set_role" do
     before { login!(admin) }
 
-    # N+1 pinned
-    it "changes roles for several users, redirecting back (html)", skip_bullet: true do
+    it "changes roles for several users, redirecting back (html)" do
       other = create(:user, :regular_user)
       patch set_role_admin_users_path,
             params: { role: "staff", user_ids: [target.id, other.id] },
@@ -298,6 +395,21 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to redirect_to("http://www.example.com/admin/users/manage_roles")
       expect(target.reload.role).to eq("staff")
       expect(other.reload.role).to eq("staff")
+    end
+
+    it "changes the roles of any number of users in a constant number of queries" do
+      change = lambda do |count|
+        users = create_list(:user, count, :regular_user)
+        selects_on("active_storage_attachments", "users") do
+          patch set_role_admin_users_path, params: { role: "staff", user_ids: users.map(&:id) }
+        end
+      end
+      change.call(1) # warm up
+      few = change.call(2)
+      many = change.call(5)
+
+      expect(User.where(role: "staff").count).to be >= 8
+      expect(many.size).to eq(few.size)
     end
 
     it "json: head 200" do
@@ -430,25 +542,180 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(RateLimitCounter.exists?(key)).to be(false)
     end
 
-    it "soft-deletes: flags user and repositories, removes lab sessions and certifications" do
-      repo = create(:repository)
+    it "soft-deletes: hides the user and their repositories and keeps every lab session and certification" do
+      repo = create(:repository, owner: target)
       repo.users << target
       space = create(:space)
-      create(:lab_session, user_id: target.id, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
-      create(:lab_session, user_id: target.id, space: space, sign_in_time: 2.days.ago, sign_out_time: 2.days.ago + 1.hour)
+      open_session = create(:lab_session, user_id: target.id, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      past_out = 2.days.ago + 1.hour
+      past_session = create(:lab_session, user_id: target.id, space: space, sign_in_time: 2.days.ago, sign_out_time: past_out)
       bystander = create(:lab_session, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
-      create(:certification, :basic_training, user_id: target.id)
-      expect(LabSession.where(user_id: target.id).count).to eq(2)
+      cert = create(:certification, :basic_training, user_id: target.id)
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("User flagged as deleted")
       expect(User.find_by(id: target.id)).to be_nil
       gone = User.unscoped.find(target.id)
       expect(gone.deleted).to be(true)
-      expect(gone.repositories.reload.pluck(:deleted)).to all(be(true))
-      expect(Certification.where(user_id: target.id)).to be_empty
-      expect(LabSession.where(user_id: target.id)).to be_empty
+      expect(Repository.unscoped.find(repo.id).deleted).to be(true)
+      expect(LabSession.where(user_id: target.id).pluck(:id)).to contain_exactly(open_session.id, past_session.id)
+      expect(Certification.where(user_id: target.id).pluck(:id)).to eq([cert.id])
+      expect(past_session.reload.sign_out_time).to be_within(1.second).of(past_out)
       expect(LabSession.where(id: bystander.id)).to exist
+    end
+
+    describe "repositories the user owns" do
+      let(:partner) { create(:user, :regular_user) }
+
+      it "passes to the member with the lowest id and stays visible" do
+        later = create(:user, :regular_user)
+        repo = create(:repository, owner: target)
+        repo.users << [target, later, partner]
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        kept = Repository.find(repo.id)
+        expect(kept.user_id).to eq([later, partner].map(&:id).min)
+        expect(kept.owned_by?(partner)).to be(true)
+        expect(kept.deleted).to be(false)
+        expect(kept.users).not_to include(target)
+        expect(Repository.unscoped.find(repo.id).users.unscope(where: :deleted)).to include(target)
+      end
+
+      it "never picks a deleted member as the new owner" do
+        gone = create(:user, :regular_user)
+        gone.update_columns(deleted: true)
+        repo = create(:repository, owner: target)
+        repo.users.push(target)
+        ActiveRecord::Base.connection.execute("INSERT INTO repositories_users (repository_id, user_id) VALUES (#{repo.id}, #{gone.id})")
+        repo.users << partner
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find(repo.id).user_id).to eq(partner.id)
+      end
+
+      it "hides the repository when no other member is left, including when the only other member is deleted" do
+        alone = create(:repository, owner: target)
+        alone.users << target
+        gone = create(:user, :regular_user)
+        gone.update_columns(deleted: true)
+        shared = create(:repository, owner: target)
+        shared.users << target
+        ActiveRecord::Base.connection.execute("INSERT INTO repositories_users (repository_id, user_id) VALUES (#{shared.id}, #{gone.id})")
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find_by(id: [alone.id, shared.id])).to be_nil
+        expect(Repository.unscoped.where(id: [alone.id, shared.id]).pluck(:deleted)).to eq([true, true])
+      end
+
+      it "skips a member who already owns a repository with the same title, and takes the next one" do
+        later = create(:user, :regular_user)
+        repo = create(:repository, owner: target, title: "Same Title")
+        repo.users << [target, partner, later]
+        create(:repository, owner: partner, title: "Same Title")
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find(repo.id)).to have_attributes(user_id: later.id, deleted: false)
+      end
+
+      it "hides the repository when every other member already owns one with the same title" do
+        repo = create(:repository, owner: target, title: "Same Title")
+        repo.users << [target, partner]
+        create(:repository, owner: partner, title: "Same Title")
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.unscoped.find(repo.id)).to have_attributes(user_id: target.id, deleted: true)
+      end
+
+      it "is not blocked by an ownerless repository with the same title" do
+        repo = create(:repository, owner: target, title: "Same Title")
+        repo.users << [target, partner]
+        create(:repository, owner: partner, title: "Other Title").update_columns(user_id: nil, title: "Same Title")
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find(repo.id)).to have_attributes(user_id: partner.id, deleted: false)
+      end
+
+      it "counts a hidden repository of the member with the same title as a conflict" do
+        repo = create(:repository, owner: target, title: "Same Title")
+        repo.users << [target, partner]
+        create(:repository, owner: partner, title: "Same Title").update_columns(deleted: true)
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.unscoped.find(repo.id)).to have_attributes(user_id: target.id, deleted: true)
+      end
+
+      it "leaves the cached zip alone when the deletion is rolled back" do
+        repo = create(:repository, owner: target)
+        repo.users << [target, partner]
+        FileUtils.mkdir_p(repo.zip_path.dirname)
+        File.write(repo.zip_path, "zip")
+        User.transaction do
+          Repository.release_owned_by!(target)
+          raise ActiveRecord::Rollback
+        end
+        expect(File.exist?(repo.zip_path)).to be(true)
+        File.delete(repo.zip_path)
+      end
+
+      it "skips deactivated and locked members" do
+        deactivated = create(:user, :regular_user)
+        locked = create(:user, :regular_user)
+        deactivated.deactivate!
+        locked.update_columns(locked: true)
+        repo = create(:repository, owner: target)
+        repo.users << [target, deactivated, locked, partner]
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find(repo.id).user_id).to eq(partner.id)
+      end
+
+      it "hides the repository when the only other members cannot sign in" do
+        locked = create(:user, :regular_user)
+        locked.update_columns(locked: true)
+        repo = create(:repository, owner: target)
+        repo.users << [target, locked]
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.unscoped.find(repo.id).deleted).to be(true)
+      end
+
+      it "moves updated_at and drops the cached zip when it hands over or hides" do
+        handed = create(:repository, owner: target)
+        handed.users << [target, partner]
+        hidden = create(:repository, owner: target)
+        hidden.users << target
+        old = 1.day.ago.change(usec: 0)
+        Repository.unscoped.where(id: [handed.id, hidden.id]).update_all(updated_at: old)
+        [handed, hidden].each do |repo|
+          FileUtils.mkdir_p(repo.zip_path.dirname)
+          File.write(repo.zip_path, "zip")
+        end
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        [handed, hidden].each do |repo|
+          expect(Repository.unscoped.find(repo.id).updated_at).to be > old
+          expect(File.exist?(repo.zip_path)).to be(false)
+        end
+      end
+
+      it "leaves a repository the user only collaborates on, and its owner, as it was" do
+        other_owner = create(:user, :regular_user)
+        repo = create(:repository, owner: other_owner)
+        repo.users << [other_owner, target]
+        delete delete_user_admin_users_path, params: { id: target.id, password: password }
+        expect(Repository.find(repo.id)).to have_attributes(user_id: other_owner.id, deleted: false)
+        expect(repo.reload.users).to contain_exactly(other_owner)
+      end
+    end
+
+    it "ends the deleted user's open lab session now, so they are not listed as in the space" do
+      space = create(:space)
+      open_session = create(:lab_session, user_id: target.id, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      bystander = create(:lab_session, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      deleted_at = Time.zone.now.change(usec: 0)
+      travel_to(deleted_at) { delete delete_user_admin_users_path, params: { id: target.id, password: password } }
+      expect(open_session.reload.sign_out_time).to eq(deleted_at)
+      expect(bystander.reload.sign_out_time).to be > Time.zone.now
+      expect(space.signed_in_users).to eq([bystander.user])
+    end
+
+    it "keeps the deleted user's history readable through its records" do
+      cert = create(:certification, :basic_training, user_id: target.id)
+      session = create(:lab_session, user_id: target.id, space: create(:space), sign_in_time: 2.days.ago, sign_out_time: 2.days.ago + 1.hour)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      expect(Certification.find(cert.id).user).to eq(User.unscoped.find(target.id))
+      expect(LabSession.find(session.id).user).to eq(User.unscoped.find(target.id))
+      expect(LabSession.joins(:user).where(id: session.id)).to exist
     end
 
     it "the deleted user can no longer log in or be found by username/email" do
@@ -459,7 +726,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       guest = open_session
       guest.post login_authentication_path, params: { username_email: target.username, password: password }
       expect(guest.response).to have_http_status(:unprocessable_content)
-      expect(guest.flash[:alert]).to start_with("Could not find user")
+      expect(guest.flash[:alert]).to eq("Incorrect username, email or password.")
     end
 
     it "keeps the row, so the username and email stay reserved" do
@@ -520,21 +787,48 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(User.find(target.id).deleted).to be(false)
     end
 
-    it "does not actually restore the user's repositories (update_all runs under Repository's default scope)" do
-      # restore_user's `user.repositories.update_all(deleted: false)` goes through Repository's default scope (deleted: false), so soft-deleted repos stay deleted after a restore
-      repo = create(:repository)
+    it "restores the user's repositories hidden by the deletion" do
+      repo = create(:repository, owner: target)
       repo.users << target
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
       patch restore_user_admin_users_path, params: { id: target.id }
-      expect(Repository.unscoped.find(repo.id).deleted).to be(true)
+      expect(Repository.unscoped.find(repo.id).deleted).to be(false)
+      expect(Repository.find_by(id: repo.id)).to eq(repo)
     end
 
-    it "does not restore the certifications or lab sessions deleted on soft delete" do
-      create(:certification, :basic_training, user_id: target.id)
+    it "does not undo a handover: the repository stays with its new owner and the old owner is a member again" do
+      partner = create(:user, :regular_user)
+      repo = create(:repository, owner: target)
+      repo.users << [target, partner]
+      hidden = create(:repository, owner: target)
+      hidden.users << target
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       patch restore_user_admin_users_path, params: { id: target.id }
-      expect(Certification.where(user_id: target.id)).to be_empty
+      expect(Repository.find(repo.id).user_id).to eq(partner.id)
+      expect(Repository.find(repo.id).users).to include(target, partner)
+      expect(Repository.unscoped.find(hidden.id)).to have_attributes(user_id: target.id, deleted: false)
+    end
+
+    it "leaves another user's hidden repositories hidden" do
+      other_repo = create(:repository)
+      other_repo.update_columns(deleted: true)
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.unscoped.find(other_repo.id).deleted).to be(true)
+    end
+
+    it "finds the lab sessions and certifications intact after delete and still intact after restore" do
+      space = create(:space)
+      session = create(:lab_session, user_id: target.id, space: space, sign_in_time: 2.days.ago, sign_out_time: 2.days.ago + 1.hour)
+      cert = create(:certification, :basic_training, user_id: target.id)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      expect(LabSession.where(user_id: target.id).pluck(:id)).to eq([session.id])
+      expect(Certification.where(user_id: target.id).pluck(:id)).to eq([cert.id])
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(User.find(target.id).deleted).to be(false)
+      expect(LabSession.where(user_id: target.id).pluck(:id)).to eq([session.id])
+      expect(Certification.where(user_id: target.id).pluck(:id)).to eq([cert.id])
+      expect(User.find(target.id).certifications.pluck(:id)).to eq([cert.id])
     end
 
     it "restoring a never-deleted user is a no-op success" do

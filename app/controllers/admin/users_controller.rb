@@ -24,6 +24,8 @@ class Admin::UsersController < AdminAreaController
 
   ASSIGNABLE_ROLES = %w[admin staff regular_user volunteer].freeze
 
+  LAST_SIGN_IN_SQL = "(SELECT MAX(lab_sessions.sign_in_time) FROM lab_sessions WHERE lab_sessions.user_id = users.id)"
+
   def index
     unless valid_sort_params?
       redirect_to admin_users_path, alert: "Invalid parameters!"
@@ -66,9 +68,11 @@ class Admin::UsersController < AdminAreaController
   end
 
   def update
+    rfid_error = nil
     saved = User.transaction do
       # Handle RFID assignment separately
-      assign_rfid_if_present
+      rfid_error = assign_rfid_if_present
+      raise ActiveRecord::Rollback if rfid_error
 
       if @edit_admin_user.update(user_params)
         true
@@ -83,6 +87,11 @@ class Admin::UsersController < AdminAreaController
       # the rollback restored the card rows, not the loaded association
       @edit_admin_user.association(:rfid).reset
       @rfids = Rfid.recent_unset
+      if rfid_error
+        # keep the admin's other edits in the form next to the refusal
+        @edit_admin_user.assign_attributes(user_params)
+        flash.now[:alert] = rfid_error
+      end
       render :edit, status: :unprocessable_entity
     end
   end
@@ -97,6 +106,8 @@ class Admin::UsersController < AdminAreaController
     elsif new_email != confirm_new_email
       redirect_to edit_admin_user_path(@edit_admin_user),
                   alert: "This confirmation email isn't matching the new email"
+    elsif (shape_error = User.email_shape_error(new_email))
+      redirect_to edit_admin_user_path(@edit_admin_user), alert: shape_error
     # LOWER(email) matches legacy mixed-case rows and uses index_users_on_lowercase_email
     elsif User.unscoped.where("LOWER(email) = ?", new_email).where.not(id: @edit_admin_user.id).exists?
       redirect_to edit_admin_user_path(@edit_admin_user),
@@ -128,7 +139,7 @@ class Admin::UsersController < AdminAreaController
 
     delete_user = User.find(params[:id])
     begin
-      User.guarding_last_admin!([delete_user.id]) { soft_delete_user(delete_user) }
+      User.delete_account!(delete_user)
     rescue User::LastAdminError => e
       redirect_to user_path(delete_user.username), alert: e.message
       return
@@ -139,7 +150,7 @@ class Admin::UsersController < AdminAreaController
 
   def restore_user
     restore_user = User.unscoped.find(params[:id])
-    restore_user_account(restore_user)
+    User.restore_account!(restore_user)
     redirect_to user_path(restore_user.username), notice: "User restored!"
   end
 
@@ -289,9 +300,9 @@ class Admin::UsersController < AdminAreaController
 
     if (order_clause = safe_order_clause)
       column, direction = order_clause
-      @users_temp = @users_temp.order(column => direction)
+      @users_temp = @users_temp.order(column => direction, "lab_sessions.id" => direction)
     else
-      @users_temp = @users_temp.order(lab_sessions: { sign_in_time: :desc })
+      @users_temp = @users_temp.order(lab_sessions: { sign_in_time: :desc, id: :desc })
     end
 
     @pagy, @users_temp = pagy(@users_temp.includes(:user), limit: 20)
@@ -304,16 +315,21 @@ class Admin::UsersController < AdminAreaController
       params[:direction] = "desc"
     end
 
-    base_scope = User.includes(:lab_sessions)
+    @pagy, @users = pagy(order_users(User.all), limit: 20)
+  end
 
-    if (order_clause = safe_order_clause)
-      column, direction = order_clause
-      base_scope = base_scope.order(Arel.sql(column) => direction)
-    else
-      base_scope = base_scope.order(created_at: :desc)
-    end
+  # Orders a user list by the whitelisted sort column. "Signed in" sorts by each user's newest
+  # visit (users who never signed in count as oldest), so a user appears once however many
+  # visits they have and no lab_sessions rows are loaded.
+  # Ties are broken by users.id, in the sort direction, so every page of a paginated list is
+  # stable and no user repeats or is skipped between pages.
+  def order_users(scope)
+    column, direction = safe_order_clause
+    return scope.order(created_at: :desc, id: :desc) unless column
+    return scope.order(Arel.sql(column) => direction, id: direction) unless column == SORTABLE_COLUMNS["sign_in_time"]
 
-    @pagy, @users = pagy(base_scope, limit: 20)
+    ordering = Arel.sql(LAST_SIGN_IN_SQL).public_send(direction)
+    scope.order(direction == :asc ? ordering.nulls_first : ordering.nulls_last, id: direction)
   end
 
   # SECURITY FIX: Safe join without user input in SQL string
@@ -344,14 +360,7 @@ class Admin::UsersController < AdminAreaController
               )
             end
 
-    if (order_clause = safe_order_clause)
-      column, direction = order_clause
-      scope = scope.order(Arel.sql(column) => direction)
-    else
-      scope = scope.order(created_at: :desc)
-    end
-
-    pagy(scope, limit: 20)
+    pagy(order_users(scope), limit: 20)
   end
 
   # ============================================
@@ -377,39 +386,27 @@ class Admin::UsersController < AdminAreaController
   # RFID Assignment
   # ============================================
 
+  # Moves the chosen card to the user through the shared rules (Rfid.unlink_from_user!
+  # for the card they hold now, which stays as an unlinked row, then Rfid.link_to_user!).
+  # Returns nil, or the refusal message; the caller rolls the whole update back on one.
   def assign_rfid_if_present
     return unless params[:user][:rfid].present?
-    
+
     rfid = Rfid.find_by(id: params[:user][:rfid])
     return unless rfid
-    
-    #Do nothing if the RFID is already the users
+
+    # Do nothing if the RFID is already the user's
     return if @edit_admin_user.rfid&.id == rfid.id
 
-    @edit_admin_user.rfid&.destroy!
-    rfid.update!(user: @edit_admin_user)
+    Rfid.unlink_from_user!(@edit_admin_user, actor: current_user)
+    error = Rfid.link_to_user!(rfid.card_number, @edit_admin_user)
+    error && "RFID card #{error}"
   end
 
 
   # ============================================
   # User Management
   # ============================================
-
-  def soft_delete_user(user)
-    user.transaction do
-      user.repositories.update_all(deleted: true)
-      LabSession.where(user_id: user.id).destroy_all
-      Certification.where(user_id: user.id).destroy_all
-      user.soft_delete!
-    end
-  end
-
-  def restore_user_account(user)
-    user.transaction do
-      user.repositories.update_all(deleted: false)
-      user.restore!
-    end
-  end
 
   # Locking is guarded (it removes a usable admin); unlocking never is. Which of the
   # two to do is decided from the row re-read under the guard's locks (lock! reloads

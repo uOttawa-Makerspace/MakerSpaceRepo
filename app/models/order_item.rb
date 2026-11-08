@@ -82,11 +82,11 @@ class OrderItem < ApplicationRecord
   private
 
   def product_present
-    errors.add(:proficient_project, "is not valid") if proficient_project.nil?
+    errors.add(:proficient_project, :not_valid) if proficient_project.nil?
   end
 
   def order_present
-    errors.add(:order, "is not a valid order.") if order.nil?
+    errors.add(:order, :not_a_valid_order) if order.nil?
   end
 
   def finalize

@@ -145,14 +145,15 @@ RSpec.describe PrintersController, type: :controller do
 
     context "Create a printer session" do
       it "should create a Printer Session" do
-        create :user, :regular_user
+        student = create :user, :regular_user
+        printer = create :printer, :UM2P_01
         admin = create(:user, :admin)
         session[:user_id] = admin.id
         patch :link_printer_to_user,
               params: {
                 printer: {
-                  user_id: 1,
-                  printer_id: 1
+                  user_id: student.id,
+                  printer_id: printer.id
                 }
               }
         expect(flash[:notice]).to eq("Printer Session Created")
@@ -213,10 +214,10 @@ RSpec.describe PrintersController, type: :controller do
         create :user, :regular_user
         admin = create(:user, :admin)
         session[:user_id] = admin.id
-        um2p_session = create(:printer_session, printer_id: @um2_2.id)
-        um3_session = create(:printer_session, printer_id: @um3.id)
-        rpl2_session = create(:printer_session, printer_id: @rpl2.id)
-        dremel_session = create(:printer_session, printer_id: @dremel.id)
+        create(:printer_session, printer_id: @um2_2.id)
+        create(:printer_session, printer_id: @um3.id)
+        create(:printer_session, printer_id: @rpl2.id)
+        create(:printer_session, printer_id: @dremel.id)
         get :staff_printers
         expect(response).to have_http_status(:success)
       end

@@ -4,7 +4,7 @@
         <%= link_to t('home.show_all'), explore_path %>
         <p><%= t('home.explore.subtext') %></p>
         <div class="row flex-nowrap">
-            <button class="col-auto btn btn-link text-secondary fs-1" onclick="document.getElementById('exploreCarousel').scrollBy({left: -250, behavior: 'smooth'})"><i class="fa fa-angle-left"></i></button>
+            <button class="col-auto btn btn-link text-secondary fs-1" aria-label="<%= t('common.previous') %>" onclick="document.getElementById('exploreCarousel').scrollBy({left: -250, behavior: 'smooth'})"><i class="fa fa-angle-left"></i></button>
             <div class="col carouselCardPack" id="exploreCarousel">
                 <div class="card-group d-flex flex-nowrap">
                     <% @recent_projects.take(8).each do |project| %>
@@ -22,7 +22,7 @@
                     <% end %>
                 </div>
             </div>
-            <button class="col-auto btn btn-link text-secondary fs-1" onclick="document.getElementById('exploreCarousel').scrollBy({left: 250, behavior: 'smooth'})"><i class="fa fa-angle-right"></i></button>
+            <button class="col-auto btn btn-link text-secondary fs-1" aria-label="<%= t('common.next') %>" onclick="document.getElementById('exploreCarousel').scrollBy({left: 250, behavior: 'smooth'})"><i class="fa fa-angle-right"></i></button>
         </div>
     </div>
 </div>

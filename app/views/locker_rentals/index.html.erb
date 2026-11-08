@@ -4,12 +4,12 @@
 <p class="text-center">Here you can see your locker rental history</p>
 <div class="container">
     <div class="row row-cols-md-4 gx-0">
-        <% @own_locker_rentals.active.each do |rental| %>
+        <% @own_locker_rentals.active.includes(:locker).find_each do |rental| %>
             <div class="card">
                 <%= vite_image_tag 'images/locker/STEM_lockers.jpg', class: 'card-img-top' %>
                 <div class="card-body">
                     <p class="fs-5"><span class="badge text-bg-success">Active</span> <%= "#{t('lockers.locker')} ##{rental.locker.specifier}" %> </p>
-                    <p>Until <%= rental.owned_until.to_date.to_fs :long %></p>
+                    <p><%= rental.owned_until ? "Until #{rental.owned_until.to_date.to_fs :long}" : "Indefinite" %></p>
                     <%= link_to "View details", locker_rental_path(rental), class: 'btn btn-secondary' %>
                 </div>
             </div>
@@ -39,6 +39,6 @@
     <hr />
     <h2>My locker history</h2>
     <%= render partial: 'rental_data_table',
-               locals: { locker_rentals: @own_locker_rentals.order(:state),
+               locals: { locker_rentals: @own_locker_rentals.includes(:locker, :rented_by).order(:state),
                    header_title: t('lockers.your_locker_requests'), hide_actions: true } %>
 </div>

@@ -12,6 +12,9 @@ en:
     skills: "Skills"
     questions: "Questions"
     spaces: "Spaces"
+    space_name:
+      blank: "A name is required for the space"
+      taken: "A space with that name already exists"
     contact: "Contact"
     staff_management: "Staff Management"
     roles: "Roles"
@@ -20,6 +23,7 @@ en:
     shifts: "Shifts"
     time_periods: "Time Periods"
     calendar: "Calendar"
+    calendar_staff_load_error: "The staff availability could not be loaded, so events cannot be added. Please reload the page."
     keys: "Keys"
     key_requests: "Key Requests"
     key_transactions: "Key Transactions"
@@ -41,8 +45,16 @@ en:
       create: "Create Training"
       update: "Update Training"
       delete: "Delete"
+    contact_infos:
+      errors_heading:
+        one: "%{count} error prevented this contact info from being saved:"
+        other: "%{count} errors prevented this contact info from being saved:"
 fr:
   admin:
+    contact_infos:
+      errors_heading:
+        one: "%{count} erreur a empêché l'enregistrement de cette fiche de contact :"
+        other: "%{count} erreurs ont empêché l'enregistrement de cette fiche de contact :"
     general: "Général"
     lockers: "Casiers"
     settings: "Préférences"
@@ -54,6 +66,9 @@ fr:
     skills: "Compétences"
     questions: "Questions"
     spaces: "Espaces"
+    space_name:
+      blank: "Un nom est requis pour l'espace"
+      taken: "Un espace portant ce nom existe déjà"
     contact: "Contact"
     staff_management: "Gestion du Personnel"
     roles: "Rôles"
@@ -62,6 +77,7 @@ fr:
     shifts: "Horaires"
     time_periods: "Périodes"
     calendar: "Calendrier"
+    calendar_staff_load_error: "La disponibilité du personnel n'a pas pu être chargée; il est donc impossible d'ajouter des événements. Veuillez recharger la page."
     keys: "Clés"
     key_requests: "Demandes de clés"
     key_transactions: "Transactions de clés"

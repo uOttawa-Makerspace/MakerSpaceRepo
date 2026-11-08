@@ -25,9 +25,7 @@ RSpec.describe "Admin calendar event types", type: :system do
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
   def show_admin_calendar(query = "")
-    visit root_path
-    page.execute_script("localStorage.fullCalendarDefaultDateAdmin = '2027-03-16T12:00:00.000Z'")
-    visit "#{admin_calendar_index_path}#{query}"
+    log_in_as(admin, to: "#{admin_calendar_index_path}#{query}", local_storage: { fullCalendarDefaultDateAdmin: "2027-03-16T12:00:00.000Z" })
   end
 
   def event_count(title)
@@ -40,7 +38,6 @@ RSpec.describe "Admin calendar event types", type: :system do
 
   # N+1 pinned (the JSON feed reads event_assignments per event)
   it "shows events of every type", js: true, skip_bullet: true do
-    log_in_as(admin)
     show_admin_calendar
 
     expect_rendered_once("Soldering training", "Laser training", "Team sync")
@@ -49,7 +46,6 @@ RSpec.describe "Admin calendar event types", type: :system do
   end
 
   it "hides only the unchecked type", js: true, skip_bullet: true do
-    log_in_as(admin)
     show_admin_calendar
     expect_rendered_once("Soldering training", "Team sync")
 
@@ -60,7 +56,6 @@ RSpec.describe "Admin calendar event types", type: :system do
   end
 
   it "shows each event of a rechecked type exactly once", js: true, skip_bullet: true do
-    log_in_as(admin)
     show_admin_calendar
     expect_rendered_once("Soldering training")
 
@@ -73,7 +68,6 @@ RSpec.describe "Admin calendar event types", type: :system do
   end
 
   it "starts with a type hidden when the URL lists it", js: true, skip_bullet: true do
-    log_in_as(admin)
     show_admin_calendar("?hidden_events=training")
 
     expect_rendered_once("Team sync")

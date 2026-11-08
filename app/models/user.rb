@@ -35,6 +35,8 @@ class User < ApplicationRecord
     'Arts',
     'Medicine',
     'Law',
+    'Civil Law',
+    'Common Law',
     'Health Sciences',
     'Science',
     'Telfer School of Management'
@@ -93,7 +95,7 @@ class User < ApplicationRecord
   
   belongs_to :space, optional: true
   
-  has_one :rfid, dependent: :destroy
+  has_one :rfid, dependent: :restrict_with_error
   has_one :key_request, class_name: 'KeyRequest', dependent: :destroy
   has_one :key_certification, dependent: :destroy
   has_one_attached :avatar
@@ -102,12 +104,15 @@ class User < ApplicationRecord
   has_many :comments, dependent: :destroy
   has_many :owned_repositories, class_name: 'Repository', dependent: :destroy
   has_many :likes
-  has_many :certifications, class_name: 'Certification', dependent: :destroy
+  # Visit, certification and training history is never deleted with the account: deleting an account only
+  # hides the user (see #soft_delete!), and reports read this history for deleted users too.
+  has_many :certifications, class_name: 'Certification'
+  # No dependent: :destroy here or on the history above: a hard delete of a user who has history
+  # is refused by the foreign keys, on purpose.
   has_many :demotion_staff,
            class_name: 'Certification',
-           foreign_key: 'demotion_staff_id',
-           dependent: :destroy
-  has_many :lab_sessions, dependent: :destroy
+           foreign_key: 'demotion_staff_id'
+  has_many :lab_sessions
   has_many :project_proposals
   has_many :project_joins, dependent: :destroy
   has_many :printer_sessions, dependent: :destroy
@@ -142,7 +147,9 @@ class User < ApplicationRecord
   has_many :space_manager_joins, dependent: :destroy
   has_many :supervised_spaces, through: :space_manager_joins, source: :space
   has_many :spaces, through: :staff_spaces
-  has_many :user_booking_approvals, inverse_of: :staff
+  # Booking access requests this user made, and the ones this user (as staff) approved.
+  has_many :user_booking_approvals, inverse_of: :user
+  has_many :approved_booking_requests, class_name: 'UserBookingApproval', foreign_key: :staff_id, inverse_of: :staff
   has_many :printer_issues, inverse_of: :reporter
   has_many :locker_rentals, foreign_key: 'rented_by'
   has_many :staff_unavailabilities
@@ -178,7 +185,7 @@ class User < ApplicationRecord
             length: { maximum: 50 },
             format: {
               without: /[<>&"]/,
-              message: 'must not contain special HTML characters'
+              message: :special_html_characters
             }
 
   validates :username,
@@ -187,11 +194,19 @@ class User < ApplicationRecord
             format: { with: /\A[a-zA-ZÀ-ÿ\d]*\z/ },
             length: { maximum: 20 }
 
+  # Only checked when the username is set or changed, so existing users are unaffected.
+  validate :username_not_reserved, if: :will_save_change_to_username?
+
   validates :email,
             presence: true,
             on: :create,
             uniqueness: { case_sensitive: false },
             email: true
+
+  # A changed address must still have the shape of an address; the provider-typo
+  # hint is for sign-up only. Unchanged addresses are not checked, so existing
+  # users with an odd stored address can still save other fields.
+  validates :email, email: { typo_check: false }, on: :update, if: :will_save_change_to_email?
 
   validates :how_heard_about_us, 
             length: { maximum: 250 }
@@ -209,15 +224,22 @@ class User < ApplicationRecord
   validates :password,
             password: PASSWORD_STRENGTH_OPTIONS,
             if: :plaintext_password_changing?
+  # A password set through pword= is stored as its hash, so the rules above skip it: they run on the plaintext
+  # pword= was given instead.
+  validate :pword_plaintext_strength, if: :own_password_hash_changing?
 
   validates :gender,
             presence: true,
             inclusion: { in: GENDERS }
 
+  # A stored value outside the list (older data) stays valid until it is changed,
+  # so saving another field does not fail; a new value must be in the list.
   validates :faculty,
             presence: true,
-            if: :student?,
-            inclusion: { in: FACULTIES }
+            if: :student?
+  validates :faculty,
+            inclusion: { in: FACULTIES },
+            if: -> { student? && faculty_changed? }
 
   validates :role,
             inclusion: { in: ROLES },
@@ -235,22 +257,22 @@ class User < ApplicationRecord
             presence: true,
             inclusion: { in: IDENTITIES }
 
-  # SECURITY FIX: Proper regex anchoring for student_id
-  # Old: /[0-9]/ - only checked for presence of ANY digit
-  # New: /\A[0-9]{9}\z/ - ensures EXACTLY 9 digits, nothing else
+  # Anchored so only digits pass. Checked when the id changes, so a stored id of
+  # another length (older data) does not block saving other fields.
+  validates :student_id,
+            presence: true,
+            if: :student_id_required?
   validates :student_id,
             format: {
               with: /\A[0-9]{7,12}\z/,
-              message: 'must be between 7 and 12 digits'
+              message: :wrong_digit_count
             },
             allow_blank: true,
-            presence: true,
-            if: :student?
-  
+            if: -> { student? && student_id_changed? }
   validates :url,
             format: {
               with: %r{\Ahttps?://[^\s<>"'{}|\\^`]+\z}i,
-              message: 'must be a valid URL starting with http:// or https://'
+              message: :not_a_web_address
             },
             allow_blank: true
 
@@ -259,6 +281,8 @@ class User < ApplicationRecord
   # ============================================
 
   normalizes :email, with: ->(email) { email.strip.downcase }
+  # A blank form field means no id, so an older student row without one is not seen as changed.
+  normalizes :student_id, with: ->(student_id) { student_id.strip.presence }
 
   before_validation :translate_faculty
 
@@ -267,6 +291,20 @@ class User < ApplicationRecord
   # ============================================
 
   default_scope { where(deleted: false) }
+
+  # The shape error (in the current locale) when `address` could not be an
+  # email address, nil when it is acceptable. The provider-typo hint is not part of it.
+  def self.email_shape_error(address)
+    probe = new
+    EmailValidator.new(attributes: [:email], typo_check: false).validate_each(probe, :email, address)
+    probe.errors.full_messages_for(:email).to_sentence.presence
+  end
+
+  # Every user row, soft-deleted ones included. For admin views and reports, which see everything;
+  # the default scope keeps deleted users out of everything else.
+  def self.including_deleted
+    unscope(where: :deleted)
+  end
 
   EMAIL_CHANGE_VERIFIER = -> { Rails.application.message_verifier(:email_change) }
 
@@ -324,6 +362,11 @@ class User < ApplicationRecord
   }
   
   scope :staff, -> { where(role: %w[admin staff]) }
+
+  # Everyone who may be offered a key: staff and admins (listed whether or not
+  # they have filed a key request) plus anyone who has a key request, such as a
+  # Teams program member. Whether the request is approved is checked on assign.
+  scope :key_assignable, -> { staff.or(where(id: KeyRequest.select(:user_id))) }
   
   scope :students, -> { where(identity: STUDENT_IDENTITIES) }
   
@@ -336,6 +379,14 @@ class User < ApplicationRecord
       'LOWER(UNACCENT(name)) LIKE LOWER(UNACCENT(:query)) OR LOWER(UNACCENT(username)) LIKE LOWER(UNACCENT(:query))',
       query: "%#{sanitize_sql_like(query)}%"
     ).limit(30)
+  }
+
+  # Name/username lookup for staff pickers: too-short terms match nothing, so a
+  # blank or wildcard-only search never lists everyone.
+  DIRECTORY_SEARCH_MIN_LENGTH = 3
+  scope :directory_search, ->(query) {
+    query = query.to_s.strip
+    query.length < DIRECTORY_SEARCH_MIN_LENGTH ? none : search(query)
   }
 
   scope :fuzzy_search, ->(query) {
@@ -370,9 +421,12 @@ class User < ApplicationRecord
   # Admins who can still sign in. A locked admin (admin lock, or too many failed
   # attempts) cannot sign in (CredentialAuthenticator), so does not count.
   # A deactivated admin (User#deactivate!) cannot either.
-  scope :usable_admins, -> {
-    where(role: "admin").where(deactivated_at: nil)
-                        .where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
+  scope :usable_admins, -> { where(role: "admin").can_sign_in }
+
+  # Accounts that can sign in: not deactivated, and not locked (an expired timed lockout no longer
+  # counts). Deleted accounts are already left out by the default scope.
+  scope :can_sign_in, -> {
+    where(deactivated_at: nil).where("users.locked IS NOT TRUE OR users.locked_until < ?", Time.current)
   }
 
   GUARD_LOCK_MODE = "FOR NO KEY UPDATE"
@@ -423,6 +477,47 @@ class User < ApplicationRecord
       end
 
       yield
+    end
+  end
+
+  # Deleting and restoring accounts run one at a time: a transaction-scoped advisory lock is taken
+  # before any row lock. The caller then re-reads the user under a row lock, so a second request
+  # for the same account finds the work already done.
+  def self.serialising_account_deletion
+    transaction do
+      connection.execute("SELECT pg_advisory_xact_lock(hashtextextended('account_deletion', 0))")
+      yield
+    end
+  end
+
+  # Deleting an account hides it; nothing the user did is deleted. Each repository they own passes to
+  # another member, or is hidden when there is none, and a lab session still open is ended now, so a
+  # deleted user is not listed as in a space. Every other row (visits, certifications, training)
+  # stays as it was. Raises LastAdminError for the last usable admin. Returns false, doing nothing,
+  # if the account was already deleted by another request.
+  def self.delete_account!(user)
+    serialising_account_deletion do
+      guarding_last_admin!([user.id]) do
+        next false if user.lock!(GUARD_LOCK_MODE).deleted?
+
+        Repository.release_owned_by!(user)
+        LabSession.where(user_id: user.id).active.update_all(sign_out_time: Time.zone.now)
+        user.soft_delete!
+        true
+      end
+    end
+  end
+
+  # Brings back what delete_account! hid: the account and the repositories it hid. Repositories
+  # handed to another member stay with them. Returns false, doing nothing, if the account is not
+  # deleted (already restored by another request).
+  def self.restore_account!(user)
+    serialising_account_deletion do
+      next false unless user.lock!(GUARD_LOCK_MODE).deleted?
+
+      Repository.restore_hidden_for!(user)
+      user.restore!
+      true
     end
   end
 
@@ -490,6 +585,7 @@ class User < ApplicationRecord
   def reload(*)
     @pword = nil
     @own_password_hash = nil
+    @pword_plaintext = nil
     super
   end
 
@@ -497,6 +593,24 @@ class User < ApplicationRecord
   # bcrypt-SHAPED string typed by a user is still a plaintext password.
   def plaintext_password_changing?
     password_changed? && password.present? && password != @own_password_hash
+  end
+
+  def own_password_hash_changing?
+    @pword_plaintext.present? && password_changed? && password == @own_password_hash
+  end
+
+  # The password validator reads the attribute from the record it is given, so it is run on a stand-in that holds
+  # the plaintext and this user's name, username and email.
+  PasswordCandidate = Struct.new(:password, :name, :username, :email) do
+    def errors = @errors ||= ActiveModel::Errors.new(self)
+  end
+
+  def pword_plaintext_strength
+    candidate = PasswordCandidate.new(@pword_plaintext, name, username, email)
+    ActiveModel::Validations::PasswordValidator
+      .new(attributes: [:password], **PASSWORD_STRENGTH_OPTIONS)
+      .validate_each(candidate, :password, @pword_plaintext)
+    candidate.errors[:password].each { |message| errors.add(:password, message) }
   end
 
   # Problems with a candidate plaintext password (strength rules only; no other
@@ -613,6 +727,7 @@ class User < ApplicationRecord
   end
 
   def pword=(new_password)
+    @pword_plaintext = new_password.to_s
     @pword = Password.create(new_password)
     @own_password_hash = @pword.to_s
     self.token_version += 1 if persisted?
@@ -672,7 +787,7 @@ class User < ApplicationRecord
 
   def send_unlock_email
     user_hash = generate_token_for(:account_unlock)
-    MsrMailer.unlock_account(self, user_hash).deliver_now
+    MsrMailer.unlock_account(self, user_hash).deliver_later
   end
 
   def token(exp = 14.days.from_now.to_i)
@@ -699,7 +814,7 @@ class User < ApplicationRecord
   end
 
   def send_password_reset
-    MsrMailer.forgot_password(email, generate_token_for(:password_reset)).deliver_now
+    MsrMailer.forgot_password(email, generate_token_for(:password_reset)).deliver_later
   end
 
   # ============================================
@@ -708,6 +823,12 @@ class User < ApplicationRecord
 
   def student?
     STUDENT_IDENTITIES.include?(identity)
+  end
+
+  # A student must give a student id when the account is created and when the identity
+  # or the id changes; an older student row without one stays saveable for other fields.
+  def student_id_required?
+    student? && (new_record? || identity_changed? || student_id_changed?)
   end
 
   def admin?
@@ -879,6 +1000,23 @@ class User < ApplicationRecord
     lab_sessions.last&.space&.name || 'no sign in yet'
   end
 
+  # The user's newest session in any space, from the loaded sessions so a listing of
+  # many users preloads them once.
+  def latest_lab_session
+    lab_sessions.max_by(&:id)
+  end
+
+  # The user's newest session in one space.
+  def latest_lab_session_in(space)
+    lab_sessions.where(space: space).newest_first.first
+  end
+
+  # The visit before the newest one; nil for a first visit. Reads the loaded sessions so
+  # a listing of many users preloads them once.
+  def previous_lab_session
+    lab_sessions.sort_by(&:id).second_to_last
+  end
+
   # ============================================
   # Instance Methods - Certifications & Training
   # ============================================
@@ -988,24 +1126,27 @@ class User < ApplicationRecord
       .pick(:department)
   end
 
+  # The identity and, for students, the year of study, worded in the current language:
+  # "2nd Year Undergraduate", "Étudiant de premier cycle, 2e année".
   def identity_readable
-    if student?
-      year = year_of_study.to_s
-      
-      if I18n.locale == :fr
-        suffix = year.last == '1' ? 'ère' : 'ème'
-        year += suffix
-      elsif I18n.locale == :en
-        year = year.to_i.ordinalize
-      end
+    return "" if identity.blank?
 
-      "#{year} #{I18n.t('year')} #{identity}uate".titleize
-    else
-      identity.titleize
-    end
+    name = I18n.t(identity, scope: "users.identity_readable.identities", default: identity.humanize)
+    return name unless student? && year_of_study.to_i.positive?
+
+    I18n.t(
+      "users.identity_readable.student_year",
+      count: year_of_study.to_i,
+      ordinal: year_of_study.to_i.ordinalize,
+      identity: name
+    )
   end
 
   private
+
+  def username_not_reserved
+    errors.add(:username, :reserved) if ReservedUsernames.include?(username)
+  end
 
   # ============================================
   # Private Methods

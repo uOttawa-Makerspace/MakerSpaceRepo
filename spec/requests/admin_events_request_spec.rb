@@ -116,10 +116,7 @@ RSpec.describe "Admin events contract", type: :request do
 
       log_in!(admin)
 
-      # the no-:id publish branch parses view_start_date/
-      # view_end_date BEFORE the space guard — date params must be present or
-      # the request 500s before the "Space ID is required." flash can even
-      # fire (pinned in admin_events_gaps_request_spec.rb).
+      # the view dates are required before the space is checked
       patch publish_admin_events_path, params: {
         view_start_date: "2027-03-31", view_end_date: "2027-04-02"
       }
@@ -138,7 +135,6 @@ RSpec.describe "Admin events contract", type: :request do
   # M61: the batch publish is scoped to the admin's space.
   it "batch publish leaves drafts of another space as drafts and does not push them" do
     travel_to(Time.zone.local(2027, 4, 1, 18, 0)) do
-      allow(Event).to receive(:upsert_event)
       other_space = create(:space)
       mine = create(:event, :draft, space: space)
       foreign = create(:event, :draft, space: other_space)
@@ -151,8 +147,8 @@ RSpec.describe "Admin events contract", type: :request do
       expect(flash[:notice]).to eq("1 event(s) published.")
       expect(mine.reload.draft).to be(false)
       expect(foreign.reload.draft).to be(true)
-      expect(Event).to have_received(:upsert_event).with(mine).at_least(:once)
-      expect(Event).not_to have_received(:upsert_event).with(foreign)
+      expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(mine.id).exactly(:once)
+      expect(GoogleCalendar::EventPushJob).not_to have_been_enqueued.with(foreign.id)
     end
   end
 

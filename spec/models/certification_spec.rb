@@ -21,6 +21,63 @@ RSpec.describe Certification, type: :model do
     end
   end
 
+  describe "share token" do
+    it "is generated on create, URL-safe and never all digits" do
+      token = create(:certification).share_token
+      expect(token).to match(/\A[A-Za-z0-9_-]{22}\z/)
+      expect(token).to match(/\D/)
+    end
+
+    it "keeps a token given at create" do
+      expect(create(:certification, share_token: "given-token").share_token).to eq("given-token")
+    end
+
+    it "differs between certifications" do
+      expect(create_list(:certification, 3).map(&:share_token).uniq.size).to eq(3)
+    end
+
+    it "does not change when the certification is saved or updated" do
+      cert = create(:certification)
+      token = cert.share_token
+      cert.update!(level: "Advanced")
+      cert.touch
+      cert.save!
+      expect(cert.reload.share_token).to eq(token)
+    end
+
+    it "cannot be assigned on a saved certification" do
+      cert = create(:certification)
+      expect { cert.share_token = "other" }.to raise_error(ActiveRecord::ReadonlyAttributeError)
+      expect(cert.reload.share_token).to match(/\A[A-Za-z0-9_-]{22}\z/)
+    end
+
+    it "is required on create" do
+      allow(described_class).to receive(:generate_share_token).and_return("")
+      expect(build(:certification)).not_to be_valid
+    end
+
+    it "is unique in the database" do
+      first = create(:certification)
+      second = create(:certification)
+      expect { described_class.unscoped.where(id: second.id).update_all(share_token: first.share_token) }
+        .to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    describe ".find_for_badge_page!" do
+      let!(:cert) { create(:certification) }
+
+      it "finds by token and by numeric id" do
+        expect(described_class.find_for_badge_page!(cert.share_token)).to eq(cert)
+        expect(described_class.find_for_badge_page!(cert.id.to_s)).to eq(cert)
+      end
+
+      it "raises not found for an unknown token or id" do
+        expect { described_class.find_for_badge_page!("nope") }.to raise_error(ActiveRecord::RecordNotFound)
+        expect { described_class.find_for_badge_page!("0") }.to raise_error(ActiveRecord::RecordNotFound)
+      end
+    end
+  end
+
   describe "Scopes" do
     context "#between_dates_picked" do
       it "should return certifications between dates" do
@@ -224,6 +281,15 @@ RSpec.describe Certification, type: :model do
       expect(cert.trainer).to eq(ts.user)
       expect(cert.get_name_en).to eq(training.name_en)
       expect(cert.get_skill_id).to eq(training.skill_id)
+    end
+
+    it "name is the training's name in the current language, falling back when that one is blank" do
+      training.update!(name_en: "Laser", name_fr: "Laseur")
+      cert = create(:certification, user: user, training_session: ts, training: training)
+      expect(cert.name).to eq("Laser")
+      I18n.with_locale(:fr) { expect(cert.name).to eq("Laseur") }
+      cert.training.name_fr = ""
+      I18n.with_locale(:fr) { expect(cert.name).to eq("Laser") }
     end
 
     it "existent_certification finds a certification of the same training at the same session level, else false" do

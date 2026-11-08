@@ -420,12 +420,12 @@ RSpec.describe "JobOrders workflow", type: :request do
     end
 
     # the recorded actor is always the order's owner, never the visitor
-    it "lets a signed-in non-owner approve and records the order owner as the actor, without any staff mail" do
+    it "lets a signed-in non-owner approve and records the order owner as the actor, mailing staff and the owner" do
       session_login!(other)
       patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: "true" }
       expect(status_names(order)).to end_with("Waiting to be Processed")
       expect(order.job_order_statuses.last.user).to eq(owner)
-      expect(deliveries).to be_empty
+      expect(deliveries.map(&:to)).to eq([["makerspace@uottawa.ca"], [owner.email]])
     end
 
     it "redirects with the accept/deny error flash when the token is missing" do

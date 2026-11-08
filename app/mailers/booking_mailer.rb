@@ -1,12 +1,15 @@
 class BookingMailer < ApplicationMailer
+  # Receives the mails meant for a space's managers when the space has none.
+  MTC_MAILBOX = "mtc@uottawa.ca"
+
   def send_booking_needs_approval(booking_id)
     @booking = SubSpaceBooking.find(booking_id)
     @sub_space = SubSpace.find(@booking.sub_space_id)
-    @emails = get_emails(@booking.sub_space.space.id)
 
-    return if @emails.empty? || @sub_space.approval_required == false
+    return if @sub_space.approval_required == false
+    @emails = manager_emails(@booking.sub_space.space)
     @message =
-      "A booking has been made in " + @sub_space.name + " by " + @booking.name +
+      "A booking has been made in " + @sub_space.name + " by " + booker_name +
         " for " + @booking.description + " on " +
         @booking.start_time.to_formatted_s(:long) + " to " +
         @booking.end_time.to_formatted_s(:long) +
@@ -17,12 +20,10 @@ class BookingMailer < ApplicationMailer
   def send_booking_automatically_approved(booking_id)
     @booking = SubSpaceBooking.find(booking_id)
     @sub_space = SubSpace.find(@booking.sub_space_id)
-    @emails = get_emails(@booking.sub_space.space.id)
-
-    return if @emails.empty?
+    @emails = manager_emails(@booking.sub_space.space)
     @message =
       "A booking has been made and automatically approved in " +
-        @sub_space.name + " by " + @booking.name + " for " +
+        @sub_space.name + " by " + booker_name + " for " +
         @booking.description + " on " +
         @booking.start_time.to_formatted_s(:long) + " to " +
         @booking.end_time.to_formatted_s(:long) +
@@ -71,12 +72,25 @@ class BookingMailer < ApplicationMailer
 
   private
 
-  def get_emails(space_id)
-    emails = []
+  # The space managers' emails; the MTC mailbox, with the missing managers
+  # reported, when the space has none.
+  def manager_emails(space)
+    emails = space.space_managers.map(&:email)
+    return emails if emails.any?
 
-    space = Space.find(space_id)
-    space.space_managers.each { |sm| emails << sm.email }
+    Rails.error.report(
+      RuntimeError.new("Booking mail for space #{space.id} (#{space.name}), which has no space managers; sent to #{MTC_MAILBOX}"),
+      handled: true,
+      severity: :warning
+    )
+    [MTC_MAILBOX]
+  end
 
-    emails
+  # The booker's name, marked when the account is deleted; the booking title when it has no user.
+  def booker_name
+    user = @booking.display_user
+    return @booking.name if user.nil?
+
+    user.deleted? ? I18n.t("users.deleted_account", name: user.name) : user.name
   end
 end

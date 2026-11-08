@@ -62,7 +62,6 @@
       <th scope="col">CC Cost</th>
       <th scope="col">Real Cost</th>
       <th scope="col">User</th>
-      <th scope="col">Actions</th>
     </tr>
     </thead>
     <tbody>
@@ -72,11 +71,6 @@
         <td><%= coupon.cc_cost %></td>
         <td><%= coupon.dollar_cost %></td>
         <td><%= link_to coupon.user.name, user_path(coupon.user.username) %></td>
-        <td>
-          <div class="input-group">
-            <%= button_to 'Delete', coupon, method: :delete, data: { confirm: 'Are you sure? This will NOT refund the CC Points.' }, class: 'btn btn-danger' %>
-          </div>
-        </td>
       </tr>
     <% end %>
     </tbody>

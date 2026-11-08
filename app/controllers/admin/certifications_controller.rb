@@ -1,9 +1,10 @@
 class Admin::CertificationsController < AdminAreaController
   before_action :set_certification, only: %i[update destroy]
+  before_action :require_certification_user, only: :update
 
   def show
     @certification = Certification.includes(:training_session).includes(:training).find(params[:id])
-    @earner = User.find(@certification.user_id)
+    @earner = @certification.user || raise(ActiveRecord::RecordNotFound)
   end
 
   def update
@@ -47,6 +48,8 @@ class Admin::CertificationsController < AdminAreaController
 
   def open_modal
     @certification_modal = Certification.find(params[:id])
+    raise ActiveRecord::RecordNotFound if @certification_modal.user.nil?
+
     respond_to { |format| format.js }
   end
 
@@ -67,5 +70,11 @@ class Admin::CertificationsController < AdminAreaController
 
   def set_certification
     @cert = Certification.unscoped.find(params[:id])
+  end
+
+  # A certification row with no user cannot be demoted or reinstated (there is no one to flag
+  # or send the admin to), like #show.
+  def require_certification_user
+    raise ActiveRecord::RecordNotFound if @cert.user.nil?
   end
 end
