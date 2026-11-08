@@ -15,10 +15,11 @@ class LearningModuleTrackController < DevelopmentProgramsController
     begin
       LearningModuleTrack.for_user_and_module!(current_user, learning_module)
       flash[:notice] = "You have successfully started the learning module !"
-    rescue ActiveRecord::ActiveRecordError
-      flash[
-        :alert
-      ] = "An error has occurred while starting the learning module, please try again or contact uottawa.makerepo@uottawa.ca for support."
+    rescue ActiveRecord::RecordInvalid => e
+      flash[:alert] = validation_message(e.record, "errors.learning_area.not_started")
+    rescue ActiveRecord::ActiveRecordError => e
+      report_unexpected(e, source: "learning_module_track#start")
+      flash[:alert] = "#{I18n.t('errors.learning_area.not_started')} #{unexpected_error_message}"
     end
     redirect_to learning_area_path(learning_module.id)
   end
@@ -33,15 +34,12 @@ class LearningModuleTrackController < DevelopmentProgramsController
     # A SCORM package reports its own completion
     if learning_module.scorm_package.attached?
       flash[:alert] = "This learning module records its own completion."
-    elsif learning_module
-         .learning_module_tracks
-         .find_by(user: current_user)
-         &.update(status: "Completed")
-      flash[:notice] = "You have successfully completed the learning module !"
+    elsif (track = learning_module.learning_module_tracks.find_by(user: current_user)).nil?
+      flash[:alert] = I18n.t("errors.learning_area.not_started_yet")
     else
-      flash[
-        :alert
-      ] = "An error has occurred while completing the learning module, please try again or contact uottawa.makerepo@uottawa.ca for support."
+      write_flash(track, "errors.learning_area.not_completed", "You have successfully completed the learning module !") do
+        track.update(status: "Completed")
+      end
     end
     redirect_to learning_area_path(learning_module.id)
   end

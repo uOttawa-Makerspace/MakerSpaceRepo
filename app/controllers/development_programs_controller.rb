@@ -85,19 +85,17 @@ class DevelopmentProgramsController < SessionsController
       flash[:notice] = "You've joined the Development Program"
       redirect_to development_programs_path
     else
-      redirect_to root_path,
-                  alert:
-                    (
-                      if current_user.dev_program?
-                        "You already joined the Program. You can already access it!"
-                      else
-                        "Something went wrong. Please try again later"
-                      end
-                    )
+      redirect_to root_path, alert: join_refusal(program)
     end
   end
 
   private
+
+  def join_refusal(program)
+    return "You already joined the Program. You can already access it!" if current_user.dev_program?
+
+    validation_message(program, "errors.development_programs.not_joined")
+  end
 
   def grant_access
     signed_in

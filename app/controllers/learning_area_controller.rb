@@ -54,7 +54,7 @@ class LearningAreaController < DevelopmentProgramsController
       redirect_to learning_area_path(@learning_module.id),
                   notice: 'Learning Module has been successfully created.'
     else
-      flash.now[:alert] = 'Something went wrong'
+      flash.now[:alert] = validation_message(@learning_module, 'errors.learning_area.not_created')
       render 'new', status: :unprocessable_content
     end
   end
@@ -78,7 +78,7 @@ class LearningAreaController < DevelopmentProgramsController
       redirect_to learning_area_path(@learning_module.id),
                   notice: 'Learning module successfully updated.'
     else
-      flash[:alert] = "Unable to apply the changes."
+      flash[:alert] = validation_message(@learning_module, "errors.learning_area.not_updated")
       @training_categories = Training.all.order(:name).pluck(:name, :id)
       @training_levels ||= TrainingSession.return_levels
       @files = @learning_module.project_files_attachments.order(created_at: :asc)

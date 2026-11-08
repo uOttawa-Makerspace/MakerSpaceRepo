@@ -73,7 +73,8 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       shop_log_in!(user)
       post memberships_path, params: { membership: { membership_tier_id: tier.id } }
       expect(response).to redirect_to(your_memberships_memberships_path)
-      expect(flash[:alert]).to eq("Error creating membership. Please try again.")
+      expect(flash[:alert]).to eq(I18n.t("errors.memberships.checkout_failed",
+                                         reference: response.headers["X-Request-Id"].first(8)))
       expect(Membership.count).to eq(0)
     end
   end
