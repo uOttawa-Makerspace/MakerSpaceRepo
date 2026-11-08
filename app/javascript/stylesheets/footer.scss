@@ -20,6 +20,10 @@ footer {
     font-size: 20px;
   }
 
+  // The footer is black in both themes, so links in it use the light orange.
+  p a {
+    color: $primary-text-dark;
+  }
   a:hover {
     color: #fff;
   }
@@ -48,7 +52,7 @@ footer {
       color: white;
       font-weight: 700;
       &:hover {
-        color: var(--bs-link-color);
+        color: $primary-text-dark;
       }
     }
   }

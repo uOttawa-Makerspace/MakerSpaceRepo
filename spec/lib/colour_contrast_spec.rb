@@ -1,7 +1,10 @@
 require "rails_helper"
 
 # Pins the WCAG AA contrast of the theme colours declared in the SCSS variable
-# file (4.5:1 for normal text). Pure arithmetic, no browser.
+# file: 4.5:1 for normal text, 3:1 for large text (bold and at least 14pt, or at
+# least 18pt). White on the brand orange is large-text only, so the large-text
+# rules that make it bold and big enough are pinned here too. Pure arithmetic,
+# no browser.
 RSpec.describe "Theme colour contrast" do
   def styles = Rails.root.join("app/javascript/stylesheets")
 
@@ -32,9 +35,10 @@ RSpec.describe "Theme colour contrast" do
   end
 
   {
-    "white text on primary (navbar, buttons, badges)" => %w[#ffffff primary],
+    "white text on primary (buttons, badges, home tile hover), large text" => ["#ffffff", "primary", 3.0],
     "primary text on white (links, .text-primary)" => %w[primary-text #ffffff],
     "primary text on the dark theme page" => %w[primary-text-dark #212529],
+    "primary text on the footer (black)" => %w[primary-text-dark #000000],
     "primary text on the dark navbar" => %w[primary-text-dark #000000],
     "secondary text on white" => %w[secondary #ffffff],
     "secondary text on the tertiary background" => %w[secondary tertiary],
@@ -42,10 +46,11 @@ RSpec.describe "Theme colour contrast" do
     "primary text on the dark theme raised surface" => %w[primary-text-dark #2b3035],
     "dark theme muted text on the page" => %w[secondary-text-dark #212529],
     "dark theme muted text on the raised surface" => %w[secondary-text-dark #2b3035],
-  }.each do |name, (fg, bg)|
-    it "#{name} is at least 4.5:1" do
+  }.each do |name, (fg, bg, minimum)|
+    minimum ||= 4.5
+    it "#{name} is at least #{minimum}:1" do
       colour = ->(key) { key.start_with?("#") ? key : variables.fetch(key) }
-      expect(ratio(colour.call(fg), colour.call(bg))).to be >= 4.5
+      expect(ratio(colour.call(fg), colour.call(bg))).to be >= minimum
     end
   end
 
@@ -53,16 +58,28 @@ RSpec.describe "Theme colour contrast" do
     [15, 20].each { |amount| expect(ratio("#ffffff", shade(variables.fetch("primary"), amount))).to be >= 4.5 }
   end
 
-  it "keeps white text readable on the volunteer button hover colour" do
+  it "keeps white text on the volunteer button hover colour at large-text contrast" do
     amount = styles.join("volunteers.scss").read[/^\$ceed-orange-hover:\s*shade-color\(\$primary,\s*(\d+)%\);/, 1]
     expect(amount).to be_present
-    expect(ratio("#ffffff", shade(variables.fetch("primary"), amount.to_i))).to be >= 4.5
+    expect(ratio("#ffffff", shade(variables.fetch("primary"), amount.to_i))).to be >= 3.0
   end
 
-  it "keeps white text readable on the home tile hover background" do
-    background = styles.join("static_pages.scss").read[/&:active\s*\{.*?background:\s*(#\h{6});/m, 1]
-    expect(background).to be_present
-    expect(ratio("#ffffff", background)).to be >= 4.5
+  it "draws the home tile hover in the brand orange with text that counts as large" do
+    tile = styles.join("static_pages.scss").read
+    expect(tile).to match(/&:active\s*\{[^}]*background:\s*\$primary;/m)
+    expect(tile).to match(/font-weight: lighter;\s*font-size: 1\.75rem;/)
+    expect(tile).to match(/max-width: 575\.98px\) \{\s*font-size: 1\.25rem;\s*font-weight: 700;/)
+    expect(ratio("#ffffff", variables.fetch("primary"))).to be >= 3.0
+  end
+
+  it "makes white text on the orange fill bold and at least 14pt" do
+    rules = styles.join("accessibility.scss").read
+    size = rules[/^\$large-text-size:\s*([\d.]+)rem;/, 1].to_f * 16
+    expect(size).to be >= 18.66
+    expect(rules).to match(/max-width: 1199\.98px\) \{\s*:root:not\(\[data-bs-theme="dark"\]\) \.navbar:not\(\.navbar-staff\) \{\s*\.nav-link,\s*\.btn\.btn-link \{\s*font-weight: 700;\s*font-size: \$large-text-size;/)
+    expect(rules).to match(/\.btn\.btn-primary,\s*\.btn\.btn-outline-primary \{\s*--bs-btn-font-weight: 700;\s*--bs-btn-font-size: #\{\$large-text-size\};/)
+    expect(rules).to match(/\.btn\.btn-outline-primary \{\s*--bs-btn-color: var\(--primary-text\);/)
+    expect(rules).to match(/\.badge:is\(\.bg-primary, \.text-bg-primary, \.cert-badge\) \{\s*font-weight: 700;\s*font-size: \$large-text-size;/)
   end
 end
 

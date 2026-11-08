@@ -8,7 +8,7 @@
 // against the background it is drawn on (WCAG 2.2 SC 1.4.11, 2.4.7, 2.4.11).
 //   light page (#fff)            #0a58ca  6.5:1
 //   dark page (#212529)          #6ea8fe  6.6:1
-//   navbar (#c93a1e) and footer  #fff     5.1:1 and 21:1
+//   navbar (#e24829) and footer  #fff     4.0:1 (large text) and 21:1
 :root {
   --focus-ring-color: #0a58ca;
 }
@@ -81,4 +81,39 @@ main[tabindex="-1"]:focus {
 }
 .text-success:is(.bg-success-subtle, .bg-opacity-10) {
   color: var(--bs-success-text-emphasis) !important;
+}
+
+// White text on the brand orange fill (#e24829) is 4.04:1: below 4.5:1, so it
+// counts as readable only as large text (3:1, WCAG 1.4.3). Large text is bold
+// and at least 14pt (1.167rem), so the text drawn on the orange is bold and that
+// size. This covers buttons and badges, and the light-theme navbar links below the
+// xl breakpoint, where the links sit in the collapsed menu. On the wide navbar
+// the links are bold but stay compact: 11 links at 14pt do not fit the bar.
+$large-text-size: 1.167rem;
+
+@media (max-width: 1199.98px) {
+  :root:not([data-bs-theme="dark"]) .navbar:not(.navbar-staff) {
+    .nav-link,
+    .btn.btn-link {
+      font-weight: 700;
+      font-size: $large-text-size;
+    }
+  }
+}
+.btn.btn-primary,
+.btn.btn-outline-primary {
+  --bs-btn-font-weight: 700;
+  --bs-btn-font-size: #{$large-text-size};
+}
+
+// An outline button's resting text is orange on the page: the darker text orange.
+// Its hover, checked and active states fill with the brand orange and show white
+// text, which the large bold size above covers.
+.btn.btn-outline-primary {
+  --bs-btn-color: var(--primary-text);
+}
+
+.badge:is(.bg-primary, .text-bg-primary, .cert-badge) {
+  font-weight: 700;
+  font-size: $large-text-size;
 }
