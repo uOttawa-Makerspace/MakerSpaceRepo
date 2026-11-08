@@ -9,7 +9,7 @@ require "rails_helper"
 # SILENT_RESCUES lists the offenders that exist today, as file => count, each with the
 # slice that removes it. The list only shrinks: a file that gains a silent rescue fails,
 # and a file that no longer has one must be taken off the list.
-RSpec.describe "Broad rescues" do
+module RescueGuard
   BROAD_RESCUE = /\A(\s*)rescue\b(?:\s*=>\s*\w+|\s+(?:StandardError|Exception)\b.*)?\s*(?:#.*)?\z/
   HANDLES_THE_ERROR = /\braise\b|report_unexpected|Rails\.error|Rails\.logger|\blogger\.|\.report\(|Airbrake/
 
@@ -28,13 +28,15 @@ RSpec.describe "Broad rescues" do
     "app/services/shop_order_applier.rb" => 1, # err-d
     "app/validators/recurrence_rule_validator.rb" => 1 # err-d
   }.freeze
+end
 
+RSpec.describe "Broad rescues" do
   # The number of broad rescue clauses in the file whose body neither re-raises nor logs.
   def silent_rescue_count(path)
     lines = File.readlines(path)
     lines.each_index.count do |i|
-      match = BROAD_RESCUE.match(lines[i])
-      match && !HANDLES_THE_ERROR.match?(rescue_body(lines, i, match[1].size))
+      match = RescueGuard::BROAD_RESCUE.match(lines[i])
+      match && !RescueGuard::HANDLES_THE_ERROR.match?(rescue_body(lines, i, match[1].size))
     end
   end
 
@@ -50,14 +52,14 @@ RSpec.describe "Broad rescues" do
   end
 
   it "has no silent broad rescue beyond the allowlist, and the allowlist has no stale entry" do
-    expect(counts).to eq(SILENT_RESCUES)
+    expect(counts).to eq(RescueGuard::SILENT_RESCUES)
   end
 
   it "recognises a silent rescue and a handled one" do
     silent = ["  rescue StandardError => e\n", "    nil\n", "  end\n"]
     handled = ["  rescue => e\n", "    report_unexpected(e)\n", "  end\n"]
-    expect(BROAD_RESCUE).to match(silent.first)
-    expect(HANDLES_THE_ERROR).not_to match(rescue_body(silent, 0, 2))
-    expect(HANDLES_THE_ERROR).to match(rescue_body(handled, 0, 2))
+    expect(RescueGuard::BROAD_RESCUE).to match(silent.first)
+    expect(RescueGuard::HANDLES_THE_ERROR).not_to match(rescue_body(silent, 0, 2))
+    expect(RescueGuard::HANDLES_THE_ERROR).to match(rescue_body(handled, 0, 2))
   end
 end
