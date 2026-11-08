@@ -226,8 +226,7 @@ RSpec.describe "Admin keys", type: :request do
       end
     end
 
-    # N+1 pinned
-    it "renders the assign page flagging staff without an approved request form", skip_bullet: true, no_request: true do
+    it "renders the assign page flagging staff without an approved request form", no_request: true do
       create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: holder, supervisor: supervisor, space: space)
       get admin_key_assign_path(key)
       expect(response).to have_http_status(:ok)
@@ -385,6 +384,42 @@ RSpec.describe "Admin keys", type: :request do
       kr.update_columns(status: KeyRequest.statuses[:approved])
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
       expect(key.reload.status).to eq("held")
+    end
+  end
+
+  describe "assigning a key to a Teams program member" do
+    let!(:teams_member) { create(:user, name: "Tess Teamster") }
+    let(:assign_params) { { key: { user_id: teams_member.id, supervisor_id: supervisor.id }, deposit_amount: 0 } }
+
+    before do
+      teams_member.programs.create!(program_type: Program::TEAMS)
+      sign_in_as(:admin)
+    end
+
+    it "lists a Teams member with an approved request in the holder picker without a label" do
+      create(:key_request, :status_approved, :all_questions_answered, user: teams_member, supervisor: supervisor, space: space)
+      get admin_key_assign_path(key)
+      expect(response.body).to match(%r{<option value="#{teams_member.id}">Tess Teamster\s*</option>})
+    end
+
+    it "flags a Teams member whose request is awaiting approval, and refuses to assign to them" do
+      create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: teams_member, supervisor: supervisor, space: space)
+      get admin_key_assign_path(key)
+      expect(response.body).to match(/Tess Teamster\s+\(Request form awaiting approval\)/)
+      expect { patch admin_key_assign_key_path(key), params: assign_params }.not_to change(KeyTransaction, :count)
+      expect(flash[:alert]).to eq("The key holder must have an approved key request.")
+      expect(key.reload.status).to eq("inventory")
+    end
+
+    it "does not list a regular member who has no key request" do
+      get admin_key_assign_path(key)
+      expect(response.body).not_to include("Tess Teamster")
+    end
+
+    it "assigns a key to a Teams member with an approved request" do
+      create(:key_request, :status_approved, :all_questions_answered, user: teams_member, supervisor: supervisor, space: space)
+      expect { patch admin_key_assign_key_path(key), params: assign_params }.to change(KeyTransaction, :count).by(1)
+      expect(key.reload).to have_attributes(status: "held", user_id: teams_member.id)
     end
   end
 
