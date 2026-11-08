@@ -90,23 +90,16 @@ class PrintersController < StaffAreaController
     printer_id = link_params[:printer_id]
     user_id = link_params[:user_id]
     last_session = Printer.get_last_number_session(printer_id)
-    if printer_id.blank? || user_id.blank?
-      flash[:alert] = "Please add both printer and user."
-    elsif user_id != "clear" && !(Printer.exists?(id: printer_id) && User.exists?(id: user_id))
-      flash[:alert] = "Something went wrong"
+    printer_session = PrinterSession.new(printer_id: printer_id, user_id: user_id, in_use: true)
+    if (problem = printer_link_problem(printer_id, user_id))
+      flash[:alert] = I18n.t("errors.printers.#{problem}")
     elsif user_id == "clear" && last_session.update(in_use: false)
       flash[:notice] = "Cleared the user."
-    elsif PrinterSession.create(
-          printer_id: printer_id,
-          user_id: user_id,
-          in_use: true
-        )
-      if !last_session.nil? && last_session.in_use?
-        last_session.update(in_use: false)
-      end
+    elsif printer_session.save
+      last_session.update(in_use: false) if last_session&.in_use?
       flash[:notice] = "Printer Session Created"
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = validation_message(printer_session, "errors.printers.session_not_created")
     end
     respond_to do |format|
       # blame the client if something goes wrong
@@ -116,6 +109,15 @@ class PrintersController < StaffAreaController
       format.html { redirect_to staff_printers_printers_path }
     end
   end
+
+  # Why a printer cannot be linked to a user (a key under errors.printers), or nil.
+  def printer_link_problem(printer_id, user_id)
+    return :printer_and_user_required if printer_id.blank? || user_id.blank?
+    return :printer_not_found unless Printer.exists?(printer_id)
+
+    :user_not_found unless user_id == "clear" || User.exists?(user_id)
+  end
+  private :printer_link_problem
 
   def send_print_failed_message_to_user
     msg_params = params[:print_failed_message]

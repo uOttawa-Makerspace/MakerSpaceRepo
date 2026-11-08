@@ -62,11 +62,10 @@ class PrinterIssuesController < StaffAreaController
       )
 
     if @issue.save
-      send_notification_email(@issue)
-      redirect_to @issue
+      redirect_to @issue, alert: (I18n.t("errors.printers.notification_not_sent") unless send_notification_email(@issue))
     else
       new
-      flash[:alert] = "Failed to create issue: #{helpers.sanitize(@issue.errors.full_messages.join("<br />"))}"
+      flash.now[:alert] = validation_message(@issue, "errors.printers.issue_not_created")
       render :new, status: :unprocessable_content
     end
   end
@@ -79,10 +78,10 @@ class PrinterIssuesController < StaffAreaController
 
   def update
     # Ideally, all updates happen from /printer_issues
-    issue = PrinterIssue.find_by(id: params[:id])
+    issue = PrinterIssue.find(params[:id])
     unless issue.update(printer_issue_params.except(:printer_id))
-      flash[:alert] = "Failed to update printer issue #{params[:id]}, #{issue.errors.full_messages.join(";")}"
-      redirect_to printer_issues_path
+      flash[:alert] = validation_message(issue, "errors.printers.issue_not_updated")
+      return redirect_to printer_issues_path
     end
     if issue.active
       redirect_to issue
@@ -107,9 +106,8 @@ class PrinterIssuesController < StaffAreaController
       redirect_to printer_issues_path
       return
     end
-    unless PrinterIssue.find_by(id: params[:id]).destroy
-      flash[:alert] = "Failed to destroy issue"
-    end
+    issue = PrinterIssue.find(params[:id])
+    flash[:alert] = validation_message(issue, "errors.printers.issue_not_deleted") unless issue.destroy
     redirect_to printer_issues_path, status: :see_other
   end
 
@@ -140,12 +138,16 @@ class PrinterIssuesController < StaffAreaController
     )
   end
 
+  # Queues the maintenance notification; false when the queue refused it (reported). The issue is
+  # already saved, so that is a notice to the reporter and not an error page.
   def send_notification_email(issue)
     recipient = Setting.maintenance_email
-    return if recipient.blank?
+    return true if recipient.blank?
 
     MsrMailer.new_printer_issue(issue, recipient).deliver_later
-  rescue StandardError => e
-    Rails.logger.error("Failed to send printer issue notification email: #{e.message}")
+    true
+  rescue ActiveJob::EnqueueError, ActiveRecord::ActiveRecordError => e
+    report_unexpected(e, source: "printer_issues#create")
+    false
   end
 end
