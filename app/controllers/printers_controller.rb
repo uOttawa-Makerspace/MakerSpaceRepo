@@ -86,12 +86,13 @@ class PrintersController < StaffAreaController
   end
 
   def link_printer_to_user
-    printer_id = params[:printer][:printer_id]
+    link_params = params.require(:printer).permit(:printer_id, :user_id)
+    printer_id = link_params[:printer_id]
+    user_id = link_params[:user_id]
     last_session = Printer.get_last_number_session(printer_id)
-    user_id = params[:printer][:user_id]
     if printer_id.blank? || user_id.blank?
       flash[:alert] = "Please add both printer and user."
-    elsif user_id != "clear" && !(Printer.exists?(printer_id) && User.exists?(user_id))
+    elsif user_id != "clear" && !(Printer.exists?(id: printer_id) && User.exists?(id: user_id))
       flash[:alert] = "Something went wrong"
     elsif user_id == "clear" && last_session.update(in_use: false)
       flash[:notice] = "Cleared the user."
