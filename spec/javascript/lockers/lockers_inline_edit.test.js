@@ -19,7 +19,7 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function load() {
   document.body.innerHTML = `
-    <table data-request-failed="Reload and retry">
+    <table>
       <tr><td>
         <input id="note" class="locker-inline-edit" name="locker[notes]" data-locker-id="4" value="x">
       </td></tr>
@@ -37,6 +37,8 @@ const reply = (status, body) =>
 describe("locker inline edits", () => {
   beforeEach(() => {
     toasts.length = 0;
+    document.documentElement.dataset.requestFailed = "Reload and retry";
+    document.documentElement.dataset.requestNetwork = "Unreachable";
     vi.spyOn(console, "error").mockImplementation(() => {});
     load();
   });
@@ -80,10 +82,25 @@ describe("locker inline edits", () => {
     expect(document.querySelector(".spinner-border").hidden).toBe(true);
   });
 
-  it("shows the generic text when the connection drops", async () => {
+  it("shows the translated network text when the connection drops", async () => {
     global.fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
     document.getElementById("note").dispatchEvent(new Event("change"));
     await flush();
-    expect(toasts).toEqual([{ message: "Reload and retry", type: "error" }]);
+    expect(toasts).toEqual([{ message: "Unreachable", type: "error" }]);
+  });
+
+  it("shows the generic text and request id for an HTML error page", async () => {
+    global.fetch = vi.fn(
+      async () =>
+        new Response("<html></html>", {
+          status: 500,
+          headers: { "X-Request-Id": "abcdef0123456789" },
+        }),
+    );
+    document.getElementById("note").dispatchEvent(new Event("change"));
+    await flush();
+    expect(toasts).toEqual([
+      { message: "Reload and retry [abcdef01]", type: "error" },
+    ]);
   });
 });

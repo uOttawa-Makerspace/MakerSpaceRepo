@@ -11,6 +11,9 @@ fr:
       not_found: "Cette page ou cet élément est introuvable. Il a peut-être été supprimé, ou le lien est erroné."
       unprocessable: "Votre demande n'a pas pu être traitée. Rechargez la page et réessayez."
       parameter_missing: "Il manque des informations obligatoires dans le formulaire (%{param}). Rechargez la page et réessayez."
+      request_failed: "La requête a échoué et le serveur n'a donné aucune raison. Rechargez la page et réessayez. Si le problème persiste, communiquez avec le personnel du makerspace."
+      copy_failed: "Le texte n'a pas pu être copié. Sélectionnez-le et copiez-le manuellement."
+      network: "Le serveur est inaccessible. Vérifiez votre connexion et réessayez."
     bookings:
       bulk_status_invalid: "Choisissez Approuver ou Refuser pour les réservations sélectionnées, puis soumettez à nouveau."
       recurring_invalid: "Une réservation récurrente nécessite une fréquence de répétition et une date de fin valide."
@@ -18,8 +21,6 @@ fr:
       approve_failed: "La réservation n'a pas pu être approuvée :"
       js:
         failed_title: "Échec de la réservation"
-        network: "Le serveur est inaccessible. Vérifiez votre connexion et réessayez."
-        no_reason: "La requête a échoué et le serveur n'a donné aucune raison. Rechargez la page et réessayez. Si le problème persiste, communiquez avec le personnel du makerspace."
         feed: "Les réservations n'ont pas pu être chargées. Rechargez la page pour réessayer."
         unavailable_title: "Réservation indisponible"
         unavailable: "Cette réservation n'a pas pu être ouverte."
@@ -79,7 +80,6 @@ fr:
         approve_invalid: "L'approbation n'a pas pu être enregistrée; aucun insigne n'a été attribué :"
         revoke_invalid: "La soumission n'a pas pu être révoquée :"
     lockers:
-      request_failed: "La modification n'a pas pu être enregistrée. Rechargez la page et réessayez."
       range_invalid: "La fin de la plage doit être supérieure au début"
       not_accepted: "Les nouvelles locations de casiers ne sont pas acceptées pour le moment."
       renter_not_found: "Utilisateur introuvable"

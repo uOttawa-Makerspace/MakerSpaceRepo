@@ -24,8 +24,8 @@ vi.mock("../../../app/javascript/src/csrf", () => ({ csrfHeaders: (h) => h }));
 
 const PAGE = `
 <div id="booking_toast"
-  data-failed-title="Booking failed" data-network="Server unreachable"
-  data-no-reason="No reason given" data-feed="Bookings not loaded"
+  data-failed-title="Booking failed"
+  data-feed="Bookings not loaded"
   data-unavailable-title="Booking unavailable" data-unavailable="Could not open it">
   <strong id="toast_title"></strong><div id="toast_text"></div>
 </div>
@@ -66,6 +66,8 @@ beforeEach(async () => {
   window.scrollTo = vi.fn();
   global.confirm = vi.fn(() => true);
   document.body.innerHTML = PAGE;
+  document.documentElement.dataset.requestNetwork = "Server unreachable";
+  document.documentElement.dataset.requestFailed = "No reason given";
   vi.resetModules();
   await import("../../../app/javascript/entrypoints/sub_space_booking.js");
   document.dispatchEvent(new Event("turbo:load"));
@@ -89,6 +91,15 @@ describe("a failed booking request", () => {
   it("says no reason came back when the answer is not JSON", async () => {
     await respond(reply(500, "<html>Internal Server Error</html>"));
     expect(toast()).toBe("No reason given");
+  });
+
+  it("adds the request id to the generic text when the answer carries one", async () => {
+    await respond({
+      ok: false,
+      headers: new Headers({ "X-Request-Id": "abcdef0123456789" }),
+      text: async () => "<html></html>",
+    });
+    expect(toast()).toBe("No reason given [abcdef01]");
   });
 
   it("says the server could not be reached when the request itself fails", async () => {
@@ -159,7 +170,7 @@ describe("a failed booking lookup", () => {
   it("shows the server's reason with its reference", async () => {
     await open({
       ok: false,
-      headers: { get: () => "application/json" },
+      headers: new Headers({ "content-type": "application/json" }),
       text: async () =>
         JSON.stringify({ error: "Not allowed.", reference: "aa11bb22" }),
     });
@@ -169,9 +180,29 @@ describe("a failed booking lookup", () => {
   it("falls back to the translated text for an answer that is not JSON", async () => {
     await open({
       ok: true,
-      headers: { get: () => "text/html" },
+      headers: new Headers({ "content-type": "text/html" }),
       text: async () => "<html></html>",
     });
+    expect(toast()).toBe("Could not open it");
+  });
+
+  it("shows the translated text for an OK JSON answer with no body", async () => {
+    await open({
+      ok: true,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => "",
+    });
+    expect(title()).toBe("Booking unavailable");
+    expect(toast()).toBe("Could not open it");
+  });
+
+  it("shows the translated text when the booking cannot be filled into the form", async () => {
+    await open({
+      ok: true,
+      headers: new Headers({ "content-type": "application/json" }),
+      text: async () => JSON.stringify({ name: "Lab" }),
+    });
+    expect(title()).toBe("Booking unavailable");
     expect(toast()).toBe("Could not open it");
   });
 });

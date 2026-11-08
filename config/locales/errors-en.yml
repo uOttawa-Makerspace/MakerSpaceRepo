@@ -11,6 +11,9 @@ en:
       not_found: "That page or record could not be found. It may have been removed, or the link may be wrong."
       unprocessable: "Your request could not be processed. Reload the page and try again."
       parameter_missing: "The form is missing required information (%{param}). Reload the page and try again."
+      request_failed: "The request failed and the server gave no reason. Reload the page and try again. If it keeps happening, contact the makerspace staff."
+      copy_failed: "The text could not be copied. Select it and copy it by hand."
+      network: "The server could not be reached. Check your connection and try again."
     bookings:
       bulk_status_invalid: "Choose Approve or Decline for the selected bookings, then submit again."
       recurring_invalid: "A repeating booking needs a repeat frequency and a valid end date."
@@ -18,8 +21,6 @@ en:
       approve_failed: "The booking could not be approved:"
       js:
         failed_title: "Booking failed"
-        network: "The server could not be reached. Check your connection and try again."
-        no_reason: "The request failed and the server gave no reason. Reload the page and try again. If it keeps happening, contact the makerspace staff."
         feed: "The bookings could not be loaded. Reload the page to try again."
         unavailable_title: "Booking unavailable"
         unavailable: "This booking could not be opened."
@@ -79,7 +80,6 @@ en:
         approve_invalid: "The approval could not be saved, so no badge was awarded:"
         revoke_invalid: "The submission could not be revoked:"
     lockers:
-      request_failed: "The change could not be saved. Reload the page and try again."
       range_invalid: "Range end must be larger than range start"
       not_accepted: "New locker rentals are not currently accepted."
       renter_not_found: "User not found"

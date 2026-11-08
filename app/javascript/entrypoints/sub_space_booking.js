@@ -9,8 +9,9 @@ import { csrfHeaders } from "../src/csrf";
 import {
   failureText,
   parseBody,
-  RequestFailed,
+  requestJson,
   requestResult,
+  resultError,
   serverError,
 } from "../src/request_error";
 
@@ -307,8 +308,8 @@ document.addEventListener("turbo:load", function () {
 
   // The booking lookup answers JSON only to staff; anything else (a refusal
   // redirected to an HTML page, a server error) is shown as the server's reason, not parsed.
-  async function fetchBooking(id) {
-    const { ok, contentType, text } = await requestResult(
+  function fetchBooking(id) {
+    return requestJson(
       `/sub_space_booking/get_sub_space_booking?id=${id}`,
       {
         headers: {
@@ -316,11 +317,7 @@ document.addEventListener("turbo:load", function () {
           "Content-Type": "application/json",
         },
       },
-      bookingText("network"),
-    );
-    if (ok && contentType.includes("json")) return parseBody(text);
-    throw new RequestFailed(
-      serverError(parseBody(text), bookingText("unavailable")),
+      { fallback: bookingText("unavailable"), requireBody: true },
     );
   }
 
@@ -344,27 +341,29 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("book-recurring").style.display = "none";
     document.getElementById("book-recurring-label").style.display = "none";
 
-    fetchBooking(arg.event.id.split("_")[1]).then((data) => {
-      document.getElementById("book-name").value = data.name;
-      document.getElementById("book-description").value = data.description;
-      start_picker.setDate(Date.parse(data.start_time.slice(0, -6)));
-      end_picker.setDate(Date.parse(data.end_time.slice(0, -6)));
-      document.getElementById("book-recurring").checked = false;
+    fetchBooking(arg.event.id.split("_")[1])
+      .then((data) => {
+        document.getElementById("book-name").value = data.name;
+        document.getElementById("book-description").value = data.description;
+        start_picker.setDate(Date.parse(data.start_time.slice(0, -6)));
+        end_picker.setDate(Date.parse(data.end_time.slice(0, -6)));
+        document.getElementById("book-recurring").checked = false;
 
-      const blockingEl = document.getElementById("book-blocking");
-      if (blockingEl) blockingEl.checked = data.blocking;
+        const blockingEl = document.getElementById("book-blocking");
+        if (blockingEl) blockingEl.checked = data.blocking;
 
-      const isRecurring = data.recurring_booking_id != null;
-      document.getElementById("bookDelete").style.display = isRecurring
-        ? "none"
-        : "block";
-      document.getElementById("bookDeleteRecurringDropdown").style.display =
-        isRecurring ? "block" : "none";
+        const isRecurring = data.recurring_booking_id != null;
+        document.getElementById("bookDelete").style.display = isRecurring
+          ? "none"
+          : "block";
+        document.getElementById("bookDeleteRecurringDropdown").style.display =
+          isRecurring ? "block" : "none";
 
-      document.getElementById("subspace").value = data.sub_space_id;
-      toggleRecurring();
-      openModal();
-    }, showBookingLoadError);
+        document.getElementById("subspace").value = data.sub_space_id;
+        toggleRecurring();
+        openModal();
+      })
+      .catch(showBookingLoadError);
   }
 
   // ---- Flatpickr instances -------------------------------------------------
@@ -523,17 +522,15 @@ document.addEventListener("turbo:load", function () {
 
   // ---- Shared fetch handler -----------------------------------------------
   function makeRequest(request, triggerBtn) {
-    requestResult(request, undefined, bookingText("network"))
-      .then(({ ok, text }) => {
+    requestResult(request)
+      .then((result) => {
+        const { ok, text } = result;
         const parsed = parseBody(text);
 
         // A refusal with no per-field errors (a server error, a missing record): say why, and keep the form.
         if (!ok && !parsed?.errors) {
           triggerBtn?.removeAttribute("disabled");
-          showToast(
-            bookingText("failedTitle"),
-            serverError(parsed, bookingText("noReason")),
-          );
+          showToast(bookingText("failedTitle"), resultError(result));
           return;
         }
 
@@ -590,10 +587,7 @@ document.addEventListener("turbo:load", function () {
       })
       .catch((error) => {
         triggerBtn?.removeAttribute("disabled");
-        showToast(
-          bookingText("failedTitle"),
-          failureText(error, bookingText("noReason")),
-        );
+        showToast(bookingText("failedTitle"), failureText(error));
       });
   }
 
