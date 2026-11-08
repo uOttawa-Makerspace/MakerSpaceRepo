@@ -246,7 +246,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
     it "redirects to root with the missing-param message when volunteer_hour is absent" do
       post volunteer_hours_path, params: {}
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to match(/param is missing/)
+      expect(flash[:alert]).to match(/The form is missing required information/)
     end
   end
 
