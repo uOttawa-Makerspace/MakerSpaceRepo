@@ -164,6 +164,19 @@ RSpec.describe User, type: :model do
   end
 
   describe "scopes" do
+    describe ".key_assignable" do
+      it "includes staff and admins, and anyone with a key request, and nobody else" do
+        staff = create(:user, :staff)
+        admin = create(:user, :admin)
+        requester = create(:user)
+        create(:key_request, :all_questions_answered, user: requester, supervisor: admin, space: create(:space))
+        bystander = create(:user)
+
+        expect(User.key_assignable).to include(staff, admin, requester)
+        expect(User.key_assignable).not_to include(bystander)
+      end
+    end
+
     context "#created_at_month" do
       it "should return users created in the specified month" do
         # Test a specific month to avoid conflicts

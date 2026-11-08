@@ -362,6 +362,11 @@ class User < ApplicationRecord
   }
   
   scope :staff, -> { where(role: %w[admin staff]) }
+
+  # Everyone who may be offered a key: staff and admins (listed whether or not
+  # they have filed a key request) plus anyone who has a key request, such as a
+  # Teams program member. Whether the request is approved is checked on assign.
+  scope :key_assignable, -> { staff.or(where(id: KeyRequest.select(:user_id))) }
   
   scope :students, -> { where(identity: STUDENT_IDENTITIES) }
   

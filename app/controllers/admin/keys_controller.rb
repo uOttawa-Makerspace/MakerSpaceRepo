@@ -81,17 +81,10 @@ class Admin::KeysController < AdminAreaController
       User.where(role: "admin").order("LOWER(name) ASC").pluck(:name, :id)
     @staff_options =
       User
-        .staff
+        .key_assignable
+        .includes(:key_request)
         .order("LOWER(name) ASC")
-        .map do |user|
-          label = ""
-          if user.key_request.blank?
-            label = " (No request form)"
-          elsif user.key_request.status_waiting_for_approval?
-            label = " (Request form awaiting approval)"
-          end
-          ["#{user.name} #{label}", user.id]
-        end
+        .map { |user| ["#{user.name} #{request_label(user.key_request)}", user.id] }
   end
 
   def assign_key
@@ -155,6 +148,16 @@ class Admin::KeysController < AdminAreaController
       :custom_keycode,
       :additional_info
     )
+  end
+
+  def request_label(key_request)
+    if key_request.blank?
+      " (No request form)"
+    elsif key_request.status_waiting_for_approval?
+      " (Request form awaiting approval)"
+    else
+      ""
+    end
   end
 
   def holder_approved?(user)
