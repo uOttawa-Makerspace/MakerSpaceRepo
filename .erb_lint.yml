@@ -1,4 +1,9 @@
 EnableDefaultLinters: false
+# CI installs gems into vendor/bundle (and packages into node_modules) inside
+# the repo; --lint-all must not lint their templates.
+exclude:
+  - "**/vendor/**/*"
+  - "**/node_modules/**/*"
 linters:
   SpaceAroundErbTag:
     enabled: true
