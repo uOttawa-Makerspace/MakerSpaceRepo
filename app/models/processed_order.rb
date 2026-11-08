@@ -21,6 +21,7 @@
 class ProcessedOrder < ApplicationRecord
   # Raised only to be reported (Rails.error.report).
   class SpentOrderStepFailed < StandardError; end
+  class DispatchFailed < StandardError; end
 
   STATUSES = %w[received applied failed].freeze
   MAX_ATTEMPTS = 10
@@ -85,7 +86,8 @@ class ProcessedOrder < ApplicationRecord
       queued = begin
         ApplyProcessedOrderJob.perform_later(order_id, token)
       rescue StandardError => e
-        Rails.logger.error("[ProcessedOrder] could not queue order #{order_id}: #{e.class}")
+        report_dispatch_failure(DispatchFailed.new("queueing order #{order_id} failed (#{e.class})"),
+                                step: "queue_order", order_id: order_id, error_class: e.class.name)
         false
       end
       if queued
@@ -96,7 +98,8 @@ class ProcessedOrder < ApplicationRecord
     end
     queued_ids
   rescue StandardError => e
-    Rails.logger.error("[ProcessedOrder] dispatch failed: #{e.class}")
+    report_dispatch_failure(DispatchFailed.new("handing out the due orders failed (#{e.class})"),
+                            step: "dispatch_due", error_class: e.class.name)
     []
   end
 
@@ -137,7 +140,7 @@ class ProcessedOrder < ApplicationRecord
       # a savepoint, so a failing UPDATE inside a caller's open transaction does not abort that transaction
       transaction(requires_new: true) { connection.select_rows(sql) }
     rescue StandardError => e
-      report_spent_order_failure(SpentOrderStepFailed.new("marking the spent orders failed raised (#{e.class})"),
+      report_dispatch_failure(SpentOrderStepFailed.new("marking the spent orders failed raised (#{e.class})"),
                                  step: "fail_exhausted", error_class: e.class.name)
       return []
     end
@@ -156,12 +159,12 @@ class ProcessedOrder < ApplicationRecord
     rows.map(&:first)
   end
 
-  def self.report_spent_order_failure(error, **context)
+  def self.report_dispatch_failure(error, **context)
     Rails.error.report(error, handled: true, severity: :error, context: context)
   rescue StandardError => e
     Rails.logger.error("[ProcessedOrder] could not report #{error.class}: #{e.class}")
   end
-  private_class_method :report_spent_order_failure
+  private_class_method :report_dispatch_failure
 
   # An application attempt failed (its transaction is already rolled back). Only the run that still holds the order
   # (received, `token` is its lease) records it: in a small transaction with the lock wait bounded (a run holding the row

@@ -11,18 +11,19 @@ require "rails_helper"
 # and a file that no longer has one must be taken off the list.
 module RescueGuard
   BROAD_RESCUE = /\A(\s*)rescue\b(?:\s*=>\s*\w+|\s+(?:StandardError|Exception)\b.*)?\s*(?:#.*)?\z/
-  HANDLES_THE_ERROR = /\braise\b|report_unexpected|Rails\.error|Rails\.logger|\blogger\.|\.report\(|Airbrake/
+  # report_* covers a rescue that hands the error to a helper that reports it (report_checkout_failure ...);
+  # note_error keeps it for the run's report.
+  HANDLES_THE_ERROR = /\braise\b|report_\w+|note_error|Rails\.error|Rails\.logger|\blogger\.|\.report\(|Airbrake/
 
   SILENT_RESCUES = {
     "app/controllers/admin/events_controller.rb" => 1, # err-b4
     "app/controllers/admin/uni_programs_controller.rb" => 1, # err-b4
     "app/controllers/repositories_controller.rb" => 2, # err-b5
     "app/controllers/staff_dashboard_controller.rb" => 1, # err-b3
-    "app/jobs/apply_processed_order_job.rb" => 1, # err-d
-    "app/models/job_order/draft_sweep.rb" => 4, # err-d (one re-raises after the block, check)
-    "app/models/locker_rental.rb" => 3, # err-d
-    "app/models/processed_order.rb" => 1, # err-d
-    "app/services/shop_order_applier.rb" => 1, # err-d
+    # record_failure! stores the error on the row and reports it; it never raises
+    "app/jobs/apply_processed_order_job.rb" => 1,
+    # the run keeps the error and flush reports it, or the signal is re-raised after the flush
+    "app/models/job_order/draft_sweep.rb" => 2
   }.freeze
 end
 
