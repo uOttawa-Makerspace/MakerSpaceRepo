@@ -76,7 +76,7 @@ RSpec.describe "Toasts and copy buttons", type: :system do
       find(".clipboard-btn", text: "Copy").click
 
       expect(clipboard_writes).to eq(["SAVE-1234"])
-      expect(page).to have_css(".popover", text: "Copied !")
+      expect(page).to have_css(".popover", text: "Copied!")
     end
   end
 

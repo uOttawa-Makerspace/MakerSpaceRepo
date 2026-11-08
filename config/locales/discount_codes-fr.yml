@@ -1,0 +1,31 @@
+fr:
+  discount_codes:
+    index:
+      # %{store_link} = link to the MakerStore
+      title_html: "Vous pouvez utiliser ces rabais au %{store_link}"
+      redeem_more: "Échangez vos CC ici"
+      learn_more: "Plus sur les CC"
+      # %{amount} = dollar value of the coupon, %{store_link} = link to the MakerStore
+      coupon_title_html: "%{amount} $ de rabais au %{store_link}"
+      use_code: "Utilisez le code:"
+      copy: "Copier"
+      copied: "C'est copié!"
+      empty:
+        title: "Vous n'avez pas de coupons."
+        # %{redeem_link} = link to the redemption page, text from link_text
+        body_html: "Échangez vos CC %{redeem_link}"
+        link_text: "ici"
+    new:
+      title: "Échangez vos CC!"
+      # %{store_link} = link to the MakerStore
+      subtitle_html: "Obtenez des rabais et magasinez au %{store_link}"
+      # %{amount} = dollar value of the coupon
+      coupon_title: "%{amount} $ de rabais au MakerStore"
+      # %{cost} = number of CCs the coupon costs
+      coupon_price: "Prix du coupon: %{cost} CC"
+      redeem: "Échanger"
+      confirm: "Êtes-vous certain de vouloir échanger %{cost} CC contre ce coupon? Ceci est irréversible."
+      empty:
+        title: "Désolé, il n'y a pas de coupons disponibles en ce moment."
+        # %{email_link} = mailto link to the MakerRepo email
+        body_html: "Revenez une autre fois ou contactez-nous à %{email_link}."

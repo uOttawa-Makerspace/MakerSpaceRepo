@@ -1,0 +1,31 @@
+en:
+  discount_codes:
+    index:
+      # %{store_link} = link to the MakerStore
+      title_html: "You can use these discount codes in our %{store_link}"
+      redeem_more: "Redeem more discount codes here"
+      learn_more: "Learn about CCs"
+      # %{amount} = dollar value of the coupon, %{store_link} = link to the MakerStore
+      coupon_title_html: "$%{amount} off %{store_link}"
+      use_code: "Use code:"
+      copy: "Copy"
+      copied: "Copied!"
+      empty:
+        title: "You don't have any coupons."
+        # %{redeem_link} = link to the redemption page, text from link_text
+        body_html: "Redeem your CCs %{redeem_link}"
+        link_text: "here"
+    new:
+      title: "Redeem your CCs!"
+      # %{store_link} = link to the MakerStore
+      subtitle_html: "Get discounts and shop at our %{store_link}"
+      # %{amount} = dollar value of the coupon
+      coupon_title: "$%{amount} off our MakerStore"
+      # %{cost} = number of CCs the coupon costs
+      coupon_price: "Coupon price: %{cost} CCs"
+      redeem: "Redeem"
+      confirm: "Are you sure you want to redeem %{cost} CCs for this coupon? This can't be undone."
+      empty:
+        title: "Sorry, there are no coupons available right now."
+        # %{email_link} = mailto link to the MakerRepo email
+        body_html: "Please come back another day or contact us at %{email_link}."

@@ -49,7 +49,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "shows the empty state when the user has none" do
         shop_log_in!(user)
         get discount_codes_path
-        expect(response.body).to include("You don't have any coupons.")
+        expect(response.body).to include(ERB::Util.html_escape("You don't have any coupons."))
       end
 
       it "gives staff and admin the same own-codes-only view" do
@@ -73,7 +73,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         shop_log_in!(user)
         get new_discount_code_path
         expect(response).to have_http_status(:ok)
-        expect(response.body.scan("Are you sure you want to buy the coupon").size).to eq(2)
+        expect(response.body.scan("Are you sure you want to redeem").size).to eq(2)
         expect(response.body).to include("$5 off our MakerStore")
         expect(response.body).to include("$10 off our MakerStore")
         expect(response.body).not_to include("$99 off")
@@ -82,7 +82,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "shows the sold-out message when nothing is unclaimed" do
         shop_log_in!(user)
         get new_discount_code_path
-        expect(response.body).to include("we don't have any coupons to offer")
+        expect(response.body).to include("Sorry, there are no coupons available right now.")
       end
     end
 
@@ -381,9 +381,9 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
       it "is public: guests see the explainer and a sign-in prompt, with no balance card" do
         get cc_moneys_path
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include("What Are CC Points?")
+        expect(response.body).to include("What Are CEED Credits?")
         expect(response.body).not_to include("Your CC Balance")
-        expect(response.body).not_to include("Redeem Points")
+        expect(response.body).not_to include(">Redeem CCs</a>")
         expect(response.body).to include("Ready to Start Earning?")
         expect(response.body).to include(%(href="#{login_path}"))
       end
@@ -398,7 +398,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         ActiveSupport::Notifications.unsubscribe(sub)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("Your CC Balance")
-        expect(response.body).to match(/30\s*<small/)
+        expect(response.body).to match(%r{display-5[^>]*>\s*30\s*</h2>})
         expect(sqls.grep(/FOR (NO KEY )?UPDATE/)).to be_empty
         expect(sqls.grep(/\AUPDATE "users"/).grep(/wallet/)).to be_empty
         expect(user.reload.wallet).to eq(0) # the cache is not written by a page view

@@ -44,6 +44,7 @@ Disallow: /price_rules
 Disallow: /discount_codes
 Disallow: /coupon_codes
 Disallow: /cc_moneys
+Disallow: /rewards
 Disallow: /chat_messages
 
 # Keys & Certifications
