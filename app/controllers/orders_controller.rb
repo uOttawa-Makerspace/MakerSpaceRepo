@@ -26,11 +26,10 @@ class OrdersController < DevelopmentProgramsController
   # cannot overdraw the wallet.
   def create
     outcome, order, kit_project_ids = Order.checkout!(current_order, current_user)
-    refusal = checkout_refusal(outcome)
+    refusal = checkout_refusal(outcome, order)
     if refusal
       # nothing was written; the cart (session[:order_id]) is kept
-      flash[:alert] = refusal
-      redirect_back(fallback_location: root_path)
+      refuse_checkout(refusal)
       return
     end
 
@@ -40,14 +39,19 @@ class OrdersController < DevelopmentProgramsController
     flash[:notice] = "Your Order was successfully processed."
     redirect_to orders_path
   rescue CcMoney::InsufficientBalance
-    flash[:alert] = "Not enough Cc Points."
-    redirect_back(fallback_location: root_path)
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, ActiveRecord::RecordNotFound,
-         ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked, CcMoney::InvalidAmount => e
+    refuse_checkout(t_shop(:not_enough_points))
+  rescue ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked
     # checkout!'s transaction has rolled back: nothing was completed or debited
-    Rails.logger.warn("[orders#create] checkout not completed: #{e.class}")
-    flash[:alert] = "Something went wrong"
-    redirect_back(fallback_location: root_path)
+    Rails.logger.warn("[orders#create] checkout not completed: the cart or wallet was busy")
+    refuse_checkout(t_shop(:checkout_busy))
+  rescue ActiveRecord::RecordNotFound
+    Rails.logger.warn("[orders#create] checkout not completed: an item in the cart no longer exists")
+    refuse_checkout(t_shop(:checkout_item_removed))
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, CcMoney::InvalidAmount => e
+    # The cart held data checkout cannot price or save (the transaction rolled back, nothing was
+    # debited): not something the shopper can fix, so it is reported with the reference.
+    report_unexpected(e, source: "orders#create")
+    refuse_checkout(unexpected_error_message)
   end
 
   def destroy
@@ -75,31 +79,37 @@ class OrdersController < DevelopmentProgramsController
 
   # The message for an outcome of Order.checkout! that did not complete the order, or nil when it did
   # (:completed, or :already_completed: a concurrent submit of the same cart completed it).
-  def checkout_refusal(outcome)
+  def checkout_refusal(outcome, order)
     case outcome
     when :completed, :already_completed then nil
-    when :invalid_items then INVALID_CART_MESSAGE
-    when :empty then EMPTY_CART_MESSAGE
-    else "Something went wrong" # :invalid or :not_open
+    when :invalid_items then t_shop(:cart_item_unavailable)
+    when :empty then t_shop(:cart_empty)
+    when :not_open then t_shop(:checkout_cart_closed)
+    else checkout_not_saved_message(order) # :invalid
     end
   end
 
-  EMPTY_CART_MESSAGE = "Your cart is empty."
-  INVALID_CART_MESSAGE = "An item in your cart can no longer be bought; remove it and try again."
+  def checkout_not_saved_message(order)
+    validation_message(order, "errors.shop.checkout_not_saved")
+  end
+
+  def refuse_checkout(message)
+    flash[:alert] = message
+    redirect_back(fallback_location: root_path)
+  end
+
+  def t_shop(key)
+    I18n.t(key, scope: "errors.shop")
+  end
 
   # Early, friendly refusal (checkout! re-checks under the wallet lock), on the SAME total the
   # charge uses (Order#subtotal of the open cart). A read: no lock, no cache write.
   def check_wallet
     total = current_order.subtotal
-    if total.nil?
-      flash[:alert] = INVALID_CART_MESSAGE
-      redirect_back(fallback_location: root_path)
-      return
-    end
+    return refuse_checkout(t_shop(:cart_item_unavailable)) if total.nil?
     return if current_user.get_total_cc >= total
 
-    flash[:alert] = "Not enough Cc Points."
-    redirect_back(fallback_location: root_path)
+    refuse_checkout(t_shop(:not_enough_points))
   end
 
   def check_permission

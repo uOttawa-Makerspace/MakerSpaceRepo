@@ -146,6 +146,26 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You have already ordered this item")
     end
 
+    it "refuses a duplicate project in French when the page is French" do
+      pp = pp_with_cc(10)
+      add_to_cart(pp)
+      post order_items_path, params: { order_item: { proficient_project_id: pp.id, quantity: 1 }, locale: "fr" }
+      expect(flash[:alert]).to eq("Vous avez déjà commandé cet article")
+    end
+
+    it "an admin revoking a badge that cannot be saved is told why" do
+      item = cart_for(user, 10).order_items.first
+      shop_log_in!(admin)
+      allow(OrderItem).to receive(:find).and_return(item)
+      allow(item).to receive(:update) do
+        item.errors.add(:base, "Status is locked")
+        false
+      end
+      post order_item_revoke_path(item)
+      expect(response).to redirect_to(admin_index_path)
+      expect(flash[:alert]).to eq("The badge could not be revoked: Status is locked")
+    end
+
     it "refuses when the user lacks the required training badges" do
       pp = pp_with_cc(10)
       create(:training_requirement, proficient_project: pp, training: create(:training), level: "Beginner")
@@ -846,27 +866,67 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
         original.call(order.reload, payer)
       end
       post orders_path
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to eq("This cart was already checked out or can no longer be changed. Nothing was charged. Check your orders, or start a new cart.")
       expect(flash[:notice]).not_to eq("Your Order was successfully processed.")
       expect(session[:order_id]).to eq(order.id)
       expect(CcMoney.where(order_id: order.id)).to be_empty
       expect(user.reload.wallet).to eq(50)
     end
 
-    [ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, ActiveRecord::RecordNotFound,
-     ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked].each do |error_class|
-      it "a #{error_class.name.demodulize} from checkout answers 'Something went wrong', not a 500" do
+    {
+      ActiveRecord::RecordNotFound => "An item in your cart was removed while you were checking out. Nothing was charged. Review your cart and try again.",
+      ActiveRecord::LockWaitTimeout => "The shop is busy right now. Nothing was charged. Please try again in a moment.",
+      ActiveRecord::Deadlocked => "The shop is busy right now. Nothing was charged. Please try again in a moment."
+    }.each do |error_class, message|
+      it "a #{error_class.name.demodulize} from checkout says what happened, not a 500" do
         credit_cc!(user, 50)
         add_to_cart(pp_with_cc(10))
         allow(Order).to receive(:checkout!).and_raise(error_class)
         post orders_path
         expect(response).to have_http_status(:redirect)
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq(message)
         expect(user.orders.last.order_status.name).to eq("In progress")
       end
     end
 
-    it "a legacy negative price snapshot in the cart rolls the checkout back: 'Something went wrong', nothing debited" do
+    {
+      ActiveRecord::RecordInvalid => -> { ActiveRecord::RecordInvalid.new(Order.new) },
+      ActiveRecord::RecordNotSaved => -> { ActiveRecord::RecordNotSaved.new("secret detail", Order.new) }
+    }.each do |error_class, build|
+      it "a #{error_class.name.demodulize} from checkout is reported and answers with the reference code" do
+        credit_cc!(user, 50)
+        add_to_cart(pp_with_cc(10))
+        allow(Order).to receive(:checkout!).and_raise(build.call)
+        expect(Rails.error).to receive(:report).with(instance_of(error_class), hash_including(context: hash_including(:reference, source: "orders#create")))
+        post orders_path
+        expect(response).to have_http_status(:redirect)
+        expect(flash[:alert]).to match(/\ASomething unexpected went wrong on our side\..*quote reference \w{8}\.\z/)
+        expect(flash[:alert]).not_to include("secret detail")
+        expect(user.orders.last.order_status.name).to eq("In progress")
+      end
+    end
+
+    it "answers in French when the page is French" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      allow(Order).to receive(:checkout!).and_raise(ActiveRecord::LockWaitTimeout)
+      post orders_path, params: { locale: "fr" }
+      expect(flash[:alert]).to eq("La boutique est occupée en ce moment. Rien n'a été débité. Veuillez réessayer dans un instant.")
+    end
+
+    it "an order that does not save is refused with its validation messages; nothing charged" do
+      credit_cc!(user, 50)
+      add_to_cart(pp_with_cc(10))
+      allow(Order).to receive(:checkout!) do |order, _user|
+        order.errors.add(:base, "Something is off")
+        [:invalid, order, []]
+      end
+      post orders_path
+      expect(flash[:alert]).to eq("Your order could not be saved, so nothing was charged. Something is off")
+      expect(user.reload.wallet).to eq(50)
+    end
+
+    it "a legacy negative price snapshot in the cart rolls the checkout back with the reference code, nothing debited" do
       credit_cc!(user, 50)
       add_to_cart(pp_with_cc(10))
       add_to_cart(pp_with_cc(5))
@@ -874,7 +934,7 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       order.order_items.last.update_columns(unit_price: -5, total_price: -5)
       post orders_path
       expect(response).to have_http_status(:redirect)
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to start_with("Something unexpected went wrong on our side.")
       expect(order.reload.order_status.name).to eq("In progress")
       expect(CcMoney.where(order_id: order.id)).to be_empty
       expect(user.reload.wallet).to eq(50)
