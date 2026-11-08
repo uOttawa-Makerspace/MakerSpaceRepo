@@ -23,13 +23,13 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
         expect(response).to have_http_status(:success)
       end
       it "should return a 200 and list of bookings for the subspace" do
-        booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
+        create(:sub_space_booking, sub_space: @subspace, user: @user)
         get :bookings, params: { room: @subspace.id }
         expect(JSON.parse(response.body).length).to eq(1)
       end
 
       it "should return a 200 and list of bookings for the subspace and only that subspace" do
-        booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
+        create(:sub_space_booking, sub_space: @subspace, user: @user)
         @other_space = create(:space)
         @other_subspace = create(:sub_space, space: @other_space)
         @other_booking =

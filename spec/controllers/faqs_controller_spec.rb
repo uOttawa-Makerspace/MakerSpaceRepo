@@ -24,7 +24,7 @@ RSpec.describe FaqsController, type: :controller do
     context "not logged in" do
       it "should redirect to login" do
         session[:user_id] = nil
-        faq = create :faq
+        create :faq
         expect {
           post :create, params: { faq: (attributes_for :faq) }
         }.to change(Faq, :count).by(0)
@@ -34,7 +34,7 @@ RSpec.describe FaqsController, type: :controller do
 
     context "logged in" do
       it "should create FAQ entry" do
-        faq = create :faq
+        create :faq
         expect {
           post :create, params: { faq: (attributes_for :faq) }
         }.to change(Faq, :count).by(1)

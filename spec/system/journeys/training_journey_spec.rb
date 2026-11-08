@@ -90,7 +90,6 @@ RSpec.describe "Journey: training exam", type: :system, skip_bullet: true do
   end
 
   it "a failed exam shows the failure notice, no certification, and a retake is issued" do
-    exam = nil
     as_actor(:staff) do
       log_in_as(staff, to: staff_training_session_path(fx[:session]))
       accept_confirm { click_button "Send Exams" }

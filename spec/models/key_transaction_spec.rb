@@ -102,12 +102,10 @@ RSpec.describe KeyTransaction, type: :model do
       @space = create(:space)
       @key =
         create(:key, :regular_key_type, :inventory_status, space_id: @space.id)
-      kt1 =
-        create(:key_transaction, :returned, user_id: @user.id, key_id: @key.id)
-      kt2 = create(:key_transaction, user_id: @user.id, key_id: @key.id)
-      kt3 =
-        create(
-          :key_transaction,
+      create(:key_transaction, :returned, user_id: @user.id, key_id: @key.id)
+      create(:key_transaction, user_id: @user.id, key_id: @key.id)
+      create(
+        :key_transaction,
           :returned,
           :deposit_returned,
           user_id: @user.id,

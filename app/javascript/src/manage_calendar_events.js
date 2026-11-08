@@ -12,12 +12,18 @@ function showStaffLoadError() {
   document.getElementById("staff_load_error").classList.remove("d-none");
 }
 
+function addEventButton() {
+  return /** @type {HTMLButtonElement} */ (
+    document.getElementById("addEventButton")
+  );
+}
+
 // "Not ready" is the state at every start, including a page Turbo restored
 // from its cache: the modal is closed to every entry point until the
 // handlers below are attached again.
 function resetReadyState() {
   document.getElementById("eventModal").removeAttribute("data-ready");
-  document.getElementById("addEventButton").disabled = true;
+  addEventButton().disabled = true;
   document.getElementById("staff_load_error").classList.add("d-none");
 }
 
@@ -53,10 +59,15 @@ onPageLoad("#eventModal", async () => {
   const staffSelect = document.getElementById("staff_select");
   let tomSelect;
 
-  const fetchedStaffUnavailabilitiesRes = await fetch(
-    "/admin/calendar/utc_unavailabilities_json/" +
-      document.getElementById("space_id").value,
-  ).catch((error) => console.error(error));
+  let fetchedStaffUnavailabilitiesRes = null;
+  try {
+    fetchedStaffUnavailabilitiesRes = await fetch(
+      "/admin/calendar/utc_unavailabilities_json/" +
+        document.getElementById("space_id").value,
+    );
+  } catch (error) {
+    console.error(error);
+  }
   // Without the staff data the modal must not be used: tell the admin and
   // leave "Add Event" disabled.
   if (!fetchedStaffUnavailabilitiesRes?.ok) {
@@ -493,5 +504,5 @@ onPageLoad("#eventModal", async () => {
 
   // Every modal handler above is attached: the page may now open the modal.
   modal.dataset.ready = "true";
-  document.getElementById("addEventButton").disabled = false;
+  addEventButton().disabled = false;
 });

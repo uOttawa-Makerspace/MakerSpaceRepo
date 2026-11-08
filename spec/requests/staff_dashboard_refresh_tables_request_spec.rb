@@ -172,7 +172,7 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
     before { LabSession.where(space: space).update_all(sign_out_time: 1.minute.ago) }
 
     it "does not return certifications of users outside the room" do
-      orphan = create(:certification, user: create(:user, :regular_user))
+      create(:certification, user: create(:user, :regular_user))
       refresh
       expect(json["certification"]).to eq([])
     end

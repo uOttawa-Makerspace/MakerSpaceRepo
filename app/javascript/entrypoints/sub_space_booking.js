@@ -44,6 +44,7 @@ function userPicker(select) {
         return el;
       },
     },
+    /** @this {import("tom-select").default} */
     load(query, callback) {
       // an unanswered lookup is forgotten, so typing the same text again asks the server again
       const skip = () => {

@@ -172,9 +172,9 @@ RSpec.describe "Admin calendar contract", type: :request do
 
     # N+1 pinned
     it "orders staff by name descending", skip_bullet: true do
-      s1 = StaffSpace.create!(space: space, color: "#111111",
+      StaffSpace.create!(space: space, color: "#111111",
                               user: create(:user, :staff, name: "Zeta"))
-      s2 = StaffSpace.create!(space: space, color: "#222222",
+      StaffSpace.create!(space: space, color: "#222222",
                               user: create(:user, :staff, name: "Alpha"))
       get utc_unavailabilities_json_admin_calendar_index_path(id: space.id)
       expect(response.parsed_body.map { |e| e["name"] })

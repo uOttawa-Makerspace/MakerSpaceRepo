@@ -200,6 +200,9 @@
                                    end
 
                       # Next level requirements
+                      next_projects_total = next_projects_done = next_projects_pct = 0
+                      next_modules_total  = next_modules_done  = next_modules_pct  = 0
+                      next_target_hours   = nil
                       if next_level.present?
                         next_projects_total = training.proficient_projects.select { |p| p.level == next_level }.size
                         next_projects_done  = @proficient_projects_awarded.call(training).where(level: next_level).size
