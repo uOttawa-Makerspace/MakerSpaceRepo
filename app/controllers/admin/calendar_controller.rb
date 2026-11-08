@@ -149,10 +149,20 @@ class Admin::CalendarController < AdminAreaController
   def update_color
     staff_space = StaffSpace.find_by(user_id: params[:user_id], space_id: @user.space_id) if params[:user_id].present?
 
-    if params[:color].present? && staff_space&.update(color: params[:color])
+    if params[:color].blank?
+      render_color_error("errors.calendar.color_blank")
+    elsif staff_space.nil?
+      render_color_error("errors.calendar.staff_not_in_space")
+    elsif staff_space.update(color: params[:color])
       render json: { status: "ok" }
     else
-      render json: { status: "error", error: "An error occurred, try again later." }, status: :unprocessable_entity
+      render_color_error("errors.calendar.color_invalid")
     end
+  end
+
+  private
+
+  def render_color_error(key)
+    render json: { status: "error", error: I18n.t(key) }, status: :unprocessable_entity
   end
 end

@@ -52,6 +52,8 @@ module JsErrorCheck
     { id: "js-error-cal-staff-option", path: %r{/admin/calendar}, message: /calendar-[\w-]+\.js .*Uncaught TypeError: Cannot read properties of undefined \(reading 'split'\)/ },
     # The copy-events dialog calls flatpickr on an element that has no plugin.
     { id: "js-error-cal-copy-flatpickr", path: %r{/admin/calendar}, message: /calendar-[\w-]+\.js .*Uncaught TypeError: \w+\.flatpickr is not a function/ },
+    # A refused staff colour answers 422; Chrome logs it as a resource error while the page shows a toast.
+    { id: "js-error-color-422", path: %r{/admin/calendar}, message: %r{/admin/calendar/update_color - Failed to load resource: the server responded with a status of 422} },
     # Refused bookings answer 422; Chrome logs each as a resource error.
     { id: "js-error-booking-422", path: %r{/sub_space_booking\b}, message: %r{/sub_space_booking - Failed to load resource: the server responded with a status of 422} },
     # After a delete the page follows the redirect with a JSON request that answers 404.
