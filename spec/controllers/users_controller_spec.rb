@@ -438,7 +438,7 @@ RSpec.describe UsersController, type: :controller do
         }.to change(Program, :count).by(0)
         expect(response).to redirect_to root_path
         expect(flash[:alert]).to eq(
-          "An error occurred: A user must me selected; You need to be staff/admin to change the programs."
+          "Only staff and admins can change a user's programs."
         )
       end
     end

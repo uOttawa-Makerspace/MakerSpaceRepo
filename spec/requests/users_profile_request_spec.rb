@@ -451,10 +451,10 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       # the result of the hashing save was ignored (session got N+1 while the DB stayed at N, success mail sent)
       login!(user)
       allow_any_instance_of(User).to receive(:bump_token_version!).and_raise(ActiveRecord::StatementInvalid, "boom")
-      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), handled: true)
+      expect(Rails.error).to receive(:report).with(an_instance_of(ActiveRecord::StatementInvalid), hash_including(handled: true))
       perform_enqueued_jobs { change! }
       expect(response).to have_http_status(:ok)
-      expect(flash[:alert]).to eq("Your password could not be changed. Please try again.")
+      expect(flash[:alert]).to start_with("Your new password could not be saved because of a problem on our side. Nothing was changed.")
       expect(deliveries).to be_empty
       user.reload
       expect(user.authenticate_password(password)).to be(true)
@@ -643,7 +643,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       login!(other)
       post change_programs_users_path, params: { user_id: user.id, volunteer: "1" }
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to start_with("An error occurred:")
+      expect(flash[:alert]).to eq("Only staff and admins can change a user's programs.")
       expect(user.programs).to be_empty
     end
 
@@ -663,7 +663,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       allow_any_instance_of(Program).to receive(:valid?).and_return(false)
       post change_programs_users_path, params: { user_id: user.id, volunteer: "1" }
       expect(response).to redirect_to(user_path(user.username))
-      expect(flash[:alert]).to start_with("The programs could not be updated")
+      expect(flash[:alert]).to start_with("The programs were not updated.")
       expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
     end
 
