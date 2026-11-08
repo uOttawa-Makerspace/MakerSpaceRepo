@@ -228,4 +228,149 @@ RSpec.describe "Admin error messages", type: :request do
       expect(flash[:alert]).to start_with("Les adresses des calendriers n'ont pas été enregistrées")
     end
   end
+
+  describe "teams" do
+    let!(:captain) { create(:user, :staff) }
+    let!(:team) do
+      Team.create!(name: "Alpha").tap { |t| TeamMembership.create!(team: t, user: captain, role: :captain) }
+    end
+    let(:member) { create(:user, :regular_user) }
+
+    it "names the failed create and update, in French too" do
+      post admin_teams_path, params: { team: { name: "" }, captain: captain.id }
+      expect(flash[:alert]).to eq("The team was not created. Name A team name is required.")
+      post admin_teams_path, params: { team: { name: "" }, captain: captain.id, locale: "fr" }
+      expect(flash[:alert]).to start_with("L'équipe n'a pas été créée. ")
+      patch admin_team_path(team), params: { team: { name: "" }, captain: captain.id, locale: "fr" }
+      expect(flash[:alert]).to start_with("L'équipe n'a pas été modifiée. ")
+    end
+
+    it "names the member that could not be added and the role that is not known, in French too" do
+      patch add_member_admin_team_path(team, member_id: member.id), params: { role: "captain", locale: "fr" }
+      expect(flash[:alert]).to start_with("L'utilisateur n'a pas été ajouté à l'équipe. ")
+      patch add_member_admin_team_path(team, member_id: member.id), params: { role: "boss", locale: "fr" }
+      expect(flash[:alert]).to start_with("Choisissez un rôle")
+    end
+
+    it "says which members can be promoted or demoted, in French too" do
+      TeamMembership.create!(team: team, user: member, role: :lead)
+      patch promote_member_admin_team_path(team, member_id: member.id), params: { locale: "fr" }
+      expect(flash[:alert]).to start_with("Le membre n'a pas été promu.")
+      TeamMembership.find_by(user: member).update!(role: :regular_member)
+      patch demote_member_admin_team_path(team, member_id: member.id), params: { locale: "fr" }
+      expect(flash[:alert]).to start_with("Le membre n'a pas été rétrogradé.")
+    end
+  end
+
+  describe "keys" do
+    let!(:space) { create(:space) }
+    let!(:key) { create(:key, :regular_key_type, :inventory_status, space: space, number: 11) }
+
+    it "names the failed update and delete in English" do
+      patch admin_key_path(key), params: { key: { number: "" } }
+      expect(flash[:alert]).to start_with("The key was not updated. ")
+      refuse_writes(Key, :destroy)
+      delete admin_key_path(key)
+      expect(flash[:alert]).to eq("The key was not deleted. Refused for the spec")
+    end
+
+    it "names the failed create and delete in French" do
+      post admin_keys_path, params: { key: { number: 11, space_id: space.id, status: "inventory", key_type: "regular" }, locale: "fr" }
+      expect(flash[:alert]).to start_with("La clé n'a pas été créée. ")
+      refuse_writes(Key, :destroy)
+      delete admin_key_path(key)
+      expect(flash[:alert]).to eq("La clé n'a pas été supprimée. Refused for the spec")
+    end
+
+    it "names the key request that could not be approved or denied" do
+      request = create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: create(:user, :staff), supervisor: create(:user, :admin), space: space)
+      refuse_writes(KeyRequest, :update)
+      patch approve_key_request_admin_keys_path, params: { id: request.id }
+      expect(flash[:alert]).to eq("The key request was not approved. Refused for the spec")
+      patch deny_key_request_admin_keys_path, params: { id: request.id, locale: "fr" }
+      expect(flash[:alert]).to eq("La demande de clé n'a pas été refusée. Refused for the spec")
+    end
+
+    it "says the request is no longer waiting, in French too" do
+      request = create(:key_request, :status_waiting_for_approval, :all_questions_answered, user: create(:user, :staff), supervisor: create(:user, :admin), space: space)
+      request.update_columns(status: KeyRequest.statuses[:approved])
+      patch approve_key_request_admin_keys_path, params: { id: request.id, locale: "fr" }
+      expect(flash[:alert]).to eq("Cette demande de clé n'attend plus d'approbation, elle a donc été laissée telle quelle.")
+    end
+
+    it "says which assignment was refused, in French" do
+      holder = create(:user, :staff)
+      create(:key_request, :status_approved, :all_questions_answered, user: holder, supervisor: create(:user, :admin), space: space)
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id }, locale: "fr" }
+      expect(flash[:alert]).to start_with("La clé n'a pas été attribuée.")
+    end
+
+    it "says which revoke was refused, in French" do
+      patch admin_key_revoke_key_path(key), params: { locale: "fr" }
+      expect(flash[:alert]).to start_with("La clé n'a pas été retirée.")
+    end
+  end
+
+  describe "key transactions" do
+    let!(:transaction_record) do
+      create(:key, :regular_key_type, :inventory_status, space: create(:space), number: 5)
+      KeyTransaction.create!(key: Key.last, user: create(:user, :staff), deposit_amount: 20)
+    end
+
+    it "asks for the return date, in French too" do
+      patch admin_key_transaction_path(transaction_record), params: { key_transaction: { deposit_return_date: "" }, locale: "fr" }
+      expect(flash[:alert]).to eq("Entrez la date de remboursement du dépôt.")
+    end
+
+    it "names the deposit that was not updated" do
+      refuse_writes(KeyTransaction, :update)
+      patch admin_key_transaction_path(transaction_record), params: { key_transaction: { deposit_return_date: "2024-02-02" } }
+      expect(flash[:alert]).to eq("The deposit was not updated. Refused for the spec")
+    end
+  end
+
+  describe "pi readers" do
+    let!(:reader) { create(:pi_reader) }
+
+    it "names the reader that was not updated and goes back to the page" do
+      refuse_writes(PiReader, :update)
+      patch admin_pi_reader_path(reader), params: { pi_reader_params: { pi_location: "Bench" }, locale: "fr" }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Le lecteur n'a pas été modifié. Refused for the spec")
+    end
+
+    it "names the reader that was not registered" do
+      post admin_pi_readers_path, params: { pi_reader_params: { pi_mac_address: "", pi_location: "Door" } }
+      expect(flash[:alert]).to start_with("The reader was not registered. ")
+    end
+  end
+
+  describe "settings" do
+    let!(:course) { create(:course_name) }
+
+    it "names the failed course add, rename and remove" do
+      post add_course_admin_settings_path, params: { name: "" }
+      expect(flash[:alert]).to start_with("The course was not added. ")
+      patch rename_course_admin_settings_path, params: { id: course.id, name: "", locale: "fr" }
+      expect(flash[:alert]).to start_with("Le cours n'a pas été renommé. ")
+      refuse_writes(CourseName, :destroy)
+      delete remove_course_admin_settings_path, params: { id: course.id, locale: "en" }
+      expect(flash[:alert]).to eq("The course was not removed. Refused for the spec")
+    end
+
+    it "names the failed message update and asks for a message, in French" do
+      JobOrderMessage.create!(name: "processed", message: "Done")
+      patch update_job_order_processed_admin_settings_path, params: { job_order_message: { message: "" }, locale: "fr" }
+      expect(flash[:alert]).to start_with("Le message n'a pas été modifié. ")
+      patch update_job_order_processed_admin_settings_path, params: { locale: "fr" }
+      expect(flash[:alert]).to eq("Veuillez entrer un message.")
+    end
+
+    it "names the project whose featured status could not change" do
+      repository = create(:repository)
+      refuse_writes(Repository, :update)
+      patch pin_unpin_repository_admin_settings_path, params: { repository_id: repository.id }
+      expect(flash[:alert]).to eq("The featured status of the project was not changed. Refused for the spec")
+    end
+  end
 end

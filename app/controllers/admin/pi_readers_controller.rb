@@ -25,23 +25,14 @@ class Admin::PiReadersController < AdminAreaController
     end
 
     reader = PiReader.new(attrs)
-    if reader.save
-      flash[:notice] = "Reader registered"
-    else
-      flash[:alert] = reader.errors.full_messages.to_sentence
-    end
+    flash_write(reader, "pi_readers.not_registered", "Reader registered") { reader.save }
     redirect_back(fallback_location: root_path)
   end
 
   def update
-    if raspi = PiReader.find(params[:id])
-      if raspi.update(pi_reader_params)
-        flash[:notice] = "Updated successfully"
-        redirect_back(fallback_location: root_path)
-      else
-        flash[:notice] = "Something went wrong"
-      end
-    end
+    reader = PiReader.find(params[:id])
+    flash_write(reader, "pi_readers.not_updated", "Updated successfully") { reader.update(pi_reader_params) }
+    redirect_back(fallback_location: root_path)
   end
 
   private

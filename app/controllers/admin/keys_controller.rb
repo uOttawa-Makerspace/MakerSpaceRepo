@@ -33,7 +33,7 @@ class Admin::KeysController < AdminAreaController
       flash[:notice] = "Successfully created key."
       redirect_to admin_keys_path
     else
-      flash[:alert] = "Something went wrong while creating the key."
+      flash[:alert] = validation_message(@key, "errors.admin.keys.not_created")
       redirect_to new_admin_key_path
     end
   end
@@ -62,17 +62,12 @@ class Admin::KeysController < AdminAreaController
     redirect_to admin_keys_path, notice: "The key was successfully updated."
   rescue Key::StateError => e
     redirect_to admin_keys_path, alert: e.message
-  rescue ActiveRecord::RecordInvalid
-    redirect_to edit_admin_key_path,
-                alert: "Something went wrong while updating the key."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to edit_admin_key_path, alert: validation_message(e.record, "errors.admin.keys.not_updated")
   end
 
   def destroy
-    if @key.destroy
-      flash[:notice] = "Successfully deleted key."
-    else
-      flash[:alert] = "Something went wrong while trying to delete the key."
-    end
+    flash_write(@key, "keys.not_deleted", "Successfully deleted key.") { @key.destroy }
     redirect_to admin_keys_path
   end
 
@@ -98,7 +93,7 @@ class Admin::KeysController < AdminAreaController
     redirect_to admin_keys_path, notice: "Successfully assigned key"
   rescue ActiveRecord::RecordInvalid, Key::StateError => e
     redirect_to admin_keys_path,
-                alert: failure_message("assign the key", e)
+                alert: failure_message("not_assigned", e)
   end
 
   def revoke_key
@@ -106,7 +101,7 @@ class Admin::KeysController < AdminAreaController
     redirect_to admin_keys_path, notice: "Successfully revoked key"
   rescue ActiveRecord::RecordInvalid, Key::StateError => e
     redirect_to admin_keys_path,
-                alert: failure_message("revoke the key", e)
+                alert: failure_message("not_revoked", e)
   end
 
   def requests
@@ -114,25 +109,11 @@ class Admin::KeysController < AdminAreaController
   end
 
   def approve_key_request
-    if @key_request.status_waiting_for_approval? &&
-         @key_request.update(status: :approved)
-      redirect_to requests_admin_keys_path,
-                  notice: "Successfully approved key request."
-    else
-      redirect_to requests_admin_keys_path,
-                  alert: "Something went wrong while approving the key request."
-    end
+    answer_key_request(:approved, "request_not_approved", "Successfully approved key request.")
   end
 
   def deny_key_request
-    if @key_request.status_waiting_for_approval? &&
-         @key_request.update(status: :in_progress)
-      redirect_to requests_admin_keys_path,
-                  notice: "Successfully denied key request."
-    else
-      redirect_to requests_admin_keys_path,
-                  alert: "Something went wrong while denying the key request."
-    end
+    answer_key_request(:in_progress, "request_not_denied", "Successfully denied key request.")
   end
 
   private
@@ -164,14 +145,24 @@ class Admin::KeysController < AdminAreaController
     user&.key_request&.status_approved? || false
   end
 
-  def failure_message(action, error)
+  # Only a request that is still waiting can be approved or denied.
+  def answer_key_request(status, failure_key, notice)
+    if @key_request.status_waiting_for_approval?
+      flash_write(@key_request, "keys.#{failure_key}", notice) { @key_request.update(status: status) }
+    else
+      flash[:alert] = I18n.t("errors.admin.keys.request_not_waiting")
+    end
+    redirect_to requests_admin_keys_path
+  end
+
+  def failure_message(key, error)
     detail =
       if error.is_a?(ActiveRecord::RecordInvalid)
         error.record.errors.full_messages.to_sentence
       else
         error.message
       end
-    "Something went wrong while trying to #{action}: #{detail}"
+    [I18n.t("errors.admin.keys.#{key}"), detail].join(" ")
   end
 
   def set_key

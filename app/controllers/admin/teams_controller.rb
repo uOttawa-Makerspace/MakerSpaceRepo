@@ -64,7 +64,7 @@ class Admin::TeamsController < AdminAreaController
         redirect_to admin_teams_path, notice: "Successfully created team"
       else
         redirect_to new_admin_team_path,
-                    alert: "Something went wrong while creating the team"
+                    alert: validation_message(@team, "errors.admin.teams.not_created")
       end
     end
   end
@@ -89,22 +89,16 @@ class Admin::TeamsController < AdminAreaController
       redirect_to admin_teams_path, notice: "Successfully updated team"
     else
       redirect_to edit_admin_team_path,
-                  alert: "Something went wrong when trying to update the team."
+                  alert: validation_message(@team, "errors.admin.teams.not_updated")
     end
   end
 
   def add_member
-    tm =
-      TeamMembership.new(
-        user_id: @member.id,
-        team_id: @team.id,
-        role: params[:role]
-      )
-
-    if tm.save
-      flash[:notice] = "Successfully added user."
+    if TeamMembership.roles.key?(params[:role])
+      tm = TeamMembership.new(user_id: @member.id, team_id: @team.id, role: params[:role])
+      flash_write(tm, "teams.member_not_added", "Successfully added user.") { tm.save }
     else
-      flash[:alert] = "Something went wrong while trying to add the user."
+      flash[:alert] = I18n.t("errors.admin.teams.role_unknown")
     end
 
     redirect_to admin_team_path(@team.id)
@@ -134,9 +128,7 @@ class Admin::TeamsController < AdminAreaController
       tm.update(role: :lead)
       flash[:notice] = "Successfully promoted member."
     else
-      flash[
-        :alert
-      ] = "Something went wrong while promoting the team member. You can only promote regular team members."
+      flash[:alert] = I18n.t("errors.admin.teams.cannot_promote")
     end
 
     redirect_to admin_team_path(@team.id)
@@ -151,9 +143,7 @@ class Admin::TeamsController < AdminAreaController
       tm.update(role: :regular_member)
       flash[:notice] = "Successfully demoted member."
     else
-      flash[
-        :alert
-      ] = "Something went wrong while demoting the team member. You can only demote team leads."
+      flash[:alert] = I18n.t("errors.admin.teams.cannot_demote")
     end
 
     redirect_to admin_team_path(@team.id)

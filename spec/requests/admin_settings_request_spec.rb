@@ -134,12 +134,12 @@ RSpec.describe "Admin settings", type: :request do
       expect { instance_exec(&all_calls[:add_course]) }.to change(CourseName, :count).by(1)
       expect(flash[:notice]).to eq("Course added successfully!")
       post add_course_admin_settings_path, params: { name: "ENG1000" }
-      expect(flash[:alert]).to eq("Input is invalid")
+      expect(flash[:alert]).to eq("The course was not added. Name has already been taken")
       instance_exec(&all_calls[:rename_course])
       expect(course.reload.name).to eq("Renamed")
       expect(flash[:notice]).to eq("Course updated successfully")
       patch rename_course_admin_settings_path, params: { id: course.id, name: "" }
-      expect(flash[:alert]).to eq("There was an issue trying to rename the course")
+      expect(flash[:alert]).to start_with("The course was not renamed. ")
       expect { instance_exec(&all_calls[:remove_course]) }.to change(CourseName, :count).by(-1)
       expect(flash[:notice]).to eq("Course removed successfully")
     end
@@ -154,7 +154,7 @@ RSpec.describe "Admin settings", type: :request do
       expect(processed_msg.reload.message).to eq("All good")
       expect(flash[:notice]).to eq("Message updated successfully!")
       patch update_job_order_processed_admin_settings_path, params: { job_order_message: { message: "" } }
-      expect(flash[:alert]).to eq("Message update failed.")
+      expect(flash[:alert]).to eq("The message was not updated. Message This field is required.")
       patch update_job_order_processed_admin_settings_path
       expect(flash[:alert]).to eq("Please enter a message.")
 

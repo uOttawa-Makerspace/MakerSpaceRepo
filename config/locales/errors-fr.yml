@@ -67,3 +67,32 @@ fr:
         confirmation_mismatch: "Le texte saisi ne correspond pas au nom de l'espace, rien n'a été supprimé."
         not_deleted: "L'espace n'a pas été supprimé."
         calendar_space_missing: "Les adresses des calendriers n'ont pas été enregistrées parce qu'aucun espace n'a été choisi. Rechargez la page et réessayez."
+      teams:
+        not_created: "L'équipe n'a pas été créée."
+        not_updated: "L'équipe n'a pas été modifiée."
+        member_not_added: "L'utilisateur n'a pas été ajouté à l'équipe."
+        role_unknown: "Choisissez un rôle pour le nouveau membre : membre ordinaire, responsable ou capitaine."
+        cannot_promote: "Le membre n'a pas été promu. Seuls les membres ordinaires peuvent devenir responsables d'équipe."
+        cannot_demote: "Le membre n'a pas été rétrogradé. Seuls les responsables d'équipe peuvent redevenir membres ordinaires."
+      keys:
+        not_created: "La clé n'a pas été créée."
+        not_updated: "La clé n'a pas été modifiée."
+        not_deleted: "La clé n'a pas été supprimée."
+        not_assigned: "La clé n'a pas été attribuée."
+        not_revoked: "La clé n'a pas été retirée."
+        request_not_approved: "La demande de clé n'a pas été approuvée."
+        request_not_denied: "La demande de clé n'a pas été refusée."
+        request_not_waiting: "Cette demande de clé n'attend plus d'approbation, elle a donc été laissée telle quelle."
+      key_transactions:
+        not_updated: "Le dépôt n'a pas été modifié."
+        return_date_required: "Entrez la date de remboursement du dépôt."
+      pi_readers:
+        not_registered: "Le lecteur n'a pas été enregistré."
+        not_updated: "Le lecteur n'a pas été modifié."
+      settings:
+        course_not_added: "Le cours n'a pas été ajouté."
+        course_not_removed: "Le cours n'a pas été retiré."
+        course_not_renamed: "Le cours n'a pas été renommé."
+        message_not_updated: "Le message n'a pas été modifié."
+        message_missing: "Veuillez entrer un message."
+        repository_not_updated: "Le statut de projet en vedette n'a pas été modifié."

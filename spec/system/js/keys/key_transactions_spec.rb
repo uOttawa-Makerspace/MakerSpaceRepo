@@ -36,7 +36,7 @@ RSpec.describe "Key transaction deposit return", type: :system, skip_bullet: tru
     expect(page).to have_css("#deposit-return-date.flatpickr-input")
     click_button "deposit-return-date-clear"
     click_button "Update Deposit"
-    expect(page).to have_text("Something went wrong while updating the deposit")
+    expect(page).to have_text("Enter the date the deposit was returned.")
     expect(transaction.reload.deposit_return_date).to be_nil
   end
 

@@ -67,3 +67,32 @@ en:
         confirmation_mismatch: "The text you typed does not match the space name, so nothing was deleted."
         not_deleted: "The space was not deleted."
         calendar_space_missing: "The calendar URLs were not saved because no space was chosen. Reload the page and try again."
+      teams:
+        not_created: "The team was not created."
+        not_updated: "The team was not updated."
+        member_not_added: "The user was not added to the team."
+        role_unknown: "Choose a role for the new member: regular member, lead or captain."
+        cannot_promote: "The member was not promoted. Only regular team members can be promoted to team lead."
+        cannot_demote: "The member was not demoted. Only team leads can be demoted to regular member."
+      keys:
+        not_created: "The key was not created."
+        not_updated: "The key was not updated."
+        not_deleted: "The key was not deleted."
+        not_assigned: "The key was not assigned."
+        not_revoked: "The key was not revoked."
+        request_not_approved: "The key request was not approved."
+        request_not_denied: "The key request was not denied."
+        request_not_waiting: "This key request is no longer waiting for approval, so it was left as it is."
+      key_transactions:
+        not_updated: "The deposit was not updated."
+        return_date_required: "Enter the date the deposit was returned."
+      pi_readers:
+        not_registered: "The reader was not registered."
+        not_updated: "The reader was not updated."
+      settings:
+        course_not_added: "The course was not added."
+        course_not_removed: "The course was not removed."
+        course_not_renamed: "The course was not renamed."
+        message_not_updated: "The message was not updated."
+        message_missing: "Please enter a message."
+        repository_not_updated: "The featured status of the project was not changed."
