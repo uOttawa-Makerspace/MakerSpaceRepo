@@ -543,6 +543,9 @@ RSpec.describe "Admin events gaps", type: :request do
       post copy_admin_events_path, params: { space_id: space.id, source_range: "2027-04-05", target_date: "2027-05-03" }
       expect(flash[:alert]).to start_with("The events were not copied. Choose the dates")
       post copy_admin_events_path,
+           params: { space_id: space.id, source_range: "2027-04-05 to 2027-04-11", target_date: "2027-13-45" }
+      expect(flash[:alert]).to start_with("The events were not copied. Choose the dates")
+      post copy_admin_events_path,
            params: { space_id: space.id, source_range: "2027-04-05", target_date: "2027-05-03", locale: "fr" }
       expect(flash[:alert]).to start_with("Les événements n'ont pas été copiés.")
     end
