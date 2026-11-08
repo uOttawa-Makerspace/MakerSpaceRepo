@@ -42,20 +42,12 @@ class AnnouncementsController < StaffAreaController
   end
 
   def update
-    if @announcement.update(announcement_params)
-      flash[:notice] = "Announcement updated"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(@announcement, "errors.announcements.not_updated", "Announcement updated") { @announcement.update(announcement_params) }
     redirect_to announcements_path
   end
 
   def destroy
-    if @announcement.destroy
-      flash[:notice] = "Announcement Deleted"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(@announcement, "errors.announcements.not_deleted", "Announcement Deleted") { @announcement.destroy }
     redirect_to announcements_path
   end
 
