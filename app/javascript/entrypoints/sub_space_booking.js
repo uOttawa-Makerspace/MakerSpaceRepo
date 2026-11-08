@@ -6,6 +6,7 @@ import TomSelect from "tom-select";
 import "flatpickr";
 import { Toast } from "bootstrap";
 import { csrfHeaders } from "../src/csrf";
+import { parseBody, serverError } from "../src/request_error";
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 
@@ -293,24 +294,32 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("book-name")?.focus();
   }
 
+  // The page's translated texts (data attributes of the toast).
+  function bookingText(name) {
+    return document.getElementById("booking_toast")?.dataset[name] ?? "";
+  }
+
   // The booking lookup answers JSON only to staff; anything else (a refusal
-  // redirected to an HTML page, a server error) is reported, not parsed.
+  // redirected to an HTML page, a server error) is shown as the server's reason, not parsed.
   function fetchBooking(id) {
     return fetch(`/sub_space_booking/get_sub_space_booking?id=${id}`, {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-    }).then((r) => {
-      const json = r.headers.get("content-type")?.includes("json");
-      if (!r.ok || !json)
-        throw new Error(`Booking lookup failed (${r.status})`);
-      return r.json();
+    }).then(async (r) => {
+      if (r.ok && r.headers.get("content-type")?.includes("json"))
+        return r.json();
+      const body = parseBody(await r.text());
+      throw new Error(serverError(body, bookingText("unavailable")));
     });
   }
 
-  function showBookingLoadError() {
-    showToast("Booking unavailable", "This booking could not be opened.");
+  function showBookingLoadError(error) {
+    showToast(
+      bookingText("unavailableTitle"),
+      error?.message || bookingText("unavailable"),
+    );
   }
 
   // ---- Edit (existing booking) ---------------------------------------------
@@ -506,13 +515,18 @@ document.addEventListener("turbo:load", function () {
   // ---- Shared fetch handler -----------------------------------------------
   function makeRequest(request, triggerBtn) {
     fetch(request)
-      .then((r) => r.text())
-      .then((text) => {
-        let parsed;
-        try {
-          parsed = JSON.parse(text);
-        } catch {
-          parsed = null;
+      .then((r) => r.text().then((text) => ({ ok: r.ok, text })))
+      .then(({ ok, text }) => {
+        const parsed = parseBody(text);
+
+        // A refusal with no per-field errors (a server error, a missing record): say why, and keep the form.
+        if (!ok && !parsed?.errors) {
+          triggerBtn?.removeAttribute("disabled");
+          showToast(
+            bookingText("failedTitle"),
+            serverError(parsed, bookingText("noReason")),
+          );
+          return;
         }
 
         // A partly booked recurring series (422 with booked > 0): some
@@ -568,10 +582,20 @@ document.addEventListener("turbo:load", function () {
       })
       .catch(() => {
         triggerBtn?.removeAttribute("disabled");
+        showToast(bookingText("failedTitle"), bookingText("network"));
       });
   }
 
   // ---- FullCalendar -------------------------------------------------------
+  // The calendar feed failed: show the server's reason when it sent one.
+  async function showFeedError(error) {
+    const body = await error?.response?.json?.().catch(() => null);
+    showToast(
+      bookingText("failedTitle"),
+      serverError(body, bookingText("feed")),
+    );
+  }
+
   const bookedCalendar = new Calendar(bookedCalendarEl, {
     initialDate: window.location.href.includes("start")
       ? new Date(new URLSearchParams(window.location.search).get("start"))
@@ -609,9 +633,7 @@ document.addEventListener("turbo:load", function () {
           window.location.search,
         ).get("room")}`,
         // Surface fetch errors in the console rather than silently failing
-        failure: () => {
-          console.error("FullCalendar failed to fetch bookings.");
-        },
+        failure: (error) => showFeedError(error),
       },
     ],
     select: (arg) => createEvent(arg),

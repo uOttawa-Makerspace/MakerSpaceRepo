@@ -11,6 +11,28 @@ en:
       not_found: "That page or record could not be found. It may have been removed, or the link may be wrong."
       unprocessable: "Your request could not be processed. Reload the page and try again."
       parameter_missing: "The form is missing required information (%{param}). Reload the page and try again."
+    bookings:
+      bulk_status_invalid: "Choose Approve or Decline for the selected bookings, then submit again."
+      recurring_invalid: "A repeating booking needs a repeat frequency and a valid end date."
+      access_request_failed: "Your access request could not be submitted:"
+      approve_failed: "The booking could not be approved:"
+      js:
+        failed_title: "Booking failed"
+        network: "The server could not be reached. Check your connection and try again."
+        no_reason: "The request failed and the server gave no reason. Reload the page and try again. If it keeps happening, contact the makerspace staff."
+        feed: "The bookings could not be loaded. Reload the page to try again."
+        unavailable_title: "Booking unavailable"
+        unavailable: "This booking could not be opened."
+    job_orders:
+      create_failed: "The job order could not be created:"
+      comments_failed: "The comments were not saved:"
+      quote_invalid: "The quote was not saved:"
+      quote_choice_missing: "Choose whether to accept or decline the quote, then submit again."
+      assign_order_missing: "That job order no longer exists, so no staff member was assigned. Reload the list and try again."
+      assign_not_allowed: "Only an admin can assign a job order to another staff member. You can assign it to yourself."
+      assign_staff_missing: "That staff member no longer exists, so nobody was assigned. Reload the page and choose again."
+      assign_failed: "The staff member could not be assigned:"
+      approval_failed_title: "The job order could not be approved or declined"
     pages:
       reference: "Reference:"
       home: "Back to the home page"

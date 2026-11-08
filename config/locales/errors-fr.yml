@@ -11,6 +11,28 @@ fr:
       not_found: "Cette page ou cet élément est introuvable. Il a peut-être été supprimé, ou le lien est erroné."
       unprocessable: "Votre demande n'a pas pu être traitée. Rechargez la page et réessayez."
       parameter_missing: "Il manque des informations obligatoires dans le formulaire (%{param}). Rechargez la page et réessayez."
+    bookings:
+      bulk_status_invalid: "Choisissez Approuver ou Refuser pour les réservations sélectionnées, puis soumettez à nouveau."
+      recurring_invalid: "Une réservation récurrente nécessite une fréquence de répétition et une date de fin valide."
+      access_request_failed: "Votre demande d'accès n'a pas pu être soumise :"
+      approve_failed: "La réservation n'a pas pu être approuvée :"
+      js:
+        failed_title: "Échec de la réservation"
+        network: "Le serveur est inaccessible. Vérifiez votre connexion et réessayez."
+        no_reason: "La requête a échoué et le serveur n'a donné aucune raison. Rechargez la page et réessayez. Si le problème persiste, communiquez avec le personnel du makerspace."
+        feed: "Les réservations n'ont pas pu être chargées. Rechargez la page pour réessayer."
+        unavailable_title: "Réservation indisponible"
+        unavailable: "Cette réservation n'a pas pu être ouverte."
+    job_orders:
+      create_failed: "La commande n'a pas pu être créée :"
+      comments_failed: "Les commentaires n'ont pas été enregistrés :"
+      quote_invalid: "Le devis n'a pas été enregistré :"
+      quote_choice_missing: "Choisissez d'accepter ou de refuser le devis, puis soumettez à nouveau."
+      assign_order_missing: "Cette commande n'existe plus ; aucun membre du personnel n'a été assigné. Rechargez la liste et réessayez."
+      assign_not_allowed: "Seul un administrateur peut assigner une commande à un autre membre du personnel. Vous pouvez vous l'assigner."
+      assign_staff_missing: "Ce membre du personnel n'existe plus ; personne n'a été assigné. Rechargez la page et choisissez à nouveau."
+      assign_failed: "Le membre du personnel n'a pas pu être assigné :"
+      approval_failed_title: "La commande n'a pas pu être approuvée ou refusée"
     pages:
       reference: "Référence :"
       home: "Retour à la page d'accueil"
