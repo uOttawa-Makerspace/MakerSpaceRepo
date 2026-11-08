@@ -68,6 +68,13 @@ RSpec.configure do |config|
     end
   end
 
+  # JS_COVERAGE=1 only: keep window.__coverage__ across full page loads and
+  # write it out after each example (spec/support/js_coverage.rb).
+  if JsCoverage.enabled?
+    config.before(:each, type: :system) { JsCoverage.install(page) }
+    config.after(:each, type: :system) { JsCoverage.flush(page) }
+  end
+
   # Save screenshots + page HTML on failure as CI artifacts (doc 9.5).
   config.after(:each, type: :system) do |example|
     if example&.exception

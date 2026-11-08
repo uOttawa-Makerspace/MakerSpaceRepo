@@ -5,7 +5,9 @@
   <br>
   <div>
     <%= form_with url: search_admin_users_path, method: :get, class: 'input-group' do |f| %>
+      <%= label_tag 'filter', 'Search by', class: 'visually-hidden' %>
       <%= select_tag 'filter', options_for_select(%w[Name Email Username]), prompt: 'Search by...', class: 'form-select form-control' %>
+      <%= label_tag 'q', 'Search users', class: 'visually-hidden' %>
       <%= text_field_tag 'q', params[:q], placeholder: 'Search users...', class: 'form-control' %>
       <div class="input-group-append">
         <%= submit_tag 'Search', class: 'btn btn-primary form-control' %>
@@ -51,7 +53,7 @@
         <% direction = params[:direction] == 'asc' ? 'desc' : 'asc' %>
         <table class="admin-table table table-striped" id="admin-index">
           <thead>
-          <th><%= check_box_tag 'select-all', 'select-all', false, class: 'form-check-input' %></th>
+          <th><%= check_box_tag 'select-all', 'select-all', false, class: 'form-check-input', 'aria-label': t('common.names.select_all_users') %></th>
           <th>
             <%= link_to 'Username', sort: 'username', direction: direction, p: params[:p], location: params[:location] %>
             <% if params[:sort] == "username" %>
@@ -80,7 +82,7 @@
           </thead>
           <% @users.each do |user| %>
             <tr>
-              <td><center><%= check_box_tag 'bulk_cert_users[]', user.id, false, class: 'form-check-input' %></center></td>
+              <td><center><%= check_box_tag 'bulk_cert_users[]', user.id, false, class: 'form-check-input', 'aria-label': t('common.names.select_user', name: user.username) %></center></td>
               <td><%= link_to user.username.to_s, admin_user_path(user) %></td>
               <td><%= user.name %></td>
               <td>

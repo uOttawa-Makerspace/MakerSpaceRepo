@@ -8,9 +8,11 @@ class UsersController < SessionsController
                   create
                   new
                   resend_confirmation
+                  send_confirmation
                   reset_password_confirmation
                   reset_password_form
                   unlock_account
+                  apply_unlock
                 ]
   before_action :signed_in,
                 except: %i[
@@ -18,10 +20,13 @@ class UsersController < SessionsController
                   create
                   show
                   resend_confirmation
+                  send_confirmation
                   confirm
+                  apply_confirmation
                   reset_password_confirmation
                   reset_password_form
                   unlock_account
+                  apply_unlock
                 ]
 
   # Re-authentication (the current password on change_password / change_email) is throttled
@@ -36,6 +41,13 @@ class UsersController < SessionsController
   EMAIL_CHANGE_OTHER_ACCOUNT_ALERT =
     'This link was requested by a different account. Please sign in as the account that requested the change.'
 
+  SIGN_UP_THROTTLED_MESSAGE = 'Too many sign-up attempts, please try again later.'
+
+  before_action :refuse_when_signed_in, only: %i[new create]
+
+  rate_limit to: 30, within: 1.hour, only: :create, name: 'sign-up-ip',
+             by: -> { request.remote_ip }, with: -> { sign_up_throttled }
+
   def create
     @new_user = User.new(user_params)
     @new_user.pword = params[:user][:password] if @new_user.valid?
@@ -48,19 +60,12 @@ class UsersController < SessionsController
       end 
     elsif @new_user.save
       hash = @new_user.generate_token_for(:email_confirmation)
-      MsrMailer.confirmation_email(@new_user, hash).deliver_now
+      MsrMailer.confirmation_email(@new_user, hash).deliver_later
       
-      respond_to do |format| 
-        format.html do
-          redirect_to root_path,
-                      notice:
-                      'Account has been created, please look in your emails to confirm your email address.'
-        end
-        format.json do
-          render json:
-                 'Account has been created, please look in your emails to confirm your email address.',
-                 status: :unprocessable_content
-        end
+      message = I18n.t('sessions.account_created')
+      respond_to do |format|
+        format.html { redirect_to root_path, notice: message }
+        format.json { render json: { message: message }, status: :created }
       end
     else
       respond_to do |format| 
@@ -72,22 +77,43 @@ class UsersController < SessionsController
     end
   end
 
+  # The answer is the same whether or not the email belongs to an account (and when the
+  # request is rate limited); only an account that is still unconfirmed is mailed.
+  RESEND_CONFIRMATION_NOTICE =
+    'If that email belongs to an account that still needs confirming, a confirmation email has been sent.'
+
+  rate_limit to: 30, within: 1.hour, only: :send_confirmation, name: 'resend-ip',
+             by: -> { request.remote_ip }, with: -> { resend_confirmation_response }
+
+  # GET: asks for confirmation before anything is sent, so opening the link
+  # (or having it prefetched) never mails anyone.
   def resend_confirmation
-    email = params[:user][:email]
-    user = User.find_by(email: email)
-    if user.present?
-      hash = user.generate_token_for(:email_confirmation)
-      MsrMailer.confirmation_email(user, hash).deliver_now
-      flash[:notice] = 'A new confirmation email has been sent'
-    else
-      flash[
-        :alert
-      ] = 'No users with that email were found. Please select a valid email.'
-    end
-    redirect_back(fallback_location: root_path)
+    @email = resend_confirmation_email
+    redirect_to resend_email_confirmation_path if @email.blank?
   end
 
+  # POST: sends the mail.
+  def send_confirmation
+    email = resend_confirmation_email
+    user = User.find_by(email: email) if email.present?
+    if user && !user.confirmed? && mail_budget_left?('resend', email)
+      hash = user.generate_token_for(:email_confirmation)
+      MsrMailer.confirmation_email(user, hash).deliver_later
+    end
+    resend_confirmation_response
+  end
+
+  # GET, the link in the sign-up mail: shows a button that POSTs the token to
+  # apply_confirmation. A GET never changes anything.
   def confirm
+    return if User.find_by_token_for(:email_confirmation, params[:token])
+
+    flash[:alert] = LINK_EXPIRED_ALERT
+    redirect_to root_path
+  end
+
+  # POST /confirm
+  def apply_confirmation
     user = User.find_by_token_for(:email_confirmation, params[:token])
     if user
       user.update(confirmed: true)
@@ -122,13 +148,22 @@ class UsersController < SessionsController
       MsrMailer.email_changed_email(user, @old_email).deliver_now
       flash[:notice] = "The email has been updated to #{user.email} !"
     else
-      flash[:alert] =
-        'The email could not be updated, the address may already be used by another account. Please request a new change.'
+      flash[:alert] = email_update_failure_alert(user)
     end
     redirect_to root_path
   end
 
+  # GET, the link in the unlock mail: shows a button that POSTs the token to
+  # apply_unlock. A GET never changes anything.
   def unlock_account
+    return if User.find_by_token_for(:account_unlock, params[:token])
+
+    flash[:alert] = LINK_EXPIRED_ALERT
+    redirect_to root_path
+  end
+
+  # POST /unlock_account
+  def apply_unlock
     user = User.find_by_token_for(:account_unlock, params[:token])
     if user
       user.update_columns(locked: false, auth_attempts: 0, locked_until: nil)
@@ -149,7 +184,6 @@ class UsersController < SessionsController
   end
 
   def new
-    redirect_to root_path if signed_in?
     @new_user = User.new
   end
 
@@ -264,19 +298,19 @@ class UsersController < SessionsController
     end
 
     if params[:new_email].present? and params[:confirm_new_email].present?
-      if params[:new_email] == params[:confirm_new_email]
-        if !User.find_by_email(params[:new_email]).present?
-          MsrMailer.email_confirmation_email(
-            params[:new_email],
-            @user,
-            @user.generate_email_change_token(params[:new_email])
-          ).deliver_now
-          flash[:notice] = 'A confirmation email has been sent to the new email'
-        else
-          flash[:alert] = 'This email is already used by a MakerRepo Account.'
-        end
-      else
+      if params[:new_email] != params[:confirm_new_email]
         flash[:alert] = "This confirmation email isn't matching the new email"
+      elsif (shape_error = User.email_shape_error(params[:new_email]))
+        flash[:alert] = shape_error
+      elsif User.find_by_email(params[:new_email]).present?
+        flash[:alert] = 'This email is already used by a MakerRepo Account.'
+      else
+        MsrMailer.email_confirmation_email(
+          params[:new_email],
+          @user,
+          @user.generate_email_change_token(params[:new_email])
+        ).deliver_now
+        flash[:notice] = 'A confirmation email has been sent to the new email'
       end
     else
       flash[
@@ -382,8 +416,9 @@ class UsersController < SessionsController
   private :sees_private_repos?
 
   def show
+    # A deleted account's profile is shown to admins only (like its badges).
     @repo_user =
-      if @user.admin? || @user.staff?
+      if @user.admin?
         User.unscoped.find_by_username params[:username]
       else
         User.find_by_username params[:username]
@@ -453,7 +488,7 @@ class UsersController < SessionsController
           render json: {
                    user: @repo_user.as_json(include: :rfid),
                    programs: @programs.as_json,
-                   certifications: @certifications.as_json(include: :training)
+                   certifications: @certifications.as_json(include: :training, except: :share_token)
                  }
         else
           head :unauthorized
@@ -476,25 +511,37 @@ class UsersController < SessionsController
     @photos = photo_hash
   end
 
-  # Hard delete of the signed-in user's own account. Goes through the last-admin
-  # guard: the last usable admin cannot delete themself.
-  def destroy
-    account = @user
-    begin
-      User.guarding_last_admin!([account.id]) do
-        account.repositories.each(&:destroy)
-        LabSession.where(user_id: account.id).destroy_all
-        account.destroy!
-      end
-    rescue User::LastAdminError => e
-      redirect_to user_path(account.username), alert: e.message
-      return
-    end
-    sign_out
-    redirect_to root_path
+  private
+
+  # The normalised email, or '' when none was given or it is longer than an address can be.
+  def resend_confirmation_email
+    fields = params[:user]
+    email = fields.is_a?(ActionController::Parameters) ? fields[:email].to_s.strip.downcase : ''
+    email.length > 254 ? '' : email
   end
 
-  private
+  # Registering is for guests: a signed-in visitor is sent home (JSON clients get a 403).
+  def refuse_when_signed_in
+    return unless signed_in?
+
+    message = I18n.t('sessions.already_signed_in')
+    respond_to do |format|
+      format.html { redirect_to root_path, alert: message }
+      format.json { render json: { error: message }, status: :forbidden }
+    end
+  end
+
+  def sign_up_throttled
+    respond_to do |format|
+      format.html { redirect_to root_path, alert: SIGN_UP_THROTTLED_MESSAGE }
+      format.json { render json: { error: SIGN_UP_THROTTLED_MESSAGE }, status: :too_many_requests }
+    end
+  end
+
+  def resend_confirmation_response
+    flash[:notice] = RESEND_CONFIRMATION_NOTICE
+    redirect_back(fallback_location: root_path)
+  end
 
   # The current password the action was given (change_password nests it).
   def submitted_current_password
@@ -526,6 +573,14 @@ class UsersController < SessionsController
     alert.nil?
   end
 
+  # The validation error when the address itself was refused, otherwise the
+  # address was taken by another account in the meantime.
+  def email_update_failure_alert(user)
+    reason = user.errors.full_messages_for(:email).to_sentence.presence ||
+             'the address may already be used by another account'
+    "The email could not be updated: #{reason}. Please request a new change."
+  end
+
   # Applies the address; false (nothing changed) when it is rejected, e.g. taken
   # by another account in the meantime. Remembers the previous address.
   def change_email_to(user, new_email)
@@ -541,8 +596,14 @@ class UsersController < SessionsController
 
   # Profile edits: no :email (use change_email's confirm flow) and no :password
   # (use change_password).
+  # Renaming an account is admin-only, so :username is not editable here. The waiver
+  # checkbox is on the profile form for an account that never accepted it: it can be
+  # accepted here, never withdrawn.
   def profile_params
-    user_params.except(:password, :password_confirmation, :email)
+    permitted = user_params.except(:password, :password_confirmation, :email, :username)
+    accepting = ActiveModel::Type::Boolean.new.cast(permitted[:read_and_accepted_waiver_form]) == true
+    permitted = permitted.except(:read_and_accepted_waiver_form) if @user.read_and_accepted_waiver_form || !accepting
+    permitted
   end
 
   def user_params

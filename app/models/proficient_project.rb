@@ -12,7 +12,8 @@ class ProficientProject < ApplicationRecord
   has_many :required_projects, through: :project_requirements
   has_many :inverse_project_requirements,
            class_name: "ProjectRequirement",
-           foreign_key: "required_project_id"
+           foreign_key: "required_project_id",
+           dependent: :destroy
   has_many :inverse_required_projects,
            through: :inverse_project_requirements,
            source: :proficient_project
@@ -27,13 +28,7 @@ class ProficientProject < ApplicationRecord
   # too; the column is an integer, so a fraction would be silently truncated).
   validates :cc, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
 
-  validates :title,
-            presence: {
-              message: "A title is required."
-            },
-            uniqueness: {
-              message: "Title already exists"
-            }
+  validates :title, presence: true, uniqueness: true
   before_save :capitalize_title
   
 
@@ -68,6 +63,17 @@ class ProficientProject < ApplicationRecord
     training_requirements.create(training: Training.find(training_requirements_id), level: training_requirements_level)
   end
 
+  # Make the project's requirements match the submitted (training, level) pairs:
+  # rows no longer listed are removed, missing ones are added, matching rows stay as they are.
+  def replace_training_requirements(training_ids, levels)
+    wanted = Array(training_ids).zip(Array(levels)).map { |id, level| [id.to_i, level] }.uniq
+    transaction do
+      training_requirements.reject { |r| wanted.include?([r.training_id, r.level]) }.each(&:destroy)
+      kept = training_requirements.reload.map { |r| [r.training_id, r.level] }
+      (wanted - kept).each { |id, level| create_training_requirements(id, level) }
+    end
+  end
+
   def extract_urls
     URI.extract(description)
   end
@@ -82,7 +88,7 @@ class ProficientProject < ApplicationRecord
   end
 
   def self.training_status(training_id, user_id)
-    user = User.find(user_id)
+    user = User.including_deleted.find(user_id)
     level =
       Certification
         .joins(:user, :training_session)

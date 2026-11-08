@@ -42,7 +42,8 @@ class Admin::TrainingSessionsController < AdminAreaController
     end
 
     #pagination
-    @pagy, @sessions = pagy(@sessions, limit: 20)
+    @pagy, @sessions =
+      pagy(@sessions.preload(:training, :user, :certifications, :users), limit: 20)
 
     respond_to do |format|
       format.js

@@ -31,6 +31,13 @@ Rails.application.configure do
   # CI step) instead of re-hashing app/javascript on every layout render.
   # VITE_RUBY_AUTO_BUILD=true restores the per-request staleness check.
   ENV["VITE_RUBY_AUTO_BUILD"] ||= "false"
+  # JS_COVERAGE=1 builds the instrumented bundle into its own output and build
+  # cache directories, so switching the variable on or off never reuses a build
+  # made the other way.
+  if ENV["JS_COVERAGE"] == "1"
+    ENV["VITE_RUBY_PUBLIC_OUTPUT_DIR"] ||= "vite-test-coverage"
+    ENV["VITE_RUBY_BUILD_CACHE_DIR"] ||= "tmp/cache/vite-coverage"
+  end
 
   # Show full error reports and disable caching.
   config.consider_all_requests_local = true

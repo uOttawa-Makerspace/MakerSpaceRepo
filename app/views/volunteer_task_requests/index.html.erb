@@ -2,7 +2,7 @@
   <!-- Top Navigation & Header -->
   <div class="row align-items-center justify-content-between mb-4 g-3">
     <div class="col-12 col-md-auto">
-      <nav aria-label="breadcrumb" class="mb-1">
+      <nav aria-label="<%= t('common.names.breadcrumb') %>" class="mb-1">
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteer_tasks_path, class: "text-decoration-none text-body-secondary" do %>
@@ -138,7 +138,7 @@
                      class="form-control"
                      placeholder="Search pending requests by volunteer, task title, or space..."
                      autocomplete="off"
-                     aria-label="Search pending requests">
+                     aria-label="<%= t('common.names.search_pending_requests') %>">
             </div>
           </div>
 
@@ -159,7 +159,7 @@
                      class="form-control"
                      placeholder="Search processed history by volunteer, task title, or space..."
                      autocomplete="off"
-                     aria-label="Search processed history">
+                     aria-label="<%= t('common.names.search_processed_history') %>">
             </div>
           </div>
 

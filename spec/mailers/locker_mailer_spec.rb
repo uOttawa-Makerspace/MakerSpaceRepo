@@ -50,4 +50,30 @@ RSpec.describe LockerMailer, type: :mailer do
     expect { described_class.with(locker_rental: LockerRental.find(request.id)).locker_requested.deliver_now }
       .to change { ActionMailer::Base.deliveries.size }.by(1)
   end
+
+  describe "cancellation mail" do
+    def body_of(rental)
+      described_class.with(locker_rental: LockerRental.find(rental.id)).locker_cancelled.body.encoded
+    end
+
+    it "gives the date the cancellation was recorded for a rental with a locker" do
+      expect(body_of(rental)).to include(rental.cancelled_at.to_date.to_formatted_s(:long))
+    end
+
+    it "renders for a rental cancelled before its end date" do
+      future = create(:locker_rental, :active, owned_until: 2.months.from_now).tap { |r| r.update!(state: :cancelled) }
+      expect(body_of(future)).to include(future.cancelled_at.to_date.to_formatted_s(:long))
+    end
+
+    it "renders for a cancelled rental that has no recorded cancellation date" do
+      future = create(:locker_rental, :active, owned_until: 2.months.from_now).tap { |r| r.update!(state: :cancelled) }
+      future.update_columns(cancelled_at: nil)
+      expect(body_of(future)).to include("has been cancelled.")
+    end
+
+    it "renders for a request cancelled before a locker was assigned" do
+      request = create(:locker_rental, :reviewing).tap { |r| r.update!(state: :cancelled, decided_by: create(:user, :staff)) }
+      expect(body_of(request)).to include("has been rejected")
+    end
+  end
 end

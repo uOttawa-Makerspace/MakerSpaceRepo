@@ -103,15 +103,15 @@ class Admin::ReportGeneratorController < AdminAreaController
     when 'date_range'
       begin
         start_date = Date.parse(params[:from_date]).to_datetime.beginning_of_day
-      rescue ParseError
-        render plain: 'Failed to parse start date'
+      rescue Date::Error, TypeError
+        render plain: 'Failed to parse start date', status: :bad_request
         return
       end
 
       begin
         end_date = Date.parse(params[:to_date]).to_datetime.end_of_day
-      rescue ParseError
-        render plain: 'Failed to parse end date'
+      rescue Date::Error, TypeError
+        render plain: 'Failed to parse end date', status: :bad_request
         return
       end
     when 'all_time'
@@ -230,7 +230,7 @@ class Admin::ReportGeneratorController < AdminAreaController
             params[:end_date].to_date
           )
         else
-          User.all
+          User.including_deleted
         end
       )
   end
@@ -439,6 +439,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
     all_users = @lab_sessions.pluck(:user_id).uniq
     User
+      .including_deleted
       .where(id: all_users)
       .each do |user|
         next if user.nil?

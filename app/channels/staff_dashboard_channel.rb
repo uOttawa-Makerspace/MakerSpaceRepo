@@ -46,7 +46,9 @@ class StaffDashboardChannel < ApplicationCable::Channel
   end
 
   def self.broadcast_table_updates(space_id)
-    space = Space.find(space_id)
+    # a space deleted meanwhile has no table to update
+    space = Space.find_by(id: space_id)
+    return unless space
 
     Turbo::StreamsChannel.broadcast_render_to(
       "signed_in_table_space_#{space_id}",
@@ -56,15 +58,10 @@ class StaffDashboardChannel < ApplicationCable::Channel
         signed_in_users:
           User
             .strict_loading
+            .where(id: LabSession.active.where(space: space_id).select(:user_id))
             .includes(certifications: { training_session: %i[training user] })
-            .includes(:lab_sessions)
-            .where(
-              lab_sessions: {
-                sign_out_time: Time.zone.now..,
-                space: space_id
-              }
-            ),
-        signed_out_users: space.recently_signed_out_users
+            .includes(:lab_sessions),
+        signed_out_users: space.recently_signed_out_users_with_history
       }
     )
   end

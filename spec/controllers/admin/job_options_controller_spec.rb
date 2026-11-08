@@ -62,6 +62,16 @@ RSpec.describe Admin::JobOptionsController, type: :controller do
       expect(job_option.reload.is_deleted).to be_truthy
     end
 
+    it "soft deletes an option that a legacy order option row references" do
+      legacy = JobOrderOption.create!(job_order: create(:job_order), job_option: job_option)
+
+      delete :destroy, params: { id: job_option.id }
+
+      expect(flash[:notice]).to eq("The option has been deleted successfully")
+      expect(job_option.reload.is_deleted).to be_truthy
+      expect(JobOrderOption.find(legacy.id).job_option_id).to eq(job_option.id)
+    end
+
     it "shows alert if destroy fails" do
       allow_any_instance_of(JobOption).to receive(:destroy).and_return(false)
 

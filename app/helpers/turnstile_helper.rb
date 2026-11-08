@@ -30,19 +30,8 @@ module TurnstileHelper
 
   def verify_turnstile
     return true unless TurnstileHelper.verification_enabled?
-    cf_turnstile_response = params['cf-turnstile-response']
-    response =
-      Excon.post(
-        TURNSTILE_SITEVERIFY_ENDPOINT,
-        headers: {
-          'Content-Type' => 'application/json'
-        },
-        body: {
-          'secret' => creds[:secret_key],
-          'response' => cf_turnstile_response,
-          'remoteip' => request.ip
-        }.to_json
-      )
+    response = post_turnstile_siteverify
+    return false if response.nil?
 
     # Cloudflare does returns a body with explanation if a check fails, but all
     # we care about is the response. Not sure if we can rely on the HTTP status
@@ -54,5 +43,26 @@ module TurnstileHelper
       Rails.logger.warn e.message
       false
     end
+  end
+
+  private
+
+  # A network error or timeout reaching Cloudflare is reported and counts as a
+  # failed check (nil), so the user sees the captcha error and can try again.
+  def post_turnstile_siteverify
+    Excon.post(
+      TURNSTILE_SITEVERIFY_ENDPOINT,
+      headers: {
+        'Content-Type' => 'application/json'
+      },
+      body: {
+        'secret' => creds[:secret_key],
+        'response' => params['cf-turnstile-response'],
+        'remoteip' => request.ip
+      }.to_json
+    )
+  rescue Excon::Error => e
+    Rails.error.report(e, handled: true, context: { source: 'turnstile_siteverify' })
+    nil
   end
 end

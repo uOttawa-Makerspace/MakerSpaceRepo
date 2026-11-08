@@ -8,7 +8,7 @@ Core features might include: - Authentication Services (Login, SAML) - Staff Kio
 
 ### The Process:
 
-- [ ] (Optional) Enable maintence mode with cap production maintenance:enable REASON="Immediate Unexpected Maintenance" UNTIL="HH:MM (H:MM AM/PM)"
+- [ ] (Optional) Put up the maintenance page (see maintenance.md)
 - [ ] Create a new branch from master.
 - [ ] Make the necessary fix.
 - [ ] Include "[skip actions]" in your commit message to avoid redundant CI runs.
@@ -16,7 +16,7 @@ Core features might include: - Authentication Services (Login, SAML) - Staff Kio
 - [ ] If feasible, have someone review the PR. If not, do a self review.
 - [ ] Merge into master
 - [ ] Monitor the workflow run from the actions tab.
-- [ ] cap production maintenance:disable
+- [ ] (If used) Take the maintenance page down
 
 ### Important Notes:
 

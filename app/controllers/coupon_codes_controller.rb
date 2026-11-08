@@ -38,9 +38,13 @@ class CouponCodesController < DevelopmentProgramsController
 
   def destroy
     @coupon_code = CouponCode.find(params[:id])
-    @coupon_code.destroy
-    redirect_to coupon_codes_path,
-                notice: "Coupon code was successfully deleted."
+    if @coupon_code.destroy
+      redirect_to coupon_codes_path,
+                  notice: "Coupon code was successfully deleted."
+    else
+      redirect_to coupon_codes_path,
+                  alert: @coupon_code.errors.full_messages.to_sentence
+    end
   end
 
   def admin_only

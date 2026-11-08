@@ -75,6 +75,7 @@ class CdelReportGenerator
         ]
     query =
       User
+        .including_deleted
         .where(created_at: start_date..end_date)
         .order(:created_at)
         .pluck(*headers)

@@ -1,0 +1,5 @@
+1	app/views/admin/spaces/edit.html.erb	Rubocop	Style/StringConcatenation: Prefer string interpolation to string concatenation.
+1	app/views/admin/spaces/index.html.erb	Rubocop	Rails/FindEach: Use `find_each` instead of `each`.
+2	app/views/admin/users/show.html.erb	Rubocop	Rails/DynamicFindBy: Use `find_by` instead of dynamic `find_by_mac`.
+1	app/views/questions/_question_form.html.erb	Rubocop	Rails/Presence: Use `@question.trainings.presence&.pluck(:id)` instead of `@question.trainings.pluck(:id) if @question.trainings.present?`.
+1	app/views/users/show.html.erb	Rubocop	Rails/DynamicFindBy: Use `find_by` instead of dynamic `find_by_mac`.

@@ -11,6 +11,11 @@ class Staff::MyCalendarController < StaffAreaController
   def json
     return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
 
+    # Staff read the schedule of the spaces they are assigned to (the spaces the page offers); admins read any.
+    unless current_user.admin? || StaffSpace.exists?(user_id: current_user.id, space_id: params[:id])
+      return render json: { error: "You are not assigned to this space" }, status: :forbidden
+    end
+
     events = Event.where(space_id: params[:id], draft: false)
     
     # Optional filters

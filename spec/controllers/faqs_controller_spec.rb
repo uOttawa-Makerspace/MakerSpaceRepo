@@ -22,19 +22,19 @@ RSpec.describe FaqsController, type: :controller do
 
   describe "POST /" do
     context "not logged in" do
-      it "should redirect" do
+      it "should redirect to login" do
         session[:user_id] = nil
-        faq = create :faq
+        create :faq
         expect {
           post :create, params: { faq: (attributes_for :faq) }
         }.to change(Faq, :count).by(0)
-        expect(response).to redirect_to root_path
+        expect(response).to redirect_to login_path
       end
     end
 
     context "logged in" do
       it "should create FAQ entry" do
-        faq = create :faq
+        create :faq
         expect {
           post :create, params: { faq: (attributes_for :faq) }
         }.to change(Faq, :count).by(1)

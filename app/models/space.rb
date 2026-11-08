@@ -4,49 +4,76 @@ class Space < ApplicationRecord
   include CalendarHelper
 
   has_many :pi_readers
-  has_many :lab_sessions, dependent: :destroy
-  has_many :users, through: :lab_sessions
+  has_many :keys, dependent: :nullify
+  has_many :key_requests, dependent: :nullify
+  has_many :walk_in_safety_sheets
+  has_many :lab_sessions
+  has_many :visitors, -> { distinct }, through: :lab_sessions, source: :user
   has_and_belongs_to_many :trainings
-  has_many :training_sessions, dependent: :destroy
+  has_many :training_sessions
   has_many :certifications, through: :training_sessions
-  has_many :volunteer_tasks, dependent: :destroy
+  has_many :volunteer_tasks
   has_many :popular_hours, dependent: :destroy
   has_many :shadowing_hours
-  has_many :users, dependent: :nullify
+  has_many :users_with_current_space, -> { including_deleted }, class_name: "User"
   has_many :staff_spaces, dependent: :destroy
-  has_many :space_staff_hour
   has_many :shifts, dependent: :destroy
   has_many :sub_spaces, dependent: :destroy
+  has_many :sub_space_bookings, through: :sub_spaces
   has_many :staff_needed_calendars, dependent: :destroy
   has_many :space_manager_joins, dependent: :destroy
   has_many :space_managers, through: :space_manager_joins, source: :user
-  has_many :users, through: :staff_spaces
+  has_many :staff, through: :staff_spaces, source: :user
+
+  # A space with user history cannot be deleted: walk-in safety sheets, lab sessions, training sessions (with
+  # their certifications and exams), volunteer tasks (with their hours) and sub space bookings feed reports and
+  # course records. Nor can a space that is still the current space of a user (users.space_id): that column is
+  # left as it is. The delete is refused with an explanation instead. The check runs before anything is
+  # destroyed (prepend), so the sub spaces are not taken along with their bookings.
+  BLOCKING_ASSOCIATIONS = %i[
+    walk_in_safety_sheets lab_sessions training_sessions volunteer_tasks sub_space_bookings users_with_current_space
+  ].freeze
+  REFUSAL_KEY = :"restrict_dependent_destroy.has_many"
+  before_destroy :refuse_deletion_while_history_exists, prepend: true
 
   after_create :create_popular_hours, unless: -> { Rails.env.test? }
 
   validates :name,
-            presence: {
-              message: "A name is required for the space"
-            },
-            uniqueness: {
-              message: "Space already exists"
-            }
+            presence: true,
+            uniqueness: true
 
+  # The records this space still has, as the associations that block its deletion. Empty when it can be deleted.
+  def blocking_records
+    BLOCKING_ASSOCIATIONS.select { |association| public_send(association).exists? }
+  end
+
+  # Why this space cannot be deleted, one message per kind of history, built the way restrict_with_error builds its
+  # message (the same key and association names, so model-scoped overrides and the locale apply).
+  def deletion_refusals
+    blocking_records.map { |association| errors.generate_message(:base, REFUSAL_KEY, record: refusal_record_name(association)) }
+  end
+
+  # Visits keep their user after the account is soft-deleted, so the rosters below leave deleted
+  # users out explicitly: they are not listed as in, or recently in, a space. The join reads the
+  # user's deleted flag in the same query (the association itself reaches deleted users).
   def signed_in_users
-    lab_sessions
-      .includes(:user)
+    visible_lab_sessions
       .where("sign_out_time > ?", Time.zone.now)
       .order(sign_out_time: :desc)
       .map(&:user)
       .uniq
   end
 
+  # For tables that show each user's previous visit.
+  def signed_in_users_with_history
+    with_visit_history(signed_in_users)
+  end
+
   def recently_signed_out_users
     users =
-      lab_sessions
+      visible_lab_sessions
         .where("sign_out_time < ?", Time.zone.now)
-        .where.not(user: signed_in_users)
-        .includes(:user)
+        .where.not(user_id: lab_sessions.where("sign_out_time > ?", Time.zone.now).where.not(user_id: nil).select(:user_id))
         .order(sign_out_time: :asc)
         .last(20)
         .map(&:user)
@@ -57,8 +84,27 @@ class Space < ApplicationRecord
           user.lab_sessions.where(space: self).last.sign_out_time
         end
         .reverse
-    
   end
+
+  # For tables that show each user's previous visit.
+  def recently_signed_out_users_with_history
+    with_visit_history(recently_signed_out_users)
+  end
+
+  def visible_lab_sessions
+    lab_sessions.includes(:user).where(users: { deleted: false })
+  end
+  private :visible_lab_sessions
+
+  # The dashboard rows show each user's previous visit; load what they read in one go.
+  def with_visit_history(users)
+    ActiveRecord::Associations::Preloader.new(
+      records: users,
+      associations: [:lab_sessions]
+    ).call
+    users
+  end
+  private :with_visit_history
 
     def create_popular_hours
       # Optimization: Prepare data in memory
@@ -207,4 +253,17 @@ class Space < ApplicationRecord
     weekly_events.sort_by(&:dtstart)
   end
 
+  private
+
+  def refusal_record_name(association)
+    self.class.human_attribute_name(association).downcase
+  end
+
+  def refuse_deletion_while_history_exists
+    history = blocking_records
+    return if history.empty?
+
+    history.each { |association| errors.add(:base, REFUSAL_KEY, record: refusal_record_name(association)) }
+    throw :abort
+  end
 end

@@ -44,63 +44,6 @@ class MsrMailerPreview < ActionMailer::Preview
     MsrMailer.send_kit_email(user, pp)
   end
 
-  def send_print_user_approval_to_makerspace
-    print_order = PrintOrder.first
-    MsrMailer.send_print_user_approval_to_makerspace(print_order&.id || 1)
-  end
-
-  def send_print_to_makerspace
-    print_order = PrintOrder.first
-    MsrMailer.send_print_to_makerspace(print_order&.id || 1)
-  end
-
-  def send_print_quote
-    user = User.new(name: "Test Name", email: "test@makerepo.com")
-    print_order = PrintOrder.first || PrintOrder.new(
-      file_file_name: "file_name.stl",
-      service_charge: 15,
-      order_type: 0,
-      grams: 350,
-      price_per_gram: 0.4,
-      expedited: true,
-      quote: 44
-    )
-    MsrMailer.send_print_quote(
-      15,                    # expedited_price
-      user,
-      print_order,
-      "Staff comments",      # comments
-      5,                     # clean_part_price
-      false                  # resend
-    )
-  end
-
-  def send_print_reminder
-    MsrMailer.send_print_reminder("user@example.com", 123)
-  end
-
-  def send_print_declined
-    MsrMailer.send_print_declined(
-      User.new(name: "Test Name", email: "test@makerepo.com"),
-      "Staff comments explaining why the print was declined",
-      "file_name.stl"
-    )
-  end
-
-  def send_print_finished
-    MsrMailer.send_print_finished(
-      User.new(name: "Test Name", email: "test@makerepo.com"),
-      "PICKUP-123",          # pickup_id
-      10.50,                 # quote
-      "Your print is ready for pickup at the Makerspace."  # message
-    )
-  end
-
-  def send_invoice
-    print_order = PrintOrder.first || PrintOrder.new(id: 123)
-    MsrMailer.send_invoice("Test User", print_order)
-  end
-
   def send_admin_pp_evaluation
     pp = ProficientProject.first || OpenStruct.new(
       id: 1,
@@ -166,10 +109,6 @@ class MsrMailerPreview < ActionMailer::Preview
       user,
       "The printer ran out of filament. Please come restart your print."
     )
-  end
-
-  def waiver_reminder_email
-    MsrMailer.waiver_reminder_email("no_waiver_user@gmail.com")
   end
 
   def issue_email

@@ -1,10 +1,23 @@
 class KeyRequest < ApplicationRecord
+  include DisplayUser
   belongs_to :user, class_name: "User", optional: true
   belongs_to :supervisor, class_name: "User", optional: true
   belongs_to :space, optional: true
+  display_user_for :user, :supervisor
 
   enum :user_status, %i[student professor staff], prefix: true
   enum :status, %i[in_progress waiting_for_approval approved], prefix: true
+
+  # The owner may change a request only while it is still being filled in.
+  def editable_by_owner?
+    status_in_progress?
+  end
+
+  # Only a request still being filled in can be submitted. A request already
+  # waiting or approved is left as it is.
+  def submit
+    status_in_progress? && update(status: :waiting_for_approval)
+  end
 
   NUMBER_OF_QUESTIONS = 14
   QUESTIONS = [
@@ -24,23 +37,23 @@ class KeyRequest < ApplicationRecord
     "The following hazards, for which training is required, are present in the laboratory (i.e. laser, x-ray diffraction, high voltage, high pressure, flame photometer, NMR, high vacuum pump, etc.):"
   ]
 
-  validates :user, presence: { message: "A user is required" }
-  validates :supervisor, presence: { message: "A supervisor is required" }
-  validates :space, presence: { message: "A space is required" }
-  validates :user_status, presence: { message: "A user status is required" }
+  validates :user, presence: true
+  validates :supervisor, presence: true
+  validates :space, presence: true
+  validates :user_status, presence: true
 
   validates :phone_number,
             :emergency_contact_phone_number,
             format: {
              # Got regex from here: https://stackoverflow.com/questions/16699007/regular-expression-to-match-standard-10-digit-phone-number
               with: /\A(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}\z/,
-              message: "only allows numbers, parentheses, dashes, spaces, dots, and +"
+              message: :invalid_phone
             }
 
   validates :student_number,
             :emergency_contact,
             presence: {
-              message: "student number and emergency contact is required"
+              message: :student_number_and_emergency_contact_required
             }
 
   validates :read_lab_rules,
@@ -48,14 +61,15 @@ class KeyRequest < ApplicationRecord
             :read_agreement,
             acceptance: {
               accept: true,
-              message: "You must agree to all the rules and policies"
+              message: :rules_not_accepted
             },
             unless: :status_in_progress?
 
   (1..KeyRequest::NUMBER_OF_QUESTIONS).each do |i|
     validates "question_#{i}".to_sym,
               presence: {
-                message: "Question #{i} is required"
+                message: :question_required,
+                question_number: i
               },
               unless: :status_in_progress?
   end

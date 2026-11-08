@@ -6,7 +6,7 @@ RSpec.describe JobTasksController, type: :controller do
   let(:user) { create(:user) }
   let(:job_order) { create(:job_order, user: user) }
   let(:job_type) { create(:job_type) }
-  let(:job_service) { create(:job_service) }
+  let(:job_service) { create(:job_service, job_service_group: create(:job_service_group, job_type: job_type)) }
   let!(:job_task) { create(:job_task, job_order: job_order, job_type: job_type, job_service: job_service) }
 
   include JobOrderSpecHelpers

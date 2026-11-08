@@ -8,6 +8,45 @@ RSpec.describe LearningModuleTrack, type: :model do
     end
   end
 
+  describe ".for_user_and_module!" do
+    let(:user) { create(:user) }
+    let(:learning_module) { create(:learning_module) }
+
+    it "creates the track when there is none" do
+      expect { described_class.for_user_and_module!(user, learning_module) }.to change(described_class, :count).by(1)
+    end
+
+    it "returns the existing track without creating another" do
+      existing = create(:learning_module_track, :completed, user: user, learning_module: learning_module)
+      expect { expect(described_class.for_user_and_module!(user, learning_module)).to eq(existing) }
+        .not_to change(described_class, :count)
+    end
+
+    # Another request created the track between the lookup and the insert: the lookup
+    # misses once, the validation passes, and the unique index refuses the insert.
+    it "returns the track another request created first, past the unique index" do
+      winner = create(:learning_module_track, user: user, learning_module: learning_module)
+      calls = 0
+      allow(described_class).to receive(:find_by).and_wrap_original do |original, *args, **kwargs|
+        (calls += 1) == 1 ? nil : original.call(*args, **kwargs)
+      end
+      allow_any_instance_of(described_class).to receive(:valid?).and_return(true)
+
+      expect { expect(described_class.for_user_and_module!(user, learning_module)).to eq(winner) }
+        .not_to change(described_class, :count)
+    end
+
+    it "returns the track another request created first when the validation already sees it" do
+      winner = create(:learning_module_track, user: user, learning_module: learning_module)
+      calls = 0
+      allow(described_class).to receive(:find_by).and_wrap_original do |original, *args, **kwargs|
+        (calls += 1) == 1 ? nil : original.call(*args, **kwargs)
+      end
+
+      expect(described_class.for_user_and_module!(user, learning_module)).to eq(winner)
+    end
+  end
+
   describe "Scopes" do
     context "#completed" do
       it "should only get the completed modules" do
@@ -36,9 +75,28 @@ RSpec.describe LearningModuleTrack, type: :model do
       expect(build(:learning_module_track, learning_module: track.learning_module)).to be_valid
     end
 
+    it "is refused by the database for a second track of the same user and module" do
+      dup = build(:learning_module_track, user: track.user, learning_module: track.learning_module)
+      expect { dup.save!(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
     it "flips to completed when the SCORM state reports cmi.completion_status=completed" do
       track.update!(scorm_state: { "cmi.completion_status" => "completed" })
       expect(track.reload).to be_completed
+    end
+
+    %w[completed passed].each do |value|
+      it "flips to completed when a SCORM 1.2 state reports cmi.core.lesson_status=#{value}" do
+        track.update!(scorm_state: { "cmi.core.lesson_status" => value })
+        expect(track.reload).to be_completed
+      end
+    end
+
+    %w[incomplete failed browsed].each do |value|
+      it "stays in progress for SCORM 1.2 lesson status #{value}" do
+        track.update!(scorm_state: { "cmi.core.lesson_status" => value })
+        expect(track.reload).to be_in_progress
+      end
     end
 
     it "stays in progress for any other SCORM completion status" do

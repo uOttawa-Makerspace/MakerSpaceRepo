@@ -43,7 +43,7 @@ module ShopifyHttpHelpers
     "https://#{cfg[:shop_name]}.myshopify.com/admin/api/#{cfg[:api_version]}/graphql.json"
   end
 
-  # In production another code path (ShopifyService / ShopifyCartConcern) has
+  # In production another code path (ShopifyService) has
   # called ShopifyAPI::Context.setup before ShopifyConcern runs; ShopifyConcern
   # itself only activates the session. Do the same priming here so the URL carries
   # the API version regardless of spec order.

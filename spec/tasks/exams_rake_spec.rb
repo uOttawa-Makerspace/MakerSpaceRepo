@@ -3,7 +3,7 @@
 require "rails_helper"
 require "rake"
 
-# The exams:check_expired_exams cron is not scheduled (config/schedule.rb), but
+# The exams:check_expired_exams cron is not scheduled, but
 # the task is still runnable by hand; it must grade an expired open exam the
 # way ExamsController#finish_exam does.
 RSpec.describe "exams:check_expired_exams" do

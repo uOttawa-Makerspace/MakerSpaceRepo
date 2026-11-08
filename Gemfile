@@ -6,7 +6,6 @@ ruby "4.0.6"
 gem "rails", "~> 8.1"
 
 # Standard libraries
-gem "abbrev"
 gem "csv"
 
 # Core Application Gems
@@ -18,6 +17,7 @@ gem "caxlsx", "~> 4.0"
 gem "chartkick"
 gem "concurrent-ruby", "~> 1.3", ">= 1.3.7"
 gem "excon"
+gem "faraday-retry", "~> 2.4"
 gem "fastimage", "~> 2.4"
 gem "file_validators"
 gem "google-apis-calendar_v3"
@@ -29,7 +29,6 @@ gem "image_processing"
 gem "jbuilder"
 gem "mission_control-jobs"
 gem "multi_json"
-gem "net-ssh"
 gem "nobspw_rails7"
 gem "octokit", "~> 10.0"
 gem "pg", "~> 1.6"
@@ -42,13 +41,13 @@ gem "roo", "~> 3.0"
 gem "roo-xls"
 gem "rrule"
 gem "rubyzip", "~> 3.0", require: "zip"
+gem "zip_kit", "~> 6.4"
 gem "saml_idp", "~> 1.0"
 gem "shopify_app", "~> 23.0"
 gem "sitemap_generator", "~> 6.3"
 gem "solid_cable"
 gem "solid_cache", "~> 1.0"
 gem "solid_queue", "~> 1.2"
-gem "trix-rails", "~> 2.4", require: "trix"
 gem "vite_rails"
 gem "youtube_id"
 gem "ruby-vips", "~> 2.3.x"
@@ -61,52 +60,30 @@ group :development, :test do
   gem "bundler-audit", require: false
   gem "factory_bot_rails"
   gem "faker", "~> 3.1"
-  gem "faraday-retry", "~> 2.4"
   gem "listen", "~> 3.7"
-  gem "mocha"
-  gem "prettier_print"
-  gem "pry", "~> 0.15"
-  gem "pry-rails", "~> 0.3"
-  gem "rails_best_practices", require: false
-  gem "railroady"
   gem "rspec-json_expectations"
   gem "rspec-rails", "~> 8.0"
-  gem "rspec_junit_formatter"
   gem "ruby_audit", require: false
   gem "simplecov", "~> 0.22"
-  gem "syntax_tree"
-  gem "syntax_tree-haml"
-  gem "syntax_tree-rbs"
   gem "debug"
 end
 
 group :development do
-  gem "capistrano", "~> 3.10", require: false
-  gem "capistrano-bundler", require: false
-  gem "capistrano-maintenance", require: false
-  gem "capistrano-rails", require: false
-  gem "capistrano-rbenv", require: false
-  gem "capistrano3-puma", require: false
   gem "erb_lint", require: false
   gem "letter_opener_web"
   gem "rubocop-rails"
   gem "ruby-prof"
-  gem "sdoc", "~> 2.6"
   gem "solargraph", require: false
   gem "solargraph-rails", require: false
   gem "web-console"
-
-  # SSH deployment
-  gem "bcrypt_pbkdf", "~> 1.0"
-  gem "ed25519", "~> 1.2"
 end
 
 group :test do
   gem "capybara"
-  gem "launchy", "~> 3.0"
   gem "selenium-webdriver", "~> 4.0"
   gem "shoulda-matchers", "~> 7.0"
   gem "parallel_tests"
   gem "test-prof"
   gem "webmock"
+  gem "axe-core-rspec", "4.14.0"
 end

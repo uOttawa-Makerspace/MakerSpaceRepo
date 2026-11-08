@@ -10,7 +10,7 @@
       </div>
 
       <div class="mb-3">
-        <%= f.label 'Printer Number', class: 'form-label' %>
+        <%= f.label :number, 'Printer Number', class: 'form-label' %>
         <div class="input-group">
           <div class="input-group-text"><span id="newPrinterCode">PrinterCode</span>-</div>
           <%= f.text_field :number, class: 'form-control' %>
@@ -25,7 +25,7 @@
     <%= form_for @printer, url: { controller: 'printers', action: 'remove_printer' } do |f| %>
       <div class="mb-3">
         <%= f.label :remove_a_printer, class: 'form-label' %>
-        <%= select_tag :remove_printer, options_from_collection_for_select(Printer.show_options, :id, :model_and_number), class: 'form-control form-select', include_blank: 'Select a printer...' %>
+        <%= select_tag :remove_printer, options_from_collection_for_select(Printer.show_options, :id, :model_and_number), class: 'form-control form-select', aria: { label: t('common.names.printer_to_remove') }, include_blank: 'Select a printer...' %>
       </div>
 
       <%= f.submit 'Remove', class: 'btn btn-primary' %>

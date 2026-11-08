@@ -71,8 +71,8 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       it "refuses a signed-in user who has not entered the password" do
         content_login!(author)
         expect { post_comment("peek", repository: secret) }.not_to change(Comment, :count)
-        # create runs the shared private-repository gate
-        expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+        # create runs the shared private-repository gate; the redirect uses the caller's own username, not the owner's
+        expect(response).to redirect_to(password_entry_repository_path(author.username, secret.id))
       end
 
       it "lets the owner, a collaborator, staff and admin comment" do
@@ -140,11 +140,10 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect { delete comments_destroy_path(comment.id) }.to change(Comment, :count).by(-1)
     end
 
-    it "500s for an unknown comment (the redirect dereferences nil)" do
+    it "answers 404 for an unknown comment" do
       content_login!(author)
-      # destroy of a missing comment flashes then calls comment.repository on nil
       delete comments_destroy_path(0)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -163,6 +162,36 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(author.reload.reputation).to eq(2)
       expect(flash[:notice]).to eq("Successfully upvoted comment")
       expect(response).to redirect_to(repository_path(owner.username, repo.id, anchor: "repo-comments"))
+    end
+
+    it "counts a vote once when the same user's vote lands between the check and the insert" do
+      content_login!(voter)
+      vote(comment)
+      allow_any_instance_of(User).to receive(:upvotes).and_wrap_original do |original|
+        relation = original.call
+        allow(relation).to receive(:find_by).and_return(nil)
+        relation
+      end
+
+      expect { vote(comment) }.not_to change(Upvote, :count)
+
+      expect(response).to redirect_to(anchor_path)
+      expect(comment.reload.upvote).to eq(1)
+      expect(author.reload.reputation).to eq(2)
+    end
+
+    it "changes no reputation when a simultaneous request already switched or removed the vote" do
+      content_login!(voter)
+      vote(comment)
+      reputation = author.reload.reputation
+      allow(Upvote).to receive(:switch).and_return(false)
+      allow(Upvote).to receive(:retract).and_return(false)
+
+      vote(comment, downvote: "t")
+      vote(comment)
+
+      expect(response).to redirect_to(anchor_path)
+      expect(author.reload.reputation).to eq(reputation)
     end
 
     it "downvote: -1 counter, -2 reputation" do
@@ -192,6 +221,14 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(Upvote.where(comment: comment, user: voter).count).to eq(1)
     end
 
+    it "flipping a downvote to an upvote swings the counter by 2 and the reputation by 4" do
+      content_login!(voter)
+      vote(comment, downvote: "t")
+      vote(comment)
+      expect(comment.reload.upvote).to eq(1)
+      expect(author.reload.reputation).to eq(2)
+    end
+
     it "removing a downvote restores counter and reputation" do
       content_login!(voter)
       vote(comment, downvote: "t")
@@ -207,11 +244,12 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(Upvote.last.downvote).to be(false)
     end
 
-    it "lets the author vote on their own comment" do
+    it "refuses a vote by the comment's author" do
       content_login!(author)
-      vote(comment)
-      expect(comment.reload.upvote).to eq(1)
-      expect(author.reload.reputation).to eq(2)
+      expect { vote(comment) }.not_to change(Upvote, :count)
+      expect(flash[:alert]).to eq("You cannot vote on your own comment")
+      expect(comment.reload.upvote).to eq(0)
+      expect(author.reload.reputation).to eq(0)
     end
 
     it "404s for a comment_id from a different repository than the :id segment" do
@@ -229,7 +267,7 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       secret_comment = create(:comment, repository: secret, user: author, username: author.username)
       content_login!(voter)
       expect { vote(secret_comment, repository: secret) }.not_to change(Upvote, :count)
-      expect(response).to redirect_to(password_entry_repository_path(owner.username, secret.id))
+      expect(response).to redirect_to(password_entry_repository_path(voter.username, secret.id))
       content_login!(owner)
       expect { vote(secret_comment, repository: secret) }.to change(Upvote, :count).by(1)
     end
@@ -246,8 +284,8 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
   describe "comments on the repository page" do
     # N+1 pinned
     it "orders by score by default and by recency with comment_filter=newest; 5 per page", skip_bullet: true do
-      low = create(:comment, repository: repo, user: author, content: "LOWCOMMENT", upvote: 0, created_at: 1.day.ago)
-      high = create(:comment, repository: repo, user: author, content: "HIGHCOMMENT", upvote: 9, created_at: 2.days.ago)
+      create(:comment, repository: repo, user: author, content: "LOWCOMMENT", upvote: 0, created_at: 1.day.ago)
+      create(:comment, repository: repo, user: author, content: "HIGHCOMMENT", upvote: 9, created_at: 2.days.ago)
       get repository_path(owner.username, repo.id)
       expect(response.body.index("HIGHCOMMENT")).to be < response.body.index("LOWCOMMENT")
       get repository_path(owner.username, repo.id, comment_filter: "newest")

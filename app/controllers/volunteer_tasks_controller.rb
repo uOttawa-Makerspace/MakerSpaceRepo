@@ -2,9 +2,10 @@
 
 class VolunteerTasksController < SessionsController
   include VolunteerTasksHelper
+  include VolunteerAreaAccess
   before_action -> { @with_volunteer_header = true }
-  before_action :grant_access, except: %i[show index my_tasks complete_task]
-  before_action :volunteer_access, only: %i[show index]
+  before_action :staff_access, except: %i[show index my_tasks complete_task]
+  before_action :volunteer_access, only: %i[show index my_tasks]
   before_action :signed_in, only: :complete_task
   before_action :task_owner_or_staff, only: :complete_task
 
@@ -45,17 +46,13 @@ class VolunteerTasksController < SessionsController
   end
 
   def create
-    @volunteer_task = VolunteerTask.new(volunteer_task_params)
+    @volunteer_task = VolunteerTask.new
     @volunteer_task.user_id = @user.try(:id)
-    if @volunteer_task.save!
+    if @volunteer_task.update_from_form(volunteer_task_params, **task_edit_params)
       update_photos
-      if params[:certifications_id].present?
-        @volunteer_task.create_certifications(params[:certifications_id])
-      end
-      add_volunteer_join(@volunteer_task.id)
-      remove_volunteer_join(@volunteer_task.id)
-      redirect_to volunteer_tasks_path
-      flash[:notice] = "You've successfully created a new Volunteer Task"
+      redirect_to volunteer_tasks_path, notice: "You've successfully created a new Volunteer Task"
+    else
+      redirect_to new_volunteer_task_path, alert: @volunteer_task.errors.full_messages.to_sentence
     end
   end
 
@@ -80,15 +77,15 @@ class VolunteerTasksController < SessionsController
     if current_user.staff?
       @volunteers = User.joins(:programs)
                         .where(programs: { program_type: Program::VOLUNTEER })
-                        .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+                        .where.not(id: active_user_ids(@volunteer_task))
                         .pluck(:name, :id)
       @staff = User.where(role: %w[staff admin])
-                   .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+                   .where.not(id: active_user_ids(@volunteer_task))
                    .pluck(:name, :id)
       @volunteers_in_task = User.joins(:programs)
-                                .where(programs: { program_type: Program::VOLUNTEER }, id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+                                .where(programs: { program_type: Program::VOLUNTEER }, id: active_user_ids(@volunteer_task))
                                 .pluck(:name, :id)
-      @staff_in_task = User.where(role: %w[staff admin], id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+      @staff_in_task = User.where(role: %w[staff admin], id: active_user_ids(@volunteer_task))
                            .pluck(:name, :id)
     end
   end
@@ -113,60 +110,58 @@ class VolunteerTasksController < SessionsController
     @tasks_categories = %w[Events Projects Supervising Workshops Other]
     @certifications = Training.all
     @volunteers_in_task = User.where(
-      id: VolunteerTaskJoin.where(volunteer_task_id: @volunteer_task.id, user_type: "Volunteer").pluck(:user_id)
+      id: @volunteer_task.volunteer_task_joins.active.where(user_type: "Volunteer").pluck(:user_id)
     )
     @staff_in_task = User.where(
-      id: VolunteerTaskJoin.where(volunteer_task_id: @volunteer_task.id).where.not(user_type: "Volunteer").pluck(:user_id)
+      id: @volunteer_task.volunteer_task_joins.active.where.not(user_type: "Volunteer").pluck(:user_id)
     )
     @staff_available = User.where(role: %w[staff admin])
-                           .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+                           .where.not(id: active_user_ids(@volunteer_task))
     @volunteers_available = User.joins(:programs)
                                 .where(programs: { program_type: Program::VOLUNTEER })
-                                .where.not(id: @volunteer_task.volunteer_task_joins.pluck(:user_id))
+                                .where.not(id: active_user_ids(@volunteer_task))
   end
 
   def update
     volunteer_task = VolunteerTask.find(params[:id])
-    volunteer_task.delete_all_certifications
-    if params[:certifications_id].present?
-      volunteer_task.create_certifications(params[:certifications_id])
-    end
-    add_volunteer_join(volunteer_task.id)
-    remove_volunteer_join(volunteer_task.id)
-    if volunteer_task.update(volunteer_task_params)
+    if volunteer_task.update_from_form(volunteer_task_params, **task_edit_params)
+      @volunteer_task = volunteer_task
       update_photos
-      flash[:notice] = "Volunteer task updated"
+      redirect_to volunteer_tasks_path, notice: "Volunteer task updated"
     else
-      flash[:alert] = "Something went wrong"
+      redirect_to edit_volunteer_task_path(volunteer_task), alert: volunteer_task.errors.full_messages.to_sentence
     end
-    redirect_to volunteer_tasks_path
   end
 
   def destroy
     volunteer_task = VolunteerTask.find(params[:id])
-    volunteer_task.delete_all_certifications
     if volunteer_task.destroy
       flash[:notice] = "Volunteer Task Deleted"
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = volunteer_task.errors.full_messages.to_sentence.presence || "Something went wrong"
     end
     redirect_to volunteer_tasks_path
   end
 
   private
 
-  def grant_access
-    unless current_user.staff?
-      flash[:alert] = "You cannot access this area."
-      redirect_to root_path
-    end
+  def active_user_ids(task)
+    task.volunteer_task_joins.active.pluck(:user_id)
   end
 
-  def volunteer_access
-    if !current_user.staff? && !current_user.volunteer?
-      flash[:alert] = "You cannot access this area."
-      redirect_to root_path
-    end
+  # The form's selects submit an empty value when nothing is chosen; those are not ids.
+  def task_edit_params
+    {
+      certification_ids: submitted_ids(:certifications_id),
+      joins: {
+        add_staff: submitted_ids(:staff_id), add_volunteers: submitted_ids(:volunteer_id),
+        remove_staff: submitted_ids(:remove_staff_id), remove_volunteers: submitted_ids(:remove_volunteer_id)
+      }
+    }
+  end
+
+  def submitted_ids(key)
+    Array(params[key]).compact_blank
   end
 
   def task_owner_or_staff
@@ -175,71 +170,6 @@ class VolunteerTasksController < SessionsController
 
     flash[:alert] = "You cannot access this area."
     redirect_to root_path
-  end
-
-  def add_volunteer_join(task_id)
-    @volunteer_task = VolunteerTask.find(task_id)
-    if params[:staff_id].present?
-      params[:staff_id] = [params[:staff_id]] unless params[:staff_id].is_a?(Array)
-      params[:staff_id].each do |staff_id|
-        @volunteer_task_join = VolunteerTaskJoin.new(
-          volunteer_task_id: @volunteer_task.id,
-          user_id: staff_id
-        )
-        if @volunteer_task_join.save
-          @volunteer_task_join.update(user_type: User.find(staff_id).role.capitalize)
-        else
-          flash[:error] = "The staff could not be added to this task, please try again later."
-        end
-      end
-    end
-    if params[:volunteer_id].present?
-      params[:volunteer_id] = [params[:volunteer_id]] unless params[:volunteer_id].is_a?(Array)
-      params[:volunteer_id].each do |volunteer_id|
-        @volunteer_task_join = VolunteerTaskJoin.new(
-          volunteer_task_id: @volunteer_task.id,
-          user_id: volunteer_id,
-          user_type: "Volunteer",
-          active: true
-        )
-        unless @volunteer_task_join.save
-          flash[:error] = "The volunteer could not be added to this task, please try again later."
-        end
-      end
-    end
-  end
-
-  def remove_volunteer_join(task_id)
-    if params[:remove_staff_id].present?
-      params[:remove_staff_id] = [params[:remove_staff_id]] unless params[:remove_staff_id].is_a?(Array)
-      params[:remove_staff_id].each do |staff_id|
-        volunteer_task = VolunteerTask.find(task_id)
-        if volunteer_task.user_id == staff_id.to_i
-          users = VolunteerTaskJoin.where(volunteer_task_id: task_id).where.not(user_id: staff_id.to_i)
-          if users.present?
-            volunteer_task.update(user_id: users.first.user_id)
-            VolunteerTaskJoin.where(volunteer_task_id: task_id, user_id: staff_id.to_i).destroy_all
-          else
-            flash[:error] = "There must be at least one staff member assigned to this task."
-            redirect_to edit_volunteer_task_path(task_id)
-          end
-        else
-          @volunteer_join_staff = VolunteerTaskJoin.find_by(user_id: staff_id, volunteer_task_id: task_id)
-          unless @volunteer_join_staff&.destroy
-            flash[:error] = "The staff could not be deleted from this task, please try again later."
-          end
-        end
-      end
-    end
-    if params[:remove_volunteer_id].present?
-      params[:remove_volunteer_id] = [params[:remove_volunteer_id]] unless params[:remove_volunteer_id].is_a?(Array)
-      params[:remove_volunteer_id].each do |volunteer_id|
-        @volunteer_join_volunteer = VolunteerTaskJoin.find_by(user_id: volunteer_id, volunteer_task_id: task_id)
-        unless @volunteer_join_volunteer&.destroy
-          flash[:error] = "The volunteer could not be deleted from this task, please try again later."
-        end
-      end
-    end
   end
 
   def update_photos

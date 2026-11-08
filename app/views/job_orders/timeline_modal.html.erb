@@ -1,8 +1,8 @@
 <ul class="timeline" id="timeline-modal-rendered">
   <% @statuses.each do |jos| %>
-    <%# the actor link is built only for rows that show it; user is optional (rows written before the presence
+    <%# the actor link is built only for rows that show it; the user is optional (rows written before the presence
         validation have none) %>
-    <% actor = (jos.user ? link_to(jos.user.name, user_path(username: jos.user.username)) : t("job_orders.timeline.unknown_user")) if jos.actor_shown? %>
+    <% actor = jos.actor_shown? ? staff_user_link(jos.display_user) || t("job_orders.timeline.unknown_user") : nil %>
     <li>
       <div class="d-flex justify-content-between">
         <p><%= jos.job_status.name %>

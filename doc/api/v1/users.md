@@ -7,7 +7,7 @@ Usernames are letters (including accented ones), digits only, max 20 characters:
 `avatar_url` is an absolute URL: the user's uploaded avatar (an Active Storage blob URL on the API host) or, without one, `<api origin>/default-avatar.png`. No legacy endpoint ever sent it.
 
 ## GET /api/v1/users/:username
-Staff/admin: any user (soft-deleted accounts included, as in the legacy profile). Anyone else: only themself. A non-staff caller asking for any other username gets 403 whether or not that user exists.
+Staff/admin: any user; only an admin can open a soft-deleted account (as in the legacy profile), for staff it is a 404. Anyone else: only themself. A non-staff caller asking for any other username gets 403 whether or not that user exists.
 
 200:
 ```json

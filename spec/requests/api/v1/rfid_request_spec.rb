@@ -239,20 +239,21 @@ RSpec.describe "/api/v1 RFID", type: :request do
       end
     end
 
-    it "keeps the card's mac when the staff member has never signed in anywhere" do
+    it "keeps the card's mac when the staff member has no assigned space" do
+      staff.update_columns(space_id: nil)
       api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
       expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
     end
 
-    it "re-homes the card to the first reader of the space the STAFF member last signed in to, like the legacy unlink_rfid" do
+    it "re-homes the card to the first reader of the staff member's assigned space, whatever space they last signed in to" do
+      staff.update_columns(space_id: space_a.id)
       create(:lab_session, user: staff, space: space_b, sign_in_time: 1.hour.ago, sign_out_time: 1.hour.from_now)
       api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
-      expect(card.reload.mac_address).to eq(reader_b.pi_mac_address)
+      expect(card.reload.mac_address).to eq(reader_a.pi_mac_address)
     end
 
-    it "then lists the card among the unlinked taps of that space" do
+    it "then lists the card among the unlinked taps of the staff member's assigned space" do
       staff.update_columns(space_id: space_a.id)
-      create(:lab_session, user: staff, space: space_a, sign_in_time: 1.hour.ago, sign_out_time: 1.hour.from_now)
       api_send :delete, "/api/v1/users/#{owner.id}/rfid", as: staff
       api_get "/api/v1/rfid_cards", as: staff, params: { linked: "false" }
       expect(body.map { |c| c["card_number"] }).to eq([card.card_number])

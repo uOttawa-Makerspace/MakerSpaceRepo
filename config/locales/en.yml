@@ -1,60 +1,19 @@
 en:
-  lockers:
-    locker_details: "Locker Details"
-    previously_assigned: "Previously Assigned"
-    assigned: "Assigned"
-    locker: "Locker"
-    view_locker_request: "View Locker Request"
-    all_locker_requests: "All Locker Requests"
-    locker_request: "Locker Request"
-    submitted_on: "Submitted on"
-    requested_by: "Requested By"
-    user: "User"
-    requested_as: "Requested As"
-    contact: "Contact"
-    team: "Team"
-    course_section: "Course / Section"
-    preferred_not_assigned: "(Preferred, not assigned)"
-    no_preferred_not_assigned: "No preference (Not assigned)"
-    none: "None"
-    approved_by: "Approved By"
-    owned_until: "Owned Until"
-    payment: "Payment"
-    paid_on: "Paid on"
-    unpaid: "Unpaid"
-    notes: "Notes"
-    rental_expired_at: "Rental Expired At"
-    rental_expires_at: "Rental Expires At"
-    expired_ago: "Expired %{when} ago"
-    cancellation_notice_sent_on: "Cancellation notice sent on"
-    time_remaining: "%{time} remaining"
-    cancelled_on: "Cancelled on"
-    reviewing_description: "Your request is currently being reviewed by staff."
-    payment_description: "Your locker request has been approved. Please proceed to payment."
-    staff_notes: "Staff Notes"
-    help_footer: "If you have any questions or need help with your locker request, please contact us."
-    state:
-      expired: "Expired"
-      cancelled: "Cancelled"
-      active: "Active"
-      await_payment: "Awaiting Payment"
-      reviewing: "Under Review"
-    new_request:
-      header: "Request a Locker"
-      description_html: "<p>Select your locker options below.</p>"
   memberships:
     index:
       no_history: "No membership history found"
+  date:
+    issued: "%{month} %{day}, %{year}" # November 3rd, 2026
   time:
     formats:
       time_only: "%l:%M %p" # 2:30 PM
       short: "%b %d, %l:%M %p" # Jun 15, 2:30 PM
-  year: "year"
   name: "English"
   faq:
     header: "Frequently Asked Questions"
     subtext: "Here's what you need to know about CEED"
   navbar:
+    skip_to_content: "Skip to main content"
     home: "Home"
     theme: "Theme"
     # explore section
@@ -136,6 +95,9 @@ en:
       recently_updated: "Recently Updated"
       filter_by: "Filter by"
   footer:
+    facebook: "Facebook"
+    instagram: "Instagram"
+    linkedin: "LinkedIn"
     about: "About"
     tos: "Terms of Service"
     hours: "Hours of Operation"
@@ -145,6 +107,8 @@ en:
     newsletter_subtext: "Sign up to our newsletter stay up to date with the latest news from CEED."
     copyright_html: 'Copyright &copy; %s <a href="https://www.uottawa.ca/faculty-engineering/centre-entrepreneurship-engineering-design">Centre for Entrepreneurship and Engineering Design</a> and <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">MakerRepo Contributors</a>'
   users:
+    deleted_account: "%{name} (deleted account)"
+    deleted_user: "Deleted user"
     reset_password: "Reset password"
     new:
       sign_up: "Create an account"
@@ -198,6 +162,8 @@ en:
         how_heard_about_us: "How did you hear about us?"
         accept_waiver_html: "By checking this box, <strong>I ACCEPT AND FULLY ASSUME</strong> all such (health and safety) risks, dangers and hazards which may be associated with my participation."
   sessions:
+    account_created: "Account has been created, please look in your emails to confirm your email address."
+    already_signed_in: "You are already signed in."
     account_deactivated: "This account has been deactivated. Please contact %{support_email}."
     login:
       sign_in: "Sign In"
@@ -211,8 +177,16 @@ en:
       submit: "Submit"
   activerecord:
     attributes:
+      space:
+        walk_in_safety_sheets: "walk in safety sheets"
+        lab_sessions: "lab sessions"
+        training_sessions: "training sessions"
+        volunteer_tasks: "volunteer tasks"
+        sub_space_bookings: "sub space bookings"
+        users_with_current_space: "users with current space"
       user:
         student_id: "Student Number"
+        email: "Email"
     errors:
       models:
         user:
@@ -229,6 +203,7 @@ en:
               confirmation: "Passwords do not match."
             email:
               taken: "This email address is already in use."
+              invalid: "is invalid"
             how_heard_about_us:
               too_long: "Maximum of %{count} characters."
             read_and_accepted_waiver_form:
@@ -250,13 +225,23 @@ en:
             end_time:
               in_the_past: "cannot be in the past for a booking that has already started. Pick an end time after now."
               booking_ended: "cannot be changed: this booking has already ended."
+              before_start: "must be after the start time."
       messages:
+        restrict_dependent_destroy:
+          has_many: "Cannot delete record because dependent %{record} exist"
         blank: "This field is required."
         inclusion: "Selection is not valid."
+  admin_events:
+    times_required: "Start and end times are required."
+    dates_required: "Start and end dates are required."
+    start_date_required: "Start date is required."
   sub_space_booking:
+    picker:
+      min_length: "Type at least %{count} characters to search for a person."
     series:
       too_long: "A recurring booking can span at most %{days} days."
       partial: "Booked %{booked} of %{total} occurrences. Not booked: %{failed}."
+      first_failed: "The series was not created because the first occurrence, %{date}, could not be booked. %{reason}"
   saml:
     login:
       sign_in: "Sign In"
@@ -296,9 +281,6 @@ en:
       telfer: "Telfer School of Management"
       choose: "Choose\u2026"
       save: "Save"
-  datetime:
-    distance_in_words:
-      ago: " ago"
   job_orders:
     are_you_sure_you_want_to_delete: "Are you sure you want to delete the Job Order?"
     alerts:
@@ -421,11 +403,16 @@ en:
       comments: "Comments"
       staff_information: "Staff Panel"
       comments_from_staff: "Comments from Staff"
+      files_from_client: "Client Files"
       files_from_staff: "Files from Staff"
       none_yet: "None yet"
       no_files: "No files uploaded for this order."
       send: "Send"
       type: "Type a message..."
+      tasks: "Tasks"
+      add_another_task: "Add Another Task"
+      save_draft: "Save Draft"
+      delete: "Delete"
     new:
       title: "What kind of project are you starting?"
       ready_to_make:

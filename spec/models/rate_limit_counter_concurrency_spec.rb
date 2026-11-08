@@ -21,12 +21,12 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
       Thread.new do
         ActiveRecord::Base.connection_pool.with_connection do
           ready << true
-          go.pop
+          go.pop(timeout: ThreadPause::PARKED_TIMEOUT)
           Array.new(per_thread) { yield }
         end
       end
     end
-    threads.times { ready.pop }
+    ThreadPause.await_all(ready, threads)
     threads.times { go << true }
     workers.flat_map(&:value)
   end
@@ -65,11 +65,11 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
         conn.transaction do
           conn.execute("UPDATE rate_limit_counters SET count = 1, expires_at = now() + interval '1 hour' WHERE key = #{conn.quote(key)}")
           holder_ready << true
-          release.pop
+          release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
         end
       end
     end
-    holder_ready.pop
+    ThreadPause.await(holder_ready)
 
     pruner = Thread.new { ActiveRecord::Base.connection_pool.with_connection { described_class.prune! } }
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 10
@@ -105,11 +105,11 @@ RSpec.describe RateLimitCounter, "across connections", type: :model do
         conn.transaction do
           conn.execute("UPDATE rate_limit_counters SET count = 1, expires_at = now() + interval '1 hour' WHERE key IN (#{revived.map { |k| conn.quote(k) }.join(', ')})")
           holder_ready << true
-          release.pop
+          release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
         end
       end
     end
-    holder_ready.pop
+    ThreadPause.await(holder_ready)
 
     pruner = Thread.new { ActiveRecord::Base.connection_pool.with_connection { described_class.prune! } }
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 10

@@ -47,11 +47,34 @@ RSpec.describe "Static pages", type: :request do
         expect(workshops.map { |w| w["name"] }).to eq((1..5).map { |i| "Workshop #{i}" })
       end
 
-      # the workshop link and picture from the third-party API are rendered as given
-      it "renders the workshop link verbatim in the href" do
-        stub_simpli(status: 200, body: { events: [{ "name" => "Evil", "startTime" => future_ms(2), "link" => "javascript:alert(1)" }] }.to_json)
+      it "renders http(s) workshop links as links" do
+        stub_simpli(status: 200, body: { events: [{ "name" => "Fine", "startTime" => future_ms(2), "link" => "https://simpli.events/e/1" }] }.to_json)
         get root_path
-        expect(response.body).to include('href="javascript:alert(1)"')
+        expect(response.body).to include('href="https://simpli.events/e/1"')
+      end
+
+      it "uses the feed picture as a background only when it is an http(s) URL" do
+        events = [
+          { "name" => "Pic", "startTime" => future_ms(1), "picture" => "https://img.example.test/a.png" },
+          { "name" => "Bad", "startTime" => future_ms(2), "picture" => "javascript:alert(1)" },
+          { "name" => "Quote", "startTime" => future_ms(3), "picture" => "https://img.example.test/a');color:red;('.png" }
+        ]
+        stub_simpli(status: 200, body: { events: events }.to_json)
+        get root_path
+        expect(response.body).to include("url('https://img.example.test/a.png')")
+        expect(response.body).not_to include("javascript:")
+        expect(response.body).not_to match(/url\('https:\/\/img\.example\.test\/a'\)/)
+        expect(response.body.scan("background-image").size).to eq(2)
+      end
+
+      it "renders a workshop without a link when the feed link is not http(s)" do
+        events = ["javascript:alert(1)", "data:text/html,x", "//evil.example.test/x", ""].each_with_index.map do |link, i|
+          { "name" => "Odd #{i}", "startTime" => future_ms(i + 1), "link" => link }
+        end
+        stub_simpli(status: 200, body: { events: events }.to_json)
+        get root_path
+        expect(response.body).to include("Odd 0", "Odd 3")
+        expect(response.body).not_to include("javascript:", "data:text", "//evil.example.test")
       end
 
       it "renders with no workshops when the API answers 500" do
@@ -300,6 +323,80 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body).to include(user.name)
     end
 
+    it "lists a volunteer's active joins on open tasks with a link to each task, and leaves out closed ones" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      space = create(:space, name: "Task Lab")
+      open_task = create(:volunteer_task, space: space, title: "Sweep the workshop floor")
+      closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "closed")
+      [open_task, closed_task].each do |task|
+        create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer")
+      end
+
+      get root_path
+
+      expect(response.body).to include("Sweep the workshop floor")
+      expect(response.body).to include(%(href="#{volunteer_task_path(open_task.id)}"))
+      expect(response.body).not_to include("Archived chore")
+    end
+
+    it "lists a volunteer's open task that has no space" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      task = create(:volunteer_task, space: nil, title: "Remote paperwork")
+      create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer")
+
+      get root_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Remote paperwork")
+    end
+
+    it "lists a volunteer's shadowing shifts with the space name, and shows a shift without a space by its time alone" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      space = create(:space, name: "Brunsfield Centre")
+      start_time = Time.zone.parse("2030-01-07 10:00")
+      create(:shadowing_hour, user: user, space: space, start_time: start_time, end_time: start_time + 3.hours)
+      create(:shadowing_hour, user: user, space: nil, start_time: start_time + 1.day, end_time: start_time + 1.day + 3.hours)
+
+      get root_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Brunsfield Centre")
+      expect(response.body.scan("shadowing-list").size).to eq(1)
+      expect(response.body.scan("10:00 - 13:00").size).to eq(2)
+      expect(response.body.scan("list-header").size).to eq(1)
+    end
+
+    it "leaves out inactive joins and shows at most five tasks, newest first" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      space = create(:space)
+      6.times do |i|
+        task = create(:volunteer_task, space: space, title: "Chore number #{i}")
+        create(:volunteer_task_join, volunteer_task: task, user: user, active: true, user_type: "Volunteer",
+                                     updated_at: i.hours.ago)
+      end
+      dropped = create(:volunteer_task, space: space, title: "Dropped chore")
+      create(:volunteer_task_join, volunteer_task: dropped, user: user, active: false, user_type: "Volunteer")
+
+      get root_path
+
+      expect(response.body).to include("Chore number 0", "Chore number 4")
+      expect(response.body).not_to include("Chore number 5")
+      expect(response.body).not_to include("Dropped chore")
+    end
+
+    it "does not hide a failing task query behind an empty list" do
+      sign_in_as(:regular)
+      allow_any_instance_of(User).to receive(:volunteer_task_joins).and_raise(ActiveRecord::StatementInvalid)
+
+      get root_path
+
+      expect(response).to have_http_status(:internal_server_error)
+    end
+
     it "shows the staff resources card to staff only" do
       sign_in_as(:regular)
       get root_path
@@ -396,11 +493,14 @@ RSpec.describe "Static pages", type: :request do
       expect(JSON.parse(response.body)).to eq([])
     end
 
-    # hours.json includes :opening_hour but ContactInfo only has_many :opening_hours, so the JSON endpoint 500s as soon as one contact info is listed
-    it "answers 500 (NoMethodError opening_hour) once a show_hours contact info exists" do
-      create(:contact_info, name: "Hours Lab", show_hours: true)
+    it "lists a show_hours contact info with its opening hours" do
+      info = create(:contact_info, name: "Hours Lab", show_hours: true)
       get hours_path(format: :json)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+      expect(body.map { |c| c["name"] }).to eq(["Hours Lab"])
+      expect(body.first["opening_hours"]).to be_an(Array)
+      expect(body.first["opening_hours"].size).to eq(info.opening_hours.count)
     end
   end
 
@@ -435,7 +535,7 @@ RSpec.describe "Static pages", type: :request do
     # that ended > 2 months ago; recurring series are never dropped.
     # Date#to_time inside safe_to_time uses the PROCESS time zone, so the examples
     # pin TZ explicitly. Most pin UTC process-zone behaviour; the production host's
-    # TZ is UNVERIFIED (Capistrano-deployed host, staging Docker sets none).
+    # TZ is UNVERIFIED (staging Docker sets none).
     # One example also pins America/Toronto so both host configurations are characterized.
     describe "happy path with a Google-style ICS feed" do
       let(:feed_url) { "https://calendar.example.test/feed.ics" }
@@ -678,7 +778,7 @@ RSpec.describe "Static pages", type: :request do
     it "emails a reset link to an existing account (delivered outcome)" do
       user = create(:user, :regular_user)
       deliveries.clear
-      patch reset_password_path, params: { email: " #{user.email.upcase} " }
+      perform_enqueued_jobs { patch reset_password_path, params: { email: " #{user.email.upcase} " } }
       expect(response).to have_http_status(:ok)
       expect(flash[:notice]).to eq("A reset link email has been sent to the email if the account exists.")
       expect(deliveries.size).to eq(1)

@@ -10,7 +10,7 @@
 
   # Format details safely for the data attribute to prevent quote collision
   search_details = log.details&.map { |k, v| "#{k} #{v}" }&.join(' ')
-  search_string = [log.card_number, log.user&.name, log.message, log.space&.name, log.mac_address, search_details].compact.join(' ').downcase
+  search_string = [log.card_number, log.display_user&.name, log.message, log.space&.name, log.mac_address, search_details].compact.join(' ').downcase
 %>
 
 <tr
@@ -24,8 +24,8 @@
   </td>
   <td class="log-card text-nowrap"><%= log.card_number || "—" %></td>
   <td class="log-user text-nowrap">
-    <% if log.user %>
-      <%= log.user.name %>
+    <% if log.display_user %>
+      <%= staff_user_name(log.display_user) %>
     <% else %>
       <span class="text-muted">—</span>
     <% end %>

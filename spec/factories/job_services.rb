@@ -4,8 +4,8 @@ FactoryBot.define do
     description { Faker::Lorem.sentence }
     unit { Faker::Lorem.word }
     required { false }
-    internal_price { Faker::Number.decimal }
-    external_price { Faker::Number.decimal }
+    internal_price { 10.0 }
+    external_price { 15.0 }
     association :job_service_group
 
     trait :with_files do

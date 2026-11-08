@@ -12,6 +12,7 @@
   <h3>Create a new space by giving it a unique name </h3>
   <%= form_for admin_spaces_path, url: { action: 'create', controller: 'admin/spaces' } do |f| %>
     <div class="mb-3">
+      <%= label_tag 'space_params_name', 'Space name', class: 'visually-hidden' %>
       <%= text_field_tag 'space_params[name]', nil, placeholder: 'Enter a unique name', class: 'form-control' %>
     </div>
     <%= submit_tag 'Create', class: 'btn btn-primary' %>

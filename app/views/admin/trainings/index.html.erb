@@ -17,7 +17,7 @@
       <tr>
         <td><%= t.skill&.name %></td>
         <td><%= t.name_en %></td>
-        <% spaces = t.spaces.order(:name) %>
+        <% spaces = @spaces_by_training.fetch(t.id, []) %>
           <td>
             <% spaces.each do |s| %>
               <%= s.name %> <br />
@@ -25,12 +25,12 @@
           </td>
           <td>
             <% spaces.each do |s| %>
-              <%= t.training_sessions.where(space_id: s.id).count %><br />
+              <%= @session_counts.fetch([t.id, s.id], 0) %><br />
             <% end %>
           </td>
           <td>
             <% spaces.each do |s| %>
-              <%= t.certifications.joins(:training_session).where('training_sessions.space_id = ?', s.id).count %> <br />
+              <%= @certification_counts.fetch([t.id, s.id], 0) %> <br />
             <% end %>
           </td>
         <td>

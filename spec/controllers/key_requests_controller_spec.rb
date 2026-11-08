@@ -212,7 +212,7 @@ RSpec.describe KeyRequestsController, type: :controller do
           )
         other_space = create(:space)
 
-        patch :steps,
+        patch :update_steps,
               params: {
                 step: 2,
                 key_request_id: kr.id,
@@ -242,7 +242,7 @@ RSpec.describe KeyRequestsController, type: :controller do
             space_id: @space.id
           )
 
-        patch :steps,
+        patch :update_steps,
               params: {
                 step: 3,
                 key_request_id: kr.id,
@@ -270,7 +270,7 @@ RSpec.describe KeyRequestsController, type: :controller do
           question_responses["question_#{i}"] = "response #{i}"
         end
 
-        patch :steps,
+        patch :update_steps,
               params: {
                 step: 4,
                 key_request_id: kr.id,
@@ -291,7 +291,7 @@ RSpec.describe KeyRequestsController, type: :controller do
             space_id: @space.id
           )
 
-        patch :steps,
+        patch :update_steps,
               params: {
                 step: 5,
                 key_request_id: kr.id,
@@ -323,7 +323,7 @@ RSpec.describe KeyRequestsController, type: :controller do
             read_lab_rules: true
           )
 
-        patch :steps,
+        patch :update_steps,
               params: {
                 step: 6,
                 key_request_id: kr.id,

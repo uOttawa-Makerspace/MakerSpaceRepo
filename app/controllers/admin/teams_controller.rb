@@ -71,6 +71,13 @@ class Admin::TeamsController < AdminAreaController
 
   def update
     tm = @team.team_memberships.find_by(user_id: params[:captain])
+    if tm.nil?
+      return(
+        redirect_to edit_admin_team_path,
+                    alert: "Please select a captain who is a member of the team."
+      )
+    end
+
     owner_tm = @team.team_memberships.where(role: :captain).first
 
     if @team.update(team_params)

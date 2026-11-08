@@ -1,11 +1,13 @@
 class ChatMessage < ApplicationRecord
+  include DisplayUser
+
   belongs_to :job_order
   belongs_to :sender, class_name: 'User'
+  # display_sender shows who wrote a message even when the account was deleted; notifications keep using +sender+.
+  display_user_for :sender
 
   validates :message, presence: true
   validates :sender_id, presence: true
-
-  after_save :schedule_notification_email
 
   scope :unread, ->(current_user) { 
     where.not(sender: current_user)
@@ -28,22 +30,29 @@ class ChatMessage < ApplicationRecord
     end
   end
 
-  private
-
-  def schedule_notification_email
+  # Emails everyone who should hear about this message, one email each: the order's owner, its assigned staff,
+  # everyone who has posted in the chat and can still open the order, and the extra recipients in Setting.chat_extra_recipients; never the
+  # author, never twice. Called by whoever posts the message, after it is saved. Nothing goes out for a draft
+  # order, or when the author already posted in this chat within the last hour.
+  def notify_participants
     return if recent_message_by_sender? || job_order.latest_status&.job_status == JobStatus.draft
 
-    recipients = job_order.chat_messages
-                  .where.not(sender_id: sender_id)
-                  .select(:sender_id)
-                  .distinct
-                  .map(&:sender)
-                  .uniq
+    notification_emails.each { |email| ChatMessageMailer.new_message(self, email).deliver_later }
+  end
 
-    additional_recipients = User.where(id: [25, 1607])
-    all_recipients = (recipients + additional_recipients).uniq - [sender]
+  private
 
-    ChatMessageMailer.new_message(self, all_recipients).deliver_later if all_recipients.any?
+  def notification_emails
+    posters = job_order.chat_messages.includes(:sender).map(&:sender)
+    participants = [job_order.user, job_order.assigned_staff, *posters].select { |user| job_order.accessible_by?(user) }
+    emails = participants.map(&:email) + extra_recipient_emails
+    emails.uniq(&:downcase).reject { |email| email.casecmp?(sender.email) }
+  end
+
+  # Setting.chat_extra_recipients holds user ids and plain addresses.
+  def extra_recipient_emails
+    ids, addresses = Setting.chat_extra_recipients.partition { |entry| entry.match?(/\A\d+\z/) }
+    User.where(id: ids).pluck(:email) + addresses
   end
 
   def recent_message_by_sender?

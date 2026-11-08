@@ -119,8 +119,15 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
   describe "GET /locker_rentals (index)" do
     before { log_in!(owner) }
 
-    # N+1 pinned
-    it "renders the CEED-lockers page with active rental cards AND the full history table", skip_bullet: true do
+    it "shows Indefinite for an active rental without an end date" do
+      create(:locker_rental, :active, rented_by: owner).update_columns(owned_until: nil)
+
+      get locker_rentals_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Indefinite")
+    end
+
+    it "renders the CEED-lockers page with active rental cards AND the full history table" do
       active = create(:locker_rental, :active, rented_by: owner)
       cancelled = create(:locker_rental, rented_by: owner)
       cancelled.update!(decided_by: staff, state: :cancelled)
@@ -146,6 +153,20 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Request a locker")
       expect(response.body).to include('href="' + new_locker_rental_path + '"')
+    end
+
+    it "runs the same number of queries however many rentals the user has" do
+      create(:locker_rental, :active, rented_by: owner)
+      create(:locker_rental, rented_by: owner).update!(decided_by: staff, state: :cancelled)
+      get locker_rentals_path # warm caches
+      few = count_queries { get locker_rentals_path }
+
+      create_list(:locker_rental, 2, :active, rented_by: owner)
+      create(:locker_rental, rented_by: owner).update!(decided_by: staff, state: :cancelled)
+      many = count_queries { get locker_rentals_path }
+
+      expect(response.body.scan('data-search="').size).to eq(5)
+      expect(many).to eq(few)
     end
 
     it "only ever shows the signed-in user's own rentals" do
@@ -180,7 +201,6 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
       get new_locker_rental_path
       tbody = response.body[/<tbody>.*<\/tbody>/m, 0]
-      puts "COUNT ROW>>>#{tbody.split.join(' ')}<<<"
       expect(response).to have_http_status(:ok)
       expect(tbody).to match(
         %r{<td>\s*(?:<!--[^>]*-->\s*)?1\s*</td>\s*<td>#{Regexp.escape(size.size)}</td>}m
@@ -306,8 +326,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
           .to eq("New locker rentals are not currently accepted.")
       end
 
-      it "renders :new with 422 and the parked-error listing once one request already waits (the form is replaced by the blocked notice)" do
-        # 422 re-render shows blocked notice plus error list
+      it "renders :new with 422 and only the error list and form (no pending-request notice) once one request already waits" do
         reviewing_rental! # one-request-per-user rule trips the 2nd POST
 
         log_in!(owner)
@@ -319,8 +338,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(response.body).to include("Errors:")
         expect(response.body)
           .to include("Rented by already has a request under review")
-        # the pending notice replaced the form, so re-rendering :new shows it again
-        expect(response.body).not_to include('name="locker_rental[notes]"')
+        expect(response.body).not_to include("You have a pending request for a locker")
+        expect(response.body).to include('name="locker_rental[notes]"')
       end
 
       it "validates the GNG student field bundle on create" do
@@ -577,14 +596,13 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include("Locker Inventory")
     end
 
-    it "denies strangers with a plain redirect to the index (no flash set)" do
-      # stranger denial sets no flash
+    it "denies strangers with a redirect to the index and an alert" do
       rental = reviewing_rental!
       log_in!(other)
 
       get locker_rental_path(rental)
       expect(response).to redirect_to(locker_rentals_path)
-      expect(flash[:alert]).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("lockers.access_denied"))
     end
 
     it "returns 404 for an unknown rental id" do
@@ -875,7 +893,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
             ActionMailer::Base.deliveries.clear
 
             perform_enqueued_jobs do
-              patch locker_rental_path(rental), params: { locker_rental: { state: target, locker_id: rental.locker_id } }
+              patch locker_rental_path(rental), params: { locker_rental: { state: target } }
             end
 
             if target == "cancelled"
@@ -927,19 +945,32 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         end
       end
 
-      it "accepts only :state for owners (notes edits silently dropped)" do
-        # owner notes edits are silently dropped
+      it "refuses an owner's edit of anything but the state, with a message, and changes nothing" do
         rental = reviewing_rental!(tenant: owner)
         log_in!(owner)
 
         patch locker_rental_path(rental),
               params: { locker_rental: { notes: "edited by owner!" } }
-
+        expect(response).to redirect_to(locker_rental_path(rental))
+        expect(flash[:alert]).to eq(I18n.t("lockers.renter_edit_refused"))
         expect(rental.reload.notes).not_to eq("edited by owner!")
-        # and the same POST with cancelled state succeeds only through state
+
         patch locker_rental_path(rental),
               params: { locker_rental: { notes: "edited by owner!", state: "cancelled" } }
+        expect(flash[:alert]).to eq(I18n.t("lockers.renter_edit_refused"))
         expect(rental.reload.notes).not_to eq("edited by owner!")
+        expect(rental.state).to eq("reviewing")
+
+        patch locker_rental_path(rental),
+              params: { locker_rental: { notes: "edited by owner!" } }, as: :json
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["error"]).to eq(I18n.t("lockers.renter_edit_refused"))
+
+        patch locker_rental_path(rental), params: { notes: "edited by owner!" }
+        expect(flash[:alert]).not_to eq(I18n.t("lockers.renter_edit_refused"))
+        expect(rental.reload.state).to eq("reviewing")
+
+        patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }
         expect(rental.reload.state).to eq("cancelled")
       end
 
@@ -950,7 +981,36 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         patch locker_rental_path(rental),
               params: { locker_rental: { state: "cancelled" } }
         expect(response).to redirect_to(locker_rentals_path)
+        expect(flash[:alert]).to eq(I18n.t("lockers.access_denied"))
         expect(rental.reload.state).to eq("reviewing")
+      end
+
+      it "redirects a stranger's JSON update too, without touching the rental" do
+        rental = reviewing_rental!(tenant: owner)
+        log_in!(other)
+
+        patch locker_rental_path(rental),
+              params: { locker_rental: { state: "cancelled" } },
+              as: :json
+        expect(response).to redirect_to(locker_rentals_path)
+        expect(rental.reload.state).to eq("reviewing")
+      end
+
+      it "answers a locker_rental sent as a plain string like any other missing parameter" do
+        rental = reviewing_rental!(tenant: owner)
+
+        [owner, staff].each do |user|
+          log_in!(user)
+
+          patch locker_rental_path(rental), params: { locker_rental: "cancelled" }
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to include("locker_rental")
+
+          patch locker_rental_path(rental), params: { locker_rental: "cancelled" }, as: :json
+          expect(response).to have_http_status(:bad_request)
+          expect(response.parsed_body["error"]).to include("locker_rental")
+          expect(rental.reload.state).to eq("reviewing")
+        end
       end
 
       it "answers a JSON cancellation with 204 and no body" do
@@ -967,16 +1027,40 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       end
     end
 
-    describe "replay and re-activation behaviour pinned" do
-      it "lets staff re-activate a cancelled rental (the action buttons are hidden in the UI)" do
-        rental = create(:locker_rental, :active)
-        rental.update!(decided_by: staff, state: :cancelled)
+    describe "a cancelled rental" do
+      let(:rental) do
+        create(:locker_rental, :active).tap { |r| r.update!(decided_by: staff, state: :cancelled) }
+      end
+
+      # staff and admin may take a cancelled rental straight to active (cash paid at the desk)
+      it "is re-activated by staff or an admin" do
+        [staff, admin].each do |actor|
+          log_in!(actor)
+          patch locker_rental_path(rental),
+                params: { locker_rental: { state: "active", locker_id: rental.locker_id } }
+          expect(rental.reload.state).to eq("active"), actor.role
+          expect(rental.decided_by).to eq(actor)
+          rental.update!(state: :cancelled)
+        end
+      end
+
+      it "is not moved to reviewing by staff" do
         log_in!(staff)
 
         patch locker_rental_path(rental),
-              params: { locker_rental: { state: "active", locker_id: rental.locker_id } }
+              params: { locker_rental: { state: "reviewing", locker_id: rental.locker_id } }
 
-        expect(rental.reload.state).to eq("active")
+        expect(flash[:alert]).to include("cannot change from cancelled")
+        expect(rental.reload.state).to eq("cancelled")
+      end
+
+      it "can be sent back to awaiting payment by staff" do
+        log_in!(staff)
+
+        patch locker_rental_path(rental),
+              params: { locker_rental: { state: "await_payment", locker_id: rental.locker_id } }
+
+        expect(rental.reload.state).to eq("await_payment")
       end
     end
 
@@ -1486,15 +1570,14 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         .to include(toggle_contacted_locker_rental_path(awaiting))
     end
 
-    it "is staff/admin-only for HTML (regular users bounce with no flash)" do
+    it "is staff/admin-only for HTML (regular users bounce with an alert)" do
       log_in!(owner)
       get admin_locker_rentals_path
       expect(response).to redirect_to(locker_rentals_path)
-      expect(flash[:alert]).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("lockers.access_denied"))
     end
 
-    # N+1 pinned
-    it "serves JSON with pending/active keys (no eager-serialized association payloads)", skip_bullet: true do
+    it "serves JSON with pending/active keys (no eager-serialized association payloads)" do
       tenant = create(:locker_rental, :reviewing)
       awaiting = create(:locker_rental, :await_payment)
 
@@ -1508,6 +1591,23 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(json["pending"].first.keys).to include("state", "rented_by_id", "notes")
       expect(json["pending"].first).not_to have_key("locker")
       expect(json["pending"].first).not_to have_key("rented_by")
+    end
+
+    it "serves the JSON with one query per list, however many rentals there are" do
+      preferred = create(:locker)
+      create(:locker_rental, :reviewing, preferred_locker: preferred)
+      log_in!(staff)
+      get admin_locker_rentals_path, as: :json
+      few = count_queries { get admin_locker_rentals_path, as: :json }
+
+      create_list(:locker_rental, 2, :reviewing)
+      create(:locker_rental, :reviewing, preferred_locker: create(:locker))
+      create_list(:locker_rental, 2, :await_payment)
+      many = count_queries { get admin_locker_rentals_path, as: :json }
+
+      expect(response.parsed_body.values.map(&:size)).to eq([4, 2])
+      expect(response.parsed_body["pending"].map { |r| r.dig("preferred_locker", "id") }.compact.size).to eq(2)
+      expect(many).to eq(few)
     end
 
     it "renders a pending request whose owner was soft-deleted (the association is unscoped from User's default scope)" do
@@ -1547,13 +1647,20 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response).to redirect_to(locker_rentals_path)
     end
 
-    it "renders an empty table for staff when nothing is expired (the 'no expired' paragraph can never render)" do
-      # the "no expired" paragraph can never render
+    it "says so, with no table, when nothing is expired" do
       log_in!(staff)
       get expired_locker_rentals_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Expired locker rentals")
-      expect(response.body).not_to include("There are no expired lockers")
+      expect(response.body).to include(I18n.t("lockers.no_expired_rentals"))
+      expect(response.body).not_to include("<table")
+    end
+
+    it "does not say there are none when there are expired rentals" do
+      create(:locker_rental, :active, owned_until: 1.week.ago)
+      log_in!(staff)
+      get expired_locker_rentals_path
+      expect(response.body).not_to include(I18n.t("lockers.no_expired_rentals"))
     end
   end
 
@@ -1623,6 +1730,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       patch toggle_contacted_locker_rental_path(rental)
 
       expect(response).to redirect_to(locker_rentals_path)
+      expect(flash[:alert]).to eq(I18n.t("lockers.access_denied"))
       expect(rental.reload.contacted_for_clearance).to eq(false)
     end
 

@@ -1,23 +1,24 @@
 # frozen_string_literal: true
 
 namespace :update_profile do
+  # Mails the profile update request once per calendar year, in BCC groups. A second run in the same year mails
+  # nobody, an interrupted run continues after the last group claimed, and FORCE=1 mails everyone again.
+  # Usage: rake "update_profile:send_emails" or, to leave out some addresses, rake "update_profile:send_emails[a@a.ca b@b.ca]"
+  # (separate addresses with spaces, not commas).
   desc "sends emails to update profile"
-  task :send_emails, [:removed_emails] => [:environment] do |t, args|
-    # HOW TO USE THE RAKE TASK
-    # rake "update_profile:send_emails", if you want to remove particular emails
-    # (In case of error while sending them for example), you can do rake "update_profile:send_emails[a@a.ca b@b.ca]"
-    # DO NOT ADD commas or it will break the rake task
-
-    emails_to_remove = args.removed_emails.split(" ")
+  task :send_emails, [:removed_emails] => [:environment] do |_t, args|
+    emails_to_remove = args.removed_emails.to_s.split
     max_bcc_at_once = 498
-    emails =
-      (User.active.not_deactivated.pluck(:email) - emails_to_remove).in_groups_of(
-        max_bcc_at_once,
-        false
-      )
-    emails.each_with_index do |email_list, i|
-      puts "Sending email ##{i}"
-      MsrMailer.send_profile_update(email_list).deliver_now
+    run = BulkMailRun.new("update_profile", Time.zone.today.year, force: ENV["FORCE"] == "1")
+    if run.done?
+      puts "The profile update mail was already sent this year; run with FORCE=1 to send it again."
+    else
+      recipients = User.active.not_deactivated.where.not(email: emails_to_remove)
+      batches = run.each_batch(recipients, max_bcc_at_once) do |users|
+        puts "Sending email to #{users.size} users"
+        MsrMailer.send_profile_update(users.map(&:email)).deliver_now
+      end
+      puts "Sent #{batches} groups"
     end
   end
 end

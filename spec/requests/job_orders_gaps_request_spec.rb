@@ -80,18 +80,18 @@ RSpec.describe "JobOrders gaps", type: :request do
       end
     end
 
-    it "answers format.js with a client-side redirect snippet" do
+    it "answers format.js with a client-side redirect snippet and 401" do
       patch job_order_user_approval_path(order), params: { approved: "true" },
                                                  headers: { "ACCEPT" => "text/javascript" }
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:unauthorized)
       expect(response.body).to eq("window.location.href = '/login'")
     end
 
-    it "answers format.json with the literal string redirect" do
+    it "answers format.json with a JSON error and 401" do
       patch job_order_user_approval_path(order), params: { approved: "true" },
                                                  headers: { "ACCEPT" => "application/json" }
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to eq("redirect") # a bare (non-JSON) string behind a json content type
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body).to eq("error" => "Please sign in.")
     end
   end
 
@@ -153,11 +153,11 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(statusless.reload.job_order_statuses).to be_empty
     end
 
-    it "marks a paid transition without sending any mail" do
+    it "marks a paid transition and mails the customer that the order is ready for pickup" do
       session_login!(staff)
       completed = order_with_task!(status_key: :completed)
       perform_enqueued_jobs { patch job_order_paid_path(completed), params: { paid: "true" } }
-      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Your Job Order ##{completed.id} is now ready for pickup"])
     end
 
     # the js format renders admin_row -> _assign_staff with a nil @staff
@@ -202,7 +202,8 @@ RSpec.describe "JobOrders gaps", type: :request do
       perform_enqueued_jobs { patch job_order_user_approval_path(order), params: { approved: "true" } }
       expect(status_names(order)).to end_with("Waiting to be Processed")
       expect(order.job_order_statuses.last.user).to eq(staff)
-      expect(ActionMailer::Base.deliveries.last.subject).to eq("A user has approved a Job Order")
+      expect(ActionMailer::Base.deliveries.map(&:subject).first).to eq("A user has approved a Job Order")
+      expect(ActionMailer::Base.deliveries.last.to).to eq([order.user.email])
     end
 
     it "accepts the SENT_REMINDER state as an origin for a user approval" do
@@ -228,7 +229,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       session_login!(owner)
       perform_enqueued_jobs { patch job_order_user_approval_path(order), params: { approved: "true" } }
 
-      mail = ActionMailer::Base.deliveries.last
+      mail = ActionMailer::Base.deliveries.first
       expect(mail.subject).to eq("EXPEDITED: A user has approved a Job Order")
       expect(mail.to).to eq(["makerspace@uottawa.ca"])
       expect(mail.header["Importance"].to_s).to eq("high")
@@ -404,8 +405,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
     end
 
-    # the has_many :job_order_options dependent: :destroy has no model;
-    # destroy is a soft delete here, so the controller never trips over it.
+    # destroy is a soft delete here: the order and its tasks stay.
     it "keeps the row (soft delete) and its tasks" do
       order = order_with_task!
       session_login!(owner)
@@ -515,7 +515,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       order = order_with_task!(status_key: :completed)
       task = order.job_tasks.first
       group = create(:job_service_group, job_type: JobType.find_by!(name: "3D Print"), name: "Resin")
-      task.update!(job_service: create(:job_service, job_service_group: group, name: "SLA print", unit: "cm3"))
+      task.update!(job_type: group.job_type, job_service: create(:job_service, job_service_group: group, name: "SLA print", unit: "cm3"))
       quote = task.build_job_task_quote(price: 10, service_price: 3, service_quantity: 2)
       quote.save!
       quote.job_task_quote_options.create!(job_option: JobOption.create!(name: "Polish", fee: 1), price: 4)

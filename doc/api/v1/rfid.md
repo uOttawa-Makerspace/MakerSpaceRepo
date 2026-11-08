@@ -33,7 +33,7 @@ Refused with 422 and nothing changed (legacy did both silently):
 | 422 | `validation_failed` | `card_number` not a string or invalid (blank/too long/control characters), or one of the two refusals above |
 
 ## DELETE /api/v1/users/:id/rfid
-Unlinks the user's card. As `unlink_rfid` does, the card is re-homed so it shows up in the unlinked list: its `mac_address` becomes the first reader of the space of the caller's last lab session (kept unchanged when the caller has never signed in, or that space has no reader).
+Unlinks the user's card. The card is re-homed so it shows up in the caller's unlinked list (`GET /rfid_cards?linked=false`): its `mac_address` becomes the first reader of the caller's assigned space, the space that list filters on (kept unchanged when the caller has no assigned space, or that space has no reader). `PUT /staff_dashboard/unlink_rfid` uses the same rule (`Rfid.unlink_from_user!`).
 
 204, empty body. A user with no card is a no-op 204 (legacy: 500 for an unknown card number).
 

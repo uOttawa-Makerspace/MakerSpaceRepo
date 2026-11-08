@@ -51,6 +51,38 @@ RSpec.describe Upvote, type: :model do
     end
   end
 
+  describe ".cast" do
+    let(:user) { create(:user, :regular_user) }
+    let(:comment) { create(:comment) }
+
+    it "records the vote and counts it once" do
+      expect(Upvote.cast(user, comment, false)).to be(true)
+      expect(comment.reload.upvote).to eq(1)
+    end
+
+    it "returns false and counts nothing when the user already voted on the comment" do
+      Upvote.cast(user, comment, false)
+      expect(Upvote.cast(user, comment, false)).to be(false)
+      expect([Upvote.where(user_id: user.id, comment_id: comment.id).count, comment.reload.upvote]).to eq([1, 1])
+    end
+
+    it "returns false when the unique index refuses a vote the validation let through" do
+      Upvote.cast(user, comment, false)
+      allow_any_instance_of(Upvote).to receive(:valid?).and_return(true)
+      expect(Upvote.cast(user, comment, true)).to be(false)
+      expect(comment.reload.upvote).to eq(1)
+    end
+  end
+
+  describe "the unique index" do
+    it "refuses a second vote by the same user on the same comment" do
+      upvote = create(:upvote)
+      expect do
+        Upvote.new(user_id: upvote.user_id, comment_id: upvote.comment_id).save(validate: false)
+      end.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+  end
+
   describe "Before destroy" do
     context "votes" do
       it 'should increment the comment\'s upvote' do

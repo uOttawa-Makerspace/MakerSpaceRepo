@@ -15,15 +15,13 @@ RSpec.describe "Tap box console", type: :system do
   end
 
   it "keeps a regular user out of the console" do
-    log_in_as(create(:user, :regular_user))
-    visit staff_tap_box_console_path
+    log_in_as(create(:user, :regular_user), to: staff_tap_box_console_path)
     expect(page).to have_current_path(root_path)
     expect(page).not_to have_css("#tap-box-console")
   end
 
   it "renders the channel markers, controls and log rows for staff" do
-    log_in_as(staff)
-    visit staff_tap_box_console_path
+    log_in_as(staff, to: staff_tap_box_console_path)
 
     expect(page).to have_css("h4", text: "Tap Box Debugger Console")
     expect(page).to have_css("turbo-cable-stream-source[channel='Turbo::StreamsChannel']", visible: :all)
@@ -39,8 +37,7 @@ RSpec.describe "Tap box console", type: :system do
   end
 
   it "filters rows client-side by event type and by search text" do
-    log_in_as(staff)
-    visit staff_tap_box_console_path
+    log_in_as(staff, to: staff_tap_box_console_path)
     expect(page).to have_css("#console-body tr", count: 2)
 
     select "Error", from: "filter-event-type"

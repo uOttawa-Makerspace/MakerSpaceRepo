@@ -15,6 +15,7 @@ end %>
     <div class="mb-3">
         <%= form_with url: search_url, method: :get, id: 'SearchForm' do |form| %>
             <div class="input-group">
+                <%= form.label :q, 'Project title or description', class: 'visually-hidden' %>
                 <%= form.text_field :q, class: 'form-control', value: params[:q], placeholder: 'Project title or description...' %>
                 <%= form.submit t('explore.search'), class: 'btn btn-primary', name: nil %>
             </div>
@@ -45,7 +46,7 @@ end %>
                 <% end %>
                 <% SearchController::SLUG_TO_CATEGORY_MODEL.each do |slug, name| %>
                     <div class="form-check">
-                        <%= label_tag "category_#{slug}", name, class: 'form-check-label' %>
+                        <%= label_tag "category_#{slug}", name, for: "category_#{slug}", class: 'form-check-label' %>
                         <%= check_box_tag 'category[]', slug, params[:category]&.include?(slug), id: "category_#{slug}", class: 'form-check-input', form: "SearchForm" %>
                     </div>
                 <% end %>

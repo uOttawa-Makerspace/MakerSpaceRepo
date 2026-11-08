@@ -181,6 +181,6 @@ class ApiRefreshToken < ApplicationRecord
   def expires_within_family_cap
     return unless expires_at && family_expires_at && expires_at > family_expires_at
 
-    errors.add(:expires_at, "must not be after the family cap")
+    errors.add(:expires_at, :after_family_cap)
   end
 end

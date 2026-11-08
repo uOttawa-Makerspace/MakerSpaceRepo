@@ -15,7 +15,8 @@ module ShopifyContextIsolation
     lib/shopify_context_spec lib/shopify_webhook_secret_spec lib/shopify_context_isolation_spec
     models/concerns_shopify_concern_spec models/job_order_spec models/locker_rental_spec models/membership_spec
     requests/job_orders_request_spec requests/locker_orders_paid_webhook_spec requests/locker_rentals_request_spec
-    requests/memberships_request_spec requests/page_crawl_spec requests/shop_orders_paid_webhook_spec
+    requests/memberships_request_spec requests/page_crawl_spec requests/shop_order_inbox_webhook_spec
+    jobs/apply_processed_order_job_spec
     requests/shopify_http_contract_spec requests/static_pages_request_spec
     system/checkout_spec system/journeys/locker_journey_spec system/page_crawl_spec
   ].freeze

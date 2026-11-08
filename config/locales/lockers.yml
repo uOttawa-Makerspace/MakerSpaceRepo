@@ -30,10 +30,14 @@ en:
 
     locker_details: Details
     assigned: Assigned
+    previously_assigned: Previously Assigned
     previously_held: Previously held
     preferred_not_assigned: Preferred, no locker assigned
     no_preferred_not_assigned: No preference, no locker assigned
     none: none
+    access_denied: You do not have access to that page.
+    renter_edit_refused: You can only cancel your own request. Nothing was changed.
+    no_expired_rentals: There are no expired lockers.
 
     submitted_on: Submitted on
     for: for
@@ -47,6 +51,7 @@ en:
       await_payment: Await payment
       active: Active
       cancelled: Ended
+      expired: Expired
 
     approved_by: Approved by
     assigned_on: Assigned on
@@ -57,6 +62,7 @@ en:
 
     rental_expires_at: Rental expires at
     rental_expired_on: Rental expired on
+    rental_expired_at: Rental Expired At
     expired_ago: "Expired %{when} ago"
     cancellation_notice_sent_on: Cancellation notice sent on
     cancelled_on: Cancelled on
@@ -154,8 +160,25 @@ fr:
     assign_a_locker: Assigner un casier
 
     locker_id: ID de casier
+    requested_by: Demandé par
+    user: Utilisateur
+    requested_as: Demandé en tant que
     rented_by: Loué par
-    details: Détails
+    contact: Contact
+    team: Équipe
+    course_section: Cours et section
+
+    locker_details: Détails
+    assigned: Assigné
+    previously_assigned: Précédemment assigné
+    previously_held: Précédemment attribué
+    preferred_not_assigned: Préféré, aucun casier assigné
+    no_preferred_not_assigned: Aucune préférence, aucun casier assigné
+    none: aucun
+    access_denied: Vous n'avez pas accès à cette page.
+    renter_edit_refused: Vous pouvez seulement annuler votre propre demande. Rien n'a été modifié.
+    no_expired_rentals: Aucun casier n'est expiré.
+
     submitted_on: Soumise le
     for: par
     paid_on: Payé le
@@ -179,6 +202,7 @@ fr:
 
     rental_expires_at: Location expire le
     rental_expired_on: Location expiré le
+    rental_expired_at: Location expirée le
     expired_ago: "Expiré il y a %{when}"
     cancellation_notice_sent_on: Avis d'annulation envoyé le
     cancelled_on: Annulé le
@@ -195,7 +219,7 @@ fr:
     help_footer: Si vous avez des questions concernant votre casier, veuillez nous contacter à
 
     actions:
-      cancel_rental: Annuler la demande
+      cancel_request: Annuler la demande
       cancel_request_description: |
         Réfuser or annuler cette demande.
         L'utilisateur sera notifié de l'annulation or réfusal de sa demande.
