@@ -263,7 +263,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       vol_login!(owner)
       get edit_volunteer_hour_path(hour)
       expect(response).to redirect_to(volunteer_hours_path)
-      expect(flash[:alert]).to eq("This volunteer hour was already processed.")
+      expect(flash[:alert]).to eq("This volunteer hour was already processed, so it can no longer be changed or deleted.")
       vol_login!(create(:user, :staff))
       get edit_volunteer_hour_path(hour)
       expect(response).to have_http_status(:ok)
@@ -326,7 +326,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       vol_login!(owner)
       patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 40 } }
       expect(response).to redirect_to(volunteer_hours_path)
-      expect(flash[:alert]).to eq("This volunteer hour was already processed.")
+      expect(flash[:alert]).to eq("This volunteer hour was already processed, so it can no longer be changed or deleted.")
       expect(hour.reload.total_time).to eq(1)
     end
 
@@ -426,7 +426,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       vol_login!(owner)
       expect { delete volunteer_hour_path(hour) }.not_to change(VolunteerHour, :count)
       expect(response).to redirect_to(volunteer_hours_path)
-      expect(flash[:alert]).to eq("Something went wrong or this volunteer hour was processed.")
+      expect(flash[:alert]).to eq("This volunteer hour was already processed, so it can no longer be changed or deleted.")
     end
 
     it "lets staff delete a processed hour (staff is redirected to the requests page)" do
@@ -434,6 +434,14 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       vol_login!(create(:user, :staff))
       expect { delete volunteer_hour_path(hour) }.to change(VolunteerHour, :count).by(-1)
       expect(response).to redirect_to(volunteer_hour_requests_volunteer_hours_path)
+    end
+
+    it "keeps the hour and gives the reason when it cannot be destroyed" do
+      hour = make_hour
+      vol_login!(owner)
+      allow_any_instance_of(VolunteerHour).to receive(:destroy) { |h| h.errors.add(:base, "It is locked") && false }
+      expect { delete volunteer_hour_path(hour) }.not_to change(VolunteerHour, :count)
+      expect(flash[:alert]).to eq("The volunteer hour was not deleted. It is locked")
     end
 
     it "404s for a missing id" do
@@ -462,6 +470,15 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(flash[:notice]).to eq("Volunteer hour updated")
       expect(hour.reload.approval).to be(true)
       expect(owner.get_total_hours).to eq(8)
+    end
+
+    it "gives the reason when the approval cannot be saved" do
+      hour = make_hour
+      vol_login!(create(:user, :staff))
+      allow_any_instance_of(VolunteerHour).to receive(:update) { |h| h.errors.add(:base, "Total time is invalid") && false }
+      put update_approval_volunteer_hours_path, params: { id: hour.id, approval: "true" }
+      expect(flash[:alert]).to eq("The volunteer hour was not updated. Total time is invalid")
+      expect(hour.reload.approval).to be_nil
     end
 
     it "rejects with approval=false for staff and redirects to the requests page" do

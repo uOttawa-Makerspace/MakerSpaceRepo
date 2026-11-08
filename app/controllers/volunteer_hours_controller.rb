@@ -42,12 +42,9 @@ class VolunteerHoursController < VolunteersController
   def destroy
     volunteer_hour = VolunteerHour.find(params[:id])
     if !volunteer_hour.was_processed? || current_user.staff?
-      volunteer_hour.destroy
-      flash[:notice] = "Volunteer Hour Deleted"
+      destroy_hour(volunteer_hour)
     else
-      flash[
-        :alert
-      ] = "Something went wrong or this volunteer hour was processed."
+      flash[:alert] = I18n.t("errors.volunteer.hours.processed")
     end
     define_redirect(current_user.role)
   end
@@ -76,7 +73,7 @@ class VolunteerHoursController < VolunteersController
     if volunteer_hour.update(approval: params[:approval])
       flash[:notice] = "Volunteer hour updated"
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = validation_message(volunteer_hour, "errors.volunteer.hours.approval_not_saved")
     end
     define_redirect(current_user.role)
   end
@@ -92,6 +89,14 @@ class VolunteerHoursController < VolunteersController
   end
 
   private
+
+  def destroy_hour(volunteer_hour)
+    if volunteer_hour.destroy
+      flash[:notice] = "Volunteer Hour Deleted"
+    else
+      flash[:alert] = validation_message(volunteer_hour, "errors.volunteer.hours.not_deleted")
+    end
+  end
 
   def load_new_hour_form
     @new_volunteer_hour = VolunteerHour.new
@@ -122,7 +127,7 @@ class VolunteerHoursController < VolunteersController
     return if current_user.staff?
 
     if VolunteerHour.find(params[:id]).was_processed?
-      flash[:alert] = "This volunteer hour was already processed."
+      flash[:alert] = I18n.t("errors.volunteer.hours.processed")
       redirect_to volunteer_hours_path
     end
   end

@@ -107,7 +107,7 @@ class VolunteerTaskRequestsController < SessionsController
       ).deliver
       flash[:notice] = "You've sent a request. No further action is needed."
     else
-      flash[:alert] = "Something went wrong. Please try it again."
+      flash[:alert] = validation_message(volunteer_task_request, "errors.volunteer.task_requests.not_created")
     end
     redirect_back(fallback_location: root_path)
   end
@@ -159,7 +159,7 @@ class VolunteerTaskRequestsController < SessionsController
       ).deliver
       flash[:notice] = "Task request updated"
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = validation_message(volunteer_task_request, "errors.volunteer.task_requests.not_updated")
     end
     redirect_to volunteer_task_requests_path
   end
