@@ -98,10 +98,10 @@ class ProficientProjectsController < DevelopmentProgramsController
       rescue FastImage::ImageFetchFailure,
              FastImage::UnknownImageType,
              FastImage::SizeNotFound => e
+        Rails.logger.warn("[proficient_projects#create] photos not read: #{e.class}")
         @proficient_project.destroy
         redirect_to request.path,
-                    alert:
-                      "Something went wrong while uploading photos, try uploading them again later."
+                    alert: I18n.t("errors.shop.projects.photos_not_read_on_create")
       else
         create_files
         redirect_to proficient_project_path(@proficient_project.id),
@@ -112,7 +112,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
       @drop_off_location = DropOffLocation.all.order(name: :asc)
       @trainings = Training.all
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = validation_message(@proficient_project, "errors.shop.projects.create_invalid")
       render "new", status: :unprocessable_content
     end
   end
@@ -142,16 +142,15 @@ class ProficientProjectsController < DevelopmentProgramsController
       rescue FastImage::ImageFetchFailure,
              FastImage::UnknownImageType,
              FastImage::SizeNotFound => e
-        flash[
-          :alert_yellow
-        ] = "Something went wrong while uploading photos, try again later. Other changes have been saved."
+        Rails.logger.warn("[proficient_projects#update] photos not read: #{e.class}")
+        flash[:alert_yellow] = I18n.t("errors.shop.projects.photos_not_read_on_update")
         redirect_to proficient_project_path(@proficient_project.id)
       else
         flash[:notice] = "Proficient Project successfully updated."
         redirect_to proficient_project_path(@proficient_project.id)
       end
     else
-      flash[:alert] = "Unable to apply the changes."
+      flash[:alert] = validation_message(@proficient_project, "errors.shop.projects.update_invalid")
       @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
       @training_levels = TrainingSession.return_levels
       @trainings = Training.all
@@ -181,10 +180,10 @@ class ProficientProjectsController < DevelopmentProgramsController
         proficient_project_id: @proficient_project.id
       )
     if !order_items.present?
-      flash[:alert] = "This project hasn't been found"
+      flash[:alert] = I18n.t("errors.shop.projects.not_found")
     elsif !order_items.in_progress.exists?
-      flash[:alert] = "This project can only be submitted while it is in progress."
-    elsif order_items.in_progress.first.update(
+      flash[:alert] = I18n.t("errors.shop.projects.not_in_progress")
+    elsif (submission = order_items.in_progress.first).update(
           order_item_params.merge(status: "Waiting for approval")
         )
       MsrMailer.send_admin_pp_evaluation(@proficient_project).deliver_now
@@ -196,80 +195,27 @@ class ProficientProjectsController < DevelopmentProgramsController
         :notice
       ] = "Congratulations on submitting this proficient project! The proficient project will now be reviewed by an admin in around 5 business days."
     else
-      flash[
-        :alert
-      ] = "Something went wrong with updating the proficient project. Please check the allowed file types."
+      flash[:alert] = validation_message(submission, "errors.shop.projects.submit_invalid")
     end
     redirect_to @proficient_project
   end
 
   def approve_project
     order_item = OrderItem.find_by(id: params[:oi_id])
-    if order_item
-      admin = @user
-      duplicates = 0
-      awarded = false
-      begin
-        order_item.with_lock do
-          if order_item.status == "Waiting for approval"
-            level = order_item.proficient_project.level
-            user_id = order_item.order.user_id
-            cert = Certification.create!(user_id: user_id, level: level)
-            ProficientProjectSession.create!(
-              proficient_project_id: order_item.proficient_project.id,
-              level: level,
-              user_id: admin.id,
-              certification_id: cert.id
-            )
-            # Award the cert
-            order_item.update!(order_item_params.merge({ status: "Awarded" }))
-            awarded = true
-          end
-        end
-      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved
-        awarded = false
-      end
-      if awarded
-        MsrMailer.send_results_pp(
-          order_item,
-          order_item.order.user,
-          "Passed"
-        ).deliver_now
-        flash[:notice] = "The project has been approved!  (#{duplicates} duplicates skipped)"
-      else
-        flash[:error] = "An error has occurred, please try again later."
-      end
+    if order_item.nil?
+      flash[:error] = I18n.t("errors.shop.projects.submission_not_found")
     else
-      flash[:error] = "An error has occurred, please try again later."
+      award(order_item)
     end
-    redirect_path =
-      if order_item.nil? || current_user.admin?
-        requests_proficient_projects_path
-      else
-        order_item.proficient_project
-      end
-    redirect_to redirect_path
+    redirect_to(order_item.nil? || current_user.admin? ? requests_proficient_projects_path : order_item.proficient_project)
   end
 
   def revoke_project
     order_item = OrderItem.find_by(id: params[:oi_id])
-    revoked = false
-    if order_item
-      order_item.with_lock do
-        if order_item.status == "Waiting for approval"
-          revoked = order_item.update(order_item_params.merge(status: "Revoked"))
-        end
-      end
-    end
-    if revoked
-      MsrMailer.send_results_pp(
-        order_item,
-        order_item.order.user,
-        "Failed"
-      ).deliver_now
-      flash[:alert_yellow] = "The project has been revoked."
+    if order_item.nil?
+      flash[:error] = I18n.t("errors.shop.projects.submission_not_found")
     else
-      flash[:error] = "An error has occurred, please try again later."
+      revoke(order_item)
     end
     redirect_to requests_proficient_projects_path
   end
@@ -342,6 +288,64 @@ class ProficientProjectsController < DevelopmentProgramsController
     )
   end
 
+  # Awards the badge for a submission waiting for approval, then mails the result. A submission in
+  # any other state, or one that fails validation, awards nothing and says which.
+  def award(order_item)
+    case (result = award_result(order_item))
+    when :awarded
+      MsrMailer.send_results_pp(order_item, order_item.order.user, "Passed").deliver_now
+      flash[:notice] = "The project has been approved!  (0 duplicates skipped)"
+    when :not_waiting
+      flash[:error] = I18n.t("errors.shop.projects.not_waiting")
+    else
+      flash[:error] = record_failure_message(result, "errors.shop.projects.approve_invalid")
+    end
+  end
+
+  # :awarded, :not_waiting, or the RecordInvalid / RecordNotSaved that rolled the award back.
+  def award_result(order_item)
+    result = :not_waiting
+    order_item.with_lock { result = :awarded if award_waiting_submission(order_item) }
+    result
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+    e
+  end
+
+  def award_waiting_submission(order_item)
+    return false unless order_item.status == "Waiting for approval"
+
+    level = order_item.proficient_project.level
+    cert = Certification.create!(user_id: order_item.order.user_id, level: level)
+    ProficientProjectSession.create!(
+      proficient_project_id: order_item.proficient_project.id,
+      level: level,
+      user_id: @user.id,
+      certification_id: cert.id
+    )
+    order_item.update!(order_item_params.merge({ status: "Awarded" }))
+    true
+  end
+
+  # Revokes a submission waiting for approval, then mails the result.
+  def revoke(order_item)
+    revoked = nil
+    order_item.with_lock do
+      revoked = order_item.update(order_item_params.merge(status: "Revoked")) if order_item.status == "Waiting for approval"
+    end
+    if revoked
+      MsrMailer.send_results_pp(order_item, order_item.order.user, "Failed").deliver_now
+      flash[:alert_yellow] = "The project has been revoked."
+    elsif revoked.nil?
+      flash[:error] = I18n.t("errors.shop.projects.not_waiting")
+    else
+      flash[:error] = validation_message(order_item, "errors.shop.projects.revoke_invalid")
+    end
+  end
+
+  def record_failure_message(error, key)
+    "#{I18n.t(key)} #{error.record.errors.full_messages.to_sentence}".strip
+  end
+
   def create_photos
     return unless params["images"].present?
       params["images"].each do |img|
@@ -361,7 +365,7 @@ class ProficientProjectsController < DevelopmentProgramsController
       params["files"].each do |f|
         @repo =
           RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
-        flash[:alert] = "Make sure you only upload PDFs for the project files" unless @repo.save
+        flash[:alert] = I18n.t("errors.shop.projects.files_not_pdf") unless @repo.save
       end
     
   end
