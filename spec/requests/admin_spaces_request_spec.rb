@@ -86,9 +86,9 @@ RSpec.describe "Admin spaces", type: :request do
 
       it "alerts on a blank or duplicate name" do
         expect { post admin_spaces_path, params: { space_params: { name: "" } } }.not_to change(Space, :count)
-        expect(flash[:alert]).to eq("Something went wrong.")
+        expect(flash[:alert]).to start_with("The space was not created. ")
         expect { post admin_spaces_path, params: { space_params: { name: "Alpha" } } }.not_to change(Space, :count)
-        expect(flash[:alert]).to eq("Something went wrong.")
+        expect(flash[:alert]).to start_with("The space was not created. ")
       end
 
       it "redirects home with the ParameterMissing message when space_params is absent" do
@@ -186,9 +186,9 @@ RSpec.describe "Admin spaces", type: :request do
       it "alerts when the limit params are missing" do
         patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id)
         expect(response).to redirect_to(edit_admin_space_path(id: space.id))
-        expect(flash[:alert]).to eq("Something went wrong.")
+        expect(flash[:alert]).to eq("Choose a sub space and enter the number of hours for the limit you want to change.")
         patch admin_space_set_max_automatic_approval_hour_path(space_id: space.id, sub_space_id: room.id)
-        expect(flash[:alert]).to eq("Something went wrong.")
+        expect(flash[:alert]).to eq("Choose a sub space and enter the number of hours for the automatic approval limit.")
       end
 
       # a non-numeric limit is silently stored as 0 (to_i) rather than rejected.
@@ -275,10 +275,10 @@ RSpec.describe "Admin spaces", type: :request do
       it "refuses non-admins, duplicates and the -1 placeholder" do
         patch add_space_manager_admin_spaces_path, params: { space_id: space.id, space_manager_id: create(:user, :staff).id }
         expect(response).to redirect_to(admin_spaces_path)
-        expect(flash[:alert]).to eq("Failed to add space manager")
+        expect(flash[:alert]).to start_with("The space manager was not added. ")
         SpaceManagerJoin.create!(user: manager, space: space)
         patch add_space_manager_admin_spaces_path, params: { space_id: space.id, space_manager_id: manager.id }
-        expect(flash[:alert]).to eq("Failed to add space manager")
+        expect(flash[:alert]).to start_with("The space manager was not added. ")
         patch add_space_manager_admin_spaces_path, params: { space_id: space.id, space_manager_id: -1 }
         expect(flash[:alert]).to eq("Please select an admin")
         expect(SpaceManagerJoin.count).to eq(1)
@@ -305,7 +305,7 @@ RSpec.describe "Admin spaces", type: :request do
       it "rejects wrong confirmation text" do
         destroy_space("alpha")
         expect(response).to redirect_to(admin_spaces_path)
-        expect(flash[:alert]).to eq("Invalid Input")
+        expect(flash[:alert]).to eq("The text you typed does not match the space name, so nothing was deleted.")
         expect(space.reload.destroy_admin_id).to be_nil
       end
 
@@ -357,7 +357,7 @@ RSpec.describe "Admin spaces", type: :request do
       it "alerts when space_id is missing" do
         put update_staff_needed_calendars_admin_spaces_path
         expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("An error occurred while trying to add/remove the calendar URLs, please try again later.")
+        expect(flash[:alert]).to eq(I18n.t("errors.admin.spaces.calendar_space_missing", locale: :en))
       end
 
       it "replaces all calendars (new rows each save), skipping blank urls and blank roles" do

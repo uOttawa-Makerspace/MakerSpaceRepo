@@ -176,4 +176,56 @@ RSpec.describe "Admin error messages", type: :request do
       end
     end
   end
+
+  describe "spaces" do
+    let!(:space) { create(:space, name: "Alpha") }
+    let!(:room) { create(:sub_space, space: space, name: "Room A") }
+
+    it "names the failed create in English and French" do
+      post admin_spaces_path, params: { space_params: { name: "" } }
+      expect(flash[:alert]).to start_with("The space was not created. ")
+      post admin_spaces_path, params: { space_params: { name: "" }, locale: "fr" }
+      expect(flash[:alert]).to start_with("L'espace n'a pas été créé. ")
+    end
+
+    it "names the failed capacity and keycode updates and goes back to the page" do
+      refuse_writes(Space, :update)
+      post update_max_capacity_admin_spaces_path, params: { space_id: space.id, max_capacity: 9 }
+      expect(flash[:alert]).to eq("The space capacity was not updated. Refused for the spec")
+      patch update_keycode_admin_spaces_path, params: { space_id: space.id, keycode: "9999", locale: "fr" }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Le code d'accès de l'espace n'a pas été modifié. Refused for the spec")
+    end
+
+    it "names the sub space that was not renamed" do
+      refuse_writes(SubSpace, :update)
+      patch admin_space_update_sub_space_path(space_id: space.id, id: room.id), params: { name: "Room Z" }
+      expect(flash[:alert]).to eq("The sub space was not renamed. Refused for the spec")
+    end
+
+    it "says why a space manager was not added, in French too" do
+      patch add_space_manager_admin_spaces_path, params: { space_id: space.id, space_manager_id: create(:user, :staff).id }
+      expect(flash[:alert]).to start_with("The space manager was not added. ")
+      patch add_space_manager_admin_spaces_path,
+            params: { space_id: space.id, space_manager_id: create(:user, :staff).id, locale: "fr" }
+      expect(flash[:alert]).to start_with("Le responsable de l'espace n'a pas été ajouté. ")
+    end
+
+    it "says which limit values are missing" do
+      patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id), params: { locale: "fr" }
+      expect(flash[:alert]).to eq(
+        "Choisissez un sous-espace et entrez le nombre d'heures de la limite à modifier."
+      )
+    end
+
+    it "says the typed confirmation did not match" do
+      delete admin_space_destroy_path(space_id: space.id), params: { id: space.id, admin_input: "alpha", locale: "fr" }
+      expect(flash[:alert]).to eq("Le texte saisi ne correspond pas au nom de l'espace, rien n'a été supprimé.")
+    end
+
+    it "says the calendar URLs need a space" do
+      put update_staff_needed_calendars_admin_spaces_path, params: { locale: "fr" }
+      expect(flash[:alert]).to start_with("Les adresses des calendriers n'ont pas été enregistrées")
+    end
+  end
 end
