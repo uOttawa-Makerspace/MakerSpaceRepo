@@ -75,7 +75,7 @@ RSpec.describe Staff::MyCalendarController, type: :controller do
     it 'returns bad request error without space_id' do
       get :json, params: { id: '' }, format: :json
       expect(response).to have_http_status(:bad_request)
-      expect(JSON.parse(response.body)['error']).to eq('Space ID is required')
+      expect(JSON.parse(response.body)).to include('error' => 'Choose a space to show its calendar.', 'reference' => be_a(String))
     end
 
     context 'basic event retrieval' do
