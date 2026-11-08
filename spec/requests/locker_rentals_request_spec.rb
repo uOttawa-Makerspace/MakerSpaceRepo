@@ -818,6 +818,16 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(rental.reload.locker_id).to eq(new_locker.id)
       end
 
+      it "keeps the field errors in the JSON and adds the sentence to show as error" do
+        rental = reviewing_rental!
+
+        patch locker_rental_path(rental), params: { locker_rental: { state: "active", locker_id: "" } }, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["locker"]).to be_present
+        expect(response.parsed_body["error"]).to start_with("Failed to update locker rental ")
+      end
+
       it "collects validation failures into one redirect alert (HTML)" do
         rental = reviewing_rental!
 
@@ -920,6 +930,21 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
           patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }, as: :json
           expect(response).to have_http_status(:no_content)
           expect(rental.reload.state).to eq("cancelled")
+        end
+
+        it "answers a refused state change over JSON with the reason in error (422)" do
+          rental = create(:locker_rental, :active, rented_by: owner)
+          log_in!(owner)
+          patch locker_rental_path(rental), params: { locker_rental: { state: "cancelled" } }, as: :json
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(response.parsed_body).to eq("error" => "Please contact administration for cancelling a locker")
+        end
+
+        it "answers a refused state change in French" do
+          rental = create(:locker_rental, :await_payment, rented_by: owner)
+          log_in!(owner)
+          patch locker_rental_path(rental), params: { locker_rental: { state: "active" }, locale: "fr" }
+          expect(flash[:alert]).to eq("Vous ne pouvez annuler qu'une demande en attente")
         end
 
         it "does not let a renter re-submitting state=active reset the term of an indefinite active rental" do

@@ -41,7 +41,7 @@ class LockersController < AdminAreaController
       flash[:notice] = "Created locker ##{@locker.specifier}"
       redirect_to @locker
     else
-      flash.now[:alert] = @locker.errors.full_messages.to_sentence
+      flash.now[:alert] = validation_message(@locker, "errors.lockers.locker_not_saved")
       render :index, status: :unprocessable_entity
     end
   end
@@ -49,7 +49,7 @@ class LockersController < AdminAreaController
   # Custom route to create a range of lockers at once
   def create_multiple
     if locker_range_create_params[:range_start] >= locker_range_create_params[:range_end]
-      flash[:alert] = 'Range end must be larger than range start'
+      flash[:alert] = I18n.t('errors.lockers.range_invalid')
       redirect_to lockers_path(anchor: 'lockerInventory')
       return
     end
@@ -65,7 +65,12 @@ class LockersController < AdminAreaController
           }
         end
       )
-    flash[:notice] = 'Lockers created'
+    unsaved = @lockers.reject(&:persisted?)
+    if unsaved.empty?
+      flash[:notice] = 'Lockers created'
+    else
+      flash[:alert] = I18n.t('errors.lockers.range_not_created', lockers: specifiers_of(unsaved))
+    end
     redirect_to lockers_path(anchor: 'lockerInventory')
   end
 
@@ -80,12 +85,14 @@ class LockersController < AdminAreaController
         format.json { head :no_content }
       end
     else
+      message = validation_message(@locker, "errors.lockers.locker_not_saved")
       respond_to do |format|
         format.html do
-          flash.now[:alert] = @locker.errors.full_messages.to_sentence
+          flash.now[:alert] = message
           render :show, status: :unprocessable_content
         end
-        format.json { render json: @locker.errors, status: :unprocessable_content }
+        # the field errors as before, plus the sentence to show
+        format.json { render json: @locker.errors.to_hash.merge(error: message), status: :unprocessable_content }
       end
     end
   end
@@ -96,30 +103,18 @@ class LockersController < AdminAreaController
       flash[:notice] = 'Locker removed'
       redirect_to lockers_path
     else
-      redirect_to @locker, alert: "Locker #{@locker.specifier} was not deleted: #{@locker.errors.full_messages.to_sentence}"
+      redirect_to @locker,
+                  alert: "#{I18n.t('errors.lockers.locker_not_deleted', specifier: @locker.specifier)} " \
+                         "#{@locker.errors.full_messages.to_sentence}"
     end
   end
 
   def bulk_edit
     # The Javascript on the frontend populates params[:id] with the selected locker IDs
     if params[:bulk_delete]
-      # Delete button was clicked
-      # A locker with any rental history is refused, one by one, and reported; the others are deleted.
-      refused = []
-      Locker.where(id: params[:id]).find_each { |locker| refused << (locker.specifier.presence || "##{locker.id}") unless locker.destroy }
-      if refused.empty?
-        flash[:notice] = 'Selected lockers deleted'
-      else
-        flash[:alert] = "Not deleted, they have rental history (mark them not available instead): #{refused.sort_by(&:to_s).to_sentence}"
-      end
+      bulk_delete_lockers
     else
-      # Update button was clicked
-      Locker
-        .where(id: params[:id])
-        .includes(:locker_size)
-        .find_each { |locker| locker.update(locker_params) }
-
-      flash[:notice] = 'Lockers updated'
+      bulk_update_lockers
     end
 
     redirect_to lockers_path(anchor: 'lockerInventory')
@@ -138,6 +133,40 @@ class LockersController < AdminAreaController
   end
 
   private
+
+  # Delete button: a locker with any rental history is refused, one by one, and reported; the others
+  # are deleted.
+  def bulk_delete_lockers
+    refused = []
+    Locker.where(id: params[:id]).find_each { |locker| refused << (locker.specifier.presence || "##{locker.id}") unless locker.destroy }
+    if refused.empty?
+      flash[:notice] = 'Selected lockers deleted'
+    else
+      flash[:alert] = I18n.t('errors.lockers.bulk_not_deleted', lockers: refused.sort_by(&:to_s).to_sentence)
+    end
+  end
+
+  # Update button: the lockers the new values were refused for are named.
+  def bulk_update_lockers
+    failed = []
+    Locker
+      .where(id: params[:id])
+      .includes(:locker_size)
+      .find_each { |locker| failed << locker unless locker.update(locker_params) }
+
+    if failed.empty?
+      flash[:notice] = 'Lockers updated'
+    else
+      flash[:alert] = I18n.t('errors.lockers.bulk_not_updated', lockers: specifiers_of(failed))
+    end
+  end
+
+  # "12, 15 and #7": each locker's stored specifier (a refused edit has already assigned the new one
+  # in memory), the one it was asked to have if it was never stored, or its id when it has none.
+  def specifiers_of(lockers)
+    lockers.map { |locker| locker.specifier_in_database.presence || locker.specifier.presence || "##{locker.id}" }
+           .sort_by(&:to_s).to_sentence
+  end
 
   def locker_sizes_lineup
     makerstore_sizes = @locker_product_info

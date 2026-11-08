@@ -77,7 +77,7 @@
   },
   "app/javascript/entrypoints/lockers.js": {
     "complexity": {
-      "count": 2
+      "count": 1
     }
   },
   "app/javascript/entrypoints/printer_issues.js": {
