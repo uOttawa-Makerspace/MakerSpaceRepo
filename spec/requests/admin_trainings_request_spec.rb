@@ -369,7 +369,7 @@ RSpec.describe "Admin training area", type: :request do
 
         it "rejects a trainer who is not staff (alert, unchanged)" do
           patch admin_training_session_path(session_record), params: { training_session: { user_id: create(:user, :regular_user).id } }
-          expect(flash[:alert]).to eq("Something went wrong")
+          expect(flash[:alert]).to eq("The training session was not updated. User must be staff")
           expect(session_record.reload.user).to eq(trainer)
         end
 
