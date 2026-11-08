@@ -132,6 +132,31 @@ RSpec.describe "Error answers", type: :request do
         expect(response.body).to include("<h1>")
       end
 
+      {
+        "application/json, text/plain, */*" => "json",
+        "application/json, text/html" => "json",
+        "text/html, application/json;q=0.9" => "html",
+        "application/json;q=0.5, text/html;q=0.9" => "html",
+        "*/*" => "html",
+        "" => "html"
+      }.each do |accept, kind|
+        it "answers #{kind} for Accept: #{accept.inspect}" do
+          with_production_error_pages { get root_path, headers: { "Accept" => accept } }
+          expect(response).to have_http_status(:internal_server_error)
+          expect(response.media_type).to eq(kind == "json" ? "application/json" : "text/html")
+        end
+      end
+
+      it "answers JSON for ?format=json whatever the Accept header" do
+        with_production_error_pages { get root_path, params: { format: "json" }, headers: { "Accept" => "text/html" } }
+        expect(response.media_type).to eq("application/json")
+      end
+
+      it "does not raise on invalid UTF-8 in the Accept header" do
+        with_production_error_pages { get root_path, headers: { "Accept" => "text/html\xFF\xFE".b } }
+        expect(response.media_type).to eq("text/html")
+      end
+
       it "answers an empty body for an image Accept header" do
         with_production_error_pages { get root_path, headers: { "Accept" => "image/png" } }
         expect(response).to have_http_status(:internal_server_error)
