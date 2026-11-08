@@ -101,12 +101,12 @@ class ShadowingHour < ApplicationRecord
     begin
       response = service.delete_event(calendar_id, event_id)
     rescue Google::Apis::ClientError => error
-      if error.to_s.include?("Resource has been deleted")
-        return response
-      else
-        return "error"
-      end
-    rescue Exception
+      return response if error.to_s.include?("Resource has been deleted")
+
+      HandledError.report(error, source: "shadowing_hour.delete_event", event_id: event_id)
+      return "error"
+    rescue StandardError => error
+      HandledError.report(error, source: "shadowing_hour.delete_event", event_id: event_id)
       return "error"
     end
 

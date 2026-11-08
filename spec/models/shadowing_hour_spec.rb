@@ -58,6 +58,23 @@ RSpec.describe ShadowingHour, type: :model do
         allow(service).to receive(:delete_event).and_raise(StandardError, "boom")
         expect(ShadowingHour.delete_event("e1", "Makerspace")).to eq("error")
       end
+
+      it "reports a failed delete (and not an already-deleted event)" do
+        expect(Rails.error).to receive(:report)
+          .with(instance_of(Google::Apis::ClientError), hash_including(handled: true, context: hash_including(event_id: "e1")))
+        allow(service).to receive(:delete_event).and_raise(Google::Apis::ClientError.new("notFound"))
+        ShadowingHour.delete_event("e1", "Makerspace")
+
+        expect(Rails.error).to receive(:report).with(instance_of(Faraday::ConnectionFailed), hash_including(handled: true))
+        allow(service).to receive(:delete_event).and_raise(Faraday::ConnectionFailed, "down")
+        ShadowingHour.delete_event("e1", "Makerspace")
+      end
+
+      it "does not report an already-deleted event" do
+        expect(Rails.error).not_to receive(:report)
+        allow(service).to receive(:delete_event).and_raise(Google::Apis::ClientError.new("Resource has been deleted"))
+        ShadowingHour.delete_event("e1", "Makerspace")
+      end
     end
   end
 end

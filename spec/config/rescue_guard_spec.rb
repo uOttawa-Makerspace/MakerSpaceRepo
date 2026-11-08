@@ -23,7 +23,6 @@ module RescueGuard
     "app/models/job_order/draft_sweep.rb" => 4, # err-d (one re-raises after the block, check)
     "app/models/locker_rental.rb" => 3, # err-d
     "app/models/processed_order.rb" => 1, # err-d
-    "app/models/shadowing_hour.rb" => 1, # err-d
     "app/models/space.rb" => 2, # err-d
     "app/services/shop_order_applier.rb" => 1, # err-d
     "app/validators/recurrence_rule_validator.rb" => 1 # err-d
