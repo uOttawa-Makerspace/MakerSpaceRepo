@@ -7,7 +7,8 @@ require "rails_helper"
 # pinned there). Adds: verbs, CSRF, other resource states, no de-duplication.
 RSpec.describe "Google calendar webhook (gaps)", type: :request do
   let(:headers) do
-    { "X-Goog-Channel-Id" => "chan-g", "X-Goog-Resource-Id" => "res-g", "X-Goog-Resource-State" => "exists" }
+    { "X-Goog-Channel-Id" => "chan-g", "X-Goog-Resource-Id" => "res-g", "X-Goog-Resource-State" => "exists",
+      "X-Goog-Channel-Token" => GoogleCalendarChannel.token_for("chan-g") }
   end
 
   before { GoogleCalendarChannel.create!(channel_id: "chan-g", resource_id: "res-g", expires_at: 1.week.from_now) }
@@ -17,7 +18,7 @@ RSpec.describe "Google calendar webhook (gaps)", type: :request do
     expect(response).to have_http_status(:not_found)
   end
 
-  it "needs no session, token or CSRF token (forgery protection is on in the test env)" do
+  it "needs no session or CSRF token (forgery protection is on in the test env)" do
     expect(ActionController::Base.allow_forgery_protection).to be(true)
     expect { post "/google/calendar/webhook", headers: headers, without_csrf_token: true }
       .to have_enqueued_job(GoogleCalendarSyncJob)

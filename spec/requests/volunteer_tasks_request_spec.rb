@@ -4,8 +4,8 @@ require "rails_helper"
 
 # Chunk 13: VolunteerTasksController.
 #   index, show         staff or volunteer-program member (`volunteer_access`)
-#   new/create/edit/update/destroy   staff or admin only (`grant_access`)
-#   my_tasks                         NO gate (guests included)
+#   new/create/edit/update/destroy   staff or admin only (`VolunteerAreaAccess#staff_access`)
+#   my_tasks                         staff or volunteer-program member (`volunteer_access`)
 #   complete_task (POST)             sign-in + staff or the task's creator
 RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   let(:space) { create(:space) }
@@ -22,7 +22,14 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "index and show gate" do
-    %i[guest regular role_only].each do |role|
+    it "guest: index and show redirect to login" do
+      get volunteer_tasks_path
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks"))
+      get volunteer_task_path(task)
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks/#{task.id}"))
+    end
+
+    %i[regular role_only].each do |role|
       it "#{role}: index and show redirect to root with an alert" do
         vol_sign_in_as(role)
         get volunteer_tasks_path
@@ -90,7 +97,21 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "staff-only actions: role matrix" do
-    %i[guest regular role_only volunteer inactive].each do |role|
+    it "guest: new/create/edit/update/destroy redirect to login and change nothing" do
+      get new_volunteer_task_path
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks/new"))
+      expect { post volunteer_tasks_path, params: task_params }.not_to change(VolunteerTask, :count)
+      expect(response.location).to include("/login")
+      get edit_volunteer_task_path(task)
+      expect(response.location).to include("/login")
+      patch volunteer_task_path(task), params: task_params(title: "changed")
+      expect(response.location).to include("/login")
+      expect(task.reload.title).to eq("Setup crew")
+      expect { delete volunteer_task_path(task) }.not_to change(VolunteerTask, :count)
+      expect(response.location).to include("/login")
+    end
+
+    %i[regular role_only volunteer inactive].each do |role|
       it "#{role}: new/create/edit/update/destroy redirect to root with an alert and change nothing" do
         vol_sign_in_as(role)
         get new_volunteer_task_path
@@ -146,13 +167,51 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
         .to eq([[other_staff.id, "Admin", true], [volunteer.id, "Volunteer", true]])
     end
 
-    # no validation on numbers/status/title: negative cc/hours, zero seats, blank title and arbitrary status are stored
-    it "stores negative cc/hours, zero seats, an empty title and a bogus status" do
-      post volunteer_tasks_path, params: task_params(title: "", cc: -50, hours: -3, joins: 0, status: "bogus")
+    # only the hours are validated: negative cc, zero seats, blank title and arbitrary status are stored
+    it "stores negative cc, zero seats, an empty title and a bogus status" do
+      post volunteer_tasks_path, params: task_params(title: "", cc: -50, hours: 3, joins: 0, status: "bogus")
       expect(response).to redirect_to(volunteer_tasks_path)
       created = VolunteerTask.last
       expect(created.attributes.values_at("title", "cc", "joins", "status")).to eq(["", -50, 0, "bogus"])
-      expect(created.hours).to eq(-3)
+    end
+
+    { 0 => "must be greater than 0", -3 => "must be greater than 0", "abc" => "is not a number", "" => "is not a number" }.each do |hours, reason|
+      it "refuses hours of #{hours.inspect} and creates nothing" do
+        expect { post volunteer_tasks_path, params: task_params(hours: hours) }.not_to change(VolunteerTask, :count)
+        expect(response).to redirect_to(new_volunteer_task_path)
+        expect(flash[:alert]).to eq("Hours #{reason}")
+      end
+    end
+
+    it "ignores empty values from unselected form fields" do
+      training = create(:training)
+      post volunteer_tasks_path, params: task_params.merge(staff_id: "", volunteer_id: [""], certifications_id: ["", training.id])
+      expect(flash[:notice]).to eq("You've successfully created a new Volunteer Task")
+      expect(VolunteerTask.last.volunteer_task_joins).to be_empty
+      expect(VolunteerTask.last.require_trainings.pluck(:training_id)).to eq([training.id])
+    end
+
+    {
+      "an unknown required training" => [{ certifications_id: [0] }, "A required training does not exist."],
+      "an unknown staff lead" => [{ staff_id: 0 }, "The staff to add could not be found."],
+      "an unknown volunteer" => [{ volunteer_id: [0] }, "The volunteer to add could not be found."]
+    }.each do |label, (extra, message)|
+      it "refuses #{label} and creates no task, trainings or joins" do
+        good_training = create(:training)
+        params = task_params.merge(staff_id: create(:user, :admin).id, certifications_id: [good_training.id]).merge(extra)
+        counts = -> { [VolunteerTask.count, RequireTraining.count, VolunteerTaskJoin.count] }
+        expect { post volunteer_tasks_path, params: params }.not_to change(&counts)
+        expect(response).to redirect_to(new_volunteer_task_path)
+        expect(flash[:alert]).to eq(message)
+      end
+    end
+
+    it "creates the task, trainings and joins together" do
+      training = create(:training)
+      other_staff = create(:user, :admin)
+      expect do
+        post volunteer_tasks_path, params: task_params.merge(certifications_id: [training.id], staff_id: other_staff.id, volunteer_id: [volunteer.id])
+      end.to change(VolunteerTask, :count).by(1).and change(RequireTraining, :count).by(1).and change(VolunteerTaskJoin, :count).by(2)
     end
 
     it "redirects to root with the missing-param message when volunteer_task is absent" do
@@ -178,6 +237,24 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(task.reload.attributes.values_at("title", "cc")).to eq(["Renamed", 99])
     end
 
+    it "refuses hours of 0, keeping the task, its required trainings and joins as they were" do
+      task.create_certifications([create(:training).id])
+      create(:volunteer_task_join, :active, volunteer_task: task)
+      patch volunteer_task_path(task), params: task_params(title: "Renamed", hours: 0)
+      expect(response).to redirect_to(edit_volunteer_task_path(task))
+      expect(flash[:alert]).to eq("Hours must be greater than 0")
+      expect(task.reload.attributes.values_at("title", "hours")).to eq(["Setup crew", 2])
+      expect(task.require_trainings.count).to eq(1)
+      expect(task.volunteer_task_joins.count).to eq(1)
+    end
+
+    it "edits the other fields of a stored 36 hour task" do
+      task.update!(hours: 36)
+      patch volunteer_task_path(task), params: task_params(title: "Renamed", hours: 36)
+      expect(flash[:notice]).to eq("Volunteer task updated")
+      expect(task.reload.attributes.values_at("title", "hours")).to eq(["Renamed", 36])
+    end
+
     it "replaces required trainings, and clears them when certifications_id is absent" do
       old = create(:training)
       task.create_certifications([old.id])
@@ -188,31 +265,132 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(task.require_trainings.reload).to be_empty
     end
 
+    it "adds staff typed by their role and applies the whole edit together" do
+      admin = create(:user, :admin)
+      trainings = create_list(:training, 2)
+      patch volunteer_task_path(task),
+            params: task_params(title: "Renamed").merge(staff_id: admin.id, certifications_id: trainings.map(&:id))
+      expect(flash[:notice]).to eq("Volunteer task updated")
+      expect(task.reload.title).to eq("Renamed")
+      expect(task.require_trainings.pluck(:training_id)).to match_array(trainings.map(&:id))
+      expect(task.volunteer_task_joins.pluck(:user_id, :user_type, :active)).to eq([[admin.id, "Admin", true]])
+    end
+
     it "adds and removes joins" do
       keep = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
       gone = create(:volunteer_task_join, :active, volunteer_task: task)
       new_volunteer = create(:user, :volunteer_with_volunteer_program)
       patch volunteer_task_path(task),
             params: task_params.merge(volunteer_id: [new_volunteer.id], remove_volunteer_id: [gone.user_id])
-      expect(task.volunteer_task_joins.pluck(:user_id)).to contain_exactly(keep.user_id, new_volunteer.id)
+      expect(task.volunteer_task_joins.active.pluck(:user_id)).to contain_exactly(keep.user_id, new_volunteer.id)
+      expect(gone.reload.active).to be(false)
     end
 
-    it "flashes an error (but still updates) when a removal target is not joined" do
-      patch volunteer_task_path(task), params: task_params(title: "x").merge(remove_volunteer_id: [volunteer.id])
-      expect(response).to redirect_to(volunteer_tasks_path)
-      expect(flash[:error]).to eq("The volunteer could not be deleted from this task, please try again later.")
-      expect(task.reload.title).to eq("x")
+    describe "a refused edit changes nothing" do
+      let(:old_training) { create(:training) }
+      let(:joined) { create(:user, :volunteer_with_volunteer_program) }
+      let(:snapshot) do
+        lambda {
+          [task.reload.attributes.values_at("title", "cc", "user_id"),
+           task.require_trainings.pluck(:training_id).sort,
+           task.volunteer_task_joins.pluck(:user_id, :user_type, :active).sort]
+        }
+      end
+
+      before do
+        task.update!(user_id: staff.id)
+        task.create_certifications([old_training.id])
+        create(:volunteer_task_join, volunteer_task: task, user: staff, user_type: "Staff")
+        create(:volunteer_task_join, :active, volunteer_task: task, user: joined)
+      end
+
+      def refuse_edit(message, extra)
+        before_edit = snapshot.call
+        patch volunteer_task_path(task), params: task_params(title: "Renamed", cc: 1).merge(certifications_id: [create(:training).id]).merge(extra)
+        expect(response).to redirect_to(edit_volunteer_task_path(task))
+        expect(flash[:alert]).to eq(message)
+        expect(snapshot.call).to eq(before_edit)
+      end
+
+      it "when a training to require does not exist" do
+        refuse_edit("A required training does not exist.", certifications_id: [0])
+      end
+
+      it "when a user to add as staff does not exist" do
+        refuse_edit("The staff to add could not be found.", staff_id: [0])
+      end
+
+      it "when a user to add as a volunteer does not exist, after a valid staff add" do
+        refuse_edit("The volunteer to add could not be found.", staff_id: [create(:user, :admin).id], volunteer_id: [0])
+      end
+
+      it "when a staff member to remove is not joined, after a valid removal" do
+        refuse_edit("The staff to remove is not on this task.", remove_volunteer_id: [joined.id], remove_staff_id: [create(:user, :admin).id])
+      end
+
+      it "when a volunteer to remove is not joined" do
+        refuse_edit("The volunteer to remove is not on this task.", remove_volunteer_id: [create(:user, :volunteer).id])
+      end
+
+      it "when the creator is removed and nobody else is joined" do
+        task.volunteer_task_joins.where.not(user_id: staff.id).destroy_all
+        refuse_edit("There must be at least one staff member assigned to this task.", remove_staff_id: [staff.id])
+      end
     end
 
-    # removing the creating staff member when nobody else is joined redirects twice (DoubleRenderError 500); the update itself IS applied
-    it "500s with DoubleRenderError when removing the task creator with no other join" do
+    it "keeps a removed user's joins as inactive history and touches no other row" do
+      history = create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+      current = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
+      other = create(:volunteer_task_join, :active, volunteer_task: task)
+      old_stamp = history.reload.updated_at
+      expect do
+        patch volunteer_task_path(task), params: task_params.merge(remove_volunteer_id: [volunteer.id])
+      end.not_to change(VolunteerTaskJoin, :count)
+      expect(flash[:notice]).to eq("Volunteer task updated")
+      expect(current.reload.active).to be(false)
+      expect(other.reload.active).to be(true)
+      expect(history.reload.attributes.values_at("active", "updated_at")).to eq([false, old_stamp])
+    end
+
+    it "treats a user with only inactive joins as not on the task" do
+      create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+      patch volunteer_task_path(task), params: task_params.merge(remove_volunteer_id: [volunteer.id])
+      expect(flash[:alert]).to eq("The volunteer to remove is not on this task.")
+      expect(task.volunteer_task_joins.count).to eq(1)
+    end
+
+    it "deactivates the creator's joins when handing the task over" do
+      other = create(:user, :admin)
       task.update!(user_id: staff.id)
-      create(:volunteer_task_join, :first, volunteer_task: task, user: staff, user_type: "Staff")
-      patch volunteer_task_path(task), params: task_params(title: "never").merge(remove_staff_id: [staff.id])
-      expect(response).to have_http_status(:internal_server_error)
-      expect(vol_error_text).to include("DoubleRenderError")
-      expect(task.reload.title).to eq("never")
-      expect(flash[:error]).to eq("There must be at least one staff member assigned to this task.")
+      old = create(:volunteer_task_join, :not_active, volunteer_task: task, user: staff)
+      mine = create(:volunteer_task_join, volunteer_task: task, user: staff, user_type: "Staff")
+      create(:volunteer_task_join, :not_active, volunteer_task: task, user: other)
+      create(:volunteer_task_join, volunteer_task: task, user: other, user_type: "Admin")
+      patch volunteer_task_path(task), params: task_params.merge(remove_staff_id: [staff.id])
+      expect(task.reload.user_id).to eq(other.id)
+      expect([old, mine].map { |j| j.reload.active }).to eq([false, false])
+      expect(task.volunteer_task_joins.count).to eq(4)
+    end
+
+    it "lists only active joins on the edit and show pages, and offers a removed user again" do
+      gone = create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+      kept = create(:volunteer_task_join, :active, volunteer_task: task, user: create(:user, :volunteer_with_volunteer_program))
+      get edit_volunteer_task_path(task)
+      expect(ivar(:@volunteers_in_task)).to contain_exactly(kept.user)
+      expect(ivar(:@volunteers_available)).to include(gone.user)
+      get volunteer_task_path(task)
+      expect(ivar(:@volunteers_in_task).map(&:last)).to eq([kept.user_id])
+      expect(ivar(:@volunteers).map(&:last)).to include(gone.user_id)
+    end
+
+    it "shows the failing record's message when a join cannot be saved" do
+      allow_any_instance_of(VolunteerTaskJoin).to receive(:save!) do |join|
+        join.errors.add(:base, "Join is invalid")
+        raise ActiveRecord::RecordInvalid, join
+      end
+      patch volunteer_task_path(task), params: task_params(title: "Renamed").merge(volunteer_id: [volunteer.id])
+      expect(flash[:alert]).to eq("Join is invalid")
+      expect(task.reload.title).to eq("Setup crew")
     end
 
     it "hands the task to another joined user when the creator is removed" do
@@ -223,7 +401,8 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       patch volunteer_task_path(task), params: task_params.merge(remove_staff_id: [staff.id])
       expect(response).to redirect_to(volunteer_tasks_path)
       expect(task.reload.user_id).to eq(other.id)
-      expect(task.volunteer_task_joins.pluck(:user_id)).to eq([other.id])
+      expect(task.volunteer_task_joins.active.pluck(:user_id)).to eq([other.id])
+      expect(task.volunteer_task_joins.count).to eq(2)
     end
 
     it "404s for a missing task" do
@@ -235,30 +414,39 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   describe "DELETE /volunteer_tasks/:id" do
     before { vol_login!(staff) }
 
-    it "destroys the task, its required trainings, joins, requests, hours and CC money" do
+    it "destroys a task with nothing awarded, with its required trainings, joins, requests and pending hours" do
       task.create_certifications([create(:training).id])
       create(:volunteer_task_join, :active, volunteer_task: task)
       create(:volunteer_task_request, :approved, volunteer_task: task)
-      create(:volunteer_hour, :approved1, volunteer_task: task)
-      create(:cc_money, volunteer_task: task)
+      create(:volunteer_hour, :not_processed, volunteer_task: task)
       expect { delete volunteer_task_path(task) }.to change(VolunteerTask, :count).by(-1)
       expect(response).to redirect_to(volunteer_tasks_path)
       expect(flash[:notice]).to eq("Volunteer Task Deleted")
-      expect([RequireTraining, VolunteerTaskJoin, VolunteerTaskRequest, VolunteerHour, CcMoney].map { |m| m.where(volunteer_task_id: task.id).count })
-        .to eq([0, 0, 0, 0, 0])
+      expect([RequireTraining, VolunteerTaskJoin, VolunteerTaskRequest, VolunteerHour].map { |m| m.where(volunteer_task_id: task.id).count })
+        .to eq([0, 0, 0, 0])
     end
 
-    # deleting a task destroys approved hours and CC money already awarded, and the wallet is not recomputed
-    it "wipes awarded hours and leaves a stale wallet" do
+    # awarded hours and CC are kept: the delete is refused with a message and nothing changes
+    it "refuses to delete a task with awarded hours and CC, keeping every row and the wallet" do
       awardee = create(:user, :volunteer_with_volunteer_program)
+      task.create_certifications([create(:training).id])
+      create(:volunteer_task_join, :active, volunteer_task: task)
       create(:volunteer_hour, :approved1, user: awardee, volunteer_task: task)
       create(:cc_money, user: awardee, volunteer_task: task, cc: 40)
       awardee.update_wallet
+      counts = -> { [VolunteerTask, RequireTraining, VolunteerTaskJoin, VolunteerHour, CcMoney].map(&:count) }
+      expect { delete volunteer_task_path(task) }.not_to change(&counts)
+      expect(response).to redirect_to(volunteer_tasks_path)
+      expect(flash[:alert]).to eq("This task has approved hours or CC awarded and cannot be deleted.")
+      expect(awardee.get_total_hours).to eq(10)
+      expect(awardee.get_total_cc).to eq(40)
       expect(awardee.reload.wallet).to eq(40)
-      delete volunteer_task_path(task)
-      expect(awardee.get_total_hours).to eq(0)
-      expect(awardee.get_total_cc).to eq(0)
-      expect(awardee.reload.wallet).to eq(40)
+    end
+
+    it "refuses to delete a task with only a CC money row" do
+      create(:cc_money, volunteer_task: task)
+      expect { delete volunteer_task_path(task) }.not_to change(VolunteerTask, :count)
+      expect(flash[:alert]).to include("cannot be deleted")
     end
 
     it "404s for a missing task" do
@@ -331,8 +519,22 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_tasks/my_tasks" do
-    %i[guest regular volunteer staff].each do |role|
-      it "#{role}: renders (no gate)" do
+    it "guest: redirects to login" do
+      get my_tasks_volunteer_tasks_path
+      expect(response).to redirect_to(login_path(back_to: "/volunteer_tasks/my_tasks"))
+    end
+
+    %i[regular role_only].each do |role|
+      it "#{role}: redirects to root with an alert" do
+        vol_sign_in_as(role)
+        get my_tasks_volunteer_tasks_path
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("You cannot access this area.")
+      end
+    end
+
+    %i[volunteer staff].each do |role|
+      it "#{role}: renders" do
         vol_sign_in_as(role)
         get my_tasks_volunteer_tasks_path
         expect(response).to have_http_status(:ok)

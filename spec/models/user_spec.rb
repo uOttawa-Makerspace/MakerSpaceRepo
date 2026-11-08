@@ -164,6 +164,19 @@ RSpec.describe User, type: :model do
   end
 
   describe "scopes" do
+    describe ".key_assignable" do
+      it "includes staff and admins, and anyone with a key request, and nobody else" do
+        staff = create(:user, :staff)
+        admin = create(:user, :admin)
+        requester = create(:user)
+        create(:key_request, :all_questions_answered, user: requester, supervisor: admin, space: create(:space))
+        bystander = create(:user)
+
+        expect(User.key_assignable).to include(staff, admin, requester)
+        expect(User.key_assignable).not_to include(bystander)
+      end
+    end
+
     context "#created_at_month" do
       it "should return users created in the specified month" do
         # Test a specific month to avoid conflicts
@@ -544,7 +557,7 @@ RSpec.describe User, type: :model do
 
       it "should be false" do
         user = create(:user, :regular_user)
-        cert = create(:certification, :basic_training, user_id: user.id, level: "Beginner")
+        create(:certification, :basic_training, user_id: user.id, level: "Beginner")
         create(:training_requirement, :"3d_printing", level: "Beginner")
         expect(user.has_requirements?(TrainingRequirement.all)).to be_falsey
       end
@@ -686,15 +699,32 @@ RSpec.describe User, type: :model do
       expect(u.email).to eq("mixed@example.com")
     end
 
-    it "email format is checked on create only, and the format check is lenient" do
-      # the `email: true` validator accepts addresses without an @ (e.g. "not-an-email") and no email rule runs on update
-      expect(build(:user, email: "not-an-email")).to be_valid
+    it "rejects an email that is not an address, on create" do
+      %w[not-an-email a@ @b.ca a@@b.ca].each do |bad|
+        user = build(:user, email: bad)
+        expect(user).not_to be_valid, "expected #{bad.inspect} to be rejected"
+        expect(user.errors[:email]).to be_present
+      end
       expect(build(:user, email: "")).not_to be_valid
+      expect(build(:user, email: "first.last+tag@uottawa.ca")).to be_valid
+    end
+
+    it "checks the email format on update only when the email changes" do
       u = create(:user)
       u.email = "not-an-email"
+      expect(u).not_to be_valid
+      expect(u.errors[:email]).to be_present
+
+      u = create(:user)
+      u.email = "someone@mail.com"
       expect(u).to be_valid
-      u.email = ""
-      expect(u).to be_valid
+
+      stored = create(:user)
+      stored.update_columns(email: "odd-stored-address")
+      stored = User.find(stored.id)
+      stored.name = "Renamed"
+      expect(stored).to be_valid
+      expect(stored.save).to be true
     end
 
     it "the waiver is required on create only" do
@@ -716,9 +746,43 @@ RSpec.describe User, type: :model do
       expect(build(:user, **base, student_id: "123456")).not_to be_valid
       expect(build(:user, **base, student_id: "12345678901234")).not_to be_valid
       expect(build(:user, **base, student_id: "12345a789")).not_to be_valid
-      # student_id has allow_blank: true alongside presence: true, so the presence rule is dead and students can omit it
-      expect(build(:user, **base, student_id: "")).to be_valid
+      expect(build(:user, **base, student_id: "")).not_to be_valid
+      expect(build(:user, **base, student_id: nil)).not_to be_valid
       expect(build(:user, identity: "community_member", student_id: "abc")).to be_valid
+    end
+
+    it "a student must give a student id on create and when identity or id changes, but an older row without one stays saveable" do
+      base = { faculty: "Engineering", program: "X", year_of_study: 1 }
+      student = create(:user, identity: "undergrad", **base, student_id: "1234567")
+      student.update_columns(student_id: nil)
+      student = User.find(student.id)
+      expect(student.update(name: "Renamed Student")).to be(true)
+      student.student_id = ""
+      expect(student).to be_valid
+
+      student.update_columns(student_id: "1234567")
+      student = User.find(student.id)
+      student.student_id = " "
+      expect(student).not_to be_valid
+      expect(student.errors[:student_id]).to be_present
+
+      community = create(:user, identity: "community_member", student_id: nil)
+      community.identity = "grad"
+      community.assign_attributes(base)
+      expect(community).not_to be_valid
+      expect(community.errors[:student_id]).to be_present
+      community.student_id = "1234567"
+      expect(community).to be_valid
+    end
+
+    it "the missing student id error is the translated required message in English and French" do
+      student = build(:user, :student, student_id: "")
+      student.valid?
+      expect(student.errors[:student_id]).to eq(["This field is required."])
+      I18n.with_locale(:fr) do
+        student.valid?
+        expect(student.errors[:student_id]).to eq(["Ce champ est requis."])
+      end
     end
 
     it "gender and identity must come from their lists" do
@@ -736,10 +800,24 @@ RSpec.describe User, type: :model do
       expect(u.faculty).to eq("Engineering")
     end
 
-    it "'Civil Law'/'Common Law' translations are not in the FACULTIES list so students with them fail" do
+    it "'Civil Law'/'Common Law' (also the French 'Droit civil'/'Droit commun') are listed faculties" do
       u = build(:user, identity: "undergrad", faculty: "Droit civil", program: "X", year_of_study: 1, student_id: "1234567")
-      expect(u).not_to be_valid
+      expect(u).to be_valid
       expect(u.faculty).to eq("Civil Law")
+      expect(build(:user, identity: "undergrad", faculty: "Common Law", program: "X", year_of_study: 1, student_id: "1234567")).to be_valid
+    end
+
+    it "a stored faculty or student id outside the rules stays valid until it is changed" do
+      u = create(:user, identity: "undergrad", faculty: "Engineering", program: "X", year_of_study: 1, student_id: "1234567")
+      u.update_columns(faculty: "Old Faculty", student_id: "1234567890123")
+      u = User.find(u.id)
+      u.name = "Another Name"
+      expect(u).to be_valid
+      u.faculty = "Other Faculty"
+      expect(u).not_to be_valid
+      u.restore_attributes
+      u.student_id = "12345"
+      expect(u).not_to be_valid
     end
 
     it "avatar: images pass, a non-image content type fails" do
@@ -748,10 +826,13 @@ RSpec.describe User, type: :model do
       expect(build(:user, :regular_user_with_broken_avatar)).not_to be_valid
     end
 
-    it "the password strength validator inspects the stored value, so any plaintext passes when set via the column" do
+    it "the password strength rules apply to the plaintext given to pword= as well as to the column" do
       expect(build(:user, password: "abc")).not_to be_valid
       u = create(:user)
       u.pword = "abc"
+      expect(u).not_to be_valid
+      expect(u.errors[:password]).to be_present
+      u.pword = "Xk3#vbN9!qLw"
       expect(u).to be_valid
     end
   end
@@ -774,7 +855,7 @@ RSpec.describe User, type: :model do
     it "record_failed_attempt! increments and locks at the 5th failure, emailing the unlock link" do
       4.times { u.record_failed_attempt! }
       expect(u.reload.locked).to be(false)
-      expect { u.record_failed_attempt! }.to change { ActionMailer::Base.deliveries.size }.by(1)
+      expect { perform_enqueued_jobs { u.record_failed_attempt! } }.to change { ActionMailer::Base.deliveries.size }.by(1)
       u.reload
       expect(u.locked).to be(true)
       expect(u.auth_attempts).to eq(5)
@@ -807,7 +888,8 @@ RSpec.describe User, type: :model do
     end
 
     it "send_password_reset emails the reset link with a single purpose-scoped token" do
-      expect { u.send_password_reset }.to change { ActionMailer::Base.deliveries.size }.by(1)
+      expect { u.send_password_reset }.to have_enqueued_mail(MsrMailer, :forgot_password)
+      expect { perform_enqueued_jobs }.to change { ActionMailer::Base.deliveries.size }.by(1)
       mail = ActionMailer::Base.deliveries.last
       expect(mail.to).to eq([u.email])
       expect(mail.subject).to eq("Reset your MakerRepo password")
@@ -867,10 +949,56 @@ RSpec.describe User, type: :model do
       expect(build(:user, program: "Unknown Thing").department).to be_nil
     end
 
-    it "identity_readable titleizes non-students and builds a year string for students" do
-      expect(build(:user, identity: "community_member").identity_readable).to eq("Community Member")
-      s = build(:user, identity: "undergrad", year_of_study: 2)
-      I18n.with_locale(:en) { expect(s.identity_readable).to eq("2nd Year Undergraduate") }
+    describe "#identity_readable" do
+      def readable(identity, year = nil, locale: :en)
+        I18n.with_locale(locale) { build(:user, identity: identity, year_of_study: year).identity_readable }
+      end
+
+      it "names a non-student's identity" do
+        expect(readable("community_member")).to eq("Community Member")
+        expect(readable("faculty_member")).to eq("Faculty Member")
+        expect(readable("staff_member")).to eq("Staff Member")
+        expect(readable("community_member", locale: :fr)).to eq("Membre de la communauté")
+        expect(readable("staff_member", locale: :fr)).to eq("Membre du personnel")
+      end
+
+      it "words a student's year and identity in English" do
+        expect(readable("undergrad", 1)).to eq("1st Year Undergraduate")
+        expect(readable("undergrad", 2)).to eq("2nd Year Undergraduate")
+        expect(readable("grad", 3)).to eq("3rd Year Graduate")
+        expect(readable("international_undergrad", 4)).to eq("4th Year International Undergraduate")
+        expect(readable("international_grad", 11)).to eq("11th Year International Graduate")
+      end
+
+      it "words a student's year and identity in French, with 1re but 2e" do
+        expect(readable("undergrad", 1, locale: :fr)).to eq("Étudiant de premier cycle, 1re année")
+        expect(readable("undergrad", 2, locale: :fr)).to eq("Étudiant de premier cycle, 2e année")
+        expect(readable("grad", 3, locale: :fr)).to eq("Étudiant aux cycles supérieurs, 3e année")
+        expect(readable("international_undergrad", 4, locale: :fr)).to eq("Étudiant international de premier cycle, 4e année")
+        expect(readable("international_grad", 5, locale: :fr)).to eq("Étudiant international aux cycles supérieurs, 5e année")
+      end
+
+      it "returns a string for a blank identity, in both languages" do
+        [nil, ""].each do |blank|
+          expect(readable(blank)).to eq("")
+          expect(readable(blank, 2, locale: :fr)).to eq("")
+        end
+      end
+
+      it "gives a student without a usable year of study just the identity" do
+        [nil, 0].each do |year|
+          expect(readable("undergrad", year)).to eq("Undergraduate")
+          expect(readable("grad", year, locale: :fr)).to eq("Étudiant aux cycles supérieurs")
+        end
+      end
+
+      it "mixes no language: no English word appears in a French result and no French word in an English one" do
+        User::IDENTITIES.each do |identity|
+          year = User::STUDENT_IDENTITIES.include?(identity) ? 2 : nil
+          expect(readable(identity, year, locale: :fr)).not_to match(/\b(year|undergraduate|graduate|member|unknown)\b/i)
+          expect(readable(identity, year)).not_to match(/\b(année|étudiant|membre|inconnu)\b/i)
+        end
+      end
     end
   end
 
@@ -894,7 +1022,8 @@ RSpec.describe User, type: :model do
     let(:u) { create(:user, :regular_user) }
 
     it "locks for LOCK_DURATION and mails the unlock link" do
-      expect { u.lock_account! }.to change { ActionMailer::Base.deliveries.size }.by(1)
+      expect { u.lock_account! }.to have_enqueued_mail(MsrMailer, :unlock_account)
+      expect { perform_enqueued_jobs }.to change { ActionMailer::Base.deliveries.size }.by(1)
       expect(u.reload.locked).to be(true)
       expect(u.locked_until).to be_within(5.seconds).of(User::LOCK_DURATION.from_now)
     end
@@ -902,7 +1031,7 @@ RSpec.describe User, type: :model do
     it "is a no-op, with no second mail, for an account already locked for longer (admin lock)" do
       admin_until = 99.years.from_now
       u.update_columns(locked: true, locked_until: admin_until)
-      expect { u.lock_account! }.not_to(change { ActionMailer::Base.deliveries.size })
+      expect { u.lock_account! }.not_to have_enqueued_mail(MsrMailer, :unlock_account)
       expect(u.reload.locked_until).to be_within(1.second).of(admin_until)
     end
 
@@ -1011,6 +1140,32 @@ RSpec.describe User, type: :model do
       expect(u.plaintext_password_problems("")).not_to be_empty
       expect(u.plaintext_password_problems("hunterxsmith1A!")).not_to be_empty
       expect(u.plaintext_password_problems("Xk3#vbN9!qLw")).to be_empty
+    end
+  end
+
+  describe "deleting a user who holds a card" do
+    it "is refused while the card is linked, and works once it is unlinked through Rfid.unlink_from_user!" do
+      user = create(:user, :regular_user)
+      card = create(:rfid, user: user)
+      expect(user.destroy).to be(false)
+      expect(user.errors[:base]).to be_present
+      expect(card.reload.user_id).to eq(user.id)
+
+      Rfid.unlink_from_user!(user, actor: create(:user, :staff))
+      expect(user.reload.destroy).to be_truthy
+      expect(Rfid.find(card.id).user_id).to be_nil
+    end
+  end
+
+  describe ".email_shape_error" do
+    it "names the problem for a malformed address, in the current locale" do
+      expect(User.email_shape_error("not-an-address")).to be_present
+      expect(I18n.with_locale(:fr) { User.email_shape_error("not-an-address") }).not_to include("translation missing")
+    end
+
+    it "accepts a well-formed address and does not apply the provider-typo hint" do
+      expect(User.email_shape_error("someone@example.com")).to be_nil
+      expect(User.email_shape_error("someone@gmial.com")).to be_nil
     end
   end
 end

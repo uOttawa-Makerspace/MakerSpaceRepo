@@ -16,32 +16,17 @@ class StaticPagesController < SessionsController
     # User-specific data (Only run when a user is signed in)
     user = current_user || @user
     if user
-      @volunteer_program_shadowing_scheduled =
-        user.shadowing_hours.includes(:space).map do |hours|
-          end_time = hours.end_time.strftime('%H:%M')
-          formatted_time = "#{I18n.l hours.start_time, format: '%A %H:%M'} - #{end_time}"
-          [hours.space.name, formatted_time]
-        end
+      @volunteer_program_shadowing_scheduled = shadowing_shift_entries(user)
 
       @volunteer_program_your_tasks =
-        begin
-          user
-            .volunteer_task_joins
-            .active
-            .order(updated_at: :desc)
-            .joins(:volunteer_task)
-            .includes(volunteer_task: :space)
-            .where(volunteer_task: { status: 'open' })
-            .limit(5)
-            .map do |task|
-              task_name = task.volunteer_task.title
-              space_name = task.volunteer_task.space.name
-              formatted_time = task.created_at.strftime('%H:%M')
-              [task_name, space_name, formatted_time, task.volunteer_task_id]
-            end
-        rescue StandardError
-          []
-        end
+        user
+          .volunteer_task_joins
+          .active
+          .joins(:volunteer_task)
+          .where(volunteer_tasks: { status: 'open' })
+          .order(updated_at: :desc)
+          .limit(5)
+          .pluck('volunteer_tasks.title', :volunteer_task_id)
 
       @user_skills =
         Certification
@@ -96,58 +81,6 @@ class StaticPagesController < SessionsController
       end
   end
 
-  # ─── 2. USER-SPECIFIC WIDGETS (Loaded via Background Turbo Frame) ─────────
-  def home_user_widgets
-    return head :ok unless current_user
-
-    @volunteer_program_shadowing_scheduled =
-      current_user.shadowing_hours.includes(:space).map do |hours|
-        end_time = hours.end_time.strftime('%H:%M')
-        formatted_time = "#{I18n.l hours.start_time, format: '%A %H:%M'} - #{end_time}"
-        [hours.space.name, formatted_time]
-      end
-
-    @volunteer_program_your_tasks =
-      current_user
-        .volunteer_task_joins
-        .active
-        .order(updated_at: :desc)
-        .joins(:volunteer_task)
-        .includes(volunteer_task: :space)
-        .where(volunteer_task: { status: 'open' })
-        .limit(5)
-        .map do |task|
-          task_name = task.volunteer_task.title
-          space_name = task.volunteer_task.space.name
-          formatted_time = task.created_at.strftime('%H:%M')
-          [task_name, space_name, formatted_time, task.volunteer_task_id]
-        end
-
-    @user_skills =
-      Certification
-        .where(user_id: current_user.id)
-        .joins(training_session: :training)
-        .limit(5)
-        .pluck('trainings.name_en', 'training_sessions.level')
-
-    # Cached total tracks (SQL Group Count instead of full table scan)
-    total_tracks = Rails.cache.fetch('LearningModuleTotalTracks', expires_in: 1.hour) do
-      LearningModule.joins(:training).group('trainings.name_en').count
-    end
-
-    @user_tracks =
-      current_user
-        .learning_module_tracks
-        .includes(learning_module: :training)
-        .group_by { |x| x.learning_module.training.name_en }
-        .transform_values { |x| x.map(&:status).tally }
-        .map do |key, value|
-          [key, "#{value['Completed'] || 0}/#{total_tracks[key] || 0}"]
-        end
-
-    render partial: 'home_user_widgets', layout: false
-  end
-
   def about; end
 
   def contact
@@ -162,8 +95,8 @@ class StaticPagesController < SessionsController
       format.html { render :hours }
       format.json do
         render json: @contact_info.as_json(
-          include: :opening_hour,
-          only: %i[name email address phone_number show_hours opening_hour]
+          include: :opening_hours,
+          only: %i[name email address phone_number show_hours]
         )
       end
     end
@@ -200,6 +133,11 @@ class StaticPagesController < SessionsController
     redirect_to root_path
   end
 
+  RESET_PASSWORD_NOTICE = 'A reset link email has been sent to the email if the account exists.'
+
+  rate_limit to: 30, within: 1.hour, only: :reset_password, name: 'reset-ip',
+             by: -> { request.remote_ip }, with: -> { reset_password_response }
+
   def reset_password
     unless verify_turnstile
       flash.now[:alert] = 'There was a problem with the captcha, please try again.'
@@ -211,9 +149,10 @@ class StaticPagesController < SessionsController
       render :forgot_password and return
     end
 
-    User.find_by(email: params[:email].strip.downcase)&.send_password_reset
-    flash[:notice] = 'A reset link email has been sent to the email if the account exists.'
-    render :forgot_password
+    email = params[:email].to_s.strip.downcase
+    user = User.find_by(email: email) if email.length <= 254
+    user.send_password_reset if user && mail_budget_left?('reset', email)
+    reset_password_response
   end
 
   def report_repository
@@ -228,6 +167,22 @@ class StaticPagesController < SessionsController
   end
 
   private
+
+  # [space name or nil, "Monday 10:00 - 13:00"] per shadowing shift; a shift
+  # without a space has no name.
+  def shadowing_shift_entries(user)
+    user.shadowing_hours.includes(:space).map do |hours|
+      end_time = hours.end_time.strftime('%H:%M')
+      formatted_time = "#{I18n.l hours.start_time, format: '%A %H:%M'} - #{end_time}"
+      [hours.space&.name, formatted_time]
+    end
+  end
+
+  # The same answer whether or not the address belongs to an account, and when throttled.
+  def reset_password_response
+    flash.now[:notice] = RESET_PASSWORD_NOTICE
+    render :forgot_password
+  end
 
   MAKERSTORE_SHOP = 'uottawa-makerspace.myshopify.com'
 

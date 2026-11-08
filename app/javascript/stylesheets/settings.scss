@@ -110,7 +110,6 @@ select.profile-select {
 
   &:focus {
     border-color: var(--bs-primary);
-    outline: 0;
     box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
   }
 }
@@ -152,7 +151,7 @@ div.section-desc {
   width: 100%;
   padding: 10px 0;
   margin: 10px 0;
-  color: var(--bs-primary);
+  color: var(--primary-text);
 
   & span {
     font-size: 0.75rem;

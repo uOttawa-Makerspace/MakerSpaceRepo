@@ -171,15 +171,30 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
   context "when nobody is signed in to the space" do
     before { LabSession.where(space: space).update_all(sign_out_time: 1.minute.ago) }
 
-    it "is a 500 (NoMethodError on nil), the polled endpoint fails on an empty room" do
-      # not only "no space context". `@space.signed_in_users.first.memberships`
-      # is called without a nil check, so ANY staff dashboard with zero signed-in users (an empty lab,
-      # the normal state overnight) gets a 500 from this endpoint instead of empty tables.
+    it "does not return certifications of users outside the room" do
+      create(:certification, user: create(:user, :regular_user))
+      refresh
+      expect(json["certification"]).to eq([])
+    end
+
+    it "has the same keys as the populated payload" do
+      refresh
+      empty_keys = json.keys.sort
+      create(:lab_session, space: space, user: latest, sign_in_time: 1.minute.ago, sign_out_time: 1.hour.from_now)
+      refresh
+      expect(json["users"]).not_to be_empty # an occupied room, not the empty payload again
+      expect(json.keys.sort).to eq(empty_keys)
+    end
+
+    it "answers empty user details and the (empty) tables instead of failing" do
       refresh
 
-      expect(response).to have_http_status(:internal_server_error)
-      expect(exception_class).to eq("NoMethodError")
-      expect(response.body[/<h1>\s*(\S+)\s+in (\S+)/, 2]).to eq("StaffDashboardController#refresh_tables")
+      expect(response).to have_http_status(:ok)
+      expect(json).to include("users" => [], "has_membership" => false, "expiration_date" => "",
+                              "is_student" => false, "signed_sheet" => false)
+      expect(json["certification"]).to eq([])
+      expect(json["signed_in"]).to be_a(String)
+      expect(json["signed_out"]).to be_a(String)
     end
   end
 end

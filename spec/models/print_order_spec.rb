@@ -8,6 +8,15 @@ RSpec.describe PrintOrder, type: :model do
   end
 
   describe "Active Storage" do
+    it "keeps stored attachments reachable through the polymorphic record" do
+      print_order = create(:print_order, :with_file)
+
+      attachment = ActiveStorage::Attachment.find_by!(record_type: "PrintOrder", record_id: print_order.id, name: "file")
+
+      expect(attachment.record).to eq(print_order)
+      expect(PrintOrder.find(print_order.id).file).to be_attached
+    end
+
     context "file type validation" do
       it "should be false" do
         print_order = build(:print_order, :with_invalid_file)

@@ -29,7 +29,7 @@ document.addEventListener("turbo:load", function () {
   const loginModal = document.getElementById("loginModal");
   if (loginModal) {
     loginModal.addEventListener("shown.bs.modal", () => {
-      loginModal.querySelector("#username_email").focus();
+      loginModal.querySelector("#login_modal_username_email").focus();
     });
   }
 

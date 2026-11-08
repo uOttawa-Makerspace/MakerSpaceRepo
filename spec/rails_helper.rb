@@ -18,7 +18,12 @@ unless ENV["COVERAGE"].to_s.empty?
     # the merged HTML report is produced once by bin/coverage_collate
     SimpleCov.formatter Class.new { def format(_result) = nil }
   end
-  SimpleCov.start
+  SimpleCov.start "rails" do
+    enable_coverage :branch
+    primary_coverage :line
+    # count only app/ and lib/ (the rails profile already drops spec, config, db)
+    add_filter { |src| !src.filename.start_with?("#{SimpleCov.root}/app/", "#{SimpleCov.root}/lib/") }
+  end
 end
 
 ENV["RAILS_ENV"] = "test"
@@ -72,14 +77,16 @@ RSpec.configure do |config|
     end
   end
 
+  # Examples tagged :perform_jobs run their enqueued jobs (mail delivered with deliver_later) as they are
+  # enqueued, so they can assert the delivered mail.
+  config.around(:each, :perform_jobs) { |example| perform_enqueued_jobs { example.run } }
+
   # The status rows live in a transaction that is rolled back after every example: never carry a memoized
   # JobStatus row (JobStatus.draft ...) into the next one.
   config.before(:each) { JobStatus.reset_lookup_cache! }
 
   config.before(:each) do
-    allow(Event).to receive(:upsert_event).and_return(true)
-    allow(Event).to receive(:delete_event).and_return(true)
-    allow(Event).to receive(:authorizer).and_return(double("GoogleAuthorizer", fetch_access_token!: true))
+    allow(GoogleCalendar::EventPublisher).to receive(:authorizer).and_return(double("GoogleAuthorizer", fetch_access_token!: true))
   end
 end
 

@@ -266,6 +266,36 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(switch.details).to include("action" => "space_switch", "previous_space_id" => space.id)
     end
 
+    it "treats a tap at a different space as a full sign in: job enqueued, both dashboards updated, old session ended" do
+      create(:membership_tier, title_en: "Faculty membership", title_fr: "Adhesion de la faculte", internal_price: 0, external_price: 0, duration: 4.months.to_i)
+      other_space = create(:space)
+      other_reader = create(:pi_reader, space: other_space)
+      tap_card
+      old_session = LabSession.where(user: owner, space_id: space.id).last
+      expect {
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: other_reader.pi_mac_address }, as: :json
+      }.to have_enqueued_job(CardTapJob).with(rfid, other_space.id)
+                                         .and have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
+      expect(old_session.reload.sign_out_time).to be <= Time.zone.now
+      expect { perform_enqueued_jobs }.to have_broadcasted_to("space_event_#{other_space.id}").with(
+        a_hash_including("add_user" => a_hash_including("id" => owner.id))
+      ).and have_broadcasted_to("signed_in_table_space_#{other_space.id}").from_channel(Turbo::StreamsChannel)
+    end
+
+    it "leaves the user signed in where they were when the switch cannot create the new session" do
+      other_space = create(:space)
+      tap_card
+      allow(LabSession).to receive(:create_session).and_raise(ActiveRecord::RecordInvalid)
+      expect {
+        RfidTap.call(card: rfid.card_number, space: other_space, mac_address: nil)
+      }.to raise_error(ActiveRecord::RecordInvalid)
+      expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
+    end
+
+    it "skips the table update for a space that no longer exists" do
+      expect { StaffDashboardChannel.send_tap_out(owner, 0) }.not_to raise_error
+    end
+
     it "enqueues CardTapJob with the rfid and space on sign in only" do
       expect { tap_card }.to have_enqueued_job(CardTapJob).with(rfid, space.id)
       expect { tap_card }.not_to have_enqueued_job(CardTapJob)
@@ -428,10 +458,10 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(response).to redirect_to(login_path(back_to: rfid_get_unset_rfids_path))
     end
 
-    it "answers a JSON guest with the raw string redirect (not JSON) and status 200" do
+    it "answers a JSON guest with a JSON error and status 401" do
       get rfid_get_unset_rfids_path(format: :json)
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to eq("redirect")
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body).to eq("error" => "Please sign in.")
     end
 
     %i[regular volunteer].each do |role|

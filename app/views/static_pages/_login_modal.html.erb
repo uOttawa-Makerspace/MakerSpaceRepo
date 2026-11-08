@@ -4,15 +4,17 @@
 
       <div class="modal-header">
         <h1 class="text-center"><%= t('sessions.login.sign_in') %></h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
       </div>
 
       <div class="modal-body">
         <%= form_tag login_authentication_path do %>
           <%= hidden_field_tag :back_to, login_back_to %>
           <div class="mb-3 attach">
-            <%= text_field_tag :username_email, params[:username_email], placeholder: t('sessions.login.username_or_email'), class: 'form-control mb-1', autofocus: true %>
-            <%= password_field_tag :password, nil, placeholder: t('sessions.login.password'), class: 'form-control' %>
+            <%= label_tag :login_modal_username_email, t('sessions.login.username_or_email'), class: 'visually-hidden' %>
+            <%= text_field_tag :username_email, params[:username_email], id: 'login_modal_username_email', placeholder: t('sessions.login.username_or_email'), class: 'form-control mb-1', autofocus: true %>
+            <%= label_tag :login_modal_password, t('sessions.login.password'), class: 'visually-hidden' %>
+            <%= password_field_tag :password, nil, id: 'login_modal_password', placeholder: t('sessions.login.password'), class: 'form-control' %>
           </div>
           <%= submit_tag t('sessions.login.sign_in'), class: 'btn btn-primary w-100' %>
         <% end %>

@@ -45,7 +45,7 @@ document.addEventListener("turbo:load", () => {
 });
 
 // Setup admin table filtering
-function setupRentalTable() {
+export function setupRentalTable() {
   if (!document.getElementById("rental-data-table")) {
     return;
   }

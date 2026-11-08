@@ -117,6 +117,38 @@ RSpec.describe LockerRental, type: :model do
       expect(rental.cancelled_at).to be_present
     end
 
+    it "records cancelled_at once and keeps it through later saves of the cancelled rental" do
+      rental = create(:locker_rental, :active, owned_until: 1.month.from_now)
+      rental.update!(state: :cancelled)
+      recorded = rental.cancelled_at
+      travel_to(2.days.from_now) { rental.update!(contacted_for_clearance: true) }
+      expect(rental.reload.cancelled_at).to be_within(1.second).of(recorded)
+    end
+
+    it "records a new cancelled_at when a returned rental is cancelled again" do
+      rental = create(:locker_rental, :await_payment)
+      rental.update!(state: :cancelled)
+      first = rental.cancelled_at
+      rental.update!(state: :await_payment)
+      travel_to(2.days.from_now) { rental.update!(state: :cancelled) }
+      expect(rental.cancelled_at).to be > first + 1.day
+    end
+
+    # staff or an admin may take a cancelled rental straight to active (cash paid at the desk)
+    it "keeps a cancelled rental cancelled unless it goes to awaiting payment, or to active by staff or admin" do
+      rental = create(:locker_rental, :active)
+      rental.update!(state: :cancelled)
+      expect(rental.reload.update(state: :active)).to be(false)
+      expect(rental.errors[:state]).to be_present
+      expect(rental.reload.update(state: :active, decided_by: create(:user))).to be(false)
+      %i[staff admin].each do |role|
+        expect(rental.reload.update(state: :active, decided_by: create(:user, role))).to be(true), role.to_s
+        rental.update!(state: :cancelled)
+      end
+      expect(rental.reload.update(state: :reviewing)).to be(false)
+      expect(rental.reload.update(state: :await_payment)).to be(true)
+    end
+
     it "blocks two reserving rentals on the same locker, but not a cancelled one" do
       locker = create(:locker)
       create(:locker_rental, :active, locker: locker)
@@ -155,12 +187,9 @@ RSpec.describe LockerRental, type: :model do
       expect(rental).to be_valid
     end
 
-    it "raises when READING a non-nil specifier (normalizes with: :squish is a Symbol)" do
-      # `normalizes :specifier, with: :squish`
-      # hands Rails a Symbol, not a callable; assignment succeeds but reading
-      # the attribute raises. The column is unused in practice (always nil).
+    it "squishes a non-nil specifier when it is read" do
       rental = LockerRental.new(specifier: "  a   b ")
-      expect { rental.specifier }.to raise_error(NoMethodError, /undefined method 'call'/)
+      expect(rental.specifier).to eq("a b")
       expect(LockerRental.new.specifier).to be_nil
     end
   end
@@ -220,6 +249,18 @@ RSpec.describe LockerRental, type: :model do
   describe "#record_payment (Shopify paid activation)" do
     def pay(rental, id: "5001", **opts)
       rental.record_payment(shopify_order_id: id, **opts)
+    end
+
+    it "holds the payment as not_activatable when a simultaneous assignment takes the locker first" do
+      other = create(:locker_rental, :active)
+      rental = create(:locker_rental, locker: other.locker)
+      allow_any_instance_of(described_class).to receive(:valid?).and_return(true)
+
+      payment = nil
+      expect { payment = pay(rental, id: "race-1") }.not_to raise_error
+
+      expect(payment).to have_attributes(status: "held", hold_reason: "not_activatable")
+      expect(rental.reload).to be_reviewing
     end
 
     it "activates an await_payment rental, defaults owned_until, stamps paid_at, mails locker_assigned" do
@@ -905,16 +946,6 @@ RSpec.describe LockerRental, type: :model do
       expect(LockerRental.state_icon("reviewing")).to eq("")
       expect(LockerRental.state_icon("await_payment")).to eq("")
       expect(build(:locker_rental, :active).state_icon).to eq("fa-lock")
-    end
-  end
-
-  describe ".get_assigned_lockers" do
-    it "groups active rentals by locker_type_id" do
-      # the query plucks :locker_type_id and
-      # :locker_specifier, columns that no longer exist on locker_rentals
-      # (they were replaced by locker_id/specifier), so it raises.
-      create(:locker_rental, :active)
-      expect { LockerRental.get_assigned_lockers }.to raise_error(ActiveRecord::StatementInvalid)
     end
   end
 

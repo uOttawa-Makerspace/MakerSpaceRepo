@@ -51,4 +51,17 @@ RSpec.describe CdelReportGenerator do
     expect(described_class.generate_visitors_report(from.to_datetime, to.to_datetime)[:filename])
       .to start_with("CEED_visitors_dump-2026-03-01T00:00:00")
   end
+
+  it "keeps the visits, certifications and sign-up of a soft-deleted user in the reports" do
+    space = create(:space, name: "S1")
+    user = create(:user, :student, name: "Deleted Visitor", created_at: march_10)
+    create(:lab_session, space: space, user: user, created_at: march_10)
+    create(:certification, :basic_training, user_id: user.id, created_at: march_10)
+    user.soft_delete!
+    visitors, certifications, new_users = described_class.generate_all_reports(from, to).map { |r| CSV.parse(r[:data]) }
+    expect(visitors.size).to eq(2)
+    expect(visitors[1][1]).to eq("Deleted Visitor")
+    expect(certifications.size).to eq(2)
+    expect(new_users.flatten).to include(user.username)
+  end
 end

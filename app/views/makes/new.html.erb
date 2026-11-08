@@ -12,8 +12,8 @@
             <div class="mb-3">
                 <%= label_tag :photo, 'Gallery', class: 'form-label' %>
                 <div class="input-group mb-3">
-                    <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
-                    <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+                    <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria: { label: t('common.names.select_pictures') } %>
+                    <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input" aria-label="<%= t('common.add') %>">
                         <i class="fa fa-plus"></i>
                     </button>
                 </div>

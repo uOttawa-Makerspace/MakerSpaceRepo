@@ -16,6 +16,14 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
   let(:visitor) { create(:user, :regular_user) }
 
   describe "PUT /staff_dashboard/add_users (sign_in_users)" do
+    it "answers the JS response (the dashboard tables) for format js" do
+      target = create(:user, :regular_user)
+      put "/staff_dashboard/add_users", params: { added_users: [target.username] }, as: :js, xhr: true
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("table-js-signed-in")
+      expect(LabSession.active_for_user(target)).to exist
+    end
+
     # The dashboard's user picker feeds two forms: Sign In (PUT, carries the CSRF
     # token) and View (GET, no token, so none ends up in its URL).
     def search_form(id)
@@ -97,7 +105,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
         put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
 
         expect(response).to have_http_status(:ok)
-        expect(json).to eq("status" => "ok")
+        expect(json).to eq("status" => "ok", "signed_out" => [visitor.username], "not_signed_in" => [], "not_found" => [])
         expect(session_row.reload.sign_out_time).to eq(Time.zone.now)
       end
       expect(LabSession.active_for_user(visitor)).to be_empty
@@ -109,39 +117,90 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(response).to redirect_to(staff_dashboard_index_path)
     end
 
-    it "an unknown username is silently ignored: {status: ok}" do
+    it "an unknown username is reported in not_found, not dropped silently" do
       put "/staff_dashboard/remove_users", params: { dropped_users: ["nobody"] }, as: :json
       expect(response).to have_http_status(:ok)
-      expect(json).to eq("status" => "ok")
+      expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [], "not_found" => ["nobody"])
+    end
+
+    it "matches usernames case-insensitively and does not report them as unknown" do
+      sign_in_session(visitor, space)
+      put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username.upcase] }, as: :json
+      expect(json).to eq("status" => "ok", "signed_out" => [visitor.username], "not_signed_in" => [], "not_found" => [])
+    end
+
+    it "ignores blank entries and non-string entries, never echoing them" do
+      sign_in_session(visitor, space)
+      put "/staff_dashboard/remove_users",
+          params: { dropped_users: [visitor.username, "", "  ", { "a" => "b" }, ["x"]] }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("status" => "ok", "signed_out" => [visitor.username], "not_signed_in" => [], "not_found" => [])
+    end
+
+    it "accepts a single string as a one-item list (form value or JSON string)" do
+      sign_in_session(visitor, space)
+      put "/staff_dashboard/remove_users", params: { dropped_users: visitor.username }, as: :json
+      expect(json).to eq("status" => "ok", "signed_out" => [visitor.username], "not_signed_in" => [], "not_found" => [])
+      put "/staff_dashboard/remove_users", params: { dropped_users: "  " }, as: :json
+      expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [], "not_found" => [])
+    end
+
+    it "ignores a dropped_users that is a hash" do
+      put "/staff_dashboard/remove_users", params: { dropped_users: { "a" => "b" } }, as: :json
+      expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [], "not_found" => [])
+    end
+
+    it "answers the JS response (the dashboard tables) for format js" do
+      sign_in_session(visitor, space)
+      put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :js, xhr: true
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("table-js-signed-in")
+      expect(LabSession.active_for_user(visitor)).to be_empty
+    end
+
+    it "html: an unknown username flashes an alert" do
+      put "/staff_dashboard/remove_users", params: { dropped_users: ["nobody"] }
+      expect(flash[:alert]).to include("nobody")
     end
 
     it "no dropped_users is a no-op {status: ok}" do
       session_row = sign_in_session(visitor, space)
       put "/staff_dashboard/remove_users", as: :json
-      expect(json).to eq("status" => "ok")
+      expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [], "not_found" => [])
       expect(session_row.reload.sign_out_time).to be > Time.zone.now
     end
 
-    it "a user who is not signed in anywhere is a 500 (NoMethodError on nil)" do
-      # `LabSession.active_for_user(user).last.sign_out` has no nil
-      # check, so the dashboard's X button for a user whose session expired or was ended in another tab
-      # (stale table) gets a 500 instead of {status: "ok"}; the other usernames in the same request
-      # are not processed either.
-      expect { put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json }.not_to change(LabSession, :count)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(exception_class).to eq("NoMethodError")
+    it "a user who is not signed in is a 200 listing them, and the other usernames are still signed out" do
+      other = create(:user, :regular_user)
+      other_row = sign_in_session(other, space)
+      expect do
+        put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username, other.username] }, as: :json
+      end.not_to change(LabSession, :count)
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("status" => "ok", "signed_out" => [other.username], "not_signed_in" => [visitor.username], "not_found" => [])
+      expect(other_row.reload.sign_out_time).to be <= Time.zone.now
     end
 
-    it "a user whose only session already ended is also a 500" do
-      # same nil dereference.
+    it "repeating the sign out of the same user is a 200 with that user in not_signed_in" do
+      sign_in_session(visitor, space)
+      2.times { put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json }
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("status" => "ok", "signed_out" => [], "not_signed_in" => [visitor.username], "not_found" => [])
+    end
+
+    it "a user whose only session already ended is listed in not_signed_in, and the ended session is untouched" do
       ended = create(:lab_session, user: visitor, space: space, sign_in_time: 3.hours.ago, sign_out_time: 1.hour.ago)
       ended_at = ended.reload.sign_out_time
-      expect do
-        put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
-      end.not_to change(LabSession, :count)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(exception_class).to eq("NoMethodError")
+      put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json["not_signed_in"]).to eq([visitor.username])
       expect(ended.reload.sign_out_time).to eq(ended_at)
+    end
+
+    it "html: a user who is not signed in anywhere redirects to the dashboard with an alert" do
+      put "/staff_dashboard/remove_users", params: { dropped_users: [visitor.username] }
+      expect(response).to redirect_to(staff_dashboard_index_path)
+      expect(flash[:alert]).to include(visitor.name)
     end
 
     it "refuses a regular user" do
@@ -197,12 +256,46 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(staff.reload.space_id).to eq(other_space.id)
     end
 
-    it "an unknown space_id is a 500 (nil.id)" do
-      # `new_space.id` is read before the `new_space.present?` check, so an
-      # unknown space_id raises instead of answering {status: "error"}.
+    it "an unknown space_id is a 404 {status: error} and the staff member stays where they were" do
       put "/staff_dashboard/change_space", params: { space_id: 0 }, as: :json
-      expect(response).to have_http_status(:internal_server_error)
-      expect(exception_class).to eq("NoMethodError")
+      expect(response).to have_http_status(:not_found)
+      expect(json).to eq("status" => "error", "error" => "Space not found")
+      expect(staff.reload.space_id).to eq(space.id)
+    end
+
+    it "a failed save is a 422 with the validation messages (JSON) and an alert (html)" do
+      allow_any_instance_of(User).to receive(:update).and_wrap_original do |m, *args|
+        m.receiver.errors.add(:base, "Space is locked")
+        false
+      end
+      put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json).to eq("status" => "error", "error" => "Space not changed: Space is locked", "errors" => ["Space is locked"])
+
+      put "/staff_dashboard/change_space", params: { space_id: other_space.id }
+      expect(flash[:alert]).to eq("Space not changed: Space is locked")
+      expect(staff.reload.space_id).to eq(space.id)
+    end
+
+    it "keeps the success notice for a JSON request, which the page shows after it reloads" do
+      put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
+      expect(response).to have_http_status(:ok)
+      get staff_dashboard_index_path
+      expect(flash[:notice]).to eq("Space changed successfully")
+    end
+
+    it "does not leave a flash behind for a JSON request" do
+      put "/staff_dashboard/change_space", params: { space_id: 0 }, as: :json
+      expect(response).to have_http_status(:not_found)
+      expect(json["error"]).to eq("Space not found")
+      get staff_dashboard_index_path
+      expect(flash[:alert]).to be_nil
+    end
+
+    it "html: an unknown space_id redirects back with an alert" do
+      put "/staff_dashboard/change_space", params: { space_id: 0 }
+      expect(response).to have_http_status(:found)
+      expect(flash[:alert]).to eq("Space not found")
       expect(staff.reload.space_id).to eq(space.id)
     end
   end

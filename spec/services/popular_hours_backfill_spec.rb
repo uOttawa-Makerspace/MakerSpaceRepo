@@ -175,6 +175,14 @@ RSpec.describe PopularHoursBackfill do
       expect(held).to be >= 1
     end
 
+    it "is taken without a type-recognition warning, and held while folding" do
+      # The warning is printed the first time a connection meets the function's void result, so forget the learned types.
+      ActiveRecord::Base.connection.reload_type_map
+      held = nil
+      expect { PopularHour.with_fold_lock { held = advisory_locks_held } }.not_to output(/unknown OID/).to_stderr
+      expect(held).to eq(1)
+    end
+
     it "is not taken by plain reads of the head count" do
       expect { PopularHour.head_count(space, now) }.not_to(change { advisory_locks_held })
     end

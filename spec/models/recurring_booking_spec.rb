@@ -11,9 +11,6 @@ RSpec.describe RecurringBooking, :booking_clock, type: :model do
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
   end
 
   it "can be saved empty (no validations) and survives alone" do
@@ -22,13 +19,9 @@ RSpec.describe RecurringBooking, :booking_clock, type: :model do
     expect(recurring.sub_space_bookings).to be_empty
   end
 
-  # destroying a group deletes NOTHING — PG raises InvalidForeignKey
-  # because the bookings' has_one :sub_space_booking_status dependent
-  # :destroy deletes the STATUS row first while
-  # sub_space_bookings.sub_space_booking_status_id still references it
-  # (that FK has no on_delete rule). The controller's destroy_booking
-  # exists to work around exactly this (request-spec pinned).
-  it "destroy raises InvalidForeignKey and deletes NOTHING" do
+  # destroying a group deletes nothing: each booking's status row refuses its destroy while the booking
+  # points at it, so the group's destroy is refused.
+  it "destroy is refused and deletes NOTHING" do
     recurring = described_class.create!
     bookings = 3.times.map {
       create(:sub_space_booking, recurring_booking: recurring,
@@ -37,9 +30,9 @@ RSpec.describe RecurringBooking, :booking_clock, type: :model do
     }
     expect(recurring.sub_space_bookings.count).to eq(3)
 
-    expect { recurring.destroy }
-      .to raise_error(ActiveRecord::InvalidForeignKey)
+    expect(recurring.destroy).to be(false)
     expect(described_class.exists?(recurring.id)).to be(true)
     expect(SubSpaceBooking.where(id: bookings.map(&:id)).count).to eq(3)
+    expect(SubSpaceBookingStatus.where(sub_space_booking_id: bookings.map(&:id)).count).to eq(3)
   end
 end

@@ -5,7 +5,7 @@
     <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast text-bg-danger border-0 shadow" data-bs-autohide="true" data-bs-delay="5000">
       <div class="toast-header text-bg-danger border-bottom border-danger-subtle">
         <strong id="toast_title" class="me-auto fw-bold"><i class="fa fa-exclamation-triangle"></i> Error</strong>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="<%= t('common.close') %>"></button>
       </div>
       <div id="toast_text" class="toast-body fs-6"></div>
     </div>
@@ -89,7 +89,7 @@
                       <td><%= booking.start_time.strftime("%b %e, %Y %l:%M %p") %></td>
                       <td><%= booking.end_time.strftime("%b %e, %Y %l:%M %p") %></td>
                       <td class="text-center">
-                        <% if booking.sub_space_booking_status.booking_status_id == BookingStatus::APPROVED.id %>
+                        <% if booking.approved? %>
                           <span class="badge text-bg-success">Approved</span>
                         <% else %>
                           <span class="badge text-bg-warning">Pending</span>
@@ -97,7 +97,7 @@
                       </td>
                       <td>
                         <div class="btn-group btn-group-sm d-flex justify-content-center">
-                          <% if @user.admin? || booking.sub_space_booking_status.booking_status_id != BookingStatus::APPROVED.id %>
+                          <% if @user.admin? || !booking.approved? %>
                             <%= button_to sub_space_booking_edit_path(sub_space_booking_id: booking.id), method: :get, class: 'btn btn-outline-primary' do %><i class="fa-solid fa-pencil"></i><% end %>
                           <% end %>
                           <%= button_to sub_space_booking_delete_path(sub_space_booking_id: booking.id), method: :delete, data: { confirm: 'Are you sure you want to delete this booking?' }, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-trash"></i><% end %>

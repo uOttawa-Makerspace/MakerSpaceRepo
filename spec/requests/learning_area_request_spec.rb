@@ -7,8 +7,8 @@ require "rails_helper"
 # (index, show, subskill, reorder, scorm_*) is open to any signed-in user.
 #
 # Guests get `current_user = User.new` (never nil), so the guest outcome is the
-# `signed_in` redirect to /login?back_to=<path> (HTML) / the literal JSON
-# "redirect" (JSON).
+# `signed_in` redirect to /login?back_to=<path> (HTML) / a JSON 401
+# error (JSON).
 
 RSpec.describe "Learning area", type: :request do
   include ActiveJob::TestHelper
@@ -53,6 +53,28 @@ RSpec.describe "Learning area", type: :request do
       body = response.body
       expect(body.index("AAA first training")).to be < body.index(training.name_en)
       expect(body.index("Beg module")).to be < body.index("Adv module")
+    end
+  end
+
+  describe "GET /learning_area (index) with a module that has no training" do
+    before { create(:learning_module, training: nil, title: "Orphan module") }
+
+    { "en" => "Other modules", "fr" => "Autres modules" }.each do |locale, heading|
+      it "lists it in a last group headed #{heading.inspect} (#{locale})" do
+        sign_in_as(:regular)
+        get learning_area_index_path(locale: locale)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Orphan module", heading)
+        expect(response.body.rindex(heading)).to be > response.body.index("Soldering basics")
+      end
+    end
+
+    it "renders the subskill page for such a module" do
+      create(:learning_module, training: nil, title: "Orphan sub", subskill: "orphans")
+      sign_in_as(:regular)
+      get subskill_learning_area_index_path("orphans")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("orphans")
     end
   end
 
@@ -102,13 +124,12 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # a module without a training makes the show page crash (500)
-    it "crashes with a 500 (nil.localized_name) when the module has no training" do
+    it "renders a module that has no training, without a training name" do
       orphan = create(:learning_module, training: nil, title: "Orphan")
       sign_in_as(:regular)
       get learning_area_path(orphan)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("undefined method 'localized_name' for nil")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Orphan")
     end
   end
 
@@ -269,11 +290,11 @@ RSpec.describe "Learning area", type: :request do
       expect(flash[:alert]).to include("learning_module")
     end
 
-    # failed saves use flash[] not flash.now[], so the alert shows on the NEXT page
-    it "shows the failure alert on the next request" do
+    it "shows the failure alert on the re-rendered form only, not on the next request" do
       post learning_area_index_path, params: valid_params(title: "")
-      get learning_area_index_path
       expect(response.body).to include("Something went wrong")
+      get learning_area_index_path
+      expect(response.body).not_to include("Something went wrong")
     end
 
     it "ignores unpermitted attributes such as order and scorm_status" do
@@ -387,20 +408,20 @@ RSpec.describe "Learning area", type: :request do
       end
     end
 
-    it "without data sets an alert and renders no template (204)" do
+    it "answers 400 without data and changes nothing" do
       sign_in_as(:admin)
+      before = orders
       put reorder_learning_area_index_path
-      expect(response).to have_http_status(:no_content)
-      expect(flash[:alert]).to eq("Unable to re-order the learning modules. Please try again later...")
+      expect(response).to have_http_status(:bad_request)
+      expect(orders).to eq(before)
     end
 
-    # an unknown id in data aborts the loop half-way, leaving a partial reorder
-    it "answers 404 on an unknown id after already reordering earlier entries" do
+    it "answers 404 on an unknown id and reorders nothing" do
       sign_in_as(:admin)
-      sorted = orders.values.sort
+      before = orders
       put reorder_learning_area_index_path, params: { data: [third.id, 0, learning_module.id] }
       expect(response).to have_http_status(:not_found)
-      expect(orders[third.id]).to eq(sorted[0])
+      expect(orders).to eq(before)
     end
   end
 
@@ -475,6 +496,21 @@ RSpec.describe "Learning area", type: :request do
     end
   end
 
+  describe "GET /learning_area/:id/scorm_assets/*path with a decomposed name" do
+    it "finds a file stored under the composed form of the name" do
+      lm = create(:learning_module, :with_scorm_object, training: training, title: "Accents")
+      prefix = "scorm/learning_modules/test_#{lm.id}_x"
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("<p>hi</p>"), filename: "caf\u00E9.html",
+                                                    content_type: "text/html", key: "#{prefix}/caf\u00E9.html")
+      lm.scorm_package_files.attach(blob)
+      lm.update_columns(scorm_prefix: prefix, scorm_status: LearningModule.scorm_statuses[:ready])
+      sign_in_as(:regular)
+      get scorm_asset_learning_area_path(lm, path: "cafe\u0301.html")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("<p>hi</p>")
+    end
+  end
+
   describe "GET /learning_area/:id/scorm_assets/*path" do
     let!(:scorm) do
       create(:learning_module, :with_scorm_object, training: training, title: "Scorm module").tap do |lm|
@@ -487,19 +523,161 @@ RSpec.describe "Learning area", type: :request do
       expect(response.location).to start_with("http://www.example.com/login")
     end
 
-    # `send_blob_stream blob, type: ...` is not a valid keyword in Rails 8.1, so EVERY
-    # existing asset request is a 500 and no extracted SCORM content can ever load
-    it "crashes with a 500 (ArgumentError: unknown keyword :type) for an extracted file" do
-      sign_in_as(:regular)
-      get scorm_asset_learning_area_path(scorm, path: "index.html")
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("ArgumentError").and include("unknown keyword: :type")
-    end
+    context "with extracted html, script, style and binary files" do
+      let!(:site) do
+        files = {
+          "imsmanifest.xml" => '<manifest><resources><resource href="index.html"/></resources></manifest>',
+          "index.html" => "<html><body>hi</body></html>", "app.js" => "var a = 1;", "style.css" => "a { color: red }",
+          "data.bin" => "0123456789", "empty.txt" => ""
+        }
+        io = StringIO.new
+        Zip::OutputStream.write_buffer(io) { |z| files.each { |n, body| z.put_next_entry(n); z.write(body) } }
+        io.rewind
+        lm = create(:learning_module, training: training, title: "Served site")
+        lm.scorm_package.attach(io: io, filename: "site.zip", content_type: "application/zip")
+        lm.save!
+        ScormExtractor.extract(lm.reload)
+        lm.reload
+      end
 
-    it "crashes the same way for the manifest" do
-      sign_in_as(:regular)
-      get scorm_asset_learning_area_path(scorm, path: "imsmanifest.xml")
-      expect(response).to have_http_status(:internal_server_error)
+      before { sign_in_as(:regular) }
+
+      {
+        "index.html" => ["text/html", "<html><body>hi</body></html>"],
+        "app.js" => ["text/javascript", "var a = 1;"],
+        "style.css" => ["text/css", "a { color: red }"]
+      }.each do |path, (type, body)|
+        it "serves #{path} inline as #{type} with the file's bytes and a private one-year cache" do
+          get scorm_asset_learning_area_path(site, path: path)
+          expect(response).to have_http_status(:ok)
+          expect(response.media_type).to eq(type)
+          expect(response.body).to eq(body)
+          expect(response.headers["Content-Disposition"]).to start_with("inline")
+          expect(response.headers["Accept-Ranges"]).to eq("bytes")
+          expect(response.headers["Cache-Control"]).to include("private").and include("max-age=#{1.year.to_i}")
+          expect(response.headers["Cache-Control"]).not_to include("public")
+          expect(response.headers["Content-Length"]).to eq(body.bytesize.to_s)
+        end
+      end
+
+      def range_get(path, range)
+        get scorm_asset_learning_area_path(site, path: path), headers: { "Range" => range }
+      end
+
+      it "serves a byte range with 206 and the matching slice" do
+        range_get("data.bin", "bytes=2-5")
+        expect(response).to have_http_status(:partial_content)
+        expect(response.body).to eq("2345")
+        expect(response.headers["Content-Range"]).to eq("bytes 2-5/10")
+        expect(response.headers["Content-Length"]).to eq("4")
+      end
+
+      it "serves an open-ended range to the end of a small file" do
+        range_get("data.bin", "bytes=7-")
+        expect(response).to have_http_status(:partial_content)
+        expect(response.body).to eq("789")
+        expect(response.headers["Content-Range"]).to eq("bytes 7-9/10")
+      end
+
+      it "serves a suffix range" do
+        range_get("data.bin", "bytes=-3")
+        expect(response).to have_http_status(:partial_content)
+        expect(response.body).to eq("789")
+      end
+
+      it "clamps a range on a 300 MB file to a 5 MB window, read in slices of at most 1 MB" do
+        allow_any_instance_of(ActiveStorage::Blob).to receive(:byte_size).and_return(314_572_800)
+        sizes = []
+        allow_any_instance_of(ActiveStorage::Blob).to receive(:download_chunk) { |_, r| sizes << r.size; "x" * r.size }
+        range_get("data.bin", "bytes=0-")
+        expect(response).to have_http_status(:partial_content)
+        expect(response.headers["Content-Range"]).to eq("bytes 0-5242879/314572800")
+        expect(response.body.bytesize).to eq(5_242_880)
+        expect(response.headers["Content-Length"]).to eq("5242880")
+        expect(sizes.max).to be <= 1_048_576
+        expect(sizes.size).to eq(5)
+      end
+
+      it "answers 200 with the whole file for a range on an empty file" do
+        range_get("empty.txt", "bytes=0-")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to eq("")
+      end
+
+      ["bytes=5-2", "items=0-1", "bytes=0-1,4-5", "bytes=abc", "bytes=-"].each do |range|
+        it "ignores the range #{range.inspect} and answers 200 with the whole file" do
+          range_get("data.bin", range)
+          expect(response).to have_http_status(:ok)
+          expect(response.body).to eq("0123456789")
+          expect(response.headers).not_to have_key("Content-Range")
+        end
+      end
+
+      it "answers 416 with the size, and no-store, for a range starting past the end" do
+        range_get("data.bin", "bytes=50-60")
+        expect(response).to have_http_status(:range_not_satisfiable)
+        expect(response.headers["Content-Range"]).to eq("bytes */10")
+        expect(response.headers["Cache-Control"]).to eq("no-store")
+      end
+
+      it "answers HEAD with the same headers as GET and reads nothing from storage" do
+        expect_any_instance_of(ActiveStorage::Blob).not_to receive(:download)
+        expect_any_instance_of(ActiveStorage::Blob).not_to receive(:download_chunk)
+        head scorm_asset_learning_area_path(site, path: "data.bin"), headers: { "Range" => "bytes=2-5" }
+        expect(response).to have_http_status(:partial_content)
+        expect(response.body).to eq("")
+        expect(response.headers["Content-Range"]).to eq("bytes 2-5/10")
+        expect(response.headers["Content-Length"]).to eq("4")
+        expect(response.headers["Accept-Ranges"]).to eq("bytes")
+        expect(response.headers["Cache-Control"]).to include("private")
+        head scorm_asset_learning_area_path(site, path: "index.html")
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq("text/html")
+        expect(response.headers["Content-Length"]).to eq("28")
+      end
+
+      it "answers 404 with no-store and none of the success headers when the stored file is gone" do
+        blob = site.scorm_package_files.blobs.find_by(key: "#{site.scorm_prefix}/data.bin")
+        blob.service.delete(blob.key)
+        get scorm_asset_learning_area_path(site, path: "data.bin"), headers: { "Range" => "bytes=2-5" }
+        expect(response).to have_http_status(:not_found)
+        expect(response.headers["Cache-Control"]).to eq("no-store")
+        %w[Content-Disposition Content-Range Accept-Ranges ETag].each do |name|
+          expect(response.headers).not_to have_key(name)
+        end
+        expect(response.headers["Content-Length"].to_i).to eq(response.body.bytesize)
+        expect(response.media_type).not_to eq("application/octet-stream")
+      end
+
+      it "answers 500 with no-store when the first slice cannot be read" do
+        allow_any_instance_of(ActiveStorage::Blob).to receive(:download_chunk).and_raise("storage down")
+        get scorm_asset_learning_area_path(site, path: "index.html")
+        expect(response).to have_http_status(:internal_server_error)
+        expect(response.headers["Cache-Control"]).to eq("no-store")
+        expect(response.headers).not_to have_key("Content-Disposition")
+      end
+
+      it "answers 304 without reading storage when the client already has the file" do
+        checksum = site.scorm_package_files.blobs.find_by(key: "#{site.scorm_prefix}/index.html").checksum
+        expect_any_instance_of(ActiveStorage::Blob).not_to receive(:download_chunk)
+        get scorm_asset_learning_area_path(site, path: "index.html"), headers: { "If-None-Match" => %("#{checksum}") }
+        expect(response).to have_http_status(:not_modified)
+        expect(response.body).to eq("")
+        expect(response.headers["ETag"]).to eq(%("#{checksum}"))
+        expect(response.headers["Cache-Control"]).to include("private")
+      end
+
+      it "sends the file when the validator does not match" do
+        get scorm_asset_learning_area_path(site, path: "index.html"), headers: { "If-None-Match" => %("other") }
+        expect(response).to have_http_status(:ok)
+        expect(response.headers["ETag"]).to be_present
+      end
+
+      it "sends no-store with a 404 for an unknown path" do
+        get scorm_asset_learning_area_path(site, path: "nope.html")
+        expect(response).to have_http_status(:not_found)
+        expect(response.headers["Cache-Control"]).to eq("no-store")
+      end
     end
 
     it "answers 404 for a path that was not extracted" do
@@ -523,16 +701,21 @@ RSpec.describe "Learning area", type: :request do
 
   describe "POST /learning_area/:id/scorm_commit" do
     let(:user) { create(:user, :regular_user) }
+    let(:learning_module) do
+      create(:learning_module, :with_scorm_object, training: training, title: "Ready package").tap do |lm|
+        lm.update_columns(scorm_status: LearningModule.scorm_statuses[:ready], scorm_prefix: "scorm/learning_modules/test_#{lm.id}_x")
+      end
+    end
     let(:state) { { "cmi.completion_status" => "incomplete", "cmi.location" => "slide-3", "cmi.suspend_data" => "abc" } }
 
     def commit(id, body = state)
       post scorm_commit_learning_area_path(id), params: body, as: :json
     end
 
-    it "answers the JSON string \"redirect\" with 200 to a guest and stores nothing" do
+    it "answers a guest with a JSON 401 error and stores nothing" do
       expect { commit(learning_module.id) }.not_to change(LearningModuleTrack, :count)
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to eq("redirect")
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body).to eq("error" => "Please sign in.")
     end
 
     it "creates the user's track and stores only whitelisted cmi keys" do
@@ -586,10 +769,38 @@ RSpec.describe "Learning area", type: :request do
       expect(user.learning_module_tracks.last.scorm_state["cmi.location"]).to eq("slide-9")
     end
 
+    it "stores the state on the track another request created between the lookup and the insert" do
+      track = create(:learning_module_track, user: user, learning_module: learning_module)
+      log_in!(user)
+      calls = 0
+      allow(LearningModuleTrack).to receive(:find_by).and_wrap_original do |original, *args, **kwargs|
+        (calls += 1) == 1 ? nil : original.call(*args, **kwargs)
+      end
+      allow_any_instance_of(LearningModuleTrack).to receive(:valid?).and_return(true)
+
+      expect { commit(learning_module.id) }.not_to change(LearningModuleTrack, :count)
+      expect(response).to have_http_status(:ok)
+      expect(track.reload.scorm_state).to eq(state)
+    end
+
     it "marks the track Completed when the package reports completion_status=completed" do
       log_in!(user)
       commit(learning_module.id, state.merge("cmi.completion_status" => "completed"))
       expect(user.learning_module_tracks.last.status).to eq("completed")
+    end
+
+    it "stores a SCORM 1.2 lesson status and marks the track Completed when it is completed or passed" do
+      log_in!(user)
+      commit(learning_module.id, { "cmi.core.lesson_status" => "passed", "cmi.location" => "end" })
+      track = user.learning_module_tracks.last
+      expect(track.status).to eq("completed")
+      expect(track.scorm_state).to eq("cmi.core.lesson_status" => "passed", "cmi.location" => "end")
+    end
+
+    it "keeps the track in progress for a SCORM 1.2 incomplete lesson status" do
+      log_in!(user)
+      commit(learning_module.id, { "cmi.core.lesson_status" => "incomplete" })
+      expect(user.learning_module_tracks.last.status).to eq("in_progress")
     end
 
     it "does not un-complete a track once completed through the start/completed flow" do
@@ -613,12 +824,10 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    # the track row is created before the params are validated, so a rejected commit still leaves an empty track
-    it "answers 400 (BadRequest) when suspend_data exceeds 64,000 characters but still leaves an empty track" do
+    it "answers 400 (BadRequest) when suspend_data exceeds 64,000 characters and stores nothing" do
       log_in!(user)
       expect { commit(learning_module.id, state.merge("cmi.suspend_data" => "x" * 64_001)) }
-        .to change(LearningModuleTrack, :count).by(1)
-      expect(user.learning_module_tracks.last.scorm_state).to be_nil
+        .not_to change(LearningModuleTrack, :count)
       expect(response).to have_http_status(:bad_request)
       expect(error_text).to include("suspend_data exceeds 64k character limit")
     end
@@ -629,11 +838,179 @@ RSpec.describe "Learning area", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    # the learner reports their own completion
-    it "records the completion a signed-in user reports for a module" do
+    # the learner's own SCORM session reports their completion
+    it "records the completion a signed-in user reports for a ready SCORM module" do
       log_in!(user)
       commit(learning_module.id, { "cmi.completion_status" => "completed" })
       expect(user.learning_module_tracks.find_by(learning_module: learning_module)).to be_completed
+    end
+
+    it "refuses a commit for a module that has no ready SCORM package, recording nothing" do
+      plain = create(:learning_module, training: training, title: "No package")
+      log_in!(user)
+      expect { commit(plain.id, { "cmi.completion_status" => "completed" }) }
+        .not_to change(LearningModuleTrack, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "keeps accepting a learner's progress while a re-extraction of an already extracted package runs" do
+      learning_module.update_columns(scorm_status: LearningModule.scorm_statuses[:processing])
+      log_in!(user)
+      commit(learning_module.id, { "cmi.completion_status" => "completed" })
+      expect(response).to have_http_status(:ok)
+      expect(user.learning_module_tracks.find_by(learning_module: learning_module)).to be_completed
+    end
+
+    it "refuses a commit for a package that has never been extracted" do
+      processing = create(:learning_module, :with_scorm_object, training: training, title: "Still processing")
+      processing.update_columns(scorm_status: LearningModule.scorm_statuses[:processing])
+      log_in!(user)
+      expect { commit(processing.id, { "cmi.completion_status" => "completed" }) }
+        .not_to change(LearningModuleTrack, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+
+  describe "POST /learning_module_track/completed for an unknown module" do
+    it "refuses cleanly and records nothing" do
+      sign_in_as(:regular)
+      expect { post completed_learning_module_track_index_path(learning_module_id: 0) }
+        .not_to change(LearningModuleTrack, :count)
+      expect(response).to redirect_to(learning_area_index_path)
+      expect(flash[:alert]).to be_present
+    end
+  end
+
+  describe "POST /learning_module_track/completed for a SCORM module" do
+    it "leaves completion to the package itself" do
+      user = sign_in_as(:regular)
+      scorm = create(:learning_module, :with_scorm_object, training: training, title: "Packaged")
+      track = create(:learning_module_track, user: user, learning_module: scorm)
+      post completed_learning_module_track_index_path(learning_module_id: scorm.id)
+      expect(track.reload.status).to eq("in_progress")
+      expect(response).to redirect_to(learning_area_path(scorm.id))
+    end
+  end
+
+  describe "SCORM extraction state" do
+    # uploading a package always starts the clock, so set the state after creating
+    def packaged(title, status, changed_at: Time.current, **rest)
+      create(:learning_module, :with_scorm_object, training: training, title: title).tap do |lm|
+        lm.update_columns(scorm_status: LearningModule.scorm_statuses[status], scorm_status_changed_at: changed_at, **rest)
+      end
+    end
+
+    let!(:scorm) { packaged("Packaged", :pending) }
+    let!(:stalled) { packaged("Stalled one", :processing, changed_at: 1.hour.ago) }
+
+    it "keeps polling while a recent extraction is pending" do
+      sign_in_as(:regular)
+      get learning_area_path(scorm)
+      expect(response.body).to include("SCORM package is processing")
+      expect(response.body).to include("Turbo.visit")
+    end
+
+    it "stops polling and offers staff the reason and a retry once the extraction has stalled" do
+      sign_in_as(:admin)
+      get learning_area_path(stalled)
+      expect(response.body).not_to include("Turbo.visit")
+      expect(response.body).not_to include("SCORM package is processing")
+      expect(response.body).to include("did not finish")
+      expect(response.body).to include(retry_scorm_learning_area_path(stalled))
+    end
+
+    # the status column defaults to pending, so a module with no package carries a meaningless one
+    [nil, 1.year.ago].each do |changed_at|
+      context "for a module with no SCORM package, pending since #{changed_at.inspect}" do
+        let!(:plain) do
+          create(:learning_module, training: training, title: "Plain module").tap do |lm|
+            lm.update_columns(scorm_status: LearningModule.scorm_statuses[:pending], scorm_status_changed_at: changed_at)
+          end
+        end
+
+        it "shows no stall, no retry and no polling, to a learner or an admin" do
+          [:regular, :admin].each do |role|
+            sign_in_as(role)
+            get learning_area_path(plain)
+            expect(response).to have_http_status(:ok)
+            expect(response.body).not_to include("Turbo.visit")
+            expect(response.body).not_to include("SCORM package is processing")
+            expect(response.body).not_to include("not available yet")
+            expect(response.body).not_to include("SCORM Extraction")
+            expect(response.body).not_to include(retry_scorm_learning_area_path(plain))
+          end
+        end
+
+        it "shows no extraction state on the edit page" do
+          sign_in_as(:admin)
+          get edit_learning_area_path(plain)
+          expect(response.body).not_to include("SCORM Extraction")
+          expect(response.body).not_to include("SCORM package status")
+          expect(response.body).not_to include(retry_scorm_learning_area_path(plain))
+        end
+
+        it "does not retry, stall or track" do
+          expect(plain).not_to be_scorm_stalled
+          expect(plain.scorm_problem).to be_nil
+          expect(plain).not_to be_scorm_retryable
+          expect(plain).not_to be_scorm_trackable
+          sign_in_as(:admin)
+          expect { post retry_scorm_learning_area_path(plain) }.not_to have_enqueued_job(ExtractScormJob)
+          expect(plain.reload.scorm_status).to eq("pending")
+        end
+      end
+    end
+
+    it "tells a learner only that the module is not available yet, with no reason or retry" do
+      failed = packaged("Failed one", :failed, scorm_error: "extraction error (RuntimeError)")
+      sign_in_as(:regular)
+      [stalled, failed].each do |lm|
+        get learning_area_path(lm)
+        expect(response.body).to include("not available yet")
+        expect(response.body).not_to include("did not finish")
+        expect(response.body).not_to include("extraction error")
+        expect(response.body).not_to include(retry_scorm_learning_area_path(lm))
+      end
+    end
+
+    it "shows staff the stored reason of a failed extraction" do
+      failed = packaged("Failed one", :failed, scorm_error: "no imsmanifest.xml found")
+      sign_in_as(:staff)
+      get learning_area_path(failed)
+      expect(response.body).to include("no imsmanifest.xml found")
+    end
+
+    it "shows the state on the edit page with a retry form of its own, outside the edit form" do
+      sign_in_as(:admin)
+      get edit_learning_area_path(stalled)
+      expect(response.body).to include("did not finish")
+      doc = Nokogiri::HTML5(response.body)
+      retry_form = doc.at_css(%(form[action="#{retry_scorm_learning_area_path(stalled)}"]))
+      expect(retry_form).to be_present
+      expect(retry_form.ancestors("form")).to be_empty
+      expect(retry_form.at_css("button, input[type=submit]")).to be_present
+      expect(doc.css(%(form[action="#{learning_area_path(stalled)}"])).first.at_css("form")).to be_nil
+    end
+
+    it "queues a fresh extraction when staff retry a stalled package" do
+      sign_in_as(:admin)
+      expect { post retry_scorm_learning_area_path(stalled) }.to have_enqueued_job(ExtractScormJob).with(stalled.id)
+      expect(response).to redirect_to(edit_learning_area_path(stalled))
+      stalled.reload
+      expect(stalled.scorm_status).to eq("pending")
+      expect(stalled).not_to be_scorm_stalled
+    end
+
+    it "does not requeue an extraction that is still within its time bound" do
+      sign_in_as(:admin)
+      expect { post retry_scorm_learning_area_path(scorm) }.not_to have_enqueued_job(ExtractScormJob)
+      expect(scorm.reload.scorm_status).to eq("pending")
+    end
+
+    it "keeps the retry to admins" do
+      sign_in_as(:staff)
+      expect { post retry_scorm_learning_area_path(stalled) }.not_to have_enqueued_job(ExtractScormJob)
+      expect(stalled.reload.scorm_status).to eq("processing")
     end
   end
 end

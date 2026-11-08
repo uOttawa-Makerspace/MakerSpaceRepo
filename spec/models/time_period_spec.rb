@@ -16,8 +16,15 @@ RSpec.describe TimePeriod, type: :model do
       expect(TimePeriod.all.to_a).to eq([new, old])
     end
 
-    it "has no validations (blank dates are valid)" do
-      expect(TimePeriod.new).to be_valid
+    it "requires a name and both dates" do
+      period = TimePeriod.new
+      expect(period).not_to be_valid
+      expect(period.errors.attribute_names).to contain_exactly(:name, :start_date, :end_date)
+    end
+
+    it "requires the end date not to be before the start date" do
+      expect(TimePeriod.new(name: "x", start_date: Date.new(2027, 2, 1), end_date: Date.new(2027, 1, 1))).not_to be_valid
+      expect(TimePeriod.new(name: "x", start_date: Date.new(2027, 2, 1), end_date: Date.new(2027, 2, 1))).to be_valid
     end
 
     describe ".current" do

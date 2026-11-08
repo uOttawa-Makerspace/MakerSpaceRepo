@@ -18,16 +18,12 @@ RSpec.describe JobTaskQuote, type: :model do
       expect(build(:job_task_quote, job_task: task, price: 0)).to be_valid
     end
 
-    # service_price and service_quantity validations are
-    # commented out (Design Services reuse).
-    it "accepts negative service_price/service_quantity" do
+    it "keeps service_price and service_quantity at zero or above, or blank" do
       task = create(:job_order).job_tasks.create!(title: "Task #1")
-      quote = build(:job_task_quote, job_task: task, price: 1, service_price: -3, service_quantity: -2)
-      expect(quote).to be_valid
-      quote.save!
-      expect(quote.reload.service_price).to eq(-3)
-      expect(quote.service_quantity).to eq(-2)
-      expect(quote.total_task_price).to eq(7) # 1 + (-3 * -2)
+      expect(build(:job_task_quote, job_task: task, price: 1, service_price: -3, service_quantity: 2)).not_to be_valid
+      expect(build(:job_task_quote, job_task: task, price: 1, service_price: 3, service_quantity: -2)).not_to be_valid
+      expect(build(:job_task_quote, job_task: task, price: 1, service_price: 3, service_quantity: 2)).to be_valid
+      expect(build(:job_task_quote, job_task: task, price: 1, service_price: nil, service_quantity: nil)).to be_valid
     end
   end
 

@@ -30,7 +30,7 @@
     .fa-asterisk {
       margin-right: 0.5rem;
       font-size: 0.75rem;
-      color: $primary;
+      color: var(--primary-text);
     }
 
     @media (prefers-color-scheme: dark) {

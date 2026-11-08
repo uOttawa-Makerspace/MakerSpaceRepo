@@ -9,8 +9,7 @@ RSpec.describe "Confirm dialogs", type: :system do
 
   before do
     user.avatar.attach(io: StringIO.new(File.binread(Rails.root.join("public/default-avatar.png"))), filename: "a.png", content_type: "image/png")
-    log_in_as(user)
-    visit settings_profile_path
+    log_in_as(user, to: settings_profile_path)
   end
 
   it "does not remove the avatar when the confirmation is dismissed" do

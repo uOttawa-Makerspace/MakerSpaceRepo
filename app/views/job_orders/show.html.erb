@@ -193,7 +193,7 @@
 
     <div class="col-md-6 mb-4">
       <!-- Chat Section -->
-      <%= render 'chat_messages/chat', jo: @job_order, chat_messages: @job_order.chat_messages.includes(:sender).order(created_at: :desc) %>
+      <%= render 'chat_messages/chat', jo: @job_order, chat_messages: @job_order.chat_messages.includes(:display_sender).order(created_at: :desc) %>
 
       <!-- Job Order Card -->
       <%= render 'order_card', jo: @job_order %>

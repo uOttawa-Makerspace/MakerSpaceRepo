@@ -23,6 +23,12 @@ RSpec.describe ReportGenerator do
       create(:user, created_at: Time.utc(2026, 4, 2))
       expect(described_class.get_new_users(from, to)).to contain_exactly(inside)
     end
+
+    it "includes users whose account was soft-deleted" do
+      deleted = create(:user, created_at: march_10)
+      deleted.soft_delete!
+      expect(described_class.get_new_users(from, to)).to include(deleted)
+    end
   end
 
   describe ".generate_new_users_report" do

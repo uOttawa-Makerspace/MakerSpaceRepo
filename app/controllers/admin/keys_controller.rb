@@ -13,11 +13,10 @@ class Admin::KeysController < AdminAreaController
                   revoke_key
                   history
                 ]
-  before_action :ensure_holder_has_approved_request, only: %i[create update]
   before_action :set_key_request, only: %i[approve_key_request deny_key_request]
 
   def index
-    @keys = Key.includes(:space, :user, :supervisor).order(updated_at: :desc)
+    @keys = Key.includes(:space, :display_user, :display_supervisor).order(updated_at: :desc)
 
     @spaces = Space.order(name: :asc)
   end
@@ -28,7 +27,9 @@ class Admin::KeysController < AdminAreaController
   def create
     @key = Key.new(key_params)
 
-    if @key.save
+    if @key.hands_out_by_edit?
+      redirect_to admin_keys_path, alert: Key::HAND_OUT_REFUSAL
+    elsif @key.save
       flash[:notice] = "Successfully created key."
       redirect_to admin_keys_path
     else
@@ -57,15 +58,13 @@ class Admin::KeysController < AdminAreaController
   end
 
   def update
-    update_params = @key.status_held? ? key_params.except(:status) : key_params
-
-    if @key.update(update_params)
-      flash[:notice] = "The key was successfully updated."
-      redirect_to admin_keys_path
-    else
-      flash[:alert] = "Something went wrong while updating the key."
-      redirect_to edit_admin_key_path
-    end
+    @key.update_from_edit!(key_params)
+    redirect_to admin_keys_path, notice: "The key was successfully updated."
+  rescue Key::StateError => e
+    redirect_to admin_keys_path, alert: e.message
+  rescue ActiveRecord::RecordInvalid
+    redirect_to edit_admin_key_path,
+                alert: "Something went wrong while updating the key."
   end
 
   def destroy
@@ -82,17 +81,10 @@ class Admin::KeysController < AdminAreaController
       User.where(role: "admin").order("LOWER(name) ASC").pluck(:name, :id)
     @staff_options =
       User
-        .staff
+        .key_assignable
+        .includes(:key_request)
         .order("LOWER(name) ASC")
-        .map do |user|
-          label = ""
-          if user.key_request.blank?
-            label = " (No request form)"
-          elsif user.key_request.status_waiting_for_approval?
-            label = " (Request form awaiting approval)"
-          end
-          ["#{user.name} #{label}", user.id]
-        end
+        .map { |user| ["#{user.name} #{request_label(user.key_request)}", user.id] }
   end
 
   def assign_key
@@ -102,44 +94,23 @@ class Admin::KeysController < AdminAreaController
       redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE and return
     end
 
-    key_transaction =
-      KeyTransaction.new(
-        user_id: user.id,
-        key_id: @key.id,
-        deposit_amount: params[:deposit_amount]
-      )
-    if @key.status_inventory? &&
-         @key.update(key_params.merge(user_id: user.id, status: :held)) &&
-         key_transaction.save
-      redirect_to admin_keys_path, notice: "Successfully assigned key"
-    else
-      redirect_to admin_keys_path,
-                  alert: "Something went wrong while trying to assign the key"
-    end
+    @key.assign_to!(user, key_params, params[:deposit_amount])
+    redirect_to admin_keys_path, notice: "Successfully assigned key"
+  rescue ActiveRecord::RecordInvalid, Key::StateError => e
+    redirect_to admin_keys_path,
+                alert: failure_message("assign the key", e)
   end
 
   def revoke_key
-    if @key.status_held? && @key.update(user_id: nil, status: :inventory) &&
-         @key.get_latest_key_transaction.update(
-           return_date: Date.today,
-           # Set deposit return date to today if deposit is zero
-           deposit_return_date:
-             params[:deposit_return_date]&.to_date ||
-               (
-                 if @key.get_latest_key_transaction.deposit_amount.zero?
-                   Time.zone.today
-                 end
-               )
-         )
-      redirect_to admin_keys_path, notice: "Successfully revoked key"
-    else
-      redirect_to admin_keys_path,
-                  alert: "Something went wrong while trying to revoke the key"
-    end
+    @key.revoke!(params[:deposit_return_date]&.to_date)
+    redirect_to admin_keys_path, notice: "Successfully revoked key"
+  rescue ActiveRecord::RecordInvalid, Key::StateError => e
+    redirect_to admin_keys_path,
+                alert: failure_message("revoke the key", e)
   end
 
   def requests
-    @key_requests = KeyRequest.order(created_at: :asc)
+    @key_requests = KeyRequest.includes(:space, :display_user, :display_supervisor).order(created_at: :asc)
   end
 
   def approve_key_request
@@ -179,28 +150,28 @@ class Admin::KeysController < AdminAreaController
     )
   end
 
-  # A key can only be given to a holder (user_id) whose key request is approved,
-  # on every path that sets it (assign_key checks the same rule).
-  def ensure_holder_has_approved_request
-    holder_id = params.dig(:key, :user_id).presence
-    if holder_id.nil? && @key&.status_held? && params[:key]&.key?(:user_id)
-      redirect_to admin_keys_path,
-                  alert: "Use revoke to remove the holder of a held key." and return
+  def request_label(key_request)
+    if key_request.blank?
+      " (No request form)"
+    elsif key_request.status_waiting_for_approval?
+      " (Request form awaiting approval)"
+    else
+      ""
     end
-    return if holder_id.nil? || holder_id.to_s == @key&.user_id.to_s
-
-    if @key&.status_held?
-      redirect_to admin_keys_path,
-                  alert: "Revoke the key before assigning it to another holder." and return
-    end
-
-    return if holder_approved?(User.find_by(id: holder_id))
-
-    redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE
   end
 
   def holder_approved?(user)
     user&.key_request&.status_approved? || false
+  end
+
+  def failure_message(action, error)
+    detail =
+      if error.is_a?(ActiveRecord::RecordInvalid)
+        error.record.errors.full_messages.to_sentence
+      else
+        error.message
+      end
+    "Something went wrong while trying to #{action}: #{detail}"
   end
 
   def set_key

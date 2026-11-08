@@ -222,6 +222,7 @@ RSpec.describe "Staff training sessions", type: :request do
         end
 
         it "sends a fresh exam without certifying anyone" do
+          training.questions << create(:question, level: record.level)
           exam_with(status: Exam::STATUS[:incomplete], expired_at: 1.hour.ago)
           expect { post resend_path }.to change { student.exams.count }.by(1).and change(Certification, :count).by(0)
           expect(student.exams.order(:id).last).to be_open_for_answers
@@ -250,6 +251,14 @@ RSpec.describe "Staff training sessions", type: :request do
         patch staff_training_session_path(record), params: { changed_params: { level: "Beginner" }, dropped_users: [student.username] }
         expect(record.reload.users).to be_empty
         expect(Certification.unscoped.exists?(cert.id)).to be(false)
+      end
+
+      it "removes a trainee through the remove link rendered on the session page" do
+        record.users << student
+        get staff_training_session_path(record)
+        href = Nokogiri::HTML(response.body).at_css("td.action-cell a.x-button")["href"]
+        patch href
+        expect(record.reload.users).to be_empty
       end
 
       it "refuses to change the trainer unless admin" do
@@ -415,6 +424,19 @@ RSpec.describe "Staff training sessions", type: :request do
       expect { delete staff_training_session_path(record) }.to change(TrainingSession, :count).by(-1)
     end
 
+    it "opens a session whose trainer's account was soft-deleted" do
+      trainer.soft_delete!
+      get staff_training_session_path(record)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(trainer.name)
+    end
+
+    it "answers 404 for a session with no trainer" do
+      TrainingSession.where(id: record.id).update_all(user_id: nil)
+      get staff_training_session_path(record)
+      expect(response).to have_http_status(:not_found)
+    end
+
     it "creates the session as themselves when no user_id is sent" do
       post staff_training_sessions_path, params: create_params
       expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(controller.send(:current_user).id)
@@ -423,6 +445,20 @@ RSpec.describe "Staff training sessions", type: :request do
     it "can create a session for another trainer by passing user_id" do
       expect { post staff_training_sessions_path, params: create_params(user_id: trainer.id) }.to change(TrainingSession, :count).by(1)
       expect(TrainingSession.unscoped.order(:id).last.user).to eq(trainer)
+    end
+
+    describe "a session whose space is missing" do
+      it "still renders its page when the space reference is empty" do
+        TrainingSession.where(id: record.id).update_all(space_id: nil)
+        get staff_training_session_path(record)
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "is not created for a space id that does not exist" do
+        expect { post staff_training_sessions_path, params: create_params(training_session: { space_id: 0 }, user_id: trainer.id) }
+          .not_to change(TrainingSession, :count)
+        expect(flash[:alert]).to eq("Something went wrong. Please try again.")
+      end
     end
   end
 end

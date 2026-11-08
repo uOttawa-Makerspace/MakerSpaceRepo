@@ -106,4 +106,28 @@ RSpec.describe KeyRequest, type: :model do
       end
     end
   end
+
+  describe "#submit" do
+    let(:space) { create(:space) }
+    let(:user) { create(:user, :staff) }
+    let(:admin) { create(:user, :admin) }
+
+    def request_in(status)
+      create(:key_request, :all_questions_answered, user: user, supervisor: admin, space: space, status: status)
+    end
+
+    it "moves an in-progress request to waiting for approval" do
+      kr = request_in(:in_progress)
+      expect(kr.submit).to be_truthy
+      expect(kr.reload.status).to eq("waiting_for_approval")
+    end
+
+    %i[waiting_for_approval approved].each do |status|
+      it "leaves a #{status} request unchanged" do
+        kr = request_in(status)
+        expect(kr.submit).to be_falsey
+        expect(kr.reload.status).to eq(status.to_s)
+      end
+    end
+  end
 end

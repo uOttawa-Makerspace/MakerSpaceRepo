@@ -13,7 +13,7 @@
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello <%= @user.name %>,</p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
     <% if @locker_rental.locker %>
-        Your rental for locker <b><%= @locker_rental.locker.specifier %></b> has been cancelled on <%= @locker_rental.expired_since.to_date.to_formatted_s :long %>
+        Your rental for locker <b><%= @locker_rental.locker.specifier %></b> has been cancelled<%= " on #{@locker_rental.cancelled_at.to_date.to_formatted_s :long}" if @locker_rental.cancelled_at %>.
     <% else %>
         Your locker request, created on <%= @locker_rental.created_at.to_fs :long %>, has been rejected.
     <% end %>

@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Chunk 17: Admin::SettingsController (< AdminAreaController, ensure_admin:
-# anyone who is not an admin is redirected to "/" with NO flash). Every action
+# a guest goes to the login page, anyone else who is not an admin is redirected to "/" with NO flash). Every action
 # is a mutation of a lookup table (category/area/equipment options, courses,
 # card readers, canned job-order messages, featured repositories).
 RSpec.describe "Admin settings", type: :request do
@@ -41,13 +41,13 @@ RSpec.describe "Admin settings", type: :request do
   end
 
   describe "authorization" do
-    it "bounces guest, regular user and staff to root on every action, changing nothing" do
+    it "bounces guest (to login), regular user and staff (to root) on every action, changing nothing" do
       before = snapshot
       %i[guest regular staff].each do |role|
         sign_in_as(role)
         all_calls.each do |name, call|
           instance_exec(&call)
-          expect(response).to redirect_to("/"), "#{name} as #{role}: #{response.status}"
+          expect_admin_area_bounce(guest: role == :guest)
         end
         post logout_path
       end
@@ -61,10 +61,9 @@ RSpec.describe "Admin settings", type: :request do
       expect(response.body).to include("Drones", "Attic", "Mill")
     end
 
-    it "answers 404 for submit_pi (route exists, action was commented out)" do
-      sign_in_as(:admin)
-      post submit_pi_admin_settings_path
-      expect(response).to have_http_status(:not_found)
+    it "has no submit_pi route" do
+      expect { Rails.application.routes.recognize_path("/admin/settings/submit_pi", method: :post) }
+        .to raise_error(ActionController::RoutingError)
     end
   end
 

@@ -118,3 +118,12 @@ fr:
       award: "Récompensé"
       show: "Afficher le projet"
       progress: "En cours"
+
+  badges:
+    show:
+      owner: "Titulaire du badge : %{name}"
+      issued_by: "Délivré par le CGEC/CEED - uOttawa le %{date}"
+      learn_more: "En savoir plus"
+      skills: "Compétences"
+      add_to_linkedin: "Ajouter à LinkedIn"
+      download_png: "Télécharger en .png"

@@ -1,12 +1,13 @@
 require "rails_helper"
 
 # Chunk 12 characterization of QuestionsController (exam question bank).
-# Inherits AdminAreaController: every action is admin-only; guests, regular
-# users AND staff are redirected to "/" with no flash (ensure_admin).
+# Inherits AdminAreaController: every action is admin-only; guests go to
+# the login page; regular users AND staff are redirected to "/" with no flash
+# (ensure_admin).
 #
-# Creation rule worth knowing: whatever the form says, the FIRST submitted
-# answer is stored as the correct one (`answers.first.correct = true`); the
-# `correct` attribute of every answer in the payload is ignored on create.
+# Creation rule worth knowing: the answer the admin marks correct is kept; when
+# no answer is marked (the new-question form has no flag) the first one is stored
+# as correct. A question must end up with exactly one correct answer.
 
 RSpec.describe "Questions (admin question bank)", type: :request do
   let(:space) { create(:space) }
@@ -41,11 +42,11 @@ RSpec.describe "Questions (admin question bank)", type: :request do
     end
 
     %i[guest regular staff volunteer].each do |role|
-      it "redirects a #{role} to / on every action and changes nothing" do
+      it "bounces a #{role} on every action and changes nothing" do
         sign_in_as(role)
         requests.each_value do |call|
           expect { instance_exec(&call) }.not_to change { [Question.count, Answer.count, question.reload.description] }
-          expect(response).to redirect_to("/")
+          expect_admin_area_bounce(guest: role == :guest)
           expect(flash).to be_empty
         end
       end
@@ -93,13 +94,23 @@ RSpec.describe "Questions (admin question bank)", type: :request do
   end
 
   describe "GET /questions/:id (show)" do
-    # N+1 pinned
-    it "renders the question and marks the correct answer to the admin", skip_bullet: true do
+    it "renders the question and marks the correct answer to the admin" do
       log_in!(admin)
       get question_path(question)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("What is a kerf?").and include("The cut width")
       expect(response.body).to match(/class="correct-answers">\s*(<div[^>]*>)?\s*The cut width/m).or match(/correct-answers/)
+    end
+
+    it "reads the answer texts in a constant number of queries" do
+      log_in!(admin)
+      get question_path(question) # warm up
+      few = selects_on("action_text_rich_texts") { get question_path(question) }
+      4.times { |i| Answer.create!(question: question, correct: false, description: "extra #{i}") }
+      many = selects_on("action_text_rich_texts") { get question_path(question) }
+
+      expect(response.body).to include("extra 3")
+      expect(many.size).to eq(few.size)
     end
 
     it "answers 404 for an unknown id" do
@@ -123,24 +134,32 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(q.trainings).to eq([training])
     end
 
-    # the first answer is forced to correct even when the admin marked another one: the question ends up with two correct answers
-    it "forces the FIRST answer correct and keeps the other submitted flags (so two can be correct)" do
+    it "keeps the answer the admin marked correct, so exactly one is correct" do
       post questions_path, params: valid_params
       answers = Question.order(:id).last.answers.order(:id)
-      expect(answers.map { |a| [a.description.to_plain_text, a.correct] }).to eq([["first", true], ["second", true]])
+      expect(answers.map { |a| [a.description.to_plain_text, a.correct] }).to eq([["first", false], ["second", true]])
     end
 
-    it "keeps wrong answers wrong when they are submitted as false" do
+    it "marks the first answer correct when none is marked" do
       params = valid_params
       params[:question][:answers_attributes]["1"][:correct] = "false"
       post questions_path, params: params
       expect(Question.order(:id).last.answers.order(:id).pluck(:correct)).to eq([true, false])
     end
 
-    it "answers 500 when no answers are submitted (nil.correct=)" do
+    it "refuses a question with two answers marked correct, showing the error and creating nothing" do
+      params = valid_params
+      params[:question][:answers_attributes]["0"][:correct] = "true"
+      expect { post questions_path, params: params }.not_to change(Question, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("A question must have exactly one correct answer")
+    end
+
+    it "refuses a question with no answers, showing the error and creating nothing" do
       expect { post questions_path, params: { question: { description: "No answers", level: "Beginner" } } }
         .not_to change(Question, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("A question must have exactly one correct answer")
     end
 
     it "stores uploaded PNG images" do
@@ -149,26 +168,35 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(Question.order(:id).last.images.map { |i| i.filename.to_s }).to eq(["test.png"])
     end
 
-    # create uses save! so a validation failure (non-image upload) raises RecordInvalid (no friendly form error) instead of a form error
-    it "answers 422 with the RecordInvalid debug page (no form) for a non-image upload and creates nothing" do
+    it "answers 422 with the form for a non-image upload and creates nothing" do
       stl = fixture_file_upload(Rails.root.join("spec/support/assets/test.stl"), "application/octet-stream")
       expect { post questions_path, params: valid_params(images: [stl]) }.not_to change(Question, :count)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(error_text).to include("ActiveRecord::RecordInvalid")
+      expect(response.body).to include("New Question")
     end
   end
 
   describe "GET /questions/:id/edit" do
     before { log_in!(admin) }
 
-    # N+1 pinned
-    it "lists the answers with the correct one first", skip_bullet: true do
+    it "lists the answers with the correct one first" do
       get edit_question_path(question)
       expect(response).to have_http_status(:ok)
       expect(response.body.index("The cut width")).to be < response.body.index("A tool")
     end
 
-    it "renders one closed, resolvable remove form per removable answer", skip_bullet: true do
+    it "reads the answer texts in a constant number of queries" do
+      log_in!(admin)
+      get edit_question_path(question) # warm up
+      few = selects_on("action_text_rich_texts") { get edit_question_path(question) }
+      4.times { |i| Answer.create!(question: question, correct: false, description: "extra #{i}") }
+      many = selects_on("action_text_rich_texts") { get edit_question_path(question) }
+
+      expect(response.body).to include("extra 3")
+      expect(many.size).to eq(few.size)
+    end
+
+    it "renders one closed, resolvable remove form per removable answer" do
       3.times { |i| Answer.create!(question: question, correct: false, description: "extra #{i}") }
       get edit_question_path(question)
       doc = Nokogiri::HTML5(response.body, max_errors: 100)
@@ -187,7 +215,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(doc.css("form#remove-answer-#{removable.first}").first.ancestors("form")).to be_empty
     end
 
-    it "renders a DELETE remove form (not a GET link) for each incorrect saved answer", skip_bullet: true do
+    it "renders a DELETE remove form (not a GET link) for each incorrect saved answer" do
       victim = question.answers.where(correct: false).first
       get edit_question_path(question)
       expect(response.body).to include(%(id="remove-answer-#{victim.id}"))
@@ -201,7 +229,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
     end
 
     # GET /questions/:id/edit?remove_answer=ID does not destroy anything (removal is DELETE /questions/:id/answers/:answer_id)
-    it "does not destroy the answer named by remove_answer on a plain GET", skip_bullet: true do
+    it "does not destroy the answer named by remove_answer on a plain GET" do
       victim = question.answers.where(correct: false).first
       expect { get edit_question_path(question, remove_answer: victim.id) }.not_to change(Answer, :count)
       expect(response).to have_http_status(:ok)
@@ -275,12 +303,11 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(flash[:notice]).to eq("Question Deleted")
     end
 
-    # Question has no dependent handling for exam_questions: deleting a question used in an exam leaves dangling exam_questions
-    it "leaves the exam_questions of a used question behind" do
+    it "keeps the exam_questions of a used question, with the question cleared" do
       exam = create(:exam)
       eq = ExamQuestion.create!(exam: exam, question: question)
       delete question_path(question)
-      expect(ExamQuestion.find(eq.id).question_id).to eq(question.id)
+      expect(ExamQuestion.find(eq.id).question_id).to be_nil
       expect(Question.exists?(question.id)).to be(false)
     end
   end

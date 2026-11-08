@@ -20,7 +20,7 @@ section#faq {
     .accordion-button {
       &::before {
         // Fontawesome really sucks dude
-        color: $primary;
+        color: var(--primary-text);
         font-family: FontAwesome;
         content: "\f047 ";
       }

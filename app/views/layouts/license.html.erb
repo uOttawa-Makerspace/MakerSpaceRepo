@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="<%= I18n.locale %>">
   <head>
     <%= render 'shared/theme_init' %>
     <title>License | MakerRepo</title>
@@ -14,8 +14,9 @@
     <%= csrf_meta_tags %>
   </head>
   <body>
+    <%= render 'layouts/skip_link' %>
     <%= render 'layouts/header' %>
-    <div class="help-grid">
+    <main class="help-grid" id="main-content" tabindex="-1">
       <%= yield %>
       <div class="help-side-panel">
         <div class="title">Licenses</div>
@@ -28,7 +29,7 @@
           <%= tag.li(link_to('Attribution - Non-Commerical - No Derivatives', licenses_ancnd_path)) %>
         </ul>
       </div>
-    </div>
+    </main>
     <%= render 'layouts/footer' %>
   </body>
 </html>

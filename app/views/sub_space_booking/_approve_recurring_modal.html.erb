@@ -3,7 +3,7 @@
     <div class="modal-content border-0 shadow bg-body">
       <div class="modal-header text-bg-primary">
         <h5 class="modal-title fw-bold">Select Recurring Dates to Approve</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
       </div>
       <%= form_with url: bulk_approve_decline_sub_space_booking_index_path, method: :put do |f| %>
         <%= f.hidden_field :bulk_status, value: 'approve' %>

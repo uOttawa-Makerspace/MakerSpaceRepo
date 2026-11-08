@@ -22,7 +22,7 @@
         <span class="input-group-text bg-body-tertiary border-end-0">
             <i class="fa fa-search text-body-secondary" aria-hidden="true"></i>
         </span>
-        <%= f.text_field :query, value: params[:query], placeholder: "Search proposals by title, client, or description...", class: "form-control border-start-0", aria: { label: "Search" } %>
+        <%= f.text_field :query, value: params[:query], placeholder: "Search proposals by title, client, or description...", class: "form-control border-start-0", aria: { label: t('common.names.search') } %>
         <%= f.submit "Search", name: nil, class: "btn btn-primary" %>
 
         <%# If search or filter parameters exist, display clear button %>

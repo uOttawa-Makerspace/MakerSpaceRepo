@@ -19,13 +19,18 @@
 
   .nav-link {
     [data-bs-theme="dark"] & {
-      --bs-nav-link-hover-color: #{$primary};
+      --bs-nav-link-hover-color: #{$primary-text-dark};
       --bs-nav-link-color: white;
     }
-    --bs-nav-link-hover-color: black;
+    --bs-nav-link-hover-color: white;
     --bs-nav-link-color: white;
     font-weight: 700;
     text-transform: uppercase;
+
+    &:hover,
+    &:focus {
+      text-decoration: underline;
+    }
 
     // Fluid sizing: slightly more compact on 1200-1399px laptops so all 11 links fit
     font-size: 0.85rem;
@@ -36,10 +41,10 @@
 
   .btn.btn-link {
     --bs-btn-color: white;
-    --bs-btn-hover-color: black;
+    --bs-btn-hover-color: white;
 
     [data-bs-theme="dark"] & {
-      --bs-btn-hover-color: #{$primary};
+      --bs-btn-hover-color: #{$primary-text-dark};
     }
   }
 
@@ -67,7 +72,7 @@
   &.navbar-staff .nav-link {
     color: white;
     &:hover {
-      color: $primary;
+      color: $primary-text-dark;
     }
     &.show {
       color: white;

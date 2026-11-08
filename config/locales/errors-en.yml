@@ -1,0 +1,8 @@
+# Error answers of the admin calendar.
+en:
+  errors:
+    calendar:
+      color_blank: "No colour was chosen."
+      staff_not_in_space: "That staff member is not on this space."
+      color_invalid: "That colour is not valid."
+      color_not_saved: "The staff colour could not be saved."

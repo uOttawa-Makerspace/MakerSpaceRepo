@@ -11,15 +11,11 @@ class KeyCertificationsController < SessionsController
 
   def update
     if @user.eql?(@key_certification.user)
-      (1..KeyCertification::TOTAL_NUMBER_OF_FILES).each do |i|
-        file_param = "pdf_file_#{i}"
-        if params[file_param]
-          if @key_certification.send(file_param).attached?
-            @key_certification.send(file_param).purge
-          end
+      KeyCertification::PDF_FILE_ATTACHMENTS.each do |number, param|
+        next unless params[param]
 
-          @key_certification.attach_pdf_file(i, params[file_param])
-        end
+        @key_certification.pdf_file_at(number).purge
+        @key_certification.attach_pdf_file(number, params[param])
       end
     end
 
@@ -33,11 +29,10 @@ class KeyCertificationsController < SessionsController
 
   def destroy_pdf
     if @user.eql?(@key_certification.user)
-      file_number = params[:file_number].to_i
-      file_attr = "pdf_file_#{file_number}"
+      attachment = @key_certification.pdf_file_at(params[:file_number].to_i)
 
-      if @key_certification.send(file_attr).attached?
-        @key_certification.send(file_attr).purge
+      if attachment&.attached?
+        attachment.purge
         flash[:notice] = "Successfully deleted certification"
       else
         flash[:alert] = "Couldn't find attached file"

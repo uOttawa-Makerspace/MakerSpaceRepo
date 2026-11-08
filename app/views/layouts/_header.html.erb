@@ -8,7 +8,7 @@
                 <a class="nav-link d-xl-none ms-auto me-2 text-white fw-bold" data-bs-toggle="modal" data-bs-target="#loginModal" href=""><%= t('navbar.sign_in') %></a>
             <% end %>
 
-            <button class="navbar-toggler <%= 'ms-auto' if signed_in? %>" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler <%= 'ms-auto' if signed_in? %>" id="navbar-toggle-button" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="<%= t('common.names.toggle_navigation') %>">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
@@ -92,7 +92,7 @@
                     <% else %>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle px-xl-1 px-xxl-2 text-nowrap d-flex align-items-center gap-1" href="<%= user_path(@user.username) %>" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="text-transform: none;">
-                                <%= image_tag @user.display_avatar, class: 'avatar', alt: 'Avatar', loading: 'lazy', decoding: 'async' %>
+                                <%= image_tag @user.display_avatar, class: 'avatar', alt: t('common.names.avatar'), loading: 'lazy', decoding: 'async' %>
                                 <span><%= @user.username %></span>
                             </a>
                             <div class="dropdown-menu dropdown-menu-end">

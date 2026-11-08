@@ -2,7 +2,7 @@
   <!-- Top Navigation & Header -->
   <div class="row align-items-center justify-content-between mb-4 g-3">
     <div class="col-12 col-md-auto">
-      <nav aria-label="breadcrumb" class="mb-1">
+      <nav aria-label="<%= t('common.names.breadcrumb') %>" class="mb-1">
         <ol class="breadcrumb mb-0 small">
           <li class="breadcrumb-item">
             <%= link_to volunteer_tasks_path, class: "text-decoration-none text-body-secondary" do %>
@@ -155,7 +155,7 @@
                 <!-- Status Switcher -->
                 <div class="col-12">
                   <label class="form-label fw-semibold text-body mb-2">Initial Status</label>
-                  <div class="btn-group w-100" role="group" aria-label="Task Status">
+                  <div class="btn-group w-100" role="group" aria-label="<%= t('common.names.task_status') %>">
                     <%= f.radio_button :status, 'open', class: 'btn-check', id: 'status_open', checked: true %>
                     <label class="btn btn-outline-success d-flex align-items-center justify-content-center gap-2 py-2" for="status_open">
                       <i class="fa-solid fa-lock-open"></i> Open

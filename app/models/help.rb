@@ -49,7 +49,7 @@ class Help < ApplicationRecord
             end
     self.gh_issue_number = issue ? issue[:number] : nil
     unless self.gh_issue_number
-      errors.add(:base, 'Internal error while submitting issue.')
+      errors.add(:base, :issue_submission_failed)
       throw :abort
     end
   end

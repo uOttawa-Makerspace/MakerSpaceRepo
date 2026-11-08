@@ -14,8 +14,6 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
   let!(:stm126) { create(:sub_space, name: "STM 126", space: space) }
   let!(:creator) { create(:user, :regular_user, email: "creator@example.test") }
 
-  before { stub_const("BookingStatus::APPROVED", approved) }
-
   def booking_for(id)
     SubSpaceBooking.find_by(google_booking_id: id)
   end
@@ -42,8 +40,19 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
         name: "Team meeting", description: "Weekly", sub_space: stm124, blocking: true, user: creator,
         start_time: Time.utc(2027, 4, 5, 14), end_time: Time.utc(2027, 4, 5, 15)
       )
-      expect(booking.sub_space_booking_status.booking_status).to eq(approved)
-      expect(booking.sub_space_booking_status_id).to eq(booking.sub_space_booking_status.id)
+      expect(booking.booking_status).to eq(approved)
+      expect(booking.sub_space_booking_status).to have_attributes(booking_status: approved, id: booking.sub_space_booking_status_id)
+    end
+
+    it "saves nothing and reports when the status of the new booking cannot be saved" do
+      allow(BookingStatus).to receive(:approved).and_return(BookingStatus.new(id: -1, name: "Ghost"))
+      expect(Rails.error).to receive(:report)
+        .with(instance_of(ActiveRecord::RecordInvalid), hash_including(handled: true, context: { google_event_id: "evt-1" }))
+
+      described_class.process(c18_gcal_event)
+
+      expect(SubSpaceBooking.count).to eq(0)
+      expect(SubSpaceBookingStatus.count).to eq(0)
     end
 
     # the past-date rule is for bookings made in the app. A full sync
@@ -52,7 +61,7 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       described_class.process(c18_gcal_event(start_at: 1.week.ago.utc, end_at: 1.week.ago.utc + 1.hour))
       booking = booking_for("evt-1")
       expect(booking).to be_persisted
-      expect(booking.sub_space_booking_status.booking_status).to eq(approved)
+      expect(booking.booking_status).to eq(approved)
     end
 
     it "defaults a blank summary/description to 'Google Calendar Event' / 'No description'" do
@@ -60,8 +69,7 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       expect(booking_for("evt-1")).to have_attributes(name: "Google Calendar Event", description: "No description")
     end
 
-    it "falls back to the hard-coded avend029@uottawa.ca user when the creator has no account" do
-      # events from unknown creators are attributed to a hard-coded personal address (avend029@uottawa.ca); if that user does not exist the booking has no owner
+    it "attributes an event from a creator without an account to the default fallback user, or to nobody if absent" do
       fallback = create(:user, :regular_user, email: "avend029@uottawa.ca")
       described_class.process(c18_gcal_event(creator_email: "stranger@example.test"))
       expect(booking_for("evt-1").user).to eq(fallback)
@@ -69,6 +77,17 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       fallback.destroy
       described_class.process(c18_gcal_event(creator_email: "stranger@example.test"))
       expect(booking_for("evt-1").user).to be_nil
+    end
+
+    it "uses the fallback email from the setting, then the environment, when configured" do
+      from_setting = create(:user, :regular_user, email: "setting@example.test")
+      from_env = create(:user, :regular_user, email: "env@example.test")
+      stub_const("ENV", ENV.to_hash.merge("GOOGLE_CALENDAR_FALLBACK_EMAIL" => "env@example.test"))
+      described_class.process(c18_gcal_event(creator_email: "stranger@example.test"))
+      expect(booking_for("evt-1").user).to eq(from_env)
+      Setting.set("google_calendar_fallback_email", "setting@example.test")
+      described_class.process(c18_gcal_event(creator_email: "stranger@example.test"))
+      expect(booking_for("evt-1").user).to eq(from_setting)
     end
 
     it "updates the same booking in place when the event is processed again (keyed by google_booking_id)" do
@@ -84,9 +103,9 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
     it "re-approves nothing: an existing status is left as it is on update" do
       described_class.process(c18_gcal_event)
       booking = booking_for("evt-1")
-      booking.sub_space_booking_status.update!(booking_status: create(:booking_status, :rejected))
+      booking.change_status!(create(:booking_status, :rejected))
       described_class.process(c18_gcal_event(summary: "Again"))
-      expect(booking.reload.sub_space_booking_status.booking_status.name).to eq("Declined")
+      expect(booking.reload.booking_status.name).to eq("Declined")
     end
 
     it "skips overlap/conflict checks: overlapping events create overlapping blocking bookings" do
@@ -95,30 +114,67 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
       expect(SubSpaceBooking.where(google_booking_id: %w[a b]).count).to eq(2)
     end
 
-    it "silently drops an all-day event (date, no date_time): nothing saved and no error" do
-      # all-day events carry start.date, not start.date_time; start_time is nil so the save fails validation and the event is silently skipped 
-      all_day = c18_gcal_event(id: "allday")
-      all_day.start = Google::Apis::CalendarV3::EventDateTime.new(date: "2027-04-05")
-      all_day.end = Google::Apis::CalendarV3::EventDateTime.new(date: "2027-04-06")
-      expect { described_class.process(all_day) }.not_to raise_error
-      expect(booking_for("allday")).to be_nil
+    def all_day_event(id, from, to)
+      event = c18_gcal_event(id: id)
+      event.start = Google::Apis::CalendarV3::EventDateTime.new(date: from)
+      event.end = Google::Apis::CalendarV3::EventDateTime.new(date: to)
+      event
     end
 
-    it "silently drops an event ending before it starts (validation failure)" do
+    it "books an all-day event from midnight to midnight Toronto time (stored in UTC), end date exclusive" do
+      described_class.process(all_day_event("allday", "2027-04-05", "2027-04-06"))
+      expect(booking_for("allday")).to have_attributes(
+        start_time: Time.utc(2027, 4, 5, 4), end_time: Time.utc(2027, 4, 6, 4), blocking: true
+      )
+    end
+
+    it "keeps midnight Toronto time for an all-day event across the clocks going back (2026-11-01)" do
+      described_class.process(all_day_event("fall", "2026-11-01", "2026-11-02"))
+      # 2026-11-01 00:00 is still EDT (UTC-4); 2026-11-02 00:00 is EST (UTC-5): a 25 hour day
+      expect(booking_for("fall")).to have_attributes(
+        start_time: Time.utc(2026, 11, 1, 4), end_time: Time.utc(2026, 11, 2, 5)
+      )
+    end
+
+    it "books a multi-day all-day event through the day before its end date" do
+      described_class.process(all_day_event("multi", "2027-03-13", "2027-03-16"))
+      expect(booking_for("multi")).to have_attributes(
+        start_time: Time.utc(2027, 3, 13, 5), end_time: Time.utc(2027, 3, 16, 4)
+      )
+    end
+
+    it "stores a timed event's instant unchanged across the clocks going back" do
+      described_class.process(c18_gcal_event(id: "timed", start_at: Time.utc(2026, 11, 1, 5), end_at: Time.utc(2026, 11, 1, 7)))
+      expect(booking_for("timed")).to have_attributes(start_time: Time.utc(2026, 11, 1, 5), end_time: Time.utc(2026, 11, 1, 7))
+    end
+
+    it "skips and reports an event with neither a date_time nor a date" do
+      empty = c18_gcal_event(id: "empty")
+      empty.start = Google::Apis::CalendarV3::EventDateTime.new
+      empty.end = Google::Apis::CalendarV3::EventDateTime.new
+      expect(Rails.error).to receive(:report).with(instance_of(ActiveRecord::RecordInvalid), hash_including(handled: true))
+      expect { described_class.process(empty) }.not_to raise_error
+      expect(booking_for("empty")).to be_nil
+    end
+
+    it "skips and reports an event ending before it starts (validation failure)" do
+      expect(Rails.error).to receive(:report).with(instance_of(ActiveRecord::RecordInvalid), hash_including(handled: true))
       expect do
         described_class.process(c18_gcal_event(start_at: Time.utc(2027, 4, 5, 16), end_at: Time.utc(2027, 4, 5, 15)))
       end.not_to change(SubSpaceBooking, :count)
     end
 
-    it "raises NoMethodError for an event with no creator" do
-      # event.creator.email has no nil guard, so one such event aborts the whole sync batch
-      expect { described_class.process(c18_gcal_event(creator_email: nil)) }.to raise_error(NoMethodError)
+    it "treats an event with no creator like an unknown creator (fallback owner)" do
+      fallback = create(:user, :regular_user, email: "avend029@uottawa.ca")
+      expect { described_class.process(c18_gcal_event(creator_email: nil)) }.not_to raise_error
+      expect(booking_for("evt-1").user).to eq(fallback)
     end
 
-    it "raises RecordNotFound when the SubSpace row for a valid location does not exist" do
-      # find_by! aborts the batch if STM 124/126 was renamed or deleted
+    it "reports and skips an event whose SubSpace row does not exist, without raising" do
       stm126.destroy
-      expect { described_class.process(c18_gcal_event(location: "STM 126")) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Rails.error).to receive(:report).with(instance_of(ActiveRecord::RecordNotFound), hash_including(handled: true))
+      expect { described_class.process(c18_gcal_event(location: "STM 126")) }.not_to raise_error
+      expect(booking_for("evt-1")).to be_nil
     end
   end
 

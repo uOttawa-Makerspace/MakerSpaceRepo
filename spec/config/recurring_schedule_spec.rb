@@ -25,6 +25,13 @@ RSpec.describe "config/recurring.yml" do
     end
   end
 
+  it "checks for failed and overdue jobs every 5 minutes in production and staging" do
+    %w[production staging].each do |env|
+      expect(config.dig(env, "job_alerts")).to include("class" => "JobAlertJob", "schedule" => "every 5 minutes")
+    end
+    expect(Fugit.parse("every 5 minutes", multi: :fail)).to be_a(Fugit::Cron)
+  end
+
   it "mails the CDEL report from production only, on the 1st at midnight" do
     expect(config.dig("production", "cdel_report")).to include("class" => "CdelReportJob", "schedule" => "0 0 1 * *")
     expect(config["staging"]).not_to have_key("cdel_report")
@@ -70,6 +77,5 @@ RSpec.describe "config/recurring.yml" do
 
   it "no longer carries a whenever schedule" do
     expect(Rails.root.join("config/schedule.rb")).not_to exist
-    expect(File.read(Rails.root.join("Capfile"))).not_to include("whenever")
   end
 end

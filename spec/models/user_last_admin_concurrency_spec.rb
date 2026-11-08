@@ -41,12 +41,12 @@ RSpec.describe User, "last-admin guard under concurrency", type: :model do
     resume = Queue.new
     allow_any_instance_of(User).to receive(:change_role!).and_wrap_original do |original, *args|
       paused << true
-      resume.pop
+      resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       original.call(*args)
     end
 
     demotion = in_thread { User.change_roles!([admin_a.id], "staff") }
-    paused.pop
+    ThreadPause.await(paused)
     second = in_thread(&second_action)
     wait_until_blocked_on_lock
     resume << true
@@ -137,7 +137,7 @@ RSpec.describe User, "last-admin guard locking", type: :model do
       if Thread.current == demoter && first_call
         first_call = false
         paused << true
-        resume.pop
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
       original.call(*args)
     end
@@ -147,7 +147,7 @@ RSpec.describe User, "last-admin guard locking", type: :model do
       demoter = Thread.current
       User.change_roles!([plain.id, admin_b.id], "staff")
     end
-    paused.pop
+    ThreadPause.await(paused)
     promotion = in_thread { User.change_roles!([plain.id, admin_b.id], "admin") }
     promotion.join(1) # it either waits on the demotion's locks or is already done
     resume << true
@@ -185,7 +185,7 @@ RSpec.describe User, "last-admin guard vs a role change between check and write"
 
       done = true
       paused << true
-      resume.pop
+      resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
     end
     subscriber.define_singleton_method(:finish) { |*| }
     ActiveSupport::Notifications.subscribe("sql.active_record", subscriber)
@@ -200,7 +200,7 @@ RSpec.describe User, "last-admin guard vs a role change between check and write"
     resume = Queue.new
     subscriber = pause_before_first_lock(-> { t1 }, paused, resume)
     t1 = in_thread { guard.call }
-    paused.pop
+    ThreadPause.await(paused)
     promoted = in_thread { User.change_roles!([target.id], "admin") }.value
     demoted = in_thread { User.change_roles!([admin_a.id], "staff") }.value
     resume << true
@@ -279,7 +279,7 @@ RSpec.describe User, "last-admin guard vs refresh-token rotation", type: :model 
       original.call(*args).tap do
         if Thread.current == rotator
           paused << true
-          resume.pop
+          resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
         end
       end
     end
@@ -288,7 +288,7 @@ RSpec.describe User, "last-admin guard vs refresh-token rotation", type: :model 
       rotator = Thread.current
       ApiRefreshToken.find(token.id).rotate!
     end
-    paused.pop
+    ThreadPause.await(paused)
     locking = in_thread do
       User.guarding_last_admin!([admin_a.id], message: User::LAST_ADMIN_LOCK_MESSAGE) { User.find(admin_a.id).admin_lock! }
     end

@@ -4,6 +4,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
+import { makeCalendarAccessible } from "./calendar_accessibility.js";
 import { eventClick, eventCreate } from "./unavailabilities_helpers.js";
 
 document.addEventListener("turbo:load", async () => {
@@ -26,6 +27,7 @@ document.addEventListener("turbo:load", async () => {
     events: "/staff/unavailabilities/json",
     eventClick: (info) => eventClick(info.event),
     select: (info) => eventCreate(info),
+    viewDidMount: () => makeCalendarAccessible(calendarEl),
     eventDidMount: (info) => {
       // fade in event
       requestAnimationFrame(() => {

@@ -37,8 +37,8 @@
                             <% badge = current_user.highest_badge(training) %>
                             <% unless badge.nil? %>
                               <div class="col-md-3">
-                                <a style="width: 100px;" class="mx-auto w-100!important d-block" target="_blank" href="./badges/<%= badge.id %>">
-                                  <%= render "badge_icon", width: 100, height: 100, margin: "auto", display: "block", level: badge.training_session.training.training_level, name: badge.training.localized_name, skill: badge.training_session.training.skill_id %>
+                                <a style="width: 100px;" class="mx-auto w-100!important d-block" target="_blank" href="<%= badge_path(badge.badge_param) %>">
+                                  <%= render "badges/badge_icon", width: 100, height: 100, margin: "auto", display: "block", level: badge.training_session.level, name: badge.training.localized_name, skill: badge.training_session.training.skill_id %>
                                 </a>
                               </div>
                               <div class="col-md-9 my-auto">
@@ -66,7 +66,7 @@
         <% @certifications.each do |cert| %>
           <div class="col">
             <b><%= cert.training.localized_name %> </b> <br/>
-            <%= vite_image_tag(cert.get_badge_path, class: 'skills-badges', alt: 'Medal image') %>
+            <%= vite_image_tag(cert.get_badge_path, class: 'skills-badges', alt: t('common.names.medal_image')) %>
             <br/>
             <%= cert.training_session.level %>
           </div>
@@ -75,7 +75,7 @@
         <% @remaining_trainings.each do |training| %>
           <div class="col">
             <b><%= training.localized_name %> </b> <br/>
-            <%= vite_image_tag 'images/badges/none.png', class: 'skills-badges', alt: 'No medal picture' %>
+            <%= vite_image_tag 'images/badges/none.png', class: 'skills-badges', alt: t('common.names.no_medal_picture') %>
             <br/>
             None
           </div>

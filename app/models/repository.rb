@@ -30,7 +30,7 @@ class Repository < ApplicationRecord
   has_many :equipments, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
-  has_many :makes, class_name: 'Repository', foreign_key: 'make_id'
+  has_many :makes, class_name: 'Repository', foreign_key: 'make_id', dependent: :nullify
   belongs_to :parent,
              class_name: 'Repository',
              foreign_key: 'make_id',
@@ -63,30 +63,18 @@ class Repository < ApplicationRecord
     ]
   end
 
-  validates :title,
-            presence: {
-              message: 'Project title is required.'
-            },
-            uniqueness: {
-              message: 'Project title is already in use.',
-              scope: :user_id # :owner
-            }
+  validates :title, presence: true, uniqueness: { scope: :user_id } # :owner
 
   validates :share_type, inclusion: { in: %w[public private], message: '' }
 
-  validates :password,
-            presence: {
-              message: 'Password is required for private projects'
-            },
-            if: :private?
+  validates :password, presence: true, if: :private?
 
   # This seems to work fine for limiting association counts.
   # Max 5 gallery photos per repository.
   validates :photos,
             length: {
               maximum: 10,
-              minimum: 1,
-              message: 'Must have between 1 and 5 photos'
+              minimum: 1
             }
 
   # validates :category,
@@ -139,6 +127,43 @@ class Repository < ApplicationRecord
     user_id == user.id || users.include?(user)
   end
 
+  # What deleting an account does to the repositories it owns (repositories.user_id), inside the
+  # caller's transaction (User.delete_account!). A repository passes to the member with the lowest id
+  # who can sign in (not deleted, deactivated or locked) and owns no repository, hidden ones
+  # included, with the same title (the title validation is exact and per owner); if there is no
+  # such member it is hidden.
+  # The deleted user keeps their membership rows (members are listed through User's default scope,
+  # so they are not shown), and repositories they only collaborate on are not touched. The rows are
+  # written without validations and callbacks so the slug (and so the address) stays as it was;
+  # updated_at follows the change, and the cached zip is dropped once the transaction commits.
+  def self.release_owned_by!(user)
+    where(user_id: user.id).order(:id).lock.to_a.each do |repository|
+      new_owner = User.can_sign_in
+                      .where(id: repository.users.where.not(id: user.id).select(:id))
+                      .where('NOT EXISTS (SELECT 1 FROM repositories owned WHERE owned.user_id = users.id AND owned.title = ?)',
+                             repository.title)
+                      .order(:id).lock('FOR SHARE').first
+      changes = new_owner ? { user_id: new_owner.id } : { deleted: true }
+      repository.update_columns(changes.merge(updated_at: Time.current))
+      clear_zip_cache_after_commit(repository)
+    end
+  end
+
+  # Brings back what release_owned_by! hid: the hidden repositories still owned by the user. A
+  # repository handed to another member has a different owner and stays with them.
+  def self.restore_hidden_for!(user)
+    unscoped.where(user_id: user.id, deleted: true).find_each do |repository|
+      repository.update_columns(deleted: false, updated_at: Time.current)
+      clear_zip_cache_after_commit(repository)
+    end
+  end
+
+  # A rollback leaves the cached zip alone.
+  def self.clear_zip_cache_after_commit(repository)
+    ActiveRecord.after_all_transactions_commit { repository.clear_zip_cache }
+  end
+  private_class_method :clear_zip_cache_after_commit
+
   def self.authenticate(id, password)
     Repository.find(id).pword == password
   end
@@ -157,7 +182,7 @@ class Repository < ApplicationRecord
   end
 
   def zip_path
-    Rails.root.join("tmp", "repository_zips", "makerepo_#{id}.zip")
+    Repository::ZipCache.directory.join("makerepo_#{id}.zip")
   end
 
   def clear_zip_cache

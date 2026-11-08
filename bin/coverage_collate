@@ -7,6 +7,10 @@ require "simplecov"
 results = Dir[File.expand_path("../coverage/*/.resultset.json", __dir__)]
 abort "coverage_collate: no coverage/*/.resultset.json found (run with COVERAGE=1)" if results.empty?
 
-SimpleCov.collate(results) do
+SimpleCov.collate(results, "rails") do
   coverage_dir "coverage"
+  enable_coverage :branch
+  primary_coverage :line
+  # count only app/ and lib/ (the rails profile already drops spec, config, db)
+  add_filter { |src| !src.filename.start_with?("#{SimpleCov.root}/app/", "#{SimpleCov.root}/lib/") }
 end

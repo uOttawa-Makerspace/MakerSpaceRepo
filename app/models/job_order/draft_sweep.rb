@@ -118,7 +118,7 @@ class JobOrder
 
     def with_sweep_lock
       ActiveRecord::Base.with_connection do |conn|
-        return build_report(skipped: true) unless conn.select_value("SELECT pg_try_advisory_lock(#{LOCK_KEY})")
+        return build_report(skipped: true) unless conn.select_value("SELECT pg_try_advisory_lock($1)", "DraftSweep lock", [LOCK_KEY])
 
         begin
           yield
@@ -126,7 +126,7 @@ class JobOrder
           @escaping ||= e # kept here: an error raised by the unlock below would replace it in flight
           raise
         ensure
-          conn.select_value("SELECT pg_advisory_unlock(#{LOCK_KEY})")
+          conn.select_value("SELECT pg_advisory_unlock($1)", "DraftSweep unlock", [LOCK_KEY])
         end
       end
     end

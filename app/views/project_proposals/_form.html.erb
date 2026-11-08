@@ -111,7 +111,7 @@
     <%= label_tag :file, t('project_proposal.new.project_files'), class: 'form-label' %>
     <div class="mb-3">
         <div class="input-group mb-3">
-            <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control files_', aria_label: t('project_proposal.new.project_files') %>
+            <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control files_', aria: { label: t('project_proposal.new.project_files') } %>
             <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-file-input">
                 <i class="fa fa-plus"></i>
             </button>
@@ -133,7 +133,7 @@
                  },
                  accept: 'image/*',
                  class: 'form-control',
-                 aria_label: t('project_proposal.new.gallery_aria_label') %>
+                 aria: { label: t('project_proposal.new.gallery_aria_label') } %>
             </div>
 
             <p class="file-upload-drop-message">

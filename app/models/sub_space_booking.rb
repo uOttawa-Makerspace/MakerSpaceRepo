@@ -1,8 +1,17 @@
 class SubSpaceBooking < ApplicationRecord
+  include DisplayUser
+
   belongs_to :user, optional: true
+  display_user_for :user
   belongs_to :approved_by, class_name: "User", optional: true
   belongs_to :sub_space
   belongs_to :recurring_booking, optional: true
+  # A new booking must be saved with a status (see save_with_status!). Optional on the association
+  # because the column may still be empty on rows older than the status column.
+  belongs_to :booking_status, optional: true
+  validates :booking_status, presence: true, on: :create
+  # The status row the booking used to be linked to. It is still written with every status change
+  # so the old table stays consistent until it is retired; nothing reads it.
   has_one :sub_space_booking_status,
           dependent: :destroy
   validates :name, presence: true
@@ -49,6 +58,57 @@ class SubSpaceBooking < ApplicationRecord
           where("(sub_space_bookings.start_time, sub_space_bookings.end_time) OVERLAPS (?, ?)",
                 start_time, end_time)
         }
+
+  scope :pending, -> { where(booking_status_id: BookingStatus.pending.id) }
+  scope :approved, -> { where(booking_status_id: BookingStatus.approved.id) }
+  scope :declined, -> { where(booking_status_id: BookingStatus.declined.id) }
+
+  def pending? = booking_status_id == BookingStatus.pending.id
+  def approved? = booking_status_id == BookingStatus.approved.id
+  def declined? = booking_status_id == BookingStatus.declined.id
+
+  # Saves a new booking with its first status, and records the status on the old status row too.
+  # All or nothing.
+  def save_with_status!(status)
+    transaction do
+      self.booking_status_id = status.id
+      save!
+      write_status_row
+    end
+  end
+
+  # Changes the status of a saved booking without running validations (a booking that no longer passes
+  # some rule can still be approved or declined), and records it on the old status row too.
+  def change_status!(status)
+    transaction do
+      update_column(:booking_status_id, status.id)
+      write_status_row
+    end
+  end
+
+  # Gives every booking of the list the status, each through change_status!, so the old status rows follow.
+  def self.change_status_of!(bookings, status)
+    transaction { bookings.each { |booking| booking.change_status!(status) } }
+  end
+
+  # Checks everything except the status, for a new booking whose status is chosen after the checks.
+  def valid_without_status?
+    valid?(:without_status)
+  end
+
+  # Destroys the booking together with its status, the one way a booking is
+  # removed. The booking and its status row reference each other, so both links
+  # are cleared before either row goes; a booking without a status is simply
+  # destroyed. All or nothing.
+  def destroy_with_status!
+    transaction do
+      status = sub_space_booking_status
+      status&.update_column(:sub_space_booking_id, nil)
+      update_column(:sub_space_booking_status_id, nil)
+      status&.destroy!
+      destroy!
+    end
+  end
 
   # FIXME: THIS DOESNT REALLY WORK FOR ICS TO MAKERROOM AND BREAKS THE GCAL INTEGRATION
   # before_save :upsert_google_booking,
@@ -161,8 +221,8 @@ class SubSpaceBooking < ApplicationRecord
 
   def end_time_after_start_time
     return unless start_time.present? && end_time.present? && start_time >= end_time
-      errors.add(:expiration_date, "Start Time needs to be before end time")
-    
+
+    errors.add(:end_time, :before_start)
   end
 
   def self.color_legend
@@ -173,9 +233,7 @@ class SubSpaceBooking < ApplicationRecord
     status =
       if blocking
         "blocking_booking"
-      elsif SubSpaceBookingStatus.find(
-            sub_space_booking_status_id
-          ).booking_status_id == BookingStatus::APPROVED.id
+      elsif approved?
         if user_id == current_user_id
           "your_confirmed_bookings"
         else
@@ -219,7 +277,7 @@ class SubSpaceBooking < ApplicationRecord
           attendees: attendees
       )
 
-    calendar_id = return_sub_space_calendar(sub_space_booking.sub_space)
+    calendar_id = GoogleCalendar::EventPublisher::SHARED_CALENDAR
     if sub_space_booking.google_booking_id.present?
       begin # Update an existing booking
         service.update_event(calendar_id, sub_space_booking.google_booking_id, gcal_event)
@@ -243,7 +301,7 @@ class SubSpaceBooking < ApplicationRecord
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
     
-    calendar_id = return_sub_space_calendar(sub_space_booking.sub_space)
+    calendar_id = GoogleCalendar::EventPublisher::SHARED_CALENDAR
 
     begin
       response = service.delete_event(calendar_id, sub_space_booking.google_booking_id)
@@ -252,14 +310,12 @@ class SubSpaceBooking < ApplicationRecord
     end
   end
 
-  # Fill in the STM 124 and 126 links with the correct calendars when ready to link up.
-  def self.return_sub_space_calendar(sub_space)
-    if sub_space.name == "STM 124"
-      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
-    elsif sub_space.name == "STM 126"
-      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com"
-    else
-      "c_hbktsseobsqd92u5rufsjbcok8@group.calendar.google.com" # my personal test calendar
-    end
+  private
+
+  # The old status row follows the booking's status: created when the booking has none, linked back.
+  def write_status_row
+    row = sub_space_booking_status || build_sub_space_booking_status
+    row.update!(booking_status_id: booking_status_id)
+    update_column(:sub_space_booking_status_id, row.id)
   end
 end

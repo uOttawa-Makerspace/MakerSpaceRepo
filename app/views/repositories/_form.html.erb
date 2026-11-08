@@ -9,7 +9,7 @@
     <div class="mb-3">
         <%= f.label :description, class: 'form-label' %>
         <div>
-            <%= f.trix_editor :description, class: 'form-control', style: 'height: auto!important;', required: true %>
+            <%= f.trix_editor :description, class: 'form-control', 'aria-label': Repository.human_attribute_name(:description), style: 'height: auto!important;', required: true %>
         </div>
     </div>
 
@@ -28,7 +28,7 @@
                                    file_upload_suffix: 'file'
                                },
                                class: 'form-control',
-                               aria_label: 'Project Files / Fichiers du projet' %>
+                               aria: { label: t('common.names.project_files') } %>
         </div>
 
         <p class="file-upload-drop-message">
@@ -75,7 +75,7 @@
                                    accept: Photo::ALLOWED_CONTENT_TYPES.join(','),
                                    class: 'form-control',
                                    placeholder: 'Select pictures',
-                                   aria_label: 'Select Pictures / Selectionner des images' %>
+                                   aria: { label: t('common.names.select_pictures') } %>
             </div>
 
             <p class="file-upload-drop-message">
@@ -115,7 +115,8 @@
         <%= f.select :categories, options_for_select(
             CategoryOption.show_options.collect(&:name),
             selected: @repository.categories.collect(&:name)),
-         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') }
+         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') },
+         { aria: { label: t('repository.cat') } }
         %>
         <span class="form-text"><%= t('repository.cat_msg') %></span>
     </div>
@@ -125,7 +126,8 @@
         <%= f.select :equipments, options_for_select(
             (EquipmentOption.show_options.collect(&:name) + @repository.equipments.pluck(:name)).uniq,
             selected: @repository.equipments.pluck(:name)),
-         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') }
+         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') },
+         { aria: { label: t('repository.equip') } }
          %>
         <span class="form-text"><%= t('repository.equip_msg') %></span>
     </div>
@@ -143,13 +145,14 @@
             <%= f.label :license, t('repository.reason') , class: 'form-label' %>
             <%= f.select(:project_proposal_id,
                          options_for_select(@project_proposals, selected: @repository.project_proposal_id),
-                         { include_blank: 'No project linked', class: 'form-control form-select' }) %>
+                         { include_blank: 'No project linked', class: 'form-control form-select' },
+                         { aria: { label: t('repository.reason') } }) %>
         <% end %>
     </div>
 
     <div class="mb-3">
         <%= label_tag(:owner, t('repository.new_owner') , class: 'form-label') %>
-        <%= select_tag(:owner, '', prompt: t('repository.search_user'), class: 'owner_select form-control', id: 'owner_select', multiple: true, autocomplete: false) %>
+        <%= select_tag(:owner, '', prompt: t('repository.search_user'), class: 'owner_select form-control', id: 'owner_select', aria: { label: t('repository.new_owner') }, multiple: true, autocomplete: false) %>
     </div>
 
     <div class="mb-3">
@@ -169,7 +172,7 @@
 
             <div id="pass" class="mb-3" style="display: <%= @repository.share_type == 'private' ? 'block' : 'none' %>;">
                 <%= f.label :password, 'Set repository password', class: 'form-label' %>
-                <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': 'Password / Mot de Passe', class: 'form-control' %>
+                <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': t('common.names.password'), class: 'form-control' %>
             </div>
             <div class="invalid-feedback">
                 Please Select a Share Type

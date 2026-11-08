@@ -31,18 +31,15 @@ class CommentsController < SessionsController
   end
 
   def destroy
-    if comment = Comment.find_by(id: params[:id])
-      if @user.admin? || comment.user == @user
-        flash[:notice] = "Comment deleted succesfully" if comment.destroy
-      else
-        flash[:alert] = "Something went wrong"
-      end
+    comment = Comment.find(params[:id])
+    if @user.admin? || comment.user == @user
+      flash[:notice] = "Comment deleted succesfully" if comment.destroy
     else
       flash[:alert] = "Something went wrong"
     end
     redirect_to repository_path(
                   id: comment.repository.id,
-                  user_username: comment.repository.user_username
+                  user_username: denial_username(comment.repository)
                 )
   end
 
@@ -50,33 +47,24 @@ class CommentsController < SessionsController
     downvote = params["downvote"].eql?("t") ? true : false
     repository = @repository
     comment = repository.comments.find params[:comment_id]
-    comment_user = comment.user
+    upvote = @user.upvotes.find_by(comment_id: comment.id)
 
-    if upvote = @user.upvotes.find_by(comment_id: comment.id)
+    # Nobody votes on their own comment (a vote already cast can still be taken back).
+    if comment.user_id == @user.id && upvote.nil?
+      return redirect_to repository_path(repository.user_username, params[:id], anchor: "repo-comments"),
+                         alert: "You cannot vote on your own comment"
+    end
+
+    if upvote
       if downvote != upvote.downvote
-        upvote.update!(downvote: downvote)
-        if downvote
-          comment_user.decrement!(:reputation, 4)
-        else
-          comment_user.increment!(:reputation, 4)
-        end
+        switch_vote(comment, downvote)
         message = "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
       else
-        upvote.destroy!
-        if downvote
-          comment_user.increment!(:reputation, 2)
-        else
-          comment_user.decrement!(:reputation, 2)
-        end
+        retract_vote(comment, downvote)
         message = "Successfully removed #{downvote ? "downvote" : "upvote"}"
       end
     else
-      @user.upvotes.create!(comment_id: comment.id, downvote: downvote)
-      if downvote
-        comment_user.decrement!(:reputation, 2)
-      else
-        comment_user.increment!(:reputation, 2)
-      end
+      cast_new_vote(comment, downvote)
       message = "Successfully #{downvote ? "downvoted" : "upvoted"} comment"
     end
 
@@ -89,6 +77,25 @@ class CommentsController < SessionsController
   end
 
   private
+
+  # A repeated click or a simultaneous request finds the vote already cast and counts nothing again.
+  def cast_new_vote(comment, downvote)
+    return unless Upvote.cast(@user, comment, downvote)
+
+    adjust_reputation(comment.user, downvote ? -2 : 2)
+  end
+
+  def switch_vote(comment, downvote)
+    adjust_reputation(comment.user, downvote ? -4 : 4) if Upvote.switch(@user, comment, downvote)
+  end
+
+  def retract_vote(comment, downvote)
+    adjust_reputation(comment.user, downvote ? 2 : -2) if Upvote.retract(@user, comment, downvote)
+  end
+
+  def adjust_reputation(user, amount)
+    user.increment!(:reputation, amount)
+  end
 
   def set_repository
     @repository = Repository.find(params[:id])

@@ -16,8 +16,10 @@ class OrderItemsController < DevelopmentProgramsController
   # removed during a checkout can never land in (or vanish from) an order already paid for.
   def create
     @order = current_order
+    # A missing or blank project id is a missing parameter (answered by the app-wide handler);
+    # an id that matches no project stays a not-found.
     proficient_project =
-      ProficientProject.find(params[:order_item][:proficient_project_id])
+      ProficientProject.find(order_item_params.require(:proficient_project_id))
     if current_user.has_requirements?(proficient_project.training_requirements)
       @order.change_items! do |cart|
         @order = cart
@@ -26,8 +28,7 @@ class OrderItemsController < DevelopmentProgramsController
         existing_order =
           cart.order_items.where(proficient_project: proficient_project)
         if existing_order.count < 1
-          cart.save
-          flash[:notice] = "Successfully added item to cart"
+          report_add_outcome(cart.save, @order_item)
         else
           flash[:alert] = "You have already ordered this item"
         end
@@ -120,6 +121,14 @@ class OrderItemsController < DevelopmentProgramsController
   end
 
   private
+
+  def report_add_outcome(saved, item)
+    if saved
+      flash[:notice] = "Successfully added item to cart"
+    else
+      flash[:alert] = "The item could not be added to your cart: #{item.errors.full_messages.to_sentence}"
+    end
+  end
 
   def cart_change_refused_message(error)
     error.is_a?(Order::CartClosed) ? CART_CLOSED_MESSAGE : CART_BUSY_MESSAGE

@@ -2,7 +2,8 @@
 
 class TrainingSession < ApplicationRecord
   belongs_to :training, optional: true
-  belongs_to :user, optional: true
+  # The instructor, including one whose account was soft-deleted: past sessions keep their instructor.
+  belongs_to :user, -> { including_deleted }, optional: true
   belongs_to :space, optional: true
   has_many :certifications, dependent: :destroy
   has_many :exams, dependent: :destroy
@@ -11,9 +12,9 @@ class TrainingSession < ApplicationRecord
   has_and_belongs_to_many :users
   belongs_to :course_name, optional: true
 
-  validates :training, presence: { message: "A training subject is required" }
-  validates :user, presence: { message: "A trainer is required" }
-  validates :level, presence: { message: "A level is required" }
+  validates :training, presence: true
+  validates :user, presence: true
+  validates :level, presence: true
   validates :space, presence: true
   validate :is_staff
   before_save :check_course
@@ -73,7 +74,7 @@ class TrainingSession < ApplicationRecord
           end
         }
   def is_staff
-    errors.add(:string, "user must be staff") unless user&.staff?
+    errors.add(:user, :must_be_staff) unless user&.staff?
   end
 
   def completed?

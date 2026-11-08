@@ -5,17 +5,17 @@
       <%= form_with url: "/admin/events/copy", method: :post, local: false, html: { class: "useTurbo" } do |f| %>
         <div class="modal-header">
           <h5 class="modal-title" id="copyEventsModalLabel">Copy Published Events</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
         </div>
 
         <div class="modal-body">
           <div class="mb-3">
-            <%= f.label :source_range, "Copy From" %>
+            <%= f.label :source_range, "Copy From", for: "source_range" %>
             <%= f.text_field :source_range, class: "form-control", id: "source_range", placeholder: "YYYY-MM-DD to YYYY-MM-DD", autocomplete: "off" %>
           </div>
 
           <div class="mb-3">
-            <%= f.label :target_date, "Copy Onto" %>
+            <%= f.label :target_date, "Copy Onto", for: "target_date" %>
             <%= f.text_field :target_date, class: "form-control", id: "target_date", placeholder: "YYYY-MM-DD", autocomplete: "off" %>
           </div>
         </div>

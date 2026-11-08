@@ -11,7 +11,7 @@
     </p>
   </div>
 
-  <% if current_user %>
+  <% if signed_in? %>
     <!-- Wallet -->
     <div class="row justify-content-center mb-5">
       <div class="col-md-6">
@@ -167,7 +167,7 @@
     </div>
   </div>
 
-  <% if current_user && @cc_activities.present? %>
+  <% if signed_in? && @cc_activities.present? %>
     <!-- Recent Activity -->
     <div class="row justify-content-center mb-5">
       <div class="col-lg-10">
@@ -245,14 +245,14 @@
     </div>
   </div>
 
-  <% unless current_user %>
+  <% unless signed_in? %>
     <!-- Sign-in CTA -->
     <div class="text-center mb-5">
       <div class="card border-0 shadow bg-primary text-white">
         <div class="card-body py-5">
           <h3 class="fw-bold mb-3"><%= t('rewards.index.sign_in_cta.title') %></h3>
           <p class="fs-5 mb-4"><%= t('rewards.index.sign_in_cta.body') %></p>
-          <%= link_to t('rewards.index.sign_in_cta.button'), new_user_session_path, class: 'btn btn-light btn-lg fw-bold' %>
+          <%= link_to t('rewards.index.sign_in_cta.button'), login_path, class: 'btn btn-light btn-lg fw-bold' %>
         </div>
       </div>
     </div>

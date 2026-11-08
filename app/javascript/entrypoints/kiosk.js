@@ -1,5 +1,5 @@
 setTimeout(function () {
-  flash = document.getElementById("flash");
+  const flash = document.getElementById("flash");
   if (flash) {
     flash.setAttribute("hidden", "true");
   }

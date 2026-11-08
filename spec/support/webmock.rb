@@ -16,6 +16,13 @@ WebMock.disable_net_connect!(allow_localhost: true)
 # empty lists: the page renders exactly as it does offline, without a socket.
 RSpec.configure do |config|
   config.before(:each) do
+    # Calendar feed hosts in specs are made-up names: have them resolve to a public address (IcsFetcher's own spec
+    # calls the real resolver).
+    allow(IcsFetcher).to receive(:resolve) do |host|
+      literal = host.delete_prefix("[").delete_suffix("]")
+      [IcsFetcher.ip_literal?(literal) ? literal : "93.184.216.34"]
+    end
+
     stub_request(:get, %r{\Ahttps://simpli\.events/api/organizer/})
       .to_return(status: 200, body: { events: [] }.to_json,
                  headers: { "Content-Type" => "application/json" })

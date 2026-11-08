@@ -3,6 +3,13 @@
 class BadgesController < DevelopmentProgramsController
   skip_before_action :grant_access, only: [:show]
 
+  # The badge page is public, so each visitor's address is limited to a pace that
+  # viewing and sharing badges never reaches. Signed-in staff and admins are exempt.
+  rate_limit to: 30, within: 1.minute, only: :show, name: "show-minute", if: -> { throttled_viewer? },
+             by: -> { request.remote_ip }, with: -> { badge_throttled }
+  rate_limit to: 300, within: 1.hour, only: :show, name: "show-hour", if: -> { throttled_viewer? },
+             by: -> { request.remote_ip }, with: -> { badge_throttled }
+
   def index
     @pagy, @badge_data = pagy(badge_scope(params[:search]), limit: 20)
 
@@ -21,10 +28,11 @@ class BadgesController < DevelopmentProgramsController
   # app/controllers/badges_controller.rb
 
   def show
-    @certification = Certification.find(params[:id])
-    @earner = User.find(@certification.user_id)
-    @los_en = @certification.training.tokenize_info_en
-    @los_fr = @certification.training.tokenize_info_fr
+    @certification = Certification.find_for_badge_page!(params[:id])
+    @earner = @certification.user
+    raise ActiveRecord::RecordNotFound if @earner.nil?
+    # A deleted account's badge is visible to admins only.
+    raise ActiveRecord::RecordNotFound if @earner.deleted? && !current_user&.admin?
     @skill_colour =
       if @certification.training.skill_id == 1
         "#488b2c"
@@ -37,11 +45,22 @@ class BadgesController < DevelopmentProgramsController
 
   private
 
+  def throttled_viewer?
+    !current_user&.staff?
+  end
+
+  def badge_throttled
+    render plain: "Too many requests, please try again later.", status: :too_many_requests
+  end
+
   def badge_scope(search_term = nil)
     certifications = Certification
       .includes(:training, :user, :training_session)
-      .joins(:training, :training_session)
+      .joins(:training, :training_session, :user)
       .where(trainings: { has_badge: true })
+
+    # A deleted earner's badge is shown to admins only (see #show)
+    certifications = certifications.where(users: { deleted: false }) unless @user.admin?
 
     # Apply user filter if not admin/staff
     certifications = certifications.where(user: @user) unless @user.admin? || @user.staff?
@@ -50,7 +69,6 @@ class BadgesController < DevelopmentProgramsController
     if search_term.present?
       search_pattern = "%#{search_term}%"
       certifications = certifications
-        .joins(:user)
         .where(
           "trainings.name_en ILIKE :search OR 
            trainings.name_fr ILIKE :search OR 

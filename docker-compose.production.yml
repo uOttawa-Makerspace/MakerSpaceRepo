@@ -57,6 +57,7 @@ services:
     volumes:
       - ./certs:/rails/certs:ro
       - ./secrets.yml:/rails/config/secrets.yml:ro
+      - repository_zips:/rails/tmp/repository_zips
 
 volumes:
   production_pgdata:

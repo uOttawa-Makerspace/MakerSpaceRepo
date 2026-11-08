@@ -39,9 +39,11 @@ class PrinterTypesController < StaffAreaController
   end
 
   def destroy
-    @printer_type.destroy
-
-    redirect_to printer_types_path, notice: "Successfully deleted printer model"
+    if @printer_type.destroy
+      redirect_to printer_types_path, notice: "Successfully deleted printer model"
+    else
+      redirect_to printer_types_path, alert: @printer_type.errors.full_messages.to_sentence
+    end
   end
 
   private

@@ -140,13 +140,18 @@ class ApplicationController < ActionController::Base
     session[:last_seen_at] = Time.current
   end
 
+  SIGN_IN_REQUIRED_MESSAGE = "Please sign in."
+
+  # A guest is sent to sign in. An HTML request is redirected; a script request gets the
+  # redirect script (the fetch that evals it, users/tabs/_certifications, ignores the
+  # status) and a JSON request a JSON error, both with 401 so a caller can tell nothing ran.
   def signed_in
     return if signed_in?
 
     respond_to do |format|
       format.html { redirect_to login_path(back_to: login_back_to) }
-      format.js { render js: "window.location.href = '#{login_path}'" }
-      format.json { render json: "redirect" }
+      format.js { render js: "window.location.href = '#{login_path}'", status: :unauthorized }
+      format.json { render json: { error: SIGN_IN_REQUIRED_MESSAGE }, status: :unauthorized }
     end
   end
 
