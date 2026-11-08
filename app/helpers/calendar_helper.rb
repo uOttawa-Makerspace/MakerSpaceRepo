@@ -70,8 +70,6 @@ module CalendarHelper
               all_exdates.compact.uniq.each do |d|
                 exdate_str = d.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
                 rrule_string_parts << "EXDATE:#{exdate_str}"
-              rescue StandardError
-                # Skip invalid dates
               end
               
               event_hash[:rrule] = rrule_string_parts.join("\n")
@@ -251,9 +249,9 @@ module CalendarHelper
     return nil if value.nil?
 
     wall = wall_clock(value)
-    (wall ? toronto_local(wall) : instant(value)).getutc
-  rescue StandardError
-    nil
+    (wall ? toronto_local(wall) : instant(value))&.getutc # nil for text that is not a time
+  rescue ArgumentError, RangeError
+    nil # not a time
   end
 
   # The date or zoneless date-time in the value (a date object, a floating

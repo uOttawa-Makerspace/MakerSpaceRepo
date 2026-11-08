@@ -218,19 +218,15 @@ class Space < ApplicationRecord
         if ev[:exdate].present?
           ev[:exdate].each do |ex|
               schedule.add_exception_time(Time.zone.parse(ex))
-            rescue StandardError
-              next
+            rescue ArgumentError, TypeError
+              next # an exception date that is not a time is skipped
           end
         end
 
         occurrences = schedule.occurrences_between(start_of_week, end_of_week)
         occurrences.each do |occ|
           occ_start = occ.start_time.in_time_zone
-          occ_end   = begin
-                        occ.end_time.in_time_zone
-                      rescue StandardError
-                        (occ_start + (dtend - dtstart))
-                      end
+          occ_end   = occ.end_time.in_time_zone
 
           weekly_events << OpenStruct.new(
             dtstart: occ_start,

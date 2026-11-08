@@ -348,6 +348,13 @@ RSpec.describe Space, type: :model do
         expect(times(space.weekly_open_hours)).to eq([["Weekly", "2027-03-15T09:00:00-04:00", "2027-03-15T11:00:00-04:00"]])
       end
 
+      it "does not hide an error from the schedule while adding an exception date" do
+        feed({ title: "Weekly", start: "2027-03-01T09:00:00", end: "2027-03-01T11:00:00",
+               rrule: { freq: "weekly", byweekday: %w[mo] }, exdate: ["2027-03-17T09:00:00"] })
+        allow_any_instance_of(IceCube::Schedule).to receive(:add_exception_time).and_raise("bug")
+        expect { space.weekly_open_hours }.to raise_error("bug")
+      end
+
       it "expands daily, monthly and yearly rules, stopping at an until date or a count" do
         feed({ title: "Daily", start: "2027-03-01T09:00:00", end: "2027-03-01T10:00:00",
                rrule: { freq: "DAILY", until: "2027-03-14T23:00:00" } },
@@ -370,15 +377,6 @@ RSpec.describe Space, type: :model do
         feed({ title: "Odd", start: "2027-03-16T09:00:00", end: "2027-03-16T10:00:00",
                rrule: { freq: "WEEKLY", byweekday: ["xx"] } })
         expect(space.weekly_open_hours.map(&:title)).to eq(["Odd"])
-      end
-
-      it "falls back to the event length when an occurrence has no end time" do
-        occurrence = double("occurrence", start_time: Time.zone.local(2027, 3, 16, 9))
-        allow(occurrence).to receive(:end_time).and_raise(StandardError)
-        schedule = instance_double(IceCube::Schedule, add_recurrence_rule: nil, occurrences_between: [occurrence])
-        allow(IceCube::Schedule).to receive(:new).and_return(schedule)
-        feed({ title: "Odd", start: "2027-03-16T09:00:00", end: "2027-03-16T10:15:00", rrule: { freq: "DAILY" } })
-        expect(times(space.weekly_open_hours)).to eq([["Odd", "2027-03-16T09:00:00-04:00", "2027-03-16T10:15:00-04:00"]])
       end
     end
   end

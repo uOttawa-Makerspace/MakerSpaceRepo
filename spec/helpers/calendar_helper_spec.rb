@@ -386,10 +386,15 @@ RSpec.describe CalendarHelper, type: :helper do
   describe "#safe_to_time" do
     it "is nil for nil and for text that is not a time" do
       expect(safe_to_time(nil)).to be_nil
-      expect(safe_to_time(Object.new.tap { |o| def o.to_time = raise("bad") })).to be_nil
+      expect(safe_to_time(Object.new.tap { |o| def o.to_time = raise(ArgumentError, "bad") })).to be_nil
       unreadable = Object.new
       def unreadable.to_s = "never"
       expect(safe_to_time(unreadable)).to be_nil
+    end
+
+    it "does not hide an error that is not about the value being a time" do
+      broken = Object.new.tap { |o| def o.to_time = raise("bug") }
+      expect { safe_to_time(broken) }.to raise_error("bug")
     end
 
     it "returns UTC for a time, a non-UTC time and a date" do
