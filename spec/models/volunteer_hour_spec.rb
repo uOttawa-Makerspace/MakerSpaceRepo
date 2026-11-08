@@ -10,6 +10,14 @@ RSpec.describe VolunteerHour, type: :model do
     end
   end
 
+  describe "in the Eastern evening", :eastern_evening do
+    it "builds a valid hour dated today" do
+      hour = build(:volunteer_hour, :approved1)
+      expect(hour.date_of_task.to_date).to eq(Date.current)
+      expect(hour).to be_valid
+    end
+  end
+
   describe "#scopes" do
     before(:each) do
       create(:volunteer_hour, :approved1)

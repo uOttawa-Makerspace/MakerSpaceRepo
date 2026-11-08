@@ -3,11 +3,11 @@ FactoryBot.define do
     deposit_amount { 20 }
 
     trait :returned do
-      return_date { Date.today }
+      return_date { Date.current }
     end
 
     trait :deposit_returned do
-      deposit_return_date { Date.today }
+      deposit_return_date { Date.current }
     end
   end
 end
