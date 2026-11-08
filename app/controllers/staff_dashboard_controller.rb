@@ -277,23 +277,7 @@ class StaffDashboardController < StaffAreaController
   # saw is created and a card another user holds, or a user who already has a
   # card, is refused with the reason (flash for HTML, 422 body for JSON).
   def link_rfid
-    error = nil
-    http_status = :unprocessable_content
-
-    if params[:user_id].blank? || params[:card_number].blank?
-      error = "card_number and user_id are required"
-    else
-      card_number = params[:card_number]
-      user = User.find_by(id: params[:user_id].to_s.match?(/\A\d+\z/) ? params[:user_id] : nil)
-      if user.nil?
-        error = "user not found"
-        http_status = :not_found
-      elsif !Rfid.valid_card_number?(card_number)
-        error = "card number is invalid"
-      else
-        error = Rfid.link_to_user!(card_number, user)
-      end
-    end
+    error, http_status = link_rfid_error
 
     respond_to do |format|
       format.html do
@@ -318,21 +302,7 @@ class StaffDashboardController < StaffAreaController
   # re-homes it to the first reader of the staff member's assigned space. A card
   # that is already unlinked changes nothing and says so.
   def unlink_rfid
-    if params[:card_number].blank?
-      error = "card_number is required"
-      http_status = :unprocessable_content
-    else
-      begin
-        outcome = Rfid.unlink_card!(params[:card_number].to_s, actor: current_user)
-      rescue Rfid::OwnerChanging
-        error = "card is changing, try again"
-        http_status = :conflict
-      end
-      if outcome == :not_found
-        error = "RFID card not found"
-        http_status = :not_found
-      end
-    end
+    outcome, error, http_status = unlink_rfid_result
 
     respond_to do |format|
       format.html do
@@ -415,6 +385,34 @@ class StaffDashboardController < StaffAreaController
   end
 
   private
+
+  # Returns [error, status]; error is nil when the card was linked.
+  def link_rfid_error
+    if params[:user_id].blank? || params[:card_number].blank?
+      return ["card_number and user_id are required", :unprocessable_content]
+    end
+
+    card_number = params[:card_number]
+    user = User.find_by(id: params[:user_id].to_s.match?(/\A\d+\z/) ? params[:user_id] : nil)
+    return ["user not found", :not_found] if user.nil?
+    return ["card number is invalid", :unprocessable_content] unless Rfid.valid_card_number?(card_number)
+
+    [Rfid.link_to_user!(card_number, user), :unprocessable_content]
+  end
+
+  # Returns [outcome, error, status]; error is nil when the card was handled.
+  def unlink_rfid_result
+    if params[:card_number].blank?
+      return [nil, "card_number is required", :unprocessable_content]
+    end
+
+    outcome = Rfid.unlink_card!(params[:card_number].to_s, actor: current_user)
+    return [outcome, "RFID card not found", :not_found] if outcome == :not_found
+
+    [outcome, nil, nil]
+  rescue Rfid::OwnerChanging
+    [nil, "card is changing, try again", :conflict]
+  end
 
   # What the table partials (refresh_tables, the sign out JS response) read.
   def load_table_context
