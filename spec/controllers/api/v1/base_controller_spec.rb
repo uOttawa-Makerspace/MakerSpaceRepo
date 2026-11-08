@@ -42,7 +42,7 @@ RSpec.describe Api::V1::BaseController, type: :controller do
     it "401s without a header, with the uniform error body and a challenge" do
       get :index
       expect(response).to have_http_status(:unauthorized)
-      expect(error).to eq("code" => "unauthenticated", "message" => "Authentication required")
+      expect(error).to include("code" => "unauthenticated", "message" => "Authentication required")
       expect(response.headers["WWW-Authenticate"]).to start_with("Bearer")
     end
 

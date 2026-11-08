@@ -281,12 +281,12 @@ RSpec.describe "ChatMessages (HTTP contract)", type: :request do
 
     # Missing chat_message param is rescued application-wide:
     # redirect to root with the raw exception message (same as JobOrders#create).
-    it "redirects to root with the raw parameter_missing message when the params key is absent" do
+    it "redirects to root with the missing-field message when the params key is absent" do
       session_login!(owner)
       post chat_messages_path, params: { other: "x" }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert])
-        .to eq("param is missing or the value is empty or invalid: chat_message")
+        .to eq("The form is missing required information (chat_message). Reload the page and try again.")
     end
 
     def post_message(order, text)

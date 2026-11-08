@@ -3,6 +3,11 @@
 Rails.application.routes.draw do
   mount MissionControl::Jobs::Engine, at: "/solid_queue"
 
+  # Error pages: config.exceptions_app (config/application.rb) answers failed requests here.
+  ErrorsController::PAGES.each_key do |code|
+    match "/#{code}", to: "errors#show", via: :all, defaults: { code: code }, as: "error_page_#{code}"
+  end
+
   if Rails.env.development?
     mount LetterOpenerWeb::Engine, at: "/letter_opener"
   end

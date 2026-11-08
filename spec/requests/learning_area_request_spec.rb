@@ -108,7 +108,7 @@ RSpec.describe "Learning area", type: :request do
       sign_in_as(:regular)
       get learning_area_path(0)
       expect(response).to have_http_status(:not_found)
-      expect(error_text).to include("ActiveRecord::RecordNotFound")
+      expect(response.body).to include("Page not found")
     end
 
     it "resolves a module by shortcut_name" do

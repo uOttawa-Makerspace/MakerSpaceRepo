@@ -1,0 +1,7 @@
+<% content_for :title, t("errors.pages.#{key}.title") %>
+<h1><%= t("errors.pages.#{key}.title") %></h1>
+<p><%= t("errors.pages.#{key}.text") %></p>
+<% if local_assigns[:reference] %>
+  <p><%= t("errors.pages.reference") %> <span class="reference"><%= reference %></span></p>
+<% end %>
+<p><a href="/"><%= t("errors.pages.home") %></a></p>
