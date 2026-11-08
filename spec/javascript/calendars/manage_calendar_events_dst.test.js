@@ -1,10 +1,9 @@
 // @vitest-environment happy-dom
-// The staff ranking in the event modal, with the clock in Toronto. The Vitest
-// run itself leaves the zone alone (UTC), where a daylight-saving bug cannot
-// show, so the zone is set here, before any date is built.
-process.env.TZ = "America/Toronto";
-
-import { beforeEach, describe, expect, it, vi } from "vitest";
+// The staff ranking in the event modal. The form fields and the feed are
+// Toronto wall-clock times, so the ranking must be the same whatever the zone
+// of the browser: every example runs with the process clock in Toronto, in
+// Paris and in UTC (the Vitest run itself leaves it in UTC alone).
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { EVENT_MODAL_HTML } from "./event_modal_fixture.js";
 
 vi.mock("bootstrap", () => ({
@@ -74,97 +73,116 @@ const availableFirst = () =>
 const adaIsFlagged = () =>
   availableFirst()[0] === "Bob" && availableFirst()[1] === "Ada";
 
-beforeEach(async () => {
-  tomInstances.length = 0;
-  document.body.innerHTML = EVENT_MODAL_HTML;
-  await load();
+const ZONES = {
+  "America/Toronto": 240,
+  "Europe/Paris": -120,
+  UTC: 0,
+};
+const originalZone = process.env.TZ;
+afterAll(() => {
+  if (originalZone === undefined) delete process.env.TZ;
+  else process.env.TZ = originalZone;
 });
 
-describe("the test clock", () => {
-  it("is Toronto", () => {
-    expect(new Date(2026, 2, 30, 12).getTimezoneOffset()).toBe(240);
-  });
-});
+describe.each(Object.entries(ZONES))(
+  "with the browser clock in %s",
+  (zone, offsetOn30March) => {
+    beforeEach(async () => {
+      process.env.TZ = zone;
+      tomInstances.length = 0;
+      document.body.innerHTML = EVENT_MODAL_HTML;
+      await load();
+    });
 
-describe("a Monday 9:00-14:20 rule written in winter", () => {
-  it.each([
-    [
-      "flags 9:30 on 2026-03-30, the day of the report",
-      "2026-03-30T09:30",
-      "2026-03-30T10:00",
-      true,
-    ],
-    ["flags 14:00 on 2026-03-30", "2026-03-30T14:00", "2026-03-30T14:30", true],
-    [
-      "does not flag 14:20 on 2026-03-30 (the shift is over)",
-      "2026-03-30T14:20",
-      "2026-03-30T15:00",
-      false,
-    ],
-    [
-      "does not flag 8:00-9:00 on 2026-03-30",
-      "2026-03-30T08:00",
-      "2026-03-30T09:00",
-      false,
-    ],
-    [
-      "flags 9:30 on 2026-03-09, the first Monday after spring-forward",
-      "2026-03-09T09:30",
-      "2026-03-09T10:00",
-      true,
-    ],
-    [
-      "flags 9:30 on 2026-11-02, after the clocks go back",
-      "2026-11-02T09:30",
-      "2026-11-02T10:00",
-      true,
-    ],
-    [
-      "does not flag 15:00 on 2026-11-02",
-      "2026-11-02T15:00",
-      "2026-11-02T16:00",
-      false,
-    ],
-    [
-      "flags 9:30 on 2027-03-15, after the next spring-forward",
-      "2027-03-15T09:30",
-      "2027-03-15T10:00",
-      true,
-    ],
-  ])("%s", (_, start, end, flagged) => {
-    setTimes(start, end);
-    expect(adaIsFlagged()).toBe(flagged);
-  });
-
-  it("does not flag a Sunday, the day of the clock change", () => {
-    setTimes("2026-03-08T09:30", "2026-03-08T10:00");
-    expect(adaIsFlagged()).toBe(false);
-  });
-});
-
-describe("a repeating event", () => {
-  it("is flagged on every Monday occurrence, across the clock change", () => {
-    // Mondays 14:00-14:30 from 2026-03-02 (before the change) for four weeks
-    setTimes("2026-03-02T14:00", "2026-03-02T14:30");
-    $("recurrence_frequency").value = "WEEKLY";
-    $("day_MO").checked = true;
-    // the rule is built when the picker takes focus
-    tomInstances[0].handlers.focus();
-    const ada = [...$("staff_select").options].find(
-      (o) => o.textContent === "Ada",
-    );
-    const days = ada.dataset.unavailableDates
-      .split(",")
-      .map((iso) => new Date(iso))
-      .map(
-        (d) =>
-          `${d.getMonth() + 1}-${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`,
+    it("has that zone", () => {
+      expect(new Date(2026, 2, 30, 12).getTimezoneOffset()).toBe(
+        offsetOn30March,
       );
-    expect(days).toEqual([
-      "3-2 14:00",
-      "3-9 14:00",
-      "3-16 14:00",
-      "3-23 14:00",
-    ]);
-  });
-});
+    });
+
+    describe("a Monday 9:00-14:20 rule written in winter", () => {
+      it.each([
+        [
+          "flags 9:30 on 2026-03-30, the day of the report",
+          "2026-03-30T09:30",
+          "2026-03-30T10:00",
+          true,
+        ],
+        [
+          "flags 14:00 on 2026-03-30",
+          "2026-03-30T14:00",
+          "2026-03-30T14:30",
+          true,
+        ],
+        [
+          "does not flag 14:20 on 2026-03-30 (the shift is over)",
+          "2026-03-30T14:20",
+          "2026-03-30T15:00",
+          false,
+        ],
+        [
+          "does not flag 8:00-9:00 on 2026-03-30",
+          "2026-03-30T08:00",
+          "2026-03-30T09:00",
+          false,
+        ],
+        [
+          "flags 9:30 on 2026-03-09, the first Monday after spring-forward",
+          "2026-03-09T09:30",
+          "2026-03-09T10:00",
+          true,
+        ],
+        [
+          "flags 9:30 on 2026-11-02, after the clocks go back",
+          "2026-11-02T09:30",
+          "2026-11-02T10:00",
+          true,
+        ],
+        [
+          "does not flag 15:00 on 2026-11-02",
+          "2026-11-02T15:00",
+          "2026-11-02T16:00",
+          false,
+        ],
+        [
+          "flags 9:30 on 2027-03-15, after the next spring-forward",
+          "2027-03-15T09:30",
+          "2027-03-15T10:00",
+          true,
+        ],
+      ])("%s", (_, start, end, flagged) => {
+        setTimes(start, end);
+        expect(adaIsFlagged()).toBe(flagged);
+      });
+
+      it("does not flag a Sunday, the day of the clock change", () => {
+        setTimes("2026-03-08T09:30", "2026-03-08T10:00");
+        expect(adaIsFlagged()).toBe(false);
+      });
+    });
+
+    describe("a repeating event", () => {
+      it("is flagged on every Monday occurrence, across the clock change", () => {
+        // Mondays 14:00-14:30 from 2026-03-02 (before the change) for four weeks
+        setTimes("2026-03-02T14:00", "2026-03-02T14:30");
+        $("recurrence_frequency").value = "WEEKLY";
+        $("day_MO").checked = true;
+        // the rule is built when the picker takes focus
+        tomInstances[0].handlers.focus();
+        const ada = [...$("staff_select").options].find(
+          (o) => o.textContent === "Ada",
+        );
+        const starts = ada.dataset.unavailableDates
+          .split(",")
+          .map((text) => new Date(text).toISOString());
+        // 14:00 in Toronto: 19:00Z before the change, 18:00Z after it
+        expect(starts).toEqual([
+          "2026-03-02T19:00:00.000Z",
+          "2026-03-09T18:00:00.000Z",
+          "2026-03-16T18:00:00.000Z",
+          "2026-03-23T18:00:00.000Z",
+        ]);
+      });
+    });
+  },
+);

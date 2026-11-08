@@ -49,6 +49,8 @@ await import("../../../app/javascript/src/manage_calendar_events.js");
 const $ = (id) => document.getElementById(id);
 const fire = (el, type, init) => el.dispatchEvent(new Event(type, init));
 const iso = (local) => new Date(local).toISOString();
+// the feed gives Toronto wall-clock times without a zone
+const wall = (local) => `${local}:00`;
 
 const staffFeed = [
   {
@@ -56,7 +58,7 @@ const staffFeed = [
     name: "Ada",
     color: "#ff0000",
     unavailabilities: [
-      { start: iso("2027-03-17T13:00"), end: iso("2027-03-17T15:00") },
+      { start: wall("2027-03-17T13:00"), end: wall("2027-03-17T15:00") },
     ],
   },
   { id: 2, name: "Bob", color: "#00ff00", unavailabilities: [] },
@@ -110,7 +112,6 @@ describe("loading", () => {
     await load();
     expect(fetch).toHaveBeenCalledWith(
       "/admin/calendar/unavailabilities_json/7",
-      { headers: { Accept: "application/json" } },
     );
   });
 });
@@ -288,22 +289,16 @@ describe("unavailable dates", () => {
         color: "#f00",
         unavailabilities: [
           {
-            start: iso("2027-03-15T13:00"),
-            end: iso("2027-03-15T15:00"),
+            start: wall("2027-03-15T13:00"),
+            end: wall("2027-03-15T15:00"),
             duration: 2 * 3600 * 1000,
-            rrule: "DTSTART:20270315T130000Z\nRRULE:FREQ=DAILY;COUNT=30",
+            rrule: "DTSTART:20270315T130000\nRRULE:FREQ=DAILY;COUNT=30",
           },
         ],
       },
     ];
     await load(feed);
-    // 13:00Z to 15:00Z each day; the browser reads the field in its own zone
-    const day = new Date(Date.UTC(2027, 2, 17, 14, 0));
-    const pad = (n) => String(n).padStart(2, "0");
-    const local = `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}T${pad(day.getHours())}:${pad(day.getMinutes())}`;
-    const later = new Date(day.getTime() + 1800000);
-    const localEnd = `${later.getFullYear()}-${pad(later.getMonth() + 1)}-${pad(later.getDate())}T${pad(later.getHours())}:${pad(later.getMinutes())}`;
-    setTimes(local, localEnd);
+    setTimes("2027-03-17T14:00", "2027-03-17T14:30");
     expect(unavailableDates("Ada")).not.toBe("");
   });
 
@@ -316,8 +311,8 @@ describe("unavailable dates", () => {
         color: "#f00",
         unavailabilities: [
           {
-            start: iso("2027-03-15T13:00"),
-            end: iso("2027-03-15T15:00"),
+            start: wall("2027-03-15T13:00"),
+            end: wall("2027-03-15T15:00"),
             duration: 7200000,
             rrule: "RRULE:FREQ=NEVER",
           },

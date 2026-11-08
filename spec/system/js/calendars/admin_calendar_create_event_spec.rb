@@ -22,18 +22,30 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
-  # The calendar view and the event modal read the same feed; the modal asks
-  # for JSON explicitly, so only its request is refused and the calendar still
-  # draws.
+  # The calendar view and the event modal read the same feed. On every page
+  # load the modal script asks for it first (the calendar view first waits for
+  # the events), so refusing the first request in the browser fails the modal
+  # only and the calendar still draws.
   def fail_staff_availability_feed
-    original = Admin::CalendarController.instance_method(:unavailabilities_json)
-    allow_any_instance_of(Admin::CalendarController).to receive(:unavailabilities_json) do |controller|
-      if controller.request.headers["Accept"] == "application/json"
-        controller.head :internal_server_error
-      else
-        original.bind_call(controller)
-      end
-    end
+    @refuse_first_feed_script = page.driver.browser.execute_cdp(
+      "Page.addScriptToEvaluateOnNewDocument",
+      source: <<~JS
+        (() => {
+          const originalFetch = window.fetch;
+          let asked = 0;
+          window.fetch = (url, ...rest) =>
+            String(url).includes("/admin/calendar/unavailabilities_json/") && asked++ === 0
+              ? Promise.resolve(new Response(null, { status: 500 }))
+              : originalFetch(url, ...rest);
+        })();
+      JS
+    )["identifier"]
+  end
+
+  after do
+    next unless @refuse_first_feed_script
+
+    page.driver.browser.execute_cdp("Page.removeScriptToEvaluateOnNewDocument", identifier: @refuse_first_feed_script)
   end
 
   def open_admin_calendar

@@ -3,13 +3,19 @@ import { RRule } from "rrule";
 import TomSelect from "tom-select";
 
 import { onPageLoad } from "./on_page";
-import { entryOverlaps, occurrencesOverlapping } from "./recurrence";
+import {
+  entryOverlaps,
+  occurrencesOverlapping,
+  startingAt,
+  wallFromString,
+  wallToInstant,
+} from "./recurrence";
 import {
   parseLocalDatetimeString,
   toLocalDatetimeString,
 } from "./calendar_helper";
 
-const FOUR_WEEKS_IN_DAYS = 28;
+const FOUR_WEEKS_MS = 28 * 24 * 60 * 60 * 1000;
 
 function showStaffLoadError() {
   document.getElementById("staff_load_error").classList.remove("d-none");
@@ -67,7 +73,6 @@ onPageLoad("#eventModal", async () => {
     fetchedStaffUnavailabilitiesRes = await fetch(
       "/admin/calendar/unavailabilities_json/" +
         document.getElementById("space_id").value,
-      { headers: { Accept: "application/json" } },
     );
   } catch (error) {
     console.error(error);
@@ -146,18 +151,22 @@ onPageLoad("#eventModal", async () => {
   }
 
   // The event's own occurrences over the next four weeks (just itself when
-  // it does not repeat).
+  // it does not repeat), as wall times read from the form fields.
   function eventOccurrences() {
-    const start = parseLocalDatetimeString(startTimeField.value);
-    const end = parseLocalDatetimeString(endTimeField.value);
+    const start = wallFromString(startTimeField.value);
+    const end = wallFromString(endTimeField.value);
+    if (!(end > start)) return [];
     if (!ruleField.value) return [{ start, end }];
-    const horizon = new Date(start);
-    horizon.setDate(horizon.getDate() + FOUR_WEEKS_IN_DAYS);
-    return occurrencesOverlapping(ruleField.value, end - start, start, horizon);
+    return occurrencesOverlapping(
+      startingAt(ruleField.value, start),
+      end - start,
+      start,
+      start + FOUR_WEEKS_MS,
+    );
   }
 
-  // Start times of the event occurrences that fall inside one of the given
-  // unavailabilities.
+  // Start times (instants) of the event occurrences that fall inside one of
+  // the given unavailabilities.
   function isUnavailableDuring(unavailabilities) {
     return eventOccurrences()
       .filter((occurrence) =>
@@ -165,7 +174,7 @@ onPageLoad("#eventModal", async () => {
           entryOverlaps(entry, occurrence.start, occurrence.end),
         ),
       )
-      .map((occurrence) => occurrence.start);
+      .map((occurrence) => new Date(wallToInstant(occurrence.start)));
   }
 
   function refreshTomSelect() {
