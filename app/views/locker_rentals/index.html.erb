@@ -4,7 +4,7 @@
 <p class="text-center">Here you can see your locker rental history</p>
 <div class="container">
     <div class="row row-cols-md-4 gx-0">
-        <% @own_locker_rentals.active.includes(:locker).each do |rental| %>
+        <% @own_locker_rentals.active.includes(:locker).find_each do |rental| %>
             <div class="card">
                 <%= vite_image_tag 'images/locker/STEM_lockers.jpg', class: 'card-img-top' %>
                 <div class="card-body">
