@@ -66,29 +66,29 @@ class RepositoriesController < SessionsController
 
     @liked = @repository.likes.find_by(user_id: @user.id).nil? ? false : true
 
-    # Add this repo to recently viewed cookie
-    begin
-      this_link =
-        repository_path id: @repository.id,
-                        user_username: @repository.user_username
-      this_proj_name = @repository.title[..35]
-      recently_viewed =
-        begin
-          JSON.parse(cookies[:recently_viewed])
-        rescue StandardError
-          {}
-        end
-      recently_viewed = {} unless recently_viewed.is_a?(Hash)
-      unless recently_viewed.key?(this_link)
-        recently_viewed[this_link] = this_proj_name
-        recently_viewed = recently_viewed.take(5).to_h
-      end
-    rescue StandardError
-      cookies[:recently_viewed] = nil
-    else
-      cookies[:recently_viewed] = JSON.generate(recently_viewed)
-    end
+    remember_recently_viewed
   end
+
+  # Adds this repository to the recently viewed cookie (the last five). A cookie that is missing or
+  # not a JSON object starts the list again.
+  def remember_recently_viewed
+    link = repository_path(id: @repository.id, user_username: @repository.user_username)
+    recently_viewed = parse_recently_viewed
+    unless recently_viewed.key?(link)
+      recently_viewed[link] = @repository.title[..35]
+      recently_viewed = recently_viewed.take(5).to_h
+    end
+    cookies[:recently_viewed] = JSON.generate(recently_viewed)
+  end
+  private :remember_recently_viewed
+
+  def parse_recently_viewed
+    parsed = JSON.parse(cookies[:recently_viewed].to_s)
+    parsed.is_a?(Hash) ? parsed : {}
+  rescue JSON::ParserError
+    {}
+  end
+  private :parse_recently_viewed
 
   def download_files
     # Verify authorization for private repositories
@@ -173,7 +173,7 @@ class RepositoriesController < SessionsController
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
         :project_proposal_id
       ].blank?
-      flash[:alert] = "Unable to apply the changes."
+      flash.now[:alert] = validation_message(@repository, "errors.repositories.not_updated")
       render 'edit', status: :unprocessable_content
     end
   end
@@ -255,13 +255,8 @@ class RepositoriesController < SessionsController
       redirect_to repository_path(repository.user_username, repository.slug) and return
     end
     repository.project_proposal_id = project_proposal_id
-    if repository.save
-      flash[
-        :notice
-      ] = "This Repository was linked to the selected Project Proposal"
-    else
-      flash[:alert] = "Something went wrong."
-    end
+    write_flash(repository, "errors.repositories.proposal_not_linked",
+                "This Repository was linked to the selected Project Proposal") { repository.save }
     redirect_to repository_path(repository.user_username, repository.slug)
   end
 
@@ -282,11 +277,7 @@ class RepositoriesController < SessionsController
 
     repository.users << member
 
-    if repository.save
-      flash[:notice] = "This user was added to your repository."
-    else
-      flash[:alert] = "Something went wrong."
-    end
+    write_flash(repository, "errors.repositories.member_not_added", "This user was added to your repository.") { repository.save }
     redirect_to repository_path(repository.user_username, repository.slug)
   end
 
@@ -306,7 +297,7 @@ class RepositoriesController < SessionsController
     elsif repository.users.delete(member)
       flash[:notice] = "This user was removed from your repository."
     else
-      flash[:alert] = "Something went wrong."
+      flash[:alert] = I18n.t("errors.repositories.member_not_removed")
     end
     redirect_to repository_path(repository.user_username, repository.slug)
   end
@@ -327,12 +318,9 @@ class RepositoriesController < SessionsController
       flash[:alert] = "This user is not a member of your repository."
     elsif member.id == repository.user_id
       flash[:alert] = "This user is already the owner of the repository."
-    elsif repository.update(user_id: member_id)
-      flash[:notice] = "Repository ownership was successfully transferred."
     else
-      flash[
-        :alert
-      ] = "Something went wrong when transferring ownership. Please try again later."
+      write_flash(repository, "errors.repositories.ownership_not_transferred",
+                  "Repository ownership was successfully transferred.") { repository.update(user_id: member_id) }
     end
     redirect_to repository_path(denial_username(repository), repository.slug)
   end

@@ -29,7 +29,7 @@ class MakesController < SessionsController
       redirect_to repository_path(@user.username, @make.slug)
       @user.increment!(:reputation, 15)
     else
-      flash[:alert] = 'Something went wrong'
+      flash.now[:alert] = validation_message(@make, 'errors.makes.not_created')
       @repo = @repository
       render :new
     end

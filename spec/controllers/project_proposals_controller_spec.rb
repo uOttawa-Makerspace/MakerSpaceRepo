@@ -207,7 +207,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
           post :create_revision, params: { old_project_proposal_id: 999_999 }
         }.not_to change(ProjectProposal, :count)
 
-        expect(flash[:alert]).to include("An error occured")
+        expect(flash[:alert]).to eq("The project proposal to copy for a revision could not be found.")
         expect(response).to have_http_status(302)
       end
     end

@@ -16,7 +16,6 @@ module RescueGuard
   SILENT_RESCUES = {
     "app/controllers/admin/events_controller.rb" => 1, # err-b4
     "app/controllers/admin/uni_programs_controller.rb" => 1, # err-b4
-    "app/controllers/repositories_controller.rb" => 2, # err-b5
     "app/controllers/staff_dashboard_controller.rb" => 1, # err-b3
     "app/helpers/calendar_helper.rb" => 2, # err-d
     "app/jobs/apply_processed_order_job.rb" => 1, # err-d

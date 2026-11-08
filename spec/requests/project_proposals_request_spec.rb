@@ -477,15 +477,15 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect { post project_proposals_path, params: proposal_params(title: "", project_cost: -1) }
         .not_to change(ProjectProposal, :count)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("An error occurred while creating the project proposal, try again later.")
+      expect(flash[:alert]).to start_with("The project proposal was not created. Title")
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
     it "shows the creation error only on the page that re-renders new" do
       post project_proposals_path, params: proposal_params(title: "", project_cost: -1)
-      expect(response.body).to include("An error occurred while creating the project proposal")
+      expect(response.body).to include("The project proposal was not created.")
       get new_project_proposal_path
-      expect(response.body).not_to include("An error occurred while creating")
+      expect(response.body).not_to include("The project proposal was not created.")
     end
 
     it "shows the captcha error only on the page that re-renders new" do
@@ -595,7 +595,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect do
         post project_proposals_path, params: { images: [content_named_upload("x.png", content: "junk", type: "image/png")] }.merge(proposal_params)
       end.not_to change(ProjectProposal, :count)
-      expect(flash[:alert]).to eq("Something went wrong while uploading photos, try again later.")
+      expect(flash[:alert]).to eq(I18n.t("errors.proposals.photos_unreadable"))
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
@@ -819,7 +819,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       patch project_proposal_path(pending.id),
             params: { project_proposal: { title: "Changed", categories: %w[New] }, deleteimages: ["drop.png"], images: [content_png_upload, unreadable_image] }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to include("An error occurred while updating")
+      expect(flash[:alert]).to eq("The project proposal was not updated. Photos could not be read as images")
       expect(photo_names).to eq(["drop.png"])
       expect(pending.title).to eq("Pending One")
       expect(pending.categories.pluck(:name)).to eq(["Old"])
@@ -828,10 +828,10 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "shows the refusal message only on the page that refuses the edit" do
       patch project_proposal_path(pending.id), params: { project_proposal: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.body).to include("An error occurred while updating the project proposal")
+      expect(response.body).to include("The project proposal was not updated.")
       get edit_project_proposal_path(pending)
       expect(response).to have_http_status(:ok)
-      expect(response.body).not_to include("An error occurred while updating")
+      expect(response.body).not_to include("The project proposal was not updated.")
     end
 
     it "shows the refused files message only on the page that refuses the edit" do
@@ -1188,7 +1188,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       content_login!(owner)
       post create_revision_project_proposals_path
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to start_with("An error occured while trying to create")
+      expect(flash[:alert]).to eq("The project proposal to copy for a revision could not be found.")
       post create_revision_project_proposals_path, params: { old_project_proposal_id: 0 }
       expect(response).to redirect_to(root_path)
     end
@@ -1219,7 +1219,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
         .to change { ProjectJoin.where(user_id: other.id).count }.by(1)
       expect { post join_project_proposal_project_proposals_path, params: { project_proposal_id: approved.id } }
         .not_to change(ProjectJoin, :count)
-      expect(flash[:alert]).to eq("You already joined this project or something went wrong.")
+      expect(flash[:alert]).to eq("You already joined this project.")
     end
 
     it "cannot join a pending or declined proposal" do

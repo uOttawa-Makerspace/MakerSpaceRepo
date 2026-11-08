@@ -133,7 +133,7 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect { post makes_create_path(owner.username, original.id), params: make_params(title: "") }
         .not_to change(Repository, :count)
       expect(response).to have_http_status(:ok)
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to eq("The make was not saved. Title Project title is required.")
       expect(original.reload.make).to eq(0)
     end
 

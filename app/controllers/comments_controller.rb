@@ -12,30 +12,20 @@ class CommentsController < SessionsController
     comment.user_id = @user.id
     comment.username = @user.username
 
-    if comment.save
-      redirect_to repository_path(
-                    id: repository.id,
-                    user_username: repository.user_username,
-                    anchor: "repo-comments"
-                  ),
-                  notice: "The comment was successfully posted."
-    else
-      redirect_to repository_path(
-                    id: repository.id,
-                    user_username: repository.user_username,
-                    anchor: "repo-comments"
-                  ),
-                  alert:
-                    "An error occured while trying to post the comment, please make sure the comment is under 1000 characters."
-    end
+    write_flash(comment, "errors.comments.not_posted", "The comment was successfully posted.") { comment.save }
+    redirect_to repository_path(
+                  id: repository.id,
+                  user_username: repository.user_username,
+                  anchor: "repo-comments"
+                )
   end
 
   def destroy
     comment = Comment.find(params[:id])
     if @user.admin? || comment.user == @user
-      flash[:notice] = "Comment deleted succesfully" if comment.destroy
+      write_flash(comment, "errors.comments.not_deleted", "Comment deleted succesfully") { comment.destroy }
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = I18n.t("errors.comments.not_yours")
     end
     redirect_to repository_path(
                   id: comment.repository.id,
