@@ -4,6 +4,7 @@ import "../src/manage_calendar_events";
 import "flatpickr";
 import { csrfHeaders } from "../src/csrf";
 import { onPageLoad } from "../src/on_page";
+import { showToast } from "../src/toast";
 
 onPageLoad("#addEventButton", () => {
   document
@@ -25,6 +26,9 @@ onPageLoad("#addEventButton", () => {
 });
 
 function updateColor(userId, color) {
+  const notSaved = document.querySelector("[data-color-not-saved]").dataset
+    .colorNotSaved;
+
   fetch("/admin/calendar/update_color", {
     method: "POST",
     headers: csrfHeaders({
@@ -37,12 +41,14 @@ function updateColor(userId, color) {
       format: "json",
     }),
   })
-    .then((res) => {
-      if (!res.ok) console.error("The staff colour could not be saved.");
+    .then(async (res) => {
+      if (res.ok) return;
+      const body = await res.json().catch(() => ({}));
+      showToast(body.error ? `${notSaved} ${body.error}` : notSaved, {
+        type: "error",
+      });
     })
-    .catch((error) => {
-      console.error("An error occurred: " + error.message);
-    });
+    .catch(() => showToast(notSaved, { type: "error" }));
 }
 
 /* For the event modal */

@@ -1,0 +1,8 @@
+# Messages d'erreur du calendrier d'administration.
+fr:
+  errors:
+    calendar:
+      color_blank: "Aucune couleur n'a été choisie."
+      staff_not_in_space: "Ce membre du personnel ne fait pas partie de cet espace."
+      color_invalid: "Cette couleur n'est pas valide."
+      color_not_saved: "La couleur du personnel n'a pas pu être enregistrée."

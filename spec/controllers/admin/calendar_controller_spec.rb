@@ -105,7 +105,7 @@ RSpec.describe Admin::CalendarController, type: :controller do
         user_id: staff_members.first.id
       }
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.parsed_body["error"]).to eq("An error occurred, try again later.")
+      expect(response.parsed_body["error"]).to eq("No colour was chosen.")
     end
 
     it "does not update if user not in space" do
@@ -115,7 +115,7 @@ RSpec.describe Admin::CalendarController, type: :controller do
         color: "#00FF00"
       }
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.parsed_body["error"]).to eq("An error occurred, try again later.")
+      expect(response.parsed_body["error"]).to eq("That staff member is not on this space.")
     end
   end
 end

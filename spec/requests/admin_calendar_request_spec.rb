@@ -212,7 +212,26 @@ RSpec.describe "Admin calendar contract", type: :request do
 
     post update_color_admin_calendar_index_path, params: {}
     expect(response.status).to eq(422)
-    expect(response.parsed_body).to eq("status" => "error", "error" => "An error occurred, try again later.")
+    expect(response.parsed_body).to eq("status" => "error", "error" => "No colour was chosen.")
+  end
+
+  {
+    en: ["No colour was chosen.", "That staff member is not on this space."],
+    fr: ["Aucune couleur n'a été choisie.", "Ce membre du personnel ne fait pas partie de cet espace."]
+  }.each do |locale, (blank_message, not_on_space_message)|
+    it "update_color names the reason it refused the colour (#{locale})" do
+      log_in!(admin)
+      admin.update_column(:space_id, space.id)
+      StaffSpace.create!(user: admin, space: space)
+
+      post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "", locale: locale }
+      expect(response.status).to eq(422)
+      expect(response.parsed_body).to eq("status" => "error", "error" => blank_message)
+
+      post update_color_admin_calendar_index_path, params: { user_id: staff.id, color: "#ff0000", locale: locale }
+      expect(response.status).to eq(422)
+      expect(response.parsed_body).to eq("status" => "error", "error" => not_on_space_message)
+    end
   end
 
   it "update_color only touches the staff colour in the admin's own space" do
@@ -402,7 +421,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       stored = row.reload.color
       post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "" }
       expect(response.status).to eq(422)
-      expect(response.parsed_body["error"]).to eq("An error occurred, try again later.")
+      expect(response.parsed_body["error"]).to eq("No colour was chosen.")
       expect(row.reload.color).to eq(stored)
     end
 
@@ -412,7 +431,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       stored = row.reload.color
       post update_color_admin_calendar_index_path, params: { user_id: staff.id, color: "#ff0000" }
       expect(response.status).to eq(422)
-      expect(response.parsed_body["error"]).to eq("An error occurred, try again later.")
+      expect(response.parsed_body["error"]).to eq("That staff member is not on this space.")
       expect(row.reload.color).to eq(stored)
     end
 
@@ -442,7 +461,7 @@ RSpec.describe "Admin calendar contract", type: :request do
   end
 
   describe "update_color when the colour cannot be saved" do
-    it "answers 422 and keeps the stored colour" do
+    it "answers 422 with the reason and keeps the stored colour" do
       log_in!(admin)
       admin.update_column(:space_id, space.id)
       row = StaffSpace.create!(user: admin, space: space, color: "#3788d8")
@@ -450,7 +469,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       allow_any_instance_of(StaffSpace).to receive(:update).and_return(false) # the model has no validation that refuses a colour
       post update_color_admin_calendar_index_path, params: { user_id: admin.id, color: "#ff0000" }
       expect(response.status).to eq(422)
-      expect(response.parsed_body["status"]).to eq("error")
+      expect(response.parsed_body).to eq("status" => "error", "error" => "That colour is not valid.")
       expect(row.reload.color).to eq(stored)
     end
   end

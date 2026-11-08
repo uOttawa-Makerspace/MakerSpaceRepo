@@ -321,6 +321,19 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       expect(StaffSpace.find_by(user: worker, space: space).color).to eq("#112233")
     end
 
+    it "tells the user when the colour could not be saved", js: true, skip_bullet: true do
+      open_admin_calendar
+      # the picker is already on the page when the staff member leaves the space
+      StaffSpace.where(user: worker).destroy_all
+      page.execute_script(<<~JS)
+        var input = document.getElementById("color-#{worker.id}");
+        input.value = "#112233";
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      JS
+
+      expect(page).to have_css(".toast.text-bg-danger", text: "The staff colour could not be saved. That staff member is not on this space.")
+    end
+
     it "reloads the calendar with the Refresh Calendar button", js: true, skip_bullet: true do
       open_admin_calendar
       page.execute_script("document.getElementById('calendar').dataset.marker = '1'")

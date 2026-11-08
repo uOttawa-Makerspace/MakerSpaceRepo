@@ -35,40 +35,58 @@ describe("admin calendar entrypoint", () => {
   });
 
   describe("staff colour picker", () => {
-    const pickColor = async (response) => {
+    const toasts = () => document.querySelectorAll(".toast");
+
+    const pickColor = async (answer) => {
       document.body.innerHTML =
         '<button id="addEventButton"></button><button id="refresh_calendar"></button>' +
+        '<section data-color-not-saved="Not saved."></section>' +
         '<input class="staff_color_select" data-user="7" value="#ff0000">';
       document.dispatchEvent(new Event("turbo:load"));
-      const fetchMock = vi.fn(() => Promise.resolve(response));
+      const fetchMock = vi.fn(() => answer);
       vi.stubGlobal("fetch", fetchMock);
-      const error = vi.spyOn(console, "error").mockImplementation(() => {});
       document
         .querySelector(".staff_color_select")
         .dispatchEvent(new Event("change"));
-      await Promise.resolve();
-      await Promise.resolve();
-      return { fetchMock, error };
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      await new Promise((resolve) => setTimeout(resolve));
+      return fetchMock;
     };
 
     it("posts the colour and stays quiet when it is saved", async () => {
-      const { fetchMock, error } = await pickColor({ ok: true });
+      const fetchMock = await pickColor(Promise.resolve({ ok: true }));
 
       expect(fetchMock).toHaveBeenCalledWith(
         "/admin/calendar/update_color",
         expect.objectContaining({ method: "POST" }),
       );
-      expect(error).not.toHaveBeenCalled();
-      error.mockRestore();
+      expect(toasts()).toHaveLength(0);
     });
 
-    it("reports an error when the server refuses the colour", async () => {
-      const { error } = await pickColor({ ok: false, status: 422 });
-
-      expect(error).toHaveBeenCalledWith(
-        "The staff colour could not be saved.",
+    it("toasts the server's reason when it refuses the colour", async () => {
+      await pickColor(
+        Promise.resolve({
+          ok: false,
+          json: () => Promise.resolve({ error: "<b>Why</b>" }),
+        }),
       );
-      error.mockRestore();
+
+      expect(toasts()).toHaveLength(1);
+      expect(toasts()[0].textContent).toContain("Not saved. <b>Why</b>");
+    });
+
+    it("toasts the page text when the refusal has no readable reason", async () => {
+      await pickColor(
+        Promise.resolve({ ok: false, json: () => Promise.reject(new Error()) }),
+      );
+
+      expect(toasts()[0].textContent).toContain("Not saved.");
+    });
+
+    it("toasts the page text when the request fails", async () => {
+      await pickColor(Promise.reject(new Error("offline")));
+
+      expect(toasts()[0].textContent).toContain("Not saved.");
     });
   });
 });
