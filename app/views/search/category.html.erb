@@ -10,7 +10,7 @@
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 mb-4">
     
     <!-- Projects Toggle (All vs Featured) -->
-    <div class="btn-group shadow-sm" role="group" aria-label="Project filter">
+    <div class="btn-group shadow-sm" role="group" aria-label="<%= t('common.names.project_filter') %>">
       <%= link_to category_path(slug: params[:slug]), class: "btn #{params['featured'] ? 'btn-outline-primary' : 'btn-primary'}" do %>
         All projects
       <% end %>

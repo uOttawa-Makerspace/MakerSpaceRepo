@@ -96,13 +96,25 @@ RSpec.describe "Printer types", type: :request do
       expect(type.reload.name).to eq("Ultimaker 2+")
     end
 
-    # destroying a printer type cascades (dependent: :destroy) to its printers and their sessions without confirmation or guard
-    it "destroys a type together with its printers and their sessions" do
-      printer = create(:printer, printer_type: type, number: "1")
-      create(:printer_session, printer: printer)
-      expect { delete printer_type_path(type) }.to change(PrinterType, :count).by(-1).and change(Printer, :count).by(-1).and change(PrinterSession, :count).by(-1)
+    it "deletes a type that has no printers" do
+      expect { delete printer_type_path(type) }.to change(PrinterType, :count).by(-1)
       expect(response).to redirect_to(printer_types_path)
       expect(flash[:notice]).to eq("Successfully deleted printer model")
+    end
+
+    it "refuses to delete a type that has printers or sessions, and keeps them all" do
+      printer = create(:printer, printer_type: type, number: "1")
+      create(:printer_session, printer: printer)
+      expect { delete printer_type_path(type) }.not_to change { [PrinterType.count, Printer.count, PrinterSession.count] }
+      expect(response).to redirect_to(printer_types_path)
+      expect(flash[:alert]).to eq("Cannot delete record because dependent printers exist")
+    end
+
+    it "refuses to delete a type whose printer has issues, without a server error" do
+      printer = create(:printer, printer_type: type, number: "1")
+      create(:printer_issue, printer: printer)
+      expect { delete printer_type_path(type) }.not_to change { [PrinterType.count, Printer.count, PrinterIssue.count] }
+      expect(flash[:alert]).to eq("Cannot delete record because dependent printers exist")
     end
 
     it "redirects update/destroy of an unknown id with an alert" do

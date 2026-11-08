@@ -26,6 +26,7 @@ RSpec.describe CustomWebhooksController, type: :controller do
             value: locker_rental.id.to_s
           }]
         })
+        perform_enqueued_jobs
         expect(locker_rental.reload.active?).to eq true
       end
 
@@ -47,17 +48,22 @@ RSpec.describe CustomWebhooksController, type: :controller do
         user = create(:user, :regular_user)
         
         signed_controller_orders_paid({
+          id: 9101,
           customer: { email: user.email },
           line_items: [{ product_id: 4_359_597_129_784, quantity: 2 }]
         })
+        perform_enqueued_jobs
         expect(user.cc_moneys.sum(:cc)).to eq(20)
       end
 
       it "should send email after not signed_in purchase" do
         signed_controller_orders_paid({
+          id: 9102,
           customer: { email: "guest@example.com" }, # Static email, no Faker
           line_items: [{ product_id: 4_359_597_129_784, quantity: 2 }]
         })
+        perform_enqueued_jobs # the order is applied...
+        perform_enqueued_jobs # ...and then the claim mail it queued is sent
         expect(CcMoney.last.linked).to be_falsey
         expect(CcMoney.last.cc).to eq(20)
         expect(ActionMailer::Base.deliveries.count).to eq(1)

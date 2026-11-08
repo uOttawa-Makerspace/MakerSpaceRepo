@@ -195,16 +195,10 @@ RSpec.describe LearningModule, type: :model do
       expect(LearningModule.all.first).to eq(b)
     end
 
-    it "orders by level with the ordered_by_level scope (stored values are capitalised, so the CASE falls to ELSE 0)" do
-      create(:learning_module, level: "Advanced", title: "Adv one")
-      create(:learning_module, level: "Beginner", title: "Beg one")
-      # the CASE compares against lowercase enum keys but the column stores 'Beginner'/'Advanced', so the scope does not sort by level
-      raw = LearningModule.connection.select_values("SELECT level FROM learning_modules")
-      expect(raw).to match_array(%w[Advanced Beginner])
-      cases = LearningModule.connection.select_values(
-        "SELECT CASE level WHEN 'beginner' THEN 1 WHEN 'advanced' THEN 3 ELSE 0 END FROM learning_modules"
-      )
-      expect(cases.uniq).to eq([0])
+    it "orders by level with the ordered_by_level scope: general, beginner, intermediate, advanced" do
+      %w[Advanced Intermediate General Beginner].each { |level| create(:learning_module, level: level, title: "#{level} one") }
+      expect(LearningModule.unscope(:order).ordered_by_level.pluck(:level))
+        .to eq(%w[general beginner intermediate advanced])
     end
 
     it "starts with scorm_status pending and no entry point" do

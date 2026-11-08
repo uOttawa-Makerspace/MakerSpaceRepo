@@ -143,6 +143,19 @@ class JobOrder < ApplicationRecord
     end
   end
 
+  # Who may open the order and use its chat: its owner, staff and admins.
+  def accessible_by?(user)
+    return false if user.nil?
+
+    user.admin? || user.staff? || user.id == user_id
+  end
+
+  # Posts +text+ to the order's chat as +sender+ and, when it was saved, emails the other participants. Call it after
+  # the transaction that caused the message has committed. Returns the message (check #persisted?).
+  def post_chat_message(text, sender)
+    chat_messages.create(message: text, sender: sender).tap { |message| message.notify_participants if message.persisted? }
+  end
+
   # once money has been taken the quote is final. Nothing on the customer or quoting side may change the
   # order, re-quote it or decline it; changes after payment go through staff by hand.
   # (A missing status (nil: an order without a status row) never matches: that is real data, so the predicates say

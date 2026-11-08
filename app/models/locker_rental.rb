@@ -53,7 +53,7 @@ class LockerRental < ApplicationRecord
        prefix: true
 
   # specifier is a string, call #squish on it
-  normalizes :specifier, with: :squish
+  normalizes :specifier, with: ->(specifier) { specifier.squish }
 
   # When submitting a request, ensure only one is present
   validate :only_one_request_per_user, on: :create
@@ -63,7 +63,7 @@ class LockerRental < ApplicationRecord
          LockerRental.where(rented_by: rented_by).exists?(
            state: %i[reviewing await_payment]
          )
-      errors.add(:rented_by, 'already has a request under review')
+      errors.add(:rented_by, :request_under_review)
     end
   end
 
@@ -77,6 +77,21 @@ class LockerRental < ApplicationRecord
             if: :reserves_locker?
   validates :locker, presence: true, if: :reserves_locker?
 
+  RESERVED_LOCKER_INDEX = 'index_locker_rentals_on_locker_id_reserved'
+
+  # Two simultaneous assignments of one locker can both pass the uniqueness validation; the partial unique index
+  # lets only one through. The other is refused with the validation's own message instead of an error page.
+  # The savepoint keeps an enclosing transaction usable after the refused insert. It fails like any validation:
+  # `save` returns false, `save!` raises RecordInvalid.
+  def create_or_update(...)
+    self.class.transaction(requires_new: true) { super }
+  rescue ActiveRecord::RecordNotUnique => e
+    raise unless e.message.include?(RESERVED_LOCKER_INDEX)
+
+    errors.add(:locker, :taken)
+    raise ActiveRecord::RecordInvalid, self
+  end
+
   # Active rentals require an owned_until date unless explicitly marked as indefinite.
   # The virtual attribute `indefinite` lifts the requirement.
   validates :owned_until, presence: true, if: -> { active? && indefinite != '1' }
@@ -88,6 +103,15 @@ class LockerRental < ApplicationRecord
   # If state ever changes from request, record who did it
   # Which staff member approved the request, or if owner cancelled the request
   validates :decided_by, presence: true, unless: :reviewing?
+
+  # A cancelled rental goes back through payment (await_payment), or straight to active when staff or an admin make
+  # the change (e.g. cash paid at the desk). decided_by is the acting user (the controller sets it on every update).
+  validate :cancelled_only_returns_to_payment, if: -> { state_changed? && state_was == 'cancelled' }
+  def cancelled_only_returns_to_payment
+    return if await_payment? || (active? && decided_by&.staff?)
+
+    errors.add(:state, :cancelled_cannot_change)
+  end
 
   # Track when rental was finished
   validates :cancelled_at, presence: true, if: :cancelled?
@@ -135,11 +159,12 @@ class LockerRental < ApplicationRecord
   scope :pending, -> { where(state: %i[reviewing await_payment]) }
   scope :reserves_locker, -> { where(state: %i[await_payment active]) }
   scope :assigned, -> { where(state: :active) }
+
   # An expired rental is announced only while its end is this recent. Older ones are not mailed (the renter was
   # not told at the time and a notice now would be noise); staff chase those by hand.
   EXPIRY_NOTICE_WINDOW = 14.days
-  # The notice query looks back one more day than the window (15 days in all), so a run that is a day late loses
-  # no rental.
+  # The notice query looks back one more day than the window (15 days in all). A run that is a day late, and the
+  # first run after the data migration that marks everything older than the window as notified, then lose no rental.
   EXPIRY_NOTICE_GRACE = 1.day
 
   # Active rentals whose owned_until fell within EXPIRY_NOTICE_WINDOW (plus the grace day) and whose renter has not been told.
@@ -319,8 +344,10 @@ class LockerRental < ApplicationRecord
     await_payment? || active?
   end
 
+  # Records when the rental was cancelled: at the moment its state becomes cancelled (or when a cancelled
+  # rental has no date yet), and left alone by later saves of an already cancelled rental.
   def set_cancellation_date
-    self.cancelled_at = DateTime.now
+    self.cancelled_at = Time.current if state_changed? || cancelled_at.nil?
   end
 
   # Mails for the LAST save of this record (a state change, or a move of an active rental), delivered after
@@ -452,14 +479,6 @@ class LockerRental < ApplicationRecord
     else
       ''
     end
-  end
-
-  def self.get_assigned_lockers
-    LockerRental
-      .where(state: :active)
-      .pluck(:locker_type_id, :locker_specifier)
-      .group_by(&:shift)
-      .transform_values(&:flatten)
   end
 
   # Display-only "latest applied payment" (GREATEST), written only when a payment becomes applied.

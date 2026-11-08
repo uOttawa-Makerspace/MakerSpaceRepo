@@ -41,7 +41,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         order = typed_quoted_order!(:user_approval)
         get user_magic_approval_job_orders_path, params: { token: order.approval_token, locale: locale }
         expect(response).to have_http_status(:ok)
-        expect(page_text).to include("Total Quote: $58.50")
+        expect(page_text).to include(locale == "fr" ? "Total Quote: 58,50 $" : "Total Quote: $58.50")
       end
     end
   end
@@ -53,7 +53,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
         session_login!(staff)
         get job_order_path(order), params: { locale: locale }
         expect(response).to have_http_status(:ok)
-        expect(page_text).to include("Price: $58.50")
+        expect(page_text).to include(locale == "fr" ? "Price: 58,50 $" : "Price: $58.50")
       end
     end
   end

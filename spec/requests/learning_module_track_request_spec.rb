@@ -62,7 +62,7 @@ RSpec.describe "Learning module tracks", type: :request do
   end
 
   describe "POST /learning_module_track/start" do
-    before { sign_in_as(:regular) }
+    let!(:signed) { sign_in_as(:regular) }
 
     it "creates an In progress track for the user, flashes a notice and redirects to the module" do
       post start_learning_module_track_index_path(learning_module_id: learning_module.id)
@@ -74,12 +74,28 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(track.scorm_state).to be_nil
     end
 
-    it "does not create a second track when started twice and flashes the error alert" do
+    it "reuses the existing track when started twice" do
       post start_learning_module_track_index_path(learning_module_id: learning_module.id)
       expect { post start_learning_module_track_index_path(learning_module_id: learning_module.id) }
         .not_to change(LearningModuleTrack, :count)
       expect(response).to redirect_to(learning_area_path(learning_module.id))
-      expect(flash[:alert]).to start_with("An error has occurred while starting the learning module")
+      expect(flash[:alert]).to be_nil
+      expect(flash[:notice]).to eq("You have successfully started the learning module !")
+    end
+
+    it "starts the module for the user when another request created the track between the lookup and the insert" do
+      track = create(:learning_module_track, user: signed, learning_module: learning_module)
+      calls = 0
+      allow(LearningModuleTrack).to receive(:find_by).and_wrap_original do |original, *args, **kwargs|
+        (calls += 1) == 1 ? nil : original.call(*args, **kwargs)
+      end
+      allow_any_instance_of(LearningModuleTrack).to receive(:valid?).and_return(true)
+
+      expect { post start_learning_module_track_index_path(learning_module_id: learning_module.id) }
+        .not_to change(LearningModuleTrack, :count)
+      expect(flash[:notice]).to eq("You have successfully started the learning module !")
+      expect(flash[:alert]).to be_nil
+      expect(track.reload.user_id).to eq(signed.id)
     end
 
     it "does not reset a Completed track when started again" do
@@ -89,12 +105,11 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(LearningModuleTrack.last.status).to eq("completed")
     end
 
-    # start/completed assume the module exists; an unknown id is a 500 (nil.learning_module_tracks)
-    it "answers 500 for an unknown module id" do
+    it "refuses with an alert, recording nothing, for an unknown module id" do
       expect { post start_learning_module_track_index_path(learning_module_id: 0) }
         .not_to change(LearningModuleTrack, :count)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to redirect_to(learning_area_index_path)
+      expect(flash[:alert]).to be_present
     end
   end
 
@@ -123,10 +138,10 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(other.reload.status).to eq("in_progress")
     end
 
-    # completing a module never started (no track) is a 500 (nil.update)
-    it "answers 500 when the user never started the module" do
+    it "refuses with an alert, recording nothing, when the user never started the module" do
       post completed_learning_module_track_index_path(learning_module_id: learning_module.id)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(learning_area_path(learning_module.id))
+      expect(flash[:alert]).to be_present
       expect(LearningModuleTrack.count).to eq(0)
     end
 

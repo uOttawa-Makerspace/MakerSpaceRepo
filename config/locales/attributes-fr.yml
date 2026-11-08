@@ -1,0 +1,179 @@
+# French attribute names for the models whose validation errors are shown to users as full
+# messages ("<attribute> <message>"). English needs no counterpart: Rails humanizes the
+# attribute name, which is what the English pages already show. Names follow the field labels
+# in fr.yml, user.yml and lockers.yml. user.student_id is defined in fr.yml; user.email is left to the
+# email-change work, which defines it in fr.yml.
+fr:
+  activerecord:
+    attributes:
+      user:
+        avatar: Photo de profil
+        name: Nom
+        username: Nom d'utilisateur
+        how_heard_about_us: Comment vous avez entendu parler de nous
+        read_and_accepted_waiver_form: Renonciation
+        password: Mot de passe
+        password_confirmation: Confirmation de mot de passe
+        gender: Genre
+        faculty: Faculté
+        role: Rôle
+        program: Programme
+        year_of_study: Année d'études
+        identity: Identité
+        url: Site web
+      training_session:
+        user: Formateur
+      staff_unavailability:
+        start_time: Heure de début
+        end_time: Heure de fin
+        recurrence_rule: Règle de récurrence
+      staff_external_unavailability:
+        ics_url: Lien ICS
+      staff_needed_calendar:
+        space_id: Espace
+      job_task:
+        job_service: Service
+      pi_reader:
+        pi_mac_address: Adresse MAC
+      api_refresh_token:
+        expires_at: Expiration
+      learning_module:
+        title: Titre
+      proficient_project:
+        title: Titre
+      repository:
+        title: Titre
+        password: Mot de passe
+        photos: Photos
+      key_certification:
+        pdf_file_1: Fichier PDF 1
+        pdf_file_2: Fichier PDF 2
+        pdf_file_3: Fichier PDF 3
+        pdf_file_4: Fichier PDF 4
+        pdf_file_5: Fichier PDF 5
+        pdf_file_6: Fichier PDF 6
+        pdf_file_7: Fichier PDF 7
+        pdf_file_8: Fichier PDF 8
+        pdf_file_9: Fichier PDF 9
+        pdf_file_10: Fichier PDF 10
+      locker_rental:
+        state: État
+        locker: Casier
+        owned_until: Date de fin de la location
+        decided_by: Décision prise par
+        cancelled_at: Date d'annulation
+        rented_by: Locataire
+        course_name: Nom du cours
+        section_name: Section
+        team_name: Nom de l'équipe
+      locker:
+        specifier: Numéro du casier
+        locker_size: Taille du casier
+      locker_size:
+        size: Taille
+        shopify_gid: Identifiant Shopify
+      volunteer_hour:
+        volunteer_task: Tâche de bénévolat
+        date_of_task: Date de la tâche
+        total_time: Nombre d'heures
+      volunteer_task:
+        photos: Photos
+      job_service:
+        name: Nom
+        files: Fichiers
+      job_service_group:
+        name: Nom
+        job_type_id: Type de commande
+      job_option:
+        name: Nom
+        fee: Frais
+      job_type:
+        name: Nom
+      time_period:
+        name: Nom
+        start_date: Date de début
+        end_date: Date de fin
+      key:
+        user: Utilisateur
+        supervisor: Superviseur
+        space: Espace
+        number: Numéro de clé
+        custom_keycode: Code d'accès
+      key_request:
+        question_1: Question 1
+        question_2: Question 2
+        question_3: Question 3
+        question_4: Question 4
+        question_5: Question 5
+        question_6: Question 6
+        question_7: Question 7
+        question_8: Question 8
+        question_9: Question 9
+        question_10: Question 10
+        question_11: Question 11
+        question_12: Question 12
+        question_13: Question 13
+        question_14: Question 14
+        user: Utilisateur
+        supervisor: Superviseur
+        space: Espace
+        user_status: Statut de l'utilisateur
+        phone_number: Numéro de téléphone
+        emergency_contact_phone_number: Numéro de téléphone du contact d'urgence
+        student_number: Numéro d'étudiant
+        emergency_contact: Contact d'urgence
+        read_lab_rules: Règles du laboratoire
+        read_policies: Politiques
+        read_agreement: Entente
+      sub_space_booking:
+        sub_space: Sous-espace
+        booking_status: Statut de la réservation
+        name: Nom
+        description: Description
+        start_time: Heure de début
+        end_time: Heure de fin
+        expiration_date: Date d'expiration
+      event:
+        created_by: Créé par
+        space: Espace
+        start_time: Heure de début
+        end_time: Heure de fin
+        created_by_id: Créé par
+        space_id: Espace
+        event_type: Type d'événement
+        training_id: Formation
+        recurrence_rule: Règle de récurrence
+      coupon_code:
+        cc_cost: Coût en points CC
+      question:
+        images: Images
+      order_item:
+        files: Fichiers
+        proficient_project: Projet
+        order: Commande
+        quantity: Quantité
+      help:
+        name: Nom
+        email: Courriel
+        subject: Sujet
+        comments: Commentaires
+      chat_message:
+        job_order: Commande
+        sender: Expéditeur
+        sender_id: Expéditeur
+        message: Message
+      quick_access_link:
+        user: Utilisateur
+        name: Nom
+        path: Chemin
+      membership_tier:
+        title_en: Titre (anglais)
+        title_fr: Titre (français)
+        internal_price: Prix interne
+        external_price: Prix externe
+        duration: Durée
+      space:
+        name: Nom
+      sub_space:
+        space: Espace
+        name: Nom

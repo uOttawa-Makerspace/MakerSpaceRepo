@@ -10,6 +10,13 @@ class ProjectProposalsController < SessionsController
   before_action :require_owner_or_admin, only: %i[edit update]
   helper_method :owner_or_admin?
 
+  # Guests may propose a project (behind the captcha), so creation is limited per visitor
+  rate_limit to: 10, within: 1.hour, only: :create,
+             by: -> { current_user.id.presence || request.remote_ip },
+             with: -> {
+               redirect_to project_proposals_path, alert: 'Too many requests, please try again later.'
+             }
+
   # GET /project_proposals
   def index
     scope =
@@ -68,9 +75,9 @@ class ProjectProposalsController < SessionsController
         .order(created_at: :desc)
         .where(approved: 1)
 
-    @pagy_joined, @project_proposals_joined = pagy(joined_scope, page_key: 'page_joined', limit: 15)
-    @pagy_pending, @user_pending_project_proposals = pagy(pending_scope, page_key: 'page_pending', limit: 15)
-    @pagy_approved, @approved_project_proposals = pagy(approved_scope, page_key: 'page_approved', limit: 15)
+    @pagy_joined, @project_proposals_joined = pagy(with_display_users(joined_scope), page_key: 'page_joined', limit: 15)
+    @pagy_pending, @user_pending_project_proposals = pagy(with_display_users(pending_scope), page_key: 'page_pending', limit: 15)
+    @pagy_approved, @approved_project_proposals = pagy(with_display_users(approved_scope), page_key: 'page_approved', limit: 15)
   end
 
   # GET /project_proposals/1
@@ -120,7 +127,7 @@ class ProjectProposalsController < SessionsController
         .distinct
         .order(created_at: :desc)
 
-    @pagy, @assigned_project_proposals = pagy(scope, limit: 15)
+    @pagy, @assigned_project_proposals = pagy(with_display_users(scope), limit: 15)
   end
 
   def projects_completed
@@ -131,7 +138,7 @@ class ProjectProposalsController < SessionsController
         .distinct
         .order(created_at: :desc)
 
-    @pagy, @completed_project_proposals = pagy(scope, limit: 15)
+    @pagy, @completed_project_proposals = pagy(with_display_users(scope), limit: 15)
   end
 
   # POST /project_proposals
@@ -141,7 +148,7 @@ class ProjectProposalsController < SessionsController
     @project_proposal.user_id = current_user&.id
 
     respond_to do |format|
-      if current_user.nil? && !verify_turnstile
+      if !signed_in? && !verify_turnstile
         flash[:alert] = 'Captcha error, please try again'
         format.html { render :new, status: :unprocessable_content }
       elsif @project_proposal.save
@@ -358,6 +365,11 @@ class ProjectProposalsController < SessionsController
   private
 
   # Admins see everything; everyone else sees approved proposals plus their own.
+  # The listing shows the proposer and reviewer to admins only, deleted accounts included.
+  def with_display_users(scope)
+    current_user.admin? ? scope.includes(:display_user, :display_admin) : scope
+  end
+
   def visible_to_viewer(scope)
     return scope if current_user.admin?
 

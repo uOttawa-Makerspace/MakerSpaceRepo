@@ -1,5 +1,6 @@
 class PrinterType < ApplicationRecord
-  has_many :printers, dependent: :destroy
+  # A type with printers (and so their sessions and issues) cannot be deleted; remove or move the printers first.
+  has_many :printers, dependent: :restrict_with_error
   has_many :printer_sessions, through: :printers
 
   validates :name, presence: true, uniqueness: true

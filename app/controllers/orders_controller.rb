@@ -16,7 +16,7 @@ class OrdersController < DevelopmentProgramsController
     @pagy, @orders = pagy(user_orders_scope, limit: 20)
 
     if current_user.admin?
-      @pagy_all, @all_orders = pagy(Order.includes(:user, :order_status, order_items: :proficient_project)
+      @pagy_all, @all_orders = pagy(Order.includes(:display_user, :order_status, order_items: :proficient_project)
                                          .order(created_at: :desc), page_key: "page_all", limit: 20)
     end
   end
@@ -26,14 +26,10 @@ class OrdersController < DevelopmentProgramsController
   # cannot overdraw the wallet.
   def create
     outcome, order, kit_project_ids = Order.checkout!(current_order, current_user)
-    if outcome == :invalid_items
-      flash[:alert] = INVALID_CART_MESSAGE
-      redirect_back(fallback_location: root_path)
-      return
-    end
-    unless %i[completed already_completed].include?(outcome)
-      # :invalid or :not_open: nothing was written; the cart (session[:order_id]) is kept
-      flash[:alert] = "Something went wrong"
+    refusal = checkout_refusal(outcome)
+    if refusal
+      # nothing was written; the cart (session[:order_id]) is kept
+      flash[:alert] = refusal
       redirect_back(fallback_location: root_path)
       return
     end
@@ -56,7 +52,9 @@ class OrdersController < DevelopmentProgramsController
 
   def destroy
     @order = Order.find(params[:id])
+    owner = @order.user
     @order.destroy
+    owner&.update_wallet
     flash[
       :notice
     ] = "The order was deleted and the CC points returned to the user."
@@ -75,6 +73,18 @@ class OrdersController < DevelopmentProgramsController
     end
   end
 
+  # The message for an outcome of Order.checkout! that did not complete the order, or nil when it did
+  # (:completed, or :already_completed: a concurrent submit of the same cart completed it).
+  def checkout_refusal(outcome)
+    case outcome
+    when :completed, :already_completed then nil
+    when :invalid_items then INVALID_CART_MESSAGE
+    when :empty then EMPTY_CART_MESSAGE
+    else "Something went wrong" # :invalid or :not_open
+    end
+  end
+
+  EMPTY_CART_MESSAGE = "Your cart is empty."
   INVALID_CART_MESSAGE = "An item in your cart can no longer be bought; remove it and try again."
 
   # Early, friendly refusal (checkout! re-checks under the wallet lock), on the SAME total the

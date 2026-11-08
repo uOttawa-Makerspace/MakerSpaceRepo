@@ -15,9 +15,6 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
     ActionMailer::Base.deliveries.clear
   end
 
@@ -47,12 +44,12 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
     booking = create(:sub_space_booking, sub_space: subspace, user: owner, name: "Existing",
                                          start_time: Time.zone.parse(start_time),
                                          end_time: Time.zone.parse(end_time))
-    booking.sub_space_booking_status.update!(booking_status_id: status.id)
+    booking.change_status!(status)
     booking
   end
 
   def status_name(booking)
-    booking.reload.sub_space_booking_status.booking_status.name
+    booking.reload.booking_status.name
   end
 
   describe "POST create" do
@@ -127,7 +124,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
            } }
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["errors"]).to eq(
-        ["Start time ne peut pas être dans le passé. Choisissez une heure de début à partir de maintenant."]
+        ["Heure de début ne peut pas être dans le passé. Choisissez une heure de début à partir de maintenant."]
       )
     end
   end
@@ -157,7 +154,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(SubSpaceBooking.where(name: "Series").distinct.pluck(:recurring_booking_id).compact.size).to eq(1)
     end
 
-    it "mails once, for the first occurrence that is booked" do
+    it "mails once, for the first occurrence that is booked", :perform_jobs do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
       log_in!(user)
@@ -193,22 +190,41 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(walls_of("Edge")).to eq(["2026-12-01 12:00", "2026-12-08 12:00", "2026-12-15 12:00"])
     end
 
-    # a failed occurrence does not stop the series and the answer is
-    # 422. Changed: the mail now goes out for the first occurrence actually
-    # booked (before, a failed first attempt meant no mail at all).
-    it "mails for the first booked occurrence when an earlier one conflicts" do
+    # Past occurrences are skipped, so the first occurrence that is actually
+    # booked is the second one here: when it conflicts the whole series is
+    # refused, nothing is saved and no mail goes out.
+    it "refuses the series when the first bookable occurrence conflicts after a skipped past one" do
       managed = create(:space, :with_space_managers)
       room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
       create(:sub_space_booking, sub_space: room, user: admin, name: "Grabber", blocking: true,
                                  start_time: Time.zone.parse("2026-12-08 10:30"),
                                  end_time: Time.zone.parse("2026-12-08 11:30"))
       log_in!(user)
+      post_series(start_on: "2026-11-17", end_on: "2026-12-15", name: "Refused", room: room)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["errors"]).to eq(["TimeSlot This time slot is already booked."])
+      expect(response.parsed_body["summary"]).to start_with("The series was not created")
+      expect(response.parsed_body).not_to have_key("booked")
+      expect(SubSpaceBooking.where(name: "Refused")).to be_empty
+      expect(RecurringBooking.count).to eq(0)
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    # a conflict on a later occurrence keeps the partial series and the answer
+    # is 422; the mail goes out once, for the first occurrence booked.
+    it "keeps a partial series and mails once when an occurrence after the first bookable one conflicts", :perform_jobs do
+      managed = create(:space, :with_space_managers)
+      room = create(:sub_space, space: managed, approval_required: true, max_automatic_approval_hour: nil)
+      create(:sub_space_booking, sub_space: room, user: admin, name: "Grabber", blocking: true,
+                                 start_time: Time.zone.parse("2026-12-15 10:30"),
+                                 end_time: Time.zone.parse("2026-12-15 11:30"))
+      log_in!(user)
       post_series(start_on: "2026-11-17", end_on: "2026-12-15", name: "Mailed", room: room)
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."],
-                                         "booked" => 1, "failed" => ["2026-12-08"],
-                                         "summary" => "Booked 1 of 2 occurrences. Not booked: 2026-12-08.")
-      expect(walls_of("Mailed")).to eq(["2026-12-15 10:00"])
+                                         "booked" => 1, "failed" => ["2026-12-15"],
+                                         "summary" => "Booked 1 of 2 occurrences. Not booked: 2026-12-15.")
+      expect(walls_of("Mailed")).to eq(["2026-12-08 10:00"])
       expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Booking needs approval"])
     end
   end
@@ -330,7 +346,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
         sub_space_booking: { start_time: "2026-11-20 10:00", end_time: "2026-12-05 11:00", name: "R", description: "D" }
       }
       expect(response.parsed_body["errors"])
-        .to eq(["End time ne peut plus être modifiée : cette réservation est déjà terminée."])
+        .to eq(["Heure de fin ne peut plus être modifiée : cette réservation est déjà terminée."])
     end
 
     # The duration/week limits use the model's minute-precision test, so
@@ -378,10 +394,11 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(flash[:notice]).to eq("Bookings approved successfully.")
       expect(status_name(past)).to eq("Approved")
 
+      other = booking_of(user, start_time: "2026-11-29 10:00", end_time: "2026-11-29 11:00")
       put bulk_approve_decline_sub_space_booking_index_path,
-          params: { sub_space_booking_ids: [past.id], bulk_status: "decline" }
+          params: { sub_space_booking_ids: [other.id], bulk_status: "decline" }
       expect(flash[:notice]).to eq("Bookings declined successfully.")
-      expect(status_name(past)).to eq("Declined")
+      expect(status_name(other)).to eq("Declined")
     end
 
     it "admins toggle it public" do
@@ -449,8 +466,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(SubSpaceBookingController::SERIES_MAX_DAYS).to eq(365)
       expect(SubSpaceBookingController.const_defined?(:SERIES_MAX_OCCURRENCES)).to be(false)
       log_in!(user)
-      expect_any_instance_of(SubSpaceBookingController)
-        .to receive(:series_occurrences).once.and_call_original
+      expect(BookingSeries).to receive(:new).once.and_call_original
       post_json_series(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
                        recurring_end: "2026-12-16", name: "Once")
       expect(response).to have_http_status(:no_content)
@@ -458,8 +474,8 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
     end
 
     # Round 3: each end is its start plus the first occurrence's duration, so
-    # a month-end clamp cannot put an end before its start. The start
-    # drift (each start advances the previous one) is kept.
+    # a month-end clamp cannot put an end before its start. Each start is the
+    # n-th month after the first, clamped to the month end.
     it "keeps every monthly occurrence's duration around month-end (22:00 Jan 30 to 01:00 Jan 31)" do
       log_in!(user)
       post_json_series(start_time: "2027-01-30 22:00", end_time: "2027-01-31 01:00",
@@ -467,7 +483,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(response).to have_http_status(:no_content)
       rows = SubSpaceBooking.where(name: "MonthEnd").order(:start_time)
       expect(rows.map { |b| b.start_time.in_time_zone.strftime("%Y-%m-%d %H:%M") }).to eq(
-        ["2027-01-30 22:00", "2027-02-28 22:00", "2027-03-28 22:00", "2027-04-28 22:00", "2027-05-28 22:00"]
+        ["2027-01-30 22:00", "2027-02-28 22:00", "2027-03-30 22:00", "2027-04-30 22:00"]
       )
       expect(rows.map { |b| b.end_time - b.start_time }).to all(eq(3.hours))
     end
@@ -537,7 +553,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
     # the middle (here the status, whose booking status does not exist, fails
     # to save) rolls the booking back: no booking is left without a status.
     it "leaves no booking behind when its status cannot be saved" do
-      stub_const("BookingStatus::APPROVED", BookingStatus.new(id: -1, name: "Ghost"))
+      allow(BookingStatus).to receive(:approved).and_return(BookingStatus.new(id: -1, name: "Ghost"))
       log_in!(user)
       create_booking(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00", name: "Orphan")
       expect(response).to have_http_status(:unprocessable_content)

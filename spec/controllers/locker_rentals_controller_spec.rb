@@ -304,7 +304,7 @@ RSpec.describe LockerRentalsController, type: :controller do
         rental.reload
         expect(flash[:alert]).to eq nil
         expect(rental.state).to eq 'active'
-        expect(rental.owned_until.to_date).to be >= Date.today
+        expect(rental.owned_until.to_date).to be >= Date.current
         expect(rental.locker).not_to eq nil
       end
 

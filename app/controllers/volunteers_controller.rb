@@ -4,11 +4,13 @@ require 'googleauth'
 require 'google/apis/calendar_v3'
 
 class VolunteersController < SessionsController
+  include VolunteerAreaAccess
+
   before_action :no_container, only: :index
   before_action :with_volunteer_header, except: :index
   before_action :current_user
   before_action :signed_in, only: :join_volunteer_program
-  before_action :grant_access,
+  before_action :volunteer_access,
                 except: %i[join_volunteer_program transcript],
                 unless:
                   lambda {
@@ -17,7 +19,7 @@ class VolunteersController < SessionsController
                   }
 
   before_action :grant_access_list,
-                only: %i[emails volunteer_list create_event delete_event new_event]
+                only: %i[emails populate_users volunteer_list create_event delete_event new_event]
 
   def index
     @user = current_user
@@ -105,11 +107,7 @@ class VolunteersController < SessionsController
 
   def populate_users
     json_data =
-      User
-        .all
-        .volunteers
-        .where('LOWER(name) like LOWER(?)', "%#{params[:search]}%")
-        .map(&:as_json)
+      User.volunteers.directory_search(params[:search]).select(:id, :name, :username)
     render json: { users: json_data }
   end
 
@@ -118,7 +116,7 @@ class VolunteersController < SessionsController
 
   def shadowing_shifts
     @shifts = current_user.shadowing_hours.where('end_time > ?', DateTime.now)
-    @all_shifts = ShadowingHour.where('end_time > ?', DateTime.now).all
+    @all_shifts = ShadowingHour.includes(:display_user).where('end_time > ?', DateTime.now)
   end
 
   def delete_event
@@ -159,22 +157,13 @@ class VolunteersController < SessionsController
         return redirect_to calendar_volunteers_path
       end
 
-      event =
-        ShadowingHour.create_event(start_time, end_time, user, params[:space])
-
-      if event.status != 'cancelled'
-        ShadowingHour.create!(
-          user_id: user.id,
-          start_time: start_time,
-          end_time: end_time,
-          event_id: event.id,
-          space_id:
-            Space.where('LOWER(name) = ?', params[:space].downcase).first.id
-        )
-        flash[:notice] = 'The shadowing shift has been added'
-      else
-        flash[:alert] = 'An Error occurred'
+      space = Space.where('LOWER(name) = ?', params[:space].downcase).first
+      if space.nil?
+        flash[:alert] = 'The selected space was not found.'
+        return redirect_to calendar_volunteers_path
       end
+
+      create_shadowing_shift(user, space, start_time, end_time)
     else
       flash[:alert] = 'An error occurred, please make sure you choose a space.'
     end
@@ -207,10 +196,21 @@ class VolunteersController < SessionsController
 
   private
 
-  def grant_access
-    unless current_user.volunteer? || current_user.admin? || current_user.staff?
-      redirect_to root_path
-      flash[:alert] = 'You cannot access this area.'
+  def create_shadowing_shift(user, space, start_time, end_time)
+    event =
+      ShadowingHour.create_event(start_time, end_time, user, params[:space])
+
+    if event.status != 'cancelled'
+      ShadowingHour.create!(
+        user_id: user.id,
+        start_time: start_time,
+        end_time: end_time,
+        event_id: event.id,
+        space_id: space.id
+      )
+      flash[:notice] = 'The shadowing shift has been added'
+    else
+      flash[:alert] = 'An Error occurred'
     end
   end
 

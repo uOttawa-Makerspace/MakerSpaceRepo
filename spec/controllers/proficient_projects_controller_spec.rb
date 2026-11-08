@@ -250,8 +250,8 @@ RSpec.describe ProficientProjectsController, type: :controller do
                     "image/png"
                   )
                 ],
-                deleteimages: [Photo.last.image.filename.to_s],
-                deletefiles: [RepoFile.last.file.filename.to_s]
+                deleteimages: Photo.last.id.to_s,
+                deletefiles: RepoFile.last.id.to_s
               }
         expect(response.body).to redirect_to(
           proficient_project_path(ProficientProject.last.id)

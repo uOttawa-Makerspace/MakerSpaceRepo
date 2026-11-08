@@ -1,7 +1,9 @@
 class KeyRequestsController < SessionsController
   before_action :ensure_staff_or_teams_program
   before_action :check_key_request, only: %i[new create]
-  before_action :set_key_request, only: %i[show steps]
+  before_action :set_key_request, only: %i[show steps update_steps]
+  before_action :ensure_request_owner, only: %i[steps update_steps]
+  before_action :ensure_editable, only: %i[steps update_steps]
 
   def index
     if @user.key_request.nil?
@@ -22,7 +24,7 @@ class KeyRequestsController < SessionsController
                   alert: "You don't have the permissions to view this"
     end
 
-    @key_certification = @key_request.user.key_certification
+    @key_certification = @key_request.display_user.key_certification
   end
 
   def new
@@ -46,83 +48,96 @@ class KeyRequestsController < SessionsController
     end
   end
 
+  WIZARD_VIEWS = {
+    1 => "key_requests/wizard/personal_information",
+    2 => "key_requests/wizard/lab_rules",
+    3 => "key_requests/wizard/safety_questionnaire",
+    4 => "key_requests/wizard/policies",
+    5 => "key_requests/wizard/agreement"
+  }.freeze
+  BOOLEAN_STEP_FIELDS = %i[read_lab_rules read_policies read_agreement].freeze
+
+  # GET: shows one step of the wizard. It never changes the request.
   def steps
-    unless @user.eql?(@key_request.user)
-      redirect_to staff_dashboard_index_path,
-                  alert:
-                    "You don't have the permission to edit this key request."
-      return
-    end
-
-    @step = params[:step].present? ? params[:step].to_i : 1
-    errors = []
-
-    if params[:key_request].present?
-      if params[:key_request][:read_lab_rules].present?
-        params[:key_request][:read_lab_rules] = params[:key_request][
-          :read_lab_rules
-        ] == "true"
-      end
-      if params[:key_request][:read_policies].present?
-        params[:key_request][:read_policies] = params[:key_request][
-          :read_policies
-        ] == "true"
-      end
-      if params[:key_request][:read_agreement].present?
-        params[:key_request][:read_agreement] = params[:key_request][
-          :read_agreement
-        ] == "true"
-      end
-
-      unless @key_request.update(key_request_params)
-        errors << "Failed to update key request"
-      end
-    end
-
-    if errors.length > 0
-      redirect_to key_request_steps_path(
-                    key_request_id: @key_request.id,
-                    step: @step == 1 ? 1 : (params[:step].to_i - 1)
-                  ),
-                  alert:
-                    "An error occured while saving the key request at step #{params[:step]}: " +
-                      errors.join(", ")
+    @step = wizard_step
+    if WIZARD_VIEWS.key?(@step)
+      render WIZARD_VIEWS[@step]
+    elsif @step == 6
+      redirect_to key_request_steps_path(key_request_id: @key_request.id, step: 5)
     else
-      case @step
-      when 1
-        render "key_requests/wizard/personal_information"
-      when 2
-        render "key_requests/wizard/lab_rules"
-      when 3
-        render "key_requests/wizard/safety_questionnaire"
-      when 4
-        render "key_requests/wizard/policies"
-      when 5
-        render "key_requests/wizard/agreement"
-      when 6
-        if @key_request.update(status: :waiting_for_approval)
-          redirect_to key_request_path(@key_request.id),
-                      notice:
-                        "You have successfully submitted the key request form, please wait a few days for an admin to review your form."
-        else
-          redirect_to key_request_steps_path(
-                        key_request_id: @key_request.id,
-                        step: 1
-                      ),
-                      alert:
-                        "There was an error when submitting your key request form. Please make sure you fill in all the required fields."
-        end
-      else
-        redirect_to key_request_steps_path(
-                      key_request_id: @key_request.id,
-                      step: 1
-                    ),
-                    alert: "Invalid step number"
+      redirect_to_first_step "Invalid step number"
+    end
+  end
+
+  # PATCH: saves the submitted fields, then shows the next step (or submits the
+  # request after the last one).
+  def update_steps
+    @step = wizard_step
+    if params[:key_request].present?
+      normalize_boolean_fields
+      unless @key_request.update(key_request_params)
+        return redirect_to(key_request_steps_path(
+                             key_request_id: @key_request.id,
+                             step: @step == 1 ? 1 : (params[:step].to_i - 1)
+                           ),
+                           alert: "An error occured while saving the key request at step #{params[:step]}: Failed to update key request")
       end
+    end
+
+    if WIZARD_VIEWS.key?(@step)
+      render WIZARD_VIEWS[@step]
+    elsif @step == 6
+      submit_key_request
+    else
+      redirect_to_first_step "Invalid step number"
     end
   end
 
   private
+
+  def wizard_step
+    params[:step].present? ? params[:step].to_i : 1
+  end
+
+  def normalize_boolean_fields
+    BOOLEAN_STEP_FIELDS.each do |field|
+      next unless params[:key_request][field].present?
+
+      params[:key_request][field] = params[:key_request][field] == "true"
+    end
+  end
+
+  def submit_key_request
+    if @key_request.submit
+      redirect_to key_request_path(@key_request.id),
+                  notice:
+                    "You have successfully submitted the key request form, please wait a few days for an admin to review your form."
+    else
+      redirect_to_first_step "There was an error when submitting your key request form. Please make sure you fill in all the required fields."
+    end
+  end
+
+  # Once submitted, a request is changed only by an admin sending it back
+  # (deny returns it to in progress).
+  def ensure_editable
+    return if @key_request.editable_by_owner?
+
+    state = @key_request.status_approved? ? "approved" : "submitted and waiting for approval"
+    redirect_to key_request_path(@key_request.id),
+                alert: "This key request is already #{state}, so it cannot be edited. An admin must send it back before you can change it."
+  end
+
+  def redirect_to_first_step(alert)
+    redirect_to key_request_steps_path(key_request_id: @key_request.id, step: 1),
+                alert: alert
+  end
+
+  def ensure_request_owner
+    return if @user.eql?(@key_request.user)
+
+    redirect_to staff_dashboard_index_path,
+                alert: "You don't have the permission to edit this key request."
+  end
 
   def key_request_params
     params.require(:key_request).permit(

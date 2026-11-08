@@ -1,6 +1,8 @@
 class TapBoxLog < ApplicationRecord
+  include DisplayUser
   belongs_to :user, optional: true
   belongs_to :space, optional: true
+  display_user_for :user
 
   CARD_TAP         = "card_tap"
   SIGN_IN          = "sign_in"

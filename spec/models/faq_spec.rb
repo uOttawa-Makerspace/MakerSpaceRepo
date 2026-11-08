@@ -44,5 +44,12 @@ RSpec.describe Faq, type: :model do
       I18n.with_locale(:en) { expect([faq.localized_title, faq.localized_body]).to eq(%w[Hello Body]) }
       I18n.with_locale(:fr) { expect([faq.localized_title, faq.localized_body]).to eq(%w[Bonjour Corps]) }
     end
+
+    it "falls back to the other language when the current one is blank" do
+      faq.assign_attributes(title_fr: "", body_fr: nil)
+      I18n.with_locale(:fr) { expect([faq.localized_title, faq.localized_body]).to eq(%w[Hello Body]) }
+      faq.assign_attributes(title_en: " ", title_fr: "Bonjour", body_en: "", body_fr: "Corps")
+      expect([faq.localized_title, faq.localized_body]).to eq(%w[Bonjour Corps])
+    end
   end
 end

@@ -9,7 +9,7 @@ section#contact-us {
 
   div.title {
     //color: #366;
-    color: $primary;
+    color: var(--primary-text);
     max-width: 40vmax;
     border-bottom: 2px solid $secondary;
     font-size: 2rem;

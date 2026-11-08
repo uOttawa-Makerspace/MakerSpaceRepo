@@ -4,7 +4,7 @@ FactoryBot.define do
     multiple_files { false }
     file_label { Faker::Lorem.word }
     file_description { Faker::Lorem.sentence }
-    service_fee { Faker::Number.decimal }
+    service_fee { 10.0 }
     comments { Faker::Lorem.sentence }
   end
 end

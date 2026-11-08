@@ -43,16 +43,7 @@ class Admin::SpacesController < AdminAreaController
   def delete_sub_space
     if params[:id].present?
       subspace = SubSpace.find(params[:id])
-      SubSpaceBooking
-        .where(sub_space: subspace)
-        .each do |booking|
-          status =
-            SubSpaceBookingStatus.find(booking.sub_space_booking_status_id)
-          status.update(sub_space_booking_id: nil)
-          booking.update(sub_space_booking_status_id: nil)
-          status.destroy
-          booking.destroy
-        end
+      SubSpaceBooking.where(sub_space: subspace).find_each(&:destroy_with_status!)
       if subspace.delete
         flash[:notice] = "Sub Space deleted!"
       else
@@ -122,17 +113,19 @@ class Admin::SpacesController < AdminAreaController
 
   def update_name
     @space = Space.find(params[:space_id])
-    return unless @space.update(name: params[:name])
+    if @space.update(name: params[:name])
       flash[:notice] = "Space Name updated !"
-      redirect_back(fallback_location: root_path)
-    
+    else
+      flash[:alert] = space_name_error
+    end
+    redirect_back(fallback_location: root_path)
   end
 
   def update_max_capacity
     @space = Space.find(params[:space_id])
     max_capacity = params[:max_capacity].to_i
     max_capacity = nil if max_capacity.zero? # 0 is no limit
-    if @space.update(max_capacity: params[:max_capacity])
+    if @space.update(max_capacity: max_capacity)
       flash[:notice] = "Space Capacity updated!"
     else
       flash[:alert] = "Failed to update space capacity."
@@ -244,9 +237,22 @@ class Admin::SpacesController < AdminAreaController
     space = Space.find(params[:id])
     if params[:admin_input] == space.name.upcase
       if space.destroy_admin_id.present? && space.destroy_admin_id != @user.id
-        raspis = PiReader.where(space_id: space.id)
-        raspis.update_all(space_id: nil)
-        flash[:notice] = "Space deleted!" if space.destroy
+        # The pi readers are detached only if the space is really deleted. A refusal (the space still has
+        # history it must not lose) is the model's, so its errors say why; the pending request is cleared.
+        deleted = Space.transaction do
+          PiReader.where(space_id: space.id).update_all(space_id: nil)
+          space.destroy || raise(ActiveRecord::Rollback)
+        end
+        if deleted
+          flash[:notice] = "Space deleted!"
+        else
+          space.update_columns(destroy_admin_id: nil)
+          flash[:alert] = space.errors.full_messages.to_sentence.presence || "The space could not be deleted."
+        end
+      elsif (refusals = space.deletion_refusals).any?
+        # Said at the first request, so nobody waits for a second admin to be told, and no request is recorded.
+        space.update_columns(destroy_admin_id: nil) if space.destroy_admin_id.present?
+        flash[:alert] = refusals.to_sentence
       elsif space.update(
           destroy_admin_id: @user.id
         )
@@ -320,6 +326,11 @@ class Admin::SpacesController < AdminAreaController
   end
 
   private
+
+  def space_name_error
+    kind = @space.errors.of_kind?(:name, :blank) ? "blank" : "taken"
+    t("admin.space_name.#{kind}")
+  end
 
   def space_params
     params.require(:space_params).permit(:name, :max_capacity, :keycode)

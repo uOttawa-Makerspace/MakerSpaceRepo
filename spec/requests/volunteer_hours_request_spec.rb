@@ -21,7 +21,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   ALLOWED = %i[volunteer inactive staff admin].freeze
-  DENIED = %i[guest regular role_only].freeze
+  DENIED = %i[regular role_only].freeze
 
   describe "grant_access matrix" do
     DENIED.each do |role|
@@ -50,6 +50,22 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       end
     end
 
+    describe "guest" do
+      it "is sent to login and nothing is persisted or changed" do
+        hour = make_hour
+        get volunteer_hours_path
+        expect(response.location).to include("/login")
+        expect { post volunteer_hours_path, params: hour_params }.not_to change(VolunteerHour, :count)
+        expect(response.location).to include("/login")
+        put update_approval_volunteer_hours_path(id: hour.id, approval: true)
+        expect(response.location).to include("/login")
+        delete volunteer_hour_path(hour)
+        expect(response.location).to include("/login")
+        expect(hour.reload.approval).to be_nil
+        expect(VolunteerHour.exists?(hour.id)).to be(true)
+      end
+    end
+
     ALLOWED.each do |role|
       it "#{role}: index renders" do
         vol_sign_in_as(role)
@@ -72,8 +88,7 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
   end
 
   describe "GET /volunteer_hours (index)" do
-    # N+1 pinned (view calls vh.volunteer_task per row)
-    it "lists only the signed-in user's hours and totals approved ones", skip_bullet: true do
+    it "lists only the signed-in user's hours and totals approved ones" do
       make_hour(approval: true, total_time: 2)
       make_hour(approval: true, total_time: 1.5)
       make_hour(approval: nil, total_time: 9)
@@ -85,22 +100,57 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response.body).not_to include("100.0 Hours")
     end
 
-    # an hour whose volunteer_task_id points at nothing (accepted on create) 500s the owner's index
-    it "500s when one of the user's hours references a missing task" do
-      VolunteerHour.create!(user: owner, volunteer_task_id: 999_999, total_time: 1)
-      vol_login!(owner)
-      get volunteer_hours_path
-      expect(response).to have_http_status(:internal_server_error)
-      expect(vol_error_text).to include("undefined method 'title' for nil")
+    # the database refuses an hour that points at a missing task, so the index never meets one
+    it "cannot hold an hour that references a missing task" do
+      expect { VolunteerHour.new(user: owner, volunteer_task_id: 999_999, total_time: 1, date_of_task: Date.current).save!(validate: false) }
+        .to raise_error(ActiveRecord::InvalidForeignKey)
     end
   end
 
   describe "GET /volunteer_hours/new" do
-    # route exists but there is no action/template (only a partial)
-    it "is a 404 for a volunteer" do
+    it "renders the tracking form for a volunteer" do
       vol_login!(owner)
       get new_volunteer_hour_path
-      expect(response).to have_http_status(:not_found)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("volunteerForm")
+      expect(response.body).to include(%(action="#{volunteer_hours_path}"))
+    end
+
+    it "is reached by the Track Hours link on the empty hours page" do
+      vol_login!(owner)
+      get volunteer_hours_path
+      link = Capybara.string(response.body).find_link("Track Hours")
+      expect(link[:href]).to eq(new_volunteer_hour_path)
+      get link[:href]
+      expect(response).to have_http_status(:ok)
+      expect(Capybara.string(response.body)).to have_css("form#volunteerForm")
+    end
+
+    it "offers only the tasks the user has joined" do
+      joined = create(:volunteer_task, title: "joined task")
+      create(:volunteer_task, title: "other task")
+      create(:volunteer_task_join, volunteer_task: joined, user: owner)
+      vol_login!(owner)
+      get new_volunteer_hour_path
+      expect(response.body).to include("joined task")
+      expect(response.body).not_to include("other task")
+    end
+
+    it "does not offer a task the user was removed from, but still offers one they are on" do
+      removed = create(:volunteer_task, title: "removed task")
+      create(:volunteer_task_join, :not_active, volunteer_task: removed, user: owner)
+      active = create(:volunteer_task, title: "active task")
+      create(:volunteer_task_join, :active, volunteer_task: active, user: owner)
+      vol_login!(owner)
+      get new_volunteer_hour_path
+      expect(response.body).to include("active task")
+      expect(response.body).not_to include("removed task")
+    end
+
+    it "redirects a user without volunteer access" do
+      vol_sign_in_as(:regular)
+      get new_volunteer_hour_path
+      expect(response).to redirect_to(root_path)
     end
   end
 
@@ -131,52 +181,55 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(VolunteerHour.last.approval).to be(true)
     end
 
-    # no range validation: negative and far-future hours are stored
-    it "accepts negative total_time and a far-future date_of_task" do
-      post volunteer_hours_path,
-           params: { volunteer_hour: { volunteer_task_id: task.id, date_of_task: "2999-01-01", total_time: -5 } }
-      expect(response).to redirect_to(volunteer_hours_path)
-      hour = VolunteerHour.last
-      expect(hour.total_time).to eq(-5)
-      expect(hour.date_of_task.year).to eq(2999)
+    {
+      "negative hours" => [{ total_time: -5 }, "Total time must be greater than 0"],
+      "zero hours" => [{ total_time: 0 }, "Total time must be greater than 0"],
+      "a non-numeric total_time" => [{ total_time: "abc" }, "Total time is not a number"],
+      "more than 24 hours" => [{ total_time: 24.5 }, "Total time must be less than or equal to 24"],
+      "a total_time beyond decimal(9,2)" => [{ total_time: 99_999_999_999 }, "Total time must be less than or equal to 24"],
+      "a future date" => [{ date_of_task: (Date.current + 1).to_s }, "Date of task cannot be in the future"],
+      "a far-future date" => [{ date_of_task: "2999-01-01" }, "Date of task cannot be in the future"]
+    }.each do |label, (overrides, message)|
+      it "refuses #{label}, stores nothing and says why" do
+        params = { volunteer_hour: hour_params[:volunteer_hour].merge(overrides) }
+        expect { post volunteer_hours_path, params: params }.not_to change(VolunteerHour, :count)
+        expect(response).to redirect_to(volunteer_hours_path)
+        expect(flash[:alert]).to eq(message)
+      end
+    end
+
+    it "accepts exactly 24 hours today" do
+      post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(total_time: 24, date_of_task: Date.current.to_s) }
+      expect(VolunteerHour.last.total_time).to eq(24)
     end
 
     it "rounds total_time to 2 decimals (decimal(9,2))" do
       post volunteer_hours_path,
-           params: { volunteer_hour: { volunteer_task_id: task.id, total_time: 1.239 } }
+           params: { volunteer_hour: { volunteer_task_id: task.id, date_of_task: "2024-03-01", total_time: 1.239 } }
       expect(VolunteerHour.last.total_time).to eq(1.24)
     end
 
-    # non-numeric total_time silently becomes 0
-    it "stores 0 for a non-numeric total_time" do
-      post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, total_time: "abc" } }
-      expect(response).to redirect_to(volunteer_hours_path)
-      expect(VolunteerHour.last.total_time).to eq(0)
-    end
-
-    # over-range total_time raises ActiveRecord::RangeError (500) instead of a validation message
-    it "500s for a total_time beyond decimal(9,2)" do
+    it "stores nothing and alerts without a date" do
       expect do
-        post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, total_time: 99_999_999_999 } }
+        post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: task.id, total_time: 1 } }
       end.not_to change(VolunteerHour, :count)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(vol_error_text).to include("ActiveRecord::RangeError")
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to include("Date of task")
     end
 
-    # missing volunteer_task_id hits the NOT NULL constraint (500)
-    it "500s without a volunteer_task_id" do
+    it "stores nothing and alerts without a volunteer_task_id" do
       expect { post volunteer_hours_path, params: { volunteer_hour: { total_time: 1 } } }
         .not_to change(VolunteerHour, :count)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(vol_error_text).to include("ActiveRecord::NotNullViolation")
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to include("Volunteer task")
     end
 
-    # the task is never checked to exist, so an orphan hour is stored (and later breaks the index)
-    it "stores an hour for a nonexistent task id" do
+    it "stores nothing and alerts for a nonexistent task id" do
       expect do
         post volunteer_hours_path, params: { volunteer_hour: { volunteer_task_id: 999_999, total_time: 1 } }
-      end.to change(VolunteerHour, :count).by(1)
-      expect(VolunteerHour.last.volunteer_task).to be_nil
+      end.not_to change(VolunteerHour, :count)
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to include("Volunteer task")
     end
 
     it "does not require the user to have joined the task" do
@@ -306,12 +359,41 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You are not authorized access this area")
     end
 
-    it "500s for an out-of-range total_time" do
+    it "refuses an out-of-range total_time and keeps the hour" do
       hour = make_hour
       vol_login!(owner)
-      patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 99_999_999_999 } }
-      expect(response).to have_http_status(:internal_server_error)
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { date_of_task: "2024-03-01", total_time: 99_999_999_999 } }
+      expect(flash[:alert]).to eq("Total time must be less than or equal to 24")
       expect(hour.reload.total_time).to eq(3)
+    end
+
+    it "refuses 0 hours and a future date on an edit" do
+      hour = make_hour
+      vol_login!(owner)
+      patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 0, date_of_task: (Date.current + 2).to_s } }
+      expect(flash[:alert]).to eq("Total time must be greater than 0 and Date of task cannot be in the future")
+      expect(hour.reload.total_time).to eq(3)
+    end
+
+    # stored awards of 36 and 0 hours (from a task's own hours) stay readable and editable
+    [36, 0].each do |stored|
+      it "lets staff edit the date of an approved #{stored} hour row without touching its hours" do
+        hour = make_hour(approval: true, total_time: stored)
+        vol_login!(create(:user, :staff))
+        get edit_volunteer_hour_path(hour)
+        expect(response).to have_http_status(:ok)
+        patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: stored, date_of_task: "2024-03-02" } }
+        expect(flash[:notice]).to eq("Volunteer hour updated")
+        expect(hour.reload.total_time).to eq(stored)
+        expect(hour.date_of_task.to_date).to eq(Date.new(2024, 3, 2))
+      end
+    end
+
+    it "approves and rejects a stored 36 hour row" do
+      hour = make_hour(approval: nil, total_time: 36)
+      vol_login!(create(:user, :staff))
+      put update_approval_volunteer_hours_path(id: hour.id, approval: true)
+      expect(hour.reload.approval).to be(true)
     end
 
     it "404s for a missing id" do
@@ -420,7 +502,12 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       end
     end
 
-    %i[guest regular role_only].each do |role|
+    it "guest: staff pages redirect to login" do
+      get volunteer_hour_requests_volunteer_hours_path
+      expect(response.location).to include("/login")
+    end
+
+    %i[regular role_only].each do |role|
       it "#{role}: staff pages redirect to root (grant_access runs first)" do
         vol_sign_in_as(role)
         get volunteer_hour_requests_volunteer_hours_path

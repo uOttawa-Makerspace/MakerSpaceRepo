@@ -18,7 +18,7 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
   end
 
   before do
-    stub_const("BookingStatus::PENDING", create(:booking_status, :pending))
+    create(:booking_status, :pending)
     ActionMailer::Base.deliveries.clear
   end
 
@@ -38,13 +38,30 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       mail = delivered.last
       expect(mail.to).to match_array(managed_space.space_managers.map(&:email))
       expect(mail.subject).to eq("Booking needs approval")
-      # the text names the BOOKING title, not the booker
+      # the text names the booker, not the booking title
       expect(mail.body.encoded).to include(
-        "A booking has been made in Laser Room by Robot Club for Weekly build on " \
+        "A booking has been made in Laser Room by Pat Booker for Weekly build on " \
         "March 03, 2027 10:00 to March 03, 2027 11:30. " \
         "Please check the Booking Admin Panel to approve or decline this booking."
       )
-      expect(mail.body.encoded).not_to include("Pat Booker")
+      expect(mail.body.encoded).not_to include("Robot Club")
+    end
+
+    it "marks the booker of a deleted account in the managers' language" do
+      booker.update_columns(deleted: true)
+
+      described_class.send_booking_needs_approval(booking.id).deliver_now
+      expect(delivered.last.body.encoded).to include("by Pat Booker (deleted account) for Weekly build")
+
+      I18n.with_locale(:fr) { described_class.send_booking_needs_approval(booking.id).deliver_now }
+      expect(delivered.last.body.decoded).to include("by Pat Booker (compte supprimé) for Weekly build")
+    end
+
+    it "falls back to the booking title when the booking has no user" do
+      booking.update_columns(user_id: nil)
+
+      described_class.send_booking_needs_approval(booking.id).deliver_now
+      expect(delivered.last.body.encoded).to include("by Robot Club for Weekly build")
     end
 
     it "is delivered through the queue like the controller's deliver_later callers" do
@@ -52,12 +69,19 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(delivered.size).to eq(1)
     end
 
-    # no managers means no mail and no warning
-    it "sends nothing when the space has no managers" do
+    it "goes to the MTC mailbox, and reports the missing managers, when the space has none" do
       lonely = create(:sub_space, space: create(:space), approval_required: true)
       lonely_booking = create(:sub_space_booking, sub_space: lonely, user: booker)
+      expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(handled: true, severity: :warning))
       described_class.send_booking_needs_approval(lonely_booking.id).deliver_now
-      expect(delivered).to be_empty
+      expect(delivered.size).to eq(1)
+      expect(delivered.last.to).to eq(["mtc@uottawa.ca"])
+      expect(delivered.last.subject).to eq("Booking needs approval")
+    end
+
+    it "reports nothing when the space has managers" do
+      expect(Rails.error).not_to receive(:report)
+      described_class.send_booking_needs_approval(booking.id).deliver_now
     end
 
     it "sends nothing when the sub space does not require approval" do
@@ -76,16 +100,19 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(mail.to).to match_array(managed_space.space_managers.map(&:email))
       expect(mail.subject).to eq("Booking automatically approved.")
       expect(mail.body.encoded).to include(
-        "A booking has been made and automatically approved in Laser Room by Robot Club for Weekly build"
+        "A booking has been made and automatically approved in Laser Room by Pat Booker for Weekly build"
       )
       expect(mail.body.encoded).to include("go to the admin space page")
       expect(mail.body.encoded).to include("on March 03, 2027 10:00 to March 03, 2027 11:30")
     end
 
-    it "sends nothing when the space has no managers" do
+    it "goes to the MTC mailbox, and reports the missing managers, when the space has none" do
       lonely_booking = create(:sub_space_booking, sub_space: create(:sub_space, space: create(:space)), user: booker)
+      expect(Rails.error).to receive(:report).with(an_instance_of(RuntimeError), hash_including(handled: true, severity: :warning))
       described_class.send_booking_automatically_approved(lonely_booking.id).deliver_now
-      expect(delivered).to be_empty
+      expect(delivered.size).to eq(1)
+      expect(delivered.last.to).to eq(["mtc@uottawa.ca"])
+      expect(delivered.last.subject).to eq("Booking automatically approved.")
     end
   end
 

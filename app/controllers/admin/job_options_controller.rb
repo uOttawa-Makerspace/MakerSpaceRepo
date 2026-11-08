@@ -1,9 +1,6 @@
 class Admin::JobOptionsController < AdminAreaController
   before_action :set_job_option, only: %i[edit update destroy]
 
-  def index
-  end
-
   def new
     @job_option = JobOption.new
   end

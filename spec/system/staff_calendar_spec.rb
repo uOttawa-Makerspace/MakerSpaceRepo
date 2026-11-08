@@ -31,14 +31,11 @@ RSpec.describe "Staff calendar", type: :system do
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
   def show_week_of_march_14
-    visit root_path
-    page.execute_script("localStorage.fullCalendarDefaultDateStaffCalendar = '2027-03-16T12:00:00.000Z'")
-    visit staff_my_calendar_index_path
+    log_in_as(staff, to: staff_my_calendar_index_path, local_storage: { fullCalendarDefaultDateStaffCalendar: "2027-03-16T12:00:00.000Z" })
   end
 
   # N+1 pinned (the JSON feed reads event_assignments per event)
   it "renders the Sunday-to-Saturday week with that week's non-draft events", js: true, skip_bullet: true do
-    log_in_as(staff)
     show_week_of_march_14
 
     expect(page).to have_css("h1", text: "My Work Schedule")
@@ -55,7 +52,6 @@ RSpec.describe "Staff calendar", type: :system do
   end
 
   it "forces the server-rendered data-turbo=true links to full page loads after turbo:load", js: true, skip_bullet: true do
-    log_in_as(staff)
     show_week_of_march_14
     link = find_link("View and manage your unavailabilities here")
     expect(link["data-turbo"]).to eq("false")
@@ -63,7 +59,6 @@ RSpec.describe "Staff calendar", type: :system do
 
   # N+1 pinned (the page's JSON feed 500s under CI Bullet)
   it "shows the space picker, view switchers and toggle buttons", js: true, skip_bullet: true do
-    log_in_as(staff)
     show_week_of_march_14
 
     expect(page).to have_select("space_id", selected: "Calendar Lab")

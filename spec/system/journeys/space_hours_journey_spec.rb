@@ -20,10 +20,10 @@ RSpec.describe "Journey: space contact info and hours", type: :system, skip_bull
   it "admin edits address, phone and the opening-hours block -> public contact page updates" do
     visit contact_path
     expect(page).to have_text("1 Old Road")
+    audit_accessibility("contact page")
 
     as_actor(:admin) do
-      log_in_as(admin)
-      visit edit_admin_contact_info_path(info)
+      log_in_as(admin, to: edit_admin_contact_info_path(info))
       expect(page).to have_css("h2", text: "Edit Contact Info")
       fill_in "contact_info_address", with: "99 New Street"
       fill_in "contact_info_phone_number", with: "613-555-0123"

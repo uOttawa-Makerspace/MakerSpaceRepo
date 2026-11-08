@@ -6,6 +6,7 @@ FactoryBot.define do
     association :sub_space
     sequence(:name) { |n| "Subspace Booking #{n}" }
     description { Faker::Lorem.sentence }
+    booking_status { BookingStatus.find_by(name: "Pending") || association(:booking_status, :pending) }
     start_time { Time.zone.now }
     end_time { Time.zone.now + 1.hour }
     # A created factory row stands for a booking that already exists, so its
@@ -15,20 +16,9 @@ FactoryBot.define do
     # rule like any other booking.
     to_create do |booking|
       booking.allow_past_start = true
-      booking.save!
+      booking.save_with_status!(booking.booking_status)
     ensure
       booking.allow_past_start = nil
-    end
-
-    after(:create) do |booking|
-      unless booking.sub_space_booking_status_id.present?
-        pending_status = BookingStatus.find_by(name: "Pending") || create(:booking_status, :pending)
-        status = SubSpaceBookingStatus.create!(
-          sub_space_booking: booking,
-          booking_status: pending_status
-        )
-        booking.update_column(:sub_space_booking_status_id, status.id)
-      end
     end
   end
 end

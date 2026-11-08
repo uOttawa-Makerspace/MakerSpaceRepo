@@ -9,16 +9,70 @@ RSpec.describe Rfid, type: :model do
 
   describe "Validations" do
     context "card_number" do
+
       it do
         should validate_presence_of(:card_number).with_message(
                  "Card number is required."
                )
       end
-      it do
-        should validate_uniqueness_of(:card_number).with_message(
-                 "Card number is already in use."
-               )
+    end
+  end
+
+  describe "a card row always has a number" do
+    it "is invalid without a usable number" do
+      [nil, "", "   ", "\t\n"].each { |blank| expect(build(:rfid, card_number: blank)).not_to be_valid }
+    end
+
+    it "makes the database refuse a NULL or blank number past the validation" do
+      expect { build(:rfid, card_number: nil).save!(validate: false) }.to raise_error(ActiveRecord::NotNullViolation)
+      expect { build(:rfid, card_number: "  ").save!(validate: false) }.to raise_error(ActiveRecord::CheckViolation)
+      expect { build(:rfid, card_number: "\t\n ").save!(validate: false) }.to raise_error(ActiveRecord::CheckViolation)
+    end
+  end
+
+  describe ".find_or_create_card" do
+    def queries
+      count = 0
+      counter = ->(*, payload) { count += 1 unless %w[SCHEMA TRANSACTION].include?(payload[:name]) || payload[:cached] }
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { yield }
+      count
+    end
+
+    it "refuses a blank or nil number without any query" do
+      [nil, "", "  "].each do |blank|
+        result = nil
+        expect(queries { result = Rfid.find_or_create_card(blank, mac_address: "m") }).to eq(0)
+        rfid, created = result
+        expect(created).to be(false)
+        expect(rfid).not_to be_persisted
+        expect(rfid.errors[:card_number]).to eq(["Card number is required."])
       end
+    end
+
+    it "creates a card with the reader's mac_address and reports it as created" do
+      rfid, created = Rfid.find_or_create_card("new-card", mac_address: "aa:aa:aa:aa:aa:aa")
+      expect(created).to be(true)
+      expect(rfid).to be_persisted
+      expect(rfid.attributes.values_at("card_number", "mac_address", "user_id")).to eq(["new-card", "aa:aa:aa:aa:aa:aa", nil])
+      expect(rfid.created_at).to be_present
+    end
+
+    it "returns the existing row unchanged and not created" do
+      existing = create(:rfid, user: nil, mac_address: "bb:bb:bb:bb:bb:bb")
+      rfid, created = Rfid.find_or_create_card(existing.card_number, mac_address: "other")
+      expect([rfid.id, created, rfid.mac_address]).to eq([existing.id, false, "bb:bb:bb:bb:bb:bb"])
+    end
+  end
+
+  describe "unique index on card_number" do
+    it "makes the database refuse a duplicate card number (the index is the authority)" do
+      create(:rfid, card_number: "DUPLICATE-1")
+      expect { create(:rfid, card_number: "DUPLICATE-1") }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    it "is case-sensitive" do
+      create(:rfid, card_number: "case-card")
+      expect { create(:rfid, card_number: "CASE-CARD") }.not_to raise_error
     end
   end
 
@@ -32,6 +86,168 @@ RSpec.describe Rfid, type: :model do
       it "should return rfid with nil users" do
         expect(Rfid.recent_unset.count).to eq(3)
       end
+    end
+  end
+
+  describe ".link_to_user!" do
+    let(:user) { create(:user, :regular_user) }
+
+    it "creates and links a card no reader ever saw" do
+      expect(Rfid.link_to_user!("brand-new-card", user)).to be_nil
+      card = Rfid.find_by!(card_number: "brand-new-card")
+      expect(card.user_id).to eq(user.id)
+      expect(card.mac_address).to be_nil
+    end
+
+    it "links an existing unlinked card without touching its mac_address" do
+      card = create(:rfid, user: nil, mac_address: "aa:aa:aa:aa:aa:aa")
+      expect(Rfid.link_to_user!(card.card_number, user)).to be_nil
+      expect(card.reload.user_id).to eq(user.id)
+      expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "refuses a card held by another user with the reason, changing nothing" do
+      holder = create(:user, :regular_user)
+      card = create(:rfid, user: holder)
+      expect(Rfid.link_to_user!(card.card_number, user)).to eq("is already linked to another user")
+      expect(card.reload.user_id).to eq(holder.id)
+    end
+
+    it "refuses a user who already has a card with the reason, changing nothing" do
+      create(:rfid, user: user)
+      other = create(:rfid, user: nil)
+      expect(Rfid.link_to_user!(other.card_number, user)).to eq("user already has a card; unlink it first")
+      expect(other.reload.user_id).to be_nil
+      expect(Rfid.where(card_number: "never-created")).to be_empty
+      expect { Rfid.link_to_user!("never-created", user) }.not_to change(Rfid, :count)
+    end
+  end
+
+  describe ".unlink_from_user!" do
+    let(:space_a) { create(:space) }
+    let(:space_b) { create(:space) }
+    let!(:reader_a) { create(:pi_reader, space: space_a) }
+    let!(:reader_a2) { create(:pi_reader, space: space_a) }
+    let!(:reader_b) { create(:pi_reader, space: space_b) }
+    let(:owner) { create(:user, :regular_user) }
+    let!(:card) { create(:rfid, user: owner, mac_address: "aa:aa:aa:aa:aa:aa") }
+    let(:actor) { create(:user, :staff, space: space_a) }
+
+    it "unlinks the card and re-homes it to the first reader of the actor's assigned space" do
+      expect(Rfid.unlink_from_user!(owner, actor: actor)).to eq(1)
+      card.reload
+      expect(card.user_id).to be_nil
+      expect(card.mac_address).to eq(reader_a.pi_mac_address)
+    end
+
+    it "uses the assigned space, not the space of the actor's last lab session" do
+      create(:lab_session, user: actor, space: space_b, sign_in_time: 1.hour.ago, sign_out_time: 1.hour.from_now)
+      Rfid.unlink_from_user!(owner, actor: actor)
+      expect(card.reload.mac_address).to eq(reader_a.pi_mac_address)
+    end
+
+    it "lists the unlinked card for the actor's space afterwards" do
+      Rfid.unlink_from_user!(owner, actor: actor)
+      macs = PiReader.where(space: actor.space).pluck(:pi_mac_address)
+      expect(Rfid.recent_unset.where(mac_address: macs)).to include(card)
+    end
+
+    it "keeps the card's mac_address when the actor has no assigned space" do
+      actor.update_columns(space_id: nil)
+      Rfid.unlink_from_user!(owner, actor: actor.reload)
+      card.reload
+      expect(card.user_id).to be_nil
+      expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "keeps the card's mac_address when the assigned space has no reader" do
+      actor.update!(space: create(:space))
+      Rfid.unlink_from_user!(owner, actor: actor)
+      expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "leaves the mac_address alone for a nil actor, even though a space with readers exists" do
+      expect(Rfid.unlink_from_user!(owner, actor: nil)).to eq(1)
+      card.reload
+      expect(card.user_id).to be_nil
+      expect(card.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "locks the owner's row even when the owner is soft-deleted" do
+      owner.update_columns(deleted: true)
+      locks = []
+      subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+        locks << payload[:sql] if payload[:sql].include?("FOR NO KEY UPDATE") && payload[:sql].include?('FROM "users"')
+      end
+      Rfid.unlink_from_user!(owner, actor: nil)
+      ActiveSupport::Notifications.unsubscribe(subscriber)
+      expect(locks.size).to eq(1)
+      expect(locks.first).not_to include('"deleted"')
+    end
+
+    it "is a no-op returning 0 for a user without a card" do
+      other = create(:user, :regular_user)
+      expect(Rfid.unlink_from_user!(other, actor: actor)).to eq(0)
+      expect(card.reload.user_id).to eq(owner.id)
+    end
+  end
+
+  describe ".unlink_card!" do
+    let(:space) { create(:space) }
+    let!(:reader) { create(:pi_reader, space: space) }
+    let(:owner) { create(:user, :regular_user) }
+    let(:actor) { create(:user, :staff, space: space) }
+    let!(:card) { create(:rfid, user: owner, mac_address: "aa:aa:aa:aa:aa:aa") }
+
+    it "unlinks and re-homes only the given card" do
+      second = create(:rfid, user: owner, mac_address: "cc:cc:cc:cc:cc:cc")
+      expect(Rfid.unlink_card!(card.card_number, actor: actor)).to eq(:unlinked)
+      expect(card.reload.user_id).to be_nil
+      expect(card.mac_address).to eq(reader.pi_mac_address)
+      expect(second.reload.user_id).to eq(owner.id)
+      expect(second.mac_address).to eq("cc:cc:cc:cc:cc:cc")
+    end
+
+    it "keeps mac_address for an actor without an assigned space" do
+      actor.update_columns(space_id: nil)
+      expect(Rfid.unlink_card!(card.card_number, actor: actor.reload)).to eq(:unlinked)
+      expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
+    end
+
+    it "reports an already unlinked card and changes nothing" do
+      loose = create(:rfid, user: nil, mac_address: "bb:bb:bb:bb:bb:bb")
+      expect(Rfid.unlink_card!(loose.card_number, actor: actor)).to eq(:already_unlinked)
+      expect(loose.reload.mac_address).to eq("bb:bb:bb:bb:bb:bb")
+    end
+
+    it "reports an unknown card" do
+      expect(Rfid.unlink_card!("no-such-card", actor: actor)).to eq(:not_found)
+    end
+  end
+
+  describe ".link_to_user! guards" do
+    let(:user) { create(:user, :regular_user) }
+
+    it "refuses a nil or blank number first, linking and creating nothing" do
+      create(:rfid, user: user)
+      [nil, "", "  "].each do |blank|
+        expect { expect(Rfid.link_to_user!(blank, user)).to eq("is invalid") }.not_to change(Rfid, :count)
+      end
+    end
+
+    it "succeeds for a card the user owns even when a legacy user holds two cards, whatever the order" do
+      first = create(:rfid, user: user)
+      second = create(:rfid, user: user)
+      [first, second, second, first].each do |card|
+        expect(Rfid.link_to_user!(card.card_number, user)).to be_nil
+      end
+      expect(Rfid.where(user_id: user.id).count).to eq(2)
+    end
+
+    it "still refuses a different card for a user who holds one" do
+      create(:rfid, user: user)
+      other = create(:rfid, user: nil)
+      expect(Rfid.link_to_user!(other.card_number, user)).to eq("user already has a card; unlink it first")
     end
   end
 end

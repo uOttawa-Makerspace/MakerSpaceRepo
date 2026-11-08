@@ -347,12 +347,12 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(ProficientProject.training_status(training.id, user.id)).to eq("Beginner")
     end
 
-    it "deleting a project cascades to its requirements but leaves inverse requirements pointing at it dangling" do
+    it "deleting a project cascades to its requirements and to the requirements that name it as required" do
       a = create(:proficient_project)
       b = create(:proficient_project)
       ProjectRequirement.create!(proficient_project: a, required_project: b)
       b.destroy
-      expect(ProjectRequirement.where(required_project_id: b.id).count).to eq(1)
+      expect(ProjectRequirement.where(required_project_id: b.id).count).to eq(0)
     end
   end
 
@@ -412,13 +412,13 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(ProjectProposal.new(approved: "approved").approved).to eq("approved")
     end
 
-    it "destroy cascades to categories and joins but orphans linked repositories and revisions" do
+    it "destroy cascades to categories and joins and clears the link of repositories and revisions" do
       pp = create(:project_proposal, :completed)
       rev = create(:project_proposal, linked_project_proposal_id: pp.id)
       repo = pp.repositories.first
       pp.destroy
-      expect(Repository.find(repo.id).project_proposal_id).to eq(pp.id)
-      expect(rev.reload.linked_project_proposal_id).to eq(pp.id)
+      expect(Repository.find(repo.id).project_proposal_id).to be_nil
+      expect(rev.reload.linked_project_proposal_id).to be_nil
     end
   end
 

@@ -95,7 +95,7 @@
 
               <% if current_user.staff? %>
                 <div class="dropdown">
-                  <button class="btn btn-outline-secondary btn-sm rounded-pill px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Staff options">
+                  <button class="btn btn-outline-secondary btn-sm rounded-pill px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="<%= t('common.names.staff_options') %>">
                     <i class="fa fa-ellipsis-v"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow border">

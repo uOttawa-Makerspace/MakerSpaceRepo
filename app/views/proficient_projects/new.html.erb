@@ -10,13 +10,13 @@
             <%= f.text_field :title, id: 'repository_title', placeholder: 'Title of the proficient project...', class: 'form-control mb-5' %>
 
             <div class="required"><%= f.label :description, 'Description (You can now input a wiki.makerepo.com link and the page will be displayed)', class: 'form-label' %></div>
-            <%= f.trix_editor :description, placeholder: 'Description of the proficient project...', class: 'form-control mb-5', id: 'redactor', 'aria-label': 'Description (You can now input a wiki.makerepo.com link and the page will be displayed)' %>
+            <%= f.trix_editor :description, placeholder: 'Description of the proficient project...', class: 'form-control mb-5', id: 'redactor', 'aria-label': t('common.names.description_wiki_hint') %>
 
             <div class="required"><%= f.label :training_id, 'Category', class: 'form-label' %></div>
-            <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select mb-5', id: 'training_id_field' }) %>
+            <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select mb-5', id: 'training_id_field', aria: { label: t('common.names.category') } }) %>
 
             <div class="required"><%= f.label :level, 'Level', class: 'form-label' %></div>
-            <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select mb-5', id: 'training_level_field' }) %>
+            <%= f.select(:level, @training_levels, {}, { class: 'form-control form-select mb-5', id: 'training_level_field', aria: { label: t('common.names.level') } }) %>
 
             <%= f.label :cc, 'Cc Points', class: 'form-label' %>
             <%= f.number_field(:cc, class: 'form-control mb-5') %>
@@ -73,14 +73,14 @@
             <p class="alert alert-secondary mb-5" id="badge-acquired-text">No badge will be acquired</p>
 
             <%= label_tag :file, 'Project files', class: 'form-label' %>
-            <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria_label: 'Project Files / Fichiers du projet' %>
+            <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control', aria: { label: t('common.names.project_files') } %>
             <div id="file-container"></div>
 
             <div class="mb-3 mt-5 required">
               <%= label_tag :photo, 'Gallery', class: 'form-label' %>
               <div class="input-group mb-3">
-                <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria_label: 'Select Pictures / Selectionner des images' %>
-                <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input">
+                <%= file_field_tag 'images[]', type: :files, multiple: true, class: 'form-control image-upload', aria: { label: t('common.names.select_pictures') } %>
+                <button class="btn btn-success d-inline-block float-end w-auto" type="button" id="new-photo-input" aria-label="<%= t('common.add') %>">
                   <i class="fa fa-plus"></i>
                 </button>
               </div>

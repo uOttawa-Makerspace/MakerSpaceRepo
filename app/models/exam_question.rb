@@ -1,7 +1,7 @@
 class ExamQuestion < ApplicationRecord
   belongs_to :exam, optional: true
   belongs_to :question, optional: true
-  has_one :exam_response
+  has_one :exam_response, dependent: :nullify
   has_one :user, through: :exam
 
   def self.create_exam_questions(exam_id, training_id, n_questions, level)

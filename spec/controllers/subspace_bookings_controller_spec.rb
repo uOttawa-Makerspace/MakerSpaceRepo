@@ -2,9 +2,9 @@ require "rails_helper"
 require "rspec/mocks/standalone"
 RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
   before(:each) do
-    stub_const("BookingStatus::PENDING", create(:booking_status, :pending))
-    stub_const("BookingStatus::APPROVED", create(:booking_status, :approved))
-    stub_const("BookingStatus::DECLINED", create(:booking_status, :rejected))
+    create(:booking_status, :pending)
+    create(:booking_status, :approved)
+    create(:booking_status, :rejected)
   end
   before(:each) do
     @space = create(:space)
@@ -23,13 +23,13 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
         expect(response).to have_http_status(:success)
       end
       it "should return a 200 and list of bookings for the subspace" do
-        booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
+        create(:sub_space_booking, sub_space: @subspace, user: @user)
         get :bookings, params: { room: @subspace.id }
         expect(JSON.parse(response.body).length).to eq(1)
       end
 
       it "should return a 200 and list of bookings for the subspace and only that subspace" do
-        booking = create(:sub_space_booking, sub_space: @subspace, user: @user)
+        create(:sub_space_booking, sub_space: @subspace, user: @user)
         @other_space = create(:space)
         @other_subspace = create(:sub_space, space: @other_space)
         @other_booking =
@@ -107,7 +107,7 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
 
   describe "PUT/request_access" do
     context "user requests booking access" do
-      it "creates a pending request when a reason is provided" do
+      it "creates a pending request when a reason is provided", :perform_jobs do
         expect {
           put :request_access,
               params: { identity: "Other", comments: "Need access" }
@@ -270,19 +270,22 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
         get :bookings, params: { room: @subspace.id }
         expect(JSON.parse(response.body).length).to eq(3)
 
-        booking_ids = SubSpaceBooking.pluck(:id)
+        booking_ids = SubSpaceBooking.order(:id).pluck(:id)
         # a regular user cannot bulk approve; staff can
         statuses_before =
-          SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.sub_space_booking_status.booking_status_id }
+          SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.booking_status_id }
         %w[approve decline].each do |bulk_status|
           put :bulk_approve_decline,
               params: { bulk_status: bulk_status, sub_space_booking_ids: booking_ids }
           expect(response).to redirect_to(root_path)
         end
         expect(
-          SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.sub_space_booking_status.booking_status_id }
+          SubSpaceBooking.where(id: booking_ids).order(:id).map { |b| b.booking_status_id }
         ).to eq(statuses_before)
         @user.update_column(:role, "staff")
+        SubSpaceBooking.where(id: booking_ids).each do |b|
+          b.change_status!(BookingStatus.pending)
+        end
         # approve first two
         first_two_ids = booking_ids.first(2)
         put :bulk_approve_decline,
@@ -294,9 +297,8 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
           expect(
             SubSpaceBooking
               .find(b_id)
-              .sub_space_booking_status
               .booking_status_id
-          ).to eq(BookingStatus::APPROVED.id)
+          ).to eq(BookingStatus.approved.id)
 
           #decline the last one
           last_id = booking_ids.last
@@ -308,9 +310,8 @@ RSpec.describe SubSpaceBookingController, :booking_clock, type: :controller do
           expect(
             SubSpaceBooking
               .find(last_id)
-              .sub_space_booking_status
               .booking_status_id
-          ).to eq(BookingStatus::DECLINED.id)
+          ).to eq(BookingStatus.declined.id)
         end
       end
     end

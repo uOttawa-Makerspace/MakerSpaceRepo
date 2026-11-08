@@ -20,7 +20,7 @@
         <tr>
           <td class="align-middle">
             <br />
-            <a target="_blank" href="/badges/<%= certification.id %>">
+            <a target="_blank" href="<%= badge_path(certification.badge_param) %>">
               <%= render "badges/badge_icon", width: 200, height: 200, level: certification.level, name: certification.training.localized_name, skill: certification.training.skill_id %>
             </a>
           </td>

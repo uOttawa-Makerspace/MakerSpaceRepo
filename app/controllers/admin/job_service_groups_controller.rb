@@ -1,9 +1,6 @@
 class Admin::JobServiceGroupsController < AdminAreaController
   before_action :set_job_service_group, only: %i[edit update destroy]
 
-  def index
-  end
-
   def new
     @job_service_group = JobServiceGroup.new
   end

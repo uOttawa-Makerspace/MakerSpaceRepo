@@ -30,8 +30,7 @@ RSpec.describe "Job Orders browser flow", type: :system do
   end
 
   it "guides the Ready-to-Make choice from landing to wizard step 1" do
-    log_in_as(user)
-    visit landing_job_orders_path
+    log_in_as(user, to: landing_job_orders_path)
 
     click_link "Start a Job Order"
     expect(page).to have_content("What kind of project are you starting?")
@@ -51,20 +50,15 @@ RSpec.describe "Job Orders browser flow", type: :system do
     order = JobOrder.order(:id).last
     expect(order.user).to eq(user)
     expect(order.is_deleted).to be(false)
-    # the "Start Production" button's inline onclick JS is broken in
-    # the shipped HTML — the ENB attribute quotes arrive un-escaped
-    # (&#39; without the needed backslashes), so the handler raises
-    # SyntaxError and the hidden job_type_id stays "" → the order is created
-    # with a NULL job_type (typeless).
-    expect(order.job_type_id).to be_nil
-    expect(order.job_type).to be_nil
+    # the card carries the Ready to Make type (it is hidden when that type is missing),
+    # so the order is created with it; the first task is typeless until step 1 is filled in.
+    expect(order.job_type).to eq(JobType.ready_to_make)
     expect(order.job_tasks.first.title).to eq("Task #1")
     expect(order.job_tasks.first.job_type).to be_nil
   end
 
   it "routes the Need-Design-Help choice straight into the design service step" do
-    log_in_as(user)
-    visit landing_job_orders_path
+    log_in_as(user, to: landing_job_orders_path)
     click_link "Start a Job Order"
 
     click_button "Get Design Help"

@@ -24,8 +24,8 @@ class Locker < ApplicationRecord
         ->(audience = nil) do
           lockers = where.not(
             id: joins(:locker_rentals).where(locker_rentals: { state: :active }).select(:id)
-          ).distinct.includes(:locker_size)
-          
+          ).distinct
+
           # If an audience is provided (e.g. 'staff' or 'gng'), filter the available lockers
           # Using present? prevents empty strings from accidentally filtering out everything
           lockers = lockers.where(audience: audience) if audience.present?

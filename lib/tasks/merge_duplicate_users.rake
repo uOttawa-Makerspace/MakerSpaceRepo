@@ -1,5 +1,25 @@
+require Rails.root.join("lib/learning_module_track_merge")
+
 # Finds all duplicated users and deletes them. This also doubles as a quick test
 # for destroying user records.
+
+# Raised when a pair of accounts cannot be merged without losing data (a row of the duplicate
+# differs from the primary's row for the same key). It stops that pair only: the run reports
+# the pair and goes on with the others. Neither row is ever deleted.
+class UserMergeRefused < StandardError
+  attr_reader :primary_id, :duplicate_id, :table, :row_ids
+
+  def initialize(primary_id:, duplicate_id:, table:, row_ids:)
+    @primary_id = primary_id
+    @duplicate_id = duplicate_id
+    @table = table
+    @row_ids = row_ids
+    super(
+      "Cannot merge user #{duplicate_id} into #{primary_id}: #{table} rows #{row_ids.join(', ')} of the " \
+      'duplicate differ from the primary\'s row for the same key. Settle them by hand and run the task again.'
+    )
+  end
+end
 
 namespace :users do
   desc 'Find and merge all duplicated user records. Uses the record with the
@@ -12,10 +32,13 @@ namespace :users do
     puts "#{duplicated_emails.count} duplicated emails found."
 
     merged_users = []
+    merged_pairs = []
+    skipped_pairs = []
     duplicated_emails.each do |email|
-      username = merge_duplicated_email(email)
-      merged_users << { username: username, email: email }
+      username = merge_duplicated_email(email, merged_pairs, skipped_pairs)
+      merged_users << { username: username, email: email } if username
     end
+    print_merge_summary(merged_pairs, skipped_pairs)
 
     # Writes this to root by default
     File.write('merged_emails_list.json', merged_users.to_json)
@@ -24,13 +47,23 @@ namespace :users do
     duplicated_usernames = username_tally.keys
     puts "After email merge, there are #{duplicated_usernames.count} usernames duplicated."
 
+    # The accounts of a skipped pair are left as they are, for whoever settles the pair; any other account that
+    # shares a username with them is renamed as usual.
+    skipped_ids = skipped_account_ids(skipped_pairs)
     renamed_users = []
     duplicated_usernames.each do |username|
-      renamed_users << rename_duplicated_username(username)
+      renamed = rename_duplicated_username(username, skipped_ids)
+      renamed_users << renamed if renamed
     end
 
     File.write('renamed_username_list.json', renamed_users.to_json)
     puts "renamed_username_list.json written to #{Dir.pwd}"
+
+    # What is still shared now is shared by accounts of skipped pairs only.
+    still_duplicated = username_tally.keys
+    if still_duplicated.any?
+      puts "Usernames left duplicated because their pair was skipped: #{still_duplicated.join(', ')}"
+    end
   end
 
   task :notify_modified_users, [] => :environment do
@@ -117,7 +150,9 @@ namespace :users do
       .filter { |k, v| v > 1 }
   end
 
-  def rename_duplicated_username(username)
+  # Renames the accounts that share the username, except those in `left_alone_ids`. Returns the changelog of the
+  # last rename, or nil when every holder of the username is left alone.
+  def rename_duplicated_username(username, left_alone_ids = [])
     users =
       User.unscope(where: :deleted).where('lower(username) ilike ?', username)
 
@@ -130,6 +165,12 @@ namespace :users do
     if users.where(deleted: false) == 1
       # the rest are deleted users, change those instead
       users = users.where(deleted: true)
+    end
+
+    users = users.where.not(id: left_alone_ids)
+    if users.none?
+      puts "\tleft alone: #{username} (every holder is in a skipped pair)"
+      return nil
     end
 
     changelog = {}
@@ -151,7 +192,27 @@ namespace :users do
     changelog
   end
 
-  def merge_duplicated_email(email)
+  # The ids of the accounts in skipped pairs.
+  def skipped_account_ids(skipped_pairs)
+    skipped_pairs.flat_map { |pair| [pair[:primary_id], pair[:duplicate_id]] }.uniq
+  end
+
+  # One line per pair, then the totals. A skipped pair is listed with the table and rows to settle by hand.
+  def print_merge_summary(merged_pairs, skipped_pairs)
+    puts "Merged #{merged_pairs.count} pairs, skipped #{skipped_pairs.count} pairs."
+    merged_pairs.each do |pair|
+      puts "\tmerged: user #{pair[:duplicate_id]} into #{pair[:primary_id]}"
+    end
+    skipped_pairs.each do |pair|
+      puts "\tskipped: user #{pair[:duplicate_id]} into #{pair[:primary_id]} " \
+           "(#{pair[:table]} rows #{pair[:row_ids].join(', ')} differ)"
+    end
+  end
+
+  # Merges every duplicate of the email into one user. A pair that is refused is rolled back
+  # on its own, recorded in skipped_pairs, and the rest go on. Returns the kept username, or
+  # nil when no duplicate of this email could be merged.
+  def merge_duplicated_email(email, merged_pairs = [], skipped_pairs = [])
     users =
       User
         .where('lower(email) like ?', email)
@@ -161,22 +222,37 @@ namespace :users do
       raise "Duplicated records were not found again for email #{email}. Probably a deleted user exists?"
     end
     puts "#{email} had #{users.count} records"
+    merge_users_into_one(users, merged_pairs, skipped_pairs)
+  end
+
+  # users are sorted by number of associations, the last has the most.
+  def merge_users_into_one(users, merged_pairs, skipped_pairs)
     # Prefer staff roles
     primary = users.find(&:staff?) || users.last # or most associations
     duplicates = users.excluding(primary)
 
+    merged_any = false
     duplicates.each do |duplicate|
-      ActiveRecord::Base.transaction { merge_record(primary, duplicate) }
+      begin
+        ActiveRecord::Base.transaction { merge_record(primary, duplicate) }
+        merged_pairs << { primary_id: primary.id, duplicate_id: duplicate.id }
+        merged_any = true
+      rescue UserMergeRefused => e
+        puts "\tSkipped: #{e.message}"
+        skipped_pairs << { primary_id: e.primary_id, duplicate_id: e.duplicate_id, table: e.table, row_ids: e.row_ids }
+      end
     end
 
     # Return the username left at the end
-    primary.username
+    merged_any ? primary.username : nil
   end
 
   def merge_record(primary, duplicate)
     # https://api.rubyonrails.org/classes/ActiveRecord/Reflection/ClassMethods.html#method-i-reflect_on_all_associations
     # Reflect on all table-level associations
     # User.reflect_on_all_associations.map(&:macro).uniq
+    merge_shared_tracks(primary, duplicate)
+    discard_rows_primary_already_has(primary, duplicate)
     # We're going to hit all possible assocs, need to make sure there's a record to update
     User.reflect_on_all_associations.each do |assoc|
       case assoc.macro
@@ -194,7 +270,122 @@ namespace :users do
       end
     end
 
+    repoint_remaining_user_references(primary, duplicate)
     duplicate.destroy!
+  end
+
+  # Tracks of a module both users have are merged into the primary's track by the same
+  # rule the unique-index migration uses (best status, newest SCORM state, earliest
+  # created_at, latest updated_at), so nothing the duplicate recorded is lost. The
+  # primary's row is the one kept; tracks only the duplicate has are moved afterwards.
+  def merge_shared_tracks(primary, duplicate)
+    connection = ActiveRecord::Base.connection
+    LearningModuleTrackMerge.merge!(
+      connection,
+      source: 'users:merge_duplicates',
+      group: %w[learning_module_id],
+      where: ActiveRecord::Base.sanitize_sql_array(['user_id IN (?)', [primary.id, duplicate.id]]),
+      keeper_order: ActiveRecord::Base.sanitize_sql_array(['(user_id = ?) DESC, created_at, id', primary.id])
+    )
+  end
+
+  # Foreign keys to users that the database does not clear by itself (no action or restrict).
+  def user_reference_columns
+    connection = ActiveRecord::Base.connection
+    connection.tables.flat_map do |table|
+      connection.foreign_keys(table).filter_map do |foreign_key|
+        next unless foreign_key.to_table == 'users' && [nil, :restrict].include?(foreign_key.on_delete)
+
+        [table, foreign_key.column]
+      end
+    end
+  end
+
+  # Where a unique index would stop the duplicate's row from moving to the primary because
+  # the primary already has a row with the same other columns, the duplicate's row is
+  # dropped only when it holds exactly the same data as the primary's (every column but
+  # id, the user and updated_at; created_at counts, as the signing date of a sheet). A row
+  # that differs is never dropped: the merge of this pair is refused (UserMergeRefused) and only that pair is skipped, to be settled by hand. An index on the user
+  # column alone cannot be settled by dropping anything, so it is left to fail loudly when
+  # the row is moved.
+  def discard_rows_primary_already_has(primary, duplicate)
+    connection = ActiveRecord::Base.connection
+    user_reference_columns.each do |table, column|
+      connection.indexes(table).each do |index|
+        next unless index.unique && index.where.nil? && index.columns.is_a?(Array) && index.columns.include?(column)
+
+        others = index.columns - [column]
+        next if others.empty?
+
+        same_key = others.map do |other|
+          "d.#{connection.quote_column_name(other)} = p.#{connection.quote_column_name(other)}"
+        end
+        delete_repeat_rows(connection, table, column, same_key + [same_data_condition(connection, table, column)],
+                           primary, duplicate)
+        raise_on_differing_rows(connection, table, column, same_key, primary, duplicate)
+      end
+    end
+  end
+
+  def same_data_condition(connection, table, column)
+    ignored = [connection.primary_key(table), column, 'updated_at'].compact.map { |name| connection.quote(name) }
+    "(to_jsonb(d) - ARRAY[#{ignored.join(', ')}]) = (to_jsonb(p) - ARRAY[#{ignored.join(', ')}])"
+  end
+
+  def raise_on_differing_rows(connection, table, column, same_key, primary, duplicate)
+    quoted_table = connection.quote_table_name(table)
+    quoted_column = connection.quote_column_name(column)
+    differing = connection.select_values(
+      ActiveRecord::Base.sanitize_sql_array(
+        ["SELECT d.#{connection.quote_column_name(connection.primary_key(table) || column)} FROM #{quoted_table} d " \
+           "JOIN #{quoted_table} p ON #{same_key.join(' AND ')} AND p.#{quoted_column} = ? WHERE d.#{quoted_column} = ?",
+         primary.id, duplicate.id]
+      )
+    )
+    return if differing.empty?
+
+    raise UserMergeRefused.new(primary_id: primary.id, duplicate_id: duplicate.id, table: table, row_ids: differing)
+  end
+
+  # Columns that reference users without a User association (supervisor_id, admin_id) and
+  # the join tables without a primary key (training_sessions_users, ...) are repointed to
+  # the primary; the foreign key would otherwise refuse to delete the duplicate. A join row
+  # the primary already has, column for column, is dropped instead of moved twice: it is
+  # the same row, not lost data.
+  def repoint_remaining_user_references(primary, duplicate)
+    connection = ActiveRecord::Base.connection
+    user_reference_columns.each do |table, column|
+      if connection.primary_key(table).nil?
+        same = (connection.columns(table).map(&:name) - [column]).map do |other|
+          quoted = connection.quote_column_name(other)
+          "d.#{quoted} IS NOT DISTINCT FROM p.#{quoted}"
+        end
+        delete_repeat_rows(connection, table, column, same, primary, duplicate)
+      end
+
+      connection.update(
+        ActiveRecord::Base.sanitize_sql_array(
+          [
+            "UPDATE #{connection.quote_table_name(table)} SET #{connection.quote_column_name(column)} = ? " \
+              "WHERE #{connection.quote_column_name(column)} = ?",
+            primary.id,
+            duplicate.id
+          ]
+        )
+      )
+    end
+  end
+
+  def delete_repeat_rows(connection, table, column, same_conditions, primary, duplicate)
+    quoted_table = connection.quote_table_name(table)
+    quoted_column = connection.quote_column_name(column)
+    conditions = ["d.#{quoted_column} = ?", "p.#{quoted_column} = ?"]
+    connection.delete(
+      ActiveRecord::Base.sanitize_sql_array(
+        ["DELETE FROM #{quoted_table} d USING #{quoted_table} p WHERE #{(conditions + same_conditions).join(' AND ')}",
+         duplicate.id, primary.id]
+      )
+    )
   end
 
   def merge_has_many_association(primary, duplicated, assoc)
@@ -207,22 +398,13 @@ namespace :users do
         .klass # Get model class and run a query to find duplicate
         .where(assoc.foreign_key => duplicated.id)
         .find_each do |foreign_record|
-          if assoc.name == :user_booking_approvals &&
+          if assoc.klass == UserBookingApproval &&
                foreign_record.identity.blank?
             foreign_record.identity = 'Other'
           end
           # update in a map to get validations to run
           foreign_record.update!(assoc.foreign_key => primary.id)
           puts "\tUpdating has_many association #{assoc.name}"
-        rescue ActiveRecord::RecordInvalid => e
-          # At the time of writing this, there's only one space you can sign a
-          # sheet for. Assuming you've signed it we can discard the second copy.
-          if assoc.name == :walk_in_safety_sheets
-            puts "\tRecord already has a safety sheet, discarding..."
-            foreign_record.destroy
-          else
-            raise e
-          end
         end
     end
   end
@@ -265,14 +447,32 @@ namespace :users do
 
   # move an association assoc from record duplicate to primary
   # This is a bit more tricky, as we can't just append to an array
+  # Legacy users may hold several cards. Every card of the duplicate is unlinked through
+  # the unlink rule (no actor here, so each card's mac_address stays as it is) and the rows
+  # are kept; if the kept user holds no card, the duplicate's most recently used one is
+  # linked to them through the link rule.
+  def merge_cards(primary, duplicate)
+    newest = Rfid.where(user_id: duplicate.id).order(:updated_at, :id).last
+    Rfid.unlink_from_user!(duplicate, actor: nil)
+    return unless newest && !Rfid.where(user_id: primary.id).exists?
+
+    error = Rfid.link_to_user!(newest.card_number, primary)
+    raise "card #{newest.card_number} could not move to the kept user: #{error}" if error
+  end
+
   def merge_has_one_association(primary, duplicate, assoc)
     # Call a method named 'assoc'
     # NOTE : This works because there's no polymorphic associations. You should
     # never use them anyways
     foreign_record = duplicate.send(assoc.name)
     return unless foreign_record
-    # This is usually the rfid model, assuming we can simply move it over
-    foreign_record.update!(assoc.foreign_key => primary.id)
+    if assoc.klass == Rfid
+      merge_cards(primary, duplicate)
+    else
+      foreign_record.update!(assoc.foreign_key => primary.id)
+    end
+    # the duplicate is destroyed next: its cached association must not show the old card
+    duplicate.association(assoc.name).reset
   end
 
   def merge_habtm_association(primary, duplicate, assoc)

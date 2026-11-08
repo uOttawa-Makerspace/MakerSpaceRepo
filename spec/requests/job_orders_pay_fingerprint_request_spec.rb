@@ -21,10 +21,12 @@ RSpec.describe "Job order pay link fingerprint", type: :request do
   def get_raising_app_errors(*args, **kwargs)
     env_config = Rails.application.env_config
     previous = env_config["action_dispatch.show_exceptions"]
-    env_config["action_dispatch.show_exceptions"] = :none
-    get(*args, **kwargs)
-  ensure
-    env_config["action_dispatch.show_exceptions"] = previous
+    begin
+      env_config["action_dispatch.show_exceptions"] = :none
+      get(*args, **kwargs)
+    ensure
+      env_config["action_dispatch.show_exceptions"] = previous
+    end
   end
 
   def status_names(order)
@@ -37,7 +39,7 @@ RSpec.describe "Job order pay link fingerprint", type: :request do
 
   def requote_mails
     ActiveJob::Base.queue_adapter.enqueued_jobs
-                   .select { |j| j[:job] == ActionMailer::MailDeliveryJob && j[:args].first(2) == %w[JobOrderMailer send_job_requote_needed] }
+                   .select { |j| j[:job] == ApplicationMailer.delivery_job && j[:args].first(2) == %w[JobOrderMailer send_job_requote_needed] }
                    .map { |j| j[:args].last["args"].first }
   end
 

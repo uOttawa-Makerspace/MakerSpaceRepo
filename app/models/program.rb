@@ -3,18 +3,12 @@
 class Program < ApplicationRecord
   belongs_to :user, optional: true
   validates :user,
-            presence: {
-              message: "A user is required."
-            },
+            presence: true,
             uniqueness: {
-              scope: :program_type,
-              message: "An user can only join a program once"
+              scope: :program_type
             }
   validates :program_type,
-            presence: {
-              message:
-                "The type of the program is required. Either 'Volunteer Program', 'Development Program', or 'Teams Program'"
-            }
+            presence: true
   VOLUNTEER = "Volunteer Program"
   DEV_PROGRAM = "Development Program"
   TEAMS = "Teams Program"

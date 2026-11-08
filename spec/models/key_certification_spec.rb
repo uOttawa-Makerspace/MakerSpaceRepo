@@ -63,6 +63,13 @@ RSpec.describe KeyCertification, type: :model do
       end
     end
 
+    context "#pdf_file_at" do
+      it "returns the attachment of each of the ten slots and nil for any other number" do
+        (1..10).each { |i| expect(@key_cert.pdf_file_at(i)).to eq(@key_cert.send("pdf_file_#{i}")) }
+        [0, 11, -1, nil].each { |i| expect(@key_cert.pdf_file_at(i)).to be_nil }
+      end
+    end
+
     context "#attach_pdf_file" do
       it "should attach the file" do
         pdf_file =

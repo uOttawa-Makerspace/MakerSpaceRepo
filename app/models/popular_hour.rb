@@ -28,7 +28,7 @@ class PopularHour < ApplicationRecord
 
   def self.with_fold_lock(&)
     transaction do
-      connection.select_value("SELECT pg_advisory_xact_lock($1)", "PopularHour fold lock", [FOLD_LOCK_KEY])
+      connection.select_value("SELECT 1 FROM pg_advisory_xact_lock($1)", "PopularHour fold lock", [FOLD_LOCK_KEY])
       yield
     end
   end

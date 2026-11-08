@@ -13,7 +13,7 @@ RSpec.describe "Login and profile", type: :system do
 
 
   it "logs in, shows the profile page and edits the name in settings" do
-    log_in_as(user)
+    log_in_through_form(user)
     expect(page).to have_current_path(root_path)
 
     visit user_path(user.username)
@@ -34,7 +34,7 @@ RSpec.describe "Login and profile", type: :system do
   end
 
   it "shows an inline validation message when the name is blank" do
-    log_in_as(user)
+    log_in_through_form(user)
     visit settings_profile_path
     fill_in "user_name", with: ""
     click_button "Save Changes"
@@ -49,7 +49,7 @@ RSpec.describe "Login and profile", type: :system do
   # the settings form POSTs with the current password; the emailed link
   # opens a confirmation page whose button POSTs the token.
   it "changes the email: settings form with the current password, then the emailed link's confirm page" do
-    log_in_as(user)
+    log_in_through_form(user)
     visit settings_admin_path
     fill_in "new_email", with: "pat.new@example.com"
     fill_in "confirm_new_email", with: "pat.new@example.com"
@@ -75,17 +75,17 @@ RSpec.describe "Login and profile", type: :system do
   end
 
   # js_errors: :allow, the 422 response to the bad login is logged by Chrome as a SEVERE resource error
-  it "rejects a wrong password with the incorrect-password alert and stays on the form", js_errors: :allow do
+  it "rejects a wrong password with the generic invalid-credentials alert and stays on the form", js_errors: :allow do
     visit login_path
     fill_in "username_email", with: user.username
     fill_in "password", with: "wrong-password"
     find("input[type=submit]").click
-    expect(page).to have_text("Incorrect password.")
+    expect(page).to have_text("Incorrect username, email or password.")
     expect(page).to have_css("input#username_email")
   end
 
   it "logging out returns to the homepage as a guest" do
-    log_in_as(user)
+    log_in_through_form(user)
     visit logout_path
     expect(page).to have_current_path(root_path)
     visit settings_profile_path

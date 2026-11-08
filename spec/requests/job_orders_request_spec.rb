@@ -308,12 +308,31 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   describe "GET /job_orders/new" do
     it "renders the two entry cards and the hidden redirect_step fields" do
       http_login!(owner)
+      seed_job_types!
       get new_job_orders_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(I18n.t("job_orders.new.ready_to_make.title"))
       expect(response.body).to include(I18n.t("job_orders.new.need_design_help.title"))
       expect(response.body).to include('name="job_order[job_type_id]"')
       expect(response.body).to include('name="redirect_step"')
+    end
+
+    it "shows the Ready to Make card with its type when the type exists" do
+      http_login!(owner)
+      seed_job_types!
+      get new_job_orders_path
+      expect(response.body).to include(I18n.t("job_orders.new.ready_to_make.title"))
+      expect(response.body).to include(%(value="#{JobType.ready_to_make.id}"))
+    end
+
+    it "hides the Ready to Make card when the type is missing, as it does for Design Help" do
+      http_login!(owner)
+      seed_job_types!
+      JobType.where(name: "Ready to Make").delete_all
+      get new_job_orders_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include('name="redirect_step" id="redirect_step" value="1"')
+      expect(response.body).to include('name="redirect_step" id="redirect_step" value="2"')
     end
   end
 
@@ -365,32 +384,47 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   # ------------------------------------------------------- PATCH user_approval
 
   describe "PATCH /job_orders/:id/user_approval" do
-    it "moves USER_APPROVAL → WAITING_PROCESSED, notifies staff by mail, redirects (HTML)" do
+    it "moves USER_APPROVAL → WAITING_PROCESSED, notifies staff and confirms to the customer by mail, redirects (HTML)" do
       order = order_with_task!(owner: owner)
       advance_to!(order, :user_approval)
       http_login!(owner)
       expect do
         patch job_order_user_approval_path(order), params: { approved: "true" }
-      end.to change { ActionMailer::Base.deliveries.size }.by(1)
+      end.to change { ActionMailer::Base.deliveries.size }.by(2)
 
       expect(response).to redirect_to(job_order_path(order))
       expect(status_names(order))
         .to eq(["Draft", "Waiting for User Approval", "Waiting to be Processed"])
-      expect(ActionMailer::Base.deliveries.last.subject)
-        .to eq("A user has approved a Job Order")
-      expect(ActionMailer::Base.deliveries.last.to).to eq(["makerspace@uottawa.ca"])
+      staff_mail, customer_mail = ActionMailer::Base.deliveries.last(2)
+      expect(staff_mail.subject).to eq("A user has approved a Job Order")
+      expect(staff_mail.to).to eq(["makerspace@uottawa.ca"])
+      expect(customer_mail.to).to eq([owner.email])
+      expect(customer_mail.subject).to include("Your approval of job order ##{order.id} is recorded")
     end
 
-    it "APPROVED=false records the DECLINED status without a mail" do
+    it "APPROVED=false records the DECLINED status, notifies staff and confirms to the customer" do
       order = order_with_task!(owner: owner)
       advance_to!(order, :user_approval)
       http_login!(owner)
       expect do
         patch job_order_user_approval_path(order), params: { approved: "false" }
-      end.not_to(change { ActionMailer::Base.deliveries.size })
+      end.to change { ActionMailer::Base.deliveries.size }.by(2)
 
       expect(status_names(order)).to include("Declined")
       expect(status_names(order)).not_to include("Waiting to be Processed")
+      staff_mail, customer_mail = ActionMailer::Base.deliveries.last(2)
+      expect(staff_mail.to).to eq(["makerspace@uottawa.ca"])
+      expect(staff_mail.subject).to eq("A user has declined a Job Order")
+      expect(customer_mail.to).to eq([owner.email])
+      expect(customer_mail.subject).to include("Your decline of job order ##{order.id} is recorded")
+    end
+
+    it "sends nothing when the transition is refused" do
+      order = order_with_task!(owner: owner) # Draft
+      http_login!(owner)
+      expect do
+        patch job_order_user_approval_path(order), params: { approved: "false" }
+      end.not_to(change { ActionMailer::Base.deliveries.size })
     end
 
     it "alerts and does nothing for a non-matching current state" do
@@ -649,6 +683,35 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
         end
       end
+    end
+  end
+
+  describe "PATCH /job_orders/:id/paid mail" do
+    before { http_login!(staff) }
+
+    it "sends the ready-for-pickup mail to the owner once, and not again when marked paid twice" do
+      order = order_with_task!(owner: owner, status_key: :completed)
+      2.times { patch job_order_paid_path(order), params: { paid: "true" } }
+
+      expect(status_names(order).count("Paid (Waiting for Pick-Up)")).to eq(1)
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      mail = ActionMailer::Base.deliveries.last
+      expect(mail.subject).to eq("Your Job Order ##{order.id} is now ready for pickup")
+      expect(mail.to).to eq([owner.email])
+    end
+
+    it "sends nothing when the order is not completed" do
+      order = order_with_task!(owner: owner, status_key: :being_processed)
+      patch job_order_paid_path(order), params: { paid: "true" }
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "sends nothing more when a zero-total order was already paid by the processed step" do
+      order = order_with_task!(owner: owner, status_key: :being_processed)
+      order.job_tasks.first.build_job_task_quote(price: 0).save!
+      patch job_order_processed_path(order), params: { completed: "true" }
+      patch job_order_paid_path(order), params: { paid: "true" }
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
     end
   end
 
@@ -1123,16 +1186,17 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           expect(status_names(magic_order))
             .to eq(["Waiting for User Approval", "Waiting to be Processed"])
           expect(magic_order.job_order_statuses.last.user).to eq(owner)
-          # the magic-link path notifies nobody
-          expect(ActionMailer::Base.deliveries).to be_empty
+          expect(ActionMailer::Base.deliveries.map(&:to)).to eq([["makerspace@uottawa.ca"], [owner.email]])
         end
 
-        it "denies: appends Declined" do
+        it "denies: appends Declined, notifies staff and confirms to the customer" do
           patch user_magic_approval_confirmation_job_orders_path,
                 params: { token: token, approved: "false" }
           expect(response).to have_http_status(:ok)
           expect(status_names(magic_order)).to end_with("Declined")
           expect(status_names(magic_order)).not_to include("Waiting to be Processed")
+          expect(ActionMailer::Base.deliveries.map(&:to)).to eq([["makerspace@uottawa.ca"], [owner.email]])
+          expect(ActionMailer::Base.deliveries.first.subject).to eq("A user has declined a Job Order")
         end
 
         # The status check is the only "one-time" guard: the token itself stays
@@ -1154,6 +1218,13 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       # the status row is attributed to the order's owner, so a
       # guest following the emailed link can approve or deny without signing in.
+      it "mails staff and the customer once on an anonymous approval, and nothing on a replay" do
+        2.times do
+          patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: "true" }
+        end
+        expect(ActionMailer::Base.deliveries.map(&:to)).to eq([["makerspace@uottawa.ca"], [owner.email]])
+      end
+
       it "lets an anonymous visitor approve: the status is persisted and attributed to the order owner" do
         patch user_magic_approval_confirmation_job_orders_path,
               params: { token: token, approved: "true" }
@@ -1286,5 +1357,38 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       get pay_job_orders_path, params: { token: minted }
       expect(response).to redirect_to(job_orders_path)
     end
+  end
+end
+
+RSpec.describe "GET /job_orders/new design help card", type: :request do
+  include JobOrdersSpecHelpers if defined?(JobOrdersSpecHelpers)
+
+  let(:user) { create(:user, :regular_user) }
+
+  before { log_in!(user) }
+
+  it "offers the Design Services card with that type's id" do
+    type = JobType.find_by(name: "Design Services") || JobType.create!(name: "Design Services", description: "d")
+    get new_job_orders_path
+    expect(response.body).to include(%(name="job_order[job_type_id]" id="job_order_job_type_id" value="#{type.id}"))
+    expect(response.body).to include('name="redirect_step" id="redirect_step" value="2"')
+  end
+
+  it "still offers the card when create fails and the page is rendered again" do
+    JobType.find_by(name: "Design Services") || JobType.create!(name: "Design Services", description: "d")
+    allow_any_instance_of(JobOrder).to receive(:save).and_return(false)
+    expect { post job_orders_path, params: { job_order: { job_type_id: "" }, redirect_step: 1 } }
+      .not_to change(JobOrder, :count)
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('name="redirect_step" id="redirect_step" value="2"')
+  end
+
+  it "hides the card when there is no Design Services type" do
+    JobType.find_by(name: "Ready to Make") || JobType.create!(name: "Ready to Make", description: "r")
+    JobType.where(name: "Design Services").destroy_all
+    get new_job_orders_path
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include('name="redirect_step" id="redirect_step" value="2"')
+    expect(response.body).to include('name="redirect_step" id="redirect_step" value="1"')
   end
 end

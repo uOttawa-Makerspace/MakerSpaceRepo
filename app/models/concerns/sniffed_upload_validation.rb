@@ -96,11 +96,11 @@ module SniffedUploadValidation
 
       filename = blob.filename.to_s
       if blob.byte_size.to_i > max_size
-        errors.add(name, "#{filename} is too large (maximum is #{ActiveSupport::NumberHelper.number_to_human_size(max_size)})")
+        errors.add(name, :upload_too_large, filename: filename, max_size: ActiveSupport::NumberHelper.number_to_human_size(max_size))
       end
       sniffed = sniffed_upload_types[blob] ||= sniff_upload(attachable, blob, name_fallback)
       unless sniffed_type_acceptable?(sniffed, allow, deny)
-        errors.add(name, "#{filename} has a file type that is not allowed (#{sniffed || 'unreadable'})")
+        errors.add(name, :upload_type_not_allowed, filename: filename, detected_type: sniffed || I18n.t("activerecord.errors.upload_type_unreadable"))
       end
     end
   end

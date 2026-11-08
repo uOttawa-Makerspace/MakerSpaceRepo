@@ -1,5 +1,6 @@
 class RepositoriesController < SessionsController
   include BCrypt
+  include ZipKit::RailsStreaming
   before_action :current_user
   before_action :signed_in,
                 except: %i[show download_files password_entry pass_authenticate]
@@ -19,10 +20,17 @@ class RepositoriesController < SessionsController
   rate_limit to: 10, within: 10.minutes, only: :pass_authenticate,
              by: -> { "#{@repository.id}:#{@user.id.presence || request.remote_ip}" },
              with: -> {
-               redirect_to password_entry_repository_path(@repository.user_username, @repository.id),
+               redirect_to password_entry_repository_path(denial_username(@repository), @repository.id),
                            alert: "Too many attempts. Please try again later."
              }
+  before_action :redirect_to_owner_url, only: %i[show download_files password_entry]
   before_action :check_auth, only: %i[show download_files]
+  before_action :require_sign_in_to_download, only: :download_files
+  # Zip builds are expensive: per user and per address, staff and admin exempt
+  rate_limit to: 20, within: 1.hour, only: :download_files, name: "download-user", if: -> { throttled_downloader? },
+             by: -> { current_user.id }, with: -> { download_throttled }
+  rate_limit to: 20, within: 1.hour, only: :download_files, name: "download-ip", if: -> { throttled_downloader? },
+             by: -> { request.remote_ip }, with: -> { download_throttled }
   before_action -> { ensure_repository_unlocked(@repository) }, only: :add_like
   before_action :set_member_repository,
                 only: %i[link_to_pp add_member remove_member]
@@ -34,7 +42,7 @@ class RepositoriesController < SessionsController
   def show
     if @repository.private? && !@check_passed
       redirect_to password_entry_repository_path(
-                    @repository.user_username,
+                    denial_username(@repository),
                     @repository.id
                   ) and return
     end
@@ -85,77 +93,22 @@ class RepositoriesController < SessionsController
   def download_files
     # Verify authorization for private repositories
     if @repository.private? && !@check_passed
-      redirect_to password_entry_repository_path(@repository.user_username, @repository.id), alert: "Password required" and return
+      redirect_to password_entry_repository_path(denial_username(@repository), @repository.id), alert: "Password required" and return
     end
 
-    @files = @repository.repo_files
-    if @files.empty?
+    if @repository.repo_files.empty?
       flash[:alert] = "This repository has no files to download."
       redirect_to repository_path(@repository.user_username, @repository.slug) and return
     end
 
-    zip_dir = Rails.root.join("tmp", "repository_zips")
-    FileUtils.mkdir_p(zip_dir) unless File.directory?(zip_dir)
-
-    zip_path = zip_dir.join("makerepo_#{@repository.id}.zip")
-
-    # CACHE CHECK: If the zip already exists and is newer than the repository,
-    # send it immediately without touching S3
-    if File.exist?(zip_path) && File.mtime(zip_path) > @repository.updated_at
-      send_file zip_path,
-                type: "application/zip",
-                filename: "#{@repository.title.parameterize.presence || 'repository'}-#{@repository.id}.zip"
-      return
-    end
-
-    # If out of date, remove the old zip and build a new one
-    File.delete(zip_path) if File.exist?(zip_path)
-
-    temp_files = []
-    files_added_count = 0
-
-    begin
-      Zip::File.open(zip_path, create: true) do |zip|
-        @files.each_with_index do |file, index|
-          next unless file.file.attached?
-
-          temp_file = Tempfile.new(["repo_file", File.extname(file.file.filename.to_s)], binmode: true)
-          temp_files << temp_file
-
-          begin
-            # Stream directly from S3 without the slow pre-check
-            file.file.download { |chunk| temp_file.write(chunk) }
-            temp_file.flush
-            temp_file.rewind
-
-            entry_name = file.file.filename.to_s
-            entry_name = "#{index}_#{entry_name}" if zip.find_entry(entry_name)
-            zip.add(entry_name, temp_file.path)
-            files_added_count += 1
-          rescue ActiveStorage::FileNotFoundError, Aws::S3::Errors::NoSuchKey
-            # Skip files that don't exist in the S3 bucket (e.g. in staging)
-            Rails.logger.warn("Attachment #{file.file.blob&.key} missing in S3, skipping.")
-          end
-        end
-      end
-    ensure
-      # Clean up all tempfiles after Zip::File has completely closed
-      temp_files.each do |tf|
-        tf.close
-        tf.unlink
-      end
-    end
-
-    # If no files actually existed in S3, don't send an empty/broken zip
-    if files_added_count.zero?
-      File.delete(zip_path) if File.exist?(zip_path)
+    zip = Repository::ZipCache.new(@repository).fetch
+    # If no files actually existed in S3, there is no zip to send
+    if zip.empty?
       flash[:alert] = "None of the files for this repository could be found in storage."
       redirect_to repository_path(@repository.user_username, @repository.slug) and return
     end
 
-    send_file zip_path,
-              type: "application/zip",
-              filename: "#{@repository.title.parameterize.presence || 'repository'}-#{@repository.id}.zip"
+    send_zip(zip)
   end
 
   def new
@@ -174,7 +127,7 @@ class RepositoriesController < SessionsController
       ].blank?
     else
       flash[:alert] = 'You are not allowed to perform this action!'
-      redirect_to repository_path(@repository.user_username, @repository.slug)
+      redirect_to repository_path(denial_username(@repository), @repository.slug)
     end
   end
 
@@ -244,13 +197,18 @@ class RepositoriesController < SessionsController
   def add_like
     current_like = @repository.likes.find_by(user_id: @user.id)
 
+    # Members do not like their own repository (a like already given can still be taken back).
+    if current_like.nil? && @repository.owned_by?(@user)
+      flash[:alert] = "You cannot like a project you are a member of"
+      return redirect_to repository_path(@repository.user_username, @repository.slug)
+    end
+
     if current_like.nil?
-      @repository.likes.create!(user_id: @user.id)
-      @repository.users.each { |u| u.increment!(:reputation, 5) }
+      # A repeated click or a simultaneous request finds the like already given and counts nothing again.
+      @repository.users.each { |u| u.increment!(:reputation, 5) } if Like.give(@repository, @user)
       flash[:notice] = "You have liked this project!"
     else
-      current_like.destroy
-      @repository.users.each { |u| u.decrement!(:reputation, 5) }
+      take_back_like
       flash[:notice] = "You have unliked this project"
     end
     redirect_to repository_path(@repository.user_username, @repository.slug)
@@ -285,7 +243,7 @@ class RepositoriesController < SessionsController
         flash[:alert] = "Incorrect password. Try again!"
         format.html do
           redirect_to password_entry_repository_path(
-                        @repository.user_username,
+                        denial_username(@repository),
                         @repository.id
                       )
         end
@@ -381,7 +339,7 @@ class RepositoriesController < SessionsController
         :alert
       ] = "Something went wrong when transferring ownership. Please try again later."
     end
-    redirect_to repository_path(repository.user_username, repository.slug)
+    redirect_to repository_path(denial_username(repository), repository.slug)
   end
 
   def populate_users
@@ -400,12 +358,19 @@ class RepositoriesController < SessionsController
 
   private
 
+  # Only the request that actually removed the like takes the reputation back.
+  def take_back_like
+    return unless Like.take_back(@repository, @user)
+
+    @repository.users.each { |u| u.decrement!(:reputation, 5) }
+  end
+
   # Block if user is not authorized to modify repository
   def check_ownership
     # admins can modify repo
     unless @user.admin? || @repository.owned_by?(@user)
       flash[:alert] = "You are not allowed to perform this action!"
-      redirect_to repository_path(@repository.user_username, @repository.slug)
+      redirect_to repository_path(denial_username(@repository), @repository.slug)
     end
   end
 
@@ -417,12 +382,49 @@ class RepositoriesController < SessionsController
   def check_link_permission
     unless @user.staff? || @user.admin? || @repository.owned_by?(@user)
       flash[:alert] = "You are not allowed to perform this action!"
-      redirect_to repository_path(@repository.user_username, @repository.slug)
+      redirect_to repository_path(denial_username(@repository), @repository.slug)
     end
+  end
+
+  def require_sign_in_to_download
+    return if signed_in?
+
+    redirect_to login_path(back_to: login_back_to), alert: "Sign in to download this repository."
+  end
+
+  def throttled_downloader?
+    !current_user.staff?
+  end
+
+  def download_throttled
+    render plain: "Too many downloads, please try again later.", status: :too_many_requests
+  end
+
+  def zip_download_name
+    "#{@repository.title.parameterize.presence || 'repository'}-#{@repository.id}.zip"
+  end
+
+  # A cached zip is sent from disk; otherwise it streams from storage as it is built.
+  def send_zip(zip)
+    return send_file(zip.path, type: "application/zip", filename: zip_download_name) if zip.path
+
+    zip_kit_stream(filename: zip_download_name) { |streamer| Repository::ZipCache.write_entries(streamer, zip.entries) }
   end
 
   def check_auth
     @check_passed = repository_unlocked?(@repository)
+  end
+
+  # The username in the address is the owner's: a link with another (or an old) username is sent on to the
+  # repository's own address, for people who may see the repository. A locked private repository is not sent on, so
+  # the redirect cannot name its owner.
+  def redirect_to_owner_url
+    username = @repository.user_username
+    return if username.blank? || params[:user_username] == username
+    return if @repository.private? && !repository_unlocked?(@repository)
+
+    redirect_to url_for(action: action_name, user_username: username, id: params[:id], only_path: true, **request.query_parameters.symbolize_keys),
+                status: :found
   end
 
   def set_repository

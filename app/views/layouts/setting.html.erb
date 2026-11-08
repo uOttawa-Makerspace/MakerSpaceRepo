@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="<%= I18n.locale %>">
   <head>
     <%= render 'shared/theme_init' %>
     <title>Settings | MakerRepo</title>
@@ -14,9 +14,10 @@
     <%= csrf_meta_tags %>
   </head>
   <body class="d-flex flex-column min-vh-100"> 
+    <%= render 'layouts/skip_link' %>
     <%= render 'layouts/header' %>
 
-    <section id="setting">
+    <main id="main-content" tabindex="-1">
       <div class="setting-grid">
         <div class="container-fluid px-lg-5">
           <div class="row">
@@ -59,7 +60,7 @@
           </div>
         </div>
       </div>
-    </section>
+    </main>
 
     <footer class="mt-auto">
       <%= render 'layouts/footer' %>

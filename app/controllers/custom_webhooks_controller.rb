@@ -23,84 +23,40 @@ class CustomWebhooksController < ApplicationController
     # 3. The gem's HMAC check (X-Shopify-Hmac-Sha256), added after the two above so they run first.
     include ShopifyApp::WebhookVerification
   end
-  include ShopifyConcern
 
-  # Two phases, so the money branches (locker activation, membership paid, CC credit) apply all
-  # together or not at all with respect to Shopify trouble:
-  #   1. resolve every draft-order metafield reference. This is the only part that can reach Shopify,
-  #      and so the only part that can raise ShopifyContext::NotConfigured; nothing is written yet.
-  #   2. apply the branches (plain DB writes, plus the CC mail).
-  # NotConfigured in phase 1 answers 503 with nothing applied, so Shopify retries once the config is fixed.
-  # Phase 2 is NOT wrapped in one DB transaction (the CC branch sends mail with deliver_now, which a
-  # rollback could not unsend); a failure inside it is a 500 and the retry re-applies the branches,
-  # which is what they did before.
+  # Both order webhooks are an inbox: the verified body is stored (ProcessedOrder) and ApplyProcessedOrderJob applies
+  # it, so the webhook itself never calls Shopify and never touches memberships, CC Money or lockers, and answers
+  # fast. A delivery of an order already stored inserts nothing and changes nothing: the stored order's own schedule
+  # (ProcessedOrder.dispatch_due) decides when it is applied.
+  # An order with nothing to apply (plain merch, job orders) is answered and not stored.
   def orders_paid
-    order_hook = webhook_params.to_h
-
-    locker_ref = nil
-    membership_ref = nil
-    begin
-      locker_ref = locker_reference(order_hook) if LockerRental.draft_order_processable?(order_hook["tags"])
-      membership_ref = membership_reference(order_hook) if Membership.draft_order_processable?(order_hook["tags"])
-    rescue ShopifyContext::NotConfigured => e
-      Rails.logger.warn("[orders_paid] Shopify not configured, answering 503 (Shopify will retry): #{e.class}")
-      return head :service_unavailable
-    end
-
-    # handle lockers
-    apply_locker_order(order_hook, locker_ref) if LockerRental.draft_order_processable?(order_hook["tags"])
-
-    # handle memberships
-    process_membership_hook(order_hook, membership_ref) if Membership.draft_order_processable?(order_hook["tags"])
-    
+    hook = verified_body
     # Job-order payment is recorded by staff, not automatically. Leave a trace so a
     # paid job-order draft order can be reconciled by hand.
-    if JobOrder.draft_order_processable?(order_hook["tags"])
+    if JobOrder.draft_order_processable?(hook["tags"])
       Rails.logger.info(
         "[orders_paid] paid job-order draft order ignored (no automatic payment recording): " \
-        "order id=#{order_hook['id'].inspect} name=#{order_hook['name'].inspect} " \
-        "draft_order_id=#{order_hook['draft_order_id'].inspect}"
+        "order id=#{hook['id'].inspect} name=#{hook['name'].inspect} draft_order_id=#{hook['draft_order_id'].inspect}"
       )
     end
-
-    # CC Money credit handling
-    customer_email = order_hook.dig("customer", "email")
-    if order_hook["line_items"].present? && customer_email.present?
-      order_hook["line_items"].each do |item|
-        increment_cc_money(item, customer_email)
-      end
-    end
-
-    head :ok
+    store_order(hook, "orders/paid")
   end
 
   # Cash locker payments. Staff fulfil a cash order in Shopify without marking it paid, so the fulfillment
   # is the payment event. Only the locker branch runs, and only while Shopify still shows the payment as
   # pending: a paid order is handled by orders_paid, and a refunded, voided or partly paid one is not a
-  # cash payment. The locker payment record is keyed by the Shopify order id, so an orders_paid for the
-  # same order later applies nothing a second time. Memberships and CC Money paid in cash stay with staff.
+  # cash payment. It is its own stored unit (provider_ref "<id>/fulfilled"), so a later orders_paid of the same
+  # order still applies its memberships and CC Money; the locker payment record is keyed by the Shopify order id,
+  # so the two never apply a locker twice. Memberships and CC Money paid in cash stay with staff.
   def orders_fulfilled
-    order_hook = webhook_params.to_h
-    return head :ok unless order_hook["financial_status"] == "pending" &&
-                           LockerRental.draft_order_processable?(order_hook["tags"])
+    hook = verified_body
+    return head :ok unless hook["financial_status"] == "pending"
 
-    begin
-      locker_ref = locker_reference(order_hook)
-    rescue ShopifyContext::NotConfigured => e
-      Rails.logger.warn("[orders_fulfilled] Shopify not configured, answering 503 (Shopify will retry): #{e.class}")
-      return head :service_unavailable
-    end
-
-    # The cash was taken when the order was fulfilled, not when it was created (processed_at)
-    fulfilled_at = Array(order_hook["fulfillments"]).filter_map { |f| parse_time(f["created_at"]) }.max
-    apply_locker_order(order_hook, locker_ref, paid_at: fulfilled_at || Time.current)
-    head :ok
+    store_order(hook, "orders/fulfilled")
   end
 
   # Raised only to be reported (Rails.error.report).
-  class LockerOrderWithoutId < StandardError; end
-  class LockerOrderWithoutReference < StandardError; end
-  class UnknownLockerRental < StandardError; end
+  class OrderWithoutId < StandardError; end
 
   private
 
@@ -136,159 +92,33 @@ class CustomWebhooksController < ApplicationController
     head :service_unavailable
   end
 
-  def webhook_params
-    params.permit!
+  # The verified webhook body, as received (a JSON object; anything else is an empty one).
+  def verified_body
+    body = JSON.parse(request.raw_post)
+    body.is_a?(Hash) ? body : {}
+  rescue JSON::ParserError
+    {}
   end
 
-  def draft_order_gid_from_hook(order_hook)
-    if order_hook["draft_order_id"].present?
-      "gid://shopify/DraftOrder/#{order_hook['draft_order_id']}"
-    else
-      order_hook["admin_graphql_api_id"]
-    end
-  end
+  def store_order(hook, topic)
+    plan = ShopOrderApplier.plan_for(hook, topic: topic)
+    return head :ok unless plan.branches?
 
-  def metafield_value(order_hook, gid, key)
-    field = order_hook['metafields']&.find do |m|
-      m['namespace'] == 'makerepo' && m['key'] == key
-    end
-    field ||= draft_order_metafields(gid)&.find { |f| f["key"] == key }
-    field&.[]("value").presence
-  end
-
-  # Phase 1 (may raise NotConfigured): the DB id the locker branch will act on, or nil.
-  def locker_reference(order_hook)
-    metafield_value(order_hook, draft_order_gid_from_hook(order_hook), "locker_db_reference")
-  end
-
-  # Phase 1 (may raise NotConfigured): the membership id, or nil. No line items: nothing to do, no lookup.
-  def membership_reference(order_hook)
-    return unless order_hook["line_items"].present?
-
-    metafield_value(order_hook, draft_order_gid_from_hook(order_hook), "membership_db_reference")
-  end
-
-  # The Shopify order id: the payload's numeric "id", else the numeric tail of its admin_graphql_api_id
-  # ("gid://shopify/Order/123"), so both spellings of one order are the same idempotency key.
-  def order_id(order_hook)
-    order_hook["id"].presence&.to_s || order_hook["admin_graphql_api_id"].presence&.to_s&.split("/")&.last
-  end
-
-  # The locker branch of a paid (orders_paid) or cash (orders_fulfilled) order.
-  def apply_locker_order(order_hook, locker_ref, paid_at: nil)
-    # A locker-tagged order that names no locker rental at all: nothing to apply, and not to be lost
-    # silently either (staff reconcile it from the report). Still 200.
-    if locker_ref.blank?
+    if plan.id.blank?
+      # Shopify always sends the id (the key of the stored order); reported with ids only, staff reconcile it.
       Rails.error.report(
-        LockerOrderWithoutReference.new("locker order #{order_id(order_hook)} carries no locker_db_reference"),
-        handled: true, severity: :error, context: { shopify_order_id: order_id(order_hook) }
+        OrderWithoutId.new("#{topic} order without an order id; nothing stored"),
+        handled: true, severity: :error, context: { draft_order_id: hook["draft_order_id"] }.compact
       )
-      return
+      return head :ok
     end
 
-    # A locker order must carry the Shopify order id (it is the idempotency key of the payment record).
-    # Shopify always sends it, so a missing one is a bug on our side or theirs: skip ONLY the locker branch
-    # (never answer an error for the whole order, which would be retried forever and block the membership
-    # and CC branches), and report it with ids only so staff can reconcile the rental by hand.
-    if order_id(order_hook).blank?
-      Rails.error.report(
-        LockerOrderWithoutId.new("locker order without an order id; locker branch skipped (rental #{locker_ref})"),
-        handled: true, severity: :error, context: { locker_rental_id: locker_ref }
-      )
-      return
-    end
-
-    process_locker_hook(locker_ref, order_hook, paid_at: paid_at)
-  end
-
-  def process_locker_hook(locker_id, order_hook, paid_at: nil)
-    return unless locker_id.present?
-
-    rental = LockerRental.find_by(id: locker_id)
-    unless rental
-      # Answer 200 (a retry cannot fix it) but never silently: a paid order points at a rental that is gone.
-      Rails.error.report(
-        UnknownLockerRental.new("locker order #{order_id(order_hook)} references unknown locker rental #{locker_id}"),
-        handled: true, severity: :error,
-        context: { locker_rental_id: locker_id.to_s, shopify_order_id: order_id(order_hook) }
-      )
-      return
-    end
-
-    # amount = the locker line only (nil when it cannot be told); order_total = the whole order. A malformed
-    # or out-of-range figure is stored as nil and never fails the webhook; record_payment reports it (ids only)
-    # after its commit, and only when the payment row is really new, so a replayed delivery does not report it again.
-    problems = []
-    rental.record_payment(
-      shopify_order_id: order_id(order_hook),
-      paid_at: paid_at || parse_time(order_hook["processed_at"]) || Time.current,
-      amount: safe_money(problems, "locker line amount") { rental.locker_line_amount(order_hook["line_items"]) },
-      order_total: safe_money(problems, "order total") { LockerPayment.money(order_hook["total_price"]) },
-      currency: order_hook["currency"].presence&.to_s&.first(8),
-      malformed_amounts: problems
-    )
-  end
-
-  def safe_money(problems, what)
-    yield
-  rescue ArgumentError
-    problems << what
-    nil
-  end
-
-  def parse_time(value)
-    Time.zone.parse(value.to_s) if value.present?
-  rescue ArgumentError
-    nil
-  end
-
-  def process_membership_hook(order_hook, membership_id)
-    return unless order_hook["line_items"].present?
-
-    if membership_id.present?
-      Membership.find_by(id: membership_id)&.update(status: :paid)
-      return
-    end
-
-    # fallback if not found
-    customer_email = order_hook.dig("customer", "email")
-    return unless customer_email.present?
-
-    Rails.logger.info "Membership metafield ID not found in DB, fallback to email: #{customer_email}"
-    user = User.find_by(email: customer_email)
-    return unless user
-
-    order_hook["line_items"].each do |item|
-      title = item["title"].to_s.strip
-
-      membership_tier = MembershipTier.where(
-        "LOWER(title_en) = ? OR LOWER(title_fr) = ?",
-        title.downcase, title.downcase
-      ).first
-
-      next unless membership_tier
-
-      Membership.create!(
-        user: user,
-        membership_tier: membership_tier,
-        status: :paid
-      )
-    end
-  end
-  
-  def increment_cc_money(product_params, email)
-    return unless email.present?
-    return unless product_params["product_id"].to_i == 4_359_597_129_784
-
-    cc = 10 * product_params["quantity"].to_i
-    user = User.find_by(email: email)
-
-    if user.present?
-      CcMoney.create(user_id: user.id, cc: cc)
-    else
-      new_cc = CcMoney.create(cc: cc, linked: false)
-      hash = Rails.application.message_verifier(:cc).generate(new_cc.id)
-      MsrMailer.send_cc_money_email(email, cc, hash).deliver_now
-    end
+    order, = ProcessedOrder.receive!(provider: ShopOrderApplier::PROVIDER, order_id: plan.id, topic: topic,
+                                     payload: hook, name: hook["name"])
+    # The row is durable and due now: it is handed to the queue here, and if that fails (answer 200 all the same)
+    # the recurring dispatcher hands it out. A redelivery of an order that is already scheduled, applied or failed
+    # hands out nothing.
+    ProcessedOrder.dispatch_due(id: order.id)
+    head :ok
   end
 end

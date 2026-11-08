@@ -28,7 +28,7 @@
                   <span class="input-group-text">$</span>
                 </div>
                 <%= number_field_tag "job_task_quote_price_#{task.id}",
-                      (job_task_quote.price.presence || number_with_precision(task.job_type.service_fee, precision: 2)),
+                      (job_task_quote.price.presence || money_input_value(task.job_type.service_fee)),
                       placeholder: 'value',
                       step: '0.01', class: 'form-control money-input base-fee' %>
               </div>
@@ -55,7 +55,7 @@
                         <span class="input-group-text">$</span>
                       </div>
                       <%= number_field_tag "task_#{task.id}_service_price",
-                            (task.job_task_quote.service_price.presence || number_with_precision(default_service_price, precision: 2)),
+                            (task.job_task_quote.service_price.presence || money_input_value(default_service_price)),
                             placeholder: "value",
                             step: '0.01', class: 'form-control money-input service-price' %>
                     </div>
@@ -74,7 +74,7 @@
                     <span class="input-group-text">$</span>
                   </div>
                   <%= number_field_tag "task_#{task.id}_option_price_#{option.job_option_id}",
-                        (qt_option.price.presence || number_with_precision(option.job_option.fee, precision: 2)),
+                        (qt_option.price.presence || money_input_value(option.job_option.fee)),
                         placeholder: 'value',
                         step: '0.01', class: 'form-control money-input option-price' %>
                 </div>

@@ -9,7 +9,7 @@ require "rails_helper"
 # outside spec/support/js_error_allowlist.rb. The no-500 breadth check for all
 # roles lives in spec/requests/page_crawl_spec.rb.
 RSpec.describe "Page crawl (browser, JS entrypoints)", type: :system, skip_bullet: true do
-  ENTRYPOINT = %r{/vite-test/assets/(?!application-)[\w.-]+\.js}
+  ENTRYPOINT = %r{/vite-test(?:-coverage)?/assets/(?!application-)[\w.-]+\.js}
 
   let!(:admin) { create(:user, :admin) }
 
@@ -49,11 +49,7 @@ RSpec.describe "Page crawl (browser, JS entrypoints)", type: :system, skip_bulle
 
   it "opens every admin-visible page with a JS entrypoint without SEVERE console errors" do
     world = PageCrawl::World.new(self)
-    if (pending, approved, declined = world.records[:booking_statuses])
-      stub_const("BookingStatus::PENDING", pending)
-      stub_const("BookingStatus::APPROVED", approved)
-      stub_const("BookingStatus::DECLINED", declined)
-    end
+
     all_pages = js_pages(world)
     pages = sample(all_pages)
     expect(all_pages.size).to be > 100 # guard: the probe really found the JS pages
@@ -66,6 +62,7 @@ RSpec.describe "Page crawl (browser, JS entrypoints)", type: :system, skip_bulle
       expect(page).to have_css("body")
       # let page scripts finish: Turbo + deferred modules mark the document loaded
       expect(page).to have_css("nav.navbar, body")
+      audit_accessibility
       errors = JsErrorCheck.collect(page)
       problems[path] = errors.map { |e| e[:message] } if errors.any?
     end

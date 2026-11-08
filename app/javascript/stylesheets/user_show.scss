@@ -104,7 +104,7 @@ section#user-show {
 
       i,
       span {
-        color: var(--bs-primary);
+        color: var(--primary-text);
         padding-right: 0.5rem;
         font-size: 1.25rem;
       }
@@ -113,7 +113,7 @@ section#user-show {
         word-break: break-all;
         color: var(--bs-link-color);
         &:hover {
-          color: var(--bs-primary);
+          color: var(--primary-text);
         }
       }
 
@@ -133,7 +133,7 @@ div#rfid-thing.user-info {
   div#rfid-details {
     visibility: hidden;
     background-color: var(--bs-tertiary-bg);
-    color: var(--bs-primary);
+    color: var(--primary-text);
     text-align: center;
     border-radius: 4px;
     padding: 6px;

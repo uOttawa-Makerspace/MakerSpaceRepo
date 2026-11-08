@@ -34,12 +34,12 @@ RSpec.describe "Admin CDEL reports", type: :request do
 
   describe "authorization" do
     %i[guest regular staff].each do |role|
-      it "#{role} is redirected to / from index and generate and receives no CSV" do
+      it "#{role} is bounced from index and generate and receives no CSV" do
         c18_sign_in(role)
         get admin_cdel_reports_index_path
-        expect(response).to redirect_to("/")
+        expect_admin_area_bounce(guest: role == :guest)
         get admin_cdel_reports_generate_path, params: range.merge(visitors: "Dump visitors")
-        expect(response).to redirect_to("/")
+        expect_admin_area_bounce(guest: role == :guest)
         expect(response.body).not_to include("cora@example.test")
       end
     end

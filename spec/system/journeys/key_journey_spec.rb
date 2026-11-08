@@ -16,9 +16,9 @@ RSpec.describe "Journey: key request", type: :system, skip_bullet: true do
 
   it "request through the wizard -> admin approves -> requester sees approved" do
     as_actor(:requester) do
-      log_in_as(requester)
-      visit new_key_request_path
+      log_in_as(requester, to: new_key_request_path)
       expect(page).to have_text("Access Key Form - Personal Information")
+      audit_accessibility("key request form")
       fill_in "key_request_student_number", with: "300123456"
       fill_in "key_request_phone_number", with: "613-555-0100"
       fill_in "key_request_emergency_contact", with: "Pat Parent"
@@ -52,8 +52,7 @@ RSpec.describe "Journey: key request", type: :system, skip_bullet: true do
     expect(key_request.supervisor).to eq(admin)
 
     as_actor(:admin) do
-      log_in_as(admin)
-      visit requests_admin_keys_path
+      log_in_as(admin, to: requests_admin_keys_path)
       expect(page).to have_css("h2", text: "Key Requests")
       click_button "Waiting for Approval" # accordion
       expect(page).to have_css("#collapseOne.show")

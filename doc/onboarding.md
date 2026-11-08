@@ -38,11 +38,11 @@ For a better explanation, this article puts it better: https://adaptivepatchwork
 
 When commiting to a local branch, a commit hook runs. The script is found in `.husky/pre-commit`.
 
-1. It runs a formatter on all staged code
-2. Pulls in code from the remote branch
-3. Re-stages formatted code
+1. It runs from the checkout being committed, so it also works from a git worktree (it uses that checkout's `bin/` and `Gemfile`).
+2. It runs `yarn lint-staged`, which formats staged files with Prettier. Ruby formatting is left to RuboCop and is not part of the hook.
+3. If any staged file is an `.erb` view, it runs `erb_lint --autocorrect` on those files and stages the result.
 
-During this phase if you're not connected to the internet the commit hook might fail. Just comment out the `git fetch` part, i'll fix it later :^).
+The hook does not fetch from the remote, so it works offline. CI also lints ERB views (`bin/erb-lint`, which fails only on offenses not in `config/erb-lint-baseline.txt`), and lints and type-checks the JavaScript (`yarn lint:js`, `yarn typecheck:js`).
 
 # Developing a new feature
 

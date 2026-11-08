@@ -3,8 +3,8 @@
 FactoryBot.define do
   factory :coupon_code do
     code { Faker::Alphanumeric.alphanumeric(number: 30) }
-    dollar_cost { Faker::Number.decimal(l_digits: 2) }
-    cc_cost { Faker::Number.number(digits: 2) }
+    dollar_cost { 10.0 }
+    cc_cost { 10 }
 
     trait :unclaimed do
       user { nil }

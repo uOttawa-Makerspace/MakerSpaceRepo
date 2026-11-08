@@ -67,11 +67,20 @@ RSpec.describe "Staff my calendar", type: :request do
   describe "json feed" do
     around { |ex| travel_to(Time.zone.local(2027, 3, 12, 12)) { ex.run } }
 
-    let!(:staff) { sign_in_as(:staff) }
+    let!(:staff) { sign_in_as(:staff).tap { |user| create(:staff_space, user: user, space: space) } }
 
-    it "serves the feed of any space to staff, not only the staff member's spaces" do
+    it "serves the feed of the staff member's spaces only" do
       other_space = create(:space)
       create(:event, space: other_space, title: "Elsewhere", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
+      get "/staff/my_calendar/json/#{other_space.id}", params: window
+      expect(response).to have_http_status(:forbidden)
+      expect(response.body).not_to include("Elsewhere")
+    end
+
+    it "serves the feed of any space to an admin" do
+      other_space = create(:space)
+      create(:event, space: other_space, title: "Elsewhere", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
+      sign_in_as(:admin)
       get "/staff/my_calendar/json/#{other_space.id}", params: window
       expect(response.parsed_body.map { |e| e["title"] }).to eq(["Elsewhere"])
     end
@@ -134,7 +143,7 @@ RSpec.describe "Staff my calendar", type: :request do
     # N+1 pinned (assignment.user and StaffSpace.find_by per assignment)
     it "colours assigned events by StaffSpace colour and flags the current user", skip_bullet: true do
       mate = create(:user, :staff)
-      create(:staff_space, user: staff, space: space).update_column(:color, "#111111")
+      StaffSpace.find_by!(user: staff, space: space).update_column(:color, "#111111")
       create(:staff_space, user: mate, space: space).update_column(:color, "#222222")
       ev = create(:event, space: space, title: "Duo", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
       [staff, mate].each { |u| EventAssignment.create!(event: ev, user: u) }
@@ -168,7 +177,7 @@ RSpec.describe "Staff my calendar", type: :request do
 
   # rules stored before validation existed must not pin a worker.
   describe "a stored sub-daily recurrence rule" do
-    before { sign_in_as(:staff) }
+    before { create(:staff_space, user: sign_in_as(:staff), space: space) }
 
     def stored_event(rule, title: "Legacy")
       create(:event, space: space, title: title, start_time: Time.utc(2027, 1, 1, 9), end_time: Time.utc(2027, 1, 1, 9, 5))

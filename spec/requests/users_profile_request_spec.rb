@@ -47,6 +47,79 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       get settings_admin_path
       expect(response).to have_http_status(:ok)
     end
+
+    it "profile form keeps stored values its options do not list (legacy faculty, long student id)" do
+      user.update_columns(faculty: "Common Law", student_id: "1234567890123")
+      login!(user)
+      get settings_profile_path
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("select[name='user[faculty]'] option[selected]")&.[]("value")).to eq("Common Law")
+      student_id = page.at_css("input[name='user[student_id]']")
+      expect(student_id["value"]).to eq("1234567890123")
+      expect(student_id["pattern"]).to be_nil
+      expect(student_id["maxlength"]).to be_nil
+    end
+  end
+
+  describe "saving the profile form with legacy stored values" do
+    let(:student) { create(:user, :regular_user, :student) }
+
+    before do
+      student.update_columns(faculty: "Law Society", student_id: "1234567890123")
+      login!(student)
+    end
+
+    it "saves another field and keeps the stored faculty and student id the form sends back" do
+      patch user_path(student.username),
+            params: { user: { name: "Renamed", faculty: "Law Society", student_id: "1234567890123" } }
+      expect(flash[:notice]).to eq("Profile updated successfully.")
+      student.reload
+      expect([student.name, student.faculty, student.student_id]).to eq(["Renamed", "Law Society", "1234567890123"])
+    end
+
+    it "still refuses a new faculty or student id outside the rules" do
+      patch user_path(student.username), params: { user: { faculty: "Made Up" } }
+      expect(flash[:alert]).to include("Faculty")
+      patch user_path(student.username), params: { user: { student_id: "123" } }
+      expect(flash[:alert]).to include("Student")
+      expect(student.reload.faculty).to eq("Law Society")
+      expect(student.student_id).to eq("1234567890123")
+    end
+  end
+
+  describe "student id is required for students" do
+    let(:student) { create(:user, :regular_user, :student) }
+
+    before { login!(student) }
+
+    it "refuses blanking the student id and keeps the stored one" do
+      patch user_path(student.username), params: { user: { student_id: "" } }
+      expect(flash[:alert]).to include("Student")
+      expect(student.reload.student_id).to be_present
+    end
+
+    it "lets a student row stored without an id save other fields, including when the form sends the id blank" do
+      student.update_columns(student_id: nil)
+      patch user_path(student.username), params: { user: { name: "Renamed" } }
+      expect(flash[:notice]).to eq("Profile updated successfully.")
+      patch user_path(student.username), params: { user: { name: "Again", student_id: "" } }
+      expect(flash[:notice]).to eq("Profile updated successfully.")
+      expect(student.reload.name).to eq("Again")
+    end
+
+    it "refuses switching to a student identity without an id" do
+      member = create(:user, :regular_user, identity: "community_member")
+      login!(member)
+      patch user_path(member.username),
+            params: { user: { identity: "undergrad", program: "X", faculty: "Engineering", year_of_study: 1 } }
+      expect(flash[:alert]).to include("Student")
+      expect(member.reload.identity).to eq("community_member")
+    end
+
+    it "shows the field as required in the profile form" do
+      get settings_profile_path
+      expect(response.body).to match(/<label class="form-label required" for="user_student_id"/)
+    end
   end
 
   describe "GET /:username (show)" do
@@ -121,10 +194,13 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
         expect(response).to have_http_status(:not_found)
       end
 
-      it "is visible to staff and admin through User.unscoped" do
+      it "is a 404 for staff, like a missing user" do
         login!(staff)
         get user_path(gone.username)
-        expect(response).to have_http_status(:ok)
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "is visible to admin through User.unscoped" do
         login!(admin)
         get user_path(gone.username)
         expect(response).to have_http_status(:ok)
@@ -200,10 +276,35 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.locked).to be(false)
     end
 
-    it "can change username and lets it collide only on case-insensitive uniqueness" do
+    it "ignores :username: renaming an account is admin-only" do
       login!(user)
-      patch user_path(user.username), params: { user: { username: other.username.upcase } }
-      expect(flash[:alert]).to include("Username")
+      original = user.username
+      patch user_path(original), params: { user: { username: "renamed#{user.id}", name: "Still Works" } }
+      expect(response).to redirect_to(settings_profile_path)
+      expect(user.reload.username).to eq(original)
+      expect(user.name).to eq("Still Works")
+    end
+
+    describe "waiver checkbox" do
+      it "accepts the waiver for an account that never accepted it" do
+        user.update_columns(read_and_accepted_waiver_form: false)
+        login!(user)
+        patch user_path(user.username), params: { user: { read_and_accepted_waiver_form: "1" } }
+        expect(user.reload.read_and_accepted_waiver_form).to be(true)
+      end
+
+      it "leaves it unaccepted when the box is not ticked" do
+        user.update_columns(read_and_accepted_waiver_form: false)
+        login!(user)
+        patch user_path(user.username), params: { user: { read_and_accepted_waiver_form: "0", name: "Z Z" } }
+        expect(user.reload.read_and_accepted_waiver_form).to be(false)
+      end
+
+      it "cannot be withdrawn once accepted" do
+        login!(user)
+        patch user_path(user.username), params: { user: { read_and_accepted_waiver_form: "0" } }
+        expect(user.reload.read_and_accepted_waiver_form).to be(true)
+      end
     end
 
     it "ignores :email on profile update (the confirm-by-email flow is the only way)" do
@@ -614,10 +715,10 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       create(:user, :regular_user, name: "Zebulon Quasar", username: "zebulonq")
     end
 
-    it "guest gets the literal json string \"redirect\"" do
+    it "guest gets a JSON error with 401" do
       get search_users_path, params: { search: "zebulon" }, as: :json
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to eq("redirect")
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body).to eq("error" => "Please sign in.")
     end
 
     it "regular user gets usernames only" do
@@ -663,8 +764,33 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
+  describe "the other pages under a deleted user's path" do
+    let!(:gone) { create(:user, :regular_user, deleted: true) }
+
+    it "likes lists the signed-in user's own likes, never the deleted user's, for staff and admin too" do
+      theirs = create(:repository, user_id: other.id, title: "Deleted Fan Pick", share_type: "public")
+      Like.create!(user_id: gone.id, repository_id: theirs.id)
+      mine = create(:repository, user_id: other.id, title: "Staff Pick", share_type: "public")
+      [staff, admin].each do |viewer|
+        Like.create!(user_id: viewer.id, repository_id: mine.id)
+        login!(viewer)
+        get likes_user_path(gone.username)
+        expect(response.body).to include("Staff Pick")
+        expect(response.body).not_to include("Deleted Fan Pick")
+      end
+    end
+
+    it "the profile update and password change under that path act on the signed-in user" do
+      login!(staff)
+      patch user_path(gone.username), params: { user: { name: "Not Gone" } }
+      expect(staff.reload.name).to eq("Not Gone")
+      expect(User.unscoped.find(gone.id).name).not_to eq("Not Gone")
+    end
+  end
+
   describe "DELETE /:username (destroy)" do
-    it "has no route: UsersController#destroy is unreachable" do
+    it "has no route and no action: an account is never hard-deleted from the profile" do
+      expect(UsersController.action_methods).not_to include("destroy")
       login!(user)
       delete user_path(user.username)
       expect(response).to have_http_status(:not_found)

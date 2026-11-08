@@ -119,4 +119,4 @@ Then visit http://localhost:3000 to view the home page locally.
 
 ## Deployment
 
-Deployment is handled by Capistrano on Github Actions. Pushing to the staging branch deploys to staging server after tests pass. Pushing to the master branch deploys to the production server after tests pass.
+Deployment is handled by Docker Compose through the `CI & Deploy` GitHub Actions workflow (`.github/workflows/main.yml`). After the tests and security checks pass, the workflow builds the Docker image, publishes it to GitHub Container Registry, then connects to the server over SSH, copies the matching `docker-compose.staging.yml` or `docker-compose.production.yml`, pulls the new image and restarts the containers. Pushing to the `staging` branch deploys to the staging server. Pushing to the `master` branch deploys to the production server.

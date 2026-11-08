@@ -14,7 +14,7 @@
     <div style="float:right;">Created On: <%= @current_training_session.created_at.strftime('%D at %l:%M%P') %></div>
     <br />
     <div style="float:right;">Updated On: <%= @current_training_session.updated_at.strftime('%D at %l:%M%P') %></div>
-    <div>Space: <span style="font-weight:bold;"> <%= @current_training_session.space.name %></span></div>
+    <div>Space: <span style="font-weight:bold;"> <%= @current_training_session.space&.name %></span></div>
     <div>
       Status:
       <% if @current_training_session.completed? %>
@@ -29,25 +29,25 @@
         <div>Trainer: <%= @staff.name %></div>
         <% if @user.admin? %>
           <% label_tag 'changed_params[user_id]', class: 'form-label' %>
-          <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: %w[staff admin]).order('name ASC'), 'id', 'name'), prompt: 'Change trainer', class: 'form-control' %>
+          <%= select_tag 'changed_params[user_id]', options_from_collection_for_select(User.where(role: %w[staff admin]).order('name ASC'), 'id', 'name'), prompt: 'Change trainer', class: 'form-control', aria: { label: t('common.names.change_trainer') } %>
           <br />
         <% end %>
         <div>
           Training Type: <%= @current_training_session.training.localized_name %>
           <br />
           <% label_tag 'changed_params[training_id]', class: 'form-label' %>
-          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select(@current_training_session.space.trainings.order('name_en ASC'), 'id', 'name_en'), prompt: 'Change training', class: 'form-control' %>
+          <%= select_tag 'changed_params[training_id]', options_from_collection_for_select((@current_training_session.space&.trainings || Training.all).order('name_en ASC'), 'id', 'name_en'), prompt: 'Change training', class: 'form-control', aria: { label: t('common.names.change_training') } %>
           <br />
           Level: <%= @current_training_session.level %>
           <br />
           <% label_tag 'changed_params[level]', class: 'form-label' %>
-          <%= select_tag 'changed_params[level]', options_for_select(@levels), prompt: 'Change level', class: 'form-control' %>
+          <%= select_tag 'changed_params[level]', options_for_select(@levels), prompt: 'Change level', class: 'form-control', aria: { label: t('common.names.change_level') } %>
           <br />
           <div>
             Course: <%= @current_training_session.course %>
           </div>
           <% label_tag 'changed_params[course]', class: 'form-label' %>
-          <%= select_tag 'changed_params[course]', options_for_select(@course_names), prompt: 'Change course', class: 'form-control' %>
+          <%= select_tag 'changed_params[course]', options_for_select(@course_names), prompt: 'Change course', class: 'form-control', aria: { label: t('common.names.change_course') } %>
           <br />
         </div>
         <br />
@@ -77,8 +77,8 @@
         <tr id="<%= return_no_waiver_id(user) %>">
           <td class="action-cell">
             <%= link_to('<i class="fa-solid fa-circle-xmark"></i>'.html_safe, { controller: :training_sessions, action: :update, id: @current_training_session.id,
-                                                   dropped_user: user.username, changed_params: { course: '' } },
-                        method: :patch, class: 'x-button') %>
+                                                   dropped_users: [user.username], changed_params: { course: '' } },
+                        method: :patch, class: 'x-button', aria: { label: t('common.remove') }) %>
           </td>
 
           <td class="user-name">
@@ -145,7 +145,7 @@
     <br />
     <br />
     <table class="space-users-table table table-striped">
-        Users inside <%= @current_training_session.space.name %>
+        Users inside <%= @current_training_session.space&.name %>
       <thead class="table-primary">
         <tr class="text-center">
            <th class="action-header">Add To This Session</th>
@@ -154,7 +154,7 @@
            <th>Certifications <span onclick="sortTable('space-users-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
          </tr>
       </thead>
-      <% @current_training_session.space.signed_in_users.each do |user| %>
+      <% (@current_training_session.space&.signed_in_users || []).each do |user| %>
         <% unless @current_training_session.users.include? user %>
           <tr>
             <td class="action-cell">

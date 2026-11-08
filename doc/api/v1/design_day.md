@@ -17,8 +17,8 @@ Public configuration for the Design Day app. Replaces `GET /admin/design_day/dat
   "floorplan_titles": ["Level 1"],
   "schedules": [
     {
-      "start": "2026-03-14T14:00:00.000Z",
-      "end": "2026-03-14T15:00:00.000Z",
+      "start": "2000-01-01T09:00:00.000-05:00",
+      "end": "2000-01-01T10:00:00.000-05:00",
       "title_en": "Judging",
       "title_fr": "Evaluation",
       "event_for": "judge"
@@ -29,6 +29,7 @@ Public configuration for the Design Day app. Replaces `GET /admin/design_day/dat
 
 - Exactly these keys. Not sent (the app never read them): `id`, `is_live`, schedule `id`, `ordering`, `design_day_id`, timestamps.
 - Differences from the legacy payload: schedules are under `schedules` (legacy: `design_day_schedules`), and `floorplan_urls` / `floorplan_titles` are always arrays (legacy: `null` when no floorplan). `floorplan_titles[i]` may be `null`.
+- Schedule `start` and `end` are times of day (a `time` column). They are sent as ISO 8601 on the placeholder date 2000-01-01 with the app time zone's offset (Eastern), so read only the hour and minute; the date belongs to the design day's `day`.
 - `semester` is `winter` (Jan-Apr), `summer` (May-Aug) or `fall` (Sep-Dec). `event_for` is `student` or `judge`. Schedules are ordered by `event_for`, `ordering`, `start`.
 - With no design day configured the answer is a placeholder (today, empty `sheet_key`, `show_floorplans: false`, empty arrays); nothing is written (the legacy endpoint creates a row).
 - Cached by nobody: `Cache-Control: no-store`.

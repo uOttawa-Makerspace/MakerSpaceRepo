@@ -65,12 +65,6 @@ RSpec.describe Question, type: :model do
       expect(q.response_for_exam(e2)).to be_nil
     end
 
-    it "randomize_answers returns every answer of the question" do
-      q = create(:question)
-      2.times { |i| Answer.create!(question: q, correct: i.zero?, description: "x#{i}") }
-      expect(q.answers.randomize_answers.count).to eq(2)
-    end
-
     it "accepts only jpeg/png images" do
       q = build(:question, :with_image)
       expect(q).to be_valid

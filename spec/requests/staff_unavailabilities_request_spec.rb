@@ -323,10 +323,14 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(flash[:notice]).to eq("External calendar links updated.")
       end
 
-      # the destroy_all runs before anything is validated; links are stored as given.
-      it "stores any string as an ICS url" do
-        patch update_external_unavailabilities_staff_unavailabilities_path, params: { external_calendar: ["not a url"] }
-        expect(StaffExternalUnavailability.where(user: staff).pluck(:ics_url)).to eq(["not a url"])
+      it "refuses a link that is not http or https and leaves the saved links as they were" do
+        StaffExternalUnavailability.create!(user: staff, ics_url: "https://keep.test/a.ics")
+        ["not a url", "file:///etc/passwd", "ftp://x.test/a.ics", "https://u:p@x.test/a.ics", "https://x.test:8080/a.ics"].each do |bad|
+          patch update_external_unavailabilities_staff_unavailabilities_path, params: { external_calendar: ["https://new.test/a.ics", bad] }
+          expect(response).to redirect_to(staff_unavailabilities_path)
+          expect(flash[:alert]).to include("is not an http or https link")
+          expect(StaffExternalUnavailability.where(user: staff).pluck(:ics_url)).to eq(["https://keep.test/a.ics"])
+        end
       end
     end
   end

@@ -6,7 +6,7 @@ class Admin::CalendarController < AdminAreaController
       Space.all.where(
         id: StaffSpace.where(user_id: current_user.id).pluck(:space_id)
       )
-    @space_id = @user.space_id || Space.first.id
+    @space_id = @user.space_id || Space.first&.id
 
     @colors = StaffSpace
       .includes(:user)
@@ -30,6 +30,7 @@ class Admin::CalendarController < AdminAreaController
     
     result = User
                .where(id: staff_user_ids, role: ['admin', 'staff'])
+               .includes(:staff_external_unavailabilities)
                .order(name: :desc).map do |staff|
       local_unavails = StaffUnavailability.where(user_id: staff.id).map do |u| 
 
@@ -84,6 +85,7 @@ class Admin::CalendarController < AdminAreaController
     
     result = User
                .where(id: staff_user_ids, role: ['admin', 'staff'])
+               .includes(:staff_external_unavailabilities)
                .order(name: :desc).map do |staff|
       local_unavails = StaffUnavailability.where(user_id: staff.id).map do |u| 
 
@@ -145,26 +147,22 @@ class Admin::CalendarController < AdminAreaController
   end
 
   def update_color
-    if params[:user_id].present? &&
-         StaffSpace.where(
-           user_id: params[:user_id],
-           space_id: @user.space_id
-         ).present? && params[:color].present?
-      staff_space =
-        StaffSpace.where(
-          user_id: params[:user_id],
-          space_id: @user.space_id
-        ).first
-      return flash[:notice] = "Color updated successfully" if staff_space.update(color: params[:color])
+    staff_space = StaffSpace.find_by(user_id: params[:user_id], space_id: @user.space_id) if params[:user_id].present?
+
+    if params[:color].blank?
+      render_color_error("errors.calendar.color_blank")
+    elsif staff_space.nil?
+      render_color_error("errors.calendar.staff_not_in_space")
+    elsif staff_space.update(color: params[:color])
+      render json: { status: "ok" }
+    else
+      render_color_error("errors.calendar.color_invalid")
     end
-
-    flash[:alert] = "An error occurred, try again later."
   end
-
 
   private
 
-  def set_default_space
-    @space_id = current_user.space_id || Space.first.id
+  def render_color_error(key)
+    render json: { status: "error", error: I18n.t(key) }, status: :unprocessable_entity
   end
 end

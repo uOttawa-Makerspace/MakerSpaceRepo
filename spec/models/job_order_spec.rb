@@ -263,11 +263,9 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
-  # the has_many :job_order_options association has no model
   describe "job_order_options association" do
-    it "has no backing model class" do
-      expect { create(:job_order).job_order_options.to_a }
-        .to raise_error(NameError, /Missing model class JobOrderOption/)
+    it "is backed by the JobOrderOption model" do
+      expect(create(:job_order).job_order_options.to_a).to eq([])
     end
   end
 
@@ -310,23 +308,74 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
-  # `has_many :job_order_options, dependent: :destroy` points at a
-  # model that does not exist, so a real destroy (of an order, or of a user who
-  # owns one) raises NameError while the controller only ever soft-deletes.
   describe "destroy" do
-    it "JobOrder#destroy raises NameError (missing JobOrderOption) and keeps the row" do
+    it "JobOrder#destroy removes the order" do
       order = create(:job_order, user: create(:user, :regular_user))
-      expect { order.destroy }.to raise_error(NameError, /Missing model class JobOrderOption/)
-      expect(described_class.exists?(order.id)).to be(true)
+      expect { order.destroy }.not_to raise_error
+      expect(described_class.exists?(order.id)).to be(false)
     end
 
-    it "User#destroy raises the same NameError for a user who owns an order, and keeps the user" do
+    it "User#destroy removes a user who owns an order" do
       user = create(:user, :regular_user)
       create(:job_order, user: user)
-      expect { user.destroy }.to raise_error(NameError, /Missing model class JobOrderOption/)
-      expect(User.exists?(user.id)).to be(true)
+      expect { user.destroy }.not_to raise_error
+      expect(User.exists?(user.id)).to be(false)
     end
 
+    context "with a legacy option row that has an attached file" do
+      let(:user) { create(:user, :regular_user) }
+      let(:order) { create(:job_order, user: user) }
+      let(:option) { JobOption.create!(name: "Legacy option", fee: 1) }
+      let!(:legacy) do
+        JobOrderOption.create!(job_order: order, job_option: option).tap do |row|
+          row.option_file.attach(io: StringIO.new("%PDF-1.4 legacy"), filename: "opt.pdf", content_type: "application/pdf")
+        end
+      end
+      let(:blob) { legacy.option_file.blob }
+
+      before do
+        other_order = create(:job_order, user: create(:user, :regular_user))
+        task = other_order.job_tasks.create!(title: "Task #1")
+        task_option = JobTaskOption.new(job_task: task, job_option: option)
+        task_option.option_file.attach(blob)
+        task_option.save!
+      end
+
+      it "deleting the row keeps the blob and its task option attachment" do
+        expect { perform_enqueued_jobs { legacy.destroy } }.to change(JobOrderOption, :count).by(-1)
+        expect(ActiveStorage::Blob.exists?(blob.id)).to be(true)
+        expect(ActiveStorage::Attachment.where(record_type: "JobTaskOption", blob_id: blob.id).count).to eq(1)
+      end
+
+      it "destroying the order deletes the row and keeps the blob" do
+        expect { perform_enqueued_jobs { order.destroy } }.to change(JobOrderOption, :count).by(-1)
+        expect(ActiveStorage::Blob.exists?(blob.id)).to be(true)
+        expect(ActiveStorage::Attachment.where(record_type: "JobTaskOption", blob_id: blob.id).count).to eq(1)
+      end
+
+      it "keeps the blob when the row is its only attachment" do
+        lone = JobOrderOption.create!(job_order: order, job_option: JobOption.create!(name: "Lone option", fee: 1))
+        lone.option_file.attach(io: StringIO.new("%PDF-1.4 lone"), filename: "lone.pdf", content_type: "application/pdf")
+        lone_blob = lone.option_file.blob
+        perform_enqueued_jobs { lone.destroy }
+        expect(ActiveStorage::Blob.exists?(lone_blob.id)).to be(true)
+      end
+
+      it "lets User#destroy remove the owner and keeps the blob" do
+        expect { user.destroy }.not_to raise_error
+        expect(JobOrderOption.count).to eq(0)
+        expect(ActiveStorage::Blob.exists?(blob.id)).to be(true)
+      end
+
+      it "lets a job option referenced by a legacy row be soft deleted, leaving the row unchanged" do
+        expect(option.destroy).to be_truthy
+        expect(option.reload.is_deleted).to be(true)
+        expect(legacy.reload.job_option_id).to eq(option.id)
+      end
+    end
+  end
+
+  describe "destroy of a user without orders" do
     it "User#destroy works for a user without job orders" do
       user = create(:user, :regular_user)
       expect { user.destroy }.not_to raise_error

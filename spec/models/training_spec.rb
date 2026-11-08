@@ -72,12 +72,24 @@ RSpec.describe Training, type: :model do
       expect(t.localized_name).to eq("Laseur")
     end
 
-    # tokenize_info_* calls `collect(&:strip)` without using the result, so tokens keep their padding
-    it "tokenizes the skill lists on commas WITHOUT stripping (collect result discarded)" do
-      t = build(:training, list_of_skills_en: "a, b,c", list_of_skills_fr: ", x, y")
-      expect(t.tokenize_info_en).to eq(["a", " b", "c"])
-      expect(t.tokenize_info_fr).to eq(["", " x", " y"])
-      expect(build(:training, list_of_skills_en: nil).tokenize_info_en).to eq([])
+    it "localized_name, description and list_of_skills fall back when the current language is blank, not only when nil" do
+      t = build(:training, name_en: "", name_fr: "Laseur", description_en: "Cuts", description_fr: " ",
+                           list_of_skills_en: "a,b", list_of_skills_fr: "")
+      expect(t.localized_name).to eq("Laseur")
+      I18n.with_locale(:fr) do
+        expect(t.description).to eq("Cuts")
+        expect(t.list_of_skills).to eq("a,b")
+      end
+      expect([t.description, t.list_of_skills]).to eq(["Cuts", "a,b"])
+    end
+
+    it "skill_list is the current language's list_of_skills as trimmed, non-empty names" do
+      t = build(:training, list_of_skills_en: " a, b,,c ", list_of_skills_fr: "x, y")
+      expect(t.skill_list).to eq(%w[a b c])
+      I18n.with_locale(:fr) { expect(t.skill_list).to eq(%w[x y]) }
+      t.list_of_skills_fr = ""
+      I18n.with_locale(:fr) { expect(t.skill_list).to eq(%w[a b c]) }
+      expect(build(:training, list_of_skills_en: nil, list_of_skills_fr: nil).skill_list).to eq([])
     end
 
     it "lists every skill ever used (with duplicates removed, nils collapsed)" do

@@ -5,6 +5,7 @@ fr:
       short: "%-d %b, %H:%M" # 15 juin, 14:30
       long: "%d %B %Y à %H:%M" # 15 juin 2023 à 14:30
   date:
+    issued: "%{day} %{month} %{year}" # 1er novembre 2026
     month_names:
       [
         ~,
@@ -37,12 +38,12 @@ fr:
         nov.,
         déc.,
       ]
-  year: "année"
   name: "Français"
   faq:
     header: "Foire Aux Questions"
     subtext: "Voici tout ce qu'il faut savoir sur CEED"
   navbar:
+    skip_to_content: "Passer au contenu principal"
     home: "Accueil"
     theme: "Thème"
     # explore section
@@ -50,6 +51,7 @@ fr:
     projects: "Projets"
     create_project: "Nouveau Projet"
     propose_project: "Devenir Client"
+    project_proposals: "Propositions de projets"
     proposed_projects: "Projets proposés"
     your_projects: "Vous Projets"
     assigned_projects: "Projets assignés"
@@ -66,6 +68,7 @@ fr:
     resources: "Ressources"
     ceed_wiki: "CEED Wiki"
     more: "Plus"
+    all_resources: "Toutes les ressources"
     design_day: "Journée du design"
     makerspace_events: "Événements au Makerspace"
     brunsfield_events: "Événements au centre Brunsfield"
@@ -120,7 +123,11 @@ fr:
       most_likes: "Plus d'Aimes"
       most_makes: "Plus de fabrications"
       recently_updated: "Récemment mis à jour"
+      filter_by: "Filtrer par"
   footer:
+    facebook: "Facebook"
+    instagram: "Instagram"
+    linkedin: "LinkedIn"
     about: "À propos"
     tos: "Conditions d'utilisation"
     hours: "Heures d'ouverture"
@@ -130,6 +137,8 @@ fr:
     newsletter_subtext: "Inscrivez-vous à notre infolettre pour rester à jour avec les dernières nouvelles du CEED."
     copyright_html: 'Copyright &copy; %s <a href="https://www.uottawa.ca/faculte-genie/centre-genie-entrepreneurial-conception">Centre en génie entrepreneurial de la conception</a> et <a href="https://github.com/uOttawa-Makerspace/MakerSpaceRepo/graphs/contributors">les contributeurs MakerRepo</a>'
   users:
+    deleted_account: "%{name} (compte supprimé)"
+    deleted_user: "Utilisateur supprimé"
     reset_password: "Réinitialiser le mot de passe"
     new:
       sign_up: "Créer un compte"
@@ -149,8 +158,8 @@ fr:
         i_am: "Je suis..."
         undergrad: "un étudiant de premier cycle de uOttawa"
         international_undergrad: "un étudiant international de premier cycle de uOttawa"
-        grad: "un étudiant diplômé de uOttawa"
-        international_grad: "un étudiant international diplômé de uOttawa"
+        grad: "un étudiant aux cycles supérieurs de uOttawa"
+        international_grad: "un étudiant international aux cycles supérieurs de uOttawa"
         faculty_member: "un membre de la faculté de uOttawa"
         staff_member: "un membre du personnel à uOttawa"
         community_member: "un membre de la communauté, hors de uOttawa"
@@ -183,6 +192,8 @@ fr:
         how_heard_about_us: "Comment avez-vous entendu parler de nous?"
         accept_waiver_html: "En cochant cette case, <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation."
   sessions:
+    account_created: "Votre compte a été créé. Veuillez consulter vos courriels pour confirmer votre adresse courriel."
+    already_signed_in: "Vous êtes déjà connecté."
     account_deactivated: "Ce compte a été désactivé. Veuillez communiquer avec %{support_email}."
     login:
       sign_in: "Connexion"
@@ -196,8 +207,16 @@ fr:
       submit: "Soumettre"
   activerecord:
     attributes:
+      space:
+        walk_in_safety_sheets: "fiches de sécurité pour visiteurs"
+        lab_sessions: "séances de laboratoire"
+        training_sessions: "séances de formation"
+        volunteer_tasks: "tâches de bénévolat"
+        sub_space_bookings: "réservations de sous-espaces"
+        users_with_current_space: "utilisateurs dont c'est l'espace courant"
       user:
         student_id: Numéro d'étudiant
+        email: Adresse courriel
     errors:
       models:
         user:
@@ -214,6 +233,7 @@ fr:
               confirmation: "Les mots de passe ne correspondent pas."
             email:
               taken: "Cette adresse courriel est déjà utilisée."
+              invalid: "n'est pas valide"
             how_heard_about_us:
               too_long: "Maximum de %{count} caractères."
             read_and_accepted_waiver_form:
@@ -235,13 +255,23 @@ fr:
             end_time:
               in_the_past: "ne peut pas être dans le passé pour une réservation déjà commencée. Choisissez une heure de fin après maintenant."
               booking_ended: "ne peut plus être modifiée : cette réservation est déjà terminée."
+              before_start: "doit être après l'heure de début."
       messages:
+        restrict_dependent_destroy:
+          has_many: "Impossible de supprimer l'enregistrement car il reste des %{record}"
         blank: "Ce champ est requis."
         inclusion: "Sélection non valide."
+  admin_events:
+    times_required: "Les heures de début et de fin sont requises."
+    dates_required: "Les dates de début et de fin sont requises."
+    start_date_required: "La date de début est requise."
   sub_space_booking:
+    picker:
+      min_length: "Saisissez au moins %{count} caractères pour rechercher une personne."
     series:
       too_long: "Une réservation récurrente peut couvrir au plus %{days} jours."
       partial: "%{booked} occurrences sur %{total} réservées. Non réservées : %{failed}."
+      first_failed: "La série n'a pas été créée, car la première occurrence, le %{date}, n'a pas pu être réservée. %{reason}"
   saml:
     login:
       sign_in: "Connexion"
@@ -283,7 +313,6 @@ fr:
       save: "Enregistrer"
   datetime:
     distance_in_words:
-      ago: ""
       about_x_hours:
         one: environ une heure
         other: environ %{count} heures
@@ -411,10 +440,8 @@ fr:
       next_step: "Prochaine étape"
       previous_step: "Étape précédente"
       step_1:
-        title: "Nouvelle tâche (Étape 1/4)"
         job_type: "Type de tâche (obligatoire)*"
       step_2:
-        title: "Nouvelle tâche (Étape 2/4)"
         upload_files_here: "Téléversez votre/vos fichier(s) ici (obligatoire)*"
         upload_additional_files_here: "Téléversez des fichiers supplémentaires ici"
         current_uploaded_files: "Fichiers présentement téléversés"
@@ -433,7 +460,6 @@ fr:
         design_description: "Décrivez votre projet"
         design_description_placeholder: "Veuillez décrire votre design et ce dont vous avez besoin d'aide. Cela nous aidera à mieux comprendre vos besoins."
       step_3:
-        title: "Nouvelle tâche (Étape 3/4)"
         by_unchecking: "Le téléchargement d’un autre fichier écrasera celui-ci."
         no_options: "Il n'y a pas d'options disponibles pour vous. Veuillez continuer vers la prochaine étape."
         job_wide_option: "S'applique à toutes les tâches"
@@ -475,190 +501,6 @@ fr:
         title: "Besoin d'aide pour le design"
         description: "Vous avez besoin d'aide pour créer ou finaliser le design avant la production."
         button: "Obtenir de l'aide"
-  volunteer_program:
-    welcome:
-      header: "Programme de bénévolat"
-      info_header: "Information le programme de bénévolat du CGEC"
-      overview:
-        "Le Makerspace Richard L’Abbé de l’Université d’Ottawa offre un merveilleux programme de bénévolat qui
-        permet à ceux qui s’y inscrivent d’être plus investi dans la vie de l’espace de conception. En plus
-        d’acquérir de l’expérience dans les différentes plateformes mises à votre disposition, ce programme
-        est une belle opportunité d’agrandir son réseau et de travailler sur des projets divertissants."
-    benefits:
-      header: "Les avantages d’être bénévole"
-      point_1: "Gagner une expérience considérable en technologie"
-      point_2: "Rencontrer des personnes avec des intérêts communs"
-      point_3: "Collaborer sur des projets d’innovation"
-      point_4: "Faire partie du réseau Maker"
-      point_5: "Recevoir des récompenses!"
-    opportunities:
-      header: "Les opportunités de bénévolat"
-      point_1: "Accueillir les nouveaux venants et faire des visites du Makerspace"
-      point_2: "Aider durant les ateliers (2-3 fois par semaine)"
-      point_3:
-        "Aider lors d’évènements ayant lieu sur le campus tels que : la journée de la conception (Design Day),
-        les défis du Makerspace, la journée des clubs ou encore la semaine de l’entreprenariat"
-      point_4: "Contribuer aux évènements ayant lieu en dehors du campus : conférences ou festivals"
-      point_5:
-        "Promouvoir le Makerspace au travers de présentations de classe ou lors de foires organisées à Jock
-        Turcot pour diversifier nos bénévoles"
-      point_6: "Assister à l’entretien des équipements"
-      point_7: "Prodiguer des sessions de formation pour ceux qui veulent en savoir plus sur la technologie disponible au Makerspace"
-      point_8: "Créer et concevoir des projets requis par la communauté"
-    info:
-      header: "Informations concernant le programme de bénévolat du CGEC"
-      paragraph_1:
-        "Comparativement aux années passées, le programme de bénévolat a connu de nombreux changements. Le
-        but du nouveau programme est que les bénévoles acquièrent des compétences autant dans le Makerspace
-        que dans le centre Brunsfield par l’accomplissement de taches à exécuter sous la supervision de ceux
-        qui gèrent les espaces. Ces tâches sont disponibles sur Makerepo et tout ce que les bénévoles ont
-        à faire, c’est de s’y enregistrer une fois qu’ils ont complété les formations et ateliers nécessaires."
-      paragraph_2:
-        "Tout d’abord, les bénévoles devront s’inscrire à deux ateliers obligatoires : la formation de
-        base du centre de formation et de fabrication (CFF) et celle de l’impression en 3D du Makerspace.
-        Cependant, lorsqu’elles ont été faites il y a moins d’un an et que le/la concerné(e) a continué à
-        fréquenter les espaces de manière courante, il n’est pas nécessaire de les refaire. Lorsque cela a
-        été fait, l’étape suivante consiste à servir d’ombre au personnel des différents espaces pendant un
-        minimum de 3 heures par espace. Libre à vous d’en demander plus lorsque vous sentez que c’est nécessaire."
-      paragraph_3:
-        "Le but de ces heures d’ombre est de se familiariser au maximum avec les espaces en apprenant directement
-        sur le terrain et en étant exposé aux activités qui s’y font de manière quotidienne. Il est important
-        que les bénévoles aient l’opportunité d’en savoir plus sur les questions et requêtes des étudiants
-        afin de savoir comment y répondre et par conséquent, gagner en expérience."
-      paragraph_4:
-        "Après avoir franchi ce cap, un membre du staff certifiera le bénévole et lui donnera accès à la liste
-        de tâches sur Makerepo. Cette liste de tâches comporte des microprojets que les bénévoles peuvent
-        accomplir selon un nombre d’heures qui leur est suggéré et ils se voient obtenir un certain nombre
-        de points CC lors que le travail est complété. Les points CC sont essentiellement des cartes cadeaux
-        du Makerspace. Lorsqu’un certain nombre de points est atteint, il est possible de les échanger contre
-        des articles du Makerstore ou encore de les utiliser comme mode de paiement pour des projets d’expertise.
-        Les projets d’expertise sont des projets-tests que les étudiants peuvent faire lorsqu’ils ont atteint
-        un certain de nombreux dans l’exercice d’une compétence particulière de leur choix et qu’ils se sont
-        sentent près à passer au niveau supérieur. Après avoir mené à bien ce projet, ils se voient recevoir
-        un badge qui peut être visible sur leur profil LinkedIn. Ils démarrent avec une expertise de base en
-        entamant les ateliers et peuvent gravir les échelons jusqu’à atteindre le niveau d’Expert. "
-      paragraph_5:
-        "Les bénévoles ont aussi l’opportunité de s’inscrire à des tâches appelées « Journées Portes Ouvertes
-        ou encore des évènements plus spécifiques comme Makercon, tout cela sur Makerepo. Ils peuvent valider
-        ces heures comme des heures de bénévolat."
-      paragraph_6:
-        "A ceux qui sont intéressés par l’expérience de bénévolat, veuillez nous contacter par courriel et
-        vous serez en mesure de recevoir les informations dont vous avez besoin. Pour les plus vieux volontaires,
-        il est nécessaire de refaire les ateliers lorsque vous n’avez plus accéder aux espaces depuis longtemps
-        et en cas de questions supplémentaires à ce sujet, n’hésitez surtout pas à nous contacter.
-        Notre objectif ici est de rendre cette expérience la plus inclusive possible et de faire en sorte
-        que l’engrenage tourne bien, en cas d’exceptions, nous ferons de notre mieux afin de nous accommoder."
-      footer: "Pour toutes questions, veuillez-nous contactez à cette adresse:
-        <a href='mailto:volunteer@makerepo.com'>volunteer@makerepo.com</a>."
-  development_program:
-    header: "Bienvenue dans la section du programme de Développement"
-    overview:
-      header: "Vue d’ensemble"
-      paragraph: "Vue d’ensemble
-        Aujourd’hui, Internet permet de se créer des expériences avec des gens du monde entier, il est possible de développer ses compétences sans avoir à passer par les bancs du système académique conventionnel.
-        Le problème qui se pose est que peu importe le talent qu’une personne acquiert, il y a un manque de certification de ces compétences.
-        Les certificats classiques peuvent déboucher vers des opportunités d’emploi mais ils sont difficiles à vérifier et à planifier par les employeurs.
-        Notre programme de Développement réparti en modules est conçu afin de planifier, d’avoir un suivi et certifier le développement de vos compétences sans effort.
-        Le Programme de Développement use de certificats standardisés qui sont joignables aussi bien électroniquement que sur papier à vos futurs employeurs.
-        Le Programme de Développement ne vous permettra pas seulement d’observer l’avancement de votre compétence à votre aise, mais il vous permettra aussi de :  "
-    learning_area:
-      header: "<a href='/learning_area'>La zone d’apprentissage</a>"
-      paragraph: "Il est possible d’apprendre ces projects gratuitement. Certains d’entre sont des pré-requis pour les projets de la section d’Expertise."
-    proficient_projects:
-      header: "<a href='/proficient_projects'>Les projets d’Expertise</a>"
-      paragraph: "Ces projets plus avancés, ne sont pas gratuits. Pour se les procurer, le paiement peut se faire par le biais d’une carte de crédit/débit ou encore par la conversion de CC points."
-    skills_badges:
-      header: "<a href='/proficient_projects'>Badges et Compétences</a>"
-      paragraph:
-        "Le Centre en Génie Entrepreneurial de la Conception (CGEC) a toujours été engagé à aider les étudiants et les membres la communauté à succéder dans leurs entreprises.
-        En plus de nos ateliers d’introduction gratuits, vous pouvez désormais développer des compétences technologiques de haut niveau offertes par le programme de développement.
-        Tel que vous progressez dans la construction de votre arsenal de compétences, vous débloquerez de nouvelles tâches et de nouveaux défis conçus pour que vous dépassiez vos limites afin d’accéder un niveau supérieur.
-        Une fois que vous êtes confiant de vos compétences, il devient possible de vous attaquer aux projets d’expertise. Les projets pratique d’expertise sont de projets de qualification mis au point par notre équipe afin
-        de mettre à l’épreuve vos habilités à acheminer un projet d’un certain niveau de qualité (intermédiaire, avancé, expert),
-        la réussite d’un projet d’expertise vous offre une récompense digitale par un badge qui atteste de votre succès dans ce niveau d’expertise."
-      footer:
-        "Pour vous aider à mieux comprendre la structure, nous avons créé un
-        <a href='/assets/development_program/Skill.png' target='_blank' rel='noopener noreferrer'>organigramme de la progression</a>
-        des compétences."
-    digital_badges:
-      header: "Badges numériques"
-      example: "<a href='/assets/development_program/BADGE.png' target='_blank' rel='noopener noreferrer'>Exemple de ce que les employeurs voient sur chaque profil de badge</a>"
-      tables:
-        digital_technologies:
-          title: "Technologies Digitales"
-          3d_printing: "Impression en 3D"
-          laser_cutting: "Découpe laser"
-          arduino: "Arduino"
-          soldering: "Soudage"
-          virtual_reality: "Réalité virtuelle"
-          embroidery: "Broderie"
-        professional_development:
-          title: "Developpement Professionel"
-          design_thinking: "Pensée conceptuelle"
-          entrepreneurship_basics: "Les bases de l’entreprenariat"
-          project_management: "La gestion de projet"
-          effective_communication: "Une communication efficace (écrite et orale)"
-        manufacturing_technologies:
-          title: "Technologies de Fabrication"
-          shop_fundamentals: "Formation de base"
-          lathe: "Tour"
-          mill: "Fraiseuse"
-          cnc: "Commande numérique par ordinateur"
-          welding: "Soudure"
-    volunteer:
-      header: "Bénévole"
-      paragraph_1:
-        "Gagner en expérience par le biais du bénévolat est une excellente manière d’élargir ses horizons et de développer les compétences requises dans le monde du travail.
-        De nombreuses études démontrent que les personnes qui ont les personnes offrent leur aide se rendent en réalité service à elle-même car elles se sentent mieux après cela.
-        Avec ce désir d’enrichir sa communauté et sa propre vie, en donnant de son temps et son expertise, vous réaliserez que vous faites la différence. "
-      paragraph_2:
-        "Le programme de développement améliore le programme de bénévolat. Dans ce programme, les bénévoles sont orientés
-        vers l’accomplissement de tâches qui sont axées sur le développement des compétences et se voir en être récompensé.
-        Pour comprendre comment le bénévolat fonctionne dans cette partie, cliquez ICI."
-      list:
-        title: "Les bénévoles peuvent désormais:"
-        point_1: "Avoir accès à des taches d’un niveau supérieur"
-        point_2: "Avoir un œil sur leur progression sur Makerepo"
-        point_3: "Chaque tâche est récompensée par CGEC Crédits (CC) à utiliser dans le Makerstore"
-        point_4: "Chaque tache aura des taches avec un temps prédéterminé pour son accomplissement"
-      paragraph_3:
-        "Nous avons compilé une version actualisée de la feuille d’information
-        <a href='/assets/development_program/Volunteerinfo.pdf' target='_blank' rel='noopener'>ICI</a> et une présentation
-        <a href='/assets/development_program/Volunteerpresentation.pdf' target='_blank' rel='noopener'>ICI</a>
-        afin de vous guider lors du processus d’enregistrement et sur le fonctionnement du programme. "
-    courses:
-      header: "Cours"
-      paragraph_1: "Qu'y a-t-il de mieux qu'un cours uniquement pratique ? Le fait que vous n'aurez pas d'examen final!"
-      paragraph_2: "À partir de l'été 2020, les étudiants de premier et deuxième cycles pourront s'inscrire à un cours officiel dans le cadre du programme de développement et obtenir des crédits."
-      requirement_list:
-        title: "Les pré-requis avant d’être admis dans le cours:"
-        point_1: "Avoir complete 1,5 heures d’impression en 3D"
-        point_2: "Avoir complété 3 heures de la formation de base"
-        point_3: "Avoir complété 6 heures d’ombre dans chacun des espaces : Makerspace et centre Brunsfield"
-        point_4: "Avoir 2 badges du niveau intermédiaire de la liste de compétences au-dessus"
-      on_completion_list:
-        title: "Après avoir pris ce cours, vous aurez:"
-        point_1: "Effectué 10 heures/semaine de taches dans l’espace de votre choix"
-        point_2: "Obtenu des badges dans toutes les compétences reliées à l’espace de votre choix"
-      paragraph_3:
-        "Pour plus d’information sur le cours pour les étudiants en études supérieures, cliquez
-        <a href='https://www.site.uottawa.ca/~lpeyton/PDWsyllabus.html' target='_blank' rel='noopener noreferrer'>ICI</a>.
-        Pour plus d'informations sur le cours de premier cycle, restez à l'écoute."
-    employment:
-      header: "Emploi"
-      paragraph_1:
-        "Non seulement le programme de Développement vous permet de développer vos compétences personnelles, mais elle vous rend favorable aux yeux des employeurs.
-        Les différents badges de vos niveaux d’expertise et des ateliers vont offriront des opportunités d’emploi avec
-        le Centre de Génie Entrepreneurial en Conception (CGEC) et d’autres organisations. Le CGEC emploie plus de
-        50 étudiants chaque session en plus des 15 AE (assistants à l’enseignement) pour les cours."
-      paragraph_2:
-        "Nous sommes également en train de travailler avec des partenaires dans l’industrie ainsi que des branches
-        gouvernementales afin d’ajouter leurs compétences cibles à notre programme."
-    contact:
-      header: "Contact"
-      paragraph_1: "Voulez-vous en savoir plus ? Envoyez-nous un courriel et nous serons ravi de répondre à vos questions."
-      contact_1: "Mohamed Elsageyer <br>Responsable D'équipe <br> melsa036@uottawa.ca"
-      contact_2: "Stephanie Chiarotto <br>Coordonnatrice des bénévoles <br> volunteer@makerrepo.com"
   terms_of_service:
     title: "Conditions d'utilisation"
     license_title: "Licence"

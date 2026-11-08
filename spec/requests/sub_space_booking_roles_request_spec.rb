@@ -22,9 +22,6 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
     @pending_status = create(:booking_status, :pending)
     @approved_status = create(:booking_status, :approved)
     @declined_status = create(:booking_status, :rejected)
-    stub_const("BookingStatus::PENDING", @pending_status)
-    stub_const("BookingStatus::APPROVED", @approved_status)
-    stub_const("BookingStatus::DECLINED", @declined_status)
     ActionMailer::Base.deliveries.clear
   end
 
@@ -50,7 +47,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   def status_name(booking)
-    booking.reload.sub_space_booking_status.booking_status.name
+    booking.reload.booking_status.name
   end
 
   def pending_booking(user = owner, **attrs)
@@ -58,7 +55,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
                      { sub_space: subspace, user: user,
                        start_time: DateTime.parse("2027-04-03 10:00"),
                        end_time: DateTime.parse("2027-04-03 11:00") }.merge(attrs))
-    booking.sub_space_booking_status.update!(booking_status_id: @pending_status.id)
+    booking.change_status!(@pending_status)
     booking
   end
 
@@ -235,20 +232,12 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
           expect(response.parsed_body.keys).to match_array(SubSpaceBooking.column_names)
         end
 
-        it "users returns the JSON user list" do
-          signed_in = sign_in_as(role)
+        it "users returns the matching people as a JSON list" do
           other = create(:user, :regular_user, name: "Listed Person", booking_approval: false)
-          get users_sub_space_booking_index_path
+          sign_in_as(role)
+          get users_sub_space_booking_index_path, params: { query: "Listed" }
           expect(response).to have_http_status(:ok)
-          json = response.parsed_body
-          expect(json).to be_an(Array)
-          expect(json.map { |u| u["id"] }).to match_array(User.pluck(:id))
-          expect(json.map { |u| u["id"] }).to include(signed_in.id, other.id)
-          listed = json.find { |u| u["id"] == other.id }
-          expect(listed).to include(
-            "name" => "Listed Person", "email" => other.email, "username" => other.username
-          )
-          expect(json.flat_map(&:keys)).not_to include("password", "access_token")
+          expect(response.parsed_body).to eq([{ "id" => other.id, "name" => "Listed Person" }])
         end
       end
     end
@@ -328,7 +317,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
 
     it "lets an admin edit and update an APPROVED booking (owners cannot)" do
       approved = pending_booking
-      approved.sub_space_booking_status.update!(booking_status_id: @approved_status.id)
+      approved.change_status!(@approved_status)
       sign_in_as(:admin)
       get sub_space_booking_edit_path(sub_space_booking_id: approved.id)
       expect(response).to have_http_status(:ok)
@@ -343,7 +332,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
 
     it "lets the owner edit a DECLINED booking (only PENDING-by-others and APPROVED are blocked)" do
       declined = pending_booking
-      declined.sub_space_booking_status.update!(booking_status_id: @declined_status.id)
+      declined.change_status!(@declined_status)
       log_in!(owner)
       get sub_space_booking_edit_path(sub_space_booking_id: declined.id)
       expect(response).to have_http_status(:ok)
@@ -465,6 +454,8 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
       b1 = pending_booking
       b2 = pending_booking(start_time: DateTime.parse("2027-04-04 10:00"),
                            end_time: DateTime.parse("2027-04-04 11:00"))
+      b3 = pending_booking(start_time: DateTime.parse("2027-04-05 10:00"),
+                           end_time: DateTime.parse("2027-04-05 11:00"))
       sign_in_as(:staff)
 
       perform_enqueued_jobs do
@@ -477,16 +468,34 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
       expect(ActionMailer::Base.deliveries.flat_map(&:to)).to eq([b1.user.email, b2.user.email])
 
       put bulk_approve_decline_sub_space_booking_index_path,
-          params: { sub_space_booking_ids: [b1.id], bulk_status: "decline" }
+          params: { sub_space_booking_ids: [b3.id], bulk_status: "decline" }
       expect(flash[:notice]).to eq("Bookings declined successfully.")
-      expect(status_name(b1)).to eq("Declined")
+      expect(status_name(b3)).to eq("Declined")
+      expect(status_name(b1)).to eq("Approved")
     end
 
-    it "silently ignores ids that do not exist (staff)" do
+    it "declines several bookings at once and sends no mail" do
+      b1 = pending_booking
+      b2 = pending_booking(start_time: DateTime.parse("2027-04-04 10:00"),
+                           end_time: DateTime.parse("2027-04-04 11:00"))
+      sign_in_as(:staff)
+
+      perform_enqueued_jobs do
+        put bulk_approve_decline_sub_space_booking_index_path,
+            params: { sub_space_booking_ids: [b1.id, b2.id], bulk_status: "decline" }
+      end
+
+      expect([b1, b2].map { |b| status_name(b) }).to eq(%w[Declined Declined])
+      expect(SubSpaceBookingStatus.where(sub_space_booking_id: [b1.id, b2.id]).map { |r| r.booking_status.name }).to eq(%w[Declined Declined])
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "ignores ids that do not exist and reports them as skipped (staff)" do
       sign_in_as(:staff)
       put bulk_approve_decline_sub_space_booking_index_path,
           params: { sub_space_booking_ids: [99_999_999], bulk_status: "approve" }
-      expect(flash[:notice]).to eq("Bookings approved successfully.")
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to include("1 selected booking(s)")
     end
 
     it "stamps the signed-in approver on a bulk approval" do
@@ -500,30 +509,21 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   describe "users JSON" do
-    # `render json: User.all` goes through User#serializable_hash,
-    # so staff/admin get every column except password and access_token.
-    it "exposes every user column except the password hash and access_token to staff" do
-      subject_user = create(:user, :regular_user, access_token: "ghp_secret_token_value")
+    it "exposes only id and name, not email, tokens or other columns, to staff" do
+      subject_user = create(:user, :regular_user, name: "Needle Person", access_token: "ghp_secret_token_value")
       sign_in_as(:staff)
 
-      get users_sub_space_booking_index_path
+      get users_sub_space_booking_index_path, params: { query: "Needle" }
       expect(response).to have_http_status(:ok)
-
-      entry = response.parsed_body.find { |u| u["id"] == subject_user.id }
-      expect(entry.keys).to match_array(User.column_names - %w[password access_token])
-      expect(entry).not_to have_key("password")
-      expect(entry).not_to have_key("access_token")
-      expect(entry["email"]).to eq(subject_user.email)
+      expect(response.parsed_body).to eq([{ "id" => subject_user.id, "name" => "Needle Person" }])
     end
 
-    it "ignores the query parameter and lists every user" do
+    it "lists only the users matching the query" do
       create(:user, :regular_user, name: "Needle Person")
       create(:user, :regular_user, name: "Other Person")
       sign_in_as(:admin)
       get users_sub_space_booking_index_path, params: { query: "Needle" }
-      names = response.parsed_body.map { |u| u["name"] }
-      expect(names).to include("Needle Person", "Other Person")
-      expect(response.parsed_body.size).to eq(User.count)
+      expect(response.parsed_body.pluck("name")).to eq(["Needle Person"])
     end
   end
 
