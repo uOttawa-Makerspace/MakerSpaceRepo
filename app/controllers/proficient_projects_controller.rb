@@ -298,7 +298,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     when :not_waiting
       flash[:error] = I18n.t("errors.shop.projects.not_waiting")
     else
-      flash[:error] = record_failure_message(result, "errors.shop.projects.approve_invalid")
+      flash[:error] = validation_message(result.record, "errors.shop.projects.approve_invalid")
     end
   end
 
@@ -340,10 +340,6 @@ class ProficientProjectsController < DevelopmentProgramsController
     else
       flash[:error] = validation_message(order_item, "errors.shop.projects.revoke_invalid")
     end
-  end
-
-  def record_failure_message(error, key)
-    "#{I18n.t(key)} #{error.record.errors.full_messages.to_sentence}".strip
   end
 
   def create_photos

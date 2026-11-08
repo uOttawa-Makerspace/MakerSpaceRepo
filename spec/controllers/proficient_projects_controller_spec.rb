@@ -149,7 +149,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
           post :create, params: { proficient_project: pp_params }
         end.to change(ProficientProject, :count).by(0)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(flash[:alert]).to start_with("The project could not be created: ")
+        expect(flash[:alert]).to eq("The project could not be created: Title A title is required.")
       end
     end
   end

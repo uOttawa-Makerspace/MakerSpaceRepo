@@ -90,7 +90,7 @@ class OrdersController < DevelopmentProgramsController
   end
 
   def checkout_not_saved_message(order)
-    validation_message(order, "errors.shop.checkout_not_saved").strip
+    validation_message(order, "errors.shop.checkout_not_saved")
   end
 
   def refuse_checkout(message)

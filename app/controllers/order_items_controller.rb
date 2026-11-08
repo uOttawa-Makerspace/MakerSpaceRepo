@@ -99,7 +99,7 @@ class OrderItemsController < DevelopmentProgramsController
     if item.update(status: "Revoked")
       flash[:notice] = "The badge has been revoked."
     else
-      flash[:alert] = validation_message(item, "errors.shop.badge_not_revoked").strip
+      flash[:alert] = validation_message(item, "errors.shop.badge_not_revoked")
     end
     redirect_to admin_index_path
   end
