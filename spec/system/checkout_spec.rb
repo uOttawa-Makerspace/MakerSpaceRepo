@@ -125,7 +125,7 @@ RSpec.describe "Checkout", type: :system do
 
       find("input[type=submit].btn-primary").click
 
-      expect(page).to have_current_path("/cc_moneys?from=shopify_invoice")
+      expect(page).to have_current_path(cc_moneys_path(from: "shopify_invoice"))
       membership = user.memberships.last
       expect(membership.status).to eq("pending")
       expect(membership.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")

@@ -187,11 +187,12 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       "a non-numeric total_time" => [{ total_time: "abc" }, "Total time is not a number"],
       "more than 24 hours" => [{ total_time: 24.5 }, "Total time must be less than or equal to 24"],
       "a total_time beyond decimal(9,2)" => [{ total_time: 99_999_999_999 }, "Total time must be less than or equal to 24"],
-      "a future date" => [{ date_of_task: (Date.current + 1).to_s }, "Date of task cannot be in the future"],
+      # a lambda, so "tomorrow" is worked out when the example runs, not when the file loads
+      "a future date" => [-> { { date_of_task: (Date.current + 1).to_s } }, "Date of task cannot be in the future"],
       "a far-future date" => [{ date_of_task: "2999-01-01" }, "Date of task cannot be in the future"]
     }.each do |label, (overrides, message)|
       it "refuses #{label}, stores nothing and says why" do
-        params = { volunteer_hour: hour_params[:volunteer_hour].merge(overrides) }
+        params = { volunteer_hour: hour_params[:volunteer_hour].merge(overrides.respond_to?(:call) ? overrides.call : overrides) }
         expect { post volunteer_hours_path, params: params }.not_to change(VolunteerHour, :count)
         expect(response).to redirect_to(volunteer_hours_path)
         expect(flash[:alert]).to eq(message)
