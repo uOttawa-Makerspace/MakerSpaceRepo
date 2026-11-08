@@ -47,8 +47,8 @@ end
 
 added = current.select { |key, count| count > baseline[key] }
 unless added.empty?
-  warn "New ERB lint offenses (not in config/erb-lint-baseline.txt):"
-  added.each { |key, count| warn "  #{count - baseline[key]} x #{key.tr("\t", "  ")}" }
+  $stderr.puts "New ERB lint offenses (not in config/erb-lint-baseline.txt):"
+  added.each { |key, count| $stderr.puts "  #{count - baseline[key]} x #{key.tr("\t", "  ")}" }
   exit 1
 end
 
