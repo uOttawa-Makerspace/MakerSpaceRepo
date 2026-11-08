@@ -16,3 +16,10 @@ RSpec.describe "Stylesheet imports" do
     expect(application.scan(%r{@import\s+["']bootstrap/scss/bootstrap["']}).size).to eq(1)
   end
 end
+
+RSpec.describe "Links in running text" do
+  it "are underlined so colour is not the only cue" do
+    rules = Rails.root.join("app/javascript/stylesheets/accessibility.scss").read
+    expect(rules).to match(/^:is\(p, li, td\)\s+a:not\([^)]*\) \{\s*text-decoration: underline;/)
+  end
+end

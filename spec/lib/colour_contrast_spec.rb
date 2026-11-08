@@ -17,6 +17,8 @@ RSpec.describe "Theme colour contrast" do
         .to_h
   end
 
+  def variables_file = styles.join("shared/_variables.scss").read
+
   def rgb(hex) = hex.delete("#").scan(/../).map { |c| c.hex / 255.0 }
 
   def luminance(hex)
@@ -74,11 +76,13 @@ RSpec.describe "Theme colour contrast" do
 
   it "makes white text on the orange fill bold and at least 14pt" do
     rules = styles.join("accessibility.scss").read
-    size = rules[/^\$large-text-size:\s*([\d.]+)rem;/, 1].to_f * 16
+    size = variables_file[/^\$large-text-size:\s*([\d.]+)rem;/, 1].to_f * 16
     expect(size).to be >= 18.66
     expect(rules).to match(/max-width: 1199\.98px\) \{\s*:root:not\(\[data-bs-theme="dark"\]\) \.navbar:not\(\.navbar-staff\) \{\s*\.nav-link,\s*\.btn\.btn-link \{\s*font-weight: 700;\s*font-size: \$large-text-size;/)
-    expect(rules).to match(/\.btn\.btn-primary,\s*\.btn\.btn-outline-primary \{\s*--bs-btn-font-weight: 700;\s*--bs-btn-font-size: #\{\$large-text-size\};/)
+    expect(rules).to match(/\.btn\.btn-primary,\s*\.btn\.btn-outline-primary \{\s*--bs-btn-font-weight: 700;\s*--bs-btn-font-size: #\{\$large-text-size\};.*?\n\s*font-size: \$large-text-size;/m)
     expect(rules).to match(/\.btn\.btn-outline-primary \{\s*--bs-btn-color: var\(--primary-text\);/)
+    expect(rules).to match(/\.nav-pills \.nav-link \{\s*font-size: \$large-text-size;\s*&\.active,\s*\.show > & \{\s*font-weight: 700 !important;/)
+    expect(rules).to match(/\.fc \.fc-button-primary \{\s*font-weight: 700;\s*font-size: \$large-text-size;/)
     expect(rules).to match(/\.badge:is\(\.bg-primary, \.text-bg-primary, \.cert-badge\) \{\s*font-weight: 700;\s*font-size: \$large-text-size;/)
   end
 end

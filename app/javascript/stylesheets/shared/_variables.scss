@@ -5,6 +5,8 @@
 // on the dark theme (#212529): 5.48:1. $secondary is muted grey text and the
 // background of white-on-grey controls: 4.95:1 on white, 4.58:1 on $tertiary.
 $primary: #e24829;
+// Smallest bold size that counts as large text (14pt): used for text on the orange.
+$large-text-size: 1.167rem;
 $primary-text: #c43c1f;
 $primary-text-dark: #ff6b4a;
 $secondary: #707070;
