@@ -7,12 +7,11 @@ require "rails_helper"
 # `Space ID is required` 400s when params[:id] is missing.
 #
 # Notes pinned here:
-#   - unavailabilities_json / utc_unavailabilities_json group per staff user
-#     with color from StaffSpace; each unavailability entry has the
-#     "🚫 <name> - <title>" title, className "unavailability" etc.
-#   - the :in_time_zone("America/Toronto") round-trip of the UTC variant maps
-#     back to the values they were written with (creation is UTC-normalized,
-#     readback is evaluated as UTC then re-zoned)
+#   - unavailabilities_json groups per staff user with color from StaffSpace;
+#     each unavailability entry has the "🚫 <name> - <title>" title,
+#     className "unavailability" etc.
+#   - times and rule starts are Toronto wall-clock values, so they read the
+#     same all year (see the winter-created rule below)
 #   - update_color answers JSON: 200 {"status":"ok"} when the colour is saved,
 #     422 with an error message when it is not
 #   - ics_to_json route was removed → 404
@@ -63,13 +62,9 @@ RSpec.describe "Admin calendar contract", type: :request do
   # NOTE: the :id segment is REQUIRED by the route, so the controller's
   # `params[:id].blank? → 400` branch is unreachable under the route shim;
   # `/…_json/0` (unknown space) returns 200 with an empty list. Pinned that.
-  it "all three admin JSON feeds answer 200 with an empty payload for an unknown space id" do
+  it "both admin JSON feeds answer 200 with an empty payload for an unknown space id" do
     log_in!(admin)
     get unavailabilities_json_admin_calendar_index_path(id: 0)
-    expect(response.status).to eq(200)
-    expect(response.parsed_body).to eq([])
-
-    get utc_unavailabilities_json_admin_calendar_index_path(id: 0)
     expect(response.status).to eq(200)
     expect(response.parsed_body).to eq([])
 
@@ -147,21 +142,6 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(flags).to eq(whole.id => true, span.id => false)
     end
 
-    it "UTC variant keeps the full iso8601 string with milliseconds and zone offset" do
-      staff_space!
-      entry = StaffUnavailability.create!(
-        user: staff, title: "Conference",
-        start_time: Time.zone.parse("2027-05-05 09:00"),
-        end_time: Time.zone.parse("2027-05-05 11:00")
-      )
-      get utc_unavailabilities_json_admin_calendar_index_path(id: space.id)
-      event = response.parsed_body.first["unavailabilities"].first
-      # raw active-record attribute time format (no custom strftime)
-      expect(entry.start_time).to eq(Time.utc(2027, 5, 5, 13, 0))
-      expect(event["start"]).to eq("2027-05-05T09:00:00.000-04:00")
-      expect(event["end"]).to eq("2027-05-05T11:00:00.000-04:00")
-    end
-
     it "returns staff without unavailabilities with empty lists" do
       staff_space!
       get unavailabilities_json_admin_calendar_index_path(id: space.id)
@@ -176,7 +156,7 @@ RSpec.describe "Admin calendar contract", type: :request do
                               user: create(:user, :staff, name: "Zeta"))
       StaffSpace.create!(space: space, color: "#222222",
                               user: create(:user, :staff, name: "Alpha"))
-      get utc_unavailabilities_json_admin_calendar_index_path(id: space.id)
+      get unavailabilities_json_admin_calendar_index_path(id: space.id)
       expect(response.parsed_body.map { |e| e["name"] })
         .to eq(["Zeta", "Alpha"])
     end
@@ -345,13 +325,18 @@ RSpec.describe "Admin calendar contract", type: :request do
       )
     end
 
-    it "keeps the raw UTC rule on the UTC feed" do
-      recurring_unavailability
-      get utc_unavailabilities_json_admin_calendar_index_path(id: space.id)
+    it "gives a rule created in winter the same wall-clock start as one created in summer" do
+      StaffUnavailability.create!(
+        user: staff, title: "Shift",
+        start_time: Time.utc(2027, 1, 13, 14), end_time: Time.utc(2027, 1, 13, 16),
+        recurrence_rule: "DTSTART:20270113T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270127T140000Z"
+      )
+      get unavailabilities_json_admin_calendar_index_path(id: space.id)
       entry = response.parsed_body.first["unavailabilities"].first
-      expect(entry["duration"]).to eq(2 * 60 * 60 * 1000)
-      expect(entry["rrule"])
-        .to eq("DTSTART:20270505T130000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE;COUNT=4\nEXDATE:20270512T130000Z")
+      expect(entry["start"]).to eq("2027-01-13T09:00:00")
+      expect(entry["rrule"]).to eq(
+        "DTSTART:20270113T090000\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270127T090000"
+      )
     end
 
     it "merges parsed external ICS events (HTTP stubbed) into the staff entry with the unavailability title" do
@@ -449,7 +434,6 @@ RSpec.describe "Admin calendar contract", type: :request do
     # the route needs a segment, but a space-only segment is present and blank
     {
       "unavailabilities_json" => "/admin/calendar/unavailabilities_json/%20",
-      "utc_unavailabilities_json" => "/admin/calendar/utc_unavailabilities_json/%20",
       "imported_calendars_json" => "/admin/calendar/imported_calendars_json/%20"
     }.each do |name, path|
       it "answers 400 with an error for #{name}" do

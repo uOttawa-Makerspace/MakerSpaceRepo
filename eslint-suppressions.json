@@ -171,14 +171,8 @@
     }
   },
   "app/javascript/src/manage_calendar_events.js": {
-    "complexity": {
-      "count": 1
-    },
-    "max-depth": {
-      "count": 5
-    },
     "no-unused-vars": {
-      "count": 4
+      "count": 2
     }
   },
   "app/javascript/src/manage_unavailabilities.js": {

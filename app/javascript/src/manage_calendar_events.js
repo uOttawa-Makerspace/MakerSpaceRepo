@@ -1,12 +1,15 @@
 import { Collapse } from "bootstrap";
-import { RRule, RRuleSet, rrulestr, datetime } from "rrule";
+import { RRule } from "rrule";
 import TomSelect from "tom-select";
 
 import { onPageLoad } from "./on_page";
+import { entryOverlaps, occurrencesOverlapping } from "./recurrence";
 import {
   parseLocalDatetimeString,
   toLocalDatetimeString,
 } from "./calendar_helper";
+
+const FOUR_WEEKS_IN_DAYS = 28;
 
 function showStaffLoadError() {
   document.getElementById("staff_load_error").classList.remove("d-none");
@@ -62,8 +65,9 @@ onPageLoad("#eventModal", async () => {
   let fetchedStaffUnavailabilitiesRes = null;
   try {
     fetchedStaffUnavailabilitiesRes = await fetch(
-      "/admin/calendar/utc_unavailabilities_json/" +
+      "/admin/calendar/unavailabilities_json/" +
         document.getElementById("space_id").value,
+      { headers: { Accept: "application/json" } },
     );
   } catch (error) {
     console.error(error);
@@ -141,94 +145,27 @@ onPageLoad("#eventModal", async () => {
     }
   }
 
+  // The event's own occurrences over the next four weeks (just itself when
+  // it does not repeat).
+  function eventOccurrences() {
+    const start = parseLocalDatetimeString(startTimeField.value);
+    const end = parseLocalDatetimeString(endTimeField.value);
+    if (!ruleField.value) return [{ start, end }];
+    const horizon = new Date(start);
+    horizon.setDate(horizon.getDate() + FOUR_WEEKS_IN_DAYS);
+    return occurrencesOverlapping(ruleField.value, end - start, start, horizon);
+  }
+
+  // Start times of the event occurrences that fall inside one of the given
+  // unavailabilities.
   function isUnavailableDuring(unavailabilities) {
-    const eventStart = parseLocalDatetimeString(startTimeField.value);
-    const eventEnd = parseLocalDatetimeString(endTimeField.value);
-    const eventRule = ruleField.value ? rrulestr(ruleField.value) : null;
-
-    const conflicts = [];
-
-    for (const unavail of unavailabilities) {
-      const start = parseLocalDatetimeString(unavail.start);
-      // if duration present, use it (rrule present), else calculate it
-      const duration =
-        typeof unavail.duration === "number"
-          ? unavail.duration
-          : parseLocalDatetimeString(unavail.end) - start;
-      const end = parseLocalDatetimeString(start.getTime() + duration);
-
-      // Recurring event vs recurring unavailability
-      if (unavail.rrule) {
-        try {
-          const unavailRule = rrulestr(unavail.rrule);
-
-          if (eventRule) {
-            const eventDuration = eventEnd - eventStart;
-            const windowStart = new Date(Math.min(start, eventStart));
-            // check for 4 weeks
-            const windowEnd = new Date(
-              Date.now() + 4 * 7 * 24 * 60 * 60 * 1000,
-            );
-
-            const eventOccurrences = eventRule
-              .between(windowStart, windowEnd)
-              .map((occStart) => ({
-                start: occStart,
-                end: new Date(occStart.getTime() + eventDuration),
-              }));
-
-            const unavailOccurrences = unavailRule
-              .between(windowStart, windowEnd)
-              .map((occStart) => ({
-                start: occStart,
-                end: new Date(occStart.getTime() + duration),
-              }));
-
-            // for each occurrence of the event, check each unavailability occurence
-            for (const ev of eventOccurrences) {
-              for (const ua of unavailOccurrences) {
-                if (ev.start < ua.end && ev.end > ua.start) {
-                  conflicts.push(ev.start);
-                }
-              }
-            }
-          } else {
-            // One-time event vs recurring unavailability
-            const unavailOccurrences = unavailRule.between(
-              parseLocalDatetimeString(eventStart.getTime() - duration),
-              parseLocalDatetimeString(eventEnd.getTime() + duration),
-              true,
-            );
-
-            // FIXME: returning the day before for some reason on events with UTC time a different day than local
-            // This debug log slows down busy calendars a lot.
-            // console.log(unavail, "#3", unavailRule, unavailRule.all());
-
-            for (const uaStart of unavailOccurrences) {
-              const uaEnd = parseLocalDatetimeString(
-                uaStart.getTime() + duration,
-              );
-              if (eventStart < uaEnd && eventEnd > uaStart) {
-                conflicts.push(eventStart);
-              }
-            }
-          }
-        } catch (e) {
-          console.warn("Invalid RRULE:", e);
-        }
-      } else {
-        // Recurring event vs one-time unavailability
-        if (eventRule) {
-          const overlapping = eventRule.between(start, end);
-          conflicts.push(...overlapping);
-          // One-time event vs one-time unavailability
-        } else if (start < eventEnd && end > eventStart) {
-          conflicts.push(eventStart);
-        }
-      }
-    }
-
-    return conflicts.sort((a, b) => a - b);
+    return eventOccurrences()
+      .filter((occurrence) =>
+        unavailabilities.some((entry) =>
+          entryOverlaps(entry, occurrence.start, occurrence.end),
+        ),
+      )
+      .map((occurrence) => occurrence.start);
   }
 
   function refreshTomSelect() {

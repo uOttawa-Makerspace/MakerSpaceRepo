@@ -109,7 +109,8 @@ describe("loading", () => {
   it("asks for the staff and their unavailabilities of the space", async () => {
     await load();
     expect(fetch).toHaveBeenCalledWith(
-      "/admin/calendar/utc_unavailabilities_json/7",
+      "/admin/calendar/unavailabilities_json/7",
+      { headers: { Accept: "application/json" } },
     );
   });
 });

@@ -249,7 +249,7 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
           expect(rows["event-#{all_day.id}"]["allDay"]).to be(true)
         end
 
-        it "GET /admin/calendar/unavailabilities_json/:id and utc_unavailabilities_json/:id render it" do
+        it "GET /admin/calendar/unavailabilities_json/:id renders it" do
           StaffSpace.create!(user: staff, space: space)
           u = create(:staff_unavailability, user: staff, start_time: local(*s), end_time: local(*e))
           whole = create(:staff_unavailability, user: staff, start_time: local(*day_start), end_time: local(*day_end))
@@ -258,12 +258,6 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
           expect(response).to have_http_status(:ok)
           rows = unavailabilities_of(response.parsed_body, staff).index_by { |r| r["id"] }
           expect(rows[u.id]).to include("end" => local(*e).strftime("%Y-%m-%dT%H:%M:%S"), "allDay" => false)
-          expect(rows[whole.id]["allDay"]).to be(true)
-
-          get utc_unavailabilities_json_admin_calendar_index_path(id: space.id)
-          expect(response).to have_http_status(:ok)
-          rows = unavailabilities_of(response.parsed_body, staff).index_by { |r| r["id"] }
-          expect(rows[u.id]["allDay"]).to be(false)
           expect(rows[whole.id]["allDay"]).to be(true)
         end
 
