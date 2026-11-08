@@ -187,8 +187,9 @@ class Repository < ApplicationRecord
 
   def clear_zip_cache
     File.delete(zip_path) if File.exist?(zip_path)
-  rescue StandardError => e
-    Rails.logger.error("Failed to delete cached zip for Repository ##{id}: #{e.message}")
+  rescue SystemCallError => e
+    # The stale zip stays on disk until the next build replaces it.
+    HandledError.report(e, severity: :warning, source: "repository.clear_zip_cache", repository_id: id)
   end
 
   # validates :license,

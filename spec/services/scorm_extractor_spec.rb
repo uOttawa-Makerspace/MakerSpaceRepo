@@ -409,6 +409,26 @@ RSpec.describe ScormExtractor do
       expect(upload_keys(lm)).to be_empty
     end
 
+    it "reports an upload it cannot remove and still raises the original error" do
+      lm = module_with(files)
+      allow_any_instance_of(LearningModule).to receive(:update!).and_raise("boom")
+      allow_any_instance_of(ActiveStorage::Blob).to receive(:purge).and_raise(Errno::EIO)
+      expect(Rails.error).to receive(:report)
+        .with(instance_of(Errno::EIO), hash_including(handled: true, context: hash_including(source: "scorm_extractor.discard_uploaded"))).at_least(:once)
+      expect { ScormExtractor.extract(lm) }.to raise_error("boom")
+    end
+
+    it "reports a previous file it cannot remove after the swap and still publishes the new files" do
+      lm = module_with(files)
+      ScormExtractor.extract(lm)
+      lm.update_columns(scorm_status: LearningModule.scorm_statuses[:pending])
+      allow_any_instance_of(ActiveStorage::Blob).to receive(:purge).and_raise(Errno::EIO)
+      expect(Rails.error).to receive(:report)
+        .with(instance_of(Errno::EIO), hash_including(handled: true, context: hash_including(source: "scorm_extractor.purge_previous"))).at_least(:once)
+      ScormExtractor.extract(lm)
+      expect(lm.reload.scorm_status).to eq("ready")
+    end
+
     it "removes the files it uploaded when a newer run took over" do
       lm = module_with(files)
       allow(ActiveStorage::Blob).to receive(:create_and_upload!).and_wrap_original do |m, **args|

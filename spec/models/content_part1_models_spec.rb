@@ -151,7 +151,17 @@ RSpec.describe "Content models (part 1 characterization)" do
         expect(File.exist?(repo.zip_path)).to be(false)
       end
 
-      it "a missing cache file is not an error" do
+      it "a missing cache file is not an error and is not reported" do
+        expect(Rails.error).not_to receive(:report)
+        expect { repo.clear_zip_cache }.not_to raise_error
+      end
+
+      it "reports a cache file that cannot be deleted" do
+        FileUtils.mkdir_p(File.dirname(repo.zip_path))
+        FileUtils.touch(repo.zip_path)
+        allow(File).to receive(:delete).with(repo.zip_path).and_raise(Errno::EACCES)
+        expect(Rails.error).to receive(:report)
+          .with(instance_of(Errno::EACCES), hash_including(handled: true, severity: :warning, context: hash_including(repository_id: repo.id)))
         expect { repo.clear_zip_cache }.not_to raise_error
       end
     end
