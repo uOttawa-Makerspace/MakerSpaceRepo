@@ -123,6 +123,28 @@ RSpec.describe "Error answers", type: :request do
       end
     end
 
+    context "with an unusual Accept header or path" do
+      let(:error) { RuntimeError.new("boom") }
+
+      it "answers HTML for a malformed Accept header" do
+        with_production_error_pages { get root_path, headers: { "Accept" => "text/;;;,,/" } }
+        expect(response.media_type).to eq("text/html")
+        expect(response.body).to include("<h1>")
+      end
+
+      it "answers an empty body for an image Accept header" do
+        with_production_error_pages { get root_path, headers: { "Accept" => "image/png" } }
+        expect(response).to have_http_status(:internal_server_error)
+        expect(response.body).to be_empty
+      end
+
+      it "answers the page for an unknown path ending in .xml" do
+        with_production_error_pages { get "/no/such/page.xml" }
+        expect(response).to have_http_status(:not_found)
+        expect(response.body).to include("Page not found")
+      end
+    end
+
     context "when a POST fails" do
       let(:error) { RuntimeError.new("boom") }
 

@@ -17,17 +17,27 @@ class ErrorsController < ActionController::Base
   layout "error"
   around_action { |_controller, action| with_request_locale(&action) }
 
+  # Never raises on the request format: a malformed or unusual Accept header gets the
+  # HTML page, JSON only when the client asks for it, and an empty body for anything else
+  # (an image or other asset request).
   def show
     page = PAGES.fetch(params[:code])
     status = params[:code].to_i
-    respond_to do |format|
-      format.html { render page, status: status }
-      format.json { render json: { error: page_message(page), reference: error_reference }, status: status }
-      format.any { head status }
+    case wanted_format
+    when :json then render json: { error: page_message(page), reference: error_reference }, status: status
+    when :html then render page, status: status, formats: :html
+    else head status
     end
   end
 
   private
+
+  def wanted_format
+    accept = request.headers["Accept"].to_s
+    return :html if accept.blank? || accept.include?("html") || accept.include?("*/*")
+
+    accept.include?("json") ? :json : :other
+  end
 
   def page_message(page)
     page == :unexpected ? unexpected_error_message : I18n.t("errors.generic.#{page}")
