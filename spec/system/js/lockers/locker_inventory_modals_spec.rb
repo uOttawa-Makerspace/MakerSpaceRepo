@@ -156,7 +156,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
         select "24x24", from: "locker_size_id", visible: :all
         click_button "Update Lockers"
       end
-      expect(page).to have_text("param is missing or the value is empty or invalid: locker")
+      expect(page).to have_text("The form is missing required information (locker)")
       expect([l1, l2, l3].map { |l| l.reload.locker_size }).to all(eq(size_small))
     end
 

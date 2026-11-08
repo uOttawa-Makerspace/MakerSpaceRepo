@@ -217,7 +217,7 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
     it "redirects to root with the missing-param message when volunteer_task is absent" do
       post volunteer_tasks_path, params: {}
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to match(/param is missing/)
+      expect(flash[:alert]).to match(/The form is missing required information/)
     end
 
     it "attaches an uploaded image as a Photo (max 5 taken)" do

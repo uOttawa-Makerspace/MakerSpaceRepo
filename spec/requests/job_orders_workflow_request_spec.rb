@@ -207,7 +207,7 @@ RSpec.describe "JobOrders workflow", type: :request do
       session_login!(staff)
       patch job_order_comments_path(order)
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to eq("param is missing or the value is empty or invalid: job_order")
+      expect(flash[:alert]).to eq("The form is missing required information (job_order). Reload the page and try again.")
     end
   end
 

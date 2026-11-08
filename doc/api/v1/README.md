@@ -25,12 +25,13 @@ Always JSON, always a real status:
   "error": {
     "code": "validation_failed",
     "message": "Validation failed",
-    "fields": { "email": ["is invalid"] }
+    "fields": { "email": ["is invalid"] },
+    "reference": "3f2a9c1e"
   }
 }
 ```
 
-`code` is a stable machine string (branch on it, not on `message`); `fields` appears on 422 only; some errors add extra keys (for example `support_email`).
+`code` is a stable machine string (branch on it, not on `message`); `fields` appears on 422 only; `reference` is on every error body and is the first 8 characters of the request id (the `X-Request-Id` response header): quote it when reporting a problem, it finds the request in the server logs and error tracker; some errors add extra keys (for example `support_email`).
 
 | Status | Meaning                                                            | Typical codes                                                     |
 | ------ | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
