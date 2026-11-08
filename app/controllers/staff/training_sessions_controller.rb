@@ -57,14 +57,12 @@ class Staff::TrainingSessionsController < StaffDashboardController
         end
       end
     else
+      message = validation_message(@new_training_session, "errors.staff.training_sessions.not_created")
       respond_to do |format|
         format.html do
-          redirect_back(
-            fallback_location: root_path,
-            alert: "Something went wrong. Please try again."
-          )
+          redirect_back(fallback_location: root_path, alert: message)
         end
-        format.json { render json: { created: false } }
+        format.json { render json: { created: false, error: message, reference: error_reference } }
       end
     end
   end
@@ -111,7 +109,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
     if @current_training_session.save
       flash[:notice] = "Training session updated succesfully"
     else
-      flash[:alert] = "Something went wrong, please try again"
+      flash[:alert] = validation_message(@current_training_session, "errors.staff.training_sessions.not_updated")
     end
     redirect_back(fallback_location: root_path)
   end
@@ -147,7 +145,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
     if cert.destroy
       flash[:notice] = "Deleted Successfully"
     else
-      flash[:alert] = "Something went wrong, try refreshing"
+      flash[:alert] = validation_message(cert, "errors.staff.training_sessions.certification_not_revoked")
     end
     redirect_to user_path(cert.user.username)
   end
@@ -157,7 +155,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
       flash[:notice] = "Deleted Successfully"
       redirect_to staff_dashboard_index_path
     else
-      flash[:alert] = "Something went wrong"
+      flash[:alert] = validation_message(@current_training_session, "errors.staff.training_sessions.not_deleted")
       redirect_back(fallback_location: root_path)
     end
   end
