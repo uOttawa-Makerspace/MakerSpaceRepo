@@ -96,3 +96,6 @@ fr:
         message_not_updated: "Le message n'a pas été modifié."
         message_missing: "Veuillez entrer un message."
         repository_not_updated: "Le statut de projet en vedette n'a pas été modifié."
+      events:
+        copy_dates_invalid: "Les événements n'ont pas été copiés. Choisissez dans les sélecteurs de dates la période à copier et la date de destination."
+        copy_failed: "Aucun événement n'a été copié."

@@ -96,3 +96,6 @@ en:
         message_not_updated: "The message was not updated."
         message_missing: "Please enter a message."
         repository_not_updated: "The featured status of the project was not changed."
+      events:
+        copy_dates_invalid: "The events were not copied. Choose the dates to copy from and the date to copy to from the calendar pickers."
+        copy_failed: "No events were copied."
