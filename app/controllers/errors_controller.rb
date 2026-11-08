@@ -32,11 +32,28 @@ class ErrorsController < ActionController::Base
 
   private
 
+  # HTML or JSON, whichever the client lists first (q-values and order honoured), JSON
+  # for ?format=json, HTML for a blank, "*/*" or unreadable Accept header, and :other
+  # when the client accepts neither (an image or other asset request).
   def wanted_format
-    accept = request.headers["Accept"].to_s
-    return :html if accept.blank? || accept.include?("html") || accept.include?("*/*")
+    return :json if params[:format].to_s == "json"
 
-    accept.include?("json") ? :json : :other
+    accepted = accepted_types
+    return :html if accepted.empty?
+
+    format_of(accepted.find { |type| type.html? || type.json? })
+  rescue Mime::Type::InvalidMimeType, ArgumentError, ActionController::BadRequest
+    :html
+  end
+
+  def format_of(type)
+    return :other unless type
+
+    type.json? ? :json : :html
+  end
+
+  def accepted_types
+    Mime::Type.parse(request.headers["Accept"].to_s.scrub(""))
   end
 
   def page_message(page)
