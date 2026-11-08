@@ -64,5 +64,11 @@ RSpec.describe ErrorReporting do
       expect(host.send(:validation_message, record, "errors.generic.not_found"))
         .to eq("Could not save. #{record.errors.full_messages.to_sentence}")
     end
+
+    it "has no trailing space when the record has no errors" do
+      allow(I18n).to receive(:t).and_call_original
+      allow(I18n).to receive(:t).with("errors.generic.not_found").and_return("Could not save.")
+      expect(host.send(:validation_message, User.new, "errors.generic.not_found")).to eq("Could not save.")
+    end
   end
 end
