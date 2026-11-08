@@ -1,8 +1,6 @@
 @import "shared/variables";
 
-// Shared accessibility rules. Imported last so they win ties with Bootstrap
-// (settings.scss and get_involved.scss import Bootstrap again, which would
-// otherwise replace earlier rules of equal specificity).
+// Shared accessibility rules. Imported last so they win ties with Bootstrap.
 
 // Keyboard focus ring. Every ring colour below has at least 3:1 contrast
 // against the background it is drawn on (WCAG 2.2 SC 1.4.11, 2.4.7, 2.4.11).
