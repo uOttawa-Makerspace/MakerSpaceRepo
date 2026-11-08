@@ -15,8 +15,11 @@ module Api
     # 400 bad_request, 406 not_acceptable, 401 unauthenticated, 403 forbidden, 404 not_found,
     # 422 validation_failed / parameter_missing, 423 account_locked, 429 rate_limited,
     # 500 internal_error (see json_internal_errors).
+    # Every error also carries `reference`: the first 8 characters of the request id (X-Request-Id),
+    # which finds the request in the logs and in Airbrake.
     class BaseController < ActionController::API
       include RateLimitStore
+      include ErrorReporting
       # Unhandled errors answer with a JSON 500 (and are reported) everywhere except
       # test, where they must stay visible to specs. A request spec turns it on with
       # `Api::V1::BaseController.json_internal_errors = true`. Declared first: the
@@ -25,8 +28,7 @@ module Api
       rescue_from StandardError do |e|
         raise e unless json_internal_errors
 
-        Rails.logger.error("#{e.class}: #{e.message}\n#{e.backtrace&.first(15)&.join("\n")}")
-        Rails.error.report(e, handled: true, severity: :error, context: { source: "api_v1" })
+        report_unexpected(e, source: "api_v1")
         render_error(:internal_error, "Something went wrong", status: :internal_server_error)
       end
 
@@ -98,7 +100,7 @@ module Api
       def render_error(code, message, status:, fields: nil, **extra)
         body = { code: code.to_s, message: message }
         body[:fields] = fields if fields
-        render json: { error: body.merge(extra) }, status: status
+        render json: { error: body.merge(extra, reference: error_reference) }, status: status
       end
 
       def render_validation_errors(record)

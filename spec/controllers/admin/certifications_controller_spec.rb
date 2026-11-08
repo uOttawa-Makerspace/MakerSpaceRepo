@@ -41,7 +41,8 @@ RSpec.describe Admin::CertificationsController, type: :controller do
   describe "GET /show without a user" do
     it "is not found", skip_bullet: true do
       @certification.update_columns(user_id: nil)
-      expect { get :show, params: { id: @certification.id } }.to raise_error(ActiveRecord::RecordNotFound)
+      get :show, params: { id: @certification.id }
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -49,15 +50,14 @@ RSpec.describe Admin::CertificationsController, type: :controller do
     before { @certification.update_columns(user_id: nil) }
 
     it "does not update (demote or reinstate) the certification", skip_bullet: true do
-      expect do
-        patch :update, params: { id: @certification.id, certification: { active: false, demotion_reason: "x" } }
-      end.to raise_error(ActiveRecord::RecordNotFound)
+      patch :update, params: { id: @certification.id, certification: { active: false, demotion_reason: "x" } }
+      expect(response).to have_http_status(:not_found)
       expect(Certification.unscoped.find(@certification.id).active).to be(true)
     end
 
     it "does not open the demote modal", skip_bullet: true do
-      expect { get :open_modal, params: { id: @certification.id }, xhr: true, format: :js }
-        .to raise_error(ActiveRecord::RecordNotFound)
+      get :open_modal, params: { id: @certification.id }, xhr: true, format: :js
+      expect(response).to have_http_status(:not_found)
     end
   end
 

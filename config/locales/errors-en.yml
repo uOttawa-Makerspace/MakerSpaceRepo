@@ -6,3 +6,20 @@ en:
       staff_not_in_space: "That staff member is not on this space."
       color_invalid: "That colour is not valid."
       color_not_saved: "The staff colour could not be saved."
+    generic:
+      unexpected: "Something unexpected went wrong on our side. Please try again. If it keeps happening, contact the makerspace staff and quote reference %{reference}."
+      not_found: "That page or record could not be found. It may have been removed, or the link may be wrong."
+      unprocessable: "Your request could not be processed. Reload the page and try again."
+      parameter_missing: "The form is missing required information (%{param}). Reload the page and try again."
+    pages:
+      reference: "Reference:"
+      home: "Back to the home page"
+      not_found:
+        title: "Page not found"
+        text: "That page or record could not be found. It may have been removed, or the link may be wrong."
+      unprocessable:
+        title: "Request could not be processed"
+        text: "Your request could not be processed. Go back, reload the page and try again. If it keeps happening, contact the makerspace staff and quote the reference below."
+      unexpected:
+        title: "Something went wrong on our side"
+        text: "An unexpected error stopped this page. Please try again. If it keeps happening, contact the makerspace staff and quote the reference below."

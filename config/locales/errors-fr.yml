@@ -6,3 +6,20 @@ fr:
       staff_not_in_space: "Ce membre du personnel ne fait pas partie de cet espace."
       color_invalid: "Cette couleur n'est pas valide."
       color_not_saved: "La couleur du personnel n'a pas pu être enregistrée."
+    generic:
+      unexpected: "Une erreur inattendue s'est produite de notre côté. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence %{reference}."
+      not_found: "Cette page ou cet élément est introuvable. Il a peut-être été supprimé, ou le lien est erroné."
+      unprocessable: "Votre demande n'a pas pu être traitée. Rechargez la page et réessayez."
+      parameter_missing: "Il manque des informations obligatoires dans le formulaire (%{param}). Rechargez la page et réessayez."
+    pages:
+      reference: "Référence :"
+      home: "Retour à la page d'accueil"
+      not_found:
+        title: "Page introuvable"
+        text: "Cette page ou cet élément est introuvable. Il a peut-être été supprimé, ou le lien est erroné."
+      unprocessable:
+        title: "La demande n'a pas pu être traitée"
+        text: "Votre demande n'a pas pu être traitée. Revenez en arrière, rechargez la page et réessayez. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence ci-dessous."
+      unexpected:
+        title: "Une erreur s'est produite de notre côté"
+        text: "Une erreur inattendue a interrompu cette page. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence ci-dessous."
