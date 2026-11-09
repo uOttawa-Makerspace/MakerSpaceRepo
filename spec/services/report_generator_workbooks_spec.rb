@@ -337,10 +337,10 @@ RSpec.describe ReportGenerator do
       expect(body.size).to eq(4)
       expect(body).to all(have_attributes(size: 9))
       gina = body.find { |r| r.first == "Gina Genie" }
-      expect(gina).to eq(["Gina Genie", "gina", "gina@example.test", "Female", "undergrad", "Génie", 2020,
+      expect(gina).to eq(["Gina Genie", "gina", "gina@example.test", "Female", "Undergrad", "Génie", 2020,
                           User.find_by(username: "gina").student_id, "2026-03-10 11:00"])
       cam = body.find { |r| r.first == "Cam Community" }
-      expect(cam).to eq(["Cam Community", "cam", "cam@example.test", "Male", "community_member", nil, nil,
+      expect(cam).to eq(["Cam Community", "cam", "cam@example.test", "Male", "Community member", nil, nil,
                          nil, "2026-03-10 11:00"])
     end
 
@@ -352,6 +352,8 @@ RSpec.describe ReportGenerator do
       expect(book["Demographics"]).to include(["None", 2])
       expect(book["Report"].count { |row| row.first == "None" }).to eq(1)
       expect(book["Report"]).to include(["None", 2])
+      ivy = book["Report"].find { |row| row.first == "Ivy Unknown" }
+      expect(ivy[4]).to eq("None")
     end
 
     it "includes soft-deleted users and excludes users outside the range" do

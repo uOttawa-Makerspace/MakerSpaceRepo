@@ -620,7 +620,7 @@ class ReportGenerator
                           user.username,
                           user.email,
                           user.gender,
-                          user.identity,
+                          User.identity_label(user.identity),
                           user.faculty,
                           user.year_of_study,
                           user.student_id,
