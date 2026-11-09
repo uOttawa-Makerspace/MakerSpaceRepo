@@ -55,7 +55,7 @@ class SubSpaceBookingController < SessionsController
       @pagy_old_pending, @old_pending_bookings = old_bookings(BookingStatus.pending.id, page_key: "old_pending_page")
       @pagy_old_approved, @old_approved_bookings = old_bookings(BookingStatus.approved.id, page_key: "old_approved_page")
       @pagy_old_declined, @old_declined_bookings = old_bookings(BookingStatus.declined.id, page_key: "old_declined_page")
-      @pending_access_requests = UserBookingApproval.pending.includes(:user).to_a
+      @pending_access_requests = UserBookingApproval.pending.from_active_accounts.includes(:user).to_a
     end
 
     @supervisors = []

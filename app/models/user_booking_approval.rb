@@ -1,6 +1,12 @@
 class UserBookingApproval < ApplicationRecord
-  belongs_to :user
+  include DisplayUser
+
+  # A request stays with its account after the account is deleted, so it can still be declined or
+  # revoked (no mail goes to a deleted account, and it cannot be approved). The admin lists leave
+  # such requests out (from_active_accounts); they come back if the account is restored.
+  belongs_to :user, -> { unscope(where: :deleted) }, inverse_of: :user_booking_approvals
   belongs_to :staff, class_name: "User", optional: true, foreign_key: "staff_id"
+  display_user_for :staff
   belongs_to :decided_by, class_name: "User", optional: true
 
   IDENTITIES = %w[JMTS Staff GNG Other].freeze
@@ -20,10 +26,13 @@ class UserBookingApproval < ApplicationRecord
             if: -> { new_record? || will_save_change_to_identity? }
   validates :reason, length: { maximum: REASON_MAX_LENGTH }
   validate :status_follows_from_the_previous_one, on: :update
+  validate :account_not_deleted, if: -> { will_save_change_to_status?(to: "approved") }
 
   before_save :mirror_status_in_approved_column
 
   default_scope { order(created_at: :desc) }
+
+  scope :from_active_accounts, -> { joins(:user).where(users: { deleted: false }) }
 
   # Records the approval by `by` (an unknown identity becomes "Other"); raises
   # ActiveRecord::RecordInvalid unless the request is new or pending.
@@ -72,6 +81,10 @@ class UserBookingApproval < ApplicationRecord
     return if NEXT_STATUSES.fetch(status_in_database, []).include?(status)
 
     errors.add(:base, "This request was already #{status_in_database}.")
+  end
+
+  def account_not_deleted
+    errors.add(:base, "The account that sent this request has been deleted.") if user&.deleted?
   end
 
   def mirror_status_in_approved_column

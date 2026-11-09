@@ -130,6 +130,31 @@ RSpec.describe UserBookingApproval, type: :model do
       expect(request.reload).to have_attributes(status: "declined", decided_by_id: nil)
     end
 
+    it "stays with its account once the account is deleted: it can be declined but not approved" do
+      user.update_column(:deleted, true)
+      request.reload
+      expect(request.user).to eq(user)
+      expect { request.approve!(by: admin) }
+        .to raise_error(ActiveRecord::RecordInvalid, /The account that sent this request has been deleted./)
+      expect(request.reload).to be_pending
+      request.decline!(by: admin)
+      expect(request.reload).to be_declined
+    end
+
+    it "reports a missing account, rather than failing, when an approved request has no user" do
+      orphan = described_class.new(identity: "GNG", comments: "c", date: Date.today, status: "approved")
+      expect(orphan).not_to be_valid
+      expect(orphan.errors[:user]).to be_present
+    end
+
+    it "lists only the requests of accounts that are not deleted as from active accounts" do
+      request
+      gone = described_class.create!(user: create(:user, :regular_user, deleted: true), identity: "GNG",
+                                     comments: "c", date: Date.today)
+      expect(described_class.from_active_accounts).to contain_exactly(request)
+      expect(described_class.where(id: gone.id)).to exist
+    end
+
     it "has ended once declined or revoked, and not while pending or approved" do
       expect(request).not_to be_ended
       expect(described_class.new(status: "approved")).not_to be_ended

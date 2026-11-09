@@ -299,14 +299,14 @@
                 </tr>
               </thead>
               <tbody>
-                <% UserBookingApproval.approved.includes(:user, :staff).find_each do |req| %>
+                <% UserBookingApproval.approved.from_active_accounts.includes(:user, :display_staff).find_each do |req| %>
                   <tr>
                     <td class="ps-3">
                       <strong class="text-body-emphasis"><%= req.user.name %></strong><br>
                       <small class="text-body-secondary"><%= req.user.email %></small>
                     </td>
                     <td class="text-body-emphasis"><%= truncate(req.comments, length: 40) %></td>
-                    <td class="text-body-secondary"><%= req.staff.name %></td>
+                    <td class="text-body-secondary"><%= req.display_staff&.name %></td>
                     <td class="text-end pe-3">
                       <%= form_with url: deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'd-flex justify-content-end align-items-center gap-2' do |f| %>
                         <%= f.text_field :reason, id: "revoke_reason_#{req.id}", class: 'form-control form-control-sm', maxlength: UserBookingApproval::REASON_MAX_LENGTH, placeholder: t('sub_space_booking.deny.reason_placeholder'), aria: { label: t('sub_space_booking.deny.revoke_reason_label', name: req.user.name) } %>

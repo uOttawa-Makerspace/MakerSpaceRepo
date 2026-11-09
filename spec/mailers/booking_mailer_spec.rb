@@ -155,6 +155,13 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       described_class.send_booking_approval_request_sent(uba.id, []).deliver_now
       expect(delivered).to be_empty
     end
+
+    it "sends nothing once the applicant's account is deleted" do
+      id = uba.id
+      booker.update_column(:deleted, true)
+      described_class.send_booking_approval_request_sent(id, ["a@uottawa.ca"]).deliver_now
+      expect(delivered).to be_empty
+    end
   end
 
   describe ".send_booking_approval_request_approved" do
@@ -175,6 +182,13 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
     it "sends nothing when the applicant has a blank email" do
       booker.update_column(:email, "")
       described_class.send_booking_approval_request_approved(uba.id).deliver_now
+      expect(delivered).to be_empty
+    end
+
+    it "sends nothing once the applicant's account is deleted" do
+      id = uba.id
+      booker.update_column(:deleted, true)
+      described_class.send_booking_approval_request_approved(id).deliver_now
       expect(delivered).to be_empty
     end
   end
@@ -228,6 +242,13 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
     it "sends nothing when the requester has a blank email" do
       booker.update_column(:email, "")
       described_class.send_booking_access_denied(answered("declined").id).deliver_now
+      expect(delivered).to be_empty
+    end
+
+    it "sends nothing once the requester's account is deleted" do
+      id = answered("declined").id
+      booker.update_column(:deleted, true)
+      described_class.send_booking_access_denied(id).deliver_now
       expect(delivered).to be_empty
     end
   end

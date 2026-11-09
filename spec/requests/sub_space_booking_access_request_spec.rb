@@ -364,6 +364,80 @@ RSpec.describe "Booking access requests", type: :request do
       end
     end
 
+    describe "a request whose account was deleted" do
+      # The rows are made first: an approved request cannot be saved for a deleted account.
+      def delete_account! = user.update_column(:deleted, true)
+
+      it "is left out of the admin lists, which still show the other requests" do
+        make_row(status: "pending")
+        make_row(status: "approved", staff: admin)
+        other = create(:user, :regular_user)
+        make_row(status: "pending", user: other)
+        delete_account!
+
+        expect(listed_emails("Pending Requests")).to eq([other.email])
+        expect(response).to have_http_status(:ok)
+        expect(listed_emails("Approved Users")).to be_empty
+      end
+
+      it "can still be declined, recording the decision and mailing nobody" do
+        row = make_row(status: "pending")
+        delete_account!
+        perform_enqueued_jobs { deny(row, reason: "Account closed") }
+
+        expect(flash[:notice]).to eq("Access request declined successfully.")
+        expect(row.reload).to have_attributes(status: "declined", decided_by_id: admin.id, reason: "Account closed")
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+
+      it "can still have its access revoked, mailing nobody" do
+        user.update!(booking_approval: true)
+        row = make_row(status: "approved", staff: admin)
+        delete_account!
+        perform_enqueued_jobs { deny(row) }
+
+        expect(flash[:notice]).to eq("Booking access revoked successfully.")
+        expect(row.reload.status).to eq("revoked")
+        expect(User.including_deleted.find(user.id).booking_approval).to be(false)
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+
+      it "cannot be approved, and the admin is told why" do
+        row = make_row(status: "pending")
+        delete_account!
+        perform_enqueued_jobs { put approve_access_sub_space_booking_index_path, params: { id: row.id } }
+
+        expect(flash[:alert]).to eq("Failed to approve: The account that sent this request has been deleted.")
+        expect(row.reload.status).to eq("pending")
+        expect(User.including_deleted.find(user.id).booking_approval).to be(false)
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+
+      it "refuses a bulk approval that includes it, approving nothing" do
+        row = make_row(status: "pending")
+        other = create(:user, :regular_user)
+        kept = make_row(status: "pending", user: other)
+        delete_account!
+        perform_enqueued_jobs do
+          put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [row.id, kept.id] }
+        end
+
+        expect(flash[:alert]).to eq("Failed to approve: The account that sent this request has been deleted.")
+        expect([row.reload.status, kept.reload.status]).to eq(%w[pending pending])
+        expect(ActionMailer::Base.deliveries).to be_empty
+      end
+    end
+
+    it "lists an approved request whose approver's account was deleted" do
+      user.update!(booking_approval: true)
+      approver = create(:user, :staff, name: "Former Staff")
+      make_row(status: "approved", staff: approver)
+      approver.update_column(:deleted, true)
+
+      expect(listed_emails("Approved Users")).to eq([user.email])
+      expect(response.body).to include("Former Staff")
+    end
+
     it "lets a user whose request was declined ask again, as a new pending request" do
       row = make_row(status: "pending")
       deny(row)
