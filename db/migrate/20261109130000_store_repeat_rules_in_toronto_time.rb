@@ -14,7 +14,7 @@ class StoreRepeatRulesInTorontoTime < ActiveRecord::Migration[8.1]
   TABLES = %w[events staff_unavailabilities].freeze
   ZONE = "America/Toronto"
   UTC_START = /^DTSTART:(\d{8}T\d{6})Z$/
-  RECORD_VERSION = "20261109120000"
+  RECORD_VERSION = "20261109130000"
 
   def up
     create_table :recurrence_rule_rewrites do |t|

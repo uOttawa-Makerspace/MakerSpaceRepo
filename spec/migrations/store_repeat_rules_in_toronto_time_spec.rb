@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "rails_helper"
-require Rails.root.join("db/migrate/20261109120000_store_repeat_rules_in_toronto_time")
+require Rails.root.join("db/migrate/20261109130000_store_repeat_rules_in_toronto_time")
 
 # The stored repeat rules move from a UTC start line to a Toronto one. The
 # rewrite is recorded row by row, down restores the exact old text, and both
@@ -65,7 +65,7 @@ RSpec.describe StoreRepeatRulesInTorontoTime do
     expect(connection.select_rows("SELECT table_name, record_id, old_rule, new_rule, migration_version FROM recurrence_rule_rewrites"))
       .to eq([["events", event.id, "DTSTART:20270310T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270317T140000Z",
                "DTSTART;TZID=America/Toronto:20270310T100000\nRRULE:FREQ=WEEKLY;BYDAY=WE\nEXDATE:20270317T140000Z",
-               "20261109120000"]])
+               "20261109130000"]])
   end
 
   it "leaves updated_at and every other rule as they are" do
