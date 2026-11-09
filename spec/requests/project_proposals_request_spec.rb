@@ -649,6 +649,96 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
   end
 
+  describe "PATCH update with attachment changes" do
+    def attach_png(proposal, name)
+      proposal.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: name, content_type: "image/png")
+    end
+
+    def unreadable_image
+      content_named_upload("broken.png", content: "not an image", type: "image/png")
+    end
+
+    before { content_login!(owner) }
+
+    def photo_names
+      pending.reload.photos.map { |p| p.filename.to_s }
+    end
+
+    def file_names
+      pending.reload.project_files.map { |f| f.filename.to_s }
+    end
+
+    it "removes one photo and adds another in one valid edit" do
+      attach_png(pending, "drop.png")
+      attach_png(pending, "keep.png")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deleteimages: ["drop.png"], images: [content_png_upload] }
+      expect(photo_names).to match_array(%w[keep.png avatar.png])
+      expect(pending.title).to eq("Changed")
+    end
+
+    it "does not remove a newly attached photo that shares a name with one marked for removal" do
+      attach_png(pending, "avatar.png")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deleteimages: ["avatar.png"], images: [content_png_upload] }
+      expect(photo_names).to eq(["avatar.png"])
+      expect(pending.photos.count).to eq(1)
+    end
+
+    it "refuses the edit and keeps everything when a new photo is unreadable" do
+      attach_png(pending, "drop.png")
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed", categories: %w[New] }, deleteimages: ["drop.png"], images: [content_png_upload, unreadable_image] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to include("An error occurred while updating")
+      expect(photo_names).to eq(["drop.png"])
+      expect(pending.title).to eq("Pending One")
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "answers a refused photo edit with the errors as JSON" do
+      attach_png(pending, "drop.png")
+      patch project_proposal_path(pending.id, format: :json),
+            params: { project_proposal: { title: "Changed" }, deleteimages: ["drop.png"], images: [unreadable_image] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to have_key("photos")
+      expect(photo_names).to eq(["drop.png"])
+    end
+
+    it "removes one file and adds another in one valid edit" do
+      pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deletefiles: ["drop.txt"], files: [content_named_upload("new.txt", content: "new")] }
+      expect(file_names).to eq(["new.txt"])
+    end
+
+    it "keeps the file marked for removal when the proposal is refused" do
+      pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "" }, deletefiles: ["drop.txt"], files: [content_named_upload("new.txt", content: "new")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(file_names).to eq(["drop.txt"])
+    end
+
+    it "keeps the proposal, its categories and the files marked for removal when an upload fails to attach" do
+      pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems).and_raise(ActiveStorage::IntegrityError)
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed", categories: %w[New] }, deletefiles: ["drop.txt"], files: [content_named_upload("new.txt", content: "new")] }
+      expect(response).to have_http_status(:internal_server_error)
+      expect(file_names).to eq(["drop.txt"])
+      expect(pending.title).to eq("Pending One")
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "rolls the edit back when a category cannot be stored" do
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      allow(Category).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed", categories: %w[New] } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(pending.reload.title).to eq("Pending One")
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+    end
+  end
+
   describe "DELETE destroy" do
     it "does nothing for guests, owners and staff (action returns without rendering: 204)" do
       [nil, owner, create(:user, :staff)].each do |user|

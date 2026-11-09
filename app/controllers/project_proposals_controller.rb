@@ -268,10 +268,7 @@ class ProjectProposalsController < SessionsController
     needs_re_review = @project_proposal.approved? && !current_user.admin?
     attributes = attributes.merge(approved: nil, admin_id: nil) if needs_re_review
     respond_to do |format|
-      if save_with_categories(attributes)
-        update_photos
-        update_files
-
+      if apply_edit(attributes)
         format.html do
           redirect_to project_proposal_path(@project_proposal.slug),
                       notice:
@@ -417,39 +414,48 @@ class ProjectProposalsController < SessionsController
     attach_project_files(files)
   end
 
-  def update_photos
-    delete_images = params[:deleteimages] || params.dig(:project_proposal, :deleteimages)
-    if delete_images.present?
-      @project_proposal.photos.attachments.each do |attachment|
-        if delete_images.include?(attachment.filename.to_s) || delete_images.include?(attachment.id.to_s)
-          attachment.purge
-        end
-      end
-    end
-
-    images = params[:images] || params.dig(:project_proposal, :images)
-    return unless images.present?
-
-    images.each do |img|
-      FastImage.size(img.tempfile, raise_on_failure: true) if img.respond_to?(:tempfile)
-      @project_proposal.photos.attach(img)
-    end
+  def uploads_param(key)
+    params[key] || params.dig(:project_proposal, key)
   end
 
-  def update_files
-    delete_files = params[:deletefiles] || params.dig(:project_proposal, :deletefiles)
-    if delete_files.present?
-      @project_proposal.project_files.attachments.each do |attachment|
-        if delete_files.include?(attachment.filename.to_s) || delete_files.include?(attachment.id.to_s)
-          attachment.purge
-        end
-      end
-    end
+  # Attachments the user asked to remove, by filename or attachment id. Collected before
+  # anything new is attached, so a new upload sharing a name is never removed.
+  def attachments_marked_for_removal(attachments, names)
+    return [] if names.blank?
 
-    files = params[:files] || params.dig(:project_proposal, :files)
-    return unless files.present?
+    attachments.select { |a| names.include?(a.filename.to_s) || names.include?(a.id.to_s) }
+  end
 
-    attach_project_files(files)
+  def marked_attachments
+    attachments_marked_for_removal(@project_proposal.photos.attachments, uploads_param(:deleteimages)) +
+      attachments_marked_for_removal(@project_proposal.project_files.attachments, uploads_param(:deletefiles))
+  end
+
+  # New photos are checked before anything is saved or removed. An unreadable one refuses the edit.
+  def new_photos_readable?
+    images = Array(uploads_param(:images))
+    return true if images.all? { |img| readable_image?(img) }
+
+    @project_proposal.errors.add(:photos, 'could not be read as images')
+    false
+  end
+
+  def readable_image?(img)
+    return true unless img.respond_to?(:tempfile)
+
+    FastImage.size(img.tempfile, raise_on_failure: true)
+    true
+  rescue FastImage::FastImageException
+    false
+  end
+
+  def attach_new_photos
+    Array(uploads_param(:images)).each { |img| @project_proposal.photos.attach(img) }
+  end
+
+  def attach_new_files
+    files = uploads_param(:files)
+    attach_project_files(files) if files.present?
   end
 
   MAX_FLASH_FILENAMES = 5
@@ -523,23 +529,37 @@ class ProjectProposalsController < SessionsController
     params.require(:project_proposal).permit(permitted)
   end
 
-  # The edit is validated and saved first; categories are replaced only once it has saved, in the same
-  # transaction, so a refused edit leaves them as they were.
-  def save_with_categories(attributes)
-    ProjectProposal.transaction do
+  # The edit is applied in this order, so a failure can only happen before anything is removed:
+  # new photos are checked; then, in one transaction, the proposal is validated and saved,
+  # categories are replaced and new uploads attached; only after that commits are the attachments
+  # the user asked to remove purged. A purge deletes the stored file and cannot be rolled back, so
+  # it runs last (synchronously, so the page shows the result).
+  def apply_edit(attributes)
+    return false unless new_photos_readable?
+
+    removals = marked_attachments
+    saved = ProjectProposal.transaction do
       next false unless @project_proposal.update(attributes)
 
-      @project_proposal.categories.destroy_all
-      create_categories
+      replace_categories
+      attach_new_photos
+      attach_new_files
       true
     end
+    removals.each(&:purge) if saved
+    saved
+  end
+
+  def replace_categories
+    @project_proposal.categories.destroy_all
+    create_categories
   end
 
   def create_categories
     return unless params.dig(:project_proposal, 'categories').present?
 
     params[:project_proposal]['categories'].first(5).each do |c|
-      Category.create(name: c, project_proposal_id: @project_proposal.id)
+      Category.create!(name: c, project_proposal_id: @project_proposal.id)
     end
   end
 
