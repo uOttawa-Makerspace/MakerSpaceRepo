@@ -159,6 +159,13 @@ RSpec.describe CalendarHelper, type: :helper do
       events = parse_ics_calendar(url).first[:events]
       expect(events.map { |e| [e[:title], e[:allDay]] }).to eq([["Alone", true]])
     end
+
+    it "lists a modified instance that has no start of its own with no start" do
+      body = ics(vevent("rec", ["RECURRENCE-ID:20270112T150000Z", "DTEND:20270112T180000Z", "SUMMARY:No start"]))
+      stub_request(:get, url).to_return(status: 200, body: body)
+      event = parse_ics_calendar(url).first[:events].first
+      expect(event).to include(title: "No start", start: nil, end: "2027-01-12T13:00:00")
+    end
   end
 
   describe "#parse_ics_calendar with all-day events" do

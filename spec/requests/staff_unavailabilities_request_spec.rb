@@ -185,6 +185,12 @@ RSpec.describe "Staff unavailabilities", type: :request do
           expect(series.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270301T143000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
         end
 
+        it "scope 'all' with a rule that does not validate flashes an alert and changes nothing" do
+          patch staff_unavailability_path(series), params: payload(title: "Shifted", recurrence_rule: "DTSTART:20270322T183000Z\nRRULE:FREQ=MINUTELY").merge(update_scope: "all")
+          expect(flash[:alert]).to start_with("Failed to update unavailability:")
+          expect(series.reload).to have_attributes(title: "Series", recurrence_rule: RULE)
+        end
+
         it "an unknown scope flashes an alert and changes nothing" do
           patch staff_unavailability_path(series), params: payload(title: "Zzz").merge(update_scope: "bogus")
           expect(flash[:alert]).to eq("Invalid update scope.")

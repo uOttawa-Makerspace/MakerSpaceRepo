@@ -373,6 +373,12 @@ RSpec.describe "Admin events gaps", type: :request do
       response.parsed_body.flat_map { |group| group["events"] }
     end
 
+    it "answers 400 when the space id is blank" do
+      get json_admin_events_path(id: " ")
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body).to eq("error" => "Space ID is required")
+    end
+
     it "renders the grey gradient and an Unassigned user for an event without staff" do
       create(:event, space: space, title: "Solo")
       entry = entries_for(space.id).first
