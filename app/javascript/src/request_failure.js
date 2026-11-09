@@ -7,11 +7,12 @@ const FALLBACK =
 // translated, and carrying the reference code when the failure was unexpected).
 export class ServerError extends Error {}
 
+/** @returns {string} */
 function genericMessage() {
-  return (
-    document.querySelector("[data-request-failed]")?.dataset.requestFailed ||
-    FALLBACK
+  const element = /** @type {HTMLElement | null} */ (
+    document.querySelector("[data-request-failed]")
   );
+  return element?.dataset.requestFailed || FALLBACK;
 }
 
 async function readBody(response) {
