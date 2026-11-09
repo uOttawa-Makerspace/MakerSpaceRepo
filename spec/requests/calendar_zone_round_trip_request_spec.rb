@@ -132,7 +132,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
           series = create(:event, space: space, start_time: series_start, end_time: series_start + 1.hour, recurrence_rule: series_rule)
           patch admin_event_path(series), params: { update_scope: "all", event: { event_type: "meeting", title: "Moved", space_id: space.id, **edit_params } }
           expect(series.reload.start_time).to eq(Time.utc(2027, 3, 3, 16))
-          expect(RecurrenceRule.new(series.recurrence_rule, nil).starts_at).to eq(Time.utc(2027, 3, 3, 16))
+          expect(series.recurrence_rule).to start_with("DTSTART;TZID=America/Toronto:20270303T110000\n")
         end
 
         it "moves every unavailability to the new Toronto time" do
@@ -140,7 +140,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
           series = create(:staff_unavailability, user: staff, start_time: series_start, end_time: series_start + 1.hour, recurrence_rule: series_rule)
           patch staff_unavailability_path(series), params: { update_scope: "all", staff_unavailability: { title: "Moved", **edit_params } }
           expect(series.reload.start_time).to eq(Time.utc(2027, 3, 3, 16))
-          expect(RecurrenceRule.new(series.recurrence_rule, nil).starts_at).to eq(Time.utc(2027, 3, 3, 16))
+          expect(series.recurrence_rule).to start_with("DTSTART;TZID=America/Toronto:20270303T110000\n")
         end
 
         it "excludes the edited event occurrence itself (10:00 daylight time is 14:00Z)" do
@@ -183,9 +183,9 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
                 expect(found.map { |t| t.utc.iso8601(3) }).to eq(c["occurrences"])
               end
 
-              it "starts at the instant of the table" do
-                expect(RecurrenceRule.new(text, nil).starts_at).to eq(start)
-                expect(RecurrenceRule.new(text, nil).starts_at.time_zone).to eq(toronto)
+              it "is edited from the start of the table" do
+                edited = RecurrenceRule.new(text, nil).without_occurrence(start + 1.day)
+                expect(edited.lines.first.chomp).to eq("DTSTART;TZID=America/Toronto:#{start.strftime('%Y%m%dT%H%M%S')}")
               end
 
               it "is accepted by the validator" do

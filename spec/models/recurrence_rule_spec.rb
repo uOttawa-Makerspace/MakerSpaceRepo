@@ -14,21 +14,24 @@ RSpec.describe RecurrenceRule do
     expect(rule(nil).with_time_from(weekly)).to eq(weekly)
   end
 
-  describe "#starts_at" do
+  describe "reading the start" do
+    def start_line(text) = rule(text).without_occurrence(Time.utc(2030, 1, 1)).lines.first.chomp
+
     it "reads a UTC start, a Toronto start and a start with no zone (Toronto) as the same instant" do
-      expected = Time.utc(2027, 3, 10, 15)
-      expect(rule("DTSTART:20270310T150000Z\nRRULE:FREQ=DAILY").starts_at).to eq(expected)
-      expect(rule("DTSTART;TZID=America/Toronto:20270310T100000\nRRULE:FREQ=DAILY").starts_at).to eq(expected)
-      expect(rule("DTSTART:20270310T100000\nRRULE:FREQ=DAILY").starts_at).to eq(expected)
+      expected = "DTSTART;TZID=America/Toronto:20270310T100000"
+      expect(start_line("DTSTART:20270310T150000Z\nRRULE:FREQ=DAILY")).to eq(expected)
+      expect(start_line("DTSTART;TZID=America/Toronto:20270310T100000\nRRULE:FREQ=DAILY")).to eq(expected)
+      expect(start_line("DTSTART:20270310T100000\nRRULE:FREQ=DAILY")).to eq(expected)
     end
 
     it "reads a start in another named zone in that zone" do
-      expect(rule("DTSTART;TZID=Europe/Paris:20270310T160000\nRRULE:FREQ=DAILY").starts_at).to eq(Time.utc(2027, 3, 10, 15))
+      expect(start_line("DTSTART;TZID=Europe/Paris:20270310T160000\nRRULE:FREQ=DAILY")).to eq("DTSTART;TZID=America/Toronto:20270310T100000")
     end
 
-    it "is nil for a rule with no start or an empty one" do
-      expect(rule("RRULE:FREQ=DAILY").starts_at).to be_nil
-      expect(rule("DTSTART:\nRRULE:FREQ=DAILY").starts_at).to be_nil
+    it "takes the series start for a rule with no start or an empty one" do
+      # the series start is 2027-03-01 15:00Z, 10:00 in Toronto
+      expect(start_line("RRULE:FREQ=DAILY")).to eq("DTSTART;TZID=America/Toronto:20270301T100000")
+      expect(start_line("DTSTART:\nRRULE:FREQ=DAILY")).to eq("DTSTART;TZID=America/Toronto:20270301T100000")
     end
   end
 

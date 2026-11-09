@@ -4,9 +4,9 @@
 # lines (an optional DTSTART, the RRULE, then any EXDATE lines). The start is
 # either a UTC stamp (DTSTART:20270310T150000Z) or a Toronto wall-clock time
 # (DTSTART;TZID=America/Toronto:20270310T100000); both are read the same way,
-# and edits write the Toronto form. UNTIL and EXDATE are UTC stamps. The admin calendar and the staff
-# unavailabilities page edit a series the same way; each edit returns the new
-# rule text.
+# and edits write the Toronto form. UNTIL and EXDATE are UTC stamps. The admin
+# calendar and the staff unavailabilities page edit a series the same way;
+# each edit returns the new rule text.
 class RecurrenceRule
   STAMP = "%Y%m%dT%H%M%SZ"
   WALL_STAMP = "%Y%m%dT%H%M%S"
@@ -17,12 +17,6 @@ class RecurrenceRule
     @text = text
     @series_start = series_start
     @rrule, @dtstart, @other_lines = parts(text)
-  end
-
-  # The first occurrence written in the rule, in Toronto time (nil when the
-  # rule has no DTSTART line).
-  def starts_at
-    @dtstart&.in_time_zone(ZONE)
   end
 
   # The rule as the calendar views read it (rrule.js has no time zones): the
@@ -66,6 +60,12 @@ class RecurrenceRule
   end
 
   private
+
+  # The first occurrence written in the rule, in Toronto time (nil when the
+  # rule has no DTSTART line).
+  def starts_at
+    @dtstart&.in_time_zone(ZONE)
+  end
 
   # The bare RRULE body, the DTSTART as a UTC time (nil when there is none) and
   # the other lines of a stored rule.

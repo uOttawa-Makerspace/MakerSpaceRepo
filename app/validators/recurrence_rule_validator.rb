@@ -6,9 +6,11 @@ require "ice_cube"
 # MONTHLY or YEARLY. Sub-daily rules (SECONDLY/MINUTELY/HOURLY) are refused
 # because the calendars expand them on every load.
 #
-# Requires the "RRULE:" line format the forms produce (rrule.js toString: an
-# optional "DTSTART:...\n" line, then "RRULE:FREQ=...;BYDAY=..;UNTIL=..;COUNT=..",
-# plus EXDATE lines added by the occurrence editors). A bare "FREQ=..." is
+# Requires the "RRULE:" line format the forms produce: an optional start line,
+# either "DTSTART;TZID=America/Toronto:<wall time>" (what the calendars write)
+# or "DTSTART:<UTC stamp>Z" (older rules), then
+# "RRULE:FREQ=...;BYDAY=..;UNTIL=..;COUNT=..", plus EXDATE lines added by the
+# occurrence editors. Only the RRULE lines are checked. A bare "FREQ=..." is
 # rejected because the calendar's series edits (RecurrenceRule) cannot read it.
 # BYHOUR/BYMINUTE/BYSECOND/BYSETPOS are rejected (they multiply daily occurrences).
 #
