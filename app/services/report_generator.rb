@@ -696,6 +696,7 @@ class ReportGenerator
 
           sheet.add_row #spacing
 
+          one_decimal = sheet.styles.add_style format_code: "0.0"
           month_header = ["Month"]
           month_average = ["Month average of attendees per sessions"]
           calendar_periods(start_date, end_date, :month).each do |month|
@@ -707,7 +708,7 @@ class ReportGenerator
           end
 
           table_header(sheet, month_header)
-          sheet.add_row month_average
+          sheet.add_row month_average, style: one_decimal
           sheet.add_row # spacing
 
           week_header = ["Week"]
@@ -721,7 +722,7 @@ class ReportGenerator
           end
 
           table_header(sheet, week_header)
-          sheet.add_row week_average
+          sheet.add_row week_average, style: one_decimal
           sheet.add_row # spacing
         end
     end
@@ -1431,12 +1432,12 @@ class ReportGenerator
   end
 
   # Certificates per session among the certificates created in the period,
-  # as a whole number (0 when there are none).
+  # rounded to one decimal place (0.0 when there are none).
   def self.average_attendees_per_session(certifications, period)
     in_period =
       certifications.select { |cert| period.cover?(cert.created_at) }
     sessions = in_period.map(&:training_session_id).uniq.count
-    sessions.zero? ? 0 : in_period.count / sessions
+    sessions.zero? ? 0.0 : in_period.count.fdiv(sessions).round(1)
   end
 
   def self.sum_by_key(hash, key)

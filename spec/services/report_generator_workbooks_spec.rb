@@ -404,17 +404,27 @@ RSpec.describe ReportGenerator do
       expect(rows[12]).to eq(["Week average of attendees per sessions", 0, 0, 2, 0, 0, 0])
     end
 
-    it "a month without certificates averages 0, and the average is a whole number" do
+    it "a month without certificates averages 0.0, and averages have one decimal place" do
       first = create(:training_session, space: alpha, training: laser, created_at: march_10)
       second = create(:training_session, space: alpha, training: laser, created_at: march_10 + 1.day)
       attend(lena, first, march_10)
       attend(create(:user), first, march_10)
       attend(create(:user), second, march_10 + 1.day)
-      rows = grid(described_class.generate_training_attendees_report(from, DateTime.new(2026, 4, 30)))["Report - Alpha"]
+      package = described_class.generate_training_attendees_report(from, DateTime.new(2026, 4, 30))
+      rows = grid(package)["Report - Alpha"]
       month = rows.index { |r| r.first == "Month" }
       expect(rows[month]).to eq(%w[Month March April])
-      # 3 certificates over 2 sessions is 1 (integer division); April has none
-      expect(rows[month + 1]).to eq(["Month average of attendees per sessions", 1, 0])
+      # 3 certificates over 2 sessions; April has none
+      expect(rows[month + 1]).to eq(["Month average of attendees per sessions", 1.5, 0.0])
+      expect(rows[month + 1].drop(1)).to all(be_a(Float))
+      styles = package.workbook.styles
+      averages = package.workbook.worksheets.first.rows.select { |r| r.cells.first&.value.to_s.include?("average") }
+      expect(averages.size).to eq(2)
+      formats = averages.flat_map { |r| r.to_a.drop(1) }.map do |cell|
+        num_fmt_id = styles.cellXfs[cell.style].numFmtId
+        styles.numFmts.find { |f| f.numFmtId == num_fmt_id }&.formatCode
+      end
+      expect(formats).to all(eq("0.0"))
     end
 
     it "a custom range has a column for every month it overlaps, the partial ones at both ends included" do
