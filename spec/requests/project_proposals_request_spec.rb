@@ -588,12 +588,43 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(pending.slug))
     end
 
-    it "wipes categories even when the update is invalid" do
+    it "keeps the categories, photos and files when the update is refused with new categories submitted" do
+      content_login!(owner)
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "keep.png", content_type: "image/png")
+      pending.project_files.attach(io: StringIO.new("tiny"), filename: "keep.txt", content_type: "text/plain")
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "", categories: %w[New] }, deleteimages: ["keep.png"], deletefiles: ["keep.txt"] }
+      expect(response).to have_http_status(:unprocessable_content)
+      pending.reload
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+      expect(pending.photos.map { |p| p.filename.to_s }).to eq(["keep.png"])
+      expect(pending.project_files.map { |f| f.filename.to_s }).to eq(["keep.txt"])
+    end
+
+    it "keeps the categories when the update is refused with none submitted" do
       content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: pending.id)
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
-      # categories.destroy_all runs before validation
+      expect(pending.reload.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "keeps an approved proposal approved and its categories when a non-admin edit is refused" do
+      content_login!(owner)
+      Category.create!(name: "Old", project_proposal_id: approved.id)
+      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "", categories: %w[New] } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(approved.reload.categories.pluck(:name)).to eq(["Old"])
+      expect(approved.approved).to eq("approved")
+    end
+
+    it "sets the categories as submitted on a valid update, and clears them when none are submitted" do
+      content_login!(owner)
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Fine", categories: %w[A B] } }
+      expect(pending.reload.categories.pluck(:name)).to match_array(%w[A B])
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Fine" } }
       expect(pending.reload.categories).to be_empty
     end
 

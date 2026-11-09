@@ -264,15 +264,13 @@ class ProjectProposalsController < SessionsController
 
   # PATCH/PUT /project_proposals/1
   def update
-    @project_proposal.categories.destroy_all
     attributes = project_proposal_params.except(:categories)
     needs_re_review = @project_proposal.approved? && !current_user.admin?
     attributes = attributes.merge(approved: nil, admin_id: nil) if needs_re_review
     respond_to do |format|
-      if @project_proposal.update(attributes)
+      if save_with_categories(attributes)
         update_photos
         update_files
-        create_categories
 
         format.html do
           redirect_to project_proposal_path(@project_proposal.slug),
@@ -523,6 +521,18 @@ class ProjectProposalsController < SessionsController
     permitted += %i[season year] if current_user&.admin?
 
     params.require(:project_proposal).permit(permitted)
+  end
+
+  # The edit is validated and saved first; categories are replaced only once it has saved, in the same
+  # transaction, so a refused edit leaves them as they were.
+  def save_with_categories(attributes)
+    ProjectProposal.transaction do
+      next false unless @project_proposal.update(attributes)
+
+      @project_proposal.categories.destroy_all
+      create_categories
+      true
+    end
   end
 
   def create_categories
