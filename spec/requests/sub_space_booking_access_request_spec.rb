@@ -77,6 +77,89 @@ RSpec.describe "Booking access requests", type: :request do
     expect(response.body).not_to include("Access Pending")
   end
 
+  describe "the access status line" do
+    let(:admin) { create(:user, :admin) }
+
+    def status_line(locale: nil)
+      get sub_space_booking_index_path(locale: locale)
+      Nokogiri::HTML(response.body).at_css("#booking-access-status")&.text&.squish
+    end
+
+    it "says when the user has not asked yet" do
+      expect(status_line).to eq("You have not requested booking access yet.")
+      expect(response.body).to include("Request Booking Access")
+    end
+
+    it "says since when a request is pending" do
+      make_row(status: "pending", created_at: Time.zone.local(2026, 11, 2, 10))
+      expect(status_line).to eq("Your request has been pending since November 02, 2026.")
+      expect(response.body).to include("Access Pending")
+    end
+
+    it "reads the pending request even when an approved row is newer" do
+      make_row(status: "pending", created_at: Time.zone.local(2026, 11, 2, 10))
+      make_row(status: "approved", created_at: Time.zone.local(2026, 11, 3, 10))
+      expect(status_line).to eq("Your request has been pending since November 02, 2026.")
+    end
+
+    it "says when and why a request was declined, and keeps the request form" do
+      make_row(status: "declined", decided_by: admin, decided_at: Time.zone.local(2026, 11, 4, 9),
+               reason: "Not a GNG student")
+      expect(status_line).to eq("Your request was declined on November 04, 2026. Reason: Not a GNG student " \
+                                "You may send a new request below.")
+      expect(response.body).to include("Request Booking Access")
+    end
+
+    it "says when access was revoked, without a reason line when none was given" do
+      make_row(status: "revoked", decided_by: admin, decided_at: Time.zone.local(2026, 11, 5, 9))
+      expect(status_line).to eq("Your booking access was revoked on November 05, 2026. You may send a new request below.")
+      expect(response.body).to include("Request Booking Access")
+    end
+
+    it "reads the newest answered request" do
+      make_row(status: "declined", decided_at: 1.year.ago, reason: "old", created_at: 1.year.ago)
+      make_row(status: "revoked", decided_at: Time.zone.local(2026, 11, 5, 9), reason: "new")
+      expect(status_line).to include("revoked on November 05, 2026", "Reason: new")
+    end
+
+    it "shows the reason as text, never as markup" do
+      make_row(status: "declined", decided_at: Time.current, reason: "<script>alert(1)</script>")
+      expect(status_line).to include("Reason: <script>alert(1)</script>")
+      expect(response.body).to include("Reason: &lt;script&gt;alert(1)&lt;/script&gt;")
+      expect(response.body).not_to include("<script>alert(1)")
+    end
+
+    it "is in French on French pages" do
+      make_row(status: "declined", decided_at: Time.zone.local(2026, 11, 4, 9), reason: "Pas en GNG")
+      expect(status_line(locale: "fr")).to eq("Votre demande a été refusée le 4 novembre 2026. Raison : Pas en GNG " \
+                                              "Vous pouvez envoyer une nouvelle demande ci-dessous.")
+    end
+
+    it "says the request was approved to a user who holds access" do
+      user.update!(booking_approval: true)
+      make_row(status: "approved", staff: admin)
+      expect(status_line).to eq("Your booking access request was approved.")
+      expect(response.body).to include("booking-tab-list")
+    end
+
+    it "shows nothing above the tabs when access is held and the newest request was declined" do
+      user.update!(booking_approval: true)
+      make_row(status: "declined", decided_at: Time.current)
+      expect(status_line).to be_nil
+      expect(response.body).to include("booking-tab-list")
+    end
+
+    it "shows nothing above the tabs for an admin who never asked" do
+      log_in!(admin)
+      expect(status_line).to be_nil
+    end
+
+    it "does not call an old approval current once the access was cleared" do
+      make_row(status: "approved", created_at: 1.year.ago)
+      expect(status_line).to eq("You have not requested booking access yet.")
+    end
+  end
+
   describe "approving by user id" do
     let(:admin) { create(:user, :admin) }
 

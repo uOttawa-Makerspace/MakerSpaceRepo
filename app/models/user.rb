@@ -305,6 +305,14 @@ class User < ApplicationRecord
     user_booking_approvals.pending.reorder(created_at: :desc, id: :desc).first
   end
 
+  # The request that tells the user where their booking access stands: the pending one, else the
+  # newest. Nil when there is none, or when the newest was approved but the access has since been
+  # cleared, so nothing claims an access the user no longer holds.
+  def booking_access_request
+    request = pending_booking_request || user_booking_approvals.reorder(created_at: :desc, id: :desc).first
+    request unless request&.approved? && !booking_approval?
+  end
+
   # Grants booking access under the user row lock, so two approvals at once grant once. Approves the
   # request `request_id`, or else the newest pending one, or else a new request. Returns the id of
   # the granted request, or nil when the user already holds access on record (nothing changes).

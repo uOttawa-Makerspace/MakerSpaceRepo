@@ -49,6 +49,12 @@ class UserBookingApproval < ApplicationRecord
     record_decision!("revoked", by: by, reason: reason)
   end
 
+  # When the request reached its current status: when it was sent while pending, when it was
+  # decided otherwise (nil for approvals recorded before decisions were dated).
+  def status_changed_at
+    pending? ? created_at : decided_at
+  end
+
   private
 
   def record_decision!(status, by:, reason: nil)

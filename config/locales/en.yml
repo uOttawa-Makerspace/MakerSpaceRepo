@@ -249,6 +249,14 @@ en:
       open_page: "Go to MakerRepo Booking"
       why_received: "You have received this email because your booking access request was answered."
   sub_space_booking:
+    access_status:
+      none: "You have not requested booking access yet."
+      pending: "Your request has been pending since %{date}."
+      approved: "Your booking access request was approved."
+      declined: "Your request was declined on %{date}."
+      revoked: "Your booking access was revoked on %{date}."
+      reason: "Reason: %{reason}"
+      ask_again: "You may send a new request below."
     deny:
       reason_placeholder: "Reason (optional)"
       decline_reason_label: "Reason for declining %{name} (optional)"

@@ -279,6 +279,14 @@ fr:
       open_page: "Aller à la réservation MakerRepo"
       why_received: "Vous avez reçu ce courriel parce que votre demande d'accès aux réservations a reçu une réponse."
   sub_space_booking:
+    access_status:
+      none: "Vous n'avez pas encore demandé l'accès aux réservations."
+      pending: "Votre demande est en attente depuis le %{date}."
+      approved: "Votre demande d'accès aux réservations a été approuvée."
+      declined: "Votre demande a été refusée le %{date}."
+      revoked: "Votre accès aux réservations a été retiré le %{date}."
+      reason: "Raison : %{reason}"
+      ask_again: "Vous pouvez envoyer une nouvelle demande ci-dessous."
     deny:
       reason_placeholder: "Raison (facultative)"
       decline_reason_label: "Raison du refus pour %{name} (facultative)"
