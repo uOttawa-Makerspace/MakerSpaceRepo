@@ -49,6 +49,12 @@ RSpec.describe RecurrenceRule do
     it "adds the instant as one more exclusion and leaves the rest as written" do
       expect(rule.with_exdate(Time.utc(2027, 3, 22, 15))).to eq("#{weekly}\nEXDATE:20270322T150000Z")
     end
+
+    it "returns the rule untouched when the rule or the instant is blank" do
+      expect(rule.with_exdate(nil)).to eq(weekly)
+      expect(rule(nil).with_exdate(Time.utc(2027, 3, 22, 15))).to be_nil
+      expect(rule("").with_exdate(Time.utc(2027, 3, 22, 15))).to eq("")
+    end
   end
 
   describe "#moved_to_time_of" do

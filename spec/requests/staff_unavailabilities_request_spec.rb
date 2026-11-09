@@ -120,6 +120,14 @@ RSpec.describe "Staff unavailabilities", type: :request do
     describe "update" do
       let!(:record) { create(:staff_unavailability, user: staff, title: "Old", start_time: Time.utc(2027, 3, 1, 15), end_time: Time.utc(2027, 3, 1, 16)) }
 
+      it "edits a non-recurring record as a whole when the scope 'this' is posted" do
+        expect {
+          patch staff_unavailability_path(record), params: payload(title: "New").merge(update_scope: "this")
+        }.not_to change(StaffUnavailability, :count)
+        expect(flash[:notice]).to eq("Unavailability updated successfully.")
+        expect(record.reload).to have_attributes(title: "New", recurrence_rule: nil)
+      end
+
       it "updates a non-recurring record" do
         patch staff_unavailability_path(record), params: payload(title: "New", utc_start_time: "2027-03-02T10:00:00Z", utc_end_time: "2027-03-02T11:00:00Z")
         expect(response).to redirect_to(staff_unavailabilities_path)

@@ -37,6 +37,8 @@ class RecurrenceRule
   # The series with one more occurrence left out, the rule kept as written
   # ("update this event": the occurrence becomes an event of its own).
   def with_exdate(start)
+    return @text if @text.blank? || start.blank?
+
     "#{@text}\nEXDATE:#{start.utc.strftime(STAMP)}"
   end
 

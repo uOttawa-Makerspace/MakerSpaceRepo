@@ -155,6 +155,15 @@ RSpec.describe "Admin events gaps", type: :request do
   describe "PATCH update" do
     before { log_in!(admin) }
 
+    it "edits a non-repeating event as a whole when the scope 'this' is posted" do
+      event = create(:event, space: space, title: "Plain")
+      expect do
+        patch admin_event_path(event), params: { update_scope: "this", event: event_attrs(title: "Renamed") }
+      end.not_to change(Event, :count)
+      expect(flash[:notice]).to eq("Event updated successfully.")
+      expect(event.reload).to have_attributes(title: "Renamed", recurrence_rule: nil)
+    end
+
     it "redirects with an alert and keeps the record when the utc_* params are missing" do
       event = create(:event, space: space, title: "Keep")
       patch admin_event_path(event), params: { event: event_attrs(title: "Changed").except(:utc_start_time) }
