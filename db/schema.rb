@@ -1725,6 +1725,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
 
   add_check_constraint "volunteer_hours", "date_of_task IS NOT NULL", name: "volunteer_hours_date_of_task_present_check", validate: false
 
+  create_table "volunteer_task_join_state_changes", force: :cascade do |t|
+    t.bigint "volunteer_task_join_id", null: false
+    t.string "old_state", null: false
+    t.datetime "old_state_changed_at"
+    t.string "new_state", null: false
+    t.datetime "changed_at", default: -> { "now()" }, null: false
+    t.datetime "restored_at"
+    t.index ["volunteer_task_join_id"], name: "index_join_state_changes_on_join_id"
+  end
+
   create_table "volunteer_task_joins", id: :serial, force: :cascade do |t|
     t.boolean "active", default: true
     t.datetime "created_at", precision: nil, null: false
@@ -1732,8 +1742,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
     t.integer "user_id"
     t.string "user_type", default: "Volunteer"
     t.integer "volunteer_task_id"
+    t.string "state", default: "joined", null: false
+    t.datetime "state_changed_at"
+    t.bigint "state_changed_by_id"
+    t.index ["state_changed_by_id"], name: "index_volunteer_task_joins_on_state_changed_by_id"
     t.index ["user_id"], name: "index_volunteer_task_joins_on_user_id"
     t.index ["volunteer_task_id"], name: "index_volunteer_task_joins_on_volunteer_task_id"
+    t.index ["volunteer_task_id", "state"], name: "index_volunteer_task_joins_on_volunteer_task_id_and_state"
+    t.check_constraint "state::text = ANY (ARRAY['joined'::character varying, 'completed'::character varying, 'left'::character varying, 'removed'::character varying]::text[])", name: "volunteer_task_joins_state_check"
   end
 
   create_table "volunteer_task_requests", id: :serial, force: :cascade do |t|
@@ -1983,6 +1999,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
   add_foreign_key "volunteer_hours", "users"
   add_foreign_key "volunteer_hours", "volunteer_tasks"
   add_foreign_key "volunteer_task_joins", "users"
+  add_foreign_key "volunteer_task_joins", "users", column: "state_changed_by_id", on_delete: :nullify
   add_foreign_key "volunteer_task_joins", "volunteer_tasks"
   add_foreign_key "volunteer_task_requests", "users"
   add_foreign_key "volunteer_task_requests", "volunteer_tasks"

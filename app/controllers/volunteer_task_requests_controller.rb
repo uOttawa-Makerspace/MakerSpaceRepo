@@ -84,7 +84,7 @@ class VolunteerTaskRequestsController < SessionsController
 
   def create_request
     volunteer_task = VolunteerTask.find(params[:id])
-    unless volunteer_task.volunteer_task_joins.active.exists?(user_id: current_user.id)
+    unless volunteer_task.volunteer_task_joins.joined.exists?(user_id: current_user.id)
       flash[:alert] = "You must be assigned to this task to submit it."
       return redirect_back(fallback_location: root_path)
     end
@@ -121,7 +121,7 @@ class VolunteerTaskRequestsController < SessionsController
         result = :already_approved
       elsif volunteer_task_request.update(approval: params[:approval])
         if volunteer_task_request.approval
-          volunteer_task_request.volunteer_task_join&.update(active: false)
+          complete_join(volunteer_task_request)
           volunteer_task = volunteer_task_request.volunteer_task
           volunteer_id = volunteer_task_request.user_id
           volunteer = volunteer_task_request.user
@@ -165,6 +165,14 @@ class VolunteerTaskRequestsController < SessionsController
   end
 
   private
+
+  # Completes the requester's joined row. A row that ended after the lookup (the volunteer left at the
+  # same moment) has nothing left to complete, and the approval carries on.
+  def complete_join(volunteer_task_request)
+    volunteer_task_request.volunteer_task_join&.finish!(:completed, by: current_user)
+  rescue VolunteerTaskJoin::NotJoined
+    nil
+  end
 
   def ensure_staff
     return if current_user.staff?

@@ -1110,7 +1110,7 @@ class User < ApplicationRecord
   # ============================================
 
   def get_volunteer_tasks_from_volunteer_joins
-    volunteer_task_joins.active.includes(:volunteer_task).map(&:volunteer_task)
+    volunteer_task_joins.joined.includes(:volunteer_task).map(&:volunteer_task)
   end
 
   def get_total_cc

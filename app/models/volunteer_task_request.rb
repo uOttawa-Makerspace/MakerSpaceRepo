@@ -22,7 +22,8 @@ class VolunteerTaskRequest < ApplicationRecord
   def volunteer_task_join
     volunteer_task
       &.volunteer_task_joins
-      &.where(user_id: user_id, active: true)
+      &.joined
+      &.where(user_id: user_id)
       &.last
   end
 

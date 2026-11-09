@@ -125,19 +125,48 @@ end
 RSpec.describe VolunteerTask, "#remove_user", type: :model do
   let(:task) { create(:volunteer_task) }
   let(:user) { create(:user, :volunteer) }
+  let(:staff) { create(:user, :staff) }
 
-  it "marks the user's active joins inactive and keeps every row" do
+  it "marks the user's joined rows left when they remove themselves, and keeps every row" do
     first = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
     second = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
 
-    expect(task.remove_user(user.id)).to be(true)
-    expect(VolunteerTaskJoin.where(id: [first.id, second.id]).pluck(:active)).to eq([false, false])
+    expect(task.remove_user(user.id, by: user)).to be(true)
+    rows = VolunteerTaskJoin.where(id: [first.id, second.id])
+    expect(rows.pluck(:state, :active, :state_changed_by_id).uniq).to eq([["left", false, user.id]])
+    expect(rows.map(&:state_changed_at)).to all(be_present)
   end
 
-  it "refuses a user with no active join" do
+  it "marks the rows removed when someone else removes the user" do
+    join = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+
+    expect(task.remove_user(user.id, by: staff)).to be(true)
+    expect(join.reload).to have_attributes(state: "removed", active: false, state_changed_by_id: staff.id)
+  end
+
+  it "leaves ended rows alone" do
+    done = create(:volunteer_task_join, :completed, volunteer_task: task, user: user)
+    create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+
+    expect { task.remove_user(user.id, by: staff) }.not_to(change { done.reload.attributes })
+  end
+
+  it "refuses, and writes nothing, when the join ended between the lookup and the change" do
+    join = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+    allow_any_instance_of(VolunteerTaskJoin).to receive(:with_lock).and_wrap_original do |original, *args, &block|
+      VolunteerTaskJoin.where(id: original.receiver.id).update_all(state: "left", active: false)
+      original.call(*args, &block)
+    end
+
+    expect(task.remove_user(user.id, by: staff)).to be(false)
+    expect(task.errors.full_messages).to eq(["The user to remove is not on this task."])
+    expect(join.reload.state_changed_by_id).to be_nil
+  end
+
+  it "refuses a user with no joined row" do
     create(:volunteer_task_join, :not_active, volunteer_task: task, user: user)
 
-    expect(task.remove_user(user.id)).to be(false)
+    expect(task.remove_user(user.id, by: staff)).to be(false)
     expect(task.errors.full_messages).to eq(["The user to remove is not on this task."])
   end
 end

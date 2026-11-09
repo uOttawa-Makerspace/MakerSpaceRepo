@@ -31,7 +31,7 @@ RSpec.describe VolunteerHoursController, type: :controller do
           user = create(:user, :volunteer_with_volunteer_program)
           session[:user_id] = user.id
           session[:expires_at] = Time.zone.now + 10_000
-          create(:volunteer_task)
+          create(:volunteer_task_join, :active, user_id: user.id, volunteer_task: create(:volunteer_task))
           hours_params =
             FactoryBot.attributes_for(
               :volunteer_hour,

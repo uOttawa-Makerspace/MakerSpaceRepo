@@ -337,6 +337,19 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       end
     end
 
+    describe "GET shadowing_shifts with a stored shift missing its start time" do
+      it "renders the page and leaves that shift out of both lists" do
+        whole = ShadowingHour.create!(user: staff, space: makerspace, start_time: 1.day.from_now, end_time: 2.days.from_now, event_id: "a")
+        broken = ShadowingHour.create!(user: staff, space: makerspace, start_time: 1.day.from_now, end_time: 2.days.from_now, event_id: "b")
+        broken.update_columns(start_time: nil)
+        vol_login!(staff)
+        get shadowing_shifts_volunteers_path
+        expect(response).to have_http_status(:ok)
+        expect(ivar(:@shifts)).to eq([whole])
+        expect(ivar(:@all_shifts)).to eq([whole])
+      end
+    end
+
     describe "POST create_event" do
       let(:params) do
         { space: "makerspace", datepicker_start: "2030-05-06 09:00", datepicker_end: "2030-05-06 11:30", user_id: volunteer.id }

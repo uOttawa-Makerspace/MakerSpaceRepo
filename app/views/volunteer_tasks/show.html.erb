@@ -1,7 +1,7 @@
 <%
-  is_assigned_to_user = @volunteer_task.volunteer_task_joins.active.pluck(:user_id).include?(current_user.id)
-  staff_joins = @volunteer_task.volunteer_task_joins.active.where('volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?', 'Staff', 'Admin')
-  volunteer_joins = @volunteer_task.volunteer_task_joins.active.where(user_type: 'Volunteer')
+  is_assigned_to_user = @volunteer_task.volunteer_task_joins.joined.pluck(:user_id).include?(current_user.id)
+  staff_joins = @volunteer_task.volunteer_task_joins.joined.where('volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?', 'Staff', 'Admin')
+  volunteer_joins = @volunteer_task.volunteer_task_joins.joined.where(user_type: 'Volunteer')
 %>
 
 <div class="py-3 py-md-4">

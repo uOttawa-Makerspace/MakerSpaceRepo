@@ -11,7 +11,7 @@ class VolunteerTasksController < SessionsController
 
   def index
     # Find all tasks that currently have an active volunteer assigned
-    active_assigned_task_ids = VolunteerTaskJoin.active
+    active_assigned_task_ids = VolunteerTaskJoin.joined
                                                 .where(user_type: "Volunteer")
                                                 .select(:volunteer_task_id)
 
@@ -48,7 +48,7 @@ class VolunteerTasksController < SessionsController
   def create
     @volunteer_task = VolunteerTask.new
     @volunteer_task.user_id = @user.try(:id)
-    if @volunteer_task.update_from_form(volunteer_task_params, **task_edit_params)
+    if @volunteer_task.update_from_form(volunteer_task_params, by: current_user, **task_edit_params)
       update_photos
       redirect_to volunteer_tasks_path, notice: "You've successfully created a new Volunteer Task"
     else
@@ -77,15 +77,15 @@ class VolunteerTasksController < SessionsController
     if current_user.staff?
       @volunteers = User.joins(:programs)
                         .where(programs: { program_type: Program::VOLUNTEER })
-                        .where.not(id: active_user_ids(@volunteer_task))
+                        .where.not(id: joined_user_ids(@volunteer_task))
                         .pluck(:name, :id)
       @staff = User.where(role: %w[staff admin])
-                   .where.not(id: active_user_ids(@volunteer_task))
+                   .where.not(id: joined_user_ids(@volunteer_task))
                    .pluck(:name, :id)
       @volunteers_in_task = User.joins(:programs)
-                                .where(programs: { program_type: Program::VOLUNTEER }, id: active_user_ids(@volunteer_task))
+                                .where(programs: { program_type: Program::VOLUNTEER }, id: joined_user_ids(@volunteer_task))
                                 .pluck(:name, :id)
-      @staff_in_task = User.where(role: %w[staff admin], id: active_user_ids(@volunteer_task))
+      @staff_in_task = User.where(role: %w[staff admin], id: joined_user_ids(@volunteer_task))
                            .pluck(:name, :id)
     end
   end
@@ -110,21 +110,21 @@ class VolunteerTasksController < SessionsController
     @tasks_categories = %w[Events Projects Supervising Workshops Other]
     @certifications = Training.all
     @volunteers_in_task = User.where(
-      id: @volunteer_task.volunteer_task_joins.active.where(user_type: "Volunteer").pluck(:user_id)
+      id: @volunteer_task.volunteer_task_joins.joined.where(user_type: "Volunteer").pluck(:user_id)
     )
     @staff_in_task = User.where(
-      id: @volunteer_task.volunteer_task_joins.active.where.not(user_type: "Volunteer").pluck(:user_id)
+      id: @volunteer_task.volunteer_task_joins.joined.where.not(user_type: "Volunteer").pluck(:user_id)
     )
     @staff_available = User.where(role: %w[staff admin])
-                           .where.not(id: active_user_ids(@volunteer_task))
+                           .where.not(id: joined_user_ids(@volunteer_task))
     @volunteers_available = User.joins(:programs)
                                 .where(programs: { program_type: Program::VOLUNTEER })
-                                .where.not(id: active_user_ids(@volunteer_task))
+                                .where.not(id: joined_user_ids(@volunteer_task))
   end
 
   def update
     volunteer_task = VolunteerTask.find(params[:id])
-    if volunteer_task.update_from_form(volunteer_task_params, **task_edit_params)
+    if volunteer_task.update_from_form(volunteer_task_params, by: current_user, **task_edit_params)
       @volunteer_task = volunteer_task
       update_photos
       redirect_to volunteer_tasks_path, notice: "Volunteer task updated"
@@ -145,8 +145,8 @@ class VolunteerTasksController < SessionsController
 
   private
 
-  def active_user_ids(task)
-    task.volunteer_task_joins.active.pluck(:user_id)
+  def joined_user_ids(task)
+    task.volunteer_task_joins.joined.pluck(:user_id)
   end
 
   # The form's selects submit an empty value when nothing is chosen; those are not ids.

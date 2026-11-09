@@ -92,6 +92,16 @@ RSpec.describe "users:merge_duplicates" do
     expect(proposal.reload.admin_id).to eq(primary.id)
   end
 
+  it "moves who ended a volunteer task join to the kept user instead of clearing it" do
+    join = create(:volunteer_task_join, :active)
+    join.finish!(:removed, by: duplicate)
+
+    merge
+
+    expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    expect(join.reload).to have_attributes(state: "removed", state_changed_by_id: primary.id)
+  end
+
   it "moves what the user associations cover as before" do
     task = create(:volunteer_task, user: duplicate)
     merge

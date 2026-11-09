@@ -89,6 +89,8 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
   let(:task) { create(:volunteer_task) }
 
   describe "hand-logged hours (save_hand_logged)" do
+    before { create(:volunteer_task_join, :active, user: user, volunteer_task: task) }
+
     def attrs(overrides = {})
       { volunteer_task_id: task.id, date_of_task: Date.current, total_time: 2 }.merge(overrides)
     end
@@ -123,6 +125,48 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
       end
     end
 
+    it "refuses a task the user never joined, left or was removed from, and says so in English and French" do
+      never = create(:volunteer_task)
+      removed = create(:volunteer_task)
+      create(:volunteer_task_join, :not_active, user: user, volunteer_task: removed)
+      left = create(:volunteer_task)
+      create(:volunteer_task_join, :left, user: user, volunteer_task: left)
+      someone_elses = create(:volunteer_task)
+      create(:volunteer_task_join, :active, user: create(:user, :volunteer_with_volunteer_program), volunteer_task: someone_elses)
+      [never, removed, left, someone_elses].each do |other|
+        hour = VolunteerHour.new(user: user)
+        expect(hour.save_hand_logged(attrs(volunteer_task_id: other.id))).to be(false)
+        expect(hour.errors.full_messages).to eq(["Volunteer task is not a task this volunteer is on or has completed"])
+      end
+      I18n.with_locale(:fr) do
+        hour = VolunteerHour.new(user: user)
+        hour.save_hand_logged(attrs(volunteer_task_id: never.id))
+        expect(hour.errors[:volunteer_task_id]).to eq(["n'est pas une tâche à laquelle ce bénévole participe ou qu'il a terminée"])
+      end
+    end
+
+    it "checks the task against the hour's owner and when the task changes" do
+      other = create(:volunteer_task)
+      row = create(:volunteer_hour, user: user, volunteer_task: task, total_time: 1)
+      expect(row.save_hand_logged(volunteer_task_id: other.id)).to be(false)
+      expect(row.reload.volunteer_task_id).to eq(task.id)
+      create(:volunteer_task_join, :active, user: user, volunteer_task: other)
+      expect(row.save_hand_logged(volunteer_task_id: other.id)).to be(true)
+    end
+
+    it "accepts a task the user has completed" do
+      done = create(:volunteer_task)
+      create(:volunteer_task_join, :completed, user: user, volunteer_task: done)
+      expect(VolunteerHour.new(user: user).save_hand_logged(attrs(volunteer_task_id: done.id))).to be(true)
+    end
+
+    it "leaves a stored hour on a task the user is no longer on editable in its other fields" do
+      left = create(:volunteer_task)
+      row = create(:volunteer_hour, user: user, volunteer_task: left, total_time: 1)
+      expect(VolunteerHour.find(row.id).save_hand_logged(total_time: 2)).to be(true)
+      expect(row.reload.volunteer_task_id).to eq(left.id)
+    end
+
     it "leaves a stored future date alone while other fields change" do
       row = VolunteerHour.new(user: user, volunteer_task: task, total_time: 1, date_of_task: Date.current + 30)
       row.save!
@@ -130,7 +174,7 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
     end
   end
 
-  it "saves in the default context without the hand-logged limits (awards take the task's hours)" do
+  it "saves in the default context without the hand-logged limits or the task check (awards take the task's hours)" do
     expect(VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 36, Time.current)).to be_persisted
     expect(VolunteerHour.create_volunteer_hour_from_approval(task.id, user.id, 0, Time.current)).to be_persisted
   end

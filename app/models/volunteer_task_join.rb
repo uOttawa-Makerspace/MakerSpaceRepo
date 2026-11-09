@@ -3,9 +3,33 @@
 class VolunteerTaskJoin < ApplicationRecord
   belongs_to :volunteer_task, optional: true
   belongs_to :user, optional: true
+  belongs_to :state_changed_by, class_name: "User", optional: true
+
+  class NotJoined < StandardError; end
+
+  ENDINGS = %w[completed left removed].freeze
+
+  # joined: on the task now. The other three are the endings: the task's request was approved (completed),
+  # the volunteer removed themselves (left) or staff removed them (removed). Not named active: the active
+  # column already gives active?.
+  enum :state, { joined: "joined", completed: "completed", left: "left", removed: "removed" }, validate: true
 
   # validates_uniqueness_of :user_id, scope: :volunteer_task_id
 
+  # Ends a joined row once, with who ended it and when. `active` is kept in step with the state (false once
+  # the join leaves joined), in the same update.
+  def finish!(ending, by:)
+    raise ArgumentError, "#{ending.inspect} is not an ending" unless ENDINGS.include?(ending.to_s)
+
+    with_lock do
+      raise NotJoined, "join #{id} is #{state}, not joined" unless joined?
+
+      update!(state: ending, state_changed_at: Time.current, state_changed_by: by, active: false)
+    end
+  end
+
+  # Joins whose task the volunteer is on or has completed: the tasks hours can be logged against.
+  scope :worked_on, -> { where(state: %w[joined completed]) }
   scope :active, -> { where(active: true) }
   scope :not_active, -> { where(active: false) }
   scope :user_type_volunteer, -> { where(user_type: "Volunteer") }

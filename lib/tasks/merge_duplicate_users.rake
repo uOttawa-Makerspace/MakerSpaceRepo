@@ -289,12 +289,13 @@ namespace :users do
     )
   end
 
-  # Foreign keys to users that the database does not clear by itself (no action or restrict).
+  # Foreign keys to users that the database would not keep: no action or restrict (it refuses the delete) and
+  # nullify (it would erase the recorded user, for example who ended a volunteer task join).
   def user_reference_columns
     connection = ActiveRecord::Base.connection
     connection.tables.flat_map do |table|
       connection.foreign_keys(table).filter_map do |foreign_key|
-        next unless foreign_key.to_table == 'users' && [nil, :restrict].include?(foreign_key.on_delete)
+        next unless foreign_key.to_table == 'users' && [nil, :restrict, :nullify].include?(foreign_key.on_delete)
 
         [table, foreign_key.column]
       end
