@@ -107,6 +107,37 @@ RSpec.describe RestoreLostCategoriesAndEquipment do
     expect(archive_rows.size).to eq(3)
   end
 
+  it "refuses the rollback when an inserted category got a category option" do
+    migrate
+    Category.find_by(project_proposal_id: proposal.id).update_columns(category_option_id: create(:category_option).id)
+    expect { ApplicationRecord.transaction(requires_new: true) { rollback } }
+      .to raise_error(/2 of 3 still match.*nothing was changed/m)
+    expect(Category.count).to eq(2)
+  end
+
+  it "refuses the rollback when an inserted row was touched but kept its name" do
+    migrate
+    Category.find_by(project_proposal_id: proposal.id).update_columns(updated_at: Time.zone.now)
+    expect { ApplicationRecord.transaction(requires_new: true) { rollback } }.to raise_error(/2 of 3 still match/)
+    Equipment.find_by(repository_id: repository.id).update_columns(updated_at: Time.zone.now)
+    expect { ApplicationRecord.transaction(requires_new: true) { rollback } }.to raise_error(/1 of 3 still match/)
+  end
+
+  it "restores equipment for a repository that already has categories" do
+    create(:category, :with_repository, repository: repository, name: "Mine")
+    expect { migrate }.to change(Equipment, :count).by(1)
+    expect(repository.categories.pluck(:name)).to eq(["Mine"])
+  end
+
+  it "keeps another migration's archive rows and the table on rollback" do
+    migrate
+    connection.execute("INSERT INTO restored_rows (migration_version, table_name, row_id, parent_type, parent_id) " \
+                       "VALUES ('other', 'categories', 1, 'Repository', 1)")
+    rollback
+    expect(connection.select_values("SELECT migration_version FROM restored_rows")).to eq(["other"])
+    expect(Category.count).to eq(0)
+  end
+
   it "refuses the rollback when an inserted row was removed" do
     migrate
     Equipment.where(repository_id: repository.id).delete_all

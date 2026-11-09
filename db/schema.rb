@@ -1299,13 +1299,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
   end
 
   create_table "restored_rows", force: :cascade do |t|
-    t.text "migration_version", null: false
-    t.text "table_name", null: false
-    t.bigint "row_id", null: false
-    t.text "parent_type", null: false
-    t.bigint "parent_id", null: false
-    t.text "name"
     t.datetime "archived_at", default: -> { "now()" }, null: false
+    t.integer "category_option_id"
+    t.text "migration_version", null: false
+    t.text "name"
+    t.bigint "parent_id", null: false
+    t.text "parent_type", null: false
+    t.bigint "row_id", null: false
+    t.datetime "row_updated_at"
+    t.text "table_name", null: false
   end
 
   create_table "rfids", id: :serial, force: :cascade do |t|

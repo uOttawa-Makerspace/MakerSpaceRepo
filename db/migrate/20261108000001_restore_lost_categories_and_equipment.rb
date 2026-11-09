@@ -6,7 +6,9 @@
 # A parent that still exists and still has no categories (respectively no equipment) gets
 # its snapshot rows. A parent that has gained rows since, or that no longer exists, is left
 # alone, and no existing row is ever updated or deleted. Every inserted row is recorded in
-# restored_rows by the statement that inserts it, so down can remove exactly those rows.
+# restored_rows by the statement that inserts it (with its parent, name, category_option_id
+# and updated_at as inserted), so down can remove exactly those rows, and only while each is
+# still as inserted.
 # Safe to run again: the parents then have rows, so nothing is inserted.
 class RestoreLostCategoriesAndEquipment < ActiveRecord::Migration[8.1]
   ARCHIVE = "restored_rows".freeze
@@ -70,9 +72,10 @@ class RestoreLostCategoriesAndEquipment < ActiveRecord::Migration[8.1]
         "and #{counts[:has_rows]} whose parent has rows now"
   end
 
-  # Removes the archived rows, each only if it still has the parent and name it was inserted
-  # with. Raises, changing nothing, unless every archived row matches; the archive is dropped
-  # only after the rows are removed.
+  # Removes the archived rows, each only if it still has the parent, name, updated_at and (for
+  # categories) category_option_id it was inserted with. Raises, changing nothing, unless every
+  # archived row matches. Only this migration's archive rows are deleted, and the archive table
+  # is dropped only when none are left.
   def down
     unless table_exists?(ARCHIVE)
       raise "#{ARCHIVE} is missing: this database ran a version of the migration that did not record its changes, " \
@@ -83,11 +86,12 @@ class RestoreLostCategoriesAndEquipment < ActiveRecord::Migration[8.1]
     matching = %w[categories equipment].sum { |table| count_unchanged(table) }
     if matching != archived
       raise "Cannot remove the restored rows: #{matching} of #{archived} still match what was inserted " \
-            "(the others were changed or removed since); nothing was changed and the archive was kept"
+            "(the others were edited or removed since); nothing was changed and the archive was kept"
     end
 
     %w[categories equipment].each { |table| delete_unchanged(table) }
-    execute "DROP TABLE #{ARCHIVE}"
+    execute "DELETE FROM #{ARCHIVE} WHERE migration_version = '#{SOURCE}'"
+    execute "DROP TABLE #{ARCHIVE}" if select_value("SELECT COUNT(*) FROM #{ARCHIVE}").to_i.zero?
   end
 
   private
@@ -100,6 +104,8 @@ class RestoreLostCategoriesAndEquipment < ActiveRecord::Migration[8.1]
       t.text :parent_type, null: false
       t.bigint :parent_id, null: false
       t.text :name
+      t.integer :category_option_id
+      t.datetime :row_updated_at
       t.datetime :archived_at, null: false, default: -> { "now()" }
     end
   end
@@ -129,10 +135,10 @@ class RestoreLostCategoriesAndEquipment < ActiveRecord::Migration[8.1]
         INSERT INTO #{table} (#{column}, #{table == 'categories' ? 'name, category_option_id' : 'name'}, created_at, updated_at)
         SELECT parent.id, v.* FROM parent, (VALUES #{values_sql(table, rows)}) AS v
         WHERE NOT EXISTS (SELECT 1 FROM #{table} existing WHERE existing.#{column} = parent.id)
-        RETURNING id, #{column} AS parent_id, name
+        RETURNING id, #{column} AS parent_id, name, #{table == 'categories' ? 'category_option_id' : 'NULL::integer'} AS option_id, updated_at
       )
-      INSERT INTO #{ARCHIVE} (migration_version, table_name, row_id, parent_type, parent_id, name)
-      SELECT '#{SOURCE}', '#{table}', id, #{connection.quote(parent_type)}, parent_id, name FROM inserted
+      INSERT INTO #{ARCHIVE} (migration_version, table_name, row_id, parent_type, parent_id, name, category_option_id, row_updated_at)
+      SELECT '#{SOURCE}', '#{table}', id, #{connection.quote(parent_type)}, parent_id, name, option_id, updated_at FROM inserted
     SQL
   end
 
@@ -154,9 +160,14 @@ class RestoreLostCategoriesAndEquipment < ActiveRecord::Migration[8.1]
     <<~SQL.squish
       FROM #{ARCHIVE} a JOIN #{table} t ON t.id = a.row_id
       WHERE a.migration_version = '#{SOURCE}' AND a.table_name = '#{table}'
-        AND a.name IS NOT DISTINCT FROM t.name
+        AND a.name IS NOT DISTINCT FROM t.name AND a.row_updated_at = t.updated_at
+        #{option_check_sql(table)}
         AND a.parent_id = CASE a.parent_type WHEN 'ProjectProposal' THEN #{project_proposal_expr(table)} ELSE t.repository_id END
     SQL
+  end
+
+  def option_check_sql(table)
+    table == "categories" ? "AND a.category_option_id IS NOT DISTINCT FROM t.category_option_id" : ""
   end
 
   def project_proposal_expr(table)
