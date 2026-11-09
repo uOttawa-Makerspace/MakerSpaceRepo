@@ -299,7 +299,7 @@ class User < ApplicationRecord
 
   # The newest request still waiting for an answer, if any.
   def pending_booking_request
-    user_booking_approvals.find_by(approved: false)
+    user_booking_approvals.where(approved: false).reorder(created_at: :desc, id: :desc).first
   end
 
   # Records a new booking access request. Old requests stay as history, so only a pending

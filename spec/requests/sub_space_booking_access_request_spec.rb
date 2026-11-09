@@ -114,6 +114,15 @@ RSpec.describe "Booking access requests", type: :request do
       expect(newer.reload.staff_id).to be_nil
     end
 
+    it "approves the later-created of two pending requests made at the same moment" do
+      moment = 1.day.ago.change(usec: 0)
+      first = make_row(approved: false, created_at: moment)
+      second = make_row(approved: false, created_at: moment)
+      approve_user
+      expect(second.reload.approved).to be(true)
+      expect(first.reload.approved).to be(false)
+    end
+
     it "creates a new approved row when the user has no pending request" do
       expect(approval_mail_recipients).to eq([user.email])
       row = UserBookingApproval.find_by!(user: user)
