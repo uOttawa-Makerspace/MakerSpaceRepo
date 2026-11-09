@@ -4,7 +4,7 @@
 // daylight-saving bug in the host zone could not show).
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
-  entryOverlaps,
+  entryIntervals,
   instantToWall,
   occurrencesOverlapping,
   startingAt,
@@ -309,7 +309,10 @@ describe.each(ZONES)("with the process clock in %s", (zone) => {
     });
   });
 
-  describe("entryOverlaps", () => {
+  describe("entryIntervals", () => {
+    const overlaps = (entry, from, to) =>
+      entryIntervals(entry, from, to).length > 0;
+
     const monday = {
       start: "2026-01-05T09:00:00",
       end: "2026-01-05T14:20:00",
@@ -319,14 +322,10 @@ describe.each(ZONES)("with the process clock in %s", (zone) => {
 
     it("matches a repeating entry on a day after spring-forward", () => {
       expect(
-        entryOverlaps(monday, wall(2026, 3, 30, 9, 30), wall(2026, 3, 30, 10)),
+        overlaps(monday, wall(2026, 3, 30, 9, 30), wall(2026, 3, 30, 10)),
       ).toBe(true);
       expect(
-        entryOverlaps(
-          monday,
-          wall(2026, 3, 30, 14, 30),
-          wall(2026, 3, 30, 15, 30),
-        ),
+        overlaps(monday, wall(2026, 3, 30, 14, 30), wall(2026, 3, 30, 15, 30)),
       ).toBe(false);
     });
 
@@ -336,17 +335,17 @@ describe.each(ZONES)("with the process clock in %s", (zone) => {
         end: "2026-03-30T10:00:00",
       };
       expect(
-        entryOverlaps(oneOff, wall(2026, 3, 30, 9, 59), wall(2026, 3, 30, 11)),
+        overlaps(oneOff, wall(2026, 3, 30, 9, 59), wall(2026, 3, 30, 11)),
       ).toBe(true);
       expect(
-        entryOverlaps(oneOff, wall(2026, 3, 30, 10), wall(2026, 3, 30, 11)),
+        overlaps(oneOff, wall(2026, 3, 30, 10), wall(2026, 3, 30, 11)),
       ).toBe(false);
     });
 
     it("matches nothing for a rule it cannot read", () => {
       const broken = { ...monday, rrule: "RRULE:FREQ=NEVER" };
       expect(
-        entryOverlaps(broken, wall(2026, 3, 30, 9), wall(2026, 3, 30, 10)),
+        overlaps(broken, wall(2026, 3, 30, 9), wall(2026, 3, 30, 10)),
       ).toBe(false);
     });
   });

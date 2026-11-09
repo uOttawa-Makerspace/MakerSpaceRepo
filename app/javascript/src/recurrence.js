@@ -133,8 +133,3 @@ export function entryIntervals(entry, from, to) {
     return [];
   }
 }
-
-/* Whether a calendar feed entry overlaps the wall-time range [from, to). */
-export function entryOverlaps(entry, from, to) {
-  return entryIntervals(entry, from, to).length > 0;
-}
