@@ -788,7 +788,7 @@ class SubSpaceBookingController < SessionsController
 
   def approval_failed(error)
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                alert: validation_message(error.record, "errors.bookings.approve_failed")
+                alert: validation_message(error.record, "errors.bookings.access_approve_failed")
   end
 
   def load_recurring_bookings_for_page(paginated_bookings)

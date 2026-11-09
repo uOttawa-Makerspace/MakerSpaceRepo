@@ -316,7 +316,7 @@ RSpec.describe "Booking access requests", type: :request do
       deny(row)
       perform_enqueued_jobs { put approve_access_sub_space_booking_index_path, params: { id: row.id } }
 
-      expect(flash[:alert]).to eq("#{I18n.t("errors.bookings.approve_failed")} This request was already declined.")
+      expect(flash[:alert]).to eq("The access request could not be approved: This request was already declined.")
       expect(row.reload.status).to eq("declined")
       expect(user.reload.booking_approval).to be(false)
       expect(ActionMailer::Base.deliveries).to be_empty
@@ -407,7 +407,7 @@ RSpec.describe "Booking access requests", type: :request do
         delete_account!
         perform_enqueued_jobs { put approve_access_sub_space_booking_index_path, params: { id: row.id } }
 
-        expect(flash[:alert]).to eq("#{I18n.t("errors.bookings.approve_failed")} The account that sent this request has been deleted.")
+        expect(flash[:alert]).to eq("#{I18n.t("errors.bookings.access_approve_failed")} The account that sent this request has been deleted.")
         expect(row.reload.status).to eq("pending")
         expect(User.including_deleted.find(user.id).booking_approval).to be(false)
         expect(ActionMailer::Base.deliveries).to be_empty
@@ -422,7 +422,7 @@ RSpec.describe "Booking access requests", type: :request do
           put bulk_approve_access_sub_space_booking_index_path, params: { user_booking_approval_ids: [row.id, kept.id] }
         end
 
-        expect(flash[:alert]).to eq("#{I18n.t("errors.bookings.approve_failed")} The account that sent this request has been deleted.")
+        expect(flash[:alert]).to eq("#{I18n.t("errors.bookings.access_approve_failed")} The account that sent this request has been deleted.")
         expect([row.reload.status, kept.reload.status]).to eq(%w[pending pending])
         expect(ActionMailer::Base.deliveries).to be_empty
       end

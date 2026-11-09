@@ -138,7 +138,7 @@ en:
       bulk_status_invalid: "Choose Approve or Decline for the selected bookings, then submit again."
       recurring_invalid: "A repeating booking needs a repeat frequency and a valid end date."
       access_request_failed: "Your access request could not be submitted:"
-      approve_failed: "The booking could not be approved:"
+      access_approve_failed: "The access request could not be approved:"
       js:
         failed_title: "Booking failed"
         feed: "The bookings could not be loaded. Reload the page to try again."

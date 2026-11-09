@@ -897,7 +897,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       put approve_access_sub_space_booking_index_path, params: { id: uba.id }
 
       expect(response).to redirect_to(sub_space_booking_index_path(anchor: "booking-admin-tab"))
-      expect(flash[:alert]).to start_with(I18n.t("errors.bookings.approve_failed"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.bookings.access_approve_failed"))
       expect(uba.reload.approved).to be(false)
       expect(applicant.reload.booking_approval).to be(false)
     end
@@ -1045,7 +1045,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
             params: { user_booking_approval_ids: [older.id, newer.id] }
       end
 
-      expect(flash[:alert]).to start_with(I18n.t("errors.bookings.approve_failed"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.bookings.access_approve_failed"))
       expect(newer.reload.approved).to be(false)
       expect(good_user.reload.booking_approval).to be(false)
       expect(older.reload.approved).to be(false)

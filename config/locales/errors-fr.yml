@@ -138,7 +138,7 @@ fr:
       bulk_status_invalid: "Choisissez Approuver ou Refuser pour les réservations sélectionnées, puis soumettez à nouveau."
       recurring_invalid: "Une réservation récurrente nécessite une fréquence de répétition et une date de fin valide."
       access_request_failed: "Votre demande d'accès n'a pas pu être soumise :"
-      approve_failed: "La réservation n'a pas pu être approuvée :"
+      access_approve_failed: "La demande d'accès n'a pas pu être approuvée :"
       js:
         failed_title: "Échec de la réservation"
         feed: "Les réservations n'ont pas pu être chargées. Rechargez la page pour réessayer."
