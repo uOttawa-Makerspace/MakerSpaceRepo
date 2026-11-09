@@ -293,22 +293,33 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    [["a stale title", "-before"], ["the old dotted form", ".after-edit"], ["the bare id", ""]].each do |label, suffix|
+    [["a stale title", "-before", :found], ["the old dotted form", ".after-edit", :moved_permanently],
+     ["the bare id", "", :found]].each do |label, suffix, status|
       it "moves #{label} to the canonical address for show and edit, keeping the query string" do
         get "/project_proposals/#{edited.id}#{suffix}?sort=newest&locale=en"
-        expect(response).to have_http_status(:moved_permanently)
+        expect(response).to have_http_status(status)
         expect(response).to redirect_to("#{canonical}?sort=newest&locale=en")
         get "/project_proposals/#{edited.id}#{suffix}/edit"
-        expect(response).to have_http_status(:moved_permanently)
+        expect(response).to have_http_status(status)
         expect(response).to redirect_to("#{canonical}/edit")
       end
+    end
+
+    it "does not loop when a title is renamed and renamed back" do
+      edited.update!(title: "B Title")
+      edited.update!(title: "After Edit")
+      get canonical
+      expect(response).to have_http_status(:ok)
+      get "/project_proposals/#{edited.id}-b-title"
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(canonical)
     end
 
     it "moves a changed title to a new address and the old address to it" do
       old_path = project_proposal_path(edited)
       edited.update!(title: "Third Title")
       get old_path
-      expect(response).to have_http_status(:moved_permanently)
+      expect(response).to have_http_status(:found)
       expect(response).to redirect_to("/project_proposals/#{edited.id}-third-title")
     end
 

@@ -535,14 +535,16 @@ class ProjectProposalsController < SessionsController
   end
 
   # Bare ids, stale titles and the old "<id>.<title>" form of a page address are moved to the
-  # current address, keeping the query string. Other requests are answered as they are.
+  # current address, keeping the query string. The old dotted form can never be current again, so
+  # its move is permanent; a stale title or bare id is temporary, because titles change back.
+  # Other requests are answered as they are.
   def redirect_to_canonical_url
     return unless request.get? && request.format.html?
     return if params[:id] == @project_proposal.to_param
 
     path = action_name == 'edit' ? edit_project_proposal_path(@project_proposal) : project_proposal_path(@project_proposal)
     path += "?#{request.query_string}" if request.query_string.present?
-    redirect_to path, status: :moved_permanently
+    redirect_to path, status: params[:id].include?('.') ? :moved_permanently : :found
   end
 
   def project_proposal_params
