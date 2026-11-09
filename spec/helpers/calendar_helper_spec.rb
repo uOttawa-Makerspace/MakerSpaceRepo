@@ -218,6 +218,27 @@ RSpec.describe CalendarHelper, type: :helper do
           expect(event[:rrule]).to eq("DTSTART:20261030T000000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T050000Z\nEXDATE:20261106T000000")
         end
 
+        it "reads a floating time as Toronto wall-clock time" do
+          body = ics(vevent("floating", ["DTSTART:20261030T090000", "DTEND:20261030T100000", "SUMMARY:Open"]))
+          expect(events_for(body).first).to include(allDay: false, start: "2026-10-30T09:00:00", end: "2026-10-30T10:00:00")
+        end
+
+        it "reads floating times on the days clocks change as Toronto wall-clock time" do
+          spring = ics(vevent("spring", ["DTSTART:20260308T090000", "DTEND:20260308T170000", "SUMMARY:Spring"]))
+          expect(events_for(spring, now: Time.utc(2026, 3, 1, 12, 0)).first).to include(start: "2026-03-08T09:00:00", end: "2026-03-08T17:00:00")
+          fall = ics(vevent("fall", ["DTSTART:20261101T090000", "DTEND:20261101T170000", "SUMMARY:Fall"]))
+          expect(events_for(fall).first).to include(start: "2026-11-01T09:00:00", end: "2026-11-01T17:00:00")
+        end
+
+        it "keeps a floating recurring series, its exceptions and its end in Toronto wall-clock time" do
+          body = ics(vevent("series", ["DTSTART:20261030T090000", "DTEND:20261030T100000", "SUMMARY:Weekly",
+                                       "RRULE:FREQ=WEEKLY;UNTIL=20261231T235959", "EXDATE:20261106T090000"]))
+          event = events_for(body).first
+          expect(event[:start]).to eq("2026-10-30T09:00:00")
+          expect(event[:rrule]).to eq("DTSTART:20261030T090000\nRRULE:FREQ=WEEKLY;UNTIL=20270101T045959Z\nEXDATE:20261106T090000")
+          expect(event[:duration]).to eq(3_600_000)
+        end
+
         it "leaves timed events on their own instant" do
           body = ics(vevent("timed", ["DTSTART:20261030T150000Z", "DTEND:20261030T160000Z", "SUMMARY:Open"]))
           expect(events_for(body).first).to include(allDay: false, start: "2026-10-30T11:00:00", end: "2026-10-30T12:00:00")
