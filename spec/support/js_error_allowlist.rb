@@ -43,7 +43,7 @@ module JsErrorCheck
     { id: "js-error-10", path: %r{/badges/\d+}, message: /Error: <svg> attribute (width|height): Unexpected end of attribute/ },
     # the admin calendar script requests its JSON endpoints with an
     # empty id (404) and then fails to parse the HTML.
-    { id: "js-error-11", path: %r{/admin/(calendar|events)}, message: %r{/admin/(calendar/(utc_)?unavailabilities_json/|events/json/|calendar|calendar/imported_calendars_json/) .*(Failed to load resource: .* 404|Uncaught \(in promise\) SyntaxError)} },
+    { id: "js-error-11", path: %r{/admin/(calendar|events)}, message: %r{/admin/(calendar/unavailabilities_json/|events/json/|calendar|calendar/imported_calendars_json/) .*(Failed to load resource: .* 404|Uncaught \(in promise\) SyntaxError)} },
     # Opening the add-event modal asks for /admin/calendar/staff_json/:id,
     # which no route serves (404); the staff list is filled from another feed.
     { id: "js-error-staff-json", path: %r{/admin/calendar}, message: %r{/admin/calendar/staff_json/\d+ - Failed to load resource: .* 404} },

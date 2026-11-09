@@ -22,6 +22,32 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
   around { |ex| travel_to(Time.zone.local(2027, 3, 16, 12)) { ex.run } }
 
+  # The calendar view and the event modal read the same feed. On every page
+  # load the modal script asks for it first (the calendar view first waits for
+  # the events), so refusing the first request in the browser fails the modal
+  # only and the calendar still draws.
+  def fail_staff_availability_feed
+    @refuse_first_feed_script = page.driver.browser.execute_cdp(
+      "Page.addScriptToEvaluateOnNewDocument",
+      source: <<~JS
+        (() => {
+          const originalFetch = window.fetch;
+          let asked = 0;
+          window.fetch = (url, ...rest) =>
+            String(url).includes("/admin/calendar/unavailabilities_json/") && asked++ === 0
+              ? Promise.resolve(new Response(null, { status: 500 }))
+              : originalFetch(url, ...rest);
+        })();
+      JS
+    )["identifier"]
+  end
+
+  after do
+    next unless @refuse_first_feed_script
+
+    page.driver.browser.execute_cdp("Page.removeScriptToEvaluateOnNewDocument", identifier: @refuse_first_feed_script)
+  end
+
   def open_admin_calendar
     log_in_as(admin, to: admin_calendar_index_path, local_storage: { fullCalendarDefaultDateAdmin: CalendarJsHelpers::WEEK_MIDDAY })
     expect(page).to have_css("#calendar .fc-toolbar-title", text: "Mar 14 – 20, 2027")
@@ -84,7 +110,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
   end
 
   it "tells the admin and keeps Add Event disabled when the staff availability cannot be loaded", js: true, js_errors: :allow, skip_bullet: true do
-    allow_any_instance_of(Admin::CalendarController).to receive(:utc_unavailabilities_json) { |controller| controller.head :internal_server_error }
+    fail_staff_availability_feed
     log_in_as(admin, to: admin_calendar_index_path)
 
     expect(page).to have_css("#staff_load_error[role='alert']", text: "staff availability could not be loaded")
@@ -94,7 +120,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
   context "when the staff availability cannot be loaded" do
     before do
-      allow_any_instance_of(Admin::CalendarController).to receive(:utc_unavailabilities_json) { |controller| controller.head :internal_server_error }
+      fail_staff_availability_feed
       create(:event, space: space, title: "Open lab", event_type: "other", draft: false,
                      start_time: Time.utc(2027, 3, 16, 14), end_time: Time.utc(2027, 3, 16, 15))
       open_admin_calendar_without_ready_wait
@@ -372,13 +398,14 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     expect(Event.count).to eq(0)
   end
 
-  describe "staff unavailable at the chosen time" do
+  describe "staff unavailable at the chosen time", browser_zone: "America/Toronto" do
     let(:slot_start) { "2027-03-17T17:30" }
     let(:slot_end) { "2027-03-17T18:00" }
 
-    # The unavailability is placed around the slot as the browser reads it, so
-    # the examples hold in any browser time zone. The page is loaded first
-    # (the browser has to compute the instants) and loaded again afterwards.
+    # The feed gives Toronto wall-clock times and the modal reads its fields in
+    # the browser's zone, so these examples run with a Toronto browser. The page
+    # is loaded first (the browser has to compute the instants) and loaded again
+    # afterwards.
     def unavailability_around_slot(rule_for: nil)
       log_in_as(admin, to: root_path)
       from = browser_utc(slot_start) - 1.hour
@@ -443,14 +470,13 @@ RSpec.describe "Admin calendar: creating events", type: :system do
       expect(staff_options.last).to include("(Unavailable")
     end
 
-    # Two repeating rules are compared only over the four weeks after today, so a
-    # slot further ahead than that (this one is in March 2027) is never marked.
-    it "does not mark a staff member when two repeating rules only meet more than four weeks from today", js: true, skip_bullet: true do
+    # Two repeating rules are compared over the four weeks after the slot.
+    it "marks a staff member when two repeating rules meet within four weeks of the slot", js: true, skip_bullet: true do
       unavailability_around_slot(rule_for: "FREQ=WEEKLY;BYDAY=<day>")
       start_modal_with_slot
       select "Daily", from: "recurrence_frequency"
 
-      expect(staff_options.join).not_to include("Unavailable")
+      expect(staff_options.last).to include("(Unavailable")
     end
   end
 end

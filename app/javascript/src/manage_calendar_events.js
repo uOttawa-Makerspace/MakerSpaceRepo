@@ -1,12 +1,21 @@
 import { Collapse } from "bootstrap";
-import { RRule, RRuleSet, rrulestr, datetime } from "rrule";
+import { RRule } from "rrule";
 import TomSelect from "tom-select";
 
 import { onPageLoad } from "./on_page";
 import {
+  entryIntervals,
+  occurrencesOverlapping,
+  startingAt,
+  wallFromString,
+  wallToInstant,
+} from "./recurrence";
+import {
   parseLocalDatetimeString,
   toLocalDatetimeString,
 } from "./calendar_helper";
+
+const FOUR_WEEKS_MS = 28 * 24 * 60 * 60 * 1000;
 
 function showStaffLoadError() {
   document.getElementById("staff_load_error").classList.remove("d-none");
@@ -62,7 +71,7 @@ onPageLoad("#eventModal", async () => {
   let fetchedStaffUnavailabilitiesRes = null;
   try {
     fetchedStaffUnavailabilitiesRes = await fetch(
-      "/admin/calendar/utc_unavailabilities_json/" +
+      "/admin/calendar/unavailabilities_json/" +
         document.getElementById("space_id").value,
     );
   } catch (error) {
@@ -141,94 +150,38 @@ onPageLoad("#eventModal", async () => {
     }
   }
 
-  function isUnavailableDuring(unavailabilities) {
-    const eventStart = parseLocalDatetimeString(startTimeField.value);
-    const eventEnd = parseLocalDatetimeString(endTimeField.value);
-    const eventRule = ruleField.value ? rrulestr(ruleField.value) : null;
+  // The event's own occurrences over the next four weeks (just itself when
+  // it does not repeat), as wall times read from the form fields.
+  function eventOccurrences() {
+    const start = wallFromString(startTimeField.value);
+    const end = wallFromString(endTimeField.value);
+    if (!(end > start)) return [];
+    if (!ruleField.value) return [{ start, end }];
+    return occurrencesOverlapping(
+      startingAt(ruleField.value, start),
+      end - start,
+      start,
+      start + FOUR_WEEKS_MS,
+    );
+  }
 
-    const conflicts = [];
-
-    for (const unavail of unavailabilities) {
-      const start = parseLocalDatetimeString(unavail.start);
-      // if duration present, use it (rrule present), else calculate it
-      const duration =
-        typeof unavail.duration === "number"
-          ? unavail.duration
-          : parseLocalDatetimeString(unavail.end) - start;
-      const end = parseLocalDatetimeString(start.getTime() + duration);
-
-      // Recurring event vs recurring unavailability
-      if (unavail.rrule) {
-        try {
-          const unavailRule = rrulestr(unavail.rrule);
-
-          if (eventRule) {
-            const eventDuration = eventEnd - eventStart;
-            const windowStart = new Date(Math.min(start, eventStart));
-            // check for 4 weeks
-            const windowEnd = new Date(
-              Date.now() + 4 * 7 * 24 * 60 * 60 * 1000,
-            );
-
-            const eventOccurrences = eventRule
-              .between(windowStart, windowEnd)
-              .map((occStart) => ({
-                start: occStart,
-                end: new Date(occStart.getTime() + eventDuration),
-              }));
-
-            const unavailOccurrences = unavailRule
-              .between(windowStart, windowEnd)
-              .map((occStart) => ({
-                start: occStart,
-                end: new Date(occStart.getTime() + duration),
-              }));
-
-            // for each occurrence of the event, check each unavailability occurence
-            for (const ev of eventOccurrences) {
-              for (const ua of unavailOccurrences) {
-                if (ev.start < ua.end && ev.end > ua.start) {
-                  conflicts.push(ev.start);
-                }
-              }
-            }
-          } else {
-            // One-time event vs recurring unavailability
-            const unavailOccurrences = unavailRule.between(
-              parseLocalDatetimeString(eventStart.getTime() - duration),
-              parseLocalDatetimeString(eventEnd.getTime() + duration),
-              true,
-            );
-
-            // FIXME: returning the day before for some reason on events with UTC time a different day than local
-            // This debug log slows down busy calendars a lot.
-            // console.log(unavail, "#3", unavailRule, unavailRule.all());
-
-            for (const uaStart of unavailOccurrences) {
-              const uaEnd = parseLocalDatetimeString(
-                uaStart.getTime() + duration,
-              );
-              if (eventStart < uaEnd && eventEnd > uaStart) {
-                conflicts.push(eventStart);
-              }
-            }
-          }
-        } catch (e) {
-          console.warn("Invalid RRULE:", e);
-        }
-      } else {
-        // Recurring event vs one-time unavailability
-        if (eventRule) {
-          const overlapping = eventRule.between(start, end);
-          conflicts.push(...overlapping);
-          // One-time event vs one-time unavailability
-        } else if (start < eventEnd && end > eventStart) {
-          conflicts.push(eventStart);
-        }
-      }
-    }
-
-    return conflicts.sort((a, b) => a - b);
+  // Start times (instants) of the event occurrences that fall inside one of
+  // the given unavailabilities. Each unavailability is expanded once over the
+  // whole span of the event's occurrences.
+  function isUnavailableDuring(occurrences, unavailabilities) {
+    if (occurrences.length === 0) return [];
+    const from = occurrences[0].start;
+    const to = occurrences[occurrences.length - 1].end;
+    const busy = unavailabilities.flatMap((entry) =>
+      entryIntervals(entry, from, to),
+    );
+    return occurrences
+      .filter((occurrence) =>
+        busy.some(
+          (slot) => slot.start < occurrence.end && slot.end > occurrence.start,
+        ),
+      )
+      .map((occurrence) => new Date(wallToInstant(occurrence.start)));
   }
 
   function refreshTomSelect() {
@@ -266,8 +219,12 @@ onPageLoad("#eventModal", async () => {
       return;
     }
 
+    const occurrences = eventOccurrences();
     const staffWithAvailability = fetchedStaffUnavailabilities.map((staff) => {
-      const unavailableDates = isUnavailableDuring(staff.unavailabilities);
+      const unavailableDates = isUnavailableDuring(
+        occurrences,
+        staff.unavailabilities,
+      );
       return { ...staff, unavailableDates };
     });
 
