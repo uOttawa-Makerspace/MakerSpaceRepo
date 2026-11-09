@@ -149,7 +149,7 @@ class ProjectProposalsController < SessionsController
 
     respond_to do |format|
       if !signed_in? && !verify_turnstile
-        flash[:alert] = 'Captcha error, please try again'
+        flash.now[:alert] = 'Captcha error, please try again'
         format.html { render :new, status: :unprocessable_content }
       elsif @project_proposal.save
         begin
@@ -179,7 +179,7 @@ class ProjectProposalsController < SessionsController
           MsrMailer.send_new_project_proposals.deliver_now
         end
       else
-        flash[:alert] = 'An error occurred while creating the project proposal, try again later.'
+        flash.now[:alert] = 'An error occurred while creating the project proposal, try again later.'
         format.html { render :new, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content
@@ -285,7 +285,7 @@ class ProjectProposalsController < SessionsController
                  }
         end
       else
-        flash[:alert] = @refused_files_alert || 'An error occurred while updating the project proposal, try again later.'
+        flash.now[:alert] = @refused_files_alert || 'An error occurred while updating the project proposal, try again later.'
         format.html { render :edit, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content

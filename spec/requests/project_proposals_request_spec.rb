@@ -405,6 +405,22 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
+    it "shows the creation error only on the page that re-renders new" do
+      post project_proposals_path, params: proposal_params(title: "", project_cost: -1)
+      expect(response.body).to include("An error occurred while creating the project proposal")
+      get new_project_proposal_path
+      expect(response.body).not_to include("An error occurred while creating")
+    end
+
+    it "shows the captcha error only on the page that re-renders new" do
+      allow_any_instance_of(ProjectProposalsController).to receive(:verify_turnstile).and_return(false)
+      post project_proposals_path, params: proposal_params
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Captcha error, please try again")
+      get new_project_proposal_path
+      expect(response.body).not_to include("Captcha error")
+    end
+
     it "JSON validation errors are keyed by attribute" do
       post project_proposals_path(format: :json), params: proposal_params(title: "")
       expect(response).to have_http_status(:unprocessable_content)
@@ -731,6 +747,23 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(photo_names).to eq(["drop.png"])
       expect(pending.title).to eq("Pending One")
       expect(pending.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "shows the refusal message only on the page that refuses the edit" do
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("An error occurred while updating the project proposal")
+      get edit_project_proposal_path(pending.id)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("An error occurred while updating")
+    end
+
+    it "shows the refused files message only on the page that refuses the edit" do
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed" }, files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response.body).to include("The edit was not saved because the type or size")
+      get edit_project_proposal_path(pending.id)
+      expect(response.body).not_to include("The edit was not saved")
     end
 
     it "shows the typed title on the form when a new photo is unreadable, without saving it" do
