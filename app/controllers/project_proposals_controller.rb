@@ -272,9 +272,7 @@ class ProjectProposalsController < SessionsController
         format.html do
           redirect_to project_proposal_path(@project_proposal.slug),
                       notice:
-                        if @project_files_failed
-                          nil
-                        elsif needs_re_review
+                        if needs_re_review
                           'Project proposal was updated. It is pending again and needs to be re-approved by an admin before it is listed publicly.'
                         else
                           'Project proposal was successfully updated.'
@@ -287,7 +285,7 @@ class ProjectProposalsController < SessionsController
                  }
         end
       else
-        flash[:alert] = 'An error occurred while updating the project proposal, try again later.'
+        flash[:alert] = @refused_files_alert || 'An error occurred while updating the project proposal, try again later.'
         format.html { render :edit, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content
@@ -453,9 +451,34 @@ class ProjectProposalsController < SessionsController
     Array(uploads_param(:images)).each { |img| @project_proposal.photos.attach(img) }
   end
 
+  def uploaded_files
+    Array(uploads_param(:files)).select { |f| f.respond_to?(:original_filename) }
+  end
+
+  # New files are checked with the model's rules (sniffed type and size) before anything is
+  # saved or removed. If any is refused, the whole edit is refused and the files are named.
+  def new_files_acceptable?
+    refused = uploaded_files.reject { |f| @project_proposal.sniffed_upload_problems(:project_files, f).empty? }
+    return true if refused.empty?
+
+    @refused_files_alert =
+      "The edit was not saved because the type or size of these files is not allowed: #{truncated_filenames(refused.map(&:original_filename))}."
+    @project_proposal.errors.add(:project_files, @refused_files_alert)
+    false
+  end
+
+  # Both checks always run, so every problem is reported.
+  def new_uploads_acceptable?
+    photos_ok = new_photos_readable?
+    files_ok = new_files_acceptable?
+    photos_ok && files_ok
+  end
+
   def attach_new_files
-    files = uploads_param(:files)
-    attach_project_files(files) if files.present?
+    files = uploaded_files
+    return if files.empty? || @project_proposal.project_files.attach(*files)
+
+    raise ActiveRecord::RecordInvalid, @project_proposal
   end
 
   MAX_FLASH_FILENAMES = 5
@@ -535,7 +558,7 @@ class ProjectProposalsController < SessionsController
   # the user asked to remove purged. A purge deletes the stored file and cannot be rolled back, so
   # it runs last (synchronously, so the page shows the result).
   def apply_edit(attributes)
-    return refuse_unreadable_photos(attributes) unless new_photos_readable?
+    return refuse_edit(attributes) unless new_uploads_acceptable?
 
     removals = marked_attachments
     saved = ProjectProposal.transaction do
@@ -550,8 +573,9 @@ class ProjectProposalsController < SessionsController
     saved
   end
 
-  # A refused edit shows the submitted values in the form, as a failed validation does; nothing is saved.
-  def refuse_unreadable_photos(attributes)
+  # A refused edit shows the submitted values in the form, as a failed validation does; nothing is saved
+  # or removed.
+  def refuse_edit(attributes)
     @project_proposal.assign_attributes(attributes)
     false
   end

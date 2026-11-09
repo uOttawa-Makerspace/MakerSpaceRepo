@@ -480,21 +480,25 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "PATCH update" do
-    it "update with a refused file gives no success notice" do
+    it "refuses an update with a refused file, names it in the alert and gives no success notice" do
       content_login!(owner)
       files = [content_named_upload("run.exe", type: "application/x-msdownload")]
       patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Pending One" }, files: files }
+      expect(response).to have_http_status(:unprocessable_content)
       expect(flash[:notice]).to be_blank
       expect(flash[:alert]).to include("run.exe")
+      expect(pending.reload.project_files).not_to be_attached
     end
 
-    it "keeps the good files after a refused one on update and reports the refused name" do
+    it "attaches none of the files and saves nothing when one new file is refused and one is good" do
       content_login!(owner)
-      mine = pending
       files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("ok.txt", content: "tiny")]
-      patch project_proposal_path(mine.slug), params: { project_proposal: { title: "Pending One" }, files: files }
-      expect(mine.reload.project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, files: files }
+      expect(response).to have_http_status(:unprocessable_content)
       expect(flash[:alert]).to include("run.exe")
+      expect(flash[:alert]).not_to include("ok.txt")
+      expect(pending.reload.project_files).not_to be_attached
+      expect(pending.title).to eq("Pending One")
     end
 
     it "does not let a guest rewrite a proposal" do
@@ -707,6 +711,49 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("Typed Description")
       expect(pending.reload.description).not_to eq("Typed Description")
+    end
+
+    it "keeps the file marked for removal and shows the typed title when a new file is refused" do
+      pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Typed Title" }, deletefiles: ["drop.txt"],
+                      files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Typed Title")
+      expect(file_names).to eq(["drop.txt"])
+      expect(pending.title).to eq("Pending One")
+    end
+
+    it "keeps the photo marked for removal when a new file is refused" do
+      attach_png(pending, "drop.png")
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed" }, deleteimages: ["drop.png"], images: [content_png_upload],
+                      files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(photo_names).to eq(["drop.png"])
+    end
+
+    it "answers a refused file edit with the errors as JSON" do
+      patch project_proposal_path(pending.id, format: :json),
+            params: { project_proposal: { title: "Changed" }, files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["project_files"].join).to include("run.exe")
+    end
+
+    it "caps the refused names in the alert" do
+      files = Array.new(12) { |i| content_named_upload("#{'x' * 200}#{i}.exe", type: "application/x-msdownload") }
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, files: files }
+      expect(flash[:alert].length).to be < 400
+      expect(flash[:alert]).to include("and 7 more")
+    end
+
+    it "refuses the edit and saves nothing when the model rejects a file the pre-check let through" do
+      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems).and_return([])
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed" }, files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(pending.reload.title).to eq("Pending One")
+      expect(pending.project_files).not_to be_attached
     end
 
     it "answers a refused photo edit with the errors as JSON" do
