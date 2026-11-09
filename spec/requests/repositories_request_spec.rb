@@ -593,15 +593,52 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.equipments).to be_empty
     end
 
-    it "destroys categories and equipment BEFORE validating: an invalid update still wipes them" do
+    it "keeps categories and equipment when the update is refused" do
+      Category.create!(name: "Old", repository_id: repo.id)
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug),
+            params: { repository: { title: "", categories: %w[New], equipments: %w[Printer] } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("Unable to apply the changes.")
+      expect(repo.reload.categories.pluck(:name)).to eq(["Old"])
+      expect(repo.equipments.pluck(:name)).to eq(["Laser Cutter"])
+      expect(repo.title).to eq("Laser Lamp")
+    end
+
+    it "keeps categories and equipment when the update is refused with none submitted" do
       Category.create!(name: "Old", repository_id: repo.id)
       content_login!(owner)
       patch repository_path(owner.username, repo.slug), params: { repository: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Unable to apply the changes.")
-      # update_destroys categories/equipments before the update is validated
-      expect(repo.reload.categories).to be_empty
-      expect(repo.title).to eq("Laser Lamp")
+      expect(repo.reload.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "sets categories and equipment as submitted on a valid update" do
+      Category.create!(name: "Old", repository_id: repo.id)
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug),
+            params: update_params.deep_merge(repository: { categories: %w[New Newer], equipments: %w[Printer] })
+      expect(response).to redirect_to("/#{owner.username}/#{repo.reload.slug}")
+      expect(repo.categories.pluck(:name)).to match_array(%w[New Newer])
+      expect(repo.equipments.pluck(:name)).to eq(["Printer"])
+    end
+
+    it "keeps the stored password when a refused update sends a new one" do
+      secret = create(:repository, :private, owner: owner, title: "Sec", users: [owner])
+      stored = secret.password
+      content_login!(owner)
+      patch repository_path(owner.username, secret.slug), params: { password: ["changed"], repository: { title: "", share_type: "private" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(secret.reload.password).to eq(stored)
+    end
+
+    it "keeps categories and equipment for a stranger's refused update" do
+      Category.create!(name: "Old", repository_id: repo.id)
+      content_login!(stranger)
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { categories: %w[New] })
+      expect(repo.reload.categories.pluck(:name)).to eq(["Old"])
     end
 
     it "switching to public clears the password" do
