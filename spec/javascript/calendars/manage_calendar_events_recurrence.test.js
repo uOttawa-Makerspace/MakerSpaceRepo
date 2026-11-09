@@ -41,8 +41,6 @@ await import("../../../app/javascript/src/manage_calendar_events.js");
 
 const $ = (id) => document.getElementById(id);
 const fire = (el, type, init) => el.dispatchEvent(new Event(type, init));
-const iso = (local) => new Date(local).toISOString();
-const rruleStart = (local) => iso(local).replace(/[-:]|\.\d+/g, "");
 
 async function load(feed) {
   vi.stubGlobal(
@@ -190,12 +188,15 @@ describe("repeat options", () => {
 });
 
 describe("repeating event against repeating unavailability", () => {
+  // The feed gives Toronto wall-clock times: a start with no zone and a rule
+  // whose DTSTART has no Z, as Admin::CalendarController#unavailabilities_json
+  // writes them.
   const feed = ada([
     {
-      start: iso("2027-03-17T10:00"),
-      end: iso("2027-03-17T11:00"),
+      start: "2027-03-17T10:00:00",
+      end: "2027-03-17T11:00:00",
       duration: 3600000,
-      rrule: `DTSTART:${rruleStart("2027-03-17T10:00")}\nRRULE:FREQ=DAILY;COUNT=10`,
+      rrule: "DTSTART:20270317T100000\nRRULE:FREQ=DAILY;COUNT=10",
     },
   ]);
 
