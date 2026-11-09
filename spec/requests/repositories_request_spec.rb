@@ -57,6 +57,19 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(JSON.parse(CGI.unescape(response.cookies["recently_viewed"])).keys.size).to eq(2)
     end
 
+    it "starts the recently_viewed cookie afresh when it holds JSON that is not a list of links" do
+      cookies[:recently_viewed] = "[1, 2]"
+      get repo_path
+      expect(JSON.parse(CGI.unescape(response.cookies["recently_viewed"]))).to eq({ "/#{owner.username}/#{repo.id}" => "Laser Lamp" })
+    end
+
+    it "shows the like button as liked to a user who has liked the repository" do
+      Like.create!(repository: repo, user: stranger)
+      content_login!(stranger)
+      get repo_path
+      expect(Nokogiri::HTML(response.body).at_css("span.like.liked")).to be_present
+    end
+
     it "does not count as a view anywhere (no counters on the model)" do
       expect { get repo_path }.not_to change { repo.reload.attributes }
     end
@@ -351,6 +364,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "renders the new form for a given project proposal with the proposal fixed and no proposal list" do
+      proposal = create(:project_proposal, :approved)
+      content_login!(stranger)
+      get new_repository_path(stranger.username, project_proposal_id: proposal.id)
+      expect(response).to have_http_status(:ok)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='repository[project_proposal_id]']")["value"]).to eq(proposal.id.to_s)
+      expect(page.at_css("select[name='repository[project_proposal_id]']")).to be_nil
+    end
+
     it "creates a repository owned by the current user (ignores the URL username), +25 reputation" do
       content_login!(stranger)
       expect do
@@ -588,6 +611,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(page.at_css("input[type='hidden'][name='repository[categories][]'][value='']")).to be_present
     end
 
+    it "renders the edit form for a given project proposal with the proposal fixed and no proposal list" do
+      proposal = create(:project_proposal, :approved)
+      content_login!(owner)
+      get edit_repository_path(owner.username, repo.slug, project_proposal_id: proposal.id)
+      expect(response).to have_http_status(:ok)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='repository[project_proposal_id]']")["value"]).to eq(proposal.id.to_s)
+      expect(page.at_css("select[name='repository[project_proposal_id]']")).to be_nil
+    end
+
     it "always sends the equipment field, so clearing all equipment is submitted" do
       content_login!(owner)
       get edit_repository_path(owner.username, repo.slug)
@@ -759,6 +792,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { equipments: "Printer" })
       expect(repo.reload.title).to eq("Renamed")
       expect(repo.equipments.pluck(:name)).to eq(["Laser Cutter"])
+    end
+
+    it "shows a refused edit for a given project proposal again with the proposal fixed" do
+      proposal = create(:project_proposal, :approved)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: { project_proposal_id: proposal.id, repository: { title: "" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='repository[project_proposal_id]']")["value"]).to eq(proposal.id.to_s)
+      expect(repo.reload.title).to eq("Laser Lamp")
     end
 
     it "keeps the stored password when a refused update sends a new one" do
