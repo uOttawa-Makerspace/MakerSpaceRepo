@@ -508,6 +508,11 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(ProjectProposal.find_by(title: "New Idea").categories.pluck(:name)).to match_array(%w[a b c d e])
     end
 
+    it "creates no category from the empty value the form sends with no selection" do
+      post project_proposals_path, params: proposal_params(categories: ["", "a"])
+      expect(ProjectProposal.find_by(title: "New Idea").categories.pluck(:name)).to eq(["a"])
+    end
+
     # ProjectProposal validates project_files (sniffed type + size) in the model
     it "attaches up to 5 images and any number of allowed files, but not an executable" do
       files = [content_pdf_upload, content_named_upload("run.exe", type: "application/x-msdownload"),
@@ -758,6 +763,14 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(pending.reload.categories).to be_empty
     end
 
+    it "clears the categories when the form sends an empty selection" do
+      content_login!(owner)
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Fine", categories: [""] } }
+      expect(response).to redirect_to(project_proposal_path(pending.reload))
+      expect(pending.categories).to be_empty
+    end
+
     it "re-slugs to '<id>.<title>' on update" do
       content_login!(owner)
       patch project_proposal_path(pending), params: { project_proposal: { title: "Zed Title" } }
@@ -991,7 +1004,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "rolls the edit back when a category cannot be stored" do
       Category.create!(name: "Old", project_proposal_id: pending.id)
-      allow(Category).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
+      allow_any_instance_of(Category).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
       patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed", categories: %w[New] } }
       expect(response).to have_http_status(:unprocessable_content)
       expect(pending.reload.title).to eq("Pending One")

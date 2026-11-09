@@ -158,7 +158,7 @@ class ProjectProposalsController < SessionsController
           format.html { redirect_back fallback_location: request.path }
         else
           create_files
-          create_categories
+          @project_proposal.replace_categories(project_proposal_params[:categories])
           @project_proposal.save
           format.html do
             redirect_to project_proposal_path(@project_proposal),
@@ -582,9 +582,8 @@ class ProjectProposalsController < SessionsController
 
     removals = marked_attachments
     saved = ProjectProposal.transaction do
-      next false unless @project_proposal.update(attributes)
+      next false unless @project_proposal.update_with_categories(attributes, project_proposal_params[:categories])
 
-      replace_categories
       attach_new_photos
       raise ActiveRecord::Rollback unless attach_new_files
 
@@ -603,19 +602,6 @@ class ProjectProposalsController < SessionsController
     @project_proposal.reload
     @project_proposal.assign_attributes(attributes)
     false
-  end
-
-  def replace_categories
-    @project_proposal.categories.destroy_all
-    create_categories
-  end
-
-  def create_categories
-    return unless params.dig(:project_proposal, 'categories').present?
-
-    params[:project_proposal]['categories'].first(5).each do |c|
-      Category.create!(name: c, project_proposal_id: @project_proposal.id)
-    end
   end
 
   def project_join_params

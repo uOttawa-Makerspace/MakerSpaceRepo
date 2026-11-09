@@ -2,6 +2,7 @@
 
 class Repository < ApplicationRecord
   include BCrypt
+  include Categorizable
   require 'bcrypt'
 
   # There's two ways to reach a user, one is the user that created the repo
@@ -26,7 +27,6 @@ class Repository < ApplicationRecord
   accepts_nested_attributes_for :repo_files, allow_destroy: true
   validates_associated :repo_files
 
-  has_many :categories, dependent: :destroy
   has_many :equipments, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy

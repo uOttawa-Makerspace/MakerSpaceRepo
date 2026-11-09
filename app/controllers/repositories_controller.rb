@@ -151,7 +151,7 @@ class RepositoriesController < SessionsController
         @repository.save
       end
       
-      create_categories
+      @repository.replace_categories(repository_params[:categories])
       create_equipments
       redirect_to repository_path(@user.username, @repository.slug).to_s
     else
@@ -458,15 +458,6 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def create_categories
-    if params[:repository][:categories].present?
-      params[:repository][:categories]
-        .filter(&:present?)
-        .first(5)
-        .each { |c| Category.create(name: c, repository_id: @repository.id) }
-    end
-  end
-
   def create_equipments
     return if params[:repository][:equipments].blank?
     
@@ -484,11 +475,10 @@ class RepositoriesController < SessionsController
   # same transaction, so a refused edit leaves them as they were.
   def save_with_categories_and_equipments
     Repository.transaction do
-      next false unless @repository.update(repository_params.except(:categories, :equipments).merge(password_attributes))
+      attributes = repository_params.except(:categories, :equipments).merge(password_attributes)
+      next false unless @repository.update_with_categories(attributes, repository_params[:categories])
 
-      @repository.categories.destroy_all
       @repository.equipments.destroy_all
-      create_categories
       create_equipments
       true
     end

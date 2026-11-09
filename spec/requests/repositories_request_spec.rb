@@ -515,6 +515,13 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "always sends the category field, so clearing every category is submitted" do
+      content_login!(owner)
+      get edit_repository_path(owner.username, repo.slug)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='repository[categories][]'][value='']")).to be_present
+    end
+
     it "bounces staff (staff can view private repos but not edit)" do
       content_sign_in_as(:staff)
       get edit_repository_path(owner.username, repo.slug)
@@ -623,6 +630,21 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to("/#{owner.username}/#{repo.reload.slug}")
       expect(repo.categories.pluck(:name)).to match_array(%w[New Newer])
       expect(repo.equipments.pluck(:name)).to eq(["Printer"])
+    end
+
+    it "clears the categories when the form sends an empty selection" do
+      Category.create!(name: "Old", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { categories: [""] })
+      expect(repo.reload.categories).to be_empty
+    end
+
+    it "clears the categories when a valid update does not send the field" do
+      Category.create!(name: "Old", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params
+      expect(repo.reload.title).to eq("Renamed")
+      expect(repo.categories).to be_empty
     end
 
     it "keeps the stored password when a refused update sends a new one" do
