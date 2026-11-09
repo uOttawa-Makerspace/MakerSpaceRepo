@@ -898,6 +898,10 @@ class ReportGenerator
 
   def self.generate_peak_hours_report(start_date, end_date)
     ls = LabSession.arel_table
+    # One row per day from the From date to the To date; the visits counted are
+    # those of these whole days in the application time zone, so every hour
+    # column comes from a visit on one of the rows.
+    days = start_date.to_date..end_date.to_date
 
     result =
       ActiveRecord::Base.connection.exec_query(
@@ -910,7 +914,11 @@ class ReportGenerator
             Arel.star.count.as("total_visits")
           )
           .from(ls)
-          .where(ls["sign_in_time"].between(start_date..end_date))
+          .where(
+            ls["sign_in_time"].between(
+              days.begin.beginning_of_day..days.end.end_of_day
+            )
+          )
           .group("year", "month", "day", "hour")
           .to_sql
       )
@@ -946,7 +954,7 @@ class ReportGenerator
 
       table_header(sheet, header)
 
-      (start_date.to_date..end_date.to_date).each do |date|
+      days.each do |date|
         row = [date.strftime("%Y-%m-%d")]
 
         hour_columns.each { |hour| row << visits_by_hour[[date, hour]] }

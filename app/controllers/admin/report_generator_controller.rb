@@ -88,28 +88,28 @@ class Admin::ReportGeneratorController < AdminAreaController
 
       case term
       when 'winter'
-        start_date = DateTime.new(year, 1, 1).beginning_of_day
-        end_date = DateTime.new(year, 4, 30).end_of_day
+        start_date = Date.new(year, 1, 1)
+        end_date = Date.new(year, 4, 30)
       when 'summer'
-        start_date = DateTime.new(year, 5, 1).beginning_of_day
-        end_date = DateTime.new(year, 8, 31).end_of_day
+        start_date = Date.new(year, 5, 1)
+        end_date = Date.new(year, 8, 31)
       when 'fall'
-        start_date = DateTime.new(year, 9, 1).beginning_of_day
-        end_date = DateTime.new(year, 12, 31).end_of_day
+        start_date = Date.new(year, 9, 1)
+        end_date = Date.new(year, 12, 31)
       else
         render plain: 'Invalid term', status: :bad_request
         return
       end
     when 'date_range'
       begin
-        start_date = Date.parse(params[:from_date]).to_datetime.beginning_of_day
+        start_date = Date.parse(params[:from_date])
       rescue Date::Error, TypeError
         render plain: 'Failed to parse start date', status: :bad_request
         return
       end
 
       begin
-        end_date = Date.parse(params[:to_date]).to_datetime.end_of_day
+        end_date = Date.parse(params[:to_date])
       rescue Date::Error, TypeError
         render plain: 'Failed to parse end date', status: :bad_request
         return
@@ -138,7 +138,8 @@ class Admin::ReportGeneratorController < AdminAreaController
       return
     end
 
-    # reload page but with GET params
+    # reload page but with GET params: the picked days, which the index and
+    # the spreadsheet both read as whole days in the application time zone
     # the index template renders parameters if present
     redirect_to admin_report_generator_index_path(
                   start_date: start_date,
@@ -153,20 +154,13 @@ class Admin::ReportGeneratorController < AdminAreaController
   end
 
   def generate_spreadsheet
-    start_date =
-      (
-        if params[:start_date].nil?
-          DateTime.new(2015, 06, 01).beginning_of_day
-        else
-          Date.parse(params[:start_date]).to_datetime
-        end
-      )
+    start_date = Date.parse(params[:start_date] || '2015-06-01').beginning_of_day
     end_date =
       (
         if params[:end_date].nil?
           Time.current
         else
-          Date.parse(params[:end_date]).to_datetime
+          Date.parse(params[:end_date]).end_of_day
         end
       )
     type = params[:type]
@@ -215,20 +209,25 @@ class Admin::ReportGeneratorController < AdminAreaController
   # Each function below corresponds to a report type
   # We collect the data in the controller
 
+  # Without picked days the report covers all time.
   def set_date_specified
     @date_specified = params[:start_date].present? && params[:end_date].present?
+    @report_window = @date_specified ? picked_days : (nil..nil)
+  end
+
+  # The picked From and To days, each covering the whole day in the
+  # application time zone.
+  def picked_days
+    first_day = Date.parse(params[:start_date])
+    last_day = Date.parse(params[:end_date])
+    first_day.beginning_of_day..last_day.end_of_day
   end
 
   def new_users
     @users =
       (
         if @date_specified
-          # params gives everything as space
-          # passing this as a string CHANGES the result
-          ReportGenerator.get_new_users(
-            params[:start_date].to_date,
-            params[:end_date].to_date
-          )
+          ReportGenerator.get_new_users(@report_window.begin, @report_window.end)
         else
           User.including_deleted
         end
@@ -240,7 +239,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       (
         if @date_specified
           Certification.where(
-            created_at: params[:start_date]..params[:end_date]
+            created_at: @report_window
           )
         else
           Certification.all
@@ -311,7 +310,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       (
         if @date_specified
           TrainingSession.where(
-            created_at: params[:start_date]..params[:end_date]
+            created_at: @report_window
           )
         else
           TrainingSession.all
@@ -354,7 +353,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     @repos =
       (
         if @date_specified
-          Repository.where(created_at: params[:start_date]..params[:end_date])
+          Repository.where(created_at: @report_window)
         else
           Repository.all
         end
@@ -385,7 +384,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     @lab_sessions =
       (
         if @date_specified
-          LabSession.where(created_at: params[:start_date]..params[:end_date])
+          LabSession.where(created_at: @report_window)
         else
           LabSession.all
         end
@@ -399,7 +398,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       if @date_specified
         lab_session_count =
           lab_session_count.where(
-            created_at: params[:start_date]..params[:end_date]
+            created_at: @report_window
           )
       end
 
@@ -468,7 +467,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     lab_sessions =
       (
         if @date_specified
-          LabSession.where(created_at: params[:start_date]..params[:end_date])
+          LabSession.where(created_at: @report_window)
         else
           LabSession.all
         end
@@ -481,7 +480,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       sessions =
         if @date_specified
           space.lab_sessions.where(
-            created_at: params[:start_date]..params[:end_date]
+            created_at: @report_window
           )
         else
           space.lab_sessions
@@ -495,7 +494,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     @project_kits =
       (
         if @date_specified
-          ProjectKit.where(created_at: params[:start_date]..params[:end_date])
+          ProjectKit.where(created_at: @report_window)
         else
           ProjectKit.all
         end
@@ -518,7 +517,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       (
         if @date_specified
           TrainingSession.where(
-            created_at: params[:start_date]..params[:end_date]
+            created_at: @report_window
           )
         else
           TrainingSession.all
@@ -537,13 +536,13 @@ class Admin::ReportGeneratorController < AdminAreaController
     end
 
     if @date_specified
-      (params[:start_date].to_datetime..params[:end_date].to_datetime)
+      (@report_window.begin.to_date..@report_window.end.to_date)
         .select { |date| date.day == 1 }
         .map do |date|
           month_name = date.end_of_month.strftime('%B')
           certs =
             Certification.where(
-              created_at: date.beginning_of_month..date.end_of_month
+              created_at: date.in_time_zone.all_month
             )
           total_certs[month_name] += certs.count
           total_sessions[month_name] += certs
@@ -552,13 +551,13 @@ class Admin::ReportGeneratorController < AdminAreaController
             .count
         end
     else
-      (DateTime.new(2015, 06, 01).beginning_of_day..DateTime.now)
+      (Date.new(2015, 6, 1)..Date.current)
         .select { |date| date.day == 1 }
         .map do |date|
           month_name = date.end_of_month.strftime('%B')
           certs =
             Certification.where(
-              created_at: date.beginning_of_month..date.end_of_month
+              created_at: date.in_time_zone.all_month
             )
           total_certs[month_name] += certs.count
           total_sessions[month_name] += certs
@@ -594,7 +593,7 @@ class Admin::ReportGeneratorController < AdminAreaController
 
   def frequent_visitors
     @weekends =
-      (params[:start_date].to_datetime..params[:end_date].to_datetime)
+      (@report_window.begin.to_date..@report_window.end.to_date)
         .select { |day| day.saturday? || day.sunday? }
         .map(&:all_day)
 
@@ -607,8 +606,7 @@ class Admin::ReportGeneratorController < AdminAreaController
             .strict_loading
             .joins(:user)
             .where(
-              created_at:
-                params[:start_date].to_datetime..params[:end_date].to_datetime,
+              created_at: @report_window,
               space: space
             )
             .group(:user)

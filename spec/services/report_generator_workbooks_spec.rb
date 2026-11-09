@@ -560,6 +560,17 @@ RSpec.describe ReportGenerator do
         expect(rows[5..]).to eq([["2026-03-09"], ["2026-03-10"]])
       end
 
+      it "counts only the visits of the listed days in Toronto, so every hour column belongs to a listed day" do
+        # 01:00 UTC on the 10th is 21:00 on the 9th in Toronto, before the first
+        # listed day; 02:00 UTC on the 11th is 22:00 on the 10th
+        create(:lab_session, sign_in_time: Time.utc(2026, 3, 10, 1), created_at: march_10)
+        create(:lab_session, sign_in_time: march_10, created_at: march_10)
+        create(:lab_session, sign_in_time: Time.utc(2026, 3, 11, 2), created_at: march_10)
+        rows = grid(described_class.generate_peak_hours_report(DateTime.new(2026, 3, 10), DateTime.new(2026, 3, 10).end_of_day))["Sheet1"]
+        expect(rows[4]).to eq(["Date", *(11..22).map { |h| "%02i:00" % h }])
+        expect(rows[5..]).to eq([["2026-03-10", 1, *[0] * 10, 1]])
+      end
+
       it "adds up the visits of the hour that repeats when daylight saving time ends" do
         # 05:30 and 06:30 UTC on 2026-11-01 are both 01:30 in Toronto (EDT, then EST)
         create(:lab_session, sign_in_time: Time.utc(2026, 11, 1, 5, 30))
