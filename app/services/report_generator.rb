@@ -703,66 +703,28 @@ class ReportGenerator
 
           sheet.add_row #spacing
 
-          month_average = ["Month average of attendees per sessions"]
           month_header = ["Month"]
-
-          (start_date.to_datetime..end_date.to_datetime)
-            .select { |date| date.day == 1 }
-            .map do |date|
-              month_header << date.strftime("%B")
-              month_certifications =
-                space_certifications.select do |cert|
-                  cert.created_at.between?(
-                    date.beginning_of_month,
-                    date.end_of_month
-                  )
-                end
-              average =
-                if month_certifications.count.zero? ||
-                     month_certifications
-                       .pluck(:training_session_id)
-                       .uniq
-                       .count
-                       .zero?
-                  0
-                else
-                  month_certifications.count /
-                    month_certifications.pluck(:training_session_id).uniq.count
-                end
-              month_average << average
-            end
+          month_average = ["Month average of attendees per sessions"]
+          calendar_periods(start_date, end_date, :month).each do |month|
+            month_header << month.first.strftime("%B")
+            month_average << average_attendees_per_session(
+              space_certifications,
+              month
+            )
+          end
 
           table_header(sheet, month_header)
           sheet.add_row month_average
           sheet.add_row # spacing
 
-          week_average = ["Week average of attendees per sessions"]
           week_header = ["Week"]
-
-          (start_date.to_datetime.to_i..end_date.to_datetime.to_i).step(
-            1.week
-          ) do |date|
-            week_header << "#{Time.at(date).beginning_of_week.strftime("%Y-%m-%d")} to #{Time.at(date).end_of_week.strftime("%Y-%m-%d")}"
-            week_certifications =
-              space_certifications.select do |cert|
-                cert.created_at.between?(
-                  Time.at(date).beginning_of_week,
-                  Time.at(date).end_of_week
-                )
-              end
-            average =
-              if week_certifications.count.zero? ||
-                   week_certifications
-                     .pluck(:training_session_id)
-                     .uniq
-                     .count
-                     .zero?
-                0
-              else
-                week_certifications.count /
-                  week_certifications.pluck(:training_session_id).uniq.count
-              end
-            week_average << average
+          week_average = ["Week average of attendees per sessions"]
+          calendar_periods(start_date, end_date, :week).each do |week|
+            week_header << "#{week.first.strftime("%Y-%m-%d")} to #{week.last.strftime("%Y-%m-%d")}"
+            week_average << average_attendees_per_session(
+              space_certifications,
+              week
+            )
           end
 
           table_header(sheet, week_header)
@@ -1457,6 +1419,25 @@ class ReportGenerator
 
   def self.push_hash(sheet, hash)
     hash.each { |key, value| sheet.add_row [key, value] }
+  end
+
+  # The calendar months or weeks (unit :month or :week) that overlap the
+  # range, the partial ones at either end included, each as the range from
+  # its first to its last instant, in the offset the range is given in.
+  def self.calendar_periods(start_date, end_date, unit)
+    (start_date.to_datetime..end_date.to_datetime)
+      .map { |day| day.public_send(:"beginning_of_#{unit}") }
+      .uniq
+      .map { |first| first..first.public_send(:"end_of_#{unit}") }
+  end
+
+  # Certificates per session among the certificates created in the period,
+  # as a whole number (0 when there are none).
+  def self.average_attendees_per_session(certifications, period)
+    in_period =
+      certifications.select { |cert| period.cover?(cert.created_at) }
+    sessions = in_period.map(&:training_session_id).uniq.count
+    sessions.zero? ? 0 : in_period.count / sessions
   end
 
   # The faculty as the reports show it: Génie counts as Engineering and a
