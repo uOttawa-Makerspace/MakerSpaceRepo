@@ -271,6 +271,40 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
   end
 
+  describe "slug paths of an edited proposal" do
+    let(:edited) do
+      create(:project_proposal, user: owner, title: "Before").tap { |pp| pp.update!(title: "After Edit") }
+    end
+
+    before { content_login!(owner) }
+
+    it "has a slug with a dot after an edit" do
+      expect(edited.slug).to eq("#{edited.id}.after-edit")
+    end
+
+    it "shows the proposal at its slug path" do
+      get project_proposal_path(edited.slug)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("After Edit")
+    end
+
+    it "renders the edit form at its slug path" do
+      get edit_project_proposal_path(edited.slug)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "answers JSON at the slug path with a json extension" do
+      get project_proposal_path(edited.slug, format: :json)
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("application/json")
+    end
+
+    it "updates the proposal at its slug path" do
+      patch project_proposal_path(edited.slug), params: { project_proposal: { title: "Third Title" } }
+      expect(edited.reload.title).to eq("Third Title")
+    end
+  end
+
   describe "POST create" do
     it "lets a guest create a proposal" do
       expect { post project_proposals_path, params: proposal_params }.to change(ProjectProposal, :count).by(1)
@@ -765,6 +799,16 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
         expect(pending.reload.title).to eq("Pending One")
         expect(file_names).to eq(["drop.txt"])
         expect(pending.categories.pluck(:name)).to eq(["Old"])
+      end
+
+      it "links to the stored slug of the proposal, not one built from the typed title" do
+        pending.update!(title: "Stored Title")
+        stored_slug = pending.reload.slug
+        patch project_proposal_path(stored_slug), params: { project_proposal: { title: "Typed Title" }, files: [bad_file] }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(pending.reload.slug).to eq(stored_slug)
+        expect(response.body).to include(%(href="#{project_proposal_path(stored_slug)}"))
+        expect(response.body).not_to include("typed-title")
       end
 
       it "shows only the stored photos on the form when new photos came with the rejected file" do

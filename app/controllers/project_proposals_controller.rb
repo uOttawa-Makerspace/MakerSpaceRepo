@@ -583,9 +583,10 @@ class ProjectProposalsController < SessionsController
   end
 
   # A refused edit shows the submitted values in the form, as a failed validation does; nothing is saved
-  # or removed.
+  # or removed. The slug a rolled-back save set in memory is replaced by the stored one, so links keep working.
   def refuse_edit(attributes)
     discard_unsaved_attachments
+    @project_proposal.slug = ProjectProposal.where(id: @project_proposal.id).pick(:slug)
     @project_proposal.assign_attributes(attributes)
     false
   end
