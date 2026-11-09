@@ -154,11 +154,11 @@ describe("my calendar", () => {
       el,
       event: {
         title: "Shift",
-        extendedProps: { description: "Desk", background: "red" },
+        extendedProps: { description: "Desk", background: "#ff0000" },
       },
     });
     expect(el.classList.contains("fade-in")).toBe(true);
-    expect(el.getAttribute("style")).toContain("background: red");
+    expect(el.getAttribute("style")).toBe("background: #ff0000");
     expect(tooltips[0].options.title).toBe("Shift<br><i>Desk</i>");
   });
 
