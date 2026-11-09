@@ -700,7 +700,7 @@ class ReportGenerator
           month_header = ["Month"]
           month_average = ["Month average of attendees per sessions"]
           calendar_periods(start_date, end_date, :month).each do |month|
-            month_header << month.first.strftime("%B")
+            month_header << month.first.strftime("%B %Y")
             month_average << average_attendees_per_session(
               space_certifications,
               month

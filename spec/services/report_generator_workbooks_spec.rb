@@ -398,7 +398,7 @@ RSpec.describe ReportGenerator do
         ["012345678", "Lena Learner", "lena@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"],
         [nil, "Max Mate", "max@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"]
       )
-      expect(rows[8..9]).to eq([%w[Month March], ["Month average of attendees per sessions", 2]])
+      expect(rows[8..9]).to eq([["Month", "March 2026"], ["Month average of attendees per sessions", 2]])
       expect(rows[11]).to eq(
         ["Week", "2026-02-23 to 2026-03-01", "2026-03-02 to 2026-03-08", "2026-03-09 to 2026-03-15",
          "2026-03-16 to 2026-03-22", "2026-03-23 to 2026-03-29", "2026-03-30 to 2026-04-05"]
@@ -415,7 +415,7 @@ RSpec.describe ReportGenerator do
       package = described_class.generate_training_attendees_report(from, DateTime.new(2026, 4, 30))
       rows = grid(package)["Report - Alpha"]
       month = rows.index { |r| r.first == "Month" }
-      expect(rows[month]).to eq(%w[Month March April])
+      expect(rows[month]).to eq(["Month", "March 2026", "April 2026"])
       # 3 certificates over 2 sessions; April has none
       expect(rows[month + 1]).to eq(["Month average of attendees per sessions", 1.5, 0.0])
       expect(rows[month + 1].drop(1)).to all(be_a(Float))
@@ -437,16 +437,25 @@ RSpec.describe ReportGenerator do
       attend(create(:user), april, Time.utc(2026, 4, 10, 15))
       rows = grid(described_class.generate_training_attendees_report(DateTime.new(2026, 3, 5), DateTime.new(2026, 4, 20)))
       sheet = rows["Report - Alpha"]
-      month = sheet.index(%w[Month March April])
+      month = sheet.index(["Month", "March 2026", "April 2026"])
       expect(month).to be_present
       expect(sheet[month + 1]).to eq(["Month average of attendees per sessions", 1, 2])
+    end
+
+    it "names each month with its year, so a range over a year does not repeat a month name" do
+      session = create(:training_session, space: alpha, training: laser, created_at: Time.utc(2027, 1, 15, 15))
+      attend(lena, session, Time.utc(2027, 1, 15, 15))
+      sheet = grid(described_class.generate_training_attendees_report(DateTime.new(2026, 12, 1), DateTime.new(2027, 12, 31)))["Report - Alpha"]
+      month = sheet.index { |r| r.first == "Month" }
+      expect(sheet[month]).to eq(["Month", "December 2026", *Date::MONTHNAMES.drop(1).map { |m| "#{m} 2027" }])
+      expect(sheet[month + 1]).to eq(["Month average of attendees per sessions", 0.0, 1.0, *[0.0] * 11])
     end
 
     it "a range within one month has that month's column, and a column for every week it overlaps" do
       session = create(:training_session, space: alpha, training: laser, created_at: march_10)
       attend(lena, session, march_10)
       sheet = grid(described_class.generate_training_attendees_report(DateTime.new(2026, 3, 5), DateTime.new(2026, 3, 20)))["Report - Alpha"]
-      expect(sheet).to include(%w[Month March], ["Month average of attendees per sessions", 1])
+      expect(sheet).to include(["Month", "March 2026"], ["Month average of attendees per sessions", 1])
       expect(sheet).to include(
         ["Week", "2026-03-02 to 2026-03-08", "2026-03-09 to 2026-03-15", "2026-03-16 to 2026-03-22"],
         ["Week average of attendees per sessions", 0, 1, 0]
