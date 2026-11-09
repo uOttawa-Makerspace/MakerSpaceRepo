@@ -376,7 +376,7 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       content_login!(buyer)
       bad = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload", content: "MZ" * 100)
       put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x", files: [bad.signed_id] } }
-      expect(flash[:alert]).to eq("Something went wrong with updating the proficient project. Please check the allowed file types.")
+      expect(flash[:alert]).to start_with("#{I18n.t("errors.shop.projects.submit_invalid")} ")
       expect(oi.reload.status).to eq("In progress")
       good = direct_blob(filename: "ok.pdf", content_type: "application/pdf", content: "%PDF-1.4\n")
       put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x", files: [good.signed_id] } }
