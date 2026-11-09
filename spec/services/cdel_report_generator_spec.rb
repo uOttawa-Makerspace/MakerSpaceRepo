@@ -45,6 +45,17 @@ RSpec.describe CdelReportGenerator do
     expect(row[-2..]).to eq([nil, nil])
   end
 
+  it "reads Date arguments as whole days in Toronto and keeps a mailer's month window as given" do
+    # 21:00 on Feb 28 in Toronto is March 1 in UTC; 23:30 on March 31 is April 1
+    early = create(:user, :student, created_at: Time.zone.local(2026, 2, 28, 21))
+    late = create(:user, :student, created_at: Time.zone.local(2026, 3, 31, 23, 30))
+    names = ->(report) { CSV.parse(report[:data]).drop(1).map { |r| r[1] } }
+    expect(names.call(described_class.generate_new_users_report(from, to))).to eq([late.name])
+    month = Time.zone.local(2026, 3, 1)
+    expect(names.call(described_class.generate_new_users_report(month, month.end_of_month))).to eq([late.name])
+    expect(names.call(described_class.generate_new_users_report(from - 1, to))).to eq([early.name, late.name])
+  end
+
   it "new_users filename uses to_date, the others use the raw argument in the name" do
     expect(described_class.generate_new_users_report(from.to_datetime, to.to_datetime)[:filename])
       .to eq("CEED_new_users_dump-2026-03-01-2026-03-31.csv")

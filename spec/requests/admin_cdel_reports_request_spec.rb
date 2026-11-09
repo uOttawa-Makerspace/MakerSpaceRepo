@@ -113,11 +113,35 @@ RSpec.describe "Admin CDEL reports", type: :request do
       expect(response.body).to be_empty
     end
 
-    it "a range report excludes records made on the end date itself" do
-      # the end date is a Date (midnight), so rows created later on the 'To' day fall outside the dump
-      create(:user, :student, email: "lastday@example.test", created_at: Time.utc(2026, 3, 31, 12))
-      get admin_cdel_reports_generate_path, params: range.merge(new_users: "x")
-      expect(csv_rows.map { |r| r[2] }).not_to include("lastday@example.test")
+    context "on a server in another time zone" do
+      around do |example|
+        server_zone = ENV.fetch("TZ", nil)
+        ENV["TZ"] = "Asia/Tokyo"
+        example.run
+      ensure
+        ENV["TZ"] = server_zone
+      end
+
+      it "a range report covers the whole From and To days in Toronto" do
+        # 21:00 on Feb 28 in Toronto is already March 1 in UTC
+        create(:user, :student, email: "eve@example.test", created_at: Time.zone.local(2026, 2, 28, 21))
+        create(:user, :student, email: "firstday@example.test", created_at: Time.zone.local(2026, 3, 1, 0, 30))
+        create(:user, :student, email: "lastday@example.test", created_at: Time.zone.local(2026, 3, 31, 23, 30))
+        create(:user, :student, email: "nextday@example.test", created_at: Time.zone.local(2026, 4, 1, 0, 30))
+        get admin_cdel_reports_generate_path, params: range.merge(new_users: "x")
+        emails = csv_rows.map { |r| r[2] }
+        expect(emails).to include("firstday@example.test", "lastday@example.test", "cora@example.test")
+        expect(emails).not_to include("eve@example.test", "nextday@example.test")
+      end
+
+      it "a semester report ends at the end of its last day in Toronto" do
+        # 23:30 on April 30 in Toronto is already May 1 in UTC
+        create(:lab_session, space: world[:space], user: world[:student],
+                             created_at: Time.zone.local(2026, 4, 30, 23, 30))
+        get admin_cdel_reports_generate_path,
+            params: { date_format: "semester", semester_term: "Winter", semester_year: "2026", visitors: "x" }
+        expect(csv_rows.size).to eq(3) # the header, the March 10 visit and the April 30 one
+      end
     end
 
     it "range with a missing or unparseable date is a 500" do
