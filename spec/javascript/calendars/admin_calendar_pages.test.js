@@ -1,11 +1,16 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("flatpickr", () => ({}));
 
 // the page script uses the global the flatpickr bundle defines
-const flatpickr = vi.fn(() => ({ flatpickr: () => ({ destroy() {} }) }));
-vi.stubGlobal("flatpickr", flatpickr);
+let destroy;
+let flatpickr;
+beforeEach(() => {
+  destroy = vi.fn();
+  flatpickr = vi.fn(() => ({ flatpickr: () => ({ destroy }) }));
+  vi.stubGlobal("flatpickr", flatpickr);
+});
 vi.mock("../../../app/javascript/src/fullcalendar_setup_admin", () => ({}));
 vi.mock("../../../app/javascript/src/manage_calendar_events", () => ({}));
 vi.mock("../../../app/javascript/src/calendar_helper", () => ({
@@ -88,5 +93,53 @@ describe("admin calendar entrypoint", () => {
 
       expect(toasts()[0].textContent).toContain("Not saved.");
     });
+  });
+
+  it("saves a staff colour when it is changed", async () => {
+    document.body.innerHTML = `<button id="addEventButton"></button>
+      <button id="refresh_calendar"></button>
+      <section data-color-not-saved="Not saved."></section>
+      <input class="staff_color_select" data-user="9" value="#00ff00">`;
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    document.dispatchEvent(new Event("turbo:load"));
+
+    document
+      .querySelector(".staff_color_select")
+      .dispatchEvent(new Event("change", { bubbles: true }));
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/admin/calendar/update_color");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({
+      user_id: "9",
+      color: "#00ff00",
+      format: "json",
+    });
+  });
+
+  it("reloads the page in place from the refresh button", () => {
+    document.body.innerHTML =
+      '<button id="addEventButton"></button><button id="refresh_calendar"></button>';
+    const visit = vi.fn();
+    vi.stubGlobal("Turbo", { visit });
+    document.dispatchEvent(new Event("turbo:load"));
+
+    document.getElementById("refresh_calendar").click();
+
+    expect(visit).toHaveBeenCalledWith(window.location, { action: "replace" });
+  });
+
+  it("releases the copy dialog date pickers when it closes", () => {
+    document.body.innerHTML = `<button id="addEventButton"></button>
+      <button id="refresh_calendar"></button><div id="copyEventsModal"></div>`;
+    destroy.mockClear();
+    document.dispatchEvent(new Event("turbo:load"));
+
+    document
+      .getElementById("copyEventsModal")
+      .dispatchEvent(new Event("hide.bs.modal"));
+
+    expect(destroy).toHaveBeenCalledTimes(2);
   });
 });

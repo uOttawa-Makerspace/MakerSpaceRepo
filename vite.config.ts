@@ -1,23 +1,6 @@
 import { defineConfig } from "vite";
 import RubyPlugin from "vite-plugin-ruby";
-
-// Line and branch counters for the JS system-spec coverage report. Only the
-// test build, and only when JS_COVERAGE=1: the development and production
-// builds never load the plugin, so their output is unchanged.
-// The plugin is ESM only and this config is loaded as CommonJS, so it is
-// imported on demand.
-const coveragePlugins = async (mode: string) => {
-  if (mode !== "test" || process.env.JS_COVERAGE !== "1") return [];
-  const { default: istanbul } = await import("vite-plugin-istanbul");
-  return [
-    istanbul({
-      include: "app/javascript/**/*",
-      extension: [".js", ".ts"],
-      requireEnv: false,
-      forceBuildInstrument: true,
-    }),
-  ];
-};
+import { coveragePlugins } from "./config/js_coverage";
 
 export default defineConfig(async ({ mode }) => ({
   build: {
