@@ -147,9 +147,12 @@ class User < ApplicationRecord
   has_many :space_manager_joins, dependent: :destroy
   has_many :supervised_spaces, through: :space_manager_joins, source: :space
   has_many :spaces, through: :staff_spaces
-  # Booking access requests this user made, and the ones this user (as staff) approved.
+  # Booking access requests this user made, the ones this user (as staff) approved, and the ones
+  # this user answered (approved, declined or revoked).
   has_many :user_booking_approvals, inverse_of: :user
   has_many :approved_booking_requests, class_name: 'UserBookingApproval', foreign_key: :staff_id, inverse_of: :staff
+  has_many :decided_booking_requests, class_name: 'UserBookingApproval', foreign_key: :decided_by_id,
+                                      inverse_of: :decided_by
   has_many :printer_issues, inverse_of: :reporter
   has_many :locker_rentals, foreign_key: 'rented_by'
   has_many :staff_unavailabilities
@@ -299,7 +302,7 @@ class User < ApplicationRecord
 
   # The newest request still waiting for an answer, if any.
   def pending_booking_request
-    user_booking_approvals.where(approved: false).reorder(created_at: :desc, id: :desc).first
+    user_booking_approvals.pending.reorder(created_at: :desc, id: :desc).first
   end
 
   # Grants booking access under the user row lock, so two approvals at once grant once. Approves the
@@ -311,11 +314,27 @@ class User < ApplicationRecord
       request = approvable_booking_request(request_id)
       next if booking_access_on_record?(request)
 
-      request.identity = "Other" unless UserBookingApproval::IDENTITIES.include?(request.identity)
-      request.date ||= Time.current
-      request.update!(approved: true, staff: by)
+      request.approve!(by: by)
       update!(booking_approval: true)
       request.id
+    end
+  end
+
+  # Answers no to `request` under the user row lock: a pending request is declined (access the
+  # user holds is left alone), and an approved one revokes the user's access, marking every
+  # approved request of the user revoked so none still lists the user as approved. The requests
+  # are kept with who decided, when and why. The access flag is cleared without validating the
+  # user, as before. Returns the request's new status; raises when it was already answered no.
+  def deny_booking_access(request, by:, reason: nil)
+    with_lock do
+      request.reload
+      if request.approved?
+        user_booking_approvals.approved.each { |approved| approved.revoke!(by: by, reason: reason) }
+        update_column(:booking_approval, false)
+      else
+        request.decline!(by: by, reason: reason)
+      end
+      request.reload.status
     end
   end
 
@@ -325,7 +344,7 @@ class User < ApplicationRecord
   # both save a pending request.
   def request_booking_access(comments:, identity:)
     with_lock do
-      request = user_booking_approvals.build(date: Time.current, comments: comments, approved: false, identity: identity)
+      request = user_booking_approvals.build(date: Time.current, comments: comments, identity: identity)
       if booking_approval?
         request.errors.add(:base, "You already have booking access.")
       elsif booking_access_pending?
@@ -1200,7 +1219,7 @@ class User < ApplicationRecord
   def booking_access_on_record?(request)
     return false unless booking_approval?
 
-    request.approved? || (request.new_record? && user_booking_approvals.exists?(approved: true))
+    request.approved? || (request.new_record? && user_booking_approvals.approved.exists?)
   end
 
   def username_not_reserved

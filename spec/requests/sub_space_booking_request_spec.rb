@@ -1186,20 +1186,20 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(fresh.reload.booking_approval).to be(true)
     end
 
-    it "deny_access destroys the UBA and revokes user approval" do
+    it "deny_access revokes user approval and keeps the request as revoked" do
       admin = create(:user, :admin, booking_approval: true)
       log_in!(admin)
       user1 = create(:user, :regular_user, booking_approval: true)
       uba = UserBookingApproval.create!(user: user1, identity: "JMTS",
-                                        approved: true, comments: "why",
+                                        status: "approved", comments: "why",
                                         date: Date.today)
 
       put deny_access_sub_space_booking_index_path, params: { id: uba.id }
       expect(response).to redirect_to(
         sub_space_booking_index_path(anchor: "booking-admin-tab")
       )
-      expect(flash[:notice]).to eq("Access request declined successfully.")
-      expect(UserBookingApproval.find_by(id: uba.id)).to be_nil
+      expect(flash[:notice]).to eq("Booking access revoked successfully.")
+      expect(uba.reload.status).to eq("revoked")
       expect(user1.reload.booking_approval).to be(false)
     end
 

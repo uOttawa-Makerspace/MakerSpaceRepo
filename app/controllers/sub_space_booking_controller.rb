@@ -109,14 +109,15 @@ class SubSpaceBookingController < SessionsController
     approval_failed(e)
   end
 
+  # Declines a pending request or revokes an approved one; the request is kept with its status.
   def deny_access
-    uba = UserBookingApproval.find(params[:id])
-    UserBookingApproval.transaction do
-      uba.user.update_column(:booking_approval, false)
-      uba.destroy!
-    end
+    request = UserBookingApproval.find(params[:id])
+    status = request.user.deny_booking_access(request, by: current_user, reason: params[:reason].to_s.strip.presence)
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "Access request declined successfully."
+                notice: status == "revoked" ? "Booking access revoked successfully." : "Access request declined successfully."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                alert: "Failed to decline: #{e.record.errors.full_messages.join(", ")}"
   end
 
   def bulk_approve_access

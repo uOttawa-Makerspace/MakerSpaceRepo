@@ -159,7 +159,7 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
 
   describe ".send_booking_approval_request_approved" do
     let(:uba) do
-      UserBookingApproval.create!(user: booker, identity: "Other", approved: true,
+      UserBookingApproval.create!(user: booker, identity: "Other", status: "approved",
                                   comments: "c", date: Date.new(2027, 1, 1))
     end
 

@@ -257,7 +257,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <% UserBookingApproval.includes(:user).where(approved: false).find_each do |req| %>
+                  <% UserBookingApproval.pending.includes(:user).find_each do |req| %>
                     <tr>
                       <td class="ps-3"><%= check_box_tag 'user_booking_approval_ids[]', req.id, false, class: 'form-check-input user-request-select', aria: { label: t('common.names.select_access_request', id: req.id) } %></td>
                       <td>
@@ -292,7 +292,7 @@
                 </tr>
               </thead>
               <tbody>
-                <% UserBookingApproval.includes(:user, :staff).where(approved: true).find_each do |req| %>
+                <% UserBookingApproval.approved.includes(:user, :staff).find_each do |req| %>
                   <tr>
                     <td class="ps-3">
                       <strong class="text-body-emphasis"><%= req.user.name %></strong><br>
