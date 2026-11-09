@@ -36,30 +36,20 @@ class Admin::SettingsController < AdminAreaController
 
   def add_course
     @new_course = CourseName.new(course_params)
-    if @new_course.save
-      flash[:notice] = "Course added successfully!"
-    else
-      flash[:alert] = "Input is invalid"
-    end
+    flash_write(@new_course, "settings.course_not_added", "Course added successfully!") { @new_course.save }
     redirect_to admin_settings_path
   end
 
   def remove_course
     @course = CourseName.find(params[:id])
-    if @course.destroy
-      flash[:notice] = "Course removed successfully"
-    else
-      flash[:alert] = "There was an issue trying to remove the course"
-    end
+    flash_write(@course, "settings.course_not_removed", "Course removed successfully", destroy: true) { @course.destroy }
     redirect_to admin_settings_path
   end
 
   def rename_course
     @course = CourseName.find(params[:id])
-    if @course.update(course_params.except(:id))
-      flash[:notice] = "Course updated successfully"
-    else
-      flash[:alert] = "There was an issue trying to rename the course"
+    flash_write(@course, "settings.course_not_renamed", "Course updated successfully") do
+      @course.update(course_params.except(:id))
     end
     redirect_to admin_settings_path
   end
@@ -155,47 +145,34 @@ class Admin::SettingsController < AdminAreaController
 
   def update_job_order_processed
     msg = params.dig(:job_order_message, :message)
-    if msg
-      if JobOrderMessage.find_by(name: "processed").update(message: msg)
-        flash[:notice] = "Message updated successfully!"
-      else
-        flash[:alert] = "Message update failed."
-      end
-    else
-      flash[:alert] = "Please enter a message."
-    end
-    redirect_to admin_settings_path
+    update_job_order_message(JobOrderMessage.find_by(name: "processed"), msg)
   end
 
   def update_print_failed_message
     msg = params.dig(:job_order_message, :message)
-    if msg
-      if JobOrderMessage.print_failed.update(message: msg)
-        flash[:notice] = "Message updated successfully!"
-      else
-        flash[:alert] = "Message update failed"
-      end
-    else
-      flash[:alert] = "Please enter a message."
-    end
-    redirect_to admin_settings_path
+    update_job_order_message(JobOrderMessage.print_failed, msg)
   end
 
   def pin_unpin_repository
     params.require(:repository_id)
     repo = Repository.find_by(id: params[:repository_id])
 
-    if repo.update(featured: !repo.featured)
-      flash[
-        :notice
-      ] = "Successfully #{repo.featured ? "Featured" : "Unfeatured"} repository"
-    else
-      flash[:alert] = "something went wrong"
+    flash_write(repo, "settings.repository_not_updated", "Successfully #{repo.featured ? "Unfeatured" : "Featured"} repository") do
+      repo.update(featured: !repo.featured)
     end
     redirect_back(fallback_location: root_path)
   end
 
   private
+
+  def update_job_order_message(message, text)
+    if text
+      flash_write(message, "settings.message_not_updated", "Message updated successfully!") { message.update(message: text) }
+    else
+      flash[:alert] = I18n.t("errors.admin.settings.message_missing")
+    end
+    redirect_to admin_settings_path
+  end
 
   def pi_params
     params.require(:pi_reader).permit(:pi_location)

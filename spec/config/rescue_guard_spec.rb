@@ -14,7 +14,6 @@ module RescueGuard
   HANDLES_THE_ERROR = /\braise\b|report_unexpected|Rails\.error|Rails\.logger|\blogger\.|\.report\(|Airbrake/
 
   SILENT_RESCUES = {
-    "app/controllers/admin/events_controller.rb" => 1, # err-b4
     "app/controllers/admin/uni_programs_controller.rb" => 1, # err-b4
     "app/controllers/repositories_controller.rb" => 2, # err-b5
     "app/helpers/calendar_helper.rb" => 2, # err-d

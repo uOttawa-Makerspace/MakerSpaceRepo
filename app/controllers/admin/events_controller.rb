@@ -305,36 +305,45 @@ class Admin::EventsController < AdminAreaController
       return redirect_back(fallback_location: admin_calendar_index_path, alert: "Please fill out all fields before copying.")
     end
 
-    begin
-      start_date = Time.zone.parse(source_range[0]).beginning_of_day
-      end_date = Time.zone.parse(source_range[1]).end_of_day
-      new_start_date = Time.zone.parse(target_date).beginning_of_day
+    dates = copy_dates(source_range, target_date)
+    return redirect_back(fallback_location: admin_calendar_index_path, alert: I18n.t("errors.admin.events.copy_dates_invalid")) if dates.nil?
 
-      # Find events in range
-      events_to_copy = Event.where(
-        space_id: space_id,
-        start_time: start_date..end_date,
-        draft: false,
-        recurrence_rule: [nil, ""]
-      )
-
-      copied_count = 0
-
-      Event.transaction do
-        events_to_copy.find_each do |event|
-          copy_event_as_draft(event, start_date, new_start_date)
-          copied_count += 1
-        end
-      end
-
-      redirect_back(fallback_location: admin_calendar_index_path,
-        notice: "#{copied_count} published event(s) copied to #{new_start_date.to_date}. Recurring events were skipped.")
-    rescue StandardError => e
-      redirect_back(fallback_location: admin_calendar_index_path, alert: "Error copying events: #{e.message}")
-    end
+    start_date, end_date, new_start_date = dates
+    copied_count = copy_published_events(space_id, start_date.beginning_of_day..end_date.end_of_day, new_start_date.beginning_of_day)
+    redirect_back(fallback_location: admin_calendar_index_path,
+      notice: "#{copied_count} published event(s) copied to #{new_start_date.to_date}. Recurring events were skipped.")
+  rescue ActiveRecord::RecordInvalid => e
+    # The copies are made in one transaction, so nothing was copied.
+    redirect_back(fallback_location: admin_calendar_index_path, alert: validation_message(e.record, "errors.admin.events.copy_failed"))
   end
 
   private
+
+  # Copies the published, non-recurring events of the space in the range to drafts starting on the new date;
+  # returns how many were copied.
+  def copy_published_events(space_id, range, new_start_date)
+    events_to_copy = Event.where(space_id: space_id, start_time: range, draft: false, recurrence_rule: [nil, ""])
+    copied_count = 0
+    Event.transaction do
+      events_to_copy.find_each do |event|
+        copy_event_as_draft(event, range.begin, new_start_date)
+        copied_count += 1
+      end
+    end
+    copied_count
+  end
+
+  # The range start, range end and target date the user picked, or nil when one is not a date.
+  def copy_dates(source_range, target_date)
+    dates = [source_range[0], source_range[1], target_date].map { |value| parse_copy_date(value) }
+    dates unless dates.any?(&:nil?)
+  end
+
+  def parse_copy_date(value)
+    Time.zone.parse(value.to_s)
+  rescue ArgumentError
+    nil
+  end
 
   # Parses the posted start and end times once; a missing or unparsable value answers with an alert.
   def parse_event_times

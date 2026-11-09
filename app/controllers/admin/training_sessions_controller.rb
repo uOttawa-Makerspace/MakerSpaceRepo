@@ -52,21 +52,14 @@ class Admin::TrainingSessionsController < AdminAreaController
   end
 
   def update
-    if @training_session.update(training_session_params)
-      flash[:notice] = "Updated Successfully"
-      redirect_back(fallback_location: root_path)
-    else
-      flash[:alert] = "Something went wrong"
-      redirect_back(fallback_location: root_path)
+    flash_write(@training_session, "training_sessions.not_updated", "Updated Successfully") do
+      @training_session.update(training_session_params)
     end
+    redirect_back(fallback_location: root_path)
   end
 
   def destroy
-    if @training_session.destroy
-      flash[:notice] = "Deleted Successfully"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    flash_write(@training_session, "training_sessions.not_deleted", "Deleted Successfully", destroy: true) { @training_session.destroy }
     redirect_back(fallback_location: root_path)
   end
 

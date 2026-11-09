@@ -32,17 +32,13 @@ class Admin::CertificationsController < AdminAreaController
       user.save
       flash[:notice] = "Action completed."
     else
-      flash[:alert] = "Something went wrong. Try again later."
+      flash[:alert] = validation_message(@cert, "errors.admin.certifications.not_updated")
     end
     redirect_to @cert.active ? demotions_admin_certifications_path : user_path(@cert.user.username)
   end
 
   def destroy
-    if @cert.destroy
-      flash[:notice] = "Certification deleted. This action can't be undone"
-    else
-      flash[:alert] = "Something went wrong. Try again later."
-    end
+    flash_write(@cert, "certifications.not_deleted", "Certification deleted. This action can't be undone", destroy: true) { @cert.destroy }
     redirect_to demotions_admin_certifications_path
   end
 

@@ -95,7 +95,7 @@ RSpec.describe "Admin keys", type: :request do
     it "redirects to new with an alert for an invalid key (duplicate number in a space)" do
       expect { post admin_keys_path, params: { key: key_attrs(number: 11) } }.not_to change(Key, :count)
       expect(response).to redirect_to(new_admin_key_path)
-      expect(flash[:alert]).to eq("Something went wrong while creating the key.")
+      expect(flash[:alert]).to eq("The key was not created. Number A key already has that number")
     end
 
     it "requires a custom keycode for non-regular keys" do
@@ -121,7 +121,7 @@ RSpec.describe "Admin keys", type: :request do
 
     it "redirects to the edit path on an invalid update" do
       patch admin_key_path(key), params: { key: { number: "" } }
-      expect(flash[:alert]).to eq("Something went wrong while updating the key.")
+      expect(flash[:alert]).to eq("The key was not updated. Number A key number is required")
       expect(key.reload.number).not_to eq("")
     end
 
@@ -247,18 +247,18 @@ RSpec.describe "Admin keys", type: :request do
     it "refuses to assign a key that is not in inventory" do
       key.update!(status: :lost)
       expect { patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id }, deposit_amount: 25 } }.not_to change(KeyTransaction, :count)
-      expect(flash[:alert]).to start_with("Something went wrong while trying to assign the key")
+      expect(flash[:alert]).to start_with("The key was not assigned. ")
     end
 
     it "refuses to assign without a supervisor (held keys require one) and leaves the key unchanged" do
       expect { patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id }, deposit_amount: 25 } }.not_to change(KeyTransaction, :count)
-      expect(flash[:alert]).to start_with("Something went wrong while trying to assign the key")
+      expect(flash[:alert]).to start_with("The key was not assigned. ")
       expect(key.reload.status).to eq("inventory")
     end
 
     it "refuses to assign without a deposit amount, leaving the key and transactions unchanged" do
       expect { patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id } } }.not_to change(KeyTransaction, :count)
-      expect(flash[:alert]).to include("Something went wrong while trying to assign the key", "Deposit amount")
+      expect(flash[:alert]).to start_with("The key was not assigned. Deposit amount")
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil, supervisor_id: nil)
     end
 
@@ -268,7 +268,7 @@ RSpec.describe "Admin keys", type: :request do
         patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 25 }
       }.not_to change(KeyTransaction, :count)
       expect(response).to redirect_to(admin_keys_path)
-      expect(flash[:alert]).to include("Something went wrong while trying to assign the key", "already has an open transaction")
+      expect(flash[:alert]).to start_with("The key was not assigned. ") & include("already has an open transaction")
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
     end
 
@@ -308,14 +308,14 @@ RSpec.describe "Admin keys", type: :request do
 
     it "refuses to revoke a key that is not held" do
       patch admin_key_revoke_key_path(key)
-      expect(flash[:alert]).to eq("Something went wrong while trying to revoke the key: Only a held key can be revoked.")
+      expect(flash[:alert]).to eq("The key was not revoked. Only a held key can be revoked.")
     end
 
     it "refuses to revoke a held key with no open transaction, changing nothing" do
       key.update!(status: :held, user: holder, supervisor: supervisor)
       expect { patch admin_key_revoke_key_path(key) }.not_to change(KeyTransaction, :count)
       expect(response).to redirect_to(admin_keys_path)
-      expect(flash[:alert]).to eq("Something went wrong while trying to revoke the key: This key has no open transaction to close.")
+      expect(flash[:alert]).to eq("The key was not revoked. This key has no open transaction to close.")
       expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
     end
 
@@ -353,9 +353,9 @@ RSpec.describe "Admin keys", type: :request do
     it "does not approve or deny a request that is not waiting" do
       kr.update_columns(status: KeyRequest.statuses[:approved])
       patch approve_key_request_admin_keys_path, params: { id: kr.id }
-      expect(flash[:alert]).to eq("Something went wrong while approving the key request.")
+      expect(flash[:alert]).to eq("This key request is no longer waiting for approval, so it was left as it is.")
       patch deny_key_request_admin_keys_path, params: { id: kr.id }
-      expect(flash[:alert]).to eq("Something went wrong while denying the key request.")
+      expect(flash[:alert]).to eq("This key request is no longer waiting for approval, so it was left as it is.")
       expect(kr.reload.status).to eq("approved")
     end
 
@@ -452,14 +452,14 @@ RSpec.describe "Admin keys", type: :request do
 
     it "refuses a blank deposit return date" do
       patch admin_key_transaction_path(tx), params: { key_transaction: { deposit_return_date: "" } }
-      expect(flash[:alert]).to eq("Something went wrong while updating the deposit")
+      expect(flash[:alert]).to eq("Enter the date the deposit was returned.")
       expect(tx.reload.deposit_return_date).to be_nil
     end
 
     it "treats a missing deposit return date like a blank one" do
       patch admin_key_transaction_path(tx), params: { key_transaction: { deposit_amount: 999 } }
       expect(response).to redirect_to(admin_key_transactions_path)
-      expect(flash[:alert]).to eq("Something went wrong while updating the deposit")
+      expect(flash[:alert]).to eq("Enter the date the deposit was returned.")
       expect(tx.reload.deposit_return_date).to be_nil
       expect(tx.deposit_amount).to eq(20)
     end

@@ -14,12 +14,7 @@ class Admin::SpacesController < AdminAreaController
 
   def create
     space = Space.new(space_params)
-    if space.save
-      flash[:notice] = "Space created successfully!"
-    else
-      flash[:alert] = "Something went wrong."
-    end
-
+    flash_write(space, "spaces.not_created", "Space created successfully!") { space.save }
     redirect_back(fallback_location: root_path)
   end
 
@@ -44,11 +39,8 @@ class Admin::SpacesController < AdminAreaController
     if params[:id].present?
       subspace = SubSpace.find(params[:id])
       SubSpaceBooking.where(sub_space: subspace).find_each(&:destroy_with_status!)
-      if subspace.delete
-        flash[:notice] = "Sub Space deleted!"
-      else
-        flash[:alert] = "Something went wrong."
-      end
+      subspace.delete
+      flash[:notice] = "Sub Space deleted!"
     end
     @sub_spaces =
       SubSpace.where(space: Space.find(params[:space_id])).order(:name)
@@ -125,20 +117,14 @@ class Admin::SpacesController < AdminAreaController
     @space = Space.find(params[:space_id])
     max_capacity = params[:max_capacity].to_i
     max_capacity = nil if max_capacity.zero? # 0 is no limit
-    if @space.update(max_capacity: max_capacity)
-      flash[:notice] = "Space Capacity updated!"
-    else
-      flash[:alert] = "Failed to update space capacity."
-    end
+    flash_write(@space, "spaces.capacity_not_updated", "Space Capacity updated!") { @space.update(max_capacity: max_capacity) }
     redirect_back(fallback_location: root_path)
   end
 
   def update_keycode
     @space = Space.find(params[:space_id])
-    return unless @space.update(keycode: params[:keycode])
-      flash[:notice] = "Space keycode updated!"
-      redirect_back(fallback_location: root_path)
-    
+    flash_write(@space, "spaces.keycode_not_updated", "Space keycode updated!") { @space.update(keycode: params[:keycode]) }
+    redirect_back(fallback_location: root_path)
   end
 
   def add_space_manager
@@ -153,11 +139,7 @@ class Admin::SpacesController < AdminAreaController
     space_manager_join =
       SpaceManagerJoin.new(user_id: @space_manager.id, space_id: @space.id)
 
-    if space_manager_join.save
-      flash[:notice] = "Successfully added space manager"
-    else
-      flash[:alert] = "Failed to add space manager"
-    end
+    flash_write(space_manager_join, "spaces.manager_not_added", "Successfully added space manager") { space_manager_join.save }
     redirect_to admin_spaces_path
   end
 
@@ -206,7 +188,7 @@ class Admin::SpacesController < AdminAreaController
                   )
       return
     end
-    flash[:alert] = "Something went wrong."
+    flash[:alert] = I18n.t("errors.admin.spaces.booking_limit_missing")
     redirect_to edit_admin_space_path(id: params[:space_id])
   end
 
@@ -229,7 +211,7 @@ class Admin::SpacesController < AdminAreaController
                   )
       return
     end
-    flash[:alert] = "Something went wrong."
+    flash[:alert] = I18n.t("errors.admin.spaces.approval_limit_missing")
     redirect_to edit_admin_space_path(id: params[:space_id])
   end
 
@@ -247,7 +229,7 @@ class Admin::SpacesController < AdminAreaController
           flash[:notice] = "Space deleted!"
         else
           space.update_columns(destroy_admin_id: nil)
-          flash[:alert] = space.errors.full_messages.to_sentence.presence || "The space could not be deleted."
+          flash[:alert] = validation_message(space, "errors.admin.spaces.not_deleted")
         end
       elsif (refusals = space.deletion_refusals).any?
         # Said at the first request, so nobody waits for a second admin to be told, and no request is recorded.
@@ -261,14 +243,14 @@ class Admin::SpacesController < AdminAreaController
         ] = "The destroy request has been submitted, a second admin will need to approve it for the space to be destroyed."
       end
     else
-      flash[:alert] = "Invalid Input"
+      flash[:alert] = I18n.t("errors.admin.spaces.confirmation_mismatch")
     end
     redirect_to admin_spaces_path
   end
 
   def update_staff_needed_calendars
     unless params[:space_id].present?
-      flash[:alert] = "An error occurred while trying to add/remove the calendar URLs, please try again later."
+      flash[:alert] = I18n.t("errors.admin.spaces.calendar_space_missing")
       return redirect_back(fallback_location: root_path)
     end
 
@@ -317,7 +299,7 @@ class Admin::SpacesController < AdminAreaController
     elsif sub_space.update(name: params[:name])
       flash[:notice] = "You've successfully renamed '#{old_name}' to '#{sub_space.name}'."
     else
-      flash[:alert] = "Failed to rename sub space: #{sub_space.errors.full_messages.join(', ')}"
+      flash[:alert] = validation_message(sub_space, "errors.admin.spaces.sub_space_not_renamed")
     end
 
     redirect_back(

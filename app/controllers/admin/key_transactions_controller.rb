@@ -6,14 +6,14 @@ class Admin::KeyTransactionsController < AdminAreaController
   end
 
   def update
-    if params.dig(:key_transaction, :deposit_return_date).present? &&
-         @key_transaction.update(key_transaction_params)
-      redirect_to admin_key_transactions_path,
-                  notice: "Successfully updated deposit information"
+    if params.dig(:key_transaction, :deposit_return_date).blank?
+      flash[:alert] = I18n.t("errors.admin.key_transactions.return_date_required")
     else
-      redirect_to admin_key_transactions_path,
-                  alert: "Something went wrong while updating the deposit"
+      flash_write(@key_transaction, "key_transactions.not_updated", "Successfully updated deposit information") do
+        @key_transaction.update(key_transaction_params)
+      end
     end
+    redirect_to admin_key_transactions_path
   end
 
   private
