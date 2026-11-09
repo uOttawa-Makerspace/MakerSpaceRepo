@@ -915,6 +915,51 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
   end
 
+  describe "a file shared by a revision and its original proposal" do
+    before do
+      content_login!(owner)
+      pending.project_files.attach(io: StringIO.new("shared bytes"), filename: "shared.txt", content_type: "text/plain")
+      pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "shared.png", content_type: "image/png")
+      post create_revision_project_proposals_path, params: { old_project_proposal_id: pending.id }
+    end
+
+    let(:revision) { ProjectProposal.find_by!(linked_project_proposal_id: pending.id) }
+
+    it "keeps the revision's file in storage and downloadable when the original drops it" do
+      expect(revision.project_files.first.blob_id).to eq(pending.project_files.first.blob_id)
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deletefiles: ["shared.txt"] }
+      expect(pending.reload.project_files.count).to eq(0)
+      expect(revision.reload.project_files.map { |f| f.filename.to_s }).to eq(["shared.txt"])
+      expect(revision.project_files.first.download).to eq("shared bytes")
+    end
+
+    it "keeps the revision's photo in storage when the original drops it" do
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deleteimages: ["shared.png"] }
+      expect(pending.reload.photos.count).to eq(0)
+      expect(revision.reload.photos.first.download).to eq(File.binread(Rails.root.join("spec/support/assets/avatar.png")))
+    end
+
+    it "keeps the original's file when the revision drops it" do
+      patch project_proposal_path(revision.id), params: { project_proposal: { title: "Changed" }, deletefiles: ["shared.txt"] }
+      expect(revision.reload.project_files.count).to eq(0)
+      expect(pending.reload.project_files.first.download).to eq("shared bytes")
+    end
+
+    it "purges the stored file once the last proposal using it drops it" do
+      blob = pending.project_files.first.blob
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deletefiles: ["shared.txt"] }
+      patch project_proposal_path(revision.id), params: { project_proposal: { title: "Changed" }, deletefiles: ["shared.txt"] }
+      expect(ActiveStorage::Blob.exists?(blob.id)).to be(false)
+    end
+
+    it "keeps the revision's files when the original proposal is deleted" do
+      revision
+      content_login!(create(:user, :admin))
+      perform_enqueued_jobs { delete project_proposal_path(pending.id) }
+      expect(revision.reload.project_files.first.download).to eq("shared bytes")
+    end
+  end
+
   describe "POST create_revision" do
     it "sends a guest to login and clones nothing" do
       expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: pending.id } }
