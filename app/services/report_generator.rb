@@ -866,13 +866,14 @@ class ReportGenerator
   end
 
   def self.generate_space_present_users_report(id)
+    now = Time.current
     lab_sessions =
       LabSession
         .includes(:user)
         .joins(:user)
         .where("space_id" => id)
-        .where("sign_in_time < ?", DateTime.now)
-        .where("sign_out_time > ?", DateTime.now)
+        .where("sign_in_time < ?", now)
+        .where("sign_out_time > ?", now)
 
     spreadsheet = Axlsx::Package.new
 
@@ -881,7 +882,7 @@ class ReportGenerator
       .add_worksheet(name: "Report") do |sheet|
         title(sheet, "Present Users")
 
-        sheet.add_row ["Date", DateTime.now.strftime("%Y-%m-%d %H:%M:%S")]
+        sheet.add_row ["Date", now.strftime("%Y-%m-%d %H:%M:%S")]
 
         sheet.add_row # spacing
 

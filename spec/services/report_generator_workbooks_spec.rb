@@ -564,18 +564,14 @@ RSpec.describe ReportGenerator do
   end
 
   describe ".generate_space_present_users_report" do
-    it "stamps the report with the current time and lists nobody when the space is empty" do
-      # the stamp is DateTime.now, i.e. the process zone: pin it to UTC for this example
-      previous_zone = ENV["TZ"]
-      ENV["TZ"] = "UTC"
-      begin
-        travel_to(Time.utc(2026, 3, 10, 15, 30, 45)) do
-          space = create(:space)
-          rows = grid(described_class.generate_space_present_users_report(space.id))["Report"]
-          expect(rows).to eq([["Present Users"], ["Date", "2026-03-10 15:30:45"], [], %w[Name Email]])
-        end
-      ensure
-        ENV["TZ"] = previous_zone
+    on_a_server_in_another_zone
+
+    it "stamps the report with the current time in Toronto and lists nobody when the space is empty" do
+      # 03:30:45 UTC on the 11th is still the evening of the 10th in Toronto
+      travel_to(Time.utc(2026, 3, 11, 3, 30, 45)) do
+        space = create(:space)
+        rows = grid(described_class.generate_space_present_users_report(space.id))["Report"]
+        expect(rows).to eq([["Present Users"], ["Date", "2026-03-10 23:30:45"], [], %w[Name Email]])
       end
     end
   end
