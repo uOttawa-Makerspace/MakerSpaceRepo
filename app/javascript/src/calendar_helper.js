@@ -512,7 +512,7 @@ function openEventForEditing(eventImpl) {
     ruleField.value = storedRule(
       { freq: rule.options.freq, byweekday: rule.options.byweekday },
       rule.options.dtstart.getTime(),
-      untilInput.value,
+      /** @type {HTMLInputElement} */ (untilInput).value,
     );
   }
 
