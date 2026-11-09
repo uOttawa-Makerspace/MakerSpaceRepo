@@ -280,10 +280,10 @@ RSpec.describe ReportGenerator do
       )
     end
 
-    it "Report: identity counts as stored, then a user table with every value under its header" do
+    it "Report: identity counts named as on Demographics, then a user table with every value under its header" do
       rows = sheets["Report"]
       expect(rows.first(3)).to eq([["New Users"], ["From", "2026-03-01"], ["To", "2026-03-31"]])
-      expect(rows).to include(["Overview"], ["undergrad", 3], ["community_member", 1])
+      expect(rows).to include(["Overview"], ["Undergrad", 3], ["Community member", 1])
       header = rows.index(["Name", "Username", "Email", "Gender", "Identity", "Faculty", "Year of Study", "Student ID", "Joined on"])
       expect(header).to be_present
       body = rows[(header + 1)..]

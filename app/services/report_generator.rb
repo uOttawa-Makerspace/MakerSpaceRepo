@@ -596,7 +596,7 @@ class ReportGenerator
         groups = users.group_by(&:identity)
 
         groups.each do |group_name, values|
-          sheet.add_row [group_name, values.length]
+          sheet.add_row [group_name.humanize, values.length]
         end
 
         sheet.add_row # spacing
