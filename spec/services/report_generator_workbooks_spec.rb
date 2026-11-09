@@ -255,12 +255,14 @@ RSpec.describe ReportGenerator do
       expect(rows[13..]).to eq([[], ["Gender"], ["Female", 1], ["Male", 2], ["Other", 1]])
     end
 
-    it "Faculties: faculties other than Engineering and None collapse into one blank row" do
-      rows = sheets["Faculties"]
-      faculty = blocks(rows)[1]
+    it "Faculties: each faculty keeps its name, Génie counts as Engineering and a blank faculty as None" do
+      student("Eli Engineer").update_columns(faculty: "Engineering")
+      faculty = blocks(grid(described_class.generate_new_users_report(from, to))["Faculties"])[1]
       expect(faculty.first(2)).to eq([["By Faculty"], ["Faculty", "New Users"]])
-      # Arts and Science both land on a nil key, so the table shows one blank row with a count of 1
-      expect(faculty[2..]).to contain_exactly([nil, 1], ["None", 1], ["Engineering", 1], ["Total", 4])
+      # the rows add up to the total
+      expect(faculty[2..]).to contain_exactly(
+        ["Arts", 1], ["Science", 1], ["None", 1], ["Engineering", 2], ["Total", 5]
+      )
     end
 
     it "Faculties: departments by level, then programs ordered by count, a blank program as Blank - No Program" do

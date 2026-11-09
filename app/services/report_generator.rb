@@ -487,7 +487,6 @@ class ReportGenerator
         # Engineering/non-engineering
 
         # By faculty
-        # HACK you should merge génie with engineering instead?
         title(sheet, "By Faculty")
         table_header(sheet, ["Faculty", "New Users"])
         push_hash(
@@ -495,12 +494,8 @@ class ReportGenerator
           users
             .group(:faculty)
             .count
-            .transform_keys do |k|
-              if k == ""
-                "None"
-              elsif k == "Génie"
-                "Engineering"
-              end
+            .each_with_object(Hash.new(0)) do |(faculty, count), counts|
+              counts[faculty_label(faculty)] += count
             end
         )
         sheet.add_row ["Total", users.count]
@@ -1454,6 +1449,14 @@ class ReportGenerator
 
   def self.push_hash(sheet, hash)
     hash.each { |key, value| sheet.add_row [key, value] }
+  end
+
+  # The faculty as the reports show it: Génie counts as Engineering and a
+  # blank faculty as None.
+  def self.faculty_label(faculty)
+    return "None" if faculty.blank?
+
+    faculty == "Génie" ? "Engineering" : faculty
   end
 
   def self.sum_by_key(hash, key)
