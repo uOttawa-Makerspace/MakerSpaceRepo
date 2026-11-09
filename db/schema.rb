@@ -1591,6 +1591,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
     t.index ["user_id"], name: "index_training_sessions_users_on_user_id"
   end
 
+  create_table "training_skill_list_changes", force: :cascade do |t|
+    t.bigint "training_id", null: false
+    t.string "column_name", null: false
+    t.text "old_value", null: false
+    t.text "new_value", null: false
+    t.datetime "changed_at", default: -> { "now()" }, null: false
+    t.datetime "restored_at"
+    t.index ["training_id", "column_name"], name: "index_training_skill_list_changes_on_training_and_column"
+  end
+
   create_table "trainings", id: :serial, force: :cascade do |t|
     t.datetime "created_at", precision: nil, null: false
     t.string "description_en"
