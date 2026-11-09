@@ -108,6 +108,16 @@ RSpec.describe ReportGenerator do
       expect(b[5].drop(1).map(&:last)).to contain_exactly("Education", "None")
     end
 
+    it "shows a visitor without an identity under None" do
+      gamma = create(:space, name: "Gamma")
+      nobody = student("No Identity")
+      nobody.update_columns(identity: nil)
+      create(:lab_session, space: gamma, user: nobody, created_at: march_10)
+      b = blocks(grid(described_class.generate_visitors_report(from, to))["Gamma"])
+      expect(b[2].drop(1)).to eq([["None", 1, nil, 1]])
+      expect(b[5].drop(1).map(&:first)).to eq(["None"])
+    end
+
     it "a space sheet repeats the tables for that space only" do
       b = blocks(sheets["Beta"])
       expect(b[1]).to eq([["Report for Beta"]])
@@ -330,6 +340,13 @@ RSpec.describe ReportGenerator do
       cam = body.find { |r| r.first == "Cam Community" }
       expect(cam).to eq(["Cam Community", "cam", "cam@example.test", "Male", "community_member", nil, nil,
                          nil, "2026-03-10 11:00"])
+    end
+
+    it "counts a user without an identity under None on Demographics and Report" do
+      student("Ivy Unknown").update_columns(identity: nil)
+      book = grid(described_class.generate_new_users_report(from, to))
+      expect(book["Demographics"]).to include(["None", 1])
+      expect(book["Report"]).to include(["None", 1])
     end
 
     it "includes soft-deleted users and excludes users outside the range" do

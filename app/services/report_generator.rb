@@ -71,7 +71,7 @@ class ReportGenerator
           space_visits
             .group_by { |d| d["identity"] }
             .each do |iden, counts|
-              sheet.add_row [iden.humanize, counts.uniq.count, "", counts.count]
+              sheet.add_row [User.identity_label(iden), counts.uniq.count, "", counts.count]
             end
 
           sheet.add_row # spacing
@@ -121,7 +121,7 @@ class ReportGenerator
                 .group_by { |y| User.faculty_label(y.faculty) }
                 .each do |faculty, counts|
                   sheet.add_row [
-                                  iden.humanize,
+                                  User.identity_label(iden),
                                   counts.uniq.count,
                                   "",
                                   counts.count,
@@ -455,7 +455,7 @@ class ReportGenerator
         title(sheet, "Level of Study")
         push_hash(
           sheet,
-          users.group(:identity).count.transform_keys(&:humanize)
+          users.group(:identity).count.transform_keys { |k| User.identity_label(k) }
         )
 
         sheet.add_row
@@ -592,7 +592,7 @@ class ReportGenerator
         groups = users.group_by(&:identity)
 
         groups.each do |group_name, values|
-          sheet.add_row [group_name.humanize, values.length]
+          sheet.add_row [User.identity_label(group_name), values.length]
         end
 
         sheet.add_row # spacing

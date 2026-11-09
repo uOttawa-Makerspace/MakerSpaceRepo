@@ -353,6 +353,12 @@ class User < ApplicationRecord
     FACULTY_TRANSLATIONS.fetch(faculty, faculty)
   end
 
+  # The identity as reports show it (community_member is "Community member"),
+  # None when missing.
+  def self.identity_label(identity)
+    identity.blank? ? 'None' : identity.humanize
+  end
+
   # Every user row, soft-deleted ones included. For admin views and reports, which see everything;
   # the default scope keeps deleted users out of everything else.
   def self.including_deleted
