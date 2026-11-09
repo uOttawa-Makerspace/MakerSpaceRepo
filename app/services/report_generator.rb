@@ -268,7 +268,7 @@ class ReportGenerator
                           row["training_level"],
                           row["course_name"],
                           row["instructor_name"],
-                          row["date"].localtime.strftime("%Y-%m-%d %H:%M"),
+                          row["date"].in_time_zone.strftime("%Y-%m-%d %H:%M"),
                           row["space_name"],
                           row["attendee_count"]
                         ] # ,
@@ -628,7 +628,7 @@ class ReportGenerator
                           user.faculty,
                           user.year_of_study,
                           user.student_id,
-                          user.created_at.localtime.strftime("%Y-%m-%d %H:%M")
+                          user.created_at.in_time_zone.strftime("%Y-%m-%d %H:%M")
                         ],
                         types: types
         end

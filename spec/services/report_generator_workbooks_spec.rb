@@ -26,6 +26,18 @@ RSpec.describe ReportGenerator do
     rows.slice_when { |a, _| a.empty? }.map { |b| b.reject(&:empty?) }
   end
 
+  # Runs the example with the server's local zone set away from the
+  # application zone (Toronto), so a time printed in the server's zone shows.
+  def self.on_a_server_in_another_zone
+    around do |example|
+      server_zone = ENV.fetch("TZ", nil)
+      ENV["TZ"] = "Asia/Tokyo"
+      example.run
+    ensure
+      ENV["TZ"] = server_zone
+    end
+  end
+
   def student(name, **attrs)
     create(:user, :student, name: name, created_at: march_10, **attrs)
   end
@@ -114,7 +126,9 @@ RSpec.describe ReportGenerator do
     let(:laser) { create(:training, name_en: "Laser", name: "Laser") }
     let(:saw) { create(:training, name_en: "Saw", name: "Saw") }
 
-    it "summarises per training, then lists every session with its instructor, local time and attendee count" do
+    on_a_server_in_another_zone
+
+    it "summarises per training, then lists every session with its instructor, Toronto time and attendee count" do
       teacher = create(:user, :staff, name: "Ina Instructor")
       busy = create(:training_session, space: alpha, training: laser, user: teacher, course: "MCG1", created_at: march_10)
       busy.users << create(:user, name: "A One") << create(:user, name: "B Two")
@@ -129,8 +143,8 @@ RSpec.describe ReportGenerator do
       expect(rows[7]).to eq([])
       expect(rows[8]).to eq(%w[Training Level Course Instructor Date Facility] + ["Attendee Count"])
       expect(rows[9..]).to contain_exactly(
-        ["Laser", "Beginner", "MCG1", "Ina Instructor", march_10.localtime.strftime("%Y-%m-%d %H:%M"), "Alpha", 2],
-        ["Saw", "Beginner", nil, "Ina Instructor", (march_10 + 1.day).localtime.strftime("%Y-%m-%d %H:%M"), "Alpha", 1]
+        ["Laser", "Beginner", "MCG1", "Ina Instructor", "2026-03-10 11:00", "Alpha", 2],
+        ["Saw", "Beginner", nil, "Ina Instructor", "2026-03-11 11:00", "Alpha", 1]
       )
     end
 
@@ -227,6 +241,8 @@ RSpec.describe ReportGenerator do
   end
 
   describe ".generate_new_users_report" do
+    on_a_server_in_another_zone
+
     before do
       gina = student("Gina Genie", gender: "Female")
       gina.update_columns(faculty: "Génie", email: "gina@example.test", username: "gina")
@@ -293,10 +309,10 @@ RSpec.describe ReportGenerator do
       expect(body).to all(have_attributes(size: 9))
       gina = body.find { |r| r.first == "Gina Genie" }
       expect(gina).to eq(["Gina Genie", "gina", "gina@example.test", "Female", "undergrad", "Génie", 2020,
-                          User.find_by(username: "gina").student_id, march_10.localtime.strftime("%Y-%m-%d %H:%M")])
+                          User.find_by(username: "gina").student_id, "2026-03-10 11:00"])
       cam = body.find { |r| r.first == "Cam Community" }
       expect(cam).to eq(["Cam Community", "cam", "cam@example.test", "Male", "community_member", nil, nil,
-                         nil, march_10.localtime.strftime("%Y-%m-%d %H:%M")])
+                         nil, "2026-03-10 11:00"])
     end
 
     it "includes soft-deleted users and excludes users outside the range" do
@@ -313,6 +329,8 @@ RSpec.describe ReportGenerator do
   end
 
   describe ".generate_training_attendees_report" do
+    on_a_server_in_another_zone
+
     let!(:alpha) { create(:space, name: "Alpha") }
     let(:laser) { create(:training, name_en: "Laser", name: "Laser") }
 
@@ -333,7 +351,7 @@ RSpec.describe ReportGenerator do
          ["Student ID", "Name", "Email Address", "Certification Type", "Certification Date", "Instructor", "Course",
           "Facility"]]
       )
-      stamp = session.created_at.strftime("%Y-%m-%d %H:%M")
+      stamp = "2026-03-10 11:00" # Toronto time
       # every value sits under its own header; a student id keeps its leading zero
       expect(rows[5..6]).to contain_exactly(
         ["012345678", "Lena Learner", "lena@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"],
