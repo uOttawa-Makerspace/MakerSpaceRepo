@@ -561,6 +561,7 @@ class ProjectProposalsController < SessionsController
     saved = ProjectProposal.transaction do
       next false unless @project_proposal.update_with_categories(attributes, project_proposal_params[:categories])
 
+      @project_proposal.store_id_slug!
       attach_new_photos
       raise ActiveRecord::Rollback unless attach_new_files
 

@@ -636,6 +636,12 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect_create_refused(proposal_params(photos: ["not-a-signed-id"]))
     end
 
+    it "stores a new proposal's slug as '<id>.<title>'" do
+      post project_proposals_path, params: proposal_params(title: "Zed Title")
+      created = ProjectProposal.find_by(title: "Zed Title")
+      expect(created.slug).to eq("#{created.id}.zed-title")
+    end
+
     it "attaches a stored image named by its signed id" do
       blob = ActiveStorage::Blob.create_and_upload!(io: Rails.root.join("spec/support/assets/avatar.png").open, filename: "a.png")
       post project_proposals_path, params: proposal_params(photos: ["", blob.signed_id])

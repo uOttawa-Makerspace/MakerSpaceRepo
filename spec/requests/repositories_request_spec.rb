@@ -371,6 +371,13 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(Repository.find_by(title: "Spoof").user_id).to eq(stranger.id)
     end
 
+    it "stores a new repository's slug as '<id>.<title>'" do
+      content_login!(stranger)
+      post repositories_path(stranger.username), params: valid_params(title: "Zed Title")
+      made = Repository.find_by(title: "Zed Title")
+      expect(made.slug).to eq("#{made.id}.zed-title")
+    end
+
     it "adds the creator once when params[:owner] names the creator too" do
       content_login!(stranger)
       post repositories_path(owner.username), params: valid_params(title: "Solo").merge(owner: [stranger.id])

@@ -137,7 +137,7 @@ class RepositoriesController < SessionsController
   def create
     @repository = Repository.new(user_id: @user.id, users: [@user, *extra_owners])
 
-    if create_with_categories_and_equipments
+    if save_with_categories_and_equipments
       @user.increment!(:reputation, 25)
       redirect_to repository_path(@user.username, @repository.slug).to_s
     else
@@ -464,19 +464,10 @@ class RepositoriesController < SessionsController
       attributes = repository_params.except(:categories, :equipments).merge(password_attributes)
       next false unless @repository.update_with_categories(attributes, repository_params[:categories])
 
+      @repository.store_id_slug!
       @repository.equipments.destroy_all
       create_equipments
       true
-    end
-  end
-
-  # A new repository's address starts with its id, which exists only once it is stored, so it is saved a second
-  # time in the same transaction (an update sets the slug to "<id>.<title>").
-  def create_with_categories_and_equipments
-    Repository.transaction do
-      next false unless save_with_categories_and_equipments
-
-      @repository.save!
     end
   end
 
