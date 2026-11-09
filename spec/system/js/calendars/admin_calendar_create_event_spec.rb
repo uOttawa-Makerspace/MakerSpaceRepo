@@ -355,6 +355,26 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     expect(until_time).to eq(browser_utc("2027-03-25T23:59:59"))
   end
 
+  describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
+    it "saves the typed times and the end date in Toronto time", js: true, skip_bullet: true,
+                                                                  pending: "the modal reads the browser zone" do
+      open_admin_calendar
+      open_add_modal
+      fill_datetime("start_time_field", "2027-03-17T10:00")
+      fill_datetime("end_time_field", "2027-03-17T11:00")
+      select "Other", from: "event_type_select"
+      select "Daily", from: "recurrence_frequency"
+      find("#recurrence_until").set(Date.new(2027, 3, 25))
+      click_button "Save Draft"
+
+      expect(page).to have_text("Event created successfully.")
+      event = Event.find_by!(event_type: "other")
+      expect(event.start_time).to eq(Time.zone.local(2027, 3, 17, 10))
+      expect(event.end_time).to eq(Time.zone.local(2027, 3, 17, 11))
+      expect(event.recurrence_rule).to include("UNTIL=20270326T035959Z")
+    end
+  end
+
   it "shows a new draft with a pencil mark after saving", js: true, skip_bullet: true do
     open_admin_calendar
     open_add_modal

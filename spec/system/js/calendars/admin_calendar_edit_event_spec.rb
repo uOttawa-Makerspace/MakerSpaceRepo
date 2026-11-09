@@ -237,6 +237,27 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
     end
   end
 
+  describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
+    it "shows the event at its Toronto times", js: true, skip_bullet: true, pending: "the modal reads the browser zone" do
+      open_admin_calendar
+      open_event("Team sync")
+
+      expect(field_value("start_time_field")).to eq("2027-03-16T10:00")
+      expect(field_value("end_time_field")).to eq("2027-03-16T11:00")
+    end
+
+    it "removes one occurrence by its own instant", js: true, skip_bullet: true, pending: "the modal reads the browser zone" do
+      series = create_series
+      open_admin_calendar
+      open_event("Open lab", index: 1)
+      click_button "Delete"
+      click_button "This event"
+
+      expect(page).to have_text("This occurrence deleted.")
+      expect(series.reload.recurrence_rule).to include("EXDATE:20270317T140000Z")
+    end
+  end
+
   describe "a staff unavailability shown on the admin calendar" do
     let!(:unavail) do
       create(:staff_unavailability, user: worker, title: "Lecture", description: "Calculus",

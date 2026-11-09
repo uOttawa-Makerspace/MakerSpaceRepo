@@ -1,0 +1,148 @@
+{
+  "about": "Calendar times around the America/Toronto clock changes of 2027 (forward on Sunday 2027-03-14 at 2:00, back on Sunday 2027-11-07 at 2:00). Read by the Vitest calendar specs and the RSpec request specs, so the browser and the server are checked against the same table. A field is a datetime-local value in Toronto wall-clock time; an instant is UTC.",
+  "zone": "America/Toronto",
+  "fieldToInstant": [
+    {
+      "label": "a winter time",
+      "field": "2027-03-10T10:00",
+      "instant": "2027-03-10T15:00:00.000Z"
+    },
+    {
+      "label": "a summer time",
+      "field": "2027-03-17T10:00",
+      "instant": "2027-03-17T14:00:00.000Z"
+    },
+    {
+      "label": "midnight starting the day the clocks go forward",
+      "field": "2027-03-14T00:00",
+      "instant": "2027-03-14T05:00:00.000Z"
+    },
+    {
+      "label": "just before the clocks go forward",
+      "field": "2027-03-14T01:30",
+      "instant": "2027-03-14T06:30:00.000Z"
+    },
+    {
+      "label": "a time skipped when the clocks go forward (the same instant as 3:30)",
+      "field": "2027-03-14T02:30",
+      "instant": "2027-03-14T07:30:00.000Z"
+    },
+    {
+      "label": "midnight after the clocks went forward",
+      "field": "2027-03-15T00:00",
+      "instant": "2027-03-15T04:00:00.000Z"
+    },
+    {
+      "label": "a time in the repeated hour when the clocks go back (the first one)",
+      "field": "2027-11-07T01:30",
+      "instant": "2027-11-07T05:30:00.000Z"
+    },
+    {
+      "label": "after the clocks went back",
+      "field": "2027-11-07T03:00",
+      "instant": "2027-11-07T08:00:00.000Z"
+    },
+    {
+      "label": "late evening (already the next day in UTC)",
+      "field": "2027-03-17T22:30",
+      "instant": "2027-03-18T02:30:00.000Z"
+    },
+    {
+      "label": "early morning (still the day before in Tokyo)",
+      "field": "2027-03-17T07:00",
+      "instant": "2027-03-17T11:00:00.000Z"
+    }
+  ],
+  "instantToField": [
+    {
+      "label": "a winter time",
+      "instant": "2027-03-10T15:00:00.000Z",
+      "field": "2027-03-10T10:00"
+    },
+    {
+      "label": "a summer time",
+      "instant": "2027-03-17T14:00:00.000Z",
+      "field": "2027-03-17T10:00"
+    },
+    {
+      "label": "the first instant after the clocks go forward",
+      "instant": "2027-03-14T07:30:00.000Z",
+      "field": "2027-03-14T03:30"
+    },
+    {
+      "label": "the first 1:30 when the clocks go back",
+      "instant": "2027-11-07T05:30:00.000Z",
+      "field": "2027-11-07T01:30"
+    },
+    {
+      "label": "the second 1:30 when the clocks go back",
+      "instant": "2027-11-07T06:30:00.000Z",
+      "field": "2027-11-07T01:30"
+    },
+    {
+      "label": "late evening (already the next day in UTC)",
+      "instant": "2027-03-18T02:30:00.000Z",
+      "field": "2027-03-17T22:30"
+    }
+  ],
+  "calendarStrings": [
+    {
+      "label": "a one-off event in winter (the feed gives an offset)",
+      "start": "2027-03-10T10:00:00-05:00",
+      "field": "2027-03-10T10:00",
+      "instant": "2027-03-10T15:00:00.000Z"
+    },
+    {
+      "label": "an occurrence of a repeating event in summer (no zone: Toronto wall-clock time)",
+      "start": "2027-03-17T10:00:00",
+      "field": "2027-03-17T10:00",
+      "instant": "2027-03-17T14:00:00.000Z"
+    },
+    {
+      "label": "an occurrence on the day the clocks go forward",
+      "start": "2027-03-14T03:30:00",
+      "field": "2027-03-14T03:30",
+      "instant": "2027-03-14T07:30:00.000Z"
+    },
+    {
+      "label": "a late-evening occurrence (already the next day in UTC)",
+      "start": "2027-03-17T22:30:00",
+      "field": "2027-03-17T22:30",
+      "instant": "2027-03-18T02:30:00.000Z"
+    },
+    {
+      "label": "an occurrence at the first 1:30 when the clocks go back",
+      "start": "2027-11-07T01:30:00",
+      "field": "2027-11-07T01:30",
+      "instant": "2027-11-07T05:30:00.000Z"
+    },
+    {
+      "label": "a one-off event at the second 1:30 when the clocks go back",
+      "start": "2027-11-07T01:30:00-05:00",
+      "field": "2027-11-07T01:30",
+      "instant": "2027-11-07T06:30:00.000Z"
+    }
+  ],
+  "untilDates": [
+    {
+      "label": "a winter day",
+      "date": "2027-03-13",
+      "until": "20270314T045959Z"
+    },
+    {
+      "label": "the day the clocks go forward (it ends in summer time)",
+      "date": "2027-03-14",
+      "until": "20270315T035959Z"
+    },
+    {
+      "label": "the day before the clocks go back",
+      "date": "2027-11-06",
+      "until": "20271107T035959Z"
+    },
+    {
+      "label": "the day the clocks go back (it ends in winter time)",
+      "date": "2027-11-07",
+      "until": "20271108T045959Z"
+    }
+  ]
+}

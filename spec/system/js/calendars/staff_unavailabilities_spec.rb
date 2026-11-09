@@ -213,6 +213,25 @@ RSpec.describe "Staff unavailabilities page", type: :system do
     end
   end
 
+  describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
+    it "saves the typed times in Toronto time and shows them again", js: true, skip_bullet: true,
+                                                                       pending: "the modal reads the browser zone" do
+      open_page
+      open_add_modal
+      fill_datetime("start_time_field", "2027-03-17T10:00")
+      fill_datetime("end_time_field", "2027-03-17T12:00")
+      click_button "Save"
+
+      eventually { StaffUnavailability.exists?(user_id: staff.id) }
+      saved = StaffUnavailability.find_by!(user: staff)
+      expect(saved.start_time).to eq(eastern.local(2027, 3, 17, 10))
+      expect(saved.end_time).to eq(eastern.local(2027, 3, 17, 12))
+      open_entry("Unavailable")
+      expect(field_value("start_time_field")).to eq("2027-03-17T10:00")
+      expect(field_value("end_time_field")).to eq("2027-03-17T12:00")
+    end
+  end
+
   describe "editing and deleting" do
     let!(:lecture) do
       create(:staff_unavailability, user: staff, title: "Lecture", description: "Calculus",
@@ -338,6 +357,22 @@ RSpec.describe "Staff unavailabilities page", type: :system do
 
       eventually { series.reload.recurrence_rule.include?("UNTIL=20270316T140000Z") }
       expect(series.reload.recurrence_rule).to include("UNTIL=20270316T140000Z")
+    end
+
+    describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
+      it "shows the repeat end date and removes one occurrence by its own instant", js: true, skip_bullet: true,
+                                                                                   pending: "the modal reads the browser zone" do
+        series = create_series
+        open_page
+        open_entry("Class", index: 1)
+        expect(field_value("start_time_field")).to eq("2027-03-17T10:00")
+        expect(field_value("recurrence_until")).to eq("2027-03-31")
+        click_button "Delete"
+        click_button "This event"
+
+        eventually { series.reload.recurrence_rule.include?("EXDATE") }
+        expect(series.reload.recurrence_rule).to include("EXDATE:20270317T140000Z")
+      end
     end
 
     it "deletes the series with 'All events'", js: true, skip_bullet: true do
