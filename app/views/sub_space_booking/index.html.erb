@@ -123,7 +123,7 @@
     <!-- Access Request Form UX Improvement -->
     <div class="row justify-content-center mt-5">
       <div class="col-md-6 col-lg-5">
-        <% if UserBookingApproval.where(user:current_user).exists? && !UserBookingApproval.where(user:current_user).first.approved %>
+        <% if current_user.booking_access_pending? %>
           <div class="alert alert-warning text-center shadow-sm p-4 rounded-3">
             <i class="fa fa-hourglass-half fa-3x mb-3 text-warning"></i>
             <h4 class="text-body-emphasis">Access Pending</h4>

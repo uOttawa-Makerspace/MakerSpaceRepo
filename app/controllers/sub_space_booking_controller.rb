@@ -77,28 +77,12 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    if UserBookingApproval.where(user: current_user).first.nil?
-      booking_approval =
-        UserBookingApproval.new(
-          user: current_user,
-          date: Time.now,
-          comments: params[:comments],
-          approved: false,
-          identity: params[:identity]
-        )
-
-      if booking_approval.save
-        BookingMailer.send_booking_approval_request_sent(
-          booking_approval.id,
-          emails
-        ).deliver_later
-
-        flash[:notice] = "Access request submitted successfully."
-      else
-        flash[:alert] = booking_approval.errors.full_messages.join(", ")
-      end
+    booking_approval = current_user.request_booking_access(comments: params[:comments], identity: params[:identity])
+    if booking_approval.persisted?
+      BookingMailer.send_booking_approval_request_sent(booking_approval.id, emails).deliver_later
+      flash[:notice] = "Access request submitted successfully."
     else
-      flash[:alert] = "You have already requested access."
+      flash[:alert] = booking_approval.errors.full_messages.join(", ")
     end
     redirect_to root_path
   end
@@ -106,27 +90,20 @@ class SubSpaceBookingController < SessionsController
   def approve_access
     if params[:id].nil?
       user = User.find(params[:user_id])
-      uba = UserBookingApproval.find_or_initialize_by(user: user)
-      if uba.approved? && user.booking_approval?
-        redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                    notice: "#{user.name} already has booking access."
-        return
-      end
-      id = grant_booking_access!(uba)
-      BookingMailer.send_booking_approval_request_approved(id).deliver_later
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  notice: "Access granted successfully."
+      id = user.approve_booking_access(by: current_user)
+      granted_notice = "Access granted successfully."
     else
-      uba = UserBookingApproval.find(params[:id])
-      if uba.approved? && uba.user.booking_approval?
-        redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                    notice: "#{uba.user.name} already has booking access."
-        return
-      end
-      id = grant_booking_access!(uba)
-      BookingMailer.send_booking_approval_request_approved(id).deliver_later
+      request = UserBookingApproval.find(params[:id])
+      user = request.user
+      id = user.approve_booking_access(by: current_user, request_id: request.id)
+      granted_notice = "Access request approved successfully."
+    end
+    if id.nil?
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  notice: "Access request approved successfully."
+                  notice: "#{user.name} already has booking access."
+    else
+      BookingMailer.send_booking_approval_request_approved(id).deliver_later
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"), notice: granted_notice
     end
   rescue ActiveRecord::RecordInvalid => e
     approval_failed(e)
@@ -730,16 +707,6 @@ class SubSpaceBookingController < SessionsController
     end
   end
 
-  def grant_booking_access!(uba)
-    uba.identity = "Other" unless %w[JMTS Staff GNG Other].include?(uba.identity)
-    uba.date ||= Time.now
-    UserBookingApproval.transaction do
-      uba.update!(approved: true, staff: current_user)
-      uba.user.update!(booking_approval: true)
-    end
-    uba.id
-  end
-
   def access_request_recipients(identity)
     case identity
     when "JMTS" then jmts_access_request_recipients
@@ -772,15 +739,14 @@ class SubSpaceBookingController < SessionsController
     [supervisor.email]
   end
 
+  # Users are locked in id order so two bulk approvals cannot wait on each other.
   def grant_pending_access(ids)
-    approved_ids = []
     UserBookingApproval.transaction do
       UserBookingApproval
         .where(id: ids)
-        .reject { |uba| uba.approved? && uba.user.booking_approval? }
-        .each { |uba| approved_ids << grant_booking_access!(uba) }
+        .reorder(:user_id, :id)
+        .filter_map { |uba| uba.user.approve_booking_access(by: current_user, request_id: uba.id) }
     end
-    approved_ids
   end
 
   # Only bookings that are still pending are changed; returns their ids.

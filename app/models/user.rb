@@ -292,6 +292,51 @@ class User < ApplicationRecord
 
   default_scope { where(deleted: false) }
 
+  # True while one of this user's booking access requests is waiting for an answer.
+  def booking_access_pending?
+    pending_booking_request.present?
+  end
+
+  # The newest request still waiting for an answer, if any.
+  def pending_booking_request
+    user_booking_approvals.where(approved: false).reorder(created_at: :desc, id: :desc).first
+  end
+
+  # Grants booking access under the user row lock, so two approvals at once grant once. Approves the
+  # request `request_id`, or else the newest pending one, or else a new request. Returns the id of
+  # the granted request, or nil when the user already holds access on record (nothing changes).
+  # The caller sends the mail after this returns, i.e. after the transaction has committed.
+  def approve_booking_access(by:, request_id: nil)
+    with_lock do
+      request = approvable_booking_request(request_id)
+      next if booking_access_on_record?(request)
+
+      request.identity = "Other" unless UserBookingApproval::IDENTITIES.include?(request.identity)
+      request.date ||= Time.current
+      request.update!(approved: true, staff: by)
+      update!(booking_approval: true)
+      request.id
+    end
+  end
+
+  # Records a new booking access request. Old requests stay as history, so only a pending
+  # request, or access the user holds now, refuses a new one; in that case the returned record is
+  # unsaved and carries the reason. The user row is locked so two submits at once cannot
+  # both save a pending request.
+  def request_booking_access(comments:, identity:)
+    with_lock do
+      request = user_booking_approvals.build(date: Time.current, comments: comments, approved: false, identity: identity)
+      if booking_approval?
+        request.errors.add(:base, "You already have booking access.")
+      elsif booking_access_pending?
+        request.errors.add(:base, "You have already requested access.")
+      else
+        request.save
+      end
+      request
+    end
+  end
+
   # The shape error (in the current locale) when `address` could not be an
   # email address, nil when it is acceptable. The provider-typo hint is not part of it.
   def self.email_shape_error(address)
@@ -1143,6 +1188,20 @@ class User < ApplicationRecord
   end
 
   private
+
+  def approvable_booking_request(request_id)
+    return user_booking_approvals.find(request_id) if request_id
+
+    pending_booking_request || user_booking_approvals.build
+  end
+
+  # True when the user holds access and it is already on record as granted: the request is approved,
+  # or it is new and an earlier request was approved.
+  def booking_access_on_record?(request)
+    return false unless booking_approval?
+
+    request.approved? || (request.new_record? && user_booking_approvals.exists?(approved: true))
+  end
 
   def username_not_reserved
     errors.add(:username, :reserved) if ReservedUsernames.include?(username)
