@@ -244,6 +244,10 @@
           <% end %>
 
           <h5 class="mt-4 text-warning border-bottom border-warning-subtle pb-2">Pending Requests</h5>
+          <%# One decline form per request, outside the bulk form; each row's reason and decline button name it. %>
+          <% @pending_access_requests.each do |req| %>
+            <%= form_with url: deny_access_sub_space_booking_index_path(id: req.id), method: :put, id: "deny-access-#{req.id}" do %><% end %>
+          <% end %>
           <%= form_with url: bulk_approve_access_sub_space_booking_index_path, method: :put do |f| %>
             <div class="table-responsive">
               <table class="table table-hover align-middle border border-secondary-subtle">
@@ -257,7 +261,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <% UserBookingApproval.includes(:user).where(approved: false).find_each do |req| %>
+                  <% @pending_access_requests.each do |req| %>
                     <tr>
                       <td class="ps-3"><%= check_box_tag 'user_booking_approval_ids[]', req.id, false, class: 'form-check-input user-request-select', aria: { label: t('common.names.select_access_request', id: req.id) } %></td>
                       <td>
@@ -267,9 +271,12 @@
                       <td class="text-body-emphasis"><%= req.comments %></td>
                       <td class="text-body-secondary"><%= req.created_at.strftime("%b %e, %Y") %></td>
                       <td class="text-end pe-3">
-                        <div class="btn-group btn-group-sm">
-                          <%= button_to approve_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-success' do %><i class="fa-solid fa-check"></i><% end %>
-                          <%= button_to deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-xmark"></i><% end %>
+                        <div class="d-flex justify-content-end align-items-center gap-2">
+                          <%= text_field_tag :reason, nil, form: "deny-access-#{req.id}", id: "decline_reason_#{req.id}", class: 'form-control form-control-sm', maxlength: UserBookingApproval::REASON_MAX_LENGTH, placeholder: t('sub_space_booking.deny.reason_placeholder'), aria: { label: t('sub_space_booking.deny.decline_reason_label', name: req.user.name) } %>
+                          <div class="btn-group btn-group-sm">
+                            <%= button_to approve_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-outline-success' do %><i class="fa-solid fa-check"></i><% end %>
+                            <button type="submit" form="deny-access-<%= req.id %>" class="btn btn-outline-danger" aria-label="<%= t('sub_space_booking.deny.decline_label', name: req.user.name) %>"><i class="fa-solid fa-xmark"></i></button>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -292,16 +299,19 @@
                 </tr>
               </thead>
               <tbody>
-                <% UserBookingApproval.includes(:user, :staff).where(approved: true).find_each do |req| %>
+                <% UserBookingApproval.approved.from_active_accounts.includes(:user, :display_staff).find_each do |req| %>
                   <tr>
                     <td class="ps-3">
                       <strong class="text-body-emphasis"><%= req.user.name %></strong><br>
                       <small class="text-body-secondary"><%= req.user.email %></small>
                     </td>
                     <td class="text-body-emphasis"><%= truncate(req.comments, length: 40) %></td>
-                    <td class="text-body-secondary"><%= req.staff.name %></td>
+                    <td class="text-body-secondary"><%= req.display_staff&.name %></td>
                     <td class="text-end pe-3">
-                      <%= button_to deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'btn btn-sm btn-outline-danger' do %>Revoke<% end %>
+                      <%= form_with url: deny_access_sub_space_booking_index_path(id: req.id), method: :put, class: 'd-flex justify-content-end align-items-center gap-2' do |f| %>
+                        <%= f.text_field :reason, id: "revoke_reason_#{req.id}", class: 'form-control form-control-sm', maxlength: UserBookingApproval::REASON_MAX_LENGTH, placeholder: t('sub_space_booking.deny.reason_placeholder'), aria: { label: t('sub_space_booking.deny.revoke_reason_label', name: req.user.name) } %>
+                        <%= f.button 'Revoke', type: 'submit', class: 'btn btn-sm btn-outline-danger' %>
+                      <% end %>
                     </td>
                   </tr>
                 <% end %>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1640,12 +1640,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
     t.string "comments"
     t.datetime "created_at", null: false
     t.date "date"
+    t.datetime "decided_at"
+    t.bigint "decided_by_id"
     t.string "identity"
+    t.text "reason"
     t.bigint "staff_id"
+    t.string "status", default: "pending", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["decided_by_id"], name: "index_user_booking_approvals_on_decided_by_id"
     t.index ["staff_id"], name: "index_user_booking_approvals_on_staff_id"
+    t.index ["status"], name: "index_user_booking_approvals_on_status"
     t.index ["user_id"], name: "index_user_booking_approvals_on_user_id"
+    t.check_constraint "status::text = ANY (ARRAY['pending'::character varying, 'approved'::character varying, 'declined'::character varying, 'revoked'::character varying]::text[])", name: "user_booking_approvals_status_check"
   end
 
   create_table "users", id: :serial, force: :cascade do |t|
@@ -1992,6 +1999,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
   add_foreign_key "upvotes", "comments"
   add_foreign_key "upvotes", "users"
   add_foreign_key "user_booking_approvals", "users"
+  add_foreign_key "user_booking_approvals", "users", column: "decided_by_id", on_delete: :nullify
   add_foreign_key "user_booking_approvals", "users", column: "staff_id"
   add_foreign_key "users", "spaces"
   add_foreign_key "videos", "learning_modules"

@@ -55,6 +55,7 @@ class SubSpaceBookingController < SessionsController
       @pagy_old_pending, @old_pending_bookings = old_bookings(BookingStatus.pending.id, page_key: "old_pending_page")
       @pagy_old_approved, @old_approved_bookings = old_bookings(BookingStatus.approved.id, page_key: "old_approved_page")
       @pagy_old_declined, @old_declined_bookings = old_bookings(BookingStatus.declined.id, page_key: "old_declined_page")
+      @pending_access_requests = UserBookingApproval.pending.from_active_accounts.includes(:user).to_a
     end
 
     @supervisors = []
@@ -109,14 +110,17 @@ class SubSpaceBookingController < SessionsController
     approval_failed(e)
   end
 
+  # Declines a pending request or revokes an approved one; the request is kept with its status,
+  # and the requester is mailed once the decision is saved.
   def deny_access
-    uba = UserBookingApproval.find(params[:id])
-    UserBookingApproval.transaction do
-      uba.user.update_column(:booking_approval, false)
-      uba.destroy!
-    end
+    approval = UserBookingApproval.find(params[:id])
+    approval.user.deny_booking_access(approval, by: current_user, reason: params[:reason].to_s.strip.presence)
+    BookingMailer.send_booking_access_denied(approval.id).deliver_later
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                notice: "Access request declined successfully."
+                notice: approval.revoked? ? "Booking access revoked successfully." : "Access request declined successfully."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
+                alert: "Failed to decline or revoke: #{e.record.errors.full_messages.join(", ")}"
   end
 
   def bulk_approve_access
@@ -407,16 +411,8 @@ class SubSpaceBookingController < SessionsController
                   "Booking made #{booking.public ? "public" : "private"} successfully."
   end
 
+  # Only the owner or an admin gets here (user_booking_belongs).
   def delete
-    unless current_user.admin? ||
-             SubSpaceBooking.find(params[:sub_space_booking_id]).user_id ==
-               current_user.id
-      return(
-        redirect_to root_path,
-                    alert: "You are not authorized to view this page."
-      )
-    end
-
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     subspaceName = booking.sub_space.name
     booking.destroy_with_status!
@@ -533,13 +529,14 @@ class SubSpaceBookingController < SessionsController
     end
   end
 
-  # Checks one occurrence on the unsaved record, then saves it with its status
-  # in one transaction, so a failure leaves no half-made row. Renders nothing:
+  # Checks one occurrence against the room's blocks and limits, then saves it
+  # with its status in one transaction, so a failure leaves no half-made row.
+  # The record's own checks already passed in create: a series occurrence
+  # differs from the first only by its date, and past ones are skipped; save!
+  # still runs them. Renders nothing:
   # returns nil when booked, or a failure ({ errors:, alert:, timeslot: }) for
   # the caller to render.
   def book_occurrence(booking, recurring_booking: nil, send_email: true)
-    return invalid_booking_failure(booking) unless booking.valid_without_status?
-
     sub_space = booking.sub_space
 
     # the zoned instants the model stores, compared with the stored UTC
@@ -613,7 +610,7 @@ class SubSpaceBookingController < SessionsController
   def send_booking_created_mail(booking)
     if booking.pending?
       BookingMailer.send_booking_needs_approval(booking.id).deliver_later
-    elsif booking.approved?
+    else # approved: a new booking is saved as pending or approved
       # Send appropriate confirmation for approved bookings
       if current_user.admin?
         BookingMailer.send_booking_approved(booking.id).deliver_later

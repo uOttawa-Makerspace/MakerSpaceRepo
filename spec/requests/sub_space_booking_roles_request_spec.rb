@@ -60,7 +60,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
   end
 
   def uba_for(user, approved: false, identity: "Other")
-    UserBookingApproval.create!(user: user, identity: identity, approved: approved,
+    UserBookingApproval.create!(user: user, identity: identity, status: (approved ? "approved" : "pending"),
                                 comments: "please", date: Date.new(2027, 1, 1))
   end
 
@@ -199,13 +199,13 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
           expect(mail.subject).to eq("Booking approval request accepted")
         end
 
-        it "deny_access removes the request and revokes access" do
+        it "deny_access revokes access and keeps the request as revoked" do
           applicant = create(:user, :regular_user, booking_approval: true)
           uba = uba_for(applicant, approved: true)
           sign_in_as(role)
           put deny_access_sub_space_booking_index_path, params: { id: uba.id }
-          expect(flash[:notice]).to eq("Access request declined successfully.")
-          expect(UserBookingApproval.exists?(uba.id)).to be(false)
+          expect(flash[:notice]).to eq("Booking access revoked successfully.")
+          expect(uba.reload.status).to eq("revoked")
           expect(applicant.reload.booking_approval).to be(false)
         end
 

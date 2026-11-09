@@ -3,8 +3,8 @@
 require "rails_helper"
 
 # Characterization for UserBookingApproval - request-access records.
-# Identity vocabulary is closed: JMTS/Staff/GNG/Other (controller
-# grant_booking_access! rewrites any other value to "Other").
+# Identity vocabulary is closed: JMTS/Staff/GNG/Other (approve! rewrites
+# any other value to "Other").
 # default_scope orders EVERY query by created_at DESC, including the
 # `where(user:...).first` duplicate-request lookup.
 # User#user_booking_approvals lists the requests a user made (user_id);
@@ -64,5 +64,111 @@ RSpec.describe UserBookingApproval, type: :model do
       approved: false, comments: "c", date: Date.today
     )
     expect(uba.staff).to be_nil
+  end
+
+  describe "status" do
+    let(:user) { create(:user, :regular_user) }
+    let(:admin) { create(:user, :admin) }
+    let(:request) { described_class.create!(user: user, identity: "GNG", comments: "c", date: Date.today) }
+
+    it "starts pending, and the approved column mirrors the status" do
+      expect(request).to have_attributes(status: "pending", approved: false)
+      request.approve!(by: admin)
+      expect(request.reload).to have_attributes(status: "approved", approved: true, staff_id: admin.id,
+                                                decided_by_id: admin.id)
+      request.revoke!(by: admin, reason: "r")
+      expect(request.reload).to have_attributes(status: "revoked", approved: false, reason: "r")
+    end
+
+    it "deny! declines a pending request and revokes an approved one" do
+      request.deny!(by: admin, reason: "no")
+      expect(request.reload).to have_attributes(status: "declined", reason: "no")
+      approved = described_class.create!(user: user, identity: "GNG", comments: "c", date: Date.today, status: "approved")
+      approved.deny!(by: admin)
+      expect(approved.reload).to have_attributes(status: "revoked", decided_by_id: admin.id)
+    end
+
+    it "lists the requests a user decided" do
+      request.decline!(by: admin)
+      expect(admin.decided_booking_requests).to contain_exactly(request)
+    end
+
+    {
+      "approved" => %w[declined pending],
+      "declined" => %w[approved revoked pending],
+      "revoked" => %w[approved declined pending]
+    }.each do |from, targets|
+      targets.each do |to|
+        it "does not go from #{from} to #{to}" do
+          request.update_columns(status: from)
+          request.status = to
+          expect(request).not_to be_valid
+          expect(request.errors[:base]).to eq(["This request was already #{from}."])
+        end
+      end
+    end
+
+    it "does not revoke a pending request" do
+      expect { request.revoke!(by: admin) }.to raise_error(ActiveRecord::RecordInvalid, /already pending/)
+    end
+
+    it "refuses an unknown status" do
+      request.status = "lost"
+      expect(request).not_to be_valid
+    end
+
+    it "checks the identity only when it is set or the request is new" do
+      request.update_columns(identity: nil)
+      expect(request.reload).to be_valid
+      request.identity = "Nope"
+      expect(request).not_to be_valid
+    end
+
+    it "keeps a decision when the deciding account is deleted" do
+      request.decline!(by: admin)
+      admin.delete
+      expect(request.reload).to have_attributes(status: "declined", decided_by_id: nil)
+    end
+
+    it "stays with its account once the account is deleted: it can be declined but not approved" do
+      user.update_column(:deleted, true)
+      request.reload
+      expect(request.user).to eq(user)
+      expect { request.approve!(by: admin) }
+        .to raise_error(ActiveRecord::RecordInvalid, /The account that sent this request has been deleted./)
+      expect(request.reload).to be_pending
+      request.decline!(by: admin)
+      expect(request.reload).to be_declined
+    end
+
+    it "reports a missing account, rather than failing, when an approved request has no user" do
+      orphan = described_class.new(identity: "GNG", comments: "c", date: Date.today, status: "approved")
+      expect(orphan).not_to be_valid
+      expect(orphan.errors[:user]).to be_present
+    end
+
+    it "lists only the requests of accounts that are not deleted as from active accounts" do
+      request
+      gone = described_class.create!(user: create(:user, :regular_user, deleted: true), identity: "GNG",
+                                     comments: "c", date: Date.today)
+      expect(described_class.from_active_accounts).to contain_exactly(request)
+      expect(described_class.where(id: gone.id)).to exist
+    end
+
+    it "has ended once declined or revoked, and not while pending or approved" do
+      expect(request).not_to be_ended
+      expect(described_class.new(status: "approved")).not_to be_ended
+      expect(described_class.new(status: "declined")).to be_ended
+      expect(described_class.new(status: "revoked")).to be_ended
+    end
+
+    it "dates the status by when the request was sent while pending, and by the decision after" do
+      sent = Time.zone.local(2026, 11, 2, 10)
+      decided = Time.zone.local(2026, 11, 4, 9)
+      expect(described_class.new(status: "pending", created_at: sent).status_changed_on).to eq(Date.new(2026, 11, 2))
+      expect(described_class.new(status: "declined", created_at: sent, decided_at: decided).status_changed_on)
+        .to eq(Date.new(2026, 11, 4))
+      expect(described_class.new(status: "approved", created_at: sent).status_changed_on).to be_nil
+    end
   end
 end

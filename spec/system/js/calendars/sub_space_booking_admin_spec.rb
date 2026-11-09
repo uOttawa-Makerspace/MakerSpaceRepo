@@ -190,6 +190,28 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       expect(requester_two.reload.booking_approval).to be(false)
     end
 
+    it "declines one request with the reason typed in its row", js: true, skip_bullet: true do
+      open_admin_panel
+      fill_in "Reason for declining Rex Requester (optional)", with: "Not a GNG student", enable_aria_label: true
+      click_button "Decline Rex Requester", enable_aria_label: true
+
+      expect(page).to have_text("Access request declined successfully.")
+      expect(requester_two.user_booking_approvals.first)
+        .to have_attributes(status: "declined", reason: "Not a GNG student", decided_by_id: admin.id)
+      expect(requester_one.user_booking_approvals.first.status).to eq("pending")
+    end
+
+    it "revokes an approved user with the reason typed in their row", js: true, skip_bullet: true do
+      requester_one.approve_booking_access(by: admin)
+      open_admin_panel
+      fill_in "Reason for revoking Rita Requester's access (optional)", with: "Misused the room", enable_aria_label: true
+      click_button "Revoke"
+
+      expect(page).to have_text("Booking access revoked successfully.")
+      expect(requester_one.user_booking_approvals.first).to have_attributes(status: "revoked", reason: "Misused the room")
+      expect(requester_one.reload.booking_approval).to be(false)
+    end
+
     it "clears every request box again", js: true, skip_bullet: true do
       open_admin_panel
       find("#userRequestSelectAll").check

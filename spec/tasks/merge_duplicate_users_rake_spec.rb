@@ -111,7 +111,7 @@ RSpec.describe "users:merge_duplicates" do
 
   it "moves a duplicate's booking access requests, and the requests it approved, with a blank identity filled in" do
     requested = UserBookingApproval.create!(user: duplicate, identity: "GNG", comments: "c", date: Date.today)
-    approved = UserBookingApproval.create!(user: create(:user), staff: duplicate, identity: "Other", approved: true,
+    approved = UserBookingApproval.create!(user: create(:user), staff: duplicate, identity: "Other", status: "approved",
                                            comments: "c", date: Date.today)
     approved.update_columns(identity: "")
 
@@ -122,6 +122,16 @@ RSpec.describe "users:merge_duplicates" do
     expect(approved.identity).to eq("Other")
     expect(primary.user_booking_approvals).to contain_exactly(requested)
     expect(primary.approved_booking_requests).to contain_exactly(approved)
+  end
+
+  it "moves the booking access answers the duplicate recorded, keeping the decision" do
+    declined = UserBookingApproval.create!(user: create(:user), identity: "GNG", comments: "c", date: Date.today)
+    declined.decline!(by: duplicate, reason: "not eligible")
+
+    merge
+
+    expect(declined.reload).to have_attributes(decided_by_id: primary.id, status: "declined", reason: "not eligible")
+    expect(primary.decided_booking_requests).to contain_exactly(declined)
   end
 
   it "keeps one membership of a training session both users attended, and moves the others" do

@@ -1,0 +1,18 @@
+<%# Where the signed-in user's booking access stands, from User#booking_access_request (nil: no request). %>
+<p class="text-body text-center mb-3" id="booking-access-status">
+  <% if approval.nil? %>
+    <%= t("sub_space_booking.access_status.none") %>
+  <% elsif approval.approved? %>
+    <%= t("sub_space_booking.access_status.approved") %>
+  <% else %>
+    <%= t("sub_space_booking.access_status.#{approval.status}", date: l(approval.status_changed_on, format: :long)) %>
+  <% end %>
+  <% if approval&.reason.present? %>
+    <br>
+    <%= t("sub_space_booking.access_status.reason", reason: approval.reason) %>
+  <% end %>
+  <% if approval&.ended? %>
+    <br>
+    <%= t("sub_space_booking.access_status.ask_again") %>
+  <% end %>
+</p>

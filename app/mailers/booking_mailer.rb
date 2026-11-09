@@ -49,7 +49,8 @@ class BookingMailer < ApplicationMailer
     @user_booking_approval = UserBookingApproval.find(booking_approval_id)
     @user = @user_booking_approval.user
 
-    return if emails.empty?
+    return if emails.empty? || @user.deleted?
+
     @message =
       "A user by the name of " + @user.name +
         " has requested to be a room booker in makeroom. Please go to the
@@ -61,16 +62,35 @@ class BookingMailer < ApplicationMailer
   def send_booking_approval_request_approved(booking_approval_id)
     @user_booking_approval = UserBookingApproval.find(booking_approval_id)
     @user = @user_booking_approval.user
-    @email = @user.email
+    @email = requester_email
+    return if @email.nil?
 
-    return if @email.blank?
     @message =
       "Your booking approval request has been reviewed and accepted by an admin. Please go to the
                 <a href='https://makerepo.com/sub_space_booking'>MakeRepo Booking</a> page if you would like to book rooms."
     mail(to: @email, subject: "Booking approval request accepted")
   end
 
+  # Tells the requester that their request was declined, or their access revoked, with the
+  # reason when staff gave one. French first, then English, like the other mails sent to users.
+  def send_booking_access_denied(booking_approval_id)
+    @user_booking_approval = UserBookingApproval.find(booking_approval_id)
+    @user = @user_booking_approval.user
+    email = requester_email
+    return if email.nil?
+
+    key = "booking_mailer.access_denied.subject.#{@user_booking_approval.status}"
+    @subject = "MakerRepo - #{I18n.t(key, locale: :fr)} // #{I18n.t(key, locale: :en)}"
+    mail(to: email, subject: @subject)
+  end
+
   private
+
+  # Where a mail to the requester goes: nil, so nothing is sent, when the account was deleted or
+  # has no email.
+  def requester_email
+    @user.email.presence unless @user.deleted?
+  end
 
   # The space managers' emails; the MTC mailbox, with the missing managers
   # reported, when the space has none.

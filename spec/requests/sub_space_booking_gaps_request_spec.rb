@@ -874,7 +874,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
     it "tells the admin when the user already has booking access (no change, no mail)" do
       applicant = create(:user, :regular_user, booking_approval: true)
-      UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
+      UserBookingApproval.create!(user: applicant, identity: "Other", status: "approved",
                                   comments: "c", date: Date.new(2027, 1, 1))
       perform_enqueued_jobs { put approve_access_sub_space_booking_index_path, params: { user_id: applicant.id } }
 
@@ -922,7 +922,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     end
 
     it "bulk approve skips requests that are already approved" do
-      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true, staff: admin,
+      uba = UserBookingApproval.create!(user: applicant, identity: "Other", status: "approved", staff: admin,
                                         comments: "c", date: Date.new(2027, 1, 1))
       applicant.update_column(:booking_approval, true)
       other_admin = create(:user, :admin, booking_approval: true)
@@ -940,7 +940,8 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
 
     def request_for(approved:)
       user = create(:user, :regular_user, booking_approval: approved)
-      UserBookingApproval.create!(user: user, identity: "Other", approved: approved, staff: (admin if approved),
+      UserBookingApproval.create!(user: user, identity: "Other", status: (approved ? "approved" : "pending"),
+                                  staff: (admin if approved),
                                   comments: "c", date: Date.new(2027, 1, 1))
     end
 
@@ -1049,26 +1050,16 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "deny_access removes the request and clears the user's booking access even when the user record is otherwise invalid" do
+    it "deny_access keeps the user's access and every request when the decision cannot be saved" do
       applicant = create(:user, :regular_user, booking_approval: true)
-      applicant.update_column(:gender, "Unlisted")
-      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
-                                        comments: "c", date: Date.new(2027, 1, 1))
-      put deny_access_sub_space_booking_index_path, params: { id: uba.id }
+      rows = 2.times.map do
+        UserBookingApproval.create!(user: applicant, identity: "Other", status: "approved", staff: admin,
+                                    comments: "c", date: Date.new(2027, 1, 1))
+      end
+      put deny_access_sub_space_booking_index_path, params: { id: rows.first.id, reason: "x" * 1001 }
 
-      expect(flash[:notice]).to eq("Access request declined successfully.")
-      expect(UserBookingApproval.exists?(uba.id)).to be(false)
-      expect(applicant.reload.booking_approval).to be(false)
-    end
-
-    it "deny_access keeps the user's access when removing the request fails" do
-      applicant = create(:user, :regular_user, booking_approval: true)
-      uba = UserBookingApproval.create!(user: applicant, identity: "Other", approved: true,
-                                        comments: "c", date: Date.new(2027, 1, 1))
-      allow_any_instance_of(UserBookingApproval).to receive(:destroy!).and_raise(ActiveRecord::RecordNotDestroyed)
-      put deny_access_sub_space_booking_index_path, params: { id: uba.id }
-
-      expect(UserBookingApproval.exists?(uba.id)).to be(true)
+      expect(flash[:alert]).to start_with("Failed to decline or revoke: Reason")
+      expect(rows.map { |row| row.reload.status }).to eq(%w[approved approved])
       expect(applicant.reload.booking_approval).to be(true)
     end
   end
