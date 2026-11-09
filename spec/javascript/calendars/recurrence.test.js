@@ -18,6 +18,7 @@ import {
   wallFromString,
   wallToInstant,
 } from "../../../app/javascript/src/recurrence.js";
+import cases from "../../fixtures/calendar_dst_cases.json";
 
 const ZONES = ["America/Toronto", "Europe/Paris", "UTC"];
 // Offset of each zone on 2026-03-30, in minutes as getTimezoneOffset reports it
@@ -352,6 +353,23 @@ describe.each(ZONES)("with the process clock in %s", (zone) => {
           wall(2026, 3, 2),
         ),
       ).toThrow();
+    });
+  });
+
+  // The same rule as it can be stored (spec/fixtures/calendar_dst_cases.json,
+  // which the request specs also read): each form starts at the same instants.
+  describe.each(["utc"])("a stored rule with a %s start", (form) => {
+    it.each(cases.storedRules)("$label", (c) => {
+      const from = instantToWall(Date.parse(c.start));
+      const found = occurrencesOverlapping(
+        c[form],
+        HOUR,
+        from,
+        from + 60 * 24 * HOUR,
+      );
+      expect(
+        found.map((o) => new Date(wallToInstant(o.start)).toISOString()),
+      ).toEqual(c.occurrences);
     });
   });
 

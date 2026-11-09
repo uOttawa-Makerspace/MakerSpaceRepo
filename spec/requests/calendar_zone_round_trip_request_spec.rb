@@ -120,6 +120,42 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
         end
       end
 
+      describe "a stored repeat rule" do
+        let(:toronto) { ActiveSupport::TimeZone["America/Toronto"] }
+
+        %w[utc].each do |form|
+          cases["storedRules"].each do |c|
+            context "#{c['label']}, with a #{form} start" do
+              let(:text) { c[form] }
+              let(:start) { Time.iso8601(c["start"]).in_time_zone(toronto) }
+
+              it "expands on the server to the instants of the table" do
+                found = RecurrenceExpansion.occurrences(text, start, start, start + 60.days, 50).occurrences
+                expect(found.map { |t| t.utc.iso8601(3) }).to eq(c["occurrences"])
+              end
+
+              it "is accepted by the validator" do
+                expect(RecurrenceRuleValidator.error_for(text)).to be_nil
+              end
+
+              it "is sent to the admin calendar starting at its Toronto time" do
+                sign_in_as(:admin)
+                event = create(:event, space: space, start_time: start, end_time: start + 1.hour, recurrence_rule: text)
+                get json_admin_events_path(id: space.id)
+                row = admin_rows.find { |r| r["id"] == "event-#{event.id}" }
+                expect(row["rrule"].lines.first.chomp).to eq("DTSTART:#{start.strftime('%Y%m%dT%H%M%S')}")
+                expect(row["rrule"].lines.drop(1).join).to eq(text.lines.drop(1).join)
+              end
+
+              it "is sent to Google as its RRULE line only" do
+                event = create(:event, space: space, start_time: start, end_time: start + 1.hour, recurrence_rule: text)
+                expect(GoogleCalendar::EventPayload.new(event).build.recurrence).to eq([text.lines.last])
+              end
+            end
+          end
+        end
+      end
+
       describe "a rule stored before the modal read Toronto time" do
         # Stored rules keep their UTC stamps: the feeds and the server expansion
         # read them exactly as before.
