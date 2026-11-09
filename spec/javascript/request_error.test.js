@@ -220,15 +220,17 @@ describe("failureText defaults and the toasts", () => {
   });
 
   it("toasts a server error's own message", () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
     reportFailure(new RequestFailed("Locker 5 is taken"));
     expect(toasts).toEqual([{ message: "Locker 5 is taken", type: "error" }]);
+    expect(log).not.toHaveBeenCalled();
   });
 
   it("toasts the generic text for a dropped connection, never the raw error", () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
     reportFailure(new TypeError("Failed to fetch"));
     expect(toasts).toEqual([{ message: "Reload and retry", type: "error" }]);
+    expect(log).toHaveBeenCalledTimes(1);
   });
 
   it("showFailure toasts the given text as an error", () => {
