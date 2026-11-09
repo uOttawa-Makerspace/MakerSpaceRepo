@@ -90,27 +90,20 @@ class SubSpaceBookingController < SessionsController
   def approve_access
     if params[:id].nil?
       user = User.find(params[:user_id])
-      uba = user.pending_booking_request || UserBookingApproval.new(user: user)
-      if already_has_booking_access?(uba)
-        redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                    notice: "#{user.name} already has booking access."
-        return
-      end
-      id = grant_booking_access!(uba)
-      BookingMailer.send_booking_approval_request_approved(id).deliver_later
-      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  notice: "Access granted successfully."
+      id = user.approve_booking_access(by: current_user)
+      granted_notice = "Access granted successfully."
     else
-      uba = UserBookingApproval.find(params[:id])
-      if already_has_booking_access?(uba)
-        redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                    notice: "#{uba.user.name} already has booking access."
-        return
-      end
-      id = grant_booking_access!(uba)
-      BookingMailer.send_booking_approval_request_approved(id).deliver_later
+      request = UserBookingApproval.find(params[:id])
+      user = request.user
+      id = user.approve_booking_access(by: current_user, request_id: request.id)
+      granted_notice = "Access request approved successfully."
+    end
+    if id.nil?
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  notice: "Access request approved successfully."
+                  notice: "#{user.name} already has booking access."
+    else
+      BookingMailer.send_booking_approval_request_approved(id).deliver_later
+      redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"), notice: granted_notice
     end
   rescue ActiveRecord::RecordInvalid => e
     approval_failed(e)
@@ -714,25 +707,6 @@ class SubSpaceBookingController < SessionsController
     end
   end
 
-  # True when the request's user holds access now and it is already on record as granted: either this
-  # request is approved, or the user has no waiting request and an earlier one was approved.
-  def already_has_booking_access?(uba)
-    user = uba.user
-    return false unless user.booking_approval?
-
-    uba.approved? || (uba.new_record? && user.user_booking_approvals.exists?(approved: true))
-  end
-
-  def grant_booking_access!(uba)
-    uba.identity = "Other" unless %w[JMTS Staff GNG Other].include?(uba.identity)
-    uba.date ||= Time.now
-    UserBookingApproval.transaction do
-      uba.update!(approved: true, staff: current_user)
-      uba.user.update!(booking_approval: true)
-    end
-    uba.id
-  end
-
   def access_request_recipients(identity)
     case identity
     when "JMTS" then jmts_access_request_recipients
@@ -765,15 +739,14 @@ class SubSpaceBookingController < SessionsController
     [supervisor.email]
   end
 
+  # Users are locked in id order so two bulk approvals cannot wait on each other.
   def grant_pending_access(ids)
-    approved_ids = []
     UserBookingApproval.transaction do
       UserBookingApproval
         .where(id: ids)
-        .reject { |uba| uba.approved? && uba.user.booking_approval? }
-        .each { |uba| approved_ids << grant_booking_access!(uba) }
+        .reorder(:user_id, :id)
+        .filter_map { |uba| uba.user.approve_booking_access(by: current_user, request_id: uba.id) }
     end
-    approved_ids
   end
 
   # Only bookings that are still pending are changed; returns their ids.
