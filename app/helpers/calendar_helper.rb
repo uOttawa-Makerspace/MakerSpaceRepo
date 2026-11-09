@@ -263,7 +263,15 @@ module CalendarHelper
     return Date.strptime(value, "%Y%m%d") if value.is_a?(String) && value.match?(/\A\d{8}\z/)
 
     raw = value.is_a?(Icalendar::Values::DateTime) ? value.value : value
-    raw if raw.instance_of?(::DateTime) || calendar_date?(raw)
+    raw if floating_time?(raw) || calendar_date?(raw)
+  end
+
+  # icalendar leaves a plain DateTime with no offset for a time with no zone and
+  # for a TZID it cannot resolve (for example a custom name with no VTIMEZONE);
+  # both are read as Toronto time. A resolved TZID gives a zoned value, and a
+  # plain DateTime with an offset is an instant.
+  def floating_time?(raw)
+    raw.instance_of?(::DateTime) && raw.offset.zero?
   end
 
   def calendar_date?(raw)

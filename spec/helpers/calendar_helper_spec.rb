@@ -247,6 +247,27 @@ RSpec.describe CalendarHelper, type: :helper do
     end
   end
 
+  describe "#safe_to_time" do
+    it "keeps the instant of a date-time that has an offset" do
+      expect(safe_to_time(DateTime.new(2026, 11, 1, 9, 0, 0, "+02:00"))).to eq(Time.utc(2026, 11, 1, 7, 0))
+    end
+
+    it "reads a date-time with no offset as Toronto wall-clock time" do
+      expect(safe_to_time(DateTime.new(2026, 10, 30, 9, 0, 0))).to eq(Time.utc(2026, 10, 30, 13, 0))
+    end
+
+    it "reads a time zone name it cannot resolve as Toronto, and keeps one it can resolve" do
+      body = ["BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT", "UID:z", "DTSTAMP:20260101T000000Z",
+              "DTSTART;TZID=Bogus/Zone:20261030T013000", "DTEND;TZID=Bogus/Zone:20261030T023000",
+              "END:VEVENT", "BEGIN:VEVENT", "UID:p", "DTSTAMP:20260101T000000Z",
+              "DTSTART;TZID=Europe/Paris:20261030T013000", "DTEND;TZID=Europe/Paris:20261030T023000",
+              "END:VEVENT", "END:VCALENDAR"].join("\r\n") + "\r\n"
+      events = Icalendar::Calendar.parse(body).first.events.index_by { |e| e.uid.to_s }
+      expect(safe_to_time(events["z"].dtstart)).to eq(Time.utc(2026, 10, 30, 5, 30))
+      expect(safe_to_time(events["p"].dtstart)).to eq(Time.utc(2026, 10, 30, 0, 30))
+    end
+  end
+
   describe "#generate_color_from_id" do
     it "gives the same colour for the same id, as rgba with the given opacity" do
       expect(generate_color_from_id("abc", 0.5)).to eq(generate_color_from_id("abc", 0.5))
