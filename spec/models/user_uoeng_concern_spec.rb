@@ -241,6 +241,26 @@ RSpec.describe User::UoengConcern, type: :model do
           expect(error_details.to_json).not_to match(/Tester|Canadian/)
         end
 
+        it "after a malformed body holds no text of the body, in the row or in the reported error" do
+          stub_api(body: '{"first_name":"Jane","email_addr":"jane.doe@example.test" oops')
+          reported = []
+          allow(Rails.error).to receive(:report) { |error, **| reported << error }
+          eng.validate_uoeng_membership
+
+          details = error_details
+          expect(details).to include("reason" => "uoeng_bad_json", "exception_class" => "JSON::ParserError", "error" => "could not be read as JSON")
+          expect(details.to_json).not_to match(/Jane|jane\.doe|email_addr/)
+          expect(reported.map(&:message).join).not_to match(/Jane|jane\.doe|email_addr/)
+          expect(reported.size).to eq(1)
+        end
+
+        it "after an answer of the wrong shape names the reason without body text" do
+          stub_api(body: full_answer.merge("faculty" => 7))
+          eng.validate_uoeng_membership
+
+          expect(error_details).to include("exception_class" => "User::UoengConcern::UnexpectedShape", "error" => "unexpected answer shape")
+        end
+
         it "is still shown by the staff console row" do
           stub_api(status: 503, body: full_answer)
           eng.validate_uoeng_membership

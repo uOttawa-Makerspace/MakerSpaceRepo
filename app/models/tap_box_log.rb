@@ -325,9 +325,15 @@ class TapBoxLog < ApplicationRecord
       details: {
         reason: "uoeng_bad_json",
         response: uoeng_response_summary(response),
-        exception_message: exception.message
+        exception_class: exception.class.name,
+        error: bad_json_reason(exception)
       }
     )
+  end
+
+  # A parser error quotes part of the body, so only a fixed description is kept.
+  def self.bad_json_reason(exception)
+    exception.is_a?(User::UoengConcern::UnexpectedShape) ? "unexpected answer shape" : "could not be read as JSON"
   end
 
   def self.log_engineering_check_error(user:, exception:, card_number: nil, space: nil)
