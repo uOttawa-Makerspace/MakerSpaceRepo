@@ -530,6 +530,28 @@ RSpec.describe ReportGenerator do
       rows = grid(described_class.generate_peak_hours_report(to, from))["Sheet1"]
       expect(rows).to eq([["Visitors by Hour"], ["From", "2026-03-31"], ["To", "2026-03-01"], [], ["Date"]])
     end
+
+    context "on a server in another time zone" do
+      on_a_server_in_another_zone
+
+      it "counts each visit under its hour and day in Toronto time" do
+        create(:lab_session, sign_in_time: march_10, created_at: march_10)
+        create(:lab_session, sign_in_time: Time.utc(2026, 3, 11, 2, 15), created_at: march_10)
+        rows = grid(described_class.generate_peak_hours_report(DateTime.new(2026, 3, 10), DateTime.new(2026, 3, 11).end_of_day))["Sheet1"]
+        # 15:00 UTC is 11:00 in Toronto, and 02:15 UTC on the 11th is 22:15 on the 10th
+        expect(rows[4]).to eq(["Date", *(11..22).map { |h| "%02i:00" % h }])
+        expect(rows[5]).to eq(["2026-03-10", 1, *[0] * 10, 1])
+        expect(rows[6]).to eq(["2026-03-11", *[0] * 12])
+      end
+
+      it "adds up the visits of the hour that repeats when daylight saving time ends" do
+        # 05:30 and 06:30 UTC on 2026-11-01 are both 01:30 in Toronto (EDT, then EST)
+        create(:lab_session, sign_in_time: Time.utc(2026, 11, 1, 5, 30))
+        create(:lab_session, sign_in_time: Time.utc(2026, 11, 1, 6, 30))
+        rows = grid(described_class.generate_peak_hours_report(DateTime.new(2026, 11, 1), DateTime.new(2026, 11, 1).end_of_day))["Sheet1"]
+        expect(rows[4..]).to eq([%w[Date 01:00], ["2026-11-01", 2]])
+      end
+    end
   end
 
   describe ".generate_space_present_users_report" do

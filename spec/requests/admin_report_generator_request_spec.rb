@@ -370,8 +370,7 @@ RSpec.describe "Admin report generator", type: :request do
       rows = c18_xlsx_sheets(response.body).fetch("Sheet1")
       expect(rows[0].first).to eq("Visitors by Hour")
       expect(rows[1].first(2)).to eq(%w[From 2026-03-01])
-      hour = march_10.localtime.hour
-      expect(rows[4].compact).to eq(["Date", "%02i:00" % hour])
+      expect(rows[4].compact).to eq(%w[Date 11:00]) # 15:00 UTC in the app time zone (Toronto)
       expect(rows[5..].size).to eq(31) # 2026-03-01 .. 2026-03-31 inclusive
       expect(rows.find { |r| r.first == "2026-03-10" }[1]).to eq(1)
       expect(rows.find { |r| r.first == "2026-03-09" }[1]).to eq(0)

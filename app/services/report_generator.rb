@@ -914,35 +914,22 @@ class ReportGenerator
           .to_sql
       )
 
-    visits_by_hour = {}
-    min_hour = 23
-    max_hour = 0
-
+    # The database stores UTC hours; each one is counted under its hour in the
+    # application time zone, so the two UTC hours that fall in the repeated
+    # hour when daylight saving time ends add up.
+    visits_by_hour = Hash.new(0)
     result.each do |row|
-      year = row["year"].to_i
-      month = row["month"].to_i
-      day = row["day"].to_i
-      hour = row["hour"].to_i
-      total_visits = row["total_visits"].to_i
-
-      date = DateTime.new(year, month, day, hour).localtime
-
-      min_hour = [min_hour, date.hour].min
-      max_hour = [max_hour, date.hour].max
-
-      visits_by_hour[date.year] = {} unless visits_by_hour[date.year]
-
-      visits_by_hour[date.year][date.month] = {} unless visits_by_hour[
-        date.year
-      ][
-        date.month
-      ]
-
-      visits_by_hour[date.year][date.month][date.day] = {
-      } unless visits_by_hour[date.year][date.month][date.day]
-
-      visits_by_hour[date.year][date.month][date.day][date.hour] = total_visits
+      at =
+        Time.utc(
+          row["year"].to_i,
+          row["month"].to_i,
+          row["day"].to_i,
+          row["hour"].to_i
+        ).in_time_zone
+      visits_by_hour[[at.to_date, at.hour]] += row["total_visits"].to_i
     end
+    hours = visits_by_hour.keys.map(&:last)
+    hour_columns = hours.empty? ? [] : (hours.min..hours.max).to_a
 
     spreadsheet = Axlsx::Package.new
 
@@ -954,22 +941,15 @@ class ReportGenerator
 
       header = ["Date"]
 
-      (min_hour..max_hour).each { |hour| header << "%02i:00" % hour }
+      hour_columns.each { |hour| header << "%02i:00" % hour }
 
       table_header(sheet, header)
 
       (start_date..end_date).each do |date|
         row = [date.strftime("%Y-%m-%d")]
 
-        (min_hour..max_hour).each do |hour|
-          row << if visits_by_hour[date.year] &&
-               visits_by_hour[date.year][date.month] &&
-               visits_by_hour[date.year][date.month][date.day] &&
-               visits_by_hour[date.year][date.month][date.day][hour]
-            visits_by_hour[date.year][date.month][date.day][hour]
-          else
-            0
-          end
+        hour_columns.each do |hour|
+          row << visits_by_hour[[date.to_date, hour]]
         end
 
         sheet.add_row row
