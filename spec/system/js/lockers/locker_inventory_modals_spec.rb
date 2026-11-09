@@ -65,7 +65,7 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Lockers created")
+      expect(page).to have_text("Some lockers were not created (the number may already exist): 1, 2, 3, and 7")
       expect(Locker.pluck(:specifier)).to match_array(%w[1 2 3 4 5 6 7 8 9])
       expect(Locker.find_by(specifier: "5").locker_size).to eq(size_large)
       expect(Locker.find_by(specifier: "1").locker_size).to eq(size_small)
