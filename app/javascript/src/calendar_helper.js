@@ -505,14 +505,15 @@ function openEventForEditing(eventImpl) {
         break;
     }
 
-    if (rule.options.until) {
-      untilInput.value = dateValue(rule.options.until.getTime());
-    }
+    const untilDate = rule.options.until
+      ? dateValue(rule.options.until.getTime())
+      : "";
+    if (untilDate) untilInput.value = untilDate;
     // The feed's start is a Toronto wall time already
     ruleField.value = storedRule(
       { freq: rule.options.freq, byweekday: rule.options.byweekday },
       rule.options.dtstart.getTime(),
-      /** @type {HTMLInputElement} */ (untilInput).value,
+      untilDate,
     );
   }
 
