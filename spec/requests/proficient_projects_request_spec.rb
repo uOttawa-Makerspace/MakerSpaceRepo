@@ -140,7 +140,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       it "renders new with 422 for a blank or duplicate title" do
         expect { post proficient_projects_path, params: project_params(title: "") }.not_to change(ProficientProject, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq("The project could not be created: Title A title is required.")
         post proficient_projects_path, params: project_params(title: "Cool widget")
         expect(response).to have_http_status(:unprocessable_content)
       end
@@ -171,7 +171,15 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
           post proficient_projects_path, params: project_params.merge(images: [content_named_upload("x.png", content: "not an image", type: "image/png")])
         end.not_to change(ProficientProject, :count)
         expect(response).to redirect_to(proficient_projects_path)
-        expect(flash[:alert]).to start_with("Something went wrong while uploading photos")
+        expect(flash[:alert]).to eq("The project was not created because its photos could not be read. Check that they are valid image files and try again.")
+      end
+
+      it "an unreadable image on update keeps the other changes and says the photos could not be read" do
+        patch proficient_project_path(project),
+              params: project_params(title: "Kept title").merge(images: [content_named_upload("x.png", content: "not an image", type: "image/png")])
+        expect(project.reload.title).to eq("Kept title".capitalize)
+        expect(response).to redirect_to(proficient_project_path(project.id))
+        expect(flash[:alert_yellow]).to start_with("The photos could not be read, so they were not added. Your other changes were saved.")
       end
 
       it "accepts allow-listed files (pdf, stl) and flags other content types but still creates the project" do
@@ -211,7 +219,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       it "re-renders edit with 422 on a blank title" do
         patch proficient_project_path(project), params: project_params(title: "")
         expect(response).to have_http_status(:unprocessable_content)
-        expect(flash[:alert]).to eq("Unable to apply the changes.")
+        expect(flash[:alert]).to eq("The changes could not be saved: Title A title is required.")
       end
 
       it "adds new images and deletes the ticked image" do
@@ -415,6 +423,18 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
+    it "says why a submission could not be saved" do
+      oi = order_item_for(buyer)
+      content_login!(buyer)
+      allow_any_instance_of(OrderItem).to receive(:update) do |item|
+        item.errors.add(:files, "must be a PDF")
+        false
+      end
+      put complete_project_proficient_projects_path, params: { id: project.id, order_item: { user_comments: "x" } }
+      expect(flash[:alert]).to eq("The submission could not be saved. Check the allowed file types: Files must be a PDF")
+      expect(oi.reload.status).to eq("In progress")
+    end
+
     it "submits the paid item, not an unpaid cart item for the same project" do
       cart_item = create(:order_item, order: create(:order, user_id: buyer.id), proficient_project: project, status: "In progress")
       paid = order_item_for(buyer)
@@ -497,7 +517,13 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     it "an unknown order item flashes an error and redirects to the staff queue (admin)" do
       content_sign_in_as(:admin)
       post approve_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
-      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+      expect(flash[:error]).to eq("That project submission was not found. It may have been removed.")
+    end
+
+    it "says the submission was not found in French" do
+      content_sign_in_as(:admin)
+      post approve_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" }, locale: "fr" }
+      expect(flash[:error]).to eq("Cette soumission de projet est introuvable. Elle a peut-être été supprimée.")
     end
 
     it "a missing or stale oi_id redirects staff to the queue with the error flash instead of 500ing" do
@@ -506,7 +532,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(response).to redirect_to(requests_proficient_projects_path)
       post approve_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
       expect(response).to redirect_to(requests_proficient_projects_path)
-      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+      expect(flash[:error]).to eq("That project submission was not found. It may have been removed.")
     end
 
     it "approving the same item twice creates one session and one certification" do
@@ -516,7 +542,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       # approval is guarded on 'Waiting for approval', so a replay is refused
       expect(ProficientProjectSession.where(proficient_project_id: project.id).count).to eq(1)
       expect(Certification.where(user_id: buyer.id).count).to eq(1)
-      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+      expect(flash[:error]).to eq("That submission is no longer waiting for approval; it may already have been approved or revoked.")
       expect(ActionMailer::Base.deliveries.size).to eq(1)
     end
 
@@ -529,7 +555,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
           post approve_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "x" } }
         end.to change(ProficientProjectSession, :count).by(0).and change(Certification, :count).by(0)
         expect(item.reload.status).to eq(status)
-        expect(flash[:error]).to eq("An error has occurred, please try again later.")
+        expect(flash[:error]).to eq("That submission is no longer waiting for approval; it may already have been approved or revoked.")
         expect(ActionMailer::Base.deliveries).to be_empty
       end
     end
@@ -542,7 +568,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
       end.to change(Certification, :count).by(0)
       expect(oi.reload.status).to eq("Waiting for approval")
-      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+      expect(flash[:error]).to eq("The approval could not be saved, so no badge was awarded:")
       expect(flash[:notice]).to be_nil
       expect(ActionMailer::Base.deliveries).to be_empty
     end
@@ -606,9 +632,20 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         post revoke_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "again" } }
         expect(item.reload.status).to eq(status)
         expect(item.admin_comments).to be_blank
-        expect(flash[:error]).to eq("An error has occurred, please try again later.")
+        expect(flash[:error]).to eq("That submission is no longer waiting for approval; it may already have been approved or revoked.")
         expect(ActionMailer::Base.deliveries).to be_empty
       end
+    end
+
+    it "says why a revoke could not be saved" do
+      content_sign_in_as(:admin)
+      allow_any_instance_of(OrderItem).to receive(:update) do |item|
+        item.errors.add(:base, "Comments are locked")
+        false
+      end
+      post revoke_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
+      expect(flash[:error]).to eq("The submission could not be revoked: Comments are locked")
+      expect(oi.reload.status).to eq("Waiting for approval")
     end
 
     it "revoking twice sends one email" do
@@ -622,7 +659,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
     it "flashes an error for an unknown item" do
       content_sign_in_as(:admin)
       post revoke_project_proficient_projects_path, params: { oi_id: 0, order_item: { admin_comments: "x" } }
-      expect(flash[:error]).to eq("An error has occurred, please try again later.")
+      expect(flash[:error]).to eq("That project submission was not found. It may have been removed.")
     end
   end
 

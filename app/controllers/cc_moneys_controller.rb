@@ -14,39 +14,45 @@ class CcMoneysController < SessionsController
 
   def link_cc_to_user
     @cc_token = params[:token]
-    if @verifier.valid_message?(@cc_token)
-      cc_id = @verifier.verify(@cc_token)
-      @cc_money = CcMoney.find_by_id(cc_id)
-      if @cc_money.nil?
-        flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
-        redirect_to cc_moneys_path
-      elsif @cc_money.linked?
-        redirect_to cc_moneys_path,
-                    alert: "The CC Money has already been added to an account"
-      end
-    else
-      flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
-      redirect_to cc_moneys_path
-    end
+    return refuse_cc(:token_invalid) unless @verifier.valid_message?(@cc_token)
+
+    @cc_money = CcMoney.find_by_id(@verifier.verify(@cc_token))
+    return refuse_cc(:not_found) if @cc_money.nil?
+
+    refuse_cc(:already_linked) if @cc_money.linked?
   end
 
   def redeem
-    cc_token = params[:token]
-    cc_id = @verifier.verified(cc_token)
-    user = User.find_by(email: user_params[:email])
+    cc_id = @verifier.verified(params[:token])
+    return refuse_cc(:token_invalid) if cc_id.nil?
+
     cc_money = CcMoney.find_by_id(cc_id)
-    if cc_money.nil?
-      flash[:alert] = "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
-    elsif !cc_money.linked? && user.present?
-      cc_money.update(user: user, linked: true)
-      flash[:notice] = "The CC Money has been added to #{user.name}"
-    else
-      flash[:alert] = "The CC Money has already been added to an account"
-    end
-    redirect_to cc_moneys_path
+    return refuse_cc(:not_found) if cc_money.nil?
+    return refuse_cc(:already_linked) if cc_money.linked?
+
+    user = User.find_by(email: user_params[:email])
+    return refuse_cc(:user_not_found) if user.nil?
+
+    link_to(cc_money, user)
   end
 
   private
+
+  def link_to(cc_money, user)
+    if cc_money.update(user: user, linked: true)
+      flash[:notice] = "The CC Money has been added to #{user.name}"
+      redirect_to cc_moneys_path
+    else
+      refuse_cc(:not_linked, cc_money)
+    end
+  end
+
+  # Every refusal goes back to the CC money page with the message for its own cause.
+  def refuse_cc(cause, record = nil)
+    key = "errors.shop.cc_money.#{cause}"
+    flash[:alert] = record ? validation_message(record, key) : I18n.t(key)
+    redirect_to cc_moneys_path
+  end
 
   def set_verifier
     @verifier = Rails.application.message_verifier(:cc)

@@ -441,9 +441,10 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: "garbage" }
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to start_with("Something went wrong.")
+        expect(flash[:alert]).to eq("This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com.")
         get link_cc_to_user_cc_moneys_path
         expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to eq("This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com.")
       end
 
       it "redirects with the generic alert for a validly signed token whose cc_money row no longer exists" do
@@ -452,7 +453,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         get link_cc_to_user_cc_moneys_path, params: { token: stale }
         # a missing row gets the same alert as an invalid token instead of a NoMethodError 500
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to start_with("Something went wrong.")
+        expect(flash[:alert]).to eq("That CC Money record no longer exists. If you think this is a mistake, contact uottawa.makerepo@gmail.com.")
       end
     end
 
@@ -496,13 +497,30 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(unlinked.reload.user_id).to eq(user.id)
       end
 
-      it "unknown email: misleading 'already added' alert, points stay unlinked" do
+      it "unknown email: says no account was found, points stay unlinked" do
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: token, user: { email: "nobody@example.com" } }
         expect(response).to redirect_to(cc_moneys_path)
-        # keep the existing alert for an unknown email (user decision: crediting a typed email is intended); no behavior change
-        expect(flash[:alert]).to eq("The CC Money has already been added to an account")
+        # crediting a typed email stays intended; only the message names the real cause
+        expect(flash[:alert]).to eq("No account with that email address was found. Check the address and try again.")
         expect(unlinked.reload.linked).to be(false)
+      end
+
+      it "names the cause in French" do
+        shop_log_in!(user)
+        post redeem_cc_moneys_path, params: { token: "bad", user: { email: user.email }, locale: "fr" }
+        expect(flash[:alert]).to start_with("Ce lien n'est pas valide.")
+      end
+
+      it "says when the link could not be saved, with the validation messages" do
+        shop_log_in!(user)
+        allow_any_instance_of(CcMoney).to receive(:update) do |cc|
+          cc.errors.add(:base, "Ledger is closed")
+          false
+        end
+        post redeem_cc_moneys_path, params: { token: token, user: { email: user.email } }
+        expect(flash[:alert]).to eq("The CC Money could not be added to that account: Ledger is closed")
+        expect(flash[:notice]).to be_nil
       end
 
       it "redirects with the generic alert for a validly signed token whose cc_money row no longer exists" do
@@ -511,7 +529,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         post redeem_cc_moneys_path, params: { token: stale, user: { email: user.email } }
         # same alert as an invalid token instead of a NoMethodError 500
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to start_with("Something went wrong.")
+        expect(flash[:alert]).to eq("That CC Money record no longer exists. If you think this is a mistake, contact uottawa.makerepo@gmail.com.")
         expect(user.cc_moneys.sum(:cc)).to eq(0)
       end
 
@@ -520,10 +538,10 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         # redeem used verifier.verify (InvalidSignature 500); verified returns nil, handled like a missing row
         post redeem_cc_moneys_path, params: { token: "bad", user: { email: user.email } }
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to start_with("Something went wrong.")
+        expect(flash[:alert]).to eq("This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com.")
         post redeem_cc_moneys_path, params: { user: { email: user.email } }
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to start_with("Something went wrong.")
+        expect(flash[:alert]).to eq("This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com.")
         post redeem_cc_moneys_path, params: { token: token }
         expect(response).to redirect_to(root_path)
         expect(unlinked.reload.linked).to be(false)

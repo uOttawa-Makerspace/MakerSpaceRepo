@@ -79,7 +79,7 @@ class LockerRentalsController < SessionsController
   def create
     # Allow staff to assign lockers
     unless current_user.staff? || LockerOption.lockers_enabled
-      flash[:alert] = 'New locker rentals are not currently accepted.'
+      flash[:alert] = t('errors.lockers.not_accepted')
       redirect_to locker_rentals_path
       return
     end
@@ -88,7 +88,7 @@ class LockerRentalsController < SessionsController
     # (the fallback below is only for a request that names no renter at all).
     if unknown_renter_username?
       @locker_rental = LockerRental.new
-      @locker_rental.errors.add(:base, RENTER_NOT_FOUND)
+      @locker_rental.errors.add(:base, renter_not_found_message)
       new_instance_attributes
       render :new, status: :unprocessable_content
       return
@@ -126,10 +126,10 @@ class LockerRentalsController < SessionsController
     if unknown_renter_username?
       respond_to do |format|
         format.html do
-          flash[:alert] = "Failed to update locker rental#{helpers.tag.br}#{RENTER_NOT_FOUND}".html_safe
+          flash[:alert] = "#{t('errors.lockers.update_failed')}#{helpers.tag.br}#{renter_not_found_message}".html_safe
           redirect_back fallback_location: :locker_rentals
         end
-        format.json { render json: { base: [RENTER_NOT_FOUND] }, status: :unprocessable_entity }
+        format.json { render json: { base: [renter_not_found_message], error: renter_not_found_message }, status: :unprocessable_entity }
       end
       return
     end
@@ -175,14 +175,11 @@ class LockerRentalsController < SessionsController
     when :stale
       stale_page_response
     when :state_refused
-      flash[:alert] = if @locker_rental.state_was == 'active' && @locker_rental.cancelled?
-                        'Please contact administration for cancelling a locker'
-                      else
-                        'You can only cancel a pending request'
-                      end
+      message = state_refused_message
+      flash[:alert] = message
       respond_to do |format|
         format.html { render :show, status: :unprocessable_content }
-        format.json { render json: { error: 'Unauthorized' }, status: :unprocessable_entity }
+        format.json { render json: { error: message }, status: :unprocessable_entity }
       end
     when :saved
       @locker_rental.notify_after_commit
@@ -205,11 +202,15 @@ class LockerRentalsController < SessionsController
     else
       respond_to do |format|
         format.html do
-          flash[:alert] = 'Failed to update locker rental' + helpers.tag.br +
+          flash[:alert] = t('errors.lockers.update_failed') + helpers.tag.br +
             @locker_rental.errors.full_messages.join(helpers.tag.br)
           redirect_back fallback_location: :locker_rentals
         end
-        format.json { render json: @locker_rental.errors, status: :unprocessable_entity }
+        # the field errors as before, plus the sentence to show
+        format.json do
+          render json: @locker_rental.errors.to_hash.merge(error: validation_message(@locker_rental, 'errors.lockers.update_failed')),
+                 status: :unprocessable_entity
+        end
       end
     end
   end
@@ -239,7 +240,7 @@ class LockerRentalsController < SessionsController
 
     case outcome
     when :not_renewable
-      redirect_to @locker_rental, alert: 'This locker rental is not renewable.'
+      redirect_to @locker_rental, alert: t('errors.lockers.not_renewable')
     when :saved
       @locker_rental.notify_after_commit
       # Committed; only now the Shopify call: last term's draft is settled so it cannot be paid a second time
@@ -247,8 +248,7 @@ class LockerRentalsController < SessionsController
       redirect_to @locker_rental,
                   notice: 'Locker renewal started. Please complete checkout to renew your locker.'
     else
-      flash[:alert] = 'Could not start renewal: ' +
-        @locker_rental.errors.full_messages.to_sentence
+      flash[:alert] = validation_message(@locker_rental, 'errors.lockers.renewal_failed')
       render :show, status: :unprocessable_content
     end
   end
@@ -310,16 +310,17 @@ class LockerRentalsController < SessionsController
     @locker_product_info = LockerOption.locker_product_info || { variants: {} }
   end
 
-  RENTER_NOT_FOUND = 'User not found'
+  def renter_not_found_message
+    t('errors.lockers.renter_not_found')
+  end
+
+  def state_refused_message
+    t(@locker_rental.state_was == 'active' && @locker_rental.cancelled? ? 'errors.lockers.cancel_active' : 'errors.lockers.cancel_pending_only')
+  end
 
   # The cancellation is committed but Shopify did not confirm the draft order delete (reported to staff).
   def draft_not_removed_message
-    if current_user.staff?
-      'Locker rental cancelled, but its Shopify checkout could not be removed. ' \
-        'A payment made on it will appear under "Paid, needs a decision". The error was reported.'
-    else
-      "Your request was cancelled. If you still see a payment link, don't use it; staff have been notified."
-    end
+    t(current_user.staff? ? 'errors.lockers.draft_not_removed_staff' : 'errors.lockers.draft_not_removed_renter')
   end
 
   # The one rule for non-staff: the only state changes a renter may make on their own rental. Everything
@@ -339,8 +340,7 @@ class LockerRentalsController < SessionsController
   end
 
   def stale_page_response
-    message = "This locker rental changed while you had the page open (it is now #{@locker_rental.state}). " \
-              'Reload it and review before acting.'
+    message = t('errors.lockers.stale', state: @locker_rental.state)
     respond_to do |format|
       format.html do
         flash[:alert] = message

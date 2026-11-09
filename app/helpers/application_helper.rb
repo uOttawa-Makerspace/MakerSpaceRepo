@@ -3,6 +3,18 @@
 require Rails.root.join("lib/jwt_authenticator")
 
 module ApplicationHelper
+  # The translated texts the page's JavaScript shows when a request fails and the server gave no reason
+  # (see app/javascript/src/request_error.js). Rendered as data attributes of the layout's <html> element.
+  def request_text_attributes
+    {
+      data: {
+        request_failed: t("errors.generic.request_failed"),
+        request_network: t("errors.generic.network"),
+        request_copy_failed: t("errors.generic.copy_failed")
+      }
+    }
+  end
+
   # A date worded in the current language with its own day rule: "November 3rd, 2026",
   # "1er novembre 2026", "3 novembre 2026" (see config/locales/number.rb).
   def issued_date(date)

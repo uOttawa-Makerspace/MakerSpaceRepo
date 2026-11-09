@@ -286,6 +286,12 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
     end
 
+    it "says so in French when the locale is French" do
+      http_login!(owner)
+      get job_order_path(id: 999_999_999, locale: "fr")
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found", locale: :fr))
+    end
+
     describe "task loading" do
       def add_complete_task!(order, title)
         group = create(:job_service_group)
@@ -646,7 +652,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
               params: quote_params(order, task).merge(approved: "")
         expect(response.status).to eq(204)
         expect(response.body).to be_blank
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+        expect(flash[:alert]).to eq(I18n.t("errors.job_orders.quote_choice_missing"))
         expect(status_names(order)).to eq(["Waiting for Staff Approval"])
       end
     end
@@ -748,7 +754,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
                 params: { flow.fetch(:ok_param) => "false" }
 
           expect(status_names(order)).to eq([JobOrderSpecHelpers::JOB_STATUS_NAMES.fetch(flow.fetch(:from))])
-          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.not_requested"))
         end
 
         it "says the order is not in a state that allows the change when the status is unexpected" do
@@ -933,40 +939,56 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # the else-flash dereferences @job_order.assigned_staff.name
-    it "refuses with a message when a non-admin staff member tries to assign someone else" do
+    it "tells a non-admin staff member that only an admin can assign someone else, and assigns nobody" do
       order = order_with_task!(owner: owner)
       http_login!(staff)
       patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
       expect(response).to redirect_to(job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_permitted"))
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_not_allowed"))
       expect(order.reload.assigned_staff).to be_nil
     end
 
-    # The route's key is job_order_id.
-    it "redirects with a not-found message for an unknown job order id" do
+    it "says the order no longer exists for an unknown job order id" do
       http_login!(staff)
       patch job_order_assign_staff_path(job_order_id: 999_999_999),
             params: { staff_id: staff.id }
       expect(response).to redirect_to(job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_order_missing"))
     end
 
-    it "refuses a soft-deleted order with a not-found message" do
+    it "says the order no longer exists for a soft-deleted order" do
       order = order_with_task!(owner: owner)
-      order.update!(is_deleted: true)
+      order.update_column(:is_deleted, true)
       http_login!(admin)
       patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_order_missing"))
+    end
+
+    it "says the staff member does not exist for an unknown staff id and assigns nobody" do
+      order = order_with_task!(owner: owner)
+      http_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: 999_999_999 }
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_staff_missing"))
       expect(order.reload.assigned_staff).to be_nil
     end
 
-    it "says the assignment failed when the order cannot be saved" do
+    it "gives the validation reason when the assignment cannot be saved" do
       order = order_with_task!(owner: owner)
-      allow_any_instance_of(JobOrder).to receive(:save).and_return(false) # rubocop:disable RSpec/AnyInstance
       http_login!(admin)
+      allow_any_instance_of(JobOrder).to receive(:save) do |record|
+        record.errors.add(:base, "is locked")
+        false
+      end
       patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_failed"))
+      expect(flash[:alert]).to eq("#{I18n.t("errors.job_orders.assign_failed")} is locked")
+    end
+
+    it "answers in French when the locale is French" do
+      order = order_with_task!(owner: owner)
+      http_login!(staff)
+      patch job_order_assign_staff_path(order), params: { staff_id: admin.id, locale: "fr" }
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_not_allowed", locale: :fr))
+      expect(flash[:alert]).to include("administrateur")
     end
   end
 
@@ -1263,7 +1285,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
               params: { token: "not-a-token", approved: "true" }
         expect(response).to redirect_to(job_orders_path)
         expect(flash[:alert])
-          .to eq(I18n.t("job_orders.alerts.error_accept_deny_order"))
+          .to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
         expect(status_names(magic_order)).not_to include("Waiting to be Processed")
       end
 
@@ -1301,8 +1323,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           patch user_magic_approval_confirmation_job_orders_path,
                 params: { token: token, approved: "true" }
           expect(response).to have_http_status(:ok)
-          expect(response.body)
-            .to include("An error occured while trying to Approve/Deny the Job Order...")
+          expect(response.body).to include(I18n.t("errors.job_orders.approval_failed_title"))
+          expect(response.body).to include(I18n.t("job_orders.alerts.status_change.wrong_state"))
           expect(JobOrderStatus.count).to eq(count)
           expect(status_names(magic_order)).to end_with("Waiting to be Processed")
         end
@@ -1338,7 +1360,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
           patch user_magic_approval_confirmation_job_orders_path,
                 params: { token: token, approved: "true" }
         end
-        expect(response.body).to include("An error occured while trying to Approve/Deny the Job Order...")
+        expect(response.body).to include(I18n.t("errors.job_orders.approval_failed_title"))
+        expect(response.body).to include(I18n.t("job_orders.alerts.status_change.wrong_state"))
         expect(status_names(magic_order)).to eq(["Waiting for User Approval", "Waiting to be Processed"])
       end
 

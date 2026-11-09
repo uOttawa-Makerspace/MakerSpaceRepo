@@ -109,10 +109,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
         redirect_to edit_job_order_job_task_path(@job_order, @job_task, step: 1)
       else
         @job_order.update(is_deleted: true)
+        flash[:alert] = validation_message(@job_order, "errors.job_orders.create_failed")
         redirect_to new_job_orders_path
       end
     else
-      flash[:alert] = t("job_orders.alerts.error_while_trying_to_create")
+      flash[:alert] = validation_message(@job_order, "errors.job_orders.create_failed")
       render "new"
     end
   end
@@ -148,7 +149,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       notify_user_decision if @status
       render "job_orders/magic_approval_confirmation"
     else
-      flash[:alert] = t("job_orders.alerts.error_accept_deny_order")
+      flash[:alert] = t("job_orders.alerts.approval_magic_link_expired")
       redirect_to job_orders_path
     end
   end
@@ -180,7 +181,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     error = false
     mail_failed = false
 
-    return flash[:alert] = t("job_orders.alerts.error_while_updating") if params[:approved].blank?
+    return flash[:alert] = t("errors.job_orders.quote_choice_missing") if params[:approved].blank?
 
     if params[:approved] == "true"
       # ACCEPT JOB. The prices and the new status are one transition: its own transaction, row lock first
@@ -200,7 +201,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       begin
         JobOrderMailer.send_job_quote(@job_order.id).deliver_now
       rescue StandardError => e
-        Rails.logger.error("[job_orders#quote] quote email for ##{@job_order.id} failed: #{e.class}: #{e.message}")
+        report_unexpected(e, job_order_id: @job_order.id, operation: "quote email")
         mail_failed = true
       end
     elsif params[:approved] == "false"
@@ -219,14 +220,14 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     end
 
     if mail_failed
-      flash[:alert] = t("job_orders.alerts.quote_saved_email_failed")
+      flash[:alert] = t("job_orders.alerts.quote_saved_email_failed", reference: error_reference)
     elsif !error
       flash[:notice] = t(
         "job_orders.alerts.updated_job_status_to_x",
         status: @job_order.latest_status.job_status.t_name
       )
     else
-      flash[:alert] = t("job_orders.alerts.error_while_updating")
+      flash[:alert] = t("errors.job_orders.quote_choice_missing")
     end
     respond_to do |format|
       format.html { redirect_to job_order_path(@job_order.id) }
@@ -238,7 +239,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     if @job_order.save
       flash[:notice] = t("job_orders.alerts.updated_successfully")
     else
-      flash[:alert] = t("job_orders.alerts.error_while_updating")
+      flash[:alert] = validation_message(@job_order, "errors.job_orders.comments_failed")
     end
 
     respond_to do |format|
@@ -273,7 +274,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
         else
           # the order is Completed but not Paid: say so, and no "updated" notice that would suggest otherwise
           flash.delete(:notice)
-          flash[:alert] = t(paid.zero_order_message_key)
+          flash[:alert] = t(paid.zero_order_message_key, reference: error_reference)
         end
       elsif params[:send_email].present? && params[:send_email] == "true"
         JobOrderMailer.send_job_completed(
@@ -313,7 +314,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     if sent.ok?
       JobOrderMailer.send_job_quote(@job_order.id, true).deliver_now
     else
-      flash[:alert] = t(sent.message_key, **sent.message_args)
+      flash[:alert] = transition_message(sent)
     end
     redirect_to job_order_path(@job_order.id)
   end
@@ -325,7 +326,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       flash[:notice] = "Job order deleted successfully."
       redirect_to orders_list_path
     else
-      flash[:alert] = t(result.message_key("job_orders.alerts.delete_refused", reasons: JobOrder::TransitionResult::DELETE_REASONS))
+      flash[:alert] = t(result.message_key("job_orders.alerts.delete_refused", reasons: JobOrder::TransitionResult::DELETE_REASONS),
+                        reference: error_reference)
       # a deleted order has no page to show the message on (set_job_order would replace it)
       redirect_to(result.reason == :order_missing ? orders_list_path : job_order_path(@job_order.id))
     end
@@ -333,10 +335,9 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
 
   def assign_staff
     @job_order = JobOrder.find_by(id: params[:job_order_id], is_deleted: false)
-    if @job_order.nil?
-      flash[:alert] = t("job_orders.alerts.job_order_not_found")
-    elsif !(@user.admin? || @user.id == params[:staff_id].to_i)
-      flash[:alert] = t("job_orders.alerts.assign_staff_not_permitted")
+    refusal = assignment_refusal
+    if refusal
+      flash[:alert] = refusal
     else
       save_staff_assignment
     end
@@ -420,6 +421,21 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     JobOrderMessage.find_by(name: "processed")&.retrieve_message(@job_order.id)
   end
 
+  # Why the assignment cannot go ahead (nothing is written), or nil when it can.
+  def assignment_refusal
+    return t("errors.job_orders.assign_order_missing") if @job_order.nil?
+    return t("errors.job_orders.assign_not_allowed") unless @user.admin? || @user.id == params[:staff_id].to_i
+
+    t("errors.job_orders.assign_staff_missing") if params[:staff_id].present? && !User.exists?(id: params[:staff_id])
+  end
+
+  # An admin who assigns someone else tells them by mail.
+  def notify_assigned_staff
+    return unless @job_order.assigned_staff.present? && @user.admin? && @job_order.assigned_staff != @user
+
+    JobOrderMailer.staff_assigned(@job_order.id, @job_order.assigned_staff.id).deliver_later
+  end
+
   # The "new" page is also rendered again when create fails, so both actions need it.
   def set_entry_job_types
     @ready_to_make_type = JobType.ready_to_make
@@ -430,14 +446,16 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @job_order.assigned_staff_id = params[:staff_id]
     if @job_order.save
       flash[:notice] = assignment_notice
-
-      if @job_order.assigned_staff.present? && @user.admin? && @job_order.assigned_staff != @user
-        JobOrderMailer.staff_assigned(@job_order.id, @job_order.assigned_staff.id).deliver_later
-      end
+      notify_assigned_staff
     else
-      refusal = @job_order.errors.messages_for(:assigned_staff).to_sentence
-      flash[:alert] = refusal.presence || t("job_orders.alerts.assign_staff_failed")
+      flash[:alert] = assignment_failure
     end
+  end
+
+  # The model's refusal of the assignee (not staff) as it words it; any other failure with the record's messages.
+  def assignment_failure
+    @job_order.errors.messages_for(:assigned_staff).to_sentence.presence ||
+      validation_message(@job_order, "errors.job_orders.assign_failed")
   end
 
   def assignment_notice
@@ -563,11 +581,17 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     when :wrong_state
       return t("job_orders.alerts.quote_refused_paid") if JobOrder.money_taken_status?(result.status)
     when :change_invalid
-      return "#{t('job_orders.alerts.error_while_updating')} #{ERB::Util.html_escape(result.error.message)}"
+      return "#{t('errors.job_orders.quote_invalid')} #{ERB::Util.html_escape(result.error.message)}"
     when :draft_not_voidable
-      return t("job_orders.alerts.requote_draft_order_failed") if requote
+      return t("job_orders.alerts.requote_draft_order_failed", reference: error_reference) if requote
     end
-    t(result.message_key, **result.message_args)
+    transition_message(result)
+  end
+
+  # The message for a refused operation, naming what its reason names (the tasks without a service price) and
+  # quoting the request's reference for the reasons whose text asks for it.
+  def transition_message(result)
+    t(result.message_key, reference: error_reference, **result.message_args)
   end
 
   # The flash and the page to send the customer to when /pay has no link to show for a reason other than Shopify
@@ -575,8 +599,9 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   def pay_refusal(link)
     case link.reason
     when :order_missing then [t("job_orders.alerts.pay_magic_link_expired"), job_orders_path]
-    when :invalid_status_row then [t("job_orders.alerts.pay_send_back_failed"), job_order_path(@job_order.id)]
-    when :service_price_missing then [t(link.message_key, **link.message_args), job_order_path(@job_order.id)]
+    when :invalid_status_row
+      [t("job_orders.alerts.pay_send_back_failed", reference: error_reference), job_order_path(@job_order.id)]
+    when :service_price_missing then [transition_message(link), job_order_path(@job_order.id)]
     end
   end
 
@@ -601,22 +626,26 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
                                       to: to_key && JobStatus.fetch(to_key),
                                       actor: actor, approval_token: approval_token)
              else
-               JobOrder::TransitionResult.refused(:nothing_asked)
+               JobOrder::TransitionResult.refused(:not_requested)
              end
 
-    if result.ok?
-      flash[:notice] = t(
-        "job_orders.alerts.updated_job_status_to_x",
-        status: @job_order.latest_status.job_status.t_name
-      )
-    else
-      flash[:alert] = t(result.message_key, **result.message_args)
-    end
+    report_status_result(result, rendered: approval_token.present?)
 
     if redirect_link.nil?
       result.ok?
     else
       redirect_to redirect_link
+    end
+  end
+
+  # The notice for a made transition; for a refused one the reason, in the alert of the redirect that follows or,
+  # for the emailed link's page (it renders instead of redirecting), in @refusal for the page to show.
+  def report_status_result(result, rendered:)
+    if result.ok?
+      flash[:notice] = t("job_orders.alerts.updated_job_status_to_x", status: @job_order.latest_status.job_status.t_name)
+    else
+      @refusal = transition_message(result)
+      flash[:alert] = @refusal unless rendered
     end
   end
 

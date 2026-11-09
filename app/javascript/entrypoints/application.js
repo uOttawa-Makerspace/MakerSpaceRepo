@@ -10,7 +10,7 @@ import "../src/header";
 import "../src/photo_gallery";
 import "../src/requests";
 import { csrfHeaders } from "../src/csrf";
-import { showToast } from "../src/toast";
+import { reportFailure, requestJson } from "../src/request_error";
 import "../src/settings";
 import "../src/sorting";
 import "../src/tabledata";
@@ -86,13 +86,18 @@ document.addEventListener("turbo:load", () => {
 const confirmMessage = (turboPrompts, sources) => {
   for (const el of sources) {
     if (!el) continue;
-    if (el.dataset.turboConfirm) return turboPrompts ? null : el.dataset.turboConfirm;
+    if (el.dataset.turboConfirm)
+      return turboPrompts ? null : el.dataset.turboConfirm;
     if (el.dataset.confirm) return el.dataset.confirm;
   }
   return null;
 };
 
-const confirmOrCancel = (event, el, { turboPrompts = false, sources = [el] } = {}) => {
+const confirmOrCancel = (
+  event,
+  el,
+  { turboPrompts = false, sources = [el] } = {},
+) => {
   const off = turboOffAtEvent(el);
   if (off) el.dataset.turbo = "false";
   const msg = confirmMessage(!off && turboPrompts, sources);
@@ -106,7 +111,10 @@ document.addEventListener(
   (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
-    confirmOrCancel(event, form, { turboPrompts: true, sources: [event.submitter, form] });
+    confirmOrCancel(event, form, {
+      turboPrompts: true,
+      sources: [event.submitter, form],
+    });
   },
   true,
 );
@@ -118,7 +126,9 @@ document.addEventListener(
       event.target instanceof Element &&
       event.target.closest("a[data-turbo-confirm], a[data-confirm]");
     if (!link) return;
-    confirmOrCancel(event, link, { turboPrompts: Boolean(link.dataset.turboMethod) });
+    confirmOrCancel(event, link, {
+      turboPrompts: Boolean(link.dataset.turboMethod),
+    });
   },
   true,
 );
@@ -136,7 +146,7 @@ window.setSpace = async function () {
   const url = "/staff_dashboard/change_space";
 
   try {
-    const response = await fetch(url, {
+    await requestJson(url, {
       method: "PUT",
       credentials: "include",
       headers: csrfHeaders({
@@ -150,23 +160,13 @@ window.setSpace = async function () {
         shifts: window.location.href.includes("shifts"),
       }),
     });
-
-    if (response.ok) {
-      window.location.reload();
-    } else {
-      let message = "Could not change space";
-      try {
-        const data = await response.json();
-        if (data.error) message = data.error;
-      } catch (_) {}
-      showToast(message, { type: "error" });
-    }
+    window.location.reload();
   } catch (error) {
-    console.error("Failed to update space:", error);
+    reportFailure(error);
   }
 };
 
-window.debounce = function (func, wait, immediate) {
+/** @type {any} */ (window).debounce = function (func, wait, immediate) {
   let timeout;
   return function (...args) {
     const context = this;
@@ -183,7 +183,7 @@ window.debounce = function (func, wait, immediate) {
 
 window.examResponse = async function (exam_id, answer_id) {
   try {
-    await fetch("/exam_responses#create", {
+    await requestJson("/exam_responses#create", {
       method: "POST",
       headers: csrfHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
@@ -192,7 +192,7 @@ window.examResponse = async function (exam_id, answer_id) {
       }),
     });
   } catch (error) {
-    console.error("Exam response error:", error);
+    reportFailure(error);
   }
 };
 

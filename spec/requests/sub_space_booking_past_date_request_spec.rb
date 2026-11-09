@@ -493,7 +493,7 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       post_json_series(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
                        recurring_end: "not-a-date", name: "BadEnd")
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.parsed_body).to eq("errors" => "Invalid recurring parameters")
+      expect(response.parsed_body).to eq("errors" => ["Recurring #{I18n.t("errors.bookings.recurring_invalid")}"])
       expect(SubSpaceBooking.where(name: "BadEnd")).to be_empty
     end
 

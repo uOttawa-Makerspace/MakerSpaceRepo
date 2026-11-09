@@ -83,7 +83,7 @@ class SubSpaceBookingController < SessionsController
       BookingMailer.send_booking_approval_request_sent(booking_approval.id, emails).deliver_later
       flash[:notice] = "Access request submitted successfully."
     else
-      flash[:alert] = booking_approval.errors.full_messages.join(", ")
+      flash[:alert] = access_request_refusal(booking_approval)
     end
     redirect_to root_path
   end
@@ -200,10 +200,8 @@ class SubSpaceBookingController < SessionsController
     if recurring
       end_date = series_end_date # nil when missing or malformed
       unless end_date && params[:sub_space_booking][:recurring_frequency].present?
-        render json: {
-                 errors: "Invalid recurring parameters"
-               },
-               status: :unprocessable_content
+        message = t("errors.bookings.recurring_invalid")
+        render_booking_failure(errors: ["Recurring #{message}"], alert: message)
         return
       end
       if end_date > booking.start_time.to_date + SERIES_MAX_DAYS.days
@@ -384,7 +382,7 @@ class SubSpaceBookingController < SessionsController
 
     unless %w[approve decline].include?(bulk_status)
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                  alert: "Failed to bulk update booking status."
+                  alert: t("errors.bookings.bulk_status_invalid")
       return
     end
 
@@ -416,8 +414,7 @@ class SubSpaceBookingController < SessionsController
     booking = SubSpaceBooking.find(params[:sub_space_booking_id])
     subspaceName = booking.sub_space.name
     booking.destroy_with_status!
-    redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
-                notice: "Booking for #{subspaceName} deleted successfully."
+    render_deleted("Booking for #{subspaceName} deleted successfully.")
   end
 
   def delete_remaining_recurring
@@ -448,9 +445,7 @@ class SubSpaceBookingController < SessionsController
     ActiveRecord::Base.transaction do
       remaining_bookings.each(&:destroy_with_status!)
     end
-    redirect_to sub_space_booking_index_path(anchor: "booking-tab"),
-                notice:
-                  "Remaining bookings for #{subspaceName} deleted successfully."
+    render_deleted("Remaining bookings for #{subspaceName} deleted successfully.")
   end
 
   def get_sub_space_booking
@@ -464,6 +459,16 @@ class SubSpaceBookingController < SessionsController
   # so the calendar feed tells the page whether a click can open one.
   def viewer_may_open_details
     @user.admin? || @user.staff?
+  end
+
+  # A delete from the booking page's fetch (JSON) is answered 204 and the page reloads to show the notice; any other
+  # request is redirected to the bookings list.
+  def render_deleted(notice)
+    flash[:notice] = notice
+    respond_to do |format|
+      format.json { head :no_content }
+      format.html { redirect_to sub_space_booking_index_path(anchor: "booking-tab") }
+    end
   end
 
   # A booking for one occurrence, owned by the current user, whose past-date
@@ -773,9 +778,17 @@ class SubSpaceBookingController < SessionsController
     flash[:alert] = alert if skipped.positive?
   end
 
+  # The request was refused (access already held or already pending, said as is on the base) or failed
+  # validation (the fields are named after the translated sentence).
+  def access_request_refusal(booking_approval)
+    return booking_approval.errors.full_messages.join(", ") if booking_approval.errors.include?(:base)
+
+    validation_message(booking_approval, "errors.bookings.access_request_failed")
+  end
+
   def approval_failed(error)
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                alert: "Failed to approve: #{error.record.errors.full_messages.join(", ")}"
+                alert: validation_message(error.record, "errors.bookings.approve_failed")
   end
 
   def load_recurring_bookings_for_page(paginated_bookings)

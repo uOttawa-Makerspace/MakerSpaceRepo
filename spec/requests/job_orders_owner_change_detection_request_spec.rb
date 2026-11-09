@@ -149,7 +149,7 @@ RSpec.describe "Owner changes: what counts, and how failures surface", type: :re
       session_login!(owner)
       delete job_order_job_task_path(order, order.job_tasks.find_by!(title: "Task #2"))
 
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.send_back_failed"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.send_back_failed", reference: error_reference))
       expect(order.reload.job_tasks.count).to eq(2)
       expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
     end
@@ -164,7 +164,7 @@ RSpec.describe "Owner changes: what counts, and how failures surface", type: :re
       get pay_job_orders_path, params: { token: order.pay_token }
 
       expect(response).to redirect_to(job_order_path(order.id))
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_send_back_failed"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.pay_send_back_failed", reference: error_reference))
       expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
       expect(order.reload.shopify_draft_order_id).to eq(draft_id)
     end

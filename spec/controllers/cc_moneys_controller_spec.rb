@@ -28,9 +28,7 @@ RSpec.describe CcMoneysController, type: :controller do
       it "should redirect without token" do
         get :link_cc_to_user
         expect(response).to redirect_to cc_moneys_path
-        expect(flash[:alert]).to eq(
-          "Something went wrong. Try to access the page again or send us an email at uottawa.makerepo@gmail.com"
-        )
+        expect(flash[:alert]).to eq("This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com.")
       end
     end
   end

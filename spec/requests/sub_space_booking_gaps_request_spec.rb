@@ -814,14 +814,16 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
     it "sends any unrecognised identity to the Other mailbox and the request is rejected by validation" do
       request_access(identity: "Wizard")
       # the UBA identity vocabulary is closed, so nothing is saved and no mail goes out
-      expect(flash[:alert]).to eq("Identity Selection is not valid.")
+      expect(flash[:alert]).to eq("#{I18n.t("errors.bookings.access_request_failed")} Identity Selection is not valid.")
       expect(UserBookingApproval.where(user: applicant)).to be_empty
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
     it "reports a validation alert when no identity is given" do
       request_access({})
-      expect(flash[:alert]).to eq("Identity This field is required., Identity Selection is not valid.")
+      expect(flash[:alert]).to eq(
+        "#{I18n.t("errors.bookings.access_request_failed")} Identity This field is required. and Identity Selection is not valid."
+      )
       expect(UserBookingApproval.where(user: applicant)).to be_empty
     end
 
@@ -895,7 +897,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       put approve_access_sub_space_booking_index_path, params: { id: uba.id }
 
       expect(response).to redirect_to(sub_space_booking_index_path(anchor: "booking-admin-tab"))
-      expect(flash[:alert]).to start_with("Failed to approve: ")
+      expect(flash[:alert]).to start_with(I18n.t("errors.bookings.approve_failed"))
       expect(uba.reload.approved).to be(false)
       expect(applicant.reload.booking_approval).to be(false)
     end
@@ -1043,7 +1045,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
             params: { user_booking_approval_ids: [older.id, newer.id] }
       end
 
-      expect(flash[:alert]).to start_with("Failed to approve: ")
+      expect(flash[:alert]).to start_with(I18n.t("errors.bookings.approve_failed"))
       expect(newer.reload.approved).to be(false)
       expect(good_user.reload.booking_approval).to be(false)
       expect(older.reload.approved).to be(false)

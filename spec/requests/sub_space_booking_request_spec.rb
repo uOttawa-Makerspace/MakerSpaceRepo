@@ -418,7 +418,7 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
 
     before { log_in!(user) }
 
-    it "rejects recurring without end/frequency with a string error" do
+    it "rejects recurring without end/frequency and names what is missing" do
       post sub_space_booking_index_path, as: :json,
            params: { sub_space_booking: {
              sub_space_id: subspace.id, start_time: "2027-02-03 10:00",
@@ -427,7 +427,18 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
            } }
       expect(response.status).to eq(422)
       expect(response.parsed_body)
-        .to eq("errors" => "Invalid recurring parameters")
+        .to eq("errors" => ["Recurring #{I18n.t("errors.bookings.recurring_invalid")}"])
+    end
+
+    it "names the missing repeat details in French too, and as an alert for an HTML request" do
+      post sub_space_booking_index_path(locale: "fr"), as: :json, headers: { "Accept" => "text/html" },
+           params: { sub_space_booking: {
+             sub_space_id: subspace.id, start_time: "2027-02-03 10:00",
+             end_time: "2027-02-03 11:00", name: "R", description: "D",
+             recurring: true
+           } }
+      expect(flash[:alert]).to eq(I18n.t("errors.bookings.recurring_invalid", locale: :fr))
+      expect(flash[:alert]).to include("fréquence")
     end
 
     it "creates a weekly series; recurring_end is date-INCLUSIVE (loop-while < start)" do
@@ -928,8 +939,17 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       b = booking_by(create(:user, :regular_user, booking_approval: true))
       put bulk_approve_decline_sub_space_booking_index_path,
           params: { sub_space_booking_ids: [b.id], bulk_status: "wibble" }
-      expect(flash[:alert]).to eq("Failed to bulk update booking status.")
+      expect(flash[:alert]).to eq(I18n.t("errors.bookings.bulk_status_invalid"))
       expect(status_name(b)).to eq("Pending")
+    end
+
+    it "bulk_approve_decline names the missing choice in French" do
+      log_in!(create(:user, :staff))
+      b = booking_by(create(:user, :regular_user, booking_approval: true))
+      put bulk_approve_decline_sub_space_booking_index_path(locale: "fr"),
+          params: { sub_space_booking_ids: [b.id], bulk_status: "wibble" }
+      expect(flash[:alert]).to eq(I18n.t("errors.bookings.bulk_status_invalid", locale: :fr))
+      expect(flash[:alert]).to include("Approuver")
     end
   end
 
@@ -988,6 +1008,34 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       log_in!(create(:user, :admin, booking_approval: true))
       delete sub_space_booking_delete_path(99_999_999)
       expect(response.status).to eq(404)
+    end
+
+    it "a delete from the booking page (JSON) answers 204 and leaves the notice for the reload" do
+      owner = create(:user, :regular_user, booking_approval: true)
+      log_in!(owner)
+      booking = booking_for(owner)
+      delete sub_space_booking_delete_path(booking.id), headers: { "Accept" => "application/json" }
+      expect(response).to have_http_status(:no_content)
+      expect(flash[:notice]).to eq("Booking for #{subspace.name} deleted successfully.")
+      expect(SubSpaceBooking.find_by(id: booking.id)).to be_nil
+    end
+
+    it "a JSON delete of an unknown booking answers 404 with the error and a reference" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      delete sub_space_booking_delete_path(99_999_999), headers: { "Accept" => "application/json" }
+      expect(response).to have_http_status(:not_found)
+      expect(response.parsed_body).to include("error" => I18n.t("errors.generic.not_found"),
+                                              "reference" => response.request.request_id.first(8))
+    end
+
+    it "a JSON delete of the remaining occurrences answers 204" do
+      owner = create(:user, :regular_user, booking_approval: true)
+      log_in!(owner)
+      recurring = RecurringBooking.create!
+      booking = booking_for(owner, recurring_booking: recurring)
+      delete delete_remaining_recurring_sub_space_booking_path(booking.id), headers: { "Accept" => "application/json" }
+      expect(response).to have_http_status(:no_content)
+      expect(SubSpaceBooking.exists?(booking.id)).to be(false)
     end
 
     it "delete_remaining_recurring clears from THIS booking onward" do
@@ -1081,6 +1129,16 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
         "name" => booking.name,
         "sub_space_id" => booking.sub_space_id
       )
+    end
+
+    it "request_access says why a request with an unknown identity was not submitted" do
+      user = create(:user, :regular_user, booking_approval: false)
+      log_in!(user)
+
+      put request_access_sub_space_booking_index_path, params: { comments: "please", identity: "Nobody" }
+      expect(flash[:alert]).to start_with(I18n.t("errors.bookings.access_request_failed"))
+      expect(flash[:alert]).to include(UserBookingApproval.human_attribute_name(:identity))
+      expect(UserBookingApproval.where(user: user)).to be_empty
     end
 
     it "request_access gates blank comments and duplicate requests" do

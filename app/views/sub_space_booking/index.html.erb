@@ -2,7 +2,11 @@
 <section class="container-fluid mt-4">
   <!-- Toast Container -->
   <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1060">
-    <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast text-bg-danger border-0 shadow" data-bs-autohide="true" data-bs-delay="5000">
+    <div id="booking_toast" role="alert" aria-live="assertive" aria-atomic="true" class="toast text-bg-danger border-0 shadow" data-bs-autohide="true" data-bs-delay="5000"
+         data-failed-title="<%= t('errors.bookings.js.failed_title') %>"
+         data-feed="<%= t('errors.bookings.js.feed') %>"
+         data-unavailable-title="<%= t('errors.bookings.js.unavailable_title') %>"
+         data-unavailable="<%= t('errors.bookings.js.unavailable') %>">
       <div class="toast-header text-bg-danger border-bottom border-danger-subtle">
         <strong id="toast_title" class="me-auto fw-bold"><i class="fa fa-exclamation-triangle"></i> Error</strong>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="<%= t('common.close') %>"></button>

@@ -64,7 +64,7 @@ class JobOrder < ApplicationRecord
   # The outcome of a locked operation on an order (#transition!, #apply_owner_change!, #checkout_link,
   # #soft_delete!, #retire_stale_draft!): ok?, or refused with a reason. Nothing is committed on a refusal.
   #   :wrong_state         the order is not in one of `from` (or, for an owner change, money was taken)
-  #   :nothing_asked       (status changes from the controller) the request did not ask for a change
+  #   :not_requested       (status changes from the controller) the request did not ask for a change
   #   :link_spent          the emailed approve link was retired (re-quote / owner change) before the lock
   #   :draft_not_voidable  the Shopify draft could not be settled (StaleDraftOrderError; any Shopify error)
   #   :invalid_status_row  the status row did not validate or could not be written (no actor)
@@ -84,13 +84,15 @@ class JobOrder < ApplicationRecord
   class TransitionResult < Data.define(:reason, :error, :status, :value)
     # The reasons that have their own message when the order's work could not be committed
     # (job_orders.alerts.status_change.<reason> and, for the $0 path, job_orders.alerts.zero_order_not_marked_paid.<reason>).
-    # Every other reason falls back to a generic one.
+    # Every other $0-path reason falls back to its "other".
     REASONS_WITH_MESSAGE = %i[draft_not_voidable invalid_status_row order_missing busy].freeze
-    # A status change also says when the order is not in a state that allows it.
-    STATUS_CHANGE_REASONS = (REASONS_WITH_MESSAGE + %i[wrong_state service_price_missing]).freeze
+    # A status change also says when the order is not in a state that allows it, when the emailed link was
+    # retired, when the request asked for nothing, and which service prices are missing. Any other reason falls
+    # back to the unexpected-error text, which quotes the request's reference.
+    STATUS_CHANGE_REASONS = (REASONS_WITH_MESSAGE + %i[wrong_state link_spent not_requested service_price_missing]).freeze
     # A deadlock is shown as the same "try again" as a busy row.
     MESSAGE_REASON = { deadlock: :busy }.freeze
-    GENERIC_MESSAGE = "job_orders.alerts.error_while_updating"
+    GENERIC_MESSAGE = "errors.generic.unexpected"
     # The reasons a delete can be refused for (job_orders.alerts.delete_refused.<reason>).
     DELETE_REASONS = %i[draft_not_voidable order_missing busy not_deletable].freeze
 

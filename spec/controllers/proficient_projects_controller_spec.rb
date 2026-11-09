@@ -149,7 +149,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
           post :create, params: { proficient_project: pp_params }
         end.to change(ProficientProject, :count).by(0)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq("The project could not be created: Title A title is required.")
       end
     end
   end
@@ -270,7 +270,7 @@ RSpec.describe ProficientProjectsController, type: :controller do
                   title: ""
                 }
               }
-        expect(flash[:alert]).to eq("Unable to apply the changes.")
+        expect(flash[:alert]).to eq("The changes could not be saved: Title A title is required.")
         expect(response).to have_http_status(:unprocessable_content)
       end
     end
@@ -459,7 +459,7 @@ level: @proficient_project.level)
           "Waiting for approval"
         )
         expect(flash[:error]).to eq(
-          "An error has occurred, please try again later."
+          "That project submission was not found. It may have been removed."
         )
       end
     end

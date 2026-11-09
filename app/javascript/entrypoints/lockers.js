@@ -3,6 +3,7 @@ import TomSelect from "tom-select";
 import DataTable from "datatables.net-bs5";
 import "datatables.net-select-bs5";
 import { csrfHeaders } from "../src/csrf";
+import { reportFailure, requestJson } from "../src/request_error";
 
 // Checkbox to toggle the student section on the form
 document.addEventListener("turbo:load", function () {
@@ -188,13 +189,12 @@ document.addEventListener("turbo:load", function () {
       const formData = new FormData();
       formData.append(this.name, this.value);
 
-      fetch(`/lockers/${lockerId}`, {
+      requestJson(`/lockers/${lockerId}`, {
         method: "PATCH",
         headers: csrfHeaders({ Accept: "application/json" }),
         body: formData,
       })
-        .then((response) => {
-          if (!response.ok) throw new Error("Failed to update size");
+        .then(() => {
           if (checkmark) {
             checkmark.hidden = false;
             setTimeout(() => {
@@ -203,7 +203,7 @@ document.addEventListener("turbo:load", function () {
           }
         })
         .catch((error) => {
-          console.error(error);
+          reportFailure(error);
           this.classList.add("is-invalid");
           setTimeout(() => this.classList.remove("is-invalid"), 3000);
         })
@@ -230,13 +230,12 @@ document.addEventListener("turbo:load", function () {
       const formData = new FormData();
       formData.append(this.name, this.value);
 
-      fetch(url, {
+      requestJson(url, {
         method: "PATCH",
         headers: csrfHeaders({ Accept: "application/json" }),
         body: formData,
       })
-        .then((response) => {
-          if (!response.ok) throw new Error("Failed to update note/details");
+        .then(() => {
           this.classList.add("is-valid");
 
           // 1. Update the cell's data-search attribute so table searching works with the new text immediately
@@ -261,7 +260,7 @@ document.addEventListener("turbo:load", function () {
           setTimeout(() => this.classList.remove("is-valid"), 1500);
         })
         .catch((error) => {
-          console.error(error);
+          reportFailure(error);
           this.classList.add("is-invalid");
           setTimeout(() => this.classList.remove("is-invalid"), 3000);
         });

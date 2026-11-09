@@ -332,7 +332,7 @@ RSpec.describe "Owner changes after the quote", type: :request do
         run_path("delete a task", order)
 
         expect(response).to redirect_to(job_order_path(order))
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.owner_change_draft_order_failed"))
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.owner_change_draft_order_failed", reference: error_reference))
         expect(snapshot(order)).to eq(before)
         expect_no_requote_mail
       end

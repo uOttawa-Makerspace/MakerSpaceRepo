@@ -1,6 +1,7 @@
 import Sortable from "sortablejs";
 import TomSelect from "tom-select";
 import { csrfHeaders } from "../src/csrf";
+import { reportFailure, requestJson } from "../src/request_error";
 
 document.addEventListener("turbo:load", () => {
   document.querySelectorAll("[data-order]").forEach((reorderSwitch) => {
@@ -13,7 +14,7 @@ document.addEventListener("turbo:load", () => {
       sort: reorderSwitch.checked,
       handle: ".sort-handle",
       onEnd: (e) => {
-        fetch("/learning_area/reorder", {
+        requestJson("/learning_area/reorder", {
           method: "PUT",
           headers: csrfHeaders({
             Accept: "application/json",
@@ -23,7 +24,7 @@ document.addEventListener("turbo:load", () => {
             data: [...e.from.children].map((c) => c.dataset.id),
             format: "json",
           }),
-        }).catch((error) => console.error("Reorder failed:", error.message));
+        }).catch(reportFailure);
       },
     });
 

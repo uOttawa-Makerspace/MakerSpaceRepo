@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="<%= I18n.locale %>">
+<html lang="<%= I18n.locale %>" <%= tag.attributes(request_text_attributes) %>>
   <head>
     <%= render 'shared/theme_init' %>
     <title><%= page_title(yield(:title), base_title: 'Staff Area | MakerRepo') %></title>

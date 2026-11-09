@@ -64,7 +64,7 @@ RSpec.describe "JobOrders workflow", type: :request do
       session_login!(staff)
       patch job_order_quote_path(order), params: quote_params(task, approved: "maybe")
       expect(response).to redirect_to(job_order_path(order))
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.quote_choice_missing"))
       expect(status_names(order)).to eq(["Waiting for Staff Approval"])
       expect(task.reload.job_task_quote).to be_nil
       expect(deliveries).to be_empty
@@ -199,7 +199,7 @@ RSpec.describe "JobOrders workflow", type: :request do
     it "flashes the generic error when the update is invalid (disallowed staff upload)" do
       session_login!(staff)
       patch job_order_comments_path(order), params: { job_order: { staff_files: [FilesTestHelper.mp4] } }
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.job_orders.comments_failed"))
       expect(order.reload.staff_files.count).to eq(0)
     end
 
@@ -221,7 +221,7 @@ RSpec.describe "JobOrders workflow", type: :request do
 
     it "does nothing and flashes the generic error when completed is false" do
       patch job_order_processed_path(order), params: { completed: "false" }
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.not_requested"))
       expect(status_names(order)).to eq(["Currently being Processed"])
     end
 
@@ -390,25 +390,34 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(status_names(reminder)).to end_with("Waiting to be Processed")
     end
 
-    it "shows the error page and records nothing for a missing or garbage approved param" do
+    it "shows the error page with the reason and records nothing for a missing or garbage approved param" do
       session_login!(owner)
       ["maybe", nil].each do |value|
         patch user_magic_approval_confirmation_job_orders_path, params: { token: token, approved: value }.compact
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include("An error occured while trying to Approve/Deny the Job Order...")
+        expect(response.body).to include(I18n.t("errors.job_orders.approval_failed_title"))
+        expect(response.body).to include(I18n.t("job_orders.alerts.status_change.not_requested"))
       end
       expect(status_names(order)).to eq(["Waiting for User Approval"])
     end
 
+    it "shows the error page with the reason when the order has moved on, in French when asked" do
+      order.job_order_statuses.create!(job_status: JobStatus.waiting_processed, user: owner)
+      session_login!(owner)
+      patch user_magic_approval_confirmation_job_orders_path(locale: "fr"), params: { token: token, approved: "true" }
+      expect(response.body).to include(CGI.escapeHTML(I18n.t("errors.job_orders.approval_failed_title", locale: :fr)))
+      expect(response.body).to include(CGI.escapeHTML(I18n.t("job_orders.alerts.status_change.wrong_state", locale: :fr)))
+    end
+
     # the token lookup returns only a live order, so a link for a
     # soft-deleted order gets the invalid-link flash instead of a nil crash
-    it "redirects with the accept/deny error flash for a soft-deleted order" do
+    it "redirects with the invalid-link flash for a soft-deleted order" do
       minted = token
       order.update!(is_deleted: true)
       session_login!(owner)
       patch user_magic_approval_confirmation_job_orders_path, params: { token: minted, approved: "true" }
       expect(response).to redirect_to(job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_accept_deny_order"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
     end
 
     it "shows the invalid-link flash on the approval page for a soft-deleted order" do
@@ -428,10 +437,10 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(deliveries.map(&:to)).to eq([["makerspace@uottawa.ca"], [owner.email]])
     end
 
-    it "redirects with the accept/deny error flash when the token is missing" do
+    it "redirects with the invalid-link flash when the token is missing" do
       patch user_magic_approval_confirmation_job_orders_path, params: { approved: "true" }
       expect(response).to redirect_to(job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_accept_deny_order"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.approval_magic_link_expired"))
     end
   end
 end

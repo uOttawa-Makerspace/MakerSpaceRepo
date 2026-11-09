@@ -6,6 +6,14 @@ import TomSelect from "tom-select";
 import "flatpickr";
 import { Toast } from "bootstrap";
 import { csrfHeaders } from "../src/csrf";
+import {
+  failureText,
+  parseBody,
+  requestJson,
+  requestResult,
+  resultError,
+  serverError,
+} from "../src/request_error";
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 
@@ -293,24 +301,31 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("book-name")?.focus();
   }
 
-  // The booking lookup answers JSON only to staff; anything else (a refusal
-  // redirected to an HTML page, a server error) is reported, not parsed.
-  function fetchBooking(id) {
-    return fetch(`/sub_space_booking/get_sub_space_booking?id=${id}`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    }).then((r) => {
-      const json = r.headers.get("content-type")?.includes("json");
-      if (!r.ok || !json)
-        throw new Error(`Booking lookup failed (${r.status})`);
-      return r.json();
-    });
+  // The page's translated texts (data attributes of the toast).
+  function bookingText(name) {
+    return document.getElementById("booking_toast")?.dataset[name] ?? "";
   }
 
-  function showBookingLoadError() {
-    showToast("Booking unavailable", "This booking could not be opened.");
+  // The booking lookup answers JSON only to staff; anything else (a refusal
+  // redirected to an HTML page, a server error) is shown as the server's reason, not parsed.
+  function fetchBooking(id) {
+    return requestJson(
+      `/sub_space_booking/get_sub_space_booking?id=${id}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+      { fallback: bookingText("unavailable"), requireBody: true },
+    );
+  }
+
+  function showBookingLoadError(error) {
+    showToast(
+      bookingText("unavailableTitle"),
+      failureText(error, bookingText("unavailable")),
+    );
   }
 
   // ---- Edit (existing booking) ---------------------------------------------
@@ -326,27 +341,29 @@ document.addEventListener("turbo:load", function () {
     document.getElementById("book-recurring").style.display = "none";
     document.getElementById("book-recurring-label").style.display = "none";
 
-    fetchBooking(arg.event.id.split("_")[1]).then((data) => {
-      document.getElementById("book-name").value = data.name;
-      document.getElementById("book-description").value = data.description;
-      start_picker.setDate(Date.parse(data.start_time.slice(0, -6)));
-      end_picker.setDate(Date.parse(data.end_time.slice(0, -6)));
-      document.getElementById("book-recurring").checked = false;
+    fetchBooking(arg.event.id.split("_")[1])
+      .then((data) => {
+        document.getElementById("book-name").value = data.name;
+        document.getElementById("book-description").value = data.description;
+        start_picker.setDate(Date.parse(data.start_time.slice(0, -6)));
+        end_picker.setDate(Date.parse(data.end_time.slice(0, -6)));
+        document.getElementById("book-recurring").checked = false;
 
-      const blockingEl = document.getElementById("book-blocking");
-      if (blockingEl) blockingEl.checked = data.blocking;
+        const blockingEl = document.getElementById("book-blocking");
+        if (blockingEl) blockingEl.checked = data.blocking;
 
-      const isRecurring = data.recurring_booking_id != null;
-      document.getElementById("bookDelete").style.display = isRecurring
-        ? "none"
-        : "block";
-      document.getElementById("bookDeleteRecurringDropdown").style.display =
-        isRecurring ? "block" : "none";
+        const isRecurring = data.recurring_booking_id != null;
+        document.getElementById("bookDelete").style.display = isRecurring
+          ? "none"
+          : "block";
+        document.getElementById("bookDeleteRecurringDropdown").style.display =
+          isRecurring ? "block" : "none";
 
-      document.getElementById("subspace").value = data.sub_space_id;
-      toggleRecurring();
-      openModal();
-    }, showBookingLoadError);
+        document.getElementById("subspace").value = data.sub_space_id;
+        toggleRecurring();
+        openModal();
+      })
+      .catch(showBookingLoadError);
   }
 
   // ---- Flatpickr instances -------------------------------------------------
@@ -505,14 +522,16 @@ document.addEventListener("turbo:load", function () {
 
   // ---- Shared fetch handler -----------------------------------------------
   function makeRequest(request, triggerBtn) {
-    fetch(request)
-      .then((r) => r.text())
-      .then((text) => {
-        let parsed;
-        try {
-          parsed = JSON.parse(text);
-        } catch {
-          parsed = null;
+    requestResult(request)
+      .then((result) => {
+        const { ok, text } = result;
+        const parsed = parseBody(text);
+
+        // A refusal with no per-field errors (a server error, a missing record): say why, and keep the form.
+        if (!ok && !parsed?.errors) {
+          triggerBtn?.removeAttribute("disabled");
+          showToast(bookingText("failedTitle"), resultError(result));
+          return;
         }
 
         // A partly booked recurring series (422 with booked > 0): some
@@ -566,12 +585,22 @@ document.addEventListener("turbo:load", function () {
           if (parsed === null) window.location.reload();
         }
       })
-      .catch(() => {
+      .catch((error) => {
         triggerBtn?.removeAttribute("disabled");
+        showToast(bookingText("failedTitle"), failureText(error));
       });
   }
 
   // ---- FullCalendar -------------------------------------------------------
+  // The calendar feed failed: show the server's reason when it sent one.
+  async function showFeedError(error) {
+    const body = await error?.response?.json?.().catch(() => null);
+    showToast(
+      bookingText("failedTitle"),
+      serverError(body, bookingText("feed")),
+    );
+  }
+
   const bookedCalendar = new Calendar(bookedCalendarEl, {
     initialDate: window.location.href.includes("start")
       ? new Date(new URLSearchParams(window.location.search).get("start"))
@@ -609,9 +638,7 @@ document.addEventListener("turbo:load", function () {
           window.location.search,
         ).get("room")}`,
         // Surface fetch errors in the console rather than silently failing
-        failure: () => {
-          console.error("FullCalendar failed to fetch bookings.");
-        },
+        failure: (error) => showFeedError(error),
       },
     ],
     select: (arg) => createEvent(arg),

@@ -139,7 +139,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       session_login!(staff)
       start = order_with_task!(status_key: :waiting_processed)
       patch job_order_start_processing_path(start)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.not_requested"))
       expect(status_names(start)).to eq(["Waiting to be Processed"])
     end
 
@@ -239,7 +239,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       session_login!(owner)
       [nil, "maybe"].each do |value|
         patch job_order_user_approval_path(order), params: { approved: value }.compact
-        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.not_requested"))
       end
       expect(status_names(order)).to eq(["Waiting for User Approval"])
     end
@@ -385,7 +385,7 @@ RSpec.describe "JobOrders gaps", type: :request do
       end.not_to change(JobOrder, :count)
 
       expect(response).to have_http_status(:ok)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_trying_to_create"))
+      expect(flash[:alert]).to start_with(I18n.t("errors.job_orders.create_failed"))
       expect(response.body).to include(I18n.t("job_orders.new.title"))
     end
 
@@ -461,14 +461,14 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "refuses to assign a deleted staff member" do
+    it "refuses to assign a deleted staff member, saying the staff member no longer exists" do
       gone = create(:user, :staff)
       gone.update_columns(deleted: true)
       session_login!(admin)
       patch job_order_assign_staff_path(order), params: { staff_id: gone.id }
 
       expect(order.reload.assigned_staff_id).to be_nil
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_staff"))
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_staff_missing"))
     end
 
     it "keeps the previous assignee when a non-staff user is refused" do
@@ -503,11 +503,11 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response).to redirect_to(admin_job_orders_url)
     end
 
-    it "refuses when staff assigns someone else, with a message, and assigns nothing" do
+    it "tells staff only an admin can assign someone else, and assigns nothing" do
       session_login!(staff)
       patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
       expect(response).to redirect_to(job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_permitted"))
+      expect(flash[:alert]).to eq(I18n.t("errors.job_orders.assign_not_allowed"))
       expect(order.reload.assigned_staff).to be_nil
     end
 
