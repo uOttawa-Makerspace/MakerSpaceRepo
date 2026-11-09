@@ -604,6 +604,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "styles the categories and equipment selects as multiple-choice form selects" do
+      content_login!(owner)
+      get edit_repository_path(owner.username, repo.slug)
+      %w[categories equipments].each do |field|
+        select = Nokogiri::HTML(response.body).at_css("select[name='repository[#{field}][]']")
+        expect(select["class"].to_s.split).to include("form-control", "form-select")
+        expect(select["multiple"]).to be_present
+      end
+    end
+
     it "always sends the category field, so clearing every category is submitted" do
       content_login!(owner)
       get edit_repository_path(owner.username, repo.slug)
