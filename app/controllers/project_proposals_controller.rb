@@ -8,6 +8,8 @@ class ProjectProposalsController < SessionsController
   before_action :signed_in, only: %i[edit update approve decline create_revision join_project_proposal unjoin_project_proposal]
   before_action :require_admin, only: %i[approve decline]
   before_action :require_owner_or_admin, only: %i[edit update]
+  before_action :require_visible_proposal, only: :show
+  before_action :redirect_to_canonical_url, only: %i[show edit]
   helper_method :owner_or_admin?
 
   # Guests may propose a project (behind the captcha), so creation is limited per visitor
@@ -82,14 +84,6 @@ class ProjectProposalsController < SessionsController
 
   # GET /project_proposals/1
   def show
-    unless @project_proposal.approved?
-      unless current_user&.admin? || (@project_proposal.user_id.present? && @project_proposal.user_id == current_user&.id)
-        redirect_to project_proposals_path,
-                    alert: 'You are not allowed to access this pending project proposal.'
-        return
-      end
-    end
-
     @categories = @project_proposal.categories
     @pagy, @repositories =
       pagy(viewable_linked_repositories.includes(:owner, :photos).order([sort_order].to_h), limit: 9)
@@ -167,13 +161,13 @@ class ProjectProposalsController < SessionsController
           create_categories
           @project_proposal.save
           format.html do
-            redirect_to project_proposal_path(@project_proposal.slug),
+            redirect_to project_proposal_path(@project_proposal),
                         notice: ('Project proposal was successfully created.' unless @project_files_failed)
           end
           format.json do
             render json: {
                      redirect_uri:
-                       project_proposal_path(@project_proposal.slug).to_s
+                       project_proposal_path(@project_proposal).to_s
                    }
           end
           MsrMailer.send_new_project_proposals.deliver_now
@@ -235,19 +229,19 @@ class ProjectProposalsController < SessionsController
       respond_to do |format|
         if @project_proposal.save!
           format.html do
-            redirect_to project_proposal_path(@project_proposal.slug),
+            redirect_to project_proposal_path(@project_proposal),
                         notice:
                           'The project proposal revision has been successfully created.'
           end
           format.json do
             render json: {
                      redirect_uri:
-                       project_proposal_path(@project_proposal.slug).to_s
+                       project_proposal_path(@project_proposal).to_s
                    }
           end
         else
           format.html do
-            redirect_to project_proposal_path(@old_project_proposal.slug),
+            redirect_to project_proposal_path(@old_project_proposal),
                         alert:
                           'An error occured while creating the Project proposal revision, please try again later.'
           end
@@ -270,7 +264,7 @@ class ProjectProposalsController < SessionsController
     respond_to do |format|
       if apply_edit(attributes)
         format.html do
-          redirect_to project_proposal_path(@project_proposal.slug),
+          redirect_to project_proposal_path(@project_proposal),
                       notice:
                         if needs_re_review
                           'Project proposal was updated. It is pending again and needs to be re-approved by an admin before it is listed publicly.'
@@ -281,7 +275,7 @@ class ProjectProposalsController < SessionsController
         format.json do
           render json: {
                    redirect_uri:
-                   project_proposal_path(@project_proposal.slug).to_s
+                   project_proposal_path(@project_proposal).to_s
                  }
         end
       else
@@ -329,10 +323,10 @@ class ProjectProposalsController < SessionsController
     @project_join = ProjectJoin.new(project_join_params)
     @project_join.user_id = current_user.id
     if @project_join.save
-      redirect_to project_proposal_path(@project_proposal.slug),
+      redirect_to project_proposal_path(@project_proposal),
                   notice: 'You joined this project.'
     else
-      redirect_to project_proposal_path(@project_proposal.slug),
+      redirect_to project_proposal_path(@project_proposal),
                   alert:
                     'You already joined this project or something went wrong.'
     end
@@ -342,15 +336,15 @@ class ProjectProposalsController < SessionsController
     @project_proposal = ProjectProposal.find(params[:project_proposal_id])
     @project_join = @project_proposal.project_joins.find(params[:project_join_id])
     unless current_user.admin? || @project_join.user_id == current_user.id
-      redirect_to project_proposal_path(@project_proposal.slug),
+      redirect_to project_proposal_path(@project_proposal),
                   alert: 'You can only leave a project you joined yourself.'
       return
     end
     if @project_join.delete
-      redirect_to project_proposal_path(@project_proposal.slug),
+      redirect_to project_proposal_path(@project_proposal),
                   notice: 'You unjoined this project.'
     else
-      redirect_to project_proposal_path(@project_proposal.slug),
+      redirect_to project_proposal_path(@project_proposal),
                   alert: 'Something went wrong.'
     end
   end
@@ -527,10 +521,28 @@ class ProjectProposalsController < SessionsController
   end
 
   def set_project_proposal
-    @project_proposal = ProjectProposal.find_by(slug: params[:id]) || ProjectProposal.find_by(id: params[:id])
+    @project_proposal = ProjectProposal.find_by_param(params[:id])
     return if @project_proposal
 
     redirect_to project_proposals_path, alert: 'Project proposal not found'
+  end
+
+  def require_visible_proposal
+    return if @project_proposal.approved? || owner_or_admin?(@project_proposal)
+
+    redirect_to project_proposals_path,
+                alert: 'You are not allowed to access this pending project proposal.'
+  end
+
+  # Bare ids, stale titles and the old "<id>.<title>" form of a page address are moved to the
+  # current address, keeping the query string. Other requests are answered as they are.
+  def redirect_to_canonical_url
+    return unless request.get? && request.format.html?
+    return if params[:id] == @project_proposal.to_param
+
+    path = action_name == 'edit' ? edit_project_proposal_path(@project_proposal) : project_proposal_path(@project_proposal)
+    path += "?#{request.query_string}" if request.query_string.present?
+    redirect_to path, status: :moved_permanently
   end
 
   def project_proposal_params
@@ -583,21 +595,12 @@ class ProjectProposalsController < SessionsController
   end
 
   # A refused edit shows the submitted values in the form, as a failed validation does; nothing is saved
-  # or removed. The slug a rolled-back save set in memory is replaced by the stored one, so links keep working.
+  # or removed. A rolled-back transaction leaves the unsaved changes in memory (the new title, attachments
+  # that were never stored), so the record is read from the database again before the values are assigned.
   def refuse_edit(attributes)
-    discard_unsaved_attachments
-    @project_proposal.slug = ProjectProposal.where(id: @project_proposal.id).pick(:slug)
+    @project_proposal.reload
     @project_proposal.assign_attributes(attributes)
     false
-  end
-
-  # A rolled-back transaction leaves attachments that were never stored on the record in memory, so
-  # pending changes are dropped and the attachment associations are read from the database again.
-  def discard_unsaved_attachments
-    @project_proposal.attachment_changes.clear
-    %i[photos_attachments photos_blobs project_files_attachments project_files_blobs].each do |name|
-      @project_proposal.association(name).reset
-    end
   end
 
   def replace_categories

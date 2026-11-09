@@ -55,7 +55,7 @@
                             </td>
                         <% end %>
                         <td>
-                            <%= link_to 'Show', project_proposal_path(project_proposal.slug), class: 'btn btn-success d-block w-100 btn-sm' %>
+                            <%= link_to 'Show', project_proposal_path(project_proposal), class: 'btn btn-success d-block w-100 btn-sm' %>
                             <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: 'btn btn-primary d-block w-100 btn-sm' %>
                             <%= button_to 'Delete', project_proposal, method: :delete,
                                           class: 'btn btn-danger d-block w-100 btn-sm my-2', data: { confirm: 'Are you sure?' } %>

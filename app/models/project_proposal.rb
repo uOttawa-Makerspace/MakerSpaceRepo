@@ -122,6 +122,21 @@ class ProjectProposal < ApplicationRecord
       id.to_s + '.' + title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
   end
 
+  # The leading integer of "12", "12-title" or the old "12.title" form names the proposal.
+  def self.find_by_param(param)
+    id = param.to_s[/\A\d+(?=[-.]|\z)/]
+    find_by(id:) if id
+  end
+
+  # "<id>-<title>" is the address of a saved proposal; the id alone when the title has no
+  # letters or digits. The saved title is used, so a title typed into a form that was
+  # refused does not change the address.
+  def to_param
+    return unless persisted?
+
+    [id, title_in_database.to_s.parameterize.presence].compact.join('-')
+  end
+
   def active_semester_label
     "#{season.capitalize} #{year}" if season && year
   end

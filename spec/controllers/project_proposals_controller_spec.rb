@@ -63,26 +63,26 @@ RSpec.describe ProjectProposalsController, type: :controller do
 
       it "should allow creator to view their pending proposal" do
         session[:user_id] = creator.id
-        get :show, params: { id: pending_pp.slug }
+        get :show, params: { id: pending_pp.to_param }
         expect(response).to have_http_status(:success)
       end
 
       it "should allow admin to view any pending proposal" do
         session[:user_id] = admin.id
-        get :show, params: { id: pending_pp.slug }
+        get :show, params: { id: pending_pp.to_param }
         expect(response).to have_http_status(:success)
       end
 
       it "should safely redirect unauthorized regular users" do
         session[:user_id] = other_user.id
-        get :show, params: { id: pending_pp.slug }
+        get :show, params: { id: pending_pp.to_param }
         expect(response).to redirect_to(project_proposals_path)
         expect(flash[:alert]).to include("not allowed")
       end
 
       it "should safely redirect unauthenticated guests without 500 error" do
         session[:user_id] = nil
-        get :show, params: { id: pending_pp.slug }
+        get :show, params: { id: pending_pp.to_param }
         expect(response).to redirect_to(project_proposals_path)
         expect(flash[:alert]).to include("not allowed")
       end
@@ -103,7 +103,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
       it "should show the form to edit the project proposal" do
         session[:user_id] = admin.id
         pp = create(:project_proposal)
-        get :edit, params: { id: pp.id }
+        get :edit, params: { id: pp.to_param }
         expect(response).to have_http_status(:success)
       end
     end
@@ -144,7 +144,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
           post :create, params: { project_proposal: project_proposal_params }
         }.to change(ProjectProposal, :count).by(1)
         expect(response).to redirect_to project_proposal_path(
-                      ProjectProposal.last.slug
+                      ProjectProposal.last
                     )
         expect(ActionMailer::Base.deliveries.count).to eq(1)
         expect(flash[:notice]).to eq(
@@ -225,7 +225,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
                 }
               }
         expect(response).to redirect_to project_proposal_url(
-                      project_proposal.reload.slug
+                      project_proposal.reload
                     )
         expect(flash[:notice]).to eq(
           "Project proposal was successfully updated."
@@ -255,7 +255,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
                   )
                 ]
               }
-        expect(response).to redirect_to project_proposal_url(pp.reload.slug)
+        expect(response).to redirect_to project_proposal_url(pp.reload)
         expect(flash[:notice]).to eq(
           "Project proposal was successfully updated."
         )
@@ -294,7 +294,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
               project_join_id: ProjectJoin.last.id
             }
         expect(response).to redirect_to project_proposal_path(
-                      project_proposal.slug
+                      project_proposal
                     )
         expect(flash[:notice]).to eq("You unjoined this project.")
       end

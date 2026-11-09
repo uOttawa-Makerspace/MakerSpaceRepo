@@ -147,7 +147,7 @@
             <div class="card mb-3 shadow-sm border">
                 <div class="card-header bg-body-tertiary fw-bold"><%= t('project_proposal.linked_proposal') %></div>
                 <div class="card-body">
-                    <%= link_to t('project_proposal.linked_proposal_button'), project_proposal_path(@linked_pp.slug), class: 'btn btn-primary btn-sm' %>
+                    <%= link_to t('project_proposal.linked_proposal_button'), project_proposal_path(@linked_pp), class: 'btn btn-primary btn-sm' %>
                 </div>
             </div>
         <% end %>
@@ -158,7 +158,7 @@
                 <div class="card-body">
                     <ul class="mb-0 ps-3">
                         <% @revisions.each do |revision| %>
-                            <li><%= link_to revision.title, project_proposal_path(revision.slug) %></li>
+                            <li><%= link_to revision.title, project_proposal_path(revision) %></li>
                         <% end %>
                     </ul>
                 </div>

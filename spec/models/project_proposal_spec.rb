@@ -85,5 +85,40 @@ RSpec.describe ProjectProposal, type: :model do
         expect(pp.approval_status).to eq("Not validated")
       end
     end
+
+    context "#to_param" do
+      it "joins the id and the parameterized title" do
+        pp = create(:project_proposal, title: "Big Robot Arm!")
+        expect(pp.to_param).to eq("#{pp.id}-big-robot-arm")
+      end
+
+      it "is the id alone when the title has no letters or digits" do
+        pp = create(:project_proposal, title: "!!!")
+        expect(pp.to_param).to eq(pp.id.to_s)
+      end
+
+      it "is nil for an unsaved proposal and keeps the saved title while a new one is typed" do
+        expect(ProjectProposal.new(title: "Draft").to_param).to be_nil
+        pp = create(:project_proposal, title: "Saved Title")
+        pp.title = "Typed Title"
+        expect(pp.to_param).to eq("#{pp.id}-saved-title")
+      end
+    end
+
+    context ".find_by_param" do
+      let!(:pp) { create(:project_proposal, title: "Find Me") }
+
+      it "finds by the bare id, the id-title form and the old dotted form" do
+        [pp.id.to_s, "#{pp.id}-find-me", "#{pp.id}-stale", "#{pp.id}.find-me"].each do |param|
+          expect(ProjectProposal.find_by_param(param)).to eq(pp)
+        end
+      end
+
+      it "finds nothing for an unknown id or text that does not start with an id" do
+        ["0", "nope", "#{pp.id}x", "", nil, "-#{pp.id}"].each do |param|
+          expect(ProjectProposal.find_by_param(param)).to be_nil
+        end
+      end
+    end
   end
 end
