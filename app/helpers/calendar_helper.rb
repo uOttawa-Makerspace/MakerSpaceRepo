@@ -181,7 +181,7 @@ module CalendarHelper
     if rrule_obj.until
       until_time = safe_to_time(rrule_obj.until)
       # Toronto wall-clock time, like the DTSTART the feed sends with it
-      parts << "UNTIL=#{until_time.in_time_zone('America/Toronto').strftime('%Y%m%dT%H%M%S')}" if until_time
+      parts << "UNTIL=#{until_time.in_time_zone(RecurrenceRule::ZONE).strftime('%Y%m%dT%H%M%S')}" if until_time
     end
     
     parts << "COUNT=#{rrule_obj.count}" if rrule_obj.count
@@ -201,8 +201,8 @@ module CalendarHelper
   # Toronto time (a repeating series keeps its Toronto clock time across clock
   # changes and late evenings, which are already the next day in UTC).
   def combine_date_and_time(keep_date, keep_time)
-    time = keep_time.in_time_zone("America/Toronto")
-    keep_date.in_time_zone("America/Toronto").change(hour: time.hour, min: time.min, sec: time.sec)
+    time = keep_time.in_time_zone(RecurrenceRule::ZONE)
+    keep_date.in_time_zone(RecurrenceRule::ZONE).change(hour: time.hour, min: time.min, sec: time.sec)
   end
 
   # A point in time as UTC. Dates and times without a zone (all-day dates,
