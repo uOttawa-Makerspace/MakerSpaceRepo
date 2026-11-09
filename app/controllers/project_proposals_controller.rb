@@ -270,7 +270,7 @@ class ProjectProposalsController < SessionsController
                  }
         end
       else
-        flash.now[:alert] = @refused_files_alert || validation_message(@project_proposal, 'errors.proposals.not_updated')
+        flash.now[:alert] = refused_edit_alert
         format.html { render :edit, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content
@@ -493,6 +493,15 @@ class ProjectProposalsController < SessionsController
     end
     messages << truncated_error_messages(model_errors) if model_errors.any?
     flash[:alert] = messages.join(' ')
+  end
+
+  # Names every cause of a refused edit. Refused files come first, in the upload check's own words,
+  # followed by any other cause (an unreadable photo, a failed validation).
+  def refused_edit_alert
+    return validation_message(@project_proposal, 'errors.proposals.not_updated') unless @refused_files_alert
+
+    others = @project_proposal.errors.reject { |e| e.attribute == :project_files && e.message == @refused_files_alert }
+    [@refused_files_alert, others.map(&:full_message).to_sentence].compact_blank.join(' ')
   end
 
   # The flash lives in the 4 KB cookie session, so names are shortened and capped.

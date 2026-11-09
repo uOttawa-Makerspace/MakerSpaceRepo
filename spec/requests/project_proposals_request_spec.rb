@@ -842,6 +842,22 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response.body).not_to include("The edit was not saved")
     end
 
+    it "names both causes when a new photo is unreadable and a new file is refused, and saves nothing" do
+      attach_png(pending, "drop.png")
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending.id),
+            params: { project_proposal: { title: "Changed", categories: %w[New] }, deleteimages: ["drop.png"],
+                      images: [unreadable_image], files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq(
+        "The edit was not saved because the type or size of these files is not allowed: run.exe. Photos could not be read as images"
+      )
+      expect(photo_names).to eq(["drop.png"])
+      expect(file_names).to be_empty
+      expect(pending.title).to eq("Pending One")
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
+    end
+
     it "shows the typed title on the form when a new photo is unreadable, without saving it" do
       patch project_proposal_path(pending.id), params: { project_proposal: { title: "Typed Title" }, images: [unreadable_image] }
       expect(response).to have_http_status(:unprocessable_content)
