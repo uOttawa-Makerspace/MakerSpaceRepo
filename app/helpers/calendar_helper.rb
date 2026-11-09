@@ -244,16 +244,52 @@ module CalendarHelper
     rrule_line
   end
 
+  # A point in time as UTC. Dates and times without a zone (all-day dates,
+  # floating times, a bare UNTIL) are Toronto wall-clock time, whatever zone the
+  # server process runs in; values with a Z or a TZID keep their own instant.
   def safe_to_time(value)
     return nil if value.nil?
-    if value.respond_to?(:to_time)
-      t = value.to_time
-      t = t.utc unless t.utc?
-      return t
-    end
-    Time.parse(value.to_s).utc # fallback
+
+    wall = wall_clock(value)
+    (wall ? toronto_local(wall) : instant(value)).getutc
   rescue StandardError
     nil
+  end
+
+  # The date or zoneless date-time in the value (a date object, a floating
+  # time, or the bare YYYYMMDD of a recurrence UNTIL), or nil when the value
+  # carries its own zone.
+  def wall_clock(value)
+    return Date.strptime(value, "%Y%m%d") if value.is_a?(String) && value.match?(/\A\d{8}\z/)
+
+    raw = value.is_a?(Icalendar::Values::DateTime) ? value.value : value
+    raw if floating_time?(raw) || calendar_date?(raw)
+  end
+
+  # icalendar leaves a plain DateTime with no offset for a time with no zone and
+  # for a TZID it cannot resolve (for example a custom name with no VTIMEZONE);
+  # both are read as Toronto time. A resolved TZID gives a zoned value, and a
+  # plain DateTime with an offset is an instant.
+  def floating_time?(raw)
+    raw.instance_of?(::DateTime) && raw.offset.zero?
+  end
+
+  def calendar_date?(raw)
+    raw.is_a?(Icalendar::Values::Date) || (raw.is_a?(::Date) && !raw.is_a?(::DateTime))
+  end
+
+  def toronto_local(wall)
+    toronto_zone.local(wall.year, wall.month, wall.day, wall.try(:hour).to_i, wall.try(:min).to_i, wall.try(:sec).to_i)
+  end
+
+  def instant(value)
+    return toronto_zone.parse(value) if value.is_a?(String)
+
+    value.respond_to?(:to_time) ? value.to_time : toronto_zone.parse(value.to_s)
+  end
+
+  def toronto_zone
+    ActiveSupport::TimeZone["America/Toronto"]
   end
 
   def convert_to_js_rrule(openstruct_obj)
