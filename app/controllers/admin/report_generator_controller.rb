@@ -525,55 +525,30 @@ class Admin::ReportGeneratorController < AdminAreaController
       ).includes(:users, :user, :trainings)
     @spaces = Space.order(name: :asc).includes(:certifications)
 
-    total_certs = {}
-    total_sessions = {}
-    @monthly_average = {}
+    @monthly_average = monthly_attendee_averages(report_days)
+  end
 
-    (1..12).each do |m|
-      month_name = Date::MONTHNAMES[m]
-      total_certs[month_name] = 0
-      total_sessions[month_name] = 0
-    end
-
+  # Every day of the report: the picked days, else 2015-06-01 to today.
+  def report_days
     if @date_specified
-      (@report_window.begin.to_date..@report_window.end.to_date)
-        .select { |date| date.day == 1 }
-        .map do |date|
-          month_name = date.end_of_month.strftime('%B')
-          certs =
-            Certification.where(
-              created_at: date.in_time_zone.all_month
-            )
-          total_certs[month_name] += certs.count
-          total_sessions[month_name] += certs
-            .pluck(:training_session_id)
-            .uniq
-            .count
-        end
-    else
-      (Date.new(2015, 6, 1)..Date.current)
-        .select { |date| date.day == 1 }
-        .map do |date|
-          month_name = date.end_of_month.strftime('%B')
-          certs =
-            Certification.where(
-              created_at: date.in_time_zone.all_month
-            )
-          total_certs[month_name] += certs.count
-          total_sessions[month_name] += certs
-            .pluck(:training_session_id)
-            .uniq
-            .count
-        end
+      return @report_window.begin.to_date..@report_window.end.to_date
     end
 
-    (1..12).each do |m|
-      month_name = Date::MONTHNAMES[m]
-      if total_certs[month_name] != 0
-        @monthly_average[month_name] = (
-          total_certs[month_name].to_f / total_sessions[month_name]
-        )
-      end
+    Date.new(2015, 6, 1)..Date.current
+  end
+
+  # Certificates per training session for each month that starts within the
+  # days and has certificates, the whole month in the application time zone,
+  # named with its year ("March 2026").
+  def monthly_attendee_averages(days)
+    months = days.select { |day| day.day == 1 }
+    months.each_with_object({}) do |month, averages|
+      certs = Certification.where(created_at: month.in_time_zone.all_month)
+      count = certs.count
+      next if count.zero?
+
+      sessions = certs.pluck(:training_session_id).uniq.count
+      averages[month.strftime('%B %Y')] = count.to_f / sessions
     end
   end
 

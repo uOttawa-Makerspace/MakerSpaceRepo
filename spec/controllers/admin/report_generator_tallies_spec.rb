@@ -201,7 +201,7 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
 
     it "averages certificates per session for each month that has some, as a float" do
       report("training_attendees", range)
-      expect(ivar(:monthly_average)).to eq("March" => 2.0)
+      expect(ivar(:monthly_average)).to eq("March 2026" => 2.0)
       expect(ivar(:spaces).map(&:name)).to eq(["Space One"])
     end
 
@@ -213,7 +213,7 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
         late = create(:training_session, space: alpha, created_at: Time.zone.local(2026, 3, 31, 22))
         create(:certification, training_session: late, created_at: Time.zone.local(2026, 3, 31, 22))
         report("training_attendees", start_date: "2026-03-01", end_date: "2026-04-30")
-        expect(ivar(:monthly_average)).to eq("March" => 5.0 / 3)
+        expect(ivar(:monthly_average)).to eq("March 2026" => 5.0 / 3)
       end
     end
 
@@ -222,13 +222,13 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
       expect(ivar(:monthly_average)).to eq({})
     end
 
-    it "without dates walks every month since June 2015 up to now and folds the same month of every year together" do
+    it "without dates walks every month since June 2015 up to now and keeps each year's month apart, oldest first" do
       travel_to(Time.utc(2026, 11, 6, 12)) do
         create(:certification, training_session: create(:training_session, space: alpha, created_at: Time.utc(2025, 3, 3)),
                                created_at: Time.utc(2025, 3, 3))
         report("training_attendees")
-        # March 2025 (1 cert, 1 session) and March 2026 (4 certs, 2 sessions) give 5 certs over 3 sessions
-        expect(ivar(:monthly_average)).to eq("March" => 5.0 / 3)
+        # March 2025 has 1 cert in 1 session, March 2026 has 4 certs in 2 sessions
+        expect(ivar(:monthly_average).to_a).to eq([["March 2025", 1.0], ["March 2026", 2.0]])
       end
     end
   end
