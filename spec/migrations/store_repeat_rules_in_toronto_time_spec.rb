@@ -44,17 +44,18 @@ RSpec.describe StoreRepeatRulesInTorontoTime do
     expect(records.map { |r| stored(r) }).to eq(cases.flat_map { |c| [c["toronto"], c["toronto"]] })
   end
 
-  it "keeps the meaning of every rewritten rule: the same start and the same occurrences" do
+  it "keeps the meaning of every rewritten rule: the same start, feed text and Google lines" do
     records = cases.map { |c| event_with(c["utc"], Time.iso8601(c["start"])) }
     before_texts = records.map { |r| stored(r) }
     migrate(:up)
     records.zip(before_texts).each do |record, old_text|
       new_text = stored(record)
-      old_rule = RecurrenceRule.new(old_text, nil)
-      new_rule = RecurrenceRule.new(new_text, nil)
-      expect(new_rule.starts_at).to eq(old_rule.starts_at)
-      expand = ->(text, start) { RecurrenceExpansion.occurrences(text, start, start, start + 1.year, 500).occurrences }
-      expect(expand.call(new_text, new_rule.starts_at)).to eq(expand.call(old_text, old_rule.starts_at))
+      # an edit writes the rule's own start again, so equal edits mean an equal start
+      edit = ->(text) { RecurrenceRule.new(text, nil).without_occurrence(Time.utc(2030, 1, 1)) }
+      expect(edit.call(new_text)).to eq(edit.call(old_text))
+      feed = ->(text) { RecurrenceRule.new(text, record.start_time).in_toronto_time }
+      expect(feed.call(new_text)).to eq(feed.call(old_text))
+      expect(new_text.lines.drop(1)).to eq(old_text.lines.drop(1))
     end
   end
 
@@ -91,15 +92,14 @@ RSpec.describe StoreRepeatRulesInTorontoTime do
     expect(connection.select_value("SELECT count(*) FROM recurrence_rule_rewrites")).to eq(0)
   end
 
-  it "keeps a rule it cannot read, and one with two start lines" do
+  it "keeps a rule with two start lines, one with no RRULE line and one whose start is not a date" do
     # stored before the rules were validated
-    two_starts = event_with("RRULE:FREQ=DAILY")
-    two_starts.update_column(:recurrence_rule, "DTSTART:20270310T150000Z\nDTSTART:20270311T150000Z\nRRULE:FREQ=DAILY")
-    unreadable = event_with("RRULE:FREQ=DAILY")
-    unreadable.update_column(:recurrence_rule, "DTSTART:20270310T150000Z\nRRULE:FREQ=FORTNIGHTLY")
+    texts = ["DTSTART:20270310T150000Z\nDTSTART:20270311T150000Z\nRRULE:FREQ=DAILY",
+             "DTSTART:20270310T150000Z\nEXDATE:20270311T150000Z",
+             "DTSTART:20271340T150000Z\nRRULE:FREQ=DAILY"]
+    records = texts.map { |text| event_with("RRULE:FREQ=DAILY").tap { |e| e.update_column(:recurrence_rule, text) } }
     migrate(:up)
-    expect(stored(two_starts)).to eq("DTSTART:20270310T150000Z\nDTSTART:20270311T150000Z\nRRULE:FREQ=DAILY")
-    expect(stored(unreadable)).to eq("DTSTART:20270310T150000Z\nRRULE:FREQ=FORTNIGHTLY")
+    expect(records.map { |r| stored(r) }).to eq(texts)
   end
 
   it "restores the exact old text and drops the record table on down" do

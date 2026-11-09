@@ -1,14 +1,11 @@
 # frozen_string_literal: true
 
-require "ice_cube"
-
 # Rewrites the start line of stored repeat rules (events and staff
 # unavailabilities) from a UTC stamp (DTSTART:20270310T150000Z) to Toronto
 # wall-clock time (DTSTART;TZID=America/Toronto:20270310T100000), the form the
 # calendar now writes. Only the DTSTART line changes, and only when the Toronto
-# form starts at the same instant and expands to the same occurrences (over the
-# life of the series, at most ten years or 1000 occurrences). Any other rule is
-# left as it is and listed in the output. updated_at is not touched.
+# wall time names the same instant. Any other rule is left as it is and listed
+# in the output. updated_at is not touched.
 #
 # Every rewrite is recorded in recurrence_rule_rewrites (table, row id, old and
 # new text). down puts the recorded old text back and drops the record table; it
@@ -17,8 +14,6 @@ class StoreRepeatRulesInTorontoTime < ActiveRecord::Migration[8.1]
   TABLES = %w[events staff_unavailabilities].freeze
   ZONE = "America/Toronto"
   UTC_START = /^DTSTART:(\d{8}T\d{6})Z$/
-  HORIZON = 10.years
-  LIMIT = 1000
   RECORD_VERSION = "20261109120000"
 
   def up
@@ -63,31 +58,26 @@ class StoreRepeatRulesInTorontoTime < ActiveRecord::Migration[8.1]
   end
 
   # The rule with its start in Toronto time, or nil and the reason it is kept.
+  # No reader takes the series start from this line: the server expansion and
+  # the calendar feeds use the row's start_time, and Google receives only the
+  # RRULE and EXDATE lines, which are not changed. So the feed text and the
+  # Google lines stay the same, and the rewrite keeps the meaning exactly when
+  # the Toronto wall time names the same instant. It does not for a start in
+  # the second 1:30 of the night the clocks go back, which wall time cannot
+  # name; such a rule is kept.
   def toronto_form(text)
     stamps = text.scan(UTC_START).flatten
     return [nil, "not a single UTC start line"] unless stamps.size == 1 && text.scan(/^DTSTART/).size == 1
+    return [nil, "no RRULE line"] unless text.match?(/^RRULE:/)
 
-    old_start = Time.find_zone!("UTC").strptime(stamps.first, "%Y%m%dT%H%M%S").in_time_zone(ZONE)
-    wall = old_start.strftime("%Y%m%dT%H%M%S")
-    new_start = Time.find_zone!(ZONE).strptime(wall, "%Y%m%dT%H%M%S")
-    return [nil, "the Toronto start gives other occurrences"] unless same_occurrences?(text, old_start, new_start)
+    old_start = Time.find_zone!("UTC").strptime(stamps.first, "%Y%m%dT%H%M%S")
+    wall = old_start.in_time_zone(ZONE).strftime("%Y%m%dT%H%M%S")
+    named = Time.find_zone!(ZONE).strptime(wall, "%Y%m%dT%H%M%S")
+    return [nil, "Toronto wall-clock time cannot name this start"] unless named == old_start
 
     [text.sub(UTC_START, "DTSTART;TZID=#{ZONE}:#{wall}"), nil]
-  rescue StandardError => e
-    [nil, "the rule cannot be read (#{e.class})"]
-  end
-
-  def same_occurrences?(text, old_start, new_start)
-    body = text.lines.map(&:strip).find { |line| line.start_with?("RRULE:") }&.delete_prefix("RRULE:")
-    return false if body.blank?
-
-    old_start == new_start && occurrences(body, old_start) == occurrences(body, new_start)
-  end
-
-  def occurrences(body, start)
-    schedule = IceCube::Schedule.new(start)
-    schedule.add_recurrence_rule(IceCube::Rule.from_ical(body))
-    schedule.next_occurrences(LIMIT, start - 1.second).select { |time| time <= start + HORIZON }.map(&:to_i)
+  rescue ArgumentError => e
+    [nil, "the start cannot be read (#{e.class})"]
   end
 
   # Rewrites the row only if it still holds the text that was read, and records it. 1 when rewritten.
