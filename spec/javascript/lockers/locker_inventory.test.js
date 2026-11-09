@@ -47,6 +47,7 @@ vi.mock("datatables.net-select-bs5", () => ({}));
 const tooltips = [];
 const disposed = [];
 vi.mock("bootstrap", () => ({
+  Toast: { getOrCreateInstance: () => ({ show() {} }) },
   Tooltip: class {
     static getInstance(el) {
       return el.tooltipInstance;
@@ -75,7 +76,7 @@ function stubFetch(ok = true) {
     "fetch",
     vi.fn(async (url, init) => {
       calls.push({ url, init });
-      return { ok };
+      return { ok, text: async () => "" };
     }),
   );
 }

@@ -25,6 +25,10 @@ vi.mock("tom-select", () => ({
 vi.mock("../../../app/javascript/src/csrf", () => ({
   csrfHeaders: (headers) => ({ ...headers, "X-CSRF-Token": "tok" }),
 }));
+const toasts = vi.hoisted(() => []);
+vi.mock("../../../app/javascript/src/toast", () => ({
+  showToast: (message, options) => toasts.push({ message, ...options }),
+}));
 
 const $ = (id) => document.getElementById(id);
 
@@ -95,13 +99,17 @@ describe("reordering", () => {
     expect(JSON.parse(init.body)).toEqual({ data: ["4", "3"], format: "json" });
   });
 
-  it("logs a failed save", async () => {
+  it("tells the user when the order could not be sent", async () => {
     await load(page);
+    document.documentElement.dataset.requestNetwork = "Server unreachable";
+    toasts.length = 0;
     document.dispatchEvent(new Event("turbo:load"));
     vi.stubGlobal("fetch", () => Promise.reject(new Error("offline")));
     sortables[0].options.onEnd({ from: $("list") });
     await vi.waitFor(() =>
-      expect(console.error).toHaveBeenCalledWith("Reorder failed:", "offline"),
+      expect(toasts).toEqual([
+        { message: "Server unreachable", type: "error" },
+      ]),
     );
   });
 

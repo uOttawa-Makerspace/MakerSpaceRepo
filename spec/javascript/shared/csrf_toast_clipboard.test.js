@@ -154,14 +154,17 @@ describe("clipboard", () => {
     expect(btn.textContent).toBe("Copy");
   });
 
-  it("copyField says Failed when copying is refused", async () => {
+  it("copyField says in a toast when copying is refused, and keeps the button label", async () => {
+    document.documentElement.dataset.requestCopyFailed = "Copy it by hand";
     writeText.mockReturnValue(Promise.reject(new Error("no")));
     document.body.innerHTML =
       '<span id="code">A</span><button id="b">Copy</button>';
     const btn = document.getElementById("b");
     window.copyField("#code", btn);
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(btn.textContent).toBe("Failed");
+    await vi.waitFor(() => expect(shows).toHaveLength(1));
+    expect(document.querySelector(".toast-body").textContent).toBe(
+      "Copy it by hand",
+    );
+    expect(btn.textContent).toBe("Copy");
   });
 });

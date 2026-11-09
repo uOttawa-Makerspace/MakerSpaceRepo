@@ -56,7 +56,10 @@ HTMLElement.prototype.flatpickr = function () {
 
 const PAGE = `
 <div id="booked-calendar"></div>
-<div id="booking_toast"></div><span id="toast_title"></span><span id="toast_text"></span>
+<div id="booking_toast" data-failed-title="Booking failed"
+  data-feed="The bookings could not be loaded."
+  data-unavailable-title="Booking unavailable"
+  data-unavailable="This booking could not be opened."></div><span id="toast_title"></span><span id="toast_text"></span>
 <div id="bookModal" style="display:none">
   <h5 id="bookingModalLabel"></h5>
   <input id="sub_space_booking_id">
@@ -106,7 +109,9 @@ const reply = (
 ) => ({
   ok,
   status,
-  headers: { get: () => type },
+  headers: {
+    get: (name) => (name.toLowerCase() === "content-type" ? type : null),
+  },
   text: async () => body,
   json: async () => JSON.parse(body),
 });
@@ -157,12 +162,11 @@ describe("calendar page", () => {
     );
   });
 
-  it("reports a failed bookings fetch in the console", () => {
+  it("says when the bookings could not be loaded", async () => {
     const cal = boot();
-    cal.options.eventSources[0].failure();
-    expect(console.error).toHaveBeenCalledWith(
-      "FullCalendar failed to fetch bookings.",
-    );
+    await cal.options.eventSources[0].failure(new Error("feed down"));
+    expect($("toast_title").innerText).toBe("Booking failed");
+    expect($("toast_text").innerText).toBe("The bookings could not be loaded.");
   });
 
   it("does nothing more on a page without the calendar", () => {

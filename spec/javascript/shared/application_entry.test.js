@@ -247,13 +247,14 @@ describe("page helpers", () => {
     expect(JSON.parse(init.body)).toEqual({ exam_id: 4, answer_id: 9 });
   });
 
-  it("examResponse logs a failed post", async () => {
+  it("examResponse tells the user when the answer cannot be sent", async () => {
+    document.documentElement.dataset.requestNetwork = "Server unreachable";
+    toasts.length = 0;
     vi.stubGlobal("fetch", () => Promise.reject(new Error("offline")));
     await window.examResponse(1, 2);
-    expect(console.error).toHaveBeenCalledWith(
-      "Exam response error:",
-      expect.any(Error),
-    );
+    expect(toasts).toEqual([
+      { message: "Server unreachable", options: { type: "error" } },
+    ]);
   });
 
   it("dragndrop puts the dropped files on the first empty image field", () => {
@@ -308,7 +309,7 @@ describe("setSpace", () => {
   });
 
   it("sends the space and which page it was chosen on, then reloads", async () => {
-    const fetchMock = respond({ ok: true });
+    const fetchMock = respond({ ok: true, text: async () => "{}" });
     await window.setSpace();
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("/staff_dashboard/change_space");
@@ -325,7 +326,10 @@ describe("setSpace", () => {
   });
 
   it("shows the server's error message when the change is refused", async () => {
-    respond({ ok: false, json: async () => ({ error: "Not allowed" }) });
+    respond({
+      ok: false,
+      text: async () => JSON.stringify({ error: "Not allowed" }),
+    });
     await window.setSpace();
     expect(toasts).toEqual([
       { message: "Not allowed", options: { type: "error" } },
@@ -334,14 +338,10 @@ describe("setSpace", () => {
   });
 
   it("falls back to a general message when the refusal has no usable body", async () => {
-    respond({ ok: false, json: async () => ({}) });
+    document.documentElement.dataset.requestFailed = "Could not change space";
+    respond({ ok: false, text: async () => "{}" });
     await window.setSpace();
-    respond({
-      ok: false,
-      json: async () => {
-        throw new Error("html");
-      },
-    });
+    respond({ ok: false, text: async () => "<html>" });
     await window.setSpace();
     expect(toasts.map((t) => t.message)).toEqual([
       "Could not change space",
@@ -349,12 +349,12 @@ describe("setSpace", () => {
     ]);
   });
 
-  it("logs a request that fails outright", async () => {
+  it("tells the user when the request fails outright", async () => {
+    document.documentElement.dataset.requestNetwork = "Server unreachable";
     vi.stubGlobal("fetch", () => Promise.reject(new Error("offline")));
     await window.setSpace();
-    expect(console.error).toHaveBeenCalledWith(
-      "Failed to update space:",
-      expect.any(Error),
-    );
+    expect(toasts).toEqual([
+      { message: "Server unreachable", options: { type: "error" } },
+    ]);
   });
 });

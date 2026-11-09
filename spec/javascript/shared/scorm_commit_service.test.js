@@ -17,10 +17,14 @@ class FakeXhr {
   setRequestHeader(name, value) {
     this.headers[name] = value;
   }
+  getResponseHeader() {
+    return null;
+  }
   send(body) {
     if (FakeXhr.throwOnSend) throw new Error("refused");
     this.body = body;
     this.status = FakeXhr.status;
+    this.responseText = "";
   }
 }
 

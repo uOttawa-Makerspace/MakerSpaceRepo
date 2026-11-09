@@ -24,6 +24,10 @@ vi.mock("tom-select", () => ({
     }
   },
 }));
+const toasts = vi.hoisted(() => []);
+vi.mock("../../../app/javascript/src/toast", () => ({
+  showToast: (message, options) => toasts.push({ message, ...options }),
+}));
 vi.mock("../../../app/javascript/src/csrf", () => ({
   csrfHeaders: (headers) => ({ ...headers, "X-CSRF-Token": "tok" }),
 }));
@@ -198,7 +202,7 @@ describe("key certificate upload", () => {
 
   it("uploads a PDF and swaps the prompt for the confirmation", async () => {
     load(page);
-    const fetchMock = vi.fn(async () => ({ ok: true }));
+    const fetchMock = vi.fn(async () => ({ ok: true, text: async () => "{}" }));
     vi.stubGlobal("fetch", fetchMock);
     choose(pdf);
     await vi.waitFor(() => expect($("cert_show").style.display).toBe("none"));
@@ -213,7 +217,7 @@ describe("key certificate upload", () => {
 
   it("keeps the prompt when the upload is refused", async () => {
     load(page);
-    vi.stubGlobal("fetch", async () => ({ ok: false }));
+    vi.stubGlobal("fetch", async () => ({ ok: false, text: async () => "" }));
     choose(pdf);
     await new Promise((r) => setTimeout(r, 0));
     expect($("cert_show").style.display).toBe("");
@@ -230,15 +234,16 @@ describe("key certificate upload", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("tells the user when the upload fails", async () => {
+  it("tells the user when the upload cannot be sent", async () => {
     load(page);
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    const alertMock = vi.fn();
-    vi.stubGlobal("alert", alertMock);
+    document.documentElement.dataset.requestNetwork = "Server unreachable";
+    toasts.length = 0;
     vi.stubGlobal("fetch", () => Promise.reject(new Error("offline")));
     choose(pdf);
     await vi.waitFor(() =>
-      expect(alertMock).toHaveBeenCalledWith("Something went wrong uploading"),
+      expect(toasts).toEqual([
+        { message: "Server unreachable", type: "error" },
+      ]),
     );
   });
 });
