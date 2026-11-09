@@ -283,7 +283,7 @@ class TapBoxLog < ApplicationRecord
     )
   end
 
-  def self.log_api_http_error(user:, http_status:, elapsed_ms:, response_body: nil, card_number: nil, space: nil)
+  def self.log_api_http_error(user:, http_status:, elapsed_ms:, response: nil, card_number: nil, space: nil)
     log!(
       event_type: ERROR,
       message: "uOEng API returned HTTP #{http_status} for #{user.name}",
@@ -294,7 +294,7 @@ class TapBoxLog < ApplicationRecord
         reason: "uoeng_http_error",
         http_status: http_status,
         elapsed_ms: elapsed_ms,
-        response_body: response_body&.truncate(500)
+        response: uoeng_response_summary(response)
       }
     )
   end
@@ -315,7 +315,7 @@ class TapBoxLog < ApplicationRecord
     )
   end
 
-  def self.log_api_bad_json(user:, exception:, response_body: nil, card_number: nil, space: nil)
+  def self.log_api_bad_json(user:, exception:, response: nil, card_number: nil, space: nil)
     log!(
       event_type: ERROR,
       message: "uOEng API returned unparseable response for #{user.name}",
@@ -324,7 +324,7 @@ class TapBoxLog < ApplicationRecord
       space: space,
       details: {
         reason: "uoeng_bad_json",
-        response_body: response_body&.truncate(500),
+        response: uoeng_response_summary(response),
         exception_message: exception.message
       }
     )
@@ -346,6 +346,46 @@ class TapBoxLog < ApplicationRecord
     )
     Rails.logger.fatal exception
   end
+
+  # What is kept of a uOEng answer that could not be used: its size and content
+  # type, and for a JSON object the key names and the few values the membership
+  # check reads. The body itself is never stored, because a real answer also
+  # carries personal fields the app does not use.
+  UOENG_LOGGED_VALUES = %w[student_this_semester faculty courses_enrolled].freeze
+
+  def self.uoeng_response_summary(response)
+    return if response.nil?
+
+    body = response.body.to_s
+    summary = { body_size: body.bytesize, content_type: response.headers["Content-Type"].to_s.truncate(100) }
+    parsed = parse_json_object(body)
+    return summary unless parsed
+
+    summary.merge(
+      keys: parsed.keys.first(50).map { |key| key.to_s.truncate(50) },
+      values: parsed.slice(*UOENG_LOGGED_VALUES).transform_values { |value| loggable_value(value) }
+    )
+  end
+
+  def self.parse_json_object(body)
+    parsed = JSON.parse(body)
+    parsed if parsed.is_a?(Hash)
+  rescue JSON::ParserError
+    nil
+  end
+
+  # Strings are cut and anything that is not a plain value is replaced by its
+  # class name, so an answer of an unexpected shape cannot carry other data in.
+  def self.loggable_value(value)
+    case value
+    when nil, true, false then value
+    when String then value.truncate(100)
+    when Array then value.first(20).map { |item| loggable_value(item) }
+    else value.class.name
+    end
+  end
+
+  private_class_method :parse_json_object, :loggable_value
 
   # Housekeeping
 

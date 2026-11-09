@@ -110,7 +110,7 @@ module User::UoengConcern
       TapBoxLog.log_api_timeout(user: self, elapsed_ms: elapsed, exception: e, card_number: card_number, space: space)
       uoeng_unknown(e)
     rescue JSON::ParserError => e
-      TapBoxLog.log_api_bad_json(user: self, exception: e, response_body: response&.body, card_number: card_number, space: space)
+      TapBoxLog.log_api_bad_json(user: self, exception: e, response: response, card_number: card_number, space: space)
       uoeng_unknown(e)
     rescue Excon::Error => e
       TapBoxLog.log_engineering_check_error(user: self, exception: e, card_number: card_number, space: space)
@@ -137,7 +137,7 @@ module User::UoengConcern
         user: self,
         http_status: response.status,
         elapsed_ms: elapsed,
-        response_body: response.body,
+        response: response,
         card_number: card_number,
         space: space
       )
