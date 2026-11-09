@@ -241,10 +241,12 @@ module CalendarHelper
     toronto_zone.local(wall.year, wall.month, wall.day, wall.try(:hour).to_i, wall.try(:min).to_i, wall.try(:sec).to_i)
   end
 
+  # Text (a recurrence UNTIL) is read in Toronto; feed values (icalendar dates
+  # and date-times) and Ruby times convert themselves. Anything else is not a time.
   def instant(value)
     return toronto_zone.parse(value) if value.is_a?(String)
 
-    value.respond_to?(:to_time) ? value.to_time : toronto_zone.parse(value.to_s)
+    value.to_time if value.respond_to?(:to_time)
   end
 
   def toronto_zone
