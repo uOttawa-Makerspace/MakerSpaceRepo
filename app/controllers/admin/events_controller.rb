@@ -102,7 +102,7 @@ class Admin::EventsController < AdminAreaController
       end
     when "all"
       old_date_new_time_start = helpers.combine_date_and_time(
-        @event.start_time.utc, 
+        @event.start_time,
         @start_time
       )
       duration = (@end_time - @start_time).to_i
@@ -374,7 +374,7 @@ class Admin::EventsController < AdminAreaController
   def update_this_occurrence(title, participants)
     exclusion_start_time = helpers.combine_date_and_time(
       @start_time,
-      @event.start_time.utc
+      @event.start_time
     )
     updated_rule = series_rule.appending_exdate(exclusion_start_time)
 

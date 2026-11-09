@@ -344,9 +344,11 @@ RSpec.describe CalendarHelper, type: :helper do
   end
 
   describe "#combine_date_and_time" do
-    it "keeps the date and takes the clock time" do
+    it "keeps the Toronto date and takes the Toronto clock time" do
+      # 01:02Z on 2027-05-06 is the evening of 2027-05-05 in Toronto; 13:45Z in January is 8:45 standard time
       result = combine_date_and_time(Time.utc(2027, 5, 6, 1, 2, 3), Time.utc(2020, 1, 1, 13, 45, 30))
-      expect(result).to eq(Time.utc(2027, 5, 6, 13, 45, 30))
+      expect(result).to eq(Time.utc(2027, 5, 5, 12, 45, 30))
+      expect(result.time_zone.name).to eq("America/Toronto")
     end
   end
 

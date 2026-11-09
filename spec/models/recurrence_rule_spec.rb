@@ -100,10 +100,18 @@ RSpec.describe RecurrenceRule do
   end
 
   describe "#with_time_from" do
-    it "keeps the start date and the exclusions and takes the new time of day for the same repeat" do
+    it "keeps the start date and the exclusions and takes the new Toronto time of day for the same repeat" do
+      # 18:30Z on 2027-03-22 is 14:30 daylight time; 14:30 on 2027-03-01 is 19:30Z
       expect(rule.with_time_from("DTSTART:20270322T183000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO")).to eq(
-        "DTSTART:20270301T183000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270308T150000Z"
+        "DTSTART:20270301T193000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270308T150000Z"
       )
+    end
+
+    it "keeps the Toronto date of a late-evening start" do
+      # 23:30 on Monday 2027-03-01 is 04:30Z on the Tuesday; moved to 22:00
+      late = "DTSTART:20270302T043000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO"
+      expect(rule(late).with_time_from("DTSTART;TZID=America/Toronto:20270322T220000\nRRULE:FREQ=WEEKLY;BYDAY=MO"))
+        .to eq("DTSTART:20270302T030000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO")
     end
 
     it "takes the new rule as it is when the repeat changed" do

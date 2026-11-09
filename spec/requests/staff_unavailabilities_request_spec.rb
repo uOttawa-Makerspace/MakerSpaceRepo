@@ -165,20 +165,22 @@ RSpec.describe "Staff unavailabilities", type: :request do
             patch staff_unavailability_path(series), params: payload(title: "Once", utc_start_time: "2027-03-22T18:00:00Z", utc_end_time: "2027-03-22T19:00:00Z").merge(update_scope: "this")
           }.to change(StaffUnavailability, :count).by(1)
           expect(flash[:notice]).to eq("This occurrence updated successfully.")
-          expect(series.reload.recurrence_rule).to eq("#{RULE}\nEXDATE:20270322T150000Z")
+          # the series is at 10:00 Toronto time: 14:00Z once daylight time starts
+          expect(series.reload.recurrence_rule).to eq("#{RULE}\nEXDATE:20270322T140000Z")
           once = StaffUnavailability.last
           expect(once).to have_attributes(title: "Once", recurrence_rule: nil, user_id: staff.id)
           expect(once.start_time.utc.iso8601).to eq("2027-03-22T18:00:00Z")
         end
 
-        it "scope 'all' keeps the series date and moves the time of day" do
+        it "scope 'all' keeps the series date and moves the Toronto time of day" do
+          # 18:30Z on 2027-03-22 is 14:30 daylight time; 14:30 on 2027-03-01 is 19:30Z
           patch staff_unavailability_path(series), params: payload(title: "Shifted", utc_start_time: "2027-03-22T18:30:00Z", utc_end_time: "2027-03-22T19:30:00Z", recurrence_rule: "DTSTART:20270322T183000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO").merge(update_scope: "all")
           expect(flash[:notice]).to eq("All occurrences updated successfully.")
           series.reload
           expect(series.title).to eq("Shifted")
-          expect(series.start_time.utc.iso8601).to eq("2027-03-01T18:30:00Z")
-          expect(series.end_time.utc.iso8601).to eq("2027-03-01T19:30:00Z")
-          expect(series.recurrence_rule).to eq("DTSTART:20270301T183000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO")
+          expect(series.start_time.utc.iso8601).to eq("2027-03-01T19:30:00Z")
+          expect(series.end_time.utc.iso8601).to eq("2027-03-01T20:30:00Z")
+          expect(series.recurrence_rule).to eq("DTSTART:20270301T193000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO")
         end
 
         it "an unknown scope flashes an alert and changes nothing" do

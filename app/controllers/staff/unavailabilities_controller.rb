@@ -234,7 +234,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
   def update_all_occurrences
     old_date_new_time_start = helpers.combine_date_and_time(
-      @staff_unavailability.start_time.utc,
+      @staff_unavailability.start_time,
       parse_time(staff_params[:utc_start_time])
     )
     duration = (parse_time(staff_params[:utc_end_time]) - parse_time(staff_params[:utc_start_time])).to_i
@@ -258,7 +258,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
   def update_this_occurrence
     exclusion_start_time = helpers.combine_date_and_time(
       parse_time(staff_params[:utc_start_time]),
-      @staff_unavailability.start_time.utc
+      @staff_unavailability.start_time
     )
 
     updated_rule = series_rule(@staff_unavailability).appending_exdate(exclusion_start_time)

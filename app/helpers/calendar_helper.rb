@@ -197,12 +197,12 @@ module CalendarHelper
     RecurrenceRule.new(event.recurrence_rule, event.start_time).in_toronto_time
   end
 
+  # The date of `keep_date` at the clock time of `keep_time`, both read in
+  # Toronto time (a repeating series keeps its Toronto clock time across clock
+  # changes and late evenings, which are already the next day in UTC).
   def combine_date_and_time(keep_date, keep_time)
-    keep_date.change(
-      hour: keep_time.hour,
-      min: keep_time.min,
-      sec: keep_time.sec
-    )
+    time = keep_time.in_time_zone("America/Toronto")
+    keep_date.in_time_zone("America/Toronto").change(hour: time.hour, min: time.min, sec: time.sec)
   end
 
   # A point in time as UTC. Dates and times without a zone (all-day dates,

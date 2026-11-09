@@ -120,6 +120,53 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
         end
       end
 
+      # Wednesdays at 10:00 from 2027-03-03 (standard time); 2027-03-17 is in daylight time.
+      describe "editing a series from an occurrence after the clocks change" do
+        let(:edit_start) { "2027-03-17T15:00:00Z" } # 11:00 daylight time
+        let(:edit_params) { { utc_start_time: edit_start, utc_end_time: "2027-03-17T16:00:00Z", recurrence_rule: "DTSTART:20270317T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE" } }
+
+        it "moves every event to the new Toronto time" do
+          sign_in_as(:admin)
+          series = create(:event, space: space, start_time: series_start, end_time: series_start + 1.hour, recurrence_rule: series_rule)
+          patch admin_event_path(series), params: { update_scope: "all", event: { event_type: "meeting", title: "Moved", space_id: space.id, **edit_params } }
+          expect(series.reload.start_time).to eq(Time.utc(2027, 3, 3, 16))
+          expect(RecurrenceRule.new(series.recurrence_rule, nil).starts_at).to eq(Time.utc(2027, 3, 3, 16))
+        end
+
+        it "moves every unavailability to the new Toronto time" do
+          staff = sign_in_as(:staff)
+          series = create(:staff_unavailability, user: staff, start_time: series_start, end_time: series_start + 1.hour, recurrence_rule: series_rule)
+          patch staff_unavailability_path(series), params: { update_scope: "all", staff_unavailability: { title: "Moved", **edit_params } }
+          expect(series.reload.start_time).to eq(Time.utc(2027, 3, 3, 16))
+          expect(RecurrenceRule.new(series.recurrence_rule, nil).starts_at).to eq(Time.utc(2027, 3, 3, 16))
+        end
+
+        it "excludes the edited event occurrence itself (10:00 daylight time is 14:00Z)" do
+          sign_in_as(:admin)
+          series = create(:event, space: space, start_time: series_start, end_time: series_start + 1.hour, recurrence_rule: series_rule)
+          patch admin_event_path(series), params: { update_scope: "this", event: { event_type: "meeting", title: "Once", space_id: space.id, **edit_params } }
+          expect(series.reload.recurrence_rule).to eq("#{series_rule}\nEXDATE:20270317T140000Z")
+        end
+
+        it "excludes the edited unavailability occurrence itself" do
+          staff = sign_in_as(:staff)
+          series = create(:staff_unavailability, user: staff, start_time: series_start, end_time: series_start + 1.hour, recurrence_rule: series_rule)
+          patch staff_unavailability_path(series), params: { update_scope: "this", staff_unavailability: { title: "Once", **edit_params } }
+          expect(series.reload.recurrence_rule).to eq("#{series_rule}\nEXDATE:20270317T140000Z")
+        end
+      end
+
+      # Daily at 23:00 Toronto time (04:00Z the next day); the 2027-03-10 occurrence is moved to 18:00 (23:00Z the same day).
+      it "excludes a late-evening occurrence moved earlier on its own Toronto day" do
+        sign_in_as(:admin)
+        start = Time.utc(2027, 3, 2, 4)
+        rule = "DTSTART:20270302T040000Z\nRRULE:FREQ=DAILY"
+        series = create(:event, space: space, start_time: start, end_time: start + 1.hour, recurrence_rule: rule)
+        patch admin_event_path(series), params: { update_scope: "this", event: { event_type: "meeting", title: "Early", space_id: space.id,
+                                                                                 utc_start_time: "2027-03-10T23:00:00Z", utc_end_time: "2027-03-11T00:00:00Z" } }
+        expect(series.reload.recurrence_rule).to eq("#{rule}\nEXDATE:20270311T040000Z")
+      end
+
       describe "a stored repeat rule" do
         let(:toronto) { ActiveSupport::TimeZone["America/Toronto"] }
 
