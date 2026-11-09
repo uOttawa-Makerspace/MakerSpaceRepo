@@ -115,8 +115,8 @@
         <%= f.select :categories, options_for_select(
             CategoryOption.show_options.collect(&:name),
             selected: @repository.categories.collect(&:name)),
-         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') },
-         { aria: { label: t('repository.cat') } }
+         { include_blank: t('repository.sel_cat') },
+         { multiple: true, class: 'form-control form-select', aria: { label: t('repository.cat') } }
         %>
         <span class="form-text"><%= t('repository.cat_msg') %></span>
     </div>
@@ -126,8 +126,8 @@
         <%= f.select :equipments, options_for_select(
             (EquipmentOption.show_options.collect(&:name) + @repository.equipments.pluck(:name)).uniq,
             selected: @repository.equipments.pluck(:name)),
-         { multiple: true, class: 'form-control form-select', include_blank: t('repository.sel_cat') },
-         { aria: { label: t('repository.equip') } }
+         { include_blank: t('repository.sel_cat') },
+         { multiple: true, class: 'form-control form-select', aria: { label: t('repository.equip') } }
          %>
         <span class="form-text"><%= t('repository.equip_msg') %></span>
     </div>

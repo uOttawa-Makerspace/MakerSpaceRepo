@@ -3,11 +3,11 @@
 class ProjectProposal < ApplicationRecord
   include SniffedUploadValidation
   include DisplayUser
+  include Categorizable
 
   belongs_to :user, optional: true
   belongs_to :admin, class_name: 'User', foreign_key: 'admin_id', optional: true
   display_user_for :user, :admin
-  has_many :categories, dependent: :destroy
   has_many :project_joins, dependent: :destroy
   has_many :repositories, dependent: :nullify
   has_many :project_proposals,
@@ -118,8 +118,18 @@ class ProjectProposal < ApplicationRecord
   end
 
   before_update do
-    self.slug =
-      id.to_s + '.' + title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
+    self.slug = id_slug
+  end
+
+  # The stored slug is "<id>.<title>". A new record has no id until its row is inserted, so the create path calls
+  # this inside its transaction once the record is saved. An edit already stores it (before_update).
+  def store_id_slug!
+    update_column(:slug, id_slug) unless slug == id_slug
+    true
+  end
+
+  def id_slug
+    "#{id}.#{title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')}"
   end
 
   # The leading integer of "12", "12-title" or the old "12.title" form names the proposal.

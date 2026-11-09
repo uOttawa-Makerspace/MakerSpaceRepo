@@ -2,6 +2,7 @@
 
 class Repository < ApplicationRecord
   include BCrypt
+  include Categorizable
   require 'bcrypt'
 
   # There's two ways to reach a user, one is the user that created the repo
@@ -26,7 +27,6 @@ class Repository < ApplicationRecord
   accepts_nested_attributes_for :repo_files, allow_destroy: true
   validates_associated :repo_files
 
-  has_many :categories, dependent: :destroy
   has_many :equipments, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
@@ -97,8 +97,18 @@ class Repository < ApplicationRecord
   end
 
   before_update do
-    self.slug =
-      id.to_s + '.' + title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')
+    self.slug = id_slug
+  end
+
+  # The stored slug is "<id>.<title>". A new record has no id until its row is inserted, so the create path calls
+  # this inside its transaction once the record is saved. An edit already stores it (before_update).
+  def store_id_slug!
+    update_column(:slug, id_slug) unless slug == id_slug
+    true
+  end
+
+  def id_slug
+    "#{id}.#{title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')}"
   end
 
   # Undo what creating it awarded: 25 for a repository, 15 for a make

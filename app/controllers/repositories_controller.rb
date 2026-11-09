@@ -48,7 +48,7 @@ class RepositoriesController < SessionsController
     end
 
     # Replace `.page params[:page]` with `pagy(...)`:
-    @pagy, @comments = pagy(@repository.comments.order(comment_filter), limit: 5)
+    @pagy, @comments = pagy(@repository.comments.includes(:user).order(comment_filter), limit: 5)
 
     @vote =
       @user
@@ -132,27 +132,13 @@ class RepositoriesController < SessionsController
   end
 
 
+  # The repository, its owners, categories and equipment are stored together or not at all; the
+  # reputation is awarded once that has committed.
   def create
-    @repository =
-      Repository.new(repository_params.except(:categories, :equipments))
-    @repository.user_id = @user.id
-    @repository.users << @user
-    update_password
+    @repository = Repository.new(user_id: @user.id, users: [@user, *extra_owners])
 
-    if @repository.save
+    if save_with_categories_and_equipments
       @user.increment!(:reputation, 25)
-
-      if params[:owner].present?
-        params[:owner].each do |owner|
-          if User.exists?(id: owner)
-            @repository.users << User.find_by(id: owner)
-          end
-        end
-        @repository.save
-      end
-      
-      create_categories
-      create_equipments
       redirect_to repository_path(@user.username, @repository.slug).to_s
     else
       @project_proposals =
@@ -458,38 +444,28 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def create_categories
-    if params[:repository][:categories].present?
-      params[:repository][:categories]
-        .filter(&:present?)
-        .first(5)
-        .each { |c| Category.create(name: c, repository_id: @repository.id) }
+  # Like categories: names not sent (nil) keep the stored equipment; a list, even an empty one, replaces it with up
+  # to five non-blank names.
+  def replace_equipments(names)
+    return if names.nil?
+
+    @repository.equipments.destroy_all
+    names.compact_blank.first(5).each do |e|
+      # Create EquipmentOption if not there already.
+      EquipmentOption.find_or_create_by(name: e)
+      Equipment.create(name: e, repository_id: @repository.id)
     end
   end
 
-  def create_equipments
-    return if params[:repository][:equipments].blank?
-    
-    params[:repository][:equipments]
-      .filter(&:present?)
-      .first(5)
-      .each do |e|
-        # Create EquipmentOption if not there already.
-        EquipmentOption.find_or_create_by(name: e)
-        Equipment.create(name: e, repository_id: @repository.id)
-    end
-  end
-
-  # The edit is validated and saved first; categories and equipment are replaced only once it has saved, in the
-  # same transaction, so a refused edit leaves them as they were.
+  # The new or edited repository is validated and saved first; categories and equipment are replaced only once it
+  # has saved, in the same transaction, so a refused or failed save stores nothing and leaves them as they were.
   def save_with_categories_and_equipments
     Repository.transaction do
-      next false unless @repository.update(repository_params.except(:categories, :equipments).merge(password_attributes))
+      attributes = repository_params.except(:categories, :equipments).merge(password_attributes)
+      next false unless @repository.update_with_categories(attributes, repository_params[:categories])
 
-      @repository.categories.destroy_all
-      @repository.equipments.destroy_all
-      create_categories
-      create_equipments
+      @repository.store_id_slug!
+      replace_equipments(repository_params[:equipments])
       true
     end
   end
@@ -505,8 +481,8 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def update_password
-    attributes = password_attributes
-    @repository.update(attributes) if attributes.any?
+  # Other members named on the new repository form; unknown ids are skipped.
+  def extra_owners
+    User.where(id: Array(params[:owner])).where.not(id: @user.id)
   end
 end
