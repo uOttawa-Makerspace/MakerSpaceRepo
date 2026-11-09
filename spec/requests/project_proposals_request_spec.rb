@@ -521,9 +521,8 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
 
     # ProjectProposal validates project_files (sniffed type + size) in the model
-    it "attaches up to 5 images and any number of allowed files, but not an executable" do
-      files = [content_pdf_upload, content_named_upload("run.exe", type: "application/x-msdownload"),
-               content_named_upload("a.stl", content: "solid x\nfacet normal 0 0 0\n", type: "model/stl")]
+    it "attaches up to 5 images and any number of allowed files" do
+      files = [content_pdf_upload, content_named_upload("a.stl", content: "solid x\nfacet normal 0 0 0\n", type: "model/stl")]
       imgs = Array.new(6) { content_png_upload }
       post project_proposals_path, params: { images: imgs, files: files }.merge(proposal_params)
       pp = ProjectProposal.find_by(title: "New Idea")
@@ -531,36 +530,41 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(pp.project_files.map { |f| f.filename.to_s }).to contain_exactly("RepoFile1.pdf", "a.stl")
     end
 
-    it "keeps the good files after a refused one and tells the user which file was refused" do
+    it "stores nothing when one file is refused, names it, and keeps the typed values in the form" do
+      ActionMailer::Base.deliveries.clear
       files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("ok.txt", content: "tiny")]
-      post project_proposals_path, params: { files: files }.merge(proposal_params)
-      pp = ProjectProposal.find_by(title: "New Idea")
-      expect(pp.project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
-      expect(flash[:alert]).to include("run.exe")
-      expect(flash[:alert]).not_to include("ok.txt")
+      expect { post project_proposals_path, params: { images: [content_png_upload], files: files }.merge(proposal_params(categories: %w[a])) }
+        .not_to change { [ProjectProposal.count, Category.count, ActiveStorage::Attachment.count] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("The project proposal was not created because the type or size of these files is not allowed: run.exe.")
+      expect(response.body).to include('value="New Idea"')
+      expect(ActionMailer::Base.deliveries).to be_empty
     end
 
     it "caps the refused-names flash so many long names cannot overflow the cookie session" do
       files = Array.new(12) { |i| content_named_upload("#{'x' * 200}#{i}.exe", type: "application/x-msdownload") }
-      post project_proposals_path, params: { files: files }.merge(proposal_params)
-      expect(response).to have_http_status(:found)
+      expect { post project_proposals_path, params: { files: files }.merge(proposal_params) }.not_to change(ProjectProposal, :count)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(flash[:alert].length).to be < 400
       expect(flash[:alert]).to include("and 7 more")
-      expect(ProjectProposal.find_by(title: "New Idea").project_files).not_to be_attached
     end
 
-    it "reports both the pre-check refusals and the model's own errors, with no success flash, and still saves the proposal" do
-      # run.exe passes the (stubbed) pre-check but fails the model validation; fake.exe is refused by the pre-check
-      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems) { |_, _name, f| f.original_filename == "fake.exe" ? ["bad"] : [] }
-      files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("fake.exe", type: "application/x-msdownload")]
-      expect { post project_proposals_path, params: { files: files }.merge(proposal_params) }.to change(ProjectProposal, :count).by(1)
-      pp = ProjectProposal.find_by(title: "New Idea")
-      expect(response).to redirect_to(project_proposal_path(pp))
-      expect(flash[:notice]).to be_blank
-      expect(flash[:alert]).to include("fake.exe") # pre-check refusal
-      expect(flash[:alert]).to include("run.exe has a file type that is not allowed") # the model's real error
-      expect(pp.project_files).not_to be_attached
-      expect(pp.errors).to be_empty
+    it "stores nothing when the model refuses a file the pre-check let through, and gives the model's reason" do
+      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems).and_return([])
+      files = [content_named_upload("run.exe", type: "application/x-msdownload")]
+      expect { post project_proposals_path, params: { files: files }.merge(proposal_params(categories: %w[a])) }
+        .not_to change { [ProjectProposal.count, Category.count, ActiveStorage::Attachment.count] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to start_with("The project proposal was not created. ")
+      expect(flash[:alert]).to include("run.exe has a file type that is not allowed")
+      expect(response.body).to include('value="New Idea"')
+    end
+
+    it "answers JSON with the refused file when one is refused" do
+      files = [content_named_upload("run.exe", type: "application/x-msdownload")]
+      post project_proposals_path(format: :json), params: { files: files }.merge(proposal_params)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["project_files"].join).to include("run.exe")
     end
 
     it "keeps the success notice when every file was accepted" do
@@ -578,15 +582,15 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "does not store an executable disguised as a pdf" do
       exe = "MZ" + ("\x00" * 200)
       files = [content_named_upload("ok.txt", content: "tiny"), content_named_upload("fake.pdf", content: exe, type: "application/pdf")]
-      post project_proposals_path, params: { files: files }.merge(proposal_params)
-      expect(ProjectProposal.find_by(title: "New Idea").project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
+      expect { post project_proposals_path, params: { files: files }.merge(proposal_params) }.not_to change(ProjectProposal, :count)
+      expect(flash[:alert]).to include("fake.pdf")
     end
 
     it "does not store a file over the size cap" do
       stub_const("ProjectProposal::MAX_PROJECT_FILE_SIZE", 20.bytes)
       files = [content_named_upload("ok.txt", content: "tiny"), content_named_upload("big.txt", content: "x" * 21)]
-      post project_proposals_path, params: { files: files }.merge(proposal_params)
-      expect(ProjectProposal.find_by(title: "New Idea").project_files.map { |f| f.filename.to_s }).to eq(["ok.txt"])
+      expect { post project_proposals_path, params: { files: files }.merge(proposal_params) }.not_to change(ProjectProposal, :count)
+      expect(flash[:alert]).to include("big.txt")
     end
 
     it "model: invalid project_files make the proposal invalid" do
@@ -602,13 +606,71 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(name).not_to include("/")
     end
 
-    it "an unreadable image destroys the proposal and redirects back without a mail" do
+    def junk_png
+      content_named_upload("x.png", content: "junk", type: "image/png")
+    end
+
+    def expect_create_refused(params)
       ActionMailer::Base.deliveries.clear
-      expect do
-        post project_proposals_path, params: { images: [content_named_upload("x.png", content: "junk", type: "image/png")] }.merge(proposal_params)
-      end.not_to change(ProjectProposal, :count)
-      expect(flash[:alert]).to eq("Something went wrong while uploading photos, try again later.")
+      expect { post project_proposals_path, params: params }
+        .not_to change { [ProjectProposal.count, Category.count, ActiveStorage::Attachment.count] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include('value="New Idea"')
       expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "stores nothing and sends no mail when an image in the legacy field is unreadable" do
+      expect_create_refused({ images: [junk_png] }.merge(proposal_params))
+    end
+
+    it "stores nothing when an image in the form's photos field is unreadable" do
+      expect_create_refused(proposal_params(photos: ["", content_png_upload, junk_png], categories: %w[a]))
+    end
+
+    it "stores nothing when a photo is named by the signed id of a stored file that is not an image" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("%PDF-1.4\n"), filename: "a.pdf")
+      expect_create_refused(proposal_params(photos: [blob.signed_id]))
+    end
+
+    it "stores nothing when a photo is named by a signed id that does not resolve" do
+      expect_create_refused(proposal_params(photos: ["not-a-signed-id"]))
+    end
+
+    it "attaches a stored image named by its signed id" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: Rails.root.join("spec/support/assets/avatar.png").open, filename: "a.png")
+      post project_proposals_path, params: proposal_params(photos: ["", blob.signed_id])
+      expect(ProjectProposal.find_by(title: "New Idea").photos.blobs).to eq([blob])
+    end
+
+    it "attaches the images sent in the form's photos field" do
+      post project_proposals_path, params: proposal_params(photos: ["", content_png_upload])
+      expect(ProjectProposal.find_by(title: "New Idea").photos.count).to eq(1)
+    end
+
+    it "re-renders the form without the unsaved photos when a create with photos is invalid" do
+      expect_create_refused(proposal_params(username: "", photos: ["", content_png_upload]))
+    end
+
+    it "keeps the typed values without the photos when the captcha fails" do
+      allow_any_instance_of(ProjectProposalsController).to receive(:verify_turnstile).and_return(false)
+      expect_create_refused(proposal_params(photos: ["", content_png_upload]))
+      expect(response.body).to include("Captcha error, please try again")
+    end
+
+    it "stores nothing when a category cannot be stored" do
+      allow_any_instance_of(Category).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
+      expect { post project_proposals_path, params: { images: [content_png_upload] }.merge(proposal_params(categories: %w[a])) }
+        .not_to change { [ProjectProposal.count, ActiveStorage::Attachment.count] }
+      # the error is raised, so it is answered by the error page after the create has rolled back
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "creates one proposal when the form is sent again after a refusal" do
+      post project_proposals_path, params: { files: [content_named_upload("run.exe", type: "application/x-msdownload")] }.merge(proposal_params)
+      expect { post project_proposals_path, params: { files: [content_named_upload("ok.txt", content: "tiny")] }.merge(proposal_params) }
+        .to change(ProjectProposal, :count).by(1)
+      expect(ProjectProposal.where(title: "New Idea").count).to eq(1)
+      expect(flash[:notice]).to eq("Project proposal was successfully created.")
     end
 
     it "an unparseable youtube link is nulled" do
@@ -618,6 +680,35 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "PATCH update" do
+    it "refuses an edit whose form photos field has an unreadable image, and saves nothing" do
+      content_login!(owner)
+      junk = content_named_upload("x.png", content: "junk", type: "image/png")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed", photos: ["", junk] } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(pending.reload.title).to eq("Pending One")
+      expect(pending.photos).not_to be_attached
+    end
+
+    it "re-renders the form with the stored photos when an edit with a new photo is invalid" do
+      content_login!(owner)
+      pending.photos.attach(content_png_upload)
+      kept = pending.photos.first.signed_id
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "", photos: ["", kept, content_png_upload] } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include(kept)
+      expect(pending.reload.photos.count).to eq(1)
+    end
+
+    it "keeps the stored photos it is sent back by signed id without reading them again" do
+      content_login!(owner)
+      pending.photos.attach(content_png_upload)
+      kept = pending.photos.first.signed_id
+      expect(FastImage).not_to receive(:size)
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed", photos: ["", kept] } }
+      expect(pending.reload.title).to eq("Changed")
+      expect(pending.photos.count).to eq(1)
+    end
+
     it "refuses an update with a refused file, names it in the alert and gives no success notice" do
       content_login!(owner)
       files = [content_named_upload("run.exe", type: "application/x-msdownload")]

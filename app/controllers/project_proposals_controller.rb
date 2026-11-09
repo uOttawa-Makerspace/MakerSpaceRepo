@@ -137,43 +137,28 @@ class ProjectProposalsController < SessionsController
 
   # POST /project_proposals
   def create
-    @project_proposal =
-      ProjectProposal.new(project_proposal_params.except(:categories))
-    @project_proposal.user_id = current_user&.id
+    attributes = project_proposal_params.except(:categories)
+    @project_proposal = ProjectProposal.new(user_id: current_user&.id)
 
     respond_to do |format|
       if !signed_in? && !verify_turnstile
+        refuse_edit(attributes)
         flash.now[:alert] = 'Captcha error, please try again'
         format.html { render :new, status: :unprocessable_content }
-      elsif @project_proposal.save
-        begin
-          create_photos
-        rescue FastImage::ImageFetchFailure,
-               FastImage::UnknownImageType,
-               FastImage::SizeNotFound => e
-          Airbrake.notify(e)
-          flash[:alert] = 'Something went wrong while uploading photos, try again later.'
-          @project_proposal.destroy
-          format.json { render json: { redirect_uri: request.path } }
-          format.html { redirect_back fallback_location: request.path }
-        else
-          create_files
-          @project_proposal.replace_categories(project_proposal_params[:categories])
-          @project_proposal.save
-          format.html do
-            redirect_to project_proposal_path(@project_proposal),
-                        notice: ('Project proposal was successfully created.' unless @project_files_failed)
-          end
-          format.json do
-            render json: {
-                     redirect_uri:
-                       project_proposal_path(@project_proposal).to_s
-                   }
-          end
-          MsrMailer.send_new_project_proposals.deliver_now
+      elsif apply_edit(attributes)
+        format.html do
+          redirect_to project_proposal_path(@project_proposal),
+                      notice: 'Project proposal was successfully created.'
         end
+        format.json do
+          render json: {
+                   redirect_uri:
+                     project_proposal_path(@project_proposal).to_s
+                 }
+        end
+        MsrMailer.send_new_project_proposals.deliver_now
       else
-        flash.now[:alert] = 'An error occurred while creating the project proposal, try again later.'
+        flash.now[:alert] = @refused_files_alert || 'An error occurred while creating the project proposal, try again later.'
         format.html { render :new, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content
@@ -389,23 +374,6 @@ class ProjectProposalsController < SessionsController
     end
   end
 
-  def create_photos
-    images = params[:images] || params.dig(:project_proposal, :images)
-    return unless images.present?
-
-    images.first(5).each do |img|
-      FastImage.size(img.tempfile, raise_on_failure: true) if img.respond_to?(:tempfile)
-      @project_proposal.photos.attach(img)
-    end
-  end
-
-  def create_files
-    files = params[:files] || params.dig(:project_proposal, :files)
-    return unless files.present?
-
-    attach_project_files(files)
-  end
-
   def uploads_param(key)
     params[key] || params.dig(:project_proposal, key)
   end
@@ -424,16 +392,18 @@ class ProjectProposalsController < SessionsController
       attachments_marked_for_removal(@project_proposal.project_files.attachments, uploads_param(:deletefiles))
   end
 
-  # New photos are checked before anything is saved or removed. An unreadable one refuses the edit.
+  # New photos are checked before anything is saved or removed: those in the legacy images field and those in the
+  # form's photos field, uploads and signed ids alike. An unreadable one refuses the create or edit.
   def new_photos_readable?
-    images = Array(uploads_param(:images))
-    return true if images.all? { |img| readable_image?(img) }
+    photos = new_images + Array(project_proposal_params[:photos]).compact_blank
+    return true if photos.all? { |img| readable_image?(img) }
 
     @project_proposal.errors.add(:photos, 'could not be read as images')
     false
   end
 
   def readable_image?(img)
+    return readable_blob?(img) if img.is_a?(String)
     return true unless img.respond_to?(:tempfile)
 
     FastImage.size(img.tempfile, raise_on_failure: true)
@@ -442,8 +412,32 @@ class ProjectProposalsController < SessionsController
     false
   end
 
+  # A photo named by signed id: one the proposal already has is not read again; any other stored file is read
+  # and must be an image.
+  def readable_blob?(signed_id)
+    blob = ActiveStorage::Blob.find_signed(signed_id)
+    return false unless blob
+    return true if stored_photo_blob_ids.include?(blob.id)
+
+    blob.open { |file| FastImage.size(file, raise_on_failure: true) }
+    true
+  rescue FastImage::FastImageException, ActiveStorage::FileNotFoundError
+    false
+  end
+
+  def stored_photo_blob_ids
+    @stored_photo_blob_ids ||= ActiveStorage::Attachment.where(record: @project_proposal, name: 'photos').pluck(:blob_id)
+  end
+
+  MAX_NEW_IMAGES = 5
+
+  # The legacy images field: at most five are taken.
+  def new_images
+    Array(uploads_param(:images)).first(MAX_NEW_IMAGES)
+  end
+
   def attach_new_photos
-    Array(uploads_param(:images)).each { |img| @project_proposal.photos.attach(img) }
+    new_images.each { |img| @project_proposal.photos.attach(img) }
   end
 
   def uploaded_files
@@ -457,7 +451,7 @@ class ProjectProposalsController < SessionsController
     return true if refused.empty?
 
     @refused_files_alert =
-      "The edit was not saved because the type or size of these files is not allowed: #{truncated_filenames(refused.map(&:original_filename))}."
+      "#{not_saved_sentence} because the type or size of these files is not allowed: #{truncated_filenames(refused.map(&:original_filename))}."
     @project_proposal.errors.add(:project_files, @refused_files_alert)
     false
   end
@@ -476,7 +470,7 @@ class ProjectProposalsController < SessionsController
 
     reasons = @project_proposal.errors[:project_files].dup
     @project_proposal.errors.delete(:project_files)
-    @refused_files_alert = "The edit was not saved. #{truncated_error_messages(reasons)}"
+    @refused_files_alert = "#{not_saved_sentence}. #{truncated_error_messages(reasons)}"
     @project_proposal.errors.add(:project_files, @refused_files_alert)
     false
   end
@@ -484,29 +478,12 @@ class ProjectProposalsController < SessionsController
   MAX_FLASH_FILENAMES = 5
   MAX_FLASH_FILENAME_LENGTH = 40
 
-  # Each upload is checked with the model's rules first (sniffed type and size). The
-  # accepted files are attached in one call and the refused ones are reported by name,
-  # so a bad file neither drops the good ones nor leaves the record with a pending
-  # invalid change. Only uploaded files are considered, never signed ids.
-  def attach_project_files(files)
-    uploads = Array(files).select { |f| f.respond_to?(:original_filename) }
-    accepted, refused = uploads.partition { |f| @project_proposal.sniffed_upload_problems(:project_files, f).empty? }
-    model_errors = []
-    if accepted.any? && !@project_proposal.project_files.attach(*accepted)
-      model_errors = @project_proposal.errors[:project_files].dup
-      # drop the invalid pending change so later saves of the proposal succeed
-      @project_proposal.attachment_changes.delete('project_files')
-      @project_proposal.errors.delete(:project_files)
-    end
-    return if refused.empty? && model_errors.empty?
+  def creating?
+    action_name == 'create'
+  end
 
-    @project_files_failed = true
-    messages = []
-    if refused.any?
-      messages << "These files were not uploaded because their type or size is not allowed: #{truncated_filenames(refused.map(&:original_filename))}."
-    end
-    messages << truncated_error_messages(model_errors) if model_errors.any?
-    flash[:alert] = messages.join(' ')
+  def not_saved_sentence
+    creating? ? 'The project proposal was not created' : 'The edit was not saved'
   end
 
   # The flash lives in the 4 KB cookie session, so names are shortened and capped.
@@ -572,8 +549,8 @@ class ProjectProposalsController < SessionsController
     params.require(:project_proposal).permit(permitted)
   end
 
-  # The edit is applied in this order, so a failure can only happen before anything is removed:
-  # new photos are checked; then, in one transaction, the proposal is validated and saved,
+  # A create or an edit is applied in this order, so a failure can only happen before anything is removed:
+  # new photos and files are checked; then, in one transaction, the proposal is validated and saved,
   # categories are replaced and new uploads attached; only after that commits are the attachments
   # the user asked to remove purged. A purge deletes the stored file and cannot be rolled back, so
   # it runs last (synchronously, so the page shows the result).
@@ -595,13 +572,24 @@ class ProjectProposalsController < SessionsController
     true
   end
 
-  # A refused edit shows the submitted values in the form, as a failed validation does; nothing is saved
-  # or removed. A rolled-back transaction leaves the unsaved changes in memory (the new title, attachments
-  # that were never stored), so the record is read from the database again before the values are assigned.
+  # A refused create or edit shows the submitted values in the form, as a failed validation does; nothing is
+  # saved or removed. A rolled-back transaction leaves the unsaved changes in memory (the new title, attachments
+  # that were never stored), so the form starts again from the stored record before the values are assigned.
+  # New uploads were not stored, so they are not shown again.
   def refuse_edit(attributes)
-    @project_proposal.reload
-    @project_proposal.assign_attributes(attributes)
+    restart_from_stored_proposal
+    @project_proposal.assign_attributes(attributes.except(:photos, :project_files))
     false
+  end
+
+  # A stored proposal is read from the database again; a new one starts blank and keeps the reasons it was refused.
+  # (After a rolled-back create the record can still look persisted, so the action decides.)
+  def restart_from_stored_proposal
+    return @project_proposal.reload unless creating?
+
+    refused = @project_proposal
+    @project_proposal = ProjectProposal.new(user_id: refused.user_id)
+    @project_proposal.errors.merge!(refused.errors)
   end
 
   def project_join_params
