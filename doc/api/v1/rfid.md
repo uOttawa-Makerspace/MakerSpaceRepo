@@ -43,7 +43,7 @@ Unlinks the user's card. The card is re-homed so it shows up in the caller's unl
 | 404 | `not_found` | Unknown, soft-deleted or non-numeric user |
 
 ## POST /api/v1/rfid_taps
-The phone NFC tap. Request: `{ "card_number": "04A1B2C3", "space_id": 3 }`. Toggles the card owner's presence in that space with the same logic as the Pi readers: not signed in anywhere, sign in (and queue the faculty-membership check and the staff live-update); signed in at this space, sign out; signed in elsewhere, sign out there and in here. The tap is logged. Pi readers cannot use this endpoint (it needs a staff Bearer token).
+The phone NFC tap. Request: `{ "card_number": "04A1B2C3", "space_id": 3 }`. Toggles the card owner's presence in that space with the same logic as the Pi readers: not signed in anywhere, sign in (and queue the faculty-membership check and the staff live-update); signed in at this space, sign out (a tap within 60 seconds of the sign in is ignored and answered `RFID sign in`, the session stays open); signed in elsewhere, sign out there and in here. The tap is logged. Pi readers cannot use this endpoint (it needs a staff Bearer token).
 
 200: `{ "success": "RFID sign in" }` or `{ "success": "RFID sign out" }` (exact strings; nothing about the card owner is returned).
 
