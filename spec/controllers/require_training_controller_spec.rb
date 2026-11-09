@@ -37,7 +37,7 @@ RSpec.describe RequireTrainingsController, type: :controller do
                  }
                }
         }.to change(RequireTraining, :count).by(0)
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to start_with("The required training was not added to this volunteer task. ")
         expect(response).to redirect_to volunteer_task_path(@task)
       end
 
@@ -89,7 +89,7 @@ RSpec.describe RequireTrainingsController, type: :controller do
                  }
                }
         }.to change(RequireTraining, :count).by(0)
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq("That training is not required by this volunteer task, so nothing was removed.")
         expect(response).to have_http_status(302)
       end
 

@@ -31,18 +31,14 @@ class ProjectKitsController < DevelopmentProgramsController
       ).deliver_now
       flash[:notice] = "The kit for #{@kit.user.name} has been created !"
     else
-      flash[:alert] = "There was an error creating the kit"
+      flash[:alert] = validation_message(@kit, "errors.project_kits.not_created")
     end
     redirect_to project_kits_path
   end
 
   def destroy
-    if params[:id].present? and ProjectKit.find(params[:id]).present?
-      ProjectKit.find(params[:id]).destroy
-      flash[:notice] = "The kit has been deleted"
-    else
-      flash[:alert] = "There was an error, try again later"
-    end
+    kit = ProjectKit.find(params[:id])
+    write_flash(kit, "errors.project_kits.not_deleted", "The kit has been deleted") { kit.destroy }
     redirect_to project_kits_path
   end
 

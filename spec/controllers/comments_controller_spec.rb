@@ -56,7 +56,7 @@ RSpec.describe CommentsController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         delete :destroy, params: { id: @comment.id }
-        expect(flash[:alert]).to eq("Something went wrong")
+        expect(flash[:alert]).to eq("Only the author of a comment or an admin can delete it.")
       end
     end
 

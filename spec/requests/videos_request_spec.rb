@@ -95,7 +95,7 @@ RSpec.describe "Videos and direct uploads (HTTP contract)", type: :request do
       blob = direct_blob(filename: "evil.exe", content_type: "application/x-msdownload", content: "MZ" * 100)
       expect { post videos_path, params: video_params([blob]) }.not_to change(Video, :count)
       expect(response).to redirect_to(new_video_path)
-      expect(flash[:alert]).to eq("Something went wrong. Try again.")
+      expect(flash[:alert]).to start_with("The video was not uploaded. Video file should be one of")
     end
 
     # the bytes must sniff as a video; the declared type and filename no longer decide

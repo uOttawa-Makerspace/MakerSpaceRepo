@@ -159,7 +159,7 @@ class ProjectProposalsController < SessionsController
         MsrMailer.send_new_project_proposals.deliver_later
       else
         refuse_create(attributes)
-        flash.now[:alert] = @refused_files_alert || 'An error occurred while creating the project proposal, try again later.'
+        flash.now[:alert] = refused_alert('errors.proposals.not_created')
         format.html { render :new, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content
@@ -191,7 +191,10 @@ class ProjectProposalsController < SessionsController
 
       @project_proposal = ProjectProposal.new(values)
       @project_proposal.user_id = current_user&.id
-      @project_proposal.save!
+      unless @project_proposal.save
+        return redirect_to project_proposal_path(@old_project_proposal),
+                           alert: validation_message(@project_proposal, 'errors.proposals.revision_not_created')
+      end
 
       if @old_project_proposal.photos.attached?
         @old_project_proposal.photos.each do |photo|
@@ -213,32 +216,20 @@ class ProjectProposalsController < SessionsController
       end
 
       respond_to do |format|
-        if @project_proposal.save!
-          format.html do
-            redirect_to project_proposal_path(@project_proposal),
-                        notice:
-                          'The project proposal revision has been successfully created.'
-          end
-          format.json do
-            render json: {
-                     redirect_uri:
-                       project_proposal_path(@project_proposal).to_s
-                   }
-          end
-        else
-          format.html do
-            redirect_to project_proposal_path(@old_project_proposal),
-                        alert:
-                          'An error occured while creating the Project proposal revision, please try again later.'
-          end
+        format.html do
+          redirect_to project_proposal_path(@project_proposal),
+                      notice:
+                        'The project proposal revision has been successfully created.'
+        end
+        format.json do
+          render json: {
+                   redirect_uri:
+                     project_proposal_path(@project_proposal).to_s
+                 }
         end
       end
     else
-      redirect_back(
-        fallback_location: root_path,
-        alert:
-          'An error occured while trying to create a project proposal revision, please try again later.'
-      )
+      redirect_back(fallback_location: root_path, alert: I18n.t('errors.proposals.revision_source_missing'))
     end
   end
 
@@ -266,7 +257,7 @@ class ProjectProposalsController < SessionsController
         end
       else
         refuse_edit(attributes)
-        flash.now[:alert] = @refused_files_alert || 'An error occurred while updating the project proposal, try again later.'
+        flash.now[:alert] = refused_alert('errors.proposals.not_updated')
         format.html { render :edit, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content
@@ -309,14 +300,13 @@ class ProjectProposalsController < SessionsController
     end
     @project_join = ProjectJoin.new(project_join_params)
     @project_join.user_id = current_user.id
+    # the only validation on a join is that a user joins a project once
     if @project_join.save
-      redirect_to project_proposal_path(@project_proposal),
-                  notice: 'You joined this project.'
+      flash[:notice] = 'You joined this project.'
     else
-      redirect_to project_proposal_path(@project_proposal),
-                  alert:
-                    'You already joined this project or something went wrong.'
+      flash[:alert] = I18n.t('errors.proposals.already_joined')
     end
+    redirect_to project_proposal_path(@project_proposal)
   end
 
   def unjoin_project_proposal
@@ -327,13 +317,9 @@ class ProjectProposalsController < SessionsController
                   alert: 'You can only leave a project you joined yourself.'
       return
     end
-    if @project_join.delete
-      redirect_to project_proposal_path(@project_proposal),
-                  notice: 'You unjoined this project.'
-    else
-      redirect_to project_proposal_path(@project_proposal),
-                  alert: 'Something went wrong.'
-    end
+    @project_join.delete
+    redirect_to project_proposal_path(@project_proposal),
+                notice: 'You unjoined this project.'
   end
 
   private
@@ -479,6 +465,15 @@ class ProjectProposalsController < SessionsController
 
   MAX_FLASH_FILENAMES = 5
   MAX_FLASH_FILENAME_LENGTH = 40
+
+  # Names every cause of a refused create or edit. Refused files come first, in the upload check's own words,
+  # followed by any other cause (an unreadable photo, a failed validation); with no refused files, `key` leads.
+  def refused_alert(key)
+    return validation_message(@project_proposal, key) unless @refused_files_alert
+
+    others = @project_proposal.errors.reject { |e| e.attribute == :project_files && e.message == @refused_files_alert }
+    [@refused_files_alert, others.map(&:full_message).to_sentence].compact_blank.join(' ')
+  end
 
   # The flash lives in the 4 KB cookie session, so names are shortened and capped.
   def truncated_filenames(names)

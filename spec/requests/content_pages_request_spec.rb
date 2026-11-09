@@ -688,7 +688,7 @@ RSpec.describe "Content pages (part 2)", type: :request do
         perform_enqueued_jobs { post help_path, params: bad }
       }.not_to change(Help, :count)
       expect(response).to have_http_status(422)
-      expect(flash[:alert]).to eq("An error occurred while receiving your issue.")
+      expect(flash[:alert]).to start_with("Your issue was not submitted. ")
       expect(deliveries).to be_empty
     end
 

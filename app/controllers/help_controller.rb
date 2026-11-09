@@ -34,27 +34,18 @@ class HelpController < SessionsController
     end
 
     if @help.save
-      redirect_to help_path, notice: 'Your issue has been submitted.'
-      text = @help.comments.to_plain_text
-      if signed_in?
-        # Signed in: the copy goes to the account's own address (bcc the team), never the typed one
-        MsrMailer.issue_email(@help.name, current_user.email, @help.subject, text, params[:share_email],
-                              contact_email: @help.email, account: current_user).deliver_later
-      else
-        MsrMailer.issue_email_to_team(@help.name, @help.email, @help.subject, text,
-                                      via: 'the MakerRepo help page').deliver_later
-      end
+      redirect_to help_path, flash_for_copy(queue_issue_copy)
     else
-      flash[:alert] = 'An error occurred while receiving your issue.'
+      flash.now[:alert] = validation_message(@help, 'errors.help.not_received')
       render :show, status: :unprocessable_entity
     end
   rescue StandardError => e
-    raise e unless Rails.env.production?
-
-    flash[:alert] = 'An internal error occurred while receiving your issue.'
+    report_unexpected(e, source: 'help#create')
+    flash.now[:alert] = unexpected_error_message
     render :show, status: :unprocessable_entity
   end
-  
+
+
   # PUT /send_email: JSON endpoint used by the MakerRepo React app's Help form.
   # Never touches a user; same validations, GitHub issue and support email as #create.
   # The confirmation always goes to the signed-in account: the posted name/email are
@@ -84,6 +75,28 @@ class HelpController < SessionsController
   end
 
   private
+
+  # Queues the copy of the report that goes by email. The report is already saved, so a queue
+  # failure is reported and the user is told the copy will not arrive; it is not an error page.
+  def queue_issue_copy
+    text = @help.comments.to_plain_text
+    if signed_in?
+      # Signed in: the copy goes to the account's own address (bcc the team), never the typed one
+      MsrMailer.issue_email(@help.name, current_user.email, @help.subject, text, params[:share_email],
+                            contact_email: @help.email, account: current_user).deliver_later
+    else
+      MsrMailer.issue_email_to_team(@help.name, @help.email, @help.subject, text,
+                                    via: 'the MakerRepo help page').deliver_later
+    end
+    true
+  rescue ActiveJob::EnqueueError, ActiveRecord::ActiveRecordError => e
+    report_unexpected(e, source: 'help#create')
+    false
+  end
+
+  def flash_for_copy(queued)
+    queued ? { notice: 'Your issue has been submitted.' } : { alert: I18n.t('errors.help.copy_not_sent') }
+  end
 
   def help_params
     permit_help(params.require(:help))

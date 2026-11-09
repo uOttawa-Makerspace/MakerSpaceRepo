@@ -43,7 +43,7 @@ class KeyRequestsController < SessionsController
                     step: 2
                   )
     else
-      flash[:alert] = "Something went wrong while trying to submit the form."
+      flash.now[:alert] = validation_message(@key_request, "errors.key_requests.not_created")
       render :new
     end
   end
@@ -80,7 +80,7 @@ class KeyRequestsController < SessionsController
                              key_request_id: @key_request.id,
                              step: @step == 1 ? 1 : (params[:step].to_i - 1)
                            ),
-                           alert: "An error occured while saving the key request at step #{params[:step]}: Failed to update key request")
+                           alert: validation_message(@key_request, "errors.key_requests.step_not_saved"))
       end
     end
 
@@ -113,8 +113,15 @@ class KeyRequestsController < SessionsController
                   notice:
                     "You have successfully submitted the key request form, please wait a few days for an admin to review your form."
     else
-      redirect_to_first_step "There was an error when submitting your key request form. Please make sure you fill in all the required fields."
+      redirect_to_first_step submit_refusal
     end
+  end
+
+  # A request that failed validation names what is missing; one that is no longer in progress says so.
+  def submit_refusal
+    return validation_message(@key_request, "errors.key_requests.not_submitted") if @key_request.errors.any?
+
+    I18n.t("errors.key_requests.already_submitted")
   end
 
   # Once submitted, a request is changed only by an admin sending it back

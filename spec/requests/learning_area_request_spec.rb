@@ -256,7 +256,7 @@ RSpec.describe "Learning area", type: :request do
     it "re-renders new with 422 and an alert when the title is blank" do
       expect { post learning_area_index_path, params: valid_params(title: "") }.not_to change(LearningModule, :count)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to eq("The learning module was not created. Title A title is required.")
     end
 
     it "rejects a duplicate title within the same training" do
@@ -292,9 +292,9 @@ RSpec.describe "Learning area", type: :request do
 
     it "shows the failure alert on the re-rendered form only, not on the next request" do
       post learning_area_index_path, params: valid_params(title: "")
-      expect(response.body).to include("Something went wrong")
+      expect(response.body).to include("The learning module was not created.")
       get learning_area_index_path
-      expect(response.body).not_to include("Something went wrong")
+      expect(response.body).not_to include("The learning module was not created.")
     end
 
     it "ignores unpermitted attributes such as order and scorm_status" do
@@ -332,7 +332,7 @@ RSpec.describe "Learning area", type: :request do
     it "re-renders edit with 422 and an alert on invalid data" do
       patch learning_area_path(learning_module), params: { learning_module: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Unable to apply the changes.")
+      expect(flash[:alert]).to eq("The learning module was not updated. Title A title is required.")
       expect(learning_module.reload.title).to eq("Soldering basics")
     end
 

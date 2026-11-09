@@ -85,7 +85,7 @@ RSpec.describe "Project kits (HTTP contract)", type: :request do
           expect do
             post project_kits_path, params: { project_kit: { user_id: recipient.id, proficient_project_id: "" } }
           end.not_to change(ProjectKit, :count)
-          expect(flash[:alert]).to eq("There was an error creating the kit")
+          expect(flash[:alert]).to eq("The kit was not created. Proficient project This field is required.")
           expect(ActionMailer::Base.deliveries).to be_empty
         end
 

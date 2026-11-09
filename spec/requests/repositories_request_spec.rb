@@ -752,7 +752,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       patch repository_path(owner.username, repo.slug),
             params: { repository: { title: "", categories: %w[New], equipments: %w[Printer] } }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Unable to apply the changes.")
+      expect(flash[:alert]).to eq("The project was not updated. Title Project title is required.")
       expect(repo.reload.categories.pluck(:name)).to eq(["Old"])
       expect(repo.equipments.pluck(:name)).to eq(["Laser Cutter"])
       expect(repo.title).to eq("Laser Lamp")
@@ -763,6 +763,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_login!(owner)
       patch repository_path(owner.username, repo.slug), params: { repository: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("The project was not updated. Title Project title is required.")
       expect(repo.reload.categories.pluck(:name)).to eq(["Old"])
     end
 

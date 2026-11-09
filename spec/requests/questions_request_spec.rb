@@ -290,7 +290,7 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       stl = fixture_file_upload(Rails.root.join("spec/support/assets/test.stl"), "application/octet-stream")
       patch question_path(question), params: { question: { images: [stl] } }
       expect(response).to redirect_to(questions_path)
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to start_with("The question was not updated. ")
     end
   end
 

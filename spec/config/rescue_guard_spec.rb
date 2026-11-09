@@ -17,7 +17,6 @@ module RescueGuard
 
   SILENT_RESCUES = {
     "app/controllers/admin/uni_programs_controller.rb" => 1, # err-b4
-    "app/controllers/repositories_controller.rb" => 2, # err-b5
     # record_failure! stores the error on the row and reports it; it never raises
     "app/jobs/apply_processed_order_job.rb" => 1,
     # the run keeps the error and flush reports it, or the signal is re-raised after the flush

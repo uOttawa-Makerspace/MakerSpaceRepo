@@ -147,7 +147,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
           .not_to change(Membership, :count)
         expect(response).to redirect_to(your_memberships_memberships_path)
-        expect(flash[:alert]).to eq("Error creating membership. Please try again.")
+        expect(flash[:alert]).to include("could not be set up because the payment page could not be created", "quote reference")
       end
 
       it "a faculty tier creates no membership, makes no Shopify call and redirects home with a notice" do
@@ -173,7 +173,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect { post memberships_path, params: { membership: { membership_tier_id: 999_999 } } }
           .not_to change(Membership, :count)
         expect(response).to redirect_to(your_memberships_memberships_path)
-        expect(flash[:alert]).to eq("Error creating membership. Please try again.")
+        expect(flash[:alert]).to eq("The membership was not created. Membership tier must exist")
       end
 
       it "missing membership param redirects to root with the ParameterMissing message" do

@@ -72,20 +72,12 @@ class QuestionsController < AdminAreaController
   end
 
   def update
-    if @question.update(question_params)
-      flash[:notice] = "Question updated"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(@question, "errors.training.question_not_updated", "Question updated") { @question.update(question_params) }
     redirect_to questions_path
   end
 
   def destroy
-    if @question.destroy
-      flash[:notice] = "Question Deleted"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(@question, "errors.training.question_not_deleted", "Question Deleted") { @question.destroy }
     redirect_to questions_path
   end
 

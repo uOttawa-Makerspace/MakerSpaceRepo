@@ -45,11 +45,7 @@ class ExamsController < SessionsController
 
   def destroy
     exam = Exam.find(params[:id])
-    if exam.destroy
-      flash[:notice] = "Exam Deleted"
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    write_flash(exam, "errors.training.exam_not_deleted", "Exam Deleted") { exam.destroy }
     redirect_to exams_path
   end
 
@@ -105,18 +101,13 @@ class ExamsController < SessionsController
         expired_at: DateTime.now + 3.days
       )
     new_exam.save!
-    if ExamQuestion.create_exam_questions(
-         new_exam.id,
-         new_exam.training.id,
-         $n_exams_question,
-         training_session.level
-       )
-      flash[
-        :notice
-      ] = "You've successfully sent exams to all users in this training."
-    else
-      flash[:alert] = "Something went wrong"
-    end
+    ExamQuestion.create_exam_questions(
+      new_exam.id,
+      new_exam.training.id,
+      $n_exams_question,
+      training_session.level
+    )
+    flash[:notice] = "You've successfully sent exams to all users in this training."
   end
 
   def set_exam

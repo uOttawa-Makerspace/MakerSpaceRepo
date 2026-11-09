@@ -100,7 +100,7 @@ RSpec.describe "Key requests", type: :request do
     it "re-renders new with an alert on invalid data (status 200)" do
       expect { post key_requests_path, params: { key_request: valid_attrs.merge(phone_number: "abc") } }.not_to change(KeyRequest, :count)
       expect(response).to have_http_status(:ok)
-      expect(flash[:alert]).to eq("Something went wrong while trying to submit the form.")
+      expect(flash[:alert]).to start_with("The key request was not started. Phone number")
     end
 
     it "refuses a second request with a notice" do
@@ -144,7 +144,7 @@ RSpec.describe "Key requests", type: :request do
     it "redirects back one step with an alert when the update is invalid" do
       patch key_request_steps_path(key_request_id: kr.id, step: 3), params: { key_request: { phone_number: "bad" } }
       expect(response).to redirect_to(key_request_steps_path(key_request_id: kr.id, step: 2))
-      expect(flash[:alert]).to eq("An error occured while saving the key request at step 3: Failed to update key request")
+      expect(flash[:alert]).to start_with("This step of the key request was not saved. Phone number")
     end
 
     it "a GET never writes: submitted fields are ignored and step 6 does not submit" do
@@ -172,7 +172,7 @@ RSpec.describe "Key requests", type: :request do
     it "does not submit step 6 until every question is answered" do
       patch key_request_steps_path(key_request_id: kr.id, step: 6)
       expect(response).to redirect_to(key_request_steps_path(key_request_id: kr.id, step: 1))
-      expect(flash[:alert]).to eq("There was an error when submitting your key request form. Please make sure you fill in all the required fields.")
+      expect(flash[:alert]).to start_with("The key request was not submitted. Fill in every required field. Question 1")
       expect(kr.reload.status).to eq("in_progress")
     end
 

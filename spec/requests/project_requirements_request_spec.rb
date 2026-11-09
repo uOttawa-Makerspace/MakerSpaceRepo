@@ -47,7 +47,7 @@ RSpec.describe "Project requirements (HTTP contract)", type: :request do
     it "a duplicate pair alerts instead of persisting" do
       add
       expect { add }.not_to change(ProjectRequirement, :count)
-      expect(flash[:alert]).to eq("Something went wrong. Try again.")
+      expect(flash[:alert]).to eq("The required project was not added. Proficient project This project is already a pre-requisite")
     end
 
     it "allows a project to require itself and circular requirements (no guard)" do

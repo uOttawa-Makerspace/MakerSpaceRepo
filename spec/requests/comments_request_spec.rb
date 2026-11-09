@@ -52,7 +52,7 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       [" ", "a" * 1001].each do |bad|
         expect { post_comment(bad) }.not_to change(Comment, :count)
         expect(response).to redirect_to(anchor_path)
-        expect(flash[:alert]).to start_with("An error occured while trying to post the comment")
+        expect(flash[:alert]).to start_with("The comment was not posted. ")
       end
       expect { post_comment("a" * 1000) }.to change(Comment, :count).by(1)
     end
@@ -113,10 +113,10 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(response.location).to include("/login")
     end
 
-    it "refuses another regular user: 'Something went wrong', comment kept" do
+    it "refuses another regular user with a message naming who can delete, comment kept" do
       content_login!(voter)
       expect { delete comments_destroy_path(comment.id) }.not_to change(Comment, :count)
-      expect(flash[:alert]).to eq("Something went wrong")
+      expect(flash[:alert]).to eq("Only the author of a comment or an admin can delete it.")
       expect(response).to redirect_to(repository_path(owner.username, repo.id))
     end
 

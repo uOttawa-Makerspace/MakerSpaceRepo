@@ -120,7 +120,7 @@ RSpec.describe "Printer issues", type: :request do
       it "re-renders the form with the error on a blank summary and persists nothing" do
         expect { post printer_issues_path, params: { printer_issue: { printer_id: printer.id, summary: "" } } }.not_to change(PrinterIssue, :count)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(flash[:alert]).to start_with("Failed to create issue:")
+        expect(flash[:alert]).to start_with("The printer issue was not created. Summary")
       end
 
       it "re-renders the form on an unknown printer (same failure branch)" do
@@ -153,10 +153,10 @@ RSpec.describe "Printer issues", type: :request do
         expect(issue.reload.active).to be false
       end
 
-      # a failed update redirects to the list and then redirects again, raising DoubleRenderError (500); the issue is unchanged
-      it "500s with a double redirect when the update is invalid" do
+      it "redirects to the list with the validation message when the update is invalid" do
         patch printer_issue_path(issue), params: { printer_issue: { summary: "" } }
-        expect(response).to have_http_status(:internal_server_error)
+        expect(response).to redirect_to(printer_issues_path)
+        expect(flash[:alert]).to start_with("The printer issue was not updated. Summary")
         expect(issue.reload.summary).to include("Nozzle clogged")
       end
 
@@ -218,10 +218,9 @@ RSpec.describe "Printer issues", type: :request do
       expect(response).to have_http_status(:see_other)
     end
 
-    # destroy uses find_by(...).destroy; an unknown id raises NoMethodError (500)
-    it "500s destroying an unknown issue" do
+    it "answers not found when destroying an unknown issue" do
       delete printer_issue_path(0)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

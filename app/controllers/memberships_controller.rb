@@ -77,10 +77,13 @@ class MembershipsController < SessionsController
     @membership = current_user.memberships.new(membership_params)
     @membership.save!
     redirect_to @membership.checkout_link, allow_other_host: true
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to your_memberships_memberships_path, alert: validation_message(e.record, 'errors.memberships.not_created')
   rescue StandardError => e
-    Rails.logger.error "Membership creation failed: #{e.message}"
+    report_unexpected(e, source: 'memberships#create')
     @membership.destroy if @membership&.persisted?
-    redirect_to your_memberships_memberships_path, alert: 'Error creating membership. Please try again.'
+    redirect_to your_memberships_memberships_path,
+                alert: I18n.t('errors.memberships.checkout_failed', reference: error_reference)
   end
 
   def load_membership_data

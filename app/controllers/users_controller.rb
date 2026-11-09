@@ -276,8 +276,8 @@ class UsersController < SessionsController
       sign_out
       redirect_to login_path, alert: 'Your session has ended. Please sign in again.' and return
     rescue ActiveRecord::ActiveRecordError => e
-      Rails.error.report(e, handled: true)
-      flash.now[:alert] = 'Your password could not be changed. Please try again.'
+      report_unexpected(e, source: 'users#update_password')
+      flash.now[:alert] = I18n.t('errors.users.password_not_saved', reference: error_reference)
       render 'settings/admin', layout: 'setting' and return
     end
 
@@ -355,7 +355,7 @@ class UsersController < SessionsController
           flash[:alert] = 'Your account changed while resetting the password. Please use the link again.'
           return redirect_to reset_password_form_users_path(token: params[:token])
         rescue ActiveRecord::ActiveRecordError => e
-          Rails.error.report(e, handled: true)
+          report_unexpected(e, source: 'users#reset_password')
           false
         end
       if stored
@@ -365,9 +365,7 @@ class UsersController < SessionsController
           :notice
         ] = 'Your password has been updated, an email will be sent to confirm!'
       else
-        flash[
-          :alert
-        ] = 'An error occured while trying to change your password. Please try again later or send us an email at uottawa.makerepo@gmail.com'
+        flash[:alert] = I18n.t('errors.users.password_not_saved', reference: error_reference)
       end
     end
     redirect_to root_path
@@ -384,10 +382,10 @@ class UsersController < SessionsController
           teams: params[:teams].present? || (json_request? ? nil : false)
         )
       rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
-        message = e.record.errors.full_messages.to_sentence.presence || e.message
+        message = validation_message(e.record, 'errors.users.programs_not_updated')
         return render json: { error: message }, status: :unprocessable_content if json_request?
 
-        flash[:alert] = "The programs could not be updated: #{message}"
+        flash[:alert] = message
         return redirect_to user_path(user.username)
       end
       if json_request?
@@ -401,9 +399,7 @@ class UsersController < SessionsController
         head :forbidden
         return
       end
-      flash[
-        :alert
-      ] = 'An error occurred: A user must me selected; You need to be staff/admin to change the programs.'
+      flash[:alert] = I18n.t('errors.users.programs_staff_only')
       redirect_to root_path
     end
   end
