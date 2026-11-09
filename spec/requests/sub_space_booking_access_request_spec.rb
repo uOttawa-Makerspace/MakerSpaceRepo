@@ -239,6 +239,48 @@ RSpec.describe "Booking access requests", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
+    it "mails the requester once their request is declined, with the reason" do
+      row = make_row(status: "pending")
+      perform_enqueued_jobs { deny(row, reason: "Not a GNG student") }
+
+      mail = ActionMailer::Base.deliveries.sole
+      expect(mail.to).to eq([user.email])
+      expect(mail.subject).to eq("MakerRepo - Demande d'accès aux réservations refusée // Booking access request declined")
+      expect(mail.body.decoded).to include("Not a GNG student")
+    end
+
+    it "mails the user once their access is revoked, without a reason line when none was given" do
+      user.update!(booking_approval: true)
+      row = make_row(status: "approved", staff: admin)
+      perform_enqueued_jobs { deny(row) }
+
+      mail = ActionMailer::Base.deliveries.sole
+      expect(mail.to).to eq([user.email])
+      expect(mail.subject).to eq("MakerRepo - Accès aux réservations retiré // Booking access revoked")
+      expect(mail.body.decoded).not_to include("Reason given:")
+    end
+
+    it "mails nobody when the decision is refused" do
+      row = make_row(status: "pending")
+      deny(row)
+      perform_enqueued_jobs { deny(row, reason: "again") }
+      expect(flash[:alert]).to start_with("Failed to decline or revoke")
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "shows the request form again after a decline and after a revoke" do
+      deny(make_row(status: "pending"))
+      other = create(:user, :regular_user, booking_approval: true)
+      deny(UserBookingApproval.create!(user: other, identity: "Other", comments: "c", date: Date.current,
+                                       status: "approved", staff: admin))
+      [user, other].each do |account|
+        log_in!(account)
+        get sub_space_booking_index_path
+        expect(response.body).to include("Request Booking Access")
+        expect(response.body).not_to include("Access Pending")
+      end
+    end
+
     it "lets a user whose request was declined ask again, as a new pending request" do
       row = make_row(status: "pending")
       deny(row)

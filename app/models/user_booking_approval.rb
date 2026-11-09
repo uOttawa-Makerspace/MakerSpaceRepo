@@ -4,6 +4,7 @@ class UserBookingApproval < ApplicationRecord
   belongs_to :decided_by, class_name: "User", optional: true
 
   IDENTITIES = %w[JMTS Staff GNG Other].freeze
+  REASON_MAX_LENGTH = 1000
 
   # A request stays as history once answered: a pending request is approved or declined, and an
   # approved one can later be revoked. Declined and revoked are final.
@@ -17,7 +18,7 @@ class UserBookingApproval < ApplicationRecord
             presence: true,
             inclusion: {in: IDENTITIES },
             if: -> { new_record? || will_save_change_to_identity? }
-  validates :reason, length: { maximum: 1000 }
+  validates :reason, length: { maximum: REASON_MAX_LENGTH }
   validate :status_follows_from_the_previous_one, on: :update
 
   before_save :mirror_status_in_approved_column

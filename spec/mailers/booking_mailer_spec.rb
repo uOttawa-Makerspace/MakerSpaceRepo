@@ -178,4 +178,57 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(delivered).to be_empty
     end
   end
+
+  describe ".send_booking_access_denied" do
+    def answered(status, reason: nil)
+      UserBookingApproval.create!(user: booker, identity: "Other", comments: "c", date: Date.new(2027, 1, 1),
+                                  status: status, decided_at: Time.current, reason: reason)
+    end
+
+    # The mail's visible text, with markup and entities resolved.
+    def text_of(mail)
+      Nokogiri::HTML(mail.body.decoded).text.squish
+    end
+
+    it "tells the requester in French and English that the request was declined, and why" do
+      described_class.send_booking_access_denied(answered("declined", reason: "Not a GNG student").id).deliver_now
+
+      mail = delivered.sole
+      expect(mail.to).to eq([booker.email])
+      expect(mail.subject).to eq("MakerRepo - Demande d'accès aux réservations refusée // Booking access request declined")
+      body = text_of(mail)
+      expect(body).to include("Bonjour Pat Booker,", "Hello Pat Booker,")
+      expect(body).to include("Votre demande d'accès aux réservations a été examinée et refusée par un administrateur.")
+      expect(body).to include("Your request for booking access has been reviewed and declined by an admin.")
+      expect(body).to include("Raison donnée :", "Reason given:", "Not a GNG student")
+      expect(body).to include("You may send a new request from the booking page.")
+      expect(body.index("Bonjour")).to be < body.index("Hello")
+    end
+
+    it "tells the user their access was revoked, with no reason line when none was given" do
+      described_class.send_booking_access_denied(answered("revoked").id).deliver_now
+
+      mail = delivered.sole
+      expect(mail.subject).to eq("MakerRepo - Accès aux réservations retiré // Booking access revoked")
+      body = text_of(mail)
+      expect(body).to include("Your booking access has been revoked by an admin. You can no longer book rooms.")
+      expect(body).to include("Votre accès aux réservations a été retiré par un administrateur.")
+      expect(body).not_to include("Reason given:")
+      expect(body).not_to include("Raison donnée")
+    end
+
+    it "shows the reason as text, never as markup" do
+      described_class.send_booking_access_denied(answered("declined", reason: "<b>no</b> & <script>x</script>").id).deliver_now
+
+      body = delivered.sole.body.decoded
+      expect(body).to include("&lt;b&gt;no&lt;/b&gt; &amp; &lt;script&gt;x&lt;/script&gt;")
+      expect(body).not_to include("<script>x")
+    end
+
+    it "sends nothing when the requester has a blank email" do
+      booker.update_column(:email, "")
+      described_class.send_booking_access_denied(answered("declined").id).deliver_now
+      expect(delivered).to be_empty
+    end
+  end
 end

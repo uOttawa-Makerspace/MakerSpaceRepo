@@ -109,10 +109,12 @@ class SubSpaceBookingController < SessionsController
     approval_failed(e)
   end
 
-  # Declines a pending request or revokes an approved one; the request is kept with its status.
+  # Declines a pending request or revokes an approved one; the request is kept with its status,
+  # and the requester is mailed once the decision is saved.
   def deny_access
     approval = UserBookingApproval.find(params[:id])
     approval.user.deny_booking_access(approval, by: current_user, reason: params[:reason].to_s.strip.presence)
+    BookingMailer.send_booking_access_denied(approval.id).deliver_later
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: approval.revoked? ? "Booking access revoked successfully." : "Access request declined successfully."
   rescue ActiveRecord::RecordInvalid => e

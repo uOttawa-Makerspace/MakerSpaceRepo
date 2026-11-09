@@ -265,7 +265,25 @@ fr:
     times_required: "Les heures de début et de fin sont requises."
     dates_required: "Les dates de début et de fin sont requises."
     start_date_required: "La date de début est requise."
+  booking_mailer:
+    access_denied:
+      subject:
+        declined: "Demande d'accès aux réservations refusée"
+        revoked: "Accès aux réservations retiré"
+      body:
+        declined: "Votre demande d'accès aux réservations a été examinée et refusée par un administrateur."
+        revoked: "Votre accès aux réservations a été retiré par un administrateur. Vous ne pouvez plus réserver de salles."
+      hello: "Bonjour %{name},"
+      reason: "Raison donnée :"
+      ask_again: "Vous pouvez envoyer une nouvelle demande depuis la page des réservations."
+      open_page: "Aller à la réservation MakerRepo"
+      why_received: "Vous avez reçu ce courriel parce que votre demande d'accès aux réservations a reçu une réponse."
   sub_space_booking:
+    deny:
+      reason_placeholder: "Raison (facultative)"
+      decline_reason_label: "Raison du refus pour %{name} (facultative)"
+      revoke_reason_label: "Raison du retrait de l'accès de %{name} (facultative)"
+      decline_label: "Refuser %{name}"
     picker:
       min_length: "Saisissez au moins %{count} caractères pour rechercher une personne."
     series:

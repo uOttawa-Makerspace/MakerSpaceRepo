@@ -235,7 +235,25 @@ en:
     times_required: "Start and end times are required."
     dates_required: "Start and end dates are required."
     start_date_required: "Start date is required."
+  booking_mailer:
+    access_denied:
+      subject:
+        declined: "Booking access request declined"
+        revoked: "Booking access revoked"
+      body:
+        declined: "Your request for booking access has been reviewed and declined by an admin."
+        revoked: "Your booking access has been revoked by an admin. You can no longer book rooms."
+      hello: "Hello %{name},"
+      reason: "Reason given:"
+      ask_again: "You may send a new request from the booking page."
+      open_page: "Go to MakerRepo Booking"
+      why_received: "You have received this email because your booking access request was answered."
   sub_space_booking:
+    deny:
+      reason_placeholder: "Reason (optional)"
+      decline_reason_label: "Reason for declining %{name} (optional)"
+      revoke_reason_label: "Reason for revoking %{name}'s access (optional)"
+      decline_label: "Decline %{name}"
     picker:
       min_length: "Type at least %{count} characters to search for a person."
     series:

@@ -70,6 +70,18 @@ class BookingMailer < ApplicationMailer
     mail(to: @email, subject: "Booking approval request accepted")
   end
 
+  # Tells the requester that their request was declined, or their access revoked, with the
+  # reason when staff gave one. French first, then English, like the other mails sent to users.
+  def send_booking_access_denied(booking_approval_id)
+    @user_booking_approval = UserBookingApproval.find(booking_approval_id)
+    @user = @user_booking_approval.user
+    return if @user.email.blank?
+
+    key = "booking_mailer.access_denied.subject.#{@user_booking_approval.status}"
+    @subject = "MakerRepo - #{I18n.t(key, locale: :fr)} // #{I18n.t(key, locale: :en)}"
+    mail(to: @user.email, subject: @subject)
+  end
+
   private
 
   # The space managers' emails; the MTC mailbox, with the missing managers
