@@ -65,6 +65,43 @@ export function wallFromString(value) {
   return Date.parse(`${value.slice(0, 19).padEnd(19, ":00")}Z`);
 }
 
+/* The wall time in a datetime-local form field; an empty field is now. */
+export function wallOfField(value) {
+  return value ? wallFromString(value) : instantToWall(Date.now());
+}
+
+/* A wall time as a datetime-local field value ("2026-03-30T09:30"). */
+export function fieldValue(wallMs) {
+  return new Date(wallMs).toISOString().slice(0, 16);
+}
+
+/* A wall time as a date field value ("2026-03-30"). */
+export function dateValue(wallMs) {
+  return fieldValue(wallMs).slice(0, 10);
+}
+
+/* The wall time at midnight starting the day of a wall time. */
+export function startOfDay(wallMs) {
+  return wallMs - (wallMs % DAY_MS);
+}
+
+/*
+ * The wall time of a date the calendar gives. One with an offset (or Z) is an
+ * instant. One without is already Toronto wall-clock time: the calendars draw
+ * in Toronto. A date alone is its midnight.
+ */
+export function wallFromCalendar(value) {
+  if (/(Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    return instantToWall(Date.parse(value));
+  }
+  return wallFromString(value.includes("T") ? value : `${value}T00:00`);
+}
+
+/* The instant a series repeating until `date` ("2026-03-30") ends: the last second of that day. */
+export function endOfDateInstant(date) {
+  return wallToInstant(wallFromString(`${date}T23:59:59`));
+}
+
 function stampOf(wallMs) {
   return new Date(wallMs).toISOString().replace(/[-:]|\.\d+Z/g, "");
 }

@@ -7,11 +7,12 @@
 module CalendarJsHelpers
   WEEK_MIDDAY = "2027-03-16T12:00:00.000Z"
 
-  # The instant (UTC, to the minute) the browser reads from a datetime-local
-  # value: the browser parses it in its own time zone.
-  def browser_utc(local_value)
-    iso = page.evaluate_script("new Date('#{local_value}').toISOString()")
-    Time.iso8601(iso).utc
+  TORONTO = ActiveSupport::TimeZone["America/Toronto"]
+
+  # The instant (UTC) of a datetime-local value: the modals read their fields
+  # as Toronto wall-clock time, like the calendars.
+  def toronto_utc(field_value)
+    TORONTO.parse(field_value).utc
   end
 
   # The admin calendar page attaches its event modal's handlers once the
@@ -37,16 +38,10 @@ module CalendarJsHelpers
     page.find(".fc-event", text: title, visible: :all)
   end
 
-  # The value a datetime-local field shows for an instant: the browser's own
-  # local wall clock, as YYYY-MM-DDTHH:MM.
-  def browser_local(time)
-    page.evaluate_script(<<~JS)
-      (function (d) {
-        var p = function (n) { return String(n).padStart(2, "0"); };
-        return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
-          "T" + p(d.getHours()) + ":" + p(d.getMinutes());
-      })(new Date("#{time.utc.iso8601}"))
-    JS
+  # The value a datetime-local field shows for an instant: its Toronto wall
+  # clock, as YYYY-MM-DDTHH:MM.
+  def toronto_field(time)
+    time.in_time_zone(TORONTO).strftime("%Y-%m-%dT%H:%M")
   end
 
   # A one-event ICS feed (UTC times).

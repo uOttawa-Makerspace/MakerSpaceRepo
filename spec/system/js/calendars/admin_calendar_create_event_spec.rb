@@ -4,9 +4,9 @@ require "rails_helper"
 
 # The "Add Event" modal of the admin calendar (calendar_helper.js
 # addEventClick / eventCreate, manage_calendar_events.js). The week shown is
-# Sun 2027-03-14 .. Sat 2027-03-20. The browser reads and writes the modal's
-# datetime-local fields in its own time zone, so expected instants are computed
-# by the browser (browser_utc), not assumed.
+# Sun 2027-03-14 .. Sat 2027-03-20. The modal reads and writes its
+# datetime-local fields in Toronto wall-clock time, like the calendar, whatever
+# the zone of the browser.
 
 RSpec.describe "Admin calendar: creating events", type: :system do
   include ActiveSupport::Testing::TimeHelpers
@@ -184,8 +184,8 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     expect(event.event_type).to eq("meeting")
     expect(event.draft).to be(true)
     expect(event.space_id).to eq(space.id)
-    expect(event.start_time).to eq(browser_utc("2027-03-17T10:00"))
-    expect(event.end_time).to eq(browser_utc("2027-03-17T11:30"))
+    expect(event.start_time).to eq(toronto_utc("2027-03-17T10:00"))
+    expect(event.end_time).to eq(toronto_utc("2027-03-17T11:30"))
     expect(event.recurrence_rule).to be_nil
     expect(event.users).to contain_exactly(worker)
   end
@@ -270,8 +270,8 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
     expect(page).to have_text("Event created successfully.")
     event = Event.find_by!(event_type: "other")
-    expect(event.start_time).to eq(browser_utc("2027-03-17T00:00"))
-    expect(event.end_time).to eq(browser_utc("2027-03-18T00:00"))
+    expect(event.start_time).to eq(toronto_utc("2027-03-17T00:00"))
+    expect(event.end_time).to eq(toronto_utc("2027-03-18T00:00"))
   end
 
   it "shows the training fields only for the training type", js: true, skip_bullet: true do
@@ -352,12 +352,11 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     rule = Event.find_by!(event_type: "other").recurrence_rule
     expect(rule).to include("FREQ=DAILY")
     until_time = Time.strptime(rule[/UNTIL=(\d{8}T\d{6}Z)/, 1], "%Y%m%dT%H%M%SZ").utc
-    expect(until_time).to eq(browser_utc("2027-03-25T23:59:59"))
+    expect(until_time).to eq(toronto_utc("2027-03-25T23:59:59"))
   end
 
   describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
-    it "saves the typed times and the end date in Toronto time", js: true, skip_bullet: true,
-                                                                  pending: "the modal reads the browser zone" do
+    it "saves the typed times and the end date in Toronto time", js: true, skip_bullet: true do
       open_admin_calendar
       open_add_modal
       fill_datetime("start_time_field", "2027-03-17T10:00")
@@ -428,8 +427,8 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     # afterwards.
     def unavailability_around_slot(rule_for: nil)
       log_in_as(admin, to: root_path)
-      from = browser_utc(slot_start) - 1.hour
-      to = browser_utc(slot_end) + 1.hour
+      from = toronto_utc(slot_start) - 1.hour
+      to = toronto_utc(slot_end) + 1.hour
       attrs = { user: worker, title: "Class", start_time: from, end_time: to }
       if rule_for
         day = %w[SU MO TU WE TH FR SA][(from - 7.days).wday]

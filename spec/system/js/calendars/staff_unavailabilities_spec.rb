@@ -96,8 +96,8 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       eventually { StaffUnavailability.exists?(user_id: staff.id) }
       saved = StaffUnavailability.find_by!(user: staff)
       expect(saved.title).to eq("Unavailable")
-      expect(saved.start_time).to eq(browser_utc("2027-03-17T10:00"))
-      expect(saved.end_time).to eq(browser_utc("2027-03-17T12:00"))
+      expect(saved.start_time).to eq(toronto_utc("2027-03-17T10:00"))
+      expect(saved.end_time).to eq(toronto_utc("2027-03-17T12:00"))
       expect(saved.recurrence_rule).to be_nil
     end
 
@@ -140,8 +140,8 @@ RSpec.describe "Staff unavailabilities page", type: :system do
 
       eventually { StaffUnavailability.exists?(user_id: staff.id) }
       saved = StaffUnavailability.find_by!(user: staff)
-      expect(saved.start_time).to eq(browser_utc("2027-03-17T00:00"))
-      expect(saved.end_time).to eq(browser_utc("2027-03-18T00:00"))
+      expect(saved.start_time).to eq(toronto_utc("2027-03-17T00:00"))
+      expect(saved.end_time).to eq(toronto_utc("2027-03-18T00:00"))
     end
 
     it "saves a weekly repeat on the ticked days up to the end date", js: true, skip_bullet: true do
@@ -214,8 +214,7 @@ RSpec.describe "Staff unavailabilities page", type: :system do
   end
 
   describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
-    it "saves the typed times in Toronto time and shows them again", js: true, skip_bullet: true,
-                                                                       pending: "the modal reads the browser zone" do
+    it "saves the typed times in Toronto time and shows them again", js: true, skip_bullet: true do
       open_page
       open_add_modal
       fill_datetime("start_time_field", "2027-03-17T10:00")
@@ -247,8 +246,8 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       expect(find("#unavailForm", visible: :all)[:action]).to end_with("/staff/unavailabilities/#{lecture.id}")
       expect(find("#title", visible: :all).value).to eq("Lecture")
       expect(find("#description", visible: :all).value).to eq("Calculus")
-      expect(field_value("start_time_field")).to eq(browser_local(lecture.start_time))
-      expect(field_value("end_time_field")).to eq(browser_local(lecture.end_time))
+      expect(field_value("start_time_field")).to eq(toronto_field(lecture.start_time))
+      expect(field_value("end_time_field")).to eq(toronto_field(lecture.end_time))
       expect(page).to have_css("#delete_forms", visible: :visible)
       expect(page).to have_css("#delete_following_form", visible: :hidden)
     end
@@ -265,7 +264,7 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       eventually { lecture.reload.title == "Lab" }
       lecture.reload
       expect(lecture.title).to eq("Lab")
-      expect(lecture.start_time).to eq(browser_utc("2027-03-18T16:00"))
+      expect(lecture.start_time).to eq(toronto_utc("2027-03-18T16:00"))
     end
 
     it "deletes the entry", js: true, skip_bullet: true do

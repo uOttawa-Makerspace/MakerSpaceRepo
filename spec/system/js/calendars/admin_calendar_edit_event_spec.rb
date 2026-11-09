@@ -58,8 +58,8 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(find("#save_button").value).to eq("Update")
       expect(find("#eventForm", visible: :all)[:action]).to end_with("/admin/events/#{single.id}")
       expect(find("#eventForm input[name=_method]", visible: :all).value).to eq("patch")
-      expect(field_value("start_time_field")).to eq(browser_local(single.start_time))
-      expect(field_value("end_time_field")).to eq(browser_local(single.end_time))
+      expect(field_value("start_time_field")).to eq(toronto_field(single.start_time))
+      expect(field_value("end_time_field")).to eq(toronto_field(single.end_time))
       expect(page).to have_css("#staff_select + .ts-wrapper .item", text: "Wanda Worker")
       expect(page).to have_css("#publish_and_delete_forms", visible: :visible)
       expect(page).to have_css("#delete_single_form", visible: :all)
@@ -115,8 +115,8 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "Update"
 
       expect(page).to have_text("Event updated successfully.")
-      expect(single.reload.start_time).to eq(browser_utc("2027-03-18T15:00"))
-      expect(single.end_time).to eq(browser_utc("2027-03-18T16:00"))
+      expect(single.reload.start_time).to eq(toronto_utc("2027-03-18T15:00"))
+      expect(single.end_time).to eq(toronto_utc("2027-03-18T16:00"))
     end
 
     it "shows an all-day event with the end field locked", js: true, skip_bullet: true do
@@ -238,7 +238,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
   end
 
   describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
-    it "shows the event at its Toronto times", js: true, skip_bullet: true, pending: "the modal reads the browser zone" do
+    it "shows the event at its Toronto times", js: true, skip_bullet: true do
       open_admin_calendar
       open_event("Team sync")
 

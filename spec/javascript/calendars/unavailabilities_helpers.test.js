@@ -16,8 +16,6 @@ vi.mock("bootstrap", () => ({
 
 const { eventClick, addUnavailabilityClick, eventCreate } =
   await import("../../../app/javascript/src/unavailabilities_helpers.js");
-const { toLocalDatetimeString } =
-  await import("../../../app/javascript/src/calendar_helper.js");
 
 const $ = (id) => document.getElementById(id);
 const form = () => document.querySelector("#unavailabilityModal form");
@@ -85,14 +83,15 @@ describe("eventClick (unavailabilities)", () => {
     );
   });
 
-  it("writes the times in the browser's local time", () => {
+  it("writes the times in Toronto time", () => {
     eventClick(fcEvent());
-    expect($("start_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T13:00:00-04:00")),
-    );
-    expect($("end_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T15:00:00-04:00")),
-    );
+    expect($("start_time_field").value).toBe("2027-03-17T13:00");
+    expect($("end_time_field").value).toBe("2027-03-17T15:00");
+  });
+
+  it("leaves the end date empty for a repeating entry without one", () => {
+    eventClick(fcEvent({ def: weeklyDef({ until: null }) }));
+    expect($("recurrence_until").value).toBe("");
   });
 
   it("checks all-day, snaps to midnight and locks the end", () => {
@@ -201,11 +200,7 @@ describe("eventCreate (unavailabilities)", () => {
     });
     expect(click).toHaveBeenCalledTimes(1);
     expect($("save_button").value).toBe("Save");
-    expect($("start_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T09:00:00-04:00")),
-    );
-    expect($("end_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T10:00:00-04:00")),
-    );
+    expect($("start_time_field").value).toBe("2027-03-17T09:00");
+    expect($("end_time_field").value).toBe("2027-03-17T10:00");
   });
 });

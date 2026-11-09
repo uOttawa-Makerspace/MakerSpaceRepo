@@ -96,7 +96,7 @@ describe.each(Object.entries(ZONES))(
 
     describe("saving sends the instant of the Toronto time in the field", () => {
       for (const c of cases.fieldToInstant) {
-        inBrowserZone(true)(c.label, () => {
+        it(c.label, () => {
           openNew(c.field);
           submit();
           expect($("utc_start_time").value).toBe(c.instant);
@@ -107,7 +107,7 @@ describe.each(Object.entries(ZONES))(
 
     describe("a repeat end date ends the series at the end of that Toronto day", () => {
       for (const c of cases.untilDates) {
-        inBrowserZone(true)(c.label, () => {
+        it(c.label, () => {
           openNew("2027-03-10T10:00", "2027-03-10T11:00");
           $("recurrence_frequency").value = "DAILY";
           $("recurrence_until").value = c.date;
@@ -121,13 +121,10 @@ describe.each(Object.entries(ZONES))(
 
     describe("opening an unavailability from the calendar", () => {
       for (const c of cases.calendarStrings) {
-        inBrowserZone(hasOffset(c.start))(
-          `shows ${c.label} at its Toronto time`,
-          () => {
-            eventClick(fcEvent(c.start));
-            expect($("start_time_field").value).toBe(c.field);
-          },
-        );
+        it(`shows ${c.label} at its Toronto time`, () => {
+          eventClick(fcEvent(c.start));
+          expect($("start_time_field").value).toBe(c.field);
+        });
 
         inBrowserZone(!hasOffset(c.start))(
           `deletes ${c.label} by its own instant`,
@@ -143,13 +140,10 @@ describe.each(Object.entries(ZONES))(
       }
 
       for (const c of cases.untilDates) {
-        inBrowserZone(true)(
-          `shows the repeat end date of a series ending on ${c.label}`,
-          () => {
-            eventClick(fcEvent("2027-03-10T10:00:00", dailyUntil(c.until)));
-            expect($("recurrence_until").value).toBe(c.date);
-          },
-        );
+        it(`shows the repeat end date of a series ending on ${c.label}`, () => {
+          eventClick(fcEvent("2027-03-10T10:00:00", dailyUntil(c.until)));
+          expect($("recurrence_until").value).toBe(c.date);
+        });
       }
     });
 
@@ -173,27 +167,21 @@ describe.each(Object.entries(ZONES))(
         expect($("end_time_field").value).toBe("2027-03-15T00:00");
       });
 
-      inBrowserZone(true)(
-        "saves that all-day entry as the 23 hours of the Toronto day",
-        () => {
-          openNew("2027-03-14T10:30", "2027-03-14T11:30");
-          $("all_day_checkbox").checked = true;
-          fire($("all_day_checkbox"), "change");
-          submit();
-          expect($("utc_start_time").value).toBe("2027-03-14T05:00:00.000Z");
-          expect($("utc_end_time").value).toBe("2027-03-15T04:00:00.000Z");
-        },
-      );
+      it("saves that all-day entry as the 23 hours of the Toronto day", () => {
+        openNew("2027-03-14T10:30", "2027-03-14T11:30");
+        $("all_day_checkbox").checked = true;
+        fire($("all_day_checkbox"), "change");
+        submit();
+        expect($("utc_start_time").value).toBe("2027-03-14T05:00:00.000Z");
+        expect($("utc_end_time").value).toBe("2027-03-15T04:00:00.000Z");
+      });
 
-      inBrowserZone(true)(
-        "ends an entry that is no longer all-day one hour after its start",
-        () => {
-          $("all_day_checkbox").checked = false;
-          openNew("2027-03-14T01:30");
-          fire($("all_day_checkbox"), "change");
-          expect($("end_time_field").value).toBe("2027-03-14T03:30");
-        },
-      );
+      it("ends an entry that is no longer all-day one hour after its start", () => {
+        $("all_day_checkbox").checked = false;
+        openNew("2027-03-14T01:30");
+        fire($("all_day_checkbox"), "change");
+        expect($("end_time_field").value).toBe("2027-03-14T03:30");
+      });
 
       it("ticks the Toronto weekday of the start for a weekly entry", () => {
         openNew("2027-03-17T22:30", "2027-03-17T23:00");
@@ -205,20 +193,17 @@ describe.each(Object.entries(ZONES))(
         expect(ticked).toEqual(["WE"]);
       });
 
-      inBrowserZone(true)(
-        "proposes the next whole Toronto hour when the modal opens",
-        () => {
-          vi.useFakeTimers({ toFake: ["Date"] });
-          vi.setSystemTime(new Date("2027-03-17T13:20:00Z"));
-          try {
-            fire($("unavailabilityModal"), "show.bs.modal");
-            expect($("start_time_field").value).toBe("2027-03-17T10:00");
-            expect($("end_time_field").value).toBe("2027-03-17T11:00");
-          } finally {
-            vi.useRealTimers();
-          }
-        },
-      );
+      it("proposes the next whole Toronto hour when the modal opens", () => {
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(new Date("2027-03-17T13:20:00Z"));
+        try {
+          fire($("unavailabilityModal"), "show.bs.modal");
+          expect($("start_time_field").value).toBe("2027-03-17T10:00");
+          expect($("end_time_field").value).toBe("2027-03-17T11:00");
+        } finally {
+          vi.useRealTimers();
+        }
+      });
     });
   },
 );

@@ -4,18 +4,21 @@ import TomSelect from "tom-select";
 
 import { onPageLoad } from "./on_page";
 import {
+  endOfDateInstant,
   entryIntervals,
+  fieldValue,
+  instantToWall,
   occurrencesOverlapping,
+  startOfDay,
   startingAt,
   wallFromString,
+  wallOfField,
   wallToInstant,
 } from "./recurrence";
-import {
-  parseLocalDatetimeString,
-  toLocalDatetimeString,
-} from "./calendar_helper";
 
-const FOUR_WEEKS_MS = 28 * 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+const FOUR_WEEKS_MS = 28 * DAY_MS;
 
 function showStaffLoadError() {
   document.getElementById("staff_load_error").classList.remove("d-none");
@@ -89,9 +92,10 @@ onPageLoad("#eventModal", async () => {
   // ---------------------------------------
   // Helper functions
   // ---------------------------------------
+  // The form fields hold Toronto wall-clock times, like the calendar.
   function validateTimeRange() {
-    const startDate = parseLocalDatetimeString(startTimeField.value);
-    const endDate = parseLocalDatetimeString(endTimeField.value);
+    const startDate = wallOfField(startTimeField.value);
+    const endDate = wallOfField(endTimeField.value);
 
     if (endDate <= startDate) {
       timeError.classList.remove("d-none");
@@ -106,10 +110,8 @@ onPageLoad("#eventModal", async () => {
     }
   }
 
+  // The rule is written with instants (UTC stamps), as it is stored.
   function buildRule() {
-    const startDate = parseLocalDatetimeString(startTimeField.value);
-    const untilDate = new Date(untilInput.value + "T23:59:59");
-
     if (frequency.value === "") {
       ruleField.value = "";
       refreshTomSelect();
@@ -118,8 +120,10 @@ onPageLoad("#eventModal", async () => {
 
     const rule = new RRule({
       freq: RRule[frequency.value] || RRule.DAILY,
-      dtstart: startDate,
-      until: untilInput.value ? untilDate : null,
+      dtstart: new Date(wallToInstant(wallOfField(startTimeField.value))),
+      until: untilInput.value
+        ? new Date(endOfDateInstant(untilInput.value))
+        : null,
       byweekday: dayCheckboxes
         .filter((cb) => cb.checked)
         .map((cb) => RRule[cb.value]),
@@ -130,20 +134,15 @@ onPageLoad("#eventModal", async () => {
   }
 
   function handleDateIfAllDay() {
-    const startDate =
-      parseLocalDatetimeString(startTimeField.value) || new Date();
-    startDate.setHours(0, 0, 0, 0);
+    const startDate = startOfDay(wallOfField(startTimeField.value));
 
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
-
-    startTimeField.value = toLocalDatetimeString(startDate);
-    endTimeField.value = toLocalDatetimeString(endDate);
+    startTimeField.value = fieldValue(startDate);
+    endTimeField.value = fieldValue(startDate + DAY_MS);
     endTimeField.disabled = true;
 
     const freq = frequency.value;
     if (freq === "WEEKLY") {
-      const dayIndex = startDate.getDay();
+      const dayIndex = new Date(startDate).getUTCDay();
       dayCheckboxes.forEach((checkbox, index) => {
         checkbox.checked = index === dayIndex;
       });
@@ -262,7 +261,9 @@ onPageLoad("#eventModal", async () => {
             .split(",")
             .filter(Boolean);
           const firstDate = unavailableDates[0]
-            ? new Date(unavailableDates[0]).toLocaleDateString()
+            ? new Date(unavailableDates[0]).toLocaleDateString(undefined, {
+                timeZone: "America/Toronto",
+              })
             : null;
           const moreDates =
             unavailableDates.length > 1
@@ -314,10 +315,8 @@ onPageLoad("#eventModal", async () => {
       handleDateIfAllDay();
     } else {
       endTimeField.disabled = false;
-      const startDate = parseLocalDatetimeString(startTimeField.value);
-      const endDate = new Date(startDate);
-      endDate.setHours(endDate.getHours() + 1);
-      endTimeField.value = toLocalDatetimeString(endDate);
+      const start = wallToInstant(wallOfField(startTimeField.value));
+      endTimeField.value = fieldValue(instantToWall(start + HOUR_MS));
     }
     validateTimeRange();
   });
@@ -350,8 +349,7 @@ onPageLoad("#eventModal", async () => {
     });
     // Set today's checkbox if frequency is WEEKLY
     if (freq === "WEEKLY") {
-      const startDate = parseLocalDatetimeString(startTimeField.value);
-      const dayIndex = startDate.getDay();
+      const dayIndex = new Date(wallOfField(startTimeField.value)).getUTCDay();
       if (dayCheckboxes[dayIndex]) dayCheckboxes[dayIndex].checked = true;
     }
   });
@@ -418,15 +416,11 @@ onPageLoad("#eventModal", async () => {
   // Set values on modal open
   modal.addEventListener("show.bs.modal", (e) => {
     if (!startTimeField.value) {
-      const now = new Date();
-      const roundedNow = new Date(now);
-      roundedNow.setMinutes(0, 0, 0);
-      roundedNow.setHours(roundedNow.getHours() + 1);
+      const now = wallOfField("");
+      const nextHour = now - (now % HOUR_MS) + HOUR_MS;
 
-      startTimeField.value = toLocalDatetimeString(roundedNow);
-      endTimeField.value = toLocalDatetimeString(
-        new Date(roundedNow.getTime() + 60 * 60 * 1000),
-      );
+      startTimeField.value = fieldValue(nextHour);
+      endTimeField.value = fieldValue(nextHour + HOUR_MS);
     }
 
     validateTimeRange();
@@ -434,18 +428,16 @@ onPageLoad("#eventModal", async () => {
     initTomSelect();
   });
 
-  // Before form submission, convert to UTC
+  // Before form submission, send the instants of the Toronto times
   document.getElementById("eventForm").addEventListener("submit", (e) => {
     buildRule();
 
-    const startLocal = parseLocalDatetimeString(startTimeField.value);
-    const endLocal = parseLocalDatetimeString(endTimeField.value);
-
-    const utcStartField = document.getElementById("utc_start_time");
-    utcStartField.value = startLocal.toISOString();
-
-    const utcEndField = document.getElementById("utc_end_time");
-    utcEndField.value = endLocal.toISOString();
+    document.getElementById("utc_start_time").value = new Date(
+      wallToInstant(wallOfField(startTimeField.value)),
+    ).toISOString();
+    document.getElementById("utc_end_time").value = new Date(
+      wallToInstant(wallOfField(endTimeField.value)),
+    ).toISOString();
 
     tomSelect.sync();
 
