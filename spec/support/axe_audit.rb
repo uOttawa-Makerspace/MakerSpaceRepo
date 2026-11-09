@@ -10,15 +10,19 @@ require "fileutils"
 # level A and AA rules, leaving out third-party widgets (UserWay, Cloudflare
 # Turnstile) that the app does not control.
 #
-# Default is report-only: violations are collected per page, written to
+# Violations are collected per page and written to
 # tmp/axe/report<TEST_ENV_NUMBER>.json at the end of the run and summarised on
-# stdout. Set AXE_STRICT=1 to fail the example on any violation instead.
+# stdout. The example fails on any violation. Set AXE_STRICT=0 to only report.
 module AxeAudit
   TAGS = %w[wcag2a wcag2aa wcag21a wcag21aa].freeze
   EXCLUDED = [
     ".userway_buttons_wrapper", "[data-uw-styling-context]", "[class*='userway']", "[id*='userway']",
     ".cf-turnstile", "iframe[src*='challenges.cloudflare.com']"
   ].freeze
+  # FullCalendar's scrolling container is not keyboard focusable. Adding a
+  # tabindex to it breaks the calendar's grid markup, so the rule is skipped
+  # until the library fixes it.
+  SKIPPED_RULES = %w[scrollable-region-focusable].freeze
   REPORT_DIR = "tmp/axe"
 
   Violation = Struct.new(:rule, :impact, :page, :label, :selector, :html, keyword_init: true)
@@ -30,12 +34,12 @@ module AxeAudit
   class << self
     attr_reader :violations, :pages, :seconds
 
-    def strict? = ENV["AXE_STRICT"].to_s.match?(/\A(1|true|yes)\z/i)
+    def strict? = !ENV["AXE_STRICT"].to_s.match?(/\A(0|false|no)\z/i)
 
     def run(page)
       started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       Axe::Configuration.instance.legacy_mode = true
-      run = Axe::API::Run.new.according_to(*TAGS).excluding(*EXCLUDED)
+      run = Axe::API::Run.new.according_to(*TAGS).excluding(*EXCLUDED).skipping(*SKIPPED_RULES)
       Axe::Core.new(page).call(run).results.violations
     ensure
       @seconds += Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
@@ -68,7 +72,23 @@ module AxeAudit
     end
   end
 
+  # Visible markers the app and its libraries show while content is still being
+  # filled in: Turbo's busy attributes and progress bar, DataTables processing,
+  # the Bootstrap spinner and the calendar pages' #spinner_container.
+  LOADING_MARKERS = "[aria-busy='true'], turbo-frame[busy], .turbo-progress-bar, .dataTables_processing, " \
+                    ".spinner-border, #spinner_container"
+
+  # Waits (Capybara waiting, no sleeping) until the page has finished loading and
+  # no loading marker is visible, so the audit never sees a half-rendered page.
+  def wait_for_page_settled
+    page.document.synchronize do
+      raise Capybara::ExpectationNotMet, "document still loading" unless page.evaluate_script("document.readyState") == "complete"
+    end
+    expect(page).to have_no_css(LOADING_MARKERS)
+  end
+
   def audit_accessibility(label = nil)
+    wait_for_page_settled
     path = URI.parse(page.current_url).request_uri
     found = AxeAudit.record(AxeAudit.run(page), path, label)
     return if found.empty? || !AxeAudit.strict?

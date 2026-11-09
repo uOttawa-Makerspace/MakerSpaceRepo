@@ -119,6 +119,8 @@ div.repo-info-item {
     cursor: pointer;
     border-radius: 6px;
     display: inline-block;
+    font-weight: 700;
+    font-size: $large-text-size;
 
     a {
       color: inherit;
@@ -173,7 +175,8 @@ div.repo-info-item {
     display: inline-flex;
     align-items: center;
     background-color: $primary;
-    font-size: 0.95rem;
+    font-size: $large-text-size;
+    font-weight: 700;
     color: white !important;
     border-radius: 1rem;
     margin-top: 0.5rem;
@@ -183,8 +186,10 @@ div.repo-info-item {
     &.liked {
       background-color: hotpink;
     }
-    a {
+    a,
+    button {
       color: inherit;
+      font-weight: inherit;
     }
     i {
       padding-right: 6px;

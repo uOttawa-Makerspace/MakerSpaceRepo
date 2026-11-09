@@ -1,4 +1,3 @@
-@import "bootstrap/scss/bootstrap";
 @import "shared/variables";
 
 /* --- LAYOUT WRAPPER --- */
@@ -201,7 +200,7 @@ div.edit-column {
   }
   .list-group-item.active-link {
     background-color: var(--bs-tertiary-bg);
-    color: #5f9ea0;
+    color: var(--bs-body-color);
     font-weight: 500;
     border-left-color: #5f9ea0;
     z-index: 2;

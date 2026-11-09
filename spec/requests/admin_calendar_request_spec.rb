@@ -51,6 +51,20 @@ RSpec.describe "Admin calendar contract", type: :request do
     expect(flash[:alert]).to eq("You are not assigned to any spaces.")
   end
 
+  it "shows no loading spinner when the admin has no staffed spaces, since the calendar never loads" do
+    create(:space)
+    log_in!(admin)
+    get admin_calendar_index_path
+    expect(response.body).not_to include(%(id="spinner_container"))
+  end
+
+  it "shows the loading spinner while the calendar loads for an admin staffed on a space" do
+    StaffSpace.create!(user: admin, space: space)
+    log_in!(admin)
+    get admin_calendar_index_path
+    expect(response.body).to include(%(id="spinner_container"))
+  end
+
   # with no spaces at all the page still renders, with the "not assigned" notice
   it "index renders when no spaces exist at all" do
     log_in!(admin) # nothing else creates a space in this example

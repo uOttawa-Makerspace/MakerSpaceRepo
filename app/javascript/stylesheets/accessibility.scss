@@ -1,10 +1,12 @@
+@import "shared/variables";
+
 // Shared accessibility rules. Imported last so they win ties with Bootstrap.
 
 // Keyboard focus ring. Every ring colour below has at least 3:1 contrast
 // against the background it is drawn on (WCAG 2.2 SC 1.4.11, 2.4.7, 2.4.11).
 //   light page (#fff)            #0a58ca  6.5:1
 //   dark page (#212529)          #6ea8fe  6.6:1
-//   navbar (#c93a1e) and footer  #fff     5.1:1 and 21:1
+//   navbar (#e24829) and footer  #fff     4.0:1 (large text) and 21:1
 :root {
   --focus-ring-color: #0a58ca;
 }
@@ -46,4 +48,130 @@ main[tabindex="-1"]:focus {
   border: 2px solid #000;
   border-radius: 0.25rem;
   font-weight: 600;
+}
+
+// Text colours with enough contrast (WCAG 1.4.3, 4.5:1 for normal text).
+// Orange text: the dark orange on light pages, the light orange on the dark theme.
+.text-primary {
+  --bs-text-opacity: 1;
+  color: var(--primary-text) !important;
+}
+
+// Bootstrap's success and danger text colours (#198754, #dc3545) pass on white
+// but not on the dark page, so the dark theme uses Bootstrap's own lighter text
+// shades (#75b798 6.6:1 and #ea868f 6.1:1 on #212529). Success text on a pale
+// green tint uses the dark emphasis shade in both themes.
+[data-bs-theme="dark"] {
+  .text-success {
+    color: var(--bs-success-text-emphasis) !important;
+  }
+  .text-danger {
+    color: var(--bs-danger-text-emphasis) !important;
+  }
+  .btn-outline-success {
+    --bs-btn-color: var(--bs-success-text-emphasis);
+    --bs-btn-border-color: var(--bs-success-text-emphasis);
+  }
+  .btn-outline-danger {
+    --bs-btn-color: var(--bs-danger-text-emphasis);
+    --bs-btn-border-color: var(--bs-danger-text-emphasis);
+  }
+}
+.text-success:is(.bg-success-subtle, .bg-opacity-10) {
+  color: var(--bs-success-text-emphasis) !important;
+}
+
+// White text on the brand orange fill (#e24829) is 4.04:1: below 4.5:1, so it
+// counts as readable only as large text (3:1, WCAG 1.4.3). Large text is bold
+// and at least 14pt (1.167rem), so the text drawn on the orange is bold and that
+// size. This covers buttons, badges, pills, and the light-theme navbar links (the
+// main navbar stays collapsed until 1600px, where the 14pt links fit).
+:root:not([data-bs-theme="dark"]) .navbar:not(.navbar-staff) {
+  .nav-link,
+  .btn.btn-link {
+    font-weight: 700;
+    font-size: $large-text-size;
+  }
+}
+
+// Primary buttons are 1.167rem bold by default. Large buttons keep their own
+// larger size. Small buttons take the same text size but a tighter line height,
+// so their height does not change; Bootstrap's small input groups set the size
+// and line height directly rather than through the variables.
+.btn:is(.btn-primary, .btn-outline-primary) {
+  --bs-btn-font-weight: 700;
+}
+.btn:is(.btn-primary, .btn-outline-primary):not(.btn-lg) {
+  --bs-btn-font-size: #{$large-text-size};
+}
+.btn-sm:is(.btn-primary, .btn-outline-primary) {
+  --bs-btn-line-height: 1.125;
+}
+.input-group-sm > .btn:is(.btn-primary, .btn-outline-primary) {
+  font-size: $large-text-size;
+  line-height: 1.125;
+}
+
+.badge:is(.bg-primary, .text-bg-primary, .cert-badge) {
+  font-weight: 700;
+  font-size: $large-text-size;
+}
+
+// Calendar toolbar buttons turn orange with white text when active or hovered
+// (dark theme), so all of them use the same bold large text to avoid a size
+// change on hover.
+.fc .fc-button-primary {
+  font-weight: 700;
+  font-size: $large-text-size;
+}
+// On phones the larger buttons no longer fit beside the title in one row, so the
+// toolbar wraps its sections instead of running off the screen.
+@media (max-width: 575.98px) {
+  .fc .fc-header-toolbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.5rem;
+  }
+}
+
+// Active pill tabs fill with the orange. The size applies to every pill so the
+// tabs do not change size when selected; the weight is needed only when active
+// and overrides the fw-semibold utility, which is declared important.
+.nav-pills .nav-link {
+  font-size: $large-text-size;
+  &.active {
+    font-weight: 700 !important;
+  }
+}
+.nav-pills .show > .nav-link {
+  font-weight: 700 !important;
+}
+
+// An outline button's resting text is orange on the page: the darker text orange.
+// Its hover, checked and active states fill with the brand orange and show white
+// text, which the large bold size above covers.
+.btn.btn-outline-primary {
+  --bs-btn-color: var(--primary-text);
+}
+
+// Links inside running text (a paragraph, list item or table cell in the page
+// content) are underlined: their colour alone does not set them apart from the
+// surrounding text by 3:1 (WCAG 1.4.1). Buttons, badges, and links in navigation,
+// pagination, tag, breadcrumb, menu and list-group containers keep their own style.
+main
+  :is(p, li, td)
+  a:not(.btn, .badge, .page-link, .navbar-brand):not(
+    :is(
+        nav,
+        .nav,
+        .tags,
+        .pagination,
+        .apple_pagination,
+        .breadcrumb,
+        .dropdown-menu,
+        .list-group
+      )
+      a
+  ) {
+  text-decoration: underline;
 }

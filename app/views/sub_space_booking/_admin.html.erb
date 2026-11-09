@@ -5,8 +5,8 @@
     <!-- PENDING BOOKINGS -->
     <div class="card shadow-sm mb-4 border-0 bg-body" id="pending-accordion">
       <div class="card-header text-bg-warning d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#pendingBody">
-        <h5 class="mb-0 fw-bold text-dark"><i class="fa-regular fa-clock"></i> Pending Bookings</h5>
-        <span class="text-dark"><i class="fa-solid fa-chevron-down"></i></span>
+        <h5 class="mb-0 fw-bold"><i class="fa-regular fa-clock"></i> Pending Bookings</h5>
+        <span><i class="fa-solid fa-chevron-down"></i></span>
       </div>
       
       <div id="pendingBody" class="collapse show">
@@ -152,7 +152,7 @@
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
                     </td>
                     <td>
-                      <span class="badge <%= booking.public ? 'text-bg-info text-dark' : 'text-bg-dark' %>"><%= booking.public ? 'Public' : 'Private' %></span>
+                      <span class="badge <%= booking.public ? 'text-bg-info' : 'text-bg-dark' %>"><%= booking.public ? 'Public' : 'Private' %></span>
                     </td>
                     <td class="text-end pe-3">
                       <div class="btn-group btn-group-sm">

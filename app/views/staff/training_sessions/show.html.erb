@@ -18,9 +18,9 @@
     <div>
       Status:
       <% if @current_training_session.completed? %>
-      <span style="color:#006633;"> Completed </span>
+      <span class="text-success"> Completed </span>
       <% else %>
-      <span style="color:#700000;"> Incomplete </span>
+      <span class="text-danger"> Incomplete </span>
       <% end %>
     </div>
     <br />
