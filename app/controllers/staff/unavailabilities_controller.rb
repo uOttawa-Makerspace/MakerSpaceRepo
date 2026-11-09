@@ -285,7 +285,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
       return redirect_to after_action_path, alert: "Start date is required for deleting a single occurrence."
     end
 
-    @unavailability.update!(recurrence_rule: series_rule(@unavailability).without_occurrence(Time.parse(params[:start_date])))
+    @unavailability.update!(recurrence_rule: series_rule(@unavailability).without_occurrence(parse_time(params[:start_date])))
     redirect_to after_action_path, notice: "This occurrence deleted."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
@@ -296,7 +296,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
       return redirect_to after_action_path, alert: "Start date is required for deleting following occurrences."
     end
 
-    @unavailability.update!(recurrence_rule: series_rule(@unavailability).ending_before(Time.parse(params[:start_date])))
+    @unavailability.update!(recurrence_rule: series_rule(@unavailability).ending_before(parse_time(params[:start_date])))
     redirect_to after_action_path, notice: "This and following deleted."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"

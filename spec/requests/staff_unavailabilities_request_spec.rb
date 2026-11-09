@@ -237,6 +237,20 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(series.recurrence_rule).not_to include("20271201")
       end
 
+      # Time.parse raises for it, so the request ends in a server error.
+      it "answers a start_date that is not a time with a server error and leaves the series as it was" do
+        %w[single following].each do |scope|
+          delete delete_with_scope_staff_unavailability_path(series), params: { scope: scope, start_date: "not a date" }
+          expect(response).to have_http_status(:internal_server_error), scope
+        end
+        expect(series.reload.recurrence_rule).to eq(RULE)
+      end
+
+      it "reads a start_date with an offset as its instant" do
+        delete delete_with_scope_staff_unavailability_path(series), params: { scope: "single", start_date: "2027-03-08T10:00:00-05:00" }
+        expect(series.reload.recurrence_rule).to eq("#{RULE}\nEXDATE:20270308T150000Z")
+      end
+
       it "all destroys the series" do
         expect { delete delete_with_scope_staff_unavailability_path(series), params: { scope: "all" } }.to change(StaffUnavailability, :count).by(-1)
         expect(flash[:notice]).to eq("All occurrences deleted.")
