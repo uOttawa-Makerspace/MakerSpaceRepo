@@ -747,13 +747,33 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(flash[:alert]).to include("and 7 more")
     end
 
-    it "refuses the edit and saves nothing when the model rejects a file the pre-check let through" do
-      allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems).and_return([])
-      patch project_proposal_path(pending.id),
-            params: { project_proposal: { title: "Changed" }, files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(pending.reload.title).to eq("Pending One")
-      expect(pending.project_files).not_to be_attached
+    context "when the model rejects a file the pre-check let through" do
+      before { allow_any_instance_of(ProjectProposal).to receive(:sniffed_upload_problems).and_return([]) }
+
+      let(:bad_file) { content_named_upload("run.exe", type: "application/x-msdownload") }
+
+      it "re-renders the edit form with the typed title and the refused file's name, and saves nothing" do
+        pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
+        Category.create!(name: "Old", project_proposal_id: pending.id)
+        patch project_proposal_path(pending.id),
+              params: { project_proposal: { title: "Typed Title", categories: %w[New] }, deletefiles: ["drop.txt"], files: [bad_file] }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Typed Title")
+        expect(response.body).to include("run.exe")
+        expect(response.body).to include('name="project_proposal[title]"')
+        expect(flash[:alert]).to include("The edit was not saved")
+        expect(pending.reload.title).to eq("Pending One")
+        expect(file_names).to eq(["drop.txt"])
+        expect(pending.categories.pluck(:name)).to eq(["Old"])
+      end
+
+      it "answers JSON clients with the project_files error" do
+        patch project_proposal_path(pending.id, format: :json), params: { project_proposal: { title: "Changed" }, files: [bad_file] }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["project_files"].join).to include("run.exe")
+        expect(pending.reload.title).to eq("Pending One")
+        expect(pending.project_files).not_to be_attached
+      end
     end
 
     it "answers a refused photo edit with the errors as JSON" do

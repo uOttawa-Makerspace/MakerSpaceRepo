@@ -474,11 +474,17 @@ class ProjectProposalsController < SessionsController
     photos_ok && files_ok
   end
 
+  # Returns false when the model refuses a file the pre-check let through; the caller rolls back.
   def attach_new_files
     files = uploaded_files
-    return if files.empty? || @project_proposal.project_files.attach(*files)
+    return true if files.empty? || @project_proposal.project_files.attach(*files)
 
-    raise ActiveRecord::RecordInvalid, @project_proposal
+    reasons = @project_proposal.errors[:project_files].dup
+    @project_proposal.attachment_changes.delete('project_files')
+    @project_proposal.errors.delete(:project_files)
+    @refused_files_alert = "The edit was not saved. #{truncated_error_messages(reasons)}"
+    @project_proposal.errors.add(:project_files, @refused_files_alert)
+    false
   end
 
   MAX_FLASH_FILENAMES = 5
@@ -566,11 +572,14 @@ class ProjectProposalsController < SessionsController
 
       replace_categories
       attach_new_photos
-      attach_new_files
+      raise ActiveRecord::Rollback unless attach_new_files
+
       true
     end
-    removals.each(&:purge) if saved
-    saved
+    return refuse_edit(attributes) unless saved
+
+    removals.each(&:purge)
+    true
   end
 
   # A refused edit shows the submitted values in the form, as a failed validation does; nothing is saved
