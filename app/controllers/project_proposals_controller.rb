@@ -156,7 +156,7 @@ class ProjectProposalsController < SessionsController
                      project_proposal_path(@project_proposal).to_s
                  }
         end
-        MsrMailer.send_new_project_proposals.deliver_now
+        MsrMailer.send_new_project_proposals.deliver_later
       else
         refuse_create(attributes)
         flash.now[:alert] = @refused_files_alert || 'An error occurred while creating the project proposal, try again later.'

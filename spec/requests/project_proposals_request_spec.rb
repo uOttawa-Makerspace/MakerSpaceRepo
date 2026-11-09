@@ -426,12 +426,25 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "sets user_id from the session and emails makerlab@uottawa.ca" do
       content_login!(owner)
       ActionMailer::Base.deliveries.clear
-      post project_proposals_path, params: proposal_params
+      perform_enqueued_jobs { post project_proposals_path, params: proposal_params }
       pp = ProjectProposal.find_by(title: "New Idea")
       expect(pp.user_id).to eq(owner.id)
-      mail = ActionMailer::Base.deliveries.last
-      expect(mail.to).to eq(["makerlab@uottawa.ca"])
-      expect(mail.subject).to eq("New Project Proposal")
+      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([["makerlab@uottawa.ca"]])
+      expect(ActionMailer::Base.deliveries.last.subject).to eq("New Project Proposal")
+    end
+
+    # The mail is queued after the proposal is stored, so a delivery failure neither fails the request nor undoes
+    # the proposal.
+    it "stores the proposal and redirects when the new-proposal mail cannot be delivered" do
+      content_login!(owner)
+      allow_any_instance_of(Mail::TestMailer).to receive(:deliver!).and_raise(Net::SMTPFatalError, "550 rejected")
+      expect { post project_proposals_path, params: proposal_params }.to change(ProjectProposal, :count).by(1)
+      pp = ProjectProposal.find_by!(title: "New Idea")
+      expect(response).to redirect_to(project_proposal_path(pp))
+
+      # the failure only surfaces when the queued job runs, and leaves the proposal as it was
+      expect { perform_enqueued_jobs }.to raise_error(Net::SMTPFatalError)
+      expect(ProjectProposal.find_by!(title: "New Idea")).to eq(pp)
     end
 
     it "ignores submitted approved/admin_id/user_id: a guest cannot self-approve" do
@@ -481,7 +494,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "re-renders new with 422 and an alert when invalid, sending no mail" do
       ActionMailer::Base.deliveries.clear
-      expect { post project_proposals_path, params: proposal_params(title: "", project_cost: -1) }
+      expect { perform_enqueued_jobs { post project_proposals_path, params: proposal_params(title: "", project_cost: -1) } }
         .not_to change(ProjectProposal, :count)
       expect(response).to have_http_status(:unprocessable_content)
       expect(flash[:alert]).to eq("An error occurred while creating the project proposal, try again later.")
@@ -533,7 +546,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "stores nothing when one file is refused, names it, and keeps the typed values in the form" do
       ActionMailer::Base.deliveries.clear
       files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("ok.txt", content: "tiny")]
-      expect { post project_proposals_path, params: { images: [content_png_upload], files: files }.merge(proposal_params(categories: %w[a])) }
+      expect { perform_enqueued_jobs { post project_proposals_path, params: { images: [content_png_upload], files: files }.merge(proposal_params(categories: %w[a])) } }
         .not_to change { [ProjectProposal.count, Category.count, ActiveStorage::Attachment.count] }
       expect(response).to have_http_status(:unprocessable_content)
       expect(flash[:alert]).to eq("The project proposal was not saved because the type or size of these files is not allowed: run.exe.")
@@ -612,7 +625,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     def expect_create_refused(params)
       ActionMailer::Base.deliveries.clear
-      expect { post project_proposals_path, params: params }
+      expect { perform_enqueued_jobs { post project_proposals_path, params: params } }
         .not_to change { [ProjectProposal.count, Category.count, ActiveStorage::Attachment.count] }
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('value="New Idea"')

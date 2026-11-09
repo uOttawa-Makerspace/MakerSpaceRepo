@@ -141,7 +141,7 @@ RSpec.describe ProjectProposalsController, type: :controller do
         project_proposal_params =
           FactoryBot.attributes_for(:project_proposal, :normal)
         expect {
-          post :create, params: { project_proposal: project_proposal_params }
+          perform_enqueued_jobs { post :create, params: { project_proposal: project_proposal_params } }
         }.to change(ProjectProposal, :count).by(1)
         expect(response).to redirect_to project_proposal_path(
                       ProjectProposal.last
