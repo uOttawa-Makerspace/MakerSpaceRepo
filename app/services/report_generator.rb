@@ -597,23 +597,20 @@ class ReportGenerator
 
         sheet.add_row # spacing
 
-        table_header(
-          sheet,
-          [
-            "Name",
-            "Username",
-            "Email",
-            "Gender",
-            "Identity",
-            "Faculty",
-            "Year of Study",
-            "Student ID",
-            "Joined on"
-          ]
-        )
+        columns = [
+          "Name",
+          "Username",
+          "Email",
+          "Gender",
+          "Identity",
+          "Faculty",
+          "Year of Study",
+          "Student ID",
+          "Joined on"
+        ]
+        table_header(sheet, columns)
 
-        # the student id stays text so its leading zeros are kept
-        types = [nil] * 7 + [:string, nil]
+        types = student_id_as_text(columns)
         users.each do |user|
           sheet.add_row [
                           user.name,
@@ -665,22 +662,19 @@ class ReportGenerator
           sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
           sheet.add_row # spacing
 
-          table_header(
-            sheet,
-            [
-              "Student ID",
-              "Name",
-              "Email Address",
-              "Certification Type",
-              "Certification Date",
-              "Instructor",
-              "Course",
-              "Facility"
-            ]
-          )
+          columns = [
+            "Student ID",
+            "Name",
+            "Email Address",
+            "Certification Type",
+            "Certification Date",
+            "Instructor",
+            "Course",
+            "Facility"
+          ]
+          table_header(sheet, columns)
 
-          # the student id stays text so its leading zeros are kept
-          types = [:string] + [nil] * 7
+          types = student_id_as_text(columns)
           space_certifications.each do |certification|
             sheet.add_row [
                             certification.user.student_id,
@@ -1415,6 +1409,12 @@ class ReportGenerator
 
   def self.push_hash(sheet, hash)
     hash.each { |key, value| sheet.add_row [key, value] }
+  end
+
+  # The cell types for a row under these headers: the Student ID column is
+  # text, so leading zeros are kept; the others are inferred from the values.
+  def self.student_id_as_text(columns)
+    columns.map { |column| :string if column == "Student ID" }
   end
 
   # The calendar months or weeks (unit :month or :week) that overlap the

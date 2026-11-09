@@ -538,6 +538,11 @@ RSpec.describe ReportGenerator do
       expect(described_class.sum_by_key([], :a)).to eq(0)
     end
 
+    it "student_id_as_text types only the Student ID column as text, wherever it is" do
+      expect(described_class.student_id_as_text(["Name", "Student ID", "Date"])).to eq([nil, :string, nil])
+      expect(described_class.student_id_as_text(%w[Name Date])).to eq([nil, nil])
+    end
+
     it "title writes a bold underlined row; table_header writes a bold row" do
       package = Axlsx::Package.new
       package.workbook.add_worksheet(name: "S") do |sheet|
