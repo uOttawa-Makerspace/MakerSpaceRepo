@@ -77,28 +77,12 @@ class SubSpaceBookingController < SessionsController
       return
     end
 
-    if UserBookingApproval.where(user: current_user).first.nil?
-      booking_approval =
-        UserBookingApproval.new(
-          user: current_user,
-          date: Time.now,
-          comments: params[:comments],
-          approved: false,
-          identity: params[:identity]
-        )
-
-      if booking_approval.save
-        BookingMailer.send_booking_approval_request_sent(
-          booking_approval.id,
-          emails
-        ).deliver_later
-
-        flash[:notice] = "Access request submitted successfully."
-      else
-        flash[:alert] = booking_approval.errors.full_messages.join(", ")
-      end
+    booking_approval = current_user.request_booking_access(comments: params[:comments], identity: params[:identity])
+    if booking_approval.persisted?
+      BookingMailer.send_booking_approval_request_sent(booking_approval.id, emails).deliver_later
+      flash[:notice] = "Access request submitted successfully."
     else
-      flash[:alert] = "You have already requested access."
+      flash[:alert] = booking_approval.errors.full_messages.join(", ")
     end
     redirect_to root_path
   end

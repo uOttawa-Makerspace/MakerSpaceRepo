@@ -294,6 +294,29 @@ class User < ApplicationRecord
 
   # The shape error (in the current locale) when `address` could not be an
   # email address, nil when it is acceptable. The provider-typo hint is not part of it.
+  # True while one of this user's booking access requests is waiting for an answer.
+  def booking_access_pending?
+    user_booking_approvals.exists?(approved: false)
+  end
+
+  # Records a new booking access request. Old requests stay as history, so only a pending
+  # request, or access the user holds now, refuses a new one; in that case the returned record is
+  # unsaved and carries the reason. The user row is locked so two submits at once cannot
+  # both save a pending request.
+  def request_booking_access(comments:, identity:)
+    with_lock do
+      request = user_booking_approvals.build(date: Time.current, comments: comments, approved: false, identity: identity)
+      if booking_approval?
+        request.errors.add(:base, "You already have booking access.")
+      elsif booking_access_pending?
+        request.errors.add(:base, "You have already requested access.")
+      else
+        request.save
+      end
+      request
+    end
+  end
+
   def self.email_shape_error(address)
     probe = new
     EmailValidator.new(attributes: [:email], typo_check: false).validate_each(probe, :email, address)
