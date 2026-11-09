@@ -29,12 +29,8 @@ class LockerRentalsController < SessionsController
     @held_rentals = LockerRental.with_held_payment.includes(*RENTAL_TABLE_ASSOCIATIONS).order(created_at: :desc)
 
     respond_to do |format|
-      format.json do
-        # The JSON carries the rental columns, and `preferred_locker` (an old text column) reads the association of
-        # the same name, so that is the one thing it loads.
-        render json: { pending: @pending_requests.preload(:preferred_locker),
-                       active: @active_rentals.preload(:preferred_locker) }
-      end
+      # The JSON carries the rental columns only, so it loads no associations.
+      format.json { render json: { pending: @pending_requests, active: @active_rentals } }
       format.all do
         # Only the tables read the locker, tenant and payments; the JSON above serializes columns only.
         @pending_requests, @active_rentals = [@pending_requests, @active_rentals].map { |rentals| rentals.includes(*RENTAL_TABLE_ASSOCIATIONS) }

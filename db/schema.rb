@@ -797,7 +797,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
     t.datetime "notified_of_cancellation_at"
     t.datetime "owned_until"
     t.datetime "paid_at"
-    t.string "preferred_locker"
     t.bigint "preferred_locker_id"
     t.bigint "rented_by_id"
     t.string "requested_as"
