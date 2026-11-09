@@ -85,11 +85,11 @@ From this release the calendars write the start of a repeat rule (`events.recurr
 
 The migration `StoreRepeatRulesInTorontoTime` (20261109120000) rewrites the stored rules to the Toronto form. It is held for an owner decision: do not run it on production without one. What it does:
 
-- It changes only the `DTSTART` line, and only when the Toronto form starts at the same instant and expands to the same occurrences; any other rule is left as it is and named in the migration output (`<table> <id> left as it is: <reason>`). `updated_at` is not touched, and Google needs no new push (it only receives the `RRULE` and `EXDATE` lines, which do not change).
+- It changes only the `DTSTART` line, and only when the Toronto wall time names the same instant (no reader takes the series start from this line, so the calendar feeds and Google see the same rule); a rule with two start lines, no `RRULE` line, a start that is not a date, or a start in the second 1:30 of the night the clocks go back is left as it is and named in the migration output (`<table> <id> left as it is: <reason>`). `updated_at` is not touched, and Google needs no new push (it only receives the `RRULE` and `EXDATE` lines, which do not change).
 - Every rewrite is recorded in `recurrence_rule_rewrites` (table, row id, old text, new text, migration version). The output ends with `<table>: <n> of <m> rules with a start rewritten`.
 - Rolling it back (`bin/rails db:migrate:down VERSION=20261109120000`) puts the recorded old text back, skips rows deleted since, and drops the record table. It refuses, changing nothing, while any rewritten rule has been edited since; the message gives the count. Those rules can be listed with `SELECT r.table_name, r.record_id FROM recurrence_rule_rewrites r JOIN events e ON r.table_name = 'events' AND e.id = r.record_id WHERE e.recurrence_rule IS DISTINCT FROM r.new_rule` (and the same with `staff_unavailabilities`).
 
-Rehearsed on a copy of a recent backup: 344 rules (18 events, 326 unavailabilities), all rewritten, none left as they were; every rewritten rule gave the same start and occurrences; down restored the rules exactly (checksums of the rule and of every other column equal to before); a second up gave the same text; a down after one rule was edited refused and changed nothing.
+Rehearsed on a copy of a recent backup: 344 rules (18 events, 326 unavailabilities), all rewritten, none left as they were; every rewritten rule gave the same start, feed text, Google lines and server occurrences; down restored the rules exactly (checksums of the rule and of every other column equal to before); a second up gave the same text; a down after one rule was edited refused and changed nothing.
 
 ### Failed and overdue job alerts
 
