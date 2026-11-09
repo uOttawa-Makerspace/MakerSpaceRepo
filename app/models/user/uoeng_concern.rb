@@ -5,6 +5,9 @@ module User::UoengConcern
   include ApplicationHelper
 
   UpstreamError = Class.new(StandardError)
+  # Raised by the shape check; its message is fixed text, unlike a parser error,
+  # whose message quotes part of the body.
+  UnexpectedShape = Class.new(JSON::ParserError)
 
   included do
     # Verify if user qualifies for a faculty membership. Returns the granted
@@ -101,7 +104,7 @@ module User::UoengConcern
       return uoeng_http_failure(response, elapsed, card_number, space) if response.status != 200
 
       parsed = JSON.parse(response.body)
-      raise JSON::ParserError, "unexpected answer shape" unless expected_uoeng_shape?(parsed)
+      raise UnexpectedShape, "unexpected answer shape" unless expected_uoeng_shape?(parsed)
 
       detect_student_id_mismatch(parsed, card_number, space)
       parsed
@@ -110,8 +113,8 @@ module User::UoengConcern
       TapBoxLog.log_api_timeout(user: self, elapsed_ms: elapsed, exception: e, card_number: card_number, space: space)
       uoeng_unknown(e)
     rescue JSON::ParserError => e
-      TapBoxLog.log_api_bad_json(user: self, exception: e, response_body: response&.body, card_number: card_number, space: space)
-      uoeng_unknown(e)
+      TapBoxLog.log_api_bad_json(user: self, exception: e, response: response, card_number: card_number, space: space)
+      uoeng_unknown(UpstreamError.new("uOEng answer: #{TapBoxLog.bad_json_reason(e)}"))
     rescue Excon::Error => e
       TapBoxLog.log_engineering_check_error(user: self, exception: e, card_number: card_number, space: space)
       uoeng_unknown(e)
@@ -137,7 +140,7 @@ module User::UoengConcern
         user: self,
         http_status: response.status,
         elapsed_ms: elapsed,
-        response_body: response.body,
+        response: response,
         card_number: card_number,
         space: space
       )

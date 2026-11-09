@@ -196,6 +196,81 @@ RSpec.describe User::UoengConcern, type: :model do
         end
       end
 
+      describe "the error log row" do
+        let(:full_answer) do
+          {
+            "emplid" => "300000001", "first_name" => "Ann", "last_name" => "Tester", "email_addr" => "ann@example.test",
+            "correspondence_lang" => "ENG", "legal_status" => "Canadian", "sex" => "F", "student_this_semester" => true,
+            "fulltime" => true, "faculty" => "GENIE", "program_level" => "Undergraduate", "program" => "Software",
+            "program_description" => "BASc", "program_options" => [], "academic_unit" => "Engineering",
+            "courses_enrolled" => ["GNG1103"]
+          }
+        end
+
+        def error_details
+          logs.find { |row| row.event_type == TapBoxLog::ERROR }.details
+        end
+
+        it "after an HTTP error holds the status and shape, never the personal fields" do
+          stub_api(status: 503, body: full_answer)
+          eng.validate_uoeng_membership
+
+          details = error_details
+          expect(details).to include("reason" => "uoeng_http_error", "http_status" => 503)
+          expect(details["response"]).to include("keys" => full_answer.keys, "values" => full_answer.slice("student_this_semester", "faculty", "courses_enrolled"))
+          expect(details["response"]["body_size"]).to eq(full_answer.to_json.bytesize)
+          expect(details.to_json).not_to match(/Canadian|Tester|ann@example|"F"|BASc/)
+        end
+
+        it "after an answer of the wrong shape holds the same summary" do
+          stub_api(body: full_answer.merge("faculty" => { "name" => "Ann Tester" }))
+          eng.validate_uoeng_membership
+
+          details = error_details
+          expect(details["reason"]).to eq("uoeng_bad_json")
+          expect(details["response"]["values"]["faculty"]).to eq("Hash")
+          expect(details.to_json).not_to match(/Canadian|Tester|ann@example|BASc/)
+        end
+
+        it "after a body that is not JSON holds only its size and content type" do
+          page = "<html>Ann Tester, F, Canadian</html>"
+          stub_request(:get, id_url).to_return(status: 502, body: page, headers: { "Content-Type" => "text/html" })
+          eng.validate_uoeng_membership
+
+          expect(error_details["response"]).to eq("body_size" => page.bytesize, "content_type" => "text/html")
+          expect(error_details.to_json).not_to match(/Tester|Canadian/)
+        end
+
+        it "after a malformed body holds no text of the body, in the row or in the reported error" do
+          stub_api(body: '{"first_name":"Jane","email_addr":"jane.doe@example.test" oops')
+          reported = []
+          allow(Rails.error).to receive(:report) { |error, **| reported << error }
+          eng.validate_uoeng_membership
+
+          details = error_details
+          expect(details).to include("reason" => "uoeng_bad_json", "exception_class" => "JSON::ParserError", "error" => "could not be read as JSON")
+          expect(details.to_json).not_to match(/Jane|jane\.doe|email_addr/)
+          expect(reported.map(&:message).join).not_to match(/Jane|jane\.doe|email_addr/)
+          expect(reported.size).to eq(1)
+        end
+
+        it "after an answer of the wrong shape names the reason without body text" do
+          stub_api(body: full_answer.merge("faculty" => 7))
+          eng.validate_uoeng_membership
+
+          expect(error_details).to include("exception_class" => "User::UoengConcern::UnexpectedShape", "error" => "unexpected answer shape")
+        end
+
+        it "is still shown by the staff console row" do
+          stub_api(status: 503, body: full_answer)
+          eng.validate_uoeng_membership
+          html = ApplicationController.render(partial: "staff/tap_box_console/log_row", locals: { log: logs.find { |r| r.event_type == TapBoxLog::ERROR } })
+
+          expect(html).to include("uoeng_http_error", "http_status=", "student_this_semester")
+          expect(html).not_to include("Canadian")
+        end
+      end
+
       it "does not create a membership for a user without one" do
         stub_request(:get, id_url).to_timeout
         expect(art.validate_uoeng_membership).to eq(:unknown)
