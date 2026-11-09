@@ -132,27 +132,13 @@ class RepositoriesController < SessionsController
   end
 
 
+  # The repository, its owners, categories and equipment are stored together or not at all; the
+  # reputation is awarded once that has committed.
   def create
-    @repository =
-      Repository.new(repository_params.except(:categories, :equipments))
-    @repository.user_id = @user.id
-    @repository.users << @user
-    update_password
+    @repository = Repository.new(user_id: @user.id, users: [@user, *extra_owners])
 
-    if @repository.save
+    if create_with_categories_and_equipments
       @user.increment!(:reputation, 25)
-
-      if params[:owner].present?
-        params[:owner].each do |owner|
-          if User.exists?(id: owner)
-            @repository.users << User.find_by(id: owner)
-          end
-        end
-        @repository.save
-      end
-      
-      @repository.replace_categories(repository_params[:categories])
-      create_equipments
       redirect_to repository_path(@user.username, @repository.slug).to_s
     else
       @project_proposals =
@@ -471,8 +457,8 @@ class RepositoriesController < SessionsController
     end
   end
 
-  # The edit is validated and saved first; categories and equipment are replaced only once it has saved, in the
-  # same transaction, so a refused edit leaves them as they were.
+  # The new or edited repository is validated and saved first; categories and equipment are replaced only once it
+  # has saved, in the same transaction, so a refused or failed save stores nothing and leaves them as they were.
   def save_with_categories_and_equipments
     Repository.transaction do
       attributes = repository_params.except(:categories, :equipments).merge(password_attributes)
@@ -481,6 +467,16 @@ class RepositoriesController < SessionsController
       @repository.equipments.destroy_all
       create_equipments
       true
+    end
+  end
+
+  # A new repository's address starts with its id, which exists only once it is stored, so it is saved a second
+  # time in the same transaction (an update sets the slug to "<id>.<title>").
+  def create_with_categories_and_equipments
+    Repository.transaction do
+      next false unless save_with_categories_and_equipments
+
+      @repository.save!
     end
   end
 
@@ -495,8 +491,8 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def update_password
-    attributes = password_attributes
-    @repository.update(attributes) if attributes.any?
+  # Other members named on the new repository form; unknown ids are skipped.
+  def extra_owners
+    User.where(id: Array(params[:owner])).where.not(id: @user.id)
   end
 end

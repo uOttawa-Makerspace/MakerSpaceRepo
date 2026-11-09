@@ -371,6 +371,19 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(Repository.find_by(title: "Spoof").user_id).to eq(stranger.id)
     end
 
+    it "adds the creator once when params[:owner] names the creator too" do
+      content_login!(stranger)
+      post repositories_path(owner.username), params: valid_params(title: "Solo").merge(owner: [stranger.id])
+      expect(Repository.find_by(title: "Solo").users.to_a).to eq([stranger])
+    end
+
+    it "awards no reputation for a refused create" do
+      content_login!(stranger)
+      post repositories_path(stranger.username), params: valid_params(title: "")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(stranger.reload.reputation).to eq(0)
+    end
+
     it "adds extra owners from params[:owner] when they exist (silently skips unknown ids)" do
       content_login!(stranger)
       post repositories_path(owner.username),
@@ -480,6 +493,52 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_login!(stranger)
       post repositories_path(stranger.username), params: valid_params(title: "Yt", youtube_link: "https://google.ca")
       expect(Repository.find_by(title: "Yt").youtube_link).to be_nil
+    end
+
+    # Owners, categories and equipment have no validations of their own, so these steps fail only by raising.
+    # The error is answered by the error page (422 for these errors) after the whole create has rolled back.
+    context "when a step after the save fails" do
+      before { content_login!(stranger) }
+
+      def fail_owner_join_for(user)
+        allow_any_instance_of(Repository.const_get(:HABTM_Users)).to receive(:create_or_update).and_wrap_original do |m, *args, **opts, &blk|
+          raise ActiveRecord::RecordNotSaved, "join refused" if m.receiver.user_id == user.id
+
+          m.call(*args, **opts, &blk)
+        end
+      end
+
+      def expect_nothing_stored(params)
+        counts = -> { [Repository.count, Photo.count, Category.count, Equipment.count, EquipmentOption.count] }
+        expect { post repositories_path(stranger.username), params: params }.not_to change(&counts)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(stranger.reload.reputation).to eq(0)
+      end
+
+      it "stores nothing and awards no reputation when an owner cannot be added" do
+        fail_owner_join_for(owner)
+        expect_nothing_stored(valid_params(title: "Partial").merge(owner: [owner.id]))
+      end
+
+      it "stores nothing and awards no reputation when a category cannot be stored" do
+        allow_any_instance_of(Category).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
+        expect_nothing_stored(valid_params(title: "Partial", categories: %w[A]))
+      end
+
+      it "stores nothing and awards no reputation when equipment cannot be stored" do
+        allow(Equipment).to receive(:create).and_raise(ActiveRecord::RecordNotSaved, "equipment refused")
+        expect_nothing_stored(valid_params(title: "Partial", categories: %w[A], equipments: %w[Laser]))
+      end
+
+      it "creates the repository once when the same form is sent again after a failure" do
+        allow(Equipment).to receive(:create).and_raise(ActiveRecord::RecordNotSaved, "equipment refused")
+        post repositories_path(stranger.username), params: valid_params(title: "Retry", equipments: %w[Laser])
+        allow(Equipment).to receive(:create).and_call_original
+        expect { post repositories_path(stranger.username), params: valid_params(title: "Retry", equipments: %w[Laser]) }
+          .to change(Repository, :count).by(1)
+        expect(Repository.find_by(title: "Retry").equipments.pluck(:name)).to eq(["Laser"])
+        expect(stranger.reload.reputation).to eq(25)
+      end
     end
 
     it "responds with a redirect for missing repository params (parameter_missing -> root with alert)" do
