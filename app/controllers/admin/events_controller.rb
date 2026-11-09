@@ -108,7 +108,7 @@ class Admin::EventsController < AdminAreaController
       duration = (@end_time - @start_time).to_i
       old_date_new_time_end = old_date_new_time_start + duration
 
-      rule_to_use = series_rule.moved_to_time_of(event_params[:recurrence_rule])
+      rule_to_use = series_rule.with_time_from(event_params[:recurrence_rule])
 
       if @event.update(
           title: title,
@@ -376,7 +376,7 @@ class Admin::EventsController < AdminAreaController
       @start_time,
       @event.start_time.utc
     )
-    updated_rule = series_rule.with_exdate(exclusion_start_time)
+    updated_rule = series_rule.appending_exdate(exclusion_start_time)
 
     # The replacement is checked before anything is saved: saving the series pushes to Google, which a
     # rollback cannot undo. A failure after this point (a database error) can still leave Google ahead.

@@ -9,7 +9,7 @@ require "ice_cube"
 # Requires the "RRULE:" line format the forms produce (rrule.js toString: an
 # optional "DTSTART:...\n" line, then "RRULE:FREQ=...;BYDAY=..;UNTIL=..;COUNT=..",
 # plus EXDATE lines added by the occurrence editors). A bare "FREQ=..." is
-# rejected because RecurrenceRule.parse (the calendar's series edits) cannot read it.
+# rejected because the calendar's series edits (RecurrenceRule) cannot read it.
 # BYHOUR/BYMINUTE/BYSECOND/BYSETPOS are rejected (they multiply daily occurrences).
 #
 #   validates :recurrence_rule, recurrence_rule: true

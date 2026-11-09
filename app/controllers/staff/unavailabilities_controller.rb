@@ -240,7 +240,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
     duration = (parse_time(staff_params[:utc_end_time]) - parse_time(staff_params[:utc_start_time])).to_i
     old_date_new_time_end = old_date_new_time_start + duration
 
-    rule_to_use = series_rule(@staff_unavailability).moved_to_time_of(staff_params[:recurrence_rule])
+    rule_to_use = series_rule(@staff_unavailability).with_time_from(staff_params[:recurrence_rule])
 
     if @staff_unavailability.update(
         title: staff_params[:title].presence || "Unavailable",
@@ -261,7 +261,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
       @staff_unavailability.start_time.utc
     )
 
-    updated_rule = series_rule(@staff_unavailability).with_exdate(exclusion_start_time)
+    updated_rule = series_rule(@staff_unavailability).appending_exdate(exclusion_start_time)
 
     unless @staff_unavailability.update(recurrence_rule: updated_rule)
       flash[:alert] = "Failed to update unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
