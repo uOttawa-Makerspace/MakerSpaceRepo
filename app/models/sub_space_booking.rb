@@ -306,7 +306,7 @@ class SubSpaceBooking < ApplicationRecord
     begin
       service.delete_event(calendar_id, sub_space_booking.google_booking_id)
     rescue Google::Apis::ClientError => e
-      # Google no longer has the event: nothing is left to delete.
+      # Expected outcome, not a failure: Google no longer has the event, so nothing is left to delete.
       return if [404, 410].include?(e.status_code)
 
       HandledError.report(e, source: "sub_space_booking.delete_booking", sub_space_booking_id: sub_space_booking.id)

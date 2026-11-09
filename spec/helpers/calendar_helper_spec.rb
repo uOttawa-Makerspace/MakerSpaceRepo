@@ -405,6 +405,15 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(safe_to_time(Date.new(2027, 1, 1)).utc?).to be(true)
     end
 
+    it "is nil for a string that is not a time, and parses one that is" do
+      expect(safe_to_time("garbage")).to be_nil
+      expect(safe_to_time("2027-01-01 05:00:00 UTC")).to eq(Time.utc(2027, 1, 1, 5))
+    end
+
+    it "is nil for a value that cannot be a time" do
+      expect(safe_to_time(Object.new)).to be_nil
+    end
+
     it "parses a value that has no to_time" do
       value = Object.new
       def value.to_s = "2027-01-01 05:00:00 UTC"
