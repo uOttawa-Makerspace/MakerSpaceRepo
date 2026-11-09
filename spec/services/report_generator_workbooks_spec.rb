@@ -553,6 +553,19 @@ RSpec.describe ReportGenerator do
         expect(tally[:spaces]["Alpha"][:genders]).to eq("Male" => { unique: 6, total: 7 })
         expect(tally[:spaces]["Alpha"][:faculties]["Arts"]).to eq(unique: 5, total: 5)
       end
+
+      it "adds up visitors who share a space, identity and faculty but not a gender" do
+        %w[Male Female].each do |gender|
+          user = create(:user, gender: gender)
+          user.update_columns(identity: "grad", faculty: "Arts")
+          create(:lab_session, space: alpha, user: user, sign_in_time: march_10)
+        end
+        tally = described_class.get_visitors(from, to)
+        arts = { "Arts" => { unique: 2, total: 2 } }
+        expect(tally[:spaces]["Alpha"][:identities]["Graduate"]).to eq(unique: 2, total: 2, faculties: arts)
+        expect(tally[:identities]["Graduate"]).to eq(unique: 2, total: 2, faculties: arts)
+        expect(tally[:spaces]["Alpha"][:genders].keys).to match_array(%w[Male Female])
+      end
     end
 
     describe ".get_new_projects" do
