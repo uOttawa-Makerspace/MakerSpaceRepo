@@ -142,7 +142,7 @@ class ProjectProposalsController < SessionsController
 
     respond_to do |format|
       if !signed_in? && !verify_turnstile
-        refuse_edit(attributes)
+        refuse_create(attributes)
         flash.now[:alert] = 'Captcha error, please try again'
         format.html { render :new, status: :unprocessable_content }
       elsif apply_edit(attributes)
@@ -158,6 +158,7 @@ class ProjectProposalsController < SessionsController
         end
         MsrMailer.send_new_project_proposals.deliver_now
       else
+        refuse_create(attributes)
         flash.now[:alert] = @refused_files_alert || 'An error occurred while creating the project proposal, try again later.'
         format.html { render :new, status: :unprocessable_content }
         format.json do
@@ -264,6 +265,7 @@ class ProjectProposalsController < SessionsController
                  }
         end
       else
+        refuse_edit(attributes)
         flash.now[:alert] = @refused_files_alert || 'An error occurred while updating the project proposal, try again later.'
         format.html { render :edit, status: :unprocessable_content }
         format.json do
@@ -451,7 +453,7 @@ class ProjectProposalsController < SessionsController
     return true if refused.empty?
 
     @refused_files_alert =
-      "#{not_saved_sentence} because the type or size of these files is not allowed: #{truncated_filenames(refused.map(&:original_filename))}."
+      "The project proposal was not saved because the type or size of these files is not allowed: #{truncated_filenames(refused.map(&:original_filename))}."
     @project_proposal.errors.add(:project_files, @refused_files_alert)
     false
   end
@@ -470,21 +472,13 @@ class ProjectProposalsController < SessionsController
 
     reasons = @project_proposal.errors[:project_files].dup
     @project_proposal.errors.delete(:project_files)
-    @refused_files_alert = "#{not_saved_sentence}. #{truncated_error_messages(reasons)}"
+    @refused_files_alert = "The project proposal was not saved. #{truncated_error_messages(reasons)}"
     @project_proposal.errors.add(:project_files, @refused_files_alert)
     false
   end
 
   MAX_FLASH_FILENAMES = 5
   MAX_FLASH_FILENAME_LENGTH = 40
-
-  def creating?
-    action_name == 'create'
-  end
-
-  def not_saved_sentence
-    creating? ? 'The project proposal was not created' : 'The edit was not saved'
-  end
 
   # The flash lives in the 4 KB cookie session, so names are shortened and capped.
   def truncated_filenames(names)
@@ -555,7 +549,7 @@ class ProjectProposalsController < SessionsController
   # the user asked to remove purged. A purge deletes the stored file and cannot be rolled back, so
   # it runs last (synchronously, so the page shows the result).
   def apply_edit(attributes)
-    return refuse_edit(attributes) unless new_uploads_acceptable?
+    return false unless new_uploads_acceptable?
 
     removals = marked_attachments
     saved = ProjectProposal.transaction do
@@ -567,29 +561,28 @@ class ProjectProposalsController < SessionsController
 
       true
     end
-    return refuse_edit(attributes) unless saved
+    return false unless saved
 
     removals.each(&:purge)
     true
   end
 
-  # A refused create or edit shows the submitted values in the form, as a failed validation does; nothing is
-  # saved or removed. A rolled-back transaction leaves the unsaved changes in memory (the new title, attachments
-  # that were never stored), so the form starts again from the stored record before the values are assigned.
+  # A refused edit shows the submitted values in the form, as a failed validation does; nothing is saved
+  # or removed. A rolled-back transaction leaves the unsaved changes in memory (the new title, attachments
+  # that were never stored), so the record is read from the database again before the values are assigned.
   # New uploads were not stored, so they are not shown again.
   def refuse_edit(attributes)
-    restart_from_stored_proposal
+    @project_proposal.reload
     @project_proposal.assign_attributes(attributes.except(:photos, :project_files))
-    false
   end
 
-  # A stored proposal is read from the database again; a new one starts blank and keeps the reasons it was refused.
-  # (After a rolled-back create the record can still look persisted, so the action decides.)
-  def restart_from_stored_proposal
-    return @project_proposal.reload unless creating?
-
+  # A refused create shows the submitted values in a new, blank form that keeps the reasons it was refused. The
+  # refused record is not reused: after a rolled-back transaction it can still look stored and hold attachments
+  # that were never stored. New uploads are not shown again.
+  def refuse_create(attributes)
     refused = @project_proposal
-    @project_proposal = ProjectProposal.new(user_id: refused.user_id)
+    @project_proposal = ProjectProposal.new(attributes.except(:photos, :project_files))
+    @project_proposal.user_id = refused.user_id
     @project_proposal.errors.merge!(refused.errors)
   end
 

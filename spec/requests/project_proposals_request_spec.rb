@@ -536,7 +536,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect { post project_proposals_path, params: { images: [content_png_upload], files: files }.merge(proposal_params(categories: %w[a])) }
         .not_to change { [ProjectProposal.count, Category.count, ActiveStorage::Attachment.count] }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("The project proposal was not created because the type or size of these files is not allowed: run.exe.")
+      expect(flash[:alert]).to eq("The project proposal was not saved because the type or size of these files is not allowed: run.exe.")
       expect(response.body).to include('value="New Idea"')
       expect(ActionMailer::Base.deliveries).to be_empty
     end
@@ -555,7 +555,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect { post project_proposals_path, params: { files: files }.merge(proposal_params(categories: %w[a])) }
         .not_to change { [ProjectProposal.count, Category.count, ActiveStorage::Attachment.count] }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to start_with("The project proposal was not created. ")
+      expect(flash[:alert]).to start_with("The project proposal was not saved. ")
       expect(flash[:alert]).to include("run.exe has a file type that is not allowed")
       expect(response.body).to include('value="New Idea"')
     end
@@ -636,6 +636,17 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect_create_refused(proposal_params(photos: ["not-a-signed-id"]))
     end
 
+    it "stores nothing when a photo is named by the signed id of an unreadable image" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("junk"), filename: "x.png", content_type: "image/png")
+      expect_create_refused(proposal_params(photos: [blob.signed_id]))
+    end
+
+    it "stores nothing when a photo is named by the signed id of a file missing from storage" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: Rails.root.join("spec/support/assets/avatar.png").open, filename: "a.png")
+      blob.service.delete(blob.key)
+      expect_create_refused(proposal_params(photos: [blob.signed_id]))
+    end
+
     it "stores a new proposal's slug as '<id>.<title>'" do
       post project_proposals_path, params: proposal_params(title: "Zed Title")
       created = ProjectProposal.find_by(title: "Zed Title")
@@ -657,9 +668,10 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect_create_refused(proposal_params(username: "", photos: ["", content_png_upload]))
     end
 
-    it "keeps the typed values without the photos when the captcha fails" do
-      allow_any_instance_of(ProjectProposalsController).to receive(:verify_turnstile).and_return(false)
-      expect_create_refused(proposal_params(photos: ["", content_png_upload]))
+    it "keeps the typed values without the photos when a guest fails the captcha" do
+      allow(TurnstileHelper).to receive(:verification_enabled?).and_return(true)
+      stub_request(:post, TurnstileHelper::TURNSTILE_SITEVERIFY_ENDPOINT).to_return(status: 200, body: { success: false }.to_json)
+      expect_create_refused(proposal_params(photos: ["", content_png_upload], categories: %w[a]))
       expect(response.body).to include("Captcha error, please try again")
     end
 
@@ -963,9 +975,9 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "shows the refused files message only on the page that refuses the edit" do
       patch project_proposal_path(pending.id),
             params: { project_proposal: { title: "Changed" }, files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
-      expect(response.body).to include("The edit was not saved because the type or size")
+      expect(response.body).to include("The project proposal was not saved because the type or size")
       get edit_project_proposal_path(pending)
-      expect(response.body).not_to include("The edit was not saved")
+      expect(response.body).not_to include("The project proposal was not saved")
     end
 
     it "shows the typed title on the form when a new photo is unreadable, without saving it" do
@@ -1030,7 +1042,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
         expect(response.body).to include("Typed Title")
         expect(response.body).to include("run.exe")
         expect(response.body).to include('name="project_proposal[title]"')
-        expect(flash[:alert]).to include("The edit was not saved")
+        expect(flash[:alert]).to include("The project proposal was not saved")
         expect(pending.reload.title).to eq("Pending One")
         expect(file_names).to eq(["drop.txt"])
         expect(pending.categories.pluck(:name)).to eq(["Old"])
