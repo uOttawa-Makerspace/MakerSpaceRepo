@@ -88,11 +88,17 @@ RSpec.describe "Booking access requests", type: :request do
       put approve_access_sub_space_booking_index_path, params: { user_id: user.id }
     end
 
+    def approval_mail_recipients
+      ActionMailer::Base.deliveries.clear
+      perform_enqueued_jobs { approve_user }
+      ActionMailer::Base.deliveries.flat_map(&:to)
+    end
+
     it "approves the pending request and leaves an older approved row unchanged" do
       old = make_row(approved: true, created_at: 1.year.ago, staff: admin)
       old_attrs = old.reload.attributes
       pending = make_row(approved: false, comments: "new")
-      approve_user
+      expect(approval_mail_recipients).to eq([user.email])
       expect(pending.reload.approved).to be(true)
       expect(pending.staff_id).to eq(admin.id)
       expect(old.reload.attributes).to eq(old_attrs)
@@ -109,7 +115,7 @@ RSpec.describe "Booking access requests", type: :request do
     end
 
     it "creates a new approved row when the user has no pending request" do
-      approve_user
+      expect(approval_mail_recipients).to eq([user.email])
       row = UserBookingApproval.find_by!(user: user)
       expect(row.approved).to be(true)
       expect(row.identity).to eq("Other")
@@ -119,7 +125,7 @@ RSpec.describe "Booking access requests", type: :request do
     it "tells the admin when the user already has access and changes nothing" do
       user.update!(booking_approval: true)
       make_row(approved: true)
-      approve_user
+      expect(approval_mail_recipients).to be_empty
       expect(flash[:notice]).to eq("#{user.name} already has booking access.")
       expect(UserBookingApproval.where(user: user).count).to eq(1)
     end
