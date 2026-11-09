@@ -507,6 +507,9 @@ describe("calendar options", () => {
   });
 
   it("decorates a mounted event", async () => {
+    // The staff colour gradient as the server builds it.
+    const GRADIENT =
+      "linear-gradient(to right, #ff0000 0.0%, #ff0000 50.0%, #0000ff 50.0%, #0000ff 100.0%);";
     stubFetch({});
     const cal = await boot();
     const el = document.createElement("div");
@@ -516,14 +519,14 @@ describe("calendar options", () => {
         title: "Shift",
         extendedProps: {
           description: "Front desk",
-          background: "linear-gradient(red, blue)",
+          background: GRADIENT,
           isAdminCreated: true,
         },
       },
     });
     expect(el.classList.contains("fade-in")).toBe(true);
     expect(el.classList.contains("admin-created-unavailability")).toBe(true);
-    expect(el.getAttribute("style")).toContain("linear-gradient");
+    expect(el.getAttribute("style")).toBe(`background: ${GRADIENT}`);
     expect(tooltips.at(-1).options.title).toBe("Shift<br><i>Front desk</i>");
   });
 
