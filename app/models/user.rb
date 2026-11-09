@@ -294,7 +294,12 @@ class User < ApplicationRecord
 
   # True while one of this user's booking access requests is waiting for an answer.
   def booking_access_pending?
-    user_booking_approvals.exists?(approved: false)
+    pending_booking_request.present?
+  end
+
+  # The newest request still waiting for an answer, if any.
+  def pending_booking_request
+    user_booking_approvals.find_by(approved: false)
   end
 
   # Records a new booking access request. Old requests stay as history, so only a pending

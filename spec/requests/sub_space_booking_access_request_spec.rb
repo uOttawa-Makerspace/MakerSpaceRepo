@@ -76,4 +76,52 @@ RSpec.describe "Booking access requests", type: :request do
     expect(response.body).to include("Request Booking Access")
     expect(response.body).not_to include("Access Pending")
   end
+
+  describe "approving by user id" do
+    let(:admin) { create(:user, :admin) }
+
+    before do
+      log_in!(admin)
+    end
+
+    def approve_user
+      put approve_access_sub_space_booking_index_path, params: { user_id: user.id }
+    end
+
+    it "approves the pending request and leaves an older approved row unchanged" do
+      old = make_row(approved: true, created_at: 1.year.ago, staff: admin)
+      old_attrs = old.reload.attributes
+      pending = make_row(approved: false, comments: "new")
+      approve_user
+      expect(pending.reload.approved).to be(true)
+      expect(pending.staff_id).to eq(admin.id)
+      expect(old.reload.attributes).to eq(old_attrs)
+      expect(user.reload.booking_approval).to be(true)
+      expect(UserBookingApproval.where(user: user).count).to eq(2)
+    end
+
+    it "approves the newest pending request when an approved row is newer than it" do
+      pending = make_row(approved: false, created_at: 2.days.ago)
+      newer = make_row(approved: true, created_at: 1.day.ago)
+      approve_user
+      expect(pending.reload.approved).to be(true)
+      expect(newer.reload.staff_id).to be_nil
+    end
+
+    it "creates a new approved row when the user has no pending request" do
+      approve_user
+      row = UserBookingApproval.find_by!(user: user)
+      expect(row.approved).to be(true)
+      expect(row.identity).to eq("Other")
+      expect(user.reload.booking_approval).to be(true)
+    end
+
+    it "tells the admin when the user already has access and changes nothing" do
+      user.update!(booking_approval: true)
+      make_row(approved: true)
+      approve_user
+      expect(flash[:notice]).to eq("#{user.name} already has booking access.")
+      expect(UserBookingApproval.where(user: user).count).to eq(1)
+    end
+  end
 end

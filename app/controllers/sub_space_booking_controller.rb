@@ -90,8 +90,8 @@ class SubSpaceBookingController < SessionsController
   def approve_access
     if params[:id].nil?
       user = User.find(params[:user_id])
-      uba = UserBookingApproval.find_or_initialize_by(user: user)
-      if uba.approved? && user.booking_approval?
+      uba = user.pending_booking_request || UserBookingApproval.new(user: user)
+      if already_has_booking_access?(uba)
         redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                     notice: "#{user.name} already has booking access."
         return
@@ -102,7 +102,7 @@ class SubSpaceBookingController < SessionsController
                   notice: "Access granted successfully."
     else
       uba = UserBookingApproval.find(params[:id])
-      if uba.approved? && uba.user.booking_approval?
+      if already_has_booking_access?(uba)
         redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                     notice: "#{uba.user.name} already has booking access."
         return
@@ -712,6 +712,15 @@ class SubSpaceBookingController < SessionsController
         redirect_to sub_space_booking_edit_path, alert: message
       end
     end
+  end
+
+  # True when the request's user holds access now and it is already on record as granted: either this
+  # request is approved, or the user has no waiting request and an earlier one was approved.
+  def already_has_booking_access?(uba)
+    user = uba.user
+    return false unless user.booking_approval?
+
+    uba.approved? || (uba.new_record? && user.user_booking_approvals.exists?(approved: true))
   end
 
   def grant_booking_access!(uba)
