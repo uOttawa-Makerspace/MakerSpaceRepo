@@ -292,8 +292,6 @@ class User < ApplicationRecord
 
   default_scope { where(deleted: false) }
 
-  # The shape error (in the current locale) when `address` could not be an
-  # email address, nil when it is acceptable. The provider-typo hint is not part of it.
   # True while one of this user's booking access requests is waiting for an answer.
   def booking_access_pending?
     user_booking_approvals.exists?(approved: false)
@@ -317,6 +315,8 @@ class User < ApplicationRecord
     end
   end
 
+  # The shape error (in the current locale) when `address` could not be an
+  # email address, nil when it is acceptable. The provider-typo hint is not part of it.
   def self.email_shape_error(address)
     probe = new
     EmailValidator.new(attributes: [:email], typo_check: false).validate_each(probe, :email, address)
