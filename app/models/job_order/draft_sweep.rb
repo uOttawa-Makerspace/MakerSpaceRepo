@@ -175,8 +175,8 @@ class JobOrder
     rescue StandardError => e
       begin
         Rails.error.report(e, handled: true, context: { where: RUN_WHERE, step: step })
-      rescue StandardError
-        nil # the flush has nowhere left to tell it
+      rescue StandardError => e
+        Rails.logger.error("[JobOrder::DraftSweep] could not report #{step}: #{e.class}") # the flush has nowhere else to tell it
       end
       nil
     end

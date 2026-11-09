@@ -35,8 +35,9 @@ class TapBoxLog < ApplicationRecord
       mac_address: mac_address,
       details: details
     )
-  rescue => e
-    Rails.logger.error("[TapBoxLog] Failed to write log: #{e.message}")
+  rescue StandardError => e
+    # A log row that cannot be written must not break the tap or the job that wrote it.
+    HandledError.report(e, source: "tap_box_log.log!", event_type: event_type)
   end
 
   # RFID loggers

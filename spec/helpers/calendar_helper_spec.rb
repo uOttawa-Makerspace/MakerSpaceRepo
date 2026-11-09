@@ -362,10 +362,15 @@ RSpec.describe CalendarHelper, type: :helper do
   describe "#safe_to_time" do
     it "is nil for nil and for text that is not a time" do
       expect(safe_to_time(nil)).to be_nil
-      expect(safe_to_time(Object.new.tap { |o| def o.to_time = raise("bad") })).to be_nil
+      expect(safe_to_time(Object.new.tap { |o| def o.to_time = raise(ArgumentError, "bad") })).to be_nil
       unreadable = Object.new
       def unreadable.to_s = "never"
       expect(safe_to_time(unreadable)).to be_nil
+    end
+
+    it "does not hide an error that is not about the value being a time" do
+      broken = Object.new.tap { |o| def o.to_time = raise("bug") }
+      expect { safe_to_time(broken) }.to raise_error("bug")
     end
 
     it "returns UTC for a time, a non-UTC time and a date" do
@@ -374,6 +379,15 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(safe_to_time(zoned)).to eq(Time.utc(2027, 1, 1, 10))
       expect(safe_to_time(zoned)).to be_utc
       expect(safe_to_time(Date.new(2027, 1, 1)).utc?).to be(true)
+    end
+
+    it "is nil for a string that is not a time, and parses one that is" do
+      expect(safe_to_time("garbage")).to be_nil
+      expect(safe_to_time("2027-01-01 05:00:00 UTC")).to eq(Time.utc(2027, 1, 1, 5))
+    end
+
+    it "is nil for a value that cannot be a time" do
+      expect(safe_to_time(Object.new)).to be_nil
     end
 
     it "parses a value that has no to_time" do

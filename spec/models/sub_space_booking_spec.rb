@@ -480,6 +480,43 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       end
     end
 
+    describe "when Google fails" do
+      let(:booking) { create(:sub_space_booking) }
+
+      def reported(klass, source)
+        expect(Rails.error).to receive(:report)
+          .with(instance_of(klass), hash_including(handled: true, context: hash_including(source: source, sub_space_booking_id: booking.id)))
+      end
+
+      it "reports a failed create and leaves the booking without a Google id" do
+        allow(service).to receive(:insert_event).and_raise(Faraday::ConnectionFailed, "down")
+        reported(Faraday::ConnectionFailed, "sub_space_booking.upsert_booking")
+        described_class.upsert_booking(booking)
+        expect(booking.reload.google_booking_id).to be_nil
+      end
+
+      it "reports a failed update" do
+        booking.update!(google_booking_id: "g1")
+        allow(service).to receive(:update_event).and_raise(Google::Apis::ClientError.new("bad"))
+        reported(Google::Apis::ClientError, "sub_space_booking.upsert_booking")
+        described_class.upsert_booking(booking)
+      end
+
+      it "reports a failed delete" do
+        booking.update!(google_booking_id: "g1")
+        allow(service).to receive(:delete_event).and_raise(Google::Apis::ClientError.new("forbidden", status_code: 403))
+        reported(Google::Apis::ClientError, "sub_space_booking.delete_booking")
+        described_class.delete_booking(booking)
+      end
+
+      it "does not report a delete of an event Google no longer has" do
+        booking.update!(google_booking_id: "g1")
+        allow(service).to receive(:delete_event).and_raise(Google::Apis::ClientError.new("gone", status_code: 404))
+        expect(Rails.error).not_to receive(:report)
+        described_class.delete_booking(booking)
+      end
+    end
+
     it "is the calendar the event publisher falls back to for spaces it does not list" do
       expect(GoogleCalendar::EventPublisher.calendar_id_for(create(:space, name: "Elsewhere")))
         .to eq(shared_calendar)

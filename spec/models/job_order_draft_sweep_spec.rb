@@ -684,6 +684,16 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       expect(report.unresolved.first).to eq("aborted: ActiveRecord::ConnectionFailed: connection gone")
     end
 
+    it "logs a report the tracker cannot take and still finishes the run" do
+      order = order_with_draft!
+      allow(JobOrder).to receive(:reconcile_orphan_draft!).and_raise(ArgumentError, "boom")
+      allow(Rails.error).to receive(:report).and_raise("tracker down")
+      allow(Rails.logger).to receive(:error)
+
+      expect { sweep(draft_node("gid://shopify/DraftOrder/1", order)) }.not_to raise_error
+      expect(Rails.logger).to have_received(:error).with(/could not report .*: RuntimeError/).at_least(:once)
+    end
+
     describe "run-level lines" do
       let(:order) { order_with_draft! }
 

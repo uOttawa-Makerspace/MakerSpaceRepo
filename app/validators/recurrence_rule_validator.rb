@@ -49,7 +49,9 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
 
       begin
         rule = IceCube::Rule.from_ical(body)
-      rescue StandardError
+      rescue ArgumentError, NoMethodError
+        # ice_cube raises ArgumentError for a malformed rule, and NoMethodError for some out-of-range parts
+        # (BYYEARDAY=400, BYMONTHDAY=0). Anything else is a bug and is not hidden.
         return UNPARSEABLE
       end
       return MESSAGE unless ALLOWED_CLASSES.include?(rule.class)

@@ -27,10 +27,10 @@ RSpec.describe TapBoxLog, type: :model do
     end
 
     # log! swallows every failure (returns the logger result, never raises), so an invalid event type silently drops the log row
-    it "swallows validation errors and writes nothing" do
-      allow(Rails.logger).to receive(:error)
+    it "reports validation errors and writes nothing" do
+      expect(Rails.error).to receive(:report)
+        .with(instance_of(ActiveRecord::RecordInvalid), hash_including(handled: true, context: hash_including(source: "tap_box_log.log!", event_type: "bogus")))
       expect { TapBoxLog.log!(event_type: "bogus", message: "x") }.not_to change(TapBoxLog, :count)
-      expect(Rails.logger).to have_received(:error).with(/Failed to write log/)
     end
   end
 

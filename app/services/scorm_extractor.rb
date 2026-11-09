@@ -113,7 +113,7 @@ class ScormExtractor
     @uploaded.each do |blob|
       blob.purge
     rescue StandardError => e
-      Rails.logger.error "Could not remove SCORM upload #{blob.key}: #{e.message}"
+      HandledError.report(e, severity: :warning, source: "scorm_extractor.discard_uploaded", blob_id: blob.id)
     end
   end
 
@@ -202,7 +202,7 @@ class ScormExtractor
     old_blobs.each do |blob|
       blob.purge
     rescue StandardError => e
-      Rails.logger.error "Could not remove previous SCORM file #{blob.key}: #{e.message}"
+      HandledError.report(e, severity: :warning, source: "scorm_extractor.purge_previous", blob_id: blob.id)
     end
   end
 end

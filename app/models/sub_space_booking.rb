@@ -282,7 +282,7 @@ class SubSpaceBooking < ApplicationRecord
       begin # Update an existing booking
         service.update_event(calendar_id, sub_space_booking.google_booking_id, gcal_event)
       rescue Google::Apis::ClientError => e
-        Rails.logger.error "Failed to update Google sub space booking #{sub_space_booking.id}: #{e.message}"
+        HandledError.report(e, source: "sub_space_booking.upsert_booking", step: "update", sub_space_booking_id: sub_space_booking.id)
       end
     else
       begin #Create a new booking
@@ -290,7 +290,7 @@ class SubSpaceBooking < ApplicationRecord
         response = service.insert_event(calendar_id, gcal_event)
         sub_space_booking.update(google_booking_id: response.id)
       rescue StandardError => e
-        Rails.logger.error "Failed to create booking #{sub_space_booking.id}: #{e.message}"
+        HandledError.report(e, source: "sub_space_booking.upsert_booking", step: "create", sub_space_booking_id: sub_space_booking.id)
       end
     end
   end
@@ -304,9 +304,12 @@ class SubSpaceBooking < ApplicationRecord
     calendar_id = GoogleCalendar::EventPublisher::SHARED_CALENDAR
 
     begin
-      response = service.delete_event(calendar_id, sub_space_booking.google_booking_id)
+      service.delete_event(calendar_id, sub_space_booking.google_booking_id)
     rescue Google::Apis::ClientError => e
-      Rails.logger.error "Failed to delete Google event #{sub_space_booking.id}: #{e.message}"
+      # Expected outcome, not a failure: Google no longer has the event, so nothing is left to delete.
+      return if [404, 410].include?(e.status_code)
+
+      HandledError.report(e, source: "sub_space_booking.delete_booking", sub_space_booking_id: sub_space_booking.id)
     end
   end
 
