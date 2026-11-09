@@ -695,6 +695,20 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(pending.categories.pluck(:name)).to eq(["Old"])
     end
 
+    it "shows the typed title on the form when a new photo is unreadable, without saving it" do
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Typed Title" }, images: [unreadable_image] }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Typed Title")
+      expect(pending.reload.title).to eq("Pending One")
+    end
+
+    it "shows the typed values on the form when validation refuses the edit" do
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "", description: "Typed Description" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Typed Description")
+      expect(pending.reload.description).not_to eq("Typed Description")
+    end
+
     it "answers a refused photo edit with the errors as JSON" do
       attach_png(pending, "drop.png")
       patch project_proposal_path(pending.id, format: :json),

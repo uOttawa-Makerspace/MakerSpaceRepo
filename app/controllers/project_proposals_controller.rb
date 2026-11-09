@@ -535,7 +535,7 @@ class ProjectProposalsController < SessionsController
   # the user asked to remove purged. A purge deletes the stored file and cannot be rolled back, so
   # it runs last (synchronously, so the page shows the result).
   def apply_edit(attributes)
-    return false unless new_photos_readable?
+    return refuse_unreadable_photos(attributes) unless new_photos_readable?
 
     removals = marked_attachments
     saved = ProjectProposal.transaction do
@@ -548,6 +548,12 @@ class ProjectProposalsController < SessionsController
     end
     removals.each(&:purge) if saved
     saved
+  end
+
+  # A refused edit shows the submitted values in the form, as a failed validation does; nothing is saved.
+  def refuse_unreadable_photos(attributes)
+    @project_proposal.assign_attributes(attributes)
+    false
   end
 
   def replace_categories
