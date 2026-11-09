@@ -683,8 +683,11 @@ class ReportGenerator
             ]
           )
 
+          # the student id stays text so its leading zeros are kept
+          types = [:string] + [nil] * 7
           space_certifications.each do |certification|
             sheet.add_row [
+                            certification.user.student_id,
                             certification.user.name,
                             certification.user.email,
                             certification.training_session.training.name_en,
@@ -694,7 +697,8 @@ class ReportGenerator
                             certification.training_session.user.name,
                             certification.training_session.course,
                             certification.training_session.space&.name
-                          ]
+                          ],
+                          types: types
           end
 
           sheet.add_row #spacing

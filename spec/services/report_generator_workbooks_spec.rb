@@ -315,7 +315,7 @@ RSpec.describe ReportGenerator do
     let(:laser) { create(:training, name_en: "Laser", name: "Laser") }
 
     let(:teacher) { create(:user, :staff, name: "Ina Instructor") }
-    let(:lena) { create(:user, name: "Lena Learner", email: "lena@example.test") }
+    let(:lena) { create(:user, :student, name: "Lena Learner", email: "lena@example.test", student_id: "012345678") }
 
     def attend(user, session, at)
       create(:certification, user: user, training_session: session, training: session.training, created_at: at)
@@ -332,10 +332,10 @@ RSpec.describe ReportGenerator do
           "Facility"]]
       )
       stamp = session.created_at.strftime("%Y-%m-%d %H:%M")
-      # the rows lack a Student ID value, so every column sits one to the left of its header
+      # every value sits under its own header; a student id keeps its leading zero
       expect(rows[5..6]).to contain_exactly(
-        ["Lena Learner", "lena@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"],
-        ["Max Mate", "max@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"]
+        ["012345678", "Lena Learner", "lena@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"],
+        [nil, "Max Mate", "max@example.test", "Laser", stamp, "Ina Instructor", "MCG1", "Alpha"]
       )
       expect(rows[8..9]).to eq([%w[Month March], ["Month average of attendees per sessions", 2]])
       expect(rows[11]).to eq(
@@ -383,7 +383,7 @@ RSpec.describe ReportGenerator do
       rows = grid(described_class.generate_training_attendees_report(from, to))
       expect(rows.keys).to eq(["Report - "])
       expect(rows["Report - "].first).to eq(["Training Attendees - "])
-      expect(rows["Report - "][5]).to eq(["Lena Learner", "lena@example.test", "Laser",
+      expect(rows["Report - "][5]).to eq(["012345678", "Lena Learner", "lena@example.test", "Laser",
                                           session.created_at.strftime("%Y-%m-%d %H:%M"), session.user.name])
     end
   end
