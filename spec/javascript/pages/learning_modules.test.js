@@ -28,12 +28,23 @@ vi.mock("../../../app/javascript/src/csrf", () => ({
 
 const $ = (id) => document.getElementById(id);
 
+// Each load imports the page script afresh, so the document listeners the
+// previous import added are removed first; otherwise every earlier example's
+// turbo:load handler would run again and the result would depend on the order.
+const documentListeners = [];
+
 async function load(html) {
+  for (const [type, handler] of documentListeners.splice(0)) {
+    document.removeEventListener(type, handler);
+  }
   document.body.innerHTML = html;
   sortables.length = 0;
   selects.length = 0;
   vi.resetModules();
+  const listen = vi.spyOn(document, "addEventListener");
   await import("../../../app/javascript/entrypoints/learning_modules.js");
+  documentListeners.push(...listen.mock.calls.map(([type, fn]) => [type, fn]));
+  listen.mockRestore();
 }
 
 beforeEach(() => {
