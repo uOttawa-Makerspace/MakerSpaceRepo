@@ -129,9 +129,11 @@ RSpec.describe "Staff training sessions", type: :request do
       it "redirects back with an alert (html) / created:false (json) when invalid" do
         expect { post staff_training_sessions_path, params: create_params(level: "") }.not_to change(TrainingSession, :count)
         expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to eq("Something went wrong. Please try again.")
+        expect(flash[:alert]).to eq("The training session was not created. Level A level is required")
         post staff_training_sessions_path(format: :json), params: create_params(level: "")
-        expect(JSON.parse(response.body)).to eq("created" => false)
+        expect(JSON.parse(response.body)).to match(
+          "created" => false, "error" => "The training session was not created. Level A level is required", "reference" => be_a(String)
+        )
       end
 
       # a non-admin who sends user_id (the React app always does) creates the session as themselves
@@ -243,6 +245,19 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(flash[:notice]).to eq("Training session updated succesfully")
         expect(record.reload.level).to eq("Advanced")
         expect(record.users).to eq([student])
+      end
+
+      it "gives the validation reason when the update is refused" do
+        patch staff_training_session_path(record), params: { changed_params: { training_id: 0 } }
+        expect(flash[:alert]).to eq("The training session was not updated. Training A training subject is required")
+        expect(record.reload.training_id).to eq(training.id)
+      end
+
+      it "answers 404 for a session that no longer exists" do
+        id = record.id
+        record.destroy
+        patch staff_training_session_path(id), params: { changed_params: { level: "Advanced" } }
+        expect(response).to have_http_status(:not_found)
       end
 
       it "drops users by username and destroys their certification of this session" do
@@ -378,6 +393,14 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(flash[:notice]).to eq("Deleted Successfully")
       end
 
+      it "keeps the certification and gives the reason when it cannot be destroyed" do
+        cert = create(:certification, user: student, training_session: record, training: training)
+        allow_any_instance_of(Certification).to receive(:destroy) { |c| c.errors.add(:base, "It is locked") && false }
+        expect { delete revoke_certification_staff_training_session_path(record), params: { cert_id: cert.id } }
+          .not_to change { Certification.unscoped.count }
+        expect(flash[:alert]).to eq("The certification was not removed. It is locked")
+      end
+
       it "answers 404 for an unknown certification" do
         delete revoke_certification_staff_training_session_path(record), params: { cert_id: 0 }
         expect(response).to have_http_status(:not_found)
@@ -385,6 +408,12 @@ RSpec.describe "Staff training sessions", type: :request do
     end
 
     describe "DELETE destroy" do
+      it "keeps the session and gives the reason when it cannot be destroyed" do
+        allow_any_instance_of(TrainingSession).to receive(:destroy) { |s| s.errors.add(:base, "It is in use") && false }
+        expect { delete staff_training_session_path(record) }.not_to change(TrainingSession, :count)
+        expect(flash[:alert]).to eq("The training session was not deleted. It is in use")
+      end
+
       it "deletes the session, its certifications and exams, redirecting to the staff dashboard" do
         cert = create(:certification, training_session: record, training: training)
         create(:exam, training_session: record)
@@ -457,7 +486,7 @@ RSpec.describe "Staff training sessions", type: :request do
       it "is not created for a space id that does not exist" do
         expect { post staff_training_sessions_path, params: create_params(training_session: { space_id: 0 }, user_id: trainer.id) }
           .not_to change(TrainingSession, :count)
-        expect(flash[:alert]).to eq("Something went wrong. Please try again.")
+        expect(flash[:alert]).to eq("The training session was not created. Space This field is required.")
       end
     end
   end

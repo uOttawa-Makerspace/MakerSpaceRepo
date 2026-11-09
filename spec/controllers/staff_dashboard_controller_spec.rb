@@ -68,6 +68,45 @@ RSpec.describe StaffDashboardController, type: :controller do
           "Users with error: john doe 123, johnnnnnn, joeeee@uottawa.ca"
         )
       end
+
+      def upload(name, content, type = "application/octet-stream")
+        file = Tempfile.new([File.basename(name, ".*"), File.extname(name)])
+        file.write(content)
+        file.rewind
+        Rack::Test::UploadedFile.new(file.path, type, original_filename: name)
+      end
+
+      it "asks for a file when none is sent" do
+        expect { post :import_excel }.not_to change(LabSession, :count)
+        expect(response).to redirect_to staff_dashboard_index_path
+        expect(flash[:alert]).to eq("Choose a spreadsheet (.xls or .xlsx) of users to sign in.")
+      end
+
+      it "names a file that is not a spreadsheet by its name" do
+        expect { post :import_excel, params: { file: upload("users.csv", "a@b.c\n") } }.not_to change(LabSession, :count)
+        expect(flash[:alert]).to eq("users.csv is not a spreadsheet. Upload an .xls or .xlsx file.")
+      end
+
+      %w[.xlsx .xls].each do |ext|
+        it "says the file cannot be read when a #{ext} file is not a spreadsheet, with no exception text" do
+          expect { post :import_excel, params: { file: upload("users#{ext}", "not a spreadsheet") } }
+            .not_to change(LabSession, :count)
+          expect(response).to redirect_to staff_dashboard_index_path
+          expect(flash[:alert]).to eq(
+            "The file could not be read as a spreadsheet. Check that it is a valid .xls or .xlsx file and upload it again."
+          )
+        end
+      end
+
+      it "reports an unexpected failure with a reference and shows no exception text" do
+        allow(LabSession).to receive(:create).and_raise(ActiveRecord::StatementInvalid, "secret sql detail")
+        create(:user, :regular_user, username: "Bob1")
+        allow(Rails.error).to receive(:report)
+        post :import_excel, params: { file: fixture_file_upload(Rails.root.join("spec/support/assets", "excel-login.xlsx")) }
+        expect(response).to redirect_to staff_dashboard_index_path
+        expect(flash[:alert]).to match(/reference [0-9a-f]{0,8}/).and satisfy { |m| m.exclude?("secret sql detail") }
+        expect(Rails.error).to have_received(:report).with(kind_of(ActiveRecord::StatementInvalid), hash_including(handled: true))
+      end
     end
   end
 

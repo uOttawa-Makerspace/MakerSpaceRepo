@@ -9,11 +9,11 @@ class Staff::MyCalendarController < StaffAreaController
   end
 
   def json
-    return render json: { error: "Space ID is required" }, status: :bad_request if params[:id].blank?
+    return render_calendar_error(:space_required, :bad_request) if params[:id].blank?
 
     # Staff read the schedule of the spaces they are assigned to (the spaces the page offers); admins read any.
     unless current_user.admin? || StaffSpace.exists?(user_id: current_user.id, space_id: params[:id])
-      return render json: { error: "You are not assigned to this space" }, status: :forbidden
+      return render_calendar_error(:space_not_assigned, :forbidden)
     end
 
     events = Event.where(space_id: params[:id], draft: false)
@@ -52,6 +52,10 @@ class Staff::MyCalendarController < StaffAreaController
 
   private
 
+  def render_calendar_error(cause, status)
+    render json: { error: I18n.t("errors.staff.my_calendar.#{cause}"), reference: error_reference }, status: status
+  end
+
   def expand_recurring_event(event, start_date, end_date)
     require 'ice_cube'
     
@@ -81,7 +85,7 @@ class Staff::MyCalendarController < StaffAreaController
     rescue => e
       # Report it (event id only), then fall back: return the
       # original event if within date range
-      Rails.error.report(e, handled: true, context: { event_id: event.id })
+      report_unexpected(e, event_id: event.id)
       if event.start_time >= start_date && event.end_time <= end_date
         expanded_events << format_event(event)
       end

@@ -120,56 +120,37 @@ class VolunteersController < SessionsController
   end
 
   def delete_event
-    if params[:event_id].present? &&
-         ShadowingHour.find_by(event_id: params[:event_id]).present?
-      space = ShadowingHour.find_by(event_id: params[:event_id]).space.name
-      event = ShadowingHour.delete_event(params[:event_id], space)
+    shift = ShadowingHour.find_by(event_id: params[:event_id]) if params[:event_id].present?
+    return refuse_shift(:shift_not_found) if shift.nil?
 
-      if event != 'error'
-        ShadowingHour.find_by(event_id: params[:event_id]).destroy!
-        flash[:notice] = 'This shift has been cancelled.'
-      else
-        flash[:alert] = 'An error occured while deleting the shift.'
-      end
+    if ShadowingHour.delete_event(shift.event_id, shift.space.name) == 'error'
+      refuse_shift(:shift_not_removed)
     else
-      flash[:alert] = 'This shift has not been found.'
+      shift.destroy!
+      flash[:notice] = 'This shift has been cancelled.'
+      redirect_to calendar_volunteers_path
     end
-    redirect_to calendar_volunteers_path
   end
 
   def create_event
-    if (
-         params[:space] == 'makerspace' || params[:space] == 'brunsfield centre'
-       ) && params[:datepicker_start].present? &&
-         params[:datepicker_end].present? && params[:user_id] &&
-         User.find(params[:user_id]).present?
-      start_time =
-        DateTime.parse(params[:datepicker_start].to_s).strftime(
-          '%Y-%m-%dT%k:%M:00'
-        )
-      end_time =
-        DateTime.parse(params[:datepicker_end].to_s).strftime(
-          '%Y-%m-%dT%k:%M:00'
-        )
-      user = User.find(params[:user_id])
-      unless user.volunteer?
-        flash[:alert] = 'Shadowing shifts can only be booked for volunteers.'
-        return redirect_to calendar_volunteers_path
-      end
+    problem = shift_request_problem
+    return refuse_shift(problem) if problem
 
-      space = Space.where('LOWER(name) = ?', params[:space].downcase).first
-      if space.nil?
-        flash[:alert] = 'The selected space was not found.'
-        return redirect_to calendar_volunteers_path
-      end
+    user = User.find(params[:user_id])
+    return refuse_shift(:not_a_volunteer) unless user.volunteer?
 
-      create_shadowing_shift(user, space, start_time, end_time)
-    else
-      flash[:alert] = 'An error occurred, please make sure you choose a space.'
-    end
+    space = Space.where('LOWER(name) = ?', params[:space].downcase).first
+    return refuse_shift(:space_not_found) if space.nil?
+
+    create_shadowing_shift(
+      user,
+      space,
+      shift_time(params[:datepicker_start]),
+      shift_time(params[:datepicker_end])
+    )
     redirect_to calendar_volunteers_path
   end
-  
+
   def transcript
     unless signed_in?
       flash[:alert] = 'Please sign in to view your volunteer transcript.'
@@ -196,6 +177,32 @@ class VolunteersController < SessionsController
 
   private
 
+  SHADOWING_SPACES = ['makerspace', 'brunsfield centre'].freeze
+
+  # The key (under errors.volunteers) of what is missing from a new shadowing shift request, or nil.
+  def shift_request_problem
+    if SHADOWING_SPACES.exclude?(params[:space])
+      :no_space
+    elsif shift_time(params[:datepicker_start]).nil? || shift_time(params[:datepicker_end]).nil?
+      :no_dates
+    elsif params[:user_id].blank?
+      :no_user
+    end
+  end
+
+  # The calendar's timestamp for a picked date and time, or nil when it is blank or not a date.
+  def shift_time(value)
+    DateTime.parse(value.to_s).strftime('%Y-%m-%dT%k:%M:00') if value.present?
+  rescue Date::Error
+    nil
+  end
+
+  # A shadowing shift request that was refused goes back to the calendar with the message for its cause.
+  def refuse_shift(cause)
+    flash[:alert] = I18n.t("errors.volunteers.#{cause}")
+    redirect_to calendar_volunteers_path
+  end
+
   def create_shadowing_shift(user, space, start_time, end_time)
     event =
       ShadowingHour.create_event(start_time, end_time, user, params[:space])
@@ -210,7 +217,7 @@ class VolunteersController < SessionsController
       )
       flash[:notice] = 'The shadowing shift has been added'
     else
-      flash[:alert] = 'An Error occurred'
+      flash[:alert] = I18n.t('errors.volunteers.calendar_event_refused')
     end
   end
 

@@ -145,7 +145,7 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       vol_login!(volunteer)
       post volunteer_task_joins_path, params: {}
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to match(/param is missing/)
+      expect(flash[:alert]).to match(/The form is missing required information/)
     end
 
     it "redirects a guest to login, nothing persisted" do

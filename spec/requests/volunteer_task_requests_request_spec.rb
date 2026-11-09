@@ -123,6 +123,15 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
       expect { get "/volunteer_task_requests/create_request", params: { id: task.id } }.not_to change(VolunteerTaskRequest, :count)
     end
 
+    it "gives the reason when the request cannot be saved" do
+      assign!(volunteer)
+      vol_login!(volunteer)
+      allow_any_instance_of(VolunteerTaskRequest).to receive(:save) { |r| r.errors.add(:base, "Task is closed") && false }
+      expect { request! }.not_to change(VolunteerTaskRequest, :count)
+      expect(flash[:alert]).to eq("Your request for this task was not sent. Task is closed")
+      expect(vol_deliveries).to be_empty
+    end
+
     it "creates a pending request, redirects back with a notice, emails the requester with staff bcc'd" do
       assign!(volunteer)
       vol_login!(volunteer)
@@ -347,6 +356,14 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(req.reload.approval).to be_nil
         expect(join.reload.state).to eq("joined")
         expect(response).to redirect_to(volunteer_task_requests_path)
+      end
+
+      it "gives the reason when the update is refused, and sends no mail" do
+        allow_any_instance_of(VolunteerTaskRequest).to receive(:update) { |r| r.errors.add(:base, "Already closed") && false }
+        approve!("true")
+        expect(flash[:alert]).to eq("The task request was not updated. Already closed")
+        expect(response).to redirect_to(volunteer_task_requests_path)
+        expect(vol_deliveries).to be_empty
       end
 
       it "404s for a missing request" do

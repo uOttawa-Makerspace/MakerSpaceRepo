@@ -6,3 +6,51 @@ fr:
       staff_not_in_space: "Ce membre du personnel ne fait pas partie de cet espace."
       color_invalid: "Cette couleur n'est pas valide."
       color_not_saved: "La couleur du personnel n'a pas pu être enregistrée."
+    generic:
+      unexpected: "Une erreur inattendue s'est produite de notre côté. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence %{reference}."
+      not_found: "Cette page ou cet élément est introuvable. Il a peut-être été supprimé, ou le lien est erroné."
+      unprocessable: "Votre demande n'a pas pu être traitée. Rechargez la page et réessayez."
+      parameter_missing: "Il manque des informations obligatoires dans le formulaire (%{param}). Rechargez la page et réessayez."
+    staff:
+      dashboard:
+        import_no_file: "Choisissez un tableur (.xls ou .xlsx) contenant les utilisateurs à enregistrer."
+        import_file_type: "%{name} n'est pas un tableur. Téléversez un fichier .xls ou .xlsx."
+        import_unreadable: "Le fichier n'a pas pu être lu comme un tableur. Vérifiez qu'il s'agit d'un fichier .xls ou .xlsx valide et téléversez-le à nouveau."
+        card_changing: "Cette carte est en cours de modification par une autre personne. Réessayez dans un instant."
+      training_sessions:
+        not_created: "La séance de formation n'a pas été créée."
+        not_updated: "La séance de formation n'a pas été mise à jour."
+        not_deleted: "La séance de formation n'a pas été supprimée."
+        certification_not_revoked: "La certification n'a pas été retirée."
+      my_calendar:
+        space_required: "Choisissez un espace pour afficher son calendrier."
+        space_not_assigned: "Vous n'êtes pas affecté à cet espace."
+    volunteer:
+      hours:
+        processed: "Cette heure de bénévolat a déjà été traitée. Elle ne peut plus être modifiée ni supprimée."
+        not_deleted: "L'heure de bénévolat n'a pas été supprimée."
+        approval_not_saved: "L'heure de bénévolat n'a pas été mise à jour."
+      task_requests:
+        not_created: "Votre demande pour cette tâche n'a pas été envoyée."
+        not_updated: "La demande de tâche n'a pas été mise à jour."
+    volunteers:
+      no_space: "Choisissez un espace (Makerspace ou Brunsfield Centre) pour la séance d'observation."
+      no_dates: "Choisissez une date et une heure de début et de fin valides pour la séance d'observation."
+      no_user: "Choisissez le bénévole qui fera l'observation."
+      not_a_volunteer: "Les séances d'observation ne peuvent être réservées que pour des bénévoles."
+      space_not_found: "L'espace sélectionné est introuvable."
+      calendar_event_refused: "Le calendrier a refusé la séance d'observation, elle n'a donc pas été ajoutée. Réessayez ou communiquez avec le personnel du makerspace."
+      shift_not_found: "Cette séance est introuvable. Elle a peut-être déjà été annulée."
+      shift_not_removed: "La séance n'a pas pu être retirée du calendrier, elle n'a donc pas été annulée. Réessayez dans un instant."
+    pages:
+      reference: "Référence :"
+      home: "Retour à la page d'accueil"
+      not_found:
+        title: "Page introuvable"
+        text: "Cette page ou cet élément est introuvable. Il a peut-être été supprimé, ou le lien est erroné."
+      unprocessable:
+        title: "La demande n'a pas pu être traitée"
+        text: "Votre demande n'a pas pu être traitée. Revenez en arrière, rechargez la page et réessayez. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence ci-dessous."
+      unexpected:
+        title: "Une erreur s'est produite de notre côté"
+        text: "Une erreur inattendue a interrompu cette page. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence ci-dessous."

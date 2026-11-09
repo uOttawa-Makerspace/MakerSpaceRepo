@@ -165,7 +165,7 @@ RSpec.describe "Admin training area", type: :request do
         it "refuses a request without the training key like any missing parameter" do
           post admin_trainings_path, params: {}
           expect(response).to redirect_to(root_path)
-          expect(flash[:alert]).to include("param is missing")
+          expect(flash[:alert]).to include("The form is missing required information (training)")
         end
       end
 

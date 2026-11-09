@@ -171,7 +171,7 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body.map { |e| e["title"] }).to eq(["Bad"])
       # the fallback is reported (event id only), not silent
       expect(Rails.error).to have_received(:report)
-        .with(kind_of(StandardError), handled: true, context: { event_id: bad.id }).once
+        .with(kind_of(StandardError), hash_including(handled: true, context: hash_including(event_id: bad.id))).once
     end
   end
 

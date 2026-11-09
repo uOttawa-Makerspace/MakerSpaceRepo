@@ -91,53 +91,27 @@ class StaffDashboardController < StaffAreaController
   end
 
   def import_excel
-    begin
-      file = params[:file]
-      file_ext = File.extname(file.original_filename)
-      faulty_users = 0
-      faulty_user_data = []
-      raise "Unknown file type: #{file.original_filename}" unless %w[.xls .xlsx].include?(file_ext)
-      spreadsheet =
-        (
-          if file_ext == ".xls"
-            Roo::Excel.new(file.path)
-          else
-            Roo::Excelx.new(file.path)
-          end
-        )
-      (1..spreadsheet.last_row).each do |i|
-        next if spreadsheet.row(i)[0].blank?
-        user_data = spreadsheet.row(i)[0].downcase
-        user =
-          User.where(
-            "lower(email) = ? OR lower(name) = ? OR lower(username) = ?",
-            user_data,
-            user_data,
-            user_data
-          )
-        faulty_users += 1 and faulty_user_data << user_data and
-          next if user.blank?
-        LabSession.create(
-          user: user.last,
-          space_id: @space.id,
-          sign_in_time: Time.zone.now,
-          sign_out_time: Time.zone.now + 8.hours
-        )
-      end
-      flash[
-        :notice
-      ] = "The file has been processed and users have been signed in ! "
-      if faulty_users > 0
-        flash[
-          :alert_yellow
-        ] = "Please note that #{faulty_users} user(s) did not get signed in because they were not found in the system."
-        flash[:alert] = "Users with error: #{faulty_user_data.join(", ")}"
-      end
-    rescue StandardError => e
-      flash[
-        :alert
-      ] = "An error occured while uploading the log in file, please try again later: #{e}"
+    file = params[:file]
+    return refuse_import(:no_file) if file.blank?
+    unless IMPORT_EXTENSIONS.include?(File.extname(file.original_filename))
+      return refuse_import(:file_type, name: file.original_filename)
     end
+
+    faulty_user_data = sign_in_listed_users(read_spreadsheet(file))
+    flash[:notice] = "The file has been processed and users have been signed in ! "
+    if faulty_user_data.any?
+      flash[
+        :alert_yellow
+      ] = "Please note that #{faulty_user_data.size} user(s) did not get signed in because they were not found in the system."
+      flash[:alert] = "Users with error: #{faulty_user_data.join(", ")}"
+    end
+    redirect_to staff_dashboard_index_path
+  rescue Zip::Error, Roo::Error, Ole::Storage::FormatError
+    # The file is not a readable spreadsheet of the type its name says.
+    refuse_import(:unreadable)
+  rescue StandardError => e
+    report_unexpected(e, source: "staff_dashboard#import_excel")
+    flash[:alert] = unexpected_error_message
     redirect_to staff_dashboard_index_path
   end
 
@@ -411,7 +385,45 @@ class StaffDashboardController < StaffAreaController
 
     [outcome, nil, nil]
   rescue Rfid::OwnerChanging
-    [nil, "card is changing, try again", :conflict]
+    [nil, I18n.t("errors.staff.dashboard.card_changing"), :conflict]
+  end
+
+  IMPORT_EXTENSIONS = %w[.xls .xlsx].freeze
+
+  def refuse_import(cause, **options)
+    flash[:alert] = I18n.t("errors.staff.dashboard.import_#{cause}", **options)
+    redirect_to staff_dashboard_index_path
+  end
+
+  def read_spreadsheet(file)
+    if File.extname(file.original_filename) == ".xls"
+      Roo::Excel.new(file.path)
+    else
+      Roo::Excelx.new(file.path)
+    end
+  end
+
+  # Signs in the user named on each row (by email, name or username, first column) for eight hours;
+  # returns the cell values that matched no user.
+  def sign_in_listed_users(spreadsheet)
+    not_found = []
+    (1..spreadsheet.last_row).each do |i|
+      user_data = spreadsheet.row(i)[0].to_s.downcase
+      next if user_data.blank?
+
+      user = User.where("lower(email) = ? OR lower(name) = ? OR lower(username) = ?", user_data, user_data, user_data)
+      if user.blank?
+        not_found << user_data
+        next
+      end
+      LabSession.create(
+        user: user.last,
+        space_id: @space.id,
+        sign_in_time: Time.zone.now,
+        sign_out_time: Time.zone.now + 8.hours
+      )
+    end
+    not_found
   end
 
   # What the table partials (refresh_tables, the sign out JS response) read.

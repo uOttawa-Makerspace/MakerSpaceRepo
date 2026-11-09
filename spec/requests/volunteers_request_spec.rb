@@ -373,22 +373,31 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
         allow(ShadowingHour).to receive(:create_event).and_return(double(id: "x", status: "cancelled"))
         expect { post create_event_volunteers_path, params: params }.not_to change(ShadowingHour, :count)
         expect(response).to redirect_to(calendar_volunteers_path)
-        expect(flash[:alert]).to eq("An Error occurred")
+        expect(flash[:alert]).to eq("The calendar refused the shadowing shift, so it was not added. Try again, or contact the makerspace staff.")
       end
 
       it "rejects an unknown space name without calling Google" do
         expect(ShadowingHour).not_to receive(:create_event)
         post create_event_volunteers_path, params: params.merge(space: "garage")
         expect(response).to redirect_to(calendar_volunteers_path)
-        expect(flash[:alert]).to eq("An error occurred, please make sure you choose a space.")
+        expect(flash[:alert]).to eq("Choose a space (Makerspace or Brunsfield Centre) for the shadowing shift.")
       end
 
-      it "rejects missing dates or user_id" do
+      it "says which of the dates or the volunteer is missing" do
         expect(ShadowingHour).not_to receive(:create_event)
+        dates = "Choose a valid start and end date and time for the shadowing shift."
         post create_event_volunteers_path, params: params.except(:datepicker_end)
-        expect(flash[:alert]).to eq("An error occurred, please make sure you choose a space.")
+        expect(flash[:alert]).to eq(dates)
+        post create_event_volunteers_path, params: params.merge(datepicker_start: "not a date")
+        expect(flash[:alert]).to eq(dates)
         post create_event_volunteers_path, params: params.except(:user_id)
-        expect(flash[:alert]).to eq("An error occurred, please make sure you choose a space.")
+        expect(flash[:alert]).to eq("Choose the volunteer who will shadow.")
+      end
+
+      it "answers in French when the locale is French" do
+        expect(ShadowingHour).not_to receive(:create_event)
+        post create_event_volunteers_path, params: params.merge(space: "garage", locale: "fr")
+        expect(flash[:alert]).to eq(I18n.t("errors.volunteers.no_space", locale: :fr))
       end
 
       it "404s for a nonexistent user_id" do
@@ -463,15 +472,15 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       it "keeps the row and alerts when Google returns 'error'" do
         allow(ShadowingHour).to receive(:delete_event).and_return("error")
         expect { delete delete_event_volunteers_path(event_id: "evt-9") }.not_to change(ShadowingHour, :count)
-        expect(flash[:alert]).to eq("An error occured while deleting the shift.")
+        expect(flash[:alert]).to eq("The shift could not be removed from the calendar, so it was not cancelled. Try again in a moment.")
       end
 
       it "alerts for an unknown or missing event_id without calling Google" do
         expect(ShadowingHour).not_to receive(:delete_event)
         delete delete_event_volunteers_path(event_id: "nope")
-        expect(flash[:alert]).to eq("This shift has not been found.")
+        expect(flash[:alert]).to eq("This shift has not been found. It may already have been cancelled.")
         delete delete_event_volunteers_path
-        expect(flash[:alert]).to eq("This shift has not been found.")
+        expect(flash[:alert]).to eq("This shift has not been found. It may already have been cancelled.")
         expect(response).to redirect_to(calendar_volunteers_path)
       end
     end

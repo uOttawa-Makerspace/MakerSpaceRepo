@@ -6,3 +6,51 @@ en:
       staff_not_in_space: "That staff member is not on this space."
       color_invalid: "That colour is not valid."
       color_not_saved: "The staff colour could not be saved."
+    generic:
+      unexpected: "Something unexpected went wrong on our side. Please try again. If it keeps happening, contact the makerspace staff and quote reference %{reference}."
+      not_found: "That page or record could not be found. It may have been removed, or the link may be wrong."
+      unprocessable: "Your request could not be processed. Reload the page and try again."
+      parameter_missing: "The form is missing required information (%{param}). Reload the page and try again."
+    staff:
+      dashboard:
+        import_no_file: "Choose a spreadsheet (.xls or .xlsx) of users to sign in."
+        import_file_type: "%{name} is not a spreadsheet. Upload an .xls or .xlsx file."
+        import_unreadable: "The file could not be read as a spreadsheet. Check that it is a valid .xls or .xlsx file and upload it again."
+        card_changing: "This card is being changed by someone else right now. Try again in a moment."
+      training_sessions:
+        not_created: "The training session was not created."
+        not_updated: "The training session was not updated."
+        not_deleted: "The training session was not deleted."
+        certification_not_revoked: "The certification was not removed."
+      my_calendar:
+        space_required: "Choose a space to show its calendar."
+        space_not_assigned: "You are not assigned to this space."
+    volunteer:
+      hours:
+        processed: "This volunteer hour was already processed, so it can no longer be changed or deleted."
+        not_deleted: "The volunteer hour was not deleted."
+        approval_not_saved: "The volunteer hour was not updated."
+      task_requests:
+        not_created: "Your request for this task was not sent."
+        not_updated: "The task request was not updated."
+    volunteers:
+      no_space: "Choose a space (Makerspace or Brunsfield Centre) for the shadowing shift."
+      no_dates: "Choose a valid start and end date and time for the shadowing shift."
+      no_user: "Choose the volunteer who will shadow."
+      not_a_volunteer: "Shadowing shifts can only be booked for volunteers."
+      space_not_found: "The selected space was not found."
+      calendar_event_refused: "The calendar refused the shadowing shift, so it was not added. Try again, or contact the makerspace staff."
+      shift_not_found: "This shift has not been found. It may already have been cancelled."
+      shift_not_removed: "The shift could not be removed from the calendar, so it was not cancelled. Try again in a moment."
+    pages:
+      reference: "Reference:"
+      home: "Back to the home page"
+      not_found:
+        title: "Page not found"
+        text: "That page or record could not be found. It may have been removed, or the link may be wrong."
+      unprocessable:
+        title: "Request could not be processed"
+        text: "Your request could not be processed. Go back, reload the page and try again. If it keeps happening, contact the makerspace staff and quote the reference below."
+      unexpected:
+        title: "Something went wrong on our side"
+        text: "An unexpected error stopped this page. Please try again. If it keeps happening, contact the makerspace staff and quote the reference below."

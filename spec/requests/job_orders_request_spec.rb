@@ -372,11 +372,11 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(JobOrder.order(:id).last.job_tasks.first.job_type).to be_nil
     end
 
-    it "redirects to root with the raw parameter_missing message when job_order param is absent" do
+    it "redirects to root with the missing-field message when job_order param is absent" do
       post job_orders_path, params: { other: "x" }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert])
-        .to eq("param is missing or the value is empty or invalid: job_order")
+        .to eq("The form is missing required information (job_order). Reload the page and try again.")
     end
 
     it "POST /job_orders/new is wired to #new in the routes (renders the choice page, does not create)" do
