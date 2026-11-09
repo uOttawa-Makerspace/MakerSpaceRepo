@@ -163,8 +163,8 @@ RSpec.describe "Admin report generator", type: :request do
       expect(response.body).not_to include('id="report"')
     end
 
-    it "an unparseable date string reaches SQL and is a 500" do
-      # dates are never parsed or validated for the html report; "abc" reaches the SQL range and Postgres rejects it
+    it "an unparseable date string is a 500" do
+      # the html report parses the days with Date.parse, which raises on "abc"
       get admin_report_generator_index_path,
           params: { start_date: "abc", end_date: "def", report_type: "certifications" }
       expect(response).to have_http_status(:internal_server_error)
@@ -187,8 +187,8 @@ RSpec.describe "Admin report generator", type: :request do
       expect(redirect_query).to include(
         "report_type" => "visitors", "range_type" => "semester", "term" => "winter", "year" => "2026"
       )
-      expect(redirect_query["start_date"]).to start_with("2026-01-01T00:00:00")
-      expect(redirect_query["end_date"]).to start_with("2026-04-30T23:59:59")
+      expect(redirect_query["start_date"]).to eq("2026-01-01")
+      expect(redirect_query["end_date"]).to eq("2026-04-30")
       expect(flash[:notice]).to eq("Successfully generated visitors report")
     end
 
@@ -202,11 +202,11 @@ RSpec.describe "Admin report generator", type: :request do
       expect([redirect_query["start_date"][0, 10], redirect_query["end_date"][0, 10]]).to eq(%w[2026-09-01 2026-12-31])
     end
 
-    it "date_range redirects with the parsed from/to as whole-day datetimes" do
+    it "date_range redirects with the parsed from/to days" do
       post admin_report_generator_generate_path,
            params: { range_type: "date_range", from_date: "2026-03-01", to_date: "2026-03-31", type: "trainings" }
-      expect(redirect_query["start_date"]).to start_with("2026-03-01T00:00:00")
-      expect(redirect_query["end_date"]).to start_with("2026-03-31T23:59:59")
+      expect(redirect_query["start_date"]).to eq("2026-03-01")
+      expect(redirect_query["end_date"]).to eq("2026-03-31")
       expect(redirect_query["range_type"]).to eq("date_range")
     end
 
@@ -305,7 +305,6 @@ RSpec.describe "Admin report generator", type: :request do
       end
     end
 
-    # Midday Eastern, so DateTime.now's server/UTC date and Date.current agree.
     it "defaults to 2015-06-01 .. today when no dates are given" do
       travel_to(Time.zone.now.change(hour: 12))
       fetch_xlsx("kit_purchased")
@@ -314,13 +313,12 @@ RSpec.describe "Admin report generator", type: :request do
       )
     end
 
-    # the default range ends at DateTime.now (server/UTC), so after 20:00 Eastern "today" is tomorrow's date
-    it "ends the default range on the UTC date in the Eastern evening" do
-      travel_to(Time.zone.now.change(hour: 21))
+    # 21:00 Eastern is already the next day in UTC
+    it "ends the default range on today's Eastern date in the evening" do
+      travel_to(Time.zone.local(2026, 3, 10, 21))
       fetch_xlsx("kit_purchased")
-      expect(response.headers["Content-Disposition"]).to include(
-        "kit_purchased_2015-06-01_#{(Date.current + 1).strftime("%Y-%m-%d")}.xlsx"
-      )
+      expect(response.headers["Content-Disposition"]).to include("kit_purchased_2015-06-01_2026-03-10.xlsx")
+      expect(c18_xlsx_sheets(response.body).fetch("Report")[2].first(2)).to eq(%w[To 2026-03-10])
     end
 
     it "kit_purchased: title, from/to, header row and one data row per kit" do
@@ -370,8 +368,7 @@ RSpec.describe "Admin report generator", type: :request do
       rows = c18_xlsx_sheets(response.body).fetch("Sheet1")
       expect(rows[0].first).to eq("Visitors by Hour")
       expect(rows[1].first(2)).to eq(%w[From 2026-03-01])
-      hour = march_10.localtime.hour
-      expect(rows[4].compact).to eq(["Date", "%02i:00" % hour])
+      expect(rows[4].compact).to eq(%w[Date 11:00]) # 15:00 UTC in the app time zone (Toronto)
       expect(rows[5..].size).to eq(31) # 2026-03-01 .. 2026-03-31 inclusive
       expect(rows.find { |r| r.first == "2026-03-10" }[1]).to eq(1)
       expect(rows.find { |r| r.first == "2026-03-09" }[1]).to eq(0)
@@ -383,12 +380,49 @@ RSpec.describe "Admin report generator", type: :request do
       expect(rows[4].compact).to eq(["Date"])
     end
 
-    it "the end date is exclusive of its own day (midnight cut-off)" do
-      # end_date is parsed with Date.parse(..).to_datetime, i.e. 00:00, without end_of_day, so records made on the 'To' date are left out of the xlsx while the html report (end_of_day) includes them
-      create(:project_kit, user: world[:visitor], created_at: Time.utc(2026, 3, 31, 12), proficient_project: create(:proficient_project, title: "Last Day Kit"))
-      fetch_xlsx("kit_purchased", range)
-      titles = c18_xlsx_sheets(response.body).fetch("Report")[5..].map(&:first)
-      expect(titles).to eq([world[:project].title])
+    context "for picked days, on a server in another time zone" do
+      around do |example|
+        server_zone = ENV.fetch("TZ", nil)
+        ENV["TZ"] = "Asia/Tokyo"
+        example.run
+      ensure
+        ENV["TZ"] = server_zone
+      end
+
+      # Kits just inside and just outside 2026-03-01 .. 2026-03-31 in Toronto;
+      # 21:00 on Feb 28 in Toronto is already March 1 in UTC
+      before do
+        {
+          "Eve kit" => Time.zone.local(2026, 2, 28, 21),
+          "First morning kit" => Time.zone.local(2026, 3, 1, 0, 30),
+          "Last night kit" => Time.zone.local(2026, 3, 31, 23, 30),
+          "Next day kit" => Time.zone.local(2026, 4, 1, 0, 30)
+        }.each do |title, at|
+          create(:project_kit, user: world[:visitor], created_at: at,
+                               proficient_project: create(:proficient_project, title: title))
+        end
+      end
+
+      # N+1 pinned (the kit report loads proficient_project and user per kit)
+      it "the spreadsheet covers the whole From and To days in Toronto", skip_bullet: true do
+        fetch_xlsx("kit_purchased", range)
+        titles = c18_xlsx_sheets(response.body).fetch("Report")[5..].map(&:first)
+        expect(titles).to contain_exactly(world[:project].title, "First morning kit", "Last night kit")
+      end
+
+      # N+1 pinned, as above
+      it "the html report and its download cover the same days", skip_bullet: true do
+        post admin_report_generator_generate_path,
+             params: { range_type: "date_range", from_date: "2026-03-01", to_date: "2026-03-31", type: "kit_purchased" }
+        follow_redirect!
+        page = Nokogiri::HTML(response.body)
+        expect(page.css("table td:first-child").map { |td| td.text.strip })
+          .to contain_exactly(world[:project].title, "First morning kit", "Last night kit")
+        download = page.at_css("a[href*='generate_spreadsheet']")["href"]
+        get download
+        titles = c18_xlsx_sheets(response.body).fetch("Report")[5..].map(&:first)
+        expect(titles).to contain_exactly(world[:project].title, "First morning kit", "Last night kit")
+      end
     end
 
     it "popular_hours and frequent_visitors have no spreadsheet (400) although the index offers them" do

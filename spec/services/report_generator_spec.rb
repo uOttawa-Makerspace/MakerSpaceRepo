@@ -132,8 +132,8 @@ RSpec.describe ReportGenerator do
       create(:lab_session, sign_in_time: march_10, created_at: march_10)
       create(:lab_session, sign_in_time: march_10 + 2.hours, created_at: march_10)
       rows = sheets_of(described_class.generate_peak_hours_report(from, to)).fetch("Sheet1")
-      hour = march_10.localtime.hour
-      expect(rows[4].compact).to eq(["Date", "%02i:00" % hour, "%02i:00" % (hour + 1), "%02i:00" % (hour + 2)])
+      # march_10 is 15:00 UTC, 11:00 in the app time zone (Toronto)
+      expect(rows[4].compact).to eq(["Date", "11:00", "12:00", "13:00"])
       day = rows.find { |r| r.first == "2026-03-10" }
       expect(day.first(4)).to eq(["2026-03-10", 1, 0, 1])
     end

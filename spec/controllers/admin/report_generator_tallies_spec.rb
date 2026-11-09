@@ -19,6 +19,18 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
     session[:expires_at] = Time.zone.now + 10_000
   end
 
+  # Runs the example with the server's local zone set away from the
+  # application zone (Toronto).
+  def self.on_a_server_in_another_zone
+    around do |example|
+      server_zone = ENV.fetch("TZ", nil)
+      ENV["TZ"] = "Asia/Tokyo"
+      example.run
+    ensure
+      ENV["TZ"] = server_zone
+    end
+  end
+
   def ivar(name)
     controller.instance_variable_get("@#{name}")
   end
@@ -189,8 +201,20 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
 
     it "averages certificates per session for each month that has some, as a float" do
       report("training_attendees", range)
-      expect(ivar(:monthly_average)).to eq("March" => 2.0)
+      expect(ivar(:monthly_average)).to eq("March 2026" => 2.0)
       expect(ivar(:spaces).map(&:name)).to eq(["Space One"])
+    end
+
+    context "on a server in another time zone" do
+      on_a_server_in_another_zone
+
+      it "buckets certificates by their month in Toronto" do
+        # 22:00 on March 31 in Toronto is already April 1 in UTC
+        late = create(:training_session, space: alpha, created_at: Time.zone.local(2026, 3, 31, 22))
+        create(:certification, training_session: late, created_at: Time.zone.local(2026, 3, 31, 22))
+        report("training_attendees", start_date: "2026-03-01", end_date: "2026-04-30")
+        expect(ivar(:monthly_average)).to eq("March 2026" => 5.0 / 3)
+      end
     end
 
     it "a range that does not include the 1st of the month sees no months" do
@@ -198,13 +222,13 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
       expect(ivar(:monthly_average)).to eq({})
     end
 
-    it "without dates walks every month since June 2015 up to now and folds the same month of every year together" do
+    it "without dates walks every month since June 2015 up to now and keeps each year's month apart, oldest first" do
       travel_to(Time.utc(2026, 11, 6, 12)) do
         create(:certification, training_session: create(:training_session, space: alpha, created_at: Time.utc(2025, 3, 3)),
                                created_at: Time.utc(2025, 3, 3))
         report("training_attendees")
-        # March 2025 (1 cert, 1 session) and March 2026 (4 certs, 2 sessions) give 5 certs over 3 sessions
-        expect(ivar(:monthly_average)).to eq("March" => 5.0 / 3)
+        # March 2025 has 1 cert in 1 session, March 2026 has 4 certs in 2 sessions
+        expect(ivar(:monthly_average).to_a).to eq([["March 2025", 1.0], ["March 2026", 2.0]])
       end
     end
   end
@@ -253,6 +277,23 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
       expect(weekends).to eq(@weekender => 1)
     end
 
+    context "on a server in another time zone" do
+      on_a_server_in_another_zone
+
+      it "reads the range and its weekends as whole days in Toronto" do
+        # 21:00 on Friday March 6 in Toronto is Saturday in UTC, and 21:00 on
+        # Sunday March 8 is Monday in UTC
+        friday = create(:user, name: "Late Friday")
+        sunday = create(:user, name: "Late Sunday")
+        create(:lab_session, space: alpha, user: friday, created_at: Time.zone.local(2026, 3, 6, 21))
+        create(:lab_session, space: alpha, user: sunday, created_at: Time.zone.local(2026, 3, 8, 21))
+        report("frequent_visitors", start_date: "2026-03-01", end_date: "2026-03-08")
+        _, all_days, weekends = ivar(:lab_sessions).first
+        expect(all_days).to eq(@regular => 2, @weekender => 1, friday => 1, sunday => 1)
+        expect(weekends).to eq(@weekender => 1, sunday => 1)
+      end
+    end
+
     it "gives empty tables for a space nobody visited" do
       create(:space, name: "Space Two")
       report("frequent_visitors", start_date: "2026-03-01", end_date: "2026-03-08")
@@ -269,6 +310,23 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
       expect(ivar(:users).count).to eq(2)
       report("new_users")
       expect(ivar(:users).count).to be >= 4
+    end
+  end
+
+  describe "picked days" do
+    on_a_server_in_another_zone
+
+    it "cover the whole From and To days in Toronto for the on-screen counts" do
+      # 21:00 on Feb 28 in Toronto is March 1 in UTC; 23:30 on March 31 is April 1
+      create(:repository, created_at: Time.zone.local(2026, 2, 28, 21))
+      create(:repository, created_at: Time.zone.local(2026, 3, 1, 0, 30))
+      create(:repository, created_at: Time.zone.local(2026, 3, 31, 23, 30))
+      create(:user, created_at: Time.zone.local(2026, 2, 28, 21))
+      on_last_day = create(:user, created_at: Time.zone.local(2026, 3, 31, 23, 30))
+      report("new_projects", range)
+      expect(ivar(:repos).count).to eq(2)
+      report("new_users", range)
+      expect(ivar(:users)).to contain_exactly(on_last_day)
     end
   end
 

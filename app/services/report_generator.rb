@@ -69,9 +69,9 @@ class ReportGenerator
             ["Identity", "Distinct Users", "", "Total Visits"]
           )
           space_visits
-            .group_by { |d| d["identity"] }
-            .each do |iden, counts|
-              sheet.add_row [iden.humanize, counts.uniq.count, "", counts.count]
+            .group_by { |d| User.identity_label(d["identity"]) }
+            .each do |identity, counts|
+              sheet.add_row [identity, counts.uniq.count, "", counts.count]
             end
 
           sheet.add_row # spacing
@@ -89,12 +89,10 @@ class ReportGenerator
 
           # sort by faculty
           space_visits
-            .group_by do |d|
-              d.faculty == "Génie" ? "Engineering" : d.faculty
-            end # Merge french
+            .group_by { |d| User.faculty_label(d.faculty) }
             .each do |faculty, counts|
               sheet.add_row [
-                              faculty == "" ? "None" : faculty,
+                              faculty,
                               counts.uniq.count,
                               "",
                               counts.count
@@ -116,21 +114,19 @@ class ReportGenerator
                                    }
           toggle_grey = true
           space_visits
-            .group_by { |x| x.identity }
-            .each do |iden, rest|
+            .group_by { |x| User.identity_label(x.identity) }
+            .each do |identity, rest|
               start_cell = sheet.rows.last.cells.first.pos # for merging
               rest
-                .group_by do |y|
-                  y.faculty == "Génie" ? "Engineering" : y.faculty
-                end # Merge french
+                .group_by { |y| User.faculty_label(y.faculty) }
                 .each do |faculty, counts|
                   sheet.add_row [
-                                  iden.humanize,
+                                  identity,
                                   counts.uniq.count,
                                   "",
                                   counts.count,
                                   "",
-                                  faculty == "" ? "None" : faculty
+                                  faculty
                                 ],
                                 style: toggle_grey ? grey_cell : merge_cell
                 end
@@ -268,7 +264,7 @@ class ReportGenerator
                           row["training_level"],
                           row["course_name"],
                           row["instructor_name"],
-                          row["date"].localtime.strftime("%Y-%m-%d %H:%M"),
+                          row["date"].in_time_zone.strftime("%Y-%m-%d %H:%M"),
                           row["space_name"],
                           row["attendee_count"]
                         ] # ,
@@ -459,7 +455,12 @@ class ReportGenerator
         title(sheet, "Level of Study")
         push_hash(
           sheet,
-          users.group(:identity).count.transform_keys(&:humanize)
+          users
+            .group(:identity)
+            .count
+            .each_with_object(Hash.new(0)) do |(identity, count), counts|
+              counts[User.identity_label(identity)] += count
+            end
         )
 
         sheet.add_row
@@ -487,7 +488,6 @@ class ReportGenerator
         # Engineering/non-engineering
 
         # By faculty
-        # HACK you should merge génie with engineering instead?
         title(sheet, "By Faculty")
         table_header(sheet, ["Faculty", "New Users"])
         push_hash(
@@ -495,12 +495,8 @@ class ReportGenerator
           users
             .group(:faculty)
             .count
-            .transform_keys do |k|
-              if k == ""
-                "None"
-              elsif k == "Génie"
-                "Engineering"
-              end
+            .each_with_object(Hash.new(0)) do |(faculty, count), counts|
+              counts[User.faculty_label(faculty)] += count
             end
         )
         sheet.add_row ["Total", users.count]
@@ -598,40 +594,39 @@ class ReportGenerator
 
         title(sheet, "Overview")
 
-        groups = users.group_by(&:identity)
-
-        groups.each do |group_name, values|
-          sheet.add_row [group_name, values.length]
-        end
+        users
+          .group_by { |user| User.identity_label(user.identity) }
+          .each { |identity, values| sheet.add_row [identity, values.length] }
 
         sheet.add_row # spacing
 
-        table_header(
-          sheet,
-          [
-            "Name",
-            "Username",
-            "Email",
-            "Gender",
-            "Identity",
-            "Faculty",
-            "Year of Study",
-            "Student ID",
-            "Joined on"
-          ]
-        )
+        columns = [
+          "Name",
+          "Username",
+          "Email",
+          "Gender",
+          "Identity",
+          "Faculty",
+          "Year of Study",
+          "Student ID",
+          "Joined on"
+        ]
+        table_header(sheet, columns)
 
+        types = student_id_as_text(columns)
         users.each do |user|
           sheet.add_row [
                           user.name,
                           user.username,
                           user.email,
                           user.gender,
-                          user.identity,
+                          User.identity_label(user.identity),
                           user.faculty,
                           user.year_of_study,
-                          user.created_at.localtime.strftime("%Y-%m-%d %H:%M")
-                        ]
+                          user.student_id,
+                          user.created_at.in_time_zone.strftime("%Y-%m-%d %H:%M")
+                        ],
+                        types: types
         end
       end
 
@@ -670,22 +665,22 @@ class ReportGenerator
           sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
           sheet.add_row # spacing
 
-          table_header(
-            sheet,
-            [
-              "Student ID",
-              "Name",
-              "Email Address",
-              "Certification Type",
-              "Certification Date",
-              "Instructor",
-              "Course",
-              "Facility"
-            ]
-          )
+          columns = [
+            "Student ID",
+            "Name",
+            "Email Address",
+            "Certification Type",
+            "Certification Date",
+            "Instructor",
+            "Course",
+            "Facility"
+          ]
+          table_header(sheet, columns)
 
+          types = student_id_as_text(columns)
           space_certifications.each do |certification|
             sheet.add_row [
+                            certification.user.student_id,
                             certification.user.name,
                             certification.user.email,
                             certification.training_session.training.name_en,
@@ -695,75 +690,39 @@ class ReportGenerator
                             certification.training_session.user.name,
                             certification.training_session.course,
                             certification.training_session.space&.name
-                          ]
+                          ],
+                          types: types
           end
 
           sheet.add_row #spacing
 
-          month_average = ["Month average of attendees per sessions"]
+          one_decimal = sheet.styles.add_style format_code: "0.0"
           month_header = ["Month"]
-
-          (start_date.to_datetime..end_date.to_datetime)
-            .select { |date| date.day == 1 }
-            .map do |date|
-              month_header << date.strftime("%B")
-              month_certifications =
-                space_certifications.select do |cert|
-                  cert.created_at.between?(
-                    date.beginning_of_month,
-                    date.end_of_month
-                  )
-                end
-              average =
-                if month_certifications.count.zero? ||
-                     month_certifications
-                       .pluck(:training_session_id)
-                       .uniq
-                       .count
-                       .zero?
-                  0
-                else
-                  month_certifications.count /
-                    month_certifications.pluck(:training_session_id).uniq.count
-                end
-              month_average << average
-            end
+          month_average = ["Month average of attendees per sessions"]
+          calendar_periods(start_date, end_date, :month).each do |month|
+            month_header << month.first.strftime("%B %Y")
+            month_average << average_attendees_per_session(
+              space_certifications,
+              month
+            )
+          end
 
           table_header(sheet, month_header)
-          sheet.add_row month_average
+          sheet.add_row month_average, style: one_decimal
           sheet.add_row # spacing
 
-          week_average = ["Week average of attendees per sessions"]
           week_header = ["Week"]
-
-          (start_date.to_datetime.to_i..end_date.to_datetime.to_i).step(
-            1.week
-          ) do |date|
-            week_header << "#{Time.at(date).beginning_of_week.strftime("%Y-%m-%d")} to #{Time.at(date).end_of_week.strftime("%Y-%m-%d")}"
-            week_certifications =
-              space_certifications.select do |cert|
-                cert.created_at.between?(
-                  Time.at(date).beginning_of_week,
-                  Time.at(date).end_of_week
-                )
-              end
-            average =
-              if week_certifications.count.zero? ||
-                   week_certifications
-                     .pluck(:training_session_id)
-                     .uniq
-                     .count
-                     .zero?
-                0
-              else
-                week_certifications.count /
-                  week_certifications.pluck(:training_session_id).uniq.count
-              end
-            week_average << average
+          week_average = ["Week average of attendees per sessions"]
+          calendar_periods(start_date, end_date, :week).each do |week|
+            week_header << "#{week.first.strftime("%Y-%m-%d")} to #{week.last.strftime("%Y-%m-%d")}"
+            week_average << average_attendees_per_session(
+              space_certifications,
+              week
+            )
           end
 
           table_header(sheet, week_header)
-          sheet.add_row week_average
+          sheet.add_row week_average, style: one_decimal
           sheet.add_row # spacing
         end
     end
@@ -907,13 +866,14 @@ class ReportGenerator
   end
 
   def self.generate_space_present_users_report(id)
+    now = Time.current
     lab_sessions =
       LabSession
         .includes(:user)
         .joins(:user)
         .where("space_id" => id)
-        .where("sign_in_time < ?", DateTime.now)
-        .where("sign_out_time > ?", DateTime.now)
+        .where("sign_in_time < ?", now)
+        .where("sign_out_time > ?", now)
 
     spreadsheet = Axlsx::Package.new
 
@@ -922,7 +882,7 @@ class ReportGenerator
       .add_worksheet(name: "Report") do |sheet|
         title(sheet, "Present Users")
 
-        sheet.add_row ["Date", DateTime.now.strftime("%Y-%m-%d %H:%M:%S")]
+        sheet.add_row ["Date", now.strftime("%Y-%m-%d %H:%M:%S")]
 
         sheet.add_row # spacing
 
@@ -938,6 +898,10 @@ class ReportGenerator
 
   def self.generate_peak_hours_report(start_date, end_date)
     ls = LabSession.arel_table
+    # One row per day from the From date to the To date; the visits counted are
+    # those of these whole days in the application time zone, so every hour
+    # column comes from a visit on one of the rows.
+    days = start_date.to_date..end_date.to_date
 
     result =
       ActiveRecord::Base.connection.exec_query(
@@ -950,40 +914,31 @@ class ReportGenerator
             Arel.star.count.as("total_visits")
           )
           .from(ls)
-          .where(ls["sign_in_time"].between(start_date..end_date))
+          .where(
+            ls["sign_in_time"].between(
+              days.begin.beginning_of_day..days.end.end_of_day
+            )
+          )
           .group("year", "month", "day", "hour")
           .to_sql
       )
 
-    visits_by_hour = {}
-    min_hour = 23
-    max_hour = 0
-
+    # The database stores UTC hours; each one is counted under its hour in the
+    # application time zone, so the two UTC hours that fall in the repeated
+    # hour when daylight saving time ends add up.
+    visits_by_hour = Hash.new(0)
     result.each do |row|
-      year = row["year"].to_i
-      month = row["month"].to_i
-      day = row["day"].to_i
-      hour = row["hour"].to_i
-      total_visits = row["total_visits"].to_i
-
-      date = DateTime.new(year, month, day, hour).localtime
-
-      min_hour = [min_hour, date.hour].min
-      max_hour = [max_hour, date.hour].max
-
-      visits_by_hour[date.year] = {} unless visits_by_hour[date.year]
-
-      visits_by_hour[date.year][date.month] = {} unless visits_by_hour[
-        date.year
-      ][
-        date.month
-      ]
-
-      visits_by_hour[date.year][date.month][date.day] = {
-      } unless visits_by_hour[date.year][date.month][date.day]
-
-      visits_by_hour[date.year][date.month][date.day][date.hour] = total_visits
+      at =
+        Time.utc(
+          row["year"].to_i,
+          row["month"].to_i,
+          row["day"].to_i,
+          row["hour"].to_i
+        ).in_time_zone
+      visits_by_hour[[at.to_date, at.hour]] += row["total_visits"].to_i
     end
+    hours = visits_by_hour.keys.map(&:last)
+    hour_columns = hours.empty? ? [] : (hours.min..hours.max).to_a
 
     spreadsheet = Axlsx::Package.new
 
@@ -995,23 +950,14 @@ class ReportGenerator
 
       header = ["Date"]
 
-      (min_hour..max_hour).each { |hour| header << "%02i:00" % hour }
+      hour_columns.each { |hour| header << "%02i:00" % hour }
 
       table_header(sheet, header)
 
-      (start_date..end_date).each do |date|
+      days.each do |date|
         row = [date.strftime("%Y-%m-%d")]
 
-        (min_hour..max_hour).each do |hour|
-          row << if visits_by_hour[date.year] &&
-               visits_by_hour[date.year][date.month] &&
-               visits_by_hour[date.year][date.month][date.day] &&
-               visits_by_hour[date.year][date.month][date.day][hour]
-            visits_by_hour[date.year][date.month][date.day][hour]
-          else
-            0
-          end
-        end
+        hour_columns.each { |hour| row << visits_by_hour[[date, hour]] }
 
         sheet.add_row row
       end
@@ -1354,7 +1300,7 @@ class ReportGenerator
             uu[:name].minimum.as("instructor_name"),
             ts[:created_at].minimum.as("date"),
             s[:name].minimum.as("space_name"),
-            Arel.star.count.as("attendee_count")
+            u[:id].count.as("attendee_count")
           ]
         )
         .where(ts[:created_at].between(start_date..end_date))
@@ -1454,6 +1400,31 @@ class ReportGenerator
 
   def self.push_hash(sheet, hash)
     hash.each { |key, value| sheet.add_row [key, value] }
+  end
+
+  # The cell types for a row under these headers: the Student ID column is
+  # text, so leading zeros are kept; the others are inferred from the values.
+  def self.student_id_as_text(columns)
+    columns.map { |column| :string if column == "Student ID" }
+  end
+
+  # The calendar months or weeks (unit :month or :week) that overlap the
+  # range, the partial ones at either end included, each as the range from
+  # its first to its last instant, in the offset the range is given in.
+  def self.calendar_periods(start_date, end_date, unit)
+    (start_date.to_datetime..end_date.to_datetime)
+      .map { |day| day.public_send(:"beginning_of_#{unit}") }
+      .uniq
+      .map { |first| first..first.public_send(:"end_of_#{unit}") }
+  end
+
+  # Certificates per session among the certificates created in the period,
+  # rounded to one decimal place (0.0 when there are none).
+  def self.average_attendees_per_session(certifications, period)
+    in_period =
+      certifications.select { |cert| period.cover?(cert.created_at) }
+    sessions = in_period.map(&:training_session_id).uniq.count
+    sessions.zero? ? 0.0 : in_period.count.fdiv(sessions).round(1)
   end
 
   def self.sum_by_key(hash, key)

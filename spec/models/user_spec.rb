@@ -1168,4 +1168,23 @@ RSpec.describe User, type: :model do
       expect(User.email_shape_error("someone@gmial.com")).to be_nil
     end
   end
+
+  describe ".identity_label" do
+    it "humanizes the stored identity and shows a missing one as None" do
+      expect(User.identity_label("community_member")).to eq("Community member")
+      expect(User.identity_label(nil)).to eq("None")
+      expect(User.identity_label("")).to eq("None")
+    end
+  end
+
+  describe ".faculty_label" do
+    it "gives the English name of a French faculty, keeps other names and shows a blank one as None" do
+      expect(User.faculty_label("Génie")).to eq("Engineering")
+      expect(User.faculty_label("Éducation")).to eq("Education")
+      expect(User.faculty_label("Education")).to eq("Education")
+      expect(User.faculty_label("Unlisted")).to eq("Unlisted")
+      expect(User.faculty_label("")).to eq("None")
+      expect(User.faculty_label(nil)).to eq("None")
+    end
+  end
 end

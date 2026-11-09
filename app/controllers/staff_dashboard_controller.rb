@@ -374,7 +374,7 @@ class StaffDashboardController < StaffAreaController
                     .to_stream
                     .read,
                   filename:
-                    "#{@space.name}_#{Time.new.strftime("%Y-%m-%d_%Hh%M")}_present_users_report.xlsx"
+                    "#{@space.name}_#{Time.current.strftime("%Y-%m-%d_%Hh%M")}_present_users_report.xlsx"
       end
     end
   end
