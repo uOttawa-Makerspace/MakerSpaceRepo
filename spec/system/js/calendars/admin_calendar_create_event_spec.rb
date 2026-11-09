@@ -421,10 +421,8 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     let(:slot_start) { "2027-03-17T17:30" }
     let(:slot_end) { "2027-03-17T18:00" }
 
-    # The feed gives Toronto wall-clock times and the modal reads its fields in
-    # the browser's zone, so these examples run with a Toronto browser. The page
-    # is loaded first (the browser has to compute the instants) and loaded again
-    # afterwards.
+    # The feed and the modal's fields are Toronto wall-clock times. The page is
+    # loaded first and loaded again afterwards.
     def unavailability_around_slot(rule_for: nil)
       log_in_as(admin, to: root_path)
       from = toronto_utc(slot_start) - 1.hour

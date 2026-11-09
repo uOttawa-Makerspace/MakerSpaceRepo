@@ -4,6 +4,7 @@ import { RRule } from "rrule";
 import {
   dateValue,
   fieldValue,
+  instantFromCalendar,
   instantToWall,
   startOfDay,
   wallFromCalendar,
@@ -126,8 +127,12 @@ export function eventClick(eventImpl) {
     allForm.style.display = "none";
   }
 
+  // The instant of the clicked occurrence
+  const occurrenceStart = new Date(
+    instantFromCalendar(eventImpl.startStr),
+  ).toISOString();
   document.querySelectorAll(".delete_start_date").forEach((e) => {
-    e.value = new Date(eventImpl.startStr).toISOString();
+    e.value = occurrenceStart;
   });
 
   singleForm.action = `/staff/unavailabilities/${id}/delete_with_scope`;

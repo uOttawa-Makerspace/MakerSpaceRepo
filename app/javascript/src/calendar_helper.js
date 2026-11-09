@@ -4,6 +4,7 @@ import { Modal } from "bootstrap";
 import {
   dateValue,
   fieldValue,
+  instantFromCalendar,
   instantToWall,
   wallFromCalendar,
   wallToInstant,
@@ -579,8 +580,10 @@ function openEventForEditing(eventImpl) {
     allForm.style.display = "none";
   }
 
-  // Set start_date for deletion
-  const startDateValue = new Date(eventImpl.startStr).toISOString();
+  // Set start_date for deletion: the instant of the clicked occurrence
+  const startDateValue = new Date(
+    instantFromCalendar(eventImpl.startStr),
+  ).toISOString();
   document.querySelectorAll(".delete_start_date").forEach((e) => {
     e.value = startDateValue;
   });

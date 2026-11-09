@@ -209,7 +209,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       click_button "This event"
 
       expect(page).to have_text("This occurrence deleted.")
-      # in the Toronto browser the excluded instant is the occurrence itself (14:00Z)
+      # the excluded instant is the occurrence itself (14:00Z)
       expect(series.reload.recurrence_rule).to include("EXDATE:20270317T140000Z")
       expect(page).to have_css(".fc-timegrid-event", text: "Open lab", count: 1, visible: :all)
     end
@@ -246,7 +246,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(field_value("end_time_field")).to eq("2027-03-16T11:00")
     end
 
-    it "removes one occurrence by its own instant", js: true, skip_bullet: true, pending: "the modal reads the browser zone" do
+    it "removes one occurrence by its own instant", js: true, skip_bullet: true do
       series = create_series
       open_admin_calendar
       open_event("Open lab", index: 1)

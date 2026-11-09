@@ -8,6 +8,7 @@ import {
   endOfDateInstant,
   entryIntervals,
   fieldValue,
+  instantFromCalendar,
   instantToWall,
   startOfDay,
   wallFromCalendar,
@@ -132,6 +133,18 @@ describe.each(ZONES)("with the process clock in %s", (zone) => {
       ["a time without a zone as Toronto time", "2026-03-30T09:30:00"],
     ])("reads %s", (_, value) => {
       expect(wallFromCalendar(value)).toBe(wall(2026, 3, 30, 9, 30));
+    });
+
+    it("keeps the instant of a calendar time with an offset", () => {
+      // the second 1:30 of the night the clocks go back
+      expect(
+        new Date(
+          instantFromCalendar("2026-11-01T01:30:00-05:00"),
+        ).toISOString(),
+      ).toBe("2026-11-01T06:30:00.000Z");
+      expect(
+        new Date(instantFromCalendar("2026-11-01T01:30:00")).toISOString(),
+      ).toBe("2026-11-01T05:30:00.000Z");
     });
 
     it("reads a calendar date alone as its midnight", () => {

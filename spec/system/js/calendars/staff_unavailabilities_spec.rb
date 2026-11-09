@@ -359,8 +359,7 @@ RSpec.describe "Staff unavailabilities page", type: :system do
     end
 
     describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
-      it "shows the repeat end date and removes one occurrence by its own instant", js: true, skip_bullet: true,
-                                                                                   pending: "the modal reads the browser zone" do
+      it "shows the repeat end date and removes one occurrence by its own instant", js: true, skip_bullet: true do
         series = create_series
         open_page
         open_entry("Class", index: 1)

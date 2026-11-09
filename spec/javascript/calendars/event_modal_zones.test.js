@@ -44,7 +44,6 @@ const hasOffset = (value) => /(Z|[+-]\d{2}:\d{2})$/.test(value);
 
 // Offset of each zone on 2027-03-17, in minutes as getTimezoneOffset reports it
 const ZONES = { "America/Toronto": 240, UTC: 0, "Asia/Tokyo": -540 };
-const TORONTO = "America/Toronto";
 const originalZone = process.env.TZ;
 afterAll(() => {
   vi.useRealTimers();
@@ -105,10 +104,6 @@ function dailyUntil(stamp) {
 describe.each(Object.entries(ZONES))(
   "with the browser clock in %s",
   (zone, offsetOn17March) => {
-    // An example the modal gets wrong in this zone: it reads the browser zone.
-    const inBrowserZone = (wrong) =>
-      zone !== TORONTO && wrong ? it.fails : it;
-
     beforeEach(() => {
       process.env.TZ = zone;
       document.body.innerHTML = EVENT_MODAL_HTML;
@@ -153,18 +148,15 @@ describe.each(Object.entries(ZONES))(
           expect($("start_time_field").value).toBe(c.field);
         });
 
-        inBrowserZone(!hasOffset(c.start))(
-          `deletes ${c.label} by its own instant`,
-          async () => {
-            await load();
-            eventClick(fcEvent(c.start));
-            const sent = [...document.querySelectorAll(".delete_start_date")];
-            expect(sent.map((input) => input.value)).toEqual([
-              c.instant,
-              c.instant,
-            ]);
-          },
-        );
+        it(`deletes ${c.label} by its own instant`, async () => {
+          await load();
+          eventClick(fcEvent(c.start));
+          const sent = [...document.querySelectorAll(".delete_start_date")];
+          expect(sent.map((input) => input.value)).toEqual([
+            c.instant,
+            c.instant,
+          ]);
+        });
       }
 
       for (const c of cases.untilDates) {

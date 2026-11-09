@@ -85,16 +85,26 @@ export function startOfDay(wallMs) {
   return wallMs - (wallMs % DAY_MS);
 }
 
+const hasOffset = (value) => /(Z|[+-]\d{2}:\d{2})$/.test(value);
+
 /*
  * The wall time of a date the calendar gives. One with an offset (or Z) is an
  * instant. One without is already Toronto wall-clock time: the calendars draw
  * in Toronto. A date alone is its midnight.
  */
 export function wallFromCalendar(value) {
-  if (/(Z|[+-]\d{2}:\d{2})$/.test(value)) {
-    return instantToWall(Date.parse(value));
-  }
+  if (hasOffset(value)) return instantToWall(Date.parse(value));
   return wallFromString(value.includes("T") ? value : `${value}T00:00`);
+}
+
+/*
+ * The instant of a date the calendar gives, read as wallFromCalendar reads it.
+ * One with an offset keeps its own instant, so the second 1:30 of the night
+ * the clocks go back stays the second one.
+ */
+export function instantFromCalendar(value) {
+  if (hasOffset(value)) return Date.parse(value);
+  return wallToInstant(wallFromCalendar(value));
 }
 
 /* The instant a series repeating until `date` ("2026-03-30") ends: the last second of that day. */
