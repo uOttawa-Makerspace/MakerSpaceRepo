@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1230,6 +1230,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_000001) do
     t.integer "count", default: 0, null: false
     t.datetime "expires_at", null: false
     t.index ["expires_at"], name: "index_rate_limit_counters_on_expires_at"
+  end
+
+  create_table "recurrence_rule_rewrites", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "migration_version", null: false
+    t.text "new_rule", null: false
+    t.text "old_rule", null: false
+    t.bigint "record_id", null: false
+    t.string "table_name", null: false
+    t.index ["table_name", "record_id", "migration_version"], name: "index_recurrence_rule_rewrites_once", unique: true
   end
 
   create_table "recurring_bookings", force: :cascade do |t|
