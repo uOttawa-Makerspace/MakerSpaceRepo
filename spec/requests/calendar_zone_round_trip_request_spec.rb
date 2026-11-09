@@ -143,13 +143,20 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
                 expect(RecurrenceRuleValidator.error_for(text)).to be_nil
               end
 
-              it "is sent to the admin calendar starting at its Toronto time" do
+              it "is sent to the admin calendar in Toronto time, its end included" do
                 sign_in_as(:admin)
                 event = create(:event, space: space, start_time: start, end_time: start + 1.hour, recurrence_rule: text)
                 get json_admin_events_path(id: space.id)
                 row = admin_rows.find { |r| r["id"] == "event-#{event.id}" }
-                expect(row["rrule"].lines.first.chomp).to eq("DTSTART:#{start.strftime('%Y%m%dT%H%M%S')}")
-                expect(row["rrule"].lines.drop(1).join).to eq(text.lines.drop(1).join)
+                expect(row["rrule"]).to eq(c["served"])
+              end
+
+              it "is sent to the staff unavailabilities calendar in Toronto time" do
+                staff = sign_in_as(:staff)
+                unavailability = create(:staff_unavailability, user: staff, start_time: start, end_time: start + 1.hour,
+                                                               recurrence_rule: text)
+                get json_staff_unavailabilities_path
+                expect(response.parsed_body.find { |r| r["id"] == unavailability.id }["rrule"]).to eq(c["served"])
               end
 
               it "is sent to Google as its RRULE line only" do
@@ -167,12 +174,12 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
         let(:stored) { "DTSTART:20270315T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270331T235959Z\nEXDATE:20270317T140000Z" }
         let(:start) { Time.utc(2027, 3, 15, 14) }
 
-        it "is sent to the admin calendar unchanged apart from the Toronto start" do
+        it "is sent to the admin calendar in Toronto time" do
           sign_in_as(:admin)
           event = create(:event, space: space, start_time: start, end_time: start + 1.hour, recurrence_rule: stored)
           get json_admin_events_path(id: space.id)
           row = admin_rows.find { |r| r["id"] == "event-#{event.id}" }
-          expect(row["rrule"]).to eq("DTSTART:20270315T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270331T235959Z\nEXDATE:20270317T100000")
+          expect(row["rrule"]).to eq("DTSTART:20270315T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270331T195959\nEXDATE:20270317T100000")
         end
 
         it "expands on the server to the same instants" do

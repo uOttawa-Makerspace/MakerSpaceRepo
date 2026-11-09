@@ -26,7 +26,7 @@ const submit = () => fire($("unavailForm"), "submit", { cancelable: true });
 const stampToDate = (stamp) =>
   new Date(
     stamp.replace(
-      /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,
+      /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?/,
       "$1-$2-$3T$4:$5:$6Z",
     ),
   );
@@ -132,8 +132,8 @@ describe.each(Object.entries(ZONES))(
       }
 
       for (const c of cases.untilDates) {
-        it(`shows the repeat end date of a series ending on ${c.label}`, () => {
-          eventClick(fcEvent("2027-03-10T10:00:00", dailyUntil(c.until)));
+        it(`shows the repeat end date the feed sends for a series ending on ${c.label}`, () => {
+          eventClick(fcEvent("2027-03-10T10:00:00", dailyUntil(c.served)));
           expect($("recurrence_until").value).toBe(c.date);
         });
       }

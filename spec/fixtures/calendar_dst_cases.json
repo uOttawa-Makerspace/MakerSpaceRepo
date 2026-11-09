@@ -1,5 +1,5 @@
 {
-  "about": "Calendar times around the America/Toronto clock changes of 2027 (forward on Sunday 2027-03-14 at 2:00, back on Sunday 2027-11-07 at 2:00). Read by the Vitest calendar specs and the RSpec request specs, so the browser and the server are checked against the same table. A field is a datetime-local value in Toronto wall-clock time; an instant is UTC. storedRules: one repeat rule written both ways it can be stored (a UTC DTSTART, and a Toronto DTSTART with TZID), with the instants it starts at; both must read the same.",
+  "about": "Calendar times around the America/Toronto clock changes of 2027 (forward on Sunday 2027-03-14 at 2:00, back on Sunday 2027-11-07 at 2:00). Read by the Vitest calendar specs and the RSpec request specs, so the browser and the server are checked against the same table. A field is a datetime-local value in Toronto wall-clock time; an instant is UTC. storedRules: one repeat rule written both ways it can be stored (a UTC DTSTART, and a Toronto DTSTART with TZID), with the instants it starts at; both must read the same. untilDates: 'until' is the stored UTC stamp, 'served' the Toronto wall-clock stamp the calendar feeds send. storedRules 'served' is the rule the calendar feeds send for it (Toronto wall-clock time throughout).",
   "zone": "America/Toronto",
   "fieldToInstant": [
     {
@@ -127,22 +127,26 @@
     {
       "label": "a winter day",
       "date": "2027-03-13",
-      "until": "20270314T045959Z"
+      "until": "20270314T045959Z",
+      "served": "20270313T235959"
     },
     {
       "label": "the day the clocks go forward (it ends in summer time)",
       "date": "2027-03-14",
-      "until": "20270315T035959Z"
+      "until": "20270315T035959Z",
+      "served": "20270314T235959"
     },
     {
       "label": "the day before the clocks go back",
       "date": "2027-11-06",
-      "until": "20271107T035959Z"
+      "until": "20271107T035959Z",
+      "served": "20271106T235959"
     },
     {
       "label": "the day the clocks go back (it ends in winter time)",
       "date": "2027-11-07",
-      "until": "20271108T045959Z"
+      "until": "20271108T045959Z",
+      "served": "20271107T235959"
     }
   ],
   "storedRules": [
@@ -155,7 +159,8 @@
         "2027-03-10T15:00:00.000Z",
         "2027-03-17T14:00:00.000Z",
         "2027-03-24T14:00:00.000Z"
-      ]
+      ],
+      "served": "DTSTART:20270310T100000\nRRULE:FREQ=WEEKLY;BYDAY=WE;UNTIL=20270324T235959"
     },
     {
       "label": "a daily rule at 1:30 across the autumn clock change (the repeated 1:30 is listed once)",
@@ -167,7 +172,8 @@
         "2027-11-06T05:30:00.000Z",
         "2027-11-07T05:30:00.000Z",
         "2027-11-08T06:30:00.000Z"
-      ]
+      ],
+      "served": "DTSTART:20271105T013000\nRRULE:FREQ=DAILY;COUNT=4"
     },
     {
       "label": "a daily rule at 23:30 (already the next day in UTC) across the spring clock change",
@@ -178,7 +184,8 @@
         "2027-03-13T04:30:00.000Z",
         "2027-03-14T04:30:00.000Z",
         "2027-03-15T03:30:00.000Z"
-      ]
+      ],
+      "served": "DTSTART:20270312T233000\nRRULE:FREQ=DAILY;UNTIL=20270314T235959"
     },
     {
       "label": "a daily rule at 1:00 ending on a winter day",
@@ -189,7 +196,8 @@
         "2027-01-04T06:00:00.000Z",
         "2027-01-05T06:00:00.000Z",
         "2027-01-06T06:00:00.000Z"
-      ]
+      ],
+      "served": "DTSTART:20270104T010000\nRRULE:FREQ=DAILY;UNTIL=20270106T235959"
     }
   ]
 }

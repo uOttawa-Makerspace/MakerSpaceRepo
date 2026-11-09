@@ -505,7 +505,7 @@ function openEventForEditing(eventImpl) {
     }
 
     if (rule.options.until) {
-      untilInput.value = dateValue(instantToWall(rule.options.until.getTime()));
+      untilInput.value = dateValue(rule.options.until.getTime());
     }
     ruleField.value = rule.toString();
   }

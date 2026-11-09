@@ -26,11 +26,11 @@ class RecurrenceRule
   end
 
   # The rule as the calendar views read it (rrule.js has no time zones): the
-  # series start, then the other lines with each EXDATE in Toronto wall-clock
-  # time.
+  # series start, then the other lines with every UTC stamp (UNTIL, EXDATE)
+  # in Toronto wall-clock time, so a series ends on its last Toronto day.
   def in_toronto_time
     lines = RecurrenceExpansion.lines(@text).reject { |l| l.start_with?("DTSTART") }
-    (["DTSTART:#{wall_stamp(@series_start)}"] + lines.map { |l| l.start_with?("EXDATE") ? in_wall_time(l) : l }).join("\n")
+    (["DTSTART:#{wall_stamp(@series_start)}"] + lines.map { |l| in_wall_time(l) }).join("\n")
   end
 
   # The series without the occurrence that starts at `start` ("delete this

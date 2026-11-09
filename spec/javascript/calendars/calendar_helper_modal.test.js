@@ -294,7 +294,7 @@ describe("eventClick", () => {
       freq: 2,
       dtstart: new Date(Date.UTC(2027, 2, 15, 14)),
       byweekday: [0, 2],
-      until: new Date(2027, 2, 31, 23, 59, 59),
+      until: new Date(Date.UTC(2027, 2, 31, 23, 59, 59)),
     };
     eventClick(
       fcEvent({

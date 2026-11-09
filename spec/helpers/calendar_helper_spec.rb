@@ -113,7 +113,7 @@ RSpec.describe CalendarHelper, type: :helper do
       event = parse_ics_calendar(url).first[:events].first
       lines = event[:rrule].split("\n")
       expect(lines.first).to eq("DTSTART:20270105T100000")
-      expect(lines[1]).to start_with("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;UNTIL=20271231T000000Z")
+      expect(lines[1]).to start_with("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;UNTIL=20271230T190000")
       expect(lines.last).to eq("EXDATE:20270119T100000")
       expect(event[:duration]).to eq(90 * 60 * 1000)
     end
@@ -215,7 +215,7 @@ RSpec.describe CalendarHelper, type: :helper do
                                        "RRULE:FREQ=WEEKLY;UNTIL=20261231", "EXDATE;VALUE=DATE:20261106"]))
           event = events_for(body).first
           expect(event[:start]).to eq("2026-10-30T00:00:00")
-          expect(event[:rrule]).to eq("DTSTART:20261030T000000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T050000Z\nEXDATE:20261106T000000")
+          expect(event[:rrule]).to eq("DTSTART:20261030T000000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T000000\nEXDATE:20261106T000000")
         end
 
         it "reads a floating time as Toronto wall-clock time" do
@@ -235,7 +235,7 @@ RSpec.describe CalendarHelper, type: :helper do
                                        "RRULE:FREQ=WEEKLY;UNTIL=20261231T235959", "EXDATE:20261106T090000"]))
           event = events_for(body).first
           expect(event[:start]).to eq("2026-10-30T09:00:00")
-          expect(event[:rrule]).to eq("DTSTART:20261030T090000\nRRULE:FREQ=WEEKLY;UNTIL=20270101T045959Z\nEXDATE:20261106T090000")
+          expect(event[:rrule]).to eq("DTSTART:20261030T090000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T235959\nEXDATE:20261106T090000")
           expect(event[:duration]).to eq(3_600_000)
         end
 
@@ -300,13 +300,13 @@ RSpec.describe CalendarHelper, type: :helper do
   end
 
   describe "#convert_rrule_to_string" do
-    it "joins every present part and leaves an interval of one out" do
+    it "joins every present part, the end in Toronto wall-clock time, and leaves an interval of one out" do
       rule = OpenStruct.new(frequency: "WEEKLY", interval: 1, by_day: %w[MO WE], by_month_day: [1, 2], by_month: [3],
                             by_year_day: [100], by_week_number: [5], by_set_position: [-1],
                             until: Time.utc(2027, 6, 1, 12), count: 5, week_start: "SU")
       expect(convert_rrule_to_string(rule)).to eq(
         "FREQ=WEEKLY;BYDAY=MO,WE;BYMONTHDAY=1,2;BYMONTH=3;BYYEARDAY=100;BYWEEKNO=5;BYSETPOS=-1;" \
-        "UNTIL=20270601T120000Z;COUNT=5;WKST=SU"
+        "UNTIL=20270601T080000;COUNT=5;WKST=SU"
       )
     end
 

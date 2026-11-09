@@ -180,7 +180,8 @@ module CalendarHelper
     
     if rrule_obj.until
       until_time = safe_to_time(rrule_obj.until)
-      parts << "UNTIL=#{until_time.utc.strftime('%Y%m%dT%H%M%SZ')}" if until_time
+      # Toronto wall-clock time, like the DTSTART the feed sends with it
+      parts << "UNTIL=#{until_time.in_time_zone('America/Toronto').strftime('%Y%m%dT%H%M%S')}" if until_time
     end
     
     parts << "COUNT=#{rrule_obj.count}" if rrule_obj.count

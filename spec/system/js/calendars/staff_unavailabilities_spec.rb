@@ -433,4 +433,17 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       expect(StaffExternalUnavailability.where(user: staff).pluck(:ics_url)).to eq(["https://feeds.example.org/a.ics"])
     end
   end
+
+  describe "a series that ends on a day" do
+    # Daily at 1:00 until Wednesday 2027-03-17: the stored end is the last
+    # second of that Toronto day (04:00 UTC on the Thursday).
+    it "shows no occurrence after its last day", js: true, skip_bullet: true do
+      create(:staff_unavailability, user: staff, title: "Night shift",
+                                    start_time: eastern.local(2027, 3, 15, 1), end_time: eastern.local(2027, 3, 15, 2),
+                                    recurrence_rule: "DTSTART:20270315T050000Z\nRRULE:FREQ=DAILY;UNTIL=20270318T035959Z")
+      open_page
+
+      expect(page).to have_css(".fc-timegrid-event", text: "Night shift", visible: :all, count: 3)
+    end
+  end
 end

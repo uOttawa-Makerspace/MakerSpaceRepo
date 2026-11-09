@@ -638,9 +638,9 @@ RSpec.describe "Static pages", type: :request do
             "start" => "2026-10-26T09:00:00",
             "end" => "2026-10-26T17:00:00",
             # rrule is a newline-joined STRING (DTSTART/RRULE/EXDATE lines), not an
-            # object; it relies on @fullcalendar/rrule parsing it. DTSTART/EXDATE are Toronto wall-clock with
-            # no TZID/Z while UNTIL stays UTC ("Z"), so the two are in different frames of reference.
-            "rrule" => "DTSTART:20261026T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20261221T235959Z\n" \
+            # object; it relies on @fullcalendar/rrule parsing it. DTSTART, UNTIL and EXDATE are all
+            # Toronto wall-clock time with no TZID/Z, the one frame of reference rrule.js reads.
+            "rrule" => "DTSTART:20261026T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20261221T185959\n" \
                        "EXDATE:20261028T090000\nEXDATE:20261102T090000",
             "duration" => 28_800_000
           )
@@ -699,7 +699,7 @@ RSpec.describe "Static pages", type: :request do
           # payload grows as feeds age. A fix that drops ended series should flip this expectation.
           parent = event_named(source, "old-series-1@google.com")
           expect(parent["rrule"]).to eq(
-            "DTSTART:20260601T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20260629T235959Z\nEXDATE:20260608T090000"
+            "DTSTART:20260601T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20260629T195959\nEXDATE:20260608T090000"
           )
         end
       end

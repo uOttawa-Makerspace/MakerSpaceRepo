@@ -5,7 +5,6 @@ import {
   dateValue,
   fieldValue,
   instantFromCalendar,
-  instantToWall,
   startOfDay,
   wallFromCalendar,
 } from "./recurrence";
@@ -93,7 +92,7 @@ export function eventClick(eventImpl) {
     }
 
     untilInput.value = rule.options.until
-      ? dateValue(instantToWall(rule.options.until.getTime()))
+      ? dateValue(rule.options.until.getTime())
       : null;
     ruleField.value = rule.toString();
   }
