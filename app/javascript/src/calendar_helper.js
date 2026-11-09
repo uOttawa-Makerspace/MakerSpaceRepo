@@ -1,37 +1,18 @@
 import { RRule } from "rrule";
 import { Modal } from "bootstrap";
 
-/*
- * Converts a Date object to a local datetime string in the format YYYY-MM-DDTHH:MM
- * If the value is empty, it returns null.
- */
-export function toLocalDatetimeString(date) {
-  if (!date) return null;
+import {
+  dateValue,
+  fieldValue,
+  instantFromCalendar,
+  instantToWall,
+  storedRule,
+  wallFromCalendar,
+  wallToInstant,
+} from "./recurrence";
 
-  const pad = (n) => (n < 10 ? "0" + n : n);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-/*
- * Converts a Date object to a local date string in the format YYYY-MM-DD
- * If the value is empty, it returns null.
- */
-export function toLocalDateString(date) {
-  if (!date) return null;
-
-  const pad = (n) => (n < 10 ? "0" + n : n);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-/*
- * Parses a local datetime string in the format YYYY-MM-DDTHH:MM
- * and returns a Date object.
- * If the value is empty, it returns the current date.
- */
-export function parseLocalDatetimeString(value) {
-  if (!value) return new Date();
-  return new Date(value);
-}
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 
 // -------------------
 // Reset modal to clean state
@@ -379,6 +360,13 @@ export function eventClick(eventImpl) {
   openEventForEditing(eventImpl);
 }
 
+// The end of an event the calendar gives without one: the next day for an
+// all-day event, otherwise an hour after the start.
+function defaultEnd(start, allDay) {
+  if (allDay) return start + DAY_MS;
+  return instantToWall(wallToInstant(start) + HOUR_MS);
+}
+
 function openEventForEditing(eventImpl) {
   const event = eventImpl._def;
   const id = eventImpl.id.replace("event-", "");
@@ -440,35 +428,20 @@ function openEventForEditing(eventImpl) {
       : event.extendedProps.eventType || "other",
   );
 
-  // TIME FIELDS
+  // TIME FIELDS, in Toronto wall-clock time like the calendar
   const startTimeField = document.getElementById("start_time_field");
   const endTimeField = document.getElementById("end_time_field");
   const allDayCheckbox = document.getElementById("all_day_checkbox");
 
-  if (eventImpl.allDay) {
-    allDayCheckbox.checked = true;
-    const startDate = new Date(eventImpl.startStr);
-    if (eventImpl.startStr.indexOf("T") === -1) {
-      startDate.setHours(0, 0, 0, 0);
-    }
-    const endDate = eventImpl.end
-      ? new Date(eventImpl.endStr)
-      : new Date(startDate);
-    if (!eventImpl.end) endDate.setDate(endDate.getDate() + 1);
-
-    startTimeField.value = toLocalDatetimeString(startDate);
-    endTimeField.value = toLocalDatetimeString(endDate);
-    endTimeField.disabled = true;
-  } else {
-    allDayCheckbox.checked = false;
-    const start = new Date(eventImpl.startStr);
-    startTimeField.value = toLocalDatetimeString(start);
-    const end = eventImpl.end
-      ? new Date(eventImpl.endStr)
-      : new Date(start.getTime() + 3600000);
-    endTimeField.value = toLocalDatetimeString(end);
-    endTimeField.disabled = false;
-  }
+  const start = wallFromCalendar(eventImpl.startStr);
+  allDayCheckbox.checked = eventImpl.allDay;
+  endTimeField.disabled = eventImpl.allDay;
+  startTimeField.value = fieldValue(start);
+  endTimeField.value = fieldValue(
+    eventImpl.end
+      ? wallFromCalendar(eventImpl.endStr)
+      : defaultEnd(start, eventImpl.allDay),
+  );
 
   // TITLE & DESCRIPTION
   document.getElementById("title").value =
@@ -532,10 +505,16 @@ function openEventForEditing(eventImpl) {
         break;
     }
 
-    if (rule.options.until) {
-      untilInput.value = toLocalDateString(rule.options.until);
-    }
-    ruleField.value = rule.toString();
+    const untilDate = rule.options.until
+      ? dateValue(rule.options.until.getTime())
+      : "";
+    if (untilDate) untilInput.value = untilDate;
+    // The feed's start is a Toronto wall time already
+    ruleField.value = storedRule(
+      { freq: rule.options.freq, byweekday: rule.options.byweekday },
+      rule.options.dtstart.getTime(),
+      untilDate,
+    );
   }
 
   // TRAINING FIELDS
@@ -608,9 +587,9 @@ function openEventForEditing(eventImpl) {
     allForm.style.display = "none";
   }
 
-  // Set start_date for deletion
-  const startDateValue = parseLocalDatetimeString(
-    eventImpl.startStr,
+  // Set start_date for deletion: the instant of the clicked occurrence
+  const startDateValue = new Date(
+    instantFromCalendar(eventImpl.startStr),
   ).toISOString();
   document.querySelectorAll(".delete_start_date").forEach((e) => {
     e.value = startDateValue;
@@ -638,11 +617,11 @@ export function eventCreate(info) {
     return;
   }
 
-  document.getElementById("start_time_field").value = toLocalDatetimeString(
-    new Date(info.startStr),
+  document.getElementById("start_time_field").value = fieldValue(
+    wallFromCalendar(info.startStr),
   );
-  document.getElementById("end_time_field").value = toLocalDatetimeString(
-    new Date(info.endStr),
+  document.getElementById("end_time_field").value = fieldValue(
+    wallFromCalendar(info.endStr),
   );
 
   // Click the add button then call addEventClick

@@ -14,7 +14,7 @@ vi.mock("bootstrap", () => ({
   },
 }));
 
-const { addEventClick, eventClick, eventCreate, toLocalDatetimeString } =
+const { addEventClick, eventClick, eventCreate } =
   await import("../../../app/javascript/src/calendar_helper.js");
 
 const $ = (id) => document.getElementById(id);
@@ -210,24 +210,17 @@ describe("eventClick", () => {
     expect($("delete_all_form").style.display).toBe("none");
   });
 
-  it("writes the start and end in the browser's local time", () => {
+  it("writes the start and end in Toronto time", () => {
     eventClick(fcEvent());
-    expect($("start_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T10:00:00-04:00")),
-    );
-    expect($("end_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T11:30:00-04:00")),
-    );
+    expect($("start_time_field").value).toBe("2027-03-17T10:00");
+    expect($("end_time_field").value).toBe("2027-03-17T11:30");
     expect($("end_time_field").disabled).toBe(false);
     expect($("all_day_checkbox").checked).toBe(false);
   });
 
   it("defaults the end to one hour after the start when the event has none", () => {
     eventClick(fcEvent({ end: null, endStr: "" }));
-    const start = new Date("2027-03-17T10:00:00-04:00");
-    expect($("end_time_field").value).toBe(
-      toLocalDatetimeString(new Date(start.getTime() + 3600000)),
-    );
+    expect($("end_time_field").value).toBe("2027-03-17T11:00");
   });
 
   it("checks all-day and locks the end field", () => {
@@ -301,7 +294,7 @@ describe("eventClick", () => {
       freq: 2,
       dtstart: new Date(Date.UTC(2027, 2, 15, 14)),
       byweekday: [0, 2],
-      until: new Date(2027, 2, 31, 23, 59, 59),
+      until: new Date(Date.UTC(2027, 2, 31, 23, 59, 59)),
     };
     eventClick(
       fcEvent({
@@ -319,7 +312,10 @@ describe("eventClick", () => {
     expect($("day_WE").checked).toBe(true);
     expect($("day_TU").checked).toBe(false);
     expect($("recurrence_until").value).toBe("2027-03-31");
-    expect($("recurrence_rule_field").value).toContain("FREQ=WEEKLY");
+    // the feed gives Toronto wall times; the field holds the rule as stored
+    expect($("recurrence_rule_field").value).toBe(
+      "DTSTART;TZID=America/Toronto:20270315T140000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270401T035959Z",
+    );
     expect($("delete_following_form").style.display).toBe("block");
     expect($("delete_all_form").style.display).toBe("block");
     expect($("update_dropdown").style.display).toBe("block");
@@ -458,12 +454,8 @@ describe("eventCreate", () => {
 
     expect(click).toHaveBeenCalledTimes(1);
     // the reset that follows the click leaves the dragged times in place
-    expect($("start_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T10:00:00-04:00")),
-    );
-    expect($("end_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T12:00:00-04:00")),
-    );
+    expect($("start_time_field").value).toBe("2027-03-17T10:00");
+    expect($("end_time_field").value).toBe("2027-03-17T12:00");
     expect($("save_button").value).toBe("Save Draft");
   });
 });

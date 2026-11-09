@@ -113,7 +113,7 @@ RSpec.describe CalendarHelper, type: :helper do
       event = parse_ics_calendar(url).first[:events].first
       lines = event[:rrule].split("\n")
       expect(lines.first).to eq("DTSTART:20270105T100000")
-      expect(lines[1]).to start_with("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;UNTIL=20271231T000000Z")
+      expect(lines[1]).to start_with("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;UNTIL=20271230T190000")
       expect(lines.last).to eq("EXDATE:20270119T100000")
       expect(event[:duration]).to eq(90 * 60 * 1000)
     end
@@ -158,6 +158,13 @@ RSpec.describe CalendarHelper, type: :helper do
       stub_request(:get, url).to_return(status: 200, body: body)
       events = parse_ics_calendar(url).first[:events]
       expect(events.map { |e| [e[:title], e[:allDay]] }).to eq([["Alone", true]])
+    end
+
+    it "lists a modified instance that has no start of its own with no start" do
+      body = ics(vevent("rec", ["RECURRENCE-ID:20270112T150000Z", "DTEND:20270112T180000Z", "SUMMARY:No start"]))
+      stub_request(:get, url).to_return(status: 200, body: body)
+      event = parse_ics_calendar(url).first[:events].first
+      expect(event).to include(title: "No start", start: nil, end: "2027-01-12T13:00:00")
     end
   end
 
@@ -215,7 +222,7 @@ RSpec.describe CalendarHelper, type: :helper do
                                        "RRULE:FREQ=WEEKLY;UNTIL=20261231", "EXDATE;VALUE=DATE:20261106"]))
           event = events_for(body).first
           expect(event[:start]).to eq("2026-10-30T00:00:00")
-          expect(event[:rrule]).to eq("DTSTART:20261030T000000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T050000Z\nEXDATE:20261106T000000")
+          expect(event[:rrule]).to eq("DTSTART:20261030T000000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T000000\nEXDATE:20261106T000000")
         end
 
         it "reads a floating time as Toronto wall-clock time" do
@@ -235,7 +242,7 @@ RSpec.describe CalendarHelper, type: :helper do
                                        "RRULE:FREQ=WEEKLY;UNTIL=20261231T235959", "EXDATE:20261106T090000"]))
           event = events_for(body).first
           expect(event[:start]).to eq("2026-10-30T09:00:00")
-          expect(event[:rrule]).to eq("DTSTART:20261030T090000\nRRULE:FREQ=WEEKLY;UNTIL=20270101T045959Z\nEXDATE:20261106T090000")
+          expect(event[:rrule]).to eq("DTSTART:20261030T090000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T235959\nEXDATE:20261106T090000")
           expect(event[:duration]).to eq(3_600_000)
         end
 
@@ -300,13 +307,13 @@ RSpec.describe CalendarHelper, type: :helper do
   end
 
   describe "#convert_rrule_to_string" do
-    it "joins every present part and leaves an interval of one out" do
+    it "joins every present part, the end in Toronto wall-clock time, and leaves an interval of one out" do
       rule = OpenStruct.new(frequency: "WEEKLY", interval: 1, by_day: %w[MO WE], by_month_day: [1, 2], by_month: [3],
                             by_year_day: [100], by_week_number: [5], by_set_position: [-1],
                             until: Time.utc(2027, 6, 1, 12), count: 5, week_start: "SU")
       expect(convert_rrule_to_string(rule)).to eq(
         "FREQ=WEEKLY;BYDAY=MO,WE;BYMONTHDAY=1,2;BYMONTH=3;BYYEARDAY=100;BYWEEKNO=5;BYSETPOS=-1;" \
-        "UNTIL=20270601T120000Z;COUNT=5;WKST=SU"
+        "UNTIL=20270601T080000;COUNT=5;WKST=SU"
       )
     end
 
@@ -343,43 +350,12 @@ RSpec.describe CalendarHelper, type: :helper do
     end
   end
 
-  describe "#parse_rrule_and_dtstart" do
-    it "splits the rule, the start (as UTC) and the other lines" do
-      rrule, dtstart, rest = parse_rrule_and_dtstart("DTSTART:20270505T130000Z\nRRULE:FREQ=DAILY\nEXDATE:20270506T130000Z")
-      expect(rrule).to eq("FREQ=DAILY")
-      expect(dtstart).to eq(Time.utc(2027, 5, 5, 13))
-      expect(rest).to eq(["EXDATE:20270506T130000Z"])
-    end
-
-    it "returns nil for a missing start or rule" do
-      rrule, dtstart, rest = parse_rrule_and_dtstart("EXDATE:20270506T130000Z")
-      expect([rrule, dtstart, rest]).to eq([nil, nil, ["EXDATE:20270506T130000Z"]])
-    end
-  end
-
-  describe "#add_exdate_to_rrule" do
-    it "appends the date as a UTC EXDATE line" do
-      expect(add_exdate_to_rrule("RRULE:FREQ=DAILY", Time.utc(2027, 5, 6, 13))).to eq("RRULE:FREQ=DAILY\nEXDATE:20270506T130000Z")
-    end
-
-    it "returns the rule untouched when either input is blank" do
-      expect(add_exdate_to_rrule("RRULE:FREQ=DAILY", nil)).to eq("RRULE:FREQ=DAILY")
-      expect(add_exdate_to_rrule(nil, Time.utc(2027, 5, 6))).to be_nil
-      expect(add_exdate_to_rrule("", Time.utc(2027, 5, 6))).to eq("")
-    end
-  end
-
   describe "#combine_date_and_time" do
-    it "keeps the date and takes the clock time" do
+    it "keeps the Toronto date and takes the Toronto clock time" do
+      # 01:02Z on 2027-05-06 is the evening of 2027-05-05 in Toronto; 13:45Z in January is 8:45 standard time
       result = combine_date_and_time(Time.utc(2027, 5, 6, 1, 2, 3), Time.utc(2020, 1, 1, 13, 45, 30))
-      expect(result).to eq(Time.utc(2027, 5, 6, 13, 45, 30))
-    end
-  end
-
-  describe "#remove_until_from_rrule" do
-    it "removes an UNTIL part ending in Z and leaves other rules alone" do
-      expect(remove_until_from_rrule("FREQ=DAILY;UNTIL=20270601T120000Z;COUNT=2")).to eq("FREQ=DAILY;COUNT=2")
-      expect(remove_until_from_rrule("FREQ=DAILY;COUNT=2")).to eq("FREQ=DAILY;COUNT=2")
+      expect(result).to eq(Time.utc(2027, 5, 5, 12, 45, 30))
+      expect(result.time_zone.name).to eq("America/Toronto")
     end
   end
 

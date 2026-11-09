@@ -161,7 +161,10 @@ describe("repeat options", () => {
     const rule = $("recurrence_rule_field").value;
     expect(rule).toContain("FREQ=WEEKLY");
     expect(rule).toContain("BYDAY=MO,WE");
-    expect(rule).toContain("UNTIL=20270630");
+    // The series starts in Toronto time and ends at the end of the picked
+    // day in Toronto (23:59:59 EDT on June 30 is 03:59:59 UTC on July 1).
+    expect(rule).toContain("DTSTART;TZID=America/Toronto:20270317T100000");
+    expect(rule).toContain("UNTIL=20270701T035959Z");
   });
 
   it("leaves the rule empty when the event does not repeat", async () => {

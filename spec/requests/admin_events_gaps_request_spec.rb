@@ -155,6 +155,15 @@ RSpec.describe "Admin events gaps", type: :request do
   describe "PATCH update" do
     before { log_in!(admin) }
 
+    it "edits a non-repeating event as a whole when the scope 'this' is posted" do
+      event = create(:event, space: space, title: "Plain")
+      expect do
+        patch admin_event_path(event), params: { update_scope: "this", event: event_attrs(title: "Renamed") }
+      end.not_to change(Event, :count)
+      expect(flash[:notice]).to eq("Event updated successfully.")
+      expect(event.reload).to have_attributes(title: "Renamed", recurrence_rule: nil)
+    end
+
     it "redirects with an alert and keeps the record when the utc_* params are missing" do
       event = create(:event, space: space, title: "Keep")
       patch admin_event_path(event), params: { event: event_attrs(title: "Changed").except(:utc_start_time) }
@@ -227,7 +236,7 @@ RSpec.describe "Admin events gaps", type: :request do
         expect(series.title).to eq("Series v2")
         expect(series.start_time).to eq(Time.utc(2025, 5, 5, 16, 30))
         expect(series.end_time).to eq(Time.utc(2025, 5, 5, 17, 45))
-        expect(series.recurrence_rule).to eq("DTSTART:20250505T163000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5")
+        expect(series.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20250505T123000\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5")
         expect(series.created_by.role).to eq("staff")
         expect(series.space_id).to eq(space.id)
       end
@@ -321,7 +330,7 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(flash[:notice]).to eq("This occurrence deleted.")
       expect(Event.exists?(series.id)).to be(true)
       expect(series.reload.recurrence_rule).to eq(
-        "DTSTART:20250505T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5\nEXDATE:20250512T150000Z"
+        "DTSTART;TZID=America/Toronto:20250505T110000\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5\nEXDATE:20250512T150000Z"
       )
     end
 
@@ -330,7 +339,7 @@ RSpec.describe "Admin events gaps", type: :request do
              params: { scope: "following", start_date: "2025-05-19 15:00" }
       expect(flash[:notice]).to eq("This and following deleted.")
       expect(series.reload.recurrence_rule).to eq(
-        "DTSTART:20250505T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5;UNTIL=20250518T150000Z"
+        "DTSTART;TZID=America/Toronto:20250505T110000\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5;UNTIL=20250518T150000Z"
       )
     end
 
@@ -362,6 +371,12 @@ RSpec.describe "Admin events gaps", type: :request do
     def entries_for(space_id)
       get json_admin_events_path(id: space_id)
       response.parsed_body.flat_map { |group| group["events"] }
+    end
+
+    it "answers 400 when the space id is blank" do
+      get json_admin_events_path(id: " ")
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body).to eq("error" => "Space ID is required")
     end
 
     it "renders the grey gradient and an Unassigned user for an event without staff" do

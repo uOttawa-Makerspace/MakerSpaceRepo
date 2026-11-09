@@ -4,13 +4,21 @@
 // daylight-saving bug in the host zone could not show).
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
+  dateValue,
+  endOfDateInstant,
   entryIntervals,
+  fieldValue,
+  instantFromCalendar,
   instantToWall,
+  startOfDay,
+  wallFromCalendar,
+  wallOfField,
   occurrencesOverlapping,
   startingAt,
   wallFromString,
   wallToInstant,
 } from "../../../app/javascript/src/recurrence.js";
+import cases from "../../fixtures/calendar_dst_cases.json";
 
 const ZONES = ["America/Toronto", "Europe/Paris", "UTC"];
 // Offset of each zone on 2026-03-30, in minutes as getTimezoneOffset reports it
@@ -98,6 +106,58 @@ describe.each(ZONES)("with the process clock in %s", (zone) => {
       expect(wallFromString("2026-03-30T09:30")).toBe(wall(2026, 3, 30, 9, 30));
       expect(wallFromString("2026-03-30T09:30:15")).toBe(
         wall(2026, 3, 30, 9, 30) + 15000,
+      );
+    });
+  });
+
+  describe("form and calendar values", () => {
+    it("writes a wall time as a datetime field and as a date field", () => {
+      expect(fieldValue(wall(2026, 3, 30, 9, 5))).toBe("2026-03-30T09:05");
+      expect(dateValue(wall(2026, 3, 30, 23, 59))).toBe("2026-03-30");
+    });
+
+    it("reads an empty field as now in Toronto", () => {
+      const before = instantToWall(Date.now());
+      const now = wallOfField("");
+      expect(now).toBeGreaterThanOrEqual(before);
+      expect(now).toBeLessThanOrEqual(instantToWall(Date.now()));
+      expect(wallOfField("2026-03-30T09:30")).toBe(wall(2026, 3, 30, 9, 30));
+    });
+
+    it("finds the midnight starting a day", () => {
+      expect(startOfDay(wall(2026, 3, 8, 23, 30))).toBe(wall(2026, 3, 8));
+    });
+
+    it.each([
+      ["a time with an offset as an instant", "2026-03-30T09:30:00-04:00"],
+      ["a time in UTC as an instant", "2026-03-30T13:30:00Z"],
+      ["a time without a zone as Toronto time", "2026-03-30T09:30:00"],
+    ])("reads %s", (_, value) => {
+      expect(wallFromCalendar(value)).toBe(wall(2026, 3, 30, 9, 30));
+    });
+
+    it("keeps the instant of a calendar time with an offset", () => {
+      // the second 1:30 of the night the clocks go back
+      expect(
+        new Date(
+          instantFromCalendar("2026-11-01T01:30:00-05:00"),
+        ).toISOString(),
+      ).toBe("2026-11-01T06:30:00.000Z");
+      expect(
+        new Date(instantFromCalendar("2026-11-01T01:30:00")).toISOString(),
+      ).toBe("2026-11-01T05:30:00.000Z");
+    });
+
+    it("reads a calendar date alone as its midnight", () => {
+      expect(wallFromCalendar("2026-03-30")).toBe(wall(2026, 3, 30));
+    });
+
+    it("ends a repeat on the last second of the Toronto day", () => {
+      expect(new Date(endOfDateInstant("2026-03-08")).toISOString()).toBe(
+        "2026-03-09T03:59:59.000Z",
+      );
+      expect(new Date(endOfDateInstant("2026-01-09")).toISOString()).toBe(
+        "2026-01-10T04:59:59.000Z",
       );
     });
   });
@@ -293,6 +353,23 @@ describe.each(ZONES)("with the process clock in %s", (zone) => {
           wall(2026, 3, 2),
         ),
       ).toThrow();
+    });
+  });
+
+  // The same rule as it can be stored (spec/fixtures/calendar_dst_cases.json,
+  // which the request specs also read): each form starts at the same instants.
+  describe.each(["utc", "toronto"])("a stored rule with a %s start", (form) => {
+    it.each(cases.storedRules)("$label", (c) => {
+      const from = instantToWall(Date.parse(c.start));
+      const found = occurrencesOverlapping(
+        c[form],
+        HOUR,
+        from,
+        from + 60 * 24 * HOUR,
+      );
+      expect(
+        found.map((o) => new Date(wallToInstant(o.start)).toISOString()),
+      ).toEqual(c.occurrences);
     });
   });
 

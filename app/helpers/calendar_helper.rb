@@ -180,7 +180,8 @@ module CalendarHelper
     
     if rrule_obj.until
       until_time = safe_to_time(rrule_obj.until)
-      parts << "UNTIL=#{until_time.utc.strftime('%Y%m%dT%H%M%SZ')}" if until_time
+      # Toronto wall-clock time, like the DTSTART the feed sends with it
+      parts << "UNTIL=#{until_time.in_time_zone(RecurrenceRule::ZONE).strftime('%Y%m%dT%H%M%S')}" if until_time
     end
     
     parts << "COUNT=#{rrule_obj.count}" if rrule_obj.count
@@ -189,59 +190,19 @@ module CalendarHelper
     parts.join(';')
   end
   
+  # The repeat rule as the calendar views read it (see RecurrenceRule#in_toronto_time).
   def date_formatted_recurrence_rule(event)
-    return unless event.recurrence_rule.present?
-    
-    rrule = event.recurrence_rule
-    rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
-    
-    # Convert EXDATE values to Toronto timezone
-    rrule_parts = rrule_parts.map do |part|
-      if part.strip.start_with?('EXDATE')
-        part.gsub(/(\d{8}T\d{6}Z?)/) do |datetime|
-          datetime.in_time_zone("America/Toronto").strftime("%Y%m%dT%H%M%S")
-        end
-      else
-        part
-      end
-    end
-    
-    rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
-    dtstart_toronto = event.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-    
-    "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
-  end
-  
-  def parse_rrule_and_dtstart(rule_string)
-    lines = RecurrenceExpansion.lines(rule_string)
-    rrule_line = lines.find { |l| l.start_with?("RRULE:") }&.sub("RRULE:", "")
-    dtstart_line = lines.find { |l| l.start_with?("DTSTART:") }&.sub("DTSTART:", "")
+    return if event.recurrence_rule.blank?
 
-    rest_of_lines = lines.reject { |l| l.start_with?("RRULE:", "DTSTART:") }
-
-    dtstart = dtstart_line.present? ? Time.parse(dtstart_line).utc : nil
-    
-    [rrule_line, dtstart, rest_of_lines]
+    RecurrenceRule.new(event.recurrence_rule, event.start_time).in_toronto_time
   end
 
-  def add_exdate_to_rrule(rrule_str, date_to_exclude)
-    return rrule_str if rrule_str.blank? || date_to_exclude.blank?
-
-    exdate = date_to_exclude.strftime('%Y%m%dT%H%M%SZ')
-    "#{rrule_str}\nEXDATE:#{exdate}"
-  end
-
+  # The date of `keep_date` at the clock time of `keep_time`, both read in
+  # Toronto time (a repeating series keeps its Toronto clock time across clock
+  # changes and late evenings, which are already the next day in UTC).
   def combine_date_and_time(keep_date, keep_time)
-    keep_date.change(
-      hour: keep_time.hour,
-      min: keep_time.min,
-      sec: keep_time.sec
-    )
-  end
-
-  def remove_until_from_rrule(rrule_line)
-    rrule_line = rrule_line.gsub(/;UNTIL=[^;Z]*Z/, '') if rrule_line.include?('UNTIL=')
-    rrule_line
+    time = keep_time.in_time_zone(RecurrenceRule::ZONE)
+    keep_date.in_time_zone(RecurrenceRule::ZONE).change(hour: time.hour, min: time.min, sec: time.sec)
   end
 
   # A point in time as UTC. Dates and times without a zone (all-day dates,

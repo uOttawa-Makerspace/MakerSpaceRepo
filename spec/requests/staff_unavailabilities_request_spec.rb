@@ -12,6 +12,8 @@ RSpec.describe "Staff unavailabilities", type: :request do
   include SpacesSpecHelpers
 
   RULE = "DTSTART:20270301T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO"
+  # RULE as the series edits write it again: the start in Toronto time
+  RULE_AS_WRITTEN = "DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO"
 
   def payload(overrides = {})
     { staff_unavailability: { title: "Class", description: "desc",
@@ -120,6 +122,14 @@ RSpec.describe "Staff unavailabilities", type: :request do
     describe "update" do
       let!(:record) { create(:staff_unavailability, user: staff, title: "Old", start_time: Time.utc(2027, 3, 1, 15), end_time: Time.utc(2027, 3, 1, 16)) }
 
+      it "edits a non-recurring record as a whole when the scope 'this' is posted" do
+        expect {
+          patch staff_unavailability_path(record), params: payload(title: "New").merge(update_scope: "this")
+        }.not_to change(StaffUnavailability, :count)
+        expect(flash[:notice]).to eq("Unavailability updated successfully.")
+        expect(record.reload).to have_attributes(title: "New", recurrence_rule: nil)
+      end
+
       it "updates a non-recurring record" do
         patch staff_unavailability_path(record), params: payload(title: "New", utc_start_time: "2027-03-02T10:00:00Z", utc_end_time: "2027-03-02T11:00:00Z")
         expect(response).to redirect_to(staff_unavailabilities_path)
@@ -157,20 +167,28 @@ RSpec.describe "Staff unavailabilities", type: :request do
             patch staff_unavailability_path(series), params: payload(title: "Once", utc_start_time: "2027-03-22T18:00:00Z", utc_end_time: "2027-03-22T19:00:00Z").merge(update_scope: "this")
           }.to change(StaffUnavailability, :count).by(1)
           expect(flash[:notice]).to eq("This occurrence updated successfully.")
-          expect(series.reload.recurrence_rule).to eq("#{RULE}\nEXDATE:20270322T150000Z")
+          # the series is at 10:00 Toronto time: 14:00Z once daylight time starts
+          expect(series.reload.recurrence_rule).to eq("#{RULE}\nEXDATE:20270322T140000Z")
           once = StaffUnavailability.last
           expect(once).to have_attributes(title: "Once", recurrence_rule: nil, user_id: staff.id)
           expect(once.start_time.utc.iso8601).to eq("2027-03-22T18:00:00Z")
         end
 
-        it "scope 'all' keeps the series date and moves the time of day" do
+        it "scope 'all' keeps the series date and moves the Toronto time of day" do
+          # 18:30Z on 2027-03-22 is 14:30 daylight time; 14:30 on 2027-03-01 is 19:30Z
           patch staff_unavailability_path(series), params: payload(title: "Shifted", utc_start_time: "2027-03-22T18:30:00Z", utc_end_time: "2027-03-22T19:30:00Z", recurrence_rule: "DTSTART:20270322T183000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO").merge(update_scope: "all")
           expect(flash[:notice]).to eq("All occurrences updated successfully.")
           series.reload
           expect(series.title).to eq("Shifted")
-          expect(series.start_time.utc.iso8601).to eq("2027-03-01T18:30:00Z")
-          expect(series.end_time.utc.iso8601).to eq("2027-03-01T19:30:00Z")
-          expect(series.recurrence_rule).to eq("DTSTART:20270301T183000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO")
+          expect(series.start_time.utc.iso8601).to eq("2027-03-01T19:30:00Z")
+          expect(series.end_time.utc.iso8601).to eq("2027-03-01T20:30:00Z")
+          expect(series.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270301T143000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
+        end
+
+        it "scope 'all' with a rule that does not validate flashes an alert and changes nothing" do
+          patch staff_unavailability_path(series), params: payload(title: "Shifted", recurrence_rule: "DTSTART:20270322T183000Z\nRRULE:FREQ=MINUTELY").merge(update_scope: "all")
+          expect(flash[:alert]).to start_with("Failed to update unavailability:")
+          expect(series.reload).to have_attributes(title: "Series", recurrence_rule: RULE)
         end
 
         it "an unknown scope flashes an alert and changes nothing" do
@@ -213,13 +231,13 @@ RSpec.describe "Staff unavailabilities", type: :request do
       it "single adds an EXDATE" do
         delete delete_with_scope_staff_unavailability_path(series), params: { scope: "single", start_date: "2027-03-08T15:00:00Z" }
         expect(flash[:notice]).to eq("This occurrence deleted.")
-        expect(series.reload.recurrence_rule).to eq("#{RULE}\nEXDATE:20270308T150000Z")
+        expect(series.reload.recurrence_rule).to eq("#{RULE_AS_WRITTEN}\nEXDATE:20270308T150000Z")
       end
 
       it "following ends the series the day before the chosen start" do
         delete delete_with_scope_staff_unavailability_path(series), params: { scope: "following", start_date: "2027-03-15T15:00:00Z" }
         expect(flash[:notice]).to eq("This and following deleted.")
-        expect(series.reload.recurrence_rule).to eq("DTSTART:20270301T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20270314T150000Z")
+        expect(series.reload.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20270314T150000Z")
       end
 
       it "following replaces an existing UNTIL" do
@@ -227,6 +245,20 @@ RSpec.describe "Staff unavailabilities", type: :request do
         delete delete_with_scope_staff_unavailability_path(series), params: { scope: "following", start_date: "2027-03-15T15:00:00Z" }
         expect(series.reload.recurrence_rule).to include("UNTIL=20270314T150000Z")
         expect(series.recurrence_rule).not_to include("20271201")
+      end
+
+      # Time.parse raises for it, so the request ends in a server error.
+      it "answers a start_date that is not a time with a server error and leaves the series as it was" do
+        %w[single following].each do |scope|
+          delete delete_with_scope_staff_unavailability_path(series), params: { scope: scope, start_date: "not a date" }
+          expect(response).to have_http_status(:internal_server_error), scope
+        end
+        expect(series.reload.recurrence_rule).to eq(RULE)
+      end
+
+      it "reads a start_date with an offset as its instant" do
+        delete delete_with_scope_staff_unavailability_path(series), params: { scope: "single", start_date: "2027-03-08T10:00:00-05:00" }
+        expect(series.reload.recurrence_rule).to eq("#{RULE_AS_WRITTEN}\nEXDATE:20270308T150000Z")
       end
 
       it "all destroys the series" do

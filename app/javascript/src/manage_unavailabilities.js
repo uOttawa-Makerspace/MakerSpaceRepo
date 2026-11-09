@@ -2,9 +2,16 @@ import { Collapse } from "bootstrap";
 import { RRule } from "rrule";
 
 import {
-  parseLocalDatetimeString,
-  toLocalDatetimeString,
-} from "./calendar_helper.js";
+  fieldValue,
+  instantToWall,
+  startOfDay,
+  storedRule,
+  wallOfField,
+  wallToInstant,
+} from "./recurrence.js";
+
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 
 document.addEventListener("turbo:load", () => {
   const container = document.querySelector("#content");
@@ -31,9 +38,10 @@ document.addEventListener("turbo:load", () => {
   // ---------------------------------------
   // Helper functions
   // ---------------------------------------
+  // The form fields hold Toronto wall-clock times, like the calendar.
   function validateTimeRange() {
-    const startDate = parseLocalDatetimeString(startTimeField.value);
-    const endDate = parseLocalDatetimeString(endTimeField.value);
+    const startDate = wallOfField(startTimeField.value);
+    const endDate = wallOfField(endTimeField.value);
 
     if (endDate <= startDate) {
       timeError.classList.remove("d-none");
@@ -48,39 +56,32 @@ document.addEventListener("turbo:load", () => {
     }
   }
 
+  // The rule as it is stored: the start in Toronto time, the end a UTC stamp.
   function buildRule() {
-    const startDate = parseLocalDatetimeString(startTimeField.value);
-    const untilDate = new Date(untilInput.value + "T23:59:59");
-
     if (frequency.value === "") return (ruleField.value = "");
 
-    const rule = new RRule({
-      freq: RRule[frequency.value] || RRule.DAILY,
-      dtstart: startDate,
-      until: untilInput.value ? untilDate : null,
-      byweekday: dayCheckboxes
-        .filter((cb) => cb.checked)
-        .map((cb) => RRule[cb.value]),
-    });
-
-    ruleField.value = rule.toString();
+    ruleField.value = storedRule(
+      {
+        freq: RRule[frequency.value] || RRule.DAILY,
+        byweekday: dayCheckboxes
+          .filter((cb) => cb.checked)
+          .map((cb) => RRule[cb.value]),
+      },
+      wallOfField(startTimeField.value),
+      untilInput.value,
+    );
   }
 
   function handleDateIfAllDay() {
-    const startDate =
-      parseLocalDatetimeString(startTimeField.value) || new Date();
-    startDate.setHours(0, 0, 0, 0);
+    const startDate = startOfDay(wallOfField(startTimeField.value));
 
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
-
-    startTimeField.value = toLocalDatetimeString(startDate);
-    endTimeField.value = toLocalDatetimeString(endDate);
+    startTimeField.value = fieldValue(startDate);
+    endTimeField.value = fieldValue(startDate + DAY_MS);
     endTimeField.disabled = true;
 
     const freq = frequency.value;
     if (freq === "WEEKLY") {
-      const dayIndex = startDate.getDay();
+      const dayIndex = new Date(startDate).getUTCDay();
       dayCheckboxes.forEach((checkbox, index) => {
         checkbox.checked = index === dayIndex;
       });
@@ -95,10 +96,8 @@ document.addEventListener("turbo:load", () => {
       handleDateIfAllDay();
     } else {
       endTimeField.disabled = false;
-      const startDate = parseLocalDatetimeString(startTimeField.value);
-      const endDate = new Date(startDate);
-      endDate.setHours(endDate.getHours() + 1);
-      endTimeField.value = toLocalDatetimeString(endDate);
+      const start = wallToInstant(wallOfField(startTimeField.value));
+      endTimeField.value = fieldValue(instantToWall(start + HOUR_MS));
     }
     validateTimeRange();
   });
@@ -127,8 +126,7 @@ document.addEventListener("turbo:load", () => {
     });
     // Set today's checkbox if frequency is WEEKLY
     if (freq === "WEEKLY") {
-      const startDate = parseLocalDatetimeString(startTimeField.value);
-      const dayIndex = startDate.getDay();
+      const dayIndex = new Date(wallOfField(startTimeField.value)).getUTCDay();
       if (dayCheckboxes[dayIndex]) dayCheckboxes[dayIndex].checked = true;
     }
   });
@@ -186,31 +184,25 @@ document.addEventListener("turbo:load", () => {
   // Set values on modal open
   modal.addEventListener("show.bs.modal", (e) => {
     if (!startTimeField.value) {
-      const now = new Date();
-      const roundedNow = new Date(now);
-      roundedNow.setMinutes(0, 0, 0);
-      roundedNow.setHours(roundedNow.getHours() + 1);
+      const now = wallOfField("");
+      const nextHour = now - (now % HOUR_MS) + HOUR_MS;
 
-      startTimeField.value = toLocalDatetimeString(roundedNow);
-      endTimeField.value = toLocalDatetimeString(
-        new Date(roundedNow.getTime() + 60 * 60 * 1000),
-      );
+      startTimeField.value = fieldValue(nextHour);
+      endTimeField.value = fieldValue(nextHour + HOUR_MS);
     }
 
     validateTimeRange();
   });
 
-  // Before form submission, convert to UTC
+  // Before form submission, send the instants of the Toronto times
   document.getElementById("unavailForm").addEventListener("submit", (e) => {
     buildRule();
 
-    const startLocal = parseLocalDatetimeString(startTimeField.value);
-    const endLocal = parseLocalDatetimeString(endTimeField.value);
-
-    const utcStartField = document.getElementById("utc_start_time");
-    utcStartField.value = startLocal.toISOString();
-
-    const utcEndField = document.getElementById("utc_end_time");
-    utcEndField.value = endLocal.toISOString();
+    document.getElementById("utc_start_time").value = new Date(
+      wallToInstant(wallOfField(startTimeField.value)),
+    ).toISOString();
+    document.getElementById("utc_end_time").value = new Date(
+      wallToInstant(wallOfField(endTimeField.value)),
+    ).toISOString();
   });
 });

@@ -13,8 +13,8 @@ vi.mock("bootstrap", () => ({
 }));
 
 await import("../../../app/javascript/src/manage_unavailabilities.js");
-const { toLocalDatetimeString } =
-  await import("../../../app/javascript/src/calendar_helper.js");
+const { instantToWall } =
+  await import("../../../app/javascript/src/recurrence.js");
 
 const $ = (id) => document.getElementById(id);
 const fire = (el, type, init) => el.dispatchEvent(new Event(type, init));
@@ -179,12 +179,12 @@ describe("modal", () => {
     expect(collapseHide).toHaveBeenCalled();
   });
 
-  it("proposes the next full hour, for one hour, when it opens empty", () => {
+  it("proposes the next full Toronto hour, for one hour, when it opens empty", () => {
     fire($("unavailabilityModal"), "show.bs.modal");
-    const start = new Date($("start_time_field").value);
-    const end = new Date($("end_time_field").value);
-    expect(start.getMinutes()).toBe(0);
-    expect(start.getTime()).toBeGreaterThan(Date.now());
+    const start = new Date(`${$("start_time_field").value}Z`);
+    const end = new Date(`${$("end_time_field").value}Z`);
+    expect(start.getUTCMinutes()).toBe(0);
+    expect(start.getTime()).toBeGreaterThan(instantToWall(Date.now()));
     expect(end.getTime() - start.getTime()).toBe(3600000);
   });
 
@@ -201,16 +201,12 @@ describe("submit", () => {
     fire($("unavailForm"), "submit", { cancelable: true });
   }
 
-  it("writes the start and end as UTC instants", () => {
+  it("writes the start and end as the UTC instants of the Toronto times", () => {
     $("start_time_field").value = "2027-03-17T10:00";
     $("end_time_field").value = "2027-03-17T11:00";
     submit();
-    expect($("utc_start_time").value).toBe(
-      new Date("2027-03-17T10:00").toISOString(),
-    );
-    expect($("utc_end_time").value).toBe(
-      new Date("2027-03-17T11:00").toISOString(),
-    );
+    expect($("utc_start_time").value).toBe("2027-03-17T14:00:00.000Z");
+    expect($("utc_end_time").value).toBe("2027-03-17T15:00:00.000Z");
   });
 
   it("leaves the rule empty when the entry does not repeat", () => {
@@ -232,21 +228,21 @@ describe("submit", () => {
     expect(rule).not.toContain("UNTIL");
   });
 
-  it("ends the rule at the end of the chosen day", () => {
+  it("ends the rule at the end of the chosen Toronto day", () => {
     $("start_time_field").value = "2027-03-17T10:00";
     $("recurrence_frequency").value = "DAILY";
     $("recurrence_until").value = "2027-03-25";
     submit();
-    const until = $("recurrence_rule_field").value.match(/UNTIL=(\w+)/)[1];
-    expect(until).toMatch(/^20270325T|^20270326T/);
+    expect($("recurrence_rule_field").value).toContain(
+      "UNTIL=20270326T035959Z",
+    );
   });
 
   it("treats the all-day start as midnight", () => {
     $("start_time_field").value = "2027-03-17T00:00";
     $("end_time_field").value = "2027-03-18T00:00";
     submit();
-    expect(toLocalDatetimeString(new Date($("utc_end_time").value))).toBe(
-      "2027-03-18T00:00",
-    );
+    expect($("utc_start_time").value).toBe("2027-03-17T04:00:00.000Z");
+    expect($("utc_end_time").value).toBe("2027-03-18T04:00:00.000Z");
   });
 });

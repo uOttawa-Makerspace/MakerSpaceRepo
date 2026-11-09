@@ -1231,6 +1231,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_120000) do
     t.index ["expires_at"], name: "index_rate_limit_counters_on_expires_at"
   end
 
+  create_table "recurrence_rule_rewrites", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "migration_version", null: false
+    t.text "new_rule", null: false
+    t.text "old_rule", null: false
+    t.bigint "record_id", null: false
+    t.string "table_name", null: false
+    t.index ["table_name", "record_id", "migration_version"], name: "index_recurrence_rule_rewrites_once", unique: true
+  end
+
   create_table "recurring_bookings", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false

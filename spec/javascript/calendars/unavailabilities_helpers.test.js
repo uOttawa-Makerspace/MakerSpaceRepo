@@ -16,8 +16,6 @@ vi.mock("bootstrap", () => ({
 
 const { eventClick, addUnavailabilityClick, eventCreate } =
   await import("../../../app/javascript/src/unavailabilities_helpers.js");
-const { toLocalDatetimeString } =
-  await import("../../../app/javascript/src/calendar_helper.js");
 
 const $ = (id) => document.getElementById(id);
 const form = () => document.querySelector("#unavailabilityModal form");
@@ -48,7 +46,7 @@ const weeklyDef = (extra = {}) => ({
               freq: 2,
               dtstart: new Date(Date.UTC(2027, 2, 15, 14)),
               byweekday: [0, 2],
-              until: new Date(2027, 2, 31, 23, 59, 59),
+              until: new Date(Date.UTC(2027, 2, 31, 23, 59, 59)),
               ...extra,
             },
           },
@@ -85,14 +83,15 @@ describe("eventClick (unavailabilities)", () => {
     );
   });
 
-  it("writes the times in the browser's local time", () => {
+  it("writes the times in Toronto time", () => {
     eventClick(fcEvent());
-    expect($("start_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T13:00:00-04:00")),
-    );
-    expect($("end_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T15:00:00-04:00")),
-    );
+    expect($("start_time_field").value).toBe("2027-03-17T13:00");
+    expect($("end_time_field").value).toBe("2027-03-17T15:00");
+  });
+
+  it("leaves the end date empty for a repeating entry without one", () => {
+    eventClick(fcEvent({ def: weeklyDef({ until: null }) }));
+    expect($("recurrence_until").value).toBe("");
   });
 
   it("checks all-day, snaps to midnight and locks the end", () => {
@@ -126,7 +125,10 @@ describe("eventClick (unavailabilities)", () => {
     expect($("recurrence_options").style.display).toBe("block");
     expect($("weekly_options").style.display).toBe("block");
     expect($("recurrence_until").value).toBe("2027-03-31");
-    expect($("recurrence_rule_field").value).toContain("FREQ=WEEKLY");
+    // the feed gives Toronto wall times; the field holds the rule as stored
+    expect($("recurrence_rule_field").value).toBe(
+      "DTSTART;TZID=America/Toronto:20270315T140000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270401T035959Z",
+    );
     expect($("update_dropdown_items").contains($("save_button"))).toBe(true);
     expect($("update_dropdown").style.display).toBe("block");
     expect($("delete_following_form").style.display).toBe("block");
@@ -201,11 +203,7 @@ describe("eventCreate (unavailabilities)", () => {
     });
     expect(click).toHaveBeenCalledTimes(1);
     expect($("save_button").value).toBe("Save");
-    expect($("start_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T09:00:00-04:00")),
-    );
-    expect($("end_time_field").value).toBe(
-      toLocalDatetimeString(new Date("2027-03-17T10:00:00-04:00")),
-    );
+    expect($("start_time_field").value).toBe("2027-03-17T09:00");
+    expect($("end_time_field").value).toBe("2027-03-17T10:00");
   });
 });

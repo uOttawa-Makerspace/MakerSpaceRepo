@@ -2,10 +2,15 @@ import { Modal } from "bootstrap";
 import { RRule } from "rrule";
 
 import {
-  parseLocalDatetimeString,
-  toLocalDateString,
-  toLocalDatetimeString,
-} from "./calendar_helper";
+  dateValue,
+  fieldValue,
+  instantFromCalendar,
+  startOfDay,
+  storedRule,
+  wallFromCalendar,
+} from "./recurrence";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // This function closely matches ./calendar.js eventClick
 export function eventClick(eventImpl) {
@@ -25,26 +30,20 @@ export function eventClick(eventImpl) {
   methodInput.value = "patch";
   form.appendChild(methodInput);
 
+  // The fields hold Toronto wall-clock times, like the calendar.
   const startTimeField = document.getElementById("start_time_field");
   const endTimeField = document.getElementById("end_time_field");
 
   if (eventImpl.allDay) {
     document.getElementById("all_day_checkbox").checked = true;
 
-    const startDate = new Date(eventImpl.startStr);
-    startDate.setHours(0, 0, 0, 0);
-
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
-
-    startTimeField.value = toLocalDatetimeString(startDate);
-    endTimeField.value = toLocalDatetimeString(endDate);
+    const startDate = startOfDay(wallFromCalendar(eventImpl.startStr));
+    startTimeField.value = fieldValue(startDate);
+    endTimeField.value = fieldValue(startDate + DAY_MS);
     endTimeField.disabled = true;
   } else {
-    const start = new Date(eventImpl.startStr);
-    startTimeField.value = toLocalDatetimeString(start);
-    const end = new Date(eventImpl.endStr);
-    endTimeField.value = toLocalDatetimeString(end);
+    startTimeField.value = fieldValue(wallFromCalendar(eventImpl.startStr));
+    endTimeField.value = fieldValue(wallFromCalendar(eventImpl.endStr));
   }
 
   document.getElementById("title").value = event.title || "";
@@ -93,8 +92,16 @@ export function eventClick(eventImpl) {
         break;
     }
 
-    untilInput.value = toLocalDateString(rule.options.until);
-    ruleField.value = rule.toString();
+    const untilDate = rule.options.until
+      ? dateValue(rule.options.until.getTime())
+      : "";
+    untilInput.value = untilDate;
+    // The feed's start is a Toronto wall time already
+    ruleField.value = storedRule(
+      { freq: rule.options.freq, byweekday: rule.options.byweekday },
+      rule.options.dtstart.getTime(),
+      untilDate,
+    );
   }
 
   document.getElementById("unavailabilityModalLabel").textContent =
@@ -126,8 +133,12 @@ export function eventClick(eventImpl) {
     allForm.style.display = "none";
   }
 
+  // The instant of the clicked occurrence
+  const occurrenceStart = new Date(
+    instantFromCalendar(eventImpl.startStr),
+  ).toISOString();
   document.querySelectorAll(".delete_start_date").forEach((e) => {
-    e.value = parseLocalDatetimeString(eventImpl.startStr).toISOString();
+    e.value = occurrenceStart;
   });
 
   singleForm.action = `/staff/unavailabilities/${id}/delete_with_scope`;
@@ -153,10 +164,10 @@ export function eventCreate(info) {
   document.getElementById("addUnavailabilityButton").click();
   addUnavailabilityClick();
 
-  document.getElementById("start_time_field").value = toLocalDatetimeString(
-    new Date(info.startStr),
+  document.getElementById("start_time_field").value = fieldValue(
+    wallFromCalendar(info.startStr),
   );
-  document.getElementById("end_time_field").value = toLocalDatetimeString(
-    new Date(info.endStr),
+  document.getElementById("end_time_field").value = fieldValue(
+    wallFromCalendar(info.endStr),
   );
 }

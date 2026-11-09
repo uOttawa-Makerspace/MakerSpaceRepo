@@ -96,8 +96,8 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       eventually { StaffUnavailability.exists?(user_id: staff.id) }
       saved = StaffUnavailability.find_by!(user: staff)
       expect(saved.title).to eq("Unavailable")
-      expect(saved.start_time).to eq(browser_utc("2027-03-17T10:00"))
-      expect(saved.end_time).to eq(browser_utc("2027-03-17T12:00"))
+      expect(saved.start_time).to eq(toronto_utc("2027-03-17T10:00"))
+      expect(saved.end_time).to eq(toronto_utc("2027-03-17T12:00"))
       expect(saved.recurrence_rule).to be_nil
     end
 
@@ -140,8 +140,8 @@ RSpec.describe "Staff unavailabilities page", type: :system do
 
       eventually { StaffUnavailability.exists?(user_id: staff.id) }
       saved = StaffUnavailability.find_by!(user: staff)
-      expect(saved.start_time).to eq(browser_utc("2027-03-17T00:00"))
-      expect(saved.end_time).to eq(browser_utc("2027-03-18T00:00"))
+      expect(saved.start_time).to eq(toronto_utc("2027-03-17T00:00"))
+      expect(saved.end_time).to eq(toronto_utc("2027-03-18T00:00"))
     end
 
     it "saves a weekly repeat on the ticked days up to the end date", js: true, skip_bullet: true do
@@ -213,6 +213,24 @@ RSpec.describe "Staff unavailabilities page", type: :system do
     end
   end
 
+  describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
+    it "saves the typed times in Toronto time and shows them again", js: true, skip_bullet: true do
+      open_page
+      open_add_modal
+      fill_datetime("start_time_field", "2027-03-17T10:00")
+      fill_datetime("end_time_field", "2027-03-17T12:00")
+      click_button "Save"
+
+      eventually { StaffUnavailability.exists?(user_id: staff.id) }
+      saved = StaffUnavailability.find_by!(user: staff)
+      expect(saved.start_time).to eq(eastern.local(2027, 3, 17, 10))
+      expect(saved.end_time).to eq(eastern.local(2027, 3, 17, 12))
+      open_entry("Unavailable")
+      expect(field_value("start_time_field")).to eq("2027-03-17T10:00")
+      expect(field_value("end_time_field")).to eq("2027-03-17T12:00")
+    end
+  end
+
   describe "editing and deleting" do
     let!(:lecture) do
       create(:staff_unavailability, user: staff, title: "Lecture", description: "Calculus",
@@ -228,8 +246,8 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       expect(find("#unavailForm", visible: :all)[:action]).to end_with("/staff/unavailabilities/#{lecture.id}")
       expect(find("#title", visible: :all).value).to eq("Lecture")
       expect(find("#description", visible: :all).value).to eq("Calculus")
-      expect(field_value("start_time_field")).to eq(browser_local(lecture.start_time))
-      expect(field_value("end_time_field")).to eq(browser_local(lecture.end_time))
+      expect(field_value("start_time_field")).to eq(toronto_field(lecture.start_time))
+      expect(field_value("end_time_field")).to eq(toronto_field(lecture.end_time))
       expect(page).to have_css("#delete_forms", visible: :visible)
       expect(page).to have_css("#delete_following_form", visible: :hidden)
     end
@@ -246,7 +264,7 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       eventually { lecture.reload.title == "Lab" }
       lecture.reload
       expect(lecture.title).to eq("Lab")
-      expect(lecture.start_time).to eq(browser_utc("2027-03-18T16:00"))
+      expect(lecture.start_time).to eq(toronto_utc("2027-03-18T16:00"))
     end
 
     it "deletes the entry", js: true, skip_bullet: true do
@@ -340,6 +358,21 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       expect(series.reload.recurrence_rule).to include("UNTIL=20270316T140000Z")
     end
 
+    describe "with the browser clock in Tokyo", browser_zone: "Asia/Tokyo" do
+      it "shows the repeat end date and removes one occurrence by its own instant", js: true, skip_bullet: true do
+        series = create_series
+        open_page
+        open_entry("Class", index: 1)
+        expect(field_value("start_time_field")).to eq("2027-03-17T10:00")
+        expect(field_value("recurrence_until")).to eq("2027-03-31")
+        click_button "Delete"
+        click_button "This event"
+
+        eventually { series.reload.recurrence_rule.include?("EXDATE") }
+        expect(series.reload.recurrence_rule).to include("EXDATE:20270317T140000Z")
+      end
+    end
+
     it "deletes the series with 'All events'", js: true, skip_bullet: true do
       series = create_series
       open_page
@@ -398,6 +431,19 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       expect(page).to have_current_path(staff_unavailabilities_path)
       expect(page).to have_css("#link-container input", count: 1)
       expect(StaffExternalUnavailability.where(user: staff).pluck(:ics_url)).to eq(["https://feeds.example.org/a.ics"])
+    end
+  end
+
+  describe "a series that ends on a day" do
+    # Daily at 1:00 until Wednesday 2027-03-17: the stored end is the last
+    # second of that Toronto day (04:00 UTC on the Thursday).
+    it "shows no occurrence after its last day", js: true, skip_bullet: true do
+      create(:staff_unavailability, user: staff, title: "Night shift",
+                                    start_time: eastern.local(2027, 3, 15, 1), end_time: eastern.local(2027, 3, 15, 2),
+                                    recurrence_rule: "DTSTART:20270315T050000Z\nRRULE:FREQ=DAILY;UNTIL=20270318T035959Z")
+      open_page
+
+      expect(page).to have_css(".fc-timegrid-event", text: "Night shift", visible: :all, count: 3)
     end
   end
 end

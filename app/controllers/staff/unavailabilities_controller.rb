@@ -234,29 +234,13 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
   def update_all_occurrences
     old_date_new_time_start = helpers.combine_date_and_time(
-      @staff_unavailability.start_time.utc,
+      @staff_unavailability.start_time,
       parse_time(staff_params[:utc_start_time])
     )
     duration = (parse_time(staff_params[:utc_end_time]) - parse_time(staff_params[:utc_start_time])).to_i
     old_date_new_time_end = old_date_new_time_start + duration
 
-    old_rrule, old_dtstart, old_extra_lines = helpers.parse_rrule_and_dtstart(@staff_unavailability.recurrence_rule)
-    new_rrule, new_dtstart, _new_extra_lines = helpers.parse_rrule_and_dtstart(staff_params[:recurrence_rule])
-
-    rule_to_use = if old_rrule == new_rrule && old_dtstart && new_dtstart
-      combined_dtstart = old_dtstart.change(
-        hour: new_dtstart.hour,
-        min: new_dtstart.min,
-        sec: new_dtstart.sec
-      )
-
-      ([
-        "DTSTART:#{combined_dtstart.strftime('%Y%m%dT%H%M%SZ')}",
-        "RRULE:#{old_rrule}"
-      ] + old_extra_lines).join("\n")
-    else
-      staff_params[:recurrence_rule]
-    end
+    rule_to_use = series_rule(@staff_unavailability).with_time_from(staff_params[:recurrence_rule])
 
     if @staff_unavailability.update(
         title: staff_params[:title].presence || "Unavailable",
@@ -274,10 +258,10 @@ class Staff::UnavailabilitiesController < StaffAreaController
   def update_this_occurrence
     exclusion_start_time = helpers.combine_date_and_time(
       parse_time(staff_params[:utc_start_time]),
-      @staff_unavailability.start_time.utc
+      @staff_unavailability.start_time
     )
 
-    updated_rule = helpers.add_exdate_to_rrule(@staff_unavailability.recurrence_rule, exclusion_start_time)
+    updated_rule = series_rule(@staff_unavailability).appending_exdate(exclusion_start_time)
 
     unless @staff_unavailability.update(recurrence_rule: updated_rule)
       flash[:alert] = "Failed to update unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
@@ -301,17 +285,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
       return redirect_to after_action_path, alert: "Start date is required for deleting a single occurrence."
     end
 
-    rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@unavailability.recurrence_rule)
-    exdate = Time.parse(params[:start_date]).utc.strftime("%Y%m%dT%H%M%SZ")
-
-    rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @unavailability.start_time)
-    recurrence_lines = [
-      "DTSTART:#{rule.dtstart.utc.strftime("%Y%m%dT%H%M%SZ")}",
-      "RRULE:#{rule}",
-      "EXDATE:#{exdate}"
-    ]
-
-    @unavailability.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
+    @unavailability.update!(recurrence_rule: series_rule(@unavailability).without_occurrence(parse_time(params[:start_date])))
     redirect_to after_action_path, notice: "This occurrence deleted."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
@@ -322,20 +296,14 @@ class Staff::UnavailabilitiesController < StaffAreaController
       return redirect_to after_action_path, alert: "Start date is required for deleting following occurrences."
     end
 
-    rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@unavailability.recurrence_rule)
-    previous_day = Time.parse(params[:start_date]).utc - 24.hours
-    rrule_line = "#{helpers.remove_until_from_rrule(rrule_line)};UNTIL=#{previous_day.strftime("%Y%m%dT%H%M%SZ")}"
-
-    rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @unavailability.start_time)
-    recurrence_lines = [
-      "DTSTART:#{rule.dtstart.utc.strftime("%Y%m%dT%H%M%SZ")}",
-      "RRULE:#{rule}"
-    ]
-
-    @unavailability.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
+    @unavailability.update!(recurrence_rule: series_rule(@unavailability).ending_before(parse_time(params[:start_date])))
     redirect_to after_action_path, notice: "This and following deleted."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
+  end
+
+  def series_rule(unavailability)
+    RecurrenceRule.new(unavailability.recurrence_rule, unavailability.start_time)
   end
 
   def parse_time(time_string)

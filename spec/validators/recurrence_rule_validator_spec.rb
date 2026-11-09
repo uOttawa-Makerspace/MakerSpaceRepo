@@ -98,12 +98,17 @@ RSpec.describe RecurrenceRuleValidator do
     expect(errors_for(long)).to eq([RecurrenceRuleValidator::TOO_LONG])
   end
 
-  it "reads leading whitespace and CRLF the same as the controllers' parser" do
+  it "reads leading whitespace and CRLF the same as the series edits' parser" do
     rule = "  DTSTART:20270301T150000Z\r\n  RRULE:FREQ=DAILY;COUNT=2\r\n"
-    rrule, dtstart, = ApplicationController.helpers.parse_rrule_and_dtstart(rule)
-    expect(rrule).to eq("FREQ=DAILY;COUNT=2")
-    expect(dtstart).to eq(Time.utc(2027, 3, 1, 15))
+    expect(RecurrenceRule.new(rule, nil).without_occurrence(Time.utc(2027, 3, 2, 15))).to eq(
+      "DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=DAILY;COUNT=2\nEXDATE:20270302T150000Z"
+    )
     expect(RecurrenceExpansion.rule_body(rule)).to eq("FREQ=DAILY;COUNT=2")
+  end
+
+  it "accepts a rule whose start is a UTC stamp or Toronto wall-clock time" do
+    expect(errors_for("DTSTART:20270301T150000Z\nRRULE:FREQ=DAILY;COUNT=2")).to eq([])
+    expect(errors_for("DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=DAILY;COUNT=2")).to eq([])
   end
 
   it "rejects a missing FREQ and garbage" do

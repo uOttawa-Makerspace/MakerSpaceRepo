@@ -48,7 +48,6 @@ await import("../../../app/javascript/src/manage_calendar_events.js");
 
 const $ = (id) => document.getElementById(id);
 const fire = (el, type, init) => el.dispatchEvent(new Event(type, init));
-const iso = (local) => new Date(local).toISOString();
 // the feed gives Toronto wall-clock times without a zone
 const wall = (local) => `${local}:00`;
 
@@ -259,6 +258,19 @@ describe("staff options", () => {
     expect(style("red")).toBe("color: #000");
   });
 
+  it("shows the first unavailable date as a Toronto date", async () => {
+    await load();
+    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
+    const render = tomInstances[0].config.render.option;
+    // 02:30 UTC on the 18th is 22:30 on the 17th in Toronto
+    const html = render(
+      { text: "Ada", unavailableDates: "2027-03-18T02:30:00Z" },
+      String,
+    );
+    const toronto = new Date("2027-03-17T12:00:00Z").toLocaleDateString();
+    expect(html).toContain(`(Unavailable ${toronto}`);
+  });
+
   it("rebuilds the repeat rule when the picker takes focus", async () => {
     await load();
     $("start_time_field").value = "2027-03-17T10:00";
@@ -407,13 +419,13 @@ describe("submit", () => {
   }
   const submit = () => fire($("eventForm"), "submit", { cancelable: true });
 
-  it("writes UTC instants, syncs the picker and builds the rule", async () => {
+  it("writes the UTC instants of the Toronto times, syncs the picker and builds the rule", async () => {
     await ready();
     $("recurrence_frequency").value = "WEEKLY";
     $("day_MO").checked = true;
     submit();
-    expect($("utc_start_time").value).toBe(iso("2027-03-17T10:00"));
-    expect($("utc_end_time").value).toBe(iso("2027-03-17T11:00"));
+    expect($("utc_start_time").value).toBe("2027-03-17T14:00:00.000Z");
+    expect($("utc_end_time").value).toBe("2027-03-17T15:00:00.000Z");
     expect($("recurrence_rule_field").value).toContain("FREQ=WEEKLY");
     expect(tomInstances[0].synced).toBeGreaterThan(0);
   });
