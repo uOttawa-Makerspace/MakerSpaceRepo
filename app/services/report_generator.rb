@@ -616,6 +616,8 @@ class ReportGenerator
           ]
         )
 
+        # the student id stays text so its leading zeros are kept
+        types = [nil] * 7 + [:string, nil]
         users.each do |user|
           sheet.add_row [
                           user.name,
@@ -625,8 +627,10 @@ class ReportGenerator
                           user.identity,
                           user.faculty,
                           user.year_of_study,
+                          user.student_id,
                           user.created_at.localtime.strftime("%Y-%m-%d %H:%M")
-                        ]
+                        ],
+                        types: types
         end
       end
 

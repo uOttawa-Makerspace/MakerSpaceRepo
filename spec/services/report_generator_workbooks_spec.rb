@@ -280,7 +280,7 @@ RSpec.describe ReportGenerator do
       )
     end
 
-    it "Report: identity counts as stored, then a user table whose Joined on column is empty" do
+    it "Report: identity counts as stored, then a user table with every value under its header" do
       rows = sheets["Report"]
       expect(rows.first(3)).to eq([["New Users"], ["From", "2026-03-01"], ["To", "2026-03-31"]])
       expect(rows).to include(["Overview"], ["undergrad", 3], ["community_member", 1])
@@ -288,13 +288,13 @@ RSpec.describe ReportGenerator do
       expect(header).to be_present
       body = rows[(header + 1)..]
       expect(body.size).to eq(4)
-      # the data rows have one value fewer than the header: the join date sits under Student ID
+      expect(body).to all(have_attributes(size: 9))
       gina = body.find { |r| r.first == "Gina Genie" }
       expect(gina).to eq(["Gina Genie", "gina", "gina@example.test", "Female", "undergrad", "Génie", 2020,
-                          march_10.localtime.strftime("%Y-%m-%d %H:%M")])
+                          User.find_by(username: "gina").student_id, march_10.localtime.strftime("%Y-%m-%d %H:%M")])
       cam = body.find { |r| r.first == "Cam Community" }
       expect(cam).to eq(["Cam Community", "cam", "cam@example.test", "Male", "community_member", nil, nil,
-                         march_10.localtime.strftime("%Y-%m-%d %H:%M")])
+                         nil, march_10.localtime.strftime("%Y-%m-%d %H:%M")])
     end
 
     it "includes soft-deleted users and excludes users outside the range" do
