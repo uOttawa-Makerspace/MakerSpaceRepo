@@ -55,17 +55,11 @@ class RecurrenceRule
     return new_text unless new_rrule == @rrule && @dtstart && new_dtstart
 
     new_time = new_dtstart.in_time_zone(ZONE)
-    start = starts_at.change(hour: new_time.hour, min: new_time.min, sec: new_time.sec)
+    start = @dtstart.in_time_zone(ZONE).change(hour: new_time.hour, min: new_time.min, sec: new_time.sec)
     ([start_line(start), "RRULE:#{@rrule}"] + @other_lines).join("\n")
   end
 
   private
-
-  # The first occurrence written in the rule, in Toronto time (nil when the
-  # rule has no DTSTART line).
-  def starts_at
-    @dtstart&.in_time_zone(ZONE)
-  end
 
   # The bare RRULE body, the DTSTART as a UTC time (nil when there is none) and
   # the other lines of a stored rule.
