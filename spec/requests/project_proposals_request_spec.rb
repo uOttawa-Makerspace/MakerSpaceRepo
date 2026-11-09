@@ -89,49 +89,49 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
   describe "GET show" do
     it "renders an approved proposal for a guest" do
-      get project_proposal_path(approved.slug)
+      get project_proposal_path(approved)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Approved One")
     end
 
     it "writes the budget as $1500 in English and 1 500 $ in French" do
       approved.update_columns(prototype_cost: 1500, project_cost: 20)
-      get project_proposal_path(approved.slug, locale: "en")
+      get project_proposal_path(approved, locale: "en")
       expect(response.body).to include("$1,500").and include("$20")
-      get project_proposal_path(approved.slug, locale: "fr")
+      get project_proposal_path(approved, locale: "fr")
       expect(response.body).to include("1\u00A0500\u00A0$").and include("20\u00A0$")
     end
 
     it "finds a proposal by slug or by id" do
-      get project_proposal_path(approved.id)
+      get project_proposal_path(approved)
       expect(response).to have_http_status(:ok)
     end
 
     [[:pending, "pending"], [:declined, "declined"]].each do |name, label|
       it "redirects a guest and a stranger away from a #{label} proposal" do
         pp = send(name)
-        get project_proposal_path(pp.slug)
+        get project_proposal_path(pp)
         expect(response).to redirect_to(project_proposals_path)
         expect(flash[:alert]).to eq("You are not allowed to access this pending project proposal.")
         content_login!(other)
-        get project_proposal_path(pp.slug)
+        get project_proposal_path(pp)
         expect(response).to redirect_to(project_proposals_path)
       end
 
       it "renders a #{label} proposal for its owner and for admin, but not for staff" do
         pp = send(name)
         content_login!(owner)
-        get project_proposal_path(pp.slug)
+        get project_proposal_path(pp)
         expect(response).to have_http_status(:ok)
       end
     end
 
     it "admin sees a pending proposal; staff does not" do
       content_sign_in_as(:staff)
-      get project_proposal_path(pending.slug)
+      get project_proposal_path(pending)
       expect(response).to redirect_to(project_proposals_path)
       content_sign_in_as(:admin)
-      get project_proposal_path(pending.slug)
+      get project_proposal_path(pending)
       expect(response).to have_http_status(:ok)
     end
 
@@ -141,24 +141,24 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       let!(:rev_own) { create(:project_proposal, user: owner, linked_project_proposal: approved, title: "Revision Own Pending") }
 
       it "shows a guest only approved revisions" do
-        get project_proposal_path(approved.slug)
+        get project_proposal_path(approved)
         expect(response.body).to include("Revision Approved Other")
         expect(response.body).not_to include("Revision Pending Other", "Revision Own Pending")
       end
 
       it "shows the viewer their own pending revision but not other users'" do
         content_login!(owner)
-        get project_proposal_path(approved.slug)
+        get project_proposal_path(approved)
         expect(response.body).to include("Revision Approved Other", "Revision Own Pending")
         expect(response.body).not_to include("Revision Pending Other")
       end
 
       it "shows an admin every revision, and staff only the approved one" do
         content_sign_in_as(:staff)
-        get project_proposal_path(approved.slug)
+        get project_proposal_path(approved)
         expect(response.body).not_to include("Revision Pending Other")
         content_sign_in_as(:admin)
-        get project_proposal_path(approved.slug)
+        get project_proposal_path(approved)
         expect(response.body).to include("Revision Pending Other", "Revision Own Pending", "Revision Approved Other")
       end
     end
@@ -171,7 +171,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "lists the repositories linked to the proposal, with sorting" do
       create(:repository, owner: owner, title: "Linked Repo", project_proposal_id: approved.id)
-      get project_proposal_path(approved.slug, sort: "most_likes")
+      get project_proposal_path(approved, sort: "most_likes")
       expect(response.body).to include("Linked Repo")
     end
   end
@@ -186,7 +186,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
 
     def expect_cards(visible:, hidden: [])
-      get project_proposal_path(approved.slug)
+      get project_proposal_path(approved)
       expect(response).to have_http_status(:ok)
       visible.each { |t| expect(response.body).to include(t) }
       hidden.each { |t| expect(response.body).not_to include(t) }
@@ -230,9 +230,9 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "still paginates the filtered scope" do
       10.times { |i| create(:repository, owner: repo_owner, title: "Bulk Repo #{i}", project_proposal_id: approved.id) }
-      get project_proposal_path(approved.slug)
+      get project_proposal_path(approved)
       expect(response.body).not_to include("Secret Linked Repo")
-      get project_proposal_path(approved.slug, page: 2)
+      get project_proposal_path(approved, page: 2)
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("Secret Linked Repo")
     end
@@ -245,16 +245,16 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
 
     it "sends a guest to the login page instead of rendering edit" do
-      get edit_project_proposal_path(pending.slug)
+      get edit_project_proposal_path(pending)
       # edit requires sign-in, then ownership or admin
-      expect(response).to redirect_to(login_path(back_to: edit_project_proposal_path(pending.slug)))
+      expect(response).to redirect_to(login_path(back_to: edit_project_proposal_path(pending)))
       expect(response.body).not_to include(pending.email)
     end
 
     it "refuses edit to a stranger and to staff" do
       [create(:user, :regular_user), create(:user, :staff)].each do |user|
         content_login!(user)
-        get edit_project_proposal_path(pending.slug)
+        get edit_project_proposal_path(pending)
         expect(response).to redirect_to(project_proposals_path)
         expect(flash[:alert]).to eq("You are not allowed to modify this project proposal.")
       end
@@ -262,46 +262,122 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "renders edit for the owner and for an admin" do
       content_login!(owner)
-      get edit_project_proposal_path(pending.slug)
+      get edit_project_proposal_path(pending)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(pending.email)
       content_sign_in_as(:admin)
-      get edit_project_proposal_path(pending.slug)
+      get edit_project_proposal_path(pending)
       expect(response).to have_http_status(:ok)
     end
   end
 
-  describe "slug paths of an edited proposal" do
+  describe "proposal addresses" do
     let(:edited) do
       create(:project_proposal, user: owner, title: "Before").tap { |pp| pp.update!(title: "After Edit") }
     end
+    let(:canonical) { "/project_proposals/#{edited.id}-after-edit" }
+    let(:old_dotted) { "/project_proposals/#{edited.id}.after-edit" }
 
     before { content_login!(owner) }
 
-    it "has a slug with a dot after an edit" do
-      expect(edited.slug).to eq("#{edited.id}.after-edit")
+    it "builds the address from the id and the title" do
+      expect(project_proposal_path(edited)).to eq(canonical)
+      expect(edit_project_proposal_path(edited)).to eq("#{canonical}/edit")
     end
 
-    it "shows the proposal at its slug path" do
-      get project_proposal_path(edited.slug)
+    it "shows and edits the proposal at the canonical address" do
+      get canonical
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("After Edit")
-    end
-
-    it "renders the edit form at its slug path" do
-      get edit_project_proposal_path(edited.slug)
+      get "#{canonical}/edit"
       expect(response).to have_http_status(:ok)
     end
 
-    it "answers JSON at the slug path with a json extension" do
-      get project_proposal_path(edited.slug, format: :json)
-      expect(response).to have_http_status(:ok)
-      expect(response.media_type).to eq("application/json")
+    [["a stale title", "-before", :found], ["the old dotted form", ".after-edit", :moved_permanently],
+     ["the bare id", "", :found]].each do |label, suffix, status|
+      it "moves #{label} to the canonical address for show and edit, keeping the query string" do
+        get "/project_proposals/#{edited.id}#{suffix}?sort=newest&locale=en"
+        expect(response).to have_http_status(status)
+        expect(response).to redirect_to("#{canonical}?sort=newest&locale=en")
+        get "/project_proposals/#{edited.id}#{suffix}/edit"
+        expect(response).to have_http_status(status)
+        expect(response).to redirect_to("#{canonical}/edit")
+      end
     end
 
-    it "updates the proposal at its slug path" do
-      patch project_proposal_path(edited.slug), params: { project_proposal: { title: "Third Title" } }
+    it "does not loop when a title is renamed and renamed back" do
+      edited.update!(title: "B Title")
+      edited.update!(title: "After Edit")
+      get canonical
+      expect(response).to have_http_status(:ok)
+      get "/project_proposals/#{edited.id}-b-title"
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(canonical)
+    end
+
+    it "moves a changed title to a new address and the old address to it" do
+      old_path = project_proposal_path(edited)
+      edited.update!(title: "Third Title")
+      get old_path
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to("/project_proposals/#{edited.id}-third-title")
+    end
+
+    it "uses the id alone when the title has no letters or digits" do
+      edited.update!(title: "!!!")
+      expect(project_proposal_path(edited)).to eq("/project_proposals/#{edited.id}")
+      get project_proposal_path(edited)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "answers JSON by id, by the canonical address and by the old dotted form, without moving" do
+      ["#{edited.id}.json", "#{edited.id}-after-edit.json", "#{edited.id}.after-edit.json"].each do |id|
+        get "/project_proposals/#{id}"
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq("application/json")
+      end
+    end
+
+    it "gives the canonical address in the url of the JSON representation" do
+      get "/project_proposals/#{edited.id}.json"
+      expect(response.parsed_body["url"]).to eq("/project_proposals/#{edited.id}-after-edit.json")
+    end
+
+    it "does not move a pending proposal's address for someone who may not see it" do
+      content_login!(other)
+      get "/project_proposals/#{pending.id}"
+      expect(response).to redirect_to(project_proposals_path)
+      expect(response).to have_http_status(:found)
+      get "/project_proposals/#{pending.id}/edit"
+      expect(response).to redirect_to(project_proposals_path)
+      expect(response).to have_http_status(:found)
+    end
+
+    it "updates the proposal at the old forms without moving" do
+      patch old_dotted, params: { project_proposal: { title: "Third Title" } }
       expect(edited.reload.title).to eq("Third Title")
+      expect(response).to redirect_to("/project_proposals/#{edited.id}-third-title")
+      expect(response).to have_http_status(:found)
+      patch "/project_proposals/#{edited.id}", params: { project_proposal: { title: "Fourth Title" } }
+      expect(edited.reload.title).to eq("Fourth Title")
+    end
+
+    it "deletes the proposal at the old forms without moving" do
+      old_dotted
+      content_sign_in_as(:admin)
+      expect { delete old_dotted }.to change(ProjectProposal, :count).by(-1)
+      expect(response).to redirect_to(project_proposals_path)
+    end
+
+    it "sends an unknown id back to the list" do
+      get "/project_proposals/0-nothing"
+      expect(response).to redirect_to(project_proposals_path)
+      expect(flash[:alert]).to eq("Project proposal not found")
+    end
+
+    it "does not read digits followed by letters as an id" do
+      get "/project_proposals/#{edited.id}x"
+      expect(response).to redirect_to(project_proposals_path)
     end
   end
 
@@ -311,7 +387,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       pp = ProjectProposal.find_by(title: "New Idea")
       expect(pp.user_id).to be_nil
       expect(pp.approved).to be_nil
-      expect(response).to redirect_to(project_proposal_path(pp.slug))
+      expect(response).to redirect_to(project_proposal_path(pp))
       expect(flash[:notice]).to eq("Project proposal was successfully created.")
     end
 
@@ -393,7 +469,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "answers JSON with the redirect uri" do
       post project_proposals_path(format: :json), params: proposal_params
-      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(ProjectProposal.find_by(title: "New Idea").slug))
+      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(ProjectProposal.find_by(title: "New Idea")))
     end
 
     it "re-renders new with 422 and an alert when invalid, sending no mail" do
@@ -467,7 +543,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       files = [content_named_upload("run.exe", type: "application/x-msdownload"), content_named_upload("fake.exe", type: "application/x-msdownload")]
       expect { post project_proposals_path, params: { files: files }.merge(proposal_params) }.to change(ProjectProposal, :count).by(1)
       pp = ProjectProposal.find_by(title: "New Idea")
-      expect(response).to redirect_to(project_proposal_path(pp.slug))
+      expect(response).to redirect_to(project_proposal_path(pp))
       expect(flash[:notice]).to be_blank
       expect(flash[:alert]).to include("fake.exe") # pre-check refusal
       expect(flash[:alert]).to include("run.exe has a file type that is not allowed") # the model's real error
@@ -533,7 +609,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "refuses an update with a refused file, names it in the alert and gives no success notice" do
       content_login!(owner)
       files = [content_named_upload("run.exe", type: "application/x-msdownload")]
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Pending One" }, files: files }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Pending One" }, files: files }
       expect(response).to have_http_status(:unprocessable_content)
       expect(flash[:notice]).to be_blank
       expect(flash[:alert]).to include("run.exe")
@@ -552,7 +628,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
 
     it "does not let a guest rewrite a proposal" do
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Hijacked" } }
       # update requires sign-in, then ownership or admin
       expect(response).to redirect_to(login_path)
       expect(pending.reload.title).to eq("Pending One")
@@ -561,10 +637,10 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "does not let a stranger or staff rewrite a proposal" do
       [create(:user, :regular_user), create(:user, :staff)].each do |user|
         content_login!(user)
-        patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Hijacked" } }
+        patch project_proposal_path(pending), params: { project_proposal: { title: "Hijacked" } }
         expect(response).to redirect_to(project_proposals_path)
         expect(flash[:alert]).to eq("You are not allowed to modify this project proposal.")
-        patch project_proposal_path(pending.slug, format: :json), params: { project_proposal: { title: "Hijacked" } }
+        patch project_proposal_path(pending, format: :json), params: { project_proposal: { title: "Hijacked" } }
         expect(response).to have_http_status(:forbidden)
         expect(pending.reload.title).to eq("Pending One")
       end
@@ -572,17 +648,17 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "lets the owner and an admin edit" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Owner Edit" } }
-      expect(response).to redirect_to(project_proposal_path(pending.reload.slug))
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Owner Edit" } }
+      expect(response).to redirect_to(project_proposal_path(pending.reload))
       expect(flash[:notice]).to eq("Project proposal was successfully updated.")
       content_sign_in_as(:admin)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Admin Edit" } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Admin Edit" } }
       expect(pending.reload.title).to eq("Admin Edit")
     end
 
     it "an owner's edit of an approved proposal sends it back to pending and drops it from the public list" do
       content_login!(owner)
-      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "Approved Reworked" } }
+      patch project_proposal_path(approved), params: { project_proposal: { title: "Approved Reworked" } }
       expect(approved.reload).to have_attributes(approved: nil, admin_id: nil, title: "Approved Reworked")
       expect(flash[:notice]).to include("needs to be re-approved by an admin")
       reset!
@@ -593,7 +669,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "an admin sees the re-pended proposal in the Pending Decision filter" do
       approved.update!(user: owner)
       content_login!(owner)
-      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "Approved Reworked" } }
+      patch project_proposal_path(approved), params: { project_proposal: { title: "Approved Reworked" } }
       content_sign_in_as(:admin)
       get project_proposals_path, params: { status: ["nil"] }
       expect(response.body).to include("Approved Reworked")
@@ -602,44 +678,44 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "an admin's edit keeps an approved proposal approved" do
       admin = content_sign_in_as(:admin)
       approved.update_columns(admin_id: admin.id)
-      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "Admin Tweak" } }
+      patch project_proposal_path(approved), params: { project_proposal: { title: "Admin Tweak" } }
       expect(approved.reload).to have_attributes(approved: "approved", admin_id: admin.id, title: "Admin Tweak")
       expect(flash[:notice]).to eq("Project proposal was successfully updated.")
     end
 
     it "an owner's edit of a pending proposal keeps it pending" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Pending Reworked" } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Pending Reworked" } }
       expect(pending.reload.approved).to be_nil
       expect(flash[:notice]).to eq("Project proposal was successfully updated.")
     end
 
     it "the owner cannot reassign user_id or set review fields through mass assignment" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug),
+      patch project_proposal_path(pending),
             params: { project_proposal: { user_id: other.id, approved: "approved", admin_id: owner.id } }
       expect(pending.reload).to have_attributes(user_id: owner.id, approved: nil, admin_id: nil)
     end
 
     it "the owner cannot re-link their proposal to someone else's" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { linked_project_proposal_id: approved.id } }
+      patch project_proposal_path(pending), params: { project_proposal: { linked_project_proposal_id: approved.id } }
       expect(pending.reload.linked_project_proposal_id).to be_nil
     end
 
     it "an admin cannot mass-assign review fields on update either" do
       content_sign_in_as(:admin)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Edited", approved: "approved", user_id: other.id } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Edited", approved: "approved", user_id: other.id } }
       expect(pending.reload).to have_attributes(title: "Edited", approved: nil, user_id: owner.id)
     end
 
     it "replaces categories, JSON answers with the uri" do
       content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: pending.id)
-      patch project_proposal_path(pending.slug, format: :json),
+      patch project_proposal_path(pending, format: :json),
             params: { project_proposal: { title: "Retitled", categories: %w[New] } }
       expect(pending.reload.categories.pluck(:name)).to eq(["New"])
-      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(pending.slug))
+      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(pending))
     end
 
     it "keeps the categories, photos and files when the update is refused with new categories submitted" do
@@ -659,7 +735,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "keeps the categories when the update is refused with none submitted" do
       content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: pending.id)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "" } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
       expect(pending.reload.categories.pluck(:name)).to eq(["Old"])
     end
@@ -667,7 +743,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "keeps an approved proposal approved and its categories when a non-admin edit is refused" do
       content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: approved.id)
-      patch project_proposal_path(approved.slug), params: { project_proposal: { title: "", categories: %w[New] } }
+      patch project_proposal_path(approved), params: { project_proposal: { title: "", categories: %w[New] } }
       expect(response).to have_http_status(:unprocessable_content)
       expect(approved.reload.categories.pluck(:name)).to eq(["Old"])
       expect(approved.approved).to eq("approved")
@@ -676,7 +752,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "sets the categories as submitted on a valid update, and clears them when none are submitted" do
       content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: pending.id)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Fine", categories: %w[A B] } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Fine", categories: %w[A B] } }
       expect(pending.reload.categories.pluck(:name)).to match_array(%w[A B])
       patch project_proposal_path(pending.id), params: { project_proposal: { title: "Fine" } }
       expect(pending.reload.categories).to be_empty
@@ -684,7 +760,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
 
     it "re-slugs to '<id>.<title>' on update" do
       content_login!(owner)
-      patch project_proposal_path(pending.slug), params: { project_proposal: { title: "Zed Title" } }
+      patch project_proposal_path(pending), params: { project_proposal: { title: "Zed Title" } }
       expect(pending.reload.slug).to eq("#{pending.id}.zed-title")
     end
 
@@ -692,12 +768,12 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       content_login!(owner)
       pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "keep.png", content_type: "image/png")
       pending.photos.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "drop.png", content_type: "image/png")
-      patch project_proposal_path(pending.slug),
+      patch project_proposal_path(pending),
             params: { project_proposal: { title: "T" }, deleteimages: ["drop.png"], files: [content_pdf_upload] }
       pending.reload
       expect(pending.photos.map { |p| p.filename.to_s }).to eq(["keep.png"])
       expect(pending.project_files.map { |f| f.filename.to_s }).to eq(["RepoFile1.pdf"])
-      patch project_proposal_path(pending.slug),
+      patch project_proposal_path(pending),
             params: { project_proposal: { title: "T" }, deletefiles: [pending.project_files.first.id.to_s] }
       expect(pending.reload.project_files.count).to eq(0)
     end
@@ -753,7 +829,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       patch project_proposal_path(pending.id), params: { project_proposal: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("An error occurred while updating the project proposal")
-      get edit_project_proposal_path(pending.id)
+      get edit_project_proposal_path(pending)
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("An error occurred while updating")
     end
@@ -762,7 +838,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       patch project_proposal_path(pending.id),
             params: { project_proposal: { title: "Changed" }, files: [content_named_upload("run.exe", type: "application/x-msdownload")] }
       expect(response.body).to include("The edit was not saved because the type or size")
-      get edit_project_proposal_path(pending.id)
+      get edit_project_proposal_path(pending)
       expect(response.body).not_to include("The edit was not saved")
     end
 
@@ -834,13 +910,12 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
         expect(pending.categories.pluck(:name)).to eq(["Old"])
       end
 
-      it "links to the stored slug of the proposal, not one built from the typed title" do
+      it "links to the stored address of the proposal, not one built from the typed title" do
         pending.update!(title: "Stored Title")
-        stored_slug = pending.reload.slug
-        patch project_proposal_path(stored_slug), params: { project_proposal: { title: "Typed Title" }, files: [bad_file] }
+        stored_path = project_proposal_path(pending.reload)
+        patch stored_path, params: { project_proposal: { title: "Typed Title" }, files: [bad_file] }
         expect(response).to have_http_status(:unprocessable_content)
-        expect(pending.reload.slug).to eq(stored_slug)
-        expect(response.body).to include(%(href="#{project_proposal_path(stored_slug)}"))
+        expect(response.body).to include(%(href="#{stored_path}"))
         expect(response.body).not_to include("typed-title")
       end
 
@@ -928,7 +1003,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     it "does nothing for guests, owners and staff (action returns without rendering: 204)" do
       [nil, owner, create(:user, :staff)].each do |user|
         content_login!(user) if user
-        expect { delete project_proposal_path(pending.slug) }.not_to change(ProjectProposal, :count)
+        expect { delete project_proposal_path(pending) }.not_to change(ProjectProposal, :count)
         # `return unless admin?` renders nothing, so a refused delete answers 204 instead of a redirect/alert
         expect(response).to have_http_status(:no_content)
       end
@@ -939,17 +1014,17 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       ProjectJoin.create!(project_proposal_id: pending.id, user_id: owner.id)
       Category.create!(name: "c", project_proposal_id: pending.id)
       repo = create(:repository, owner: owner, project_proposal_id: pending.id)
-      expect { delete project_proposal_path(pending.slug) }
+      expect { delete project_proposal_path(pending) }
         .to change(ProjectProposal, :count).by(-1).and change(ProjectJoin, :count).by(-1).and change(Category, :count).by(-1)
       expect(response).to redirect_to(project_proposals_url)
       expect(flash[:notice]).to eq("Project proposal was successfully deleted.")
       expect(Repository.exists?(repo.id)).to be(true)
-      expect { delete project_proposal_path(approved.slug) }.to change(ProjectProposal, :count).by(-1)
+      expect { delete project_proposal_path(approved) }.to change(ProjectProposal, :count).by(-1)
     end
 
     it "answers 204 for JSON when admin" do
       content_sign_in_as(:admin)
-      delete project_proposal_path(pending.slug, format: :json)
+      delete project_proposal_path(pending, format: :json)
       expect(response).to have_http_status(:no_content)
       expect(ProjectProposal.exists?(pending.id)).to be(false)
     end
@@ -1077,7 +1152,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
         .to change(ProjectProposal, :count).by(1)
       rev = ProjectProposal.find_by(title: "Revision of Pending One")
       expect(rev).to have_attributes(linked_project_proposal_id: pending.id, user_id: owner.id, approved: nil, admin_id: nil, email: pending.email)
-      expect(response).to redirect_to(project_proposal_path(rev.slug))
+      expect(response).to redirect_to(project_proposal_path(rev))
       expect(flash[:notice]).to eq("The project proposal revision has been successfully created.")
       admin = content_sign_in_as(:admin)
       expect { post create_revision_project_proposals_path, params: { old_project_proposal_id: declined.id } }
@@ -1097,7 +1172,7 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(rev.photos.first.blob_id).to eq(approved.photos.first.blob_id)
       expect(rev.project_files.first.blob_id).to eq(approved.project_files.first.blob_id)
       expect(rev.categories.pluck(:name)).to eq(["cat"])
-      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(rev.slug))
+      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(rev))
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
@@ -1244,30 +1319,30 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       get project_proposals_path(format: :json)
       expect(response).to have_http_status(:not_acceptable)
 
-      get project_proposal_path(approved.slug, format: :json)
+      get project_proposal_path(approved, format: :json)
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body).keys).to match_array(public_keys)
 
       content_login!(other)
-      get project_proposal_path(approved.slug, format: :json)
+      get project_proposal_path(approved, format: :json)
       expect(JSON.parse(response.body).keys).to match_array(public_keys)
       expect(response.body).not_to include(approved.email, approved.client)
     end
 
     it "includes them for the owner and for admins" do
       content_login!(owner)
-      get project_proposal_path(approved.slug, format: :json)
+      get project_proposal_path(approved, format: :json)
       body = JSON.parse(response.body)
       expect(body.keys).to match_array(public_keys + contact_keys)
       expect(body.values_at(*contact_keys)).to eq([approved.username, approved.email, approved.client])
 
       content_sign_in_as(:admin)
-      get project_proposal_path(approved.slug, format: :json)
+      get project_proposal_path(approved, format: :json)
       expect(JSON.parse(response.body).keys).to match_array(public_keys + contact_keys)
     end
 
     it "leaves the HTML pages unaffected" do
-      get project_proposal_path(approved.slug)
+      get project_proposal_path(approved)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Approved One")
       get project_proposals_path

@@ -113,7 +113,8 @@ Rails.application.routes.draw do
 
   resources :chat_messages, only: [:index, :create]
 
-  # A proposal's slug is "<id>.<title>" once it has been edited, so the id segment may contain a dot.
+  # A proposal's address is "<id>-<title>". Old links use "<id>.<title>", so the id segment may
+  # contain a dot; the controller sends those to the current address.
   # A trailing ".json" or ".js" is still read as the response format.
   resources :project_proposals, constraints: { id: /[^\/]+(?<!\.json)(?<!\.js)/ } do
     collection do

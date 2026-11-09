@@ -22,9 +22,15 @@ RSpec.describe "Project proposal routes", type: :routing do
     expect(post: "/project_proposals/approve").to route_to("project_proposals#approve")
   end
 
-  it "builds the same paths as before" do
+  it "routes the canonical id-title form" do
+    expect(get: "/project_proposals/12-after-edit").to route_to("project_proposals#show", id: "12-after-edit")
+    expect(get: "/project_proposals/12-after-edit/edit").to route_to("project_proposals#edit", id: "12-after-edit")
+    expect(get: "/project_proposals/12-after-edit.json").to route_to("project_proposals#show", id: "12-after-edit", format: "json")
+  end
+
+  it "builds paths from the id or a given param" do
     expect(project_proposal_path("12.after-edit")).to eq("/project_proposals/12.after-edit")
     expect(project_proposal_path(12, format: :json)).to eq("/project_proposals/12.json")
-    expect(edit_project_proposal_path("12.after-edit")).to eq("/project_proposals/12.after-edit/edit")
+    expect(edit_project_proposal_path("12-after-edit")).to eq("/project_proposals/12-after-edit/edit")
   end
 end
