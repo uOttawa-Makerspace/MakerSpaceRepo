@@ -444,16 +444,16 @@ class RepositoriesController < SessionsController
     end
   end
 
-  def create_equipments
-    return if params[:repository][:equipments].blank?
-    
-    params[:repository][:equipments]
-      .filter(&:present?)
-      .first(5)
-      .each do |e|
-        # Create EquipmentOption if not there already.
-        EquipmentOption.find_or_create_by(name: e)
-        Equipment.create(name: e, repository_id: @repository.id)
+  # Like categories: names not sent (nil) keep the stored equipment; a list, even an empty one, replaces it with up
+  # to five non-blank names.
+  def replace_equipments(names)
+    return if names.nil?
+
+    @repository.equipments.destroy_all
+    names.compact_blank.first(5).each do |e|
+      # Create EquipmentOption if not there already.
+      EquipmentOption.find_or_create_by(name: e)
+      Equipment.create(name: e, repository_id: @repository.id)
     end
   end
 
@@ -465,8 +465,7 @@ class RepositoriesController < SessionsController
       next false unless @repository.update_with_categories(attributes, repository_params[:categories])
 
       @repository.store_id_slug!
-      @repository.equipments.destroy_all
-      create_equipments
+      replace_equipments(repository_params[:equipments])
       true
     end
   end

@@ -588,6 +588,13 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(page.at_css("input[type='hidden'][name='repository[categories][]'][value='']")).to be_present
     end
 
+    it "always sends the equipment field, so clearing all equipment is submitted" do
+      content_login!(owner)
+      get edit_repository_path(owner.username, repo.slug)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='repository[equipments][]'][value='']")).to be_present
+    end
+
     it "bounces staff (staff can view private repos but not edit)" do
       content_sign_in_as(:staff)
       get edit_repository_path(owner.username, repo.slug)
@@ -711,6 +718,47 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       patch repository_path(owner.username, repo.slug), params: update_params
       expect(repo.reload.title).to eq("Renamed")
       expect(repo.categories.pluck(:name)).to eq(["Old"])
+    end
+
+    it "clears the equipment when the form sends an empty selection" do
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { equipments: [""] })
+      expect(repo.reload.title).to eq("Renamed")
+      expect(repo.equipments).to be_empty
+    end
+
+    it "keeps the equipment when a valid update does not send the field" do
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params
+      expect(repo.reload.title).to eq("Renamed")
+      expect(repo.equipments.pluck(:name)).to eq(["Laser Cutter"])
+    end
+
+    it "keeps the equipment when a JSON update does not send the field" do
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params, as: :json
+      expect(repo.reload.title).to eq("Renamed")
+      expect(repo.equipments.pluck(:name)).to eq(["Laser Cutter"])
+    end
+
+    it "replaces the equipment when a JSON update sends the field, and clears it when the list is empty" do
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { equipments: %w[Printer] }), as: :json
+      expect(repo.reload.equipments.pluck(:name)).to eq(["Printer"])
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { equipments: [] }), as: :json
+      expect(repo.reload.equipments).to be_empty
+    end
+
+    it "keeps the equipment when a scalar value is sent instead of a list" do
+      Equipment.create!(name: "Laser Cutter", repository_id: repo.id)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params.deep_merge(repository: { equipments: "Printer" })
+      expect(repo.reload.title).to eq("Renamed")
+      expect(repo.equipments.pluck(:name)).to eq(["Laser Cutter"])
     end
 
     it "keeps the stored password when a refused update sends a new one" do
