@@ -69,9 +69,9 @@ class ReportGenerator
             ["Identity", "Distinct Users", "", "Total Visits"]
           )
           space_visits
-            .group_by { |d| d["identity"] }
-            .each do |iden, counts|
-              sheet.add_row [User.identity_label(iden), counts.uniq.count, "", counts.count]
+            .group_by { |d| User.identity_label(d["identity"]) }
+            .each do |identity, counts|
+              sheet.add_row [identity, counts.uniq.count, "", counts.count]
             end
 
           sheet.add_row # spacing
@@ -114,14 +114,14 @@ class ReportGenerator
                                    }
           toggle_grey = true
           space_visits
-            .group_by { |x| x.identity }
-            .each do |iden, rest|
+            .group_by { |x| User.identity_label(x.identity) }
+            .each do |identity, rest|
               start_cell = sheet.rows.last.cells.first.pos # for merging
               rest
                 .group_by { |y| User.faculty_label(y.faculty) }
                 .each do |faculty, counts|
                   sheet.add_row [
-                                  User.identity_label(iden),
+                                  identity,
                                   counts.uniq.count,
                                   "",
                                   counts.count,
@@ -455,7 +455,12 @@ class ReportGenerator
         title(sheet, "Level of Study")
         push_hash(
           sheet,
-          users.group(:identity).count.transform_keys { |k| User.identity_label(k) }
+          users
+            .group(:identity)
+            .count
+            .each_with_object(Hash.new(0)) do |(identity, count), counts|
+              counts[User.identity_label(identity)] += count
+            end
         )
 
         sheet.add_row
@@ -589,11 +594,9 @@ class ReportGenerator
 
         title(sheet, "Overview")
 
-        groups = users.group_by(&:identity)
-
-        groups.each do |group_name, values|
-          sheet.add_row [User.identity_label(group_name), values.length]
-        end
+        users
+          .group_by { |user| User.identity_label(user.identity) }
+          .each { |identity, values| sheet.add_row [identity, values.length] }
 
         sheet.add_row # spacing
 

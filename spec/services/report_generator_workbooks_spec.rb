@@ -108,13 +108,15 @@ RSpec.describe ReportGenerator do
       expect(b[5].drop(1).map(&:last)).to contain_exactly("Education", "None")
     end
 
-    it "shows a visitor without an identity under None" do
+    it "shows visitors with a missing or blank identity in one None row" do
       gamma = create(:space, name: "Gamma")
-      nobody = student("No Identity")
-      nobody.update_columns(identity: nil)
-      create(:lab_session, space: gamma, user: nobody, created_at: march_10)
+      { "Nil Identity" => nil, "Blank Identity" => "" }.each do |name, identity|
+        user = student(name)
+        user.update_columns(identity: identity)
+        create(:lab_session, space: gamma, user: user, created_at: march_10)
+      end
       b = blocks(grid(described_class.generate_visitors_report(from, to))["Gamma"])
-      expect(b[2].drop(1)).to eq([["None", 1, nil, 1]])
+      expect(b[2].drop(1)).to eq([["None", 2, nil, 2]])
       expect(b[5].drop(1).map(&:first)).to eq(["None"])
     end
 
@@ -342,11 +344,14 @@ RSpec.describe ReportGenerator do
                          nil, "2026-03-10 11:00"])
     end
 
-    it "counts a user without an identity under None on Demographics and Report" do
+    it "counts users with a missing or blank identity in one None row on Demographics and Report" do
       student("Ivy Unknown").update_columns(identity: nil)
+      student("Bea Blank").update_columns(identity: "")
       book = grid(described_class.generate_new_users_report(from, to))
-      expect(book["Demographics"]).to include(["None", 1])
-      expect(book["Report"]).to include(["None", 1])
+      expect(book["Demographics"].count { |row| row.first == "None" }).to eq(1)
+      expect(book["Demographics"]).to include(["None", 2])
+      expect(book["Report"].count { |row| row.first == "None" }).to eq(1)
+      expect(book["Report"]).to include(["None", 2])
     end
 
     it "includes soft-deleted users and excludes users outside the range" do
