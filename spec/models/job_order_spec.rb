@@ -17,6 +17,33 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
+  describe "assigned staff" do
+    let(:order) { create(:job_order, user: create(:user, :regular_user)) }
+
+    it "accepts a staff member or an admin, and no assignee" do
+      expect(order.update(assigned_staff: create(:user, :staff))).to be(true)
+      expect(order.update(assigned_staff: create(:user, :admin))).to be(true)
+      expect(order.update(assigned_staff: nil)).to be(true)
+    end
+
+    it "refuses a user who is not staff" do
+      expect(order.update(assigned_staff: create(:user, :regular_user))).to be(false)
+      expect(order.errors[:assigned_staff]).to eq([I18n.t("job_orders.alerts.assign_staff_not_staff")])
+    end
+
+    it "refuses a deleted staff member" do
+      gone = create(:user, :staff)
+      gone.update_columns(deleted: true)
+      expect(order.update(assigned_staff_id: gone.id)).to be(false)
+    end
+
+    it "stays editable for other fields when the assignee has since stopped being staff" do
+      order.update!(assigned_staff: create(:user, :staff))
+      order.assigned_staff.update_columns(role: "regular_user")
+      expect(order.reload.update(user_comments: "changed")).to be(true)
+    end
+  end
+
   describe "#total_price" do
     before { seed_job_types! }
 
@@ -182,15 +209,12 @@ RSpec.describe JobOrder, type: :model do
       expect(JobOrder.without_drafts).not_to include(draft_last)
     end
 
-    # without_drafts does not filter deleted rows — callers must compose
-    # `.not_deleted` themselves (as JobOrdersController#admin does).
-    it "keeps soft-deleted orders (deletion is a separate composition)" do
+    it "leaves out soft-deleted orders" do
       submitted = create(:job_order, user: create(:user, :regular_user), is_deleted: true)
       travel(5.minutes) do
         submitted.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: submitted.user)
       end
-      expect(JobOrder.without_drafts).to include(submitted)
-      expect(JobOrder.not_deleted.without_drafts).not_to include(submitted)
+      expect(JobOrder.without_drafts).not_to include(submitted)
     end
   end
 
@@ -611,6 +635,36 @@ RSpec.describe JobOrder, type: :model do
         expect(order.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
         expect(shopify).to have_received(:query).once
       end
+    end
+  end
+
+  describe "#tasks_missing_information" do
+    it "lists the tasks lacking a job type or a required service, oldest first" do
+      order = create(:job_order)
+      typed = create(:job_type)
+      group = create(:job_service_group, job_type: typed)
+      service = create(:job_service, job_service_group: group)
+      later = order.job_tasks.create!(title: "no type", created_at: 1.hour.ago)
+      earlier = order.job_tasks.create!(title: "no service", job_type: typed, created_at: 2.hours.ago)
+      order.job_tasks.create!(title: "complete", job_type: typed, job_service: service)
+
+      expect(order.tasks_missing_information).to eq([earlier, later])
+    end
+
+    it "loads job types and service groups once, whatever the number of tasks" do
+      order = create(:job_order)
+      3.times { order.job_tasks.create!(title: "T", job_type: create(:job_type)) }
+      queries = []
+      callback = ->(*, payload) { queries << payload[:sql] unless payload[:name] == "SCHEMA" }
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { order.tasks_missing_information }
+      expect(queries.size).to eq(3)
+    end
+
+    it "uses the tasks it is given" do
+      order = create(:job_order)
+      task = order.job_tasks.create!(title: "T")
+      expect(order.tasks_missing_information([task])).to eq([task])
+      expect(order.tasks_missing_information([])).to eq([])
     end
   end
 end

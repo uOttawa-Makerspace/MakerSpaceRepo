@@ -105,10 +105,6 @@ RSpec.describe "Admin calendar contract", type: :request do
       )
     end
 
-    # StaffSpace#before_create :create_color OVERWRITES any color
-    # passed to create! — generate_color picks the first global palette
-    # entry not yet taken in the space, so a brand-new StaffSpace always
-    # gets "#e6194b" (palette x 22 colors) regardless of what we assign.
     it "shares UNAVAILABILITY entries under the staff + literal wall re-zoned" do
       staff_space!
       unavailability
@@ -122,8 +118,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(staff_entry.keys)
         .to eq(%w[id name color unavailabilities])
       expect(staff_entry["id"]).to eq(staff.id)
-      # not the "#3788d8" the helper assigned — see note above
-      expect(staff_entry["color"]).to eq("#e6194b")
+      expect(staff_entry["color"]).to eq("#3788d8")
 
       event = staff_entry["unavailabilities"].first
       expect(event["title"]).to eq("🚫 #{staff.name} - Doctor")
@@ -226,6 +221,19 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(response.status).to eq(422)
       expect(response.parsed_body).to eq("status" => "error", "error" => not_on_space_message)
     end
+  end
+
+  it "update_color keeps the stored colour when the new one is not a #rrggbb value" do
+    log_in!(admin)
+    admin.update_column(:space_id, space.id)
+    row = StaffSpace.create!(user: admin, space: space, color: "#3788d8")
+
+    post update_color_admin_calendar_index_path,
+         params: { user_id: admin.id, color: "red;background:url(https://example.test/x)" }
+
+    expect(response.status).to eq(422)
+    expect(response.parsed_body).to eq("status" => "error", "error" => "That colour is not valid.")
+    expect(row.reload.color).to eq("#3788d8")
   end
 
   it "update_color only touches the staff colour in the admin's own space" do

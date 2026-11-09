@@ -97,7 +97,7 @@ RSpec.describe Admin::CalendarController, type: :controller do
       }
       expect(response).to be_successful
       expect(response.parsed_body).to eq("status" => "ok")
-      expect(staff_space.reload.color).to eq("#00FF00")
+      expect(staff_space.reload.color).to eq("#00ff00")
     end
 
     it "does not update without color" do

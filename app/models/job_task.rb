@@ -12,6 +12,19 @@ class JobTask < ApplicationRecord
 
   after_save :set_filename
 
+  # True when the task has no job type, or its job type offers services and none is chosen.
+  def missing_information?
+    job_type.blank? || (job_type.job_service_groups.any? && job_service.blank?)
+  end
+
+  # True when the task has a service line (a job service) whose price is missing. A price of 0 is a price; blank
+  # is not. The service quantity does not count as a service line: a quote row starts with quantity 1 by default,
+  # and the quote form only offers the service fields for a task that has a job service.
+  # The quote is read first so a preloaded quote is always used, even for a task without a job service.
+  def service_price_missing?
+    job_task_quote&.service_price.nil? && job_service_id.present?
+  end
+
   has_many_attached :user_files
   validates :user_files,
             file_content_type: {

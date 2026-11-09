@@ -53,11 +53,14 @@
 <style>
  <% @space_list.each do |space| %>
  .btn-outline-<%= space.name %> {
-   <% hex_color = space.assigned_color.map { |x| x.to_s(16).rjust(2, '0') }.join('') %>
-   --bs-btn-color: #<%= hex_color %>;
-   --bs-btn-border-color: #<%= hex_color %>;
-   --bs-btn-active-bg: #<%= hex_color %>;
-   --bs-btn-active-border-color: #<%= hex_color %>;
+   --bs-btn-color: var(--bs-body-color);
+   --bs-btn-border-color: <%= space.assigned_color_hex %>;
+   --bs-btn-hover-color: <%= space.assigned_color_text %>;
+   --bs-btn-hover-bg: <%= space.assigned_color_hex %>;
+   --bs-btn-hover-border-color: <%= space.assigned_color_hex %>;
+   --bs-btn-active-color: <%= space.assigned_color_text %>;
+   --bs-btn-active-bg: <%= space.assigned_color_hex %>;
+   --bs-btn-active-border-color: <%= space.assigned_color_hex %>;
  }
  <% end %>
 </style>

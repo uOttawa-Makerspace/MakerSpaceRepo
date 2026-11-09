@@ -245,6 +245,43 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       get manage_roles_admin_users_path
       expect(response).to have_http_status(:ok)
     end
+
+    describe "space buttons" do
+      def luminance(hex)
+        r, g, b = hex.delete("#").scan(/../).map { |c| c.hex / 255.0 }.map { |c| c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055)**2.4 }
+        (0.2126 * r) + (0.7152 * g) + (0.0722 * b)
+      end
+
+      def ratio(fg, bg)
+        hi, lo = [luminance(fg), luminance(bg)].sort.reverse
+        (hi + 0.05) / (lo + 0.05)
+      end
+
+      # One space per palette colour (the colour follows the space id).
+      let!(:spaces) { create_list(:space, 10) }
+
+      it "keeps the palette colour as the border and fill, with readable text in the outline, hover and checked states" do
+        get manage_roles_admin_users_path
+        rules = response.body.scan(/\.btn-outline-([^\s{]+) \{([^}]*)\}/m).to_h { |name, css| [name, css.scan(/--bs-btn-([\w-]+): ([^;]+);/).to_h] }
+        ratios = {}
+
+        Space.all.each do |space|
+          vars = rules.fetch(space.name)
+          hex = space.assigned_color_hex
+          expect(vars).to include("color" => "var(--bs-body-color)", "border-color" => hex, "hover-bg" => hex,
+                                  "hover-border-color" => hex, "active-bg" => hex, "active-border-color" => hex)
+          expect(vars["hover-color"]).to eq(space.assigned_color_text)
+          expect(vars["active-color"]).to eq(space.assigned_color_text)
+          ratios[hex] = ratio(vars["hover-color"], hex)
+        end
+
+        expect(ratios.size).to eq(10)
+        expect(ratios.values.min).to be >= 4.5
+        # Outline text is the body colour on the page background, in both themes.
+        expect(ratio("#212529", "#ffffff")).to be >= 4.5
+        expect(ratio("#dee2e6", "#212529")).to be >= 4.5
+      end
+    end
   end
 
   describe "PATCH /admin/users/:id (update)" do

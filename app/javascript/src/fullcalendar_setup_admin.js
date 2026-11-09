@@ -10,6 +10,7 @@ import { Tooltip } from "bootstrap";
 
 import { eventClick, eventCreate } from "./calendar_helper.js";
 import { onPageLoad } from "./on_page";
+import { applyEventBackground } from "./calendar_background.js";
 
 onPageLoad("#calendar", async () => {
   const calendarEl = document.getElementById("calendar");
@@ -85,12 +86,7 @@ onPageLoad("#calendar", async () => {
       });
 
       // add user color bg gradient
-      if (info.event.extendedProps.background) {
-        info.el.setAttribute(
-          "style",
-          `background: ${info.event.extendedProps.background}`,
-        );
-      }
+      applyEventBackground(info.el, info.event.extendedProps.background);
 
       // Add visual indicator for admin-created unavailabilities
       if (info.event.extendedProps.isAdminCreated) {

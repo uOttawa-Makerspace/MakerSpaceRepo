@@ -144,12 +144,12 @@ RSpec.describe "JobOrders gaps", type: :request do
     end
 
     # an order with no status rows is in no source state, so the
-    # transition is refused with the generic error (the status is read under the lock)
+    # transition is refused as a wrong state (the status is read under the lock)
     it "refuses a transition for an order with no status rows (no 500)" do
       session_login!(staff)
       statusless = create(:job_order, user: owner)
       patch job_order_start_processing_path(statusless), params: { start_processing: "true" }
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.error_while_updating"))
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.wrong_state"))
       expect(statusless.reload.job_order_statuses).to be_empty
     end
 
@@ -160,14 +160,13 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(ActionMailer::Base.deliveries.map(&:subject)).to eq(["Your Job Order ##{completed.id} is now ready for pickup"])
     end
 
-    # the js format renders admin_row -> _assign_staff with a nil @staff
-    it "answers format.js on a transition with the same 500 (ActionView::Template::Error)" do
+    it "answers format.js on a transition with a redirect to the order page, as for html" do
       session_login!(staff)
       start = order_with_task!(status_key: :waiting_processed)
       patch job_order_start_processing_path(start), params: { start_processing: "true" },
                                                     headers: { "ACCEPT" => "text/javascript" }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("ActionView::Template::Error")
+      expect(response).to redirect_to(job_order_path(start))
+      expect(status_names(start)).to end_with("Currently being Processed")
     end
   end
 
@@ -310,25 +309,35 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(order.chat_messages.first.reload.is_read).to be(false)
     end
 
-    # staff see the quote modal on show, which calls
-    # `task.job_type.name` for every task; a task without a job type crashes it.
-    it "500s (NoMethodError) for staff when a task has no job type" do
+    # The quote modal sits on the order page for staff; a task without a job type
+    # shows neutral text instead of a type name.
+    it "renders the order page and quote modal for staff and admin when a task has no job type" do
       order = order_with_task!(status_key: :staff_approval)
-      session_login!(staff)
-      get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("undefined method 'name' for nil")
-      expect(response.body).to include("app/views/job_orders/_quote_modal.html.erb")
+      [staff, admin].each do |viewer|
+        session_login!(viewer)
+        get job_order_path(order)
+        expect(response).to have_http_status(:ok)
+        modal = Capybara.string(response.body).find("#quote-modal-rendered")
+        expect(modal.text.squish).to include("Task #1 No job type")
+      end
     end
 
-    # show dereferences the "processed" JobOrderMessage unconditionally
-    it "raises (500, NoMethodError) when the processed JobOrderMessage row is missing" do
+    it "words the missing job type in French for a French-speaking viewer" do
+      order = order_with_task!(status_key: :staff_approval)
+      session_login!(staff)
+      get job_order_path(order, locale: "fr")
+      expect(response).to have_http_status(:ok)
+      expect(Capybara.string(response.body).find("#quote-modal-rendered").text.squish).to include("Task #1 Aucun type de tâche")
+    end
+
+    it "renders the order page when the processed JobOrderMessage row is missing" do
       JobOrderMessage.where(name: "processed").delete_all
       order = order_with_task!(status_key: :staff_approval)
+      order.job_tasks.first.update!(job_type: JobType.find_by!(name: "3D Print"))
       session_login!(owner)
       get job_order_path(order)
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Job Order ##{order.id}")
     end
 
     # the missing-info alert is flash.now, shown on the page that computed it only
@@ -420,13 +429,41 @@ RSpec.describe "JobOrders gaps", type: :request do
   describe "PATCH assign_staff corners" do
     let!(:order) { order_with_task!(status_key: :staff_approval) }
 
-    it "lets an admin assign a non-staff user" do
+    it "refuses to assign a non-staff user, with a message, and mails nobody" do
       session_login!(admin)
       perform_enqueued_jobs { patch job_order_assign_staff_path(order), params: { staff_id: other.id } }
 
-      expect(order.reload.assigned_staff).to eq(other)
-      expect(flash[:notice]).to eq("#{other.name} has been assigned to this job order.")
-      expect(ActionMailer::Base.deliveries.last.to).to eq([other.email])
+      expect(order.reload.assigned_staff).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_staff"))
+      expect(flash[:notice]).to be_nil
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "refuses to assign a deleted staff member" do
+      gone = create(:user, :staff)
+      gone.update_columns(deleted: true)
+      session_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: gone.id }
+
+      expect(order.reload.assigned_staff_id).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_staff"))
+    end
+
+    it "keeps the previous assignee when a non-staff user is refused" do
+      order.update!(assigned_staff: staff)
+      session_login!(admin)
+      patch job_order_assign_staff_path(order), params: { staff_id: other.id }
+      expect(order.reload.assigned_staff).to eq(staff)
+    end
+
+    it "words the assigned and unassigned notices in the request's language" do
+      session_login!(admin)
+      patch job_order_assign_staff_path(order, locale: "fr"), params: { staff_id: staff.id }
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.staff_assigned", name: staff.name, locale: :fr))
+
+      patch job_order_assign_staff_path(order, locale: "fr"), params: { staff_id: "" }
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.no_staff_assigned", locale: :fr))
+      expect(flash[:notice]).not_to include("assigned")
     end
 
     it "unassigns with a blank staff_id and says 'No staff'" do
@@ -444,13 +481,18 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(response).to redirect_to(admin_job_orders_url)
     end
 
-    # the else branch dereferences the (nil) assigned staff
-    it "500s (NoMethodError) when staff assigns someone else, and assigns nothing" do
+    it "refuses when staff assigns someone else, with a message, and assigns nothing" do
       session_login!(staff)
       patch job_order_assign_staff_path(order), params: { staff_id: admin.id }
-      expect(response).to have_http_status(:internal_server_error)
-      expect(error_text).to include("NoMethodError")
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.assign_staff_not_permitted"))
       expect(order.reload.assigned_staff).to be_nil
+    end
+
+    it "lets staff assign themselves" do
+      session_login!(staff)
+      patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      expect(order.reload.assigned_staff).to eq(staff)
     end
 
     it "sends the EXPEDITED subject and priority headers to the assigned staff member" do
@@ -531,10 +573,8 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(text).to include("Total: CAD $25.50")
     end
 
-    # the parts line is only printed when the task has a job service,
-    # but the total always includes service_price * service_quantity, so the
-    # printed lines can fail to add up to the printed total.
-    it "omits the parts line for a task without a service although the total includes it" do
+    # The service line is itemised whenever it counts toward the total, with or without a job service.
+    it "itemises the service amount for a task without a service, matching the total" do
       order = order_with_task!(status_key: :completed)
       order.job_tasks.first.build_job_task_quote(price: 10, service_price: 3, service_quantity: 2).save!
       session_login!(owner)
@@ -542,8 +582,19 @@ RSpec.describe "JobOrders gaps", type: :request do
 
       text = Capybara.string(response.body).text.squish
       expect(text).to include("Task #1 - Base Fee CAD $10.00")
-      expect(text).not_to include("CAD $6.00")
+      expect(text).to include("Task #1 - Service - 2.0 unit CAD $6.00")
       expect(text).to include("Total: CAD $16.00")
+    end
+
+    it "prints no service line when the service amount is zero" do
+      order = order_with_task!(status_key: :completed)
+      order.job_tasks.first.build_job_task_quote(price: 10, service_price: 3, service_quantity: 0).save!
+      session_login!(owner)
+      get job_order_invoice_path(order)
+
+      text = Capybara.string(response.body).text.squish
+      expect(text).not_to include("Task #1 - Service")
+      expect(text).to include("Total: CAD $10.00")
     end
 
     it "redirects invoice requests for a soft-deleted order to new with no_permission" do

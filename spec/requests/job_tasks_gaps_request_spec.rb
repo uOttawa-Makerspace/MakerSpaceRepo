@@ -256,16 +256,14 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(response.body).to include("Are you sure you want to delete this task?")
     end
 
-    # numbering falls back to the row count, so deleting an early
-    # task makes the next one reuse an existing title.
-    it "produces a duplicate 'Task #2' title after deleting Task #1 from [#1, #2]" do
+    it "numbers the next task after the highest existing one when an early task was deleted" do
       order = order_with_task!
       order.job_tasks.create!(title: "Task #2")
       session_login!(owner)
       delete job_order_job_task_path(order, order.job_tasks.find_by!(title: "Task #1"))
 
       post job_order_job_tasks_path(order)
-      expect(order.reload.job_tasks.order(:id).pluck(:title)).to eq(["Task #2", "Task #2"])
+      expect(order.reload.job_tasks.order(:id).pluck(:title)).to eq(["Task #2", "Task #3"])
     end
 
     it "refuses staff deleting a task, lets an admin" do

@@ -31,4 +31,32 @@ RSpec.describe StaffNeededCalendar, type: :model do
       end
     end
   end
+
+  describe "color" do
+    let(:space) { create(:space) }
+
+    def calendar(color) = described_class.new(space: space, calendar_url: "u", color: color)
+
+    it "accepts a #rrggbb value, a blank value and no value" do
+      ["#3788d8", "", nil].each { |color| expect(calendar(color)).to be_valid }
+    end
+
+    it "normalizes case and surrounding whitespace" do
+      expect(calendar(" #E6194B ").tap(&:validate).color).to eq("#e6194b")
+    end
+
+    it "rejects anything else" do
+      ["red", "#fff", "#ggg000", "#e6194b;background:url(x)", "url(x)", "#e6194b\nx"].each do |color|
+        expect(calendar(color)).not_to be_valid, "expected #{color.inspect} to be rejected"
+      end
+    end
+
+    it "keeps an older row with a stored value editable until its colour changes" do
+      old = described_class.create!(space: space, calendar_url: "u")
+      old.update_columns(color: "teal")
+      expect(old.reload.update(name: "Renamed")).to be(true)
+      expect(old.update(color: "navy")).to be(false)
+      expect(old.update(color: "#008080")).to be(true)
+    end
+  end
 end

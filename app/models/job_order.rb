@@ -15,13 +15,16 @@ class JobOrder < ApplicationRecord
   has_many :job_tasks, dependent: :destroy
   has_many :job_quote_line_items, dependent: :destroy
 
+  validate :assigned_staff_must_be_staff, if: :will_save_change_to_assigned_staff_id?
+
   after_save :set_filename
 
-  # Orders whose latest status (the one rule, LATEST_STATUS_ID_SQL) exists and is not Draft. An order without a
-  # status is NULL <> id: excluded. JobStatus.draft raises JobStatus::Missing when Draft is not seeded.
-  scope :without_drafts, -> { where("#{LATEST_STATUS_ID_SQL} <> ?", JobStatus.draft.id) }
-
   scope :not_deleted, -> { where(is_deleted: false) }
+
+  # Orders that are not deleted and whose latest status (the one rule, LATEST_STATUS_ID_SQL) exists and is not
+  # Draft. An order without a status is NULL <> id: excluded. JobStatus.draft raises JobStatus::Missing when Draft
+  # is not seeded.
+  scope :without_drafts, -> { not_deleted.where("#{LATEST_STATUS_ID_SQL} <> ?", JobStatus.draft.id) }
 
   # emailed approve / pay links. Purpose-scoped (generates_token_for),
   # bound to the order and its owner, valid for 14 days. The approval link is
@@ -61,11 +64,14 @@ class JobOrder < ApplicationRecord
   # The outcome of a locked operation on an order (#transition!, #apply_owner_change!, #checkout_link,
   # #soft_delete!, #retire_stale_draft!): ok?, or refused with a reason. Nothing is committed on a refusal.
   #   :wrong_state         the order is not in one of `from` (or, for an owner change, money was taken)
+  #   :nothing_asked       (status changes from the controller) the request did not ask for a change
   #   :link_spent          the emailed approve link was retired (re-quote / owner change) before the lock
   #   :draft_not_voidable  the Shopify draft could not be settled (StaleDraftOrderError; any Shopify error)
   #   :invalid_status_row  the status row did not validate or could not be written (no actor)
   #   :change_invalid      the caller's own writes did not validate; `error.message` holds the messages
   #   :order_missing       the order was deleted (hard, or soft) before the lock
+  #   :service_price_missing a task has a service line with no price (see #service_price_missing_error); `error`
+  #                        names the tasks
   #   :busy                a lock wait in the operation timed out (the order's row or a row the work locks);
   #                        nothing was changed, retry
   #   :not_deletable       (soft_delete! only) the actor may not delete an order in this status
@@ -76,9 +82,12 @@ class JobOrder < ApplicationRecord
   # operation returns (the invoice url, whether the order was sent back, the draft outcome).
   # `error` is the exception behind a refusal made from one (reported and logged once, by JobOrder#refuse_from).
   class TransitionResult < Data.define(:reason, :error, :status, :value)
-    # The reasons that have their own message (job_orders.alerts.status_change.<reason>, and for the $0 path
-    # job_orders.alerts.zero_order_not_marked_paid.<reason>). Every other reason falls back to a generic one.
+    # The reasons that have their own message when the order's work could not be committed
+    # (job_orders.alerts.status_change.<reason> and, for the $0 path, job_orders.alerts.zero_order_not_marked_paid.<reason>).
+    # Every other reason falls back to a generic one.
     REASONS_WITH_MESSAGE = %i[draft_not_voidable invalid_status_row order_missing busy].freeze
+    # A status change also says when the order is not in a state that allows it.
+    STATUS_CHANGE_REASONS = (REASONS_WITH_MESSAGE + %i[wrong_state service_price_missing]).freeze
     # A deadlock is shown as the same "try again" as a busy row.
     MESSAGE_REASON = { deadlock: :busy }.freeze
     GENERIC_MESSAGE = "job_orders.alerts.error_while_updating"
@@ -89,17 +98,32 @@ class JobOrder < ApplicationRecord
     def self.refused(reason, error = nil) = new(reason: reason, error: error, status: nil, value: nil)
     def ok? = reason.nil?
 
+    # The values the refusal's message names (the tasks of :service_price_missing); none for any other reason.
+    def message_args
+      error.is_a?(ServicePriceMissing) ? { tasks: error.task_titles.to_sentence } : {}
+    end
+
     # The $0 path in #processed: the order was already moved to Completed, so "nothing was changed" would be
     # false. Its own messages say the order is Completed and why it could not be marked Paid.
     def zero_order_message_key
-      message_key("job_orders.alerts.zero_order_not_marked_paid",
+      message_key("job_orders.alerts.zero_order_not_marked_paid", reasons: REASONS_WITH_MESSAGE,
                   fallback: "job_orders.alerts.zero_order_not_marked_paid.other")
     end
 
     # `scope` holds a message per reason in `reasons`; any other reason gets `fallback`.
-    def message_key(scope = "job_orders.alerts.status_change", reasons: REASONS_WITH_MESSAGE, fallback: GENERIC_MESSAGE)
+    def message_key(scope = "job_orders.alerts.status_change", reasons: STATUS_CHANGE_REASONS, fallback: GENERIC_MESSAGE)
       key = MESSAGE_REASON.fetch(reason, reason)
       reasons.include?(key) ? "#{scope}.#{key}" : fallback
+    end
+  end
+
+  # A quote or a payment link was asked for while a task's service line has no price. Carries the tasks' titles.
+  class ServicePriceMissing < StandardError
+    attr_reader :task_titles
+
+    def initialize(task_titles)
+      @task_titles = task_titles
+      super("service price missing for: #{task_titles.join(', ')}")
     end
   end
 
@@ -138,9 +162,24 @@ class JobOrder < ApplicationRecord
       end
 
       apply_change(&changes) if changes
+      require_priced_services!(to)
       enter_status!(to, from: latest, actor: actor)
       TransitionResult.done
     end
+  end
+
+  # The statuses that put the quote in front of the customer (sent, reminded, approved) or lead to its payment
+  # link (Completed): an order may only enter them with every service line priced.
+  def self.priced_quote_status?(status)
+    [JobStatus.user_approval, JobStatus.sent_reminder, JobStatus.waiting_processed, JobStatus.completed].include?(status)
+  end
+
+  # The error that refuses to quote or bill the order: a task has a service line (a job service) but no
+  # service price. A price of 0 is a price (a free service); only a missing one (blank)
+  # is refused. nil when every service line is priced. The amounts are never changed.
+  def service_price_missing_error(snapshot = quote_snapshot)
+    tasks = snapshot.tasks.select(&:service_price_missing?)
+    ServicePriceMissing.new(tasks.map { |task| task.title.presence || "##{task.id}" }) if tasks.any?
   end
 
   # Who may open the order and use its chat: its owner, staff and admins.
@@ -225,6 +264,12 @@ class JobOrder < ApplicationRecord
     end
     JobOrderMailer.send_job_requote_needed(id, "owner_change").deliver_later if result.ok? && result.value
     result
+  end
+
+  # The tasks that still lack a job type or a required service, in creation order. Pass tasks already loaded with
+  # their job types and service groups to reuse them; by default they are loaded here.
+  def tasks_missing_information(tasks = job_tasks.reorder(:created_at, :id).includes(job_type: :job_service_groups))
+    tasks.select(&:missing_information?)
   end
 
   # Digest of what the order's tasks ask to be made, read fresh: per non-blank task (id order) its job type, service
@@ -377,6 +422,16 @@ class JobOrder < ApplicationRecord
   # busy row, order deleted, the send-back's status row not written) has already been reported by #refuse_from.
   # `status` is the caller's fresh #current_status (the default: read now), so the fast path does not read it again.
   def checkout_link(status = current_status)
+    service_price_refusal || serve_checkout_link(status)
+  end
+
+  # A refusal (nothing is created or served) while a task's service line has no price; nil otherwise.
+  def service_price_refusal
+    missing = service_price_missing_error
+    TransitionResult.refused(:service_price_missing, missing) if missing
+  end
+
+  def serve_checkout_link(status)
     # Lock-free fast path (the status is read fresh, #current_status: the cached #latest_status could serve an
     # invoice for a status that changed on another connection): a COMPLETED order whose stored draft is current (read without a lock) is served by one
     # fetch. A race with a change that voids the draft is safe: the void deletes it on Shopify, the fetch then finds
@@ -400,6 +455,7 @@ class JobOrder < ApplicationRecord
   rescue StaleDraftOrderError => e # the fast path's fetch (the locked path maps its own)
     refuse_from(e, :draft_not_voidable, "checkout_link")
   end
+  private :service_price_refusal, :serve_checkout_link
 
   # The one staleness rule: the stored draft is current only when its fingerprint equals the fingerprint
   # of the order's quote now. A draft without a fingerprint (legacy) is never current.
@@ -426,17 +482,17 @@ class JobOrder < ApplicationRecord
     format("%.2f", BigDecimal((amount || 0).to_s).round(2))
   end
 
-  # Everything the quote is made of, loaded once per request and ordered by id: the tasks with their quotes and
-  # quote options, and the order's line items. ONE snapshot is read by #total_price, #quote_fingerprint and the
-  # draft's line items, so they cannot disagree within a request. The options' names (JobOption) are only needed
-  # for the draft's line titles, so they are preloaded onto the same rows when those are built
-  # (#shopify_draft_order_line_items), not for readers that never show them. reload (and so lock!)
-  # drops it.
+  # Everything the quote is made of, loaded once per request and ordered by id: the tasks with their quotes, and the
+  # order's line items. ONE snapshot is read by #total_price, #quote_fingerprint and the draft's line items, so they
+  # cannot disagree within a request. The quote options are only needed by the readers that add up or list the
+  # amounts, and the options' names (JobOption) only for the draft's line titles, so each is preloaded onto the same
+  # rows when those readers run (#preload_quote_options, #preload_option_names), not for readers that never use
+  # them (the price check). reload (and so lock!) drops it.
   QuoteSnapshot = Data.define(:tasks, :line_items)
 
   def quote_snapshot
     @quote_snapshot ||= QuoteSnapshot.new(
-      tasks: job_tasks.includes(job_task_quote: :job_task_quote_options).reorder(:id).to_a,
+      tasks: job_tasks.includes(:job_task_quote).reorder(:id).to_a,
       line_items: job_quote_line_items.reorder(:id).to_a
     )
   end
@@ -646,6 +702,7 @@ class JobOrder < ApplicationRecord
 
   def total_price
     snapshot = quote_snapshot
+    preload_quote_options(snapshot)
     tasks_total = snapshot.tasks.sum do |task|
       quote = task.job_task_quote
       next 0 if quote.nil?
@@ -663,6 +720,17 @@ class JobOrder < ApplicationRecord
       [generate_line_item("Line Items Total", snapshot.line_items.sum { |li| li.price || 0 })]
   end
 
+  # The tasks the printable invoice lists, from the same snapshot as #total_price (so the lines and the total agree),
+  # with everything the invoice shows for them loaded: quote options and their names, and the job service and its
+  # group of the tasks that have a service line (only those are shown).
+  def invoice_tasks
+    snapshot = quote_snapshot
+    preload_option_names(snapshot)
+    with_service_line = snapshot.tasks.select { |task| task.job_task_quote&.service_total.to_f.positive? }
+    ActiveRecord::Associations::Preloader.new(records: with_service_line, associations: { job_service: :job_service_group }).call
+    snapshot.tasks
+  end
+
   def expedited?
     job_tasks
       .joins(job_task_options: :job_option)
@@ -671,6 +739,14 @@ class JobOrder < ApplicationRecord
   end
 
   private
+
+  # Only a newly chosen assignee is checked, so an order whose assignee has since lost the staff role (or been
+  # deleted: the default scope hides them) stays editable for its other fields.
+  def assigned_staff_must_be_staff
+    return if assigned_staff_id.nil? || assigned_staff&.staff?
+
+    errors.add(:assigned_staff, I18n.t("job_orders.alerts.assign_staff_not_staff"))
+  end
 
   # The one operation on a locked order (#transition!, #apply_owner_change!, #checkout_link, #soft_delete!,
   # #retire_stale_draft!): its own transaction (ApplicationRecord.own_transaction: every lock wait is bounded, and it
@@ -715,6 +791,8 @@ class JobOrder < ApplicationRecord
     refuse_from(e, :draft_not_voidable, label, report: report)
   rescue ChangeInvalid => e
     refuse_from(e, :change_invalid, label, report: report)
+  rescue ServicePriceMissing => e
+    refuse_from(e, :service_price_missing, label, report: report)
   rescue StatusRowInvalid => e
     refuse_from(e, :invalid_status_row, label, report: report)
   end
@@ -770,6 +848,16 @@ class JobOrder < ApplicationRecord
     outcome
   end
 
+  # Refuses (rolling the transition back) a destination that needs a priced quote while a service line has no
+  # price. The block's writes are in the database by now, so the snapshot is read again.
+  def require_priced_services!(to)
+    return unless self.class.priced_quote_status?(to)
+
+    @quote_snapshot = nil
+    missing = service_price_missing_error
+    raise missing if missing
+  end
+
   # The caller's own writes, made inside the row lock: their validation failures are ChangeInvalid (nothing is
   # committed). Anything else propagates.
   def apply_change
@@ -791,7 +879,15 @@ class JobOrder < ApplicationRecord
     update_columns(shopify_draft_order_id: new_id, shopify_draft_order_fingerprint: quote_fingerprint)
   end
 
+  # Loads the quote options of the snapshot's quotes in one query (a no-op for quotes that already have them).
+  def preload_quote_options(snapshot)
+    ActiveRecord::Associations::Preloader.new(
+      records: snapshot.tasks.filter_map(&:job_task_quote), associations: :job_task_quote_options
+    ).call
+  end
+
   def preload_option_names(snapshot)
+    preload_quote_options(snapshot)
     quote_options = snapshot.tasks.flat_map { |task| task.job_task_quote&.job_task_quote_options.to_a }
     ActiveRecord::Associations::Preloader.new(records: quote_options, associations: :job_option).call
   end
@@ -800,6 +896,7 @@ class JobOrder < ApplicationRecord
   # { key: [task id, component], amount: BigDecimal, title: draft line title (only with titles:, which needs the
   # options' names preloaded, see #preload_option_names) }.
   def quote_lines(snapshot, titles: false)
+    preload_quote_options(snapshot)
     snapshot.tasks.flat_map do |task|
       quote = task.job_task_quote
       next [] if quote.nil?

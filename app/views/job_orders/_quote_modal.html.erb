@@ -11,7 +11,7 @@
             <h5 class="m-0">
               <%= task.title || "Task ##{task.id}" %>
               <span class="ms-1 text-muted fs-6">
-                <%= task.job_type.name %>
+                <%= task.job_type&.name || t("job_orders.order.no_job_type") %>
                 <% if task.job_service.present? %>
                   -
                   <%= task.job_service.name %> (<%= task.job_service.job_service_group.name %>)
@@ -28,7 +28,7 @@
                   <span class="input-group-text">$</span>
                 </div>
                 <%= number_field_tag "job_task_quote_price_#{task.id}",
-                      (job_task_quote.price.presence || money_input_value(task.job_type.service_fee)),
+                      (job_task_quote.price.presence || money_input_value(task.job_type&.service_fee)),
                       placeholder: 'value',
                       step: '0.01', class: 'form-control money-input base-fee' %>
               </div>

@@ -1,10 +1,16 @@
 class StaffSpace < ApplicationRecord
   belongs_to :user, optional: true
   belongs_to :space, optional: true
-  
 
-  before_create :create_color
-  before_save :check_color
+  COLOR_FORMAT = /\A#\h{6}\z/
+
+  normalizes :color, with: ->(color) { color.strip.downcase }
+
+  # The colour is written into style attributes by the calendar pages, so only a #rrggbb value is accepted. A
+  # stored value is only checked when it changes, so an older row stays editable for its other fields.
+  validates :color, format: { with: COLOR_FORMAT }, allow_blank: true, if: :will_save_change_to_color?
+
+  before_save :ensure_color
 
   # List of colors with good enough contrast between them
   $color_list = %w[
@@ -32,12 +38,9 @@ class StaffSpace < ApplicationRecord
     #000000
   ]
 
-  def create_color
-    self.color = generate_color
-  end
-
-  def check_color
-    self.color = generate_color if self.color.nil?
+  # A colour passed in is kept; a blank one gets the first palette entry still free in the space.
+  def ensure_color
+    self.color = generate_color if color.blank?
   end
 
   def generate_color

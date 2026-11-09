@@ -287,6 +287,11 @@ en:
       please_upload_valid_file_type: "Please make sure you have a uploaded a valid filetype."
       options_have_not_been_saved: "The options have not been saved successfully."
       job_order_not_found: "The Job Order hasn't been found."
+      assign_staff_not_permitted: "Only an admin can assign another staff member to a job order."
+      assign_staff_not_staff: "Only a staff member or an admin can be assigned to a job order."
+      staff_assigned: "%{name} has been assigned to this job order."
+      no_staff_assigned: "No staff has been assigned to this job order."
+      assign_staff_failed: "The staff member could not be assigned to this job order."
       error_while_saving_step: "An error occurred while saving the Job Order Step. "
       job_order_submitted_for_approval: "Your job order has been submitted for staff approval!"
       job_order_updated: "Your job order has been updated!"
@@ -305,6 +310,8 @@ en:
       owner_change_busy: "Your change could not be saved because the order is being changed by someone else. Nothing was changed. Please try again in a moment."
       owner_change_order_missing: "Your change could not be saved because this order no longer exists."
       status_change:
+        service_price_missing: "This order cannot move forward yet: the service price is missing for %{tasks}. Staff must enter a price (0 is allowed for a free service) in the quote first. Nothing was changed."
+        wrong_state: "The status could not be changed because the order is no longer in a state that allows this change (it may already have been updated). Nothing was changed."
         draft_not_voidable: "The status could not be changed because this order's payment link could not be cancelled. Nothing was changed. Please try again later."
         invalid_status_row: "The status could not be changed because the change could not be recorded. Nothing was changed. The problem has been reported."
         order_missing: "The status could not be changed because this order no longer exists. Nothing was changed."
@@ -388,7 +395,10 @@ en:
       step_4:
         additional_comments: "Additional Comments"
     order:
+      submit_for_approval: "Submit for Approval"
+      submit_for_approval_confirm: "Are you sure you want to submit this job order for staff approval?"
       job_order: "Job Order"
+      no_job_type: "No job type"
       client_information: "Client Information"
       name: "Name"
       email: "Email"

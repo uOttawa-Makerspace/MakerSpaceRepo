@@ -365,6 +365,11 @@ fr:
       please_upload_valid_file_type: "Vérifiez que vous avez téléversé un type de fichier valide."
       options_have_not_been_saved: "Les options n'ont pas été enregistrées avec succès."
       job_order_not_found: "La commande n'a pas été trouvée"
+      assign_staff_not_permitted: "Seul un administrateur peut assigner un autre membre du personnel à une commande."
+      assign_staff_not_staff: "Seul un membre du personnel ou un administrateur peut être assigné à une commande."
+      staff_assigned: "%{name} a été assigné à cette commande."
+      no_staff_assigned: "Aucun membre du personnel n'est assigné à cette commande."
+      assign_staff_failed: "Le membre du personnel n'a pas pu être assigné à cette commande."
       error_while_saving_step: "Une erreur s'est produite lors de l'enregistrement de l'étape de commande.  "
       job_order_submitted_for_approval: "Votre commande a été soumise à l'approbation du personnel !"
       job_order_updated: "Votre commande a été mise a jour !"
@@ -383,6 +388,8 @@ fr:
       owner_change_busy: "Votre modification n'a pas pu être enregistrée car la commande est en cours de modification par quelqu'un d'autre. Rien n'a été modifié. Veuillez réessayer dans un instant."
       owner_change_order_missing: "Votre modification n'a pas pu être enregistrée car cette commande n'existe plus."
       status_change:
+        service_price_missing: "Cette commande ne peut pas avancer pour le moment : le prix du service est manquant pour %{tasks}. Le personnel doit d'abord saisir un prix dans le devis (0 est permis pour un service gratuit). Rien n'a été modifié."
+        wrong_state: "Le statut n'a pas pu être modifié car la commande n'est plus dans un état qui permet ce changement (elle a peut-être déjà été mise à jour). Rien n'a été modifié."
         draft_not_voidable: "Le statut n'a pas pu être modifié car le lien de paiement de cette commande n'a pas pu être annulé. Rien n'a été modifié. Veuillez réessayer plus tard."
         invalid_status_row: "Le statut n'a pas pu être modifié car le changement n'a pas pu être enregistré. Rien n'a été modifié. Le problème a été signalé."
         order_missing: "Le statut n'a pas pu être modifié car cette commande n'existe plus. Rien n'a été modifié."
@@ -466,7 +473,10 @@ fr:
       step_4:
         additional_comments: "Commentaires supplémentaires"
     order:
+      submit_for_approval: "Soumettre pour approbation"
+      submit_for_approval_confirm: "Voulez-vous vraiment soumettre cette commande à l'approbation du personnel ?"
       job_order: "Commande"
+      no_job_type: "Aucun type de tâche"
       client_information: "Informations du client"
       name: "Nom"
       email: "Courriel"
