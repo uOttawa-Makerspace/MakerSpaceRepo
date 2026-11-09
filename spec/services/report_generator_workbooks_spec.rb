@@ -553,6 +553,13 @@ RSpec.describe ReportGenerator do
         expect(rows[6]).to eq(["2026-03-11", *[0] * 12])
       end
 
+      it "lists the days from the From date to the To date, for a range that ends now in the Toronto evening" do
+        # 21:00 in Toronto is 01:00 UTC on the next day
+        rows = grid(described_class.generate_peak_hours_report(DateTime.new(2026, 3, 9), Time.zone.local(2026, 3, 10, 21)))["Sheet1"]
+        expect(rows[2]).to eq(%w[To 2026-03-10])
+        expect(rows[5..]).to eq([["2026-03-09"], ["2026-03-10"]])
+      end
+
       it "adds up the visits of the hour that repeats when daylight saving time ends" do
         # 05:30 and 06:30 UTC on 2026-11-01 are both 01:30 in Toronto (EDT, then EST)
         create(:lab_session, sign_in_time: Time.utc(2026, 11, 1, 5, 30))

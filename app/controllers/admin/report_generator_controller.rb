@@ -164,7 +164,7 @@ class Admin::ReportGeneratorController < AdminAreaController
     end_date =
       (
         if params[:end_date].nil?
-          DateTime.now
+          Time.current
         else
           Date.parse(params[:end_date]).to_datetime
         end

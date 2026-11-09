@@ -946,12 +946,10 @@ class ReportGenerator
 
       table_header(sheet, header)
 
-      (start_date..end_date).each do |date|
+      (start_date.to_date..end_date.to_date).each do |date|
         row = [date.strftime("%Y-%m-%d")]
 
-        hour_columns.each do |hour|
-          row << visits_by_hour[[date.to_date, hour]]
-        end
+        hour_columns.each { |hour| row << visits_by_hour[[date, hour]] }
 
         sheet.add_row row
       end
