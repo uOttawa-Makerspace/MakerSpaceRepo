@@ -445,22 +445,13 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     staff ? t("job_orders.alerts.staff_assigned", name: staff.name) : t("job_orders.alerts.no_staff_assigned")
   end
 
+  # The order the route names (job_order_id on the nested routes, id on destroy; never an id from the query string),
+  # looked up once; a missing or deleted order gets the same answer as one the viewer may not see.
   def set_job_order
-    if JobOrder.where(id: params[:job_order_id], is_deleted: false).present? ||
-         JobOrder.where(id: params[:id], is_deleted: false).present?
-      jo =
-        JobOrder.where(
-          id:
-            
-              params[:job_order_id].presence || params[:id],
-          is_deleted: false
-        ).first
-      if @user.admin? | @user.staff? || @user.id == jo.user_id
-        @job_order = jo
-      else
-        flash[:alert] = t("job_orders.alerts.no_permission")
-        redirect_to new_job_orders_path
-      end
+    route = request.path_parameters
+    order = JobOrder.not_deleted.find_by(id: route[:job_order_id] || route[:id])
+    if order && (@user.admin? || @user.staff? || @user.id == order.user_id)
+      @job_order = order
     else
       flash[:alert] = t("job_orders.alerts.no_permission")
       redirect_to new_job_orders_path

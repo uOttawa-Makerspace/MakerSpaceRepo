@@ -186,6 +186,28 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(deleted.reload.staff_comments).not_to eq("x")
     end
 
+    # The order is the one the route names (job_order_id on the nested routes, id on destroy); an id in the
+    # query string is never used in its place.
+    it "refuses a deleted order named by the route even when the query names a live one" do
+      deleted = order_with_task!
+      deleted.update!(is_deleted: true)
+      live = order_with_task!
+      session_login!(staff)
+      patch job_order_comments_path(deleted, id: live.id), params: { job_order: { staff_comments: "x" } }
+      expect(response).to redirect_to(new_job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+      expect([deleted.reload.staff_comments, live.reload.staff_comments]).not_to include("x")
+    end
+
+    it "deletes the order the route names, not one named by job_order_id in the query" do
+      named = order_with_task!
+      other_order = order_with_task!
+      session_login!(owner)
+      delete job_order_path(named, job_order_id: other_order.id)
+      expect(response).to redirect_to(job_orders_path)
+      expect([named.reload.is_deleted, other_order.reload.is_deleted]).to eq([true, false])
+    end
+
     it "treats a non-owner's user_approval like any other protected action (no_permission redirect)" do
       order = order_with_task!(status_key: :user_approval)
       session_login!(other)
