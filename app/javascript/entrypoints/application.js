@@ -166,7 +166,7 @@ window.setSpace = async function () {
   }
 };
 
-window.debounce = function (func, wait, immediate) {
+/** @type {any} */ (window).debounce = function (func, wait, immediate) {
   let timeout;
   return function (...args) {
     const context = this;

@@ -33,6 +33,11 @@ export class RequestFailed extends Error {}
 // Sends the request and reads the whole answer: { ok, contentType, text, requestId }. When the request or the
 // reading of its body fails (server unreachable, connection dropped), throws a RequestFailed carrying
 // `networkText` (the page's translated text unless given).
+/**
+ * @param {RequestInfo | URL} input
+ * @param {RequestInit} [init]
+ * @param {string} [networkText]
+ */
 export async function requestResult(
   input,
   init,
@@ -65,6 +70,11 @@ export function resultError(
 
 // Sends the request and returns its parsed JSON body (null for an empty or non-JSON body). A failed answer,
 // or an OK one with no JSON body when `requireBody` is set, throws a RequestFailed with the reason to show.
+/**
+ * @param {RequestInfo | URL} input
+ * @param {RequestInit} [init]
+ * @param {{ fallback?: string, networkText?: string, requireBody?: boolean }} [options]
+ */
 export async function requestJson(
   input,
   init,
@@ -77,6 +87,11 @@ export async function requestJson(
 }
 
 // Sends the request and returns the answer's text. A failed answer throws a RequestFailed with the reason to show.
+/**
+ * @param {RequestInfo | URL} input
+ * @param {RequestInit} [init]
+ * @param {{ fallback?: string, networkText?: string }} [options]
+ */
 export async function requestText(input, init, options = {}) {
   const result = await requestResult(input, init, options.networkText);
   if (!result.ok)
