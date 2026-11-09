@@ -134,11 +134,13 @@ RSpec.describe ReportGenerator do
       )
     end
 
-    it "counts a session nobody attended as one attendee" do
+    it "counts no attendees for a session nobody attended" do
       create(:training_session, space: alpha, training: laser, created_at: march_10)
+      create(:training_session, space: alpha, training: laser, created_at: march_10 + 1.hour)
+        .users << create(:user)
       rows = grid(described_class.generate_trainings_report(from, to))["Report"]
-      expect(rows[5]).to eq(["Laser", 1, 1])
-      expect(rows.last.last).to eq(1)
+      expect(rows[5]).to eq(["Laser", 2, 1])
+      expect(rows[8..].map(&:last)).to contain_exactly(0, 1)
     end
 
     it "leaves the facility blank for a session without a space" do

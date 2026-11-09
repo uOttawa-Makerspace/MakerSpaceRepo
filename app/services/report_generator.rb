@@ -1357,7 +1357,7 @@ class ReportGenerator
             uu[:name].minimum.as("instructor_name"),
             ts[:created_at].minimum.as("date"),
             s[:name].minimum.as("space_name"),
-            Arel.star.count.as("attendee_count")
+            u[:id].count.as("attendee_count")
           ]
         )
         .where(ts[:created_at].between(start_date..end_date))
