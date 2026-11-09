@@ -70,6 +70,35 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(Nokogiri::HTML(response.body).at_css("span.like.liked")).to be_present
     end
 
+    describe "comments" do
+      let(:commenter) { create(:user, :regular_user, reputation: 42) }
+
+      before do
+        create(:comment, repository: repo, user: commenter, content: "Older and popular", upvote: 9, created_at: 2.days.ago)
+        create(:comment, repository: repo, user: commenter, content: "Newer and quiet", upvote: 1, created_at: 1.day.ago)
+      end
+
+      def listed_comments
+        Nokogiri::HTML(response.body).css("#comment-container .comment-content").map { |c| c.text.strip }
+      end
+
+      it "lists the comments by votes by default, each with its author's reputation" do
+        get repo_path
+        expect(listed_comments).to eq(["Older and popular", "Newer and quiet"])
+        expect(Nokogiri::HTML(response.body).css("#comment-container .rep").map { |r| r.text.strip }).to eq(%w[42 42])
+      end
+
+      it "lists the comments by votes for the top filter" do
+        get repo_path, params: { comment_filter: "top" }
+        expect(listed_comments).to eq(["Older and popular", "Newer and quiet"])
+      end
+
+      it "lists the newest comment first for the newest filter" do
+        get repo_path, params: { comment_filter: "newest" }
+        expect(listed_comments).to eq(["Newer and quiet", "Older and popular"])
+      end
+    end
+
     it "does not count as a view anywhere (no counters on the model)" do
       expect { get repo_path }.not_to change { repo.reload.attributes }
     end

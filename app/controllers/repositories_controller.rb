@@ -48,7 +48,7 @@ class RepositoriesController < SessionsController
     end
 
     # Replace `.page params[:page]` with `pagy(...)`:
-    @pagy, @comments = pagy(@repository.comments.order(comment_filter), limit: 5)
+    @pagy, @comments = pagy(@repository.comments.includes(:user).order(comment_filter), limit: 5)
 
     @vote =
       @user
