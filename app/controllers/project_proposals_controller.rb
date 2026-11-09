@@ -149,7 +149,7 @@ class ProjectProposalsController < SessionsController
 
     respond_to do |format|
       if !signed_in? && !verify_turnstile
-        flash[:alert] = 'Captcha error, please try again'
+        flash.now[:alert] = 'Captcha error, please try again'
         format.html { render :new, status: :unprocessable_content }
       elsif @project_proposal.save
         begin
@@ -179,7 +179,7 @@ class ProjectProposalsController < SessionsController
           MsrMailer.send_new_project_proposals.deliver_now
         end
       else
-        flash[:alert] = 'An error occurred while creating the project proposal, try again later.'
+        flash.now[:alert] = 'An error occurred while creating the project proposal, try again later.'
         format.html { render :new, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content
@@ -264,22 +264,15 @@ class ProjectProposalsController < SessionsController
 
   # PATCH/PUT /project_proposals/1
   def update
-    @project_proposal.categories.destroy_all
     attributes = project_proposal_params.except(:categories)
     needs_re_review = @project_proposal.approved? && !current_user.admin?
     attributes = attributes.merge(approved: nil, admin_id: nil) if needs_re_review
     respond_to do |format|
-      if @project_proposal.update(attributes)
-        update_photos
-        update_files
-        create_categories
-
+      if apply_edit(attributes)
         format.html do
           redirect_to project_proposal_path(@project_proposal.slug),
                       notice:
-                        if @project_files_failed
-                          nil
-                        elsif needs_re_review
+                        if needs_re_review
                           'Project proposal was updated. It is pending again and needs to be re-approved by an admin before it is listed publicly.'
                         else
                           'Project proposal was successfully updated.'
@@ -292,7 +285,7 @@ class ProjectProposalsController < SessionsController
                  }
         end
       else
-        flash[:alert] = 'An error occurred while updating the project proposal, try again later.'
+        flash.now[:alert] = @refused_files_alert || 'An error occurred while updating the project proposal, try again later.'
         format.html { render :edit, status: :unprocessable_content }
         format.json do
           render json: @project_proposal.errors, status: :unprocessable_content
@@ -419,39 +412,79 @@ class ProjectProposalsController < SessionsController
     attach_project_files(files)
   end
 
-  def update_photos
-    delete_images = params[:deleteimages] || params.dig(:project_proposal, :deleteimages)
-    if delete_images.present?
-      @project_proposal.photos.attachments.each do |attachment|
-        if delete_images.include?(attachment.filename.to_s) || delete_images.include?(attachment.id.to_s)
-          attachment.purge
-        end
-      end
-    end
-
-    images = params[:images] || params.dig(:project_proposal, :images)
-    return unless images.present?
-
-    images.each do |img|
-      FastImage.size(img.tempfile, raise_on_failure: true) if img.respond_to?(:tempfile)
-      @project_proposal.photos.attach(img)
-    end
+  def uploads_param(key)
+    params[key] || params.dig(:project_proposal, key)
   end
 
-  def update_files
-    delete_files = params[:deletefiles] || params.dig(:project_proposal, :deletefiles)
-    if delete_files.present?
-      @project_proposal.project_files.attachments.each do |attachment|
-        if delete_files.include?(attachment.filename.to_s) || delete_files.include?(attachment.id.to_s)
-          attachment.purge
-        end
-      end
-    end
+  # Attachments the user asked to remove, by filename or attachment id. Collected before
+  # anything new is attached, so a new upload sharing a name is never removed.
+  def attachments_marked_for_removal(attachments, names)
+    names = Array.wrap(names).map(&:to_s)
+    return [] if names.empty?
 
-    files = params[:files] || params.dig(:project_proposal, :files)
-    return unless files.present?
+    attachments.select { |a| names.include?(a.filename.to_s) || names.include?(a.id.to_s) }
+  end
 
-    attach_project_files(files)
+  def marked_attachments
+    attachments_marked_for_removal(@project_proposal.photos.attachments, uploads_param(:deleteimages)) +
+      attachments_marked_for_removal(@project_proposal.project_files.attachments, uploads_param(:deletefiles))
+  end
+
+  # New photos are checked before anything is saved or removed. An unreadable one refuses the edit.
+  def new_photos_readable?
+    images = Array(uploads_param(:images))
+    return true if images.all? { |img| readable_image?(img) }
+
+    @project_proposal.errors.add(:photos, 'could not be read as images')
+    false
+  end
+
+  def readable_image?(img)
+    return true unless img.respond_to?(:tempfile)
+
+    FastImage.size(img.tempfile, raise_on_failure: true)
+    true
+  rescue FastImage::FastImageException
+    false
+  end
+
+  def attach_new_photos
+    Array(uploads_param(:images)).each { |img| @project_proposal.photos.attach(img) }
+  end
+
+  def uploaded_files
+    Array(uploads_param(:files)).select { |f| f.respond_to?(:original_filename) }
+  end
+
+  # New files are checked with the model's rules (sniffed type and size) before anything is
+  # saved or removed. If any is refused, the whole edit is refused and the files are named.
+  def new_files_acceptable?
+    refused = uploaded_files.reject { |f| @project_proposal.sniffed_upload_problems(:project_files, f).empty? }
+    return true if refused.empty?
+
+    @refused_files_alert =
+      "The edit was not saved because the type or size of these files is not allowed: #{truncated_filenames(refused.map(&:original_filename))}."
+    @project_proposal.errors.add(:project_files, @refused_files_alert)
+    false
+  end
+
+  # Both checks always run, so every problem is reported.
+  def new_uploads_acceptable?
+    photos_ok = new_photos_readable?
+    files_ok = new_files_acceptable?
+    photos_ok && files_ok
+  end
+
+  # Returns false when the model refuses a file the pre-check let through; the caller rolls back.
+  def attach_new_files
+    files = uploaded_files
+    return true if files.empty? || @project_proposal.project_files.attach(*files)
+
+    reasons = @project_proposal.errors[:project_files].dup
+    @project_proposal.errors.delete(:project_files)
+    @refused_files_alert = "The edit was not saved. #{truncated_error_messages(reasons)}"
+    @project_proposal.errors.add(:project_files, @refused_files_alert)
+    false
   end
 
   MAX_FLASH_FILENAMES = 5
@@ -525,11 +558,58 @@ class ProjectProposalsController < SessionsController
     params.require(:project_proposal).permit(permitted)
   end
 
+  # The edit is applied in this order, so a failure can only happen before anything is removed:
+  # new photos are checked; then, in one transaction, the proposal is validated and saved,
+  # categories are replaced and new uploads attached; only after that commits are the attachments
+  # the user asked to remove purged. A purge deletes the stored file and cannot be rolled back, so
+  # it runs last (synchronously, so the page shows the result).
+  def apply_edit(attributes)
+    return refuse_edit(attributes) unless new_uploads_acceptable?
+
+    removals = marked_attachments
+    saved = ProjectProposal.transaction do
+      next false unless @project_proposal.update(attributes)
+
+      replace_categories
+      attach_new_photos
+      raise ActiveRecord::Rollback unless attach_new_files
+
+      true
+    end
+    return refuse_edit(attributes) unless saved
+
+    removals.each(&:purge)
+    true
+  end
+
+  # A refused edit shows the submitted values in the form, as a failed validation does; nothing is saved
+  # or removed. The slug a rolled-back save set in memory is replaced by the stored one, so links keep working.
+  def refuse_edit(attributes)
+    discard_unsaved_attachments
+    @project_proposal.slug = ProjectProposal.where(id: @project_proposal.id).pick(:slug)
+    @project_proposal.assign_attributes(attributes)
+    false
+  end
+
+  # A rolled-back transaction leaves attachments that were never stored on the record in memory, so
+  # pending changes are dropped and the attachment associations are read from the database again.
+  def discard_unsaved_attachments
+    @project_proposal.attachment_changes.clear
+    %i[photos_attachments photos_blobs project_files_attachments project_files_blobs].each do |name|
+      @project_proposal.association(name).reset
+    end
+  end
+
+  def replace_categories
+    @project_proposal.categories.destroy_all
+    create_categories
+  end
+
   def create_categories
     return unless params.dig(:project_proposal, 'categories').present?
 
     params[:project_proposal]['categories'].first(5).each do |c|
-      Category.create(name: c, project_proposal_id: @project_proposal.id)
+      Category.create!(name: c, project_proposal_id: @project_proposal.id)
     end
   end
 

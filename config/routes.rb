@@ -113,7 +113,9 @@ Rails.application.routes.draw do
 
   resources :chat_messages, only: [:index, :create]
 
-  resources :project_proposals do
+  # A proposal's slug is "<id>.<title>" once it has been edited, so the id segment may contain a dot.
+  # A trailing ".json" or ".js" is still read as the response format.
+  resources :project_proposals, constraints: { id: /[^\/]+(?<!\.json)(?<!\.js)/ } do
     collection do
       post :create_revision
       post :approve
