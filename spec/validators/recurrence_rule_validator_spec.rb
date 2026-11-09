@@ -98,9 +98,9 @@ RSpec.describe RecurrenceRuleValidator do
     expect(errors_for(long)).to eq([RecurrenceRuleValidator::TOO_LONG])
   end
 
-  it "reads leading whitespace and CRLF the same as the controllers' parser" do
+  it "reads leading whitespace and CRLF the same as the series edits' parser" do
     rule = "  DTSTART:20270301T150000Z\r\n  RRULE:FREQ=DAILY;COUNT=2\r\n"
-    rrule, dtstart, = ApplicationController.helpers.parse_rrule_and_dtstart(rule)
+    rrule, dtstart, = RecurrenceRule.parse(rule)
     expect(rrule).to eq("FREQ=DAILY;COUNT=2")
     expect(dtstart).to eq(Time.utc(2027, 3, 1, 15))
     expect(RecurrenceExpansion.rule_body(rule)).to eq("FREQ=DAILY;COUNT=2")

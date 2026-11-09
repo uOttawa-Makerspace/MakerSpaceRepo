@@ -343,43 +343,10 @@ RSpec.describe CalendarHelper, type: :helper do
     end
   end
 
-  describe "#parse_rrule_and_dtstart" do
-    it "splits the rule, the start (as UTC) and the other lines" do
-      rrule, dtstart, rest = parse_rrule_and_dtstart("DTSTART:20270505T130000Z\nRRULE:FREQ=DAILY\nEXDATE:20270506T130000Z")
-      expect(rrule).to eq("FREQ=DAILY")
-      expect(dtstart).to eq(Time.utc(2027, 5, 5, 13))
-      expect(rest).to eq(["EXDATE:20270506T130000Z"])
-    end
-
-    it "returns nil for a missing start or rule" do
-      rrule, dtstart, rest = parse_rrule_and_dtstart("EXDATE:20270506T130000Z")
-      expect([rrule, dtstart, rest]).to eq([nil, nil, ["EXDATE:20270506T130000Z"]])
-    end
-  end
-
-  describe "#add_exdate_to_rrule" do
-    it "appends the date as a UTC EXDATE line" do
-      expect(add_exdate_to_rrule("RRULE:FREQ=DAILY", Time.utc(2027, 5, 6, 13))).to eq("RRULE:FREQ=DAILY\nEXDATE:20270506T130000Z")
-    end
-
-    it "returns the rule untouched when either input is blank" do
-      expect(add_exdate_to_rrule("RRULE:FREQ=DAILY", nil)).to eq("RRULE:FREQ=DAILY")
-      expect(add_exdate_to_rrule(nil, Time.utc(2027, 5, 6))).to be_nil
-      expect(add_exdate_to_rrule("", Time.utc(2027, 5, 6))).to eq("")
-    end
-  end
-
   describe "#combine_date_and_time" do
     it "keeps the date and takes the clock time" do
       result = combine_date_and_time(Time.utc(2027, 5, 6, 1, 2, 3), Time.utc(2020, 1, 1, 13, 45, 30))
       expect(result).to eq(Time.utc(2027, 5, 6, 13, 45, 30))
-    end
-  end
-
-  describe "#remove_until_from_rrule" do
-    it "removes an UNTIL part ending in Z and leaves other rules alone" do
-      expect(remove_until_from_rrule("FREQ=DAILY;UNTIL=20270601T120000Z;COUNT=2")).to eq("FREQ=DAILY;COUNT=2")
-      expect(remove_until_from_rrule("FREQ=DAILY;COUNT=2")).to eq("FREQ=DAILY;COUNT=2")
     end
   end
 

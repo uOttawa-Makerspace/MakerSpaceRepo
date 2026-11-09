@@ -108,24 +108,7 @@ class Admin::EventsController < AdminAreaController
       duration = (@end_time - @start_time).to_i
       old_date_new_time_end = old_date_new_time_start + duration
 
-      old_rrule, old_dtstart, old_extra_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
-      new_rrule, new_dtstart, _new_extra_lines = helpers.parse_rrule_and_dtstart(event_params[:recurrence_rule])
-
-      rule_to_use = if old_rrule == new_rrule && old_dtstart && new_dtstart
-        combined_dtstart = old_dtstart.change(
-          hour: new_dtstart.hour,
-          min: new_dtstart.min,
-          sec: new_dtstart.sec
-        )
-        
-        ([
-          "DTSTART:#{combined_dtstart.strftime('%Y%m%dT%H%M%SZ')}",
-          "RRULE:#{old_rrule}"
-        ] + old_extra_lines).join("\n")
-      else
-        # the freq changed so we don't care if the dtstart is the new date
-        event_params[:recurrence_rule]
-      end
+      rule_to_use = series_rule.moved_to_time_of(event_params[:recurrence_rule])
 
       if @event.update(
           title: title,
@@ -182,17 +165,7 @@ class Admin::EventsController < AdminAreaController
       occurrence_start = parse_time(params[:start_date])
       return redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.start_date_required")) unless occurrence_start
 
-      rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
-      exdate = occurrence_start.strftime("%Y%m%dT%H%M%SZ")
-      
-      rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @event.start_time)
-      recurrence_lines = [
-        "DTSTART:#{rule.dtstart.utc.strftime("%Y%m%dT%H%M%SZ")}",
-        "RRULE:#{rule}",
-        "EXDATE:#{exdate}"
-      ]
-      
-      @event.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
+      @event.update!(recurrence_rule: series_rule.without_occurrence(occurrence_start))
       @event.push_to_google_later
       redirect_back(fallback_location: admin_calendar_index_path, notice: "This occurrence deleted.")
       
@@ -200,17 +173,7 @@ class Admin::EventsController < AdminAreaController
       occurrence_start = parse_time(params[:start_date])
       return redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.start_date_required")) unless occurrence_start
 
-      rrule_line, dtstart, rest_of_lines = helpers.parse_rrule_and_dtstart(@event.recurrence_rule)
-      previous_day = occurrence_start - 24.hours
-      rrule_line = "#{helpers.remove_until_from_rrule(rrule_line)};UNTIL=#{previous_day.strftime("%Y%m%dT%H%M%SZ")}"
-      
-      rule = RRule::Rule.new(rrule_line, dtstart: dtstart || @event.start_time)
-      recurrence_lines = [
-        "DTSTART:#{rule.dtstart.utc.strftime("%Y%m%dT%H%M%SZ")}",
-        "RRULE:#{rule}"
-      ]
-      
-      @event.update!(recurrence_rule: (recurrence_lines + rest_of_lines).join("\n"))
+      @event.update!(recurrence_rule: series_rule.ending_before(occurrence_start))
       @event.push_to_google_later
       redirect_back(fallback_location: admin_calendar_index_path, notice: "This and following deleted.")
       
@@ -395,6 +358,10 @@ class Admin::EventsController < AdminAreaController
     redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.dates_required"))
   end
 
+  def series_rule
+    RecurrenceRule.new(@event.recurrence_rule, @event.start_time)
+  end
+
   # The time in UTC, or nil when the value is blank or not a time.
   def parse_time(value)
     Time.parse(value.to_s).utc
@@ -409,7 +376,7 @@ class Admin::EventsController < AdminAreaController
       @start_time,
       @event.start_time.utc
     )
-    updated_rule = helpers.add_exdate_to_rrule(@event.recurrence_rule, exclusion_start_time)
+    updated_rule = series_rule.with_exdate(exclusion_start_time)
 
     # The replacement is checked before anything is saved: saving the series pushes to Google, which a
     # rollback cannot undo. A failure after this point (a database error) can still leave Google ahead.
