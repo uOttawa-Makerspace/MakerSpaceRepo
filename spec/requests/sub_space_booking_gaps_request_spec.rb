@@ -1058,7 +1058,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       end
       put deny_access_sub_space_booking_index_path, params: { id: rows.first.id, reason: "x" * 1001 }
 
-      expect(flash[:alert]).to start_with("Failed to decline: Reason")
+      expect(flash[:alert]).to start_with("Failed to decline or revoke: Reason")
       expect(rows.map { |row| row.reload.status }).to eq(%w[approved approved])
       expect(applicant.reload.booking_approval).to be(true)
     end

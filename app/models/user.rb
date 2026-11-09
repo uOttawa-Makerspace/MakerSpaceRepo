@@ -320,21 +320,15 @@ class User < ApplicationRecord
     end
   end
 
-  # Answers no to `request` under the user row lock: a pending request is declined (access the
-  # user holds is left alone), and an approved one revokes the user's access, marking every
-  # approved request of the user revoked so none still lists the user as approved. The requests
-  # are kept with who decided, when and why. The access flag is cleared without validating the
-  # user, as before. Returns the request's new status; raises when it was already answered no.
-  def deny_booking_access(request, by:, reason: nil)
+  # Answers no to `approval` under the user row lock (UserBookingApproval#deny!): a pending
+  # request is declined and access the user holds is left alone; an approved one is revoked,
+  # along with every other approved request of the user (access is one flag per user), so none
+  # still lists the user as approved. Returns the approval; raises when it was already answered no.
+  def deny_booking_access(approval, by:, reason: nil)
     with_lock do
-      request.reload
-      if request.approved?
-        user_booking_approvals.approved.each { |approved| approved.revoke!(by: by, reason: reason) }
-        update_column(:booking_approval, false)
-      else
-        request.decline!(by: by, reason: reason)
-      end
-      request.reload.status
+      approval.reload.deny!(by: by, reason: reason)
+      revoke_booking_access(by: by, reason: reason) if approval.revoked?
+      approval
     end
   end
 
@@ -1207,6 +1201,12 @@ class User < ApplicationRecord
   end
 
   private
+
+  def revoke_booking_access(by:, reason:)
+    user_booking_approvals.approved.each { |other| other.revoke!(by: by, reason: reason) }
+    # update_column on purpose: revoking must work even when the user record fails validation.
+    update_column(:booking_approval, false)
+  end
 
   def approvable_booking_request(request_id)
     return user_booking_approvals.find(request_id) if request_id

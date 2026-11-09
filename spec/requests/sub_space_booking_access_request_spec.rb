@@ -224,7 +224,7 @@ RSpec.describe "Booking access requests", type: :request do
       before = row.reload.attributes
 
       deny(row, reason: "second")
-      expect(flash[:alert]).to eq("Failed to decline: This request was already declined.")
+      expect(flash[:alert]).to eq("Failed to decline or revoke: This request was already declined.")
       expect(row.reload.attributes).to eq(before)
     end
 

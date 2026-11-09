@@ -29,8 +29,15 @@ class UserBookingApproval < ApplicationRecord
   def approve!(by:)
     self.identity = "Other" unless IDENTITIES.include?(identity)
     self.date ||= Time.current
+    # staff_id is the older approver column: kept (copy, never move) and still read by the
+    # admin "Approved Users" list, so it is set alongside decided_by.
     self.staff = by
     record_decision!("approved", by: by)
+  end
+
+  # Answers no: declines a pending request, or revokes an approved one.
+  def deny!(by:, reason: nil)
+    approved? ? revoke!(by: by, reason: reason) : decline!(by: by, reason: reason)
   end
 
   def decline!(by:, reason: nil)

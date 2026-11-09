@@ -80,6 +80,14 @@ RSpec.describe UserBookingApproval, type: :model do
       expect(request.reload).to have_attributes(status: "revoked", approved: false, reason: "r")
     end
 
+    it "deny! declines a pending request and revokes an approved one" do
+      request.deny!(by: admin, reason: "no")
+      expect(request.reload).to have_attributes(status: "declined", reason: "no")
+      approved = described_class.create!(user: user, identity: "GNG", comments: "c", date: Date.today, status: "approved")
+      approved.deny!(by: admin)
+      expect(approved.reload).to have_attributes(status: "revoked", decided_by_id: admin.id)
+    end
+
     it "lists the requests a user decided" do
       request.decline!(by: admin)
       expect(admin.decided_booking_requests).to contain_exactly(request)
