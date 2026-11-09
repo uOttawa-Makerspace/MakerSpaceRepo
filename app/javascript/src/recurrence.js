@@ -1,4 +1,4 @@
-import { rrulestr } from "rrule";
+import { RRule, rrulestr } from "rrule";
 
 /*
  * Recurrence rules are kept in Toronto wall-clock time: "Monday 9:00" stays
@@ -130,6 +130,21 @@ function toWallRule(ruleText) {
   return ruleText
     .replace(/^DTSTART;TZID=America\/Toronto:/m, "DTSTART:")
     .replace(/(\d{8}T\d{6})Z/g, (_, stamp) => utcStampToWallStamp(stamp));
+}
+
+/*
+ * A repeat rule as it is stored: the start as Toronto wall-clock time
+ * (DTSTART;TZID=America/Toronto), so the series keeps its clock time across
+ * clock changes, and the repeat end as the instant of the last second of
+ * `untilDate` ("2026-03-30") in Toronto, a UTC stamp. `options` are the other
+ * rrule.js options (freq, byweekday).
+ */
+export function storedRule(options, startWall, untilDate) {
+  const until = untilDate ? new Date(endOfDateInstant(untilDate)) : null;
+  const body = new RRule({ ...options, until }).toString();
+  // A time the clocks skip or repeat is written as the time it stands for
+  const start = stampOf(instantToWall(wallToInstant(startWall)));
+  return `DTSTART;TZID=${ZONE}:${start}\n${body}`;
 }
 
 /* The rule with its start replaced by a wall time. */

@@ -312,7 +312,10 @@ describe("eventClick", () => {
     expect($("day_WE").checked).toBe(true);
     expect($("day_TU").checked).toBe(false);
     expect($("recurrence_until").value).toBe("2027-03-31");
-    expect($("recurrence_rule_field").value).toContain("FREQ=WEEKLY");
+    // the feed gives Toronto wall times; the field holds the rule as stored
+    expect($("recurrence_rule_field").value).toBe(
+      "DTSTART;TZID=America/Toronto:20270315T140000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270401T035959Z",
+    );
     expect($("delete_following_form").style.display).toBe("block");
     expect($("delete_all_form").style.display).toBe("block");
     expect($("update_dropdown").style.display).toBe("block");

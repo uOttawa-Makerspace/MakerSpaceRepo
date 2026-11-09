@@ -1,56 +1,66 @@
 {
-  "about": "Calendar times around the America/Toronto clock changes of 2027 (forward on Sunday 2027-03-14 at 2:00, back on Sunday 2027-11-07 at 2:00). Read by the Vitest calendar specs and the RSpec request specs, so the browser and the server are checked against the same table. A field is a datetime-local value in Toronto wall-clock time; an instant is UTC. storedRules: one repeat rule written both ways it can be stored (a UTC DTSTART, and a Toronto DTSTART with TZID), with the instants it starts at; both must read the same. untilDates: 'until' is the stored UTC stamp, 'served' the Toronto wall-clock stamp the calendar feeds send. storedRules 'served' is the rule the calendar feeds send for it (Toronto wall-clock time throughout).",
+  "about": "Calendar times around the America/Toronto clock changes of 2027 (forward on Sunday 2027-03-14 at 2:00, back on Sunday 2027-11-07 at 2:00). Read by the Vitest calendar specs and the RSpec request specs, so the browser and the server are checked against the same table. A field is a datetime-local value in Toronto wall-clock time; an instant is UTC. storedRules: one repeat rule written both ways it can be stored (a UTC DTSTART, and a Toronto DTSTART with TZID), with the instants it starts at; both must read the same. untilDates: 'until' is the stored UTC stamp, 'served' the Toronto wall-clock stamp the calendar feeds send. storedRules 'served' is the rule the calendar feeds send for it (Toronto wall-clock time throughout). fieldToInstant 'storedStart' is the start line the modal writes for a repeating series starting at that field.",
   "zone": "America/Toronto",
   "fieldToInstant": [
     {
       "label": "a winter time",
       "field": "2027-03-10T10:00",
-      "instant": "2027-03-10T15:00:00.000Z"
+      "instant": "2027-03-10T15:00:00.000Z",
+      "storedStart": "DTSTART;TZID=America/Toronto:20270310T100000"
     },
     {
       "label": "a summer time",
       "field": "2027-03-17T10:00",
-      "instant": "2027-03-17T14:00:00.000Z"
+      "instant": "2027-03-17T14:00:00.000Z",
+      "storedStart": "DTSTART;TZID=America/Toronto:20270317T100000"
     },
     {
       "label": "midnight starting the day the clocks go forward",
       "field": "2027-03-14T00:00",
-      "instant": "2027-03-14T05:00:00.000Z"
+      "instant": "2027-03-14T05:00:00.000Z",
+      "storedStart": "DTSTART;TZID=America/Toronto:20270314T000000"
     },
     {
       "label": "just before the clocks go forward",
       "field": "2027-03-14T01:30",
-      "instant": "2027-03-14T06:30:00.000Z"
+      "instant": "2027-03-14T06:30:00.000Z",
+      "storedStart": "DTSTART;TZID=America/Toronto:20270314T013000"
     },
     {
       "label": "a time skipped when the clocks go forward (the same instant as 3:30)",
       "field": "2027-03-14T02:30",
-      "instant": "2027-03-14T07:30:00.000Z"
+      "instant": "2027-03-14T07:30:00.000Z",
+      "storedStart": "DTSTART;TZID=America/Toronto:20270314T033000"
     },
     {
       "label": "midnight after the clocks went forward",
       "field": "2027-03-15T00:00",
-      "instant": "2027-03-15T04:00:00.000Z"
+      "instant": "2027-03-15T04:00:00.000Z",
+      "storedStart": "DTSTART;TZID=America/Toronto:20270315T000000"
     },
     {
       "label": "a time in the repeated hour when the clocks go back (the first one)",
       "field": "2027-11-07T01:30",
-      "instant": "2027-11-07T05:30:00.000Z"
+      "instant": "2027-11-07T05:30:00.000Z",
+      "storedStart": "DTSTART;TZID=America/Toronto:20271107T013000"
     },
     {
       "label": "after the clocks went back",
       "field": "2027-11-07T03:00",
-      "instant": "2027-11-07T08:00:00.000Z"
+      "instant": "2027-11-07T08:00:00.000Z",
+      "storedStart": "DTSTART;TZID=America/Toronto:20271107T030000"
     },
     {
       "label": "late evening (already the next day in UTC)",
       "field": "2027-03-17T22:30",
-      "instant": "2027-03-18T02:30:00.000Z"
+      "instant": "2027-03-18T02:30:00.000Z",
+      "storedStart": "DTSTART;TZID=America/Toronto:20270317T223000"
     },
     {
       "label": "early morning (still the day before in Tokyo)",
       "field": "2027-03-17T07:00",
-      "instant": "2027-03-17T11:00:00.000Z"
+      "instant": "2027-03-17T11:00:00.000Z",
+      "storedStart": "DTSTART;TZID=America/Toronto:20270317T070000"
     }
   ],
   "instantToField": [

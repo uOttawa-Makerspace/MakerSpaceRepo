@@ -6,6 +6,7 @@ import {
   fieldValue,
   instantFromCalendar,
   startOfDay,
+  storedRule,
   wallFromCalendar,
 } from "./recurrence";
 
@@ -94,7 +95,12 @@ export function eventClick(eventImpl) {
     untilInput.value = rule.options.until
       ? dateValue(rule.options.until.getTime())
       : null;
-    ruleField.value = rule.toString();
+    // The feed's start is a Toronto wall time already
+    ruleField.value = storedRule(
+      { freq: rule.options.freq, byweekday: rule.options.byweekday },
+      rule.options.dtstart.getTime(),
+      untilInput.value,
+    );
   }
 
   document.getElementById("unavailabilityModalLabel").textContent =

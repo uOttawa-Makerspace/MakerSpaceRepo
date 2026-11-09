@@ -333,7 +333,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
 
     expect(page).to have_text("Event created successfully.")
     event = Event.find_by!(event_type: "shift")
-    expect(event.recurrence_rule).to include("FREQ=WEEKLY")
+    expect(event.recurrence_rule).to start_with("DTSTART;TZID=America/Toronto:20270317T100000\nRRULE:FREQ=WEEKLY")
     expect(event.recurrence_rule).to match(/BYDAY=(WE,FR|FR,WE)/)
     expect(event.recurrence_rule).not_to include("UNTIL")
   end
@@ -371,6 +371,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
       expect(event.start_time).to eq(Time.zone.local(2027, 3, 17, 10))
       expect(event.end_time).to eq(Time.zone.local(2027, 3, 17, 11))
       expect(event.recurrence_rule).to include("UNTIL=20270326T035959Z")
+      expect(event.recurrence_rule).to start_with("DTSTART;TZID=America/Toronto:20270317T100000\n")
     end
   end
 

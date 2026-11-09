@@ -24,6 +24,8 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
   # A weekly series on Wednesdays at 10:00 Toronto time, written the way the
   # modal writes it (UTC stamps)
   let(:series_rule) { "DTSTART:20270303T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE" }
+  # The same series as the series edits write it again: the start in Toronto time
+  let(:series_rule_as_written) { "DTSTART;TZID=America/Toronto:20270303T100000\nRRULE:FREQ=WEEKLY;BYDAY=WE" }
   let(:series_start) { Time.utc(2027, 3, 3, 15) }
 
   zones.each do |zone, offset_on_17_march|
@@ -61,7 +63,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
             series = create(:event, space: space, start_time: series_start, end_time: series_start + 1.hour,
                                     recurrence_rule: series_rule)
             delete delete_with_scope_admin_event_path(series), params: { scope: "single", start_date: c["instant"] }
-            expect(series.reload.recurrence_rule).to eq("#{series_rule}\nEXDATE:#{stamp(c['instant'])}")
+            expect(series.reload.recurrence_rule).to eq("#{series_rule_as_written}\nEXDATE:#{stamp(c['instant'])}")
           end
 
           it "ends the series a day before #{c['label']}" do
@@ -69,7 +71,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
                                     recurrence_rule: series_rule)
             delete delete_with_scope_admin_event_path(series), params: { scope: "following", start_date: c["instant"] }
             until_stamp = (Time.iso8601(c["instant"]) - 1.day).utc.strftime("%Y%m%dT%H%M%SZ")
-            expect(series.reload.recurrence_rule).to eq("#{series_rule};UNTIL=#{until_stamp}")
+            expect(series.reload.recurrence_rule).to eq("#{series_rule_as_written};UNTIL=#{until_stamp}")
           end
         end
       end
@@ -95,7 +97,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
             series = create(:staff_unavailability, user: staff, start_time: series_start, end_time: series_start + 1.hour,
                                                    recurrence_rule: series_rule)
             delete delete_with_scope_staff_unavailability_path(series), params: { scope: "single", start_date: c["instant"] }
-            expect(series.reload.recurrence_rule).to eq("#{series_rule}\nEXDATE:#{stamp(c['instant'])}")
+            expect(series.reload.recurrence_rule).to eq("#{series_rule_as_written}\nEXDATE:#{stamp(c['instant'])}")
           end
 
           it "ends the series a day before #{c['label']}" do
@@ -103,7 +105,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
                                                    recurrence_rule: series_rule)
             delete delete_with_scope_staff_unavailability_path(series), params: { scope: "following", start_date: c["instant"] }
             until_stamp = (Time.iso8601(c["instant"]) - 1.day).utc.strftime("%Y%m%dT%H%M%SZ")
-            expect(series.reload.recurrence_rule).to eq("#{series_rule};UNTIL=#{until_stamp}")
+            expect(series.reload.recurrence_rule).to eq("#{series_rule_as_written};UNTIL=#{until_stamp}")
           end
         end
       end

@@ -10,7 +10,7 @@ RSpec.describe RecurrenceRule do
 
   it "reads a rule with leading spaces and CRLF line ends, and one with no lines" do
     expect(rule("  DTSTART:20270505T130000Z\r\n  RRULE:FREQ=DAILY\r\n").without_occurrence(Time.utc(2027, 5, 6, 13)))
-      .to eq("DTSTART:20270505T130000Z\nRRULE:FREQ=DAILY\nEXDATE:20270506T130000Z")
+      .to eq("DTSTART;TZID=America/Toronto:20270505T090000\nRRULE:FREQ=DAILY\nEXDATE:20270506T130000Z")
     expect(rule(nil).with_time_from(weekly)).to eq(weekly)
   end
 
@@ -67,13 +67,13 @@ RSpec.describe RecurrenceRule do
   describe "#without_occurrence" do
     it "excludes the instant and keeps the earlier exclusions" do
       expect(rule.without_occurrence(Time.utc(2027, 3, 15, 15))).to eq(
-        "DTSTART:20270301T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270315T150000Z\nEXDATE:20270308T150000Z"
+        "DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270315T150000Z\nEXDATE:20270308T150000Z"
       )
     end
 
     it "starts a rule stored without a DTSTART at the series start" do
       expect(rule("RRULE:FREQ=DAILY").without_occurrence(Time.utc(2027, 3, 2, 15))).to eq(
-        "DTSTART:20270301T150000Z\nRRULE:FREQ=DAILY\nEXDATE:20270302T150000Z"
+        "DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=DAILY\nEXDATE:20270302T150000Z"
       )
     end
   end
@@ -82,7 +82,7 @@ RSpec.describe RecurrenceRule do
     it "ends the series a day before the instant, replacing an earlier end" do
       expect(rule("DTSTART:20270301T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20271201T000000Z")
                .ending_before(Time.utc(2027, 3, 15, 15))).to eq(
-                 "DTSTART:20270301T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20270314T150000Z"
+                 "DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20270314T150000Z"
                )
     end
   end
@@ -103,7 +103,7 @@ RSpec.describe RecurrenceRule do
     it "keeps the start date and the exclusions and takes the new Toronto time of day for the same repeat" do
       # 18:30Z on 2027-03-22 is 14:30 daylight time; 14:30 on 2027-03-01 is 19:30Z
       expect(rule.with_time_from("DTSTART:20270322T183000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO")).to eq(
-        "DTSTART:20270301T193000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270308T150000Z"
+        "DTSTART;TZID=America/Toronto:20270301T143000\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270308T150000Z"
       )
     end
 
@@ -111,7 +111,7 @@ RSpec.describe RecurrenceRule do
       # 23:30 on Monday 2027-03-01 is 04:30Z on the Tuesday; moved to 22:00
       late = "DTSTART:20270302T043000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO"
       expect(rule(late).with_time_from("DTSTART;TZID=America/Toronto:20270322T220000\nRRULE:FREQ=WEEKLY;BYDAY=MO"))
-        .to eq("DTSTART:20270302T030000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO")
+        .to eq("DTSTART;TZID=America/Toronto:20270301T220000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
     end
 
     it "takes the new rule as it is when the repeat changed" do

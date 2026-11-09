@@ -236,7 +236,7 @@ RSpec.describe "Admin events gaps", type: :request do
         expect(series.title).to eq("Series v2")
         expect(series.start_time).to eq(Time.utc(2025, 5, 5, 16, 30))
         expect(series.end_time).to eq(Time.utc(2025, 5, 5, 17, 45))
-        expect(series.recurrence_rule).to eq("DTSTART:20250505T163000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5")
+        expect(series.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20250505T123000\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5")
         expect(series.created_by.role).to eq("staff")
         expect(series.space_id).to eq(space.id)
       end
@@ -330,7 +330,7 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(flash[:notice]).to eq("This occurrence deleted.")
       expect(Event.exists?(series.id)).to be(true)
       expect(series.reload.recurrence_rule).to eq(
-        "DTSTART:20250505T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5\nEXDATE:20250512T150000Z"
+        "DTSTART;TZID=America/Toronto:20250505T110000\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5\nEXDATE:20250512T150000Z"
       )
     end
 
@@ -339,7 +339,7 @@ RSpec.describe "Admin events gaps", type: :request do
              params: { scope: "following", start_date: "2025-05-19 15:00" }
       expect(flash[:notice]).to eq("This and following deleted.")
       expect(series.reload.recurrence_rule).to eq(
-        "DTSTART:20250505T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5;UNTIL=20250518T150000Z"
+        "DTSTART;TZID=America/Toronto:20250505T110000\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5;UNTIL=20250518T150000Z"
       )
     end
 

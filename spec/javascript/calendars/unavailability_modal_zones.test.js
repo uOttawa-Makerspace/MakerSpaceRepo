@@ -100,6 +100,19 @@ describe.each(Object.entries(ZONES))(
       }
     });
 
+    describe("saving a repeating series writes its start in Toronto time", () => {
+      for (const c of cases.fieldToInstant) {
+        it(c.label, () => {
+          openNew(c.field);
+          $("recurrence_frequency").value = "DAILY";
+          submit();
+          expect($("recurrence_rule_field").value).toBe(
+            `${c.storedStart}\nRRULE:FREQ=DAILY`,
+          );
+        });
+      }
+    });
+
     describe("a repeat end date ends the series at the end of that Toronto day", () => {
       for (const c of cases.untilDates) {
         it(c.label, () => {

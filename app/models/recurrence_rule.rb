@@ -3,8 +3,8 @@
 # The stored repeat rule of a calendar event or staff unavailability: iCalendar
 # lines (an optional DTSTART, the RRULE, then any EXDATE lines). The start is
 # either a UTC stamp (DTSTART:20270310T150000Z) or a Toronto wall-clock time
-# (DTSTART;TZID=America/Toronto:20270310T100000); both are read the same way.
-# UNTIL and EXDATE are UTC stamps. The admin calendar and the staff
+# (DTSTART;TZID=America/Toronto:20270310T100000); both are read the same way,
+# and edits write the Toronto form. UNTIL and EXDATE are UTC stamps. The admin calendar and the staff
 # unavailabilities page edit a series the same way; each edit returns the new
 # rule text.
 class RecurrenceRule
@@ -62,7 +62,7 @@ class RecurrenceRule
 
     new_time = new_dtstart.in_time_zone(ZONE)
     start = starts_at.change(hour: new_time.hour, min: new_time.min, sec: new_time.sec)
-    (["DTSTART:#{start.utc.strftime(STAMP)}", "RRULE:#{@rrule}"] + @other_lines).join("\n")
+    ([start_line(start), "RRULE:#{@rrule}"] + @other_lines).join("\n")
   end
 
   private
@@ -86,6 +86,12 @@ class RecurrenceRule
     ActiveSupport::TimeZone.new(params.delete_prefix(";TZID=").presence || ZONE.name).parse(stamp)
   end
 
+  # The start as it is written: Toronto wall-clock time, so the series keeps
+  # its clock time across clock changes.
+  def start_line(time)
+    "DTSTART;TZID=#{ZONE.tzinfo.name}:#{wall_stamp(time)}"
+  end
+
   def wall_stamp(time)
     time.in_time_zone(ZONE).strftime(WALL_STAMP)
   end
@@ -98,6 +104,6 @@ class RecurrenceRule
   # The rule written again through the rrule gem, with its start first.
   def rewritten(rrule, *extra_lines)
     rule = RRule::Rule.new(rrule, dtstart: @dtstart || @series_start)
-    (["DTSTART:#{rule.dtstart.utc.strftime(STAMP)}", "RRULE:#{rule}"] + extra_lines + @other_lines).join("\n")
+    ([start_line(rule.dtstart), "RRULE:#{rule}"] + extra_lines + @other_lines).join("\n")
   end
 end

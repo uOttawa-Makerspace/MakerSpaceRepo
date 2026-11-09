@@ -6,6 +6,7 @@ import {
   fieldValue,
   instantFromCalendar,
   instantToWall,
+  storedRule,
   wallFromCalendar,
   wallToInstant,
 } from "./recurrence";
@@ -507,7 +508,12 @@ function openEventForEditing(eventImpl) {
     if (rule.options.until) {
       untilInput.value = dateValue(rule.options.until.getTime());
     }
-    ruleField.value = rule.toString();
+    // The feed's start is a Toronto wall time already
+    ruleField.value = storedRule(
+      { freq: rule.options.freq, byweekday: rule.options.byweekday },
+      rule.options.dtstart.getTime(),
+      untilInput.value,
+    );
   }
 
   // TRAINING FIELDS

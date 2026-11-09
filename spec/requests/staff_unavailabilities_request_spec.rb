@@ -12,6 +12,8 @@ RSpec.describe "Staff unavailabilities", type: :request do
   include SpacesSpecHelpers
 
   RULE = "DTSTART:20270301T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO"
+  # RULE as the series edits write it again: the start in Toronto time
+  RULE_AS_WRITTEN = "DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO"
 
   def payload(overrides = {})
     { staff_unavailability: { title: "Class", description: "desc",
@@ -180,7 +182,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
           expect(series.title).to eq("Shifted")
           expect(series.start_time.utc.iso8601).to eq("2027-03-01T19:30:00Z")
           expect(series.end_time.utc.iso8601).to eq("2027-03-01T20:30:00Z")
-          expect(series.recurrence_rule).to eq("DTSTART:20270301T193000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO")
+          expect(series.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270301T143000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
         end
 
         it "an unknown scope flashes an alert and changes nothing" do
@@ -223,13 +225,13 @@ RSpec.describe "Staff unavailabilities", type: :request do
       it "single adds an EXDATE" do
         delete delete_with_scope_staff_unavailability_path(series), params: { scope: "single", start_date: "2027-03-08T15:00:00Z" }
         expect(flash[:notice]).to eq("This occurrence deleted.")
-        expect(series.reload.recurrence_rule).to eq("#{RULE}\nEXDATE:20270308T150000Z")
+        expect(series.reload.recurrence_rule).to eq("#{RULE_AS_WRITTEN}\nEXDATE:20270308T150000Z")
       end
 
       it "following ends the series the day before the chosen start" do
         delete delete_with_scope_staff_unavailability_path(series), params: { scope: "following", start_date: "2027-03-15T15:00:00Z" }
         expect(flash[:notice]).to eq("This and following deleted.")
-        expect(series.reload.recurrence_rule).to eq("DTSTART:20270301T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20270314T150000Z")
+        expect(series.reload.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20270314T150000Z")
       end
 
       it "following replaces an existing UNTIL" do
@@ -250,7 +252,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
 
       it "reads a start_date with an offset as its instant" do
         delete delete_with_scope_staff_unavailability_path(series), params: { scope: "single", start_date: "2027-03-08T10:00:00-05:00" }
-        expect(series.reload.recurrence_rule).to eq("#{RULE}\nEXDATE:20270308T150000Z")
+        expect(series.reload.recurrence_rule).to eq("#{RULE_AS_WRITTEN}\nEXDATE:20270308T150000Z")
       end
 
       it "all destroys the series" do

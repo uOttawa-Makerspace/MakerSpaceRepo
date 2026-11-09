@@ -2,10 +2,10 @@ import { Collapse } from "bootstrap";
 import { RRule } from "rrule";
 
 import {
-  endOfDateInstant,
   fieldValue,
   instantToWall,
   startOfDay,
+  storedRule,
   wallOfField,
   wallToInstant,
 } from "./recurrence.js";
@@ -56,22 +56,20 @@ document.addEventListener("turbo:load", () => {
     }
   }
 
-  // The rule is written with instants (UTC stamps), as it is stored.
+  // The rule as it is stored: the start in Toronto time, the end a UTC stamp.
   function buildRule() {
     if (frequency.value === "") return (ruleField.value = "");
 
-    const rule = new RRule({
-      freq: RRule[frequency.value] || RRule.DAILY,
-      dtstart: new Date(wallToInstant(wallOfField(startTimeField.value))),
-      until: untilInput.value
-        ? new Date(endOfDateInstant(untilInput.value))
-        : null,
-      byweekday: dayCheckboxes
-        .filter((cb) => cb.checked)
-        .map((cb) => RRule[cb.value]),
-    });
-
-    ruleField.value = rule.toString();
+    ruleField.value = storedRule(
+      {
+        freq: RRule[frequency.value] || RRule.DAILY,
+        byweekday: dayCheckboxes
+          .filter((cb) => cb.checked)
+          .map((cb) => RRule[cb.value]),
+      },
+      wallOfField(startTimeField.value),
+      untilInput.value,
+    );
   }
 
   function handleDateIfAllDay() {
