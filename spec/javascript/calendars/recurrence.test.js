@@ -13,6 +13,12 @@ import {
 } from "../../../app/javascript/src/recurrence.js";
 
 const ZONES = ["America/Toronto", "Europe/Paris", "UTC"];
+// Offset of each zone on 2026-03-30, in minutes as getTimezoneOffset reports it
+const OFFSET_ON_30_MARCH = {
+  "America/Toronto": 240,
+  "Europe/Paris": -120,
+  UTC: 0,
+};
 const originalZone = process.env.TZ;
 afterAll(() => {
   if (originalZone === undefined) delete process.env.TZ;
@@ -47,6 +53,12 @@ const summerMondays = "DTSTART:20260706T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO";
 describe.each(ZONES)("with the process clock in %s", (zone) => {
   beforeEach(() => {
     process.env.TZ = zone;
+  });
+
+  it("has that zone", () => {
+    expect(new Date(2026, 2, 30, 12).getTimezoneOffset()).toBe(
+      OFFSET_ON_30_MARCH[zone],
+    );
   });
 
   describe("the wall time of an instant", () => {
