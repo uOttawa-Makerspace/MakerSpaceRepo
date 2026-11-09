@@ -246,6 +246,8 @@ module CalendarHelper
 
   def safe_to_time(value)
     return nil if value.nil?
+    date = calendar_date(value)
+    return all_day_start(date) if date
     if value.respond_to?(:to_time)
       t = value.to_time
       t = t.utc unless t.utc?
@@ -254,6 +256,20 @@ module CalendarHelper
     Time.parse(value.to_s).utc # fallback
   rescue StandardError
     nil
+  end
+
+  # An all-day value is a calendar date, not an instant: it starts at midnight
+  # in Toronto whatever zone the server process runs in.
+  # The date in an all-day value (a date object, or the bare YYYYMMDD of a
+  # recurrence UNTIL), or nil when the value is a point in time.
+  def calendar_date(value)
+    return Date.strptime(value, "%Y%m%d") if value.is_a?(String) && value.match?(/\A\d{8}\z/)
+
+    value if value.is_a?(Icalendar::Values::Date) || (value.is_a?(::Date) && !value.is_a?(::DateTime))
+  end
+
+  def all_day_start(date)
+    ActiveSupport::TimeZone["America/Toronto"].local(date.year, date.month, date.day).utc
   end
 
   def convert_to_js_rrule(openstruct_obj)

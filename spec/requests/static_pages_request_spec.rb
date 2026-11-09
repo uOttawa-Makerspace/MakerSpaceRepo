@@ -533,10 +533,8 @@ RSpec.describe "Static pages", type: :request do
     # (app/javascript/entrypoints/fullcalendar_setup_homepage.js). Time is frozen
     # because parse_ics_calendar drops NON-recurring events (and modified instances)
     # that ended > 2 months ago; recurring series are never dropped.
-    # Date#to_time inside safe_to_time uses the PROCESS time zone, so the examples
-    # pin TZ explicitly. Most pin UTC process-zone behaviour; the production host's
-    # TZ is UNVERIFIED (staging Docker sets none).
-    # One example also pins America/Toronto so both host configurations are characterized.
+    # The examples run under a UTC process zone (the Docker image sets no TZ); one
+    # example also runs under America/Toronto.
     describe "happy path with a Google-style ICS feed" do
       let(:feed_url) { "https://calendar.example.test/feed.ics" }
       let(:ics) { File.binread(Rails.root.join("spec/fixtures/files/open_hours_google.ics")) }
@@ -601,12 +599,9 @@ RSpec.describe "Static pages", type: :request do
           )
         end
 
-        # DTSTART;VALUE=DATE:20261030 (a single all-day Oct 30) is emitted as a timed
-        # window 2026-10-29T20:00 -> 2026-10-30T20:00. Date#to_time is midnight in the PROCESS zone
-        # (UTC here), then converted to Toronto (-4h), so it lands on the previous evening.
-        # The calendar expects "2026-10-30" / "2026-10-31" (or midnight Toronto). With allDay: true
-        # FullCalendar keeps only the date part, so the closure shows on Oct 29, one day early.
-        it "emits an all-day event with allDay true but a shifted, timed start/end under a UTC process zone" do
+        # DTSTART;VALUE=DATE:20261030 is the calendar date Oct 30 in Toronto, whatever the
+        # process zone: FullCalendar keeps only the date part of an all-day event.
+        it "emits an all-day event on its own dates under a UTC process zone" do
           expect(event_named(source, "allday-1@google.com")).to eq(
             "id" => "allday-1@google.com",
             "groupId" => source_id,
@@ -614,16 +609,15 @@ RSpec.describe "Static pages", type: :request do
             "extendedProps" => { "name" => "Makerspace", "description" => "" },
             "allDay" => true,
             "display" => "auto",
-            "start" => "2026-10-29T20:00:00",
-            "end" => "2026-10-30T20:00:00"
+            "start" => "2026-10-30T00:00:00",
+            "end" => "2026-10-31T00:00:00"
           )
         end
 
         context "when the process zone is America/Toronto" do
           let(:process_tz) { "America/Toronto" }
 
-          # Same feed, different host TZ: the all-day event is correct only in this configuration.
-          it "emits the all-day event at Toronto midnight (the date the calendar intends)" do
+          it "emits the same all-day event" do
             event = event_named(source, "allday-1@google.com")
             expect(event).to include("allDay" => true, "start" => "2026-10-30T00:00:00", "end" => "2026-10-31T00:00:00")
           end

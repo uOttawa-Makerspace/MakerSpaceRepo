@@ -34,9 +34,9 @@ RSpec.describe CalendarHelper, type: :helper do
         )
         expect(event[:extendedProps]).to eq(name: "Maker", description: nil)
         expect(event).not_to have_key(:rrule)
-        # all-day dates are read as UTC midnight and rendered in Toronto
-        expect(event[:start]).to eq("2025-11-15T19:00:00")
-        expect(event[:end]).to eq("2025-11-16T19:00:00")
+        # all-day dates are calendar dates in Toronto
+        expect(event[:start]).to eq("2025-11-16T00:00:00")
+        expect(event[:end]).to eq("2025-11-17T00:00:00")
       end
     end
 
@@ -158,6 +158,71 @@ RSpec.describe CalendarHelper, type: :helper do
       stub_request(:get, url).to_return(status: 200, body: body)
       events = parse_ics_calendar(url).first[:events]
       expect(events.map { |e| [e[:title], e[:allDay]] }).to eq([["Alone", true]])
+    end
+  end
+
+  describe "#parse_ics_calendar with all-day events" do
+    let(:url) { "https://calendar.example/all-day.ics" }
+
+    def ics(*vevents)
+      (["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN"] + vevents.flatten + ["END:VCALENDAR"]).join("\r\n") + "\r\n"
+    end
+
+    def vevent(uid, lines)
+      ["BEGIN:VEVENT", "UID:#{uid}", "DTSTAMP:20260101T000000Z", *lines, "END:VEVENT"]
+    end
+
+    def events_for(body, now: Time.utc(2026, 10, 28, 16, 0))
+      stub_request(:get, url).to_return(status: 200, body: body)
+      travel_to(now) { parse_ics_calendar(url).first[:events] }
+    end
+
+    def in_process_zone(zone)
+      original = ENV["TZ"]
+      ENV["TZ"] = zone
+      yield
+    ensure
+      ENV["TZ"] = original
+    end
+
+    %w[UTC America/Toronto America/Vancouver].each do |zone|
+      context "when the process zone is #{zone}" do
+        around { |example| in_process_zone(zone) { example.run } }
+
+        it "keeps a single all-day date on that date, with the exclusive end on the next date" do
+          events = events_for(ics(vevent("one", ["DTSTART;VALUE=DATE:20261030", "DTEND;VALUE=DATE:20261031", "SUMMARY:Closed"])))
+          expect(events.first).to include(allDay: true, start: "2026-10-30T00:00:00", end: "2026-10-31T00:00:00")
+        end
+
+        it "keeps a multi-day all-day span on its dates, ending on the exclusive end date" do
+          events = events_for(ics(vevent("span", ["DTSTART;VALUE=DATE:20261030", "DTEND;VALUE=DATE:20261102", "SUMMARY:Break"])))
+          expect(events.first).to include(allDay: true, start: "2026-10-30T00:00:00", end: "2026-11-02T00:00:00")
+        end
+
+        it "keeps all-day dates on the days clocks change" do
+          body = ics(
+            vevent("spring", ["DTSTART;VALUE=DATE:20260308", "DTEND;VALUE=DATE:20260309", "SUMMARY:Spring"]),
+            vevent("fall", ["DTSTART;VALUE=DATE:20261101", "DTEND;VALUE=DATE:20261102", "SUMMARY:Fall"])
+          )
+          events = events_for(body, now: Time.utc(2026, 3, 1, 12, 0)).index_by { |e| e[:title].to_s }
+          expect(events["Spring"]).to include(start: "2026-03-08T00:00:00", end: "2026-03-09T00:00:00")
+          fall = events_for(body, now: Time.utc(2026, 10, 28, 12, 0)).index_by { |e| e[:title].to_s }["Fall"]
+          expect(fall).to include(start: "2026-11-01T00:00:00", end: "2026-11-02T00:00:00")
+        end
+
+        it "keeps the dates of a recurring all-day series, its exceptions and its end" do
+          body = ics(vevent("series", ["DTSTART;VALUE=DATE:20261030", "DTEND;VALUE=DATE:20261031", "SUMMARY:Weekly",
+                                       "RRULE:FREQ=WEEKLY;UNTIL=20261231", "EXDATE;VALUE=DATE:20261106"]))
+          event = events_for(body).first
+          expect(event[:start]).to eq("2026-10-30T00:00:00")
+          expect(event[:rrule]).to eq("DTSTART:20261030T000000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T050000Z\nEXDATE:20261106T000000")
+        end
+
+        it "leaves timed events on their own instant" do
+          body = ics(vevent("timed", ["DTSTART:20261030T150000Z", "DTEND:20261030T160000Z", "SUMMARY:Open"]))
+          expect(events_for(body).first).to include(allDay: false, start: "2026-10-30T11:00:00", end: "2026-10-30T12:00:00")
+        end
+      end
     end
   end
 
