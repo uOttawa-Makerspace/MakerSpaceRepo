@@ -767,6 +767,19 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
         expect(pending.categories.pluck(:name)).to eq(["Old"])
       end
 
+      it "shows only the stored photos on the form when new photos came with the rejected file" do
+        attach_png(pending, "stored.png")
+        new_photo = Rack::Test::UploadedFile.new(Rails.root.join("spec/support/assets/avatar.png"), "image/png", original_filename: "newphoto.png")
+        patch project_proposal_path(pending.id),
+              params: { project_proposal: { title: "Typed Title" }, images: [new_photo], files: [bad_file] }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include("Typed Title")
+        expect(response.body).to include("stored.png")
+        expect(response.body).not_to include("newphoto.png")
+        expect(photo_names).to eq(["stored.png"])
+        expect(pending.title).to eq("Pending One")
+      end
+
       it "answers JSON clients with the project_files error" do
         patch project_proposal_path(pending.id, format: :json), params: { project_proposal: { title: "Changed" }, files: [bad_file] }
         expect(response).to have_http_status(:unprocessable_content)

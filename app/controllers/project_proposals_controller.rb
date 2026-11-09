@@ -480,7 +480,6 @@ class ProjectProposalsController < SessionsController
     return true if files.empty? || @project_proposal.project_files.attach(*files)
 
     reasons = @project_proposal.errors[:project_files].dup
-    @project_proposal.attachment_changes.delete('project_files')
     @project_proposal.errors.delete(:project_files)
     @refused_files_alert = "The edit was not saved. #{truncated_error_messages(reasons)}"
     @project_proposal.errors.add(:project_files, @refused_files_alert)
@@ -585,8 +584,18 @@ class ProjectProposalsController < SessionsController
   # A refused edit shows the submitted values in the form, as a failed validation does; nothing is saved
   # or removed.
   def refuse_edit(attributes)
+    discard_unsaved_attachments
     @project_proposal.assign_attributes(attributes)
     false
+  end
+
+  # A rolled-back transaction leaves attachments that were never stored on the record in memory, so
+  # pending changes are dropped and the attachment associations are read from the database again.
+  def discard_unsaved_attachments
+    @project_proposal.attachment_changes.clear
+    %i[photos_attachments photos_blobs project_files_attachments project_files_blobs].each do |name|
+      @project_proposal.association(name).reset
+    end
   end
 
   def replace_categories
