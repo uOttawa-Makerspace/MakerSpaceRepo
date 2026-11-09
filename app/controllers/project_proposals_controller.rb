@@ -419,7 +419,8 @@ class ProjectProposalsController < SessionsController
   # Attachments the user asked to remove, by filename or attachment id. Collected before
   # anything new is attached, so a new upload sharing a name is never removed.
   def attachments_marked_for_removal(attachments, names)
-    return [] if names.blank?
+    names = Array.wrap(names).map(&:to_s)
+    return [] if names.empty?
 
     attachments.select { |a| names.include?(a.filename.to_s) || names.include?(a.id.to_s) }
   end

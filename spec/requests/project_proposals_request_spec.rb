@@ -804,6 +804,20 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(file_names).to eq(["new.txt"])
     end
 
+    it "removes only the file named when the removal is sent as a single value" do
+      pending.project_files.attach(io: StringIO.new("a"), filename: "a.txt", content_type: "text/plain")
+      pending.project_files.attach(io: StringIO.new("aa"), filename: "aa.txt", content_type: "text/plain")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deletefiles: "aa.txt" }
+      expect(file_names).to eq(["a.txt"])
+    end
+
+    it "removes only the photo named when the removal is sent as a single value" do
+      attach_png(pending, "p.png")
+      attach_png(pending, "pp.png")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed" }, deleteimages: "pp.png" }
+      expect(photo_names).to eq(["p.png"])
+    end
+
     it "keeps the file marked for removal when the proposal is refused" do
       pending.project_files.attach(io: StringIO.new("old"), filename: "drop.txt", content_type: "text/plain")
       patch project_proposal_path(pending.id), params: { project_proposal: { title: "" }, deletefiles: ["drop.txt"], files: [content_named_upload("new.txt", content: "new")] }
