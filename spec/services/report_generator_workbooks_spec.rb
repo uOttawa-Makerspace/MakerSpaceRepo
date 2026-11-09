@@ -93,6 +93,21 @@ RSpec.describe ReportGenerator do
       )
     end
 
+    it "merges a French faculty into its English name and shows a missing faculty as None" do
+      gamma = create(:space, name: "Gamma")
+      %w[Éducation Education].each do |name|
+        user = student("Ed #{name}")
+        user.update_columns(faculty: name)
+        create(:lab_session, space: gamma, user: user, created_at: march_10)
+      end
+      nobody = student("No Faculty")
+      nobody.update_columns(faculty: nil)
+      create(:lab_session, space: gamma, user: nobody, created_at: march_10)
+      b = blocks(grid(described_class.generate_visitors_report(from, to))["Gamma"])
+      expect(b[4].drop(1)).to contain_exactly(["Education", 2, nil, 2], ["None", 1, nil, 1])
+      expect(b[5].drop(1).map(&:last)).to contain_exactly("Education", "None")
+    end
+
     it "a space sheet repeats the tables for that space only" do
       b = blocks(sheets["Beta"])
       expect(b[1]).to eq([["Report for Beta"]])
@@ -273,13 +288,15 @@ RSpec.describe ReportGenerator do
       expect(rows[13..]).to eq([[], ["Gender"], ["Female", 1], ["Male", 2], ["Other", 1]])
     end
 
-    it "Faculties: each faculty keeps its name, Génie counts as Engineering and a blank faculty as None" do
+    it "Faculties: each faculty under its English name, a French one merged into it and a blank one as None" do
       student("Eli Engineer").update_columns(faculty: "Engineering")
+      student("Edna Educ").update_columns(faculty: "Éducation")
+      student("Ed Educ").update_columns(faculty: "Education")
       faculty = blocks(grid(described_class.generate_new_users_report(from, to))["Faculties"])[1]
       expect(faculty.first(2)).to eq([["By Faculty"], ["Faculty", "New Users"]])
       # the rows add up to the total
       expect(faculty[2..]).to contain_exactly(
-        ["Arts", 1], ["Science", 1], ["None", 1], ["Engineering", 2], ["Total", 5]
+        ["Arts", 1], ["Science", 1], ["None", 1], ["Engineering", 2], ["Education", 2], ["Total", 7]
       )
     end
 

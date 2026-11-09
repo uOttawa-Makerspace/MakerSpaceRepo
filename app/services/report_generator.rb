@@ -89,12 +89,10 @@ class ReportGenerator
 
           # sort by faculty
           space_visits
-            .group_by do |d|
-              d.faculty == "Génie" ? "Engineering" : d.faculty
-            end # Merge french
+            .group_by { |d| User.faculty_label(d.faculty) }
             .each do |faculty, counts|
               sheet.add_row [
-                              faculty == "" ? "None" : faculty,
+                              faculty,
                               counts.uniq.count,
                               "",
                               counts.count
@@ -120,9 +118,7 @@ class ReportGenerator
             .each do |iden, rest|
               start_cell = sheet.rows.last.cells.first.pos # for merging
               rest
-                .group_by do |y|
-                  y.faculty == "Génie" ? "Engineering" : y.faculty
-                end # Merge french
+                .group_by { |y| User.faculty_label(y.faculty) }
                 .each do |faculty, counts|
                   sheet.add_row [
                                   iden.humanize,
@@ -130,7 +126,7 @@ class ReportGenerator
                                   "",
                                   counts.count,
                                   "",
-                                  faculty == "" ? "None" : faculty
+                                  faculty
                                 ],
                                 style: toggle_grey ? grey_cell : merge_cell
                 end
@@ -495,7 +491,7 @@ class ReportGenerator
             .group(:faculty)
             .count
             .each_with_object(Hash.new(0)) do |(faculty, count), counts|
-              counts[faculty_label(faculty)] += count
+              counts[User.faculty_label(faculty)] += count
             end
         )
         sheet.add_row ["Total", users.count]
@@ -1438,14 +1434,6 @@ class ReportGenerator
       certifications.select { |cert| period.cover?(cert.created_at) }
     sessions = in_period.map(&:training_session_id).uniq.count
     sessions.zero? ? 0 : in_period.count / sessions
-  end
-
-  # The faculty as the reports show it: Génie counts as Engineering and a
-  # blank faculty as None.
-  def self.faculty_label(faculty)
-    return "None" if faculty.blank?
-
-    faculty == "Génie" ? "Engineering" : faculty
   end
 
   def self.sum_by_key(hash, key)

@@ -345,6 +345,14 @@ class User < ApplicationRecord
     probe.errors.full_messages_for(:email).to_sentence.presence
   end
 
+  # The faculty as reports show it: the English name of a French one (Génie is
+  # Engineering), None when blank.
+  def self.faculty_label(faculty)
+    return 'None' if faculty.blank?
+
+    FACULTY_TRANSLATIONS.fetch(faculty, faculty)
+  end
+
   # Every user row, soft-deleted ones included. For admin views and reports, which see everything;
   # the default scope keeps deleted users out of everything else.
   def self.including_deleted
