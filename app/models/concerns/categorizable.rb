@@ -10,12 +10,13 @@ module Categorizable
     has_many :categories, dependent: :destroy
   end
 
-  # Saves the edit, then replaces the categories, in one transaction. A refused edit changes nothing.
+  # Saves the edit, then replaces the categories, in one transaction. Names of nil (the request did not send
+  # the field) keep the stored categories; an empty list clears them. A refused edit changes nothing.
   def update_with_categories(attributes, category_names)
     transaction do
       next false unless update(attributes)
 
-      replace_categories(category_names)
+      replace_categories(category_names) unless category_names.nil?
       true
     end
   end

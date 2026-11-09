@@ -20,6 +20,12 @@ RSpec.describe Categorizable, type: :model do
       expect(repository.reload.categories).to be_empty
     end
 
+    it "keeps the categories when no names are given" do
+      expect(repository.update_with_categories({ title: "Renamed" }, nil)).to be(true)
+      expect(repository.reload.title).to eq("Renamed")
+      expect(repository.categories.pluck(:name)).to eq(["Old"])
+    end
+
     it "changes nothing when the edit is refused" do
       expect(repository.update_with_categories({ title: "" }, %w[New])).to be(false)
       expect(repository.reload.title).to eq("Laser Lamp")

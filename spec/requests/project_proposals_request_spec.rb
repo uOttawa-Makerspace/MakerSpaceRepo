@@ -269,6 +269,13 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       get edit_project_proposal_path(pending)
       expect(response).to have_http_status(:ok)
     end
+
+    it "always sends the category field, so clearing every category is submitted" do
+      content_login!(owner)
+      get edit_project_proposal_path(pending)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("input[type='hidden'][name='project_proposal[categories][]'][value='']")).to be_present
+    end
   end
 
   describe "proposal addresses" do
@@ -754,13 +761,22 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(approved.approved).to eq("approved")
     end
 
-    it "sets the categories as submitted on a valid update, and clears them when none are submitted" do
+    it "sets the categories as submitted on a valid update, and keeps them when the field is not sent" do
       content_login!(owner)
       Category.create!(name: "Old", project_proposal_id: pending.id)
       patch project_proposal_path(pending), params: { project_proposal: { title: "Fine", categories: %w[A B] } }
       expect(pending.reload.categories.pluck(:name)).to match_array(%w[A B])
-      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Fine" } }
-      expect(pending.reload.categories).to be_empty
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Finer" } }
+      expect(pending.reload.title).to eq("Finer")
+      expect(pending.categories.pluck(:name)).to match_array(%w[A B])
+    end
+
+    it "keeps the categories when a JSON update does not send the field" do
+      content_login!(owner)
+      Category.create!(name: "Old", project_proposal_id: pending.id)
+      patch project_proposal_path(pending, format: :json), params: { project_proposal: { title: "Retitled" } }
+      expect(response.parsed_body).to eq("redirect_uri" => project_proposal_path(pending.reload))
+      expect(pending.categories.pluck(:name)).to eq(["Old"])
     end
 
     it "clears the categories when the form sends an empty selection" do
