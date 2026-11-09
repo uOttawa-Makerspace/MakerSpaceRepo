@@ -6,6 +6,17 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { EVENT_MODAL_HTML } from "./event_modal_fixture.js";
 
+const parse = vi.hoisted(() => ({ calls: 0 }));
+vi.mock("rrule", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    rrulestr: (...args) => {
+      parse.calls += 1;
+      return actual.rrulestr(...args);
+    },
+  };
+});
 vi.mock("bootstrap", () => ({
   Modal: class {},
   Collapse: class {
@@ -162,6 +173,16 @@ describe.each(Object.entries(ZONES))(
     });
 
     describe("a repeating event", () => {
+      it("reads each rule once per refresh, not once per occurrence", () => {
+        setTimes("2026-03-02T14:00", "2026-03-02T14:30");
+        $("recurrence_frequency").value = "WEEKLY";
+        $("day_MO").checked = true;
+        parse.calls = 0;
+        tomInstances[0].handlers.focus();
+        // the event's own rule and Ada's single repeating entry
+        expect(parse.calls).toBe(2);
+      });
+
       it("is flagged on every Monday occurrence, across the clock change", () => {
         // Mondays 14:00-14:30 from 2026-03-02 (before the change) for four weeks
         setTimes("2026-03-02T14:00", "2026-03-02T14:30");

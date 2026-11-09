@@ -4,7 +4,7 @@ import TomSelect from "tom-select";
 
 import { onPageLoad } from "./on_page";
 import {
-  entryOverlaps,
+  entryIntervals,
   occurrencesOverlapping,
   startingAt,
   wallFromString,
@@ -166,12 +166,19 @@ onPageLoad("#eventModal", async () => {
   }
 
   // Start times (instants) of the event occurrences that fall inside one of
-  // the given unavailabilities.
-  function isUnavailableDuring(unavailabilities) {
-    return eventOccurrences()
+  // the given unavailabilities. Each unavailability is expanded once over the
+  // whole span of the event's occurrences.
+  function isUnavailableDuring(occurrences, unavailabilities) {
+    if (occurrences.length === 0) return [];
+    const from = occurrences[0].start;
+    const to = occurrences[occurrences.length - 1].end;
+    const busy = unavailabilities.flatMap((entry) =>
+      entryIntervals(entry, from, to),
+    );
+    return occurrences
       .filter((occurrence) =>
-        unavailabilities.some((entry) =>
-          entryOverlaps(entry, occurrence.start, occurrence.end),
+        busy.some(
+          (slot) => slot.start < occurrence.end && slot.end > occurrence.start,
         ),
       )
       .map((occurrence) => new Date(wallToInstant(occurrence.start)));
@@ -212,8 +219,12 @@ onPageLoad("#eventModal", async () => {
       return;
     }
 
+    const occurrences = eventOccurrences();
     const staffWithAvailability = fetchedStaffUnavailabilities.map((staff) => {
-      const unavailableDates = isUnavailableDuring(staff.unavailabilities);
+      const unavailableDates = isUnavailableDuring(
+        occurrences,
+        staff.unavailabilities,
+      );
       return { ...staff, unavailableDates };
     });
 

@@ -96,10 +96,12 @@ function overlaps(occurrence, from, to) {
 
 /*
  * The occurrences of a rule that overlap the wall-time range [from, to), each
- * ending `durationMs` of wall-clock time after it starts.
+ * ending `durationMs` of wall-clock time after it starts. The rule is read once.
  */
 export function occurrencesOverlapping(ruleText, durationMs, from, to) {
   const rule = rrulestr(toWallRule(ruleText));
+  const until = rule.options.until;
+  if (until && until.getTime() < from - durationMs) return [];
   return rule
     .between(new Date(from - durationMs), new Date(to), true)
     .map((start) => ({
@@ -110,25 +112,29 @@ export function occurrencesOverlapping(ruleText, durationMs, from, to) {
 }
 
 /*
- * Whether a calendar feed entry overlaps the wall-time range [from, to). An
- * entry is either one-off ({ start, end }) or repeating ({ rrule, duration });
- * its times are Toronto wall-clock strings. A rule that cannot be read
- * overlaps nothing.
+ * The intervals of a calendar feed entry that overlap the wall-time range
+ * [from, to). An entry is either one-off ({ start, end }) or repeating
+ * ({ rrule, duration }); its times are Toronto wall-clock strings. A rule that
+ * cannot be read has none. A repeating entry is parsed and expanded once, for
+ * the whole range.
  */
-export function entryOverlaps(entry, from, to) {
+export function entryIntervals(entry, from, to) {
   if (!entry.rrule) {
     const occurrence = {
       start: wallFromString(entry.start),
       end: wallFromString(entry.end),
     };
-    return overlaps(occurrence, from, to);
+    return overlaps(occurrence, from, to) ? [occurrence] : [];
   }
   try {
-    return (
-      occurrencesOverlapping(entry.rrule, entry.duration, from, to).length > 0
-    );
+    return occurrencesOverlapping(entry.rrule, entry.duration, from, to);
   } catch (error) {
     console.warn("Invalid RRULE:", error);
-    return false;
+    return [];
   }
+}
+
+/* Whether a calendar feed entry overlaps the wall-time range [from, to). */
+export function entryOverlaps(entry, from, to) {
+  return entryIntervals(entry, from, to).length > 0;
 }
