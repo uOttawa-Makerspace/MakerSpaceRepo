@@ -13,9 +13,8 @@
 
   <% if current_user.booking_approval || current_user.admin? %>
     <div class="col-xl-11 mx-auto">
-      <%# With access, only an approved request is shown: a request declined while access is held leaves that access as it is. %>
-      <% if (access_request = current_user.booking_access_request)&.approved? %>
-        <%= render 'access_status', approval: access_request %>
+      <% if (approved_request = current_user.approved_booking_request) %>
+        <%= render 'access_status', approval: approved_request %>
       <% end %>
       <ul class="nav nav-tabs nav-fill mb-4 border-bottom-0 shadow-sm rounded bg-body" id="booking-tab-list" role="tablist">
         <li class="nav-item" role="presentation">

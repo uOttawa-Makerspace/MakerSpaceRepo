@@ -302,15 +302,21 @@ class User < ApplicationRecord
 
   # The newest request still waiting for an answer, if any.
   def pending_booking_request
-    user_booking_approvals.pending.reorder(created_at: :desc, id: :desc).first
+    latest_booking_request(user_booking_approvals.pending)
   end
 
   # The request that tells the user where their booking access stands: the pending one, else the
   # newest. Nil when there is none, or when the newest was approved but the access has since been
   # cleared, so nothing claims an access the user no longer holds.
   def booking_access_request
-    request = pending_booking_request || user_booking_approvals.reorder(created_at: :desc, id: :desc).first
-    request unless request&.approved? && !booking_approval?
+    request = pending_booking_request || latest_booking_request
+    request if describes_booking_access?(request)
+  end
+
+  # The approval behind the access the user holds now, if it is the request that describes it.
+  def approved_booking_request
+    request = booking_access_request
+    request if request&.approved?
   end
 
   # Grants booking access under the user row lock, so two approvals at once grant once. Approves the
@@ -1214,6 +1220,16 @@ class User < ApplicationRecord
     user_booking_approvals.approved.each { |other| other.revoke!(by: by, reason: reason) }
     # update_column on purpose: revoking must work even when the user record fails validation.
     update_column(:booking_approval, false)
+  end
+
+  # Newest first, ties broken by id.
+  def latest_booking_request(requests = user_booking_approvals)
+    requests.reorder(created_at: :desc, id: :desc).first
+  end
+
+  # An approval describes the access only while the user still holds it; any other answer always does.
+  def describes_booking_access?(request)
+    request.present? && (booking_approval? || request.pending? || request.ended?)
   end
 
   def approvable_booking_request(request_id)

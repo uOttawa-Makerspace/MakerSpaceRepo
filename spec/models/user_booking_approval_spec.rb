@@ -129,5 +129,21 @@ RSpec.describe UserBookingApproval, type: :model do
       admin.delete
       expect(request.reload).to have_attributes(status: "declined", decided_by_id: nil)
     end
+
+    it "has ended once declined or revoked, and not while pending or approved" do
+      expect(request).not_to be_ended
+      expect(described_class.new(status: "approved")).not_to be_ended
+      expect(described_class.new(status: "declined")).to be_ended
+      expect(described_class.new(status: "revoked")).to be_ended
+    end
+
+    it "dates the status by when the request was sent while pending, and by the decision after" do
+      sent = Time.zone.local(2026, 11, 2, 10)
+      decided = Time.zone.local(2026, 11, 4, 9)
+      expect(described_class.new(status: "pending", created_at: sent).status_changed_on).to eq(Date.new(2026, 11, 2))
+      expect(described_class.new(status: "declined", created_at: sent, decided_at: decided).status_changed_on)
+        .to eq(Date.new(2026, 11, 4))
+      expect(described_class.new(status: "approved", created_at: sent).status_changed_on).to be_nil
+    end
   end
 end

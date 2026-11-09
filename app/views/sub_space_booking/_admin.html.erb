@@ -244,9 +244,8 @@
           <% end %>
 
           <h5 class="mt-4 text-warning border-bottom border-warning-subtle pb-2">Pending Requests</h5>
-          <% pending_requests = UserBookingApproval.pending.includes(:user).to_a %>
           <%# One decline form per request, outside the bulk form; each row's reason and decline button name it. %>
-          <% pending_requests.each do |req| %>
+          <% @pending_access_requests.each do |req| %>
             <%= form_with url: deny_access_sub_space_booking_index_path(id: req.id), method: :put, id: "deny-access-#{req.id}" do %><% end %>
           <% end %>
           <%= form_with url: bulk_approve_access_sub_space_booking_index_path, method: :put do |f| %>
@@ -262,7 +261,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <% pending_requests.each do |req| %>
+                  <% @pending_access_requests.each do |req| %>
                     <tr>
                       <td class="ps-3"><%= check_box_tag 'user_booking_approval_ids[]', req.id, false, class: 'form-check-input user-request-select', aria: { label: t('common.names.select_access_request', id: req.id) } %></td>
                       <td>
