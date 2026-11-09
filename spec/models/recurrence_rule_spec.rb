@@ -14,6 +14,44 @@ RSpec.describe RecurrenceRule do
     expect(rule(nil).with_time_from(weekly)).to eq(weekly)
   end
 
+  describe "#starts_at" do
+    it "reads a UTC start, a Toronto start and a start with no zone (Toronto) as the same instant" do
+      expected = Time.utc(2027, 3, 10, 15)
+      expect(rule("DTSTART:20270310T150000Z\nRRULE:FREQ=DAILY").starts_at).to eq(expected)
+      expect(rule("DTSTART;TZID=America/Toronto:20270310T100000\nRRULE:FREQ=DAILY").starts_at).to eq(expected)
+      expect(rule("DTSTART:20270310T100000\nRRULE:FREQ=DAILY").starts_at).to eq(expected)
+    end
+
+    it "reads a start in another named zone in that zone" do
+      expect(rule("DTSTART;TZID=Europe/Paris:20270310T160000\nRRULE:FREQ=DAILY").starts_at).to eq(Time.utc(2027, 3, 10, 15))
+    end
+
+    it "is nil for a rule with no start or an empty one" do
+      expect(rule("RRULE:FREQ=DAILY").starts_at).to be_nil
+      expect(rule("DTSTART:\nRRULE:FREQ=DAILY").starts_at).to be_nil
+    end
+  end
+
+  describe "#in_toronto_time" do
+    it "starts at the series start in Toronto time and writes each exclusion in Toronto time" do
+      text = "DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270308T150000Z,20270315T140000Z"
+      expect(rule(text).in_toronto_time).to eq(
+        "DTSTART:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270308T100000,20270315T100000"
+      )
+    end
+
+    it "leaves an exclusion already in wall-clock time as it is" do
+      expect(rule("RRULE:FREQ=DAILY\nEXDATE:20270302T100000").in_toronto_time)
+        .to eq("DTSTART:20270301T100000\nRRULE:FREQ=DAILY\nEXDATE:20270302T100000")
+    end
+  end
+
+  it "edits a rule stored with a Toronto start from the same start as one with a UTC start" do
+    toronto = "DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270308T150000Z"
+    expect(rule(toronto).without_occurrence(Time.utc(2027, 3, 15, 14))).to eq(rule.without_occurrence(Time.utc(2027, 3, 15, 14)))
+    expect(rule(toronto).ending_before(Time.utc(2027, 3, 15, 14))).to eq(rule.ending_before(Time.utc(2027, 3, 15, 14)))
+  end
+
   # Times arrive as UTC from the controllers, but a zoned time gives the same stamps.
   describe "with a time in another zone" do
     let(:toronto) { Time.utc(2027, 3, 15, 15).in_time_zone("America/Toronto") }

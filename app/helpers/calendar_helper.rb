@@ -189,29 +189,13 @@ module CalendarHelper
     parts.join(';')
   end
   
+  # The repeat rule as the calendar views read it (see RecurrenceRule#in_toronto_time).
   def date_formatted_recurrence_rule(event)
-    return unless event.recurrence_rule.present?
-    
-    rrule = event.recurrence_rule
-    rrule_parts = rrule.split(/[;\n]/).reject { |part| part.strip.start_with?('DTSTART') }
-    
-    # Convert EXDATE values to Toronto timezone
-    rrule_parts = rrule_parts.map do |part|
-      if part.strip.start_with?('EXDATE')
-        part.gsub(/(\d{8}T\d{6}Z?)/) do |datetime|
-          datetime.in_time_zone("America/Toronto").strftime("%Y%m%dT%H%M%S")
-        end
-      else
-        part
-      end
-    end
-    
-    rrule_without_dtstart = rrule_parts.join(';').gsub(/;EXDATE/, "\nEXDATE")
-    dtstart_toronto = event.start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-    
-    "DTSTART:#{dtstart_toronto}\n#{rrule_without_dtstart}"
+    return if event.recurrence_rule.blank?
+
+    RecurrenceRule.new(event.recurrence_rule, event.start_time).in_toronto_time
   end
-  
+
   def combine_date_and_time(keep_date, keep_time)
     keep_date.change(
       hour: keep_time.hour,

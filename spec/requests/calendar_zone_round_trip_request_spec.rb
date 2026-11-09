@@ -123,7 +123,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
       describe "a stored repeat rule" do
         let(:toronto) { ActiveSupport::TimeZone["America/Toronto"] }
 
-        %w[utc].each do |form|
+        %w[utc toronto].each do |form|
           cases["storedRules"].each do |c|
             context "#{c['label']}, with a #{form} start" do
               let(:text) { c[form] }
@@ -132,6 +132,11 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
               it "expands on the server to the instants of the table" do
                 found = RecurrenceExpansion.occurrences(text, start, start, start + 60.days, 50).occurrences
                 expect(found.map { |t| t.utc.iso8601(3) }).to eq(c["occurrences"])
+              end
+
+              it "starts at the instant of the table" do
+                expect(RecurrenceRule.new(text, nil).starts_at).to eq(start)
+                expect(RecurrenceRule.new(text, nil).starts_at.time_zone).to eq(toronto)
               end
 
               it "is accepted by the validator" do

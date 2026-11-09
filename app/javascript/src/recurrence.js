@@ -124,11 +124,12 @@ function utcStampToWallStamp(stamp) {
 }
 
 // Timestamps ending in Z (an UNTIL or EXDATE written by the rule builder)
-// are instants: read them in Toronto.
+// are instants: read them in Toronto. A start written in Toronto time
+// (DTSTART;TZID=America/Toronto:...) is already a wall time.
 function toWallRule(ruleText) {
-  return ruleText.replace(/(\d{8}T\d{6})Z/g, (_, stamp) =>
-    utcStampToWallStamp(stamp),
-  );
+  return ruleText
+    .replace(/^DTSTART;TZID=America\/Toronto:/m, "DTSTART:")
+    .replace(/(\d{8}T\d{6})Z/g, (_, stamp) => utcStampToWallStamp(stamp));
 }
 
 /* The rule with its start replaced by a wall time. */

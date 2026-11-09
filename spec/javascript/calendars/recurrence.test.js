@@ -358,7 +358,7 @@ describe.each(ZONES)("with the process clock in %s", (zone) => {
 
   // The same rule as it can be stored (spec/fixtures/calendar_dst_cases.json,
   // which the request specs also read): each form starts at the same instants.
-  describe.each(["utc"])("a stored rule with a %s start", (form) => {
+  describe.each(["utc", "toronto"])("a stored rule with a %s start", (form) => {
     it.each(cases.storedRules)("$label", (c) => {
       const from = instantToWall(Date.parse(c.start));
       const found = occurrencesOverlapping(
