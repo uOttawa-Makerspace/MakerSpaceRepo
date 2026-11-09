@@ -70,6 +70,17 @@ describe("showRequestFailure", () => {
     ]);
   });
 
+  it("does not log a server error, which is an expected refusal already shown", () => {
+    showRequestFailure(new ServerError("Locker 5 is taken"));
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("logs an error that is not a server error, since its text is not shown", () => {
+    const error = new TypeError("Failed to fetch");
+    showRequestFailure(error);
+    expect(console.error).toHaveBeenCalledWith(error);
+  });
+
   it("toasts the generic text for a dropped connection, never the raw error", () => {
     showRequestFailure(new TypeError("Failed to fetch"));
     expect(toasts).toEqual([{ message: "Reload", type: "error" }]);

@@ -38,9 +38,10 @@ export async function rejectFailedResponse(response) {
 }
 
 // Shows the failure as an error toast: the server's message for a ServerError,
-// the generic text for anything else (a dropped connection).
+// the generic text for anything else (a dropped connection). A ServerError is a refusal the user is told
+// about, so only other errors are logged.
 export function showRequestFailure(error) {
-  console.error(error);
+  if (!(error instanceof ServerError)) console.error(error);
   showToast(error instanceof ServerError ? error.message : genericMessage(), {
     type: "error",
   });
