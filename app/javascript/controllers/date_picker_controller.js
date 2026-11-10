@@ -6,7 +6,9 @@ export default class extends Controller {
   static targets = ["input"];
 
   connect() {
-    this.picker = flatpickr(this.inputTarget, {
+    // Stimulus defines inputTarget at runtime; the cast tells the type checker.
+    const input = /** @type {any} */ (this).inputTarget;
+    this.picker = flatpickr(input, {
       enableTime: false,
       dateFormat: "Y-m-d",
       minDate: "today",
