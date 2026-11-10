@@ -102,51 +102,11 @@ describe("addEventClick", () => {
     ).toBe("event[space_id]");
   });
 
-  it("fills the staff list from the server once, when it is empty", async () => {
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [
-        { id: 1, name: "Ada" },
-        { id: 2, name: "Wanda" },
-      ],
-    });
-    addEventClick();
-    await vi.waitFor(() => expect($("staff_select").options.length).toBe(2));
-    expect(fetch).toHaveBeenCalledWith("/admin/calendar/staff_json/7");
-    expect([...$("staff_select").options].map((o) => o.textContent)).toEqual([
-      "Ada",
-      "Wanda",
-    ]);
-  });
-
-  it("leaves the staff list empty when the server answers with an error", async () => {
-    fetch.mockResolvedValueOnce({ ok: false, json: async () => [] });
-    addEventClick();
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
-    expect($("staff_select").options.length).toBe(0);
-  });
-
-  it("logs the failure when the staff request throws", async () => {
-    const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    fetch.mockRejectedValueOnce(new Error("offline"));
-    addEventClick();
-    await vi.waitFor(() => expect(log).toHaveBeenCalled());
-    expect(log.mock.calls[0][0]).toBe("Error fetching staff data:");
-  });
-
-  it("takes the space from the form's own field when the page has no space picker", async () => {
-    $("space_id").remove();
-    addEventClick();
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
-    expect(fetch).toHaveBeenCalledWith("/admin/calendar/staff_json/7");
-  });
-
-  it("does not ask for staff when no space field exists at all", async () => {
-    $("space_id").remove();
-    document.querySelector('input[name="event[space_id]"]').remove();
+  it("leaves the staff list to the event form and asks the server for nothing", async () => {
     addEventClick();
     await Promise.resolve();
     expect(fetch).not.toHaveBeenCalled();
+    expect($("staff_select").options.length).toBe(0);
   });
 
   it("points the form at unavailabilities when that type is chosen, and back", () => {

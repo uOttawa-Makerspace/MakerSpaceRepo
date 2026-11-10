@@ -135,7 +135,7 @@
   },
   "app/javascript/src/calendar_helper.js": {
     "complexity": {
-      "count": 6
+      "count": 5
     },
     "no-unused-vars": {
       "count": 2
