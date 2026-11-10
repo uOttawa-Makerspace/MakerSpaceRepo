@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 class OrderItem < ApplicationRecord
+  WAITING = "Waiting for approval"
+  AWARDED = "Awarded"
+  REVOKED = "Revoked"
+  REVOKED_BADGE_REASON = Certification::BADGE_REVOKED_REASON
+
   belongs_to :proficient_project, optional: true
   belongs_to :order, optional: true
   has_many_attached :files
@@ -79,83 +84,104 @@ class OrderItem < ApplicationRecord
     self[:total_price]&.to_i
   end
 
-  REVOKED_BADGE_REASON = "Project badge revoked"
-
-  # Revokes the item. The certification its approval granted is deactivated like a demotion (the
-  # row and its history stay), unless another awarded item of the same user and project still
-  # backs the badge. Revoking an item that is already revoked changes nothing. Returns false (and
-  # writes nothing) when the item does not save.
-  def revoke!(staff = nil)
-    with_lock do
-      return true if status == "Revoked"
-      return false unless update(status: "Revoked")
-
-      deactivate_badge(staff)
-      true
+  # Revokes the item. The certifications its approvals granted are deactivated like a demotion
+  # (rows and history stay), unless another awarded item of the same user and project still backs
+  # the badge. Revoking a revoked item changes nothing. Returns false, with the reasons on the item
+  # and nothing written, when the item does not save; a certification that cannot be saved raises
+  # (RecordInvalid) and rolls everything back.
+  def revoke(staff)
+    transaction do
+      lock_project_items
+      if revoked?
+        true
+      elsif update(status: "Revoked")
+        deactivate_badge(staff)
+        true
+      else
+        false
+      end
     end
   end
 
-  # Approves a submission waiting for approval, or restores a revoked one whose badge was
-  # deactivated by the revoke. Approving anything else returns false and writes nothing.
+  # Approves a submission that is waiting for approval or was revoked, and grants the project's
+  # badge: a certification this user lost to a badge revoke is reactivated (the most recent one),
+  # otherwise a new one is created. Any other status returns false and writes nothing.
   def award!(staff, attributes = {})
-    with_lock do
-      return false unless awardable?
-
-      status == "Revoked" ? restore_badge : grant_badge(staff)
-      update!(attributes.merge(status: "Awarded"))
-      true
+    transaction do
+      lock_project_items
+      if awardable?
+        grant_badge(staff)
+        update!(attributes.merge(status: "Awarded"))
+        true
+      else
+        false
+      end
     end
   end
 
-  def awardable?
-    status == "Waiting for approval" || (status == "Revoked" && revoked_badges.exists?)
+  def revoked?
+    status == REVOKED
+  end
+
+  def awarded?
+    status == AWARDED
+  end
+
+  def waiting?
+    status == WAITING
   end
 
   private
 
+  def awardable?
+    waiting? || revoked?
+  end
+
+  # Revoke and award serialize per user and project: every item of the pair is locked in id order
+  # before any status is read, so two admins acting on sibling items never both see the other as
+  # still awarded. Reloads, so the status read afterwards is the locked one.
+  def lock_project_items
+    project_items.order(:id).lock.pluck(:id)
+    reload
+  end
+
+  def project_items
+    if order
+      OrderItem.where(proficient_project_id: proficient_project_id, order_id: Order.where(user_id: order.user_id).select(:id))
+    else
+      OrderItem.where(id: id)
+    end
+  end
+
+  def granted_certifications
+    Certification.for_project(order.user_id, proficient_project_id)
+  end
+
   def grant_badge(staff)
-    level = proficient_project.level
-    cert = Certification.create!(user_id: order.user_id, level: level)
+    cert = granted_certifications.revoked_badges.first
+    if cert
+      cert.update!(active: true, demotion_reason: nil, demotion_staff: nil)
+    else
+      cert = Certification.create!(user_id: order.user_id, level: proficient_project.level)
+    end
     ProficientProjectSession.create!(
       proficient_project_id: proficient_project.id,
-      level: level,
+      level: proficient_project.level,
       user_id: staff.id,
       certification_id: cert.id
     )
-  end
-
-  # Certifications this user earned through approvals of this item's project (the session carries
-  # no link to the order item itself).
-  def granted_certifications
-    Certification.unscoped.joins(:proficient_project_session).where(
-      user_id: order.user_id,
-      proficient_project_sessions: { proficient_project_id: proficient_project_id }
-    )
-  end
-
-  def revoked_badges
-    granted_certifications.where(active: false, demotion_reason: REVOKED_BADGE_REASON)
   end
 
   def deactivate_badge(staff)
     return if other_awarded_items.exists?
 
     granted_certifications.where(active: true).find_each do |cert|
-      cert.update!(active: false, demotion_reason: REVOKED_BADGE_REASON, demotion_staff: staff)
-    end
-  end
-
-  def restore_badge
-    revoked_badges.find_each do |cert|
-      cert.update!(active: true, demotion_reason: nil, demotion_staff: nil)
+      cert.update!(active: false, demotion_reason: Certification::BADGE_REVOKED_REASON, demotion_staff: staff)
     end
   end
 
   def other_awarded_items
-    OrderItem.awarded.joins(:order).where(
-      proficient_project_id: proficient_project_id,
-      orders: { user_id: order.user_id }
-    ).where.not(id: id)
+    project_items.awarded.where.not(id: id)
   end
 
   def product_present

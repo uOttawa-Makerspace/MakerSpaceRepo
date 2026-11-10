@@ -123,32 +123,59 @@ RSpec.describe OrderItem, type: :model do
     let(:item) do
       create(:order_item, order: create(:order, :completed, user_id: buyer.id), status: "Waiting for approval")
     end
+    let(:certification) { Certification.unscoped.find_by!(user_id: buyer.id) }
 
-    it "deactivates the granted certification on revoke and restores it on award, in both directions repeatably" do
-      expect(item.award!(staff, admin_comments: "ok")).to be(true)
-      cert = Certification.find_by!(user_id: buyer.id)
+    before { item.award!(staff, admin_comments: "ok") }
 
-      2.times { expect(item.revoke!(staff)).to be(true) }
-      expect(item.reload.status).to eq("Revoked")
-      expect(Certification.unscoped.find(cert.id)).not_to be_active
+    it "deactivates the granted certification on revoke" do
+      expect(item.revoke(staff)).to be(true)
+      expect(item).to be_revoked
+      expect(certification).not_to be_active
+      expect(certification.demotion_staff).to eq(staff)
+    end
+
+    it "keeps the certification and its session when revoking" do
+      item.revoke(staff)
       expect(Certification.unscoped.where(user_id: buyer.id).count).to eq(1)
-
-      expect(item.award!(staff)).to be(true)
-      expect(item.award!(staff)).to be(false)
-      expect(Certification.find(cert.id)).to be_active
       expect(ProficientProjectSession.count).to eq(1)
     end
 
-    it "does not award an item that is not waiting and has no deactivated badge" do
-      item.update!(status: "In progress")
-      expect(item.award!(staff)).to be(false)
-      expect(Certification.unscoped.count).to eq(0)
+    it "changes nothing when revoking a revoked item" do
+      item.revoke(staff)
+      expect { expect(item.revoke(staff)).to be(true) }.not_to change { certification.reload.attributes }
     end
 
-    it "reports false and writes nothing when the revoke does not save" do
-      allow(item).to receive(:update).and_return(false)
-      expect(item.revoke!(staff)).to be(false)
-      expect(item.reload.status).to eq("Waiting for approval")
+    it "restores the certification when a revoked item is awarded again" do
+      item.revoke(staff)
+      expect(item.award!(staff)).to be(true)
+      expect(certification).to be_active
+      expect(item).to be_awarded
+    end
+
+    it "refuses to award an awarded item again" do
+      expect(item.award!(staff)).to be(false)
+      expect(ProficientProjectSession.count).to eq(1)
+    end
+
+    it "does not award an item that is in progress" do
+      other = create(:order_item, order: create(:order, :completed, user_id: buyer.id), status: "In progress")
+      expect(other.award!(staff)).to be(false)
+      expect(other.reload.status).to eq("In progress")
+    end
+
+    it "reports false with the reasons on the item, and writes nothing, when the revoke does not save" do
+      item.update_column(:quantity, 0)
+      expect(item.revoke(staff)).to be(false)
+      expect(item.errors[:quantity]).to be_present
+      expect(item.reload.status).to eq("Awarded")
+      expect(certification).to be_active
+    end
+
+    it "reports false with the order error for an item that has no order" do
+      orphan = OrderItem.new(proficient_project: create(:proficient_project), quantity: 1, status: "Awarded")
+      orphan.save(validate: false)
+      expect(orphan.revoke(staff)).to be(false)
+      expect(orphan.errors[:order]).to be_present
     end
   end
 end

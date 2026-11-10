@@ -96,12 +96,14 @@ class OrderItemsController < DevelopmentProgramsController
 
   def revoke
     item = OrderItem.find(params[:order_item_id])
-    if item.revoke!(current_user)
+    if item.revoke(current_user)
       flash[:notice] = "The badge has been revoked."
     else
       flash[:alert] = validation_message(item, "errors.shop.badge_not_revoked")
     end
     redirect_to admin_index_path
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+    redirect_to admin_index_path, alert: validation_message(e.record, "errors.shop.badge_not_revoked")
   end
 
   def order_item_modal
