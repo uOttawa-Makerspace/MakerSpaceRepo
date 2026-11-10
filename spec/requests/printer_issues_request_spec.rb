@@ -2,8 +2,8 @@ require "rails_helper"
 
 # Chunk 15: PrinterIssuesController: reporting and resolving printer issues.
 # StaffAreaController gate (guest -> login, regular/volunteer -> root alert);
-# everything inside is open to any staff member except destroy and the
-# notification email (admin only).
+# everything inside is open to any staff member except destroy (admin only,
+# staff are redirected with an alert) and the notification email (admin only).
 RSpec.describe "Printer issues", type: :request do
   include ActiveJob::TestHelper
 
@@ -79,10 +79,9 @@ RSpec.describe "Printer issues", type: :request do
         .to include(controller: "printer_issues", action: "show", id: "history")
     end
 
-    # show for an unknown id uses find_by and renders the template with a nil @issue (500) instead of 404
-    it "500s showing an unknown issue" do
+    it "answers not found showing an unknown issue" do
       get printer_issue_path(0)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
 
     describe "POST create" do
@@ -185,11 +184,10 @@ RSpec.describe "Printer issues", type: :request do
     end
 
     describe "DELETE destroy" do
-      # staff DELETE silently redirects to the list without a flash; only admins delete
-      it "silently ignores staff" do
+      it "refuses staff with an alert and deletes nothing" do
         expect { delete printer_issue_path(issue) }.not_to change(PrinterIssue, :count)
         expect(response).to redirect_to(printer_issues_path)
-        expect(flash[:alert]).to be_nil
+        expect(flash[:alert]).to eq("Only admins can delete printer issues.")
       end
     end
 

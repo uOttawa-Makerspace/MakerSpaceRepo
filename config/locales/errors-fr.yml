@@ -240,6 +240,8 @@ fr:
       issue_not_created: "Le problème d'imprimante n'a pas été créé."
       issue_not_updated: "Le problème d'imprimante n'a pas été modifié."
       issue_not_deleted: "Le problème d'imprimante n'a pas été supprimé."
+      issue_delete_admin_only: "Seuls les administrateurs peuvent supprimer les problèmes d'imprimante."
+      printer_not_removed: "L'imprimante n'a pas été supprimée."
       notification_not_sent: "Le problème d'imprimante a été créé, mais le courriel de notification à l'équipe d'entretien n'a pas pu être mis en file d'attente, il n'a donc pas été envoyé."
     help:
       not_received: "Votre demande n'a pas été soumise."
