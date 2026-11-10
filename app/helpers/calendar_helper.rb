@@ -1,4 +1,7 @@
 module CalendarHelper
+  # The longest COUNT whose end is worked out when deciding whether a series is over.
+  MAX_COUNTED_SERIES = 1000
+
   def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil )
     return [] if ics_url.blank?
 
@@ -225,7 +228,8 @@ module CalendarHelper
     end_time = safe_to_time(main_event.dtend)
     return report_ics_event_without_start(main_event, group_id) if start_time.nil?
 
-    return if main_event.rrule.empty? && stale_event?(end_time || start_time)
+    rrule_obj = main_event.rrule&.first
+    return if ics_event_over?(rrule_obj, start_time, end_time)
 
     event_hash = {
       id: main_event.uid,
@@ -240,7 +244,6 @@ module CalendarHelper
       start: toronto_iso(start_time),
       end: toronto_iso(end_time)
     }
-    rrule_obj = main_event.rrule&.first
     event_hash.merge!(ics_recurrence(main_event, rrule_obj, modified_instances, start_time, end_time)) if rrule_obj.present?
     event_hash
   end
@@ -290,6 +293,35 @@ module CalendarHelper
       start: toronto_iso(start_time),
       end: toronto_iso(end_time)
     }
+  end
+
+  # Whether an event no longer needs showing: a single event that ended, or a series that stopped, more than two
+  # months ago.
+  def ics_event_over?(rrule_obj, start_time, end_time)
+    rrule_obj.present? ? series_ended?(rrule_obj, start_time) : stale_event?(end_time || start_time)
+  end
+
+  # Whether a repeating series stopped (by its UNTIL date, or after its COUNT occurrences) more than two months
+  # ago. A series that never ends, or whose end cannot be worked out, is not ended.
+  def series_ended?(rrule_obj, start_time)
+    cutoff = Time.now.utc - 2.months
+    until_time = safe_to_time(rrule_obj.until)
+    return true if until_time && until_time < cutoff
+
+    counted_series_ended_before?(rrule_obj, start_time, cutoff)
+  end
+
+  # Whether all the occurrences of a series with a COUNT fall before the cutoff. A very long count, and a rule
+  # IceCube cannot read, are not worked out: the series is kept and the calendar view decides.
+  def counted_series_ended_before?(rrule_obj, start_time, cutoff)
+    count = rrule_obj.count.to_i
+    return false unless count.between?(1, MAX_COUNTED_SERIES)
+
+    start = start_time.in_time_zone(RecurrenceRule::ZONE)
+    found = RecurrenceExpansion.occurrences(convert_rrule_to_string(rrule_obj), start, start, cutoff, count)
+    found.occurrences.size == count
+  rescue ArgumentError
+    false
   end
 
   # Whether an event's last moment (its end, else its start) is more than two months ago. An event with

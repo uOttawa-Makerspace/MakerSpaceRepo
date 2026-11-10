@@ -94,13 +94,37 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(group[:events].first[:extendedProps]).to eq(name: "Hours", description: "Walk in")
     end
 
-    it "drops a single event that ended more than two months ago and keeps a recurring one" do
+    it "drops a single event that ended more than two months ago and keeps a series that has not ended" do
       body = ics(
         vevent("old", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Old"]),
-        vevent("rec", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Rec", "RRULE:FREQ=DAILY;COUNT=3"])
+        vevent("rec", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Rec", "RRULE:FREQ=DAILY"])
       )
       stub_request(:get, url).to_return(status: 200, body: body)
       expect(parse_ics_calendar(url).first[:events].map { |e| e[:id] }).to eq(["rec"])
+    end
+
+    it "drops a series whose last day or last counted occurrence was more than two months ago" do
+      body = ics(
+        vevent("until-old", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:A", "RRULE:FREQ=DAILY;UNTIL=20260810T150000Z"]),
+        vevent("count-old", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:B", "RRULE:FREQ=WEEKLY;COUNT=3"]),
+        vevent("until-recent", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:C", "RRULE:FREQ=DAILY;UNTIL=20261220T150000Z"]),
+        vevent("count-recent", ["DTSTART:20261201T150000Z", "DTEND:20261201T160000Z", "SUMMARY:D", "RRULE:FREQ=WEEKLY;COUNT=10"]),
+        vevent("count-straddles", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:E", "RRULE:FREQ=WEEKLY;COUNT=40"]),
+        vevent("count-huge", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:F", "RRULE:FREQ=YEARLY;COUNT=5000"]),
+        vevent("unreadable", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:G", "RRULE:FREQ=WEEKLY;BYWEEKNO=3;COUNT=2"])
+      )
+      stub_request(:get, url).to_return(status: 200, body: body)
+      expect(parse_ics_calendar(url).first[:events].map { |e| e[:id] })
+        .to eq(%w[until-recent count-recent count-straddles count-huge unreadable])
+    end
+
+    it "still lists a modified instance of a series that has ended when the instance is recent" do
+      body = ics(
+        vevent("rec", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=3"]),
+        vevent("rec", ["RECURRENCE-ID:20260808T150000Z", "DTSTART:20270108T170000Z", "DTEND:20270108T180000Z", "SUMMARY:Moved"])
+      )
+      stub_request(:get, url).to_return(status: 200, body: body)
+      expect(parse_ics_calendar(url).first[:events].map { |e| e[:title] }).to eq(["Moved"])
     end
 
     it "turns a recurring event into an rrule string with DTSTART, the rule, the exdates and a duration in ms" do
