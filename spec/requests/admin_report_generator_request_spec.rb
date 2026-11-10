@@ -145,6 +145,34 @@ RSpec.describe "Admin report generator", type: :request do
         expect(response.body).to include("unknown")
       end
 
+      it "certifications: a project certificate whose project session lost its project counts under unknown" do
+        cert = create(:certification, user: world[:visitor], training_session: nil, created_at: march_10)
+        pps = create(:proficient_project_session, certification: cert, user: world[:visitor],
+                                                  proficient_project: create(:proficient_project), level: "Beginner")
+        pps.update_columns(proficient_project_id: nil)
+        get admin_report_generator_index_path, params: range.merge(report_type: "certifications")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("unknown")
+      end
+
+      it "certifications: a project certificate whose project lost its training counts under unknown" do
+        project = create(:proficient_project, training: create(:training, name_en: "Gone Training"))
+        project.update_columns(training_id: nil)
+        cert = create(:certification, user: world[:visitor], training_session: nil, created_at: march_10)
+        create(:proficient_project_session, certification: cert, user: world[:visitor], proficient_project: project, level: "Beginner")
+        get admin_report_generator_index_path, params: range.merge(report_type: "certifications")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("unknown")
+        expect(response.body).not_to include("Gone Training")
+      end
+
+      it "certifications: a certificate with neither a session nor a project session counts under unknown" do
+        create(:certification, user: world[:visitor], training_session: nil, created_at: march_10)
+        get admin_report_generator_index_path, params: range.merge(report_type: "certifications")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("unknown")
+      end
+
       it "downloads the kit_purchased spreadsheet without a query per record" do
         get admin_report_generator_generate_spreadsheet_path, params: { type: "kit_purchased" }.merge(range)
         expect(response).to have_http_status(:ok)
