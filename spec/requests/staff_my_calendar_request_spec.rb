@@ -201,6 +201,7 @@ RSpec.describe "Staff my calendar", type: :request do
       steps = rule_steps { get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" } }
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body.size).to eq(cap)
+      expect(steps).to be_positive
       expect(steps).to be <= cap + 2 # unbounded: 144,000 candidates for MINUTELY, 8,640,000 for SECONDLY
     end
 
