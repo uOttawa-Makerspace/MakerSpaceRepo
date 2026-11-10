@@ -105,7 +105,7 @@ module Api
       # or only through a proficient project (the same trainings remaining_trainings
       # counts as held).
       def profile_certifications(user)
-        from_sessions = user.certifications.includes(training_session: :training).highest_level
+        from_sessions = user.certifications.where.not(training_session_id: nil).highest_level
         held = from_sessions.to_set { |c| c.training_session.training_id }
         via_projects = user.certifications.where(training_session_id: nil)
                            .includes(:training_session, proficient_project_session: { proficient_project: :training }).to_a

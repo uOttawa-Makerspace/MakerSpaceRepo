@@ -16,7 +16,7 @@
     <% @badge_data.each do |badges| %>
       <div class="col-md-3">
         <p style="text-align: center">
-          <% if badges.training_session.training.has_badge %>
+          <% if badges.training.has_badge %>
             <% if badges.user_id.present? %>
               <%= link_to(badges.user.name, user_path(badges.user.username)) %>
             <% else %>

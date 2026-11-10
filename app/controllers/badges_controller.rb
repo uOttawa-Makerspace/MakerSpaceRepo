@@ -55,8 +55,9 @@ class BadgesController < DevelopmentProgramsController
 
   def badge_scope(search_term = nil)
     certifications = Certification
-      .includes(:training, :user, :training_session)
-      .joins(:training, :training_session, :user)
+      .with_training
+      .joins(:user)
+      .includes(:user)
       .where(trainings: { has_badge: true })
 
     # A deleted earner's badge is shown to admins only (see #show)

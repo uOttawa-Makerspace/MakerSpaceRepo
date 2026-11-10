@@ -37,6 +37,19 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(other).to be_persisted
     end
 
+    it "lists a badge earned only through a proficient project, and finds it by training name" do
+      project_training = create(:training, name_en: "Soldering EN", skill: skill, has_badge: true)
+      granted = create(:certification, user: earner, training_session: nil, training: nil, level: "Beginner")
+      create(:proficient_project_session, certification: granted, user: earner, level: "Beginner",
+                                          proficient_project: create(:proficient_project, training: project_training))
+      log_in!(earner)
+      get badges_path
+      expect(response.body).to include("Soldering EN").and include("Laser EN")
+      get search_badges_path(search: "soldering")
+      expect(response.body).to include("Soldering EN")
+      expect(response.body).not_to include("Laser EN")
+    end
+
     it "hides trainings with has_badge=false" do
       training.update!(has_badge: false)
       log_in!(earner)

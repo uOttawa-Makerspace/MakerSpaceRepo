@@ -163,30 +163,38 @@ class Certification < ApplicationRecord
     false
   end
 
-  def self.highest_level
-    high_certs = []
-    
-      all
-      .joins(:training_session)
-      .group_by(&:training)
-      .each do |_, certs|
-        certifications = certs
-        level = certifications.map { |c| c.training_session.level }
-        if level.include?("Advanced")
-          high_certs +=
-            certifications.select { |c| c.training_session.level == "Advanced" }
-        elsif level.include?("Intermediate")
-          high_certs +=
-            certifications.select do |c|
-              c.training_session.level == "Intermediate"
-            end
-        elsif level.include?("Beginner")
-          high_certs +=
-            certifications.select { |c| c.training_session.level == "Beginner" }
+  LEVELS = %w[Beginner Intermediate Advanced].freeze
+
+  # Certifications with their training known in SQL, whether earned in a training session or
+  # through a proficient project.
+  scope :with_training,
+        -> do
+          left_joins(:training_session, proficient_project_session: :proficient_project).joins(
+            "INNER JOIN trainings ON trainings.id = " \
+              "COALESCE(training_sessions.training_id, proficient_projects.training_id)"
+          )
         end
-      end
-    high_certs
+
+  # The top-level certifications of each training (all of them when several share that level),
+  # whether earned in a training session or through a proficient project.
+  def self.highest_level
+    certs = all.to_a
+    preload_trainings(certs)
+    certs.group_by(&:training).flat_map do |_, held|
+      top = held.map { |c| LEVELS.index(c.level).to_i }.max
+      held.select { |c| LEVELS.index(c.level).to_i == top }
+    end
   end
+
+  def self.preload_trainings(certs)
+    by_session, by_project = certs.partition(&:training_session_id)
+    ActiveRecord::Associations::Preloader.new(records: by_session, associations: { training_session: :training }).call
+    ActiveRecord::Associations::Preloader.new(
+      records: by_project,
+      associations: { proficient_project_session: { proficient_project: :training } }
+    ).call
+  end
+  private_class_method :preload_trainings
 
   # The name of the training behind the certification, in the current language.
   def name

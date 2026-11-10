@@ -129,6 +129,19 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(response.body).to include(user.username)
     end
 
+    it "lists a skill earned only through a proficient project, for the owner and for staff" do
+      granted = create(:certification, user: user, training_session: nil, training: nil, level: "Intermediate")
+      create(:proficient_project_session, certification: granted, user: user, level: "Intermediate",
+                                          proficient_project: create(:proficient_project,
+                                                                     training: create(:training, name_en: "Soldering EN")))
+      [user, staff].each do |viewer|
+        login!(viewer)
+        get user_path(user.username)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Soldering EN").and include("Intermediate")
+      end
+    end
+
     it "username lookup is case-insensitive" do
       get user_path(user.username.upcase)
       expect(response).to have_http_status(:ok)

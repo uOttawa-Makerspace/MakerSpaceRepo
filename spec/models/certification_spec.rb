@@ -305,6 +305,27 @@ RSpec.describe Certification, type: :model do
       expect(Certification.highest_level).to eq([top])
     end
 
+    def project_certification(for_user, project_training, level)
+      granted = create(:certification, user: for_user, training_session: nil, training: nil, level: level)
+      create(:proficient_project_session, certification: granted, user: for_user, level: level,
+                                          proficient_project: create(:proficient_project, training: project_training))
+      granted
+    end
+
+    it "highest_level includes a certification earned only through a proficient project" do
+      create(:certification, user: user, training_session: ts, training: training, level: "Beginner")
+      other_training = create(:training)
+      project_only = project_certification(user, other_training, "Beginner")
+      expect(user.certifications.highest_level).to include(project_only)
+      expect(user.certifications.highest_level.size).to eq(2)
+    end
+
+    it "highest_level ranks a project certification against session ones of the same training" do
+      create(:certification, user: user, training_session: ts, training: training, level: "Beginner")
+      higher = project_certification(user, training, "Advanced")
+      expect(user.certifications.highest_level).to eq([higher])
+    end
+
     it "demoted (inactive) certifications disappear from the default scope but not from unscoped" do
       cert = create(:certification, user: user, training_session: ts, training: training)
       cert.update!(active: false)

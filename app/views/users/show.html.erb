@@ -16,12 +16,12 @@
             <p><%= t('.skills') %></p>
             <% @certifications.each do |certification| %>
                 <div class="d-flex flex-nowrap justify-content-between">
-                    <% if current_user.staff? %>
+                    <% if current_user.staff? && certification.training_session %>
                         <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
                     <% else %>
                         <%= certification.training.localized_name %>
                     <% end %>
-                    <%= certification_status(certification.training_session.level) %>
+                    <%= certification_status(certification.level) %>
                 </div>
             <% end %>
             <% if current_user.staff? || @repo_user == current_user %>
