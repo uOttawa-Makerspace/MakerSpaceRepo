@@ -699,11 +699,17 @@ RSpec.describe "Exams", type: :request do
       expect(exam.expired_at).to be_within(1.minute).of(DateTime.now + 3.days)
     end
 
-    it "creates every exam even when a mail cannot be delivered, and mails after the exams exist" do
+    it "creates every exam and redirects even when the mail for one user cannot be delivered" do
       second_student
-      allow_any_instance_of(ActionMailer::MessageDelivery).to receive(:deliver_now).and_raise(Net::SMTPFatalError)
+      allow_any_instance_of(MsrMailer).to receive(:send_exam).and_wrap_original do |original, user, *rest|
+        raise Net::SMTPFatalError, "mailbox unavailable" if user == student
+        original.call(user, *rest)
+      end
       expect { create_from_training }.to change(Exam, :count).by(2)
       expect(response).to redirect_to(staff_dashboard_index_path(space_id: session_record.space.id))
+      expect(deliveries).to be_empty
+      expect { perform_enqueued_jobs }.to raise_error(Net::SMTPFatalError)
+      expect(Exam.where(user: [student, second_student]).count).to eq(2)
     end
 
     it "creates no exam for anyone when one of them cannot be created" do
