@@ -48,17 +48,23 @@ RSpec.describe Printer, type: :model do
   end
 
   describe "associations" do
-    it "destroys its sessions" do
+    it "cannot be destroyed while it has sessions, and keeps them" do
       printer = create(:printer, :UM2P_01)
       create(:printer_session, printer: printer)
-      expect { printer.destroy }.to change(PrinterSession, :count).by(-1)
+      expect { expect(printer.destroy).to be false }.not_to change { [Printer.count, PrinterSession.count] }
+      expect(printer.errors.full_messages).to eq(["Cannot delete record because dependent printer sessions exist"])
     end
 
-    # printer_issues has no dependent option, so destroying a printer that ever had an issue raises InvalidForeignKey
-    it "cannot be destroyed once it has printer issues" do
+    it "cannot be destroyed while it has printer issues, and keeps them" do
       printer = create(:printer, :UM2P_01)
       create(:printer_issue, printer: printer)
-      expect { printer.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
+      expect { expect(printer.destroy).to be false }.not_to change { [Printer.count, PrinterIssue.count] }
+      expect(printer.errors.full_messages).to eq(["Cannot delete record because dependent printer issues exist"])
+    end
+
+    it "can be destroyed when it has neither" do
+      printer = create(:printer, :UM2P_01)
+      expect { printer.destroy }.to change(Printer, :count).by(-1)
     end
   end
 end

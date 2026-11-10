@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 class Printer < ApplicationRecord
-  has_many :printer_sessions, dependent: :destroy
-  has_many :printer_issues
+  # A printer with sessions or issues cannot be deleted: its history is kept.
+  has_many :printer_sessions, dependent: :restrict_with_error
+  has_many :printer_issues, dependent: :restrict_with_error
   belongs_to :printer_type, optional: true
   scope :show_options,
         -> {

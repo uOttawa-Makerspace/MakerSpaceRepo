@@ -101,16 +101,24 @@ RSpec.describe "Printers", type: :request do
       expect(response).to redirect_to(printers_path)
     end
 
-    it "removes a printer (and its sessions)" do
-      create(:printer_session, printer: um2p)
-      expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.to change(Printer, :count).by(-1).and change(PrinterSession, :count).by(-1)
+    it "removes a printer that has no sessions or issues" do
+      expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.to change(Printer, :count).by(-1)
+      expect(response).to redirect_to(printers_path)
       expect(flash[:notice]).to eq("Printer removed successfully!")
     end
 
-    it "500s removing a printer that has printer issues (FK violation)" do
+    it "keeps a printer that has sessions, and its sessions, and says why" do
+      create(:printer_session, printer: um2p)
+      expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.not_to change { [Printer.count, PrinterSession.count] }
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("The printer was not removed. Cannot delete record because dependent printer sessions exist")
+    end
+
+    it "keeps a printer that has printer issues, and its issues, and says why" do
       create(:printer_issue, printer: um2p)
-      expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.not_to change(Printer, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.not_to change { [Printer.count, PrinterIssue.count] }
+      expect(response).to redirect_to(printers_path)
+      expect(flash[:alert]).to eq("The printer was not removed. Cannot delete record because dependent printer issues exist")
     end
 
     it "alerts when no printer is selected for removal" do
@@ -118,16 +126,16 @@ RSpec.describe "Printers", type: :request do
       expect(flash[:alert]).to eq("Please select a Printer.")
     end
 
-    # remove_printer reports success for an unknown id (destroy_all on an empty relation)
-    it "reports success even for an unknown printer id" do
-      post remove_printer_printers_path, params: { remove_printer: 0 }
-      expect(flash[:notice]).to eq("Printer removed successfully!")
+    it "alerts that the printer no longer exists for an unknown printer id" do
+      expect { post remove_printer_printers_path, params: { remove_printer: 0 } }.not_to change(Printer, :count)
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq(I18n.t("errors.printers.printer_not_found"))
     end
 
-    # remove_printer with no remove_printer param (nil != "") runs destroy_all on where(id: nil), a silent no-op reported as success
-    it "treats a missing remove_printer param as a successful removal" do
+    it "asks for a printer when the remove_printer param is missing" do
       expect { post remove_printer_printers_path }.not_to change(Printer, :count)
-      expect(flash[:notice]).to eq("Printer removed successfully!")
+      expect(flash[:notice]).to be_nil
+      expect(flash[:alert]).to eq("Please select a Printer.")
     end
   end
 

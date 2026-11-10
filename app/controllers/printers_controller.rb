@@ -49,11 +49,16 @@ class PrintersController < StaffAreaController
   end
 
   def remove_printer
-    if params[:remove_printer] != ""
-      Printer.where(id: params[:remove_printer]).destroy_all
+    printer_id = params[:remove_printer].to_s
+    printer = Printer.find_by(id: printer_id) if printer_id.present?
+    if printer_id.blank?
+      flash[:alert] = "Please select a Printer."
+    elsif printer.nil?
+      flash[:alert] = I18n.t("errors.printers.printer_not_found")
+    elsif printer.destroy
       flash[:notice] = "Printer removed successfully!"
     else
-      flash[:alert] = "Please select a Printer."
+      flash[:alert] = validation_message(printer, "errors.printers.printer_not_removed")
     end
     redirect_to printers_path
   end

@@ -195,7 +195,7 @@ en:
       cancel_active: "Please contact administration for cancelling a locker"
       cancel_pending_only: "You can only cancel a pending request"
       stale: "This locker rental changed while you had the page open (it is now %{state}). Reload it and review before acting."
-      draft_not_removed_staff: "Locker rental cancelled, but its Shopify checkout could not be removed. A payment made on it will appear under \"Paid, needs a decision\". The error was reported."
+      draft_not_removed_staff: 'Locker rental cancelled, but its Shopify checkout could not be removed. A payment made on it will appear under "Paid, needs a decision". The error was reported.'
       draft_not_removed_renter: "Your request was cancelled. If you still see a payment link, don't use it; staff have been notified."
       not_renewable: "This locker rental is not renewable."
       renewal_failed: "Could not start renewal:"
@@ -240,6 +240,7 @@ en:
       issue_not_created: "The printer issue was not created."
       issue_not_updated: "The printer issue was not updated."
       issue_not_deleted: "The printer issue was not deleted."
+      printer_not_removed: "The printer was not removed."
       notification_not_sent: "The printer issue was created, but the maintenance notification email could not be queued, so it was not sent."
     help:
       not_received: "Your issue was not submitted."
