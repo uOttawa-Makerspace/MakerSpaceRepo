@@ -56,11 +56,12 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.body).to include(%(value="#{space.id}"))
     end
 
-    # index calls @spaces.first.id: staff with no StaffSpace (and no space_id) get a 500.
-    it "500s for staff assigned to no space" do
+    it "shows an empty state, not an error, for staff assigned to no space" do
       sign_in_as(:staff)
       get staff_my_calendar_index_path
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("not assigned to any space")
+      expect(response.body).not_to include('id="calendar"')
     end
   end
 
