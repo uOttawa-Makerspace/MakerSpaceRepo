@@ -505,19 +505,25 @@ class Admin::ReportGeneratorController < AdminAreaController
     Date.new(2015, 6, 1)..Date.current
   end
 
-  # Certificates per training session for each month that starts within the
-  # days and has certificates, the whole month in the application time zone,
-  # named with its year ("March 2026").
+  # Certificates per training session for each month the days overlap that
+  # has certificates, in the application time zone, named with its year
+  # ("March 2026"). A month the days only partly cover counts the
+  # certificates inside the report window.
   def monthly_attendee_averages(days)
-    months = days.select { |day| day.day == 1 }
+    months = days.map(&:beginning_of_month).uniq
     months.each_with_object({}) do |month, averages|
-      certs = Certification.where(created_at: month.in_time_zone.all_month)
+      certs = certifications_in_month(month)
       count = certs.count
       next if count.zero?
 
       sessions = certs.pluck(:training_session_id).uniq.count
       averages[month.strftime('%B %Y')] = count.to_f / sessions
     end
+  end
+
+  def certifications_in_month(month)
+    certs = Certification.where(created_at: month.in_time_zone.all_month)
+    @date_specified ? certs.where(created_at: @report_window) : certs
   end
 
   def popular_hours
