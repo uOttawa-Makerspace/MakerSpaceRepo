@@ -498,16 +498,23 @@ class UsersController < SessionsController
     repo_ids = Like.where(user_id: @user.id).pluck(:repository_id)
     like_scope = Repository.where(id: repo_ids).order([sort_arr].to_h)
 
-    if params[:category].present?
-      category_name = SLUG_TO_CATEGORY_MODEL[params[:category]]
-      like_scope = like_scope.includes(:categories).where(categories: { name: category_name })
-    end
+    like_scope = in_requested_categories(like_scope) if params[:category].present?
+    @category_slug = params[:category] if SLUG_TO_CATEGORY_MODEL.key?(params[:category])
 
     @pagy, @repositories = pagy(like_scope, limit: 12)
     @photos = photo_hash
   end
 
   private
+
+  # Keeps the repositories filed under the requested category slugs (one slug or a list). Slugs that are
+  # not text or not known are ignored; when none is known the result is empty.
+  def in_requested_categories(scope)
+    names = Array.wrap(params[:category]).grep(String).filter_map { |slug| SLUG_TO_CATEGORY_MODEL[slug] }
+    return scope.none if names.empty?
+
+    scope.includes(:categories).where(categories: { name: names })
+  end
 
   # The normalised email, or '' when none was given or it is longer than an address can be.
   def resend_confirmation_email

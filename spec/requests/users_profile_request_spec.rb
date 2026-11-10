@@ -777,6 +777,51 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
+  describe "GET /:username/likes filtered by category" do
+    let!(:tagged) { create(:repository, user_id: other.id, title: "Tagged Thing", share_type: "public") }
+    let!(:untagged) { create(:repository, user_id: other.id, title: "Plain Thing", share_type: "public") }
+
+    before do
+      CategoryOption.find_or_create_by!(name: "Wearable")
+      Category.create!(repository_id: tagged.id, name: "Wearable")
+      [tagged, untagged].each { |repo| Like.create!(user_id: user.id, repository_id: repo.id) }
+      login!(user)
+    end
+
+    def listed
+      %w[Tagged\ Thing Plain\ Thing].select { |title| response.body.include?(title) }
+    end
+
+    it "lists every like without a category" do
+      get likes_user_path(user.username)
+      expect(listed).to eq(["Tagged Thing", "Plain Thing"])
+    end
+
+    it "lists only the likes filed under a known category slug" do
+      get likes_user_path(user.username, category: "wearable")
+      expect(listed).to eq(["Tagged Thing"])
+    end
+
+    it "lists nothing for an unknown category slug" do
+      get likes_user_path(user.username, category: "nonsense")
+      expect(response).to have_http_status(:ok)
+      expect(listed).to be_empty
+    end
+
+    it "ignores unknown slugs in a list of categories and lists nothing when none is known" do
+      get "/#{user.username}/likes?category[]=wearable&category[]=nonsense"
+      expect(listed).to eq(["Tagged Thing"])
+      get "/#{user.username}/likes?category[]=nonsense"
+      expect(listed).to be_empty
+    end
+
+    it "lists nothing when the category is not text or a list of text" do
+      get "/#{user.username}/likes?category[wearable]=wearable"
+      expect(response).to have_http_status(:ok)
+      expect(listed).to be_empty
+    end
+  end
+
   describe "the other pages under a deleted user's path" do
     let!(:gone) { create(:user, :regular_user, deleted: true) }
 
