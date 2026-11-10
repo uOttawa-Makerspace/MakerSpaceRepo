@@ -233,6 +233,18 @@ RSpec.describe "Admin keys", type: :request do
       expect(response.body).to include("Request form awaiting approval")
     end
 
+    it "lists several staff holders with their request status without a query per holder" do
+      3.times do
+        extra = create(:user, :staff)
+        create(:key_request, :status_approved, :all_questions_answered, user: extra, supervisor: supervisor, space: space)
+      end
+
+      get admin_key_assign_path(key)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan(/<option /).size).to be >= 4
+    end
+
     it "assigns an inventory key: key becomes held and a KeyTransaction with the deposit is created" do
       expect {
         patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 25 }

@@ -57,6 +57,15 @@ RSpec.describe "Repository zip download", type: :request do
     expect(zip_entries).to eq("a.txt" => "AAA", "b.txt" => "BBB")
   end
 
+  it "serves a zip of several files without a query per file" do
+    3.times { |i| add_file("f#{i}.txt", content: "C#{i}") }
+    delete perform_logout_path
+    content_sign_in_as(:regular)
+    download
+    expect(response).to have_http_status(:ok)
+    expect(zip_entries).to eq("f0.txt" => "C0", "f1.txt" => "C1", "f2.txt" => "C2")
+  end
+
   # N+1 pinned
   it "prefixes the index to a duplicate file name", skip_bullet: true do
     add_file("same.txt", content: "one")
