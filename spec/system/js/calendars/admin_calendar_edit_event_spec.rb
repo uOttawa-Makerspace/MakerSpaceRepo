@@ -196,7 +196,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       choose "update_all"
       click_button "Update"
 
-      expect(page).to have_text("Unavailability updated successfully.")
+      expect(page).to have_text("Event updated successfully.")
       expect(series.reload.title).to eq("Open lab (all)")
       expect(Event.count).to eq(2)
     end

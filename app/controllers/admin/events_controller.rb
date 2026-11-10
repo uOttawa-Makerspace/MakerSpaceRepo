@@ -136,7 +136,7 @@ class Admin::EventsController < AdminAreaController
 
         @event.push_to_google_later
 
-        flash[:notice] = "Unavailability updated successfully."
+        flash[:notice] = "Event updated successfully."
       else
         flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
       end

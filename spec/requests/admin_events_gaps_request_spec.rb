@@ -221,9 +221,8 @@ RSpec.describe "Admin events gaps", type: :request do
     context "recurring event, scope 'all'" do
       # The time of day of the rewritten DTSTART comes from the DTSTART line of
       # the POSTED rule (the calendar UI sends it in sync with utc_start_time).
-      it "moves the whole series to the new time of day, keeps the series date and the rule, and wrongly flashes 'Unavailability'" do
-        # the success flash says "Unavailability updated"; the scope
-        # also leaves created_by_id and space_id alone.
+      it "moves the whole series to the new time of day, keeps the series date and the rule, and flashes that the event was updated" do
+        # the scope also leaves created_by_id and space_id alone.
         patch admin_event_path(series),
               params: { update_scope: "all",
                         event: event_attrs(utc_start_time: "2027-04-01 16:30",
@@ -231,7 +230,7 @@ RSpec.describe "Admin events gaps", type: :request do
                                            recurrence_rule: "DTSTART:20270401T163000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5",
                                            title: "Series v2") }
 
-        expect(flash[:notice]).to eq("Unavailability updated successfully.")
+        expect(flash[:notice]).to eq("Event updated successfully.")
         series.reload
         expect(series.title).to eq("Series v2")
         expect(series.start_time).to eq(Time.utc(2025, 5, 5, 16, 30))
