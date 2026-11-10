@@ -254,6 +254,16 @@ RSpec.describe "Pages that show a deleted user", type: :request do
       expect(page_text).to include("Still here", "Deleted user")
       expect(response.body).not_to include("goneperson")
     end
+
+    it "counts a vote on the comment without changing any reputation" do
+      voter = create(:user, :regular_user)
+      sign_in!(voter)
+      post comments_vote_path(repository.id), params: { comment_id: comment.id, downvote: "f" }
+
+      expect(response).to have_http_status(:found)
+      expect(comment.reload.upvote).to eq(1)
+      expect(Upvote.where(comment_id: comment.id, user_id: voter.id).count).to eq(1)
+    end
   end
 
   describe "the real associations" do
