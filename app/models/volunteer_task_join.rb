@@ -14,7 +14,9 @@ class VolunteerTaskJoin < ApplicationRecord
   # column already gives active?.
   enum :state, { joined: "joined", completed: "completed", left: "left", removed: "removed" }, validate: true
 
-  # validates_uniqueness_of :user_id, scope: :volunteer_task_id
+  # A user is joined to a task at most once at a time. Ended joins (completed, left, removed) are history
+  # and do not count, so a user who left can join again.
+  validates :user_id, uniqueness: { scope: :volunteer_task_id, conditions: -> { joined } }, if: :joined?
 
   # Ends a joined row once, with who ended it and when. `active` is kept in step with the state (false once
   # the join leaves joined), in the same update.

@@ -69,12 +69,21 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect { join!(join_params) }.to change(VolunteerTaskJoin, :count).by(1)
     end
 
-    # no uniqueness on (user, task): the same volunteer joins repeatedly when capacity allows
-    it "allows the same volunteer to join twice on a multi-seat task, with two rounds of email" do
+    it "refuses a second join of the same volunteer on a multi-seat task, with a message and no email" do
       big = create(:volunteer_task, joins: 3)
       vol_login!(volunteer)
-      expect { 2.times { join!(join_params(task_id: big.id)) } }.to change(VolunteerTaskJoin, :count).by(2)
-      expect(vol_deliveries.size).to eq(4)
+      join!(join_params(task_id: big.id))
+      ActionMailer::Base.deliveries.clear
+      expect { join!(join_params(task_id: big.id)) }.not_to change(VolunteerTaskJoin, :count)
+      expect(flash[:alert]).to eq("User is already on this task")
+      expect(vol_deliveries).to be_empty
+    end
+
+    it "lets a volunteer who left the task join it again" do
+      big = create(:volunteer_task, joins: 3)
+      create(:volunteer_task_join, :left, volunteer_task: big, user: volunteer)
+      vol_login!(volunteer)
+      expect { join!(join_params(task_id: big.id)) }.to change(VolunteerTaskJoin, :count).by(1)
     end
 
     # capacity only counts user_type "Volunteer" (users.role), so a program member whose role is regular_user is stored as "Regular_user" and never consumes a seat
@@ -229,7 +238,8 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
     end
 
     it "ends every joined row of the user and leaves other rows alone" do
-      second = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
+      # a stored duplicate from before joins were unique
+      second = build(:volunteer_task_join, :active, volunteer_task: task, user: volunteer).tap { |j| j.save!(validate: false) }
       old = create(:volunteer_task_join, :completed, volunteer_task: task, user: volunteer)
       other = create(:volunteer_task_join, :active, volunteer_task: task, user: other_volunteer)
       vol_login!(volunteer)

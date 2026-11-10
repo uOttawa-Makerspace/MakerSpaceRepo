@@ -10,6 +10,31 @@ RSpec.describe VolunteerTaskJoin, type: :model do
     end
   end
 
+  describe "one joined row per user and task" do
+    let(:task) { create(:volunteer_task, joins: 3) }
+    let(:user) { create(:user, :volunteer_with_volunteer_program) }
+
+    it "refuses a second joined row for the same user and task" do
+      create(:volunteer_task_join, volunteer_task: task, user: user, state: "joined")
+      again = build(:volunteer_task_join, volunteer_task: task, user: user, state: "joined")
+      expect(again).not_to be_valid
+      expect(again.errors.full_messages).to eq(["User is already on this task"])
+    end
+
+    it "allows the same user on another task, or again after an ended row" do
+      create(:volunteer_task_join, volunteer_task: task, user: user, state: "left")
+      expect(build(:volunteer_task_join, volunteer_task: task, user: user, state: "joined")).to be_valid
+      expect(build(:volunteer_task_join, volunteer_task: create(:volunteer_task), user: user, state: "joined")).to be_valid
+    end
+
+    it "lets a joined row be ended even when a stored duplicate exists" do
+      first = create(:volunteer_task_join, volunteer_task: task, user: user, state: "joined")
+      dup = build(:volunteer_task_join, volunteer_task: task, user: user, state: "joined").tap { |j| j.save!(validate: false) }
+      expect { dup.finish!(:left, by: user) }.not_to raise_error
+      expect(first.reload).to be_joined
+    end
+  end
+
   describe "#scopes" do
     before(:each) do
       create(:volunteer_task_join, :active)
@@ -45,13 +70,6 @@ RSpec.describe VolunteerTaskJoin, "defaults and uniqueness", type: :model do
   it "defaults to active and user_type Volunteer" do
     join = VolunteerTaskJoin.create!
     expect([join.active, join.user_type]).to eq([true, "Volunteer"])
-  end
-
-  it "allows the same user on the same task repeatedly (uniqueness validation is commented out)" do
-    user = create(:user, :volunteer_with_volunteer_program)
-    task = create(:volunteer_task)
-    2.times { VolunteerTaskJoin.create!(user: user, volunteer_task: task) }
-    expect(task.volunteer_task_joins.where(user: user).count).to eq(2)
   end
 
   it "scopes compose: active + user_type_volunteer ignores inactive and staff joins" do

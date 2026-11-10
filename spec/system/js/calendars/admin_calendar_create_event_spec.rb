@@ -75,10 +75,9 @@ RSpec.describe "Admin calendar: creating events", type: :system do
   end
 
   def open_add_modal
-    page.execute_script("document.getElementById('eventModal').addEventListener('shown.bs.modal', function (e) { e.target.dataset.shown = '1'; })")
     click_button "+ Add Event"
     # shown (not just opening): a modal still fading in ignores a close request
-    expect(page).to have_css("#eventModal[data-shown]")
+    expect(page).to have_css("#eventModal[data-shown='true']")
   end
 
   # The calendar scripts stay registered after Turbo leaves the page (the admin
@@ -150,7 +149,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
     open_admin_calendar
     drag_a_range
 
-    expect(page).to have_css("#eventModal.show")
+    expect(page).to have_css("#eventModal[data-shown='true']")
     expect(field_value("start_time_field")).to start_with("2027-03-18T")
   end
 
@@ -396,7 +395,7 @@ RSpec.describe "Admin calendar: creating events", type: :system do
       click_button "Cancel"
     end
 
-    expect(page).to have_css("#eventModal.show")
+    expect(page).to have_css("#eventModal[data-shown='true']")
     expect(field_value("start_time_field")).to eq("2027-03-17T10:00")
   end
 

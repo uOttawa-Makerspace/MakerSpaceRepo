@@ -452,7 +452,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @job_order.assigned_staff_id = params[:staff_id]
     if @job_order.save
       flash[:notice] = assignment_notice
-      notify_assigned_staff
+      notify_assigned_staff if @job_order.saved_change_to_assigned_staff_id?
     else
       flash[:alert] = assignment_failure
     end
