@@ -12,6 +12,19 @@ class RecurrenceRule
   WALL_STAMP = "%Y%m%dT%H%M%S"
   ZONE = ActiveSupport::TimeZone["America/Toronto"]
 
+  # The instant of a DTSTART line: a stamp ending in Z is UTC; one without is
+  # wall-clock time in its TZID, or in Toronto when it names none. Nil when the
+  # line has no stamp; raises ArgumentError for a stamp or zone that cannot be read.
+  def self.start_of(line)
+    params, stamp = line.delete_prefix("DTSTART").split(":", 2)
+    return if stamp.blank?
+    return Time.parse(stamp) if stamp.end_with?("Z")
+
+    zone_name = params.delete_prefix(";TZID=").presence || ZONE.name
+    zone = ActiveSupport::TimeZone[zone_name] or raise ArgumentError, "unknown time zone #{zone_name}"
+    zone.parse(stamp)
+  end
+
   # `series_start` stands in for a rule stored without a DTSTART.
   def initialize(text, series_start)
     @text = text
@@ -67,17 +80,7 @@ class RecurrenceRule
     lines = RecurrenceExpansion.lines(text)
     rrule = lines.find { |l| l.start_with?("RRULE:") }&.delete_prefix("RRULE:")
     dtstart = lines.find { |l| l.start_with?("DTSTART") }
-    [rrule, dtstart && start_of(dtstart)&.utc, lines.reject { |l| l.start_with?("RRULE:", "DTSTART") }]
-  end
-
-  # The instant of a DTSTART line: a stamp ending in Z is UTC; one without is
-  # wall-clock time in its TZID, or in Toronto when it names none.
-  def start_of(line)
-    params, stamp = line.delete_prefix("DTSTART").split(":", 2)
-    return if stamp.blank?
-    return Time.parse(stamp) if stamp.end_with?("Z")
-
-    ActiveSupport::TimeZone.new(params.delete_prefix(";TZID=").presence || ZONE.name).parse(stamp)
+    [rrule, dtstart && self.class.start_of(dtstart)&.utc, lines.reject { |l| l.start_with?("RRULE:", "DTSTART") }]
   end
 
   # The start as it is written: Toronto wall-clock time, so the series keeps
