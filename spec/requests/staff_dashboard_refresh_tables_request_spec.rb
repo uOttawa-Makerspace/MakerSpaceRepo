@@ -10,7 +10,8 @@ require "rails_helper"
 RSpec.describe "Staff dashboard refresh_tables", type: :request do
   include StaffDashboardSpecHelpers
 
-  let!(:space) { create(:space) }
+  # A space that asks for a walk-in safety sheet, so each signed-in row checks it.
+  let!(:space) { create(:space, name: "MTC") }
   let!(:other_space) { create(:space) }
   let!(:staff) { sign_in_as(:staff, space: space) }
 
@@ -82,6 +83,7 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request do
     expect(html).to include(latest.email, earlier.email, "/#{latest.username}", "/#{earlier.username}")
     expect(html).to include("Has a Community Membership") # latest: student with an active membership
     expect(html.scan("data-user-id=").size).to eq(2)
+    expect(html.scan("Did not sign sheet").size).to eq(2)
     expect(html).not_to include(gone.email)
     expect(html).not_to include(elsewhere.email)
     # each row has the sign-out button for that username

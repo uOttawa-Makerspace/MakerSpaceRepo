@@ -6,14 +6,16 @@ class StaffDashboardController < StaffAreaController
   def index
     # Strict loading because this is used in table views
     # FIXME: Temporarily disabled because of space 119
-    @signed_in_users = User
-      .where(id: LabSession.active.where(space: @space).select(:user_id))
-      .includes(certifications: {training_session: [:training, :user]})
-      .includes(:lab_sessions)
+    @signed_in_users = @space.including_walk_in_sheets(
+      User
+        .where(id: LabSession.active.where(space: @space).select(:user_id))
+        .includes(certifications: {training_session: [:training, :user]})
+        .includes(:lab_sessions)
+    )
 
     respond_to do |format|
       format.html do
-        @signed_out_users = @space.recently_signed_out_users_with_history
+        @signed_out_users = @space.recently_signed_out_users_with_history(with_sheets: true)
         load_table_context
         @printers_in_use =
           PrinterSession.order(created_at: :desc).where(in_use: true)
