@@ -159,7 +159,6 @@
                         <%= button_to sub_space_booking_publish_path(sub_space_booking_id: booking.id), method: :put, class: "btn #{booking.public ? 'btn-outline-secondary' : 'btn-outline-primary'}" do %>
                           <%= booking.public ? 'Make Private' : 'Make Public' %>
                         <% end %>
-                        <%= button_to sub_space_booking_decline_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-xmark"></i><% end %>
                       </div>
                     </td>
                   </tr>
@@ -198,7 +197,6 @@
                   <th>Event Details</th>
                   <th>User</th>
                   <th>Schedule</th>
-                  <th class="text-end pe-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,9 +213,6 @@
                     <td>
                       <strong class="text-body-emphasis"><%= booking.start_time.strftime("%b %e, %Y") %></strong><br>
                       <small class="text-body-secondary"><%= booking.start_time.strftime("%l:%M %p") %> - <%= booking.end_time.strftime("%l:%M %p") %></small>
-                    </td>
-                    <td class="text-end pe-3">
-                      <%= button_to sub_space_booking_approve_path(sub_space_booking_id: booking.id), method: :put, class: 'btn btn-sm btn-success' do %><i class="fa-solid fa-check"></i> Approve<% end %>
                     </td>
                   </tr>
                 <% end %>

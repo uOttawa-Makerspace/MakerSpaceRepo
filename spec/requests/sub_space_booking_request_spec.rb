@@ -899,6 +899,23 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(status_name(booking)).to eq("Declined")
     end
 
+    it "the admin panel offers only the actions each booking can take" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      owner = create(:user, :regular_user, booking_approval: true)
+      approved = booking_by(owner, name: "ApprovedOne")
+      approved.change_status!(@approved_status)
+      declined = booking_by(owner, name: "DeclinedOne")
+      declined.change_status!(@declined_status)
+
+      get sub_space_booking_index_path
+      page = Capybara.string(response.body)
+
+      expect(page).not_to have_css("#approved-accordion form[action='#{sub_space_booking_decline_path(sub_space_booking_id: approved.id)}']", visible: :all)
+      expect(page).not_to have_css("#declined-accordion form[action='#{sub_space_booking_approve_path(sub_space_booking_id: declined.id)}']", visible: :all)
+      expect(page).to have_css("#approved-accordion", text: "ApprovedOne", visible: :all)
+      expect(page).to have_css("#declined-accordion", text: "DeclinedOne", visible: :all)
+    end
+
     it "publish needs admin; admin toggles public/private" do
       log_in!(create(:user, :regular_user, booking_approval: true))
       booking = booking_by(create(:user, :regular_user, booking_approval: true),
