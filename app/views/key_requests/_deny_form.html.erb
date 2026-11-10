@@ -1,0 +1,7 @@
+<%# Locals: key_request; optional class, input_class, button_class, icon. One form: optional reason, confirm on the form. %>
+<% field_id = "denial_reason_#{key_request.id}" %>
+<%= form_with url: deny_key_request_admin_keys_path(id: key_request.id), method: :patch, class: local_assigns[:class], data: { confirm: 'Are you sure you want to deny this key request?' } do |f| %>
+  <%= f.label :denial_reason, 'Reason for denying (optional)', for: field_id, class: 'visually-hidden' %>
+  <%= f.text_field :denial_reason, id: field_id, maxlength: KeyRequest::MAX_DENIAL_REASON_LENGTH, placeholder: 'Reason (optional)', class: "form-control #{local_assigns[:input_class]}" %>
+  <%= f.button type: 'submit', class: local_assigns[:button_class] do %><% if local_assigns[:icon] %><i class="bi bi-x-lg"></i> <% end %>Deny<% end %>
+<% end %>

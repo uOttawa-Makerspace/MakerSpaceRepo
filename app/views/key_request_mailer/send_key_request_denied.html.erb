@@ -17,10 +17,10 @@
     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
       <%= t("key_request_mailer.denied.body", locale: locale) %>
     </p>
-    <% if @key_request.denial_reason.present? %>
+    <% if @reason.present? %>
       <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
         <%= t("key_request_mailer.denied.reason", locale: locale) %><br>
-        <span style="font-style: italic"><%= @key_request.denial_reason %></span>
+        <span style="font-style: italic"><%= @reason %></span>
       </p>
     <% end %>
     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">

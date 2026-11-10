@@ -172,6 +172,19 @@ RSpec.describe KeyRequest, type: :model do
       expect(kr.reload).to have_attributes(status: "denied", denial_reason: nil)
     end
 
+    it "returns false and changes nothing for a request that is already denied" do
+      expect(kr.deny("First")).to be_truthy
+      expect(described_class.find(kr.id).deny("Second")).to be_falsey
+      expect(kr.reload.denial_reason).to eq("First")
+    end
+
+    it "denies once when the in-memory copy is stale" do
+      stale = described_class.find(kr.id)
+      expect(kr.deny("First")).to be_truthy
+      expect(stale.deny("Second")).to be_falsey
+      expect(kr.reload.denial_reason).to eq("First")
+    end
+
     it "refuses a reason longer than the limit and changes nothing" do
       expect(kr.deny("x" * (KeyRequest::MAX_DENIAL_REASON_LENGTH + 1))).to be_falsey
       expect(kr.reload).to have_attributes(status: "waiting_for_approval", denial_reason: nil)

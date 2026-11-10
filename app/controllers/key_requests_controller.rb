@@ -124,8 +124,8 @@ class KeyRequestsController < SessionsController
     I18n.t("errors.key_requests.already_submitted")
   end
 
-  # Once submitted, a request is changed only by an admin sending it back
-  # (deny returns it to in progress).
+  # Once submitted, a request is changed only after an admin denies it (a denied request is
+  # editable again).
   def ensure_editable
     return if @key_request.editable_by_owner?
 

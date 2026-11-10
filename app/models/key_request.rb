@@ -26,8 +26,12 @@ class KeyRequest < ApplicationRecord
   end
 
   # An admin's refusal of a waiting request, with the reason they typed (kept until resubmission).
+  # The request is locked and re-read first, so of two simultaneous denials only one changes the
+  # row and returns true.
   def deny(reason)
-    update(status: :denied, denial_reason: reason.to_s.strip.presence)
+    with_lock do
+      status_waiting_for_approval? && update(status: :denied, denial_reason: reason.to_s.strip.presence)
+    end
   end
 
   NUMBER_OF_QUESTIONS = 14

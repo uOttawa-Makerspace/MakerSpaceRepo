@@ -120,7 +120,11 @@ class Admin::KeysController < AdminAreaController
 
   def deny_key_request
     answer_key_request("request_not_denied", "Successfully denied key request.") do
-      @key_request.deny(params[:denial_reason]) && notify_denied
+      denied = @key_request.deny(params[:denial_reason])
+      if denied
+        KeyRequestMailer.send_key_request_denied(@key_request.id, @key_request.denial_reason).deliver_later
+      end
+      denied
     end
   end
 
@@ -169,12 +173,6 @@ class Admin::KeysController < AdminAreaController
       flash[:alert] = I18n.t("errors.admin.keys.request_not_waiting")
     end
     redirect_to requests_admin_keys_path
-  end
-
-  # Mail the requester once the denial is saved. Always true, so it can end the change block.
-  def notify_denied
-    KeyRequestMailer.send_key_request_denied(@key_request.id).deliver_later
-    true
   end
 
   def failure_message(key, error)
