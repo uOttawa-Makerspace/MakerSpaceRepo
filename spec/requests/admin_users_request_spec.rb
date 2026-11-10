@@ -116,6 +116,39 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "index p=signed_in_users filters by the reader's location" do
+      space = create(:space)
+      reader = create(:pi_reader, pi_location: "Main Room", space: space)
+      other_reader = create(:pi_reader, pi_location: "Back Room", space: space)
+      here = create(:user, :regular_user)
+      there = create(:user, :regular_user)
+      create(:lab_session, user_id: here.id, space: space, mac_address: reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      create(:lab_session, user_id: there.id, space: space, mac_address: other_reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+
+      get admin_users_path(p: "signed_in_users", location: "main room")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(here.username)
+      expect(response.body).not_to include(there.username)
+    end
+
+    it "index p=signed_in_users lists a session once when two readers share an address" do
+      space = create(:space)
+      reader = create(:pi_reader, pi_location: "Main Room", space: space)
+      twin = create(:pi_reader, pi_location: "Main Room", space: space)
+      twin.update_column(:pi_mac_address, reader.pi_mac_address)
+      create(:lab_session, user_id: target.id, space: space, mac_address: reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+
+      get admin_users_path(p: "signed_in_users")
+      appearances = response.body.scan(target.username).size
+      get admin_users_path(p: "signed_in_users", location: "Main Room")
+
+      expect(response.body.scan(target.username).size).to eq(appearances)
+    end
+
     it "index: unknown p redirects with 'Invalid parameters!'" do
       get admin_users_path(p: "bogus")
       expect(response).to redirect_to(admin_users_path)
@@ -553,6 +586,21 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
 
   describe "DELETE /admin/users/delete_user (soft delete)" do
     before { login!(admin) }
+
+    it "refuses an admin who was demoted after the request was authorised" do
+      other_admin = create(:user, :admin)
+      allow(User).to receive(:serialising_account_deletion).and_wrap_original do |original, &block|
+        User.where(id: admin.id).update_all(role: "regular_user")
+        original.call(&block)
+      end
+
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+
+      expect(response).to redirect_to(user_path(target.username))
+      expect(flash[:alert]).to eq("Only admins can delete accounts.")
+      expect(target.reload.deleted).to be(false)
+      expect(other_admin.reload.deleted).to be(false)
+    end
 
     it "requires the admin's own password" do
       delete delete_user_admin_users_path, params: { id: target.id, password: "wrong" }

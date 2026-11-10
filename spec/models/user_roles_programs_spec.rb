@@ -36,6 +36,58 @@ RSpec.describe User do
     end
   end
 
+  describe ".promote_to_staff!" do
+    it "promotes a regular user and leaves staff and admin roles alone" do
+      regular = create(:user, :regular_user)
+      admin = create(:user, :admin)
+      staff = create(:user, :staff)
+      User.promote_to_staff!([regular.id, admin.id, staff.id])
+      expect([regular, admin, staff].map { |u| u.reload.role }).to eq(%w[staff admin staff])
+    end
+
+    it "promotes a user whose role is empty" do
+      blank = create(:user, :regular_user)
+      User.where(id: blank.id).update_all(role: nil)
+      User.promote_to_staff!([blank.id])
+      expect(blank.reload.role).to eq("staff")
+    end
+
+    it "leaves a user who became admin since they were loaded as an admin" do
+      stale = create(:user, :regular_user)
+      User.where(id: stale.id).update_all(role: "admin")
+      expect { User.promote_to_staff!([stale.id]) }.not_to raise_error
+      expect(stale.reload.role).to eq("admin")
+    end
+  end
+
+  describe ".delete_account! actor check" do
+    it "refuses when the actor was demoted after the actor was loaded" do
+      actor = create(:user, :admin)
+      create(:user, :admin)
+      target = create(:user, :regular_user)
+      stale_actor = User.find(actor.id)
+      actor.update_column(:role, "regular_user")
+
+      expect { User.delete_account!(target, actor: stale_actor) }.to raise_error(User::NotAdminError)
+      expect(target.reload.deleted).to be(false)
+    end
+
+    it "refuses when there is no actor" do
+      create(:user, :admin)
+      target = create(:user, :regular_user)
+
+      expect { User.delete_account!(target, actor: nil) }.to raise_error(User::NotAdminError)
+      expect(target.reload.deleted).to be(false)
+    end
+
+    it "deletes when the actor is still an admin" do
+      actor = create(:user, :admin)
+      target = create(:user, :regular_user)
+
+      expect(User.delete_account!(target, actor: actor)).to be(true)
+    end
+  end
+
   describe "#sync_programs! atomicity" do
     it "rolls back the earlier changes when a later one fails" do
       user = create(:user)
@@ -66,10 +118,11 @@ RSpec.describe User do
   end
 
   describe ".text_search" do
-    it "does not escape wildcards (legacy staff dashboard behaviour)" do
+    it "matches wildcard characters in the query literally" do
       u = create(:user, name: "Wild Card")
-      expect(User.text_search("%")).to include(u)
-      expect(User.text_search(User.sanitize_sql_like("%"))).not_to include(u)
+      pct = create(:user, name: "100% Real")
+      expect(User.text_search("%")).to contain_exactly(pct)
+      expect(User.text_search("_")).not_to include(u)
     end
   end
 end
