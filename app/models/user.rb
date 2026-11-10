@@ -962,7 +962,7 @@ class User < ApplicationRecord
   # sign out, password change/reset, admin lock, demotion from staff/admin. A
   # still-valid session simply reconnects and is re-checked at the handshake.
   # Best effort: it runs after the change is already committed (mostly from the
-  # after_update_commit below; the solid_cable broadcast is an INSERT that can fail),
+  # change_role!, the merge task and bump_token_version!; the solid_cable broadcast is an INSERT that can fail),
   # so a failure is reported, never raised.
   # Rescues StandardError, not just ActiveRecordError: any broadcast failure (Timeout,
   # a raw PG error from the pool, ActionCable server errors) must not 500 a role change,
@@ -982,15 +982,17 @@ class User < ApplicationRecord
     self
   end
 
-  # Role and soft-delete writes skip validations only (a row that is invalid for an
-  # unrelated legacy reason must still be demotable/deletable); callbacks run, so the
-  # after_update_commit below (cable_access_lost?) closes the connections once, after
-  # the real commit, even inside an outer transaction.
+  # Role writes skip validations only (a row that is invalid for an unrelated legacy reason must still be
+  # demotable). A demotion from staff or admin closes the user's open websocket connections once the real commit
+  # has happened, also when this runs inside an outer transaction (StaffDashboardChannel authorizes at subscribe
+  # time only, so an open connection would otherwise keep receiving broadcasts).
   def change_role!(new_role)
     raise ArgumentError, "unknown role #{new_role.inspect}" unless ROLES.include?(new_role)
 
+    was_staff = staff?
     self.role = new_role
     save!(validate: false)
+    ActiveRecord.after_all_transactions_commit { disconnect_cable! } if was_staff && !staff?
     self
   end
 
@@ -1030,13 +1032,6 @@ class User < ApplicationRecord
   def reactivate!
     change_deactivation!(false)
   end
-
-  # Demoted from staff/admin, soft-deleted or deactivated: such a connection must not
-  # keep receiving broadcasts (StaffDashboardChannel authorizes at subscribe time
-  # only; the handshake already refuses deleted/deactivated users on reconnect).
-  after_update_commit :disconnect_cable!, if: :cable_access_lost?
-  # A block, not the method symbol: Rails de-duplicates commit callbacks by method name.
-  after_destroy_commit { disconnect_cable! }
 
   def staff?
     role.in?(%w[staff admin])
@@ -1382,10 +1377,5 @@ class User < ApplicationRecord
 
   def translate_faculty
     self.faculty = FACULTY_TRANSLATIONS[faculty] if FACULTY_TRANSLATIONS.key?(faculty)
-  end
-
-  def cable_access_lost?
-    demoted = saved_change_to_role? && role_before_last_save.in?(%w[staff admin]) && !staff?
-    demoted || (saved_change_to_deleted? && !AuthEligibility.allowed?(self))
   end
 end

@@ -235,6 +235,7 @@ namespace :users do
     duplicates.each do |duplicate|
       begin
         ActiveRecord::Base.transaction { merge_record(primary, duplicate) }
+        duplicate.disconnect_cable!
         merged_pairs << { primary_id: primary.id, duplicate_id: duplicate.id }
         merged_any = true
       rescue UserMergeRefused => e

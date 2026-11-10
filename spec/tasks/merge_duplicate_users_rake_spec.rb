@@ -263,6 +263,19 @@ RSpec.describe "users:merge_duplicates" do
       [create(:user), create(:user)]
     end
 
+    it "closes the open connections of the merged duplicate once it is deleted, and of nobody else" do
+      primary, duplicate = duplicated_pair
+      disconnected = []
+      allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
+        double("remote").tap { |remote| allow(remote).to receive(:disconnect) { disconnected << current_user.id } }
+      end
+
+      send(:merge_users_into_one, [duplicate, primary], [], [])
+
+      expect(User.unscoped.exists?(duplicate.id)).to be(false)
+      expect(disconnected).to eq([duplicate.id])
+    end
+
     it "skips the pair whose sheets differ, merges the other pair and reports both" do
       good_primary, good_duplicate = duplicated_pair
       bad_primary, bad_duplicate = duplicated_pair
