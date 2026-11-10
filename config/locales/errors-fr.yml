@@ -125,6 +125,7 @@ fr:
         not_registered: "Le lecteur n'a pas été enregistré."
         not_updated: "Le lecteur n'a pas été modifié."
       settings:
+        category_in_use: "La catégorie est utilisée par des projets; elle n'a pas été retirée."
         course_not_added: "Le cours n'a pas été ajouté."
         course_not_removed: "Le cours n'a pas été retiré."
         course_not_renamed: "Le cours n'a pas été renommé."

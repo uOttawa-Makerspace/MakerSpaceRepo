@@ -116,17 +116,30 @@ RSpec.describe "Admin settings", type: :request do
       expect { instance_exec(&all_calls[:remove_equipment]) }.to change(EquipmentOption, :count).by(-1)
     end
 
-    # remove_* with the select left unset (param absent, not "") skips the guard and reports success while deleting nothing
-    it "claims success when no option id was submitted" do
+    it "asks for a selection when no option id was submitted" do
       expect { post remove_category_admin_settings_path }.not_to change(CategoryOption, :count)
-      expect(flash[:notice]).to eq("Category removed successfully!")
+      expect(flash[:alert]).to eq("Please select a category.")
+      expect(flash[:notice]).to be_nil
       post remove_category_admin_settings_path, params: { remove_category: "" }
       expect(flash[:alert]).to eq("Please select a category.")
+      post remove_equipment_admin_settings_path
+      expect(flash[:alert]).to eq("Please select a piece of equipment.")
     end
 
-    it "claims success when the id to remove does not exist" do
+    it "asks for a selection when the id to remove does not exist" do
       post remove_area_admin_settings_path, params: { remove_area: 0 }
-      expect(flash[:notice]).to eq("Area removed successfully!")
+      expect(flash[:alert]).to eq("Please select an area.")
+      expect(flash[:notice]).to be_nil
+      post remove_equipment_admin_settings_path, params: { remove_equipment: 0 }
+      expect(flash[:alert]).to eq("Please select a piece of equipment.")
+    end
+
+    it "keeps a category option that projects still use and says so" do
+      create(:category, category_option: category)
+      expect { instance_exec(&all_calls[:remove_category]) }.not_to change(CategoryOption, :count)
+      expect(response).to redirect_to(admin_settings_path)
+      expect(flash[:alert]).to eq(I18n.t("errors.admin.settings.category_in_use"))
+      expect(flash[:notice]).to be_nil
     end
 
     it "removes a card reader" do

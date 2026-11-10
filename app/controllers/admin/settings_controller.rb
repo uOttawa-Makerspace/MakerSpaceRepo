@@ -68,24 +68,29 @@ class Admin::SettingsController < AdminAreaController
   # end
 
   def remove_category
-    if params[:remove_category] != ""
-      CategoryOption.where(id: params[:remove_category]).destroy_all
-      flash[:notice] = "Category removed successfully!"
-    else
+    option = CategoryOption.find_by(id: params[:remove_category])
+    if option.nil?
       flash[:alert] = "Please select a category."
+    elsif option.in_use?
+      flash[:alert] = I18n.t("errors.admin.settings.category_in_use")
+    else
+      option.destroy
+      flash[:notice] = "Category removed successfully!"
     end
     redirect_to admin_settings_path
   end
 
   def remove_area
-    if params[:remove_area] != ""
-      AreaOption.where(id: params[:remove_area]).destroy_all
+    option = AreaOption.find_by(id: params[:remove_area])
+    if option
+      option.destroy
       flash[:notice] = "Area removed successfully!"
     else
       flash[:alert] = "Please select an area."
     end
     redirect_to admin_settings_path
   end
+
   def add_equipment
     if equip_params[:name].blank?
       flash[:alert] = "Invalid equipment name."
@@ -112,8 +117,9 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def remove_equipment
-    if params[:remove_equipment] != ""
-      EquipmentOption.where(id: params[:remove_equipment]).destroy_all
+    option = EquipmentOption.find_by(id: params[:remove_equipment])
+    if option
+      option.destroy
       flash[:notice] = "Equipment removed successfully!"
     else
       flash[:alert] = "Please select a piece of equipment."

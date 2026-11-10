@@ -125,6 +125,7 @@ en:
         not_registered: "The reader was not registered."
         not_updated: "The reader was not updated."
       settings:
+        category_in_use: "The category is used by projects, so it was not removed."
         course_not_added: "The course was not added."
         course_not_removed: "The course was not removed."
         course_not_renamed: "The course was not renamed."
