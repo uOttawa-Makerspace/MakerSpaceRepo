@@ -140,6 +140,7 @@ class Membership < ApplicationRecord
 
   def fetch_checkout_link
     draft = fetch_or_create_draft
+    draft = replace_draft_priced_for_now if draft && draft_price_changed?(draft)
     draft && draft['invoiceUrl']
   end
 
@@ -152,6 +153,32 @@ class Membership < ApplicationRecord
     raise 'Shopify did not answer the draft order check' if state == :error
 
     draft
+  end
+
+  # True when the draft's line was priced differently from what the tier charges this member now. A draft that
+  # does not say its price is taken as current.
+  def draft_price_changed?(draft)
+    amount = draft.dig('lineItems', 'nodes')&.first&.dig('originalUnitPriceSet', 'shopMoney', 'amount')
+    amount.present? && BigDecimal(amount) != membership_tier.price(user)
+  end
+
+  # Takes the out-of-date draft off this membership and deletes it on Shopify (see #discard_unused_draft), then
+  # makes a new one at today's price. The membership stays the one pending checkout.
+  def replace_draft_priced_for_now
+    stale_id = shopify_draft_order_id
+    discard_unused_draft(stale_id) if release_draft_id(stale_id)
+    fetch_or_create_draft
+  end
+
+  # Clears the stored draft id under the row lock, only while the membership is pending and still holds `stale_id`.
+  def release_draft_id(stale_id)
+    transaction do
+      lock!
+      next false unless pending? && shopify_draft_order_id == stale_id
+
+      update_column(:shopify_draft_order_id, nil)
+      true
+    end
   end
 
   def create_and_store_remote_draft_order

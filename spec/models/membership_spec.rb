@@ -223,6 +223,49 @@ RSpec.describe Membership, type: :model do
       expect(m.checkout_link).to be_nil
     end
 
+    describe ".begin_purchase" do
+      let!(:fake) { stub_shopify_admin! }
+
+      it "reuses the draft order of a pending checkout while the price is unchanged" do
+        first = Membership.begin_purchase(user, tier.id)
+        again = Membership.begin_purchase(user, tier.id)
+        expect(again).to eq(first)
+        expect(fake.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
+        expect(fake.deleted_ids).to be_empty
+      end
+
+      it "replaces the draft order of a pending checkout whose price has changed, deleting the old one" do
+        first = Membership.begin_purchase(user, tier.id)
+        old_id = first.shopify_draft_order_id
+        tier.update!(external_price: 55)
+        fake.draft_id = "gid://shopify/DraftOrder/9002"
+
+        again = Membership.begin_purchase(user, tier.id)
+
+        expect(again).to eq(first)
+        expect(again.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
+        expect(again).to be_pending
+        expect(fake.deleted_ids).to eq([old_id])
+        creates = fake.calls.select { |c| c[:query].include?("draftOrderCreate") }
+        expect(creates.last[:variables].dig(:input, :lineItems, 0, :originalUnitPrice)).to eq("55.0")
+      end
+
+      it "keeps the checkout when the old draft cannot be deleted, and reports it" do
+        first = Membership.begin_purchase(user, tier.id)
+        tier.update!(external_price: 55)
+        fake.draft_id = "gid://shopify/DraftOrder/9002"
+        fake.delete_user_errors = [{ "field" => "id", "message" => "not deletable" }]
+        allow(Rails.error).to receive(:report)
+
+        again = Membership.begin_purchase(user, tier.id)
+
+        expect(Rails.error).to have_received(:report)
+        expect(again.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
+        expect(user.memberships.pending.count).to eq(1)
+        expect(first.reload).to be_pending
+      end
+    end
+
     context "when the new draft order cannot be kept" do
       let!(:fake) { stub_shopify_admin! }
       let!(:m) { create(:membership, user: user, membership_tier: tier, status: "pending") }

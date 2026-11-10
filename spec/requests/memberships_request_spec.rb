@@ -177,6 +177,16 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(other.memberships.count).to eq(0)
       end
 
+      it "gives a reused pending membership a draft order at today's price" do
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        tier.update!(internal_price: 30, external_price: 55)
+        admin_client.draft_id = "gid://shopify/DraftOrder/9002"
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        expect(user.memberships.count).to eq(1)
+        expect(user.memberships.first.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
+        expect(admin_client.deleted_ids).to eq(["gid://shopify/DraftOrder/9001"])
+      end
+
       it "marks a pending membership whose draft order no longer exists failed and starts a new one" do
         post memberships_path, params: { membership: { membership_tier_id: tier.id } }
         old = user.memberships.first

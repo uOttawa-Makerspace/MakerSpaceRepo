@@ -48,6 +48,15 @@ module ShopifyConcern
             invoiceUrl
             status
             tags
+            lineItems(first: 10) {
+              nodes {
+                originalUnitPriceSet {
+                  shopMoney {
+                    amount
+                  }
+                }
+              }
+            }
             order {
               id
               fullyPaid
