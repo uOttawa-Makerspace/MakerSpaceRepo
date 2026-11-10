@@ -324,14 +324,17 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).not_to include("Staff-only news")
     end
 
-    # 'regular_user' announcements are never displayed to anyone (the partial only checks that one exists, then renders the 'all' ones a second time)
-    it "never shows regular_user announcements and renders 'all' twice for signed-in users when one exists" do
+    it "shows regular_user announcements to signed-in users only, once, apart from the 'all' ones" do
       ann!("regular_user", "Regular-only news")
       ann!("all", "Everyone news")
-      sign_in_as(:regular)
       get root_path
       expect(response.body).not_to include("Regular-only news")
-      expect(response.body.scan("Everyone news").size).to eq(2)
+      expect(response.body.scan("Everyone news").size).to eq(1)
+
+      sign_in_as(:regular)
+      get root_path
+      expect(response.body.scan("Regular-only news").size).to eq(1)
+      expect(response.body.scan("Everyone news").size).to eq(1)
       expect(response.body).to include("To All Users", "To All Visitors")
     end
 

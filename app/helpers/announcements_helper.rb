@@ -23,7 +23,7 @@ module AnnouncementsHelper
       groups = []
       groups << [:admins, visible.admins] if admin
       groups << [:staff, visible.staff] if staff
-      groups << [:all_users, visible.all_users] if signed_in? && Announcement.active.regular_user.exists?
+      groups << [:all_users, visible.regular_user] if signed_in?
       groups << [:all_visitors, visible.all_users]
       groups << [:volunteers, visible.volunteers] if volunteer || staff
       groups.flat_map { |group, scope| scope.order(:id).pluck(:id, :description).map { |id, text| [group, id, text] } }
