@@ -75,7 +75,7 @@ RSpec.describe CdelReportJob, type: :job do
       described_class.perform_now("2026-09")
 
       expect(ActionMailer::Base.deliveries.size).to eq(1)
-      expect(Setting.get("cdel_report_sent:2026-09")).to be_present
+      expect(Setting.get("cdel_report_sent:2026-09")).to eq("sent")
     end
 
     it "counts last month as the same month as its name" do
@@ -88,6 +88,26 @@ RSpec.describe CdelReportJob, type: :job do
       described_class.perform_now(month: "2026-09")
       described_class.perform_now(month: "2026-08")
       expect(ActionMailer::Base.deliveries.size).to eq(2)
+    end
+
+    it "is left alone while another run holds a recent claim" do
+      Setting.set("cdel_report_sent:2026-09", "claimed:#{10.minutes.ago.iso8601}")
+      described_class.perform_now(month: "2026-09")
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "is mailed by a later run when a claim was left behind and is older than half an hour" do
+      Setting.set("cdel_report_sent:2026-09", "claimed:#{31.minutes.ago.iso8601}")
+      described_class.perform_now(month: "2026-09")
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(Setting.get("cdel_report_sent:2026-09")).to eq("sent")
+    end
+
+    it "is mailed when forced even while a recent claim is held" do
+      Setting.set("cdel_report_sent:2026-09", "claimed:#{1.minute.ago.iso8601}")
+      described_class.perform_now(month: "2026-09", force: true)
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(Setting.get("cdel_report_sent:2026-09")).to eq("sent")
     end
 
     it "is mailed again when forced" do

@@ -4,15 +4,20 @@
 # (config/recurring.yml, the 1st of each month, for the month just ended; also
 # `rake "reports:send_cdel_report_to_sharepoint[2026-08]"`). Without a month it is last month, in the app time zone.
 #
-# A month is mailed once: the run records it in Setting (SENT_KEY_PREFIX + month) in the same transaction as the
-# delivery, so a failed delivery leaves nothing recorded and the next run sends it, while a second run (a rerun,
-# a retry, another worker) waits for the first one's row lock and then finds the month already sent. +force+
-# mails a month that was already sent (rake: FORCE=1).
+# A month is mailed once. A run first claims the month in Setting (SENT_KEY_PREFIX + month) in a short transaction
+# of its own: the value goes from empty to "claimed:<time>", and a second run (a rerun, a retry, another worker)
+# that finds a claim younger than CLAIM_TIMEOUT mails nothing. The reports are generated and the mail delivered
+# after that transaction has committed, and then the value becomes "sent". A run that raises hands its claim back,
+# so the next run sends the month. A run killed outright leaves its claim, which turns retryable once it is older
+# than CLAIM_TIMEOUT, so a month is never lost (a crash right after delivery can mail it twice). +force+ mails a
+# month whatever its state (rake: FORCE=1).
 class CdelReportJob < ApplicationJob
   queue_as :default
 
   RECIPIENT = "avendett@uottawa.ca"
   SENT_KEY_PREFIX = "cdel_report_sent:"
+  CLAIM_PREFIX = "claimed:"
+  CLAIM_TIMEOUT = 30.minutes
 
   class InvalidMonth < ArgumentError; end
 
@@ -24,11 +29,12 @@ class CdelReportJob < ApplicationJob
   def perform(positional_month = nil, month: nil, force: false)
     first_day = self.class.parse_month(month || positional_month)
     reported_month = first_day || Time.zone.today.prev_month.beginning_of_month
-    Setting.transaction do
-      next unless Setting.claim("#{SENT_KEY_PREFIX}#{reported_month.strftime("%Y-%m")}", "sent", force: force)
+    key = "#{SENT_KEY_PREFIX}#{reported_month.strftime("%Y-%m")}"
+    claim = claim_month(key, force)
+    return unless claim
 
-      MsrMailer.send_cdel_monthly_report(RECIPIENT, month: reported_month).deliver_now
-    end
+    deliver_or_release(key, claim, reported_month)
+    Setting.swap(key, claim, "sent")
   end
 
   def self.month_argument(arguments)
@@ -50,5 +56,30 @@ class CdelReportJob < ApplicationJob
     end
 
     first_day
+  end
+
+  private
+
+  # The value written to claim the month, or nil when another run has it (sent, or claimed less than
+  # CLAIM_TIMEOUT ago).
+  def claim_month(key, force)
+    claim = "#{CLAIM_PREFIX}#{Time.current.iso8601}"
+    return (Setting.claim(key, claim, force: true) ? claim : nil) if force
+
+    current = Setting.get(key)
+    return claim if Setting.swap(key, nil, claim)
+
+    claim if stale_claim?(current) && Setting.swap(key, current, claim)
+  end
+
+  def stale_claim?(value)
+    value.to_s.start_with?(CLAIM_PREFIX) && Time.zone.parse(value.delete_prefix(CLAIM_PREFIX)) < CLAIM_TIMEOUT.ago
+  end
+
+  def deliver_or_release(key, claim, reported_month)
+    MsrMailer.send_cdel_monthly_report(RECIPIENT, month: reported_month).deliver_now
+  rescue StandardError
+    Setting.swap(key, claim, nil)
+    raise
   end
 end
