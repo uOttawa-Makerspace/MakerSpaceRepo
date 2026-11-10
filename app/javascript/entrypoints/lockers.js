@@ -130,7 +130,7 @@ document.addEventListener("turbo:load", function () {
         render: {
           option: function (data, escape) {
             let itemtitle = escape(data.text);
-            let jsondata = data.data ? JSON.parse(data.data) : {};
+            let jsondata = (data.data && JSON.parse(data.data)) || {};
             let title = escape(jsondata.displayName || "");
             let sku = escape(jsondata.sku || "");
             let price = escape(jsondata.price || "");
@@ -238,9 +238,10 @@ document.addEventListener("turbo:load", function () {
           // 2. Update tooltip
           const tooltipWrapper = this.closest('[data-bs-toggle="tooltip"]');
           if (tooltipWrapper) {
-            tooltipWrapper.setAttribute("title", this.value || "No note");
+            // dispose puts the old text back as the title, so set the new text after it
             const existingTooltip = Tooltip.getInstance(tooltipWrapper);
             if (existingTooltip) existingTooltip.dispose();
+            tooltipWrapper.setAttribute("title", this.value || "No note");
             new Tooltip(tooltipWrapper);
           }
 

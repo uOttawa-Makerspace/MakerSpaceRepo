@@ -1,7 +1,31 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("bootstrap", () => ({ Tooltip: class {} }));
+// A tooltip like Bootstrap's: it moves the title into data-bs-original-title,
+// and dispose puts that stored text back as the title.
+vi.mock("bootstrap", () => {
+  const instances = new Map();
+  class Tooltip {
+    constructor(el) {
+      this.el = el;
+      el.setAttribute("data-bs-original-title", el.getAttribute("title"));
+      el.removeAttribute("title");
+      instances.set(el, this);
+    }
+    static getInstance(el) {
+      return instances.get(el);
+    }
+    dispose() {
+      this.el.setAttribute(
+        "title",
+        this.el.getAttribute("data-bs-original-title"),
+      );
+      this.el.removeAttribute("data-bs-original-title");
+      instances.delete(this.el);
+    }
+  }
+  return { Tooltip };
+});
 vi.mock("tom-select", () => ({ default: class {} }));
 vi.mock("datatables.net-bs5", () => ({ default: class {} }));
 vi.mock("datatables.net-select-bs5", () => ({}));
@@ -102,5 +126,36 @@ describe("locker inline edits", () => {
     expect(toasts).toEqual([
       { message: "Reload and retry [abcdef01]", type: "error" },
     ]);
+  });
+});
+
+describe("hover note after a note is saved", () => {
+  const hoverTextAfterSaving = async (before, typed) => {
+    const { Tooltip } = await import("bootstrap");
+    document.body.innerHTML = `
+      <div id="wrapper" data-bs-toggle="tooltip" title="${before}">
+        <input id="note" class="locker-inline-edit" name="locker[notes]" data-locker-id="4">
+      </div>`;
+    const wrapper = document.getElementById("wrapper");
+    new Tooltip(wrapper);
+    document.dispatchEvent(new Event("turbo:load"));
+    global.fetch = reply(204, {});
+    const note = document.getElementById("note");
+    note.value = typed;
+    note.dispatchEvent(new Event("change"));
+    await flush();
+    return Tooltip.getInstance(wrapper).el.getAttribute(
+      "data-bs-original-title",
+    );
+  };
+
+  it("shows the new note", async () => {
+    expect(await hoverTextAfterSaving("Placeholder", "Door sticks")).toBe(
+      "Door sticks",
+    );
+  });
+
+  it("shows the placeholder once the note is cleared", async () => {
+    expect(await hoverTextAfterSaving("Old note", "")).toBe("No note");
   });
 });
