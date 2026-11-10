@@ -332,25 +332,12 @@ class SubSpaceBookingController < SessionsController
   def approve
     sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
 
-    unless sub_space_booking.pending?
+    unless sub_space_booking.approve_if_pending!(by: current_user)
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
       return
     end
 
-    # 1. Update status
-    sub_space_booking.change_status!(BookingStatus.approved)
-    
-    # 2. Stamp the approval with update_columns, so a row that no longer passes
-    # some validation can still be approved. It writes only the approval
-    # columns, never the times, so the past-date rule (it checks only
-    # saves that set or move the times) allows approving a past pending booking.
-    sub_space_booking.update_columns(
-      approved_at: DateTime.now,
-      approved_by_id: current_user.id
-    )
-
-    # 3. Pass the integer ID to align with expected enqueued job arguments
     BookingMailer.send_booking_approved(sub_space_booking.id).deliver_later
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),

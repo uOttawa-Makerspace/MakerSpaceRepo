@@ -899,6 +899,36 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(status_name(booking)).to eq("Declined")
     end
 
+    it "approve mails the owner once and not again when the booking was approved meanwhile" do
+      staff = create(:user, :staff, booking_approval: true)
+      log_in!(staff)
+      booking = booking_by(create(:user, :regular_user, booking_approval: true))
+      # another request approves the row after this one has loaded it
+      allow(SubSpaceBooking).to receive(:find).and_wrap_original do |original, *args|
+        loaded = original.call(*args)
+        SubSpaceBooking.where(id: loaded.id).update_all(booking_status_id: @approved_status.id)
+        loaded
+      end
+
+      perform_enqueued_jobs do
+        put sub_space_booking_approve_path(sub_space_booking_id: booking.id)
+      end
+
+      expect(flash[:alert]).to eq("Booking for #{subspace.name} is no longer pending.")
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(booking.reload.approved_by_id).to be_nil
+    end
+
+    it "approve delivers the approved mail to the owner" do
+      log_in!(create(:user, :staff, booking_approval: true))
+      owner = create(:user, :regular_user, booking_approval: true)
+      booking = booking_by(owner)
+      perform_enqueued_jobs do
+        put sub_space_booking_approve_path(sub_space_booking_id: booking.id)
+      end
+      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([[owner.email]])
+    end
+
     it "the admin panel offers only the actions each booking can take" do
       log_in!(create(:user, :admin, booking_approval: true))
       owner = create(:user, :regular_user, booking_approval: true)
