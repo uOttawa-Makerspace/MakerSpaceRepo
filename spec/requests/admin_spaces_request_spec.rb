@@ -84,6 +84,25 @@ RSpec.describe "Admin spaces", type: :request do
         expect(Space.find_by!(name: "Beta")).to have_attributes(max_capacity: 7, keycode: "k1")
       end
 
+      it "creates the popular hour rows for the new space and none when the save fails" do
+        expect {
+          post admin_spaces_path, params: { space_params: { name: "Beta", max_capacity: 7, keycode: "k1" } }
+        }.to change(PopularHour, :count).by(168)
+        expect(Space.find_by!(name: "Beta").popular_hours.pluck(:day, :hour)).to match_array((0..6).to_a.product((0..23).to_a))
+
+        expect { post admin_spaces_path, params: { space_params: { name: "Beta" } } }.not_to change(PopularHour, :count)
+      end
+
+      it "stores no space and shows the reason, not a server error, when the popular hour rows cannot be inserted" do
+        allow(PopularHour).to receive(:insert_all).and_raise(ActiveRecord::StatementInvalid, "insert failed")
+        expect {
+          post admin_spaces_path, params: { space_params: { name: "Gamma", max_capacity: 7, keycode: "k9" } }
+        }.not_to change { [Space.count, PopularHour.count] }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to start_with("The space was not created. ").and include("popular hours")
+        expect(Space.find_by(name: "Gamma")).to be_nil
+      end
+
       it "alerts on a blank or duplicate name" do
         expect { post admin_spaces_path, params: { space_params: { name: "" } } }.not_to change(Space, :count)
         expect(flash[:alert]).to start_with("The space was not created. ")
