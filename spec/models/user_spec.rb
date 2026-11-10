@@ -1187,4 +1187,36 @@ RSpec.describe User, type: :model do
       expect(User.faculty_label(nil)).to eq("None")
     end
   end
+
+  describe "private profile section audiences" do
+    let(:owner) { create(:user, :regular_user) }
+    let(:other) { create(:user, :regular_user) }
+    let(:staff) { create(:user, :staff) }
+    let(:admin) { create(:user, :admin) }
+    let(:guest) { User.new }
+
+    it "shows keys to staff and admins only" do
+      expect([guest, other, owner].map { |v| owner.keys_visible_to?(v) }).to all(be(false))
+      expect([staff, admin].map { |v| owner.keys_visible_to?(v) }).to all(be(true))
+    end
+
+    it "shows lockers to the owner, staff and admins" do
+      expect([guest, other].map { |v| owner.lockers_visible_to?(v) }).to all(be(false))
+      expect([owner, staff, admin].map { |v| owner.lockers_visible_to?(v) }).to all(be(true))
+    end
+
+    it "shows roles to admins only" do
+      expect([guest, other, owner, staff].map { |v| owner.roles_visible_to?(v) }).to all(be(false))
+      expect(owner.roles_visible_to?(admin)).to be(true)
+    end
+
+    it "shows key certifications to admins, and to staff or teams members on their own profile" do
+      expect([guest, other, owner, staff].map { |v| owner.key_certification_visible_to?(v) }).to all(be(false))
+      expect(owner.key_certification_visible_to?(admin)).to be(true)
+      expect(staff.key_certification_visible_to?(staff)).to be(true)
+      owner.programs.create!(program_type: Program::TEAMS)
+      expect(owner.key_certification_visible_to?(owner)).to be(true)
+      expect(owner.key_certification_visible_to?(other)).to be(false)
+    end
+  end
 end

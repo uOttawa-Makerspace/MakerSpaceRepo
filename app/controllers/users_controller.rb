@@ -449,9 +449,6 @@ class UsersController < SessionsController
         training.learning_modules.where(level: levels).count +
           training.proficient_projects.where(level: levels).count
       end
-    @space_list = Space.all
-    @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
-
     if @user.key_certification.nil? && @user.eql?(@repo_user) &&
          (
            @user.staff? ||
@@ -461,11 +458,7 @@ class UsersController < SessionsController
       key_cert.save
     end
 
-    @keys_owned = @repo_user.keys
-    @keys_supervising = Key.where(supervisor_id: @repo_user.id)
-    @key_cert = @repo_user.key_certification
-
-    @locker_rentals = @repo_user.locker_rentals
+    load_private_profile_sections
 
     respond_to do |format|
       format.html
@@ -498,6 +491,20 @@ class UsersController < SessionsController
   end
 
   private
+
+  # Each private section is loaded only for a viewer who may see it.
+  def load_private_profile_sections
+    if @repo_user.roles_visible_to?(@user)
+      @space_list = Space.all
+      @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
+    end
+    if @repo_user.keys_visible_to?(@user)
+      @keys_owned = @repo_user.keys
+      @keys_supervising = Key.where(supervisor_id: @repo_user.id)
+    end
+    @key_cert = @repo_user.key_certification if @repo_user.key_certification_visible_to?(@user)
+    @locker_rentals = @repo_user.locker_rentals if @repo_user.lockers_visible_to?(@user)
+  end
 
   def ensure_staff
     return if @user.staff?

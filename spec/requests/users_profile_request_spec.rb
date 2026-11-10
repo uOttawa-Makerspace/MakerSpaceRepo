@@ -122,6 +122,56 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
+  describe "GET /:username private sections" do
+    let(:tabs) { %w[keys-manager profile-lockers key-certs-manager adminTabPane] }
+
+    def tabs_shown
+      tabs.select { |id| response.body.include?(%(id="#{id}")) }
+    end
+
+    it "shows a guest and another regular user none of them" do
+      get user_path(user.username)
+      expect(tabs_shown).to be_empty
+      login!(other)
+      get user_path(user.username)
+      expect(tabs_shown).to be_empty
+    end
+
+    it "shows the owner the lockers" do
+      login!(user)
+      get user_path(user.username)
+      expect(tabs_shown).to eq(%w[profile-lockers])
+    end
+
+    it "shows staff the keys and lockers" do
+      login!(staff)
+      get user_path(user.username)
+      expect(tabs_shown).to eq(%w[keys-manager profile-lockers])
+    end
+
+    it "shows staff the key certification upload forms on the first visit to their own profile" do
+      expect(staff.key_certification).to be_nil
+      login!(staff)
+      get user_path(staff.username)
+      expect(response.body).not_to include("You have no key certifications")
+      expect(response.body).to include("pdf_file_1_form")
+    end
+
+    it "shows a Teams member the key certification upload forms on the first visit to their own profile" do
+      user.programs.create!(program_type: Program::TEAMS)
+      login!(user)
+      get user_path(user.username)
+      expect(response.body).not_to include("You have no key certifications")
+      expect(response.body).to include("pdf_file_1_form")
+    end
+
+    it "shows an admin every section" do
+      login!(admin)
+      get user_path(user.username)
+      expect(tabs_shown).to match_array(tabs)
+    end
+  end
+
   describe "GET /:username (show)" do
     it "guest: 200 public profile page" do
       get user_path(user.username)

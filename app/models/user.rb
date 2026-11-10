@@ -951,6 +951,24 @@ class User < ApplicationRecord
     role == 'admin'
   end
 
+  # Who may see the private sections of this user's profile. Each section
+  # keeps the audience its tab has always had.
+  def keys_visible_to?(viewer)
+    viewer.staff?
+  end
+
+  def lockers_visible_to?(viewer)
+    viewer == self || viewer.staff?
+  end
+
+  def roles_visible_to?(viewer)
+    viewer.admin?
+  end
+
+  def key_certification_visible_to?(viewer)
+    viewer.admin? || (viewer == self && (staff? || programs.exists?(program_type: Program::TEAMS)))
+  end
+
   # Admin lock: blocks new logins for 99 years AND ends every existing session and JWT
   # for good by bumping token_version. The bump is a SQL increment (not
   # token_version + 1 computed from a possibly stale in-memory value), so a password
