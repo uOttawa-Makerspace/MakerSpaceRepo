@@ -193,6 +193,25 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include("Submit request")
     end
 
+    it "preselects the only request type, and asks a student to choose between several" do
+      log_in!(owner)
+      get new_locker_rental_path
+      expect(response.body).to match(%r{<option selected="selected" value="general">General request</option>})
+      expect(response.body).not_to include("Choose one")
+
+      log_in!(create(:user, :student))
+      get new_locker_rental_path
+      expect(response.body).to include('<option value="">Choose one</option>')
+      expect(response.body).not_to include('selected="selected" value="student"')
+    end
+
+    it "keeps the chosen request type selected when a student's request is refused" do
+      log_in!(create(:user, :student))
+      post locker_rentals_path, params: { locker_rental: { requested_as: "student", section_name: "A4" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to match(%r{<option selected="selected" value="student">GNG student</option>})
+    end
+
     it "shows the audience-filtered available counts (a community user sees 'general' only)" do
       log_in!(owner)
       size = create(:locker_size)
