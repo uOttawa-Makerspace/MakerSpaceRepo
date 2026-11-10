@@ -440,6 +440,8 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect { post faqs_path, params: valid_params }.to change(Faq, :count).by(1)
       expect(response).to have_http_status(:ok)
       expect(flash[:notice]).to eq("Created FAQ successfully")
+      get faqs_path
+      expect(flash[:notice]).to be_nil
 
       patch faq_path(faq1), params: { faq: { title_en: "Edited" } }
       expect(response).to redirect_to(faqs_path)
