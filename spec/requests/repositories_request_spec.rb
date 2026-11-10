@@ -1110,6 +1110,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.reload.users).to eq([owner])
     end
 
+    it "remove_member says the user is not a member instead of reporting a removal" do
+      repo.users << newbie
+      content_login!(owner)
+      patch remove_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_id: stranger.id } }
+      expect(flash[:alert]).to eq("This user is not a member of this repository.")
+      expect(flash[:notice]).to be_nil
+      expect(repo.reload.users).to contain_exactly(owner, newbie)
+    end
+
     it "remove_member protects the last member and the owner, and reports unknown users" do
       content_login!(owner)
       patch remove_member_repositories_path(owner.username),
