@@ -388,10 +388,18 @@ onPageLoad("#eventModal", async () => {
     if (!confirmExit) {
       e.preventDefault();
       e.stopPropagation();
+      return;
     }
+    delete modal.dataset.shown;
+  });
+  // Ready signal: set once the open transition has finished, since a modal
+  // still fading in ignores a close request
+  modal.addEventListener("shown.bs.modal", () => {
+    modal.dataset.shown = "true";
   });
   // Reset the form
   modal.addEventListener("hidden.bs.modal", () => {
+    delete modal.dataset.shown;
     const form = modal.querySelector("#eventModal form");
     form.reset();
     allDayCheckbox.checked = false;

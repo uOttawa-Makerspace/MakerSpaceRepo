@@ -504,4 +504,28 @@ describe("submit", () => {
     submit();
     expect($("title").value).toBe("   ");
   });
+  it("marks the event window ready once shown and clears it on a confirmed close", async () => {
+    await load();
+    const modal = $("eventModal");
+    fire(modal, "shown.bs.modal");
+    expect(modal.dataset.shown).toBe("true");
+
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
+    modal.dispatchEvent(new Event("hide.bs.modal", { cancelable: true }));
+    expect(modal.dataset.shown).toBe("true");
+
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => true),
+    );
+    modal.dispatchEvent(new Event("hide.bs.modal", { cancelable: true }));
+    expect(modal.dataset.shown).toBeUndefined();
+
+    fire(modal, "shown.bs.modal");
+    fire(modal, "hidden.bs.modal");
+    expect(modal.dataset.shown).toBeUndefined();
+  });
 });

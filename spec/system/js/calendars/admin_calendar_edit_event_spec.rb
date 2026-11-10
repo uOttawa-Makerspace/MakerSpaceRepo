@@ -36,7 +36,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
   def open_event(title, index: 0)
     expect(page).to have_css(".fc-timegrid-event", text: title, visible: :all)
     page.all(".fc-timegrid-event", text: title, visible: :all)[index].click
-    expect(page).to have_css("#eventModal.show")
+    expect(page).to have_css("#eventModal[data-shown='true']")
   end
 
   def create_series(title: "Open lab", rule: "DTSTART:20270315T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270331T235959Z")
@@ -124,7 +124,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       open_admin_calendar
       expect(page).to have_css(".fc-daygrid-event", text: "Closed", visible: :all)
       find(".fc-daygrid-event", text: "Closed", visible: :all).click
-      expect(page).to have_css("#eventModal.show")
+      expect(page).to have_css("#eventModal[data-shown='true']")
 
       expect(page).to have_checked_field("all_day_checkbox")
       expect(page).to have_field("end_time_field", disabled: true)
@@ -325,7 +325,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       open_admin_calendar
       expect(page).to have_css(".fc-timegrid-event", text: "Wanda Worker", visible: :all)
       page.all(".fc-timegrid-event", text: "Wanda Worker", visible: :all).first.click
-      expect(page).to have_css("#eventModal.show")
+      expect(page).to have_css("#eventModal[data-shown='true']")
       expect(find("#title", visible: :all).value).to eq("")
       open_custom_values
       fill_in "description", with: "Calculus tutorial"

@@ -168,12 +168,17 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(joins.map { |j| [j.state, j.state_changed_at, j.state_changed_by_id] }).to eq([["joined", nil, nil]] * 2)
     end
 
-    # only the hours are validated: negative cc, zero seats, blank title and arbitrary status are stored
-    it "stores negative cc, zero seats, an empty title and a bogus status" do
-      post volunteer_tasks_path, params: task_params(title: "", cc: -50, hours: 3, joins: 0, status: "bogus")
-      expect(response).to redirect_to(volunteer_tasks_path)
-      created = VolunteerTask.last
-      expect(created.attributes.values_at("title", "cc", "joins", "status")).to eq(["", -50, 0, "bogus"])
+    {
+      { title: "" } => "Title This field is required.",
+      { cc: -50 } => "Cc must be greater than or equal to 0",
+      { joins: 0 } => "Joins must be greater than or equal to 1",
+      { status: "bogus" } => "Status Selection is not valid."
+    }.each do |attrs, message|
+      it "refuses #{attrs.inspect} and creates nothing" do
+        expect { post volunteer_tasks_path, params: task_params(**attrs) }.not_to change(VolunteerTask, :count)
+        expect(response).to redirect_to(new_volunteer_task_path)
+        expect(flash[:alert]).to eq(message)
+      end
     end
 
     { 0 => "must be greater than 0", -3 => "must be greater than 0", "abc" => "is not a number", "" => "is not a number" }.each do |hours, reason|

@@ -87,17 +87,100 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     XLSX_TYPES.each do |type|
-      # N+1 pinned (certifications/trainings/training_attendees load associations they never use)
-      pinned = %w[certifications trainings training_attendees].include?(type)
-      it "renders the #{type} report for a date range", skip_bullet: pinned do
+      it "renders the #{type} report for a date range" do
         get admin_report_generator_index_path, params: range.merge(report_type: type)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include('id="report"')
       end
     end
 
-    # N+1 pinned
-    it "renders every dispatched report type without dates (all time)", skip_bullet: true do
+    context "with several records of each kind" do
+      before do
+        other_space = create(:space, name: "Second Space")
+        other_training = create(:training, name_en: "Saw Basics")
+        other_session = create(:training_session, space: other_space, training: other_training,
+                                                  created_at: march_10)
+        other_session.users << world[:visitor]
+        create(:certification, user: world[:visitor], training_session: other_session,
+                               training: other_training, space: other_space, created_at: march_10)
+        create(:project_kit, user: world[:visitor], proficient_project: create(:proficient_project),
+                             created_at: march_10)
+      end
+
+      %w[certifications trainings training_attendees kit_purchased].each do |type|
+        it "renders the #{type} report without a query per record" do
+          get admin_report_generator_index_path, params: range.merge(report_type: type)
+          expect(response).to have_http_status(:ok)
+          expect(response.body).to include('id="report"')
+        end
+      end
+
+      it "training_attendees: a session with no training or no instructor renders as Unknown" do
+        session = create(:training_session, space: world[:space], training: create(:training), user: create(:user, :staff), created_at: march_10)
+        session.update_columns(training_id: nil, user_id: nil)
+        create(:certification, user: world[:visitor], training_session: session, created_at: march_10)
+        get admin_report_generator_index_path, params: range.merge(report_type: "training_attendees")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Unknown")
+      end
+
+      it "certifications: a certificate earned through a proficient project counts under that project's training" do
+        project_training = create(:training, name_en: "Project Training")
+        project = create(:proficient_project, training: project_training)
+        2.times do
+          cert = create(:certification, user: world[:visitor], training_session: nil, created_at: march_10)
+          create(:proficient_project_session, certification: cert, user: world[:visitor], proficient_project: project, level: "Beginner")
+        end
+        get admin_report_generator_index_path, params: range.merge(report_type: "certifications")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Project Training").and include("Laser Basics").and include("Saw Basics")
+      end
+
+      it "certifications: a project certificate whose project has no training counts under unknown" do
+        project = create(:proficient_project, training: nil)
+        cert = create(:certification, user: world[:visitor], training_session: nil, created_at: march_10)
+        create(:proficient_project_session, certification: cert, user: world[:visitor], proficient_project: project, level: "Beginner")
+        get admin_report_generator_index_path, params: range.merge(report_type: "certifications")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("unknown")
+      end
+
+      it "certifications: a project certificate whose project session lost its project counts under unknown" do
+        cert = create(:certification, user: world[:visitor], training_session: nil, created_at: march_10)
+        pps = create(:proficient_project_session, certification: cert, user: world[:visitor],
+                                                  proficient_project: create(:proficient_project), level: "Beginner")
+        pps.update_columns(proficient_project_id: nil)
+        get admin_report_generator_index_path, params: range.merge(report_type: "certifications")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("unknown")
+      end
+
+      it "certifications: a project certificate whose project lost its training counts under unknown" do
+        project = create(:proficient_project, training: create(:training, name_en: "Gone Training"))
+        project.update_columns(training_id: nil)
+        cert = create(:certification, user: world[:visitor], training_session: nil, created_at: march_10)
+        create(:proficient_project_session, certification: cert, user: world[:visitor], proficient_project: project, level: "Beginner")
+        get admin_report_generator_index_path, params: range.merge(report_type: "certifications")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("unknown")
+        expect(response.body).not_to include("Gone Training")
+      end
+
+      it "certifications: a certificate with neither a session nor a project session counts under unknown" do
+        create(:certification, user: world[:visitor], training_session: nil, created_at: march_10)
+        get admin_report_generator_index_path, params: range.merge(report_type: "certifications")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("unknown")
+      end
+
+      it "downloads the kit_purchased spreadsheet without a query per record" do
+        get admin_report_generator_generate_spreadsheet_path, params: { type: "kit_purchased" }.merge(range)
+        expect(response).to have_http_status(:ok)
+        expect(c18_xlsx_sheets(response.body).fetch("Report")[5..].size).to eq(2)
+      end
+    end
+
+    it "renders every dispatched report type without dates (all time)" do
       REPORT_TYPES.each do |type|
         get admin_report_generator_index_path, params: { report_type: type }
         expect(response).to have_http_status(:ok), "#{type}: #{response.status}"
@@ -370,8 +453,7 @@ RSpec.describe "Admin report generator", type: :request do
       expect(rows.size).to eq(6)
     end
 
-    # N+1 pinned (kit report loads proficient_project and user per kit)
-    it "kit_purchased: a delivered kit says Delivered", skip_bullet: true do
+    it "kit_purchased: a delivered kit says Delivered" do
       create(:project_kit, :"delivered", user: world[:visitor], created_at: march_10)
       fetch_xlsx("kit_purchased", range)
       statuses = c18_xlsx_sheets(response.body).fetch("Report")[5..].map { |r| r[3] }
