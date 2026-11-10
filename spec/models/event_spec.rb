@@ -199,4 +199,17 @@ RSpec.describe Event, type: :model do
       end
     end
   end
+
+  describe "a stored repeat rule with an unreadable start" do
+    let(:bad_rule) { "DTSTART;TZID=Nowhere/Land:20270401T100000\nRRULE:FREQ=DAILY" }
+
+    it "still saves an unrelated change, but validates a changed rule" do
+      event = build_event.tap(&:save!)
+      event.update_column(:recurrence_rule, bad_rule)
+      event.reload
+      expect(event.update(title: "Renamed")).to be(true)
+      expect(event.update(recurrence_rule: "#{bad_rule}\nEXDATE:20270402T140000Z")).to be(false)
+      expect(event.errors[:recurrence_rule]).to eq([RecurrenceRuleValidator::UNPARSEABLE])
+    end
+  end
 end

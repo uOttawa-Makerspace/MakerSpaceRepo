@@ -217,9 +217,18 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
       end
     end
 
-    it "a range that does not include the 1st of the month sees no months" do
+    it "a range that starts mid-month still counts that month, with only the certificates inside the range" do
+      outside = create(:training_session, space: alpha, created_at: Time.utc(2026, 3, 25, 15))
+      3.times { create(:certification, training_session: outside, created_at: Time.utc(2026, 3, 25, 15)) }
       report("training_attendees", start_date: "2026-03-05", end_date: "2026-03-20")
-      expect(ivar(:monthly_average)).to eq({})
+      expect(ivar(:monthly_average)).to eq("March 2026" => 2.0)
+    end
+
+    it "a range over two partial months gives each month its own average" do
+      april = create(:training_session, space: alpha, created_at: Time.utc(2026, 4, 5, 15))
+      create(:certification, training_session: april, created_at: Time.utc(2026, 4, 5, 15))
+      report("training_attendees", start_date: "2026-03-05", end_date: "2026-04-10")
+      expect(ivar(:monthly_average)).to eq("March 2026" => 2.0, "April 2026" => 1.0)
     end
 
     it "without dates walks every month since June 2015 up to now and keeps each year's month apart, oldest first" do

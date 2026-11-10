@@ -1993,7 +1993,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_120000) do
   add_foreign_key "sub_space_bookings", "booking_statuses"
   add_foreign_key "sub_space_bookings", "recurring_bookings"
   add_foreign_key "sub_space_bookings", "sub_space_booking_statuses"
-  add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
+  add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :restrict
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_space_bookings", "users", column: "approved_by_id"
   add_foreign_key "sub_spaces", "spaces"
