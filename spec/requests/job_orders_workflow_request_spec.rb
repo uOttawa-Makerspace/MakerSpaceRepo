@@ -125,6 +125,26 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(deliveries.last.subject).to eq("Your job ##{order.id} has been declined")
     end
 
+    it "declines an already declined order only once: no second status row, comment or email" do
+      session_login!(staff)
+      patch job_order_quote_path(order), params: { approved: "false", user_comments: "Sorry, we cannot make this" }
+      deliveries.clear
+      patch job_order_quote_path(order), params: { approved: "false", user_comments: "Sorry again" }
+
+      expect(status_names(order).count("Declined")).to eq(1)
+      expect(order.chat_messages.pluck(:message)).to eq(["Sorry, we cannot make this"])
+      expect(deliveries).to be_empty
+      expect(response).to redirect_to(job_order_path(order))
+      expect(flash[:alert]).to be_present
+    end
+
+    it "still lets a declined order be quoted again" do
+      session_login!(staff)
+      patch job_order_quote_path(order), params: { approved: "false" }
+      patch job_order_quote_path(order), params: quote_params(task)
+      expect(status_names(order)).to end_with("Declined", "Waiting for User Approval")
+    end
+
     it "pins what happens to a disallowed staff file: the attach is ignored and the quote still completes" do
       session_login!(staff)
       patch job_order_quote_path(order),

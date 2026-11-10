@@ -216,6 +216,11 @@ class JobOrder < ApplicationRecord
      JobStatus.waiting_processed, JobStatus.being_processed, JobStatus.completed, JobStatus.declined]
   end
 
+  # Every status an order may be declined from: the quotable ones, except an order that is already declined.
+  def self.declinable_statuses
+    quotable_statuses - [JobStatus.declined]
+  end
+
   # The approve link is bound to the latest quote boundary: the newest "Waiting for User Approval" row (a re-quote
   # retires older links) or "Waiting for Staff Approval" row (an order sent back for a new quote, retires
   # the link of the quote it replaced). A reminder moves neither, so it keeps the link.

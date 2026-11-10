@@ -207,7 +207,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       end
     elsif params[:approved] == "false"
       # DECLINE JOB. Never once paid (transition! reads the status under the row lock).
-      declined = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus.declined, actor: @user)
+      declined = @job_order.transition!(from: JobOrder.declinable_statuses, to: JobStatus.declined, actor: @user)
 
       if declined.ok?
         post_user_comment
