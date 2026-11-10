@@ -34,8 +34,6 @@ module JsErrorCheck
     # the home/changelog hours widget calls /open_hours, which
     # fetches external ICS feeds (unreachable in tests: 500).
     { id: "js-error-07", path: %r{/open_hours}, message: %r{/open_hours - Failed to load resource: .* 500} },
-    # announcements/new inline script uses a global flatpickr that is not loaded.
-    { id: "js-error-08", path: %r{/admin/announcements/new}, message: /announcements\/new \d+:\d+ Uncaught ReferenceError: flatpickr is not defined/ },
     # the badge SVG is rendered with empty width/height attributes.
     { id: "js-error-10", path: %r{/badges/\d+}, message: /Error: <svg> attribute (width|height): Unexpected end of attribute/ },
     # the admin calendar script requests its JSON endpoints with an
