@@ -334,7 +334,7 @@ class Admin::UsersController < AdminAreaController
 
   # SECURITY FIX: Safe join without user input in SQL string
   def sanitized_pi_readers_join
-    "INNER JOIN pi_readers ON lab_sessions.pi_mac_address = pi_readers.mac_address"
+    "INNER JOIN pi_readers ON lab_sessions.mac_address = pi_readers.pi_mac_address"
   end
 
   # ============================================

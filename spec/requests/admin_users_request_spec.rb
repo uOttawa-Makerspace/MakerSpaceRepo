@@ -116,6 +116,24 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "index p=signed_in_users filters by the reader's location" do
+      space = create(:space)
+      reader = create(:pi_reader, pi_location: "Main Room", space: space)
+      other_reader = create(:pi_reader, pi_location: "Back Room", space: space)
+      here = create(:user, :regular_user)
+      there = create(:user, :regular_user)
+      create(:lab_session, user_id: here.id, space: space, mac_address: reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      create(:lab_session, user_id: there.id, space: space, mac_address: other_reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+
+      get admin_users_path(p: "signed_in_users", location: "main room")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(here.username)
+      expect(response.body).not_to include(there.username)
+    end
+
     it "index: unknown p redirects with 'Invalid parameters!'" do
       get admin_users_path(p: "bogus")
       expect(response).to redirect_to(admin_users_path)
