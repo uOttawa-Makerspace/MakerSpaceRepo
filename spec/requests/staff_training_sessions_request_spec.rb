@@ -423,10 +423,26 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(flash[:alert]).to include("certifications")
       end
 
-      it "deletes a session without certifications, with its exams, redirecting to the staff dashboard" do
+      it "keeps a session whose only certification is demoted, and its exams" do
+        cert = create(:certification, training_session: record, training: training)
+        cert.update!(active: false)
         create(:exam, training_session: record)
         expect { delete staff_training_session_path(record) }
-          .to change(TrainingSession, :count).by(-1).and change(Exam, :count).by(-1)
+          .not_to change { [TrainingSession.count, Certification.unscoped.count, Exam.count] }
+        expect(flash[:alert]).to start_with("The training session was not deleted.")
+        expect(flash[:alert]).to include("certifications")
+      end
+
+      it "keeps a session that has exams" do
+        create(:exam, training_session: record)
+        expect { delete staff_training_session_path(record) }
+          .not_to change { [TrainingSession.count, Exam.count] }
+        expect(flash[:alert]).to include("exams")
+      end
+
+      it "deletes a session without certifications or exams, redirecting to the staff dashboard" do
+        expect { delete staff_training_session_path(record) }
+          .to change(TrainingSession, :count).by(-1)
         expect(response).to redirect_to(staff_dashboard_index_path)
         expect(flash[:notice]).to eq("Deleted Successfully")
       end

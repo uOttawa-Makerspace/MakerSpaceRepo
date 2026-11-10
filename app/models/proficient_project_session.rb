@@ -5,7 +5,7 @@ class ProficientProjectSession < ApplicationRecord
 
   # A session always holds the certification it awarded and is the only record of how it was earned,
   # so a session is never deleted.
-  before_destroy :keep_certification
+  before_destroy :refuse_destroy
 
   enum :level, {
          beginner: "Beginner",
@@ -34,8 +34,8 @@ class ProficientProjectSession < ApplicationRecord
 
   private
 
-  def keep_certification
-    errors.add(:base, "This session holds a certification, so it cannot be deleted.")
+  def refuse_destroy
+    errors.add(:base, :holds_certification)
     throw :abort
   end
 end

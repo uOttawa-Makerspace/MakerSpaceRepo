@@ -424,11 +424,16 @@ RSpec.describe "Admin training area", type: :request do
           expect(flash[:alert]).to start_with("The training session was not deleted.")
         end
 
-        it "deletes a session without certifications, with its exams, redirecting back with a notice" do
+        it "keeps a session that has exams" do
           create(:exam, training_session: session_record)
           expect { delete session_path(session_record) }
+            .not_to change { [TrainingSession.count, Exam.count] }
+          expect(flash[:alert]).to include("exams")
+        end
+
+        it "deletes a session without certifications or exams, redirecting back with a notice" do
+          expect { delete session_path(session_record) }
             .to change(TrainingSession, :count).by(-1)
-            .and change(Exam, :count).by(-1)
           expect(flash[:notice]).to eq("Deleted Successfully")
           expect(response).to redirect_to(root_path)
         end

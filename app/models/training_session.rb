@@ -5,8 +5,11 @@ class TrainingSession < ApplicationRecord
   # The instructor, including one whose account was soft-deleted: past sessions keep their instructor.
   belongs_to :user, -> { including_deleted }, optional: true
   belongs_to :space, optional: true
-  has_many :certifications, dependent: :restrict_with_error
-  has_many :exams, dependent: :destroy
+  has_many :certifications
+  # Every certification the session awarded, demoted ones too (certifications are active-only by default):
+  # a session that awarded any, or has exams, cannot be deleted.
+  has_many :awarded_certifications, -> { unscope(where: :active) }, class_name: "Certification", dependent: :restrict_with_error
+  has_many :exams, dependent: :restrict_with_error
   # This used to be a has_many
   #has_many :users, through: :training_sessions_users, uniq: true
   has_and_belongs_to_many :users

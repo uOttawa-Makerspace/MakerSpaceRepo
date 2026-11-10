@@ -350,6 +350,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         create(:proficient_project_session, proficient_project: project)
         delete proficient_project_path(project, format: :json)
         expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"].to_sentence).to include("proficient project sessions")
         expect(ProficientProject.exists?(project.id)).to be(true)
       end
 

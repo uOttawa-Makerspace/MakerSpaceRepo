@@ -4,6 +4,8 @@ fr:
   activerecord:
     errors:
       models:
+        proficient_project_session:
+          holds_certification: "Cette séance détient une certification et ne peut donc pas être supprimée."
         key_request:
           attributes:
             user:
