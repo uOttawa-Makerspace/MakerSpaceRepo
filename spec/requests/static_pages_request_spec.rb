@@ -328,7 +328,7 @@ RSpec.describe "Static pages", type: :request do
       user.programs.create!(program_type: Program::VOLUNTEER)
       space = create(:space, name: "Task Lab")
       open_task = create(:volunteer_task, space: space, title: "Sweep the workshop floor")
-      closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "closed")
+      closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "completed")
       [open_task, closed_task].each do |task|
         create(:volunteer_task_join, :active, volunteer_task: task, user: user, user_type: "Volunteer")
       end
