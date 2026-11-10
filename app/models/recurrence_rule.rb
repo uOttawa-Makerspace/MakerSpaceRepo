@@ -12,10 +12,26 @@ class RecurrenceRule
   WALL_STAMP = "%Y%m%dT%H%M%S"
   ZONE = ActiveSupport::TimeZone["America/Toronto"]
 
-  # The instant of a DTSTART line: a stamp ending in Z is UTC; one without is
-  # wall-clock time in its TZID, or in Toronto when it names none. Nil when the
-  # line has no stamp; raises ArgumentError for a stamp or zone that cannot be read.
+  # The instant of a DTSTART line, or nil when it has none or cannot be read
+  # (readers then fall back to the series start).
   def self.start_of(line)
+    parse_start(line)
+  rescue ArgumentError
+    nil
+  end
+
+  # False when the line has a stamp or zone that start_of cannot read.
+  def self.readable_start?(line)
+    parse_start(line)
+    true
+  rescue ArgumentError
+    false
+  end
+
+  # A stamp ending in Z is UTC; one without is wall-clock time in its TZID, or
+  # in Toronto when it names none. Nil when the line has no stamp; raises
+  # ArgumentError for a stamp or zone that cannot be read.
+  def self.parse_start(line)
     params, stamp = line.delete_prefix("DTSTART").split(":", 2)
     return if stamp.blank?
     return Time.parse(stamp) if stamp.end_with?("Z")
@@ -24,6 +40,7 @@ class RecurrenceRule
     zone = ActiveSupport::TimeZone[zone_name] or raise ArgumentError, "unknown time zone #{zone_name}"
     zone.parse(stamp) or raise ArgumentError, "unreadable start #{stamp}"
   end
+  private_class_method :parse_start
 
   # `series_start` stands in for a rule stored without a DTSTART.
   def initialize(text, series_start)

@@ -89,6 +89,16 @@ RSpec.describe "Admin events contract", type: :request do
     expect(event.reload.draft).to be(true)
   end
 
+  it "saves an unrelated edit of a legacy draft with an invalid rule" do
+    event = create(:event, :draft, space: space)
+    event.update_column(:recurrence_rule, "DTSTART:20270301T150000Z\nRRULE:FREQ=MINUTELY")
+    event.reload
+    expect(event.update(title: "Renamed")).to be(true)
+    expect(event.reload.title).to eq("Renamed")
+    expect(event.update(draft: false)).to be(false)
+    expect(event.reload.draft).to be(true)
+  end
+
   it "batch publish reports a legacy draft with an invalid rule instead of ignoring it" do
     travel_to(Time.zone.local(2027, 4, 1, 18, 0)) do
       good = create(:event, :draft, space: space)

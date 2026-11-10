@@ -16,10 +16,10 @@ class Event < ApplicationRecord
   validates :recurrence_rule, recurrence_rule: true, if: :check_recurrence_rule?
   validate :weekly_frequency_must_contain_days
 
-  # The repeat rule is checked when it changes and when a draft is published, so a
+  # The repeat rule is checked when it changes and when a draft is published (not when an event goes back to draft), so a
   # stored rule that is no longer valid cannot go live but does not block other edits.
   def check_recurrence_rule?
-    will_save_change_to_recurrence_rule? || will_save_change_to_draft?
+    will_save_change_to_recurrence_rule? || will_save_change_to_draft?(from: true, to: false)
   end
 
   # Single source of truth for event title formatting across the entire app

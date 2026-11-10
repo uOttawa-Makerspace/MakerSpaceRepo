@@ -68,10 +68,7 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
 
   # Every DTSTART line must be a start the series edits (RecurrenceRule) can read.
   def self.readable_starts?(value)
-    RecurrenceExpansion.lines(value).select { |l| l.start_with?("DTSTART") }.each { |l| RecurrenceRule.start_of(l) }
-    true
-  rescue ArgumentError
-    false
+    RecurrenceExpansion.lines(value).select { |l| l.start_with?("DTSTART") }.all? { |l| RecurrenceRule.readable_start?(l) }
   end
 
   # The RRULE: lines (what the forms produce), stripped like the controllers' parser.
