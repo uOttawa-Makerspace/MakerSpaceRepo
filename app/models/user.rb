@@ -440,11 +440,11 @@ class User < ApplicationRecord
   }
   
   scope :not_created_this_year, -> {
-    where.not(created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year)
+    where.not(created_at: Time.current.beginning_of_year..Time.current.end_of_year)
   }
   
   scope :created_this_year, -> {
-    where(created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year)
+    where(created_at: Time.current.beginning_of_year..Time.current.end_of_year)
   }
   
   scope :staff, -> { where(role: %w[admin staff]) }
