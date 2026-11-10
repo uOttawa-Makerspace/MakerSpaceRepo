@@ -226,10 +226,10 @@ module CalendarHelper
   def ics_main_event(main_event, modified_instances, group_id:, name:)
     start_time = safe_to_time(main_event.dtstart)
     end_time = safe_to_time(main_event.dtend)
-    return report_ics_event_without_start(main_event, group_id) if start_time.nil?
+    return report_ics_event_problem("ICS event has no usable start", main_event, group_id) if start_time.nil?
 
     rrule_obj = main_event.rrule&.first
-    return if ics_event_over?(rrule_obj, start_time, end_time)
+    return if ics_event_over?(rrule_obj, start_time, end_time) { |message| report_ics_event_problem(message, main_event, group_id) }
 
     event_hash = {
       id: main_event.uid,
@@ -297,18 +297,18 @@ module CalendarHelper
 
   # Whether an event no longer needs showing: a single event that ended, or a series that stopped, more than two
   # months ago.
-  def ics_event_over?(rrule_obj, start_time, end_time)
-    rrule_obj.present? ? series_ended?(rrule_obj, start_time) : stale_event?(end_time || start_time)
+  def ics_event_over?(rrule_obj, start_time, end_time, &report)
+    rrule_obj.present? ? series_ended?(rrule_obj, start_time, &report) : stale_event?(end_time || start_time)
   end
 
   # Whether a repeating series stopped (by its UNTIL date, or after its COUNT occurrences) more than two months
   # ago. A series that never ends, or whose end cannot be worked out, is not ended.
-  def series_ended?(rrule_obj, start_time)
+  def series_ended?(rrule_obj, start_time, &report)
     cutoff = Time.now.utc - 2.months
     until_time = safe_to_time(rrule_obj.until)
     return true if until_time && until_time < cutoff
 
-    counted_series_ended_before?(rrule_obj, start_time, cutoff)
+    counted_series_ended_before?(rrule_obj, start_time, cutoff, &report)
   end
 
   # Whether all the occurrences of a series with a COUNT fall before the cutoff. A very long count, and a rule
@@ -320,7 +320,10 @@ module CalendarHelper
     start = start_time.in_time_zone(RecurrenceRule::ZONE)
     found = RecurrenceExpansion.occurrences(convert_rrule_to_string(rrule_obj), start, start, cutoff, count)
     found.occurrences.size == count
-  rescue ArgumentError
+  rescue ArgumentError, NoMethodError
+    # IceCube raises ArgumentError for a rule it does not support, and NoMethodError for some out-of-range values
+    # (for example BYYEARDAY=400). The series is kept and the problem reported; the rest of the feed is unaffected.
+    yield "ICS series has a rule that cannot be expanded"
     false
   end
 
@@ -335,9 +338,9 @@ module CalendarHelper
   end
 
   # Reports an event that cannot be placed on the calendar; returns nil so the caller leaves it out.
-  def report_ics_event_without_start(event, group_id)
+  def report_ics_event_problem(message, event, group_id)
     Rails.error.report(
-      ArgumentError.new("ICS event has no usable start"),
+      ArgumentError.new(message),
       handled: true, severity: :warning, context: { event_uid: event.uid.to_s, calendar: group_id }
     )
     nil

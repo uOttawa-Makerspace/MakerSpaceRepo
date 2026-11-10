@@ -74,6 +74,19 @@ RSpec.describe CalendarHelper, type: :helper do
 
     around { |example| travel_to(Time.utc(2027, 1, 10, 12, 0)) { example.run } }
 
+    # The [message, context] of every problem reported (Rails.error) while the block runs.
+    def reported_ics_problems
+      reports = []
+      subscriber = Class.new { define_method(:report) { |error, handled:, severity:, context:, source:| reports << [error.message, context] } }.new
+      Rails.error.subscribe(subscriber)
+      begin
+        yield
+      ensure
+        Rails.error.unsubscribe(subscriber)
+      end
+      reports
+    end
+
     it "returns no calendar at all (not an empty one) when the fetch gives no body" do
       stub_request(:get, url).to_return(status: 404, body: "")
       expect(parse_ics_calendar(url)).to eq([])
@@ -164,14 +177,8 @@ RSpec.describe CalendarHelper, type: :helper do
         vevent("nostart-single", ["DTEND:20270115T160000Z", "SUMMARY:Broken too"])
       )
       stub_request(:get, url).to_return(status: 200, body: body)
-      reports = []
-      subscriber = Class.new { define_method(:report) { |error, handled:, severity:, context:, source:| reports << [error.message, context] } }.new
-      Rails.error.subscribe(subscriber)
-      begin
-        events = parse_ics_calendar(url).first[:events]
-      ensure
-        Rails.error.unsubscribe(subscriber)
-      end
+      events = nil
+      reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
       expect(events.map { |e| e[:id] }).to eq(["fine"])
       expect(reports.map(&:first)).to all(eq("ICS event has no usable start"))
       expect(reports.map { |_, context| context[:event_uid] }).to eq(%w[nostart nostart-single])
@@ -215,6 +222,29 @@ RSpec.describe CalendarHelper, type: :helper do
       event = parse_ics_calendar(url).first[:events].first
       expect(event).to include(title: "No start", start: nil, end: "2027-01-12T13:00:00")
     end
+
+    it "keeps a counted series whose rule cannot be expanded, reports it, and still lists the other events" do
+      unreadable = ["FREQ=WEEKLY;BYWEEKNO=3;COUNT=2", "FREQ=DAILY;BYYEARDAY=400;COUNT=2", "FREQ=WEEKLY;INTERVAL=0;COUNT=2", "FREQ=MONTHLY;BYMONTH=13;COUNT=2"]
+      vevents = unreadable.each_with_index.map do |rule, i|
+        vevent("bad#{i}", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Bad #{i}", "RRULE:#{rule}"])
+      end
+      stub_request(:get, url).to_return(status: 200, body: ics(*vevents, vevent("fine", ["DTSTART:20270115T150000Z", "DTEND:20270115T160000Z", "SUMMARY:Fine"])))
+      events = nil
+      reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+      expect(events.map { |e| e[:id] }).to eq(%w[bad0 bad1 bad2 bad3 fine])
+      expect(reports.map(&:first)).to all(eq("ICS series has a rule that cannot be expanded"))
+      expect(reports.map { |_, context| context[:event_uid] }).to eq(%w[bad0 bad1 bad2 bad3])
+    end
+
+    it "does not expand a series whose COUNT is above the limit, so it is kept without a report" do
+      body = ics(vevent("long", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Long", "RRULE:FREQ=DAILY;COUNT=#{CalendarHelper::MAX_COUNTED_SERIES + 1}"]))
+      stub_request(:get, url).to_return(status: 200, body: body)
+      expect(RecurrenceExpansion).not_to receive(:occurrences)
+      events = nil
+      expect(reported_ics_problems { events = parse_ics_calendar(url).first[:events] }).to eq([])
+      expect(events.map { |e| e[:id] }).to eq(["long"])
+    end
+
   end
 
   describe "#parse_ics_calendar with all-day events" do
