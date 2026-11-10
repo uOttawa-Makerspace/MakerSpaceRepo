@@ -390,9 +390,8 @@ RSpec.describe "Staff unavailabilities", type: :request do
 
     it "edits and deletes other users' records (no ownership restriction for admins)" do
       theirs = create(:staff_unavailability, user: staffer, title: "Theirs")
-      # update never sets @unavailability, so admin_managing_other_user? is false and the redirect goes to the staff page (destroy goes to the admin calendar).
       patch staff_unavailability_path(theirs), params: payload(title: "Edited")
-      expect(response).to redirect_to(staff_unavailabilities_path)
+      expect(response).to redirect_to(admin_calendar_index_path)
       expect(theirs.reload.title).to eq("Edited")
       delete staff_unavailability_path(theirs)
       expect(response).to redirect_to(admin_calendar_index_path)
