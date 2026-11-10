@@ -43,7 +43,7 @@ class JobOrdersController < SessionsController
     @job_orders = []
     @archived_job_orders = []
     @drafts = []
-    @user.job_orders.not_deleted.includes(job_order_statuses: :job_status).each do |jo|
+    @user.job_orders.not_deleted.includes(latest_job_order_status: :job_status).each do |jo|
       next unless jo.latest_status
 
       if jo.latest_status.job_status == JobStatus.draft
@@ -52,6 +52,7 @@ class JobOrdersController < SessionsController
         @job_orders << jo
       end
     end
+    preload_list_rows
   end
 
   def show
@@ -351,7 +352,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @statuses = JobStatus.where.not(name: "Draft")
     @job_types = JobType.all
 
-    @job_orders = JobOrder.without_drafts.includes(job_order_statuses: :job_status).order(created_at: :desc)
+    @job_orders = JobOrder.without_drafts.includes(:user, :assigned_staff, latest_job_order_status: :job_status, job_tasks: :job_type)
+                       .order(created_at: :desc)
   end
 
   def settings
@@ -512,6 +514,12 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
 
   # The quote form's writes, run by JobOrder#transition! under the order's row lock (the order was reloaded by
   # lock!, so its tasks are read fresh). Validation failures raise, which rolls the transition back.
+  # The drafts' links read their tasks; the submitted orders' rows read each task's job type too.
+  def preload_list_rows
+    ActiveRecord::Associations::Preloader.new(records: @drafts, associations: :job_tasks).call
+    ActiveRecord::Associations::Preloader.new(records: @job_orders, associations: { job_tasks: :job_type }).call
+  end
+
   def apply_quote_params!
     @job_order.job_tasks.each do |task|
       price_key = "job_task_quote_price_#{task.id}"

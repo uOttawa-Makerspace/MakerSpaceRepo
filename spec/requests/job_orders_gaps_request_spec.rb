@@ -266,8 +266,7 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- index
 
   describe "GET /job_orders (index) corners" do
-    # N+1 pinned
-    it "lists only the viewer's own, non-deleted orders and skips orders without status rows", skip_bullet: true do
+    it "lists only the viewer's own, non-deleted orders and skips orders without status rows" do
       mine = order_with_task!(status_key: :staff_approval)
       deleted = order_with_task!(status_key: :staff_approval)
       deleted.update!(is_deleted: true)
@@ -533,8 +532,7 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- admin / settings / invoice / timeline
 
   describe "admin, settings, invoice and timeline corners" do
-    # N+1 pinned
-    it "renders the admin list for the admin role, newest first, hiding drafts and deleted orders", skip_bullet: true do
+    it "renders the admin list for the admin role, newest first, hiding drafts and deleted orders" do
       older = order_with_task!(status_key: :staff_approval)
       newer = nil
       travel_to(2.minutes.from_now) { newer = order_with_task!(status_key: :user_approval) }

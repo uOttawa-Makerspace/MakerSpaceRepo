@@ -114,8 +114,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).not_to include(I18n.t("job_orders.public_page.admin_page"))
     end
 
-    # N+1 pinned
-    it "splits draft orders (partly created) from submitted ones", skip_bullet: true do
+    it "splits draft orders (partly created) from submitted ones" do
       draft = order_with_task!(owner: owner, status_key: :draft)
       empty_draft = make_job_order!(owner: owner, status_key: :draft)
       submitted = order_with_task!(owner: owner, status_key: :staff_approval)
@@ -995,8 +994,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   # ------------------------------------------------------- admin / settings
 
   describe "GET /job_orders/admin" do
-    # N+1 pinned
-    it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)", skip_bullet: true do
+    it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)" do
       draft = make_job_order!(owner: owner, status_key: :draft)
       listed = order_with_task!(owner: owner, status_key: :staff_approval)
 

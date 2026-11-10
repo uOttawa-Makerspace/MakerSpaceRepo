@@ -8,6 +8,9 @@ class JobOrder < ApplicationRecord
   has_many :job_order_options, dependent: :destroy
   # Oldest first, by id: THE order of a job order's statuses (see #latest_status; the history views read it too).
   has_many :job_order_statuses, -> { order(:id) }, dependent: :destroy
+  # The newest status row, for lists: preloaded for a whole page of orders in one query that reads only that row per
+  # order (no status history loaded). Read it through #latest_status.
+  has_one :latest_job_order_status, -> { where(LATEST_STATUS_ROW_SQL) }, class_name: "JobOrderStatus", inverse_of: false
   has_and_belongs_to_many :job_services
   has_many :chat_messages, dependent: :destroy
   belongs_to :assigned_staff, class_name: "User", optional: true
@@ -557,6 +560,9 @@ class JobOrder < ApplicationRecord
   LATEST_STATUS_ID_SQL = "(SELECT s.job_status_id FROM job_order_statuses s WHERE s.job_order_id = job_orders.id " \
                          "ORDER BY s.id DESC LIMIT 1)"
 
+  LATEST_STATUS_ROW_SQL = "job_order_statuses.id = (SELECT MAX(s.id) FROM job_order_statuses s " \
+                          "WHERE s.job_order_id = job_order_statuses.job_order_id)"
+
   # The order's CURRENT status as a JobStatus (nil without a status row), read now: one query on LATEST_STATUS_ID_SQL,
   # never cached, no association involved. Use it for every decision (locks, guards, what to serve or charge). For
   # display and lists use #latest_status, which honours preloads (but may be a stale preload or a cached read).
@@ -569,6 +575,7 @@ class JobOrder < ApplicationRecord
   # query, its `.last` (the association is ordered by id). A row built but not saved (no id yet) is the newest, as
   # with `.last`: the last of those wins over the persisted rows.
   def latest_status
+    return latest_job_order_status if !job_order_statuses.loaded? && association(:latest_job_order_status).loaded?
     return job_order_statuses.last unless job_order_statuses.loaded?
 
     unsaved, saved = job_order_statuses.to_a.partition { |s| s.id.nil? }
