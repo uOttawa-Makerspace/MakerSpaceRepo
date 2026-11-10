@@ -278,6 +278,7 @@ module CalendarHelper
   def ics_modified_instance(modified, group_id:, name:)
     start_time = safe_to_time(modified.dtstart)
     end_time = safe_to_time(modified.dtend)
+    return report_ics_event_problem("ICS event has no usable start", modified, group_id) if start_time.nil?
 
     return if stale_event?(end_time || start_time)
 

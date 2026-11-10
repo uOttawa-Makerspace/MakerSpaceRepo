@@ -216,11 +216,16 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(events.map { |e| [e[:title], e[:allDay]] }).to eq([["Alone", true]])
     end
 
-    it "lists a modified instance that has no start of its own with no start" do
-      body = ics(vevent("rec", ["RECURRENCE-ID:20270112T150000Z", "DTEND:20270112T180000Z", "SUMMARY:No start"]))
+    it "leaves out a modified instance that has no start of its own, and reports it" do
+      body = ics(
+        vevent("rec", ["DTSTART:20270105T150000Z", "DTEND:20270105T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=4"]),
+        vevent("rec", ["RECURRENCE-ID:20270112T150000Z", "DTEND:20270112T180000Z", "SUMMARY:No start"])
+      )
       stub_request(:get, url).to_return(status: 200, body: body)
-      event = parse_ics_calendar(url).first[:events].first
-      expect(event).to include(title: "No start", start: nil, end: "2027-01-12T13:00:00")
+      events = nil
+      reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+      expect(events.map { |e| e[:title] }).to eq(["Weekly"])
+      expect(reports.map { |message, context| [message, context[:event_uid]] }).to eq([["ICS event has no usable start", "rec"]])
     end
 
     it "keeps a counted series whose rule cannot be expanded, reports it, and still lists the other events" do
