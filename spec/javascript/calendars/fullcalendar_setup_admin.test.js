@@ -254,6 +254,27 @@ describe("loading the calendar", () => {
     expect(created[0].rendered).toBe(false);
   });
 
+  it("keeps the shifts of an assignment whose user was deleted", async () => {
+    const orphaned = [
+      {
+        id: "shift",
+        color: "#111",
+        events: [
+          {
+            id: "9",
+            title: "Orphan",
+            extendedProps: { name: "Shifts", assignedUsers: [{ id: null }] },
+          },
+        ],
+      },
+    ];
+    stubFetch({ events: orphaned });
+    const cal = await boot();
+    let out;
+    cal.sources.get("staffEvents").events({}, (list) => (out = list));
+    expect(out.map((e) => e.id)).toEqual(["9"]);
+  });
+
   it("lists one checkbox per event type and one per staff member", async () => {
     stubFetch({ imported: calendars });
     await boot();

@@ -166,7 +166,7 @@ onPageLoad("#calendar", async () => {
       for (const src of eventsData.filter(isEventTypeShown)) {
         for (const ev of src.events) {
           const assigned = (ev.extendedProps.assignedUsers || []).map((u) =>
-            u.id.toString(),
+            String(u.id),
           );
           const visible = !assigned.every((id) => hiddenUserIds.has(id));
           if (visible) filtered.push(ev);
