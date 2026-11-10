@@ -253,6 +253,38 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(record.reload.training_id).to eq(training.id)
       end
 
+      context "when the session already awarded certifications" do
+        let!(:awarded) do
+          create(:training_session_with_certifications, user: trainer, training: training, space: space, level: "Beginner")
+        end
+
+        it "refuses a new training, level or trainer with a message and changes nothing" do
+          other = create(:training, spaces: [space])
+          before = awarded.reload.attributes.slice("training_id", "level", "user_id")
+          [{ level: "Advanced" }, { training_id: other.id }, { user_id: create(:user, :staff).id }].each do |changes|
+            patch staff_training_session_path(awarded), params: { changed_params: changes, added_users: [student.username] }
+            expect(flash[:alert]).to eq("The training, level and trainer of a completed training session cannot be changed.")
+          end
+          expect(awarded.reload.attributes.slice("training_id", "level", "user_id")).to eq(before)
+          expect(awarded.users).not_to include(student)
+          expect(awarded.certifications.map(&:level).uniq).to eq(["Beginner"])
+        end
+
+        it "still accepts a course change" do
+          create(:course_name, name: "Intro")
+          patch staff_training_session_path(awarded), params: { changed_params: { course: "Intro" } }
+          expect(flash[:notice]).to eq("Training session updated succesfully")
+          expect(awarded.reload.course).to eq("Intro")
+        end
+
+        it "hides the edit form on the session page" do
+          get staff_training_session_path(awarded)
+          expect(response.body).not_to include("changed_params[level]")
+          get staff_training_session_path(record)
+          expect(response.body).to include("changed_params[level]")
+        end
+      end
+
       it "answers 404 for a session that no longer exists" do
         id = record.id
         record.destroy

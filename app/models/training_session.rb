@@ -20,6 +20,7 @@ class TrainingSession < ApplicationRecord
   validates :level, presence: true
   validates :space, presence: true
   validate :is_staff
+  validate :locked_fields_unchanged, on: :session_edit
   before_save :check_course
 
   default_scope -> { order(updated_at: :desc) }
@@ -82,6 +83,23 @@ class TrainingSession < ApplicationRecord
 
   def completed?
     certifications.any?
+  end
+
+  # Saving with `context: :session_edit` (the staff and admin edit paths) enforces the lock; other writes,
+  # such as merging a duplicate trainer into another account, are not edits of the session.
+  # The fields a certification copies from its session: once the session has awarded any
+  # certification (demoted ones included) they can no longer change.
+  LOCKED_ONCE_AWARDED = %w[training_id level user_id].freeze
+
+  def editable?
+    !awarded_certifications.exists?
+  end
+
+  # True when the attributes would change a locked field of a session that no longer allows it.
+  def locked_change?(attributes)
+    return false if editable?
+
+    attributes.to_h.any? { |name, value| LOCKED_ONCE_AWARDED.include?(name.to_s) && self[name].to_s != value.to_s }
   end
 
   CertifyResult = Struct.new(:duplicates, :failed, :self_skipped, keyword_init: true) do
@@ -157,6 +175,10 @@ class TrainingSession < ApplicationRecord
   end
 
   private
+
+  def locked_fields_unchanged
+    errors.add(:base, :locked_once_awarded) if changed.intersect?(LOCKED_ONCE_AWARDED) && !editable?
+  end
 
   def check_course
     self.course = nil if course == "no course"

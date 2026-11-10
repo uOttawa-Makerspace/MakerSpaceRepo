@@ -24,7 +24,7 @@
       <% end %>
     </div>
     <br />
-    <% unless @current_training_session.completed? %>
+    <% if @current_training_session.editable? %>
       <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
         <div>Trainer: <%= @staff.name %></div>
         <% if @user.admin? %>

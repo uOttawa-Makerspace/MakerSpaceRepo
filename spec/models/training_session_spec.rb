@@ -1,6 +1,57 @@
 require "rails_helper"
 
 RSpec.describe TrainingSession, type: :model do
+  describe "editing once certifications are awarded" do
+    let(:open_session) { create(:training_session, level: "Beginner") }
+    let(:awarded_session) { create(:training_session_with_certifications, level: "Beginner").reload }
+    let(:other_training) { create(:training) }
+
+    def edit(session, attributes)
+      session.assign_attributes(attributes)
+      session.save(context: :session_edit)
+    end
+
+    it "does not apply the lock to writes that are not edits of the session" do
+      new_trainer = create(:user, :staff)
+      expect(awarded_session.update(user: new_trainer)).to be(true)
+      expect(awarded_session.reload.user).to eq(new_trainer)
+    end
+
+    it "is editable while no certification was awarded" do
+      expect(open_session).to be_editable
+      expect(edit(open_session, level: "Advanced", training: other_training)).to be(true)
+      expect(open_session.reload.level).to eq("Advanced")
+    end
+
+    it "is not editable once it awarded a certification, even a demoted one" do
+      expect(awarded_session).not_to be_editable
+      awarded_session.certifications.each { |cert| cert.update!(active: false) }
+      expect(awarded_session.reload).not_to be_editable
+    end
+
+    it "refuses a new training, level or instructor and keeps the stored values" do
+      before = awarded_session.attributes.slice("training_id", "level", "user_id")
+      expect(edit(awarded_session, level: "Advanced")).to be(false)
+      expect(awarded_session.errors.full_messages.to_sentence).to include("cannot be changed once the session has awarded")
+      expect(edit(awarded_session.reload, training: other_training)).to be(false)
+      expect(edit(awarded_session.reload, user: create(:user, :staff))).to be(false)
+      expect(awarded_session.reload.attributes.slice("training_id", "level", "user_id")).to eq(before)
+      expect(awarded_session.certifications.map(&:level).uniq).to eq(["Beginner"])
+    end
+
+    it "still accepts the other fields" do
+      expect(edit(awarded_session, course: "Some course")).to be(true)
+      expect(awarded_session.reload.course).to eq("Some course")
+    end
+
+    it "reports whether an attribute set touches a locked field" do
+      expect(awarded_session.locked_change?("level" => "Advanced")).to be(true)
+      expect(awarded_session.locked_change?("level" => "Beginner")).to be(false)
+      expect(awarded_session.locked_change?(course: "x")).to be(false)
+      expect(open_session.locked_change?("level" => "Advanced")).to be(false)
+    end
+  end
+
   describe "Association" do
     context "has_and_belong_to_many" do
       it { should have_and_belong_to_many(:users) }

@@ -72,6 +72,7 @@ fr:
             training_id:
               blank: "Une formation doit être sélectionnée"
         training_session:
+          locked_once_awarded: "La formation, le niveau et le formateur ne peuvent plus être modifiés une fois que la séance a délivré des certifications."
           attributes:
             training:
               blank: "Un sujet de formation est requis"

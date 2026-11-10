@@ -328,6 +328,20 @@ RSpec.describe "Admin training area", type: :request do
     context "as admin" do
       before { log_in!(admin) }
 
+      it "changes the trainer of an open session" do
+        new_trainer = create(:user, :staff)
+        patch admin_training_session_path(session_record), params: { training_session: { user_id: new_trainer.id } }
+        expect(flash[:notice]).to eq("Updated Successfully")
+        expect(session_record.reload.user).to eq(new_trainer)
+      end
+
+      it "refuses to change the trainer of a session that awarded certifications" do
+        awarded = create(:training_session_with_certifications, user: trainer)
+        patch admin_training_session_path(awarded), params: { training_session: { user_id: create(:user, :staff).id } }
+        expect(flash[:alert]).to include("cannot be changed once the session has awarded")
+        expect(awarded.reload.user).to eq(trainer)
+      end
+
       describe "GET index" do
         it "lists the sessions of the last 30 days by default" do
           old = create(:training_session, user: trainer)
