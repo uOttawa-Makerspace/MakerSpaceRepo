@@ -144,6 +144,25 @@ describe("job-order-comments-modal", () => {
     expect(document.querySelector("p").innerHTML).toBe("one<br>two");
   });
 
+  it("shows the order number and comments as text, not markup", async () => {
+    await mount(page);
+    const controller = application.getControllerForElementAndIdentifier(
+      $("m"),
+      "job-order-comments-modal",
+    );
+    controller.setCoHostContent({
+      id: "<b>1</b>",
+      comments: "<img src=x onerror=alert(1)>\nnext",
+    });
+    expect(document.querySelector("span").querySelector("b")).toBeNull();
+    expect(document.querySelector("span").textContent).toBe("<b>1</b>");
+    expect(document.querySelector("p").querySelector("img")).toBeNull();
+    expect(document.querySelector("p").textContent).toBe(
+      "<img src=x onerror=alert(1)>next",
+    );
+    expect(document.querySelectorAll("p br")).toHaveLength(1);
+  });
+
   it("opens and closes the dialog with a backdrop", async () => {
     await mount(page);
     const controller = application.getControllerForElementAndIdentifier(
