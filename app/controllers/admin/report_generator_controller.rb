@@ -111,13 +111,7 @@ class Admin::ReportGeneratorController < AdminAreaController
   end
 
   def generate_spreadsheet
-    period =
-      ReportPeriod.parse(
-        params[:start_date] || '2015-06-01',
-        params[:end_date] || Date.current.to_s
-      )
-    start_date = period.window.begin
-    end_date = params[:end_date].nil? ? Time.current : period.window.end
+    start_date, end_date = spreadsheet_window
     type = params[:type]
 
     case type
@@ -160,6 +154,18 @@ class Admin::ReportGeneratorController < AdminAreaController
   end
 
   private
+
+  # From the start of the first day to the end of the last. Without a first day
+  # the report starts on 1 June 2015, and without a last day it ends now.
+  def spreadsheet_window
+    period =
+      ReportPeriod.parse(
+        params[:start_date] || '2015-06-01',
+        params[:end_date] || Date.current.to_s
+      )
+    window = period.window
+    [window.begin, params[:end_date].nil? ? Time.current : window.end]
+  end
 
   # The period of the chosen range type; nil for all time.
   def chosen_period
@@ -528,12 +534,10 @@ class Admin::ReportGeneratorController < AdminAreaController
       )
   end
 
+  # Without picked days the visits of all time are counted, and the list of
+  # weekend days is left out.
   def frequent_visitors
-    @weekends =
-      (@report_window.begin.to_date..@report_window.end.to_date)
-        .select { |day| day.saturday? || day.sunday? }
-        .map(&:all_day)
-
+    @weekends = weekend_days
     @lab_sessions =
       Space.all.map do |space|
         [
@@ -550,16 +554,28 @@ class Admin::ReportGeneratorController < AdminAreaController
             .order('count(users.id) desc')
             .limit(20)
             .count,
-          # Weekend only
+          # Weekend only, by the weekday in the application time zone
           LabSession
             .strict_loading
             .joins(:user)
-            .where(created_at: @weekends, space: space)
+            .where(created_at: @report_window, space: space)
+            .where(
+              "EXTRACT(DOW FROM (lab_sessions.created_at AT TIME ZONE 'UTC') AT TIME ZONE ?) IN (0, 6)",
+              Time.zone.tzinfo.name
+            )
             .group(:user)
             .order('count(users.id) desc')
             .limit(20)
             .count
         ]
       end
+  end
+
+  def weekend_days
+    return unless @period
+
+    (@period.first_day..@period.last_day).select do |day|
+      day.saturday? || day.sunday?
+    end
   end
 end

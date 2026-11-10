@@ -97,8 +97,8 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     # N+1 pinned
-    it "renders every dispatched report type without dates (all time), except frequent_visitors", skip_bullet: true do
-      (REPORT_TYPES - %w[frequent_visitors]).each do |type|
+    it "renders every dispatched report type without dates (all time)", skip_bullet: true do
+      REPORT_TYPES.each do |type|
         get admin_report_generator_index_path, params: { report_type: type }
         expect(response).to have_http_status(:ok), "#{type}: #{response.status}"
       end
@@ -127,9 +127,17 @@ RSpec.describe "Admin report generator", type: :request do
       expect(response.media_type).to eq("text/plain")
     end
 
-    it "frequent_visitors without dates is a 500" do
+    it "frequent_visitors without dates covers all time, with weekend visits counted by Toronto weekday" do
+      zone = Time.find_zone("America/Toronto")
+      # Sunday 22:00 in Toronto is already Monday in UTC; Friday 22:00 is Saturday there
+      create(:lab_session, space: world[:space], user: world[:visitor], created_at: zone.local(2024, 2, 11, 22))
+      create(:lab_session, space: world[:space], user: world[:visitor], created_at: zone.local(2024, 2, 9, 22))
       get admin_report_generator_index_path, params: { report_type: "frequent_visitors" }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      page = Nokogiri::HTML(response.body)
+      weekend = page.css("h2").find { |h| h.text.include?("Weekend-only") }.parent
+      expect(weekend.css("li").map { |li| li.text.squish }).to eq(["#{world[:visitor].username}: 1 Visits"])
+      expect(response.body).to include("All time")
     end
 
     it "frequent_visitors with dates renders" do
