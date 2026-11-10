@@ -5,6 +5,6 @@ import { Controller } from "@hotwired/stimulus";
 // application entry) exist.
 export default class extends Controller {
   connect() {
-    this.element.disabled = false;
+    /** @type {HTMLButtonElement} */ (this.element).disabled = false;
   }
 }
