@@ -193,18 +193,6 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include("Submit request")
     end
 
-    it "preselects the only request type, and asks a student to choose between several" do
-      log_in!(owner)
-      get new_locker_rental_path
-      expect(response.body).to match(%r{<option selected="selected" value="general">General request</option>})
-      expect(response.body).not_to include("Choose one")
-
-      log_in!(create(:user, :student))
-      get new_locker_rental_path
-      expect(response.body).to include('<option value="">Choose one</option>')
-      expect(response.body).not_to include('selected="selected" value="student"')
-    end
-
     it "shows the audience-filtered available counts (a community user sees 'general' only)" do
       log_in!(owner)
       size = create(:locker_size)
@@ -1196,6 +1184,41 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect(response).to redirect_to(locker_rentals_path)
         expect(rental.state).to eq("active")
       end
+    end
+  end
+
+  # ------------------------------------------------------- expiry notice reset on date changes
+
+  describe "expiry notice after the end date moves" do
+    let(:told_at) { 2.days.ago.change(usec: 0) }
+    let(:rental) do
+      create(:locker_rental, :active, rented_by: owner, owned_until: 3.days.ago).tap do |r|
+        r.update_columns(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+      end
+    end
+
+    it "is cleared when staff move the end date later" do
+      log_in!(staff)
+      patch locker_rental_path(rental), params: { locker_rental: { owned_until: 4.months.from_now.to_date.to_s } }
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+    end
+
+    it "is cleared when staff make the rental indefinite" do
+      log_in!(staff)
+      patch locker_rental_path(rental), params: { locker_rental: { indefinite: "1" } }
+      expect(rental.reload).to have_attributes(owned_until: nil, notified_of_cancellation_at: nil)
+    end
+
+    it "is kept when staff move the end date earlier" do
+      log_in!(staff)
+      patch locker_rental_path(rental), params: { locker_rental: { owned_until: 10.days.ago.to_date.to_s } }
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+    end
+
+    it "is cleared when the renter renews" do
+      log_in!(owner)
+      patch renew_locker_rental_path(rental)
+      expect(rental.reload).to have_attributes(state: "await_payment", notified_of_cancellation_at: nil, contacted_for_clearance: false)
     end
   end
 

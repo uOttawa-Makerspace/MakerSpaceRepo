@@ -145,17 +145,9 @@ class LockerRentalsController < SessionsController
         outcome = :stale
       else
         # Assign new parameters but don't commit yet
-        @locker_rental.assign_attributes(locker_rental_params)
+        @locker_rental.assign_attributes(locker_rental_params.except(:owned_until))
         @locker_rental.decided_by = current_user
-
-        # Requirement: Ideally I would like to have an 'indefinite' option for the date
-        # We check this if the state is changing to active OR if it's already active (Move Locker)
-        if @locker_rental.indefinite == '1'
-          @locker_rental.owned_until = nil
-        elsif (@locker_rental.state_changed?(to: :active) || (current_user.staff? && @locker_rental.active?)) &&
-              @locker_rental.owned_until.blank?
-          @locker_rental.owned_until = end_of_this_semester
-        end
+        assign_requested_owned_until
 
         if renter_state_change_refused?
           outcome = :state_refused
@@ -227,12 +219,8 @@ class LockerRentalsController < SessionsController
     LockerRental.transaction do
       @locker_rental.lock!
       if @locker_rental.renewable?
-        @locker_rental.assign_attributes(
-          state: :await_payment,
-          decided_by: current_user,
-          owned_until: end_of_this_semester
-        )
-        outcome = @locker_rental.save ? :saved : :invalid
+        saved = @locker_rental.extend_until(end_of_this_semester, state: :await_payment, decided_by: current_user)
+        outcome = saved ? :saved : :invalid
       else
         outcome = :not_renewable
       end
@@ -266,6 +254,23 @@ class LockerRentalsController < SessionsController
   end
 
   private
+
+  # Requirement: Ideally I would like to have an 'indefinite' option for the date
+  # We check this if the state is changing to active OR if it's already active (Move Locker)
+  def assign_requested_owned_until
+    date = @locker_rental.owned_until
+    date = locker_rental_params[:owned_until] if locker_rental_params.key?(:owned_until)
+    if @locker_rental.indefinite == '1'
+      date = nil
+    elsif date.blank? && defaults_to_semester_end?
+      date = end_of_this_semester
+    end
+    @locker_rental.assign_owned_until(date)
+  end
+
+  def defaults_to_semester_end?
+    @locker_rental.state_changed?(to: :active) || (current_user.staff? && @locker_rental.active?)
+  end
 
   def check_permission
     # If user accesses a locker rental by ID
