@@ -642,6 +642,7 @@ class ReportGenerator
       Certification
         .includes({ training_session: %i[user training space] }, :user)
         .where(created_at: start_date..end_date)
+        .where.not(training_session_id: nil)
         .order(
           "spaces.name",
           "training_sessions.created_at",

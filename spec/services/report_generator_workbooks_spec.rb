@@ -482,6 +482,17 @@ RSpec.describe ReportGenerator do
       expect(rows[month + 1]).to eq(["Month average of attendees per sessions", 1.0, 1.0])
     end
 
+    it "leaves out a certificate earned through a project, which has no training session" do
+      session = create(:training_session, space: alpha, training: laser, created_at: march_10)
+      attend(lena, session, march_10)
+      cert = create(:certification, user: lena, training_session: nil, created_at: march_10)
+      create(:proficient_project_session, certification: cert, user: lena,
+                                          proficient_project: create(:proficient_project), level: "Beginner")
+      rows = grid(described_class.generate_training_attendees_report(from, to))
+      expect(rows.keys).to eq(["Report - Alpha"])
+      expect(rows["Report - Alpha"][5..].count { |r| r[1] == "Lena Learner" }).to eq(1)
+    end
+
     it "a session without a space gets its own sheet named for an unknown space" do
       session = create(:training_session, space: alpha, training: laser, created_at: march_10)
       session.update_columns(space_id: nil)
