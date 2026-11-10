@@ -32,6 +32,7 @@ class Repository < ApplicationRecord
   has_many :likes, dependent: :destroy
   has_many :makes, class_name: 'Repository', foreign_key: 'make_id', dependent: :nullify
   belongs_to :parent,
+             -> { including_hidden },
              class_name: 'Repository',
              foreign_key: 'make_id',
              optional: true
@@ -82,6 +83,13 @@ class Repository < ApplicationRecord
   #           presence: { message: "A category is required."},
   #           length: {maximum: 5, message:"You may only select 5 categories."}
   default_scope { where(deleted: false) }
+
+  # Every repository, hidden (deleted) ones included. Rows that belong to a repository (comments, likes,
+  # photos, files, makes) read it through this, so they keep working while it is hidden; everything
+  # else sees only visible repositories through the default scope.
+  def self.including_hidden
+    unscope(where: :deleted)
+  end
 
   scope :between_dates_picked,
         ->(start_date, end_date) do

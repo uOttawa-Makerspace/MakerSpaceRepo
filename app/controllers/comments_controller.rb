@@ -27,10 +27,7 @@ class CommentsController < SessionsController
     else
       flash[:alert] = I18n.t("errors.comments.not_yours")
     end
-    redirect_to repository_path(
-                  id: comment.repository.id,
-                  user_username: denial_username(comment.repository)
-                )
+    redirect_after_destroy(comment.repository)
   end
 
   def vote
@@ -67,6 +64,13 @@ class CommentsController < SessionsController
   end
 
   private
+
+  # A deleted repository has no page any more, so the visitor goes to the home page instead.
+  def redirect_after_destroy(repository)
+    return redirect_to root_path if repository.deleted?
+
+    redirect_to repository_path(id: repository.id, user_username: denial_username(repository))
+  end
 
   # A repeated click or a simultaneous request finds the vote already cast and counts nothing again.
   def cast_new_vote(comment, downvote)

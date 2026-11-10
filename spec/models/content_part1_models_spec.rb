@@ -24,11 +24,12 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(Repository.unscoped.where(deleted: true).count).to eq(1)
     end
 
-    it "a comment's repository association resolves to nil once the repository is soft-deleted" do
+    it "a comment's, like's and photo's repository is still found once the repository is soft-deleted" do
       comment = create(:comment, repository: repo)
+      like = create(:like, repository: repo)
+      photo = repo.photos.first
       repo.update_columns(deleted: true)
-      # belongs_to goes through the default scope; code that derefs comment.repository (CommentsController#destroy) breaks
-      expect(comment.reload.repository).to be_nil
+      expect([comment, like, photo].map { |row| row.reload.repository }).to all(eq(repo))
       expect(Comment.count).to eq(1)
     end
 
@@ -38,10 +39,10 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect([Photo.count, Like.count]).to eq([1, 1])
     end
 
-    it "a make's parent resolves to nil once the original is soft-deleted" do
+    it "a make's parent is still found once the original is soft-deleted" do
       child = create(:repository, owner: owner, title: "Child", make_id: repo.id)
       repo.update_columns(deleted: true)
-      expect(child.reload.parent).to be_nil
+      expect(child.reload.parent).to eq(repo)
     end
 
     describe "slug" do
