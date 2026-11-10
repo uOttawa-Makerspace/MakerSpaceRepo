@@ -138,13 +138,13 @@ describe("my calendar", () => {
     expect(theirs.props.display).toBe("none");
     expect(
       document.querySelector(".fc-toggleOthersShifts-button").innerHTML,
-    ).toBe("Show My Shifts Only");
+    ).toBe("Show All Shifts");
 
     cal.options.customButtons.toggleOthersShifts.click();
     expect(theirs.props.display).toBe("auto");
     expect(
       document.querySelector(".fc-toggleOthersShifts-button").innerHTML,
-    ).toBe("Show All Shifts");
+    ).toBe("Show My Shifts Only");
   });
 
   it("decorates a mounted event with a tooltip, fade in and user colour", () => {
