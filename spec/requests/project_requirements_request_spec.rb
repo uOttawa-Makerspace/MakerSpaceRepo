@@ -50,17 +50,23 @@ RSpec.describe "Project requirements (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("The required project was not added. Proficient project This project is already a pre-requisite")
     end
 
-    it "allows a project to require itself and circular requirements (no guard)" do
-      expect { add(required: project.id) }.to change(ProjectRequirement, :count).by(1)
-      # no self/cycle validation (the show page only hides them from its picker)
-      add(id: prereq.id, required: project.id)
-      add(id: project.id, required: prereq.id)
-      expect(ProjectRequirement.count).to eq(3)
+    it "refuses a project that requires itself" do
+      expect { add(required: project.id) }.not_to change(ProjectRequirement, :count)
+      expect(flash[:alert]).to start_with("The required project was not added.")
     end
 
-    it "persists a blank prerequisite id (nil required_project)" do
-      expect { add(required: "") }.to change(ProjectRequirement, :count).by(1)
-      expect(ProjectRequirement.last.required_project_id).to be_nil
+    it "refuses a requirement that would close a circle" do
+      third = create(:proficient_project, title: "Third project")
+      add(id: project.id, required: prereq.id)
+      add(id: prereq.id, required: third.id)
+      expect { add(id: third.id, required: project.id) }.not_to change(ProjectRequirement, :count)
+      expect { add(id: prereq.id, required: project.id) }.not_to change(ProjectRequirement, :count)
+      expect(flash[:alert]).to start_with("The required project was not added.")
+    end
+
+    it "refuses a blank or unknown prerequisite id" do
+      expect { add(required: "") }.not_to change(ProjectRequirement, :count)
+      expect { add(required: 0) }.not_to change(ProjectRequirement, :count)
     end
 
     it "404s when the target project is unknown or the id param is missing" do

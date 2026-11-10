@@ -82,6 +82,8 @@ en:
           attributes:
             proficient_project_id:
               taken: "This project is already a pre-requisite"
+            required_project:
+              circular: "cannot depend on itself, directly or through other required projects"
         time_period:
           attributes:
             end_date:

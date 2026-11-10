@@ -8,6 +8,36 @@ RSpec.describe ProjectRequirement, type: :model do
     end
   end
 
+  describe "Ends" do
+    let(:a) { create(:proficient_project) }
+    let(:b) { create(:proficient_project) }
+    let(:c) { create(:proficient_project) }
+
+    it "needs both projects" do
+      expect(ProjectRequirement.new(proficient_project: a)).not_to be_valid
+      expect(ProjectRequirement.new(required_project: a)).not_to be_valid
+    end
+
+    it "cannot require itself" do
+      expect(ProjectRequirement.new(proficient_project: a, required_project: a)).not_to be_valid
+    end
+
+    it "cannot close a circle of any length" do
+      ProjectRequirement.create!(proficient_project: a, required_project: b)
+      ProjectRequirement.create!(proficient_project: b, required_project: c)
+      expect(ProjectRequirement.new(proficient_project: c, required_project: a)).not_to be_valid
+      expect(ProjectRequirement.new(proficient_project: a, required_project: c)).to be_valid
+    end
+
+    it "lets an existing requirement that is already circular be saved unchanged" do
+      req = ProjectRequirement.create!(proficient_project: a, required_project: b)
+      back = ProjectRequirement.new(proficient_project: b, required_project: a)
+      back.save!(validate: false)
+      expect(req.reload.save).to be(true)
+      expect(back.save).to be(true)
+    end
+  end
+
   describe "Validations" do
     context "user" do
       it do
