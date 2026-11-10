@@ -233,6 +233,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def update_all_occurrences
+    return alert_unreadable_times if unreadable_times?
+
     old_date_new_time_start = helpers.combine_date_and_time(
       @staff_unavailability.start_time,
       parse_time(staff_params[:utc_start_time])
@@ -256,6 +258,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def update_this_occurrence
+    return alert_unreadable_times if unreadable_times?
+
     exclusion_start_time = helpers.combine_date_and_time(
       parse_time(staff_params[:utc_start_time]),
       @staff_unavailability.start_time
@@ -281,22 +285,24 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def delete_single_occurrence
-    if params[:start_date].blank?
+    start = parse_time(params[:start_date])
+    if start.nil?
       return redirect_to after_action_path, alert: "Start date is required for deleting a single occurrence."
     end
 
-    @staff_unavailability.update!(recurrence_rule: series_rule(@staff_unavailability).without_occurrence(parse_time(params[:start_date])))
+    @staff_unavailability.update!(recurrence_rule: series_rule(@staff_unavailability).without_occurrence(start))
     redirect_to after_action_path, notice: "This occurrence deleted."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
   end
 
   def delete_following_occurrences
-    if params[:start_date].blank?
+    start = parse_time(params[:start_date])
+    if start.nil?
       return redirect_to after_action_path, alert: "Start date is required for deleting following occurrences."
     end
 
-    @staff_unavailability.update!(recurrence_rule: series_rule(@staff_unavailability).ending_before(parse_time(params[:start_date])))
+    @staff_unavailability.update!(recurrence_rule: series_rule(@staff_unavailability).ending_before(start))
     redirect_to after_action_path, notice: "This and following deleted."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
@@ -306,8 +312,23 @@ class Staff::UnavailabilitiesController < StaffAreaController
     RecurrenceRule.new(unavailability.recurrence_rule, unavailability.start_time)
   end
 
+  # The time as UTC, or nil when the text is missing or not a time.
   def parse_time(time_string)
     return nil if time_string.blank?
     Time.parse(time_string).utc
+  rescue ArgumentError
+    nil
+  end
+
+  def unreadable_times?
+    parse_time(staff_params[:utc_start_time]).nil? || parse_time(staff_params[:utc_end_time]).nil?
+  end
+
+  # The model's blank-time messages for a series edit that has no usable start or end.
+  def alert_unreadable_times
+    record = StaffUnavailability.new
+    record.errors.add(:start_time, :blank) if parse_time(staff_params[:utc_start_time]).nil?
+    record.errors.add(:end_time, :blank) if parse_time(staff_params[:utc_end_time]).nil?
+    flash[:alert] = "Failed to update unavailability: #{record.errors.full_messages.to_sentence}"
   end
 end
