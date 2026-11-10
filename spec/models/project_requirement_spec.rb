@@ -29,6 +29,28 @@ RSpec.describe ProjectRequirement, type: :model do
       expect(ProjectRequirement.new(proficient_project: a, required_project: c)).to be_valid
     end
 
+    context "when two requirement paths reach the same project" do
+      let(:d) { create(:proficient_project) }
+
+      before do
+        ProjectRequirement.create!(proficient_project: a, required_project: b)
+        ProjectRequirement.create!(proficient_project: a, required_project: c)
+        ProjectRequirement.create!(proficient_project: b, required_project: d)
+        ProjectRequirement.create!(proficient_project: c, required_project: d)
+      end
+
+      it "accepts a requirement that does not close a circle" do
+        newcomer = create(:proficient_project)
+        expect(ProjectRequirement.new(proficient_project: newcomer, required_project: a)).to be_valid
+      end
+
+      it "refuses a requirement that closes a circle through the diamond" do
+        req = ProjectRequirement.new(proficient_project: d, required_project: a)
+        expect(req).not_to be_valid
+        expect(req.errors.of_kind?(:required_project, :circular)).to be(true)
+      end
+    end
+
     it "lets an existing requirement that is already circular be saved unchanged" do
       req = ProjectRequirement.create!(proficient_project: a, required_project: b)
       back = ProjectRequirement.new(proficient_project: b, required_project: a)

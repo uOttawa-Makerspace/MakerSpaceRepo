@@ -102,6 +102,16 @@ RSpec.describe ProficientProject, type: :model do
       end
     end
 
+    context "clearing the title" do
+      it "is invalid with a presence error and leaves the title nil" do
+        pp = create(:proficient_project, title: "Keep me")
+        pp.title = nil
+        expect { pp.valid? }.not_to raise_error
+        expect(pp.title).to be_nil
+        expect(pp.errors[:title]).to be_present
+      end
+    end
+
     context "#capitalize_title" do
       it "should capitalize the title" do
         pp = build(:proficient_project, title: "abc")
