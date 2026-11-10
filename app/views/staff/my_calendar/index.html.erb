@@ -8,7 +8,6 @@
 <% if @space_id.blank? %>
     <p class="alert alert-info">You are not assigned to any space yet, so there is no calendar to show. Ask an admin to assign you to a space.</p>
 <% else %>
-<%= vite_javascript_tag 'my_calendar' %>
 <div class="mt-4">
     <%= form_tag staff_dashboard_change_space_path, method: :put do %>
         <div class="input-group mb-3">

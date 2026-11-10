@@ -5,7 +5,8 @@ class Staff::MyCalendarController < StaffAreaController
     @spaces = Space.all.where(
       id: StaffSpace.where(user_id: current_user.id).pluck(:space_id)
     )
-    @space_id = current_user.space_id || @spaces.first&.id
+    # Only a space the page offers can be selected; a stored space the user is no longer assigned to is skipped.
+    @space_id = (@spaces.find_by(id: current_user.space_id) || @spaces.first)&.id
   end
 
   def json

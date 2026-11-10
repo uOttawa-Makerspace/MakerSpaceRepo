@@ -75,6 +75,13 @@ beforeEach(() => {
 });
 
 describe("my calendar", () => {
+  it("does nothing on a page without the calendar", () => {
+    document.body.innerHTML = "<p>Not assigned to any space</p>";
+    created.length = 0;
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(created).toHaveLength(0);
+  });
+
   it("reads the events of the space and shows the calendar", () => {
     const cal = boot();
     expect(cal.options.eventSources).toBe("/staff/my_calendar/json/3");

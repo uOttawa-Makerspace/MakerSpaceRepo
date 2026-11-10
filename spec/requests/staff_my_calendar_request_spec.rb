@@ -56,6 +56,15 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.body).to include(%(value="#{space.id}"))
     end
 
+    it "falls back to the first assigned space when the user's own space is not one they are assigned to" do
+      staff = sign_in_as(:staff)
+      staff.update!(space_id: create(:space, name: "Elsewhere").id)
+      create(:staff_space, user: staff, space: space)
+      get staff_my_calendar_index_path
+      expect(response.body).to include(%(<option selected="selected" value="#{space.id}">))
+      expect(response.body).not_to include("Elsewhere")
+    end
+
     it "shows an empty state, not an error, for staff assigned to no space" do
       sign_in_as(:staff)
       get staff_my_calendar_index_path
