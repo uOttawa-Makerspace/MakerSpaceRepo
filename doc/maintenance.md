@@ -91,6 +91,10 @@ The migration `StoreRepeatRulesInTorontoTime` (20261109130000) rewrites the stor
 
 Rehearsed on a copy of a recent backup: 344 rules (18 events, 326 unavailabilities), all rewritten, none left as they were; every rewritten rule gave the same start, feed text, Google lines and server occurrences; down restored the rules exactly (checksums of the rule and of every other column equal to before); a second up gave the same text; a down after one rule was edited refused and changed nothing.
 
+### Deploy step: one dismissal per user and announcement
+
+The release that adds the unique index on `announcement_dismisses (user_id, announcement_id)` needs no manual step; `web` runs the migration on boot. If any user has more than one dismissal row for the same announcement, the migration stops, changing nothing, and says how many pairs. Remove the extra rows by hand (they are exact repeats), then deploy again. Rolling back only drops the index.
+
 ### Failed and overdue job alerts
 
 The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:

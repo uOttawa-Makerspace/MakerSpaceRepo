@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_10_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -61,6 +61,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["announcement_id"], name: "index_announcement_dismisses_on_announcement_id"
+    t.index ["user_id", "announcement_id"], name: "index_announcement_dismisses_on_user_id_and_announcement_id", unique: true
     t.index ["user_id"], name: "index_announcement_dismisses_on_user_id"
   end
 

@@ -109,6 +109,33 @@ RSpec.describe Announcement, type: :model do
       expect { a.destroy }.to change(AnnouncementDismiss, :count).by(-1)
     end
 
+    describe "AnnouncementDismiss.dismiss" do
+      let(:user) { create(:user, :admin) }
+      let(:announcement) { create(:announcement, :all, user: user) }
+
+      it "records one dismissal however often it is called" do
+        first = AnnouncementDismiss.dismiss(announcement, by: user)
+        expect(AnnouncementDismiss.dismiss(announcement, by: user)).to eq(first)
+        expect(AnnouncementDismiss.where(user: user, announcement: announcement).count).to eq(1)
+      end
+
+      it "returns the existing row when a concurrent request inserts it first" do
+        winner = nil
+        allow(AnnouncementDismiss).to receive(:find_or_create_by!).and_wrap_original do |_original, **attrs|
+          winner = AnnouncementDismiss.create!(**attrs)
+          raise ActiveRecord::RecordNotUnique
+        end
+        expect(AnnouncementDismiss.dismiss(announcement, by: user)).to eq(winner)
+        expect(AnnouncementDismiss.count).to eq(1)
+      end
+
+      it "is refused by the database for a second row" do
+        AnnouncementDismiss.create!(user: user, announcement: announcement)
+        expect { AnnouncementDismiss.new(user: user, announcement: announcement).save!(validate: false) }
+          .to raise_error(ActiveRecord::RecordNotUnique)
+      end
+    end
+
     it "does not validate the description" do
       expect(Announcement.new(user: create(:user, :admin), public_goal: "all")).to be_valid
     end

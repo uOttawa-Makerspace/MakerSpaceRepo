@@ -364,27 +364,27 @@ RSpec.describe "Content pages (part 2)", type: :request do
         expect(other).to be_present
       end
 
-      it "answers a guest with 204 without looking anything up or inserting" do
-        expect(AnnouncementDismiss).not_to receive(:create)
-        expect(AnnouncementDismiss).not_to receive(:new)
+      it "refuses a guest without inserting anything" do
         put dismiss_announcements_path(announcement_id: news.id)
-        expect(response).to have_http_status(:no_content)
+        expect(response).to have_http_status(:unauthorized)
         expect(AnnouncementDismiss.count).to eq(0)
       end
 
-      it "silently ignores an unknown announcement id" do
+      it "answers an unknown announcement id with 404 and inserts nothing" do
         sign_in_as(:regular)
         expect {
           put dismiss_announcements_path(announcement_id: 0)
         }.not_to change(AnnouncementDismiss, :count)
-        expect(response).to have_http_status(:no_content)
+        expect(response).to have_http_status(:not_found)
       end
 
-      # no uniqueness on (user, announcement), so repeated dismisses pile up duplicate rows
-      it "creates a duplicate row on a repeated dismiss" do
+      it "keeps one row when the same announcement is dismissed again" do
         user = sign_in_as(:regular)
-        2.times { put dismiss_announcements_path(announcement_id: news.id) }
-        expect(AnnouncementDismiss.where(user: user, announcement: news).count).to eq(2)
+        2.times do
+          put dismiss_announcements_path(announcement_id: news.id)
+          expect(response).to have_http_status(:no_content)
+        end
+        expect(AnnouncementDismiss.where(user: user, announcement: news).count).to eq(1)
       end
 
       it "dismissal survives the expiry window: an expired announcement stays hidden, a re-activated one stays dismissed" do
