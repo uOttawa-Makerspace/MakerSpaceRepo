@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_10_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -303,11 +303,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
     t.string "title"
     t.bigint "training_id"
     t.datetime "updated_at", null: false
+    t.bigint "updated_by_id"
     t.index ["course_name_id"], name: "index_events_on_course_name_id"
     t.index ["created_by_id"], name: "index_events_on_created_by_id"
     t.index ["space_id", "draft"], name: "idx_events_on_space_and_draft"
     t.index ["space_id", "start_time", "end_time"], name: "idx_events_on_space_and_times"
     t.index ["training_id"], name: "index_events_on_training_id"
+    t.index ["updated_by_id"], name: "index_events_on_updated_by_id"
   end
 
   create_table "exam_questions", id: :serial, force: :cascade do |t|
@@ -1850,6 +1852,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
   add_foreign_key "events", "spaces"
   add_foreign_key "events", "trainings", on_delete: :nullify
   add_foreign_key "events", "users", column: "created_by_id"
+  add_foreign_key "events", "users", column: "updated_by_id"
   add_foreign_key "exam_questions", "exams"
   add_foreign_key "exam_questions", "questions", on_delete: :nullify
   add_foreign_key "exam_responses", "answers", on_delete: :nullify

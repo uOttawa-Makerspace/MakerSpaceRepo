@@ -1,5 +1,7 @@
 class Event < ApplicationRecord
   belongs_to :created_by, class_name: 'User'
+  # Who last edited the event in the admin calendar; empty for an event nobody has edited since it was created.
+  belongs_to :updated_by, class_name: 'User', optional: true
   belongs_to :space
   has_many :event_assignments, dependent: :destroy
   has_many :users, through: :event_assignments, source: :user
