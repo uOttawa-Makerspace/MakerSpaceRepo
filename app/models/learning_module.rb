@@ -49,14 +49,6 @@ class LearningModule < ApplicationRecord
     end
   end
 
-  # If scorm package changes, update extraction or purge File is available only
-  # after commit, but change key is cleared after save. This would queue the
-  # job, and the job is configured to run after commit succeeds
-  # https://guides.rubyonrails.org/active_storage_overview.html#downloading-files
-  # https://codewithrails.com/blog/rails-enqueue-after-transaction-commit/
-  after_commit :process_scorm_package,
-               on: %i[create update],
-               if: -> { @scorm_package_changed || @scorm_package_cleared }
   # The unzipped files are attached to this model here. Need to clear if the
   # scorm package changes
   has_many_attached :scorm_package_files
@@ -146,6 +138,25 @@ class LearningModule < ApplicationRecord
     true
   end
 
+  # Called by the controller after a save that may have changed the package: queues the extraction for a new
+  # package, or purges the extracted files when the package was removed. The files can only be read once the
+  # save has committed, so it must not run inside the transaction. It acts once per save and does nothing for a
+  # save that left the package alone.
+  def process_scorm_package
+    changed = @scorm_package_changed
+    cleared = @scorm_package_cleared
+    @scorm_package_changed = @scorm_package_cleared = false
+    return unless changed || cleared
+
+    if scorm_package.attached?
+      Rails.logger.info "Queued SCORM extract for learning module #{id}"
+      # ExtractScorm purges files eventually.
+      ExtractScormJob.perform_later(id)
+    else
+      scorm_package_files.purge_later
+    end
+  end
+
   def tracks_for_user(user)
     learning_module_tracks.find_by(user:)
   end
@@ -189,18 +200,6 @@ class LearningModule < ApplicationRecord
   end
 
   private
-
-  # Called when scorm package changes
-  def process_scorm_package
-    if scorm_package.attached?
-      Rails.logger.info "Queued SCORM extract for learning module #{id}"
-      # ExtractScorm purges files eventually.
-      ExtractScormJob.perform_later(id)
-    else
-      # Package removed, delete files
-      scorm_package_files.purge_later
-    end
-  end
 
   def uniqueness
     if LearningModule
