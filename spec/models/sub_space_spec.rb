@@ -41,4 +41,27 @@ RSpec.describe SubSpace, type: :model do
     room = create(:sub_space)
     expect { room.destroy }.to change(SubSpace, :count).by(-1)
   end
+
+  # The database refuses what the model refuses, so a delete that skips callbacks cannot remove a
+  # room's bookings with it.
+  describe "deleting without callbacks" do
+    it "is refused by the database while the room has bookings, and keeps the bookings" do
+      create(:booking_status, :pending)
+      room = create(:sub_space)
+      booking = create(:sub_space_booking, sub_space: room)
+      # A savepoint, so the refused statement does not abort the example's own transaction.
+      expect { described_class.transaction(requires_new: true) { room.delete } }.to raise_error(
+        ActiveRecord::InvalidForeignKey
+      )
+      expect { described_class.transaction(requires_new: true) { described_class.where(id: room.id).delete_all } }
+        .to raise_error(ActiveRecord::InvalidForeignKey)
+      expect(described_class.exists?(room.id)).to be(true)
+      expect(SubSpaceBooking.where(id: booking.id)).to exist
+    end
+
+    it "deletes a room that has no bookings" do
+      room = create(:sub_space)
+      expect { room.delete }.to change(SubSpace, :count).by(-1)
+    end
+  end
 end
