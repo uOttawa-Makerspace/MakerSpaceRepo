@@ -174,3 +174,10 @@ The cache lives in the `repository_zips` Docker volume (`staging_repository_zips
 ## Help requests whose GitHub issue failed
 
 When GitHub does not return an issue number, the help request is still saved and the sender is told it was not submitted. These rows have an empty `gh_issue_number`. Find them in a console with `Help.where(gh_issue_number: nil)`. A retry by the sender creates a new row; the earlier one stays as the record of the attempt. Nothing deletes these rows.
+
+## Interface components
+
+Repeated interface pieces are ViewComponents (`view_component` gem) in `app/components/`, named `<Thing>Component`. The directory is autoloaded like the other `app/` directories.
+
+- A component's Stimulus controller lives in `app/javascript/controllers/`, named after the component (for example `key_request_deny_form_controller.js`), because the controller index only loads files under that directory. Its scoped CSS goes in a partial under `app/javascript/stylesheets/` imported by `application.scss`.
+- Component specs live in `spec/components/` and get `type: :component`, the ViewComponent test helpers and Capybara matchers from `spec/support/view_component.rb`.
