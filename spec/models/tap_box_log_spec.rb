@@ -46,6 +46,27 @@ RSpec.describe TapBoxLog, type: :model do
     end
   end
 
+  describe "broadcast timing and failures" do
+    it "does not broadcast a row written in a transaction that rolls back" do
+      expect do
+        TapBoxLog.transaction do
+          TapBoxLog.log!(event_type: TapBoxLog::INFO, message: "undone")
+          raise ActiveRecord::Rollback
+        end
+      end.not_to have_broadcasted_to("tap_box_console")
+    end
+
+    it "keeps the row and reports when the broadcast fails" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_prepend_to).and_raise(StandardError, "cable down")
+      expect(Rails.error).to receive(:report).with(instance_of(StandardError), hash_including(handled: true))
+      expect { TapBoxLog.log!(event_type: TapBoxLog::INFO, message: "kept") }.to change { TapBoxLog.where(message: "kept").count }.by(1)
+    end
+
+    it "does not broadcast the unregistered reader trace" do
+      expect { TapBoxLog.log_unknown_reader(mac_address: "de:ad:be:ef:00:02") }.not_to have_broadcasted_to("tap_box_console")
+    end
+  end
+
   describe ".recent" do
     it "returns newest first, capped at 500" do
       old = TapBoxLog.log!(event_type: TapBoxLog::INFO, message: "old")
