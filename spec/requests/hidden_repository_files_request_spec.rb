@@ -24,7 +24,8 @@ RSpec.describe "Files of a deleted repository", type: :request do
       "file proxy" => rails_storage_proxy_path(file),
       "file redirect" => rails_storage_redirect_path(file),
       "photo short blob url" => "/rails/active_storage/blobs/#{photo.blob.signed_id}/#{photo.filename}",
-      "photo disk" => URI(photo.blob.url(expires_in: 5.minutes)).path
+      "photo disk" => URI(photo.blob.url(expires_in: 5.minutes)).path,
+      "photo variant disk" => URI(photo.variant(:explore).processed.url(expires_in: 5.minutes)).path
     }
   end
 
@@ -89,5 +90,28 @@ RSpec.describe "Files of a deleted repository", type: :request do
     repo.hide!
     get rails_storage_proxy_path(user.avatar)
     expect(response).to have_http_status(:ok)
+  end
+
+  describe "query cost" do
+    include QueryCounter
+
+    def attachment_queries(&block)
+      count = 0
+      counter = ->(*, payload) { count += 1 if payload[:sql].include?('FROM "active_storage_attachments"') }
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record", &block)
+      count
+    end
+
+    it "asks for one set of attachments for an avatar" do
+      user = create(:user, :regular_user)
+      user.avatar.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "a.png", content_type: "image/png")
+      path = rails_storage_proxy_path(user.avatar)
+      expect(attachment_queries { get path }).to eq(1)
+    end
+
+    it "asks for at most two sets of attachments for the photo of a visible repository" do
+      path = rails_storage_proxy_path(repo.photos.first.image)
+      expect(attachment_queries { get path }).to be <= 2
+    end
   end
 end

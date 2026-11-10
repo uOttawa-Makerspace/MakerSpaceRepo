@@ -5,13 +5,16 @@
 # (deleted) repository, as a photo or a repo file, answers 404 to everyone but a signed-in admin, so
 # deleting a repository also stops its files from being served. Any other file is served as before.
 #
-# The controllers inherit from ActiveSupport's base, not ApplicationController, so the session user
+# The controllers inherit from ActionController::Base, not ApplicationController, so the session user
 # is read here, through the same SessionAuthenticator rule as DirectUploadAuthentication. The filter
 # is prepended so it runs before the proxy controllers switch the session off.
 #
-# Cost: every file request does one blob lookup and, when the blob has attachments, one or two small
-# indexed queries (ActiveStorage::Blob#hidden_by_repository?). Files are normally cached by the
-# browser or a CDN, and a blob with no attachment to a hidden repository answers from the first query.
+# Cost: one primary-key lookup of the blob (the engine looks it up again afterwards: the filter has to run
+# before it, so a hidden file is neither read nor given a variant), then ActiveStorage::Blob#hidden_by_repository?,
+# which is one query on the blob's attachments for any file that is not a repository's (an avatar, say) and
+# one more for a repository's.
+#
+# Hiding is not a purge: see doc/maintenance.md.
 require Rails.root.join("lib/jwt_authenticator")
 
 module HiddenRepositoryFileGuard

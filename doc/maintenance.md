@@ -165,6 +165,10 @@ Setting.set("chat_message_extra_recipients", "")                    # nobody ext
 
 The change applies to the next message. A user id that no longer exists is skipped.
 
+## Deleted repositories and their files
+
+Deleting a repository hides it (`repositories.deleted`); nothing is removed, and an admin can restore it from the admin page "Deleted Repositories". The photos and files of a hidden repository stop being served by the site (Active Storage links answer 404, except to a signed-in admin), but hiding is not a purge. Copies already cached by a browser or a CDN (proxy responses are public with a very long lifetime) and storage-service links already issued (valid for about five minutes) stay usable until they expire. The stored files stay in the storage service until someone removes them on purpose; the application never does so for a hidden repository. If a file has to disappear for good, that is a separate manual step on the storage service and a CDN purge.
+
 ## Repository zip cache
 
 Repository downloads are cached as zips in `tmp/repository_zips`. The cache is limited by `REPOSITORY_ZIP_CACHE_MAX_BYTES` (default 5 GB), the filesystem keeps `REPOSITORY_ZIP_MIN_FREE_BYTES` free (default 5 GB), and a zip larger than `REPOSITORY_ZIP_MAX_CACHED_ZIP_BYTES` (default 1 GB) is streamed instead of kept. An hourly job trims the cache (least recently used first) and removes partial zips older than an hour. Everything in `tmp/repository_zips` can be deleted at any time; zips are rebuilt on demand.
