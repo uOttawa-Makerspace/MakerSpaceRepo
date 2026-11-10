@@ -74,7 +74,7 @@ RSpec.describe "Printers", type: :request do
   describe "admin: index, add_printer, remove_printer" do
     before { sign_in_as(:admin) }
 
-    # N+1 pinned
+    # The printer list in the remove form reads each printer's model.
     it "renders index with printer models labelled with short forms", skip_bullet: true do
       get printers_path
       expect(response).to have_http_status(:ok)
@@ -165,8 +165,7 @@ RSpec.describe "Printers", type: :request do
   describe "staff pages" do
     before { sign_in_as(:staff) }
 
-    # N+1 pinned
-    it "renders staff_printers and staff_printers_updates", skip_bullet: true do
+    it "renders staff_printers and staff_printers_updates" do
       get staff_printers_printers_path
       expect(response).to have_http_status(:ok)
       get staff_printers_updates_printers_path
