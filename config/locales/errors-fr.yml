@@ -191,6 +191,7 @@ fr:
       range_invalid: "Indiquez un premier et un dernier numéro de casier, le dernier n'étant pas inférieur au premier"
       not_accepted: "Les nouvelles locations de casiers ne sont pas acceptées pour le moment."
       renter_not_found: "Utilisateur introuvable"
+      request_type_not_offered: "Ce type de demande n'est pas disponible pour vous"
       update_failed: "Échec de la mise à jour de la location de casier"
       cancel_active: "Veuillez contacter l'administration pour annuler un casier"
       cancel_pending_only: "Vous ne pouvez annuler qu'une demande en attente"

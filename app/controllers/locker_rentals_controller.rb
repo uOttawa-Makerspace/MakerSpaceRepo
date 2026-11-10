@@ -4,6 +4,7 @@ class LockerRentalsController < SessionsController
   # Also sets @locker_rental
   before_action :check_permission, except: %i[index new create]
   before_action :refuse_renter_edits_beyond_state, only: :update
+  before_action :refuse_unoffered_request_type, only: :create
   layout 'staff_area', only: [:admin]
   layout 'admin_area', only: [:assign_locker]
 
@@ -303,13 +304,29 @@ class LockerRentalsController < SessionsController
     fields.respond_to?(:keys) ? fields.keys : []
   end
 
-  def new_instance_attributes
+  # The request types the form offers this user, as [label, value] pairs.
+  def available_request_types
     # FIXME localize this later
-    @available_fors = {
+    {
       staff: ('CEED staff member' if current_user.staff?),
       student: ('GNG student' if current_user.student?),
       general: 'General request'
     }.compact.invert
+  end
+
+  # A new request must name one of the types the form offers this user (a student cannot file as staff).
+  def refuse_unoffered_request_type
+    return unless current_user.staff? || LockerOption.lockers_enabled
+    return if available_request_types.value?(locker_rental_params[:requested_as].to_s.to_sym)
+
+    @locker_rental = LockerRental.new
+    @locker_rental.errors.add(:requested_as, t('errors.lockers.request_type_not_offered'))
+    new_instance_attributes
+    render :new, status: :unprocessable_content
+  end
+
+  def new_instance_attributes
+    @available_fors = available_request_types
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.pending.first
     @locker_product_info = LockerOption.locker_product_info || { variants: {} }

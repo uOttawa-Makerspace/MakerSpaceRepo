@@ -191,6 +191,7 @@ en:
       range_invalid: "Enter a first and last locker number, the last not smaller than the first"
       not_accepted: "New locker rentals are not currently accepted."
       renter_not_found: "User not found"
+      request_type_not_offered: "The request type is not one you can choose"
       update_failed: "Failed to update locker rental"
       cancel_active: "Please contact administration for cancelling a locker"
       cancel_pending_only: "You can only cancel a pending request"

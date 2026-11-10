@@ -315,6 +315,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect do
           post locker_rentals_path,
                params: { locker_rental: {
+                 requested_as: "general",
                  notes: "try to sneak",
                  state: "active",
                  locker_id: locker.id
@@ -329,7 +330,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       it "forces rented_by_id to the signed-in user (cannot request for someone else)" do
         expect do
           post locker_rentals_path,
-               params: { locker_rental: { rented_by_id: other.id } }
+               params: { locker_rental: { requested_as: "general", rented_by_id: other.id } }
         end.to change(LockerRental, :count).by(1)
         expect(LockerRental.order(:id).last.rented_by).to eq(owner)
       end
@@ -338,7 +339,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         LockerOption.lockers_enabled = false
 
         expect do
-          post locker_rentals_path, params: { locker_rental: { notes: "x" } }
+          post locker_rentals_path, params: { locker_rental: { requested_as: "general", notes: "x" } }
         end.not_to change(LockerRental, :count)
         expect(response).to redirect_to(locker_rentals_path)
         expect(flash[:alert])
@@ -350,7 +351,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
         log_in!(owner)
         expect do
-          post locker_rentals_path, params: { locker_rental: { notes: "second" } }
+          post locker_rentals_path, params: { locker_rental: { requested_as: "general", notes: "second" } }
         end.not_to change(LockerRental, :count)
 
         expect(response).to have_http_status(:unprocessable_content)
@@ -359,6 +360,25 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
           .to include("Rented by already has a request under review")
         expect(response.body).not_to include("You have a pending request for a locker")
         expect(response.body).to include('name="locker_rental[notes]"')
+      end
+
+      it "refuses a request type the form does not offer this user, or none" do
+        log_in!(create(:user, :student))
+        ["staff", ""].each do |type|
+          expect do
+            post locker_rentals_path, params: { locker_rental: { requested_as: type, notes: "x" } }
+          end.not_to change(LockerRental, :count)
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(response.body).to include(I18n.t("errors.lockers.request_type_not_offered"))
+        end
+      end
+
+      it "accepts a request type the form offers this user" do
+        log_in!(create(:user, :student))
+        expect do
+          post locker_rentals_path, params: { locker_rental: { requested_as: "general", notes: "x" } }
+        end.to change(LockerRental, :count).by(1)
+        expect(LockerRental.order(:id).last.requested_as).to eq("general")
       end
 
       it "validates the GNG student field bundle on create" do
@@ -400,6 +420,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
             post locker_rentals_path,
                  params: {
                    locker_rental: {
+                     requested_as: "staff",
                      rented_by_id: tenant.id,
                      locker_id: locker.id,
                      state: "active"
@@ -479,6 +500,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       it "honors an explicit owned_until and lets indefinite ('1') clear the date" do
         post locker_rentals_path,
              params: { locker_rental: {
+               requested_as: "staff",
                rented_by_id: create(:user).id,
                locker_id: create(:locker).id,
                state: "active",
@@ -489,6 +511,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
         post locker_rentals_path,
              params: { locker_rental: {
+               requested_as: "staff",
                rented_by_id: create(:user).id,
                locker_id: create(:locker).id,
                state: "active",
@@ -504,6 +527,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         perform_enqueued_jobs do
           post locker_rentals_path,
                params: { locker_rental: {
+                 requested_as: "staff",
                  rented_by_id: tenant.id,
                  locker_id: locker.id,
                  state: "await_payment",
@@ -527,6 +551,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         post locker_rentals_path,
              params: {
                locker_rental: {
+                 requested_as: "staff",
                  locker_id: create(:locker).id,
                  state: "active",
                  rented_by_username: tenant.username
@@ -542,6 +567,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect do
           post locker_rentals_path,
                params: { locker_rental: {
+                 requested_as: "staff",
                  rented_by_id: create(:user).id,
                  locker_id: reserved.locker_id,
                  state: "active"
@@ -558,6 +584,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect do
           post locker_rentals_path,
                params: { locker_rental: {
+                 requested_as: "staff",
                  rented_by_id: create(:user).id,
                  locker_id: create(:locker).id,
                  state: "active"
@@ -572,6 +599,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         log_in!(admin)
         post locker_rentals_path,
              params: { locker_rental: {
+               requested_as: "staff",
                rented_by_id: create(:user).id,
                locker_id: create(:locker).id,
                state: "active"
