@@ -101,13 +101,16 @@ function userTapIn(user) {
 
   const certContainer = document.getElementById("sign-in-certifications");
   if (certContainer && Array.isArray(user.certification)) {
-    const certBadges = user.certification
-      .map(
-        (name) =>
-          `<span class="badge text-bg-light text-black-50">${name}</span>`,
-      )
-      .join(" ");
-    certContainer.innerHTML = `<span class="fs-4">${certBadges}</span>`;
+    const wrapper = document.createElement("span");
+    wrapper.className = "fs-4";
+    user.certification.forEach((name, index) => {
+      if (index > 0) wrapper.append(" ");
+      const badge = document.createElement("span");
+      badge.className = "badge text-bg-light text-black-50";
+      badge.textContent = name;
+      wrapper.append(badge);
+    });
+    certContainer.replaceChildren(wrapper);
   }
 
   const tableEl = document.querySelector("#signed-in-table");
