@@ -41,9 +41,12 @@ RSpec.describe Printer, type: :model do
   end
 
   describe "#model_and_number" do
-    # model_and_number raises NoMethodError for a printer without a printer type (the association is optional)
-    it "raises for an orphan printer" do
-      expect { Printer.new(number: "3").model_and_number }.to raise_error(NoMethodError)
+    it "names the type and the printer" do
+      expect(create(:printer, :UM2P_01).model_and_number).to eq("Ultimaker 2+; UM2P - 01")
+    end
+
+    it "does not fail for a printer without a printer type" do
+      expect(Printer.new(number: "3").model_and_number).to eq(";  - 3")
     end
   end
 

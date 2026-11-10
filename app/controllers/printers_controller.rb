@@ -97,7 +97,8 @@ class PrintersController < StaffAreaController
     printer_session = PrinterSession.new(printer_id: printer_id, user_id: user_id, in_use: true)
     if (problem = printer_link_problem(printer_id, user_id))
       flash[:alert] = I18n.t("errors.printers.#{problem}")
-    elsif user_id == "clear" && last_session.update(in_use: false)
+    elsif user_id == "clear"
+      last_session&.update(in_use: false)
       flash[:notice] = "Cleared the user."
     elsif printer_session.save
       last_session.update(in_use: false) if last_session&.in_use?
@@ -182,7 +183,8 @@ class PrintersController < StaffAreaController
   def last_user_assigned_to_printer
     printer_users = {}
     Printer.includes(printer_sessions: :user).find_each do |printer|
-      printer_users[printer.id] = printer.printer_sessions.last.user.slice(:id, :username, :name)
+      user = printer.printer_sessions.last&.user
+      printer_users[printer.id] = user.slice(:id, :username, :name) if user
     end
 
     render json: printer_users

@@ -191,10 +191,19 @@ RSpec.describe "Printers", type: :request do
       expect(row["printers"]).to eq([{ "id" => um2p.id, "number" => "01", "maintenance" => false, "has_issues" => true }])
     end
 
-    # last_user_assigned_to_printer raises NoMethodError (500) as soon as any printer has no session
-    it "500s when a printer has never had a session" do
+    it "leaves out printers that have never had a session" do
+      user = create(:user, :regular_user)
+      PrinterSession.create!(printer: um3, user: user, in_use: true)
       get last_user_assigned_to_printer_printers_path
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq(um3.id.to_s => { "id" => user.id, "username" => user.username, "name" => user.name })
+    end
+
+    it "leaves out a printer whose last session has no user" do
+      PrinterSession.create!(printer: um2p, user: nil, in_use: false)
+      get last_user_assigned_to_printer_printers_path
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq({})
     end
 
     it "maps printer ids to the last session user when every printer has one" do
@@ -277,10 +286,10 @@ RSpec.describe "Printers", type: :request do
       expect(response).to redirect_to(staff_printers_printers_path)
     end
 
-    # clearing a printer that never had a session raises NoMethodError (500) because last_session is nil
-    it "500s when clearing a printer that has no session" do
-      link("clear")
-      expect(response).to have_http_status(:internal_server_error)
+    it "clearing a printer that has no session changes nothing and replies 200" do
+      expect { link("clear") }.not_to change(PrinterSession, :count)
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq([["notice", "Cleared the user."]])
     end
   end
 

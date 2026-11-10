@@ -18,7 +18,7 @@ class Printer < ApplicationRecord
   end
 
   def model_and_number
-    "#{printer_type.name}; #{name}"
+    "#{printer_type&.name}; #{name}"
   end
 
   def self.get_printer_ids(model)
