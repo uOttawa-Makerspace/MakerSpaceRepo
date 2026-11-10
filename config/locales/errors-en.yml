@@ -99,6 +99,7 @@ en:
         sub_space_not_renamed: "The sub space was not renamed."
         booking_limit_missing: "Choose a sub space and enter the number of hours for the limit you want to change."
         approval_limit_missing: "Choose a sub space and enter the number of hours for the automatic approval limit."
+        limit_not_whole_number: "The limit must be a whole number of hours, or -1 to remove it."
         confirmation_mismatch: "The text you typed does not match the space name, so nothing was deleted."
         not_deleted: "The space was not deleted."
         calendar_space_missing: "The calendar URLs were not saved because no space was chosen. Reload the page and try again."

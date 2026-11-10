@@ -99,6 +99,7 @@ fr:
         sub_space_not_renamed: "Le sous-espace n'a pas été renommé."
         booking_limit_missing: "Choisissez un sous-espace et entrez le nombre d'heures de la limite à modifier."
         approval_limit_missing: "Choisissez un sous-espace et entrez le nombre d'heures de la limite d'approbation automatique."
+        limit_not_whole_number: "La limite doit être un nombre entier d'heures, ou -1 pour la retirer."
         confirmation_mismatch: "Le texte saisi ne correspond pas au nom de l'espace, rien n'a été supprimé."
         not_deleted: "L'espace n'a pas été supprimé."
         calendar_space_missing: "Les adresses des calendriers n'ont pas été enregistrées parce qu'aucun espace n'a été choisi. Rechargez la page et réessayez."

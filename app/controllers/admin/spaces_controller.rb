@@ -159,34 +159,16 @@ class Admin::SpacesController < AdminAreaController
 
   def set_max_booking_duration
     if params[:max_hours].present? && params[:sub_space_id].present?
-      SubSpace.find(params[:sub_space_id]).update!(
-        maximum_booking_duration:
-          params[:max_hours].to_i == -1 ? nil : params[:max_hours].to_i
-      )
-      flash[:notice] = "Max booking duration updated!"
-      redirect_to edit_admin_space_path(
-                    id: params[:space_id],
-                    anchor: "sub_space_area"
-                  )
-      return
+      return update_sub_space_limit(:maximum_booking_duration, params[:max_hours], "Max booking duration updated!")
     end
     if params[:max_weekly_hours].present? && params[:sub_space_id].present?
-      SubSpace.find(params[:sub_space_id]).update!(
-        maximum_booking_hours_per_week:
-          (
-            if params[:max_weekly_hours].to_i == -1
-              nil
-            else
-              params[:max_weekly_hours].to_i
-            end
-          )
+      return(
+        update_sub_space_limit(
+          :maximum_booking_hours_per_week,
+          params[:max_weekly_hours],
+          "Max weekly booking duration updated!"
+        )
       )
-      flash[:notice] = "Max weekly booking duration updated!"
-      redirect_to edit_admin_space_path(
-                    id: params[:space_id],
-                    anchor: "sub_space_area"
-                  )
-      return
     end
     flash[:alert] = I18n.t("errors.admin.spaces.booking_limit_missing")
     redirect_to edit_admin_space_path(id: params[:space_id])
@@ -194,22 +176,13 @@ class Admin::SpacesController < AdminAreaController
 
   def set_max_automatic_approval_hour
     if params[:auto_approve_hours].present? && params[:sub_space_id].present?
-      SubSpace.find(params[:sub_space_id]).update!(
-        max_automatic_approval_hour:
-          (
-            if params[:auto_approve_hours].to_i == -1
-              nil
-            else
-              params[:auto_approve_hours].to_i
-            end
-          )
+      return(
+        update_sub_space_limit(
+          :max_automatic_approval_hour,
+          params[:auto_approve_hours],
+          "Max automatic approval duration updated!"
+        )
       )
-      flash[:notice] = "Max automatic approval duration updated!"
-      redirect_to edit_admin_space_path(
-                    id: params[:space_id],
-                    anchor: "sub_space_area"
-                  )
-      return
     end
     flash[:alert] = I18n.t("errors.admin.spaces.approval_limit_missing")
     redirect_to edit_admin_space_path(id: params[:space_id])
@@ -308,6 +281,18 @@ class Admin::SpacesController < AdminAreaController
   end
 
   private
+
+  # Sets one hours limit of a sub space from the submitted text: a whole number of hours, or -1 to remove the limit.
+  def update_sub_space_limit(attribute, text, notice)
+    unless text.to_s.match?(/\A(-1|\d+)\z/)
+      flash[:alert] = I18n.t("errors.admin.spaces.limit_not_whole_number")
+      return redirect_to edit_admin_space_path(id: params[:space_id])
+    end
+    hours = text.to_i
+    SubSpace.find(params[:sub_space_id]).update!(attribute => hours == -1 ? nil : hours)
+    flash[:notice] = notice
+    redirect_to edit_admin_space_path(id: params[:space_id], anchor: "sub_space_area")
+  end
 
   def space_name_error
     kind = @space.errors.of_kind?(:name, :blank) ? "blank" : "taken"
