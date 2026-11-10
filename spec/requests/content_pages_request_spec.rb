@@ -707,6 +707,16 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response).to have_http_status(422)
       expect(deliveries).to be_empty
     end
+
+    it "re-renders a form that posts again, and the retry succeeds" do
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
+      post help_path, params: params
+      expect(response.body).not_to include('name="_method"')
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: 5 })
+      expect { post help_path, params: params }.to change(Help, :count).by(1)
+      expect(response).to redirect_to(help_path)
+      expect(Help.last.gh_issue_number).to eq("5")
+    end
   end
 
   # ------------------------------------------------------------------
