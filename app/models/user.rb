@@ -495,6 +495,17 @@ class User < ApplicationRecord
       .limit(10)
   }
 
+  # Rows for the user pickers (repository owner, team captain, new staff).
+  # Staff match on name and see it; everyone else matches on username and
+  # sees only the id and username, like the directory search.
+  def self.picker_entries(term, viewer)
+    fields = viewer.staff? ? %i[name username] : %i[username]
+    pattern = "%#{sanitize_sql_like(term.to_s)}%"
+    columns = [:id, *fields]
+    where(arel_table[fields.first].matches(pattern)).limit(10).pluck(*columns)
+      .map { |row| columns.zip(row).to_h }
+  end
+
   # Staff-facing substring search over name, email and username (accent- and
   # case-insensitive). LIKE wildcards in the query match literally.
   scope :text_search, ->(query) {
