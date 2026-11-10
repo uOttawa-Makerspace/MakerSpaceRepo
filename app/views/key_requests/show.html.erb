@@ -130,7 +130,7 @@
         <% if @user.admin? && @key_request.status_waiting_for_approval? %>
           <div class="border-top pt-4 d-flex justify-content-end align-items-center gap-3">
             <span class="text-muted small">Admin Actions:</span>
-            <%= render 'key_requests/deny_form', key_request: @key_request, class: 'd-flex gap-2', button_class: 'btn btn-outline-danger', icon: true %>
+            <%= render KeyRequestDenyFormComponent.new(key_request: @key_request, form_class: 'd-flex gap-2', button_class: 'btn btn-outline-danger', icon: true) %>
             
             <%= button_to approve_key_request_admin_keys_path(id: @key_request.id), class: 'btn btn-success px-4', method: :patch do %>
                <i class="bi bi-check-lg"></i> Approve
