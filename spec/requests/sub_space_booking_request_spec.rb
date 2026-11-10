@@ -916,6 +916,20 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(page).to have_css("#declined-accordion", text: "DeclinedOne", visible: :all)
     end
 
+    it "My Bookings shows each booking's own status" do
+      owner = create(:user, :regular_user, booking_approval: true)
+      log_in!(owner)
+      booking_by(owner, name: "WaitingOne")
+      booking_by(owner, name: "YesOne").change_status!(@approved_status)
+      booking_by(owner, name: "NoOne").change_status!(@declined_status)
+
+      get sub_space_booking_index_path
+      page = Capybara.string(response.body)
+      badge = ->(name) { page.find("tr", text: name, visible: :all).find(".badge.text-bg-warning, .badge.text-bg-success, .badge.text-bg-danger", visible: :all).text }
+
+      expect([badge.call("WaitingOne"), badge.call("YesOne"), badge.call("NoOne")]).to eq(%w[Pending Approved Declined])
+    end
+
     it "publish needs admin; admin toggles public/private" do
       log_in!(create(:user, :regular_user, booking_approval: true))
       booking = booking_by(create(:user, :regular_user, booking_approval: true),
