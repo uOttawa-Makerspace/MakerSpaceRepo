@@ -54,7 +54,7 @@ RSpec.describe "JobOrders gaps", type: :request do
     {
       "destroy" => -> { delete job_order_path(order) },
       "user_approval" => -> { patch job_order_user_approval_path(order), params: { approved: "true" } },
-      "quote" => -> { patch job_order_quote_path(order), params: { approved: "true" } },
+      "quote" => -> { patch_quote order, { approved: "true" } },
       "comments" => -> { patch job_order_comments_path(order), params: { job_order: { staff_comments: "x" } } },
       "processed" => -> { patch job_order_processed_path(order), params: { completed: "true" } },
       "resend_quote_email" => -> { patch job_order_resend_quote_email_path(order) },

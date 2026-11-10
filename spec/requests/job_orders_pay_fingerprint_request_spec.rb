@@ -206,7 +206,7 @@ RSpec.describe "Job order pay link fingerprint", type: :request do
       shopify.calls.clear
 
       session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "5",
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task.id}" => "5",
                                                    job_order: { staff_comments: "" } }
 
       expect(status_names(order).last).to eq("Waiting for User Approval")
