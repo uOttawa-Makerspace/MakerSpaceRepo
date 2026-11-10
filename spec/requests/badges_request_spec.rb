@@ -42,9 +42,15 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       granted = create(:certification, user: earner, training_session: nil, training: nil, level: "Beginner")
       create(:proficient_project_session, certification: granted, user: earner, level: "Beginner",
                                           proficient_project: create(:proficient_project, training: project_training))
+      second_project_training = create(:training, name_en: "Sewing EN", skill: skill, has_badge: true)
+      second = create(:certification, user: earner, training_session: nil, training: nil, level: "Advanced")
+      create(:proficient_project_session, certification: second, user: earner, level: "Advanced",
+                                          proficient_project: create(:proficient_project, training: second_project_training))
+      press = create(:training, name_en: "Press EN", skill: skill, has_badge: true)
+      create(:certification, user: earner, training_session: create(:training_session, training: press), training: press, level: "Beginner")
       log_in!(earner)
       get badges_path
-      expect(response.body).to include("Soldering EN").and include("Laser EN")
+      expect(response.body).to include("Soldering EN").and include("Laser EN").and include("Sewing EN").and include("Press EN")
       get search_badges_path(search: "soldering")
       expect(response.body).to include("Soldering EN")
       expect(response.body).not_to include("Laser EN")

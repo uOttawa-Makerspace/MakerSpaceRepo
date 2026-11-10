@@ -176,16 +176,22 @@ class Certification < ApplicationRecord
         end
 
   # The top-level certifications of each training (all of them when several share that level),
-  # whether earned in a training session or through a proficient project.
+  # whether earned in a training session or through a proficient project. A certification
+  # whose training cannot be found is left out.
   def self.highest_level
     certs = all.to_a
     preload_trainings(certs)
-    certs.group_by(&:training).flat_map do |_, held|
-      top = held.map { |c| LEVELS.index(c.level).to_i }.max
-      held.select { |c| LEVELS.index(c.level).to_i == top }
-    end
+    certs.select(&:training_known?).group_by(&:training).reject { |training, _| training.nil? }.flat_map { |_, held| top_ranked(held) }
   end
 
+  def self.top_ranked(held)
+    ranks = held.map(&:rank)
+    top = ranks.compact.max
+    top ? held.select { |c| c.rank == top } : []
+  end
+  private_class_method :top_ranked
+
+  # Loads the training of each certification, through its session or its proficient project.
   def self.preload_trainings(certs)
     by_session, by_project = certs.partition(&:training_session_id)
     ActiveRecord::Associations::Preloader.new(records: by_session, associations: { training_session: :training }).call
@@ -194,7 +200,16 @@ class Certification < ApplicationRecord
       associations: { proficient_project_session: { proficient_project: :training } }
     ).call
   end
-  private_class_method :preload_trainings
+
+  # A session certification ranks by its session's level, a project-only one by its own level.
+  # A level outside Beginner, Intermediate and Advanced has no rank.
+  def rank
+    LEVELS.index(training_session ? training_session.level : level)
+  end
+
+  def training_known?
+    training_session.present? || proficient_project_session&.proficient_project.present?
+  end
 
   # The name of the training behind the certification, in the current language.
   def name
