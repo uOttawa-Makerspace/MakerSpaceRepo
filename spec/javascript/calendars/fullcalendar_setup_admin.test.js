@@ -446,6 +446,19 @@ describe("staff filters", () => {
     expect(cal.sources.has("6")).toBe(true);
   });
 
+  it("gives the all events and all staff checkboxes their own ids and labels", async () => {
+    stubFetch({});
+    await boot();
+    const events = document.querySelector(".all_events_checkbox");
+    const staff = document.querySelector(".all_checkbox");
+    expect(events.id).not.toBe(staff.id);
+    expect(document.querySelectorAll(`[id="${staff.id}"]`).length).toBe(1);
+    expect(document.querySelector(`label[for="${events.id}"]`)).not.toBeNull();
+    expect(document.querySelector(`label[for="${staff.id}"]`).textContent).toBe(
+      "All Staff",
+    );
+  });
+
   it("the all events checkbox toggles every staff events checkbox", async () => {
     stubFetch({});
     const cal = await boot();

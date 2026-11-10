@@ -334,7 +334,12 @@ onPageLoad("#calendar", async () => {
     allCheckboxDiv.className = "m-2 d-flex align-items-center gap-1";
 
     const { checkbox: allEventsCheckbox, label: allEventsLabel } =
-      createCheckboxElement("all", " / ", "#919191", "all_events_checkbox");
+      createCheckboxElement(
+        "all-events",
+        " / ",
+        "#919191",
+        "all_events_checkbox",
+      );
     const { checkbox: allCheckbox, label: allLabel } = createCheckboxElement(
       "all",
       "All Staff",
