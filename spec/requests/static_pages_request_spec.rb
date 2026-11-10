@@ -308,6 +308,13 @@ RSpec.describe "Static pages", type: :request do
       expect(recent).not_to include(priv)
     end
 
+    it "renders a card for each of several recent repositories" do
+      create_list(:repository, 3)
+      get root_path
+      expect(response).to have_http_status(:ok)
+      expect(controller.instance_variable_get(:@recent_projects).size).to eq(3)
+    end
+
     it "lists contact infos flagged show_hours (name order)" do
       create(:contact_info, name: "Zeta Lab", show_hours: true)
       create(:contact_info, name: "Alpha Lab", show_hours: true)

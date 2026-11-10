@@ -12,8 +12,7 @@ require "rails_helper"
 # fetches /open_hours; the JS-error check is being added to system specs by a
 # parallel chunk, so no SEVERE console errors were observed or asserted here
 # (see c17-notes.md).
-# N+1 pinned (home eager-loads variant_records it never uses)
-RSpec.describe "Homepage", type: :system, skip_bullet: true do
+RSpec.describe "Homepage", type: :system do
   let(:workshop_ms) { (Time.current + 3.days).to_i * 1000 }
 
   before do
