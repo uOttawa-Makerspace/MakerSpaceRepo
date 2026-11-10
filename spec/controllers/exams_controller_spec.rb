@@ -46,9 +46,6 @@ RSpec.describe ExamsController, type: :controller do
                 $n_exams_question
               )
         expect(Exam.last.category).to eq(training_session.training.name_en)
-        expect(flash[:notice]).to eq(
-          "You've successfully sent exams to all users in this training."
-        )
       end
     end
   end
@@ -151,8 +148,9 @@ RSpec.describe ExamsController, type: :controller do
                 $n_exams_question
               )
         expect(flash[:notice]).to eq(
-          "You've successfully sent exams to all users in this training."
+          "You've successfully sent the exam to #{user.name}."
         )
+        expect(ActionMailer::Base.deliveries.map(&:to)).to eq([[user.email]])
         expect(response).to redirect_to staff_training_session_path(
                       training_session.id
                     )

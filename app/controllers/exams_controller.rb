@@ -23,6 +23,7 @@ class ExamsController < SessionsController
       users.each { |user| create_exam_and_exam_questions(user, training_session) }
     end
     users.each { |user| MsrMailer.send_exam(user, training_session).deliver_later }
+    flash[:notice] = "You've successfully sent exams to all users in this training." if users.any?
     redirect_to staff_dashboard_index_path(space_id: training_session.space.id)
   end
 
@@ -30,8 +31,9 @@ class ExamsController < SessionsController
     training_session = @training_session
     user = User.find(params[:user_id])
     create_exam_and_exam_questions(user, training_session)
+    MsrMailer.send_exam(user, training_session).deliver_now
+    flash[:notice] = I18n.t("exams.sent_to_user", name: user.name)
     redirect_to staff_training_session_path(training_session.id)
-    # SEND EMAIL
   end
 
   def show
@@ -108,7 +110,6 @@ class ExamsController < SessionsController
       $n_exams_question,
       training_session.level
     )
-    flash[:notice] = "You've successfully sent exams to all users in this training."
   end
 
   def set_exam

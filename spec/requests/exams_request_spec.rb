@@ -793,14 +793,18 @@ RSpec.describe "Exams", type: :request do
 
     before { log_in!(session_record.user) }
 
-    it "creates the exam for that user without emailing, and redirects to the staff session page" do
+    it "creates the exam for that user, emails only that user, and redirects to the staff session page" do
+      other = create(:user, :regular_user)
+      session_record.users << other
       expect do
         perform_enqueued_jobs do
           create_for_single_user(student)
         end
       end.to change { Exam.where(user: student).count }.by(1)
       expect(response).to redirect_to(staff_training_session_path(session_record.id))
-      expect(deliveries).to be_empty
+      expect(deliveries.map(&:to)).to eq([[student.email]])
+      expect(deliveries.first.subject).to eq("An exam was sent to you")
+      expect(flash[:notice]).to eq("You've successfully sent the exam to #{student.name}.")
       expect(Exam.last.exam_questions.count).to eq($n_exams_question)
     end
 
@@ -813,9 +817,10 @@ RSpec.describe "Exams", type: :request do
     it "refuses with a message and saves nothing when the training has no questions at that level" do
       empty = build_exam_fixture(question_count: 0)
       sign_in_as(:admin)
-      expect { create_for_single_user(empty[:user], empty[:session]) }.not_to change(Exam, :count)
+      expect { perform_enqueued_jobs { create_for_single_user(empty[:user], empty[:session]) } }.not_to change(Exam, :count)
       expect(response).to redirect_to(staff_training_session_path(empty[:session].id))
       expect(flash[:alert]).to eq("This training has no questions at this level, so no exams were created.")
+      expect(deliveries).to be_empty
     end
 
     it "makes a guest sign in and issues nothing" do
