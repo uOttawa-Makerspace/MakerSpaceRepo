@@ -489,6 +489,14 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(hour.reload.approval).to be(true)
     end
 
+    it "sends staff back to the requests page after an approval" do
+      hour = make_hour(approval: nil)
+      vol_login!(create(:user, :staff))
+      put update_approval_volunteer_hours_path(id: hour.id, approval: true)
+      expect(response).to redirect_to(volunteer_hour_requests_volunteer_hours_path)
+      expect(hour.reload.approval).to be(true)
+    end
+
     it "404s for a missing id" do
       vol_login!(owner)
       patch volunteer_hour_path(id: 999_999), params: { volunteer_hour: { total_time: 1 } }

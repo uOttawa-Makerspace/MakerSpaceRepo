@@ -22,7 +22,7 @@ class RecurrenceRule
 
     zone_name = params.delete_prefix(";TZID=").presence || ZONE.name
     zone = ActiveSupport::TimeZone[zone_name] or raise ArgumentError, "unknown time zone #{zone_name}"
-    zone.parse(stamp)
+    zone.parse(stamp) or raise ArgumentError, "unreadable start #{stamp}"
   end
 
   # `series_start` stands in for a rule stored without a DTSTART.
