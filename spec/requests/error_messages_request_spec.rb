@@ -332,10 +332,10 @@ RSpec.describe "Error messages", type: :request do
   end
 
   describe "users and memberships" do
-    it "tells a regular user that only staff change programs, in French" do
+    it "refuses a regular user changing programs, in French" do
       content_sign_in_as(:regular)
       post change_programs_users_path, params: { user_id: create(:user, :regular_user).id }.merge(fr)
-      expect(flash[:alert]).to eq("Seuls le personnel et les administrateurs peuvent modifier les programmes d'un utilisateur.")
+      expect(flash[:alert]).to eq("Vous ne pouvez pas accéder à cette zone.")
     end
 
     it "names an unknown membership tier in French" do

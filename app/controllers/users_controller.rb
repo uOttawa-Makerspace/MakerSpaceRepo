@@ -509,9 +509,11 @@ class UsersController < SessionsController
   def ensure_staff
     return if @user.staff?
 
-    return head :forbidden if json_request?
-
-    redirect_to root_path, alert: 'You cannot access this area.'
+    if json_request?
+      head :forbidden
+    else
+      redirect_to root_path, alert: I18n.t('errors.users.staff_only')
+    end
   end
 
   # The normalised email, or '' when none was given or it is longer than an address can be.
