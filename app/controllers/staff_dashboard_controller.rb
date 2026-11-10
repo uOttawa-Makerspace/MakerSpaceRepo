@@ -57,7 +57,7 @@ class StaffDashboardController < StaffAreaController
 
   def refresh_tables
     signed_in_users = @space.signed_in_users
-    return head :not_modified if params[:token] == signed_in_users.map(&:id).join("")
+    return head :not_modified if params[:token] == signed_in_users.map(&:id).join(",")
 
     load_table_context
     @printers_in_use =
