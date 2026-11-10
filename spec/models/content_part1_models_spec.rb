@@ -141,14 +141,21 @@ RSpec.describe "Content models (part 1 characterization)" do
     end
 
     describe "zip cache" do
-      it "zip_path is tmp/repository_zips/makerepo_<id>.zip and clear_zip_cache removes it after update and destroy" do
+      it "zip_path is tmp/repository_zips/makerepo_<id>.zip and clear_zip_cache removes it" do
+        FileUtils.mkdir_p(File.dirname(repo.zip_path))
+        FileUtils.touch(repo.zip_path)
+        repo.clear_zip_cache
+        expect(File.exist?(repo.zip_path)).to be(false)
+      end
+
+      it "is not cleared by saving or destroying the record itself" do
         FileUtils.mkdir_p(File.dirname(repo.zip_path))
         FileUtils.touch(repo.zip_path)
         repo.update!(description: "changed")
-        expect(File.exist?(repo.zip_path)).to be(false)
-        FileUtils.touch(repo.zip_path)
         repo.destroy
-        expect(File.exist?(repo.zip_path)).to be(false)
+        expect(File.exist?(repo.zip_path)).to be(true)
+      ensure
+        FileUtils.rm_f(repo.zip_path)
       end
 
       it "a missing cache file is not an error and is not reported" do

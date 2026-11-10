@@ -1091,6 +1091,17 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(Repository.exists?(repo.id)).to be(false)
     end
 
+    it "drops the cached zip of the deleted repository" do
+      cache_dir = Pathname(Dir.mktmpdir("repository_zips"))
+      allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir)
+      repo = create(:repository)
+      FileUtils.touch(repo.zip_path)
+      delete delete_repository_admin_users_path, params: { id: repo.id }
+      expect(File.exist?(repo.zip_path)).to be(false)
+    ensure
+      FileUtils.rm_rf(cache_dir.to_s)
+    end
+
     it "unknown id: 404" do
       delete delete_repository_admin_users_path, params: { id: 0 }
       expect(response).to have_http_status(:not_found)

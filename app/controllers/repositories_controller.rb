@@ -149,6 +149,7 @@ class RepositoriesController < SessionsController
 
   def update
     if save_with_categories_and_equipments
+      @repository.clear_zip_cache
       flash[:notice] = "Project updated successfully!"
       redirect_to repository_path(
                     @repository.user_username,
@@ -165,7 +166,7 @@ class RepositoriesController < SessionsController
   end
 
   def destroy
-    @repository.destroy
+    @repository.clear_zip_cache if @repository.destroy
     respond_to do |format|
       format.html do
         redirect_to user_path(@repository.user_username),

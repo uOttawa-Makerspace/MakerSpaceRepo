@@ -35,7 +35,6 @@ class Repository < ApplicationRecord
              class_name: 'Repository',
              foreign_key: 'make_id',
              optional: true
-  after_commit :clear_zip_cache, on: %i[update destroy]
 
   scope :public_repos, -> { where(share_type: 'public') }
 

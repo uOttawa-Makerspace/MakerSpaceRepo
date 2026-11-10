@@ -736,6 +736,17 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.reload.title).to eq("Renamed")
     end
 
+    it "drops the cached zip of the updated repository" do
+      cache_dir = Pathname(Dir.mktmpdir("repository_zips"))
+      allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir)
+      FileUtils.touch(repo.zip_path)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params
+      expect(File.exist?(repo.zip_path)).to be(false)
+    ensure
+      FileUtils.rm_rf(cache_dir.to_s)
+    end
+
     it "replaces categories and equipment wholesale (destroy_all then recreate)" do
       Category.create!(name: "Old", repository_id: repo.id)
       content_login!(owner)
@@ -914,6 +925,17 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(user_path(owner.username))
       expect(flash[:notice]).to eq("Repository has been successfully deleted.")
       expect(owner.reload.reputation).to eq(75)
+    end
+
+    it "drops the cached zip of the deleted repository" do
+      cache_dir = Pathname(Dir.mktmpdir("repository_zips"))
+      allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir)
+      FileUtils.touch(repo.zip_path)
+      content_login!(owner)
+      delete repository_path(owner.username, repo.slug)
+      expect(File.exist?(repo.zip_path)).to be(false)
+    ensure
+      FileUtils.rm_rf(cache_dir.to_s)
     end
 
     it "removes photos, comments and likes with it" do
