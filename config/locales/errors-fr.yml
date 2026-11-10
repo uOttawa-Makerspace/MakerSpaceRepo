@@ -68,6 +68,7 @@ fr:
         not_updated: "Les coordonnées n'ont pas été modifiées."
         not_deleted: "Les coordonnées n'ont pas été supprimées."
       announcements:
+        not_created: "L'annonce n'a pas été créée."
         not_updated: "L'annonce n'a pas été modifiée."
         not_deleted: "L'annonce n'a pas été supprimée."
       training_sessions:
@@ -220,6 +221,7 @@ fr:
     development_programs:
       not_joined: "Vous n'avez pas rejoint le programme de développement."
     announcements:
+      not_created: "L'annonce n'a pas été créée."
       not_updated: "L'annonce n'a pas été modifiée."
       not_deleted: "L'annonce n'a pas été supprimée."
     makes:

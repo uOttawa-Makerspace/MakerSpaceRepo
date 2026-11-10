@@ -76,6 +76,15 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(flash[:alert]).to eq("Please select another public goal")
     end
 
+    it "refuses a staff announcement with no audience and saves nothing" do
+      sign_in_as(:staff)
+      expect {
+        post announcements_path, params: { announcement: { description: "Hello" } }
+      }.not_to change(Announcement, :count)
+      expect(response).to redirect_to(new_announcement_path)
+      expect(flash[:alert]).to include("The announcement was not created.")
+    end
+
     it "lets an admin create any audience through the staff controller" do
       sign_in_as(:admin)
       expect {
@@ -211,18 +220,26 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(Announcement.last).to have_attributes(user_id: admin.id, public_goal: "all", active: true, end_date: Date.new(2030, 1, 1))
     end
 
-    # public_goal is not validated, so an admin can save an audience nothing ever displays (e.g. "regular_user", a typo, or even blank)
-    it "accepts a typo'd or blank public_goal" do
+    it "refuses a typo'd or blank audience and saves nothing" do
       sign_in_as(:admin)
       expect {
         post admin_announcements_path, params: { announcement: { description: "Typo", public_goal: "evryone" } }
-      }.to change(Announcement, :count).by(1)
-      expect(flash[:notice]).to eq("You've successfully created an announcement for Evryone")
+      }.not_to change(Announcement, :count)
+      expect(response).to redirect_to(new_admin_announcement_path)
+      expect(flash[:alert]).to include("The announcement was not created.", "Public goal")
       expect {
         post admin_announcements_path, params: { announcement: { description: "Blank" } }
-      }.to change(Announcement, :count).by(1) # saved, then the flash line raises on nil.capitalize
-      expect(response).to have_http_status(:internal_server_error)
-      expect(Announcement.last.public_goal).to be_nil
+      }.not_to change(Announcement, :count)
+      expect(response).to redirect_to(new_admin_announcement_path)
+      expect(flash[:alert]).to include("The announcement was not created.")
+    end
+
+    it "refuses to change an announcement to an unknown audience" do
+      sign_in_as(:admin)
+      news = create(:announcement, :all, description: "Keep")
+      patch admin_announcement_path(news), params: { announcement: { public_goal: "evryone" } }
+      expect(flash[:alert]).to include("The announcement was not updated.")
+      expect(news.reload.public_goal).to eq("all")
     end
 
     it "requires the announcement param" do

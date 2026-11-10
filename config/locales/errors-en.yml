@@ -68,6 +68,7 @@ en:
         not_updated: "The contact information was not updated."
         not_deleted: "The contact information was not deleted."
       announcements:
+        not_created: "The announcement was not created."
         not_updated: "The announcement was not updated."
         not_deleted: "The announcement was not deleted."
       training_sessions:
@@ -220,6 +221,7 @@ en:
     development_programs:
       not_joined: "You did not join the Development Program."
     announcements:
+      not_created: "The announcement was not created."
       not_updated: "The announcement was not updated."
       not_deleted: "The announcement was not deleted."
     makes:

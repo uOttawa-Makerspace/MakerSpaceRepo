@@ -33,11 +33,12 @@ class AnnouncementsController < StaffAreaController
 
   def create
     @announcement.user_id = current_user.id
-    if @announcement.save!
-      redirect_to announcements_path
-      flash[
-        :notice
-      ] = "You've successfully created an announcement for #{@announcement.public_goal.capitalize}"
+    if @announcement.save
+      redirect_to announcements_path,
+                  notice: "You've successfully created an announcement for #{@announcement.public_goal.capitalize}"
+    else
+      redirect_to new_announcement_path,
+                  alert: validation_message(@announcement, "errors.announcements.not_created")
     end
   end
 

@@ -84,9 +84,11 @@ RSpec.describe Announcement, type: :model do
     end
 
     it "does not filter by audience" do
-      goals = %w[all admin staff volunteer regular_user nonsense]
+      goals = %w[all admin staff volunteer regular_user]
       goals.each { |g| create(:announcement, user: admin, public_goal: g) }
-      expect(Announcement.active.pluck(:public_goal)).to match_array(goals)
+      stray = create(:announcement, :all, user: admin)
+      stray.update_columns(public_goal: "nonsense")
+      expect(Announcement.active.pluck(:public_goal)).to match_array(goals + ["nonsense"])
     end
 
     it "has a regular_user scope" do
@@ -107,8 +109,18 @@ RSpec.describe Announcement, type: :model do
       expect { a.destroy }.to change(AnnouncementDismiss, :count).by(-1)
     end
 
-    it "does not validate description or public_goal" do
-      expect(Announcement.new(user: create(:user, :admin))).to be_valid
+    it "does not validate the description" do
+      expect(Announcement.new(user: create(:user, :admin), public_goal: "all")).to be_valid
+    end
+
+    it "accepts only the known audiences" do
+      admin = create(:user, :admin)
+      Announcement::PUBLIC_GOALS.each { |goal| expect(Announcement.new(user: admin, public_goal: goal)).to be_valid }
+      ["evryone", "", nil, "all_visitors"].each do |goal|
+        announcement = Announcement.new(user: admin, public_goal: goal)
+        expect(announcement).not_to be_valid
+        expect(announcement.errors[:public_goal]).to be_present
+      end
     end
   end
 end
