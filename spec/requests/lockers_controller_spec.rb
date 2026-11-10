@@ -209,6 +209,23 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(flash[:notice]).to eq("Selected lockers deleted")
     end
 
+    it "GET index names the bulk edit size field so the form submits it under locker" do
+      log_in!(admin)
+      create(:locker)
+      get lockers_path
+      form = Nokogiri::HTML(response.body).at_css("#lockerBulkEditModal form")
+      expect(form.at_css("select")["name"]).to eq("locker[locker_size_id]")
+    end
+
+    it "PATCH bulk_edit with no size chosen changes no locker and says so" do
+      size = create(:locker_size)
+      lockers = create_list(:locker, 2, locker_size: size)
+      patch bulk_edit_lockers_path, params: { id: lockers.map(&:id), locker: { locker_size_id: "" } }
+      expect(lockers.map { |l| l.reload.locker_size_id }).to all(eq(size.id))
+      expect(Locker.count).to eq(2)
+      expect(flash[:alert]).to start_with("Some lockers were not updated")
+    end
+
     it "PATCH update answers an invalid JSON edit with the field errors and the sentence to show as error" do
       locker = create(:locker, specifier: "E-1")
       other = create(:locker, specifier: "E-2")

@@ -7,7 +7,7 @@
             </div>
 
             <div class="modal-body">
-                <%= form_with url: bulk_edit_lockers_path, method: :patch do |f| %>
+                <%= form_with scope: :locker, url: bulk_edit_lockers_path, method: :patch do |f| %>
                     <div>
                         <ul id="lockerBulkEditList" class="row row-cols-md-4">
                         </ul>

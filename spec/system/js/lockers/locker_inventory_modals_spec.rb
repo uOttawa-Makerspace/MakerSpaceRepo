@@ -149,15 +149,16 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
       expect(page).to have_no_css("#lockerBulkEditList li")
     end
 
-    it "is refused with a missing-parameter error, so no locker size changes" do
+    it "changes the size of the selected lockers only" do
       select_rows(l1, l3)
       open_modal "Bulk edit", "#lockerBulkEditModal"
       within("#lockerBulkEditModal") do
-        select "24x24", from: "locker_size_id", visible: :all
+        select "24x24", from: "locker_locker_size_id", visible: :all
         click_button "Update Lockers"
       end
-      expect(page).to have_text("The form is missing required information (locker)")
-      expect([l1, l2, l3].map { |l| l.reload.locker_size }).to all(eq(size_small))
+      expect(page).to have_text("Lockers updated")
+      expect([l1, l3].map { |l| l.reload.locker_size }).to all(eq(size_large))
+      expect(l2.reload.locker_size).to eq(size_small)
     end
 
     it "deletes the selected lockers after confirmation" do
