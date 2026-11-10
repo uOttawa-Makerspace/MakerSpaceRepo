@@ -74,13 +74,26 @@ RSpec.describe CalendarHelper, type: :helper do
 
     around { |example| travel_to(Time.utc(2027, 1, 10, 12, 0)) { example.run } }
 
+    # The [message, context] of every problem reported (Rails.error) while the block runs.
+    def reported_ics_problems
+      reports = []
+      subscriber = Class.new { define_method(:report) { |error, handled:, severity:, context:, source:| reports << [error.message, context] } }.new
+      Rails.error.subscribe(subscriber)
+      begin
+        yield
+      ensure
+        Rails.error.unsubscribe(subscriber)
+      end
+      reports
+    end
+
     it "returns no calendar at all (not an empty one) when the fetch gives no body" do
       stub_request(:get, url).to_return(status: 404, body: "")
       expect(parse_ics_calendar(url)).to eq([])
     end
 
-    it "logs and returns no events for a body that is not a calendar" do
-      stub_request(:get, url).to_return(status: 200, body: "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nBROKEN")
+    it "logs and returns no events for a body with a value that is not a date" do
+      stub_request(:get, url).to_return(status: 200, body: ics(vevent("bad", ["DTSTART:notadate", "SUMMARY:Bad"])))
       allow(Rails.logger).to receive(:error)
       expect(parse_ics_calendar(url).first[:events]).to eq([])
       expect(Rails.logger).to have_received(:error).with(/ICS parse error for #{Regexp.escape(url)}/)
@@ -94,13 +107,37 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(group[:events].first[:extendedProps]).to eq(name: "Hours", description: "Walk in")
     end
 
-    it "drops a single event that ended more than two months ago and keeps a recurring one" do
+    it "drops a single event that ended more than two months ago and keeps a series that has not ended" do
       body = ics(
         vevent("old", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Old"]),
-        vevent("rec", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Rec", "RRULE:FREQ=DAILY;COUNT=3"])
+        vevent("rec", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Rec", "RRULE:FREQ=DAILY"])
       )
       stub_request(:get, url).to_return(status: 200, body: body)
       expect(parse_ics_calendar(url).first[:events].map { |e| e[:id] }).to eq(["rec"])
+    end
+
+    it "drops a series whose last day or last counted occurrence was more than two months ago" do
+      body = ics(
+        vevent("until-old", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:A", "RRULE:FREQ=DAILY;UNTIL=20260810T150000Z"]),
+        vevent("count-old", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:B", "RRULE:FREQ=WEEKLY;COUNT=3"]),
+        vevent("until-recent", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:C", "RRULE:FREQ=DAILY;UNTIL=20261220T150000Z"]),
+        vevent("count-recent", ["DTSTART:20261201T150000Z", "DTEND:20261201T160000Z", "SUMMARY:D", "RRULE:FREQ=WEEKLY;COUNT=10"]),
+        vevent("count-straddles", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:E", "RRULE:FREQ=WEEKLY;COUNT=40"]),
+        vevent("count-huge", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:F", "RRULE:FREQ=YEARLY;COUNT=5000"]),
+        vevent("unreadable", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:G", "RRULE:FREQ=WEEKLY;BYWEEKNO=3;COUNT=2"])
+      )
+      stub_request(:get, url).to_return(status: 200, body: body)
+      expect(parse_ics_calendar(url).first[:events].map { |e| e[:id] })
+        .to eq(%w[until-recent count-recent count-straddles count-huge unreadable])
+    end
+
+    it "still lists a modified instance of a series that has ended when the instance is recent" do
+      body = ics(
+        vevent("rec", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=3"]),
+        vevent("rec", ["RECURRENCE-ID:20260808T150000Z", "DTSTART:20270108T170000Z", "DTEND:20270108T180000Z", "SUMMARY:Moved"])
+      )
+      stub_request(:get, url).to_return(status: 200, body: body)
+      expect(parse_ics_calendar(url).first[:events].map { |e| e[:title] }).to eq(["Moved"])
     end
 
     it "turns a recurring event into an rrule string with DTSTART, the rule, the exdates and a duration in ms" do
@@ -133,24 +170,43 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(moved[:id]).to eq("rec_#{Time.utc(2027, 1, 12, 15).to_i}")
     end
 
-    it "drops the whole feed when one recurring event has no start (the error is logged, not raised)" do
+    it "leaves out an event that has no start, reports it, and still lists the other events" do
       body = ics(
         vevent("fine", ["DTSTART:20270115T150000Z", "DTEND:20270115T160000Z", "SUMMARY:Fine"]),
-        vevent("nostart", ["DTEND:20270115T160000Z", "SUMMARY:Broken", "RRULE:FREQ=DAILY;COUNT=2"])
+        vevent("nostart", ["DTEND:20270115T160000Z", "SUMMARY:Broken", "RRULE:FREQ=DAILY;COUNT=2"]),
+        vevent("nostart-single", ["DTEND:20270115T160000Z", "SUMMARY:Broken too"])
       )
       stub_request(:get, url).to_return(status: 200, body: body)
-      allow(Rails.logger).to receive(:error)
-      expect(parse_ics_calendar(url).first[:events]).to eq([])
-      expect(Rails.logger).to have_received(:error).with(/ICS parse error for #{Regexp.escape(url)}/)
+      events = nil
+      reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+      expect(events.map { |e| e[:id] }).to eq(["fine"])
+      expect(reports.map(&:first)).to all(eq("ICS event has no usable start"))
+      expect(reports.map { |_, context| context[:event_uid] }).to eq(%w[nostart nostart-single])
+      expect(reports.first.last[:calendar]).to eq(Digest::MD5.hexdigest(url))
     end
 
-    it "gives a recurring event without an end no end time and a negative duration" do
+    it "gives a recurring event without an end no end time and no duration" do
       body = ics(vevent("noend", ["DTSTART:20270115T150000Z", "SUMMARY:Open ended", "RRULE:FREQ=DAILY;COUNT=2"]))
       stub_request(:get, url).to_return(status: 200, body: body)
       event = parse_ics_calendar(url).first[:events].first
       expect(event[:end]).to be_nil
       expect(event[:start]).to eq("2027-01-15T10:00:00")
-      expect(event[:duration]).to eq(-Time.utc(2027, 1, 15, 15).to_i * 1000)
+      expect(event).not_to have_key(:duration)
+      expect(event[:rrule]).to start_with("DTSTART:20270115T100000")
+    end
+
+    it "keeps single events and modified instances without an end, judging their age by the start" do
+      body = ics(
+        vevent("day", ["DTSTART;VALUE=DATE:20270112", "SUMMARY:All day"]),
+        vevent("old", ["DTSTART:20260801T150000Z", "SUMMARY:Old"]),
+        vevent("rec", ["DTSTART:20270105T150000Z", "DTEND:20270105T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=4"]),
+        vevent("rec", ["RECURRENCE-ID:20270112T150000Z", "DTSTART:20270112T170000Z", "SUMMARY:Moved"]),
+        vevent("rec", ["RECURRENCE-ID:20260101T150000Z", "DTSTART:20260101T170000Z", "SUMMARY:Ancient"])
+      )
+      stub_request(:get, url).to_return(status: 200, body: body)
+      events = parse_ics_calendar(url).first[:events]
+      expect(events.map { |e| e[:title] }).to match_array(["All day", "Weekly", "Moved"])
+      expect(events.find { |e| e[:title] == "All day" }).to include(allDay: true, start: "2027-01-12T00:00:00", end: nil)
     end
 
     it "lists a modified instance whose master event is not in the feed" do
@@ -160,12 +216,95 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(events.map { |e| [e[:title], e[:allDay]] }).to eq([["Alone", true]])
     end
 
-    it "lists a modified instance that has no start of its own with no start" do
-      body = ics(vevent("rec", ["RECURRENCE-ID:20270112T150000Z", "DTEND:20270112T180000Z", "SUMMARY:No start"]))
+    it "leaves out a modified instance that has no start of its own, and reports it" do
+      body = ics(
+        vevent("rec", ["DTSTART:20270105T150000Z", "DTEND:20270105T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=4"]),
+        vevent("rec", ["RECURRENCE-ID:20270112T150000Z", "DTEND:20270112T180000Z", "SUMMARY:No start"])
+      )
       stub_request(:get, url).to_return(status: 200, body: body)
-      event = parse_ics_calendar(url).first[:events].first
-      expect(event).to include(title: "No start", start: nil, end: "2027-01-12T13:00:00")
+      events = nil
+      reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+      expect(events.map { |e| e[:title] }).to eq(["Weekly"])
+      expect(reports.map { |message, context| [message, context[:event_uid]] }).to eq([["ICS event has no usable start", "rec"]])
     end
+
+    it "keeps a counted series whose rule cannot be expanded, reports it, and still lists the other events" do
+      unreadable = ["FREQ=WEEKLY;BYWEEKNO=3;COUNT=2", "FREQ=DAILY;BYYEARDAY=400;COUNT=2", "FREQ=WEEKLY;INTERVAL=0;COUNT=2", "FREQ=MONTHLY;BYMONTH=13;COUNT=2"]
+      vevents = unreadable.each_with_index.map do |rule, i|
+        vevent("bad#{i}", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Bad #{i}", "RRULE:#{rule}"])
+      end
+      stub_request(:get, url).to_return(status: 200, body: ics(*vevents, vevent("fine", ["DTSTART:20270115T150000Z", "DTEND:20270115T160000Z", "SUMMARY:Fine"])))
+      events = nil
+      reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+      expect(events.map { |e| e[:id] }).to eq(%w[bad0 bad1 bad2 bad3 fine])
+      expect(reports.map { |_, context| context[:event_uid] }).to eq(%w[bad0 bad1 bad2 bad3])
+      expect(reports.map { |_, context| context[:error_class] }).to all(eq("ArgumentError"))
+      expect(reports.map(&:first)).to eq(
+        ["Invalid rule validation type: BYWEEKNO", "by_year_day is out of range", "interval is out of range", "by_month is out of range"]
+      )
+    end
+
+    {
+      "FREQ=YEARLY;BYYEARDAY=0" => "by_year_day", "FREQ=YEARLY;BYYEARDAY=367" => "by_year_day", "FREQ=YEARLY;BYYEARDAY=-367" => "by_year_day",
+      "FREQ=MONTHLY;BYMONTHDAY=0" => "by_month_day", "FREQ=MONTHLY;BYMONTHDAY=32" => "by_month_day", "FREQ=MONTHLY;BYMONTHDAY=-32" => "by_month_day",
+      "FREQ=YEARLY;BYWEEKNO=0" => "by_week_number", "FREQ=YEARLY;BYWEEKNO=54" => "by_week_number", "FREQ=YEARLY;BYWEEKNO=-54" => "by_week_number",
+      "FREQ=YEARLY;BYMONTH=0" => "by_month", "FREQ=YEARLY;BYMONTH=13" => "by_month",
+      "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=0" => "by_set_position", "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=367" => "by_set_position",
+      "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=-367" => "by_set_position",
+      "FREQ=MONTHLY;BYDAY=0MO" => "by_day", "FREQ=MONTHLY;BYDAY=54MO" => "by_day", "FREQ=MONTHLY;BYDAY=-54FR" => "by_day",
+      "FREQ=WEEKLY;INTERVAL=0" => "interval"
+    }.each do |rule, part|
+      it "keeps the series and reports it when #{rule} has a value outside its allowed range" do
+        body = ics(vevent("odd", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Odd", "RRULE:#{rule};COUNT=2"]))
+        stub_request(:get, url).to_return(status: 200, body: body)
+        events = nil
+        reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+        expect(events.map { |e| e[:id] }).to eq(["odd"])
+        expect(reports.map(&:first)).to eq(["#{part} is out of range"])
+      end
+    end
+
+    ["FREQ=WEEKLY;BYDAY=MO,TU,TH;COUNT=6", "FREQ=MONTHLY;BYDAY=1MO,-1FR;COUNT=6"].each do |rule|
+      it "lists #{rule} without reporting its weekday list" do
+        body = ics(vevent("days", ["DTSTART:20261201T150000Z", "DTEND:20261201T160000Z", "SUMMARY:Days", "RRULE:#{rule}"]))
+        stub_request(:get, url).to_return(status: 200, body: body)
+        events = nil
+        reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+        expect(reports).to eq([])
+        expect(events.map { |e| e[:id] }).to eq(["days"])
+        expect(events.first[:rrule]).to include("BYDAY=#{rule[/BYDAY=([^;]+)/, 1]}")
+      end
+    end
+
+    describe "the allowed ranges of a repeat rule" do
+      let(:rule_class) { Struct.new(:interval, :by_day, :by_year_day, :by_month_day, :by_week_number, :by_month, :by_set_position, keyword_init: true) }
+
+      def out_of_range(**parts)
+        send(:out_of_range_rule_part, rule_class.new(**parts))
+      end
+
+      it "accepts the values at the edges of every range" do
+        expect(out_of_range(interval: 1, by_day: %w[MO -1FR +53SU 5TU], by_year_day: %w[1 -1 366 -366], by_month_day: %w[1 -31 31],
+                            by_week_number: %w[1 53 -53], by_month: %w[1 12], by_set_position: %w[1 -1 366 -366])).to be_nil
+        expect(out_of_range).to be_nil
+      end
+
+      it "refuses a value that is not a number" do
+        expect(out_of_range(by_month_day: %w[x])).to eq(:by_month_day)
+        expect(out_of_range(by_set_position: ["1.5"])).to eq(:by_set_position)
+        expect(out_of_range(by_day: ["1"])).to eq(:by_day)
+      end
+    end
+
+    it "does not expand a series whose COUNT is above the limit, so it is kept without a report" do
+      body = ics(vevent("long", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Long", "RRULE:FREQ=DAILY;COUNT=#{CalendarHelper::MAX_COUNTED_SERIES + 1}"]))
+      stub_request(:get, url).to_return(status: 200, body: body)
+      expect(RecurrenceExpansion).not_to receive(:occurrences)
+      events = nil
+      expect(reported_ics_problems { events = parse_ics_calendar(url).first[:events] }).to eq([])
+      expect(events.map { |e| e[:id] }).to eq(["long"])
+    end
+
   end
 
   describe "#parse_ics_calendar with all-day events" do

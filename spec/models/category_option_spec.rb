@@ -7,6 +7,15 @@ RSpec.describe CategoryOption, type: :model do
     end
   end
 
+  describe "#in_use?" do
+    it "is true only while a category points at the option" do
+      option = create(:category_option)
+      expect(option.in_use?).to be(false)
+      create(:category, category_option: option)
+      expect(option.in_use?).to be(true)
+    end
+  end
+
   describe "Validations" do
     context "presence" do
       it { should validate_presence_of(:name) }

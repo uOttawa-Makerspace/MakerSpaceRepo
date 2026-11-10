@@ -36,7 +36,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
   def open_event(title, index: 0)
     expect(page).to have_css(".fc-timegrid-event", text: title, visible: :all)
     page.all(".fc-timegrid-event", text: title, visible: :all)[index].click
-    expect(page).to have_css("#eventModal.show")
+    expect(page).to have_css("#eventModal[data-shown='true']")
   end
 
   def create_series(title: "Open lab", rule: "DTSTART:20270315T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270331T235959Z")
@@ -124,7 +124,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       open_admin_calendar
       expect(page).to have_css(".fc-daygrid-event", text: "Closed", visible: :all)
       find(".fc-daygrid-event", text: "Closed", visible: :all).click
-      expect(page).to have_css("#eventModal.show")
+      expect(page).to have_css("#eventModal[data-shown='true']")
 
       expect(page).to have_checked_field("all_day_checkbox")
       expect(page).to have_field("end_time_field", disabled: true)
@@ -154,6 +154,22 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(page).to have_unchecked_field("day_TU", visible: :all)
       expect(field_value("recurrence_until")).to eq("2027-03-31")
       expect(field_value("recurrence_rule_field")).to include("FREQ=WEEKLY")
+    end
+
+    it "clears the end date and weekdays of the previous series when a series without an end is opened next", js: true, skip_bullet: true do
+      create_series
+      create_series(title: "Night lab", rule: "DTSTART:20270316T200000Z\nRRULE:FREQ=DAILY")
+      open_admin_calendar
+      open_event("Open lab", index: 1)
+      expect(field_value("recurrence_until")).to eq("2027-03-31")
+      accept_confirm { within("#eventModal") { click_button "Cancel" } }
+      expect(page).to have_no_css("#eventModal.show", visible: :all)
+      open_event("Night lab", index: 1)
+
+      expect(find("#recurrence_frequency", visible: :all).value).to eq("DAILY")
+      expect(field_value("recurrence_until")).to eq("")
+      expect(page).to have_unchecked_field("day_MO", visible: :all)
+      expect(field_value("recurrence_rule_field")).not_to include("UNTIL")
     end
 
     it "moves the save button into the scope menu and offers all three delete choices", js: true, skip_bullet: true do
@@ -196,7 +212,7 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       choose "update_all"
       click_button "Update"
 
-      expect(page).to have_text("Unavailability updated successfully.")
+      expect(page).to have_text("Event updated successfully.")
       expect(series.reload.title).to eq("Open lab (all)")
       expect(Event.count).to eq(2)
     end
@@ -292,16 +308,31 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(unavail.reload.description).to eq("Calculus tutorial")
     end
 
-    # The title field is filled with the calendar's own label ("<icon> <name> - <title>"),
-    # so every save writes that label back as the title.
-    it "fills the title field with the calendar label and saves it back as the title", js: true, skip_bullet: true do
+    it "fills the title field with the stored title and keeps it unchanged when saved", js: true, skip_bullet: true do
       open_admin_calendar
       open_event("Lecture")
-      expect(find("#title", visible: :all).value).to eq("🚫 Wanda Worker - Lecture")
+      expect(find("#title", visible: :all).value).to eq("Lecture")
+      open_custom_values
+      fill_in "description", with: "Calculus tutorial"
       click_button "Update"
 
-      eventually { unavail.reload.title != "Lecture" }
-      expect(unavail.reload.title).to eq("🚫 Wanda Worker - Lecture")
+      eventually { unavail.reload.description == "Calculus tutorial" }
+      expect(unavail.reload.title).to eq("Lecture")
+    end
+
+    it "leaves the title field empty for an unavailability without a title and does not save the label as its title", js: true, skip_bullet: true do
+      unavail.update_columns(title: nil)
+      open_admin_calendar
+      expect(page).to have_css(".fc-timegrid-event", text: "Wanda Worker", visible: :all)
+      page.all(".fc-timegrid-event", text: "Wanda Worker", visible: :all).first.click
+      expect(page).to have_css("#eventModal[data-shown='true']")
+      expect(find("#title", visible: :all).value).to eq("")
+      open_custom_values
+      fill_in "description", with: "Calculus tutorial"
+      click_button "Update"
+
+      eventually { unavail.reload.description == "Calculus tutorial" }
+      expect(unavail.reload.title).not_to include("🚫")
     end
 
     it "deletes it from the modal", js: true, skip_bullet: true do

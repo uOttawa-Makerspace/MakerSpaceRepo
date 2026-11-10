@@ -74,13 +74,15 @@ RSpec.describe "PUT /send_email (React Help form)", type: :request do
   end
 
   # GithubIssuesService#create_issue returns `false` on an Octokit error
-  it "returns 422 JSON errors and sends no email when the GitHub API call fails (create_issue => false)" do
+  it "returns 422 JSON errors, keeps the report without an issue number and sends no email when the GitHub API call fails (create_issue => false)" do
     allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
 
     expect do
       perform_enqueued_jobs { put "/send_email", params: payload.to_json, headers: headers.merge("Content-Type" => "application/json") }
-    end.not_to(change { [deliveries.size, Help.count] })
+    end.to change(Help, :count).by(1)
+    expect(deliveries).to be_empty
 
+    expect(Help.last.gh_issue_number).to be_nil
     expect(response).to have_http_status(:unprocessable_content)
     expect(JSON.parse(response.body)["errors"].join).to include("Internal error")
   end

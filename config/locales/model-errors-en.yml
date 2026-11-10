@@ -35,6 +35,7 @@ en:
           attributes:
             cc_cost:
               invalid_cc_cost: "must be a number of CC points (0 or more)"
+          claimed_cannot_delete: "A user has already claimed this coupon with CC points, so it cannot be deleted"
         program:
           attributes:
             user:
@@ -152,6 +153,33 @@ en:
           attributes:
             photos:
               too_many: " can't exceed 5 photos"
+          awarded_cannot_delete: "This task has approved hours or CC awarded and cannot be deleted."
+          edit_refused:
+            training_missing: "A required training does not exist."
+            no_successor: "There must be at least one staff member assigned to this task."
+            add_not_found:
+              staff: "The staff to add could not be found."
+              volunteer: "The volunteer to add could not be found."
+            remove_not_on_task:
+              staff: "The staff to remove is not on this task."
+              volunteer: "The volunteer to remove is not on this task."
+              user: "The user to remove is not on this task."
+        volunteer_hour:
+          attributes:
+            date_of_task:
+              in_the_future: "cannot be in the future"
+        user_booking_approval:
+          already_pending: "This request was already pending."
+          already_approved: "This request was already approved."
+          already_declined: "This request was already declined."
+          already_revoked: "This request was already revoked."
+          account_deleted: "The account that sent this request has been deleted."
+          already_has_access: "You already have booking access."
+          already_requested: "You have already requested access."
+        volunteer_task_join:
+          attributes:
+            user_id:
+              taken: "is already on this task"
         learning_module:
           attributes:
             title:

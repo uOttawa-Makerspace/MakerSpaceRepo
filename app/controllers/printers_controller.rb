@@ -17,10 +17,9 @@ class PrintersController < StaffAreaController
   end
 
   def update
-    if Printer.find_by(id: params[:id]).update(printer_params)
-      flash[
-        :notice
-      ] = "Printer #{Printer.find_by(id: params[:id]).name} updated"
+    printer = Printer.find(params[:id])
+    if printer.update(printer_params)
+      flash[:notice] = "Printer #{printer.name} updated"
     else
       flash[:alert] = "Failed to update printer"
     end
@@ -50,11 +49,16 @@ class PrintersController < StaffAreaController
   end
 
   def remove_printer
-    if params[:remove_printer] != ""
-      Printer.where(id: params[:remove_printer]).destroy_all
+    printer_id = params[:remove_printer].to_s
+    printer = Printer.find_by(id: printer_id) if printer_id.present?
+    if printer_id.blank?
+      flash[:alert] = "Please select a Printer."
+    elsif printer.nil?
+      flash[:alert] = I18n.t("errors.printers.printer_not_found")
+    elsif printer.destroy
       flash[:notice] = "Printer removed successfully!"
     else
-      flash[:alert] = "Please select a Printer."
+      flash[:alert] = validation_message(printer, "errors.printers.printer_not_removed")
     end
     redirect_to printers_path
   end
@@ -93,7 +97,8 @@ class PrintersController < StaffAreaController
     printer_session = PrinterSession.new(printer_id: printer_id, user_id: user_id, in_use: true)
     if (problem = printer_link_problem(printer_id, user_id))
       flash[:alert] = I18n.t("errors.printers.#{problem}")
-    elsif user_id == "clear" && last_session.update(in_use: false)
+    elsif user_id == "clear"
+      last_session&.update(in_use: false)
       flash[:notice] = "Cleared the user."
     elsif printer_session.save
       last_session.update(in_use: false) if last_session&.in_use?
@@ -140,8 +145,8 @@ class PrintersController < StaffAreaController
 
     if msg_params[:sent_from] == "updates"
       redirect_to staff_printers_updates_printers_url
-    elsif msg_params[:sent_from] == "printers"
-      redirect_to staff_printers_printers_url #(anchor: 'failedPrintHeader')
+    else
+      redirect_to staff_printers_printers_url
     end
   end
 
@@ -178,7 +183,8 @@ class PrintersController < StaffAreaController
   def last_user_assigned_to_printer
     printer_users = {}
     Printer.includes(printer_sessions: :user).find_each do |printer|
-      printer_users[printer.id] = printer.printer_sessions.last.user.slice(:id, :username, :name)
+      user = printer.printer_sessions.last&.user
+      printer_users[printer.id] = user.slice(:id, :username, :name) if user
     end
 
     render json: printer_users

@@ -221,9 +221,8 @@ RSpec.describe "Admin events gaps", type: :request do
     context "recurring event, scope 'all'" do
       # The time of day of the rewritten DTSTART comes from the DTSTART line of
       # the POSTED rule (the calendar UI sends it in sync with utc_start_time).
-      it "moves the whole series to the new time of day, keeps the series date and the rule, and wrongly flashes 'Unavailability'" do
-        # the success flash says "Unavailability updated"; the scope
-        # also leaves created_by_id and space_id alone.
+      it "moves the whole series to the new time of day, keeps the series date and the rule, and flashes that the event was updated" do
+        # the scope also leaves created_by_id and space_id alone.
         patch admin_event_path(series),
               params: { update_scope: "all",
                         event: event_attrs(utc_start_time: "2027-04-01 16:30",
@@ -231,13 +230,14 @@ RSpec.describe "Admin events gaps", type: :request do
                                            recurrence_rule: "DTSTART:20270401T163000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5",
                                            title: "Series v2") }
 
-        expect(flash[:notice]).to eq("Unavailability updated successfully.")
+        expect(flash[:notice]).to eq("Event updated successfully.")
         series.reload
         expect(series.title).to eq("Series v2")
         expect(series.start_time).to eq(Time.utc(2025, 5, 5, 16, 30))
         expect(series.end_time).to eq(Time.utc(2025, 5, 5, 17, 45))
         expect(series.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20250505T123000\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5")
         expect(series.created_by.role).to eq("staff")
+        expect(series.updated_by_id).to eq(admin.id)
         expect(series.space_id).to eq(space.id)
       end
 
@@ -269,6 +269,9 @@ RSpec.describe "Admin events gaps", type: :request do
         expect(replacement.start_time).to eq(Time.utc(2025, 5, 12, 17, 0))
         expect(replacement.end_time).to eq(Time.utc(2025, 5, 12, 18, 0))
         expect(replacement.created_by_id).to eq(admin.id)
+        expect(replacement.updated_by_id).to be_nil
+        expect(series.created_by_id).not_to eq(admin.id)
+        expect(series.updated_by_id).to eq(admin.id)
       end
 
       it "assigns the submitted staff to the replacement event only" do
@@ -329,6 +332,7 @@ RSpec.describe "Admin events gaps", type: :request do
              params: { scope: "single", start_date: "2025-05-12 15:00" }
       expect(flash[:notice]).to eq("This occurrence deleted.")
       expect(Event.exists?(series.id)).to be(true)
+      expect(series.reload.updated_by_id).to eq(admin.id)
       expect(series.reload.recurrence_rule).to eq(
         "DTSTART;TZID=America/Toronto:20250505T110000\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5\nEXDATE:20250512T150000Z"
       )
@@ -338,6 +342,7 @@ RSpec.describe "Admin events gaps", type: :request do
       delete delete_with_scope_admin_event_path(series),
              params: { scope: "following", start_date: "2025-05-19 15:00" }
       expect(flash[:notice]).to eq("This and following deleted.")
+      expect(series.reload.updated_by_id).to eq(admin.id)
       expect(series.reload.recurrence_rule).to eq(
         "DTSTART;TZID=America/Toronto:20250505T110000\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5;UNTIL=20250518T150000Z"
       )
@@ -483,6 +488,7 @@ RSpec.describe "Admin events gaps", type: :request do
       staff = create(:user, :staff)
       source = create(:event, space: space, title: "Source", description: "Orig",
                               start_time: Time.utc(2027, 4, 5, 14, 0), end_time: Time.utc(2027, 4, 5, 15, 30))
+      source.update!(updated_by: staff)
       create(:event_assignment, event: source, user: staff)
       create(:event, :draft, space: space, title: "SkippedDraft",
                              start_time: Time.utc(2027, 4, 6, 14, 0), end_time: Time.utc(2027, 4, 6, 15, 0))
@@ -502,6 +508,7 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(copy.draft).to be(true)
       expect(copy.description).to eq("Orig")
       expect(copy.google_event_id).to be_nil
+      expect(copy.updated_by_id).to be_nil
       expect(copy.event_assignments.pluck(:user_id)).to eq([staff.id])
       # target date (Eastern midnight) + the original offset into the Eastern day:
       # 14:00 UTC on Apr 5 is 10:00 EDT, so the copy is 10:00 EDT on May 3

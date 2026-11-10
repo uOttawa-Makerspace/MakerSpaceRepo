@@ -12,6 +12,14 @@ RSpec.describe "Localized model error messages" do
     end
   end
 
+  def messages_after_filing(record, locale)
+    I18n.with_locale(locale) do
+      record.errors.clear
+      record.file_issue
+      record.errors[:base]
+    end
+  end
+
   def messages_after_save(record, locale)
     I18n.with_locale(locale) do
       record.errors.clear
@@ -197,8 +205,8 @@ RSpec.describe "Localized model error messages" do
   it "localizes the help submission message" do
     allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: nil })
     attrs = { name: "Pat", email: "pat@example.test", subject: "A long enough subject", comments: "Something broke" }
-    expect(messages_after_save(Help.new(attrs), :en)).to include("Internal error while submitting issue.")
-    expect(messages_after_save(Help.new(attrs), :fr)).to include("Erreur interne lors de la soumission du problème.")
+    expect(messages_after_filing(Help.create!(attrs), :en)).to include("Internal error while submitting issue.")
+    expect(messages_after_filing(Help.create!(attrs), :fr)).to include("Erreur interne lors de la soumission du problème.")
   end
 
   it "localizes the booking time and volunteer photo messages" do

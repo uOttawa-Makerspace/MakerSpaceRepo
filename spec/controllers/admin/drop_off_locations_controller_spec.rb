@@ -42,7 +42,7 @@ RSpec.describe Admin::DropOffLocationsController, type: :controller do
         drop_off_locations_params =
           FactoryBot.attributes_for(:drop_off_location)
         expect {
-          post :create, params: { name: drop_off_locations_params }
+          post :create, params: { name: drop_off_locations_params[:name] }
         }.to change(DropOffLocation, :count).by(1)
         expect(flash[:notice]).to eq("Drop-off Location added successfully!")
         expect(response).to redirect_to admin_drop_off_locations_path

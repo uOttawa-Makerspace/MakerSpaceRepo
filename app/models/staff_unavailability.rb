@@ -3,7 +3,7 @@ class StaffUnavailability < ApplicationRecord
 
   validates :start_time, :end_time, presence: true
   validate :start_time_must_be_before_end_time
-  validates :recurrence_rule, recurrence_rule: true
+  validates :recurrence_rule, recurrence_rule: true, if: :will_save_change_to_recurrence_rule?
   validate :weekly_frequency_must_contain_days
 
   def start_time_must_be_before_end_time

@@ -57,6 +57,8 @@ fr:
       unexpected:
         title: "Une erreur s'est produite de notre côté"
         text: "Une erreur inattendue a interrompu cette page. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence ci-dessous."
+    faqs:
+      not_created: "L'entrée de la FAQ n'a pas été créée."
     admin:
       still_in_use: "D'autres éléments l'utilisent encore, il a donc été laissé tel quel."
       record_missing: "Un élément auquel il fait référence n'existe plus. Rechargez la page et réessayez."
@@ -99,6 +101,7 @@ fr:
         sub_space_not_renamed: "Le sous-espace n'a pas été renommé."
         booking_limit_missing: "Choisissez un sous-espace et entrez le nombre d'heures de la limite à modifier."
         approval_limit_missing: "Choisissez un sous-espace et entrez le nombre d'heures de la limite d'approbation automatique."
+        limit_not_whole_number: "La limite doit être un nombre entier d'heures, ou -1 pour la retirer."
         confirmation_mismatch: "Le texte saisi ne correspond pas au nom de l'espace, rien n'a été supprimé."
         not_deleted: "L'espace n'a pas été supprimé."
         calendar_space_missing: "Les adresses des calendriers n'ont pas été enregistrées parce qu'aucun espace n'a été choisi. Rechargez la page et réessayez."
@@ -115,6 +118,8 @@ fr:
         not_deleted: "La clé n'a pas été supprimée."
         not_assigned: "La clé n'a pas été attribuée."
         not_revoked: "La clé n'a pas été retirée."
+        holder_not_found: "Le détenteur de clé choisi est introuvable."
+        deposit_return_date_invalid: "Entrez la date de remise du dépôt sous forme de date valide."
         request_not_approved: "La demande de clé n'a pas été approuvée."
         request_not_denied: "La demande de clé n'a pas été refusée."
         request_not_waiting: "Cette demande de clé n'attend plus d'approbation, elle a donc été laissée telle quelle."
@@ -125,6 +130,7 @@ fr:
         not_registered: "Le lecteur n'a pas été enregistré."
         not_updated: "Le lecteur n'a pas été modifié."
       settings:
+        category_in_use: "La catégorie est utilisée par des projets; elle n'a pas été retirée."
         course_not_added: "Le cours n'a pas été ajouté."
         course_not_removed: "Le cours n'a pas été retiré."
         course_not_renamed: "Le cours n'a pas été renommé."
@@ -240,6 +246,8 @@ fr:
       issue_not_created: "Le problème d'imprimante n'a pas été créé."
       issue_not_updated: "Le problème d'imprimante n'a pas été modifié."
       issue_not_deleted: "Le problème d'imprimante n'a pas été supprimé."
+      issue_delete_admin_only: "Seuls les administrateurs peuvent supprimer les problèmes d'imprimante."
+      printer_not_removed: "L'imprimante n'a pas été supprimée."
       notification_not_sent: "Le problème d'imprimante a été créé, mais le courriel de notification à l'équipe d'entretien n'a pas pu être mis en file d'attente, il n'a donc pas été envoyé."
     help:
       not_received: "Votre demande n'a pas été soumise."
@@ -252,7 +260,6 @@ fr:
       not_updated: "Le projet n'a pas été modifié."
       proposal_not_linked: "Le projet n'a pas été lié à la proposition de projet."
       member_not_added: "L'utilisateur n'a pas été ajouté au dépôt."
-      member_not_removed: "L'utilisateur n'a pas été retiré du dépôt."
       ownership_not_transferred: "La propriété du dépôt n'a pas été transférée."
     proposals:
       not_created: "La proposition de projet n'a pas été créée."
