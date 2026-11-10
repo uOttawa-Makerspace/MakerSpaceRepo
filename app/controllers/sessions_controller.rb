@@ -139,7 +139,7 @@ class SessionsController < ApplicationController
   # (the session stores the repository id, never the raw URL segment).
   def repository_unlocked?(repository)
     authorized_repo_ids.include?(repository.id) || @user.admin? ||
-      @user.staff? || repository.owned_by?(@user)
+      @user.staff? || repository.editable_by?(@user)
   end
 
   # Redirects to the password page when a private repository is still locked.

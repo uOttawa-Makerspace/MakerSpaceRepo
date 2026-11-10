@@ -8,7 +8,7 @@ require "rails_helper"
 # (id OR slug OR title, soft-deleted rows excluded by Repository's
 # default_scope); check_auth (show/download_files: admin, staff, the owner by
 # username, or a password the session already passed); check_ownership
-# (edit/update/destroy: admin or a member of repository.users).
+# (edit/update: admin, the owner or a member of repository.users; destroy and member management: admin or the owner).
 #
 # There is no GitHub integration in this controller: the `github` / `github_url`
 # columns are only copied by MakesController (see makes_request_spec.rb).
@@ -117,7 +117,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(repository_path(repo.user_username, repo.slug, page: "2"))
     end
 
-    it "shows the member forms to owners and admin only, the link-to-proposal form to staff too" do
+    it "shows the member forms to owners and admin only, the link-to-proposal form to members and staff too" do
       forms = ->(path) { %w[link_to_pp add_member remove_member].select { |a| response.body.include?("/#{a}") } }
       content_login!(owner)
       get repo_path
@@ -127,6 +127,11 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(forms.call(nil)).to eq(%w[link_to_pp add_member remove_member])
       # staff cannot use the member forms (check_ownership), so they are no longer rendered
       content_sign_in_as(:staff)
+      get repo_path
+      expect(forms.call(nil)).to eq(%w[link_to_pp])
+      member = create(:user, :regular_user)
+      repo.users << member
+      content_login!(member)
       get repo_path
       expect(forms.call(nil)).to eq(%w[link_to_pp])
       content_login!(stranger)
@@ -906,7 +911,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You are not allowed to perform this action!")
     end
 
-    it "HARD deletes for a member (the soft-delete flag is not used here), -25 reputation per member" do
+    it "HARD deletes for the owner (the soft-delete flag is not used here), -25 reputation per member" do
       owner.update!(reputation: 100)
       content_login!(owner)
       expect { delete repository_path(owner.username, repo.slug) }
@@ -914,6 +919,15 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(user_path(owner.username))
       expect(flash[:notice]).to eq("Repository has been successfully deleted.")
       expect(owner.reload.reputation).to eq(75)
+    end
+
+    it "refuses a member who is not the owner and keeps the repository" do
+      member = create(:user, :regular_user)
+      repo.users << member
+      content_login!(member)
+      expect { delete repository_path(owner.username, repo.slug) }.not_to change(Repository, :count)
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+      expect(response).to redirect_to(repo_path)
     end
 
     it "removes photos, comments and likes with it" do
@@ -1043,13 +1057,13 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_login!(stranger)
       patch add_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: repo.id, owner_username: newbie.username } }
-      # add_member runs check_ownership (owner, member or admin)
+      # add_member runs check_ownership (owner or admin)
       expect(repo.reload.users).to eq([owner])
       expect(flash[:alert]).to eq("You are not allowed to perform this action!")
       expect(response).to redirect_to(repo_path)
     end
 
-    it "lets the owner (even when not in users), a collaborator and admin add a member" do
+    it "lets the owner (even when not in users) and admin add a member" do
       orphan = create(:repository, owner: owner, title: "Orphan")
       content_login!(owner)
       patch add_member_repositories_path(owner.username),
@@ -1057,16 +1071,24 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(orphan.reload.users).to eq([newbie])
       expect(flash[:notice]).to eq("This user was added to your repository.")
 
-      content_login!(newbie) # now a collaborator of orphan
-      patch add_member_repositories_path(owner.username),
-            params: { repo_owner: { repository_id: orphan.id, owner_username: stranger.username } }
-      expect(orphan.reload.users).to contain_exactly(newbie, stranger)
-
       third = create(:user, :regular_user)
       content_sign_in_as(:admin)
       patch add_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: orphan.id, owner_username: third.username } }
-      expect(orphan.reload.users).to include(third)
+      expect(orphan.reload.users).to contain_exactly(newbie, third)
+    end
+
+    it "refuses a member who is not the owner adding or removing members" do
+      repo.users << newbie
+      content_login!(newbie)
+      patch add_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_username: stranger.username } }
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+      expect(response).to redirect_to(repo_path)
+      patch remove_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_id: owner.id } }
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+      expect(repo.reload.users).to contain_exactly(owner, newbie)
     end
 
     it "refuses staff adding a member (staff are not repository owners)" do
