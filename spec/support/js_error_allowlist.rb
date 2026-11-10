@@ -25,10 +25,6 @@ module JsErrorCheck
     # DNS failure. Extend the host list only with the same kind of resource.
     { id: "js-error-04", path: %r{\Ahttps://(challenges\.cloudflare\.com|cdn\.userway\.org|www\.youtube\.com)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
     # Found by the browser crawl (spec/system/page_crawl_spec.rb).
-    # the 500s of the printers route (printers without sessions) break the
-    # printer pages' fetch + JSON parse.
-    { id: "js-error-05", path: %r{/printers/last_user_assigned_to_printer}, message: %r{last_user_assigned_to_printer - Failed to load resource: .* 500} },
-    { id: "js-error-05", path: %r{/printers/staff_printers\b|/printer_types\b}, message: /(staff_printers|printer_types) 0:0 Uncaught \(in promise\) SyntaxError: Unexpected token '<'/ },
     # printer_issues.js binds a listener on an element the page lacks.
     { id: "js-error-06", path: %r{/assets/printer_issues-}, message: /printer_issues-[\w-]+\.js .*Cannot read properties of null \(reading 'addEventListener'\)/ },
     # the home/changelog hours widget calls /open_hours, which
