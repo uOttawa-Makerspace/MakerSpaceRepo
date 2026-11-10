@@ -157,6 +157,19 @@ RSpec.describe ReportGenerator do
       expect(rows[9]).to eq(["Tia Trainee", "tia@example.test"])
     end
 
+    it "shows Unknown for a missing training, instructor or space" do
+      session = create(:training_session, course: "Intro", created_at: march_10)
+      session.users << create(:user, name: "Tia Trainee", email: "tia@example.test")
+      session.update_columns(training_id: nil, user_id: nil, space_id: nil)
+      rows = sheets_of(described_class.generate_training_session_report(session.id)).fetch("Report")
+      expect(rows[1..6]).to eq(
+        [["Training Type", "Unknown"], ["Location", "Unknown"],
+         ["Date", march_10.in_time_zone.strftime("%Y-%m-%d %H:%M")], ["Instructor", "Unknown"],
+         %w[Course Intro], ["Number of Trainees", 1]]
+      )
+      expect(rows[9]).to eq(["Tia Trainee", "tia@example.test"])
+    end
+
     it "raises RecordNotFound for an unknown session id" do
       expect { described_class.generate_training_session_report(0) }.to raise_error(ActiveRecord::RecordNotFound)
     end

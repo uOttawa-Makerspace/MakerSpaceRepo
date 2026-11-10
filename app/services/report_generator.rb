@@ -845,6 +845,18 @@ class ReportGenerator
     spreadsheet
   end
 
+  # The type, location, date and instructor lines of a single session
+  # workbook. A missing training, space or instructor shows Unknown.
+  def self.session_summary_rows(session)
+    [
+      ["Training Type", session.training&.name_en || UNKNOWN],
+      ["Location", session.space&.name || UNKNOWN_SPACE],
+      ["Date", session.created_at.strftime("%Y-%m-%d %H:%M")],
+      ["Instructor", session.user&.name || UNKNOWN]
+    ]
+  end
+  private_class_method :session_summary_rows
+
   def self.generate_training_session_report(id)
     session =
       TrainingSession.includes(:user, :users, :space, :training).find(id)
@@ -856,10 +868,7 @@ class ReportGenerator
       .add_worksheet(name: "Report") do |sheet|
         title(sheet, "Training Session")
 
-        sheet.add_row ["Training Type", session.training.name_en]
-        sheet.add_row ["Location", session.space.name]
-        sheet.add_row ["Date", session.created_at.strftime("%Y-%m-%d %H:%M")]
-        sheet.add_row ["Instructor", session.user.name]
+        session_summary_rows(session).each { |row| sheet.add_row row }
         sheet.add_row ["Course", session.course]
         sheet.add_row ["Number of Trainees", session.users.length]
 
