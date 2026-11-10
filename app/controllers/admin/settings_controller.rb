@@ -13,7 +13,7 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def add_category
-    if params[:category_option][:name].blank?
+    if cat_params[:name].blank?
       flash[:alert] = "Invalid category name."
     else
       @cat_option = CategoryOption.new(cat_params)
@@ -24,7 +24,7 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def add_area
-    if params[:area_option][:name].blank?
+    if area_params[:name].blank?
       flash[:alert] = "Invalid area name."
     else
       @area_option = AreaOption.new(area_params)
@@ -87,7 +87,7 @@ class Admin::SettingsController < AdminAreaController
     redirect_to admin_settings_path
   end
   def add_equipment
-    if params[:equipment_option][:name].blank?
+    if equip_params[:name].blank?
       flash[:alert] = "Invalid equipment name."
     else
       @equip_option = EquipmentOption.new(equip_params)
@@ -98,7 +98,7 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def rename_equipment
-    if params[:equipment_option][:name].blank?
+    if equip_params[:name].blank?
       flash[:alert] = "Invalid equipment name."
     elsif params[:rename_equipment] == ""
       flash[:alert] = "Please select a piece of equipment."
@@ -179,15 +179,15 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def equip_params
-    params.require(:equipment_option).permit(:name)
+    params.expect(equipment_option: [:name])
   end
 
   def cat_params
-    params.require(:category_option).permit(:name)
+    params.expect(category_option: [:name])
   end
 
   def area_params
-    params.require(:area_option).permit(:name)
+    params.expect(area_option: [:name])
   end
 
   def printer_params

@@ -88,10 +88,16 @@ RSpec.describe "Admin settings", type: :request do
       expect(CategoryOption.count).to eq(1)
     end
 
-    # add_* read params[:x][:name] without a guard, so a request missing the wrapper param is a 500 NoMethodError instead of a clean alert
-    it "answers 500 when the wrapper param is missing" do
-      post add_category_admin_settings_path
-      expect(response).to have_http_status(:internal_server_error)
+    it "answers with the missing-parameter message when the wrapper param is missing" do
+      {
+        add_category_admin_settings_path => "category_option",
+        add_area_admin_settings_path => "area_option",
+        add_equipment_admin_settings_path => "equipment_option"
+      }.each do |path, param|
+        expect { post path }.not_to change { [CategoryOption.count, AreaOption.count, EquipmentOption.count] }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq(I18n.t("errors.generic.parameter_missing", param: param))
+      end
     end
 
     it "adds and removes an area option" do
