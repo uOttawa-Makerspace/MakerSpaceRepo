@@ -489,7 +489,7 @@ class SubSpaceBookingController < SessionsController
   def series_end_date
     raw = params[:sub_space_booking][:recurring_end]
     Date.parse(raw.to_s) if raw.present?
-  rescue Date::Error
+  rescue ArgumentError
     nil
   end
 
