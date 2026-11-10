@@ -299,7 +299,7 @@
                                 <div><%= comment.username %><%= tag.div(comment.user.reputation, class: 'rep') %> </div>
                             <% end %>
                         <% else %>
-                            <div><%= t('users.deleted_account', name: comment.username) %></div>
+                            <div><%= t('users.deleted_user') %></div>
                         <% end %>
                         <%= content_tag :div, "#{time_ago_in_words(comment.created_at)} ago", class: 'time' %><br>
                         <% if ((@user.admin?) || (@user.id.equal? comment.user_id)) %>
