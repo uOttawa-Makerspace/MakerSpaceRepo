@@ -96,7 +96,7 @@ class OrderItemsController < DevelopmentProgramsController
 
   def revoke
     item = OrderItem.find(params[:order_item_id])
-    if item.update(status: "Revoked")
+    if item.revoke!(current_user)
       flash[:notice] = "The badge has been revoked."
     else
       flash[:alert] = validation_message(item, "errors.shop.badge_not_revoked")

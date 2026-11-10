@@ -116,4 +116,39 @@ RSpec.describe OrderItem, type: :model do
       expect(OrderItem.completed_order).to contain_exactly(a)
     end
   end
+
+  describe "revoking and awarding a project badge" do
+    let(:staff) { create(:user, :staff) }
+    let(:buyer) { create(:user) }
+    let(:item) do
+      create(:order_item, order: create(:order, :completed, user_id: buyer.id), status: "Waiting for approval")
+    end
+
+    it "deactivates the granted certification on revoke and restores it on award, in both directions repeatably" do
+      expect(item.award!(staff, admin_comments: "ok")).to be(true)
+      cert = Certification.find_by!(user_id: buyer.id)
+
+      2.times { expect(item.revoke!(staff)).to be(true) }
+      expect(item.reload.status).to eq("Revoked")
+      expect(Certification.unscoped.find(cert.id)).not_to be_active
+      expect(Certification.unscoped.where(user_id: buyer.id).count).to eq(1)
+
+      expect(item.award!(staff)).to be(true)
+      expect(item.award!(staff)).to be(false)
+      expect(Certification.find(cert.id)).to be_active
+      expect(ProficientProjectSession.count).to eq(1)
+    end
+
+    it "does not award an item that is not waiting and has no deactivated badge" do
+      item.update!(status: "In progress")
+      expect(item.award!(staff)).to be(false)
+      expect(Certification.unscoped.count).to eq(0)
+    end
+
+    it "reports false and writes nothing when the revoke does not save" do
+      allow(item).to receive(:update).and_return(false)
+      expect(item.revoke!(staff)).to be(false)
+      expect(item.reload.status).to eq("Waiting for approval")
+    end
+  end
 end
