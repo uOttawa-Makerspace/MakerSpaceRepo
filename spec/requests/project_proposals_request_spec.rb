@@ -1471,9 +1471,9 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response.body).not_to include("Declined One")
     end
 
-    it "user_projects renders for a guest (empty sets)" do
+    it "user_projects sends a guest to the login page" do
       get user_projects_project_proposals_path
-      expect(response).to have_http_status(:ok)
+      expect(response.location).to start_with("http://www.example.com/login")
     end
 
     it "projects_assigned lists approved, joined proposals without a repository; projects_completed those with one" do

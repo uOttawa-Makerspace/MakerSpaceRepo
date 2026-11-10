@@ -2,7 +2,7 @@ class ExamsController < SessionsController
   before_action :current_user
   before_action :set_exam
   before_action :signed_in,
-                only: %i[create_from_training create_for_single_user destroy finish_exam]
+                only: %i[index create_from_training create_for_single_user destroy finish_exam]
   before_action :grant_access, only: [:show]
   before_action :check_exam_status, only: [:show]
   before_action :only_admin_access, only: [:destroy]
