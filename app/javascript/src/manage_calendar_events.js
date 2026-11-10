@@ -256,7 +256,7 @@ onPageLoad("#eventModal", async () => {
       render: {
         option: (data, escape) => {
           const color = isHexColour(data.color) ? data.color : "#000";
-          const unavailableDates = data.unavailableDates
+          const unavailableDates = (data.unavailableDates || "")
             .split(",")
             .filter(Boolean);
           const firstDate = unavailableDates[0]
