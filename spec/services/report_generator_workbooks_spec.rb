@@ -11,8 +11,8 @@ RSpec.describe ReportGenerator do
   include ActiveSupport::Testing::TimeHelpers
 
   let(:march_10) { Time.utc(2026, 3, 10, 15, 0, 0) }
-  let(:from) { DateTime.new(2026, 3, 1) }
-  let(:to) { DateTime.new(2026, 3, 31) }
+  let(:from) { Time.zone.local(2026, 3, 1) }
+  let(:to) { Time.zone.local(2026, 3, 31) }
 
   # { sheet name => rows }, each row without its trailing empty cells.
   def grid(package)
@@ -412,7 +412,7 @@ RSpec.describe ReportGenerator do
       attend(lena, first, march_10)
       attend(create(:user), first, march_10)
       attend(create(:user), second, march_10 + 1.day)
-      package = described_class.generate_training_attendees_report(from, DateTime.new(2026, 4, 30))
+      package = described_class.generate_training_attendees_report(from, Time.zone.local(2026, 4, 30))
       rows = grid(package)["Report - Alpha"]
       month = rows.index { |r| r.first == "Month" }
       expect(rows[month]).to eq(["Month", "March 2026", "April 2026"])
@@ -435,7 +435,7 @@ RSpec.describe ReportGenerator do
       april = create(:training_session, space: alpha, training: laser, created_at: Time.utc(2026, 4, 10, 15))
       attend(lena, april, Time.utc(2026, 4, 10, 15))
       attend(create(:user), april, Time.utc(2026, 4, 10, 15))
-      rows = grid(described_class.generate_training_attendees_report(DateTime.new(2026, 3, 5), DateTime.new(2026, 4, 20)))
+      rows = grid(described_class.generate_training_attendees_report(Time.zone.local(2026, 3, 5), Time.zone.local(2026, 4, 20)))
       sheet = rows["Report - Alpha"]
       month = sheet.index(["Month", "March 2026", "April 2026"])
       expect(month).to be_present
@@ -445,7 +445,7 @@ RSpec.describe ReportGenerator do
     it "names each month with its year, so a range over a year does not repeat a month name" do
       session = create(:training_session, space: alpha, training: laser, created_at: Time.utc(2027, 1, 15, 15))
       attend(lena, session, Time.utc(2027, 1, 15, 15))
-      sheet = grid(described_class.generate_training_attendees_report(DateTime.new(2026, 12, 1), DateTime.new(2027, 12, 31)))["Report - Alpha"]
+      sheet = grid(described_class.generate_training_attendees_report(Time.zone.local(2026, 12, 1), Time.zone.local(2027, 12, 31)))["Report - Alpha"]
       month = sheet.index { |r| r.first == "Month" }
       expect(sheet[month]).to eq(["Month", "December 2026", *Date::MONTHNAMES.drop(1).map { |m| "#{m} 2027" }])
       expect(sheet[month + 1]).to eq(["Month average of attendees per sessions", 0.0, 1.0, *[0.0] * 11])
@@ -454,7 +454,7 @@ RSpec.describe ReportGenerator do
     it "a range within one month has that month's column, and a column for every week it overlaps" do
       session = create(:training_session, space: alpha, training: laser, created_at: march_10)
       attend(lena, session, march_10)
-      sheet = grid(described_class.generate_training_attendees_report(DateTime.new(2026, 3, 5), DateTime.new(2026, 3, 20)))["Report - Alpha"]
+      sheet = grid(described_class.generate_training_attendees_report(Time.zone.local(2026, 3, 5), Time.zone.local(2026, 3, 20)))["Report - Alpha"]
       expect(sheet).to include(["Month", "March 2026"], ["Month average of attendees per sessions", 1])
       expect(sheet).to include(
         ["Week", "2026-03-02 to 2026-03-08", "2026-03-09 to 2026-03-15", "2026-03-16 to 2026-03-22"],
@@ -465,10 +465,21 @@ RSpec.describe ReportGenerator do
     it "the last days of the range fall in the week that holds them" do
       session = create(:training_session, space: alpha, training: laser, created_at: Time.utc(2026, 4, 29, 12))
       attend(lena, session, Time.utc(2026, 4, 29, 12))
-      sheet = grid(described_class.generate_training_attendees_report(from, DateTime.new(2026, 4, 30)))["Report - Alpha"]
+      sheet = grid(described_class.generate_training_attendees_report(from, Time.zone.local(2026, 4, 30)))["Report - Alpha"]
       week = sheet.find { |r| r.first == "Week" }
       expect(week.last).to eq("2026-04-27 to 2026-05-03")
       expect(sheet.last).to eq(["Week average of attendees per sessions"] + [0] * (week.size - 2) + [1])
+    end
+
+    it "puts a certificate made just after local midnight on April 1 in April, across the March clock change" do
+      session = create(:training_session, space: alpha, training: laser, created_at: march_10)
+      attend(lena, session, Time.zone.local(2026, 4, 1, 0, 30))
+      attend(create(:user), session, Time.zone.local(2026, 3, 31, 23, 30))
+      package = described_class.generate_training_attendees_report(Time.zone.local(2026, 3, 1), Time.zone.local(2026, 4, 30))
+      rows = grid(package)["Report - Alpha"]
+      month = rows.index { |r| r.first == "Month" }
+      expect(rows[month]).to eq(["Month", "March 2026", "April 2026"])
+      expect(rows[month + 1]).to eq(["Month average of attendees per sessions", 1.0, 1.0])
     end
 
     it "a session without a space gets its own sheet named with a trailing dash" do

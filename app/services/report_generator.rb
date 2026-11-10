@@ -1413,10 +1413,10 @@ class ReportGenerator
 
   # The calendar months or weeks (unit :month or :week) that overlap the
   # range, the partial ones at either end included, each as the range from
-  # its first to its last instant, in the offset the range is given in.
+  # its first to its last instant, in the application time zone.
   def self.calendar_periods(start_date, end_date, unit)
-    (start_date.to_datetime..end_date.to_datetime)
-      .map { |day| day.public_send(:"beginning_of_#{unit}") }
+    (start_date.in_time_zone.to_date..end_date.in_time_zone.to_date)
+      .map { |day| day.public_send(:"beginning_of_#{unit}").in_time_zone }
       .uniq
       .map { |first| first..first.public_send(:"end_of_#{unit}") }
   end
