@@ -119,6 +119,22 @@ RSpec.describe "Search and explore", type: :request do
       expect(response.body).to include("&lt;script&gt;alert(1)&lt;/script&gt;")
     end
 
+    it "drops NUL bytes from the query and searches for the rest" do
+      get search_path(q: "Las\u0000er")
+      expect(response).to have_http_status(:ok)
+      expect(repos).to eq([pub_laser])
+    end
+
+    it "treats an array or hash q param as no query" do
+      get "/search?q[]=Laser"
+      expect(response).to have_http_status(:ok)
+      expect(repos).to match_array([pub_laser, pub_robot])
+      get "/search?q[a]=Laser"
+      expect(response).to have_http_status(:ok)
+      expect(repos).to match_array([pub_laser, pub_robot])
+      expect(response.body).not_to include("Search results for")
+    end
+
     it "lists nothing when no category slug is known, and ignores unknown ones next to known ones" do
       CategoryOption.find_or_create_by!(name: "Wearable")
       Category.create!(repository_id: pub_robot.id, name: "Wearable")

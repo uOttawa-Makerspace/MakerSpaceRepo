@@ -3,6 +3,7 @@
 class SearchController < SessionsController
   before_action :current_user
   before_action :no_container
+  before_action :set_query
 
   SEARCH_SORT_BY_OPTIONS = %i[
     newest
@@ -22,7 +23,7 @@ class SearchController < SessionsController
                       .includes(:owner)
                       .includes(photos: { image_attachment: :blob })
 
-    scope = scope.fuzzy_search(params[:q]) if params[:q].present?
+    scope = scope.fuzzy_search(@query) if @query
 
     scope = scope.order([sort_order].to_h)
 
@@ -93,6 +94,12 @@ class SearchController < SessionsController
   end
 
   private
+
+  # The search text as a plain string without NUL bytes; nil when it is
+  # missing, blank, or sent as an array or hash.
+  def set_query
+    @query = params[:q].delete("\u0000").presence if params[:q].is_a?(String)
+  end
 
   # Limits the scope to the categories named by the `category` slugs. Slugs
   # that are unknown, or params that are not strings, are ignored; when none
