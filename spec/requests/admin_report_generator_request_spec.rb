@@ -153,9 +153,12 @@ RSpec.describe "Admin report generator", type: :request do
       expect(response.body).not_to include('id="Report-Space-3"')
     end
 
-    it "popular_hours WITH dates shows 'Invalid report type specified' instead of the per-period report" do
+    it "popular_hours WITH dates renders the per-period report" do
       get admin_report_generator_index_path, params: range.merge(report_type: "popular_hours")
-      expect(response.body).to include("Invalid report type specified")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Invalid report type specified")
+      expect(response.body).to include("Displaying popular hours from 2026-03-01 to 2026-03-31")
+      expect(response.body).to include('id="report"')
     end
 
     it "an unparseable date string is answered with a 400 naming the date" do
