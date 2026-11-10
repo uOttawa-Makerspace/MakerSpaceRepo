@@ -87,8 +87,8 @@ class Space < ApplicationRecord
   end
 
   # For tables that show each user's previous visit.
-  def recently_signed_out_users_with_history(with_sheets: false)
-    with_visit_history(recently_signed_out_users, with_sheets: with_sheets)
+  def recently_signed_out_users_with_history
+    with_visit_history(recently_signed_out_users)
   end
 
   def visible_lab_sessions
@@ -103,7 +103,7 @@ class Space < ApplicationRecord
   end
 
   # The dashboard rows show each user's previous visit (and, with with_sheets, their walk-in
-  # sheets in a space that asks for one); load what they read in one go.
+  # sheets in a space that asks for one; only signed-in rows read them); load what they read in one go.
   def with_visit_history(users, with_sheets: false)
     associations = [:lab_sessions]
     associations << :walk_in_safety_sheets if with_sheets && needs_walk_in_safety_sheet?

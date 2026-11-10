@@ -63,7 +63,7 @@ class StaffDashboardChannel < ApplicationCable::Channel
               .includes(certifications: { training_session: %i[training user] })
               .includes(:lab_sessions)
           ),
-        signed_out_users: space.recently_signed_out_users_with_history(with_sheets: true)
+        signed_out_users: space.recently_signed_out_users_with_history
       }
     )
   end

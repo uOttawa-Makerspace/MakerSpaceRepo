@@ -15,7 +15,7 @@ class StaffDashboardController < StaffAreaController
 
     respond_to do |format|
       format.html do
-        @signed_out_users = @space.recently_signed_out_users_with_history(with_sheets: true)
+        @signed_out_users = @space.recently_signed_out_users_with_history
         load_table_context
         @printers_in_use =
           PrinterSession.order(created_at: :desc).where(in_use: true)
