@@ -129,7 +129,8 @@ RSpec.describe VolunteerTask, "#remove_user", type: :model do
 
   it "marks the user's joined rows left when they remove themselves, and keeps every row" do
     first = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
-    second = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+    # a stored duplicate from before joins were unique
+    second = build(:volunteer_task_join, :active, volunteer_task: task, user: user).tap { |j| j.save!(validate: false) }
 
     expect(task.remove_user(user.id, by: user)).to be(true)
     rows = VolunteerTaskJoin.where(id: [first.id, second.id])

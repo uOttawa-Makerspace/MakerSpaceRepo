@@ -152,6 +152,10 @@ en:
           attributes:
             photos:
               too_many: " can't exceed 5 photos"
+        volunteer_task_join:
+          attributes:
+            user_id:
+              taken: "is already on this task"
         learning_module:
           attributes:
             title:
