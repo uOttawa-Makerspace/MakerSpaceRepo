@@ -30,7 +30,9 @@ RSpec.describe "Homepage", type: :system do
       ] } } }.to_json
     )
     create(:repository, title: "Featured Gizmo")
+    create(:repository, title: "Second Gizmo")
     create(:announcement, :all, description: "Maker night this Friday")
+    create(:announcement, :all, description: "Open house on Monday")
   end
 
   def expect_public_chrome

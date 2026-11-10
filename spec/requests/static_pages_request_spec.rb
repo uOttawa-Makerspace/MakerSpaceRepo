@@ -308,11 +308,17 @@ RSpec.describe "Static pages", type: :request do
       expect(recent).not_to include(priv)
     end
 
-    it "renders a card for each of several recent repositories" do
-      create_list(:repository, 3)
+    it "renders a card with the owner and photo for each of several recent repositories" do
+      repos = create_list(:repository, 3)
       get root_path
       expect(response).to have_http_status(:ok)
-      expect(controller.instance_variable_get(:@recent_projects).size).to eq(3)
+      page = Nokogiri::HTML(response.body)
+      repos.each do |repo|
+        card = page.css("a.card").find { |node| node.text.include?(repo.title) }
+        expect(card).to be_present
+        expect(card.text).to include(repo.owner.username)
+        expect(card.at_css("img")["src"]).to include("active_storage")
+      end
     end
 
     it "lists contact infos flagged show_hours (name order)" do
