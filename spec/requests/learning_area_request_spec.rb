@@ -304,6 +304,12 @@ RSpec.describe "Learning area", type: :request do
       expect(lm.scorm_status).to eq("pending")
     end
 
+    it "ignores a cc field, which learning modules do not have" do
+      post learning_area_index_path, params: valid_params.deep_merge(learning_module: { cc: 5 })
+      expect(response).to have_http_status(:redirect)
+      expect(LearningModule.find_by!(shortcut_name: "laser_101").title).to eq("Laser cutting 101")
+    end
+
     it "attaches photos, project files and videos" do
       photo = fixture_file_upload(Rails.root.join("spec/support/assets/avatar.png"), "image/png")
       file = fixture_file_upload(Rails.root.join("spec/support/assets/RepoFile1.pdf"), "application/pdf")
