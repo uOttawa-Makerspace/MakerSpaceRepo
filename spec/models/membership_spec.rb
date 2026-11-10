@@ -130,6 +130,17 @@ RSpec.describe Membership, type: :model do
       expect(m.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
     end
 
+    it "the concern's draft order and paid state are returned on first use, not nil" do
+      fake = stub_shopify_admin!
+      fake.fully_paid = true
+      m = create(:membership, user: user, membership_tier: tier, status: "pending")
+      expect(m.send(:shopify_draft_order)).to include("invoiceUrl" => fake.invoice_url)
+      expect(m.reload.shopify_draft_order_id).to eq(fake.draft_id)
+
+      fresh = create(:membership, user: user, membership_tier: tier, status: "pending")
+      expect(fresh.shopify_is_paid).to be(true)
+    end
+
     it "#checkout_link is asked once per membership" do
       fake = stub_shopify_admin!
       m = create(:membership, user: user, membership_tier: tier, status: "pending")
@@ -178,6 +189,19 @@ RSpec.describe Membership, type: :model do
         m2.send(:create_shopify_draft_order)
         expect(fake.deleted_ids).to eq(["gid://shopify/DraftOrder/9001"])
         expect(m.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/1")
+      end
+
+      it "returns the winner's invoice URL, fetches the winner's draft and deletes its own when another request stores first" do
+        winner = "gid://shopify/DraftOrder/1"
+        allow(m).to receive(:create_remote_draft_order).and_wrap_original do |original, *args|
+          original.call(*args).tap { Membership.find(m.id).update_column(:shopify_draft_order_id, winner) }
+        end
+        fake.invoice_url = "https://shop.example.test/invoices/winner"
+
+        expect(m.checkout_link).to eq("https://shop.example.test/invoices/winner")
+        expect(fake.calls.last[:variables][:id]).to eq(winner)
+        expect(fake.deleted_ids).to eq(["gid://shopify/DraftOrder/9001"])
+        expect(m.reload.shopify_draft_order_id).to eq(winner)
       end
 
       it "does not keep a draft for a membership that is no longer pending" do
