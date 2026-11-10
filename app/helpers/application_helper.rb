@@ -187,6 +187,12 @@ module ApplicationHelper
     }
   end
 
+  # Data attributes and state for a button that asks for confirmation: disabled until the page
+  # script (which registers the confirm prompts) has run and the controller enables it.
+  def confirmed_until_ready(message)
+    { disabled: true, data: { controller: 'enable-when-ready', confirm: message } }
+  end
+
   private
 
   # Forget who was resolved earlier in this request (cookie user, current user,

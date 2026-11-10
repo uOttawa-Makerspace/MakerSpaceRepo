@@ -643,6 +643,15 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include("Locker Inventory")
     end
 
+    it "renders the confirming staff action buttons disabled until the page script enables them" do
+      log_in!(staff)
+      get locker_rental_path(reviewing_rental!)
+
+      assert_select "button[data-confirm]", count: 3
+      assert_select "button[data-confirm]:not([disabled])", count: 0
+      assert_select "button[data-confirm]:not([data-controller='enable-when-ready'])", count: 0
+    end
+
     describe "the Indefinite box of the assign form" do
       before { log_in!(staff) }
 
@@ -1442,6 +1451,15 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
     def hold!(rental, reason: "renter_ineligible", id: nil)
       create(:locker_payment, :held, locker_rental: rental, hold_reason: reason, **(id ? { shopify_order_id: id } : {}))
+    end
+
+    it "renders the resolution buttons disabled until the page script enables them" do
+      hold!(rental)
+      log_in!(staff)
+      get locker_rental_path(rental)
+
+      assert_select "form button[name=resolution][data-confirm]", count: 2
+      assert_select "form button[name=resolution][disabled][data-controller='enable-when-ready']", count: 2
     end
 
     it "shows the badge, the section and the alert only while a held payment exists, driven by the scope" do

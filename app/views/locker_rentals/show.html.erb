@@ -328,8 +328,8 @@ end
                                             <% if payment.held? %>
                                                 <%= form_with url: locker_rental_locker_payment_path(@locker_rental, payment), method: :patch, class: 'mt-1' do %>
                                                     <%= text_field_tag :resolution_note, nil, placeholder: t('lockers.held_payments.note_placeholder'), class: 'form-control form-control-sm mb-1' %>
-                                                    <%= button_tag t('lockers.held_payments.mark_refunded'), name: 'resolution', value: 'refunded', class: 'btn btn-sm btn-outline-primary', data: { confirm: t('lockers.held_payments.confirm_refunded') } %>
-                                                    <%= button_tag t('lockers.held_payments.dismiss'), name: 'resolution', value: 'dismissed', class: 'btn btn-sm btn-outline-secondary', data: { confirm: t('lockers.held_payments.confirm_dismissed') } %>
+                                                    <%= button_tag t('lockers.held_payments.mark_refunded'), name: 'resolution', value: 'refunded', class: 'btn btn-sm btn-outline-primary', **confirmed_until_ready(t('lockers.held_payments.confirm_refunded')) %>
+                                                    <%= button_tag t('lockers.held_payments.dismiss'), name: 'resolution', value: 'dismissed', class: 'btn btn-sm btn-outline-secondary', **confirmed_until_ready(t('lockers.held_payments.confirm_dismissed')) %>
                                                 <% end %>
                                             <% end %>
                                         </td>
