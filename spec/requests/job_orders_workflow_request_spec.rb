@@ -53,7 +53,7 @@ RSpec.describe "JobOrders workflow", type: :request do
 
     it "lets the admin role quote an order (the recorded status user is the admin)" do
       session_login!(admin)
-      patch job_order_quote_path(order), params: quote_params(task)
+      patch_quote order, quote_params(task)
       expect(response).to redirect_to(job_order_path(order))
       expect(status_names(order)).to end_with("Waiting for User Approval")
       expect(order.job_order_statuses.last.user).to eq(admin)
@@ -62,7 +62,7 @@ RSpec.describe "JobOrders workflow", type: :request do
 
     it "flashes the generic error for a non-blank junk approved value and changes nothing" do
       session_login!(staff)
-      patch job_order_quote_path(order), params: quote_params(task, approved: "maybe")
+      patch_quote order, quote_params(task, approved: "maybe")
       expect(response).to redirect_to(job_order_path(order))
       expect(flash[:alert]).to eq(I18n.t("errors.job_orders.quote_choice_missing"))
       expect(status_names(order)).to eq(["Waiting for Staff Approval"])
@@ -74,8 +74,7 @@ RSpec.describe "JobOrders workflow", type: :request do
       option = JobOption.create!(name: "Polish", fee: 1)
       task.job_task_options.create!(job_option: option)
       session_login!(staff)
-      patch job_order_quote_path(order),
-            params: quote_params(task, "task_#{task.id}_option_price_#{option.id}" => "7.25")
+      patch_quote order, quote_params(task, "task_#{task.id}_option_price_#{option.id}" => "7.25")
 
       quote_option = task.reload.job_task_quote.job_task_quote_options.first
       expect(quote_option.job_option).to eq(option)
@@ -86,8 +85,7 @@ RSpec.describe "JobOrders workflow", type: :request do
       option = JobOption.create!(name: "Polish", fee: 1)
       task.job_task_options.create!(job_option: option)
       session_login!(staff)
-      patch job_order_quote_path(order),
-            params: quote_params(task, "task_#{task.id}_option_price_#{option.id}" => "")
+      patch_quote order, quote_params(task, "task_#{task.id}_option_price_#{option.id}" => "")
       expect(task.reload.job_task_quote.job_task_quote_options).to be_empty
     end
 
@@ -95,7 +93,7 @@ RSpec.describe "JobOrders workflow", type: :request do
     # no comment change, not a NoMethodError 500 that rolled the quote back.
     it "quotes without a job_order param (no staff comment change), not a 500" do
       session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "10" }
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task.id}" => "10" }
       expect(response).to redirect_to(job_order_path(order.id))
       expect(task.reload.job_task_quote.price).to eq(10)
       expect(status_names(order).last).to eq("Waiting for User Approval")
@@ -104,20 +102,20 @@ RSpec.describe "JobOrders workflow", type: :request do
     it "does not overwrite existing staff_comments with a blank value" do
       order.update!(staff_comments: "original note")
       session_login!(staff)
-      patch job_order_quote_path(order), params: quote_params(task, job_order: { staff_comments: "" })
+      patch_quote order, quote_params(task, job_order: { staff_comments: "" })
       expect(order.reload.staff_comments).to eq("original note")
     end
 
     it "keeps the existing line items when no job_quote_line_items param is sent" do
       order.job_quote_line_items.create!(description: "Existing", price: 3)
       session_login!(staff)
-      patch job_order_quote_path(order), params: quote_params(task)
+      patch_quote order, quote_params(task)
       expect(order.reload.job_quote_line_items.pluck(:description, :price)).to eq([["Existing", BigDecimal("3")]])
     end
 
     it "records the staff comment of a decline as a chat message and emails the customer" do
       session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "false", user_comments: "Sorry, we cannot make this" }
+      patch_quote order, { approved: "false", user_comments: "Sorry, we cannot make this" }
       expect(status_names(order)).to end_with("Declined")
       expect(order.chat_messages.last.message).to eq("Sorry, we cannot make this")
       expect(order.chat_messages.last.sender).to eq(staff)
@@ -125,10 +123,71 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(deliveries.last.subject).to eq("Your job ##{order.id} has been declined")
     end
 
+    it "refuses a quote or decline that does not name the status row of its form, and writes nothing" do
+      session_login!(staff)
+      [quote_params(task), { approved: "false" }].each do |params|
+        patch_quote order, params, status_row_id: ""
+        expect(response).to redirect_to(job_order_path(order))
+        expect(flash[:alert]).to be_present
+      end
+      expect(status_names(order).count).to eq(1)
+      expect(order.chat_messages).to be_empty
+      expect(deliveries).to be_empty
+    end
+
+    it "quotes once when the same form is submitted twice, and a deliberate re-quote from a fresh form still works" do
+      session_login!(staff)
+      row_id = order.job_order_statuses.reorder(id: :desc).first.id
+      patch_quote order, quote_params(task), status_row_id: row_id
+      deliveries.clear
+      patch_quote order, quote_params(task), status_row_id: row_id
+
+      expect(status_names(order).count("Waiting for User Approval")).to eq(1)
+      expect(deliveries).to be_empty
+      expect(flash[:alert]).to be_present
+
+      fresh_id = order.job_order_statuses.reorder(id: :desc).first.id
+      patch_quote order, quote_params(task), status_row_id: fresh_id
+      expect(status_names(order).count("Waiting for User Approval")).to eq(2)
+    end
+
+    it "declines once when the same form is submitted twice" do
+      session_login!(staff)
+      row_id = order.job_order_statuses.reorder(id: :desc).first.id
+      2.times { patch_quote order, { approved: "false" }, status_row_id: row_id }
+      expect(status_names(order).count("Declined")).to eq(1)
+    end
+
+    it "renders the current status row in the quote and decline forms" do
+      session_login!(staff)
+      get job_order_path(order)
+      row_id = order.job_order_statuses.reorder(id: :desc).first.id
+      expect(Capybara.string(response.body)).to have_css("input[name='status_row_id'][value='#{row_id}']", count: 2, visible: :all)
+    end
+
+    it "declines an already declined order only once: no second status row, comment or email" do
+      session_login!(staff)
+      patch_quote order, { approved: "false", user_comments: "Sorry, we cannot make this" }
+      deliveries.clear
+      patch_quote order, { approved: "false", user_comments: "Sorry again" }
+
+      expect(status_names(order).count("Declined")).to eq(1)
+      expect(order.chat_messages.pluck(:message)).to eq(["Sorry, we cannot make this"])
+      expect(deliveries).to be_empty
+      expect(response).to redirect_to(job_order_path(order))
+      expect(flash[:alert]).to be_present
+    end
+
+    it "still lets a declined order be quoted again" do
+      session_login!(staff)
+      patch_quote order, { approved: "false" }
+      patch_quote order, quote_params(task)
+      expect(status_names(order)).to end_with("Declined", "Waiting for User Approval")
+    end
+
     it "pins what happens to a disallowed staff file: the attach is ignored and the quote still completes" do
       session_login!(staff)
-      patch job_order_quote_path(order),
-            params: quote_params(task, "task_#{task.id}_staff_files" => [FilesTestHelper.mp4])
+      patch_quote order, quote_params(task, "task_#{task.id}_staff_files" => [FilesTestHelper.mp4])
       expect(response).to redirect_to(job_order_path(order))
       expect(task.reload.staff_files.count).to eq(0)
       expect(status_names(order)).to end_with("Waiting for User Approval")
@@ -140,7 +199,7 @@ RSpec.describe "JobOrders workflow", type: :request do
     it "refuses to re-quote a PAID order: no status row, no customer email" do
       paid = order_with_task!(status_key: :paid)
       session_login!(staff)
-      patch job_order_quote_path(paid), params: quote_params(paid.job_tasks.first)
+      patch_quote paid, quote_params(paid.job_tasks.first)
 
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_refused_paid"))
       expect(status_names(paid)).to eq(["Paid (Waiting for Pick-Up)"])
@@ -150,7 +209,7 @@ RSpec.describe "JobOrders workflow", type: :request do
     it "re-quotes a Draft order" do
       draft = order_with_task!(status_key: :draft)
       session_login!(staff)
-      patch job_order_quote_path(draft), params: quote_params(draft.job_tasks.first)
+      patch_quote draft, quote_params(draft.job_tasks.first)
       expect(status_names(draft)).to eq(["Draft", "Waiting for User Approval"])
     end
 
@@ -158,7 +217,7 @@ RSpec.describe "JobOrders workflow", type: :request do
     # which opens the approval page and approves with the owner's login.
     it "emails a magic link that opens the approval page and approves the quote" do
       session_login!(staff)
-      patch job_order_quote_path(order), params: quote_params(task)
+      patch_quote order, quote_params(task)
       body = deliveries.last.body.decoded
       token = CGI.unescape(body[/user_magic_approval\?token=([^"&\s]+)/, 1].to_s)
       expect(token).to be_present

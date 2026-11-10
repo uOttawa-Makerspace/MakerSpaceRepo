@@ -21,7 +21,7 @@ class KeyTransaction < ApplicationRecord
   # day unless a deposit return date is given.
   def close!(deposit_return_date = nil)
     update!(
-      return_date: Date.today,
+      return_date: Date.current,
       deposit_return_date: deposit_return_date || (Time.zone.today if deposit_amount.zero?)
     )
   end

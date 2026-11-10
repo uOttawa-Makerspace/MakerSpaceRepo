@@ -103,8 +103,10 @@ RSpec.describe PrinterIssuesController, type: :controller do
       end
 
       it "should prevent deleting issues" do
-        delete :destroy, params: { id: create(:printer_issue) }
+        issue = create(:printer_issue)
+        expect { delete :destroy, params: { id: issue.id } }.not_to change(PrinterIssue, :count)
         expect(response).to redirect_to printer_issues_path
+        expect(flash[:alert]).to eq("Only admins can delete printer issues.")
       end
     end
 

@@ -42,4 +42,14 @@ RSpec.describe StaffUnavailability, type: :model do
     expect(record.start_time.zone).to eq("EST")
     expect(record.start_time.utc).to eq(start_time)
   end
+
+  it "saves an unrelated change to a stored rule with an unreadable start, but validates a changed rule" do
+    bad_rule = "DTSTART;TZID=Nowhere/Land:20270301T100000\nRRULE:FREQ=DAILY"
+    record = build_one.tap(&:save!)
+    record.update_column(:recurrence_rule, bad_rule)
+    record.reload
+    expect(record.update(end_time: start_time + 2.hours)).to be(true)
+    expect(record.update(recurrence_rule: "#{bad_rule};COUNT=2")).to be(false)
+    expect(record.errors[:recurrence_rule]).to eq([RecurrenceRuleValidator::UNPARSEABLE])
+  end
 end

@@ -29,7 +29,7 @@ RSpec.describe "Quoting a paid job order", type: :request do
 
   def quote!(order, task, price, approved: "true", job_order: { staff_comments: "" })
     session_login!(staff)
-    patch job_order_quote_path(order), params: { approved: approved, "job_task_quote_price_#{task.id}" => price.to_s,
+    patch_quote order, { approved: approved, "job_task_quote_price_#{task.id}" => price.to_s,
                                                  job_order: job_order }
   end
 
@@ -83,7 +83,7 @@ RSpec.describe "Quoting a paid job order", type: :request do
       order.update!(staff_comments: "kept")
       session_login!(staff)
 
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "40",
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task.id}" => "40",
                                                    "job_order[staff_comments][]" => "a" }
 
       expect(order.reload.total_price).to eq(BigDecimal("40"))

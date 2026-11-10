@@ -1,6 +1,8 @@
 class PrinterIssuesController < StaffAreaController
   layout "staff_area"
 
+  before_action :ensure_admin, only: :update_notification_email
+
   def index
     @issues = PrinterIssue.all.order(:printer_id)
     @issues_summary =
@@ -35,7 +37,7 @@ class PrinterIssuesController < StaffAreaController
   end
 
   def show
-    @issue = PrinterIssue.find_by(id: params[:id])
+    @issue = PrinterIssue.find(params[:id])
   end
 
   def new
@@ -103,7 +105,7 @@ class PrinterIssuesController < StaffAreaController
 
   def destroy
     unless current_user.admin?
-      redirect_to printer_issues_path
+      redirect_to printer_issues_path, alert: I18n.t("errors.printers.issue_delete_admin_only")
       return
     end
     issue = PrinterIssue.find(params[:id])
@@ -128,6 +130,12 @@ class PrinterIssuesController < StaffAreaController
   end
 
   private
+
+  def ensure_admin
+    return if current_user.admin?
+
+    redirect_to printer_issues_path, alert: "Only admins can change the notification email."
+  end
 
   def printer_issue_params
     params.require(:printer_issue).permit(

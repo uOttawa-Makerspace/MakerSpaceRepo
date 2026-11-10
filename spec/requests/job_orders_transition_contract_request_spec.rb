@@ -94,7 +94,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       JobStatus.reset_lookup_cache!
       session_login!(staff)
 
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "77",
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task.id}" => "77",
                                                    job_order: { staff_comments: "" } }
 
       expect_missing_status!("Waiting for User Approval")
@@ -109,7 +109,7 @@ RSpec.describe "Job order transition failure contract", type: :request do
       JobStatus.reset_lookup_cache!
       session_login!(staff)
 
-      patch job_order_quote_path(order), params: { approved: "false", job_order: { staff_comments: "" } }
+      patch_quote order, { approved: "false", job_order: { staff_comments: "" } }
 
       expect_missing_status!("Declined")
       expect(status_names(order)).to eq(["Waiting for Staff Approval"])

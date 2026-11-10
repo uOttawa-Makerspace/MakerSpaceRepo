@@ -42,6 +42,22 @@ RSpec.describe CcMoney, type: :model do
     expect { CcMoney.create! }.not_to raise_error
   end
 
+  describe "#link_to" do
+    let(:first_user) { create(:user, :regular_user) }
+    let(:second_user) { create(:user, :regular_user) }
+
+    it "gives an unlinked row to the user once and keeps that owner on a repeat or a second claim" do
+      row = CcMoney.create!(cc: 10, linked: false)
+      stale = CcMoney.find(row.id)
+      expect(row.link_to(first_user)).to be(true)
+      expect(stale.link_to(second_user)).to be(false)
+      expect(stale.linked?).to be(true)
+      expect(row.link_to(first_user)).to be(false)
+      expect(row.reload.user_id).to eq(first_user.id)
+      expect(CcMoney.where(user_id: [first_user.id, second_user.id]).sum(:cc)).to eq(10)
+    end
+  end
+
   describe ".debit! (the one wallet-debit operation)" do
     # A joinable caller transaction (the fixture transaction is not one).
     def in_caller_transaction(&block)
