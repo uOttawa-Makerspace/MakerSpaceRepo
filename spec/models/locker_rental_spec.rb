@@ -32,6 +32,13 @@ RSpec.describe LockerRental, type: :model do
       expect(rental.reload.notified_of_cancellation_at).to be_nil
     end
 
+    it "clears a notice recorded after the instance was loaded, when saved without a row lock" do
+      stale = LockerRental.find(create(:locker_rental, :active, owned_until: 3.days.ago).id)
+      LockerRental.where(id: stale.id).update_all(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+      stale.update!(owned_until: 4.months.from_now)
+      expect(stale.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+    end
+
     it "does not touch a notice recorded on a rental being created" do
       told = create(:locker_rental, :active, owned_until: 3.days.ago, notified_of_cancellation_at: told_at, contacted_for_clearance: true)
       expect(told.reload).to have_attributes(notified_of_cancellation_at: told_at, contacted_for_clearance: true)

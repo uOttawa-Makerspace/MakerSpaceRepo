@@ -17,15 +17,17 @@ class Locker < ApplicationRecord
   scope :order_by_specifier,
         -> do
           order(
-            Arel.sql("(specifier ~ '^[0-9]{1,18}$') DESC"),
+            Arel.sql("(specifier ~ '^[0-9]{1,18}$') DESC NULLS LAST"),
             Arel.sql("CASE WHEN specifier ~ '^[0-9]{1,18}$' THEN specifier::bigint END"),
-            :specifier
+            Arel.sql('specifier ASC NULLS LAST')
           )
         end
 
   # The same order for a list of specifiers already in memory.
   def self.sort_specifiers(specifiers)
     specifiers.sort_by do |specifier|
+      next [2, 0, ''] if specifier.nil?
+
       text = specifier.to_s
       text.match?(/\A[0-9]{1,18}\z/) ? [0, text.to_i, text] : [1, 0, text]
     end

@@ -98,6 +98,8 @@ class LockerRental < ApplicationRecord
 
   # A renewal or extension (owned_until moved later, or made indefinite) makes the earlier expiry notice history:
   # the next expiry has to be announced again. A column reset on the same row, whichever path changed the date.
+  # The notice is read from the stored row (locked for the rest of the save), not from this instance, which may
+  # have been loaded before the notifier recorded it.
   before_save :reset_expiry_notice, if: :owned_until_moved_later?
 
   # If state ever changes from request, record who did it
@@ -496,11 +498,16 @@ class LockerRental < ApplicationRecord
   private
 
   def owned_until_moved_later?
-    persisted? && notified_of_cancellation_at.present? && will_save_change_to_owned_until? &&
-      (owned_until.nil? || owned_until_was.nil? || owned_until > owned_until_was)
+    persisted? && will_save_change_to_owned_until? &&
+      (owned_until.nil? || owned_until_was.nil? || owned_until > owned_until_was) &&
+      self.class.lock.where(id: id).where.not(notified_of_cancellation_at: nil).exists?
   end
 
+  # Marked changed explicitly: this instance may still hold the old values, and an unchanged-looking attribute
+  # would be left out of the UPDATE.
   def reset_expiry_notice
+    notified_of_cancellation_at_will_change!
+    contacted_for_clearance_will_change!
     self.notified_of_cancellation_at = nil
     self.contacted_for_clearance = false
   end

@@ -48,7 +48,7 @@ end %>
         <div class="row row-cols-auto mb-3">
             <div>
                 <%= f.label :requested_as, 'I am a ', class: 'form-label' %>
-                <%= f.select :requested_as, options_for_select(@available_fors), {}, { class: 'form-select w-auto', required: true } %>
+                <%= f.select :requested_as, options_for_select(@available_fors, (@available_fors.values.first if @available_fors.one?)), (@available_fors.one? ? {} : { prompt: 'Choose one' }), { class: 'form-select w-auto', required: true } %>
             </div>
             <div>
                 <%= f.label :preferred_locker_id, 'You can request for a specific locker, if it is available (optional)', class: 'form-label' %>
