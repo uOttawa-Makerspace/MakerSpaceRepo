@@ -128,7 +128,6 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     it "frequent_visitors without dates is a 500" do
-      # frequent_visitors calls params[:start_date].to_datetime with no presence check, so choosing it without a date range raises NoMethodError
       get admin_report_generator_index_path, params: { report_type: "frequent_visitors" }
       expect(response).to have_http_status(:internal_server_error)
     end
@@ -155,19 +154,30 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     it "popular_hours WITH dates shows 'Invalid report type specified' instead of the per-period report" do
-      # the controller rewrites params[:report_type] to 'popular_hours_per_period', which the index view's allow-list does not contain, so the per-period report (its partial exists) is never rendered
       get admin_report_generator_index_path, params: range.merge(report_type: "popular_hours")
-      expect(response).to have_http_status(:ok)
       expect(response.body).to include("Invalid report type specified")
-      expect(response.body).not_to include("Displaying popular hours from")
-      expect(response.body).not_to include('id="report"')
     end
 
-    it "an unparseable date string is a 500" do
-      # the html report parses the days with Date.parse, which raises on "abc"
+    it "an unparseable date string is answered with a 400 naming the date" do
       get admin_report_generator_index_path,
-          params: { start_date: "abc", end_date: "def", report_type: "certifications" }
-      expect(response).to have_http_status(:internal_server_error)
+          params: { start_date: "abc", end_date: "2026-03-31", report_type: "certifications" }
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("Failed to parse start date")
+      get admin_report_generator_index_path,
+          params: { start_date: "2026-03-01", end_date: "def", report_type: "certifications" }
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("Failed to parse end date")
+    end
+
+    it "an inverted or out-of-range period is answered with a 400" do
+      get admin_report_generator_index_path,
+          params: { start_date: "2026-03-31", end_date: "2026-03-01", report_type: "visitors" }
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("The end date is before the start date")
+      get admin_report_generator_index_path,
+          params: { start_date: "1990-01-01", end_date: "2026-03-01", report_type: "visitors" }
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to start_with("Dates must be between 2000-01-01")
     end
   end
 
@@ -261,17 +271,32 @@ RSpec.describe "Admin report generator", type: :request do
       expect(response.body).to eq("Invalid range type")
     end
 
-    it "accepts a huge year (no upper bound)" do
-      post admin_report_generator_generate_path,
-           params: { range_type: "semester", term: "fall", year: "9999", type: "visitors" }
-      expect(response).to have_http_status(:found)
-      expect(redirect_query["start_date"]).to start_with("9999-09-01")
+    it "refuses a year far in the future or the past" do
+      %w[9999 1999].each do |year|
+        post admin_report_generator_generate_path,
+             params: { range_type: "semester", term: "fall", year: year, type: "visitors" }
+        expect(response).to have_http_status(:bad_request)
+        expect(response.body).to start_with("Dates must be between 2000-01-01")
+      end
     end
 
-    it "date_range accepts an inverted range (end before start) with no complaint" do
+    it "accepts the coming year's semesters, up to the end of next year" do
+      freeze_time do
+        year = Date.current.year + 1
+        post admin_report_generator_generate_path,
+             params: { range_type: "semester", term: "fall", year: year, type: "visitors" }
+        expect(response).to have_http_status(:found)
+        post admin_report_generator_generate_path,
+             params: { range_type: "semester", term: "fall", year: year + 1, type: "visitors" }
+        expect(response).to have_http_status(:bad_request)
+      end
+    end
+
+    it "date_range refuses an inverted range (end before start)" do
       post admin_report_generator_generate_path,
            params: { range_type: "date_range", from_date: "2026-03-31", to_date: "2026-03-01", type: "visitors" }
-      expect(response).to have_http_status(:found)
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("The end date is before the start date")
     end
 
     # N+1 pinned
@@ -443,25 +468,27 @@ RSpec.describe "Admin report generator", type: :request do
       expect(response.body).to eq("Unknown report type")
     end
 
-    it "an unparseable start or end date is a 500" do
-      # Date.parse is not rescued in generate_spreadsheet, so a bad date raises instead of a 400
+    it "an unparseable start or end date is a 400 naming the date" do
       get admin_report_generator_generate_spreadsheet_path, params: { type: "visitors", start_date: "garbage" }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("Failed to parse start date")
       get admin_report_generator_generate_spreadsheet_path, params: { type: "visitors", end_date: "garbage" }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("Failed to parse end date")
     end
 
-    it "does not validate the order of the range (end before start gives an empty workbook)" do
-      fetch_xlsx("visitors", start_date: "2026-04-01", end_date: "2026-03-01")
-      sheets = c18_xlsx_sheets(response.body)
-      expect(sheets.keys).to eq(["Report", "Programs"])
+    it "refuses a range whose end is before its start" do
+      get admin_report_generator_generate_spreadsheet_path,
+          params: { type: "visitors", start_date: "2026-04-01", end_date: "2026-03-01" }
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("The end date is before the start date")
     end
 
-    it "has no cap on the date range: a 36-year visits_by_hour report is generated, one row per day" do
-      # no maximum span: a workbook gets a row per day for any range (admins only)
-      fetch_xlsx("visits_by_hour", start_date: "1990-01-01", end_date: "2026-01-01")
-      rows = c18_xlsx_sheets(response.body).fetch("Sheet1")
-      expect(rows[5..].size).to eq((Date.new(2026, 1, 1) - Date.new(1990, 1, 1)).to_i + 1)
+    it "refuses a range that starts before 2000, so a workbook cannot get a row for every day of decades" do
+      get admin_report_generator_generate_spreadsheet_path,
+          params: { type: "visits_by_hour", start_date: "1990-01-01", end_date: "2026-01-01" }
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to start_with("Dates must be between 2000-01-01")
     end
   end
 end
