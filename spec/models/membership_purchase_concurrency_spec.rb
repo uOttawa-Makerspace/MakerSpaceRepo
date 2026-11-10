@@ -35,7 +35,7 @@ RSpec.describe Membership, "purchase under concurrency", type: :model do
     first = nil
     paused = Queue.new
     resume = Queue.new
-    allow(Membership).to receive(:calculate_end_date).and_wrap_original do |original, *args|
+    allow_any_instance_of(Membership).to receive(:set_dates).and_wrap_original do |original, *args|
       if Thread.current == first
         first = nil
         paused << true
@@ -90,5 +90,36 @@ RSpec.describe Membership, "purchase under concurrency", type: :model do
     expect(two_link).to eq(fake.invoice_url)
     expect(Membership.find(membership.id).shopify_draft_order_id).to eq("gid://shopify/DraftOrder/2")
     expect(fake.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
+  end
+
+  it "stacks two memberships paid at the same time instead of overlapping them" do
+    a = Membership.create!(user: member, membership_tier: tier)
+    b = Membership.create!(user: member, membership_tier: tier)
+    first = nil
+    paused = Queue.new
+    resume = Queue.new
+    allow(Membership).to receive(:calculate_end_date).and_wrap_original do |original, *args|
+      if Thread.current == first
+        first = nil
+        paused << true
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
+      end
+      original.call(*args)
+    end
+
+    one = in_thread do
+      first = Thread.current
+      Membership.find(a.id).mark_paid_if_pending
+    end
+    ThreadPause.await(paused)
+    two = in_thread { Membership.find(b.id).mark_paid_if_pending }
+    deadline = Time.current + 5
+    Thread.pass until blocked_backends.positive? || !two.alive? || Time.current > deadline
+    resume << true
+
+    expect([one.value, two.value]).to eq([true, true])
+    paid = Membership.where(user_id: member.id).order(:start_date).to_a
+    expect(paid.map(&:status)).to eq(%w[paid paid])
+    expect(paid.last.start_date).to eq(paid.first.end_date)
   end
 end

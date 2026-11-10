@@ -172,20 +172,28 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
   # ------------------------------------------------------------ memberships
 
   describe "membership path" do
-    let!(:pending) { create(:membership, user: user, membership_tier: tier, status: "pending") }
+    let!(:pending) { create(:membership, user: user, membership_tier: tier, status: "pending", start_date: nil, end_date: nil) }
     let(:reports) { [] }
 
     before { allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] } }
 
-    it "marks the referenced pending membership paid (dates untouched)" do
-      before_dates = pending.slice(:start_date, :end_date)
-      order = hook(membership_payload(pending.id))
+    it "marks the referenced pending membership paid, starting now" do
+      frozen = Time.utc(2026, 2, 3, 10)
+      order = travel_to(frozen) { hook(membership_payload(pending.id)) }
       pending.reload
       expect(order.reload.last_error).to be_nil
       expect(ProcessedOrder.refused).to be_empty
       expect(pending.status).to eq("paid")
-      expect(pending.slice(:start_date, :end_date)).to eq(before_dates)
+      expect(pending.start_date).to eq(frozen)
+      expect(pending.end_date).to eq(Time.zone.at(frozen) + tier.duration.days)
       expect(Membership.count).to eq(1)
+    end
+
+    it "stacks two memberships paid by orders delivered together" do
+      second = create(:membership, user: user, membership_tier: tier, status: "pending", start_date: nil, end_date: nil)
+      hook(membership_payload(pending.id, id: 7020))
+      hook(membership_payload(second.id, id: 7021))
+      expect(second.reload.start_date).to eq(pending.reload.end_date)
     end
 
     it "accepts a comma-separated tag string too" do
@@ -305,6 +313,12 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         hook(payload.merge(id: 7004))
         expect { 2.times { hook(payload.merge(id: 7004)) } }.not_to change(Membership, :count)
         expect(user.memberships.where(status: "paid").count).to eq(1)
+      end
+
+      it "stacks the lines of one order" do
+        hook(payload.merge(line_items: [{ title: "1 Day Membership" }, { title: "1 day membership" }]))
+        paid = user.memberships.where(status: "paid").order(:id).to_a
+        expect(paid.last.start_date).to eq(paid.first.end_date)
       end
 
       it "stacks the memberships of two different orders" do

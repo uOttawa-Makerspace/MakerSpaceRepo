@@ -102,7 +102,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
       let!(:admin_client) { stub_shopify_admin! }
       before { shop_log_in!(user) }
 
-      it "creates a pending membership with dates, a Shopify draft order, and redirects to its invoice URL" do
+      it "creates a pending membership without dates, a Shopify draft order, and redirects to its invoice URL" do
         freeze = Time.utc(2026, 3, 1, 12)
         travel_to(freeze) do
           expect { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
@@ -114,8 +114,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         m = Membership.last
         expect(m.user).to eq(user)
         expect(m.status).to eq("pending")
-        expect(m.start_date).to eq(freeze)
-        expect(m.end_date).to eq(Time.zone.at(freeze) + 120.days) # wall-clock days in the app zone (DST aware)
+        expect([m.start_date, m.end_date]).to eq([nil, nil])
         expect(m.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
 
         create_call = admin_client.calls.find { |c| c[:query].include?("draftOrderCreate") }
@@ -133,12 +132,14 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(create_call[:variables][:input][:lineItems].first[:originalUnitPrice]).to eq("25.0")
       end
 
-      it "starts a new membership when the previous active one ends (stacked dates)" do
+      it "starts a purchased membership when it is paid, after the previous active one ends" do
         prior_end = 10.days.from_now.change(usec: 0)
         create(:membership, user: user, membership_tier: tier, status: "paid", end_date: prior_end)
         post memberships_path, params: { membership: { membership_tier_id: tier.id } }
         m = Membership.order(:id).last
-        expect(m.start_date).to be_within(1.second).of(prior_end)
+        expect(m.start_date).to be_nil
+        m.mark_paid_if_pending
+        expect(m.reload.start_date).to be_within(1.second).of(prior_end)
         expect(m.end_date).to be_within(1.second).of(prior_end + 120.days)
       end
 
@@ -174,17 +175,6 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         post memberships_path, params: { membership: { membership_tier_id: other_tier.id } }
         expect(user.memberships.pending.pluck(:membership_tier_id)).to contain_exactly(tier.id, other_tier.id)
         expect(other.memberships.count).to eq(0)
-      end
-
-      it "gives a reused pending membership dates from the day it is bought again" do
-        travel_to(Time.utc(2026, 3, 1, 12)) { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
-        travel_to(Time.utc(2026, 3, 10, 12)) do
-          shop_log_in!(user)
-          post memberships_path, params: { membership: { membership_tier_id: tier.id } }
-        end
-        membership = user.memberships.first
-        expect(membership.start_date).to eq(Time.utc(2026, 3, 10, 12))
-        expect(membership.end_date).to eq(Time.zone.at(Time.utc(2026, 3, 10, 12)) + 120.days)
       end
 
       it "marks a pending membership whose draft order no longer exists failed and starts a new one" do

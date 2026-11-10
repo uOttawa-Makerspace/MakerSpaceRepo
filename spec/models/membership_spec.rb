@@ -30,20 +30,25 @@ RSpec.describe Membership, type: :model do
     end
   end
 
-  describe "before_create :set_dates" do
-    it "starts now and ends `duration` DAYS later when the user has no active membership" do
+  describe "dates" do
+    it "a pending membership has none until it is paid" do
+      m = Membership.create!(user: user, membership_tier: tier)
+      expect([m.start_date, m.end_date]).to eq([nil, nil])
+    end
+
+    it "a paid membership made without dates starts now and ends `duration` DAYS later" do
       freeze = Time.utc(2026, 1, 10, 15)
       travel_to(freeze) do
-        m = Membership.create!(user: user, membership_tier: tier)
+        m = Membership.create!(user: user, membership_tier: tier, status: "paid")
         expect(m.start_date).to eq(freeze)
         expect(m.end_date).to eq(Time.zone.at(freeze) + 120.days)
       end
     end
 
-    it "stacks after the latest ACTIVE (paid, unexpired) membership" do
+    it "a paid membership made without dates stacks after the latest ACTIVE (paid, unexpired) one" do
       base_end = 10.days.from_now.change(usec: 0)
       create(:membership, user: user, membership_tier: tier, status: "paid", end_date: base_end)
-      m = Membership.create!(user: user, membership_tier: tier)
+      m = Membership.create!(user: user, membership_tier: tier, status: "paid")
       expect(m.start_date).to be_within(1.second).of(base_end)
       expect(m.end_date).to be_within(1.second).of(base_end + 120.days)
     end
@@ -52,21 +57,69 @@ RSpec.describe Membership, type: :model do
       create(:membership, user: user, membership_tier: tier, status: "pending", end_date: 10.days.from_now)
       create(:membership, user: user, membership_tier: tier, status: "revoked", end_date: 10.days.from_now)
       create(:membership, user: user, membership_tier: tier, status: "paid", end_date: 1.day.ago)
-      m = Membership.create!(user: user, membership_tier: tier)
+      m = Membership.create!(user: user, membership_tier: tier, status: "paid")
       expect(m.start_date).to be_within(5.seconds).of(Time.current)
     end
 
     it "keeps explicitly given dates" do
       s = 2.days.from_now.change(usec: 0)
-      m = Membership.create!(user: user, membership_tier: tier, start_date: s, end_date: s + 3.days)
+      m = Membership.create!(user: user, membership_tier: tier, status: "paid", start_date: s, end_date: s + 3.days)
       expect([m.start_date, m.end_date]).to eq([s, s + 3.days])
     end
+  end
 
-    it "computes the dates once, at creation: marking paid later does not move them" do
-      m = Membership.create!(user: user, membership_tier: tier)
-      original = m.slice(:start_date, :end_date)
-      travel_to(30.days.from_now) { m.paid! }
-      expect(m.reload.slice(:start_date, :end_date)).to eq(original)
+  describe "#mark_paid_if_pending dates" do
+    let(:clicked) { Time.utc(2026, 1, 1, 12) }
+    let(:membership) { travel_to(clicked) { Membership.create!(user: user, membership_tier: tier) } }
+
+    it "starts the membership when it is paid, not when it was clicked" do
+      membership
+      travel_to(clicked + 9.days) do
+        expect(membership.mark_paid_if_pending).to be(true)
+        membership.reload
+        expect(membership).to be_paid
+        expect(membership.start_date).to eq(clicked + 9.days)
+        expect(membership.end_date).to eq(Time.zone.at(clicked + 9.days) + 120.days)
+      end
+    end
+
+    it "starts after the member's active membership when there is one" do
+      membership
+      current_end = clicked + 29.days
+      travel_to(clicked + 9.days) do
+        create(:membership, user: user, membership_tier: tier, status: "paid", start_date: clicked - 30.days, end_date: current_end)
+        membership.mark_paid_if_pending
+        membership.reload
+        expect(membership.start_date).to eq(current_end)
+        expect(membership.end_date).to eq(Time.zone.at(current_end) + 120.days)
+      end
+    end
+
+    it "stacks two pending memberships paid one after the other" do
+      other = travel_to(clicked) { Membership.create!(user: user, membership_tier: create(:membership_tier, duration: 30)) }
+      membership
+      travel_to(clicked + 2.days) do
+        membership.mark_paid_if_pending
+        other.mark_paid_if_pending
+      end
+      expect(other.reload.start_date).to eq(membership.reload.end_date)
+      expect(other.end_date).to eq(Time.zone.at(membership.end_date) + 30.days)
+    end
+
+    it "changes nothing when the membership is no longer pending" do
+      membership.update_column(:status, "revoked")
+      expect { membership.mark_paid_if_pending }.not_to(change { membership.reload.attributes })
+    end
+  end
+
+  describe ".grant!" do
+    it "makes a paid membership of the tier's duration, stacked after the latest active one" do
+      base_end = 10.days.from_now.change(usec: 0)
+      create(:membership, user: user, membership_tier: tier, status: "paid", end_date: base_end)
+      m = Membership.grant!(user, tier)
+      expect(m).to be_paid
+      expect(m.start_date).to eq(base_end)
+      expect(m.end_date).to eq(Time.zone.at(base_end) + 120.days)
     end
   end
 
@@ -76,6 +129,7 @@ RSpec.describe Membership, type: :model do
       later = create(:membership, user: user, membership_tier: tier, status: "paid", end_date: 9.days.from_now)
       create(:membership, user: user, membership_tier: tier, status: "pending", end_date: 9.days.from_now)
       create(:membership, user: user, membership_tier: tier, status: "revoked", end_date: 9.days.from_now)
+      create(:membership, user: user, membership_tier: tier, status: "failed", end_date: 9.days.from_now)
       create(:membership, user: user, membership_tier: tier, status: "paid", end_date: 1.second.ago)
       expect(Membership.active.to_a).to eq([later, soon])
       expect(later.active?).to be(true)
@@ -252,8 +306,10 @@ RSpec.describe Membership, type: :model do
       expect(user.has_active_membership?).to be_falsey
       create(:membership, user: user, membership_tier: tier, status: "paid", end_date: 5.days.from_now)
       expect(user.has_active_membership?).to be_truthy
-      Membership.update_all(status: "revoked")
-      expect(user.reload.has_active_membership?).to be_falsey
+      %w[revoked pending failed].each do |status|
+        Membership.update_all(status: status)
+        expect(user.reload.has_active_membership?).to be_falsey
+      end
     end
   end
 end

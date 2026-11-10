@@ -299,7 +299,7 @@ class ShopOrderApplier
 
   # Fallback when the order carries no membership reference: the customer's email names the user (users.email is
   # case-insensitive) and each line item's title the tier (checkout sells one membership per line, quantity 1).
-  # Each matched tier line is a new membership with the current dates.
+  # Each matched tier line is a new paid membership starting when the member's latest active one ends (or now).
   def apply_membership_by_email(plan)
     if plan.email.blank?
       report_unresolved(plan, UnresolvedMembershipOrder, "membership", "has no membership reference and no customer email")
@@ -318,7 +318,7 @@ class ShopOrderApplier
       tier = MembershipTier.where("LOWER(title_en) = ? OR LOWER(title_fr) = ?", title.downcase, title.downcase).first
       next unless tier
 
-      Membership.create!(user: user, membership_tier: tier, status: :paid)
+      Membership.grant!(user, tier)
       created += 1
     end
     return if created.positive?
