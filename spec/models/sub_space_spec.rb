@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe SubSpace, type: :model do
   it { should belong_to(:space) }
-  it { should have_many(:sub_space_bookings).dependent(:destroy) }
+  it { should have_many(:sub_space_bookings).dependent(:restrict_with_error) }
 
   it "requires a name with a custom message (copied from Space)" do
     record = SubSpace.new(space: create(:space), name: "")
@@ -26,13 +26,13 @@ RSpec.describe SubSpace, type: :model do
     expect(SubSpace.new(space: space, name: "Room")).to be_valid
   end
 
-  # A booking's status row refuses its own destroy while the booking points at it, so the room's destroy is
-  # refused; the admin controller removes bookings with destroy_with_status! first.
+  # A room with bookings is never destroyed, and no booking or status is removed.
   it "cannot be destroyed while it has bookings" do
     create(:booking_status, :pending)
     room = create(:sub_space)
     create(:sub_space_booking, sub_space: room)
     expect(room.destroy).to be(false)
+    expect(room.errors.full_messages.to_sentence).to include("bookings")
     expect(SubSpaceBooking.count).to eq(1)
     expect(described_class.exists?(room.id)).to be(true)
   end
