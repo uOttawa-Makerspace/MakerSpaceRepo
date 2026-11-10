@@ -1,13 +1,13 @@
-<% if params[:q].present?
-    provide(:title, "Search results for \"#{params[:q]}\"")
+<% if @query
+    provide(:title, "Search results for \"#{@query}\"")
 else
     provide(:title, t('explore.explore'))
 end %>
 
 <div class="container">
     <h1 class="text-center">
-        <% if params[:q].present? %>
-            Search results for <%= params[:q] %>
+        <% if @query %>
+            Search results for <%= @query %>
         <% else %>
             Explore recent repositories
         <% end %>
@@ -16,7 +16,7 @@ end %>
         <%= form_with url: search_url, method: :get, id: 'SearchForm' do |form| %>
             <div class="input-group">
                 <%= form.label :q, 'Project title or description', class: 'visually-hidden' %>
-                <%= form.text_field :q, class: 'form-control', value: params[:q], placeholder: 'Project title or description...' %>
+                <%= form.text_field :q, class: 'form-control', value: @query, placeholder: 'Project title or description...' %>
                 <%= form.submit t('explore.search'), class: 'btn btn-primary', name: nil %>
             </div>
         <% end %>
