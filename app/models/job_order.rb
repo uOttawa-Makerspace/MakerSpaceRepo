@@ -1,4 +1,5 @@
 class JobOrder < ApplicationRecord
+  include PrefixedFileNames
   include ShopifyConcern
 
   belongs_to :user, optional: true
@@ -19,8 +20,6 @@ class JobOrder < ApplicationRecord
   has_many :job_quote_line_items, dependent: :destroy
 
   validate :assigned_staff_must_be_staff, if: :will_save_change_to_assigned_staff_id?
-
-  after_save :set_filename
 
   scope :not_deleted, -> { where(is_deleted: false) }
 
@@ -349,22 +348,11 @@ class JobOrder < ApplicationRecord
               if: -> { staff_files.attached? }
             }
 
-  def set_filename
-    if user_files.attached?
-      user_files.each do |user_files|
-        unless user_files.filename.to_s.start_with?(id.to_s)
-          user_files.blob.update(filename: "#{id}_#{user_files.filename}")
-        end
-      end
-    end
-
-    return unless staff_files.attached?
-      staff_files.each do |staff_files|
-        unless staff_files.filename.to_s.start_with?(id.to_s)
-          staff_files.blob.update(filename: "#{id}_#{staff_files.filename}")
-        end
-      end
-    
+  # Prefixes the stored names of this order's files, and of its tasks' files, with the order id. Called by the
+  # actions that attach files, once the save has committed.
+  def prefix_file_names
+    prefix_blob_names(%w[user_files staff_files], "#{id}_", already: id.to_s)
+    JobTask.where(job_order_id: id).each(&:prefix_file_names)
   end
 
   # The statuses in which the owner may still change (and delete) the order: before it is quoted.

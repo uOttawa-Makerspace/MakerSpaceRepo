@@ -29,17 +29,31 @@ RSpec.describe JobTask, type: :model do
     let(:order) { create(:job_order, user: create(:user, :regular_user)) }
     let(:task) { order.job_tasks.create!(title: "Task #1") }
 
-    it "prefixes an attached user file's stored name with the order id (set_filename)" do
+    it "prefixes an attached user file's stored name with the order id" do
       task.user_files.attach(FilesTestHelper.stl)
       task.save!
+      expect(task.reload.user_files.first.filename.to_s).to eq("test.stl")
+      task.prefix_file_names
       expect(task.reload.user_files.map { |f| f.filename.to_s }).to eq(["#{order.id}_test.stl"])
     end
 
     it "does not prefix the name twice on a later save" do
       task.user_files.attach(FilesTestHelper.stl)
       task.save!
+      task.prefix_file_names
       task.update!(title: "Task #1 renamed")
+      task.prefix_file_names
       expect(task.reload.user_files.first.filename.to_s).to eq("#{order.id}_test.stl")
+    end
+
+    it "prefixes the stored name of an option file with JMTS, through the task, once" do
+      option = task.job_task_options.create!(job_option: create(:job_option))
+      option.option_file.attach(FilesTestHelper.png)
+      option.reload
+      expect(option.option_file.filename.to_s).to eq(FilesTestHelper.png_name)
+      task.prefix_file_names
+      task.prefix_file_names
+      expect(option.reload.option_file.filename.to_s).to eq("JMTS_#{FilesTestHelper.png_name}")
     end
 
     it "rejects a user file of a disallowed content type" do

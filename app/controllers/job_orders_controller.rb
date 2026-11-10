@@ -94,6 +94,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @job_order.user = @user
 
     if @job_order.save
+      @job_order.prefix_file_names
       @job_order.job_order_statuses << JobOrderStatus.create(
         job_order: @job_order,
         job_status: JobStatus.draft,
@@ -198,6 +199,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       # After the commit: the chat message's notification must not be enqueued by a quote that is rolled back, and
       # a mail failure must not roll back a quote whose old Shopify draft is already deleted (the restored id would
       # point at a deleted draft). Staff can use resend_quote_email.
+      @job_order.prefix_file_names
       post_user_comment
       begin
         JobOrderMailer.send_job_quote(@job_order.id).deliver_now
@@ -239,6 +241,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   def comments
     @job_order.update(job_order_params)
     if @job_order.save
+      @job_order.prefix_file_names
       flash[:notice] = t("job_orders.alerts.updated_successfully")
     else
       flash[:alert] = validation_message(@job_order, "errors.job_orders.comments_failed")

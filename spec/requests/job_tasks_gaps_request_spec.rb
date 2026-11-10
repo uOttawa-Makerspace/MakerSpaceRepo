@@ -127,6 +127,15 @@ RSpec.describe "JobTasks gaps", type: :request do
       expect(task.reload.job_task_options.first.option_file).to be_attached
     end
 
+    it "prefixes the stored name of an option file with JMTS, once" do
+      params = { step: "3", job_task: { job_task_options_attributes: [{ job_option_id: option.id, option_file: FilesTestHelper.stl }] } }
+      patch job_order_job_task_path(order, task), params: params
+      expect(task.reload.job_task_options.first.option_file.filename.to_s).to eq("JMTS_#{FilesTestHelper.stl_name}")
+
+      patch job_order_job_task_path(order, task), params: { step: "3", job_task: { job_task_options_attributes: [{ job_option_id: option.id }] } }
+      expect(task.reload.job_task_options.first.option_file.filename.to_s).to eq("JMTS_#{FilesTestHelper.stl_name}")
+    end
+
     it "shows a deleted option on step 3 only while it is still selected by the task" do
       option.update!(is_deleted: true)
       other_option # stays selectable

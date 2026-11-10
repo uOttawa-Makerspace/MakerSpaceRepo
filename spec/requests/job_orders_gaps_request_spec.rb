@@ -378,6 +378,12 @@ RSpec.describe "JobOrders gaps", type: :request do
   describe "POST /job_orders (create) corners" do
     before { session_login!(owner) }
 
+    it "prefixes the stored name of a user file sent with the new order with the order id" do
+      post job_orders_path, params: { job_order: { user_files: [FilesTestHelper.stl] }, redirect_step: "1" }
+      order = JobOrder.order(:id).last
+      expect(order.user_files.map { |f| f.filename.to_s }).to eq(["#{order.id}_#{FilesTestHelper.stl_name}"])
+    end
+
     it "re-renders new with the creation-error flash when the order cannot be saved (disallowed upload)" do
       expect do
         post job_orders_path, params: { job_order: { user_files: [FilesTestHelper.mp4] }, redirect_step: "1" }
