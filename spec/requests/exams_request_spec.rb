@@ -362,12 +362,12 @@ RSpec.describe "Exams", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    it "answers 500 when the answer belongs to a question that is not in the exam" do
+    it "answers 404 and stores nothing when the answer belongs to a question that is not in the exam" do
       log_in!(student)
       stranger = create(:question)
       foreign = Answer.create!(question: stranger, correct: true, description: "foreign")
       expect { post_answer(foreign) }.not_to change(ExamResponse, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
 
     it "stores the answer and answers 204 whatever the request format" do
