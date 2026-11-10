@@ -45,6 +45,13 @@ RSpec.describe User do
       expect([regular, admin, staff].map { |u| u.reload.role }).to eq(%w[staff admin staff])
     end
 
+    it "promotes a user whose role is empty" do
+      blank = create(:user, :regular_user)
+      User.where(id: blank.id).update_all(role: nil)
+      User.promote_to_staff!([blank.id])
+      expect(blank.reload.role).to eq("staff")
+    end
+
     it "leaves a user who became admin since they were loaded as an admin" do
       stale = create(:user, :regular_user)
       User.where(id: stale.id).update_all(role: "admin")

@@ -634,7 +634,7 @@ class User < ApplicationRecord
   def self.promote_to_staff!(user_ids, actor: nil)
     user_ids = Array(user_ids)
     guarding_last_admin!(user_ids, only_if: -> { false }) do
-      where(id: user_ids).where.not(role: %w[staff admin]).order(:id).each do |user|
+      where(id: user_ids).merge(where(role: nil).or(where.not(role: %w[staff admin]))).order(:id).each do |user|
         Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to 'staff' by Admin##{actor&.id}"
         user.change_role!("staff")
       end
