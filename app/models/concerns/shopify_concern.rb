@@ -48,7 +48,7 @@ module ShopifyConcern
             invoiceUrl
             status
             tags
-            lineItems(first: 10) {
+            lineItems(first: 1) {
               nodes {
                 originalUnitPriceSet {
                   shopMoney {

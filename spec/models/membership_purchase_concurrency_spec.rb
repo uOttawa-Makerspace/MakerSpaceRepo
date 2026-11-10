@@ -122,4 +122,37 @@ RSpec.describe Membership, "purchase under concurrency", type: :model do
     expect(paid.map(&:status)).to eq(%w[paid paid])
     expect(paid.last.start_date).to eq(paid.first.end_date)
   end
+
+  it "does not fail a checkout whose draft another request replaced while this one was asking Shopify about it" do
+    old_id = "gid://shopify/DraftOrder/1"
+    new_id = "gid://shopify/DraftOrder/2"
+    membership = Membership.claim_pending(member, tier.id)
+    membership.update_column(:shopify_draft_order_id, old_id)
+    fake.draft_prices[new_id] = tier.price(member).to_s
+    fake.missing_ids << old_id
+
+    first = nil
+    paused = Queue.new
+    resume = Queue.new
+    allow_any_instance_of(Membership).to receive(:fetch_shopify_draft_order_result).and_wrap_original do |original, *args|
+      result = original.call(*args)
+      if Thread.current == first
+        first = nil
+        paused << true
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
+      end
+      result
+    end
+
+    one = in_thread do
+      first = Thread.current
+      Membership.begin_purchase(User.find(member.id), tier.id)
+    end
+    ThreadPause.await(paused)
+    Membership.where(id: membership.id).update_all(shopify_draft_order_id: new_id)
+    resume << true
+
+    expect(one.value).to eq(fake.invoice_url)
+    expect(Membership.where(user_id: member.id).pluck(:status, :shopify_draft_order_id)).to eq([["pending", new_id]])
+  end
 end

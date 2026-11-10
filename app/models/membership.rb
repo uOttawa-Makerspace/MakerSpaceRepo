@@ -1,5 +1,6 @@
 class Membership < ApplicationRecord
   include ShopifyConcern
+  include Checkout
 
   belongs_to :user
   belongs_to :membership_tier
@@ -28,40 +29,6 @@ class Membership < ApplicationRecord
     [{ originalUnitPrice: membership_tier.price(user).to_s, quantity: 1, title: membership_title }]
   end
 
-  # Concurrency: the user's row lock serializes claiming a pending membership, paying one and granting others; the
-  # membership's own row lock guards storing the Shopify draft id (Shopify itself is called outside any lock); the
-  # status changes to paid and failed are conditional UPDATEs from pending, so they cannot overwrite another state.
-  # Paying also takes the user's row lock, to set the dates after the member's latest active membership.
-
-  # The Shopify invoice URL that pays this membership, creating the draft order if there is none yet. Nil when the
-  # stored draft no longer exists on Shopify (see .begin_purchase). Shopify not answering raises.
-  def checkout_link
-    # Faculty memberships never trigger Shopify calls
-    return '/' if faculty?
-
-    @checkout_link ||= fetch_checkout_link
-  end
-
-  # The user's pending membership for the tier (made now if there is none) with a draft order that can be paid;
-  # its checkout_link is the way to pay. A draft that Shopify no longer has cannot be paid, so that membership is
-  # marked failed (kept, and only if still pending) and a fresh pending one is used.
-  def self.begin_purchase(user, tier_id)
-    membership = claim_pending(user, tier_id)
-    return membership if membership.checkout_link
-
-    membership.mark_failed_if_pending
-    claim_pending(user, tier_id).tap(&:checkout_link)
-  end
-
-  # The user's pending membership for the tier, or a new one. Under the user's row lock, so repeated or
-  # simultaneous purchases share one row. A pending membership has no dates: they are set when it is paid.
-  def self.claim_pending(user, tier_id)
-    user.with_lock do
-      user.memberships.pending.where(membership_tier_id: tier_id).order(:id).first ||
-        user.memberships.create!(membership_tier_id: tier_id)
-    end
-  end
-
   # Pending -> paid in one conditional UPDATE, so it holds against a concurrent revoke or a second payment. The
   # membership starts when the latest active one ends (or now) and lasts the tier's duration, worked out at the
   # moment of payment under the member's row lock, so payments made together stack instead of overlapping.
@@ -69,14 +36,13 @@ class Membership < ApplicationRecord
   def mark_paid_if_pending
     user.with_lock do
       start_time = Membership.calculate_end_date(user)
-      self.class.where(id: id, status: 'pending')
-          .update_all(status: 'paid', start_date: start_time, end_date: start_time + duration.days, updated_at: Time.current) == 1
+      change_if_pending({}, status: 'paid', start_date: start_time, end_date: start_time + duration.days)
     end
   end
 
   # Pending -> failed, the same way; a paid, revoked or failed membership is never touched.
   def mark_failed_if_pending
-    update_status_if_pending('failed')
+    change_if_pending({}, status: 'failed')
   end
 
   def membership_title
@@ -104,18 +70,22 @@ class Membership < ApplicationRecord
     user.with_lock do
       raise DuplicateGrant if recent_custom_grant?(user, tier, days)
 
-      grant!(user, tier, days: days)
+      create_stacked!(user, tier, days)
     end
   end
 
-  # A paid membership of the tier's duration (or `days`), stacked after the user's latest active one, made under
-  # the user's row lock. Used for a payment that arrives without a pending membership to pay.
-  def self.grant!(user, tier, days: tier.duration)
-    user.with_lock do
-      start_time = calculate_end_date(user)
-      create!(user: user, membership_tier: tier, status: 'paid', start_date: start_time, end_date: start_time + days.days)
-    end
+  # A paid membership of the tier's duration, stacked after the user's latest active one, made under the user's row
+  # lock. Used for a payment that arrives without a pending membership to pay.
+  def self.grant!(user, tier)
+    user.with_lock { create_stacked!(user, tier, tier.duration) }
   end
+
+  # The caller holds the user's row lock.
+  def self.create_stacked!(user, tier, days)
+    start_time = calculate_end_date(user)
+    create!(user: user, membership_tier: tier, status: 'paid', start_date: start_time, end_date: start_time + days.days)
+  end
+  private_class_method :create_stacked!
 
   def self.recent_custom_grant?(user, tier, days)
     user.memberships.paid.where(membership_tier: tier).where('created_at > ?', DUPLICATE_GRANT_WINDOW.ago)
@@ -134,88 +104,11 @@ class Membership < ApplicationRecord
 
   private
 
-  def update_status_if_pending(status)
-    self.class.where(id: id, status: 'pending').update_all(status: status, updated_at: Time.current) == 1
-  end
-
-  def fetch_checkout_link
-    draft = fetch_or_create_draft
-    draft = replace_draft_priced_for_now if draft && draft_price_changed?(draft)
-    draft && draft['invoiceUrl']
-  end
-
-  # The membership's Shopify draft order, made first if it has none; nil when Shopify no longer has it.
-  def fetch_or_create_draft
-    create_and_store_remote_draft_order if shopify_draft_order_id.blank?
-    raise 'Membership has no draft order after creating one' if shopify_draft_order_id.blank?
-
-    state, draft = fetch_shopify_draft_order_result
-    raise 'Shopify did not answer the draft order check' if state == :error
-
-    draft
-  end
-
-  # True when the draft's line was priced differently from what the tier charges this member now. A draft that
-  # does not say its price is taken as current.
-  def draft_price_changed?(draft)
-    amount = draft.dig('lineItems', 'nodes')&.first&.dig('originalUnitPriceSet', 'shopMoney', 'amount')
-    amount.present? && BigDecimal(amount) != membership_tier.price(user)
-  end
-
-  # Takes the out-of-date draft off this membership and deletes it on Shopify (see #discard_unused_draft), then
-  # makes a new one at today's price. The membership stays the one pending checkout.
-  def replace_draft_priced_for_now
-    stale_id = shopify_draft_order_id
-    discard_unused_draft(stale_id) if release_draft_id(stale_id)
-    fetch_or_create_draft
-  end
-
-  # Clears the stored draft id under the row lock, only while the membership is pending and still holds `stale_id`.
-  def release_draft_id(stale_id)
-    transaction do
-      lock!
-      next false unless pending? && shopify_draft_order_id == stale_id
-
-      update_column(:shopify_draft_order_id, nil)
-      true
-    end
-  end
-
-  def create_and_store_remote_draft_order
-    new_id, line_items = create_remote_draft_order
-    store_shopify_draft_order_id(new_id, line_items)
-  end
-
-  # The draft was just created on Shopify (no lock held); keep it only if no other request stored one first. A
-  # draft that lost the race, or could not be stored, is deleted, so one membership has one payable draft.
-  def store_shopify_draft_order_id(new_id, _line_items)
-    stored = begin
-      store_draft_id_unless_taken(new_id)
-    rescue StandardError
-      discard_unused_draft(new_id)
-      raise
-    end
-    discard_unused_draft(new_id) unless stored
-  end
-
-  # Stores the draft id under the row lock when the membership is still pending and has none. True when stored.
-  def store_draft_id_unless_taken(new_id)
-    transaction do
-      lock!
-      next false unless shopify_draft_order_id.blank? && pending?
-
-      update_column(:shopify_draft_order_id, new_id)
-      true
-    end
-  end
-
-  def discard_unused_draft(gid)
-    result = ShopifyConcern::DraftRemoval.call(gid)
-    return unless result.outcome == :open
-
-    raise "Shopify did not delete the unused draft order #{gid}"
-  rescue StandardError => e
-    Rails.error.report(e, handled: true, severity: :error, context: { membership_id: id, step: 'delete_unused_shopify_draft_order' })
+  # The one way a pending membership changes: a conditional UPDATE that applies `changes` only while the row is still
+  # pending and matches `expected` (columns the caller saw), so it cannot overwrite what another request did. True
+  # when this call changed the row.
+  def change_if_pending(expected, **changes)
+    self.class.where(id: id, status: 'pending').where(expected).update_all(changes.merge(updated_at: Time.current)) == 1
   end
 
   # A paid membership made without dates (the faculty grant) gets them now; a pending one has none until paid.

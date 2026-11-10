@@ -74,8 +74,7 @@ class MembershipsController < SessionsController
   # Sends the user to the checkout of their pending membership for the tier (made now if there is none). A
   # failure leaves the pending membership in place: it is reused by the next attempt.
   def start_purchase
-    membership = Membership.begin_purchase(current_user, membership_params[:membership_tier_id])
-    redirect_to membership.checkout_link, allow_other_host: true
+    redirect_to Membership.begin_purchase(current_user, membership_params[:membership_tier_id]), allow_other_host: true
   rescue ActiveRecord::RecordInvalid => e
     redirect_to your_memberships_memberships_path, alert: validation_message(e.record, 'errors.memberships.not_created')
   rescue StandardError => e

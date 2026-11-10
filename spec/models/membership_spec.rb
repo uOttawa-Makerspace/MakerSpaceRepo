@@ -225,44 +225,92 @@ RSpec.describe Membership, type: :model do
 
     describe ".begin_purchase" do
       let!(:fake) { stub_shopify_admin! }
+      let(:old_id) { "gid://shopify/DraftOrder/9001" }
+      let(:new_id) { "gid://shopify/DraftOrder/9002" }
 
-      it "reuses the draft order of a pending checkout while the price is unchanged" do
-        first = Membership.begin_purchase(user, tier.id)
-        again = Membership.begin_purchase(user, tier.id)
-        expect(again).to eq(first)
+      def reprice!
+        tier.update!(external_price: 55)
+        fake.draft_id = new_id
+      end
+
+      it "returns the invoice URL of the user's pending checkout, reusing its draft while the price is unchanged" do
+        expect(Membership.begin_purchase(user, tier.id)).to eq(fake.invoice_url)
+        expect(Membership.begin_purchase(user, tier.id)).to eq(fake.invoice_url)
+        expect(user.memberships.count).to eq(1)
         expect(fake.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
         expect(fake.deleted_ids).to be_empty
       end
 
-      it "replaces the draft order of a pending checkout whose price has changed, deleting the old one" do
-        first = Membership.begin_purchase(user, tier.id)
-        old_id = first.shopify_draft_order_id
-        tier.update!(external_price: 55)
-        fake.draft_id = "gid://shopify/DraftOrder/9002"
+      it "replaces the draft of a checkout whose price has changed: the old one is deleted first, then a new one made" do
+        Membership.begin_purchase(user, tier.id)
+        reprice!
 
-        again = Membership.begin_purchase(user, tier.id)
+        expect(Membership.begin_purchase(user, tier.id)).to eq(fake.invoice_url)
 
-        expect(again).to eq(first)
-        expect(again.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
-        expect(again).to be_pending
+        membership = user.memberships.sole
+        expect(membership).to be_pending
+        expect(membership.shopify_draft_order_id).to eq(new_id)
         expect(fake.deleted_ids).to eq([old_id])
-        creates = fake.calls.select { |c| c[:query].include?("draftOrderCreate") }
-        expect(creates.last[:variables].dig(:input, :lineItems, 0, :originalUnitPrice)).to eq("55.0")
+        queries = fake.calls.map { |c| c[:query][/draftOrder(Create|Delete)/] }.compact
+        expect(queries).to eq(%w[draftOrderCreate draftOrderDelete draftOrderCreate])
+        expect(fake.calls.select { |c| c[:query].include?("draftOrderCreate") }.last[:variables].dig(:input, :lineItems, 0, :originalUnitPrice)).to eq("55.0")
       end
 
-      it "keeps the checkout when the old draft cannot be deleted, and reports it" do
-        first = Membership.begin_purchase(user, tier.id)
-        tier.update!(external_price: 55)
-        fake.draft_id = "gid://shopify/DraftOrder/9002"
+      it "keeps serving the old draft, and reports it, when the old draft cannot be deleted" do
+        Membership.begin_purchase(user, tier.id)
+        reprice!
         fake.delete_user_errors = [{ "field" => "id", "message" => "not deletable" }]
         allow(Rails.error).to receive(:report)
 
-        again = Membership.begin_purchase(user, tier.id)
+        expect(Membership.begin_purchase(user, tier.id)).to eq(fake.invoice_url)
 
         expect(Rails.error).to have_received(:report)
-        expect(again.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
-        expect(user.memberships.pending.count).to eq(1)
-        expect(first.reload).to be_pending
+        membership = user.memberships.sole
+        expect(membership).to be_pending
+        expect(membership.shopify_draft_order_id).to eq(old_id)
+        expect(fake.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
+      end
+
+      it "does not replace a draft that is already paid, whatever its price" do
+        Membership.begin_purchase(user, tier.id)
+        reprice!
+        fake.draft_statuses[old_id] = "COMPLETED"
+
+        expect(Membership.begin_purchase(user, tier.id)).to eq(fake.invoice_url)
+
+        expect(user.memberships.sole.shopify_draft_order_id).to eq(old_id)
+        expect(fake.deleted_ids).to be_empty
+        expect(fake.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
+      end
+
+      it "marks the checkout failed and starts a new one when its draft is gone" do
+        Membership.begin_purchase(user, tier.id)
+        fake.missing_ids << old_id
+        fake.draft_id = new_id
+
+        Membership.begin_purchase(user, tier.id)
+
+        expect(user.memberships.failed.sole.shopify_draft_order_id).to eq(old_id)
+        expect(user.memberships.pending.sole.shopify_draft_order_id).to eq(new_id)
+      end
+
+      it "does not fail a checkout whose draft was replaced by another request, and uses that checkout" do
+        Membership.begin_purchase(user, tier.id)
+        stale = Membership.find(user.memberships.sole.id)
+        stale.update_column(:shopify_draft_order_id, old_id)
+        Membership.find(stale.id).update_column(:shopify_draft_order_id, new_id)
+        fake.missing_ids << old_id
+
+        expect(stale.checkout_link).to be_nil
+
+        expect(stale.reload).to be_pending
+        expect(Membership.begin_purchase(user, tier.id)).to eq(fake.invoice_url)
+        expect(user.memberships.count).to eq(1)
+      end
+
+      it "raises rather than loop when the checkout keeps changing under it" do
+        allow_any_instance_of(Membership).to receive(:checkout_link).and_return(nil)
+        expect { Membership.begin_purchase(user, tier.id) }.to raise_error(/did not settle/)
       end
     end
 
@@ -274,7 +322,7 @@ RSpec.describe Membership, type: :model do
       before { allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] } }
 
       it "deletes it and re-raises when storing its id fails" do
-        allow(m).to receive(:store_draft_id_unless_taken).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        allow(m).to receive(:adopt_draft).and_raise(ActiveRecord::LockWaitTimeout, "x")
         expect { m.checkout_link }.to raise_error(ActiveRecord::LockWaitTimeout)
         expect(fake.deleted_ids).to eq(["gid://shopify/DraftOrder/9001"])
         expect(m.reload.shopify_draft_order_id).to be_nil
