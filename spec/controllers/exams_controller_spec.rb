@@ -139,11 +139,13 @@ RSpec.describe ExamsController, type: :controller do
           create(:training_session_with_users, training: training)
         user = create(:user, :regular_user)
         expect do
-          post :create_for_single_user,
-              params: {
-                user_id: user.id,
-                training_session_id: training_session.id
-              }
+          perform_enqueued_jobs do
+            post :create_for_single_user,
+                params: {
+                  user_id: user.id,
+                  training_session_id: training_session.id
+                }
+          end
         end.to change(Exam, :count).by(1).and change(ExamQuestion, :count).by(
                 $n_exams_question
               )

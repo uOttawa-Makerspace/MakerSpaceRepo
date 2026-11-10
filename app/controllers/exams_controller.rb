@@ -31,7 +31,7 @@ class ExamsController < SessionsController
     training_session = @training_session
     user = User.find(params[:user_id])
     create_exam_and_exam_questions(user, training_session)
-    MsrMailer.send_exam(user, training_session).deliver_now
+    MsrMailer.send_exam(user, training_session).deliver_later
     flash[:notice] = I18n.t("exams.sent_to_user", name: user.name)
     redirect_to staff_training_session_path(training_session.id)
   end
