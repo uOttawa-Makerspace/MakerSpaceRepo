@@ -60,6 +60,8 @@ en:
     admin:
       still_in_use: "Other records still use it, so it was left as it is."
       record_missing: "A record it refers to no longer exists. Reload the page and try again."
+      uni_programs:
+        programs_file_missing: "The current programs file is not available on the server."
       time_periods:
         not_created: "The time period was not created."
         not_updated: "The time period was not updated."

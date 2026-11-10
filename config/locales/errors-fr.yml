@@ -60,6 +60,8 @@ fr:
     admin:
       still_in_use: "D'autres éléments l'utilisent encore, il a donc été laissé tel quel."
       record_missing: "Un élément auquel il fait référence n'existe plus. Rechargez la page et réessayez."
+      uni_programs:
+        programs_file_missing: "Le fichier des programmes actuels n'est pas disponible sur le serveur."
       time_periods:
         not_created: "La période n'a pas été créée."
         not_updated: "La période n'a pas été modifiée."
