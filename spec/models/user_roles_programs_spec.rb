@@ -65,6 +65,14 @@ RSpec.describe User do
       expect(target.reload.deleted).to be(false)
     end
 
+    it "refuses when there is no actor" do
+      create(:user, :admin)
+      target = create(:user, :regular_user)
+
+      expect { User.delete_account!(target, actor: nil) }.to raise_error(User::NotAdminError)
+      expect(target.reload.deleted).to be(false)
+    end
+
     it "deletes when the actor is still an admin" do
       actor = create(:user, :admin)
       target = create(:user, :regular_user)

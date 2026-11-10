@@ -585,10 +585,10 @@ class User < ApplicationRecord
   # stays as it was. Raises LastAdminError for the last usable admin. Returns false, doing nothing,
   # if the account was already deleted by another request. With an actor, the actor's role is read
   # again once the admin rows are locked, and NotAdminError is raised if they are no longer an admin.
-  def self.delete_account!(user, actor: nil)
+  def self.delete_account!(user, actor:)
     serialising_account_deletion do
       guarding_last_admin!([user.id]) do
-        raise NotAdminError unless actor.nil? || where(id: actor.id, role: "admin").exists?
+        raise NotAdminError unless actor && where(id: actor.id, role: "admin").exists?
 
         next false if user.lock!(GUARD_LOCK_MODE).deleted?
 
@@ -974,10 +974,6 @@ class User < ApplicationRecord
     Rails.error.report(e, handled: true)
   end
 
-  # Role and soft-delete writes skip validations only (a row that is invalid for an
-  # unrelated legacy reason must still be demotable/deletable); callbacks run, so the
-  # after_update_commit below (cable_access_lost?) closes the connections once, after
-  # the real commit, even inside an outer transaction.
   # Marks the email confirmed. Skips validations, like change_role!, so a row that no longer passes
   # them (older data) is still confirmed.
   def confirm_email!
@@ -986,6 +982,10 @@ class User < ApplicationRecord
     self
   end
 
+  # Role and soft-delete writes skip validations only (a row that is invalid for an
+  # unrelated legacy reason must still be demotable/deletable); callbacks run, so the
+  # after_update_commit below (cable_access_lost?) closes the connections once, after
+  # the real commit, even inside an outer transaction.
   def change_role!(new_role)
     raise ArgumentError, "unknown role #{new_role.inspect}" unless ROLES.include?(new_role)
 
