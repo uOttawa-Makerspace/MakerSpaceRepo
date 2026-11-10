@@ -124,6 +124,15 @@ RSpec.describe "Learning module tracks", type: :request do
       expect(track.reload.status).to eq("completed")
     end
 
+    it "refuses with an alert, recording nothing, for an unknown or missing module id" do
+      [0, nil].each do |id|
+        expect { post completed_learning_module_track_index_path(learning_module_id: id) }
+          .not_to change(LearningModuleTrack, :count)
+        expect(response).to redirect_to(learning_area_index_path)
+        expect(flash[:alert]).to be_present
+      end
+    end
+
     it "is idempotent on an already completed track" do
       track = create(:learning_module_track, :completed, user: signed, learning_module: learning_module)
       post completed_learning_module_track_index_path(learning_module_id: learning_module.id)
