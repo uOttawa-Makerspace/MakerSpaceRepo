@@ -297,8 +297,10 @@ class Admin::UsersController < AdminAreaController
     @users_temp = LabSession.joins(:user).where("sign_out_time > ?", Time.zone.now)
     
     if params[:location].present?
-      @users_temp = @users_temp.joins(sanitized_pi_readers_join)
-                               .where("LOWER(pi_readers.pi_location) = LOWER(?)", params[:location])
+      @users_temp = @users_temp.where(
+        "EXISTS (SELECT 1 FROM pi_readers WHERE pi_readers.pi_mac_address = lab_sessions.mac_address " \
+        "AND LOWER(pi_readers.pi_location) = LOWER(?))", params[:location]
+      )
     end
 
     if (order_clause = safe_order_clause)
@@ -333,11 +335,6 @@ class Admin::UsersController < AdminAreaController
 
     ordering = Arel.sql(LAST_SIGN_IN_SQL).public_send(direction)
     scope.order(direction == :asc ? ordering.nulls_first : ordering.nulls_last, id: direction)
-  end
-
-  # SECURITY FIX: Safe join without user input in SQL string
-  def sanitized_pi_readers_join
-    "INNER JOIN pi_readers ON lab_sessions.mac_address = pi_readers.pi_mac_address"
   end
 
   # ============================================
