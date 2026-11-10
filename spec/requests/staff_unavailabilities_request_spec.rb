@@ -325,6 +325,14 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(row["rrule"]).to eq("DTSTART:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270308T100000\nEXDATE:20270329T110000")
       end
 
+      it "still lists a series whose stored start line cannot be read, from its own start" do
+        record = create(:staff_unavailability, user: staff, start_time: Time.utc(2027, 3, 1, 15), end_time: Time.utc(2027, 3, 1, 16))
+        record.update_column(:recurrence_rule, "DTSTART;TZID=Nowhere/Land:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
+        get json_staff_unavailabilities_path
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body.first["rrule"]).to eq("DTSTART:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
+      end
+
       it "flags all-day (exactly 24h) records and admin-created titles" do
         create(:staff_unavailability, user: staff, title: "Away (Admin)", start_time: Time.utc(2027, 3, 1, 5), end_time: Time.utc(2027, 3, 2, 5))
         get json_staff_unavailabilities_path
