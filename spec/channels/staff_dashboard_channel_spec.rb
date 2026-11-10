@@ -7,6 +7,9 @@ require "rails_helper"
 RSpec.describe StaffDashboardChannel do
   include_context "with test cable adapter"
   include TableQueries
+  include ActiveSupport::Testing::TimeHelpers
+
+  around { |example| travel_to(Time.zone.local(2027, 3, 12, 12)) { example.run } }
 
   let!(:space) { create(:space, name: "MTC") }
   let(:stream) { "signed_in_table_space_#{space.id}" }

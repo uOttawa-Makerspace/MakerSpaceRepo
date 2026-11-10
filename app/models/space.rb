@@ -102,8 +102,8 @@ class Space < ApplicationRecord
     needs_walk_in_safety_sheet? ? users.includes(:walk_in_safety_sheets) : users
   end
 
-  # The dashboard rows show each user's previous visit (and, with with_sheets, their walk-in
-  # sheets in a space that asks for one; only signed-in rows read them); load what they read in one go.
+  # Loads what the dashboard rows read: each user's visits and, with with_sheets in a space that
+  # asks for a walk-in sheet, their sheets (only signed-in rows show those).
   def with_visit_history(users, with_sheets: false)
     associations = [:lab_sessions]
     associations << :walk_in_safety_sheets if with_sheets && needs_walk_in_safety_sheet?
