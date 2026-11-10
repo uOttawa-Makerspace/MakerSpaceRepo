@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe SubSpace, type: :model do
   it { should belong_to(:space) }
-  it { should have_many(:sub_space_bookings).dependent(:destroy) }
+  it { should have_many(:sub_space_bookings).dependent(:restrict_with_error) }
 
   it "requires a name with a custom message (copied from Space)" do
     record = SubSpace.new(space: create(:space), name: "")
@@ -26,13 +26,13 @@ RSpec.describe SubSpace, type: :model do
     expect(SubSpace.new(space: space, name: "Room")).to be_valid
   end
 
-  # A booking's status row refuses its own destroy while the booking points at it, so the room's destroy is
-  # refused; the admin controller removes bookings with destroy_with_status! first.
+  # A room with bookings is never destroyed, and no booking or status is removed.
   it "cannot be destroyed while it has bookings" do
     create(:booking_status, :pending)
     room = create(:sub_space)
     create(:sub_space_booking, sub_space: room)
     expect(room.destroy).to be(false)
+    expect(room.errors.full_messages.to_sentence).to include("bookings")
     expect(SubSpaceBooking.count).to eq(1)
     expect(described_class.exists?(room.id)).to be(true)
   end
@@ -40,5 +40,28 @@ RSpec.describe SubSpace, type: :model do
   it "destroys when it has no bookings" do
     room = create(:sub_space)
     expect { room.destroy }.to change(SubSpace, :count).by(-1)
+  end
+
+  # The database refuses what the model refuses, so a delete that skips callbacks cannot remove a
+  # room's bookings with it.
+  describe "deleting without callbacks" do
+    it "is refused by the database while the room has bookings, and keeps the bookings" do
+      create(:booking_status, :pending)
+      room = create(:sub_space)
+      booking = create(:sub_space_booking, sub_space: room)
+      # A savepoint, so the refused statement does not abort the example's own transaction.
+      expect { described_class.transaction(requires_new: true) { room.delete } }.to raise_error(
+        ActiveRecord::InvalidForeignKey
+      )
+      expect { described_class.transaction(requires_new: true) { described_class.where(id: room.id).delete_all } }
+        .to raise_error(ActiveRecord::InvalidForeignKey)
+      expect(described_class.exists?(room.id)).to be(true)
+      expect(SubSpaceBooking.where(id: booking.id)).to exist
+    end
+
+    it "deletes a room that has no bookings" do
+      room = create(:sub_space)
+      expect { room.delete }.to change(SubSpace, :count).by(-1)
+    end
   end
 end

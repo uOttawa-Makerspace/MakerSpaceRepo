@@ -10,7 +10,8 @@ require "ice_cube"
 # either "DTSTART;TZID=America/Toronto:<wall time>" (what the calendars write)
 # or "DTSTART:<UTC stamp>Z" (older rules), then
 # "RRULE:FREQ=...;BYDAY=..;UNTIL=..;COUNT=..", plus EXDATE lines added by the
-# occurrence editors. Only the RRULE lines are checked. A bare "FREQ=..." is
+# occurrence editors. The RRULE and DTSTART lines are checked (a DTSTART must be
+# readable by RecurrenceRule); EXDATE lines are not. A bare "FREQ=..." is
 # rejected because the calendar's series edits (RecurrenceRule) cannot read it.
 # BYHOUR/BYMINUTE/BYSECOND/BYSETPOS are rejected (they multiply daily occurrences).
 #
@@ -39,24 +40,35 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
     return TOO_LONG if value.length > MAX_LENGTH
 
     bodies = rule_bodies(value)
-    return UNPARSEABLE if bodies.empty?
+    return UNPARSEABLE if bodies.empty? || !readable_starts?(value)
 
     bodies.each do |body|
-      keys = body.split(";").map { |part| part.split("=", 2).first.to_s.strip.upcase }
-      return UNPARSEABLE unless keys.include?("FREQ")
-      return UNPARSEABLE if keys.count("FREQ") > 1
-      return MESSAGE if keys.intersect?(FORBIDDEN_PARTS)
-
-      begin
-        rule = IceCube::Rule.from_ical(body)
-      rescue ArgumentError, NoMethodError
-        # ice_cube raises ArgumentError for a malformed rule, and NoMethodError for some out-of-range parts
-        # (BYYEARDAY=400, BYMONTHDAY=0). Anything else is a bug and is not hidden.
-        return UNPARSEABLE
-      end
-      return MESSAGE unless ALLOWED_CLASSES.include?(rule.class)
+      error = body_error(body)
+      return error if error
     end
     nil
+  end
+
+  # nil when one RRULE body is allowed, else the message.
+  def self.body_error(body)
+    keys = body.split(";").map { |part| part.split("=", 2).first.to_s.strip.upcase }
+    return UNPARSEABLE unless keys.include?("FREQ")
+    return UNPARSEABLE if keys.count("FREQ") > 1
+    return MESSAGE if keys.intersect?(FORBIDDEN_PARTS)
+
+    begin
+      rule = IceCube::Rule.from_ical(body)
+    rescue ArgumentError, NoMethodError
+      # ice_cube raises ArgumentError for a malformed rule, and NoMethodError for some out-of-range parts
+      # (BYYEARDAY=400, BYMONTHDAY=0). Anything else is a bug and is not hidden.
+      return UNPARSEABLE
+    end
+    MESSAGE unless ALLOWED_CLASSES.include?(rule.class)
+  end
+
+  # Every DTSTART line must be a start the series edits (RecurrenceRule) can read.
+  def self.readable_starts?(value)
+    RecurrenceExpansion.lines(value).select { |l| l.start_with?("DTSTART") }.all? { |l| RecurrenceRule.readable_start?(l) }
   end
 
   # The RRULE: lines (what the forms produce), stripped like the controllers' parser.

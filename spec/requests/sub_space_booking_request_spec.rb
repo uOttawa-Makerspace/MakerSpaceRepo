@@ -899,6 +899,67 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(status_name(booking)).to eq("Declined")
     end
 
+    it "approve mails the owner once and not again when the booking was approved meanwhile" do
+      staff = create(:user, :staff, booking_approval: true)
+      log_in!(staff)
+      booking = booking_by(create(:user, :regular_user, booking_approval: true))
+      # another request approves the row after this one has loaded it
+      allow(SubSpaceBooking).to receive(:find).and_wrap_original do |original, *args|
+        loaded = original.call(*args)
+        SubSpaceBooking.where(id: loaded.id).update_all(booking_status_id: @approved_status.id)
+        loaded
+      end
+
+      perform_enqueued_jobs do
+        put sub_space_booking_approve_path(sub_space_booking_id: booking.id)
+      end
+
+      expect(flash[:alert]).to eq("Booking for #{subspace.name} is no longer pending.")
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(booking.reload.approved_by_id).to be_nil
+    end
+
+    it "approve delivers the approved mail to the owner" do
+      log_in!(create(:user, :staff, booking_approval: true))
+      owner = create(:user, :regular_user, booking_approval: true)
+      booking = booking_by(owner)
+      perform_enqueued_jobs do
+        put sub_space_booking_approve_path(sub_space_booking_id: booking.id)
+      end
+      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([[owner.email]])
+    end
+
+    it "the admin panel offers only the actions each booking can take" do
+      log_in!(create(:user, :admin, booking_approval: true))
+      owner = create(:user, :regular_user, booking_approval: true)
+      approved = booking_by(owner, name: "ApprovedOne")
+      approved.change_status!(@approved_status)
+      declined = booking_by(owner, name: "DeclinedOne")
+      declined.change_status!(@declined_status)
+
+      get sub_space_booking_index_path
+      page = Capybara.string(response.body)
+
+      expect(page).not_to have_css("#approved-accordion form[action='#{sub_space_booking_decline_path(sub_space_booking_id: approved.id)}']", visible: :all)
+      expect(page).not_to have_css("#declined-accordion form[action='#{sub_space_booking_approve_path(sub_space_booking_id: declined.id)}']", visible: :all)
+      expect(page).to have_css("#approved-accordion", text: "ApprovedOne", visible: :all)
+      expect(page).to have_css("#declined-accordion", text: "DeclinedOne", visible: :all)
+    end
+
+    it "My Bookings shows each booking's own status" do
+      owner = create(:user, :regular_user, booking_approval: true)
+      log_in!(owner)
+      booking_by(owner, name: "WaitingOne")
+      booking_by(owner, name: "YesOne").change_status!(@approved_status)
+      booking_by(owner, name: "NoOne").change_status!(@declined_status)
+
+      get sub_space_booking_index_path
+      page = Capybara.string(response.body)
+      badge = ->(name) { page.find("tr", text: name, visible: :all).find(".badge.text-bg-warning, .badge.text-bg-success, .badge.text-bg-danger", visible: :all).text }
+
+      expect([badge.call("WaitingOne"), badge.call("YesOne"), badge.call("NoOne")]).to eq(%w[Pending Approved Declined])
+    end
+
     it "publish needs admin; admin toggles public/private" do
       log_in!(create(:user, :regular_user, booking_approval: true))
       booking = booking_by(create(:user, :regular_user, booking_approval: true),
