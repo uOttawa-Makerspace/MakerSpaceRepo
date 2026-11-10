@@ -215,8 +215,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         end
       )
         .includes(:space)
-        .includes(training_session: %i[course_name training])
-        .includes(training: [:skill])
+        .includes(training_session: [:course_name, { training: :skill }])
     @space_count = {}
     @space_count['unknown'] = 0
 
@@ -257,7 +256,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # Count by skill and name
-      skill_name = cert.training.skill.name
+      skill_name = cert.training_session.training.skill.name
       if !@skill_count.has_key?(skill_name)
         @skill_count[skill_name] = 1
       else
@@ -265,7 +264,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # get cert training topic (?)
-      training_name = cert.training.name_en
+      training_name = cert.training_session.training.name_en
       if !@training_count.has_key?(training_name)
         @training_count[training_name] = 1
       else
@@ -284,7 +283,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           TrainingSession.all
         end
-      ).includes(:training, :space, :user)
+      ).includes(:training, :space)
 
     @training_sessions = @training_sessions.unscope(:order)
 
@@ -467,7 +466,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           ProjectKit.all
         end
-      )
+      ).includes(:proficient_project, :user)
 
     @pp_hash = {}
 
@@ -491,8 +490,8 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           TrainingSession.all
         end
-      ).includes(:users, :user, :trainings)
-    @spaces = Space.order(name: :asc).includes(:certifications)
+      )
+    @spaces = Space.order(name: :asc)
 
     @monthly_average = monthly_attendee_averages(report_days)
   end

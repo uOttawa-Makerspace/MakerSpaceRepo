@@ -967,7 +967,10 @@ class ReportGenerator
   end
 
   def self.generate_kit_purchased_report(start_date, end_date)
-    kits = ProjectKit.where("created_at" => start_date..end_date)
+    kits =
+      ProjectKit
+        .includes(:proficient_project, :user)
+        .where("created_at" => start_date..end_date)
 
     spreadsheet = Axlsx::Package.new
 

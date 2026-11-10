@@ -87,17 +87,42 @@ RSpec.describe "Admin report generator", type: :request do
     end
 
     XLSX_TYPES.each do |type|
-      # N+1 pinned (certifications/trainings/training_attendees load associations they never use)
-      pinned = %w[certifications trainings training_attendees].include?(type)
-      it "renders the #{type} report for a date range", skip_bullet: pinned do
+      it "renders the #{type} report for a date range" do
         get admin_report_generator_index_path, params: range.merge(report_type: type)
         expect(response).to have_http_status(:ok)
         expect(response.body).to include('id="report"')
       end
     end
 
-    # N+1 pinned
-    it "renders every dispatched report type without dates (all time)", skip_bullet: true do
+    context "with several records of each kind" do
+      before do
+        other_space = create(:space, name: "Second Space")
+        other_training = create(:training, name_en: "Saw Basics")
+        other_session = create(:training_session, space: other_space, training: other_training,
+                                                  created_at: march_10)
+        other_session.users << world[:visitor]
+        create(:certification, user: world[:visitor], training_session: other_session,
+                               training: other_training, space: other_space, created_at: march_10)
+        create(:project_kit, user: world[:visitor], proficient_project: create(:proficient_project),
+                             created_at: march_10)
+      end
+
+      %w[certifications trainings training_attendees kit_purchased].each do |type|
+        it "renders the #{type} report without a query per record" do
+          get admin_report_generator_index_path, params: range.merge(report_type: type)
+          expect(response).to have_http_status(:ok)
+          expect(response.body).to include('id="report"')
+        end
+      end
+
+      it "downloads the kit_purchased spreadsheet without a query per record" do
+        get admin_report_generator_generate_spreadsheet_path, params: { type: "kit_purchased" }.merge(range)
+        expect(response).to have_http_status(:ok)
+        expect(c18_xlsx_sheets(response.body).fetch("Report")[5..].size).to eq(2)
+      end
+    end
+
+    it "renders every dispatched report type without dates (all time)" do
       REPORT_TYPES.each do |type|
         get admin_report_generator_index_path, params: { report_type: type }
         expect(response).to have_http_status(:ok), "#{type}: #{response.status}"
@@ -370,8 +395,7 @@ RSpec.describe "Admin report generator", type: :request do
       expect(rows.size).to eq(6)
     end
 
-    # N+1 pinned (kit report loads proficient_project and user per kit)
-    it "kit_purchased: a delivered kit says Delivered", skip_bullet: true do
+    it "kit_purchased: a delivered kit says Delivered" do
       create(:project_kit, :"delivered", user: world[:visitor], created_at: march_10)
       fetch_xlsx("kit_purchased", range)
       statuses = c18_xlsx_sheets(response.body).fetch("Report")[5..].map { |r| r[3] }
