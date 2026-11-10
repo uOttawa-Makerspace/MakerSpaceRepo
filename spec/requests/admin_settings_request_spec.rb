@@ -126,6 +126,21 @@ RSpec.describe "Admin settings", type: :request do
       expect(flash[:alert]).to eq("Please select a piece of equipment.")
     end
 
+    it "renames only an existing equipment option and refuses a blank name" do
+      post rename_equipment_admin_settings_path, params: { equipment_option: { name: "Lathe" } }
+      expect(flash[:alert]).to eq("Please select a piece of equipment.")
+      expect(flash[:notice]).to be_nil
+      post rename_equipment_admin_settings_path, params: { rename_equipment: 0, equipment_option: { name: "Lathe" } }
+      expect(flash[:alert]).to eq("Please select a piece of equipment.")
+      expect(flash[:notice]).to be_nil
+      post rename_equipment_admin_settings_path, params: { rename_equipment: equipment.id, equipment_option: { name: "" } }
+      expect(flash[:alert]).to eq("Invalid equipment name.")
+      expect(equipment.reload.name).to eq("Mill")
+      post rename_equipment_admin_settings_path, params: { rename_equipment: equipment.id, equipment_option: { name: "Lathe" } }
+      expect(flash[:notice]).to eq("Equipment renamed successfully!")
+      expect(equipment.reload.name).to eq("Lathe")
+    end
+
     it "asks for a selection when the id to remove does not exist" do
       post remove_area_admin_settings_path, params: { remove_area: 0 }
       expect(flash[:alert]).to eq("Please select an area.")

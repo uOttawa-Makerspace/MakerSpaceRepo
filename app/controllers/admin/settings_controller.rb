@@ -105,12 +105,10 @@ class Admin::SettingsController < AdminAreaController
   def rename_equipment
     if equip_params[:name].blank?
       flash[:alert] = "Invalid equipment name."
-    elsif params[:rename_equipment] == ""
+    elsif (option = EquipmentOption.find_by(id: params[:rename_equipment])).nil?
       flash[:alert] = "Please select a piece of equipment."
     else
-      EquipmentOption.where(id: params[:rename_equipment]).update_all(
-        name: equip_params["name"]
-      )
+      option.update(name: equip_params[:name])
       flash[:notice] = "Equipment renamed successfully!"
     end
     redirect_to admin_settings_path
