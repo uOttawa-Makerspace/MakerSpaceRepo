@@ -292,6 +292,10 @@ Rails.application.routes.draw do
 
     resources :announcements
 
+    resources :deleted_repositories, only: :index do
+      resource :restoration, only: :create, module: :deleted_repositories
+    end
+
     resources :job_service_groups, only: %i[new create edit update destroy]
     resources :job_services, only: %i[new create edit update destroy]
     resources :job_options, only: %i[new create edit update destroy]

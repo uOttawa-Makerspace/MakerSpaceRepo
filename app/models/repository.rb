@@ -124,6 +124,11 @@ class Repository < ApplicationRecord
     users.each { |u| u.decrement!(:reputation, creation_reputation) }
   end
 
+  # The deleted repositories, newest first, for the admins who can bring them back.
+  def self.hidden
+    including_hidden.where(deleted: true).order(updated_at: :desc, id: :desc)
+  end
+
   # Deleting a repository hides it: its photos, files, comments, likes and makes stay as they were
   # (and so do the stored files), and an admin can bring it back with #restore!. The members lose
   # the reputation creating it gave them. False, changing nothing, when it is already hidden (a
