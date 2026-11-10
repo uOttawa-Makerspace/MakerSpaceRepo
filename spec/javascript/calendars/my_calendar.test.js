@@ -42,9 +42,8 @@ vi.mock("bootstrap", () => ({
 
 const PAGE = `
 <input id="space_id" value="3">
-<div id="calendar_container" style="display:none"></div>
+<div id="calendar_container" data-my-calendar style="display:none"><div id="calendar"></div></div>
 <div id="spinner_container"></div>
-<div id="calendar"></div>
 <span class="fc-toggleOthersShifts-button"></span>
 <span class="fc-toggleEventOverlap-button"></span>`;
 
@@ -75,6 +74,14 @@ beforeEach(() => {
 });
 
 describe("my calendar", () => {
+  it("does nothing on a page with another calendar", () => {
+    document.body.innerHTML =
+      '<div id="calendar_container"><div id="calendar"></div></div>';
+    created.length = 0;
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(created).toHaveLength(0);
+  });
+
   it("does nothing on a page without the calendar", () => {
     document.body.innerHTML = "<p>Not assigned to any space</p>";
     created.length = 0;

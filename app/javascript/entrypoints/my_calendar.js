@@ -8,10 +8,10 @@ import { Tooltip } from "bootstrap";
 import { applyEventBackground } from "../src/calendar_background.js";
 
 document.addEventListener("turbo:load", async () => {
-  // The staff layout loads this entrypoint on the calendar page only, but the
-  // listener outlives that page under Turbo, and the page shows a notice
-  // instead of the calendar for staff with no space.
-  const calendarEl = document.getElementById("calendar");
+  // The staff layout loads this entrypoint on the calendar page, and the
+  // listener outlives that page under Turbo. Other staff pages have a
+  // #calendar of their own, so only the marked container is this calendar.
+  const calendarEl = document.querySelector("[data-my-calendar] #calendar");
   if (!calendarEl) return;
 
   let onlyShowMyShifts = false;
