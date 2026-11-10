@@ -125,6 +125,36 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(deliveries.last.subject).to eq("Your job ##{order.id} has been declined")
     end
 
+    it "quotes once when the same form is submitted twice, and a deliberate re-quote from a fresh form still works" do
+      session_login!(staff)
+      row_id = order.job_order_statuses.reorder(id: :desc).first.id
+      patch job_order_quote_path(order), params: quote_params(task, status_row_id: row_id)
+      deliveries.clear
+      patch job_order_quote_path(order), params: quote_params(task, status_row_id: row_id)
+
+      expect(status_names(order).count("Waiting for User Approval")).to eq(1)
+      expect(deliveries).to be_empty
+      expect(flash[:alert]).to be_present
+
+      fresh_id = order.job_order_statuses.reorder(id: :desc).first.id
+      patch job_order_quote_path(order), params: quote_params(task, status_row_id: fresh_id)
+      expect(status_names(order).count("Waiting for User Approval")).to eq(2)
+    end
+
+    it "declines once when the same form is submitted twice" do
+      session_login!(staff)
+      row_id = order.job_order_statuses.reorder(id: :desc).first.id
+      2.times { patch job_order_quote_path(order), params: { approved: "false", status_row_id: row_id } }
+      expect(status_names(order).count("Declined")).to eq(1)
+    end
+
+    it "renders the current status row in the quote and decline forms" do
+      session_login!(staff)
+      get job_order_path(order)
+      row_id = order.job_order_statuses.reorder(id: :desc).first.id
+      expect(Capybara.string(response.body)).to have_css("input[name='status_row_id'][value='#{row_id}']", count: 2, visible: :all)
+    end
+
     it "declines an already declined order only once: no second status row, comment or email" do
       session_login!(staff)
       patch job_order_quote_path(order), params: { approved: "false", user_comments: "Sorry, we cannot make this" }

@@ -158,13 +158,13 @@ class JobOrder < ApplicationRecord
   # the lock after the source state is checked and before the status row is written; its validation failures are
   # :change_invalid. The destination's draft rule (#enter_status!) runs in the same transaction, so a refusal undoes
   # everything: the block's writes, the status row, the draft id.
-  def transition!(from:, to:, actor:, approval_token: nil, &changes)
+  # `expected_status_row_id` (optional) is the id of the status row the caller's form was rendered from; a form
+  # submitted twice, or from a page that has since moved on, is refused as :wrong_state once the newest row differs.
+  def transition!(from:, to:, actor:, approval_token: nil, expected_status_row_id: nil, &changes)
     label = "transition! #{Array.wrap(from).map { |s| s&.name }} -> #{to&.name}"
     locked_operation(label) do |latest|
-      next TransitionResult.refused(:wrong_state) if latest.nil? || !Array.wrap(from).include?(latest)
-      if approval_token && self.class.from_approval_token(approval_token)&.id != id
-        next TransitionResult.refused(:link_spent)
-      end
+      refusal = transition_refusal(latest, from, approval_token, expected_status_row_id)
+      next refusal if refusal
 
       apply_change(&changes) if changes
       require_priced_services!(to)
@@ -964,6 +964,22 @@ class JobOrder < ApplicationRecord
   def enter_status!(to, from:, actor:, reason: nil)
     write_status_row!(to, actor, reason)
     settle_draft_order!(from, to)
+  end
+
+  def transition_refusal(latest, from, approval_token, expected_status_row_id)
+    return TransitionResult.refused(:wrong_state) if wrong_state_for_transition?(latest, from, expected_status_row_id)
+    return unless approval_token && self.class.from_approval_token(approval_token)&.id != id
+
+    TransitionResult.refused(:link_spent)
+  end
+
+  def wrong_state_for_transition?(latest, from, expected_status_row_id)
+    latest.nil? || !Array.wrap(from).include?(latest) ||
+      (expected_status_row_id && newest_status_row_id != expected_status_row_id)
+  end
+
+  def newest_status_row_id
+    job_order_statuses.reorder(id: :desc).limit(1).pick(:id)
   end
 
   def write_status_row!(to, actor, reason)

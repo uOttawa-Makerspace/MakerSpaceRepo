@@ -112,6 +112,7 @@
       <div class="modal-body">
         <%= form_with model: @job_order, url: job_order_quote_path(@job_order), method: :patch do |f| %>
           <%= hidden_field_tag :approved, false %>
+          <%= hidden_field_tag :status_row_id, jo.latest_status&.id %>
           <%= f.label :user_comments, 'Comments (Why is it not approved?)' %>
           <%= text_field_tag :user_comments, nil, placeholder: "The size won't fit", class: 'form-control mb-2' %>
           <%= f.submit 'Decline', class: 'btn btn-danger' %>
