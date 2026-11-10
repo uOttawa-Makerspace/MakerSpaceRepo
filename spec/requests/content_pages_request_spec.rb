@@ -725,7 +725,6 @@ RSpec.describe "Content pages (part 2)", type: :request do
   describe "QuickAccessLinksController (admin only)" do
     let(:admin) { create(:user, :admin) }
 
-    # check_user redirects twice in one filter chain (guest/regular + :id), which raises DoubleRenderError (500) instead of a clean redirect
     it "redirects a guest or regular user without an id (create)" do
       post quick_access_links_create_path, params: { name: "Home", path: "/" }
       expect(response).to redirect_to(root_path)
@@ -737,11 +736,20 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(QuickAccessLink.count).to eq(0)
     end
 
-    it "answers 500 (double redirect) when a non-admin supplies an id of an existing link" do
+    it "redirects once when a non-admin supplies an id of an existing link" do
       link = QuickAccessLink.create!(user: admin, name: "Home", path: "/")
       sign_in_as(:regular)
       delete quick_access_links_delete_path(link)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq("You can't do that")
+      expect(QuickAccessLink.exists?(link.id)).to be(true)
+    end
+
+    it "redirects once when an admin supplies another admin's link" do
+      link = QuickAccessLink.create!(user: create(:user, :admin), name: "Home", path: "/")
+      sign_in_as(:admin)
+      delete quick_access_links_delete_path(link)
+      expect(response).to redirect_to(root_path)
       expect(QuickAccessLink.exists?(link.id)).to be(true)
     end
 

@@ -1,18 +1,15 @@
 class QuickAccessLinksController < SessionsController
   before_action :check_user
 
+  # Only admins, and only on their own links. Every refusal is one redirect.
   def check_user
-    if current_user.nil?
-      redirect_to root_path, notice: "You must be logged in to do that"
-    end
-    unless current_user.admin?
-      redirect_to root_path, notice: "You can't do that"
-    end
-    if params[:id].present?
-      if QuickAccessLink.find(params[:id]).user_id != current_user.id
-        redirect_to root_path, notice: "You can't do that"
-      end
-    end
+    return if current_user.admin? && own_link_or_none?
+
+    redirect_to root_path, notice: "You can't do that"
+  end
+
+  def own_link_or_none?
+    params[:id].blank? || QuickAccessLink.find(params[:id]).user_id == current_user.id
   end
 
   def create
