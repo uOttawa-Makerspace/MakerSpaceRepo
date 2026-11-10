@@ -64,15 +64,27 @@ module SniffedUploadValidation
     sniffed_upload_rules.fetch(name.to_sym).select { |rule| sniffed_rule_applies?(rule) }.flat_map do |rule|
       max_size = rule[:max_size].respond_to?(:call) ? rule[:max_size].call : rule[:max_size]
       problems = []
-      problems << "#{filename} is too large" if upload.respond_to?(:size) && upload.size.to_i > max_size
+      problems << upload_problem(:upload_too_large, **too_large_options(filename, max_size)) if upload.respond_to?(:size) && upload.size.to_i > max_size
       sniffed = sniffed_by_name[rule[:name_fallback]] ||=
         (head && Marcel::MimeType.for(StringIO.new(head), name: (filename if rule[:name_fallback])))
-      problems << "#{filename} has a file type that is not allowed" unless sniffed_type_acceptable?(sniffed, rule[:allow], rule[:deny])
+      problems << upload_problem(:upload_type_not_allowed, **type_not_allowed_options(filename, sniffed)) unless sniffed_type_acceptable?(sniffed, rule[:allow], rule[:deny])
       problems
     end.uniq
   end
 
   private
+
+  def upload_problem(type, **options)
+    I18n.t(type, scope: "activerecord.errors.messages", **options)
+  end
+
+  def too_large_options(filename, max_size)
+    { filename: filename, max_size: ActiveSupport::NumberHelper.number_to_human_size(max_size) }
+  end
+
+  def type_not_allowed_options(filename, sniffed)
+    { filename: filename, detected_type: sniffed || I18n.t("activerecord.errors.upload_type_unreadable") }
+  end
 
   def sniffed_type_acceptable?(sniffed, allow, deny)
     !(sniffed.nil? || (allow && Array(allow).none? { |type| type === sniffed }) || Array(deny).any? { |type| type === sniffed })
@@ -96,11 +108,11 @@ module SniffedUploadValidation
 
       filename = blob.filename.to_s
       if blob.byte_size.to_i > max_size
-        errors.add(name, :upload_too_large, filename: filename, max_size: ActiveSupport::NumberHelper.number_to_human_size(max_size))
+        errors.add(name, :upload_too_large, **too_large_options(filename, max_size))
       end
       sniffed = sniffed_upload_types[blob] ||= sniff_upload(attachable, blob, name_fallback)
       unless sniffed_type_acceptable?(sniffed, allow, deny)
-        errors.add(name, :upload_type_not_allowed, filename: filename, detected_type: sniffed || I18n.t("activerecord.errors.upload_type_unreadable"))
+        errors.add(name, :upload_type_not_allowed, **type_not_allowed_options(filename, sniffed))
       end
     end
   end

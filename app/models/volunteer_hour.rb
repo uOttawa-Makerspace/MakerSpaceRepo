@@ -62,6 +62,6 @@ class VolunteerHour < ApplicationRecord
   end
 
   def date_of_task_not_in_future
-    errors.add(:date_of_task, "cannot be in the future") if date_of_task.to_date > Date.current
+    errors.add(:date_of_task, :in_the_future) if date_of_task.to_date > Date.current
   end
 end

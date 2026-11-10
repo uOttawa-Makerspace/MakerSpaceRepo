@@ -17,6 +17,12 @@ class CouponCode < ApplicationRecord
   # One rule: blank, non-numeric, fractional and negative are all refused with the same message.
   validates :cc_cost, numericality: { only_integer: true, greater_than_or_equal_to: 0, message: :invalid_cc_cost }
 
+  # A coupon needs a code and a whole-dollar value above zero, and no two coupons share a code. Coupons
+  # created before these rules may break them, so each rule is checked for a new coupon and when its own
+  # field changes: claiming or editing an old coupon over another field still works.
+  validates :code, presence: true, uniqueness: true, if: :checks_code?
+  validates :dollar_cost, numericality: { only_integer: true, greater_than: 0 }, if: :checks_dollar_cost?
+
   # Trades `user`'s CC points for one unclaimed coupon worth `dollar_cost` AT `cc_cost`, the
   # price the user confirmed (a same-dollar coupon at another price is never picked; a blank
   # cc_cost matches nothing). Atomic: the
@@ -69,10 +75,18 @@ class CouponCode < ApplicationRecord
 
   private
 
+  def checks_code?
+    new_record? || will_save_change_to_code?
+  end
+
+  def checks_dollar_cost?
+    new_record? || will_save_change_to_dollar_cost?
+  end
+
   def refuse_deletion_once_claimed
     return unless claimed?
 
-    errors.add(:base, "A user has already claimed this coupon with CC points, so it cannot be deleted")
+    errors.add(:base, :claimed_cannot_delete)
     throw :abort
   end
 end

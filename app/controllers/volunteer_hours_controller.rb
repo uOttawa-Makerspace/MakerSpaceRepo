@@ -45,7 +45,7 @@ class VolunteerHoursController < VolunteersController
     else
       flash[:alert] = I18n.t("errors.volunteer.hours.processed")
     end
-    define_redirect(current_user.role)
+    define_redirect(current_user)
   end
 
   def update
@@ -55,7 +55,7 @@ class VolunteerHoursController < VolunteersController
     else
       flash[:alert] = volunteer_hour.errors.full_messages.to_sentence
     end
-    define_redirect(current_user.role)
+    define_redirect(current_user)
   end
 
   def volunteer_hour_requests
@@ -74,7 +74,7 @@ class VolunteerHoursController < VolunteersController
     else
       flash[:alert] = validation_message(volunteer_hour, "errors.volunteer.hours.approval_not_saved")
     end
-    define_redirect(current_user.role)
+    define_redirect(current_user)
   end
 
   def volunteer_hour_per_user

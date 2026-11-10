@@ -38,7 +38,7 @@ RSpec.describe "Job order invoice", type: :request do
     task = order.job_tasks.find_by!(title: "Print B")
     session_login!(staff)
 
-    patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "99" }
+    patch_quote order, { approved: "true", "job_task_quote_price_#{task.id}" => "99" }
     expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.quote_refused_paid"))
 
     get job_order_invoice_path(order)

@@ -155,15 +155,13 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
 
     it "an admin revoking a badge that cannot be saved is told why" do
       item = cart_for(user, 10).order_items.first
+      item.update_column(:quantity, 0)
       shop_log_in!(admin)
-      allow(OrderItem).to receive(:find).and_return(item)
-      allow(item).to receive(:update) do
-        item.errors.add(:base, "Status is locked")
-        false
-      end
       post order_item_revoke_path(item)
       expect(response).to redirect_to(admin_index_path)
-      expect(flash[:alert]).to eq("The badge could not be revoked: Status is locked")
+      expect(flash[:alert]).to start_with("The badge could not be revoked:")
+      expect(flash[:alert]).to include("Quantity")
+      expect(item.reload.status).not_to eq("Revoked")
     end
 
     it "refuses when the user lacks the required training badges" do

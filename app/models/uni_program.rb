@@ -3,12 +3,15 @@
 class UniProgram < ApplicationRecord
   validates :program, presence: true
 
+  # Shown when the reference row with no faculty is missing
+  NO_PROGRAM_LABEL = "My program is not in the list"
+
   # NOTE: This returns duplicates, because some programs are listed
   # as both Bachelor's and PhD for some reason. Check docs for more info
   default_scope { where.not(faculty: "") }
 
   def self.no_program
-    UniProgram.unscoped.find_by(faculty: "").program
+    UniProgram.unscoped.find_by(faculty: "")&.program || NO_PROGRAM_LABEL
   end
 
   def self.unique_programs

@@ -173,7 +173,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
 
     def requote!(order, task, price)
       session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => price.to_s,
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task.id}" => price.to_s,
                                                    job_order: { staff_comments: "" } }
     end
 
@@ -231,7 +231,7 @@ RSpec.describe "JobOrders audit gaps", type: :request do
       order, task = order_with_draft!
       session_login!(staff)
       # 29.99 base before; after: 19.99 base + 10 x 1.00 parts = the same 29.99 total
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "19.99",
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task.id}" => "19.99",
                                                    "task_#{task.id}_service_qty" => "10",
                                                    "task_#{task.id}_service_price" => "1",
                                                    job_order: { staff_comments: "" } }

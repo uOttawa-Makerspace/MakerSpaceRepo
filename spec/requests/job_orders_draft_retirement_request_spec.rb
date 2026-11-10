@@ -59,7 +59,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
     it "voids the draft when staff decline a COMPLETED order" do
       order, = order_with_draft!(:completed)
       session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "false", job_order: { staff_comments: "" } }
+      patch_quote order, { approved: "false", job_order: { staff_comments: "" } }
 
       expect(status_names(order).last).to eq("Declined")
       expect(shopify_ops).to eq(%w[draftOrderDelete])
@@ -71,8 +71,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       refuse_delete!
       before = status_names(order)
       session_login!(staff)
-      patch job_order_quote_path(order),
-            params: { approved: "false", user_comments: "no", job_order: { staff_comments: "" } }
+      patch_quote order, { approved: "false", user_comments: "no", job_order: { staff_comments: "" } }
 
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.draft_not_voidable", reference: error_reference))
       expect(status_names(order)).to eq(before)
@@ -165,7 +164,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
       order, = order_with_draft!(:completed)
       allow(shopify).to receive(:query).and_raise(Net::ReadTimeout)
       session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "false", job_order: { staff_comments: "" } }
+      patch_quote order, { approved: "false", job_order: { staff_comments: "" } }
 
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.status_change.draft_not_voidable", reference: error_reference))
       expect(status_names(order).last).to eq("Completed (Waiting for Payment)")
@@ -177,7 +176,7 @@ RSpec.describe "Job order drafts on status changes", type: :request do
     it "voids the draft even when the new quote has the same prices (the customer approves again)" do
       order, task = order_with_draft!(:completed)
       session_login!(staff)
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "29.99",
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task.id}" => "29.99",
                                                    job_order: { staff_comments: "" } }
 
       expect(status_names(order).last).to eq("Waiting for User Approval")
