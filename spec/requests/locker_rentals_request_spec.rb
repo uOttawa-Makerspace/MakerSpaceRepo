@@ -643,6 +643,39 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include("Locker Inventory")
     end
 
+    describe "the Indefinite box of the assign form" do
+      before { log_in!(staff) }
+
+      it "starts unticked, with the end date proposed, for a request without an end date" do
+        rental = reviewing_rental!
+        rental.update_columns(owned_until: nil)
+
+        get locker_rental_path(rental)
+
+        assert_select "input#indefinite_assign:not([checked])"
+        assert_select "input#owned_until_assign[value=?]", end_of_this_semester.to_date.iso8601
+      end
+
+      it "starts unticked for a request that already has an end date" do
+        rental = reviewing_rental!
+        rental.update_columns(owned_until: Time.zone.local(2031, 4, 30))
+
+        get locker_rental_path(rental)
+
+        assert_select "input#indefinite_assign:not([checked])"
+        assert_select "input#owned_until_assign[value=?]", "2031-04-30"
+      end
+
+      it "starts ticked for a rental that is indefinite" do
+        rental = create(:locker_rental, :active)
+        rental.update_columns(owned_until: nil)
+
+        get locker_rental_path(rental)
+
+        assert_select "input#indefinite_assign[checked]"
+      end
+    end
+
     it "denies strangers with a redirect to the index and an alert" do
       rental = reviewing_rental!
       log_in!(other)

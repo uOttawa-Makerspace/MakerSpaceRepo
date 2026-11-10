@@ -245,6 +245,14 @@ RSpec.describe LockerRental, type: :model do
     end
   end
 
+  describe "#indefinite?" do
+    it "is true only for an active rental without an end date" do
+      expect(build(:locker_rental, :active, owned_until: nil)).to be_indefinite
+      expect(build(:locker_rental, :active, owned_until: 1.month.from_now)).not_to be_indefinite
+      expect(build(:locker_rental, owned_until: nil)).not_to be_indefinite
+    end
+  end
+
   describe "#expired? / #expired_since / #overdue?" do
     it "is expired only when active, dated, and past owned_until" do
       expect(build(:locker_rental, :active, owned_until: 1.minute.ago).expired?).to be true

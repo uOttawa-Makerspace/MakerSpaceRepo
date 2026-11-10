@@ -312,6 +312,11 @@ class LockerRental < ApplicationRecord
     active? && owned_until && owned_until <= DateTime.current
   end
 
+  # Active with no end date: the rental never expires
+  def indefinite?
+    active? && owned_until.nil?
+  end
+
   def renewable?
     active? && expired?
   end
