@@ -57,9 +57,16 @@
                         <%= certification.user.email %>
                       <% end %>
                     </td>
-                    <td><%= certification.training_session.training.name %></td>
+                    <td><%= certification.training_session.training&.name || 'Unknown' %></td>
                     <td><%= certification.created_at.strftime('%Y-%m-%d') %></td>
-                    <td><%= link_to certification.training_session.user.name, user_path(certification.training_session.user.username) %></td>
+                    <td>
+                      <% instructor = certification.training_session.user %>
+                      <% if instructor %>
+                        <%= link_to instructor.name, user_path(instructor.username) %>
+                      <% else %>
+                        Unknown
+                      <% end %>
+                    </td>
                     <td><%= certification.training_session.course %></td>
                   </tr>
                 <% end %>

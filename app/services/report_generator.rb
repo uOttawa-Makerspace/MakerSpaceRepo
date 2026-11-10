@@ -5,6 +5,8 @@ class ReportGenerator
 
   # What a sheet or title says for a session that has no space.
   UNKNOWN_SPACE = "Unknown"
+  # What a cell says for a session whose training or instructor is missing.
+  UNKNOWN = "Unknown"
   # region Date Range Reports
 
   # @param [DateTime] start_date
@@ -637,6 +639,24 @@ class ReportGenerator
     spreadsheet
   end
 
+  # One attendee line. A missing attendee name, training or instructor
+  # shows Unknown in that cell.
+  def self.attendee_row(certification)
+    session = certification.training_session
+    user = certification.user
+    [
+      user&.student_id,
+      user&.name || UNKNOWN,
+      user&.email,
+      session.training&.name_en || UNKNOWN,
+      session.created_at.strftime("%Y-%m-%d %H:%M"),
+      session.user&.name || UNKNOWN,
+      session.course,
+      session.space&.name
+    ]
+  end
+  private_class_method :attendee_row
+
   def self.generate_training_attendees_report(start_date, end_date)
     certifications =
       Certification
@@ -680,18 +700,7 @@ class ReportGenerator
 
           types = student_id_as_text(columns)
           space_certifications.each do |certification|
-            sheet.add_row [
-                            certification.user.student_id,
-                            certification.user.name,
-                            certification.user.email,
-                            certification.training_session.training.name_en,
-                            certification.training_session.created_at.strftime(
-                              "%Y-%m-%d %H:%M"
-                            ),
-                            certification.training_session.user.name,
-                            certification.training_session.course,
-                            certification.training_session.space&.name
-                          ],
+            sheet.add_row attendee_row(certification),
                           types: types
           end
 

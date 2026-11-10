@@ -115,6 +115,15 @@ RSpec.describe "Admin report generator", type: :request do
         end
       end
 
+      it "training_attendees: a session with no training or no instructor renders as Unknown" do
+        session = create(:training_session, space: world[:space], training: create(:training), user: create(:user, :staff), created_at: march_10)
+        session.update_columns(training_id: nil, user_id: nil)
+        create(:certification, user: world[:visitor], training_session: session, created_at: march_10)
+        get admin_report_generator_index_path, params: range.merge(report_type: "training_attendees")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Unknown")
+      end
+
       it "certifications: a certificate earned through a proficient project counts under that project's training" do
         project_training = create(:training, name_en: "Project Training")
         project = create(:proficient_project, training: project_training)

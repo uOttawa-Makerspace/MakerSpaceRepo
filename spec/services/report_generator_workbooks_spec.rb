@@ -493,6 +493,24 @@ RSpec.describe ReportGenerator do
       expect(rows["Report - Alpha"][5..].count { |r| r[1] == "Lena Learner" }).to eq(1)
     end
 
+    it "labels a session with no training or no instructor Unknown" do
+      session = create(:training_session, space: alpha, training: laser, user: teacher, created_at: march_10)
+      attend(lena, session, march_10)
+      session.update_columns(training_id: nil, user_id: nil)
+      rows = grid(described_class.generate_training_attendees_report(from, to))["Report - Alpha"]
+      expect(rows[5]).to eq(["012345678", "Lena Learner", "lena@example.test", "Unknown",
+                             session.created_at.in_time_zone("America/Toronto").strftime("%Y-%m-%d %H:%M"),
+                             "Unknown", session.course, "Alpha"])
+    end
+
+    it "labels a certificate with no user Unknown" do
+      session = create(:training_session, space: alpha, training: laser, user: teacher, course: "MCG1", created_at: march_10)
+      cert = attend(lena, session, march_10)
+      cert.update_columns(user_id: nil)
+      rows = grid(described_class.generate_training_attendees_report(from, to))["Report - Alpha"]
+      expect(rows[5]).to eq([nil, "Unknown", nil, "Laser", "2026-03-10 11:00", "Ina Instructor", "MCG1", "Alpha"])
+    end
+
     it "a session without a space gets its own sheet named for an unknown space" do
       session = create(:training_session, space: alpha, training: laser, created_at: march_10)
       session.update_columns(space_id: nil)
