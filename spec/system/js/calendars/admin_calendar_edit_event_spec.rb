@@ -308,16 +308,16 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(unavail.reload.description).to eq("Calculus tutorial")
     end
 
-    # The title field is filled with the calendar's own label ("<icon> <name> - <title>"),
-    # so every save writes that label back as the title.
-    it "fills the title field with the calendar label and saves it back as the title", js: true, skip_bullet: true do
+    it "fills the title field with the stored title and keeps it unchanged when saved", js: true, skip_bullet: true do
       open_admin_calendar
       open_event("Lecture")
-      expect(find("#title", visible: :all).value).to eq("🚫 Wanda Worker - Lecture")
+      expect(find("#title", visible: :all).value).to eq("Lecture")
+      open_custom_values
+      fill_in "description", with: "Calculus tutorial"
       click_button "Update"
 
-      eventually { unavail.reload.title != "Lecture" }
-      expect(unavail.reload.title).to eq("🚫 Wanda Worker - Lecture")
+      eventually { unavail.reload.description == "Calculus tutorial" }
+      expect(unavail.reload.title).to eq("Lecture")
     end
 
     it "deletes it from the modal", js: true, skip_bullet: true do

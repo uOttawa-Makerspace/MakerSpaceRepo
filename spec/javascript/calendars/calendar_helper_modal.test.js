@@ -389,6 +389,21 @@ describe("eventClick", () => {
     expect($("day_FR").checked).toBe(true);
   });
 
+  it("fills the title from the stored title rather than the calendar label", () => {
+    eventClick(
+      fcEvent({
+        def: { title: "🚫 Wanda Worker - Lecture" },
+        props: { eventType: "unavailability", title: "Lecture", userId: 3 },
+      }),
+    );
+    expect($("title").value).toBe("Lecture");
+  });
+
+  it("falls back to the label without its pencil when no stored title is sent", () => {
+    eventClick(fcEvent({ def: { title: "✎ Team sync" } }));
+    expect($("title").value).toBe("Team sync");
+  });
+
   it("cannot read a rule string that starts with a start date", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     eventClick(

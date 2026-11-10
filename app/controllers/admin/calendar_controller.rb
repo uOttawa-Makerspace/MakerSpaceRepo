@@ -47,6 +47,7 @@ class Admin::CalendarController < AdminAreaController
           allDay: CalendarTime.all_day?(u.start_time, u.end_time),
           extendedProps: {
             name: staff.name,
+            title: u.title,
             description: u.description
           },
           className: "unavailability"

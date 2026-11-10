@@ -367,6 +367,14 @@ function defaultEnd(start, allDay) {
   return instantToWall(wallToInstant(start) + HOUR_MS);
 }
 
+// The title to edit: the stored one when the feed sends it (the calendar's own
+// label adds a mark and the staff name), otherwise the label without its pencil.
+function storedTitle(event) {
+  const stored = event.extendedProps.title;
+  if (typeof stored === "string") return stored;
+  return event.title.replace(/✎/g, "").trim() || "";
+}
+
 function openEventForEditing(eventImpl) {
   const event = eventImpl._def;
   const id = eventImpl.id.replace("event-", "");
@@ -444,8 +452,7 @@ function openEventForEditing(eventImpl) {
   );
 
   // TITLE & DESCRIPTION
-  document.getElementById("title").value =
-    event.title.replace(/✎/g, "").trim() || "";
+  document.getElementById("title").value = storedTitle(event);
   document.getElementById("description").value =
     event.extendedProps.description || "";
 
