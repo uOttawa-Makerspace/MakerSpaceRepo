@@ -226,6 +226,8 @@ class Admin::ReportGeneratorController < AdminAreaController
 
     @training_count = {}
 
+    preload_project_trainings(@certs)
+
     # For each certification in our database
     @certs.each do |cert|
       if cert.space.present?
@@ -256,7 +258,8 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # Count by skill and name
-      skill_name = cert.training_session.training.skill.name
+      training = certificate_training(cert)
+      skill_name = training.skill.name
       if !@skill_count.has_key?(skill_name)
         @skill_count[skill_name] = 1
       else
@@ -264,7 +267,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # get cert training topic (?)
-      training_name = cert.training_session.training.name_en
+      training_name = training.name_en
       if !@training_count.has_key?(training_name)
         @training_count[training_name] = 1
       else
@@ -519,6 +522,23 @@ class Admin::ReportGeneratorController < AdminAreaController
       sessions = certs.pluck(:training_session_id).uniq.count
       averages[month.strftime('%B %Y')] = count.to_f / sessions
     end
+  end
+
+  # The training a certificate was earned for: its session's, else its
+  # proficient project's.
+  def certificate_training(cert)
+    cert.training_session&.training ||
+      cert.proficient_project_session&.proficient_project&.training
+  end
+
+  # Certificates earned through a proficient project have no session, so
+  # their training is loaded through the project, for those alone.
+  def preload_project_trainings(certs)
+    sessionless = certs.reject(&:training_session)
+    ActiveRecord::Associations::Preloader.new(
+      records: sessionless,
+      associations: { proficient_project_session: { proficient_project: { training: :skill } } }
+    ).call
   end
 
   def certifications_in_month(month)

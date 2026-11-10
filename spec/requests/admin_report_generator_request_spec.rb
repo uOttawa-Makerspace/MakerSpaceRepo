@@ -115,6 +115,18 @@ RSpec.describe "Admin report generator", type: :request do
         end
       end
 
+      it "certifications: a certificate earned through a proficient project counts under that project's training" do
+        project_training = create(:training, name_en: "Project Training")
+        project = create(:proficient_project, training: project_training)
+        2.times do
+          cert = create(:certification, user: world[:visitor], training_session: nil, created_at: march_10)
+          create(:proficient_project_session, certification: cert, user: world[:visitor], proficient_project: project, level: "Beginner")
+        end
+        get admin_report_generator_index_path, params: range.merge(report_type: "certifications")
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Project Training").and include("Laser Basics").and include("Saw Basics")
+      end
+
       it "downloads the kit_purchased spreadsheet without a query per record" do
         get admin_report_generator_generate_spreadsheet_path, params: { type: "kit_purchased" }.merge(range)
         expect(response).to have_http_status(:ok)
