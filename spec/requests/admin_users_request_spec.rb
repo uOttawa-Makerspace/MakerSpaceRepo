@@ -262,11 +262,11 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
 
       it "keeps the palette colour as the border and fill, with readable text in the outline, hover and checked states" do
         get manage_roles_admin_users_path
-        rules = response.body.scan(/\.btn-outline-([^\s{]+) \{([^}]*)\}/m).to_h { |name, css| [name, css.scan(/--bs-btn-([\w-]+): ([^;]+);/).to_h] }
+        rules = response.body.scan(/\.btn-outline-space-(\d+) \{([^}]*)\}/m).to_h { |id, css| [id.to_i, css.scan(/--bs-btn-([\w-]+): ([^;]+);/).to_h] }
         ratios = {}
 
         Space.all.each do |space|
-          vars = rules.fetch(space.name)
+          vars = rules.fetch(space.id)
           hex = space.assigned_color_hex
           expect(vars).to include("color" => "var(--bs-body-color)", "border-color" => hex, "hover-bg" => hex,
                                   "hover-border-color" => hex, "active-bg" => hex, "active-border-color" => hex)
@@ -280,6 +280,15 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
         # Outline text is the body colour on the page background, in both themes.
         expect(ratio("#212529", "#ffffff")).to be >= 4.5
         expect(ratio("#dee2e6", "#212529")).to be >= 4.5
+      end
+
+      it "keeps the space name out of the page stylesheet and out of the button class" do
+        space = Space.first
+        space.update_columns(name: "x{color:red} .y")
+        get manage_roles_admin_users_path
+        style = response.body[/<style>.*?<\/style>/m]
+        expect(style).not_to include("color:red")
+        expect(response.body).to include("btn-outline-primary btn-outline-space-#{space.id}")
       end
     end
   end
