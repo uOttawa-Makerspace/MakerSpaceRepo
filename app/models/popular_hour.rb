@@ -77,19 +77,23 @@ class PopularHour < ApplicationRecord
   end
   private_class_method :note_live_run
 
+  # Average visits per matching weekday for each (weekday, hour) of each space over the period. created_at is
+  # stored in UTC, so weekday and hour are read in the app time zone, the same zone the hourly counter uses.
   def self.popular_hours_per_period(start_date, end_date)
     lab_sessions_in_space =
       LabSession.between_dates_picked(
         start_date.beginning_of_day,
         end_date.end_of_day
       )
+    zone = Time.zone.tzinfo.identifier
     data = {}
     Space.all.each do |space|
       data[space.id] = {}
       (0..6).each do |weekday|
         s =
           lab_sessions_in_space.where(
-            "extract(dow from created_at) = ?",
+            "extract(dow from (created_at AT TIME ZONE 'UTC' AT TIME ZONE ?)) = ?",
+            zone,
             weekday
           ).where(space: space)
         data[space.id][weekday] = {}
@@ -98,7 +102,11 @@ class PopularHour < ApplicationRecord
             data[space.id][weekday][hour] = 0
           else
             data[space.id][weekday][hour] = (
-              s.where("extract('hour' from created_at) = ?", hour).count.to_f /
+              s.where(
+                "extract('hour' from (created_at AT TIME ZONE 'UTC' AT TIME ZONE ?)) = ?",
+                zone,
+                hour
+              ).count.to_f /
                 (start_date..end_date).count { |date| weekday == date.wday }
             ).round(2)
           end
