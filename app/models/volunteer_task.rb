@@ -73,13 +73,13 @@ class VolunteerTask < ApplicationRecord
 
   private
 
-  def refuse!(message)
-    raise EditRefused, message
+  def refuse!(key, **options)
+    raise EditRefused, I18n.t(key, scope: "activerecord.errors.models.volunteer_task.edit_refused", **options)
   end
 
   def replace_certifications(certification_ids)
     ids = Array(certification_ids).compact_blank
-    refuse!("A required training does not exist.") unless Training.where(id: ids).count == ids.uniq.size
+    refuse!(:training_missing) unless Training.where(id: ids).count == ids.uniq.size
     delete_all_certifications
     create_certifications(ids)
   end
@@ -87,7 +87,7 @@ class VolunteerTask < ApplicationRecord
   def add_joins(user_ids, label, staff:)
     Array(user_ids).each do |user_id|
       user = User.find_by(id: user_id)
-      refuse!("The #{label} to add could not be found.") unless user
+      refuse!(:"add_not_found.#{label}") unless user
       volunteer_task_joins.create!(user: user, user_type: staff ? user.role.capitalize : "Volunteer", active: true)
     end
   end
@@ -96,19 +96,19 @@ class VolunteerTask < ApplicationRecord
   # else does.
   def remove_join(user_id, label, by:)
     joins = volunteer_task_joins.joined.where(user_id: user_id).to_a
-    refuse!("The #{label} to remove is not on this task.") if joins.empty?
+    refuse!(:"remove_not_on_task.#{label}") if joins.empty?
     ending = by.id == user_id.to_i ? :left : :removed
     joins.each { |join| join.finish!(ending, by: by) }
   rescue VolunteerTaskJoin::NotJoined
     # Someone else ended a join between the lookup and the change: the user is no longer on the task.
-    refuse!("The #{label} to remove is not on this task.")
+    refuse!(:"remove_not_on_task.#{label}")
   end
 
   # The task's creator can only leave when another joined user can take over as creator.
   def remove_staff(user_id, label = "staff", by:)
     if self.user_id == user_id.to_i
       successor = volunteer_task_joins.joined.where.not(user_id: user_id).order(:id).first
-      refuse!("There must be at least one staff member assigned to this task.") unless successor
+      refuse!(:no_successor) unless successor
       update!(user_id: successor.user_id)
     end
     remove_join(user_id, label, by: by)
@@ -117,7 +117,7 @@ class VolunteerTask < ApplicationRecord
   def refuse_deletion_while_awarded
     return unless awarded?
 
-    errors.add(:base, "This task has approved hours or CC awarded and cannot be deleted.")
+    errors.add(:base, :awarded_cannot_delete)
     throw :abort
   end
 

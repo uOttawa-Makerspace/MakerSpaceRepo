@@ -354,9 +354,9 @@ class User < ApplicationRecord
     with_lock do
       request = user_booking_approvals.build(date: Time.current, comments: comments, identity: identity)
       if booking_approval?
-        request.errors.add(:base, "You already have booking access.")
+        request.errors.add(:base, :already_has_access)
       elsif booking_access_pending?
-        request.errors.add(:base, "You have already requested access.")
+        request.errors.add(:base, :already_requested)
       else
         request.save
       end
