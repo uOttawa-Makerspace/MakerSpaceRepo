@@ -204,6 +204,7 @@ en:
       locker_not_deleted: "Locker %{specifier} was not deleted:"
       bulk_not_deleted: "Not deleted, they have rental history (mark them not available instead): %{lockers}"
       range_not_created: "Some lockers were not created (the number may already exist): %{lockers}"
+      bulk_none_selected: "Select at least one locker."
       bulk_not_updated: "Some lockers were not updated: %{lockers}"
       size_not_saved: "The locker size could not be saved:"
       size_not_deleted: "The locker size could not be deleted:"

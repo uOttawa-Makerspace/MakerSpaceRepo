@@ -204,6 +204,7 @@ fr:
       locker_not_deleted: "Le casier %{specifier} n'a pas été supprimé :"
       bulk_not_deleted: "Non supprimés, ils ont un historique de location (marquez-les plutôt comme non disponibles) : %{lockers}"
       range_not_created: "Certains casiers n'ont pas été créés (le numéro existe peut-être déjà) : %{lockers}"
+      bulk_none_selected: "Sélectionnez au moins un casier."
       bulk_not_updated: "Certains casiers n'ont pas été mis à jour : %{lockers}"
       size_not_saved: "La taille de casier n'a pas pu être enregistrée :"
       size_not_deleted: "La taille de casier n'a pas pu être supprimée :"
