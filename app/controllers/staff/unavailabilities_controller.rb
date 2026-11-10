@@ -10,8 +10,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
     @staff_unavailability = StaffUnavailability.new(
       title: staff_params[:title].presence || default_title,
       description: ActionController::Base.helpers.strip_tags(staff_params[:description].to_s),
-      start_time: Time.parse(staff_params[:utc_start_time]).utc,
-      end_time: Time.parse(staff_params[:utc_end_time]).utc,
+      start_time: parse_time(staff_params[:utc_start_time]),
+      end_time: parse_time(staff_params[:utc_end_time]),
       recurrence_rule: staff_params[:recurrence_rule].presence,
       user_id: target_user.id
     )

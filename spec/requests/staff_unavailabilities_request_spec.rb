@@ -99,11 +99,10 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(flash[:alert]).to eq("Failed to create unavailability: Recurrence rule must include days of the week when using weekly frequency")
       end
 
-      # missing times raise TypeError from Time.parse(nil) (500) instead of a validation alert.
-      it "500s when the times are missing" do
-        post staff_unavailabilities_path, params: { staff_unavailability: { title: "x" } }
-        expect(response).to have_http_status(:internal_server_error)
-        expect(StaffUnavailability.count).to eq(0)
+      it "alerts with the validation message when the times are missing" do
+        expect { post staff_unavailabilities_path, params: { staff_unavailability: { title: "x" } } }.not_to change(StaffUnavailability, :count)
+        expect(response).to redirect_to(staff_unavailabilities_path)
+        expect(flash[:alert]).to eq("Failed to create unavailability: Start time This field is required. and End time This field is required.")
       end
 
       it "redirects home with the ParameterMissing message without the nested hash" do
