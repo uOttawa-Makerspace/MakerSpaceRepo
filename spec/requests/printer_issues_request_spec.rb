@@ -3,7 +3,7 @@ require "rails_helper"
 # Chunk 15: PrinterIssuesController: reporting and resolving printer issues.
 # StaffAreaController gate (guest -> login, regular/volunteer -> root alert);
 # everything inside is open to any staff member except destroy (admin only,
-# silent redirect for staff).
+# staff are redirected with an alert).
 RSpec.describe "Printer issues", type: :request do
   include ActiveJob::TestHelper
 
@@ -184,11 +184,10 @@ RSpec.describe "Printer issues", type: :request do
     end
 
     describe "DELETE destroy" do
-      # staff DELETE silently redirects to the list without a flash; only admins delete
-      it "silently ignores staff" do
+      it "refuses staff with an alert and deletes nothing" do
         expect { delete printer_issue_path(issue) }.not_to change(PrinterIssue, :count)
         expect(response).to redirect_to(printer_issues_path)
-        expect(flash[:alert]).to be_nil
+        expect(flash[:alert]).to eq("Only admins can delete printer issues.")
       end
     end
 

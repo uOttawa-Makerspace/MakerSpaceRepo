@@ -240,6 +240,7 @@ en:
       issue_not_created: "The printer issue was not created."
       issue_not_updated: "The printer issue was not updated."
       issue_not_deleted: "The printer issue was not deleted."
+      issue_delete_admin_only: "Only admins can delete printer issues."
       printer_not_removed: "The printer was not removed."
       notification_not_sent: "The printer issue was created, but the maintenance notification email could not be queued, so it was not sent."
     help:
