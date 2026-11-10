@@ -36,6 +36,23 @@ RSpec.describe User do
     end
   end
 
+  describe ".promote_to_staff!" do
+    it "promotes a regular user and leaves staff and admin roles alone" do
+      regular = create(:user, :regular_user)
+      admin = create(:user, :admin)
+      staff = create(:user, :staff)
+      User.promote_to_staff!([regular.id, admin.id, staff.id])
+      expect([regular, admin, staff].map { |u| u.reload.role }).to eq(%w[staff admin staff])
+    end
+
+    it "leaves a user who became admin since they were loaded as an admin" do
+      stale = create(:user, :regular_user)
+      User.where(id: stale.id).update_all(role: "admin")
+      expect { User.promote_to_staff!([stale.id]) }.not_to raise_error
+      expect(stale.reload.role).to eq("admin")
+    end
+  end
+
   describe ".delete_account! actor check" do
     it "refuses when the actor was demoted after the actor was loaded" do
       actor = create(:user, :admin)

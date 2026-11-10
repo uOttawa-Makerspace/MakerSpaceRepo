@@ -628,6 +628,19 @@ class User < ApplicationRecord
     end
   end
 
+  # Promotes users below staff to staff, re-reading each role once the rows are locked, so a user
+  # made staff or admin in the meantime is left as they are. Takes the locks of change_roles! and
+  # never removes an admin, so it needs no last-admin check.
+  def self.promote_to_staff!(user_ids, actor: nil)
+    user_ids = Array(user_ids)
+    guarding_last_admin!(user_ids, only_if: -> { false }) do
+      where(id: user_ids).where.not(role: %w[staff admin]).order(:id).each do |user|
+        Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to 'staff' by Admin##{actor&.id}"
+        user.change_role!("staff")
+      end
+    end
+  end
+
   # ============================================
   # Class Methods
   # ============================================

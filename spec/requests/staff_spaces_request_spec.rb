@@ -42,6 +42,14 @@ RSpec.describe "StaffSpaces", type: :request do
         expect(StaffSpace.where(user: target).pluck(:color)).to all(eq("#e6194b")) # first free colour per space
       end
 
+      it "leaves an admin in the list as an admin without an error" do
+        other = create(:user, :admin)
+        post bulk_add_users_staff_spaces_path, params: params.merge(user_ids: [other.username, target.username])
+        expect(response).to redirect_to(root_path)
+        expect(other.reload.role).to eq("admin")
+        expect(target.reload.role).to eq("staff")
+      end
+
       it "promotes a user whose stored record no longer passes validation" do
         target.update_column(:name, "")
         post bulk_add_users_staff_spaces_path, params: params
