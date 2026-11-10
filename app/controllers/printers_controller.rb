@@ -17,10 +17,9 @@ class PrintersController < StaffAreaController
   end
 
   def update
-    if Printer.find_by(id: params[:id]).update(printer_params)
-      flash[
-        :notice
-      ] = "Printer #{Printer.find_by(id: params[:id]).name} updated"
+    printer = Printer.find(params[:id])
+    if printer.update(printer_params)
+      flash[:notice] = "Printer #{printer.name} updated"
     else
       flash[:alert] = "Failed to update printer"
     end

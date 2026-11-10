@@ -154,11 +154,10 @@ RSpec.describe "Printers", type: :request do
       expect(um2p.reload.number).to eq("01")
     end
 
-    # update uses find_by(...).update so an unknown printer id raises NoMethodError (500) instead of 404
-    it "500s for an unknown printer id" do
+    it "answers not found for an unknown printer id" do
       sign_in_as(:staff)
       patch printer_path(0), params: { printer: { maintenance: true } }
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
   end
 

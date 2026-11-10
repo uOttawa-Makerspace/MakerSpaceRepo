@@ -79,10 +79,9 @@ RSpec.describe "Printer issues", type: :request do
         .to include(controller: "printer_issues", action: "show", id: "history")
     end
 
-    # show for an unknown id uses find_by and renders the template with a nil @issue (500) instead of 404
-    it "500s showing an unknown issue" do
+    it "answers not found showing an unknown issue" do
       get printer_issue_path(0)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
 
     describe "POST create" do

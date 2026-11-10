@@ -35,7 +35,7 @@ class PrinterIssuesController < StaffAreaController
   end
 
   def show
-    @issue = PrinterIssue.find_by(id: params[:id])
+    @issue = PrinterIssue.find(params[:id])
   end
 
   def new
