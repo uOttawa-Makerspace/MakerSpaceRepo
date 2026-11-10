@@ -67,7 +67,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       expect(fetch[:body]["variables"]).to eq("id" => draft_id)
     end
 
-    it "when Shopify answers userErrors over HTTP: the pending row is destroyed and the user is redirected with an alert" do
+    it "when Shopify answers userErrors over HTTP: the pending row is kept without a draft and the user is redirected with an alert" do
       stub_shopify_graphql("mutation draftOrderCreate", { "draftOrderCreate" => { "draftOrder" => nil,
                            "userErrors" => [{ "field" => ["input"], "message" => "boom" }] } })
       shop_log_in!(user)
@@ -75,7 +75,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       expect(response).to redirect_to(your_memberships_memberships_path)
       expect(flash[:alert]).to eq(I18n.t("errors.memberships.checkout_failed",
                                          reference: response.headers["X-Request-Id"].first(8)))
-      expect(Membership.count).to eq(0)
+      expect(Membership.pluck(:status, :shopify_draft_order_id)).to eq([["pending", nil]])
     end
   end
 

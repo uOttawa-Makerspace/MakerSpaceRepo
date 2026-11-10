@@ -142,12 +142,62 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(m.end_date).to be_within(1.second).of(prior_end + 120.days)
       end
 
-      it "when Shopify fails: destroys the pending row and redirects to the user's memberships with an alert" do
+      it "when Shopify fails: keeps the pending row without a draft and redirects to the user's memberships with an alert" do
         admin_client.user_errors = [{ "message" => "boom" }]
         expect { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
-          .not_to change(Membership, :count)
+          .to change { user.memberships.pending.count }.by(1)
+        expect(user.memberships.pending.last.shopify_draft_order_id).to be_nil
         expect(response).to redirect_to(your_memberships_memberships_path)
         expect(flash[:alert]).to include("could not be set up because the payment page could not be created", "quote reference")
+      end
+
+      it "a second purchase of the same tier reuses the pending membership and its draft order" do
+        2.times { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
+        expect(user.memberships.count).to eq(1)
+        expect(response.location).to eq("https://shop.example.test/invoices/abc")
+        expect(admin_client.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
+      end
+
+      it "retries the draft order for the pending membership after a Shopify failure, without a second row" do
+        admin_client.user_errors = [{ "message" => "boom" }]
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        admin_client.user_errors = []
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        expect(user.memberships.count).to eq(1)
+        expect(user.memberships.first.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(response.location).to eq("https://shop.example.test/invoices/abc")
+      end
+
+      it "keeps one pending membership per tier and per user" do
+        other_tier = create(:membership_tier, title_en: "1 Day Membership", duration: 1, internal_price: 5, external_price: 10)
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        post memberships_path, params: { membership: { membership_tier_id: other_tier.id } }
+        expect(user.memberships.pending.pluck(:membership_tier_id)).to contain_exactly(tier.id, other_tier.id)
+        expect(other.memberships.count).to eq(0)
+      end
+
+      it "gives a reused pending membership dates from the day it is bought again" do
+        travel_to(Time.utc(2026, 3, 1, 12)) { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
+        travel_to(Time.utc(2026, 3, 10, 12)) do
+          shop_log_in!(user)
+          post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        end
+        membership = user.memberships.first
+        expect(membership.start_date).to eq(Time.utc(2026, 3, 10, 12))
+        expect(membership.end_date).to eq(Time.zone.at(Time.utc(2026, 3, 10, 12)) + 120.days)
+      end
+
+      it "marks a pending membership whose draft order no longer exists failed and starts a new one" do
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        old = user.memberships.first
+        admin_client.missing_ids << old.shopify_draft_order_id
+        admin_client.draft_id = "gid://shopify/DraftOrder/9002"
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        expect(old.reload.status).to eq("failed")
+        expect(old.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        fresh = user.memberships.pending.sole
+        expect(fresh.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
+        expect(response.location).to eq("https://shop.example.test/invoices/abc")
       end
 
       it "a faculty tier creates no membership, makes no Shopify call and redirects home with a notice" do
