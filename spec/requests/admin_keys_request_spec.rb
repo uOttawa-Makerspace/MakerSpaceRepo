@@ -283,12 +283,11 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.get_latest_key_transaction).to have_attributes(return_date: Date.current, deposit_return_date: Date.current)
     end
 
-    # revoke stamps return_date with Date.today (server/UTC date), so after 20:00 Eastern the key is returned "tomorrow"
-    it "stamps the UTC date as the return date when revoked in the Eastern evening" do
-      travel_to(Time.zone.now.change(hour: 21))
+    it "stamps the app-zone date as the return date when revoked in the Eastern evening" do
+      travel_to(Time.find_zone!("America/Toronto").local(2026, 3, 10, 22, 30))
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
       patch admin_key_revoke_key_path(key)
-      expect(key.get_latest_key_transaction.return_date).to eq(Date.current + 1)
+      expect(key.get_latest_key_transaction.return_date).to eq(Date.new(2026, 3, 10))
     end
 
     it "revokes with a non-zero deposit: deposit stays outstanding unless a return date is given" do
@@ -326,7 +325,6 @@ RSpec.describe "Admin keys", type: :request do
       expect(KeyTransaction.where(key: key).not_returned).to be_empty
     end
 
-    # assign_key does User.find(params[:key][:user_id]) so a missing/unknown user is a RecordNotFound (404) instead of a flash alert
     it "404s assigning to an unknown user" do
       patch admin_key_assign_key_path(key), params: { key: { user_id: 0 }, deposit_amount: 1 }
       expect(response).to have_http_status(:not_found)
