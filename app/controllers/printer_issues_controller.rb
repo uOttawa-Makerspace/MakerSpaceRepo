@@ -1,6 +1,8 @@
 class PrinterIssuesController < StaffAreaController
   layout "staff_area"
 
+  before_action :ensure_admin, only: :update_notification_email
+
   def index
     @issues = PrinterIssue.all.order(:printer_id)
     @issues_summary =
@@ -128,6 +130,12 @@ class PrinterIssuesController < StaffAreaController
   end
 
   private
+
+  def ensure_admin
+    return if current_user.admin?
+
+    redirect_to printer_issues_path, alert: "Only admins can change the notification email."
+  end
 
   def printer_issue_params
     params.require(:printer_issue).permit(

@@ -2,8 +2,8 @@ require "rails_helper"
 
 # Chunk 15: PrinterIssuesController: reporting and resolving printer issues.
 # StaffAreaController gate (guest -> login, regular/volunteer -> root alert);
-# everything inside is open to any staff member except destroy (admin only,
-# silent redirect for staff).
+# everything inside is open to any staff member except destroy and the
+# notification email (admin only).
 RSpec.describe "Printer issues", type: :request do
   include ActiveJob::TestHelper
 
@@ -194,23 +194,43 @@ RSpec.describe "Printer issues", type: :request do
     end
 
     describe "PATCH update_notification_email" do
-      it "stores a valid address, clears a blank one and rejects garbage" do
-        patch update_notification_email_printer_issues_path, params: { notification_email: " maint@example.com " }
+      it "does not let staff change the address" do
+        Setting.maintenance_email = "kept@example.com"
+        patch update_notification_email_printer_issues_path, params: { notification_email: "other@example.com" }
         expect(response).to redirect_to(printer_issues_path)
-        expect(flash[:notice]).to eq("Notification email updated to maint@example.com.")
-        expect(Setting.maintenance_email).to eq("maint@example.com")
-        patch update_notification_email_printer_issues_path, params: { notification_email: "nope" }
-        expect(flash[:alert]).to eq("Invalid email address.")
-        expect(Setting.maintenance_email).to eq("maint@example.com")
-        patch update_notification_email_printer_issues_path, params: { notification_email: "" }
-        expect(flash[:notice]).to eq("Notification email removed.")
-        expect(Setting.maintenance_email).to be_blank
+        expect(flash[:alert]).to eq("Only admins can change the notification email.")
+        expect(Setting.maintenance_email).to eq("kept@example.com")
+      end
+
+      it "shows staff the address without the edit form" do
+        Setting.maintenance_email = "kept@example.com"
+        get printer_issues_path
+        expect(response.body).to include("kept@example.com")
+        expect(response.body).not_to include("name=\"notification_email\"")
       end
     end
   end
 
   describe "as admin" do
     before { sign_in_as(:admin) }
+
+    it "stores a valid address, clears a blank one and rejects garbage" do
+      patch update_notification_email_printer_issues_path, params: { notification_email: " maint@example.com " }
+      expect(response).to redirect_to(printer_issues_path)
+      expect(flash[:notice]).to eq("Notification email updated to maint@example.com.")
+      expect(Setting.maintenance_email).to eq("maint@example.com")
+      patch update_notification_email_printer_issues_path, params: { notification_email: "nope" }
+      expect(flash[:alert]).to eq("Invalid email address.")
+      expect(Setting.maintenance_email).to eq("maint@example.com")
+      patch update_notification_email_printer_issues_path, params: { notification_email: "" }
+      expect(flash[:notice]).to eq("Notification email removed.")
+      expect(Setting.maintenance_email).to be_blank
+    end
+
+    it "shows admins the edit form" do
+      get printer_issues_path
+      expect(response.body).to include("name=\"notification_email\"")
+    end
 
     it "destroys an issue with a 303 to the list" do
       expect { delete printer_issue_path(issue) }.to change(PrinterIssue, :count).by(-1)
