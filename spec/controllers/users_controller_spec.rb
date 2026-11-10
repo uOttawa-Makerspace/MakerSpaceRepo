@@ -44,6 +44,14 @@ RSpec.describe UsersController, type: :controller do
         expect(ActionMailer::Base.deliveries.first.to.first).to eq(user.email)
       end
 
+      it "confirms and welcomes a user whose stored record no longer passes validation" do
+        user = create(:user, :regular_user_not_confirmed)
+        user.update_column(:name, "")
+        post :apply_confirmation, params: { token: user.generate_token_for(:email_confirmation) }
+        expect(User.find(user.id).confirmed?).to be(true)
+        expect(ActionMailer::Base.deliveries.map(&:to).flatten).to eq([user.email])
+      end
+
       it "should not confirm the user" do
         user = create(:user, :regular_user_not_confirmed)
         post :apply_confirmation, params: { token: "abc" }

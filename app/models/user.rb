@@ -965,6 +965,14 @@ class User < ApplicationRecord
     self.role = new_role
     save!(validate: false)
     self
+  # Marks the email confirmed. Skips validations, like change_role!, so a row that no longer passes
+  # them (older data) is still confirmed.
+  def confirm_email!
+    self.confirmed = true
+    save!(validate: false)
+    self
+  end
+
   end
 
   # Also revokes every session and JWT issued so far (SQL increment, like admin_lock!,
