@@ -179,8 +179,10 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
 
     it "marks the referenced pending membership paid (dates untouched)" do
       before_dates = pending.slice(:start_date, :end_date)
-      hook(membership_payload(pending.id))
+      order = hook(membership_payload(pending.id))
       pending.reload
+      expect(order.reload.last_error).to be_nil
+      expect(ProcessedOrder.refused).to be_empty
       expect(pending.status).to eq("paid")
       expect(pending.slice(:start_date, :end_date)).to eq(before_dates)
       expect(Membership.count).to eq(1)
@@ -220,6 +222,8 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         order = hook(membership_payload(pending.id, id: 7010))
         expect(order).to have_attributes(status: "applied")
         expect(pending.reload.status).to eq(status)
+        expect(order.reload.last_error).to eq("refused: membership #{pending.id} is #{status}, not pending")
+        expect(ProcessedOrder.refused).to eq([order])
         expect(reports.map { |e, _| e.class }).to eq([ShopOrderApplier::MembershipNotPending])
         expect(reports.first.last[:context]).to include(shopify_order_id: order.provider_ref)
       end
@@ -229,7 +233,8 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       hook(membership_payload(pending.id, id: 7011))
       paid_attributes = pending.reload.attributes
       reports.clear
-      hook(membership_payload(pending.id, id: 7012))
+      second = hook(membership_payload(pending.id, id: 7012))
+      expect(second.reload.last_error).to eq("refused: membership #{pending.id} is paid, not pending")
       expect(pending.reload.attributes).to eq(paid_attributes)
       expect(reports.map { |e, _| e.class }).to eq([ShopOrderApplier::MembershipNotPending])
     end

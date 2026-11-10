@@ -89,8 +89,9 @@ class ShopOrderApplier
       order = ProcessedOrder.lock.find(@record.id)
       next unless order.status == "received"
 
+      @refusals = []
       apply(plan)
-      order.update!(status: "applied", applied_at: Time.current, last_error: nil, leased_until: nil)
+      order.update!(status: "applied", applied_at: Time.current, last_error: refusal_note, leased_until: nil)
       @applied_here = true
     end
   rescue StandardError => e
@@ -272,6 +273,11 @@ class ShopOrderApplier
     apply_membership_by_email(plan)
   end
 
+  # What an applied order records in last_error when part of it was refused (see ProcessedOrder.refused); nil if none.
+  def refusal_note
+    ProcessedOrder::REFUSED_PREFIX + @refusals.join("; ").first(200 - ProcessedOrder::REFUSED_PREFIX.size) if @refusals.any?
+  end
+
   # Only a pending membership becomes paid. One that is already paid, revoked or failed is left as it is and
   # reported with the order, so a late or second order cannot reactivate a membership staff took away.
   def apply_referenced_membership(plan)
@@ -279,10 +285,15 @@ class ShopOrderApplier
     if membership.nil?
       report_unresolved(plan, UnknownMembership, "membership", "references unknown membership #{plan.membership_ref}")
     elsif !membership.mark_paid_if_pending
-      report_unresolved(plan, MembershipNotPending, "membership",
-                        "references membership #{membership.id} that is #{membership.reload.status}, not pending",
-                        membership_id: membership.id)
+      refuse_membership(plan, membership)
     end
+  end
+
+  # Records the refusal on the order (see ProcessedOrder.refused) and reports it.
+  def refuse_membership(plan, membership)
+    detail = "membership #{membership.id} is #{membership.reload.status}, not pending"
+    @refusals << detail
+    report_unresolved(plan, MembershipNotPending, "membership", "references #{detail}", membership_id: membership.id)
   end
 
   # Fallback when the order carries no membership reference: the customer's email names the user (users.email is
