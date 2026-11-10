@@ -4,6 +4,8 @@ require "uri"
 class ProficientProject < ApplicationRecord
   include Filterable
   has_and_belongs_to_many :users
+  # Each session holds the certification it awarded, so a project with sessions cannot be deleted.
+  has_many :proficient_project_sessions, dependent: :restrict_with_error
   belongs_to :training, optional: true
   has_many :photos, dependent: :destroy
   has_many :repo_files, dependent: :destroy
@@ -21,7 +23,6 @@ class ProficientProject < ApplicationRecord
   has_many :order_items, dependent: :destroy
   has_many :training_requirements, dependent: :destroy
   has_many :project_kits, dependent: :destroy
-  has_many :proficient_project_sessions, dependent: :destroy
   belongs_to :drop_off_location, optional: true
 
   # The CC price is a whole number, never negative (a negative cc made checkout fail; DB CHECK

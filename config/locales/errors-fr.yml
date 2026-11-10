@@ -73,6 +73,8 @@ fr:
       training_sessions:
         not_updated: "La séance de formation n'a pas été modifiée."
         not_deleted: "La séance de formation n'a pas été supprimée."
+      trainings:
+        not_deleted: "La formation n'a pas été supprimée."
       certifications:
         not_updated: "La certification n'a pas été modifiée."
         not_deleted: "La certification n'a pas été supprimée."
@@ -177,6 +179,7 @@ fr:
       projects:
         create_invalid: "Le projet n'a pas pu être créé :"
         update_invalid: "Les modifications n'ont pas pu être enregistrées :"
+        not_deleted: "Le projet de compétence n'a pas été supprimé."
         photos_not_read_on_create: "Le projet n'a pas été créé, car ses photos n'ont pas pu être lues. Vérifiez qu'il s'agit de fichiers image valides et réessayez."
         photos_not_read_on_update: "Les photos n'ont pas pu être lues et n'ont donc pas été ajoutées. Vos autres modifications ont été enregistrées. Vérifiez qu'il s'agit de fichiers image valides et réessayez."
         files_not_pdf: "Assurez-vous de ne téléverser que des PDF pour les fichiers du projet"

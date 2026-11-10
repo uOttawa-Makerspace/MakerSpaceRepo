@@ -32,11 +32,15 @@ RSpec.describe TrainingSession, type: :model do
     context "has_many" do
       it { should have_many(:certifications) }
       it { should have_many(:exams) }
-      it "dependent destroy: should destroy certifications if destroyed" do
+      it { should have_many(:certifications).dependent(:restrict_with_error) }
+      it "refuses to be deleted while it has certifications, keeping them" do
         training_session = create(:training_session_with_certifications)
-        expect { training_session.destroy }.to change {
-          Certification.count
-        }.by(-training_session.certifications.count)
+        expect { training_session.destroy }.not_to change { [TrainingSession.count, Certification.count] }
+        expect(training_session.errors.full_messages.to_sentence).to include("certifications")
+      end
+      it "is deleted with its exams when it has no certifications" do
+        training_session = create(:training_session_with_exams)
+        expect { training_session.destroy }.to change(TrainingSession, :count).by(-1)
       end
       it "dependent destroy: should destroy exams if destroyed" do
         training_session = create(:training_session_with_exams)

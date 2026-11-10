@@ -32,6 +32,16 @@ RSpec.describe ProficientProject, type: :model do
       it { should have_many(:cc_moneys) }
       it { should have_many(:order_items) }
       it { should have_many(:project_kits) }
+      it { should have_many(:proficient_project_sessions).dependent(:restrict_with_error) }
+      it "refuses to be deleted while sessions hold certifications, keeping everything" do
+        record = create(:proficient_project_session)
+        project = record.proficient_project
+        cert = record.certification
+
+        expect { project.destroy }.not_to change { [ProficientProject.count, ProficientProjectSession.count, Certification.unscoped.count] }
+        expect(project.errors.full_messages.to_sentence).to include("proficient project sessions")
+        expect(Certification.unscoped.exists?(cert.id)).to be(true)
+      end
       it "dependent destroy: should destroy project kits if destroyed" do
         proficient_project = create(:proficient_project_with_project_kits)
         expect { proficient_project.destroy }.to change { ProjectKit.count }.by(

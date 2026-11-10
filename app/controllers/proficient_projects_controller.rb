@@ -118,13 +118,18 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def destroy
-    @proficient_project.destroy
+    deleted = @proficient_project.destroy
     respond_to do |format|
       format.html do
-        redirect_to proficient_projects_path,
-                    notice: "Proficient Project has been successfully deleted."
+        if deleted
+          redirect_to proficient_projects_path,
+                      notice: "Proficient Project has been successfully deleted."
+        else
+          redirect_to proficient_project_path(@proficient_project),
+                      alert: validation_message(@proficient_project, "errors.shop.projects.not_deleted")
+        end
       end
-      format.json { head :no_content }
+      format.json { deleted ? head(:no_content) : head(:unprocessable_content) }
     end
   end
 

@@ -5,7 +5,7 @@ class TrainingSession < ApplicationRecord
   # The instructor, including one whose account was soft-deleted: past sessions keep their instructor.
   belongs_to :user, -> { including_deleted }, optional: true
   belongs_to :space, optional: true
-  has_many :certifications, dependent: :destroy
+  has_many :certifications, dependent: :restrict_with_error
   has_many :exams, dependent: :destroy
   # This used to be a has_many
   #has_many :users, through: :training_sessions_users, uniq: true
