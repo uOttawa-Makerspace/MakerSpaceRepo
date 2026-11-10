@@ -112,7 +112,7 @@ if (document.getElementById("revoke_user_select")) {
 }
 
 var download = document.querySelector("#add-to-linkedin");
-download.addEventListener("click", downloadSVGAsPNG, false);
+download?.addEventListener("click", downloadSVGAsPNG, false);
 
 function downloadSVGAsText() {
   const svg = document.querySelector("svg");
@@ -158,9 +158,10 @@ function downloadSVGAsPNG(e) {
 }
 
 const downloadSVG = document.querySelector("#downloadSVG");
-downloadSVG.addEventListener("click", downloadSVGAsText);
+downloadSVG?.addEventListener("click", downloadSVGAsText);
 const downloadPNG = document.querySelector("#downloadPNG");
-downloadPNG.addEventListener("click", downloadSVGAsPNG);
+downloadPNG?.addEventListener("click", downloadSVGAsPNG);
 
-new DataTable("#badge-table");
-new DataTable("#awarded-badge-table");
+for (const table of ["#badge-table", "#awarded-badge-table"]) {
+  if (document.querySelector(table)) new DataTable(table);
+}
