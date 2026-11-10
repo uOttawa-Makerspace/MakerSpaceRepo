@@ -6,7 +6,10 @@
     <li>
       <div class="d-flex justify-content-between">
         <p><%= jos.job_status.name %>
-          <% if actor && jos.reason.blank? %>(By: <%= actor %>)<% end %>
+          <% if actor && jos.reason.blank? %>
+            <% if jos.acted_for_customer? %>(<%= t(jos.job_status == JobStatus.declined ? "job_orders.timeline.declined_by_html" : "job_orders.timeline.approved_by_html", name: actor) %>)
+            <% else %>(By: <%= actor %>)<% end %>
+          <% end %>
         </p>
         <p class="float-right"><%= jos.created_at.strftime('%b %e %Y at %H:%M') %></p>
       </div>
