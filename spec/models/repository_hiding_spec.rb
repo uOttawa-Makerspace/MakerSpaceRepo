@@ -69,4 +69,15 @@ RSpec.describe Repository, "hiding and restoring" do
       expect(repo.restore!).to be(true)
     end
   end
+
+  describe ".hides_blob?" do
+    it "is true for the photo of a hidden repository, false once restored or for other files" do
+      blob = repo.photos.first.image.blob
+      expect(Repository.hides_blob?(blob)).to be(false)
+      repo.hide!
+      expect(Repository.hides_blob?(blob)).to be(true)
+      repo.restore!
+      expect(Repository.hides_blob?(blob)).to be(false)
+    end
+  end
 end

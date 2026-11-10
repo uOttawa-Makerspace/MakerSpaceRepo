@@ -31,6 +31,25 @@ module Repository::Hideable
     def hidden
       including_hidden.where(deleted: true).order(updated_at: :desc, id: :desc)
     end
+
+    # True when a stored file belongs only to hidden repositories (as a photo, a repo file or
+    # directly): it must not be served. A file that is also attached to something visible is served.
+    def hides_blob?(blob)
+      attachments = ActiveStorage::Attachment.where(blob_id: blob.id)
+      hidden_attachments = attachments.where(id: hidden_attachment_ids)
+      hidden_attachments.exists? && !attachments.where.not(id: hidden_attachments.select(:id)).exists?
+    end
+
+    private
+
+    def hidden_attachment_ids
+      hidden_ids = hidden.reorder(nil).select(:id)
+      attachments = ActiveStorage::Attachment
+      direct = attachments.where(record_type: "Repository", record_id: hidden_ids)
+      photos = attachments.where(record_type: "Photo", record_id: Photo.where(repository_id: hidden_ids).select(:id))
+      files = attachments.where(record_type: "RepoFile", record_id: RepoFile.where(repository_id: hidden_ids).select(:id))
+      direct.or(photos).or(files).select(:id)
+    end
   end
 
   # Hides the repository: its photos, files, comments, likes and makes stay as they were (and so do
