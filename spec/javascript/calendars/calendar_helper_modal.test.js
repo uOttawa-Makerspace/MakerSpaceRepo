@@ -399,6 +399,16 @@ describe("eventClick", () => {
     expect($("title").value).toBe("Lecture");
   });
 
+  it("leaves the title field empty for an entry whose stored title is null", () => {
+    eventClick(
+      fcEvent({
+        def: { title: "🚫 Wanda Worker - " },
+        props: { eventType: "unavailability", title: null, userId: 3 },
+      }),
+    );
+    expect($("title").value).toBe("");
+  });
+
   it("falls back to the label without its pencil when no stored title is sent", () => {
     eventClick(fcEvent({ def: { title: "✎ Team sync" } }));
     expect($("title").value).toBe("Team sync");

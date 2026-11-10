@@ -367,11 +367,11 @@ function defaultEnd(start, allDay) {
   return instantToWall(wallToInstant(start) + HOUR_MS);
 }
 
-// The title to edit: the stored one when the feed sends it (the calendar's own
-// label adds a mark and the staff name), otherwise the label without its pencil.
+// The title to edit: the stored one when the feed sends it (an entry with no
+// title sends null, which is an empty field), otherwise the calendar's label
+// without its pencil mark.
 function storedTitle(event) {
-  const stored = event.extendedProps.title;
-  if (typeof stored === "string") return stored;
+  if ("title" in event.extendedProps) return event.extendedProps.title ?? "";
   return event.title.replace(/✎/g, "").trim() || "";
 }
 

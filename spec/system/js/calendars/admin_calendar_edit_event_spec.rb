@@ -320,6 +320,21 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(unavail.reload.title).to eq("Lecture")
     end
 
+    it "leaves the title field empty for an unavailability without a title and does not save the label as its title", js: true, skip_bullet: true do
+      unavail.update_columns(title: nil)
+      open_admin_calendar
+      expect(page).to have_css(".fc-timegrid-event", text: "Wanda Worker", visible: :all)
+      page.all(".fc-timegrid-event", text: "Wanda Worker", visible: :all).first.click
+      expect(page).to have_css("#eventModal.show")
+      expect(find("#title", visible: :all).value).to eq("")
+      open_custom_values
+      fill_in "description", with: "Calculus tutorial"
+      click_button "Update"
+
+      eventually { unavail.reload.description == "Calculus tutorial" }
+      expect(unavail.reload.title).not_to include("🚫")
+    end
+
     it "deletes it from the modal", js: true, skip_bullet: true do
       open_admin_calendar
       open_event("Lecture")
