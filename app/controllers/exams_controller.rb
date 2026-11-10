@@ -18,10 +18,11 @@ class ExamsController < SessionsController
 
   def create_from_training
     training_session = @training_session
-    training_session.users.find_each do |user|
-      create_exam_and_exam_questions(user, training_session)
-      MsrMailer.send_exam(user, training_session).deliver_now
+    users = training_session.users.to_a
+    Exam.transaction do
+      users.each { |user| create_exam_and_exam_questions(user, training_session) }
     end
+    users.each { |user| MsrMailer.send_exam(user, training_session).deliver_later }
     redirect_to staff_dashboard_index_path(space_id: training_session.space.id)
   end
 

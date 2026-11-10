@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe ExamsController, type: :controller do
+  include ActiveJob::TestHelper
+
   let(:admin) { create(:user, :admin) }
   let(:exam) { create(:exam) }
 
@@ -111,10 +113,12 @@ RSpec.describe ExamsController, type: :controller do
           create(:training_session_with_users, training: training)
         n_users = training_session.users.count
         expect do
-          post :create_from_training,
-              params: {
-                training_session_id: training_session.id
-              }
+          perform_enqueued_jobs do
+            post :create_from_training,
+                params: {
+                  training_session_id: training_session.id
+                }
+          end
         end.to change(Exam, :count).by(n_users).and change(
                 ExamQuestion,
                 :count

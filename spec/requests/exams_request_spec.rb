@@ -699,6 +699,25 @@ RSpec.describe "Exams", type: :request do
       expect(exam.expired_at).to be_within(1.minute).of(DateTime.now + 3.days)
     end
 
+    it "creates every exam even when a mail cannot be delivered, and mails after the exams exist" do
+      second_student
+      allow_any_instance_of(ActionMailer::MessageDelivery).to receive(:deliver_now).and_raise(Net::SMTPFatalError)
+      expect { create_from_training }.to change(Exam, :count).by(2)
+      expect(response).to redirect_to(staff_dashboard_index_path(space_id: session_record.space.id))
+    end
+
+    it "creates no exam for anyone when one of them cannot be created" do
+      second_student
+      calls = 0
+      allow(ExamQuestion).to receive(:create_exam_questions).and_wrap_original do |original, *args|
+        calls += 1
+        raise ActiveRecord::StatementInvalid, "boom" if calls == 2
+        original.call(*args)
+      end
+      expect { create_from_training }.not_to change(Exam, :count)
+      expect(deliveries).to be_empty
+    end
+
     it "only draws questions of the session's level and trainings" do
       other_level = create(:question, level: "Advanced")
       fixture[:training].questions << other_level
