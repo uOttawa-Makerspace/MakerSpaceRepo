@@ -274,16 +274,17 @@ class RepositoriesController < SessionsController
 
     if member.nil?
       flash[:alert] = "Couldn't find user, please try again."
+    elsif !repository.users.include?(member)
+      flash[:alert] = "This user is not a member of this repository."
     elsif repository.users.length == 1
       flash[
         :alert
       ] = "You cannot remove the last person in this repository. Please go to your profile page if you want to delete this repository."
     elsif member.id == repository.user_id
       flash[:alert] = "You cannot remove the current owner of this repository."
-    elsif repository.users.delete(member)
-      flash[:notice] = "This user was removed from your repository."
     else
-      flash[:alert] = I18n.t("errors.repositories.member_not_removed")
+      repository.users.delete(member)
+      flash[:notice] = "This user was removed from your repository."
     end
     redirect_to repository_path(repository.user_username, repository.slug)
   end
