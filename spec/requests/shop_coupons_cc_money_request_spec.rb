@@ -510,6 +510,17 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(unlinked.reload.user_id).to eq(user.id)
       end
 
+      it "does not take over a row another claim linked after this request read it" do
+        shop_log_in!(user)
+        stale = CcMoney.find(unlinked.id)
+        CcMoney.where(id: unlinked.id).update_all(user_id: other.id, linked: true)
+        allow(CcMoney).to receive(:find_by_id).and_return(stale)
+        expect { post redeem_cc_moneys_path, params: { token: token, user: { email: user.email } } }
+          .not_to change { CcMoney.where(user_id: user.id).count }
+        expect(flash[:alert]).to eq("The CC Money has already been added to an account")
+        expect(unlinked.reload.user_id).to eq(other.id)
+      end
+
       it "unknown email: says no account was found, points stay unlinked" do
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: token, user: { email: "nobody@example.com" } }
