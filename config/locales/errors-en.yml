@@ -188,7 +188,7 @@ en:
         approve_invalid: "The approval could not be saved, so no badge was awarded:"
         revoke_invalid: "The submission could not be revoked:"
     lockers:
-      range_invalid: "Range end must be larger than range start"
+      range_invalid: "Enter a first and last locker number, the last not smaller than the first"
       not_accepted: "New locker rentals are not currently accepted."
       renter_not_found: "User not found"
       update_failed: "Failed to update locker rental"

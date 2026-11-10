@@ -71,25 +71,25 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
       expect(Locker.find_by(specifier: "1").locker_size).to eq(size_small)
     end
 
-    it "is refused by the server for a one-number range" do
+    it "creates the one locker of a one-number range" do
       type_range("50", "50")
       expect(page).to have_css("#newRangeLockersPossible li", text: "50")
       within("#newRangeLockerModal") do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Range end must be larger than range start")
-      expect(Locker.where(specifier: "50")).to be_empty
+      expect(page).to have_text("Lockers created")
+      expect(Locker.where(specifier: "50").count).to eq(1)
     end
 
-    it "compares the range ends as text on the server, so 9 to 10 is refused" do
+    it "creates the lockers of a range such as 9 to 10" do
       type_range("9", "10")
       within("#newRangeLockerModal") do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Range end must be larger than range start")
-      expect(Locker.where(specifier: %w[9 10])).to be_empty
+      expect(page).to have_text("Lockers created")
+      expect(Locker.where(specifier: %w[9 10]).count).to eq(2)
     end
   end
 

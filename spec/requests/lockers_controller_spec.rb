@@ -178,7 +178,7 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       end
     end
 
-    it "POST create_multiple builds the range and rejects end <= start" do
+    it "POST create_multiple builds the range and rejects end < start" do
       size = create(:locker_size)
       expect do
         post create_multiple_lockers_path,
@@ -189,9 +189,40 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
 
       expect do
         post create_multiple_lockers_path,
-             params: { range_start: "310", range_end: "310", locker_size_id: size.id }
+             params: { range_start: "312", range_end: "310", locker_size_id: size.id }
       end.not_to change(Locker, :count)
-      expect(flash[:alert]).to eq("Range end must be larger than range start")
+      expect(flash[:alert]).to eq("Enter a first and last locker number, the last not smaller than the first")
+    end
+
+    it "POST create_multiple compares the range ends as numbers, so 9 to 10 is made" do
+      size = create(:locker_size)
+      expect do
+        post create_multiple_lockers_path, params: { range_start: "9", range_end: "10", locker_size_id: size.id }
+      end.to change(Locker, :count).by(2)
+      expect(Locker.pluck(:specifier)).to match_array(%w[9 10])
+    end
+
+    it "POST create_multiple makes one locker for a one-number range" do
+      size = create(:locker_size)
+      expect do
+        post create_multiple_lockers_path, params: { range_start: "50", range_end: "50", locker_size_id: size.id }
+      end.to change(Locker, :count).by(1)
+      expect(flash[:notice]).to eq("Lockers created")
+    end
+
+    it "POST create_multiple answers a range that is not numbers with a message and makes nothing" do
+      size = create(:locker_size)
+      expect do
+        post create_multiple_lockers_path, params: { range_start: "a", range_end: "", locker_size_id: size.id }
+      end.not_to change(Locker, :count)
+      expect(flash[:alert]).to start_with("Enter a first and last locker number")
+    end
+
+    it "POST create_multiple lists the skipped numbers in numeric order" do
+      size = create(:locker_size)
+      %w[2 10].each { |n| create(:locker, specifier: n) }
+      post create_multiple_lockers_path, params: { range_start: "1", range_end: "11", locker_size_id: size.id }
+      expect(flash[:alert]).to eq("Some lockers were not created (the number may already exist): 2 and 10")
     end
 
     it "PATCH bulk_edit updates or deletes the selected ids" do
@@ -256,8 +287,8 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
     end
 
     it "says the range is wrong in French" do
-      post create_multiple_lockers_path, params: { range_start: "9", range_end: "9", locker_size_id: create(:locker_size).id, locale: "fr" }
-      expect(flash[:alert]).to eq("La fin de la plage doit être supérieure au début")
+      post create_multiple_lockers_path, params: { range_start: "9", range_end: "8", locker_size_id: create(:locker_size).id, locale: "fr" }
+      expect(flash[:alert]).to eq("Indiquez un premier et un dernier numéro de casier, le dernier n'étant pas inférieur au premier")
     end
 
     it "DELETE destroy refuses a locker that someone listed as preferred (preferred_locker_id) and deletes nothing" do
