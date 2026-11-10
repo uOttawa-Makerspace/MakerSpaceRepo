@@ -30,12 +30,10 @@ class MembershipsController < SessionsController
     user = User.find(params[:user_id])
     days = params[:extend_days].to_i
 
-    if !days.positive?
-      flash[:alert] = "Please enter a valid number of days."
-    elsif Membership.grant_custom(user, days)
-      flash[:notice] = "Custom membership added for #{days} days."
+    if days.positive?
+      grant_custom_membership(user, days)
     else
-      flash[:alert] = "The same custom membership was just added for this member."
+      flash[:alert] = "Please enter a valid number of days."
     end
 
     redirect_back(fallback_location: memberships_path)
@@ -49,6 +47,13 @@ class MembershipsController < SessionsController
   end
 
   private
+
+  def grant_custom_membership(user, days)
+    Membership.grant_custom!(user, days)
+    flash[:notice] = "Custom membership added for #{days} days."
+  rescue Membership::DuplicateGrant
+    flash[:alert] = "The same custom membership was just added for this member."
+  end
 
   # Why this purchase is refused before anything is saved, or nil. Checked in this order: the
   # renewal cutoff, a hidden tier, a faculty tier.
@@ -69,8 +74,8 @@ class MembershipsController < SessionsController
   # Sends the user to the checkout of their pending membership for the tier (made now if there is none). A
   # failure leaves the pending membership in place: it is reused by the next attempt.
   def start_purchase
-    _membership, link = Membership.begin_purchase(current_user, membership_params[:membership_tier_id])
-    redirect_to link, allow_other_host: true
+    membership = Membership.begin_purchase(current_user, membership_params[:membership_tier_id])
+    redirect_to membership.checkout_link, allow_other_host: true
   rescue ActiveRecord::RecordInvalid => e
     redirect_to your_memberships_memberships_path, alert: validation_message(e.record, 'errors.memberships.not_created')
   rescue StandardError => e

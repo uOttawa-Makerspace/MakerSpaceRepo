@@ -4,7 +4,7 @@ require "rails_helper"
 
 # Real second connections with a deterministic interleaving (see rfid_link_concurrency_spec). Two admins
 # submitting the same custom grant for one member must add one membership, not two stacked ones.
-RSpec.describe Membership, ".grant_custom under concurrency", type: :model do
+RSpec.describe Membership, ".grant_custom! under concurrency", type: :model do
   self.use_transactional_tests = false
 
   let!(:member) { create(:user, :regular_user) }
@@ -45,17 +45,17 @@ RSpec.describe Membership, ".grant_custom under concurrency", type: :model do
 
     one = in_thread do
       first = Thread.current
-      Membership.grant_custom(User.find(member.id), 5)
+      Membership.grant_custom!(User.find(member.id), 5)
     end
     ThreadPause.await(paused)
-    two = in_thread { Membership.grant_custom(User.find(member.id), 5) }
+    two = in_thread { Membership.grant_custom!(User.find(member.id), 5) }
     deadline = Time.current + 5
     Thread.pass until blocked_backends.positive? || !two.alive? || Time.current > deadline
     resume << true
 
     results = [one.value, two.value]
-    expect(results.grep(StandardError)).to be_empty
-    expect(results.compact.size).to eq(1)
+    expect(results.grep(Membership::DuplicateGrant).size).to eq(1)
+    expect(results.grep(Membership).size).to eq(1)
     expect(Membership.where(user_id: member.id).count).to eq(1)
   end
 end
