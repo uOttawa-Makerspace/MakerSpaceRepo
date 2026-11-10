@@ -11,15 +11,13 @@
           <tr class="text-center">
             <th>Title</th>
             <th>Owner</th>
-            <th>Deleted</th>
             <th>Action</th>
           </tr>
         </thead>
         <% @repositories.each do |repository| %>
           <tr>
             <td><%= repository.title %></td>
-            <td><%= @owner_names.fetch(repository.user_id, 'Deleted account') %></td>
-            <td><%= l(repository.updated_at.to_date, format: :long) %></td>
+            <td><%= repository.owner&.username || 'Deleted account' %></td>
             <td>
               <%= button_to 'Restore', admin_deleted_repository_restoration_path(repository),
                             class: 'btn btn-primary', data: { confirm: 'Restore this repository?' } %>

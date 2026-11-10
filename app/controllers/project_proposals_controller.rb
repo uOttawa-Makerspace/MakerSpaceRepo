@@ -113,10 +113,7 @@ class ProjectProposalsController < SessionsController
     scope =
       ProjectProposal
         .joins(:project_joins)
-        .joins(
-          'LEFT OUTER JOIN repositories ON (project_proposals.id = repositories.project_proposal_id AND repositories.deleted = false)'
-        )
-        .where('repositories.id IS NULL')
+        .where.missing(:repositories)
         .where(approved: 1)
         .distinct
         .order(created_at: :desc)

@@ -35,6 +35,7 @@ RSpec.describe "Admin deleted repositories", type: :request do
       get admin_deleted_repositories_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Gone Soon", owner.username)
+      expect(response.body).not_to include("<th>Deleted</th>")
     end
 
     it "says so when none has been deleted" do
@@ -71,6 +72,14 @@ RSpec.describe "Admin deleted repositories", type: :request do
       post admin_deleted_repository_restoration_path(repo.id)
       expect(response).to redirect_to(admin_deleted_repositories_path)
       expect(flash[:alert]).to start_with("The repository was not restored")
+      expect(Repository.unscoped.find(repo.id).deleted).to be(true)
+    end
+
+    it "refuses when the owner has another visible repository with the same title" do
+      create(:repository, owner: owner, title: "Other").update_columns(title: "Gone Soon")
+      post admin_deleted_repository_restoration_path(repo.id)
+      expect(response).to redirect_to(admin_deleted_repositories_path)
+      expect(flash[:alert]).to include("same title")
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
     end
 

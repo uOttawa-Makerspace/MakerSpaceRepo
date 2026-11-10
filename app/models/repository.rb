@@ -3,6 +3,7 @@
 class Repository < ApplicationRecord
   include BCrypt
   include Categorizable
+  include Hideable
   require 'bcrypt'
 
   # There's two ways to reach a user, one is the user that created the repo
@@ -82,15 +83,6 @@ class Repository < ApplicationRecord
   #           inclusion: { within: CategoryOption.show_options },
   #           presence: { message: "A category is required."},
   #           length: {maximum: 5, message:"You may only select 5 categories."}
-  default_scope { where(deleted: false) }
-
-  # Every repository, hidden (deleted) ones included. Rows that belong to a repository (comments, likes,
-  # photos, files, makes) read it through this, so they keep working while it is hidden; everything
-  # else sees only visible repositories through the default scope.
-  def self.including_hidden
-    unscope(where: :deleted)
-  end
-
   scope :between_dates_picked,
         ->(start_date, end_date) do
           where('created_at BETWEEN ? AND ? ', start_date, end_date)
@@ -119,46 +111,6 @@ class Repository < ApplicationRecord
     "#{id}.#{title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')}"
   end
 
-  # Undo what creating it awarded: 25 for a repository, 15 for a make
-  before_destroy do
-    users.each { |u| u.decrement!(:reputation, creation_reputation) }
-  end
-
-  # The deleted repositories, newest first, for the admins who can bring them back.
-  def self.hidden
-    including_hidden.where(deleted: true).order(updated_at: :desc, id: :desc)
-  end
-
-  # Deleting a repository hides it: its photos, files, comments, likes and makes stay as they were
-  # (and so do the stored files), and an admin can bring it back with #restore!. The members lose
-  # the reputation creating it gave them. False, changing nothing, when it is already hidden (a
-  # repeated or simultaneous request). The cached zip is dropped once the transaction commits.
-  def hide!
-    transaction do
-      lock!
-      next false if deleted?
-
-      users.each { |u| u.decrement!(:reputation, creation_reputation) }
-      update_columns(deleted: true, updated_at: Time.current)
-      ActiveRecord.after_all_transactions_commit { clear_zip_cache }
-      true
-    end
-  end
-
-  # Brings a hidden repository back and gives its members the reputation again. False, changing
-  # nothing, when it is not hidden or its owner's account is deleted (restoring that account brings
-  # its repositories back).
-  def restore!
-    transaction do
-      lock!
-      next false unless deleted? && User.exists?(user_id)
-
-      users.each { |u| u.increment!(:reputation, creation_reputation) }
-      update_columns(deleted: false, updated_at: Time.current)
-      true
-    end
-  end
-
   def thumbnail_variant(variant)
     return unless photos.any?
     
@@ -168,11 +120,6 @@ class Repository < ApplicationRecord
       photos.first.image
     end
   end
-
-  def creation_reputation
-    make_id.present? ? 15 : 25
-  end
-  private :creation_reputation
 
   def private?
     share_type.eql?('private')

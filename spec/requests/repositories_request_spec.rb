@@ -2,8 +2,6 @@
 
 require "rails_helper"
 
-RSpec::Matchers.define_negated_matcher :not_change, :change
-
 # Chunk 16: RepositoriesController (HTTP contract).
 #
 # Gates: `signed_in` for everything except show/download_files; set_repository

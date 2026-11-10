@@ -45,41 +45,6 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(child.reload.parent).to eq(repo)
     end
 
-    describe "#hide! and #restore!" do
-      it "hides the repository, takes the creation reputation back once and keeps the rows" do
-        owner.update!(reputation: 100)
-        create(:comment, repository: repo)
-        expect(repo.hide!).to be(true)
-        expect(repo.hide!).to be(false)
-        expect(owner.reload.reputation).to eq(75)
-        expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true)
-        expect(Comment.where(repository_id: repo.id).count).to eq(1)
-      end
-
-      it "takes 15 reputation back for a make" do
-        make = create(:repository, owner: owner, title: "A make", users: [owner], make_id: repo.id)
-        owner.update!(reputation: 100)
-        make.hide!
-        expect(owner.reload.reputation).to eq(85)
-      end
-
-      it "brings a hidden repository back with the reputation, only once" do
-        repo.hide!
-        owner.update!(reputation: 50)
-        expect(repo.restore!).to be(true)
-        expect(repo.restore!).to be(false)
-        expect(Repository.find(repo.id)).to eq(repo)
-        expect(owner.reload.reputation).to eq(75)
-      end
-
-      it "does not restore a repository whose owner's account is deleted" do
-        repo.hide!
-        owner.update_columns(deleted: true)
-        expect(repo.restore!).to be(false)
-        expect(Repository.unscoped.find(repo.id).deleted).to be(true)
-      end
-    end
-
     describe "slug" do
       it "is the bare title slug on create, '<id>.<slug>' after any later save with changes" do
         fresh = create(:repository, owner: owner, title: "Hello, World!")
