@@ -449,12 +449,12 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response).to redirect_to(faqs_path)
     end
 
-    # the failed-create flash says "Created FAQ successfully"
-    it "rejects an invalid create with 422 but a success-sounding alert" do
+    it "rejects an invalid create with 422 and says what failed" do
       sign_in_as(:admin)
       expect { post faqs_path, params: { faq: { title_en: "only title" } } }.not_to change(Faq, :count)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Created FAQ successfully")
+      expect(flash[:alert]).to start_with(I18n.t("errors.faqs.not_created"))
+      expect(flash[:alert]).not_to include("successfully")
     end
 
     it "rejects an invalid update with 422" do

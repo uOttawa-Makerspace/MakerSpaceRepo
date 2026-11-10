@@ -57,6 +57,8 @@ en:
       unexpected:
         title: "Something went wrong on our side"
         text: "An unexpected error stopped this page. Please try again. If it keeps happening, contact the makerspace staff and quote the reference below."
+    faqs:
+      not_created: "The FAQ entry was not created."
     admin:
       still_in_use: "Other records still use it, so it was left as it is."
       record_missing: "A record it refers to no longer exists. Reload the page and try again."

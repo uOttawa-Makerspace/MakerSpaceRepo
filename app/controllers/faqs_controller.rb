@@ -22,7 +22,7 @@ class FaqsController < SessionsController
       @faq = Faq.new
       render :new
     else
-      flash[:alert] = "Created FAQ successfully"
+      flash.now[:alert] = validation_message(@faq, "errors.faqs.not_created")
       render :new, status: :unprocessable_content
     end
   end
