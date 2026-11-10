@@ -108,6 +108,13 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body.first["id"]).to match(/\Aevent-\d+-\d+\z/)
     end
 
+    it "leaves out an occurrence removed from the series with an EXDATE" do
+      create(:event, space: space, title: "Weekly", recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=4\nEXDATE:20270314T140000Z",
+                     start_time: Time.zone.local(2027, 3, 7, 10), end_time: Time.zone.local(2027, 3, 7, 11))
+      get feed, params: { start: "2027-03-01T00:00:00-05:00", end: "2027-04-01T00:00:00-04:00" }
+      expect(response.parsed_body.map { |e| e["start"] }).to eq(%w[2027-03-07T10:00:00-05:00 2027-03-21T10:00:00-04:00 2027-03-28T10:00:00-04:00])
+    end
+
     it "an event across the DST gap keeps its wall-clock endpoints (2h of clock time is 1h elapsed)" do
       create(:event, space: space, title: "Night", start_time: Time.zone.local(2027, 3, 14, 1, 30), end_time: Time.zone.local(2027, 3, 14, 3, 30))
       get feed, params: { start: "2027-03-14T00:00:00-05:00", end: "2027-03-15T00:00:00-04:00" }

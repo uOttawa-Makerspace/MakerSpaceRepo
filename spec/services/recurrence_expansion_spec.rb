@@ -152,4 +152,48 @@ RSpec.describe RecurrenceExpansion do
     expect(result.occurrences.map(&:iso8601)).to eq(%w[2026-10-25T01:30:00-04:00 2026-10-26T01:30:00-04:00 2026-10-27T01:30:00-04:00])
     expect(result.truncated).to be(true)
   end
+
+  describe "EXDATE lines" do
+    let(:start) { local(2027, 1, 4, 10) } # a Monday, 10:00 EST
+    let(:window) { [local(2027, 1, 1), local(2027, 3, 1)] }
+    let(:weekly) { "DTSTART;TZID=America/Toronto:20270104T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4" }
+
+    it "leaves out an occurrence named by a UTC stamp" do
+      expect(starts("#{weekly}\nEXDATE:20270111T150000Z", start, *window))
+        .to eq(%w[2027-01-04T10:00:00-05:00 2027-01-18T10:00:00-05:00 2027-01-25T10:00:00-05:00])
+    end
+
+    it "reads a stamp without Z as Toronto wall-clock time, and honours a TZID" do
+      expect(starts("#{weekly}\nEXDATE:20270111T100000", start, *window).size).to eq(3)
+      expect(starts("#{weekly}\nEXDATE;TZID=America/Toronto:20270111T100000", start, *window).size).to eq(3)
+      expect(starts("#{weekly}\nEXDATE;TZID=America/Halifax:20270111T110000", start, *window).size).to eq(3)
+    end
+
+    it "reads a TZID it does not know as Toronto time" do
+      expect(starts("#{weekly}\nEXDATE;TZID=Nowhere/Land:20270111T100000", start, *window).size).to eq(3)
+    end
+
+    it "takes several lines and comma separated values, and skips values that match nothing" do
+      rule = "#{weekly}\nEXDATE:20270111T150000Z,20270118T150000Z\nEXDATE:20270125T150000Z\nEXDATE:20270112T150000Z\nEXDATE:oops"
+      expect(starts(rule, start, *window)).to eq(%w[2027-01-04T10:00:00-05:00])
+    end
+
+    it "does not give an excluded occurrence's place in COUNT to a later one" do
+      expect(starts("RRULE:FREQ=DAILY;COUNT=3\nEXDATE:20270105T150000Z", start, *window))
+        .to eq(%w[2027-01-04T10:00:00-05:00 2027-01-06T10:00:00-05:00])
+    end
+
+    it "keeps the 10:00 wall time across the clock change when the exclusion is the daylight-time stamp" do
+      rule = "RRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270315T140000Z"
+      expect(starts(rule, local(2027, 3, 8, 10), local(2027, 3, 1), local(2027, 3, 23)))
+        .to eq(%w[2027-03-08T10:00:00-05:00 2027-03-22T10:00:00-04:00])
+    end
+
+    it "applies to a rule IceCube enumerates directly and counts truncation after the exclusion" do
+      rule = "RRULE:FREQ=DAILY\nEXDATE:20270105T150000Z"
+      result = described_class.occurrences(rule, start, start, start + 5.days, 2)
+      expect(result.occurrences.map(&:iso8601)).to eq(%w[2027-01-04T10:00:00-05:00 2027-01-06T10:00:00-05:00])
+      expect(result.truncated).to be(true)
+    end
+  end
 end

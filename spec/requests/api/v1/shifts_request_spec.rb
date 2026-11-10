@@ -92,6 +92,13 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     expect(body.first["end"]).to eq((t0 + 2.hours).in_time_zone.iso8601)
   end
 
+  it "leaves out an occurrence removed from the series with an EXDATE" do
+    ev = shift(recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4\nEXDATE:#{(t0 + 7.days).utc.strftime('%Y%m%dT%H%M%SZ')}")
+    shifts({ start: t0.iso8601, end: (t0 + 15.days).iso8601 })
+    expect(body.map { |r| r["id"] }).to eq([t0, t0 + 14.days].map { |t| "event-#{ev.id}-#{t.to_i}" })
+    expect(body.first.keys).to eq(%w[id title start end allDay extendedProps])
+  end
+
   it "does not query per event" do
     users = create_list(:user, 3, :staff)
     4.times do |i|
