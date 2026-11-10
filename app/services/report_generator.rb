@@ -1488,7 +1488,8 @@ class ReportGenerator
           .values
           .sum,
       "Masters" => programs.select { |k, _| k =~ /Master/i }.values.sum,
-      "Doctorate" => programs.select { |k, _| k =~ /Doctorate/i }.values.sum
+      "Doctorate" =>
+        programs.select { |k, _| get_study_level(k) == "Doctorate" }.values.sum
     }
   end
 

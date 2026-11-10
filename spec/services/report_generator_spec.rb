@@ -207,10 +207,13 @@ RSpec.describe ReportGenerator do
       )
     end
 
-    it "categorize_programs misses PhD programs although get_study_level calls them Doctorate" do
-      # categorize_programs looks for the literal "Doctorate" while get_study_level also accepts "PhD|Doctor", so PhD students are counted under no level in the Programs breakdown
-      expect(described_class.get_study_level("PhD in Chemistry")).to eq("Doctorate")
-      expect(described_class.categorize_programs({ "PhD in Chemistry" => 5 })["Doctorate"]).to eq(0)
+    it "categorize_programs counts as Doctorate every program get_study_level calls Doctorate" do
+      programs = { "PhD in Chemistry" => 5, "Doctorate in Philosophy Biology" => 2, "Doctor of Education" => 1,
+                   "Master of Arts" => 3 }
+      programs.each_key do |program|
+        expect(described_class.get_study_level(program) == "Doctorate").to eq(described_class.categorize_programs(program => 1)["Doctorate"] == 1)
+      end
+      expect(described_class.categorize_programs(programs)["Doctorate"]).to eq(8)
     end
   end
 
