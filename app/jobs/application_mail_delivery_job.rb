@@ -17,7 +17,7 @@ class ApplicationMailDeliveryJob < ActionMailer::MailDeliveryJob
 
   TRANSIENT_ERRORS = [
     Net::SMTPServerBusy,
-    Net::OpenTimeout, Net::ReadTimeout, Timeout::Error,
+    Timeout::Error, # also Net::OpenTimeout and Net::ReadTimeout
     SocketError, EOFError, OpenSSL::SSL::SSLError,
     Errno::ECONNRESET, Errno::ECONNREFUSED, Errno::ETIMEDOUT, Errno::EHOSTUNREACH, Errno::EPIPE
   ].freeze
