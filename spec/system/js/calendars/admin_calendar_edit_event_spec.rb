@@ -156,6 +156,22 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(field_value("recurrence_rule_field")).to include("FREQ=WEEKLY")
     end
 
+    it "clears the end date and weekdays of the previous series when a series without an end is opened next", js: true, skip_bullet: true do
+      create_series
+      create_series(title: "Night lab", rule: "DTSTART:20270316T200000Z\nRRULE:FREQ=DAILY")
+      open_admin_calendar
+      open_event("Open lab", index: 1)
+      expect(field_value("recurrence_until")).to eq("2027-03-31")
+      accept_confirm { within("#eventModal") { click_button "Cancel" } }
+      expect(page).to have_no_css("#eventModal.show", visible: :all)
+      open_event("Night lab", index: 1)
+
+      expect(find("#recurrence_frequency", visible: :all).value).to eq("DAILY")
+      expect(field_value("recurrence_until")).to eq("")
+      expect(page).to have_unchecked_field("day_MO", visible: :all)
+      expect(field_value("recurrence_rule_field")).not_to include("UNTIL")
+    end
+
     it "moves the save button into the scope menu and offers all three delete choices", js: true, skip_bullet: true do
       create_series
       open_admin_calendar

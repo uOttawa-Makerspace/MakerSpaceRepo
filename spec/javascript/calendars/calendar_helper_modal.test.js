@@ -289,6 +289,37 @@ describe("eventClick", () => {
     expect($("publish_form").style.display).toBe("none");
   });
 
+  it("leaves no end date, weekdays or rule of the previous series when a series without an end is opened next", () => {
+    const series = (origOptions) =>
+      fcEvent({
+        def: {
+          recurringDef: {
+            typeData: { rruleSet: { _rrule: [{ origOptions }] } },
+          },
+        },
+      });
+    eventClick(
+      series({
+        freq: 2,
+        dtstart: new Date(Date.UTC(2027, 2, 15, 14)),
+        byweekday: [0, 2],
+        until: new Date(Date.UTC(2027, 2, 31, 23, 59, 59)),
+      }),
+    );
+    expect($("recurrence_until").value).toBe("2027-03-31");
+
+    eventClick(
+      series({ freq: 3, dtstart: new Date(Date.UTC(2027, 2, 16, 14)) }),
+    );
+
+    expect($("recurrence_frequency").value).toBe("DAILY");
+    expect($("recurrence_until").value).toBe("");
+    expect($("weekly_options").style.display).toBe("none");
+    expect($("day_MO").checked).toBe(false);
+    expect($("day_WE").checked).toBe(false);
+    expect($("recurrence_rule_field").value).not.toContain("UNTIL");
+  });
+
   it("restores a repeat rule from the series definition of the calendar", () => {
     const origOptions = {
       freq: 2,
