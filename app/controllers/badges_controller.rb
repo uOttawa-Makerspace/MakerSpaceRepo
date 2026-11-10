@@ -2,6 +2,7 @@
 
 class BadgesController < DevelopmentProgramsController
   skip_before_action :grant_access, only: [:show]
+  skip_authorization only: :show, reason: "Public: a badge page can be viewed without signing in"
 
   # The badge page is public, so each visitor's address is limited to a pace that
   # viewing and sharing badges never reaches. Signed-in staff and admins are exempt.

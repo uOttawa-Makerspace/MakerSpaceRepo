@@ -2,6 +2,7 @@
 
 class AnnouncementsController < StaffAreaController
   layout "staff_area"
+  skip_authorization only: :dismiss, reason: "Not gated by the staff area: it only records the current user's own dismissal"
   before_action :set_announcement, only: %i[show edit update destroy]
   before_action :build_announcement, only: :create
   before_action :ensure_announcement_access, only: %i[show edit]

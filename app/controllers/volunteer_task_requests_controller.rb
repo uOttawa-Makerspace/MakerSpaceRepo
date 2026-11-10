@@ -175,7 +175,7 @@ class VolunteerTaskRequestsController < SessionsController
   end
 
   def ensure_staff
-    return if current_user.staff?
+    return authorized!(:staff) if current_user.staff?
 
     flash[:alert] = "You cannot access this area."
     redirect_to root_path

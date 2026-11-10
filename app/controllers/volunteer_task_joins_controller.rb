@@ -3,6 +3,8 @@
 class VolunteerTaskJoinsController < SessionsController
   include VolunteerAreaAccess
 
+  skip_authorization only: :remove,
+                     reason: "Checked inline (staff or the joined user); the authorization rollout adds the check"
   before_action :signed_in
   before_action :volunteer_access, only: :create
 

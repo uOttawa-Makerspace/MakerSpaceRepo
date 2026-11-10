@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class DevelopmentProgramsController < SessionsController
+  require_authorization
+  skip_authorization only: %i[index join_development_program],
+                     reason: "Not gated by grant_access today; the authorization rollout adds the checks"
   before_action :current_user
   before_action :with_development_header, except: :index
 
@@ -98,6 +101,8 @@ class DevelopmentProgramsController < SessionsController
   end
 
   def grant_access
-    signed_in
+    return signed_in unless signed_in?
+
+    authorized!(:signed_in)
   end
 end

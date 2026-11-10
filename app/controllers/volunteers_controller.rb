@@ -6,6 +6,8 @@ require 'google/apis/calendar_v3'
 class VolunteersController < SessionsController
   include VolunteerAreaAccess
 
+  skip_authorization only: %i[index join_volunteer_program transcript],
+                     reason: "Open to any signed-in user (or checked inline); the authorization rollout adds the checks"
   before_action :no_container, only: :index
   before_action :with_volunteer_header, except: :index
   before_action :current_user

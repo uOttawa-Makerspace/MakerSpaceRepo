@@ -3,6 +3,7 @@
 class ApplicationController < ActionController::Base
   include RateLimitStore
   include ErrorReporting
+  include Authorization
   include FlashWrite
   include RequestLocale
   rescue_from ActionController::ParameterMissing, with: :parameter_missing
@@ -209,6 +210,14 @@ class ApplicationController < ActionController::Base
         end
         format.any { head :not_found }
       end
+    end
+  end
+
+  # A request refused by authorize!: a page goes home with a message, anything else gets 403.
+  def authorization_denied
+    respond_to do |format|
+      format.html { redirect_to root_path, alert: "You cannot access this area." }
+      format.any { head :forbidden }
     end
   end
 end

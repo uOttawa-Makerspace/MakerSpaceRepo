@@ -6,18 +6,22 @@
 module VolunteerAreaAccess
   extend ActiveSupport::Concern
 
+  included do
+    require_authorization
+  end
+
   private
 
   def volunteer_access
     return signed_in unless signed_in?
 
-    deny_volunteer_area unless current_user.staff? || current_user.volunteer?
+    current_user.staff? || current_user.volunteer? ? authorized!(:volunteer) : deny_volunteer_area
   end
 
   def staff_access
     return signed_in unless signed_in?
 
-    deny_volunteer_area unless current_user.staff?
+    current_user.staff? ? authorized!(:staff) : deny_volunteer_area
   end
 
   def deny_volunteer_area
