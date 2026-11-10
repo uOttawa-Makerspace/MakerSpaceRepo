@@ -1,4 +1,19 @@
 module CalendarHelper
+  # The values RFC 5545 allows for the BY parts of a repeat rule, and whether the value may be negative.
+  ICS_RULE_PART_LIMITS = {
+    by_year_day: [1..366, true],
+    by_month_day: [1..31, true],
+    by_week_number: [1..53, true],
+    by_month: [1..12, false],
+    by_set_position: [1..366, true]
+  }.freeze
+
+  # One BYDAY value: a weekday, optionally with a number (and sign) saying which one of the period.
+  ICS_BY_DAY = /\A(?:[+-]?(?<number>\d+))?(?:MO|TU|WE|TH|FR|SA|SU)\z/
+
+  # The longest COUNT whose end is worked out when deciding whether a series is over.
+  MAX_COUNTED_SERIES = 1000
+
   def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil )
     return [] if ics_url.blank?
 
@@ -19,91 +34,9 @@ module CalendarHelper
 
       events = parsed_cals.flat_map do |calendar|
         # Group events by UID to handle recurrence-id
-        events_by_uid = calendar.events.group_by(&:uid)
-        
-        events_by_uid.flat_map do |uid, event_group|
-          main_event = event_group.find { |e| e.recurrence_id.nil? }
-          modified_instances = event_group.select { |e| e.recurrence_id.present? }
-          
-          results = []
-          
-          if main_event
-            start_time = safe_to_time(main_event.dtstart)
-            end_time = safe_to_time(main_event.dtend)
-            all_day = main_event.dtstart.is_a?(Icalendar::Values::Date)
-
-            next if main_event.rrule.empty? && end_time < (Time.now.utc - 2.months)
-
-            event_hash = {
-              id: main_event.uid,
-              groupId: group_id,
-              title: main_event.summary,
-              extendedProps: {
-                name: name,
-                description: main_event.description,
-              },
-              allDay: all_day,
-              display: 'auto',
-              start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-              end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
-            }
-
-            rrule_obj = main_event.rrule&.first
-
-            if rrule_obj.present?
-              rrule_string_parts = []
-              
-              dtstart_toronto = start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-              rrule_string_parts << "DTSTART:#{dtstart_toronto}"
-              
-              rrule_line = convert_rrule_to_string(rrule_obj)
-              rrule_string_parts << "RRULE:#{rrule_line}"
-              
-              all_exdates = main_event.exdate.map(&:value).flatten.map { |d| safe_to_time(d) }
-              
-              # Add recurrence-id dates from modified instances to exdates
-              modified_instances.each do |modified|
-                recurrence_time = safe_to_time(modified.recurrence_id)
-                all_exdates << recurrence_time if recurrence_time
-              end
-              
-              all_exdates.compact.uniq.each do |d|
-                exdate_str = d.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-                rrule_string_parts << "EXDATE:#{exdate_str}"
-              end
-              
-              event_hash[:rrule] = rrule_string_parts.join("\n")
-              
-              duration_seconds = end_time.to_i - start_time.to_i
-              event_hash[:duration] = duration_seconds * 1000
-            end
-            
-            results << event_hash
-          end
-          
-          # Process modified instances as separate events
-          modified_instances.each do |modified|
-            start_time = safe_to_time(modified.dtstart)
-            end_time = safe_to_time(modified.dtend)
-            
-            next if end_time < (Time.now.utc - 2.months)
-            
-            results << {
-              id: "#{modified.uid}_#{safe_to_time(modified.recurrence_id)&.to_i}",
-              groupId: group_id,
-              title: modified.summary,
-              extendedProps: {
-                name: name,
-                description: modified.description,
-              },
-              allDay: modified.dtstart.is_a?(Icalendar::Values::Date),
-              start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-              end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
-            }
-          end
-          
-          results
-        end.compact
+        calendar.events.group_by(&:uid).flat_map do |_uid, event_group|
+          ics_event_group(event_group, group_id: group_id, name: name)
+        end
       end
     rescue StandardError => e
       Rails.logger.error("ICS parse error for #{ics_url}: #{e.inspect}")
@@ -279,5 +212,182 @@ module CalendarHelper
     js_rrule[:wkst] = openstruct_obj.week_start if openstruct_obj.week_start
     
     js_rrule
+  end
+
+  private
+
+  # The calendar events for one UID: the series (or single event) itself, then each modified instance of it.
+  def ics_event_group(event_group, group_id:, name:)
+    main_event = event_group.find { |e| e.recurrence_id.nil? }
+    modified_instances = event_group.select { |e| e.recurrence_id.present? }
+
+    results = []
+    if main_event
+      main_hash = ics_main_event(main_event, modified_instances, group_id: group_id, name: name)
+      results << main_hash if main_hash
+    end
+    modified_instances.each do |modified|
+      instance_hash = ics_modified_instance(modified, group_id: group_id, name: name)
+      results << instance_hash if instance_hash
+    end
+    results
+  end
+
+  # The calendar entry for a single or recurring event, or nil when it ended more than two months ago (a single
+  # event) or has no usable start (reported, so the rest of the feed still loads).
+  def ics_main_event(main_event, modified_instances, group_id:, name:)
+    start_time = safe_to_time(main_event.dtstart)
+    end_time = safe_to_time(main_event.dtend)
+    return report_ics_event_problem("ICS event has no usable start", main_event, group_id) if start_time.nil?
+
+    rrule_obj = main_event.rrule&.first
+    return if skip_ics_event?(main_event, rrule_obj, start_time, end_time, group_id)
+
+    event_hash = {
+      id: main_event.uid,
+      groupId: group_id,
+      title: main_event.summary,
+      extendedProps: {
+        name: name,
+        description: main_event.description,
+      },
+      allDay: main_event.dtstart.is_a?(Icalendar::Values::Date),
+      display: 'auto',
+      start: toronto_iso(start_time),
+      end: toronto_iso(end_time)
+    }
+    event_hash.merge!(ics_recurrence(main_event, rrule_obj, modified_instances, start_time, end_time)) if rrule_obj.present?
+    event_hash
+  end
+
+  def ics_recurrence(main_event, rrule_obj, modified_instances, start_time, end_time)
+    rrule_string_parts = []
+
+    dtstart_toronto = start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
+    rrule_string_parts << "DTSTART:#{dtstart_toronto}"
+
+    rrule_line = convert_rrule_to_string(rrule_obj)
+    rrule_string_parts << "RRULE:#{rrule_line}"
+
+    ics_exdates(main_event, modified_instances).each do |d|
+      exdate_str = d.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
+      rrule_string_parts << "EXDATE:#{exdate_str}"
+    end
+
+    recurrence = { rrule: rrule_string_parts.join("\n") }
+    recurrence[:duration] = (end_time - start_time).to_i * 1000 if end_time
+    recurrence
+  end
+
+  # The dates left out of a series: its own exception dates and the original dates of its modified instances.
+  def ics_exdates(main_event, modified_instances)
+    all_exdates = main_event.exdate.map(&:value).flatten.map { |d| safe_to_time(d) }
+    all_exdates += modified_instances.map { |modified| safe_to_time(modified.recurrence_id) }
+    all_exdates.compact.uniq
+  end
+
+  # A modified instance of a series, listed as an event of its own; nil when it ended more than two months ago.
+  def ics_modified_instance(modified, group_id:, name:)
+    start_time = safe_to_time(modified.dtstart)
+    end_time = safe_to_time(modified.dtend)
+    return report_ics_event_problem("ICS event has no usable start", modified, group_id) if start_time.nil?
+
+    return if stale_event?(end_time || start_time)
+
+    {
+      id: "#{modified.uid}_#{safe_to_time(modified.recurrence_id)&.to_i}",
+      groupId: group_id,
+      title: modified.summary,
+      extendedProps: {
+        name: name,
+        description: modified.description,
+      },
+      allDay: modified.dtstart.is_a?(Icalendar::Values::Date),
+      start: toronto_iso(start_time),
+      end: toronto_iso(end_time)
+    }
+  end
+
+  # Whether an event no longer needs showing: a single event that ended, or a series that stopped, more than two
+  # months ago.
+  # An unreadable series rule is reported and the series kept (the calendar view decides what to do with it).
+  def skip_ics_event?(main_event, rrule_obj, start_time, end_time, group_id)
+    over = rrule_obj.present? ? series_ended?(rrule_obj, start_time) : stale_event?(end_time || start_time)
+    report_ics_event_problem(over, main_event, group_id) if over.is_a?(StandardError)
+    over == true
+  end
+
+  # Whether a repeating series stopped (by its UNTIL date, or after its COUNT occurrences) more than two months
+  # ago. A series that never ends, or whose end cannot be worked out, is not ended.
+  def series_ended?(rrule_obj, start_time)
+    cutoff = Time.now.utc - 2.months
+    until_time = safe_to_time(rrule_obj.until)
+    return true if until_time && until_time < cutoff
+
+    counted_series_ended_before?(rrule_obj, start_time, cutoff)
+  end
+
+  # Whether all the occurrences of a series with a COUNT fall before the cutoff. A very long count is not worked
+  # out: the series is kept. A rule that cannot be read gives the error describing why instead of true or false.
+  def counted_series_ended_before?(rrule_obj, start_time, cutoff)
+    count = rrule_obj.count.to_i
+    return false unless count.between?(1, MAX_COUNTED_SERIES)
+
+    out_of_range = out_of_range_rule_part(rrule_obj)
+    return ArgumentError.new("#{out_of_range} is out of range") if out_of_range
+
+    start = start_time.in_time_zone(RecurrenceRule::ZONE)
+    found = expand_counted_series(convert_rrule_to_string(rrule_obj), start, cutoff, count)
+    found.is_a?(StandardError) ? found : found.occurrences.size == count
+  end
+
+  # The occurrences of a rule before the cutoff, or the ArgumentError IceCube raises for a rule it does not support.
+  def expand_counted_series(rule_string, start, cutoff, count)
+    RecurrenceExpansion.occurrences(rule_string, start, start, cutoff, count)
+  rescue ArgumentError => e
+    e
+  end
+
+  # The first part of the rule whose value is outside what RFC 5545 allows (IceCube fails with a method error on
+  # some of these, and accepts others silently), or nil. Only the parts convert_rrule_to_string passes on are
+  # checked. A BY part with a sign may count from the end, so only its size is checked.
+  def out_of_range_rule_part(rrule_obj)
+    return :interval unless rrule_obj.interval.nil? || rrule_obj.interval.to_i >= 1
+    return :by_day unless Array(rrule_obj.by_day).all? { |token| valid_by_day?(token) }
+
+    ICS_RULE_PART_LIMITS.find { |part, (limit, signed)| !values_within?(rrule_obj.public_send(part), limit, signed) }&.first
+  end
+
+  def values_within?(values, limit, signed)
+    Array(values).all? do |value|
+      number = Integer(value.to_s, 10, exception: false)
+      number && limit.cover?(signed ? number.abs : number)
+    end
+  end
+
+  def valid_by_day?(token)
+    match = ICS_BY_DAY.match(token.to_s)
+    match.present? && (match[:number].nil? || match[:number].to_i.between?(1, 53))
+  end
+
+  # Whether an event's last moment (its end, else its start) is more than two months ago. An event with
+  # no time at all is not stale.
+  def stale_event?(last_moment)
+    last_moment.present? && last_moment < (Time.now.utc - 2.months)
+  end
+
+  def toronto_iso(time)
+    time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
+  end
+
+  # Reports an event that cannot be placed on the calendar; returns nil so the caller leaves it out.
+  def report_ics_event_problem(problem, event, group_id)
+    error = problem.is_a?(StandardError) ? problem : ArgumentError.new(problem)
+    Rails.error.report(
+      error,
+      handled: true, severity: :warning,
+      context: { event_uid: event.uid.to_s, calendar: group_id, error_class: error.class.name }
+    )
+    nil
   end
 end
