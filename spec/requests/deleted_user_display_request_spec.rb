@@ -232,6 +232,19 @@ RSpec.describe "Pages that show a deleted user", type: :request do
     end
   end
 
+  describe "repository comments" do
+    it "shows a comment by a deleted account with the deleted mark, no profile link and no reputation" do
+      repository = create(:repository, owner: create(:user), share_type: "public")
+      create(:comment, repository: repository, user: gone, username: gone.username, content: "Still here")
+      delete_account!(gone)
+      get repository_path(repository.user_username, repository.slug)
+
+      expect(response).to have_http_status(:ok)
+      expect(page_text).to include("Still here", "goneperson (deleted account)")
+      expect(response.body).not_to include(user_path(gone.username))
+    end
+  end
+
   describe "the real associations" do
     before { delete_account!(gone, gone_supervisor) }
 
