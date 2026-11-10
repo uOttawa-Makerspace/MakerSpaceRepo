@@ -2,6 +2,9 @@
 
 class ReportGenerator
   require "axlsx"
+
+  # What a sheet or title says for a session that has no space.
+  UNKNOWN_SPACE = "Unknown"
   # region Date Range Reports
 
   # @param [DateTime] start_date
@@ -327,11 +330,12 @@ class ReportGenerator
     courses = courses.uniq # .map { |d| d || "None" }
 
     (spaces + ["total"]).each do |space|
+      space_label = space || UNKNOWN_SPACE
       spreadsheet
         .workbook
-        .add_worksheet(name: space || "Unknown") do |sheet|
+        .add_worksheet(name: space_label) do |sheet|
           title(sheet, "Makerepo Certifications report")
-          title_string = "Certifications granted in #{space}"
+          title_string = "Certifications granted in #{space_label}"
           header(sheet, title_string, start_date, end_date)
           sheet.column_widths title_string.length + 2
 
@@ -648,18 +652,14 @@ class ReportGenerator
     spreadsheet = Axlsx::Package.new
 
     certifications.each do |_space, space_certifications|
+      space_name =
+        space_certifications[0].training_session.space&.name || UNKNOWN_SPACE
       spreadsheet
         .workbook
-        .add_worksheet(
-          name:
-            "Report - #{space_certifications[0].training_session.space&.name}"
-        ) do |sheet|
+        .add_worksheet(name: "Report - #{space_name}") do |sheet|
           merge_cell = sheet.styles.add_style alignment: { vertical: :center }
 
-          title(
-            sheet,
-            "Training Attendees - #{space_certifications[0].training_session.space&.name}"
-          )
+          title(sheet, "Training Attendees - #{space_name}")
 
           sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
           sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]

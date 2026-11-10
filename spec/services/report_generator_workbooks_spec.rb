@@ -240,8 +240,8 @@ RSpec.describe ReportGenerator do
       )
     end
 
-    it "the Unknown sheet holds the sessions without a space and its title ends in nothing" do
-      expect(sheets["Unknown"][1]).to eq(["Certifications granted in "])
+    it "the Unknown sheet holds the sessions without a space and its title says Unknown" do
+      expect(sheets["Unknown"][1]).to eq(["Certifications granted in Unknown"])
       expect(sheets["Unknown"][7..]).to eq(
         [["Laser", 0, 0, 0, 0, 0, 0], ["Saw", 0, 0, 1, 1, 1, 1], ["Total", 0, 0, 1, 1, 1, 1]]
       )
@@ -482,14 +482,14 @@ RSpec.describe ReportGenerator do
       expect(rows[month + 1]).to eq(["Month average of attendees per sessions", 1.0, 1.0])
     end
 
-    it "a session without a space gets its own sheet named with a trailing dash" do
+    it "a session without a space gets its own sheet named for an unknown space" do
       session = create(:training_session, space: alpha, training: laser, created_at: march_10)
       session.update_columns(space_id: nil)
       attend(lena, session, march_10)
       rows = grid(described_class.generate_training_attendees_report(from, to))
-      expect(rows.keys).to eq(["Report - "])
-      expect(rows["Report - "].first).to eq(["Training Attendees - "])
-      expect(rows["Report - "][5]).to eq(["012345678", "Lena Learner", "lena@example.test", "Laser",
+      expect(rows.keys).to eq(["Report - Unknown"])
+      expect(rows["Report - Unknown"].first).to eq(["Training Attendees - Unknown"])
+      expect(rows["Report - Unknown"][5]).to eq(["012345678", "Lena Learner", "lena@example.test", "Laser",
                                           session.created_at.strftime("%Y-%m-%d %H:%M"), session.user.name])
     end
   end
