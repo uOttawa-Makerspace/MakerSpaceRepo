@@ -66,6 +66,53 @@ RSpec.describe CdelReportJob, type: :job do
     expect(last_mail.subject).to eq("CDEL Reports from 2026-09-01 to 2026-09-30")
   end
 
+  describe "a month already mailed" do
+    around { |example| travel_to(zone.local(2026, 11, 5, 12, 0)) { example.run } }
+
+    it "is not mailed again by a second run, a retry or the rake task" do
+      described_class.perform_now(month: "2026-09")
+      described_class.perform_now(month: "2026-09")
+      described_class.perform_now("2026-09")
+
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(Setting.get("cdel_report_sent:2026-09")).to be_present
+    end
+
+    it "counts last month as the same month as its name" do
+      described_class.perform_now
+      described_class.perform_now(month: "2026-10")
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+    end
+
+    it "does not hold back another month" do
+      described_class.perform_now(month: "2026-09")
+      described_class.perform_now(month: "2026-08")
+      expect(ActionMailer::Base.deliveries.size).to eq(2)
+    end
+
+    it "is mailed again when forced" do
+      described_class.perform_now(month: "2026-09")
+      described_class.perform_now(month: "2026-09", force: true)
+      expect(ActionMailer::Base.deliveries.size).to eq(2)
+    end
+
+    it "is not recorded as sent when the mail fails, so the next run sends it" do
+      allow(MsrMailer).to receive(:send_cdel_monthly_report).and_raise(Net::OpenTimeout).once
+      expect { described_class.perform_now(month: "2026-09") }.to raise_error(Net::OpenTimeout)
+      expect(Setting.get("cdel_report_sent:2026-09")).to be_nil
+
+      allow(MsrMailer).to receive(:send_cdel_monthly_report).and_call_original
+      described_class.perform_now(month: "2026-09")
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+    end
+
+    it "is not recorded as sent when delivery fails inside the mailer" do
+      allow_any_instance_of(Mail::Message).to receive(:deliver).and_raise(Net::ReadTimeout)
+      expect { described_class.perform_now(month: "2026-09") }.to raise_error(Net::ReadTimeout)
+      expect(Setting.get("cdel_report_sent:2026-09")).to be_nil
+    end
+  end
+
   describe "a month that cannot be reported" do
     around { |example| travel_to(zone.local(2026, 11, 5, 12, 0)) { example.run } }
 
@@ -104,8 +151,23 @@ RSpec.describe CdelReportJob, type: :job do
     end
 
     it "runs the job for last month without an argument" do
-      expect(described_class).to receive(:perform_now).with(month: nil)
+      expect(described_class).to receive(:perform_now).with(month: nil, force: false)
       Rake::Task["reports:send_cdel_report_to_sharepoint"].invoke
+    end
+
+    it "mails a month again with FORCE=1 and not without it" do
+      travel_to(zone.local(2026, 11, 5, 12, 0)) do
+        described_class.perform_now(month: "2026-09")
+        Rake::Task["reports:send_cdel_report_to_sharepoint"].invoke("2026-09")
+        expect(ActionMailer::Base.deliveries.size).to eq(1)
+
+        ENV["FORCE"] = "1"
+        Rake::Task["reports:send_cdel_report_to_sharepoint"].reenable
+        Rake::Task["reports:send_cdel_report_to_sharepoint"].invoke("2026-09")
+        expect(ActionMailer::Base.deliveries.size).to eq(2)
+      end
+    ensure
+      ENV.delete("FORCE")
     end
 
     it "passes the YYYY-MM argument on" do

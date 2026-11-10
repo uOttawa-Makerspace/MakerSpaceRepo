@@ -3,10 +3,16 @@
 # Mails a month's CDEL reports to the inbox whose Power Automate flow files the attachments in SharePoint
 # (config/recurring.yml, the 1st of each month, for the month just ended; also
 # `rake "reports:send_cdel_report_to_sharepoint[2026-08]"`). Without a month it is last month, in the app time zone.
+#
+# A month is mailed once: the run records it in Setting (SENT_KEY_PREFIX + month) in the same transaction as the
+# delivery, so a failed delivery leaves nothing recorded and the next run sends it, while a second run (a rerun,
+# a retry, another worker) waits for the first one's row lock and then finds the month already sent. +force+
+# mails a month that was already sent (rake: FORCE=1).
 class CdelReportJob < ApplicationJob
   queue_as :default
 
   RECIPIENT = "avendett@uottawa.ca"
+  SENT_KEY_PREFIX = "cdel_report_sent:"
 
   class InvalidMonth < ArgumentError; end
 
@@ -15,8 +21,14 @@ class CdelReportJob < ApplicationJob
 
   # The month as "YYYY-MM", given by keyword (month: "2026-08") or as the first argument ("2026-08"); nil for
   # last month.
-  def perform(positional_month = nil, month: nil)
-    MsrMailer.send_cdel_monthly_report(RECIPIENT, month: self.class.parse_month(month || positional_month)).deliver_now
+  def perform(positional_month = nil, month: nil, force: false)
+    first_day = self.class.parse_month(month || positional_month)
+    reported_month = first_day || Time.zone.today.prev_month.beginning_of_month
+    Setting.transaction do
+      next unless Setting.claim("#{SENT_KEY_PREFIX}#{reported_month.strftime("%Y-%m")}", "sent", force: force)
+
+      MsrMailer.send_cdel_monthly_report(RECIPIENT, month: reported_month).deliver_now
+    end
   end
 
   def self.month_argument(arguments)
