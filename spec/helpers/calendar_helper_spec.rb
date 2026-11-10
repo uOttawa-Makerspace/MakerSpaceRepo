@@ -264,6 +264,18 @@ RSpec.describe CalendarHelper, type: :helper do
       end
     end
 
+    ["FREQ=WEEKLY;BYDAY=MO,TU,TH;COUNT=6", "FREQ=MONTHLY;BYDAY=1MO,-1FR;COUNT=6"].each do |rule|
+      it "lists #{rule} without reporting its weekday list" do
+        body = ics(vevent("days", ["DTSTART:20261201T150000Z", "DTEND:20261201T160000Z", "SUMMARY:Days", "RRULE:#{rule}"]))
+        stub_request(:get, url).to_return(status: 200, body: body)
+        events = nil
+        reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+        expect(reports).to eq([])
+        expect(events.map { |e| e[:id] }).to eq(["days"])
+        expect(events.first[:rrule]).to include("BYDAY=#{rule[/BYDAY=([^;]+)/, 1]}")
+      end
+    end
+
     describe "the allowed ranges of a repeat rule" do
       let(:rule_class) { Struct.new(:interval, :by_day, :by_year_day, :by_month_day, :by_week_number, :by_month, :by_set_position, keyword_init: true) }
 
