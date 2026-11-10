@@ -13,7 +13,6 @@ RSpec.describe "Page crawl (request level)", type: :request, skip_bullet: true d
   # route (path spec) => { role => short reason }
   ALL = PageCrawl::ROLES
   KNOWN_500 = {
-    "/printers/last_user_assigned_to_printer" => %i[staff admin].index_with { "printer_without_session" },
     "/staff/my_calendar" => %i[staff admin].index_with { "my_calendar_500" },
     "/admin/uni_programs/current_programs" => { admin: "current_programs_500" }
   }.freeze

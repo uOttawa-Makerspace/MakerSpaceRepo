@@ -3,6 +3,7 @@
 class SearchController < SessionsController
   before_action :current_user
   before_action :no_container
+  before_action :set_query
 
   SEARCH_SORT_BY_OPTIONS = %i[
     newest
@@ -12,12 +13,7 @@ class SearchController < SessionsController
   ].freeze
 
   def explore
-    scope = Repository.public_repos.order([sort_order].to_h)
-
-    if params[:category].present?
-      category_name = SLUG_TO_CATEGORY_MODEL[params[:category]]
-      scope = scope.includes(:categories).where(categories: { name: category_name })
-    end
+    scope = in_requested_categories(Repository.public_repos.order([sort_order].to_h))
 
     @pagy, @repositories = pagy(scope, limit: 12)
   end
@@ -27,9 +23,7 @@ class SearchController < SessionsController
                       .includes(:owner)
                       .includes(photos: { image_attachment: :blob })
 
-    if params[:q].present?
-      scope = scope.fuzzy_search(params[:q])
-    end
+    scope = scope.fuzzy_search(@query) if @query
 
     scope = scope.order([sort_order].to_h)
 
@@ -37,10 +31,7 @@ class SearchController < SessionsController
       scope = scope.includes(:likes).where(likes: { user_id: @user.id })
     end
 
-    if params[:category].present?
-      category_names = SLUG_TO_CATEGORY_MODEL.values_at(*params[:category])
-      scope = scope.includes(:categories).where(categories: { name: category_names })
-    end
+    scope = in_requested_categories(scope)
 
     @pagy, @repositories = pagy(scope, limit: 12)
 
@@ -103,6 +94,24 @@ class SearchController < SessionsController
   end
 
   private
+
+  # The search text as a plain string without NUL bytes; nil when it is
+  # missing, blank, or sent as an array or hash.
+  def set_query
+    @query = params[:q].delete("\u0000").presence if params[:q].is_a?(String)
+  end
+
+  # Limits the scope to the categories named by the `category` slugs. Slugs
+  # that are unknown, or params that are not strings, are ignored; when none
+  # is known the result is empty, like the category and equipment pages.
+  def in_requested_categories(scope)
+    return scope if params[:category].blank?
+
+    names = SLUG_TO_CATEGORY_MODEL.values_at(*Array.wrap(params[:category]).grep(String)).compact
+    return scope.none if names.empty?
+
+    scope.includes(:categories).where(categories: { name: names })
+  end
 
   def sort_order
     case params[:sort]

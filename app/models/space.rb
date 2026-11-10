@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Space < ApplicationRecord
-  include CalendarHelper
-
   has_many :pi_readers
   has_many :keys, dependent: :nullify
   has_many :key_requests, dependent: :nullify
@@ -162,103 +160,6 @@ class Space < ApplicationRecord
     linear = assigned_color.map { |c| c / 255.0 }.map { |c| c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055)**2.4 }
     luminance = (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2])
     luminance < 0.179 ? "#ffffff" : "#000000"
-  end
-
-  def weekly_open_hours
-    calendar = staff_needed_calendars.find_by(role: "open_hours")
-    return [] if calendar.blank?
-
-    parsed = parse_ics_calendar(calendar.calendar_url, name: "Open Hours")
-    return [] if parsed.blank?
-
-    events = parsed.first[:events]
-
-    start_of_week = Time.zone.today.beginning_of_week(start_day = :saturday).beginning_of_day
-    end_of_week   = Time.zone.today.end_of_week(start_day = :saturday).end_of_day
-
-    weekly_events = []
-
-    # logger.warn "Events: #{events.inspect}"
-
-    events.each do |ev|
-      next if ev[:start].blank?
-
-      dtstart = Time.zone.parse(ev[:start])
-      dtend =
-        if ev[:end].present?
-          Time.zone.parse(ev[:end])
-        elsif ev[:duration].present?
-          dtstart + (ev[:duration].to_f / 1000.0)
-        else
-          dtstart + 1.hour
-        end
-      
-      if ev[:rrule].present?
-        rule_obj = ev[:rrule]
-        
-        rule = case rule_obj[:freq]&.upcase
-              when "DAILY"   then IceCube::Rule.daily
-              when "WEEKLY"  then IceCube::Rule.weekly
-              when "MONTHLY" then IceCube::Rule.monthly
-              when "YEARLY"  then IceCube::Rule.yearly
-              end
-
-              next if rule.nil?
-              
-        if rule_obj[:byweekday].present?
-          weekday_map = {
-            "su" => 0,
-            "mo" => 1,
-            "tu" => 2,
-            "we" => 3,
-            "th" => 4,
-            "fr" => 5,
-            "sa" => 6
-          }
-
-          mapped_days = rule_obj[:byweekday].map { |d| weekday_map[d] }.compact
-
-          rule.day(*mapped_days) if mapped_days.any?
-        end
-        
-        rule.until(Time.zone.parse(rule_obj[:until])) if rule_obj[:until].present?
-        rule.count(rule_obj[:count]) if rule_obj[:count].present?
-
-        schedule = IceCube::Schedule.new(dtstart, end_time: dtend)
-        schedule.add_recurrence_rule(rule)
-
-        if ev[:exdate].present?
-          ev[:exdate].each do |ex|
-              schedule.add_exception_time(Time.zone.parse(ex))
-            rescue ArgumentError, TypeError
-              next # an exception date that is not a time is skipped
-          end
-        end
-
-        occurrences = schedule.occurrences_between(start_of_week, end_of_week)
-        occurrences.each do |occ|
-          occ_start = occ.start_time.in_time_zone
-          occ_end   = occ.end_time.in_time_zone
-
-          weekly_events << OpenStruct.new(
-            dtstart: occ_start,
-            dtend: occ_end,
-            title: ev[:title]
-          )
-        end
-
-      elsif dtstart >= start_of_week && dtstart <= end_of_week
-        weekly_events << OpenStruct.new(
-          dtstart: dtstart,
-          dtend: dtend,
-          title: ev[:title]
-        )
-      end
-    end
-
-    # logger.warn "WE: #{weekly_events.inspect}"
-
-    weekly_events.sort_by(&:dtstart)
   end
 
   private

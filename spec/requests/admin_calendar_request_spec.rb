@@ -128,7 +128,7 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(event).not_to include("rrule")
       expect(event["className"]).to eq("unavailability")
       expect(event["extendedProps"]).to eq(
-        "name" => staff.name, "description" => "Away at hospital"
+        "name" => staff.name, "title" => "Doctor", "description" => "Away at hospital"
       )
     end
 
@@ -345,6 +345,15 @@ RSpec.describe "Admin calendar contract", type: :request do
       expect(entry["rrule"]).to eq(
         "DTSTART:20270505T090000\nRRULE:FREQ=WEEKLY;BYDAY=WE;COUNT=4\nEXDATE:20270512T090000"
       )
+    end
+
+    it "still lists a series whose stored start line cannot be read, from its own start" do
+      unavailability = recurring_unavailability
+      unavailability.update_column(:recurrence_rule, "DTSTART:garbage\nRRULE:FREQ=WEEKLY;BYDAY=WE;COUNT=4")
+      get unavailabilities_json_admin_calendar_index_path(id: space.id)
+      expect(response).to have_http_status(:ok)
+      entry = response.parsed_body.first["unavailabilities"].first
+      expect(entry["rrule"]).to eq("DTSTART:20270505T090000\nRRULE:FREQ=WEEKLY;BYDAY=WE;COUNT=4")
     end
 
     it "gives a rule created in winter the same wall-clock start as one created in summer" do

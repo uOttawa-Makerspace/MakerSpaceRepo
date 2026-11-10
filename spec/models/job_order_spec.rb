@@ -98,6 +98,19 @@ RSpec.describe JobOrder, type: :model do
       expect(order.reload.latest_status).to eq(highest) # unloaded: one query, the same row
     end
 
+    it "preloads only the newest status row per order, and #latest_status reads it" do
+      other = create(:job_order, user: owner)
+      other.job_order_statuses.create!(job_status: JobStatus.draft, user: owner)
+      order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner)
+      orders = JobOrder.where(id: [order.id, other.id]).includes(latest_job_order_status: :job_status).to_a
+
+      expect(orders.map { |o| o.latest_job_order_status.id }.sort)
+        .to eq([order, other].map { |o| o.job_order_statuses.reorder(id: :desc).first.id }.sort)
+      statuses = orders.index_by(&:id).transform_values { |o| o.latest_status.job_status }
+      expect(statuses).to eq(order.id => JobStatus.staff_approval, other.id => JobStatus.draft)
+      expect(orders.first.job_order_statuses).not_to be_loaded
+    end
+
     it "has no latest_status_id reader (the SQL is the batch rule, #latest_status the instance rule)" do
       expect(order).not_to respond_to(:latest_status_id)
     end
@@ -166,6 +179,15 @@ RSpec.describe JobOrder, type: :model do
       result = JobOrder.without_drafts
       expect(result).not_to include(draft, without_status)
       expect(result).to match_array(others)
+    end
+
+    it "excludes a deleted order whatever its latest status" do
+      kept = order_in(:staff_approval)
+      deleted = order_in(:staff_approval)
+      deleted.update!(is_deleted: true)
+
+      expect(JobOrder.without_drafts).to include(kept)
+      expect(JobOrder.without_drafts).not_to include(deleted)
     end
 
     it "is one query however many orders there are (no query per order)" do

@@ -161,6 +161,20 @@ describe("sign in notification", () => {
     expect(modal.show).toHaveBeenCalled();
   });
 
+  it("shows certification names as text, not markup", async () => {
+    await load(MODAL);
+    const name = "<img src=x onerror=alert(1)>";
+    tapIn({ ...member, certification: [name, "Laser"] });
+    const box = $("sign-in-certifications");
+    expect(box.querySelector("img")).toBeNull();
+    const badges = box.querySelectorAll("span.badge.text-bg-light");
+    expect(Array.from(badges).map((b) => b.textContent)).toEqual([
+      name,
+      "Laser",
+    ]);
+    expect(box.firstElementChild.className).toBe("fs-4");
+  });
+
   it("copes with a person with few details", async () => {
     await load(MODAL);
     tapIn({ membership: false, signed_sheet: true, is_student: false });
