@@ -168,6 +168,15 @@ RSpec.describe JobOrder, type: :model do
       expect(result).to match_array(others)
     end
 
+    it "excludes a deleted order whatever its latest status" do
+      kept = order_in(:staff_approval)
+      deleted = order_in(:staff_approval)
+      deleted.update!(is_deleted: true)
+
+      expect(JobOrder.without_drafts).to include(kept)
+      expect(JobOrder.without_drafts).not_to include(deleted)
+    end
+
     it "is one query however many orders there are (no query per order)" do
       3.times { order_in(:staff_approval) }
       JobStatus.draft # memoized: not part of the scope's own cost
