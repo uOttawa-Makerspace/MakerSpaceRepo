@@ -44,6 +44,11 @@ class ProcessedOrder < ApplicationRecord
   REFUSED_PREFIX = "refused: "
   scope :refused, -> { where(status: "applied").where("last_error LIKE ?", "#{sanitize_sql_like(REFUSED_PREFIX)}%") }
 
+  # What an applied order records in last_error when part of it was refused; nil if none.
+  def self.refusal_note(refusals)
+    REFUSED_PREFIX + refusals.join("; ").first(200 - REFUSED_PREFIX.size) if refusals.any?
+  end
+
   def applied? = status == "applied"
 
   # The provider_ref of an order's delivery of `topic`.

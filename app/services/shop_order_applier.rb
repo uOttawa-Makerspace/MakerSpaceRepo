@@ -79,6 +79,7 @@ class ShopOrderApplier
 
   def initialize(record)
     @record = record
+    @refusals = []
   end
 
   def call
@@ -89,9 +90,8 @@ class ShopOrderApplier
       order = ProcessedOrder.lock.find(@record.id)
       next unless order.status == "received"
 
-      @refusals = []
       apply(plan)
-      order.update!(status: "applied", applied_at: Time.current, last_error: refusal_note, leased_until: nil)
+      order.update!(status: "applied", applied_at: Time.current, last_error: ProcessedOrder.refusal_note(@refusals), leased_until: nil)
       @applied_here = true
     end
   rescue StandardError => e
@@ -271,11 +271,6 @@ class ShopOrderApplier
     end
 
     apply_membership_by_email(plan)
-  end
-
-  # What an applied order records in last_error when part of it was refused (see ProcessedOrder.refused); nil if none.
-  def refusal_note
-    ProcessedOrder::REFUSED_PREFIX + @refusals.join("; ").first(200 - ProcessedOrder::REFUSED_PREFIX.size) if @refusals.any?
   end
 
   # Only a pending membership becomes paid. One that is already paid, revoked or failed is left as it is and
