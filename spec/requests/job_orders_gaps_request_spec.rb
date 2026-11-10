@@ -227,6 +227,26 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(ActionMailer::Base.deliveries.last.to).to eq([order.user.email])
     end
 
+    it "records the customer as the actor when the customer approves or declines a quote" do
+      approved = order_with_task!(status_key: :user_approval)
+      declined = order_with_task!(status_key: :user_approval)
+      session_login!(owner)
+      patch job_order_user_approval_path(approved), params: { approved: "true" }
+      patch job_order_user_approval_path(declined), params: { approved: "false" }
+      expect(approved.job_order_statuses.last.user).to eq(owner)
+      expect(declined.job_order_statuses.last.user).to eq(owner)
+      expect(status_names(declined).last).to eq("Declined")
+    end
+
+    it "records the staff member as the actor when staff decline a quote for the customer" do
+      order = order_with_task!(status_key: :user_approval)
+      session_login!(staff)
+      patch job_order_user_approval_path(order), params: { approved: "false" }
+      expect(status_names(order).last).to eq("Declined")
+      expect(order.job_order_statuses.last.user).to eq(staff)
+      expect(order.job_order_statuses.last.user).not_to eq(order.user)
+    end
+
     it "accepts the SENT_REMINDER state as an origin for a user approval" do
       order = order_with_task!(status_key: :sent_reminder)
       session_login!(owner)
