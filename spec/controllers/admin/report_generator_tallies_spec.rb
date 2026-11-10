@@ -246,7 +246,7 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
       expect(ivar(:info)).to be_nil
     end
 
-    it "with dates builds the per-weekday hourly averages and renames the report type" do
+    it "with dates builds the per-weekday hourly averages and keeps the report type" do
       create(:lab_session, space: alpha, user: create(:user), created_at: Time.utc(2026, 3, 10, 15))
       create(:lab_session, space: alpha, user: create(:user), created_at: Time.utc(2026, 3, 10, 15, 30))
       report("popular_hours", start_date: "2026-03-01", end_date: "2026-03-14")
@@ -255,7 +255,7 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
       # 2026-03-10 is a Tuesday (wday 2); two Tuesdays in the 14 days -> 2 visits / 2 days
       expect(info[alpha.id][2][15]).to eq(1.0)
       expect(info[alpha.id][2][14]).to eq(0.0)
-      expect(controller.params[:report_type]).to eq("popular_hours_per_period")
+      expect(controller.params[:report_type]).to eq("popular_hours")
     end
   end
 
