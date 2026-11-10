@@ -13,6 +13,6 @@ module AdminOnly
     @user = current_user
     return redirect_to("/") unless @user.admin?
 
-    authorized!(:admin)
+    record_authorization!(:admin)
   end
 end

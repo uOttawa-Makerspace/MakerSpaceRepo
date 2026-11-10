@@ -81,7 +81,10 @@ module Api
       end
 
       def authenticate!
-        return authorized!(:authenticated) if signed_in?
+        if signed_in?
+          record_authorization!(:authenticated)
+          return
+        end
 
         response.set_header("WWW-Authenticate", 'Bearer realm="makerepo"')
         render_error(:unauthenticated, "Authentication required", status: :unauthorized)
@@ -91,14 +94,22 @@ module Api
         authenticate!
         return if performed?
 
-        current_user.staff? ? authorized!(:staff) : authorization_denied
+        if current_user.staff?
+          record_authorization!(:staff)
+        else
+          authorization_denied
+        end
       end
 
       def require_admin!
         authenticate!
         return if performed?
 
-        current_user.admin? ? authorized!(:admin) : authorization_denied
+        if current_user.admin?
+          record_authorization!(:admin)
+        else
+          authorization_denied
+        end
       end
 
       def authorization_denied

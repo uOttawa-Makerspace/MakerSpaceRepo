@@ -15,13 +15,21 @@ module VolunteerAreaAccess
   def volunteer_access
     return signed_in unless signed_in?
 
-    current_user.staff? || current_user.volunteer? ? authorized!(:volunteer) : deny_volunteer_area
+    if current_user.staff? || current_user.volunteer?
+      record_authorization!(:volunteer)
+    else
+      deny_volunteer_area
+    end
   end
 
   def staff_access
     return signed_in unless signed_in?
 
-    current_user.staff? ? authorized!(:staff) : deny_volunteer_area
+    if current_user.staff?
+      record_authorization!(:staff)
+    else
+      deny_volunteer_area
+    end
   end
 
   def deny_volunteer_area

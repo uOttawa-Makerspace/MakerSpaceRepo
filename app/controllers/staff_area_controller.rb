@@ -12,7 +12,7 @@ class StaffAreaController < SessionsController
 
     @user = current_user
     if @user.staff? || @user.admin?
-      authorized!(:staff)
+      record_authorization!(:staff)
     else
       redirect_to root_path
       flash[:alert] = 'You cannot access this area.'

@@ -8,7 +8,7 @@ RSpec.describe Authorization, type: :controller do
     skip_authorization only: :open, reason: "Public test page"
 
     def checked
-      authorized!(:test)
+      record_authorization!(:test)
       head :ok
     end
 
@@ -100,6 +100,27 @@ RSpec.describe Authorization, type: :controller do
       Class.new(ApplicationController) { skip_authorization only: :a, reason: "x" }
       expect(ApplicationController.authorization_skips).to eq({})
     end
+  end
+
+  it "keeps an opt-out to the controller that declares it" do
+    parent = Class.new(ApplicationController) { skip_authorization only: :index, reason: "x" }
+    child = Class.new(parent)
+    expect(parent.authorization_skips.keys).to eq(["index"])
+    expect(child.authorization_skips).to eq({})
+  end
+
+  it "still requires a check on a subclass's own action of the same name" do
+    klass = Class.new(ApplicationController) do
+      require_authorization
+      skip_authorization only: :index, reason: "x"
+    end
+    child = Class.new(klass) { def index = head(:ok) }
+    child.define_singleton_method(:name) { "ChildController" }
+    sub = child.new
+    sub.request = ActionController::TestRequest.create(child)
+    sub.set_response!(child.make_response!(sub.request))
+    sub.request.path_parameters = { controller: "child", action: "index" }
+    expect { sub.process(:index) }.to raise_error(Authorization::NotChecked)
   end
 
   it "turns the guard on once per controller chain" do

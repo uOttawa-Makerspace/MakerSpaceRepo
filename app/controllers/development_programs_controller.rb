@@ -3,7 +3,7 @@
 class DevelopmentProgramsController < SessionsController
   require_authorization
   skip_authorization only: %i[index join_development_program],
-                     reason: "Not gated by grant_access today; the authorization rollout adds the checks"
+                     reason: "#{Authorization::ROLLOUT_PENDING}index and join_development_program are not behind grant_access"
   before_action :current_user
   before_action :with_development_header, except: :index
 
@@ -103,6 +103,6 @@ class DevelopmentProgramsController < SessionsController
   def grant_access
     return signed_in unless signed_in?
 
-    authorized!(:signed_in)
+    record_authorization!(:signed_in)
   end
 end
