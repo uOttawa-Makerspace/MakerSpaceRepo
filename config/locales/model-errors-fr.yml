@@ -74,6 +74,9 @@ fr:
         training_session:
           locked_once_awarded: "La formation, le niveau et le formateur ne peuvent plus être modifiés une fois que la séance a délivré des certifications."
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette séance de formation a délivré des certifications ou a des examens, elle ne peut donc pas être supprimée."
             training:
               blank: "Un sujet de formation est requis"
             user:

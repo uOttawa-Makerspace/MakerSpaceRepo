@@ -85,22 +85,33 @@ RSpec.describe TrainingSession, type: :model do
       it { should have_many(:exams) }
       it { should have_many(:awarded_certifications).dependent(:restrict_with_error) }
       it { should have_many(:exams).dependent(:restrict_with_error) }
+      let(:deleted_refusal) { "This training session has awarded certifications or has exams, so it cannot be deleted." }
+
       it "refuses to be deleted while it has certifications, keeping them" do
         training_session = create(:training_session_with_certifications)
         expect { training_session.destroy }.not_to change { [TrainingSession.count, Certification.count] }
-        expect(training_session.errors.full_messages.to_sentence).to include("certifications")
+        expect(training_session.errors.full_messages).to eq([deleted_refusal])
       end
       it "refuses to be deleted when its only certification is demoted" do
         training_session = create(:training_session)
         cert = create(:certification, training_session: training_session, training: training_session.training)
         cert.update!(active: false)
         expect { training_session.destroy }.not_to change { [TrainingSession.count, Certification.unscoped.count] }
-        expect(training_session.errors.full_messages.to_sentence).to include("certifications")
+        expect(training_session.errors.full_messages).to eq([deleted_refusal])
       end
       it "refuses to be deleted while it has exams, keeping them" do
         training_session = create(:training_session_with_exams)
         expect { training_session.destroy }.not_to change { [TrainingSession.count, Exam.count] }
-        expect(training_session.errors.full_messages.to_sentence).to include("exams")
+        expect(training_session.errors.full_messages).to eq([deleted_refusal])
+      end
+      it "explains the refusal in French" do
+        training_session = create(:training_session_with_exams)
+        training_session.destroy
+        I18n.with_locale(:fr) do
+          expect(training_session.errors.full_messages).to eq(
+            ["Cette séance de formation a délivré des certifications ou a des examens, elle ne peut donc pas être supprimée."]
+          )
+        end
       end
       it "is deleted when it has no certifications or exams" do
         training_session = create(:training_session)

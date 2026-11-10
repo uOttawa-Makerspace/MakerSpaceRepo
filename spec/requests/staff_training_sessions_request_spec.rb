@@ -440,6 +440,15 @@ RSpec.describe "Staff training sessions", type: :request do
     end
 
     describe "DELETE destroy" do
+      let(:refusal_en) do
+        "The training session was not deleted. " \
+          "This training session has awarded certifications or has exams, so it cannot be deleted."
+      end
+      let(:refusal_fr) do
+        "La séance de formation n'a pas été supprimée. " \
+          "Cette séance de formation a délivré des certifications ou a des examens, elle ne peut donc pas être supprimée."
+      end
+
       it "keeps the session and gives the reason when it cannot be destroyed" do
         allow_any_instance_of(TrainingSession).to receive(:destroy) { |s| s.errors.add(:base, "It is in use") && false }
         expect { delete staff_training_session_path(record) }.not_to change(TrainingSession, :count)
@@ -451,8 +460,13 @@ RSpec.describe "Staff training sessions", type: :request do
         expect { delete staff_training_session_path(record) }
           .not_to change { [TrainingSession.count, Certification.unscoped.count] }
         expect(Certification.unscoped.exists?(cert.id)).to be(true)
-        expect(flash[:alert]).to start_with("The training session was not deleted.")
-        expect(flash[:alert]).to include("certifications")
+        expect(flash[:alert]).to eq(refusal_en)
+      end
+
+      it "gives the reason in French when it has certifications" do
+        create(:certification, training_session: record, training: training)
+        delete staff_training_session_path(record), params: { locale: "fr" }
+        expect(flash[:alert]).to eq(refusal_fr)
       end
 
       it "keeps a session whose only certification is demoted, and its exams" do
@@ -461,15 +475,20 @@ RSpec.describe "Staff training sessions", type: :request do
         create(:exam, training_session: record)
         expect { delete staff_training_session_path(record) }
           .not_to change { [TrainingSession.count, Certification.unscoped.count, Exam.count] }
-        expect(flash[:alert]).to start_with("The training session was not deleted.")
-        expect(flash[:alert]).to include("certifications")
+        expect(flash[:alert]).to eq(refusal_en)
       end
 
       it "keeps a session that has exams" do
         create(:exam, training_session: record)
         expect { delete staff_training_session_path(record) }
           .not_to change { [TrainingSession.count, Exam.count] }
-        expect(flash[:alert]).to include("exams")
+        expect(flash[:alert]).to eq(refusal_en)
+      end
+
+      it "gives the reason in French when it has exams" do
+        create(:exam, training_session: record)
+        delete staff_training_session_path(record), params: { locale: "fr" }
+        expect(flash[:alert]).to eq(refusal_fr)
       end
 
       it "deletes a session without certifications or exams, redirecting to the staff dashboard" do

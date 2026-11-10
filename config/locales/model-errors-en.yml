@@ -74,6 +74,9 @@ en:
         training_session:
           locked_once_awarded: "The training, level and trainer cannot be changed once the session has awarded certifications."
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This training session has awarded certifications or has exams, so it cannot be deleted."
             training:
               blank: "A training subject is required"
             user:
