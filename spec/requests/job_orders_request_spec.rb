@@ -407,6 +407,15 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).to include('name="redirect_step"')
     end
 
+    it "submits each entry card with a plain submit button and no inline script handler" do
+      http_login!(owner)
+      seed_job_types!
+      get new_job_orders_path
+      page = Nokogiri::HTML(response.body)
+      expect(page.css("form button[type=submit]").size).to be >= 2
+      expect(page.css("[onclick]")).to be_empty
+    end
+
     it "shows the Ready to Make card with its type when the type exists" do
       http_login!(owner)
       seed_job_types!
