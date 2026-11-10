@@ -328,6 +328,39 @@ describe("unavailable dates", () => {
     expect(unavailableDates("Ada")).not.toBe("");
   });
 
+  it("flags a repeating event planned months ahead against a repeating unavailability", async () => {
+    vi.useFakeTimers({
+      toFake: ["Date"],
+      now: new Date("2026-01-05T12:00:00Z"),
+    });
+    try {
+      const feed = [
+        {
+          id: 1,
+          name: "Ada",
+          color: "#f00",
+          unavailabilities: [
+            {
+              start: wall("2027-03-15T13:00"),
+              end: wall("2027-03-15T15:00"),
+              duration: 2 * 3600 * 1000,
+              rrule: "DTSTART:20270315T130000\nRRULE:FREQ=DAILY;COUNT=30",
+            },
+          ],
+        },
+      ];
+      await load(feed);
+      fire($("eventModal"), "show.bs.modal");
+      $("start_time_field").value = "2027-03-17T14:00";
+      $("end_time_field").value = "2027-03-17T14:30";
+      $("recurrence_frequency").value = "DAILY";
+      tomInstances[0].handlers.focus();
+      expect(unavailableDates("Ada")).not.toBe("");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("warns and carries on when a repeating unavailability has an unreadable rule", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const feed = [
