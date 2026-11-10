@@ -114,8 +114,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).not_to include(I18n.t("job_orders.public_page.admin_page"))
     end
 
-    # N+1 pinned
-    it "splits draft orders (partly created) from submitted ones", skip_bullet: true do
+    it "splits draft orders (partly created) from submitted ones" do
       draft = order_with_task!(owner: owner, status_key: :draft)
       empty_draft = make_job_order!(owner: owner, status_key: :draft)
       submitted = order_with_task!(owner: owner, status_key: :staff_approval)
@@ -582,7 +581,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
     it "requires staff/admin (a regular user is bounced to root)" do
       http_login!(owner)
-      patch job_order_quote_path(order), params: quote_params(order, order.job_tasks.first)
+      patch_quote order, quote_params(order, order.job_tasks.first)
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.cannot_access_area"))
     end
@@ -593,7 +592,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       it "saves task quote, staff comments, chat message, sets USER_APPROVAL and emails the quote" do
         task = order.job_tasks.first
         expect do
-          patch job_order_quote_path(order), params: quote_params(order, task)
+          patch_quote order, quote_params(order, task)
         end.to change { ActionMailer::Base.deliveries.size }.by(1)
 
         expect(response).to redirect_to(job_order_path(order))
@@ -623,8 +622,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "switches to the re-approved wording after a second quote submission" do
         task = order.job_tasks.first
-        patch job_order_quote_path(order), params: quote_params(order, task)
-        patch job_order_quote_path(order), params: quote_params(order, task)
+        patch_quote order, quote_params(order, task)
+        patch_quote order, quote_params(order, task)
 
         second = ActionMailer::Base.deliveries.last
         expect(second.subject)
@@ -633,7 +632,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "attaches staff files and prefixes stored filenames with the order id" do
         task = order.job_tasks.first
-        patch job_order_quote_path(order), params: quote_params(order, task).merge(
+        patch_quote order, quote_params(order, task).merge(
           "task_#{task.id}_staff_files" => [FilesTestHelper.stl]
         )
         task.reload
@@ -645,7 +644,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       it "replaces job quote line items from submitted params" do
         order.job_quote_line_items.create!(description: "old", price: 1)
         task = order.job_tasks.first
-        patch job_order_quote_path(order), params: quote_params(order, task).merge(
+        patch_quote order, quote_params(order, task).merge(
           job_quote_line_items: {
             "0" => { description: "Expedited SLA resin", price: "12.5" },
             "1" => { description: "", price: "" }
@@ -658,8 +657,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       it "declines: sets DECLINED, emails the user, no USER_APPROVAL status" do
         task = order.job_tasks.first
         expect do
-          patch job_order_quote_path(order),
-                params: quote_params(order, task).merge(approved: "false")
+          patch_quote order, quote_params(order, task).merge(approved: "false")
         end.to change { ActionMailer::Base.deliveries.size }.by(1)
 
         expect(status_names(order)).to end_with("Declined")
@@ -672,8 +670,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "blank approved just flashes the error and renders nothing (204)" do
         task = order.job_tasks.first
-        patch job_order_quote_path(order),
-              params: quote_params(order, task).merge(approved: "")
+        patch_quote order, quote_params(order, task).merge(approved: "")
         expect(response.status).to eq(204)
         expect(response.body).to be_blank
         expect(flash[:alert]).to eq(I18n.t("errors.job_orders.quote_choice_missing"))
@@ -1019,8 +1016,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   # ------------------------------------------------------- admin / settings
 
   describe "GET /job_orders/admin" do
-    # N+1 pinned
-    it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)", skip_bullet: true do
+    it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)" do
       draft = make_job_order!(owner: owner, status_key: :draft)
       listed = order_with_task!(owner: owner, status_key: :staff_approval)
 

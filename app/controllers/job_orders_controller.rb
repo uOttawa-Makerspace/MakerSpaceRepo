@@ -43,7 +43,7 @@ class JobOrdersController < SessionsController
     @job_orders = []
     @archived_job_orders = []
     @drafts = []
-    @user.job_orders.not_deleted.includes(job_order_statuses: :job_status).each do |jo|
+    @user.job_orders.not_deleted.includes(latest_job_order_status: :job_status).each do |jo|
       next unless jo.latest_status
 
       if jo.latest_status.job_status == JobStatus.draft
@@ -52,6 +52,7 @@ class JobOrdersController < SessionsController
         @job_orders << jo
       end
     end
+    preload_list_rows
   end
 
   def show
@@ -189,7 +190,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       # the new quote's draft rule voiding any live Shopify draft (fail closed: if it cannot be deleted
       # nothing is written: no price, status or email). A refusal is reported by the model, once.
       result = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus.user_approval,
-                                      actor: @user) { apply_quote_params! }
+                                      actor: @user, expected_status_row_id: form_status_row_id) { apply_quote_params! }
       unless result.ok?
         flash[:alert] = refusal_alert(result, requote: true)
         return redirect_to job_order_path(@job_order.id)
@@ -206,7 +207,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       end
     elsif params[:approved] == "false"
       # DECLINE JOB. Never once paid (transition! reads the status under the row lock).
-      declined = @job_order.transition!(from: JobOrder.quotable_statuses, to: JobStatus.declined, actor: @user)
+      declined = @job_order.transition!(from: JobOrder.declinable_statuses, to: JobStatus.declined, actor: @user,
+                                         expected_status_row_id: form_status_row_id)
 
       if declined.ok?
         post_user_comment
@@ -351,7 +353,8 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     @statuses = JobStatus.where.not(name: "Draft")
     @job_types = JobType.all
 
-    @job_orders = JobOrder.without_drafts.includes(job_order_statuses: :job_status).order(created_at: :desc)
+    @job_orders = JobOrder.without_drafts.includes(:user, :assigned_staff, latest_job_order_status: :job_status, job_tasks: :job_type)
+                       .order(created_at: :desc)
   end
 
   def settings
@@ -508,6 +511,18 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       flash[:alert] = t("job_orders.alerts.cannot_access_area")
       redirect_to root_path
     
+  end
+
+  # The drafts' links read their tasks; the submitted orders' rows read each task's job type too.
+  def preload_list_rows
+    ActiveRecord::Associations::Preloader.new(records: @drafts, associations: :job_tasks).call
+    ActiveRecord::Associations::Preloader.new(records: @job_orders, associations: { job_tasks: :job_type }).call
+  end
+
+  # The status row the quote or decline form was rendered from. A missing field is 0, which matches no row, so the
+  # request is refused as a stale form.
+  def form_status_row_id
+    params[:status_row_id].to_i
   end
 
   # The quote form's writes, run by JobOrder#transition! under the order's row lock (the order was reloaded by
