@@ -861,6 +861,17 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).not_to include("color:red")
     end
 
+    it "strips scripts and event handlers from raw HTML in the markdown" do
+      allow(File).to receive(:read).and_call_original
+      markdown = +"# v1\n\n<script>alert(1)</script>\n\n<img src=\"x\" onerror=\"alert(2)\">\n\n<a href=\"javascript:alert(3)\">link</a>\n"
+      allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(markdown)
+      get changelog_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("<script>alert(1)")
+      expect(response.body).not_to include("onerror")
+      expect(response.body).not_to include("javascript:alert(3)")
+    end
+
     it "does not turn a renderer error into the fallback" do
       allow(File).to receive(:read).and_call_original
       allow(File).to receive(:read).with(Rails.root.join("CHANGELOG.md")).and_return(+"# v1\n")
