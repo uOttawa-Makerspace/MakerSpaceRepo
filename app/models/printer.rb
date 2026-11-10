@@ -41,17 +41,17 @@ class Printer < ApplicationRecord
     printer_issues.where(active: true)
   end
 
-  def group_printer_issues
+  def group_printer_issues(except: nil)
     # NOTE this might cause performance issues
     # what is this, O(n^2)?
     # If you ever touch this, checkout the one in printer_issues_controller#index
-    active_printer_issues.group_by do |issue|
+    active_printer_issues.where.not(id: except).group_by do |issue|
       PrinterIssue.summaries.values.detect { |s| issue.summary.include? s } ||
         "Other"
     end
   end
 
-  def count_printer_issues
-    group_printer_issues.transform_values { |issues| issues.count }
+  def count_printer_issues(except: nil)
+    group_printer_issues(except: except).transform_values { |issues| issues.count }
   end
 end

@@ -25,8 +25,6 @@ module JsErrorCheck
     # DNS failure. Extend the host list only with the same kind of resource.
     { id: "js-error-04", path: %r{\Ahttps://(challenges\.cloudflare\.com|cdn\.userway\.org|www\.youtube\.com)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
     # Found by the browser crawl (spec/system/page_crawl_spec.rb).
-    # printer_issues.js binds a listener on an element the page lacks.
-    { id: "js-error-06", path: %r{/assets/printer_issues-}, message: /printer_issues-[\w-]+\.js .*Cannot read properties of null \(reading 'addEventListener'\)/ },
     # the home/changelog hours widget calls /open_hours, which
     # fetches external ICS feeds (unreachable in tests: 500).
     { id: "js-error-07", path: %r{/open_hours}, message: %r{/open_hours - Failed to load resource: .* 500} },

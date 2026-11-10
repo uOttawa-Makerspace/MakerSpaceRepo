@@ -44,8 +44,8 @@ class PrinterIssuesController < StaffAreaController
     @issueSummary =
       @printers
         .filter_map do |printer|
-          count = printer.count_printer_issues.count
-          [printer.id, printer.count_printer_issues] if count.positive?
+          counts = printer.count_printer_issues(except: @issue.id)
+          [printer.id, counts] if counts.any?
         end
         .to_h
   end
@@ -71,8 +71,8 @@ class PrinterIssuesController < StaffAreaController
   end
 
   def edit
-    new
     @issue = PrinterIssue.find(params[:id])
+    new
     render :new, locals: { is_edit: true }
   end
 
