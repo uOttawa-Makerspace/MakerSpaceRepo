@@ -332,6 +332,14 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
     end
 
+    it "refuses an unreadable deposit return date, leaving the key held and its transaction open" do
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 30 }
+      patch admin_key_revoke_key_path(key), params: { deposit_return_date: "not a date" }
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("The key was not revoked. Enter the deposit return date as a valid date.")
+      expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
+      expect(KeyTransaction.where(key: key).not_returned.count).to eq(1)
+    end
   end
 
   describe "key request approval" do

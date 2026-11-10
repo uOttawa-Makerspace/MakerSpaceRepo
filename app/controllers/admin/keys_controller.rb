@@ -101,7 +101,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def revoke_key
-    @key.revoke!(params[:deposit_return_date]&.to_date)
+    @key.revoke!(deposit_return_date_param)
     redirect_to admin_keys_path, notice: "Successfully revoked key"
   rescue ActiveRecord::RecordInvalid, Key::StateError => e
     redirect_to admin_keys_path,
@@ -133,6 +133,14 @@ class Admin::KeysController < AdminAreaController
       :custom_keycode,
       :additional_info
     )
+  end
+
+  # The posted deposit return date, or nil when none was given. An unreadable date is refused before
+  # anything is changed.
+  def deposit_return_date_param
+    params[:deposit_return_date]&.to_date
+  rescue Date::Error
+    raise Key::StateError, I18n.t("errors.admin.keys.deposit_return_date_invalid")
   end
 
   def request_label(key_request)
