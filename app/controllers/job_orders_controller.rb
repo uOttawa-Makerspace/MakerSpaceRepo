@@ -323,7 +323,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     # One locked operation: the order's Shopify draft (a payable invoice) is settled with the delete, fail closed.
     result = @job_order.soft_delete!(actor: @user)
     if result.ok?
-      flash[:notice] = "Job order deleted successfully."
+      flash[:notice] = t("job_orders.alerts.deleted")
       redirect_to orders_list_path
     else
       flash[:alert] = t(result.message_key("job_orders.alerts.delete_refused", reasons: JobOrder::TransitionResult::DELETE_REASONS),

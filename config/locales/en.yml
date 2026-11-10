@@ -320,6 +320,7 @@ en:
       assign_staff_not_staff: "Only a staff member or an admin can be assigned to a job order."
       staff_assigned: "%{name} has been assigned to this job order."
       no_staff_assigned: "No staff has been assigned to this job order."
+      deleted: "Job order deleted successfully."
       job_order_submitted_for_approval: "Your job order has been submitted for staff approval!"
       job_order_updated: "Your job order has been updated!"
       approval_magic_link_expired: "The following Job Order Approval link is invalid or has expired. Please Sign In to look at the Job Order Page."
