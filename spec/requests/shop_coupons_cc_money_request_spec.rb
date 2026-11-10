@@ -313,6 +313,19 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
       end
 
+      it "refuses a code that is already in use (422, nothing saved)" do
+        create(:coupon_code, :unclaimed, code: "TAKEN-1")
+        expect { post coupon_codes_path, params: { coupon_code: { code: "TAKEN-1", cc_cost: 5, dollar_cost: 3 } } }
+          .not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "refuses a coupon without a positive dollar value" do
+        expect { post coupon_codes_path, params: { coupon_code: { code: "ZERO", cc_cost: 5, dollar_cost: 0 } } }
+          .not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
       it "refuses a non-numeric price on create with the same message" do
         expect { post coupon_codes_path, params: { coupon_code: { code: "X", cc_cost: "abc", dollar_cost: 3 } } }
           .not_to change(CouponCode, :count)
