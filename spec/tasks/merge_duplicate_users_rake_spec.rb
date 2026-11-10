@@ -26,6 +26,18 @@ RSpec.describe "users:merge_duplicates" do
     $stdout = original_stdout
   end
 
+  it "keeps a hidden repository of the duplicate, with its photo, for the kept user" do
+    hidden = create(:repository, owner: duplicate, title: "Hidden One", users: [duplicate])
+    photo_ids = hidden.photos.pluck(:id)
+    hidden.hide!
+
+    merge
+
+    expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    expect(Repository.unscoped.find(hidden.id)).to have_attributes(user_id: primary.id, deleted: true)
+    expect(Photo.where(id: photo_ids).pluck(:repository_id)).to eq([hidden.id])
+  end
+
   it "moves the duplicate's card to the kept user when that user has none, and the merge completes" do
     card = create(:rfid, user: duplicate, mac_address: "aa:aa:aa:aa:aa:aa")
 

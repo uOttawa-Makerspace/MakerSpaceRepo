@@ -93,8 +93,6 @@ RSpec.describe "Files of a deleted repository", type: :request do
   end
 
   describe "query cost" do
-    include QueryCounter
-
     def attachment_queries(&block)
       count = 0
       counter = ->(*, payload) { count += 1 if payload[:sql].include?('FROM "active_storage_attachments"') }
