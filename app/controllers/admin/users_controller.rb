@@ -126,7 +126,7 @@ class Admin::UsersController < AdminAreaController
   end
 
   def delete_repository
-    Repository.find(params[:id]).destroy
+    Repository.find(params[:id]).hide!
     redirect_to root_path, notice: "Repository Deleted!"
   end
 

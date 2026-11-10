@@ -121,7 +121,37 @@ class Repository < ApplicationRecord
 
   # Undo what creating it awarded: 25 for a repository, 15 for a make
   before_destroy do
-    users.each { |u| u.decrement!(:reputation, make_id.present? ? 15 : 25) }
+    users.each { |u| u.decrement!(:reputation, creation_reputation) }
+  end
+
+  # Deleting a repository hides it: its photos, files, comments, likes and makes stay as they were
+  # (and so do the stored files), and an admin can bring it back with #restore!. The members lose
+  # the reputation creating it gave them. False, changing nothing, when it is already hidden (a
+  # repeated or simultaneous request). The cached zip is dropped once the transaction commits.
+  def hide!
+    transaction do
+      lock!
+      next false if deleted?
+
+      users.each { |u| u.decrement!(:reputation, creation_reputation) }
+      update_columns(deleted: true, updated_at: Time.current)
+      ActiveRecord.after_all_transactions_commit { clear_zip_cache }
+      true
+    end
+  end
+
+  # Brings a hidden repository back and gives its members the reputation again. False, changing
+  # nothing, when it is not hidden or its owner's account is deleted (restoring that account brings
+  # its repositories back).
+  def restore!
+    transaction do
+      lock!
+      next false unless deleted? && User.exists?(user_id)
+
+      users.each { |u| u.increment!(:reputation, creation_reputation) }
+      update_columns(deleted: false, updated_at: Time.current)
+      true
+    end
   end
 
   def thumbnail_variant(variant)
@@ -133,6 +163,11 @@ class Repository < ApplicationRecord
       photos.first.image
     end
   end
+
+  def creation_reputation
+    make_id.present? ? 15 : 25
+  end
+  private :creation_reputation
 
   def private?
     share_type.eql?('private')

@@ -165,7 +165,7 @@ class RepositoriesController < SessionsController
   end
 
   def destroy
-    @repository.destroy
+    @repository.hide!
     respond_to do |format|
       format.html do
         redirect_to user_path(@repository.user_username),

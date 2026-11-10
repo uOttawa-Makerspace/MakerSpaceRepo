@@ -1026,12 +1026,15 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "DELETE /admin/users/delete_repository" do
     before { login!(admin) }
 
-    it "destroys any repository and redirects to root" do
+    it "hides any repository, keeps its rows, and redirects to root" do
       repo = create(:repository)
+      create(:comment, repository: repo)
       delete delete_repository_admin_users_path, params: { id: repo.id }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("Repository Deleted!")
       expect(Repository.exists?(repo.id)).to be(false)
+      expect(Repository.unscoped.find(repo.id).deleted).to be(true)
+      expect(Comment.where(repository_id: repo.id).count).to eq(1)
     end
 
     it "unknown id: 404" do
