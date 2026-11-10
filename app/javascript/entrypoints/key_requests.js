@@ -21,13 +21,3 @@ if (spaceSelect && !spaceSelect.tomselect) {
     searchOnKeyUp: true,
   });
 }
-
-let deleteFiles = document.getElementById("delete_files");
-[...document.getElementsByClassName("file-remove")].forEach((el) => {
-  el.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    deleteFiles.value += el.id + ",";
-    el.parentElement.parentElement.remove();
-  });
-});

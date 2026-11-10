@@ -5,19 +5,6 @@ import "datatables.net-select-bs5";
 import { csrfHeaders } from "../src/csrf";
 import { reportFailure, requestJson } from "../src/request_error";
 
-// Checkbox to toggle the student section on the form
-document.addEventListener("turbo:load", function () {
-  document
-    .querySelector("#locker_rental_requested_as")
-    ?.addEventListener("change", function () {
-      const repoSelect = document.querySelector("#repo-select");
-      if (repoSelect) {
-        repoSelect.hidden = !this.checked;
-        repoSelect.disabled = !this.checked;
-      }
-    });
-});
-
 // Handle grabbing the product gid on link paste
 export function handleLinkInput() {
   const url = this.value;

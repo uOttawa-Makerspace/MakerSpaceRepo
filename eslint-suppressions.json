@@ -64,11 +64,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/locker_rentals.js": {
-    "no-unused-vars": {
-      "count": 6
-    }
-  },
   "app/javascript/entrypoints/lockers.js": {
     "complexity": {
       "count": 1
