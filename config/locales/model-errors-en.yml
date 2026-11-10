@@ -164,6 +164,10 @@ en:
               taken: "Title already exists"
         repository:
           attributes:
+            base:
+              not_hidden: "It is already restored."
+              owner_deleted: "The owner's account is deleted. Restore the account to bring its repositories back."
+              title_taken: "The owner already has another repository with the same title. Rename that one first."
             title:
               blank: "Project title is required."
               taken: "Project title is already in use."

@@ -14,11 +14,6 @@ module Repository::Hideable
 
   included do
     default_scope { where(deleted: false) }
-
-    # Undo what creating it awarded: 25 for a repository, 15 for a make
-    before_destroy do
-      users.each { |u| u.decrement!(:reputation, creation_reputation) }
-    end
   end
 
   class_methods do
@@ -30,25 +25,6 @@ module Repository::Hideable
     # The hidden repositories, newest change first.
     def hidden
       including_hidden.where(deleted: true).order(updated_at: :desc, id: :desc)
-    end
-
-    # True when a stored file belongs only to hidden repositories (as a photo, a repo file or
-    # directly): it must not be served. A file that is also attached to something visible is served.
-    def hides_blob?(blob)
-      attachments = ActiveStorage::Attachment.where(blob_id: blob.id)
-      hidden_attachments = attachments.where(id: hidden_attachment_ids)
-      hidden_attachments.exists? && !attachments.where.not(id: hidden_attachments.select(:id)).exists?
-    end
-
-    private
-
-    def hidden_attachment_ids
-      hidden_ids = hidden.reorder(nil).select(:id)
-      attachments = ActiveStorage::Attachment
-      direct = attachments.where(record_type: "Repository", record_id: hidden_ids)
-      photos = attachments.where(record_type: "Photo", record_id: Photo.where(repository_id: hidden_ids).select(:id))
-      files = attachments.where(record_type: "RepoFile", record_id: RepoFile.where(repository_id: hidden_ids).select(:id))
-      direct.or(photos).or(files).select(:id)
     end
   end
 
@@ -68,23 +44,18 @@ module Repository::Hideable
     end
   end
 
-  # Why #restore! would refuse, or nil when it would go ahead: :not_hidden (nothing to restore, or
-  # already restored), :owner_deleted (restoring that account brings its repositories back) or
-  # :title_taken (the owner has another visible repository with this title; titles are unique per owner).
-  def restore_refusal
-    return :not_hidden unless deleted?
-    return :owner_deleted unless User.exists?(user_id)
-
-    :title_taken if Repository.exists?(user_id: user_id, title: title)
-  end
-
   # Brings a hidden repository back. The current members get the creation reputation, as they
   # lost it when it was hidden (a member who joined or left since is treated by what they are now).
-  # False, changing nothing, when there is a #restore_refusal.
+  # False, changing nothing, when it cannot be restored; errors[:base] then says why (not hidden,
+  # because it was already restored; the owner's account is deleted, and restoring that account
+  # brings its repositories back; or the owner has another visible repository with the same title).
   def restore!
     transaction do
       lock!
-      next false if restore_refusal
+      errors.clear
+      reason = restore_refusal
+      errors.add(:base, reason) if reason
+      next false if reason
 
       users.each { |u| u.increment!(:reputation, creation_reputation) }
       update_columns(deleted: false, updated_at: Time.current)
@@ -96,5 +67,12 @@ module Repository::Hideable
 
   def creation_reputation
     make_id.present? ? 15 : 25
+  end
+
+  def restore_refusal
+    return :not_hidden unless deleted?
+    return :owner_deleted unless User.exists?(user_id)
+
+    :title_taken if Repository.exists?(user_id: user_id, title: title)
   end
 end

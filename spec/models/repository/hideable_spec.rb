@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Repository, "hiding and restoring" do
+RSpec.describe Repository::Hideable do
   let(:owner) { create(:user, :regular_user) }
   let!(:repo) { create(:repository, owner: owner, title: "Scope Check", users: [owner]) }
 
@@ -30,8 +30,8 @@ RSpec.describe Repository, "hiding and restoring" do
 
     it "brings the repository back and gives its current members the reputation, only once" do
       owner.update!(reputation: 50)
-      expect(repo.restore_refusal).to be_nil
       expect(repo.restore!).to be(true)
+      expect(repo.errors).to be_empty
       expect(repo.restore!).to be(false)
       expect(Repository.find(repo.id)).to eq(repo)
       expect(owner.reload.reputation).to eq(75)
@@ -45,39 +45,29 @@ RSpec.describe Repository, "hiding and restoring" do
       expect(newcomer.reload.reputation).to eq(25)
     end
 
-    it "refuses with :not_hidden once it is back" do
+    it "refuses once it is back, saying it is already restored" do
       repo.restore!
-      expect(repo.restore_refusal).to eq(:not_hidden)
+      expect(repo.restore!).to be(false)
+      expect(repo.errors.full_messages).to eq(["It is already restored."])
     end
 
-    it "refuses with :owner_deleted when the owner's account is deleted" do
+    it "refuses when the owner's account is deleted, saying so" do
       owner.update_columns(deleted: true)
-      expect(repo.restore_refusal).to eq(:owner_deleted)
       expect(repo.restore!).to be(false)
+      expect(repo.errors.full_messages).to eq(["The owner's account is deleted. Restore the account to bring its repositories back."])
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
     end
 
-    it "refuses with :title_taken when the owner has another visible repository with the title" do
+    it "refuses when the owner has another visible repository with the title, saying so" do
       create(:repository, owner: owner, title: "Other").update_columns(title: "Scope Check")
-      expect(repo.restore_refusal).to eq(:title_taken)
       expect(repo.restore!).to be(false)
+      expect(repo.errors.full_messages).to eq(["The owner already has another repository with the same title. Rename that one first."])
       expect(Repository.where(user_id: owner.id, title: "Scope Check").count).to eq(1)
     end
 
     it "does not mind a visible repository of another owner with the same title" do
       create(:repository, title: "Scope Check")
       expect(repo.restore!).to be(true)
-    end
-  end
-
-  describe ".hides_blob?" do
-    it "is true for the photo of a hidden repository, false once restored or for other files" do
-      blob = repo.photos.first.image.blob
-      expect(Repository.hides_blob?(blob)).to be(false)
-      repo.hide!
-      expect(Repository.hides_blob?(blob)).to be(true)
-      repo.restore!
-      expect(Repository.hides_blob?(blob)).to be(false)
     end
   end
 end

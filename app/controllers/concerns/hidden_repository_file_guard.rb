@@ -1,13 +1,17 @@
 # frozen_string_literal: true
 
-# Applied to the stock Active Storage controllers that serve files (see
-# config/initializers/hidden_repository_file_guard.rb). A file that belongs only to a hidden
+# Included in the stock Active Storage controllers that serve files (see
+# config/initializers/hidden_repository_file_guard.rb), which adds a before_action filter. A file that belongs only to a hidden
 # (deleted) repository, as a photo or a repo file, answers 404 to everyone but a signed-in admin, so
 # deleting a repository also stops its files from being served. Any other file is served as before.
 #
 # The controllers inherit from ActiveSupport's base, not ApplicationController, so the session user
-# is read here, through the same SessionAuthenticator rule as DirectUploadAuthentication. The guard
+# is read here, through the same SessionAuthenticator rule as DirectUploadAuthentication. The filter
 # is prepended so it runs before the proxy controllers switch the session off.
+#
+# Cost: every file request does one blob lookup and, when the blob has attachments, one or two small
+# indexed queries (ActiveStorage::Blob#hidden_by_repository?). Files are normally cached by the
+# browser or a CDN, and a blob with no attachment to a hidden repository answers from the first query.
 require Rails.root.join("lib/jwt_authenticator")
 
 module HiddenRepositoryFileGuard
@@ -30,7 +34,7 @@ module HiddenRepositoryFileGuard
 
   def refuse_hidden_repository_file
     blob = requested_blob
-    return if blob.nil? || !Repository.hides_blob?(blob)
+    return if blob.nil? || !blob.hidden_by_repository?
     return @admin_sees_hidden_file = true if session_admin?
 
     head :not_found

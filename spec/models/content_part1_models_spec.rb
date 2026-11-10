@@ -167,12 +167,12 @@ RSpec.describe "Content models (part 1 characterization)" do
       end
     end
 
-    it "destroy lowers every member's reputation by 25 (can go negative) and removes dependents" do
+    it "destroy removes dependents and leaves the members' reputation alone (hide! is what takes it back)" do
       member = create(:user, reputation: 10)
       repo.users << member
       create(:comment, repository: repo)
       repo.destroy
-      expect(member.reload.reputation).to eq(-15)
+      expect(member.reload.reputation).to eq(10)
       expect(Comment.count).to eq(0)
     end
 

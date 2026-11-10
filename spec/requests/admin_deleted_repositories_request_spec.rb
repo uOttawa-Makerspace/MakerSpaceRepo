@@ -71,7 +71,7 @@ RSpec.describe "Admin deleted repositories", type: :request do
       owner.update_columns(deleted: true)
       post admin_deleted_repository_restoration_path(repo.id)
       expect(response).to redirect_to(admin_deleted_repositories_path)
-      expect(flash[:alert]).to start_with("The repository was not restored")
+      expect(flash[:alert]).to eq("The repository was not restored. The owner's account is deleted. Restore the account to bring its repositories back.")
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
     end
 
@@ -79,7 +79,7 @@ RSpec.describe "Admin deleted repositories", type: :request do
       create(:repository, owner: owner, title: "Other").update_columns(title: "Gone Soon")
       post admin_deleted_repository_restoration_path(repo.id)
       expect(response).to redirect_to(admin_deleted_repositories_path)
-      expect(flash[:alert]).to include("same title")
+      expect(flash[:alert]).to eq("The repository was not restored. The owner already has another repository with the same title. Rename that one first.")
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
     end
 
