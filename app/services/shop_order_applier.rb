@@ -19,6 +19,7 @@ class ShopOrderApplier
   class UnknownLockerRental < StandardError; end
   class UnknownMembership < StandardError; end
   class UnresolvedMembershipOrder < StandardError; end
+  class MembershipNotPending < StandardError; end
   class UnresolvedCcOrder < StandardError; end
   # Shopify refused a metafield lookup for good (an access or invalid-id error): reported once, and the order goes
   # on without that reference. The locker and membership branches that needed it apply nothing (the reference is
@@ -264,16 +265,24 @@ class ShopOrderApplier
     return if plan.left_unapplied&.include?(:membership)
 
     if plan.membership_ref.present?
-      membership = Membership.find_by(id: plan.membership_ref)
-      if membership
-        membership.update!(status: :paid)
-      else
-        report_unresolved(plan, UnknownMembership, "membership", "references unknown membership #{plan.membership_ref}")
-      end
+      apply_referenced_membership(plan)
       return
     end
 
     apply_membership_by_email(plan)
+  end
+
+  # Only a pending membership becomes paid. One that is already paid, revoked or failed is left as it is and
+  # reported with the order, so a late or second order cannot reactivate a membership staff took away.
+  def apply_referenced_membership(plan)
+    membership = Membership.find_by(id: plan.membership_ref)
+    if membership.nil?
+      report_unresolved(plan, UnknownMembership, "membership", "references unknown membership #{plan.membership_ref}")
+    elsif !membership.mark_paid_if_pending
+      report_unresolved(plan, MembershipNotPending, "membership",
+                        "references membership #{membership.id} that is #{membership.reload.status}, not pending",
+                        membership_id: membership.id)
+    end
   end
 
   # Fallback when the order carries no membership reference: the customer's email names the user (users.email is

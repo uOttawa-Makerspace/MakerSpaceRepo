@@ -34,6 +34,12 @@ class Membership < ApplicationRecord
     shopify_draft_order['invoiceUrl']
   end
 
+  # Pending -> paid in one conditional UPDATE, so it holds against a concurrent revoke or a second payment.
+  # False when the membership was not pending (nothing changed).
+  def mark_paid_if_pending
+    self.class.where(id: id, status: 'pending').update_all(status: 'paid', updated_at: Time.current) == 1
+  end
+
   def membership_title
     membership_tier.title(I18n.locale)
   end
