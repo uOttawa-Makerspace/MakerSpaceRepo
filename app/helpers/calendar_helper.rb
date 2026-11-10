@@ -19,91 +19,9 @@ module CalendarHelper
 
       events = parsed_cals.flat_map do |calendar|
         # Group events by UID to handle recurrence-id
-        events_by_uid = calendar.events.group_by(&:uid)
-        
-        events_by_uid.flat_map do |uid, event_group|
-          main_event = event_group.find { |e| e.recurrence_id.nil? }
-          modified_instances = event_group.select { |e| e.recurrence_id.present? }
-          
-          results = []
-          
-          if main_event
-            start_time = safe_to_time(main_event.dtstart)
-            end_time = safe_to_time(main_event.dtend)
-            all_day = main_event.dtstart.is_a?(Icalendar::Values::Date)
-
-            next if main_event.rrule.empty? && end_time < (Time.now.utc - 2.months)
-
-            event_hash = {
-              id: main_event.uid,
-              groupId: group_id,
-              title: main_event.summary,
-              extendedProps: {
-                name: name,
-                description: main_event.description,
-              },
-              allDay: all_day,
-              display: 'auto',
-              start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-              end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
-            }
-
-            rrule_obj = main_event.rrule&.first
-
-            if rrule_obj.present?
-              rrule_string_parts = []
-              
-              dtstart_toronto = start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-              rrule_string_parts << "DTSTART:#{dtstart_toronto}"
-              
-              rrule_line = convert_rrule_to_string(rrule_obj)
-              rrule_string_parts << "RRULE:#{rrule_line}"
-              
-              all_exdates = main_event.exdate.map(&:value).flatten.map { |d| safe_to_time(d) }
-              
-              # Add recurrence-id dates from modified instances to exdates
-              modified_instances.each do |modified|
-                recurrence_time = safe_to_time(modified.recurrence_id)
-                all_exdates << recurrence_time if recurrence_time
-              end
-              
-              all_exdates.compact.uniq.each do |d|
-                exdate_str = d.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-                rrule_string_parts << "EXDATE:#{exdate_str}"
-              end
-              
-              event_hash[:rrule] = rrule_string_parts.join("\n")
-              
-              duration_seconds = end_time.to_i - start_time.to_i
-              event_hash[:duration] = duration_seconds * 1000
-            end
-            
-            results << event_hash
-          end
-          
-          # Process modified instances as separate events
-          modified_instances.each do |modified|
-            start_time = safe_to_time(modified.dtstart)
-            end_time = safe_to_time(modified.dtend)
-            
-            next if end_time < (Time.now.utc - 2.months)
-            
-            results << {
-              id: "#{modified.uid}_#{safe_to_time(modified.recurrence_id)&.to_i}",
-              groupId: group_id,
-              title: modified.summary,
-              extendedProps: {
-                name: name,
-                description: modified.description,
-              },
-              allDay: modified.dtstart.is_a?(Icalendar::Values::Date),
-              start: start_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S"),
-              end: end_time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
-            }
-          end
-          
-          results
-        end.compact
+        calendar.events.group_by(&:uid).flat_map do |_uid, event_group|
+          ics_event_group(event_group, group_id: group_id, name: name)
+        end
       end
     rescue StandardError => e
       Rails.logger.error("ICS parse error for #{ics_url}: #{e.inspect}")
@@ -279,5 +197,110 @@ module CalendarHelper
     js_rrule[:wkst] = openstruct_obj.week_start if openstruct_obj.week_start
     
     js_rrule
+  end
+
+  private
+
+  # The calendar events for one UID: the series (or single event) itself, then each modified instance of it.
+  def ics_event_group(event_group, group_id:, name:)
+    main_event = event_group.find { |e| e.recurrence_id.nil? }
+    modified_instances = event_group.select { |e| e.recurrence_id.present? }
+
+    results = []
+    if main_event
+      main_hash = ics_main_event(main_event, modified_instances, group_id: group_id, name: name)
+      results << main_hash if main_hash
+    end
+    modified_instances.each do |modified|
+      instance_hash = ics_modified_instance(modified, group_id: group_id, name: name)
+      results << instance_hash if instance_hash
+    end
+    results
+  end
+
+  # The calendar entry for a single or recurring event, or nil when it ended more than two months ago (a single
+  # event) or has no usable start (reported, so the rest of the feed still loads).
+  def ics_main_event(main_event, modified_instances, group_id:, name:)
+    start_time = safe_to_time(main_event.dtstart)
+    end_time = safe_to_time(main_event.dtend)
+    return report_ics_event_without_start(main_event, group_id) if start_time.nil?
+
+    return if main_event.rrule.empty? && end_time < (Time.now.utc - 2.months)
+
+    event_hash = {
+      id: main_event.uid,
+      groupId: group_id,
+      title: main_event.summary,
+      extendedProps: {
+        name: name,
+        description: main_event.description,
+      },
+      allDay: main_event.dtstart.is_a?(Icalendar::Values::Date),
+      display: 'auto',
+      start: toronto_iso(start_time),
+      end: toronto_iso(end_time)
+    }
+    rrule_obj = main_event.rrule&.first
+    event_hash.merge!(ics_recurrence(main_event, rrule_obj, modified_instances, start_time, end_time)) if rrule_obj.present?
+    event_hash
+  end
+
+  def ics_recurrence(main_event, rrule_obj, modified_instances, start_time, end_time)
+    rrule_string_parts = []
+
+    dtstart_toronto = start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
+    rrule_string_parts << "DTSTART:#{dtstart_toronto}"
+
+    rrule_line = convert_rrule_to_string(rrule_obj)
+    rrule_string_parts << "RRULE:#{rrule_line}"
+
+    ics_exdates(main_event, modified_instances).each do |d|
+      exdate_str = d.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
+      rrule_string_parts << "EXDATE:#{exdate_str}"
+    end
+
+    duration_seconds = end_time.to_i - start_time.to_i
+    { rrule: rrule_string_parts.join("\n"), duration: duration_seconds * 1000 }
+  end
+
+  # The dates left out of a series: its own exception dates and the original dates of its modified instances.
+  def ics_exdates(main_event, modified_instances)
+    all_exdates = main_event.exdate.map(&:value).flatten.map { |d| safe_to_time(d) }
+    all_exdates += modified_instances.map { |modified| safe_to_time(modified.recurrence_id) }
+    all_exdates.compact.uniq
+  end
+
+  # A modified instance of a series, listed as an event of its own; nil when it ended more than two months ago.
+  def ics_modified_instance(modified, group_id:, name:)
+    start_time = safe_to_time(modified.dtstart)
+    end_time = safe_to_time(modified.dtend)
+
+    return if end_time < (Time.now.utc - 2.months)
+
+    {
+      id: "#{modified.uid}_#{safe_to_time(modified.recurrence_id)&.to_i}",
+      groupId: group_id,
+      title: modified.summary,
+      extendedProps: {
+        name: name,
+        description: modified.description,
+      },
+      allDay: modified.dtstart.is_a?(Icalendar::Values::Date),
+      start: toronto_iso(start_time),
+      end: toronto_iso(end_time)
+    }
+  end
+
+  def toronto_iso(time)
+    time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
+  end
+
+  # Reports an event that cannot be placed on the calendar; returns nil so the caller leaves it out.
+  def report_ics_event_without_start(event, group_id)
+    Rails.error.report(
+      ArgumentError.new("ICS event has no usable start"),
+      handled: true, severity: :warning, context: { event_uid: event.uid.to_s, calendar: group_id }
+    )
+    nil
   end
 end

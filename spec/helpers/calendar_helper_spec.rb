@@ -79,8 +79,8 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(parse_ics_calendar(url)).to eq([])
     end
 
-    it "logs and returns no events for a body that is not a calendar" do
-      stub_request(:get, url).to_return(status: 200, body: "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nBROKEN")
+    it "logs and returns no events for a body with a value that is not a date" do
+      stub_request(:get, url).to_return(status: 200, body: ics(vevent("bad", ["DTSTART:notadate", "SUMMARY:Bad"])))
       allow(Rails.logger).to receive(:error)
       expect(parse_ics_calendar(url).first[:events]).to eq([])
       expect(Rails.logger).to have_received(:error).with(/ICS parse error for #{Regexp.escape(url)}/)
@@ -133,15 +133,25 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(moved[:id]).to eq("rec_#{Time.utc(2027, 1, 12, 15).to_i}")
     end
 
-    it "drops the whole feed when one recurring event has no start (the error is logged, not raised)" do
+    it "leaves out an event that has no start, reports it, and still lists the other events" do
       body = ics(
         vevent("fine", ["DTSTART:20270115T150000Z", "DTEND:20270115T160000Z", "SUMMARY:Fine"]),
-        vevent("nostart", ["DTEND:20270115T160000Z", "SUMMARY:Broken", "RRULE:FREQ=DAILY;COUNT=2"])
+        vevent("nostart", ["DTEND:20270115T160000Z", "SUMMARY:Broken", "RRULE:FREQ=DAILY;COUNT=2"]),
+        vevent("nostart-single", ["DTEND:20270115T160000Z", "SUMMARY:Broken too"])
       )
       stub_request(:get, url).to_return(status: 200, body: body)
-      allow(Rails.logger).to receive(:error)
-      expect(parse_ics_calendar(url).first[:events]).to eq([])
-      expect(Rails.logger).to have_received(:error).with(/ICS parse error for #{Regexp.escape(url)}/)
+      reports = []
+      subscriber = Class.new { define_method(:report) { |error, handled:, severity:, context:, source:| reports << [error.message, context] } }.new
+      Rails.error.subscribe(subscriber)
+      begin
+        events = parse_ics_calendar(url).first[:events]
+      ensure
+        Rails.error.unsubscribe(subscriber)
+      end
+      expect(events.map { |e| e[:id] }).to eq(["fine"])
+      expect(reports.map(&:first)).to all(eq("ICS event has no usable start"))
+      expect(reports.map { |_, context| context[:event_uid] }).to eq(%w[nostart nostart-single])
+      expect(reports.first.last[:calendar]).to eq(Digest::MD5.hexdigest(url))
     end
 
     it "gives a recurring event without an end no end time and a negative duration" do
