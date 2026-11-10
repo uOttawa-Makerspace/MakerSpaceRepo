@@ -429,7 +429,7 @@ RSpec.describe "Job order locked operations", type: :request do
       delete job_order_path(order)
 
       expect(response).to redirect_to(admin_job_orders_path)
-      expect(flash[:notice]).to eq("Job order deleted successfully.")
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.deleted"))
       expect(order.reload.is_deleted).to be(true)
       expect(order.shopify_draft_order_id).to be_nil
       expect(shopify_ops).to eq(%w[draftOrderDelete])
@@ -521,7 +521,7 @@ RSpec.describe "Job order locked operations", type: :request do
 
         delete job_order_path(order)
 
-        expect(flash[:notice]).to eq("Job order deleted successfully.")
+        expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.deleted"))
         expect(order.reload.is_deleted).to be(true)
         expect(order.shopify_draft_order_id).to eq(draft_id)
         expect(shopify_ops).to eq(%w[getDraftOrder])

@@ -448,9 +448,24 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       http_login!(owner)
       delete job_order_path(order)
       expect(response).to redirect_to(job_orders_path)
-      expect(flash[:notice]).to eq("Job order deleted successfully.")
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.deleted"))
       expect(order.reload.is_deleted).to be(true)
       expect(JobOrder.where(id: order.id, is_deleted: false)).to be_empty
+    end
+
+    it "words the flash in the visitor's language" do
+      order = order_with_task!(owner: owner)
+      http_login!(owner)
+      delete job_order_path(order, locale: "fr")
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.deleted", locale: :fr))
+      expect(flash[:notice]).not_to eq(I18n.t("job_orders.alerts.deleted", locale: :en))
+    end
+
+    it "asks for the delete confirmation in the visitor's language on the order page" do
+      order = order_with_task!(owner: owner)
+      http_login!(owner)
+      get job_order_path(order, locale: "fr")
+      expect(response.body).to include(CGI.escapeHTML(I18n.t("job_orders.are_you_sure_you_want_to_delete", locale: :fr)))
     end
 
     it "sends the admin back to the admin index" do
