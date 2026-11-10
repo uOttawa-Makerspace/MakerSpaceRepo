@@ -2,6 +2,11 @@
 
 class ReportGenerator
   require "axlsx"
+
+  # What a sheet or title says for a session that has no space.
+  UNKNOWN_SPACE = "Unknown"
+  # What a cell says for a session whose training or instructor is missing.
+  UNKNOWN = "Unknown"
   # region Date Range Reports
 
   # @param [DateTime] start_date
@@ -327,11 +332,12 @@ class ReportGenerator
     courses = courses.uniq # .map { |d| d || "None" }
 
     (spaces + ["total"]).each do |space|
+      space_label = space || UNKNOWN_SPACE
       spreadsheet
         .workbook
-        .add_worksheet(name: space || "Unknown") do |sheet|
+        .add_worksheet(name: space_label) do |sheet|
           title(sheet, "Makerepo Certifications report")
-          title_string = "Certifications granted in #{space}"
+          title_string = "Certifications granted in #{space_label}"
           header(sheet, title_string, start_date, end_date)
           sheet.column_widths title_string.length + 2
 
@@ -633,11 +639,30 @@ class ReportGenerator
     spreadsheet
   end
 
+  # One attendee line. A missing attendee name, training or instructor
+  # shows Unknown in that cell.
+  def self.attendee_row(certification)
+    session = certification.training_session
+    user = certification.user
+    [
+      user&.student_id,
+      user&.name || UNKNOWN,
+      user&.email,
+      session.training&.name_en || UNKNOWN,
+      session.created_at.strftime("%Y-%m-%d %H:%M"),
+      session.user&.name || UNKNOWN,
+      session.course,
+      session.space&.name
+    ]
+  end
+  private_class_method :attendee_row
+
   def self.generate_training_attendees_report(start_date, end_date)
     certifications =
       Certification
         .includes({ training_session: %i[user training space] }, :user)
         .where(created_at: start_date..end_date)
+        .where.not(training_session_id: nil)
         .order(
           "spaces.name",
           "training_sessions.created_at",
@@ -648,18 +673,14 @@ class ReportGenerator
     spreadsheet = Axlsx::Package.new
 
     certifications.each do |_space, space_certifications|
+      space_name =
+        space_certifications[0].training_session.space&.name || UNKNOWN_SPACE
       spreadsheet
         .workbook
-        .add_worksheet(
-          name:
-            "Report - #{space_certifications[0].training_session.space&.name}"
-        ) do |sheet|
+        .add_worksheet(name: "Report - #{space_name}") do |sheet|
           merge_cell = sheet.styles.add_style alignment: { vertical: :center }
 
-          title(
-            sheet,
-            "Training Attendees - #{space_certifications[0].training_session.space&.name}"
-          )
+          title(sheet, "Training Attendees - #{space_name}")
 
           sheet.add_row ["From", start_date.strftime("%Y-%m-%d")]
           sheet.add_row ["To", end_date.strftime("%Y-%m-%d")]
@@ -679,18 +700,7 @@ class ReportGenerator
 
           types = student_id_as_text(columns)
           space_certifications.each do |certification|
-            sheet.add_row [
-                            certification.user.student_id,
-                            certification.user.name,
-                            certification.user.email,
-                            certification.training_session.training.name_en,
-                            certification.training_session.created_at.strftime(
-                              "%Y-%m-%d %H:%M"
-                            ),
-                            certification.training_session.user.name,
-                            certification.training_session.course,
-                            certification.training_session.space&.name
-                          ],
+            sheet.add_row attendee_row(certification),
                           types: types
           end
 
@@ -835,6 +845,18 @@ class ReportGenerator
     spreadsheet
   end
 
+  # The type, location, date and instructor lines of a single session
+  # workbook. A missing training, space or instructor shows Unknown.
+  def self.session_summary_rows(session)
+    [
+      ["Training Type", session.training&.name_en || UNKNOWN],
+      ["Location", session.space&.name || UNKNOWN_SPACE],
+      ["Date", session.created_at.strftime("%Y-%m-%d %H:%M")],
+      ["Instructor", session.user&.name || UNKNOWN]
+    ]
+  end
+  private_class_method :session_summary_rows
+
   def self.generate_training_session_report(id)
     session =
       TrainingSession.includes(:user, :users, :space, :training).find(id)
@@ -846,10 +868,7 @@ class ReportGenerator
       .add_worksheet(name: "Report") do |sheet|
         title(sheet, "Training Session")
 
-        sheet.add_row ["Training Type", session.training.name_en]
-        sheet.add_row ["Location", session.space.name]
-        sheet.add_row ["Date", session.created_at.strftime("%Y-%m-%d %H:%M")]
-        sheet.add_row ["Instructor", session.user.name]
+        session_summary_rows(session).each { |row| sheet.add_row row }
         sheet.add_row ["Course", session.course]
         sheet.add_row ["Number of Trainees", session.users.length]
 
@@ -967,7 +986,10 @@ class ReportGenerator
   end
 
   def self.generate_kit_purchased_report(start_date, end_date)
-    kits = ProjectKit.where("created_at" => start_date..end_date)
+    kits =
+      ProjectKit
+        .includes(:proficient_project, :user)
+        .where("created_at" => start_date..end_date)
 
     spreadsheet = Axlsx::Package.new
 
@@ -1410,10 +1432,10 @@ class ReportGenerator
 
   # The calendar months or weeks (unit :month or :week) that overlap the
   # range, the partial ones at either end included, each as the range from
-  # its first to its last instant, in the offset the range is given in.
+  # its first to its last instant, in the application time zone.
   def self.calendar_periods(start_date, end_date, unit)
-    (start_date.to_datetime..end_date.to_datetime)
-      .map { |day| day.public_send(:"beginning_of_#{unit}") }
+    (start_date.in_time_zone.to_date..end_date.in_time_zone.to_date)
+      .map { |day| day.public_send(:"beginning_of_#{unit}").in_time_zone }
       .uniq
       .map { |first| first..first.public_send(:"end_of_#{unit}") }
   end
@@ -1485,7 +1507,8 @@ class ReportGenerator
           .values
           .sum,
       "Masters" => programs.select { |k, _| k =~ /Master/i }.values.sum,
-      "Doctorate" => programs.select { |k, _| k =~ /Doctorate/i }.values.sum
+      "Doctorate" =>
+        programs.select { |k, _| get_study_level(k) == "Doctorate" }.values.sum
     }
   end
 
