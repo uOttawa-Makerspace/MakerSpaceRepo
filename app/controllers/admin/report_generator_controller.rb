@@ -258,8 +258,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # Count by skill and name
-      training = certificate_training(cert)
-      skill_name = training.skill.name
+      skill_name, training_name = training_labels(cert)
       if !@skill_count.has_key?(skill_name)
         @skill_count[skill_name] = 1
       else
@@ -267,7 +266,6 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # get cert training topic (?)
-      training_name = training.name_en
       if !@training_count.has_key?(training_name)
         @training_count[training_name] = 1
       else
@@ -539,6 +537,13 @@ class Admin::ReportGeneratorController < AdminAreaController
       records: sessionless,
       associations: { proficient_project_session: { proficient_project: { training: :skill } } }
     ).call
+  end
+
+  # The skill and training names a certificate counts under, "unknown" for
+  # one whose training cannot be found.
+  def training_labels(cert)
+    training = certificate_training(cert)
+    [training&.skill&.name || "unknown", training&.name_en || "unknown"]
   end
 
   def certifications_in_month(month)
