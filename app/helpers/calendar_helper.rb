@@ -1,4 +1,15 @@
 module CalendarHelper
+  # The values RFC 5545 allows for the BY parts of a repeat rule, and whether the value may be negative.
+  ICS_RULE_PART_LIMITS = {
+    by_year_day: [1..366, true],
+    by_month_day: [1..31, true],
+    by_week_number: [1..53, true],
+    by_month: [1..12, false],
+    by_hour: [0..23, false],
+    by_minute: [0..59, false],
+    by_second: [0..60, false]
+  }.freeze
+
   # The longest COUNT whose end is worked out when deciding whether a series is over.
   MAX_COUNTED_SERIES = 1000
 
@@ -229,7 +240,7 @@ module CalendarHelper
     return report_ics_event_problem("ICS event has no usable start", main_event, group_id) if start_time.nil?
 
     rrule_obj = main_event.rrule&.first
-    return if ics_event_over?(rrule_obj, start_time, end_time) { |message| report_ics_event_problem(message, main_event, group_id) }
+    return if skip_ics_event?(main_event, rrule_obj, start_time, end_time, group_id)
 
     event_hash = {
       id: main_event.uid,
@@ -298,34 +309,55 @@ module CalendarHelper
 
   # Whether an event no longer needs showing: a single event that ended, or a series that stopped, more than two
   # months ago.
-  def ics_event_over?(rrule_obj, start_time, end_time, &report)
-    rrule_obj.present? ? series_ended?(rrule_obj, start_time, &report) : stale_event?(end_time || start_time)
+  # An unreadable series rule is reported and the series kept (the calendar view decides what to do with it).
+  def skip_ics_event?(main_event, rrule_obj, start_time, end_time, group_id)
+    over = rrule_obj.present? ? series_ended?(rrule_obj, start_time) : stale_event?(end_time || start_time)
+    report_ics_event_problem(over, main_event, group_id) if over.is_a?(StandardError)
+    over == true
   end
 
   # Whether a repeating series stopped (by its UNTIL date, or after its COUNT occurrences) more than two months
   # ago. A series that never ends, or whose end cannot be worked out, is not ended.
-  def series_ended?(rrule_obj, start_time, &report)
+  def series_ended?(rrule_obj, start_time)
     cutoff = Time.now.utc - 2.months
     until_time = safe_to_time(rrule_obj.until)
     return true if until_time && until_time < cutoff
 
-    counted_series_ended_before?(rrule_obj, start_time, cutoff, &report)
+    counted_series_ended_before?(rrule_obj, start_time, cutoff)
   end
 
-  # Whether all the occurrences of a series with a COUNT fall before the cutoff. A very long count, and a rule
-  # IceCube cannot read, are not worked out: the series is kept and the calendar view decides.
+  # Whether all the occurrences of a series with a COUNT fall before the cutoff. A very long count is not worked
+  # out: the series is kept. A rule that cannot be read gives the error describing why instead of true or false.
   def counted_series_ended_before?(rrule_obj, start_time, cutoff)
     count = rrule_obj.count.to_i
     return false unless count.between?(1, MAX_COUNTED_SERIES)
 
+    out_of_range = out_of_range_rule_part(rrule_obj)
+    return ArgumentError.new("#{out_of_range} is out of range") if out_of_range
+
     start = start_time.in_time_zone(RecurrenceRule::ZONE)
-    found = RecurrenceExpansion.occurrences(convert_rrule_to_string(rrule_obj), start, start, cutoff, count)
-    found.occurrences.size == count
-  rescue ArgumentError, NoMethodError
-    # IceCube raises ArgumentError for a rule it does not support, and NoMethodError for some out-of-range values
-    # (for example BYYEARDAY=400). The series is kept and the problem reported; the rest of the feed is unaffected.
-    yield "ICS series has a rule that cannot be expanded"
-    false
+    found = expand_counted_series(convert_rrule_to_string(rrule_obj), start, cutoff, count)
+    found.is_a?(StandardError) ? found : found.occurrences.size == count
+  end
+
+  # The occurrences of a rule before the cutoff, or the ArgumentError IceCube raises for a rule it does not support.
+  def expand_counted_series(rule_string, start, cutoff, count)
+    RecurrenceExpansion.occurrences(rule_string, start, start, cutoff, count)
+  rescue ArgumentError => e
+    e
+  end
+
+  # The first part of the rule whose value is outside what RFC 5545 allows (IceCube fails with a method error on
+  # some of these), or nil. A BY part with a sign may count from the end, so only its size is checked.
+  def out_of_range_rule_part(rrule_obj)
+    return :interval if rrule_obj.interval.to_i < 1 && !rrule_obj.interval.nil?
+
+    ICS_RULE_PART_LIMITS.find do |part, (limit, signed)|
+      Array(rrule_obj.public_send(part)).any? do |value|
+        number = signed ? value.to_i.abs : value.to_i
+        !limit.cover?(number)
+      end
+    end&.first
   end
 
   # Whether an event's last moment (its end, else its start) is more than two months ago. An event with
@@ -339,10 +371,12 @@ module CalendarHelper
   end
 
   # Reports an event that cannot be placed on the calendar; returns nil so the caller leaves it out.
-  def report_ics_event_problem(message, event, group_id)
+  def report_ics_event_problem(problem, event, group_id)
+    error = problem.is_a?(StandardError) ? problem : ArgumentError.new(problem)
     Rails.error.report(
-      ArgumentError.new(message),
-      handled: true, severity: :warning, context: { event_uid: event.uid.to_s, calendar: group_id }
+      error,
+      handled: true, severity: :warning,
+      context: { event_uid: event.uid.to_s, calendar: group_id, error_class: error.class.name }
     )
     nil
   end

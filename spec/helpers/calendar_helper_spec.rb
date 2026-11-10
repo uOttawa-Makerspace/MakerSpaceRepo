@@ -237,8 +237,20 @@ RSpec.describe CalendarHelper, type: :helper do
       events = nil
       reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
       expect(events.map { |e| e[:id] }).to eq(%w[bad0 bad1 bad2 bad3 fine])
-      expect(reports.map(&:first)).to all(eq("ICS series has a rule that cannot be expanded"))
       expect(reports.map { |_, context| context[:event_uid] }).to eq(%w[bad0 bad1 bad2 bad3])
+      expect(reports.map { |_, context| context[:error_class] }).to all(eq("ArgumentError"))
+      expect(reports.map(&:first)).to eq(
+        ["Invalid rule validation type: BYWEEKNO", "by_year_day is out of range", "interval is out of range", "by_month is out of range"]
+      )
+    end
+
+    it "accepts the extremes RFC 5545 allows in a repeat rule without a report" do
+      rules = ["FREQ=YEARLY;BYYEARDAY=-366,1,366;COUNT=3", "FREQ=MONTHLY;BYMONTHDAY=-31,31;COUNT=3", "FREQ=YEARLY;BYMONTH=1,12;COUNT=3"]
+      vevents = rules.each_with_index.map do |rule, i|
+        vevent("ok#{i}", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Ok #{i}", "RRULE:#{rule}"])
+      end
+      stub_request(:get, url).to_return(status: 200, body: ics(*vevents))
+      expect(reported_ics_problems { parse_ics_calendar(url) }).to eq([])
     end
 
     it "does not expand a series whose COUNT is above the limit, so it is kept without a report" do
