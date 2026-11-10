@@ -30,18 +30,12 @@ class MembershipsController < SessionsController
     user = User.find(params[:user_id])
     days = params[:extend_days].to_i
 
-    if days.positive?
-      start_time = Membership.calculate_end_date(user)
-      Membership.create!(
-        user: user,
-        membership_tier: MembershipTier.find_by!(title_en: "Custom Membership"),
-        status: 'paid',
-        start_date: start_time,
-        end_date: start_time + days.days
-      )
+    if !days.positive?
+      flash[:alert] = "Please enter a valid number of days."
+    elsif Membership.grant_custom(user, days)
       flash[:notice] = "Custom membership added for #{days} days."
     else
-      flash[:alert] = "Please enter a valid number of days."
+      flash[:alert] = "The same custom membership was just added for this member."
     end
 
     redirect_back(fallback_location: memberships_path)

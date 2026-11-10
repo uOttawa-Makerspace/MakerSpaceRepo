@@ -241,6 +241,32 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(m.end_date).to be_within(1.second).of(base_end + 5.days)
       end
 
+      it "refuses the same grant submitted again within a minute, so a double submit adds one membership" do
+        freeze = Time.utc(2026, 3, 1, 12)
+        travel_to(freeze) { post admin_create_membership_memberships_path, params: params }
+        travel_to(freeze + 30.seconds) do
+          expect { post admin_create_membership_memberships_path, params: params }.not_to change(Membership, :count)
+        end
+        expect(flash[:alert]).to eq("The same custom membership was just added for this member.")
+        expect(other.memberships.count).to eq(1)
+      end
+
+      it "adds the same grant again after a minute, and a different length at once" do
+        freeze = Time.utc(2026, 3, 1, 12)
+        travel_to(freeze) { post admin_create_membership_memberships_path, params: params }
+        travel_to(freeze + 10.seconds) do
+          post admin_create_membership_memberships_path, params: params.merge(extend_days: 7)
+        end
+        travel_to(freeze + 61.seconds) { post admin_create_membership_memberships_path, params: params }
+        expect(other.memberships.count).to eq(3)
+      end
+
+      it "does not treat another member's recent grant as a duplicate" do
+        post admin_create_membership_memberships_path, params: params
+        expect { post admin_create_membership_memberships_path, params: { user_id: user.id, extend_days: 5 } }
+          .to change { user.memberships.count }.by(1)
+      end
+
       it "rejects zero/blank/negative days with an alert" do
         ["0", "", "-3", "abc"].each do |days|
           expect { post admin_create_membership_memberships_path, params: { user_id: other.id, extend_days: days } }

@@ -52,6 +52,27 @@ class Membership < ApplicationRecord
     membership_tier.title_en.downcase.include?('faculty')
   end
 
+  # A custom grant repeated within this window is a double submit, not a second grant.
+  DUPLICATE_GRANT_WINDOW = 1.minute
+
+  # An admin's paid custom membership of `days`, stacked after the user's latest active one. Under the user's row
+  # lock, so two submits cannot both pass the check. Nil (nothing added) when the same grant was just made.
+  def self.grant_custom(user, days)
+    tier = MembershipTier.find_by!(title_en: 'Custom Membership')
+    user.with_lock do
+      next if recent_custom_grant?(user, tier, days)
+
+      start_time = calculate_end_date(user)
+      create!(user: user, membership_tier: tier, status: 'paid', start_date: start_time, end_date: start_time + days.days)
+    end
+  end
+
+  def self.recent_custom_grant?(user, tier, days)
+    user.memberships.paid.where(membership_tier: tier).where('created_at > ?', DUPLICATE_GRANT_WINDOW.ago)
+        .any? { |m| m.end_date - m.start_date == days.days }
+  end
+  private_class_method :recent_custom_grant?
+
   def self.calculate_end_date(user)
     last_active =
       user
