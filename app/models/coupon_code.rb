@@ -86,7 +86,7 @@ class CouponCode < ApplicationRecord
   def refuse_deletion_once_claimed
     return unless claimed?
 
-    errors.add(:base, "A user has already claimed this coupon with CC points, so it cannot be deleted")
+    errors.add(:base, :claimed_cannot_delete)
     throw :abort
   end
 end
