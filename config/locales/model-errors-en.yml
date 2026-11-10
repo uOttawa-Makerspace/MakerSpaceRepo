@@ -176,6 +176,10 @@ en:
           account_deleted: "The account that sent this request has been deleted."
           already_has_access: "You already have booking access."
           already_requested: "You have already requested access."
+        volunteer_task_join:
+          attributes:
+            user_id:
+              taken: "is already on this task"
         learning_module:
           attributes:
             title:

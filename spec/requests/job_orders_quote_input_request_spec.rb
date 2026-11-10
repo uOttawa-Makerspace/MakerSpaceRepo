@@ -20,12 +20,12 @@ RSpec.describe "Job order quote input", type: :request do
   let!(:task) { order.job_tasks.create!(title: "Task #1") }
 
   def quote(extra = {})
-    patch job_order_quote_path(order), params: {
+    patch_quote(order, {
       approved: "true",
       "job_task_quote_price_#{task.id}" => "10",
       "task_#{task.id}_service_qty" => "1",
       "task_#{task.id}_service_price" => "2"
-    }.merge(extra)
+    }.merge(extra))
   end
 
   def status_names
