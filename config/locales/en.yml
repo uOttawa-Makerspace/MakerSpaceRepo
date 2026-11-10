@@ -239,6 +239,15 @@ en:
     times_required: "Start and end times are required."
     dates_required: "Start and end dates are required."
     start_date_required: "Start date is required."
+  key_request_mailer:
+    denied:
+      subject: "Key request denied"
+      body: "Your key request has been reviewed and denied by an admin."
+      hello: "Hello %{name},"
+      reason: "Reason given:"
+      ask_again: "You may edit your key request and submit it again from your key request page."
+      open_page: "Go to my key request"
+      why_received: "You have received this email because your key request was answered."
   booking_mailer:
     access_denied:
       subject:

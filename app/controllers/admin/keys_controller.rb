@@ -113,11 +113,15 @@ class Admin::KeysController < AdminAreaController
   end
 
   def approve_key_request
-    answer_key_request(:approved, "request_not_approved", "Successfully approved key request.")
+    answer_key_request("request_not_approved", "Successfully approved key request.") do
+      @key_request.update(status: :approved)
+    end
   end
 
   def deny_key_request
-    answer_key_request(:in_progress, "request_not_denied", "Successfully denied key request.")
+    answer_key_request("request_not_denied", "Successfully denied key request.") do
+      @key_request.deny(params[:denial_reason]) && notify_denied
+    end
   end
 
   private
@@ -158,13 +162,19 @@ class Admin::KeysController < AdminAreaController
   end
 
   # Only a request that is still waiting can be approved or denied.
-  def answer_key_request(status, failure_key, notice)
+  def answer_key_request(failure_key, notice, &change)
     if @key_request.status_waiting_for_approval?
-      flash_write(@key_request, "keys.#{failure_key}", notice) { @key_request.update(status: status) }
+      flash_write(@key_request, "keys.#{failure_key}", notice, &change)
     else
       flash[:alert] = I18n.t("errors.admin.keys.request_not_waiting")
     end
     redirect_to requests_admin_keys_path
+  end
+
+  # Mail the requester once the denial is saved. Always true, so it can end the change block.
+  def notify_denied
+    KeyRequestMailer.send_key_request_denied(@key_request.id).deliver_later
+    true
   end
 
   def failure_message(key, error)

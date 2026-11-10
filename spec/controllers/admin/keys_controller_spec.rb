@@ -506,7 +506,7 @@ RSpec.describe Admin::KeysController, type: :controller do
         patch :deny_key_request, params: { id: kr.id }
 
         expect(flash[:notice]).to eq("Successfully denied key request.")
-        expect(KeyRequest.last.status).to eq("in_progress")
+        expect(KeyRequest.last.status).to eq("denied")
       end
 
       it "should not deny key requests that are not awaiting for approval" do
