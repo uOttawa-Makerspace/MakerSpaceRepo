@@ -162,17 +162,22 @@ RSpec.describe "Staff my calendar", type: :request do
       mate = create(:user, :staff)
       StaffSpace.find_by!(user: staff, space: space).update_column(:color, "#111111")
       create(:staff_space, user: mate, space: space).update_column(:color, "#222222")
-      3.times do |i|
-        ev = create(:event, space: space, title: "Duo #{i}", start_time: Time.zone.local(2027, 3, 13, 9 + i), end_time: Time.zone.local(2027, 3, 13, 10 + i))
-        [staff, mate].each { |u| EventAssignment.create!(event: ev, user: u) }
+      add_duo_events = lambda do |count, from|
+        count.times do |i|
+          ev = create(:event, space: space, title: "Duo #{from + i}", start_time: Time.zone.local(2027, 3, 13, 8 + from + i), end_time: Time.zone.local(2027, 3, 13, 9 + from + i))
+          [staff, mate].each { |u| EventAssignment.create!(event: ev, user: u) }
+        end
       end
 
-      assignment_reads = selects_on("event_assignments", "staff_spaces") { get feed, params: window }
+      add_duo_events.call(2, 0)
+      few = selects_on("event_assignments", "staff_spaces") { get feed, params: window }.size
+      add_duo_events.call(3, 2)
+      many = selects_on("event_assignments", "staff_spaces") { get feed, params: window }.size
 
+      expect(response.parsed_body.size).to eq(5)
       expect(response.parsed_body.map { |e| e.dig("extendedProps", "background") }.uniq)
         .to eq(["linear-gradient(to right, #111111 0.0%, #111111 50.0%, #222222 50.0%, #222222 100.0%);"])
-      # one for the access check, one for the assignments and one for the colours
-      expect(assignment_reads.size).to eq(3)
+      expect(many).to eq(few)
     end
 
     # an unparseable start/end param parses to nil; with any single event in the space the nil comparison 500s (empty space: 200 []).
