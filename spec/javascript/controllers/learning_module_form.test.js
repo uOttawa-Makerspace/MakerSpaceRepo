@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { Application } from "@hotwired/stimulus";
 
 const { default: LearningModuleForm } =
@@ -19,78 +19,29 @@ async function mount(html) {
 afterEach(() => {
   application?.stop();
   document.body.innerHTML = "";
-  vi.useRealTimers();
 });
 
-const formHtml = ({ required = true, scorm = false } = {}) => `
-  <form id="f" data-controller="learning-module-form"
-        data-action="submit->learning-module-form#submit"
-        data-learning-module-form-photos-required-value="${required}">
+const formHtml = ({ scorm = false } = {}) => `
+  <form id="f" data-controller="learning-module-form">
     <input type="checkbox" id="scorm" data-learning-module-form-target="scormToggle"
            data-action="change->learning-module-form#toggleScorm" ${scorm ? "checked" : ""}>
     <fieldset id="regular" data-learning-module-form-target="regularSection">
       <div class="image-item"><button type="button" id="rm-image" data-action="learning-module-form#removeImage"></button></div>
       <div class="video-item"><button type="button" id="rm-video" data-action="learning-module-form#removeVideo"></button></div>
       <div id="rows"><div class="input-group" id="row">
-        <input type="file" id="learning_module_photos" data-learning-module-form-target="photos">
+        <input type="file" id="learning_module_photos">
         <button type="button" id="new-photo-input" data-action="learning-module-form#addPhoto"><i class="fa fa-plus"></i></button>
       </div></div>
     </fieldset>
     <fieldset id="scorm-section" data-learning-module-form-target="scormSection"></fieldset>
-    <button id="waiting-save-button" data-learning-module-form-target="saveButton">Save</button>
   </form>`;
 
-const submit = () => {
-  const event = new Event("submit", { cancelable: true, bubbles: true });
-  $("f").dispatchEvent(event);
-  return event;
-};
-
-describe("photo check", () => {
-  it("asks for an image when none is chosen, once", async () => {
-    await mount(formHtml());
-    expect(submit().defaultPrevented).toBe(true);
-    submit();
-    expect($("learning_module_photos").classList.contains("is-invalid")).toBe(
-      true,
-    );
-    expect(document.querySelectorAll(".invalid-feedback")).toHaveLength(1);
-    expect(document.querySelector(".invalid-feedback").textContent).toBe(
-      "You must upload at least one image",
-    );
-  });
-
-  it("lets the form go with an image", async () => {
-    await mount(formHtml());
-    Object.defineProperty($("learning_module_photos"), "files", {
-      value: [{}],
-    });
-    expect(submit().defaultPrevented).toBe(false);
-  });
-
-  it("is not asked for on edit", async () => {
-    await mount(formHtml({ required: false }));
-    expect(submit().defaultPrevented).toBe(false);
-  });
-
-  it("is not asked for a SCORM module, whose photos are not submitted", async () => {
-    await mount(formHtml({ scorm: true }));
-    expect(submit().defaultPrevented).toBe(false);
-  });
-
-  it("leaves the save button alone when the photo check refuses", async () => {
-    await mount(formHtml());
-    vi.useFakeTimers();
-    submit();
-    vi.advanceTimersByTime(0);
-    expect($("waiting-save-button").disabled).toBe(false);
-  });
-
+describe("form lifecycle", () => {
   it("works for a form that appears after the page loaded", async () => {
     await mount("<p>index</p>");
     document.body.insertAdjacentHTML("beforeend", formHtml());
     await settle();
-    expect(submit().defaultPrevented).toBe(true);
+    expect($("scorm-section").disabled).toBe(true);
   });
 });
 
@@ -104,11 +55,6 @@ describe("photo rows", () => {
     expect(added.id).toBe("");
     expect(added.className).toBe("btn btn-danger");
     expect(added.querySelector("i").className).toBe("fa fa-trash");
-    expect(
-      rows[1]
-        .querySelector("input")
-        .hasAttribute("data-learning-module-form-target"),
-    ).toBe(false);
     await settle();
     added.click();
     expect(document.querySelectorAll(".input-group")).toHaveLength(1);
@@ -141,40 +87,5 @@ describe("scorm toggle", () => {
   it("is skipped when the form has no toggle", async () => {
     await mount('<form id="f" data-controller="learning-module-form"></form>');
     expect($("f")).not.toBeNull();
-  });
-});
-
-describe("save button", () => {
-  const page = (extra = "") => `
-    <form id="f" data-controller="learning-module-form"
-          data-action="submit->learning-module-form#submit">
-      <input required id="r" value="x">${extra}
-    </form>`;
-  const button =
-    '<button id="waiting-save-button" data-learning-module-form-target="saveButton">Save</button>';
-
-  it("shows a waiting message once a valid form is submitted", async () => {
-    await mount(page(button));
-    vi.useFakeTimers();
-    submit();
-    vi.advanceTimersByTime(0);
-    expect($("waiting-save-button").disabled).toBe(true);
-    expect($("waiting-save-button").innerHTML).toContain(
-      "Saving (Please wait)",
-    );
-  });
-
-  it("leaves the button alone when the form is invalid", async () => {
-    await mount(page(button));
-    vi.useFakeTimers();
-    $("r").value = "";
-    submit();
-    vi.advanceTimersByTime(0);
-    expect($("waiting-save-button").disabled).toBe(false);
-  });
-
-  it("copes with a form without the button", async () => {
-    await mount(page());
-    expect(submit).not.toThrow();
   });
 });

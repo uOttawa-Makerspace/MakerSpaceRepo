@@ -1,8 +1,7 @@
 <%= form_with model: @learning_module,
     url: { controller: 'learning_area', action: @learning_module.persisted? ? 'update' : 'create' },
-    data: { controller: 'learning-module-form',
-            action: 'submit->learning-module-form#submit',
-            learning_module_form_photos_required_value: !@learning_module.persisted? } do |f| %>
+    class: 'useTurbo',
+    data: { controller: 'learning-module-form' } do |f| %>
     <div class="mb-3">
         <%= f.label :title, 'Title', class: 'form-label' %>
         <%= f.text_field :title,
@@ -97,7 +96,7 @@
         <div class="mb-3">
             <%= f.label :photos, 'Gallery', class: 'form-label' %>
             <div class="input-group">
-                <%= f.file_field :photos, multiple: true, class: 'form-control image-upload', data: { learning_module_form_target: 'photos' }, aria: { label: t('common.names.select_pictures') } %>
+                <%= f.file_field :photos, multiple: true, class: 'form-control image-upload', aria: { label: t('common.names.select_pictures') } %>
                 <button class="btn btn-success" type="button" id="new-photo-input" data-action="learning-module-form#addPhoto" aria-label="<%= t('common.names.add_image_input') %>">
                     <i class="fa-solid fa-plus"></i>
                 </button>
@@ -167,7 +166,7 @@
         <%= f.submit @learning_module.persisted? ? 'Save Changes' : 'Create Learning Module',
                  class: 'btn btn-primary px-4',
                  id: 'waiting-save-button',
-                 data: { learning_module_form_target: 'saveButton' } %>
+                 data: { turbo_submits_with: 'Saving (Please wait)...' } %>
         <p class="small text-muted mt-2 mb-0">
             Uploading large SCORM zip files may take a minute. Please do not close or refresh this page.
         </p>

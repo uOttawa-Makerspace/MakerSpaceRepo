@@ -19,14 +19,13 @@ RSpec.describe "Learning module form", type: :system do
     expect(page).to have_css("h1", text: "New Learning Module")
   end
 
-  it "asks for an image when the new form is reached through a Turbo visit" do
+  it "creates a module without a photo when the new form is reached through a Turbo visit" do
     open_new_form_through_turbo
     fill_in "repository_title", with: "Turbo module"
     click_button "Create Learning Module"
 
-    expect(page).to have_css(".invalid-feedback", text: "You must upload at least one image")
-    expect(page).to have_current_path(new_learning_area_path)
-    expect(LearningModule.where(title: "Turbo module")).to be_empty
+    expect(page).to have_content("Learning Module has been successfully created.")
+    expect(LearningModule.find_by(title: "Turbo module").photos).not_to be_attached
   end
 
   it "adds another photo input when the new form is reached through a Turbo visit" do
@@ -37,11 +36,30 @@ RSpec.describe "Learning module form", type: :system do
     expect(page).to have_css("input[type=file].image-upload", count: 2)
   end
 
-  it "asks for an image when the new form is loaded directly" do
-    log_in_as(admin, to: new_learning_area_path)
-    fill_in "repository_title", with: "Direct module"
+  # The browser logs the 422 response of the failed save.
+  it "keeps working after a failed save re-renders the form", js_errors: :allow do
+    open_new_form_through_turbo
     click_button "Create Learning Module"
-    expect(page).to have_css(".invalid-feedback", text: "You must upload at least one image")
+
+    expect(page).to have_css(".alert", text: /title/i)
+    expect(page).to have_button("Create Learning Module", disabled: false)
+    expect(LearningModule.count).to eq(0)
+
+    find("#new-photo-input").click
+    expect(page).to have_css("input[type=file].image-upload", count: 2)
+    check "SCORM package"
+    expect(page).to have_css("#scorm-section")
+    expect(page).to have_no_css("#regular-files-section")
+  end
+
+  it "restores the save button when the page is restored from the history" do
+    open_new_form_through_turbo
+    fill_in "repository_title", with: "History module"
+    click_button "Create Learning Module"
+    expect(page).to have_content("Learning Module has been successfully created.")
+
+    page.go_back
+    expect(page).to have_button("Create Learning Module", disabled: false)
   end
 
   it "switches between SCORM and regular file fields on a module edit reached through a Turbo visit" do
