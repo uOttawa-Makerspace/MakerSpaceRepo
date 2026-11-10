@@ -125,6 +125,18 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(deliveries.last.subject).to eq("Your job ##{order.id} has been declined")
     end
 
+    it "refuses a quote or decline that does not name the status row of its form, and writes nothing" do
+      session_login!(staff)
+      [quote_params(task, status_row_id: ""), { approved: "false", status_row_id: "" }].each do |params|
+        patch job_order_quote_path(order), params: params
+        expect(response).to redirect_to(job_order_path(order))
+        expect(flash[:alert]).to be_present
+      end
+      expect(status_names(order).count).to eq(1)
+      expect(order.chat_messages).to be_empty
+      expect(deliveries).to be_empty
+    end
+
     it "quotes once when the same form is submitted twice, and a deliberate re-quote from a fresh form still works" do
       session_login!(staff)
       row_id = order.job_order_statuses.reorder(id: :desc).first.id

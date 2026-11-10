@@ -513,19 +513,20 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     
   end
 
-  # The quote form's writes, run by JobOrder#transition! under the order's row lock (the order was reloaded by
-  # lock!, so its tasks are read fresh). Validation failures raise, which rolls the transition back.
   # The drafts' links read their tasks; the submitted orders' rows read each task's job type too.
   def preload_list_rows
     ActiveRecord::Associations::Preloader.new(records: @drafts, associations: :job_tasks).call
     ActiveRecord::Associations::Preloader.new(records: @job_orders, associations: { job_tasks: :job_type }).call
   end
 
-  # The status row the quote or decline form was rendered from (absent for callers that send none).
+  # The status row the quote or decline form was rendered from. A missing field is 0, which matches no row, so the
+  # request is refused as a stale form.
   def form_status_row_id
-    params[:status_row_id].presence&.to_i
+    params[:status_row_id].to_i
   end
 
+  # The quote form's writes, run by JobOrder#transition! under the order's row lock (the order was reloaded by
+  # lock!, so its tasks are read fresh). Validation failures raise, which rolls the transition back.
   def apply_quote_params!
     @job_order.job_tasks.each do |task|
       price_key = "job_task_quote_price_#{task.id}"
