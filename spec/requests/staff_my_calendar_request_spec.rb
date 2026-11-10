@@ -154,13 +154,13 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(props["background"]).to eq("linear-gradient(to right, #111111 0.0%, #111111 50.0%, #222222 50.0%, #222222 100.0%);")
     end
 
-    # an unparseable start/end param parses to nil; with any single event in the space the nil comparison 500s (empty space: 200 []).
-    it "500s for an unparseable start param once the space has a single event" do
-      get feed, params: { start: "garbage" }
-      expect(response.parsed_body).to eq([])
+    it "answers 400 for an unparseable start or end param" do
       create(:event, space: space, start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
-      get feed, params: { start: "garbage" }
-      expect(response).to have_http_status(:internal_server_error)
+      [{ start: "garbage" }, { end: "garbage" }, { start: "2027-13-45" }].each do |bad|
+        get feed, params: bad
+        expect(response).to have_http_status(:bad_request)
+        expect(response.parsed_body["error"]).to eq(I18n.t("errors.staff.my_calendar.invalid_date"))
+      end
     end
 
     it "falls back to the raw event when the recurrence rule is malformed (inside the window only)" do

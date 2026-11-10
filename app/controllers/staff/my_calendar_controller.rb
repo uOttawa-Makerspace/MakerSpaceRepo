@@ -28,8 +28,10 @@ class Staff::MyCalendarController < StaffAreaController
     end
     
     # Date range
-    start_date = params[:start].present? ? Time.zone.parse(params[:start]) : Time.zone.now - 3.months
-    end_date = params[:end].present? ? Time.zone.parse(params[:end]) : Time.zone.now + 3.months
+    start_date = parse_range_param(params[:start], Time.zone.now - 3.months)
+    end_date = parse_range_param(params[:end], Time.zone.now + 3.months)
+    return render_calendar_error(:invalid_date, :bad_request) if start_date.nil? || end_date.nil?
+
     formatted_events = []
     
     events.each do |event|
@@ -51,6 +53,15 @@ class Staff::MyCalendarController < StaffAreaController
   end
 
   private
+
+  # The parsed time, the default when the param is absent, nil when it is not a date.
+  def parse_range_param(value, default)
+    return default if value.blank?
+
+    Time.zone.parse(value)
+  rescue ArgumentError
+    nil
+  end
 
   def render_calendar_error(cause, status)
     render json: { error: I18n.t("errors.staff.my_calendar.#{cause}"), reference: error_reference }, status: status

@@ -28,6 +28,7 @@ en:
       my_calendar:
         space_required: "Choose a space to show its calendar."
         space_not_assigned: "You are not assigned to this space."
+        invalid_date: "The start or end date is not a valid date."
     volunteer:
       hours:
         processed: "This volunteer hour was already processed, so it can no longer be changed or deleted."

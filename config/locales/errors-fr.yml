@@ -28,6 +28,7 @@ fr:
       my_calendar:
         space_required: "Choisissez un espace pour afficher son calendrier."
         space_not_assigned: "Vous n'êtes pas affecté à cet espace."
+        invalid_date: "La date de début ou de fin n'est pas une date valide."
     volunteer:
       hours:
         processed: "Cette heure de bénévolat a déjà été traitée. Elle ne peut plus être modifiée ni supprimée."
