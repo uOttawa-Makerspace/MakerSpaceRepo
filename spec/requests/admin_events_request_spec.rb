@@ -195,8 +195,8 @@ RSpec.describe "Admin events contract", type: :request do
   end
 
   it "update PATCH (non-recurring) with a title" do
-    event = create(:event, space: space, title: "Update-me",
-                           created_by: admin)
+    creator = create(:user, :staff)
+    event = create(:event, space: space, title: "Update-me", created_by: creator)
     log_in!(admin)
     # space_id must ride along: leaving it blank fails validation and the
     # notice flash is never set
@@ -213,8 +213,26 @@ RSpec.describe "Admin events contract", type: :request do
     expect(event.description).to eq("New description")
     expect(event.start_time).to eq(Time.utc(2027, 4, 1, 10, 0))
     expect(event.end_time).to eq(Time.utc(2027, 4, 1, 11, 0))
-    # a non-recurring update overwrites created_by_id with the editor
-    expect(event.created_by_id).to eq(admin.id)
+    # the creator stays; the editor is recorded separately
+    expect(event.created_by_id).to eq(creator.id)
+    expect(event.updated_by_id).to eq(admin.id)
+  end
+
+  it "single publish records the admin as the last editor and keeps the creator" do
+    creator = create(:user, :staff)
+    event = create(:event, :draft, space: space, created_by: creator)
+    log_in!(admin)
+    patch publish_admin_event_path(event)
+    expect(event.reload).to have_attributes(created_by_id: creator.id, updated_by_id: admin.id)
+  end
+
+  it "create POST leaves the last editor empty" do
+    log_in!(admin)
+    post admin_events_path, params: {
+      event: { event_type: "meeting", space_id: space.id,
+               utc_start_time: "2027-04-01 10:00", utc_end_time: "2027-04-01 11:00" }
+    }
+    expect(Event.order(:id).last).to have_attributes(created_by_id: admin.id, updated_by_id: nil)
   end
 
   it "delete_with_scope: non-recurring event simply destroyed" do
