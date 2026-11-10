@@ -16,7 +16,7 @@ module AnnouncementsHelper
     user = current_user
     admin, staff, volunteer = role_flag(:admin?), role_flag(:staff?), role_flag(:volunteer?)
     dismissed = AnnouncementDismiss.where(user_id: user.id)
-    key = ["announcements-bar/v2", user.id || "guest", admin, staff, volunteer, signed_in?, Time.zone.today,
+    key = ["announcements-bar/v3", user.id || "guest", admin, staff, volunteer, signed_in?, Time.zone.today,
            Announcement.all.cache_key_with_version, dismissed.cache_key_with_version]
     Rails.cache.fetch(key, expires_in: 10.minutes) do
       visible = Announcement.active.where.not(id: dismissed.select(:announcement_id))
