@@ -697,14 +697,25 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response).to redirect_to(root_path)
     end
 
-    it "fails the submission (422, nothing sent) when GitHub issue creation returns no number" do
+    it "fails the submission (422, report kept without an issue number, nothing sent) when GitHub issue creation returns no number" do
       allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: nil })
       deliveries.clear
       expect {
         perform_enqueued_jobs { post help_path, params: params }
-      }.not_to change(Help, :count)
+      }.to change(Help, :count).by(1)
+      expect(Help.last.gh_issue_number).to be_nil
       expect(response).to have_http_status(422)
       expect(deliveries).to be_empty
+    end
+
+    it "re-renders a form that posts again, and the retry succeeds" do
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
+      post help_path, params: params
+      expect(response.body).not_to include('name="_method"')
+      allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: 5 })
+      expect { post help_path, params: params }.to change(Help, :count).by(1)
+      expect(response).to redirect_to(help_path)
+      expect(Help.last.gh_issue_number).to eq("5")
     end
   end
 
