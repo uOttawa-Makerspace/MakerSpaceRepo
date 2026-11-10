@@ -406,6 +406,16 @@ describe.each(ZONES)("with the process clock in %s", (zone) => {
       ).toBe(false);
     });
 
+    it("treats a repeating entry with no duration as zero-length occurrences", () => {
+      const open = { rrule: winterMondays };
+      expect(overlaps(open, wall(2026, 3, 30, 8), wall(2026, 3, 30, 10))).toBe(
+        true,
+      );
+      expect(
+        overlaps(open, wall(2026, 3, 30, 9, 1), wall(2026, 3, 30, 10)),
+      ).toBe(false);
+    });
+
     it("matches a one-off entry by its overlap", () => {
       const oneOff = {
         start: "2026-03-30T09:00:00",
