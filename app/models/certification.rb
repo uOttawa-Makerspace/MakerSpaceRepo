@@ -181,7 +181,8 @@ class Certification < ApplicationRecord
   def self.highest_level
     certs = all.to_a
     preload_trainings(certs)
-    certs.select(&:training_known?).group_by(&:training).reject { |training, _| training.nil? }.flat_map { |_, held| top_ranked(held) }
+    by_training = certs.select(&:training_known?).group_by(&:training)
+    by_training.reject { |training, _| training.nil? }.flat_map { |_, held| top_ranked(held) }
   end
 
   def self.top_ranked(held)
@@ -197,18 +198,18 @@ class Certification < ApplicationRecord
     ActiveRecord::Associations::Preloader.new(records: by_session, associations: { training_session: :training }).call
     ActiveRecord::Associations::Preloader.new(
       records: by_project,
-      associations: { proficient_project_session: { proficient_project: :training } }
+      associations: [:training_session, { proficient_project_session: { proficient_project: :training } }]
     ).call
   end
 
   # A session certification ranks by its session's level, a project-only one by its own level.
   # A level outside Beginner, Intermediate and Advanced has no rank.
   def rank
-    LEVELS.index(training_session ? training_session.level : level)
+    LEVELS.index(training_session_id ? training_session.level : level)
   end
 
   def training_known?
-    training_session.present? || proficient_project_session&.proficient_project.present?
+    training_session_id.present? || proficient_project_session&.proficient_project.present?
   end
 
   # The name of the training behind the certification, in the current language.

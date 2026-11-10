@@ -56,6 +56,30 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(response.body).not_to include("Laser EN")
     end
 
+    it "reads the trainings of the listed badges in a constant number of queries" do
+      add_earner = lambda do |project_only|
+        user = create(:user, :regular_user)
+        badge_training = create(:training, skill: skill, has_badge: true)
+        if project_only
+          granted = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+          create(:proficient_project_session, certification: granted, user: user, level: "Beginner",
+                                              proficient_project: create(:proficient_project, training: badge_training))
+        else
+          create(:certification, user: user, training_session: create(:training_session, training: badge_training),
+                                 training: badge_training, level: "Beginner")
+        end
+      end
+      2.times { |i| add_earner.call(i.odd?) }
+      sign_in_as(:staff)
+      get badges_path # warm up
+      few = selects_on("trainings", "training_sessions", "proficient_projects", "proficient_project_sessions") { get badges_path }
+      6.times { |i| add_earner.call(i.odd?) }
+      many = selects_on("trainings", "training_sessions", "proficient_projects", "proficient_project_sessions") { get badges_path }
+
+      expect(response).to have_http_status(:ok)
+      expect(many.size).to eq(few.size)
+    end
+
     it "hides trainings with has_badge=false" do
       training.update!(has_badge: false)
       log_in!(earner)
