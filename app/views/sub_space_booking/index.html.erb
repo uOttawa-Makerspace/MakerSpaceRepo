@@ -98,6 +98,8 @@
                       <td class="text-center">
                         <% if booking.approved? %>
                           <span class="badge text-bg-success">Approved</span>
+                        <% elsif booking.declined? %>
+                          <span class="badge text-bg-danger">Declined</span>
                         <% else %>
                           <span class="badge text-bg-warning">Pending</span>
                         <% end %>

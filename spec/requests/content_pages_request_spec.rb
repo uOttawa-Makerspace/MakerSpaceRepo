@@ -440,6 +440,8 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect { post faqs_path, params: valid_params }.to change(Faq, :count).by(1)
       expect(response).to have_http_status(:ok)
       expect(flash[:notice]).to eq("Created FAQ successfully")
+      get faqs_path
+      expect(flash[:notice]).to be_nil
 
       patch faq_path(faq1), params: { faq: { title_en: "Edited" } }
       expect(response).to redirect_to(faqs_path)
@@ -449,12 +451,12 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response).to redirect_to(faqs_path)
     end
 
-    # the failed-create flash says "Created FAQ successfully"
-    it "rejects an invalid create with 422 but a success-sounding alert" do
+    it "rejects an invalid create with 422 and says what failed" do
       sign_in_as(:admin)
       expect { post faqs_path, params: { faq: { title_en: "only title" } } }.not_to change(Faq, :count)
       expect(response).to have_http_status(:unprocessable_content)
-      expect(flash[:alert]).to eq("Created FAQ successfully")
+      expect(flash[:alert]).to start_with(I18n.t("errors.faqs.not_created"))
+      expect(flash[:alert]).not_to include("successfully")
     end
 
     it "rejects an invalid update with 422" do
@@ -736,7 +738,6 @@ RSpec.describe "Content pages (part 2)", type: :request do
   describe "QuickAccessLinksController (admin only)" do
     let(:admin) { create(:user, :admin) }
 
-    # check_user redirects twice in one filter chain (guest/regular + :id), which raises DoubleRenderError (500) instead of a clean redirect
     it "redirects a guest or regular user without an id (create)" do
       post quick_access_links_create_path, params: { name: "Home", path: "/" }
       expect(response).to redirect_to(root_path)
@@ -748,11 +749,20 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(QuickAccessLink.count).to eq(0)
     end
 
-    it "answers 500 (double redirect) when a non-admin supplies an id of an existing link" do
+    it "redirects once when a non-admin supplies an id of an existing link" do
       link = QuickAccessLink.create!(user: admin, name: "Home", path: "/")
       sign_in_as(:regular)
       delete quick_access_links_delete_path(link)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:notice]).to eq("You can't do that")
+      expect(QuickAccessLink.exists?(link.id)).to be(true)
+    end
+
+    it "redirects once when an admin supplies another admin's link" do
+      link = QuickAccessLink.create!(user: create(:user, :admin), name: "Home", path: "/")
+      sign_in_as(:admin)
+      delete quick_access_links_delete_path(link)
+      expect(response).to redirect_to(root_path)
       expect(QuickAccessLink.exists?(link.id)).to be(true)
     end
 

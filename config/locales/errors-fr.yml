@@ -57,6 +57,8 @@ fr:
       unexpected:
         title: "Une erreur s'est produite de notre côté"
         text: "Une erreur inattendue a interrompu cette page. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence ci-dessous."
+    faqs:
+      not_created: "L'entrée de la FAQ n'a pas été créée."
     admin:
       still_in_use: "D'autres éléments l'utilisent encore, il a donc été laissé tel quel."
       record_missing: "Un élément auquel il fait référence n'existe plus. Rechargez la page et réessayez."
@@ -128,6 +130,7 @@ fr:
         not_registered: "Le lecteur n'a pas été enregistré."
         not_updated: "Le lecteur n'a pas été modifié."
       settings:
+        category_in_use: "La catégorie est utilisée par des projets; elle n'a pas été retirée."
         course_not_added: "Le cours n'a pas été ajouté."
         course_not_removed: "Le cours n'a pas été retiré."
         course_not_renamed: "Le cours n'a pas été renommé."

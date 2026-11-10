@@ -13,7 +13,7 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def add_category
-    if params[:category_option][:name].blank?
+    if cat_params[:name].blank?
       flash[:alert] = "Invalid category name."
     else
       @cat_option = CategoryOption.new(cat_params)
@@ -24,7 +24,7 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def add_area
-    if params[:area_option][:name].blank?
+    if area_params[:name].blank?
       flash[:alert] = "Invalid area name."
     else
       @area_option = AreaOption.new(area_params)
@@ -68,26 +68,31 @@ class Admin::SettingsController < AdminAreaController
   # end
 
   def remove_category
-    if params[:remove_category] != ""
-      CategoryOption.where(id: params[:remove_category]).destroy_all
-      flash[:notice] = "Category removed successfully!"
-    else
+    option = CategoryOption.find_by(id: params[:remove_category])
+    if option.nil?
       flash[:alert] = "Please select a category."
+    elsif option.in_use?
+      flash[:alert] = I18n.t("errors.admin.settings.category_in_use")
+    else
+      option.destroy
+      flash[:notice] = "Category removed successfully!"
     end
     redirect_to admin_settings_path
   end
 
   def remove_area
-    if params[:remove_area] != ""
-      AreaOption.where(id: params[:remove_area]).destroy_all
+    option = AreaOption.find_by(id: params[:remove_area])
+    if option
+      option.destroy
       flash[:notice] = "Area removed successfully!"
     else
       flash[:alert] = "Please select an area."
     end
     redirect_to admin_settings_path
   end
+
   def add_equipment
-    if params[:equipment_option][:name].blank?
+    if equip_params[:name].blank?
       flash[:alert] = "Invalid equipment name."
     else
       @equip_option = EquipmentOption.new(equip_params)
@@ -98,22 +103,21 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def rename_equipment
-    if params[:equipment_option][:name].blank?
+    if equip_params[:name].blank?
       flash[:alert] = "Invalid equipment name."
-    elsif params[:rename_equipment] == ""
+    elsif (option = EquipmentOption.find_by(id: params[:rename_equipment])).nil?
       flash[:alert] = "Please select a piece of equipment."
     else
-      EquipmentOption.where(id: params[:rename_equipment]).update_all(
-        name: equip_params["name"]
-      )
+      option.update(name: equip_params[:name])
       flash[:notice] = "Equipment renamed successfully!"
     end
     redirect_to admin_settings_path
   end
 
   def remove_equipment
-    if params[:remove_equipment] != ""
-      EquipmentOption.where(id: params[:remove_equipment]).destroy_all
+    option = EquipmentOption.find_by(id: params[:remove_equipment])
+    if option
+      option.destroy
       flash[:notice] = "Equipment removed successfully!"
     else
       flash[:alert] = "Please select a piece of equipment."
@@ -179,15 +183,15 @@ class Admin::SettingsController < AdminAreaController
   end
 
   def equip_params
-    params.require(:equipment_option).permit(:name)
+    params.expect(equipment_option: [:name])
   end
 
   def cat_params
-    params.require(:category_option).permit(:name)
+    params.expect(category_option: [:name])
   end
 
   def area_params
-    params.require(:area_option).permit(:name)
+    params.expect(area_option: [:name])
   end
 
   def printer_params

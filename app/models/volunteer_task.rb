@@ -22,6 +22,14 @@ class VolunteerTask < ApplicationRecord
   # created or edited there. Other updates (completing a task) and stored tasks are not checked.
   validates :hours, numericality: { greater_than: 0 }, on: %i[create task_form]
 
+  # What the task forms offer: a title, a whole number of CC of 0 or more, at least 1 seat, and a status
+  # of open or completed.
+  STATUSES = %w[open completed].freeze
+  validates :title, presence: true
+  validates :cc, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :joins, numericality: { only_integer: true, greater_than_or_equal_to: 1 }
+  validates :status, inclusion: { in: STATUSES }
+
   # Awarded means: an approved volunteer hour row, or any CC money row, belongs to the task.
   def awarded?
     volunteer_hours.approved.exists? || cc_moneys.exists?
