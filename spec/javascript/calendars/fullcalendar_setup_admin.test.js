@@ -242,6 +242,18 @@ describe("loading the calendar", () => {
     expect(created[0].rendered).toBe(false);
   });
 
+  it("quietly makes no request when the space picker has no value", async () => {
+    const fetchMock = stubFetch({});
+    document.body.innerHTML = PAGE;
+    document.getElementById("space_id").value = "";
+    created.length = 0;
+    document.dispatchEvent(new Event("turbo:load"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(console.error).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(created[0].rendered).toBe(false);
+  });
+
   it("lists one checkbox per event type and one per staff member", async () => {
     stubFetch({ imported: calendars });
     await boot();
