@@ -283,6 +283,7 @@ class ShopOrderApplier
   def apply_referenced_membership(plan)
     membership = Membership.find_by(id: plan.membership_ref)
     if membership.nil?
+      @refusals << "membership reference #{plan.membership_ref} not found"
       report_unresolved(plan, UnknownMembership, "membership", "references unknown membership #{plan.membership_ref}")
     elsif !membership.mark_paid_if_pending
       refuse_membership(plan, membership)

@@ -239,6 +239,20 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       expect(reports.map { |e, _| e.class }).to eq([ShopOrderApplier::MembershipNotPending])
     end
 
+    it "records a reference that names no membership on the applied order, so staff can list it" do
+      order = hook(membership_payload(999_999_999, id: 7013))
+      expect(order.reload).to have_attributes(status: "applied", last_error: "refused: membership reference 999999999 not found")
+      expect(ProcessedOrder.refused).to eq([order])
+      expect(reports.map { |e, _| e.class }).to eq([ShopOrderApplier::UnknownMembership])
+    end
+
+    it "keeps the refusal note within 200 characters" do
+      order = hook(membership_payload("9" * 300, id: 7014))
+      expect(order.reload.last_error.length).to eq(200)
+      expect(order.last_error).to start_with("refused: membership reference 999")
+      expect(ProcessedOrder.refused).to eq([order])
+    end
+
     it "accepts the admin_graphql_api_id spelling of an order already applied by its numeric id" do
       hook(membership_payload(pending.id, id: 7003))
       pending.update!(status: "revoked")
