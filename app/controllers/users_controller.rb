@@ -156,7 +156,7 @@ class UsersController < SessionsController
   # GET, the link in the unlock mail: shows a button that POSTs the token to
   # apply_unlock. A GET never changes anything.
   def unlock_account
-    return if User.find_by_token_for(:account_unlock, params[:token])
+    return if User.unlock_link_valid?(params[:token])
 
     flash[:alert] = LINK_EXPIRED_ALERT
     redirect_to root_path
@@ -321,7 +321,7 @@ class UsersController < SessionsController
   end
 
   def reset_password_form
-    return if User.find_by_token_for(:password_reset, params[:token])
+    return if User.password_reset_link_valid?(params[:token])
 
     flash[:alert] = LINK_EXPIRED_ALERT
     redirect_to forgot_password_path

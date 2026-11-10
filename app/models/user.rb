@@ -410,6 +410,16 @@ class User < ApplicationRecord
     [locked, locked_until&.to_i]
   end
 
+  # Whether a password reset or unlock link is still accepted: the same lookup the links' pages use, so the
+  # mailer (at delivery) and the controller (at click) cannot disagree.
+  def self.password_reset_link_valid?(token)
+    find_by_token_for(:password_reset, token).present?
+  end
+
+  def self.unlock_link_valid?(token)
+    find_by_token_for(:account_unlock, token).present?
+  end
+
   scope :no_waiver_users, -> { where(read_and_accepted_waiver_form: false) }
   
   scope :between_dates_picked, ->(start_date, end_date) {
