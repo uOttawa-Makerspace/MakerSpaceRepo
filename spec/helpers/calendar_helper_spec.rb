@@ -154,13 +154,28 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(reports.first.last[:calendar]).to eq(Digest::MD5.hexdigest(url))
     end
 
-    it "gives a recurring event without an end no end time and a negative duration" do
+    it "gives a recurring event without an end no end time and no duration" do
       body = ics(vevent("noend", ["DTSTART:20270115T150000Z", "SUMMARY:Open ended", "RRULE:FREQ=DAILY;COUNT=2"]))
       stub_request(:get, url).to_return(status: 200, body: body)
       event = parse_ics_calendar(url).first[:events].first
       expect(event[:end]).to be_nil
       expect(event[:start]).to eq("2027-01-15T10:00:00")
-      expect(event[:duration]).to eq(-Time.utc(2027, 1, 15, 15).to_i * 1000)
+      expect(event).not_to have_key(:duration)
+      expect(event[:rrule]).to start_with("DTSTART:20270115T100000")
+    end
+
+    it "keeps single events and modified instances without an end, judging their age by the start" do
+      body = ics(
+        vevent("day", ["DTSTART;VALUE=DATE:20270112", "SUMMARY:All day"]),
+        vevent("old", ["DTSTART:20260801T150000Z", "SUMMARY:Old"]),
+        vevent("rec", ["DTSTART:20270105T150000Z", "DTEND:20270105T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=4"]),
+        vevent("rec", ["RECURRENCE-ID:20270112T150000Z", "DTSTART:20270112T170000Z", "SUMMARY:Moved"]),
+        vevent("rec", ["RECURRENCE-ID:20260101T150000Z", "DTSTART:20260101T170000Z", "SUMMARY:Ancient"])
+      )
+      stub_request(:get, url).to_return(status: 200, body: body)
+      events = parse_ics_calendar(url).first[:events]
+      expect(events.map { |e| e[:title] }).to match_array(["All day", "Weekly", "Moved"])
+      expect(events.find { |e| e[:title] == "All day" }).to include(allDay: true, start: "2027-01-12T00:00:00", end: nil)
     end
 
     it "lists a modified instance whose master event is not in the feed" do

@@ -225,7 +225,7 @@ module CalendarHelper
     end_time = safe_to_time(main_event.dtend)
     return report_ics_event_without_start(main_event, group_id) if start_time.nil?
 
-    return if main_event.rrule.empty? && end_time < (Time.now.utc - 2.months)
+    return if main_event.rrule.empty? && stale_event?(end_time || start_time)
 
     event_hash = {
       id: main_event.uid,
@@ -259,8 +259,9 @@ module CalendarHelper
       rrule_string_parts << "EXDATE:#{exdate_str}"
     end
 
-    duration_seconds = end_time.to_i - start_time.to_i
-    { rrule: rrule_string_parts.join("\n"), duration: duration_seconds * 1000 }
+    recurrence = { rrule: rrule_string_parts.join("\n") }
+    recurrence[:duration] = (end_time - start_time).to_i * 1000 if end_time
+    recurrence
   end
 
   # The dates left out of a series: its own exception dates and the original dates of its modified instances.
@@ -275,7 +276,7 @@ module CalendarHelper
     start_time = safe_to_time(modified.dtstart)
     end_time = safe_to_time(modified.dtend)
 
-    return if end_time < (Time.now.utc - 2.months)
+    return if stale_event?(end_time || start_time)
 
     {
       id: "#{modified.uid}_#{safe_to_time(modified.recurrence_id)&.to_i}",
@@ -289,6 +290,12 @@ module CalendarHelper
       start: toronto_iso(start_time),
       end: toronto_iso(end_time)
     }
+  end
+
+  # Whether an event's last moment (its end, else its start) is more than two months ago. An event with
+  # no time at all is not stale.
+  def stale_event?(last_moment)
+    last_moment.present? && last_moment < (Time.now.utc - 2.months)
   end
 
   def toronto_iso(time)
