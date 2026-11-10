@@ -344,10 +344,11 @@ RSpec.describe "Printers", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    # with an unrecognised sent_from nothing is rendered or redirected (implicit missing template, 204/500)
-    it "has no response branch for an unknown sent_from" do
+    it "redirects to the staff printers page for an unknown or missing sent_from" do
       send_msg(from: "other")
-      expect(response.status).to be_in([204, 500])
+      expect(response).to redirect_to(staff_printers_printers_url)
+      send_msg(from: nil)
+      expect(response).to redirect_to(staff_printers_printers_url)
     end
   end
 end

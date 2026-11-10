@@ -145,8 +145,8 @@ class PrintersController < StaffAreaController
 
     if msg_params[:sent_from] == "updates"
       redirect_to staff_printers_updates_printers_url
-    elsif msg_params[:sent_from] == "printers"
-      redirect_to staff_printers_printers_url #(anchor: 'failedPrintHeader')
+    else
+      redirect_to staff_printers_printers_url
     end
   end
 
