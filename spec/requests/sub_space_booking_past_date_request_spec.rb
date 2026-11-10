@@ -497,6 +497,15 @@ RSpec.describe "Sub space booking past-date rule", :booking_clock, type: :reques
       expect(SubSpaceBooking.where(name: "BadEnd")).to be_empty
     end
 
+    it "answers a recurring_end too long to be a date with the invalid-parameters 422" do
+      log_in!(user)
+      post_json_series(start_time: "2026-12-02 10:00", end_time: "2026-12-02 11:00",
+                       recurring_end: "2027-01-31#{" " * 200}", name: "LongEnd")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body).to eq("errors" => ["Recurring #{I18n.t("errors.bookings.recurring_invalid")}"])
+      expect(SubSpaceBooking.where(name: "LongEnd")).to be_empty
+    end
+
     it "redirects a successful HTML create to the room's calendar with the notice" do
       log_in!(user)
       post sub_space_booking_index_path, params: { sub_space_booking: {
