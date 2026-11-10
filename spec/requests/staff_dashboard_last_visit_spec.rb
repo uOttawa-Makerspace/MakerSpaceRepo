@@ -93,7 +93,7 @@ RSpec.describe "Staff dashboard last visit cells", type: :request do
     end
   end
 
-  describe "refresh_tables", skip_bullet: true do
+  describe "refresh_tables" do
     before do
       rewrite_older_session do
         create(:lab_session, user: visitor, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
