@@ -244,13 +244,44 @@ RSpec.describe CalendarHelper, type: :helper do
       )
     end
 
-    it "accepts the extremes RFC 5545 allows in a repeat rule without a report" do
-      rules = ["FREQ=YEARLY;BYYEARDAY=-366,1,366;COUNT=3", "FREQ=MONTHLY;BYMONTHDAY=-31,31;COUNT=3", "FREQ=YEARLY;BYMONTH=1,12;COUNT=3"]
-      vevents = rules.each_with_index.map do |rule, i|
-        vevent("ok#{i}", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Ok #{i}", "RRULE:#{rule}"])
+    {
+      "FREQ=YEARLY;BYYEARDAY=0" => "by_year_day", "FREQ=YEARLY;BYYEARDAY=367" => "by_year_day", "FREQ=YEARLY;BYYEARDAY=-367" => "by_year_day",
+      "FREQ=MONTHLY;BYMONTHDAY=0" => "by_month_day", "FREQ=MONTHLY;BYMONTHDAY=32" => "by_month_day", "FREQ=MONTHLY;BYMONTHDAY=-32" => "by_month_day",
+      "FREQ=YEARLY;BYWEEKNO=0" => "by_week_number", "FREQ=YEARLY;BYWEEKNO=54" => "by_week_number", "FREQ=YEARLY;BYWEEKNO=-54" => "by_week_number",
+      "FREQ=YEARLY;BYMONTH=0" => "by_month", "FREQ=YEARLY;BYMONTH=13" => "by_month",
+      "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=0" => "by_set_position", "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=367" => "by_set_position",
+      "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=-367" => "by_set_position",
+      "FREQ=MONTHLY;BYDAY=0MO" => "by_day", "FREQ=MONTHLY;BYDAY=54MO" => "by_day", "FREQ=MONTHLY;BYDAY=-54FR" => "by_day",
+      "FREQ=WEEKLY;INTERVAL=0" => "interval"
+    }.each do |rule, part|
+      it "keeps the series and reports it when #{rule} has a value outside its allowed range" do
+        body = ics(vevent("odd", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Odd", "RRULE:#{rule};COUNT=2"]))
+        stub_request(:get, url).to_return(status: 200, body: body)
+        events = nil
+        reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
+        expect(events.map { |e| e[:id] }).to eq(["odd"])
+        expect(reports.map(&:first)).to eq(["#{part} is out of range"])
       end
-      stub_request(:get, url).to_return(status: 200, body: ics(*vevents))
-      expect(reported_ics_problems { parse_ics_calendar(url) }).to eq([])
+    end
+
+    describe "the allowed ranges of a repeat rule" do
+      let(:rule_class) { Struct.new(:interval, :by_day, :by_year_day, :by_month_day, :by_week_number, :by_month, :by_set_position, keyword_init: true) }
+
+      def out_of_range(**parts)
+        send(:out_of_range_rule_part, rule_class.new(**parts))
+      end
+
+      it "accepts the values at the edges of every range" do
+        expect(out_of_range(interval: 1, by_day: %w[MO -1FR +53SU 5TU], by_year_day: %w[1 -1 366 -366], by_month_day: %w[1 -31 31],
+                            by_week_number: %w[1 53 -53], by_month: %w[1 12], by_set_position: %w[1 -1 366 -366])).to be_nil
+        expect(out_of_range).to be_nil
+      end
+
+      it "refuses a value that is not a number" do
+        expect(out_of_range(by_month_day: %w[x])).to eq(:by_month_day)
+        expect(out_of_range(by_set_position: ["1.5"])).to eq(:by_set_position)
+        expect(out_of_range(by_day: ["1"])).to eq(:by_day)
+      end
     end
 
     it "does not expand a series whose COUNT is above the limit, so it is kept without a report" do

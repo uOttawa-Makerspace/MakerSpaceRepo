@@ -5,10 +5,11 @@ module CalendarHelper
     by_month_day: [1..31, true],
     by_week_number: [1..53, true],
     by_month: [1..12, false],
-    by_hour: [0..23, false],
-    by_minute: [0..59, false],
-    by_second: [0..60, false]
+    by_set_position: [1..366, true]
   }.freeze
+
+  # One BYDAY value: a weekday, optionally with a number (and sign) saying which one of the period.
+  ICS_BY_DAY = /\A(?:[+-]?(?<number>\d+))?(?:MO|TU|WE|TH|FR|SA|SU)\z/
 
   # The longest COUNT whose end is worked out when deciding whether a series is over.
   MAX_COUNTED_SERIES = 1000
@@ -348,16 +349,25 @@ module CalendarHelper
   end
 
   # The first part of the rule whose value is outside what RFC 5545 allows (IceCube fails with a method error on
-  # some of these), or nil. A BY part with a sign may count from the end, so only its size is checked.
+  # some of these, and accepts others silently), or nil. Only the parts convert_rrule_to_string passes on are
+  # checked. A BY part with a sign may count from the end, so only its size is checked.
   def out_of_range_rule_part(rrule_obj)
-    return :interval if rrule_obj.interval.to_i < 1 && !rrule_obj.interval.nil?
+    return :interval unless rrule_obj.interval.nil? || rrule_obj.interval.to_i >= 1
+    return :by_day unless Array(rrule_obj.by_day).all? { |token| valid_by_day?(token) }
 
-    ICS_RULE_PART_LIMITS.find do |part, (limit, signed)|
-      Array(rrule_obj.public_send(part)).any? do |value|
-        number = signed ? value.to_i.abs : value.to_i
-        !limit.cover?(number)
-      end
-    end&.first
+    ICS_RULE_PART_LIMITS.find { |part, (limit, signed)| !values_within?(rrule_obj.public_send(part), limit, signed) }&.first
+  end
+
+  def values_within?(values, limit, signed)
+    Array(values).all? do |value|
+      number = Integer(value.to_s, 10, exception: false)
+      number && limit.cover?(signed ? number.abs : number)
+    end
+  end
+
+  def valid_by_day?(token)
+    match = ICS_BY_DAY.match(token.to_s)
+    match.present? && (match[:number].nil? || match[:number].to_i.between?(1, 53))
   end
 
   # Whether an event's last moment (its end, else its start) is more than two months ago. An event with
