@@ -419,7 +419,7 @@ function openEventForEditing(eventImpl) {
     try {
       const rruleStr = event.extendedProps.rrule;
       rruleData = RRule.fromString(
-        rruleStr.startsWith("RRULE:") ? rruleStr : `RRULE:${rruleStr}`,
+        /^(RRULE|DTSTART)/.test(rruleStr) ? rruleStr : `RRULE:${rruleStr}`,
       ).options;
     } catch (e) {
       console.log("RRule parse error", e);

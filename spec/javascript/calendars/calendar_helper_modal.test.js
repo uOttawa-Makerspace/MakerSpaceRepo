@@ -318,15 +318,18 @@ describe("eventClick", () => {
     expect($("day_FR").checked).toBe(true);
   });
 
-  it("cannot read a rule string that starts with a start date", () => {
+  it("restores a repeat rule from a rule string that starts with a start date", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     eventClick(
       fcEvent({
-        props: { rrule: "DTSTART:20270315T140000Z\nRRULE:FREQ=DAILY" },
+        props: {
+          rrule: "DTSTART:20270315T140000Z\nRRULE:FREQ=WEEKLY;BYDAY=FR",
+        },
       }),
     );
-    expect(log).toHaveBeenCalledWith("RRule parse error", expect.anything());
-    expect($("recurrence_frequency").value).toBe("");
+    expect(log).not.toHaveBeenCalled();
+    expect($("recurrence_frequency").value).toBe("WEEKLY");
+    expect($("day_FR").checked).toBe(true);
   });
 
   it("logs and carries on when the rule string cannot be read", () => {
