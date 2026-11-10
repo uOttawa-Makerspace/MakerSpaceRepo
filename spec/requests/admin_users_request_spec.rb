@@ -563,6 +563,21 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "DELETE /admin/users/delete_user (soft delete)" do
     before { login!(admin) }
 
+    it "refuses an admin who was demoted after the request was authorised" do
+      other_admin = create(:user, :admin)
+      allow(User).to receive(:serialising_account_deletion).and_wrap_original do |original, &block|
+        User.where(id: admin.id).update_all(role: "regular_user")
+        original.call(&block)
+      end
+
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+
+      expect(response).to redirect_to(user_path(target.username))
+      expect(flash[:alert]).to eq("Only admins can delete accounts.")
+      expect(target.reload.deleted).to be(false)
+      expect(other_admin.reload.deleted).to be(false)
+    end
+
     it "requires the admin's own password" do
       delete delete_user_admin_users_path, params: { id: target.id, password: "wrong" }
       expect(response).to redirect_to(user_path(target.username))

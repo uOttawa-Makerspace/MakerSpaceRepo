@@ -139,9 +139,12 @@ class Admin::UsersController < AdminAreaController
 
     delete_user = User.find(params[:id])
     begin
-      User.delete_account!(delete_user)
+      User.delete_account!(delete_user, actor: @user)
     rescue User::LastAdminError => e
       redirect_to user_path(delete_user.username), alert: e.message
+      return
+    rescue User::NotAdminError
+      redirect_to user_path(delete_user.username), alert: "Only admins can delete accounts."
       return
     end
 

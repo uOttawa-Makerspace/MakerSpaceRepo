@@ -61,6 +61,9 @@ class User < ApplicationRecord
   # Raised by User.change_roles! when the change would leave no usable admin.
   class LastAdminError < StandardError; end
 
+  # Raised by User.delete_account! when the acting user is no longer an admin.
+  class NotAdminError < StandardError; end
+
   # The one wording, used by the admin UI and the API.
   LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
   LAST_ADMIN_LOCK_MESSAGE = "You cannot lock the last admin."
@@ -580,10 +583,13 @@ class User < ApplicationRecord
   # another member, or is hidden when there is none, and a lab session still open is ended now, so a
   # deleted user is not listed as in a space. Every other row (visits, certifications, training)
   # stays as it was. Raises LastAdminError for the last usable admin. Returns false, doing nothing,
-  # if the account was already deleted by another request.
-  def self.delete_account!(user)
+  # if the account was already deleted by another request. With an actor, the actor's role is read
+  # again once the admin rows are locked, and NotAdminError is raised if they are no longer an admin.
+  def self.delete_account!(user, actor: nil)
     serialising_account_deletion do
       guarding_last_admin!([user.id]) do
+        raise NotAdminError unless actor.nil? || where(id: actor.id, role: "admin").exists?
+
         next false if user.lock!(GUARD_LOCK_MODE).deleted?
 
         Repository.release_owned_by!(user)
@@ -959,12 +965,6 @@ class User < ApplicationRecord
   # unrelated legacy reason must still be demotable/deletable); callbacks run, so the
   # after_update_commit below (cable_access_lost?) closes the connections once, after
   # the real commit, even inside an outer transaction.
-  def change_role!(new_role)
-    raise ArgumentError, "unknown role #{new_role.inspect}" unless ROLES.include?(new_role)
-
-    self.role = new_role
-    save!(validate: false)
-    self
   # Marks the email confirmed. Skips validations, like change_role!, so a row that no longer passes
   # them (older data) is still confirmed.
   def confirm_email!
@@ -973,6 +973,12 @@ class User < ApplicationRecord
     self
   end
 
+  def change_role!(new_role)
+    raise ArgumentError, "unknown role #{new_role.inspect}" unless ROLES.include?(new_role)
+
+    self.role = new_role
+    save!(validate: false)
+    self
   end
 
   # Also revokes every session and JWT issued so far (SQL increment, like admin_lock!,
