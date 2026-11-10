@@ -108,6 +108,13 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body.first["id"]).to match(/\Aevent-\d+-\d+\z/)
     end
 
+    it "leaves out an occurrence removed from the series with an EXDATE" do
+      create(:event, space: space, title: "Weekly", recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=4\nEXDATE:20270314T140000Z",
+                     start_time: Time.zone.local(2027, 3, 7, 10), end_time: Time.zone.local(2027, 3, 7, 11))
+      get feed, params: { start: "2027-03-01T00:00:00-05:00", end: "2027-04-01T00:00:00-04:00" }
+      expect(response.parsed_body.map { |e| e["start"] }).to eq(%w[2027-03-07T10:00:00-05:00 2027-03-21T10:00:00-04:00 2027-03-28T10:00:00-04:00])
+    end
+
     it "an event across the DST gap keeps its wall-clock endpoints (2h of clock time is 1h elapsed)" do
       create(:event, space: space, title: "Night", start_time: Time.zone.local(2027, 3, 14, 1, 30), end_time: Time.zone.local(2027, 3, 14, 3, 30))
       get feed, params: { start: "2027-03-14T00:00:00-05:00", end: "2027-03-15T00:00:00-04:00" }
@@ -184,22 +191,33 @@ RSpec.describe "Staff my calendar", type: :request do
         .tap { |e| e.update_column(:recurrence_rule, rule) }
     end
 
-    it "is expanded within the per-event cap, quickly (MINUTELY over 100 days)" do
-      stored_event("DTSTART:20270101T090000Z\nRRULE:FREQ=MINUTELY")
-      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" }
-      elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
-      expect(response).to have_http_status(:ok)
-      expect(response.parsed_body.size).to eq(Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT)
-      expect(elapsed).to be < 2
+    # Counts the candidate occurrences the rule generates, so the bound is on work done, not on time.
+    def rule_steps
+      steps = 0
+      allow_any_instance_of(IceCube::ValidatedRule).to receive(:next_time).and_wrap_original do |original, *args|
+        steps += 1
+        original.call(*args)
+      end
+      yield
+      steps
     end
 
-    it "returns SECONDLY quickly too" do
-      stored_event("FREQ=SECONDLY")
-      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" }
-      expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 2
-      expect(response.parsed_body.size).to eq(Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT)
+    def expect_expansion_stops_at_cap(rule)
+      cap = Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT
+      stored_event(rule)
+      steps = rule_steps { get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" } }
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.size).to eq(cap)
+      expect(steps).to be_positive
+      expect(steps).to be <= cap + 2 # unbounded: 144,000 candidates for MINUTELY, 8,640,000 for SECONDLY
+    end
+
+    it "is expanded within the per-event cap, generating at most cap + 1 candidates (MINUTELY over 100 days)" do
+      expect_expansion_stops_at_cap("DTSTART:20270101T090000Z\nRRULE:FREQ=MINUTELY")
+    end
+
+    it "stops SECONDLY at the cap too" do
+      expect_expansion_stops_at_cap("FREQ=SECONDLY")
     end
 
     it "leaves a normal rule with fewer occurrences than the cap untouched" do

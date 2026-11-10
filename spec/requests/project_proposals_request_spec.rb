@@ -660,6 +660,13 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect_create_refused(proposal_params(photos: [blob.signed_id]))
     end
 
+    it "stores no file named by the signed id of an executable in the project_files field" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("MZ" + ("\x00" * 200)), filename: "run.exe", content_type: "application/x-msdownload")
+      expect { post project_proposals_path, params: proposal_params(project_files: [blob.signed_id]) }
+        .not_to change { ActiveStorage::Attachment.where(name: "project_files").count }
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it "stores a new proposal's slug as '<id>.<title>'" do
       post project_proposals_path, params: proposal_params(title: "Zed Title")
       created = ProjectProposal.find_by(title: "Zed Title")
@@ -864,6 +871,13 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(pending.categories.pluck(:name)).to eq(["Old"])
       expect(pending.photos.map { |p| p.filename.to_s }).to eq(["keep.png"])
       expect(pending.project_files.map { |f| f.filename.to_s }).to eq(["keep.txt"])
+    end
+
+    it "attaches no file named by the signed id of an executable in the project_files field" do
+      content_login!(owner)
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("MZ" + ("\x00" * 200)), filename: "run.exe", content_type: "application/x-msdownload")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed", project_files: [blob.signed_id] } }
+      expect(pending.reload.project_files).not_to be_attached
     end
 
     it "keeps the categories when the update is refused with none submitted" do

@@ -145,6 +145,8 @@ fr:
         recurrence_rule: Règle de récurrence
       coupon_code:
         cc_cost: Coût en points CC
+        code: Code
+        dollar_cost: Valeur en dollars
       question:
         images: Images
       order_item:

@@ -83,7 +83,11 @@ class Admin::KeysController < AdminAreaController
   end
 
   def assign_key
-    user = User.find(params[:key][:user_id])
+    user = User.find_by(id: params[:key][:user_id])
+
+    if user.nil?
+      redirect_to admin_keys_path, alert: [I18n.t("errors.admin.keys.not_assigned"), I18n.t("errors.admin.keys.holder_not_found")].join(" ") and return
+    end
 
     unless holder_approved?(user)
       redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE and return
@@ -97,7 +101,7 @@ class Admin::KeysController < AdminAreaController
   end
 
   def revoke_key
-    @key.revoke!(params[:deposit_return_date]&.to_date)
+    @key.revoke!(deposit_return_date_param)
     redirect_to admin_keys_path, notice: "Successfully revoked key"
   rescue ActiveRecord::RecordInvalid, Key::StateError => e
     redirect_to admin_keys_path,
@@ -129,6 +133,14 @@ class Admin::KeysController < AdminAreaController
       :custom_keycode,
       :additional_info
     )
+  end
+
+  # The posted deposit return date, or nil when none was given. An unreadable date is refused before
+  # anything is changed.
+  def deposit_return_date_param
+    params[:deposit_return_date]&.to_date
+  rescue Date::Error
+    raise Key::StateError, I18n.t("errors.admin.keys.deposit_return_date_invalid")
   end
 
   def request_label(key_request)

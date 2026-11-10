@@ -3,7 +3,7 @@
 FactoryBot.define do
   factory :coupon_code do
     code { Faker::Alphanumeric.alphanumeric(number: 30) }
-    dollar_cost { 10.0 }
+    dollar_cost { 10 }
     cc_cost { 10 }
 
     trait :unclaimed do

@@ -546,7 +546,16 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries.size).to eq(1)
     end
 
-    ["In progress", "Awarded", "Revoked"].each do |status|
+    it "approves a revoked item, granting the badge again" do
+      item = order_item_for(buyer, status: "Revoked")
+      content_sign_in_as(:staff)
+      expect do
+        post approve_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "x" } }
+      end.to change(ProficientProjectSession, :count).by(1).and change(Certification, :count).by(1)
+      expect(item.reload.status).to eq("Awarded")
+    end
+
+    ["In progress", "Awarded"].each do |status|
       it "does not approve a #{status} item" do
         item = order_item_for(buyer, status: status)
         content_sign_in_as(:staff)

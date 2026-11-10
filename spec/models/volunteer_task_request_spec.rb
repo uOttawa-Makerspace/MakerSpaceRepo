@@ -97,8 +97,9 @@ RSpec.describe VolunteerTaskRequest, "status, join lookup and search", type: :mo
     let(:req) { create(:volunteer_task_request) }
 
     it "returns the LAST joined join of the requester on the task" do
-      create(:volunteer_task_join, :active, volunteer_task: req.volunteer_task, user: req.user)
-      newest = create(:volunteer_task_join, :active, volunteer_task: req.volunteer_task, user: req.user)
+      # a stored duplicate from before joins were unique
+      build(:volunteer_task_join, :active, volunteer_task: req.volunteer_task, user: req.user).save!(validate: false)
+      newest = build(:volunteer_task_join, :active, volunteer_task: req.volunteer_task, user: req.user).tap { |j| j.save!(validate: false) }
       create(:volunteer_task_join, :completed, volunteer_task: req.volunteer_task, user: req.user)
       expect(req.volunteer_task_join).to eq(newest)
     end
