@@ -360,11 +360,19 @@ class Admin::EventsController < AdminAreaController
   end
 
   def parse_view_range
-    @view_start = parse_time(params[:view_start_date])
-    @view_end = parse_time(params[:view_end_date])
+    @view_start = parse_view_time(params[:view_start_date])
+    @view_end = parse_view_time(params[:view_end_date])
     return if @view_start && @view_end
 
     redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.dates_required"))
+  end
+
+  # The calendar sends its view range as local times without an offset, so a value without one is
+  # read in the app's time zone. Nil when the value is blank or not a time.
+  def parse_view_time(value)
+    Time.zone.parse(value.to_s)&.utc
+  rescue ArgumentError
+    nil
   end
 
   def series_rule
