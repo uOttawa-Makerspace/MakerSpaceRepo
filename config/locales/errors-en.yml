@@ -115,6 +115,7 @@ en:
         not_deleted: "The key was not deleted."
         not_assigned: "The key was not assigned."
         not_revoked: "The key was not revoked."
+        holder_not_found: "The selected key holder was not found."
         request_not_approved: "The key request was not approved."
         request_not_denied: "The key request was not denied."
         request_not_waiting: "This key request is no longer waiting for approval, so it was left as it is."

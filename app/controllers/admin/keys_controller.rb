@@ -83,7 +83,11 @@ class Admin::KeysController < AdminAreaController
   end
 
   def assign_key
-    user = User.find(params[:key][:user_id])
+    user = User.find_by(id: params[:key][:user_id])
+
+    if user.nil?
+      redirect_to admin_keys_path, alert: [I18n.t("errors.admin.keys.not_assigned"), I18n.t("errors.admin.keys.holder_not_found")].join(" ") and return
+    end
 
     unless holder_approved?(user)
       redirect_to admin_keys_path, alert: HOLDER_NOT_APPROVED_MESSAGE and return

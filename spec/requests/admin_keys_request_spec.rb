@@ -325,10 +325,13 @@ RSpec.describe "Admin keys", type: :request do
       expect(KeyTransaction.where(key: key).not_returned).to be_empty
     end
 
-    it "404s assigning to an unknown user" do
-      patch admin_key_assign_key_path(key), params: { key: { user_id: 0 }, deposit_amount: 1 }
-      expect(response).to have_http_status(:not_found)
+    it "refuses to assign to an unknown user with an alert, changing nothing" do
+      expect { patch admin_key_assign_key_path(key), params: { key: { user_id: 0 }, deposit_amount: 1 } }.not_to change(KeyTransaction, :count)
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("The key was not assigned. The selected key holder was not found.")
+      expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
     end
+
   end
 
   describe "key request approval" do

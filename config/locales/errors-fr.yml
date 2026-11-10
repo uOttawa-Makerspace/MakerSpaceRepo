@@ -115,6 +115,7 @@ fr:
         not_deleted: "La clé n'a pas été supprimée."
         not_assigned: "La clé n'a pas été attribuée."
         not_revoked: "La clé n'a pas été retirée."
+        holder_not_found: "Le détenteur de clé choisi est introuvable."
         request_not_approved: "La demande de clé n'a pas été approuvée."
         request_not_denied: "La demande de clé n'a pas été refusée."
         request_not_waiting: "Cette demande de clé n'attend plus d'approbation, elle a donc été laissée telle quelle."
