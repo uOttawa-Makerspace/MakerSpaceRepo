@@ -66,10 +66,11 @@ RSpec.describe User do
   end
 
   describe ".text_search" do
-    it "does not escape wildcards (legacy staff dashboard behaviour)" do
+    it "matches wildcard characters in the query literally" do
       u = create(:user, name: "Wild Card")
-      expect(User.text_search("%")).to include(u)
-      expect(User.text_search(User.sanitize_sql_like("%"))).not_to include(u)
+      pct = create(:user, name: "100% Real")
+      expect(User.text_search("%")).to contain_exactly(pct)
+      expect(User.text_search("_")).not_to include(u)
     end
   end
 end

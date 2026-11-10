@@ -493,9 +493,9 @@ class User < ApplicationRecord
   }
 
   # Staff-facing substring search over name, email and username (accent- and
-  # case-insensitive). The caller escapes LIKE wildcards if it wants literal matching.
+  # case-insensitive). LIKE wildcards in the query match literally.
   scope :text_search, ->(query) {
-    pattern = "%#{query}%"
+    pattern = "%#{sanitize_sql_like(query.to_s)}%"
     where(
       "LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR
                            LOWER(UNACCENT(email)) like LOWER(UNACCENT(?)) OR
