@@ -176,17 +176,23 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       end
     end
 
-    # The bulk form wraps the per-row approve and deny forms (nested forms),
-    # so the browser submits a mixed set of tokens and the app answers with its
-    # stale-form message; nothing is approved.
-    it "ticks every request with the header box, but submitting them together is refused as a stale form", js: true, skip_bullet: true do
+    it "ticks every request with the header box and approves them together", js: true, skip_bullet: true do
       open_admin_panel
       find("#userRequestSelectAll").check
       expect(page).to have_checked_field(class: "user-request-select", count: 2)
 
-      find("input[type=submit][value='Bulk Approve Selected']").click
-      expect(page).to have_text("Your session changed; please try again.")
-      expect(requester_one.reload.booking_approval).to be(false)
+      find("button[form='bulkApproveAccessForm']").click
+      expect(page).to have_text("All selected access requests approved successfully.")
+      expect(requester_one.reload.booking_approval).to be(true)
+      expect(requester_two.reload.booking_approval).to be(true)
+    end
+
+    it "approves one request with the button in its row", js: true, skip_bullet: true do
+      open_admin_panel
+      find("button[form='approve-access-#{requester_one.user_booking_approvals.first.id}']").click
+
+      expect(page).to have_css("#flash", text: "Access request approved successfully.")
+      expect(requester_one.reload.booking_approval).to be(true)
       expect(requester_two.reload.booking_approval).to be(false)
     end
 

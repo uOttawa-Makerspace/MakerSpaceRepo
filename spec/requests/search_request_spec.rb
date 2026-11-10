@@ -43,9 +43,18 @@ RSpec.describe "Search and explore", type: :request do
       Category.create!(repository_id: pub_robot.id, name: "Wearable")
       get explore_path(category: "wearable")
       expect(repos).to eq([pub_robot])
-      # an unrecognised category slug resolves to a nil name, which matches repositories that have NO category at all
+    end
+
+    it "lists nothing for an unknown category slug" do
       get explore_path(category: "nonsense")
-      expect(repos).to eq([pub_laser])
+      expect(response).to have_http_status(:ok)
+      expect(repos).to eq([])
+    end
+
+    it "lists nothing for a category param that is not a slug string" do
+      get "/explore?category[a]=wearable"
+      expect(response).to have_http_status(:ok)
+      expect(repos).to eq([])
     end
 
     # N+1 pinned
@@ -110,14 +119,34 @@ RSpec.describe "Search and explore", type: :request do
       expect(response.body).to include("&lt;script&gt;alert(1)&lt;/script&gt;")
     end
 
-    # a NUL byte, or an array/hash q param, answers 500
-    it "answers 500 for a NUL byte, array or hash q param" do
-      get search_path(q: "\u0000x")
-      expect(response).to have_http_status(:internal_server_error)
+    it "drops NUL bytes from the query and searches for the rest" do
+      get search_path(q: "Las\u0000er")
+      expect(response).to have_http_status(:ok)
+      expect(repos).to eq([pub_laser])
+    end
+
+    it "treats an array or hash q param as no query" do
       get "/search?q[]=Laser"
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(repos).to match_array([pub_laser, pub_robot])
       get "/search?q[a]=Laser"
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(repos).to match_array([pub_laser, pub_robot])
+      expect(response.body).not_to include("Search results for")
+    end
+
+    it "lists nothing when no category slug is known, and ignores unknown ones next to known ones" do
+      CategoryOption.find_or_create_by!(name: "Wearable")
+      Category.create!(repository_id: pub_robot.id, name: "Wearable")
+      get "/search?category[]=nonsense"
+      expect(repos).to eq([])
+      get "/search?category=nonsense"
+      expect(repos).to eq([])
+      get "/search?category[a]=wearable"
+      expect(response).to have_http_status(:ok)
+      expect(repos).to eq([])
+      get "/search?category[]=nonsense&category[]=wearable"
+      expect(repos).to eq([pub_robot])
     end
 
     it "filters by multiple categories" do

@@ -308,7 +308,7 @@ RSpec.describe "Owner changes after the quote", type: :request do
       expect(JobOrder.from_approval_token(old_token)).to be_nil
 
       # a new quote issues a new link; the old one stays dead
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task1(order).id}" => "60",
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task1(order).id}" => "60",
                                                    job_order: { staff_comments: "" } }
       expect(status_names(order).last).to eq("Waiting for User Approval")
       expect(JobOrder.from_approval_token(old_token)).to be_nil

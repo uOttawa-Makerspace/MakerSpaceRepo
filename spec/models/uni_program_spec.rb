@@ -30,11 +30,10 @@ RSpec.describe UniProgram, type: :model do
       expect(UniProgram.no_program).to eq("Undeclared")
     end
 
-    it "raises NoMethodError when no faculty-less row exists" do
-      # find_by returns nil and `.program` is called on it unguarded.
+    it "falls back to a fixed label when no faculty-less row exists" do
       create(:uni_program, faculty: "Engineering", program: "CS")
 
-      expect { UniProgram.no_program }.to raise_error(NoMethodError)
+      expect(UniProgram.no_program).to eq("My program is not in the list")
     end
   end
 

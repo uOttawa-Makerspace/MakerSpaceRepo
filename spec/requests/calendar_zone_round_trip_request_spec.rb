@@ -231,10 +231,10 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
           expect(row["rrule"]).to eq("DTSTART:20270315T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20270331T195959\nEXDATE:20270317T100000")
         end
 
-        it "expands on the server to the same instants" do
+        it "expands on the server to the same instants, without the excluded one" do
           found = RecurrenceExpansion.occurrences(stored, start.in_time_zone, start, start + 1.month, 50).occurrences
           expect(found.map { |t| t.utc.iso8601 }).to eq(
-            %w[2027-03-15T14:00:00Z 2027-03-17T14:00:00Z 2027-03-22T14:00:00Z 2027-03-24T14:00:00Z
+            %w[2027-03-15T14:00:00Z 2027-03-22T14:00:00Z 2027-03-24T14:00:00Z
                2027-03-29T14:00:00Z 2027-03-31T14:00:00Z]
           )
         end

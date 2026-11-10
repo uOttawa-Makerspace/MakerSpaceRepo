@@ -313,26 +313,9 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   # :awarded, :not_waiting, or the RecordInvalid / RecordNotSaved that rolled the award back.
   def award_result(order_item)
-    result = :not_waiting
-    order_item.with_lock { result = :awarded if award_waiting_submission(order_item) }
-    result
+    order_item.award!(@user, order_item_params) ? :awarded : :not_waiting
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
     e
-  end
-
-  def award_waiting_submission(order_item)
-    return false unless order_item.status == "Waiting for approval"
-
-    level = order_item.proficient_project.level
-    cert = Certification.create!(user_id: order_item.order.user_id, level: level)
-    ProficientProjectSession.create!(
-      proficient_project_id: order_item.proficient_project.id,
-      level: level,
-      user_id: @user.id,
-      certification_id: cert.id
-    )
-    order_item.update!(order_item_params.merge({ status: "Awarded" }))
-    true
   end
 
   # Revokes a submission waiting for approval, then mails the result.

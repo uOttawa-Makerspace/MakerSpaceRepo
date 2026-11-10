@@ -39,9 +39,11 @@ class CcMoneysController < SessionsController
   private
 
   def link_to(cc_money, user)
-    if cc_money.update(user: user, linked: true)
+    if cc_money.link_to(user)
       flash[:notice] = "The CC Money has been added to #{user.name}"
       redirect_to cc_moneys_path
+    elsif cc_money.linked?
+      refuse_cc(:already_linked)
     else
       refuse_cc(:not_linked, cc_money)
     end

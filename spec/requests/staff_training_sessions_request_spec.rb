@@ -511,6 +511,14 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.body.bytes.first(2)).to eq([0x50, 0x4b]) # zip magic: an xlsx file
       end
+
+      it "streams the workbook for a session with no training or space" do
+        record.update_columns(training_id: nil, space_id: nil)
+        get training_report_staff_training_session_path(record, format: :xlsx)
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq("application/octet-stream")
+        expect(response.body.bytes.first(2)).to eq([0x50, 0x4b])
+      end
     end
   end
 
