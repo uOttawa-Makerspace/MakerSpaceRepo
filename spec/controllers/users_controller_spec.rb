@@ -131,7 +131,8 @@ RSpec.describe UsersController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         post :flag, params: { flagged_user: user.id, flag: "flag" }
-        expect(response).to redirect_to user_path(user.username)
+        expect(response).to redirect_to root_path
+        expect(flash[:alert]).to eq("You cannot access this area.")
       end
     end
   end
@@ -157,7 +158,8 @@ RSpec.describe UsersController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         put :remove_flag, params: { repo_user_id: user.id, flag_msg: "abc" }
-        expect(response).to redirect_to user_path(user.username)
+        expect(response).to redirect_to root_path
+        expect(flash[:alert]).to eq("You cannot access this area.")
       end
     end
   end
@@ -445,9 +447,7 @@ RSpec.describe UsersController, type: :controller do
           post :change_programs, params: { user_id: user.id, volunteer: 1 }
         }.to change(Program, :count).by(0)
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq(
-          "Only staff and admins can change a user's programs."
-        )
+        expect(flash[:alert]).to eq("You cannot access this area.")
       end
     end
 

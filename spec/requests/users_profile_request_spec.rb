@@ -581,7 +581,8 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     it "regular user cannot flag: redirected to own profile, nothing changes" do
       login!(other)
       post flag_users_path, params: { flagged_user: user.id, flag_message: "x" }
-      expect(response).to redirect_to(user_path(other.username))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
       expect(user.reload.flagged).to be_falsey
     end
 
@@ -594,6 +595,8 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       user.update_columns(flagged: true, flag_message: "; bad")
       login!(other)
       post unflag_users_path, params: { flagged_user: user.id }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
       expect(user.reload.flagged).to be(true)
       login!(staff)
       post unflag_users_path, params: { flagged_user: user.id }
@@ -608,7 +611,8 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       user.update_columns(flagged: true, flag_message: "; bad")
       login!(other)
       put remove_flag_users_path, params: { repo_user_id: user.id, flag_msg: "bad" }
-      expect(response).to redirect_to(user_path(other.username))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
       user.reload
       expect(user.flagged).to be(true)
       expect(user.flag_message).to eq("; bad")
@@ -643,7 +647,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       login!(other)
       post change_programs_users_path, params: { user_id: user.id, volunteer: "1" }
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to eq("Only staff and admins can change a user's programs.")
+      expect(flash[:alert]).to eq("You cannot access this area.")
       expect(user.programs).to be_empty
     end
 
