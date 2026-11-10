@@ -6,6 +6,7 @@ require "rails_helper"
 # walk-in safety sheet say which users have not signed one.
 RSpec.describe StaffDashboardChannel do
   include_context "with test cable adapter"
+  include TableQueries
 
   let!(:space) { create(:space, name: "MTC") }
   let(:stream) { "signed_in_table_space_#{space.id}" }
@@ -29,6 +30,12 @@ RSpec.describe StaffDashboardChannel do
 
   it "renders every signed-in row, with the missing-sheet marker, when the tables are broadcast" do
     expect { described_class.broadcast_table_updates(space.id) }.to expect_rows_for_three_signed_in_users
+  end
+
+  it "reads the walk-in sheets of all signed-in users in one query" do
+    sheet_reads = selects_on("walk_in_safety_sheets") { described_class.broadcast_table_updates(space.id) }
+
+    expect(sheet_reads.size).to eq(1)
   end
 
   it "broadcasts the same tables when a card tap signs a user in" do
