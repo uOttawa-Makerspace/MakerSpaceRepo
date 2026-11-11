@@ -79,7 +79,7 @@ export const EVENT_MODAL_HTML = `
 export const UNAVAILABILITY_MODAL_HTML = `
 <div id="content">
 <button type="button" id="addUnavailabilityButton"></button>
-<div class="modal fade" id="unavailabilityModal">
+<div class="modal fade" id="unavailabilityModal" data-controller="unavailability-form">
   <h5 id="unavailabilityModalLabel">Add Unavailability</h5>
   <form id="unavailForm" action="/staff/unavailabilities" method="post">
     <input type="checkbox" id="all_day_checkbox">

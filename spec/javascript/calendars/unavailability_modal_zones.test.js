@@ -3,7 +3,16 @@
 // like the calendar it opens from. Every example runs with the browser clock
 // in Toronto, in UTC and in Tokyo. The cases come from
 // spec/fixtures/calendar_dst_cases.json, which the request specs also read.
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+import { Application } from "@hotwired/stimulus";
 import cases from "../../fixtures/calendar_dst_cases.json";
 import { UNAVAILABILITY_MODAL_HTML } from "./event_modal_fixture.js";
 
@@ -16,7 +25,8 @@ vi.mock("bootstrap", () => ({
   },
 }));
 
-await import("../../../app/javascript/src/manage_unavailabilities.js");
+const { default: UnavailabilityForm } =
+  await import("../../../app/javascript/controllers/unavailability_form_controller.js");
 const { eventClick, eventCreate } =
   await import("../../../app/javascript/src/unavailabilities_helpers.js");
 
@@ -77,10 +87,19 @@ const dailyUntil = (stamp) => ({
 describe.each(Object.entries(ZONES))(
   "with the browser clock in %s",
   (zone, offsetOn17March) => {
-    beforeEach(() => {
+    let application;
+
+    beforeEach(async () => {
       process.env.TZ = zone;
       document.body.innerHTML = UNAVAILABILITY_MODAL_HTML;
-      document.dispatchEvent(new Event("turbo:load"));
+      application = Application.start();
+      application.register("unavailability-form", UnavailabilityForm);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    afterEach(() => {
+      application.stop();
+      document.body.innerHTML = "";
     });
 
     it("has that zone", () => {

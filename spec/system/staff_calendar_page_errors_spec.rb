@@ -43,8 +43,8 @@ RSpec.describe "Staff calendar page: console errors", type: :system, skip_bullet
     end
   end
 
-  # A Turbo visit keeps the document, so the calendar script's turbo:load
-  # listener runs again on the destination page, which has no calendar.
+  # A Turbo visit keeps the document, so nothing of the work calendar's script
+  # may run against the destination page, which draws its own calendar.
   it "stays clean when Turbo moves staff on to another staff page", js: true do
     staff = create(:user, :staff, space_id: space.id)
     create(:staff_space, user: staff, space: space)
@@ -52,6 +52,47 @@ RSpec.describe "Staff calendar page: console errors", type: :system, skip_bullet
     expect(page).to have_css("#calendar .fc-toolbar-title")
     page.execute_script("Turbo.visit('/staff/unavailabilities')")
     expect(page).to have_css("h1", text: "My Unavailabilities")
-    expect(page).to have_no_css("#calendar")
+    expect(page).to have_css("#calendar .fc-toolbar-title", count: 1)
+  end
+
+  describe "moving between the work calendar and the unavailabilities page under Turbo" do
+    let(:staff) { create(:user, :staff, space_id: space.id) }
+
+    before { create(:staff_space, user: staff, space: space) }
+
+    it "draws only the work calendar after a visit from the unavailabilities page", js: true do
+      log_in_as(staff, to: staff_unavailabilities_path)
+      expect(page).to have_css("#calendar .fc-toolbar-title")
+      page.execute_script("Turbo.visit('/staff/my_calendar')")
+      expect(page).to have_css("h1", text: "My Work Schedule")
+      expect(page).to have_css("#calendar .fc-toggleOthersShifts-button")
+      expect(page).to have_css("#calendar .fc-toggleEventOverlap-button")
+      expect(page).to have_css("#calendar .fc-toolbar-title", count: 1)
+      expect(page).to have_no_css("#unavailabilityModal", visible: :all)
+    end
+
+    it "draws only the work calendar when going back to it", js: true do
+      open_calendar_as(staff)
+      expect(page).to have_css("#calendar .fc-toggleOthersShifts-button")
+      page.execute_script("Turbo.visit('/staff/unavailabilities')")
+      expect(page).to have_css("h1", text: "My Unavailabilities")
+      expect(page).to have_css("#calendar .fc-toolbar-title")
+      page.go_back
+      expect(page).to have_css("h1", text: "My Work Schedule")
+      expect(page).to have_css("#calendar .fc-toggleOthersShifts-button")
+      expect(page).to have_css("#calendar .fc-toolbar-title", count: 1)
+    end
+
+    it "draws the unavailabilities calendar once after a visit from the work calendar", js: true do
+      open_calendar_as(staff)
+      page.execute_script("Turbo.visit('/staff/unavailabilities')")
+      expect(page).to have_css("h1", text: "My Unavailabilities")
+      expect(page).to have_css("#calendar .fc-toolbar-title", count: 1)
+      expect(page).to have_css("#calendar_container", visible: :visible)
+      expect(page).to have_no_css(".fc-toggleOthersShifts-button")
+      expect(page).to have_css("#unavailabilityModal", visible: :all, count: 1)
+      click_button "+ Add Unavailability"
+      expect(page).to have_css("#unavailabilityModal.show")
+    end
   end
 end

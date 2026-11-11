@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Application } from "@hotwired/stimulus";
 import { UNAVAILABILITY_MODAL_HTML } from "./event_modal_fixture.js";
 
 const collapseHide = vi.fn();
@@ -12,7 +13,8 @@ vi.mock("bootstrap", () => ({
   },
 }));
 
-await import("../../../app/javascript/src/manage_unavailabilities.js");
+const { default: UnavailabilityForm } =
+  await import("../../../app/javascript/controllers/unavailability_form_controller.js");
 const { instantToWall } =
   await import("../../../app/javascript/src/recurrence.js");
 
@@ -24,10 +26,19 @@ function setStart(local) {
   fire($("start_time_field"), "change");
 }
 
-beforeEach(() => {
+let application;
+
+beforeEach(async () => {
   document.body.innerHTML = UNAVAILABILITY_MODAL_HTML;
   collapseHide.mockClear();
-  document.dispatchEvent(new Event("turbo:load"));
+  application = Application.start();
+  application.register("unavailability-form", UnavailabilityForm);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+});
+
+afterEach(() => {
+  application.stop();
+  document.body.innerHTML = "";
 });
 
 describe("time range", () => {
