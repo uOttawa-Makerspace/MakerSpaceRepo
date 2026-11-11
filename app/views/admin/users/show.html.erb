@@ -41,10 +41,10 @@
         <i class="fa-solid fa-envelope"></i>
         <%= mail_to @edit_admin_user.email %>
       </div>
-      <% if @edit_admin_user.url.present? %>
+      <% if @edit_admin_user.url.to_s.match?(%r{\Ahttps?://}i) %>
         <div class="user-info">
           <i class="fa-solid fa-link"></i>
-          <%= link_to @edit_admin_user.url.gsub(%r{\Ahttps?://}, '').to_s, @edit_admin_user.url %>
+          <%= link_to @edit_admin_user.url.sub(%r{\Ahttps?://}i, '').to_s, @edit_admin_user.url %>
         </div>
       <% end %>
       <% if @edit_admin_user.location.present? %>

@@ -232,7 +232,7 @@ jobs:
           bundler-cache: true
 
       - name: Brakeman (Static Analysis)
-        run: bundle exec brakeman -w2
+        run: bundle exec brakeman -w1
 
       - name: Bundle Audit (Gem Vulnerabilities)
         run: bundle exec bundle-audit check --update

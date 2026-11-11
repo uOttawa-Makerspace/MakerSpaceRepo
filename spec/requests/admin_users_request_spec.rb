@@ -222,6 +222,17 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
+    it "show links the web address of a user only when it is an http(s) address" do
+      target.update_columns(url: "https://example.org/me")
+      get admin_user_path(target)
+      expect(response.body).to include('<a href="https://example.org/me">example.org/me</a>')
+
+      target.update_columns(url: "javascript:alert(1)")
+      get admin_user_path(target)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("javascript:alert")
+    end
+
     it "edit renders" do
       get edit_admin_user_path(target)
       expect(response).to have_http_status(:ok)
