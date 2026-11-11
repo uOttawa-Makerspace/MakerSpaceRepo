@@ -48,6 +48,11 @@ class Membership < ApplicationRecord
     paid? && end_date > Time.current
   end
 
+  # Only a paid membership can be taken away; an unpaid checkout (pending or failed) is not one yet.
+  def revocable?
+    paid?
+  end
+
   def faculty?
     membership_tier.title_en.downcase.include?('faculty')
   end

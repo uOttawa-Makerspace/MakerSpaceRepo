@@ -153,6 +153,14 @@ RSpec.describe Membership, type: :model do
     end
   end
 
+  describe "#revocable?" do
+    it "is true only for a paid membership" do
+      %w[paid pending failed revoked].each do |status|
+        expect(Membership.new(status: status)).to have_attributes(revocable?: status == "paid")
+      end
+    end
+  end
+
   describe "tier delegation and faculty flag" do
     it "delegates duration and renders the title for the current locale" do
       m = Membership.new(user: user, membership_tier: tier)

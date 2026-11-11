@@ -374,6 +374,16 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
       expect(membership.reload.status).to eq("paid")
     end
 
+    %w[pending failed revoked].each do |status|
+      it "refuses an admin revoking a #{status} membership, with a message, and changes nothing" do
+        unpaid = create(:membership, user: other, membership_tier: tier, status: status)
+        shop_log_in!(admin)
+        expect { patch revoke_membership_path(unpaid) }.not_to(change { unpaid.reload.attributes })
+        expect(flash[:alert]).to eq("This membership is #{status}, not paid, so it cannot be revoked.")
+        expect(flash[:notice]).to be_nil
+      end
+    end
+
     it "lets an admin revoke, redirecting back to the referer" do
       shop_log_in!(admin)
       patch revoke_membership_path(membership), headers: { "HTTP_REFERER" => "http://www.example.com/admin/users/1" }
