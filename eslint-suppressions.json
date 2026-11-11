@@ -69,11 +69,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/printer_issues.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/project_proposals.js": {
     "no-unused-vars": {
       "count": 3

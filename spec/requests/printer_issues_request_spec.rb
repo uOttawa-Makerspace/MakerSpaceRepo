@@ -14,6 +14,10 @@ RSpec.describe "Printer issues", type: :request do
     JSON.parse(response.body)
   end
 
+  def summary_hints
+    JSON.parse(CGI.unescapeHTML(response.body[/issueSummary = (\{.*?\})\s*</m, 1]))
+  end
+
   describe "auth matrix" do
     GETS = %i[printer_issues_path new_printer_issue_path].freeze
 
@@ -72,6 +76,17 @@ RSpec.describe "Printer issues", type: :request do
       expect(response).to have_http_status(:ok)
       get edit_printer_issue_path(issue)
       expect(response).to have_http_status(:ok)
+    end
+
+    it "does not count the edited issue itself in the duplicate summary hints" do
+      other = create(:printer_issue, :bed_issue, printer: printer)
+      get edit_printer_issue_path(other)
+      expect(summary_hints).to eq(printer.id.to_s => { "Nozzle clogged" => 1 })
+      get edit_printer_issue_path(issue)
+      expect(summary_hints).to eq(printer.id.to_s => { "Bed issue" => 1 })
+      other.destroy
+      get edit_printer_issue_path(issue)
+      expect(summary_hints).to eq({})
     end
 
     it "has no history page route" do
