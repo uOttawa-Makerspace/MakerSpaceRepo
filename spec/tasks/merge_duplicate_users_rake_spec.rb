@@ -327,6 +327,18 @@ RSpec.describe "users:merge_duplicates" do
       expect($stdout.string).to include("left alone: same (every holder is in a skipped pair)")
     end
 
+    it "renames only the deleted holders when exactly one holder of the username is active" do
+      ActiveRecord::Base.connection.remove_index :users, name: "index_users_on_lowercase_username" # rolled back with the example
+      active, gone = duplicated_pair
+      User.where(id: [active.id, gone.id]).update_all(username: "same")
+      User.where(id: gone.id).update_all(deleted: true)
+
+      send(:rename_duplicated_username, "same")
+
+      expect(active.reload.username).to eq("same")
+      expect(User.unscoped.find(gone.id).username).to match(/\Asame\d{3}\z/)
+    end
+
     it "lists the ids of the accounts in skipped pairs" do
       expect(send(:skipped_account_ids, [{ primary_id: 1, duplicate_id: 2 }, { primary_id: 3, duplicate_id: 2 }]))
         .to eq([1, 2, 3])
@@ -375,6 +387,41 @@ RSpec.describe "users:merge_duplicates" do
       expect(renamed.map { |entry| entry["previous_username"] }).to eq(["sharedname"])
       expect($stdout.string).to include("Merged 0 pairs, skipped 1 pairs.")
       expect($stdout.string).to include("Usernames left duplicated because their pair was skipped: sharedname")
+    end
+  end
+
+  describe "programs" do
+    def held_types(user) = Program.where(user_id: user.id).order(:id).pluck(:program_type)
+
+    it "moves the programs only the duplicate holds and keeps the ones the primary holds" do
+      create(:program, :development_program, user: primary)
+      create(:program, :volunteer_program, user: duplicate)
+
+      merge
+
+      expect(held_types(primary)).to match_array([Program::DEV_PROGRAM, Program::VOLUNTEER])
+      expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    end
+
+    it "drops the duplicate's row only when the primary holds the same program with the same data" do
+      at = 3.days.ago.change(usec: 0)
+      kept = create(:program, :volunteer_program, user: primary, created_at: at)
+      create(:program, :volunteer_program, user: duplicate, created_at: at)
+
+      merge
+
+      expect(Program.where(user_id: primary.id).pluck(:id)).to eq([kept.id])
+      expect(Program.where(user_id: duplicate.id)).to be_empty
+    end
+
+    it "stops without deleting anything when both hold the program with different data" do
+      create(:program, :volunteer_program, user: primary, active: true)
+      create(:program, :volunteer_program, user: duplicate, active: false)
+
+      expect { merge }.to raise_error(UserMergeRefused, /programs rows/)
+
+      expect(Program.where(user_id: [primary.id, duplicate.id]).count).to eq(2)
+      expect(User.unscoped.exists?(duplicate.id)).to be(true)
     end
   end
 

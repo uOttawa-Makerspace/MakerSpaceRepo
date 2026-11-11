@@ -233,8 +233,6 @@ en:
       not_posted: "The comment was not posted."
       not_deleted: "The comment was not deleted."
       not_yours: "Only the author of a comment or an admin can delete it."
-    development_programs:
-      not_joined: "You did not join the Development Program."
     announcements:
       not_created: "The announcement was not created."
       not_updated: "The announcement was not updated."

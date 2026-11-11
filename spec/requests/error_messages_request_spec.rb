@@ -289,13 +289,6 @@ RSpec.describe "Error messages", type: :request do
   end
 
   describe "development program, kits, videos and key requests" do
-    it "names a refused join in French" do
-      content_sign_in_as(:regular)
-      refuse_writes(Program, :save)
-      post join_development_program_development_programs_path, params: fr
-      expect(flash[:alert]).to eq("Vous n'avez pas rejoint le programme de développement. Refused for the spec")
-    end
-
     it "tells a member who already joined the Development Program so" do
       user = content_sign_in_as(:regular)
       Program.create!(user: user, program_type: Program::DEV_PROGRAM)

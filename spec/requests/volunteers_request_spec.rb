@@ -214,6 +214,16 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
         expect(user.volunteer?).to be(true)
       end
 
+      it "#{verb}: joining again keeps the one row and still sends the user to the form" do
+        user = create(:user, :regular_user)
+        create(:program, :volunteer_program, user: user, active: false)
+        vol_login!(user)
+        expect { send(verb, join_volunteer_program_volunteers_path) }.not_to change(Program, :count)
+        expect(response).to redirect_to(HUBSPOT_URL)
+        expect(flash[:notice]).to eq("You've joined the Volunteer Program")
+        expect(user.programs.sole.active).to be(false)
+      end
+
       it "#{verb}: staff are not enrolled; notice says they already have access" do
         staff = create(:user, :staff)
         vol_login!(staff)

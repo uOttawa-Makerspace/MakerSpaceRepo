@@ -233,8 +233,6 @@ fr:
       not_posted: "Le commentaire n'a pas été publié."
       not_deleted: "Le commentaire n'a pas été supprimé."
       not_yours: "Seuls l'auteur d'un commentaire et les administrateurs peuvent le supprimer."
-    development_programs:
-      not_joined: "Vous n'avez pas rejoint le programme de développement."
     announcements:
       not_created: "L'annonce n'a pas été créée."
       not_updated: "L'annonce n'a pas été modifiée."
