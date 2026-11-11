@@ -7,6 +7,9 @@ class VolunteerHoursController < VolunteersController
                 only: %i[volunteer_hour_requests volunteer_hour_per_user update_approval]
   include VolunteerHoursHelper
 
+  # The only decisions staff can record; anything else (missing, blank, other text) changes nothing.
+  APPROVAL_VALUES = { "true" => true, "false" => false }.freeze
+
   def index
     @user = current_user
     scope = VolunteerHour.where(user_id: @user.id).includes(:volunteer_task).order(created_at: :desc)
@@ -69,7 +72,10 @@ class VolunteerHoursController < VolunteersController
 
   def update_approval
     volunteer_hour = VolunteerHour.find(params[:id])
-    if volunteer_hour.update(approval: params[:approval])
+    approval = APPROVAL_VALUES[params[:approval].to_s]
+    if approval.nil?
+      flash[:alert] = I18n.t("errors.volunteer.hours.approval_invalid")
+    elsif volunteer_hour.update(approval: approval)
       flash[:notice] = "Volunteer hour updated"
     else
       flash[:alert] = validation_message(volunteer_hour, "errors.volunteer.hours.approval_not_saved")

@@ -35,6 +35,7 @@ en:
         processed: "This volunteer hour was already processed, so it can no longer be changed or deleted."
         not_deleted: "The volunteer hour was not deleted."
         approval_not_saved: "The volunteer hour was not updated."
+        approval_invalid: "The approval must be true or false; nothing was changed."
       task_requests:
         not_created: "Your request for this task was not sent."
         not_updated: "The task request was not updated."

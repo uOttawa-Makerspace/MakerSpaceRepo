@@ -597,11 +597,14 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(hour.reload.approval).to be(false)
     end
 
-    it "resets a processed hour to unprocessed when approval is blank or absent" do
-      hour = make_hour(approval: true)
-      vol_login!(create(:user, :admin))
-      put update_approval_volunteer_hours_path, params: { id: hour.id }
-      expect(hour.reload.approval).to be_nil
+    ["", "maybe", nil].each do |value|
+      it "refuses an approval of #{value.inspect} and leaves a processed hour as it was" do
+        hour = make_hour(approval: true)
+        vol_login!(create(:user, :admin))
+        put update_approval_volunteer_hours_path, params: { id: hour.id, approval: value }.compact
+        expect(flash[:alert]).to eq("The approval must be true or false; nothing was changed.")
+        expect(hour.reload.approval).to be(true)
+      end
     end
 
     it "sends no email and creates no CC money" do
