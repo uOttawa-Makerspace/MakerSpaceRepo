@@ -5,6 +5,6 @@ class Admin::CcMoneysController < AdminAreaController
   layout "admin_area"
 
   def index
-    @cc_moneys = CcMoney.unclaimed.order(created_at: :desc)
+    @cc_moneys = CcMoney.unclaimed.includes(latest_email_correction: :admin).order(created_at: :desc)
   end
 end

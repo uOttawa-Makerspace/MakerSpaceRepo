@@ -69,6 +69,10 @@ fr:
         already_linked: "Ces CC Money ont déjà été ajoutés à un compte, aucun courriel n'a donc été envoyé."
         email_invalid: "Saisissez l'adresse courriel de l'acheteur. Aucun courriel n'a été envoyé."
         email_mismatch: "Ce Cc Money a été acheté avec une autre adresse courriel. Utilisez l'adresse de l'achat. Aucun courriel n'a été envoyé."
+      cc_money_purchase_email:
+        already_linked: "Ces CC Money ont déjà été ajoutés à un compte, l'adresse n'a donc pas été changée et rien n'a été envoyé."
+        email_invalid: "Saisissez une adresse courriel valide. Rien n'a été changé et aucun courriel n'a été envoyé."
+        email_unchanged: "C'est déjà l'adresse de l'achat. Utilisez Renvoyer pour envoyer le lien à nouveau. Rien n'a été changé."
       uni_programs:
         programs_file_missing: "Le fichier des programmes actuels n'est pas disponible sur le serveur."
       time_periods:
