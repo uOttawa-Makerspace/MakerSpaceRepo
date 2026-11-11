@@ -60,6 +60,17 @@ RSpec.describe ProjectProposal, type: :model do
     create(:project_proposal, :not_approved)
   end
 
+  describe "approval scopes" do
+    it "selects each stored value on its own, leaving out a proposal with no decision" do
+      undecided = create(:project_proposal, approved: nil)
+      expect(ProjectProposal.approved.to_sql).to include('"approved" = 1')
+      expect(ProjectProposal.not_approved.to_sql).to include('"approved" = 0')
+      expect(ProjectProposal.approved.pluck(:approved).uniq).to eq(["approved"])
+      expect(ProjectProposal.not_approved.pluck(:approved).uniq).to eq(["not_approved"])
+      expect(ProjectProposal.approved + ProjectProposal.not_approved).not_to include(undecided)
+    end
+  end
+
   describe "semester" do
     let(:proposal) { create(:project_proposal, season: :fall, year: 2024) }
 

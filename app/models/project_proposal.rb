@@ -37,10 +37,13 @@ class ProjectProposal < ApplicationRecord
                            deny: SniffedUploadValidation::DANGEROUS_FILE_TYPES,
                            max_size: -> { MAX_PROJECT_FILE_SIZE }
 
-  enum :approved, { not_approved: 0, approved: 1 }
+  # The scopes are written out below: the generated negative scope for "approved" would clash with the
+  # "not_approved" value and Rails warns about it at every boot.
+  enum :approved, { not_approved: 0, approved: 1 }, scopes: false
   enum :season, { fall: 0, summer: 1, winter: 2 }
 
-  scope :approved, -> { where(approved: 1) }
+  scope :approved, -> { where(approved: :approved) }
+  scope :not_approved, -> { where(approved: :not_approved) }
   scope :for_year, ->(year) { where(year:) }
   scope :for_season, ->(season) { where(season:) }
 
