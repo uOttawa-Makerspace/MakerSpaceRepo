@@ -135,6 +135,12 @@ class User < ApplicationRecord
   has_many :programs, dependent: :destroy
   has_many :orders, dependent: :destroy
   has_many :order_items, through: :orders
+
+  # The user's open (In progress) shop cart: their latest order when it is still in progress, else nil.
+  def open_cart
+    cart = orders.last
+    cart if cart&.in_progress?
+  end
   has_many :project_kits, dependent: :destroy
   has_many :learning_module_tracks
   has_many :shadowing_hours

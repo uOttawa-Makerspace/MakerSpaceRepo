@@ -388,6 +388,14 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).to match(/cart-text.*fs-4\\?">0</)
     end
 
+    it "a refused update on a checked-out cart shows the item count of the user's other open cart in the badge" do
+      close_cart_before_the_lock
+      cart_for(user, 5, 6, 7)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(response.body).to match(/cart-text.*fs-4\\?">3</)
+    end
+
     it "a busy refusal keeps the cart's own badge count and session" do
       add_to_cart(other_project)
       fail_the_lock_with(ActiveRecord::LockWaitTimeout)

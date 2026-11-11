@@ -67,6 +67,7 @@ class OrderItemsController < DevelopmentProgramsController
       format.js do
         @cart_closed = e.is_a?(Order::CartClosed)
         @order = e.order if @cart_closed && e.order
+        @badge_order = @cart_closed ? current_user.open_cart : @order
         @order_item = nil
         # a checked-out order is shown read-only from what was stored when it was paid (no live
         # pricing); the badge is drawn from the order in hand, so session[:order_id] is untouched

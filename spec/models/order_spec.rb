@@ -188,4 +188,22 @@ RSpec.describe OrderItem, "project is fixed once created", type: :model do
     expect { item.update_column(:proficient_project_id, other.id) }.to raise_error(ActiveRecord::ActiveRecordError)
     expect(item.reload.proficient_project_id).not_to eq(other.id)
   end
+
+  describe "User#open_cart" do
+    let(:user) { create(:user, :regular_user) }
+
+    it "is nil without orders" do
+      expect(user.open_cart).to be_nil
+    end
+
+    it "is the latest order while it is in progress" do
+      cart = Order.create!(user: user)
+      expect(user.open_cart).to eq(cart)
+    end
+
+    it "is nil when the latest order is completed" do
+      Order.create!(user: user, order_status: OrderStatus.find_by!(name: "Completed"))
+      expect(user.open_cart).to be_nil
+    end
+  end
 end
