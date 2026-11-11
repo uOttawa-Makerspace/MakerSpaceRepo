@@ -88,7 +88,6 @@ RSpec.describe RfidTap do
         tap_in
         travel(described_class::REPEAT_WINDOW + 1.second)
         expect(tap_in.outcome).to eq(:sign_out)
-        travel(1.second)
         expect(tap_in.outcome).to eq(:sign_in)
         session = active_sessions.sole
         expect(session.sign_in_time).to eq(Time.current)
