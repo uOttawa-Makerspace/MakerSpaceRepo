@@ -482,6 +482,7 @@ Rails.application.routes.draw do
       end
       member do
         patch :publish
+        patch :unpublish
         delete :delete_with_scope
       end
     end
