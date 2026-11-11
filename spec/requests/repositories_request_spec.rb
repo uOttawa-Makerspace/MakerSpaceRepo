@@ -50,11 +50,12 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(cookie).to eq({ "/#{owner.username}/#{repo.id}" => "Laser Lamp" })
     end
 
-    it "caps recently_viewed at 5 entries (existing entries kept, newcomer dropped past the cap)" do
-      get repo_path
-      other = create(:repository, owner: owner, title: "Other", users: [owner])
-      get repo_path(other)
-      expect(JSON.parse(CGI.unescape(response.cookies["recently_viewed"])).keys.size).to eq(2)
+    it "keeps the five most recently viewed repositories, newest first, without duplicates" do
+      repos = Array.new(6) { |i| create(:repository, owner: owner, title: "Viewed #{i}", users: [owner]) }
+      repos.each { |r| get repo_path(r) }
+      get repo_path(repos[3])
+      links = JSON.parse(CGI.unescape(cookies[:recently_viewed])).keys
+      expect(links).to eq([3, 5, 4, 2, 1].map { |i| "/#{owner.username}/#{repos[i].id}" })
     end
 
     it "starts the recently_viewed cookie afresh when it holds JSON that is not a list of links" do

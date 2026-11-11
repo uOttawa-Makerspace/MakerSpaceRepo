@@ -69,15 +69,12 @@ class RepositoriesController < SessionsController
     remember_recently_viewed
   end
 
-  # Adds this repository to the recently viewed cookie (the last five). A cookie that is missing or
-  # not a JSON object starts the list again.
+  # Puts this repository first in the recently viewed cookie, which keeps the five latest views
+  # without repeats. A cookie that is missing or not a JSON object starts the list again.
   def remember_recently_viewed
     link = repository_path(id: @repository.id, user_username: @repository.user_username)
-    recently_viewed = parse_recently_viewed
-    unless recently_viewed.key?(link)
-      recently_viewed[link] = @repository.title[..35]
-      recently_viewed = recently_viewed.take(5).to_h
-    end
+    earlier = parse_recently_viewed.except(link)
+    recently_viewed = { link => @repository.title[..35] }.merge(earlier).first(5).to_h
     cookies[:recently_viewed] = JSON.generate(recently_viewed)
   end
   private :remember_recently_viewed
