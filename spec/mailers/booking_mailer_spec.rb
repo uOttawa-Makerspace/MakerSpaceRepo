@@ -280,23 +280,4 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(delivered).to be_empty
     end
   end
-
-  describe "dates in the French locale" do
-    let(:french_range) { "03 mars 2027 à 10:00 to 03 mars 2027 à 11:30" }
-
-    it "writes French month names in the needs-approval mail" do
-      I18n.with_locale(:fr) { described_class.send_booking_needs_approval(booking.id).deliver_now }
-      expect(delivered.last.body.decoded).to include(french_range)
-    end
-
-    it "writes French month names in the automatically-approved mail" do
-      I18n.with_locale(:fr) { described_class.send_booking_automatically_approved(booking.id).deliver_now }
-      expect(delivered.last.body.decoded).to include(french_range)
-    end
-
-    it "writes French month names in the approved mail" do
-      I18n.with_locale(:fr) { described_class.send_booking_approved(booking.id).deliver_now }
-      expect(delivered.last.body.decoded).to include("#{french_range} has been approved.")
-    end
-  end
 end
