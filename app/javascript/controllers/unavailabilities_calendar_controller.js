@@ -13,6 +13,8 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
   calendarTarget: HTMLElement,
   containerTarget: HTMLElement,
   spinnerTarget: HTMLElement,
+  failuresTarget: HTMLElement,
+  messageValue: string,
   feedUrlValue: string,
   unavailabilityFormOutlet: { openForAdd(options?: { returnFocusTo?: HTMLElement }): void, openForEdit(event: any): void, openForRange(range: { start: string, end: string }): void },
   importedEventDetailsOutlet: { show(event: any, returnFocusTo?: HTMLElement | null): void },
@@ -22,8 +24,8 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
 // calendar target, opens the unavailability dialog (the unavailability-form
 // outlet) from it, and removes the calendar when the element leaves the page.
 export default class extends TypedController {
-  static targets = ["calendar", "container", "spinner"];
-  static values = { feedUrl: String };
+  static targets = ["calendar", "container", "spinner", "failures"];
+  static values = { feedUrl: String, message: String };
   static outlets = ["unavailability-form", "imported-event-details"];
 
   connect() {
@@ -59,6 +61,22 @@ export default class extends TypedController {
     }
   }
 
+  // The feed names, in a header, the hosts of the linked calendars it could not
+  // load. Each is listed as text; nothing is listed when all loaded.
+  showFailures(response) {
+    const hosts = (response.headers.get("X-Failed-Calendars") || "")
+      .split(",")
+      .filter(Boolean);
+    this.failuresTarget.replaceChildren(
+      ...hosts.map((host) => {
+        const line = document.createElement("div");
+        line.textContent = this.messageValue.replace("{host}", host);
+        return line;
+      }),
+    );
+    this.failuresTarget.hidden = hosts.length === 0;
+  }
+
   calendarOptions() {
     return {
       plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin, interactionPlugin],
@@ -74,7 +92,10 @@ export default class extends TypedController {
       selectMirror: true,
       selectMinDistance: 30,
       height: "80vh",
-      events: this.feedUrlValue,
+      events: {
+        url: this.feedUrlValue,
+        success: (_events, response) => this.showFailures(response),
+      },
       eventClick: (info) => this.openEvent(info.event, info.el),
       select: (info) =>
         this.unavailabilityFormOutlet.openForRange({

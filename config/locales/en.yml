@@ -555,6 +555,7 @@ en:
       content: "MakerRepo may revise these terms of service for its website at any time without notice. By using this website you are agreeing to be bound by the then current version of these terms of service."
 
   staff_unavailabilities:
+    could_not_load: "{host} could not be loaded"
     imported_event:
       title: "Imported event"
       from: "Imported from a linked calendar ({host})."

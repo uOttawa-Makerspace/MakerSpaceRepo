@@ -115,21 +115,11 @@ class Staff::UnavailabilitiesController < StaffAreaController
       }
     end.compact
 
-    ics_unavails = current_user.staff_external_unavailabilities.flat_map do |external|
-      parsed = helpers.parse_ics_calendar(
-        external.ics_url,
-        name: "#{current_user.name} External Unavailability"
-      )
-
-      parsed.flat_map do |calendar|
-        calendar[:events].map do |event|
-          event.merge(
-            title: "External - #{event[:title]}",
-            extendedProps: event[:extendedProps].merge(sourceHost: external.source_host)
-          )
-        end
-      end
-    end
+    failed_hosts = []
+    ics_unavails = current_user.staff_external_unavailabilities.flat_map { |external| imported_events(external, failed_hosts) }
+    # The failure header is not part of the body's ETag, so a browser must not reuse an earlier answer.
+    response.set_header("Cache-Control", "no-store")
+    response.set_header("X-Failed-Calendars", failed_hosts.compact.join(",")) if failed_hosts.any?
 
     combined_unavailabilities = local_unavails + ics_unavails
 
@@ -155,6 +145,21 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   private
+
+  # The events of one linked calendar, marked with where they came from. The host of a link that could not be
+  # loaded is added to failed_hosts: only the host is ever reported, because a private link holds its secret in
+  # the path.
+  def imported_events(external, failed_hosts)
+    failures = []
+    parsed = helpers.parse_ics_calendar(external.ics_url, name: "#{current_user.name} External Unavailability", failures: failures)
+    failed_hosts << external.source_host if parsed.empty? || failures.any?
+
+    parsed.flat_map do |calendar|
+      calendar[:events].map do |event|
+        event.merge(title: "External - #{event[:title]}", extendedProps: event[:extendedProps].merge(sourceHost: external.source_host))
+      end
+    end
+  end
 
   def staff_params
     params.require(:staff_unavailability).permit(

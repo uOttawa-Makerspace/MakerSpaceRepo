@@ -633,6 +633,7 @@ fr:
       content: "MakerRepo peut réviser ces conditions d'utilisation de son site Web à tout moment sans préavis. En utilisant ce site Web, vous acceptez d'être lié par la version actuelle de ces conditions d'utilisation."
 
   staff_unavailabilities:
+    could_not_load: "{host} n'a pas pu être chargé"
     imported_event:
       title: "Événement importé"
       from: "Importé depuis un calendrier lié ({host})."

@@ -39,12 +39,13 @@ const { default: UnavailabilitiesCalendar } =
   await import("../../../app/javascript/controllers/unavailabilities_calendar_controller.js");
 
 const PAGE = `
-<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
+<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-message-value="{host} could not be loaded" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
   <div id="calendar_container" data-unavailabilities-calendar-target="container" style="display:none">
     <button id="addUnavailabilityButton" data-action="click->unavailabilities-calendar#addUnavailability"></button>
     <div id="calendar" data-unavailabilities-calendar-target="calendar"><p id="stale">old</p></div>
   </div>
   <div id="spinner_container" data-unavailabilities-calendar-target="spinner"></div>
+  <div id="failures" data-unavailabilities-calendar-target="failures" hidden></div>
 </div>
 <div id="modal" data-controller="unavailability-form"></div>
 <div id="details" data-controller="imported-event-details"></div>`;
@@ -104,7 +105,7 @@ describe("staff unavailabilities calendar", () => {
     expect(document.getElementById("stale")).toBeNull();
     document.dispatchEvent(new Event("turbo:load"));
     expect(created).toHaveLength(1);
-    expect(cal.options.events).toBe("/staff/unavailabilities/json");
+    expect(cal.options.events.url).toBe("/staff/unavailabilities/json");
     expect(cal.rendered).toBe(true);
     expect(document.getElementById("calendar_container").style.display).toBe(
       "block",
@@ -158,6 +159,36 @@ describe("staff unavailabilities calendar", () => {
       event: { id: "e", extendedProps: { eventType: "unavailability" } },
     });
     expect(details.show).not.toHaveBeenCalled();
+  });
+
+  describe("linked calendars that could not be loaded", () => {
+    const response = (value) => ({
+      headers: new Headers(value ? { "X-Failed-Calendars": value } : {}),
+    });
+    const failures = () => document.getElementById("failures");
+
+    it("names each failed host as text and shows the area", async () => {
+      const cal = await boot();
+      const kept = cal.options.events.success(
+        [{ id: "e" }],
+        response("a.example,<b>b</b>.example"),
+      );
+      expect(kept).toBeUndefined();
+      expect(failures().hidden).toBe(false);
+      expect([...failures().children].map((c) => c.textContent)).toEqual([
+        "a.example could not be loaded",
+        "<b>b</b>.example could not be loaded",
+      ]);
+      expect(failures().querySelector("b")).toBeNull();
+    });
+
+    it("clears the names again when every calendar loads", async () => {
+      const cal = await boot();
+      cal.options.events.success([], response("a.example"));
+      cal.options.events.success([], response(null));
+      expect(failures().hidden).toBe(true);
+      expect(failures().children).toHaveLength(0);
+    });
   });
 
   it("makes the calendar accessible whenever a view is mounted", async () => {

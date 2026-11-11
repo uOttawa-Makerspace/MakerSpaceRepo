@@ -478,6 +478,27 @@ RSpec.describe "Staff unavailabilities page", type: :system do
     end
   end
 
+  describe "a linked calendar that cannot be loaded" do
+    it "names its host without showing the link", js: true, skip_bullet: true do
+      url = "https://down.example.org/private/secret-token/basic.ics"
+      create(:staff_external_unavailability, user: staff, ics_url: url)
+      allow(IcsFetcher).to receive(:get).and_return(nil)
+      open_page
+
+      expect(page).to have_css("[data-unavailabilities-calendar-target='failures']", text: "down.example.org could not be loaded")
+      expect(page).to have_no_text("secret-token")
+    end
+
+    it "shows no message when the linked calendars load", js: true, skip_bullet: true do
+      create(:staff_external_unavailability, user: staff, ics_url: "https://fine.example.org/a.ics")
+      allow(IcsFetcher).to receive(:get).and_return(ics_document)
+      open_page
+
+      expect(page).to have_css(".fc-timegrid", visible: :all)
+      expect(page).to have_no_text("could not be loaded")
+    end
+  end
+
   describe "a series that ends on a day" do
     # Daily at 1:00 until Wednesday 2027-03-17: the stored end is the last
     # second of that Toronto day (04:00 UTC on the Thursday).

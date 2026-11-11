@@ -362,6 +362,34 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(response.body).not_to include("key=abc")
       end
 
+      it "names the host of each linked calendar that could not be loaded in a header, never the link" do
+        down = "https://down.example.org/private/secret-down/basic.ics?key=zzz"
+        slow = "https://slow.example.org/private/secret-slow/basic.ics"
+        empty = "https://empty.example.org/private/secret-empty/basic.ics"
+        [down, slow, empty].each { |url| StaffExternalUnavailability.create!(user: staff, ics_url: url) }
+        stub_ics(down, status: 503)
+        stub_request(:get, slow).to_timeout
+        stub_ics(empty, body: ics_document)
+        get json_staff_unavailabilities_path
+
+        expect(response.headers["X-Failed-Calendars"].split(",")).to contain_exactly("down.example.org", "slow.example.org")
+        expect(response.parsed_body).to eq([])
+        expect(response.body + response.headers.to_h.to_s).not_to match(/secret-|key=zzz/)
+      end
+
+      it "tells the browser not to reuse an earlier answer, since the failure header is not part of the body's ETag" do
+        get json_staff_unavailabilities_path
+        expect(response.headers["Cache-Control"]).to eq("no-store")
+      end
+
+      it "sends no failure header when every linked calendar loads" do
+        url = "https://cal.test/fine.ics"
+        StaffExternalUnavailability.create!(user: staff, ics_url: url)
+        stub_ics(url, body: ics_document)
+        get json_staff_unavailabilities_path
+        expect(response.headers).not_to have_key("X-Failed-Calendars")
+      end
+
       it "silently drops an external feed that fails to download" do
         url = "https://cal.test/down.ics"
         StaffExternalUnavailability.create!(user: staff, ics_url: url)

@@ -14,35 +14,42 @@ module CalendarHelper
   # The longest COUNT whose end is worked out when deciding whether a series is over.
   MAX_COUNTED_SERIES = 1000
 
-  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil )
+  # The feed as one calendar of events, or no calendar at all (an empty list) when the server did not answer with
+  # a feed body. A feed that cannot be fetched or read has the error added to failures (when given) and no events.
+  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil, failures: nil)
     return [] if ics_url.blank?
 
     background_color = color.presence || generate_color_from_id(ics_url.to_s)
     group_id = Digest::MD5.hexdigest(ics_url.to_s)
 
-    events = []
-
-    begin
-      if ics_url.is_a? Pathname
-        response = File.read(ics_url) 
-        parsed_cals = ::Icalendar::Calendar.parse(response)
-      else
-        body = IcsFetcher.get(ics_url.to_s, timeout: 10)
-        return [] if body.nil?
-        parsed_cals = ::Icalendar::Calendar.parse(body)
-      end
-
-      events = parsed_cals.flat_map do |calendar|
-        # Group events by UID to handle recurrence-id
-        calendar.events.group_by(&:uid).flat_map do |_uid, event_group|
-          ics_event_group(event_group, group_id: group_id, name: name)
-        end
-      end
-    rescue StandardError => e
-      Rails.logger.error("ICS parse error for #{ics_url}: #{e.inspect}")
-    end
+    events = ics_feed_events(ics_url, group_id, name, failures)
+    return [] if events.nil?
 
     [{ id: group_id, color: background_color, events: events }]
+  end
+
+  # The events of the feed, nil when there is no body to read.
+  def ics_feed_events(ics_url, group_id, name, failures)
+    parsed_cals = read_ics_calendars(ics_url)
+    return if parsed_cals.nil?
+
+    parsed_cals.flat_map do |calendar|
+      # Group events by UID to handle recurrence-id
+      calendar.events.group_by(&:uid).flat_map do |_uid, event_group|
+        ics_event_group(event_group, group_id: group_id, name: name)
+      end
+    end
+  rescue StandardError => e
+    Rails.logger.error("ICS parse error for #{ics_url}: #{e.inspect}")
+    failures&.push(e)
+    []
+  end
+
+  def read_ics_calendars(ics_url)
+    return ::Icalendar::Calendar.parse(File.read(ics_url)) if ics_url.is_a?(Pathname)
+
+    body = IcsFetcher.get(ics_url.to_s, timeout: 10)
+    ::Icalendar::Calendar.parse(body) unless body.nil?
   end
 
   # COLOR HELPERS
