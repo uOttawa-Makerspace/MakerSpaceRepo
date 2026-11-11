@@ -300,7 +300,6 @@ class LearningAreaController < DevelopmentProgramsController
       :shortcut_name,
       :training_id,
       :level,
-      :cc,
       :subskill,
       :scorm_package,
       :scorm_enabled,

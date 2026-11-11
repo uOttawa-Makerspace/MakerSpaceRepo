@@ -22,11 +22,12 @@ class Admin::AnnouncementsController < AdminAreaController
   def create
     announcement = Announcement.new(announcement_params)
     announcement.user_id = current_user.id
-    if announcement.save!
-      redirect_to admin_announcements_path
-      flash[
-        :notice
-      ] = "You've successfully created an announcement for #{announcement.public_goal.capitalize}"
+    if announcement.save
+      redirect_to admin_announcements_path,
+                  notice: "You've successfully created an announcement for #{announcement.public_goal.capitalize}"
+    else
+      redirect_to new_admin_announcement_path,
+                  alert: validation_message(announcement, "errors.admin.announcements.not_created")
     end
   end
 

@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe ExamsController, type: :controller do
+  include ActiveJob::TestHelper
+
   let(:admin) { create(:user, :admin) }
   let(:exam) { create(:exam) }
 
@@ -44,9 +46,6 @@ RSpec.describe ExamsController, type: :controller do
                 $n_exams_question
               )
         expect(Exam.last.category).to eq(training_session.training.name_en)
-        expect(flash[:notice]).to eq(
-          "You've successfully sent exams to all users in this training."
-        )
       end
     end
   end
@@ -111,10 +110,12 @@ RSpec.describe ExamsController, type: :controller do
           create(:training_session_with_users, training: training)
         n_users = training_session.users.count
         expect do
-          post :create_from_training,
-              params: {
-                training_session_id: training_session.id
-              }
+          perform_enqueued_jobs do
+            post :create_from_training,
+                params: {
+                  training_session_id: training_session.id
+                }
+          end
         end.to change(Exam, :count).by(n_users).and change(
                 ExamQuestion,
                 :count
@@ -138,17 +139,20 @@ RSpec.describe ExamsController, type: :controller do
           create(:training_session_with_users, training: training)
         user = create(:user, :regular_user)
         expect do
-          post :create_for_single_user,
-              params: {
-                user_id: user.id,
-                training_session_id: training_session.id
-              }
+          perform_enqueued_jobs do
+            post :create_for_single_user,
+                params: {
+                  user_id: user.id,
+                  training_session_id: training_session.id
+                }
+          end
         end.to change(Exam, :count).by(1).and change(ExamQuestion, :count).by(
                 $n_exams_question
               )
         expect(flash[:notice]).to eq(
-          "You've successfully sent exams to all users in this training."
+          "You've successfully sent the exam to #{user.name}."
         )
+        expect(ActionMailer::Base.deliveries.map(&:to)).to eq([[user.email]])
         expect(response).to redirect_to staff_training_session_path(
                       training_session.id
                     )

@@ -12,7 +12,7 @@ class BadgesController < DevelopmentProgramsController
              by: -> { request.remote_ip }, with: -> { badge_throttled }
 
   def index
-    @pagy, @badge_data = pagy(badge_scope(params[:search]), limit: 20)
+    paginate_badges
 
     respond_to do |format|
       format.js
@@ -22,7 +22,7 @@ class BadgesController < DevelopmentProgramsController
 
   def search
     @search_term = params[:search] # Store search term for pagination
-    @pagy, @badge_data = pagy(badge_scope(params[:search]), limit: 20)
+    paginate_badges
     render partial: "badges/badge_list", layout: false
   end
 
@@ -46,6 +46,13 @@ class BadgesController < DevelopmentProgramsController
 
   private
 
+  # One page of badges, with each badge's training loaded for the way it was earned.
+  def paginate_badges
+    @pagy, badges = pagy(badge_scope(params[:search]), limit: 20)
+    @badge_data = badges.to_a
+    Certification.preload_trainings(@badge_data)
+  end
+
   def throttled_viewer?
     !current_user&.staff?
   end
@@ -56,8 +63,9 @@ class BadgesController < DevelopmentProgramsController
 
   def badge_scope(search_term = nil)
     certifications = Certification
-      .includes(:training, :user, :training_session)
-      .joins(:training, :training_session, :user)
+      .with_training
+      .joins(:user)
+      .includes(:user)
       .where(trainings: { has_badge: true })
 
     # A deleted earner's badge is shown to admins only (see #show)

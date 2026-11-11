@@ -74,6 +74,7 @@ fr:
         not_updated: "Les coordonnées n'ont pas été modifiées."
         not_deleted: "Les coordonnées n'ont pas été supprimées."
       announcements:
+        not_created: "L'annonce n'a pas été créée."
         not_updated: "L'annonce n'a pas été modifiée."
         not_deleted: "L'annonce n'a pas été supprimée."
       training_sessions:
@@ -217,6 +218,7 @@ fr:
       locker_not_deleted: "Le casier %{specifier} n'a pas été supprimé :"
       bulk_not_deleted: "Non supprimés, ils ont un historique de location (marquez-les plutôt comme non disponibles) : %{lockers}"
       range_not_created: "Certains casiers n'ont pas été créés (le numéro existe peut-être déjà) : %{lockers}"
+      bulk_none_selected: "Sélectionnez au moins un casier."
       bulk_not_updated: "Certains casiers n'ont pas été mis à jour : %{lockers}"
       size_not_saved: "La taille de casier n'a pas pu être enregistrée :"
       size_not_deleted: "La taille de casier n'a pas pu être supprimée :"
@@ -234,6 +236,7 @@ fr:
     development_programs:
       not_joined: "Vous n'avez pas rejoint le programme de développement."
     announcements:
+      not_created: "L'annonce n'a pas été créée."
       not_updated: "L'annonce n'a pas été modifiée."
       not_deleted: "L'annonce n'a pas été supprimée."
     makes:

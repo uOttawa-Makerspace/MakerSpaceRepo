@@ -257,6 +257,19 @@ RSpec.describe "Lockers and locker sizes admin", type: :request do
       expect(flash[:alert]).to start_with("Some lockers were not updated")
     end
 
+    it "PATCH bulk_edit with no locker selected refuses and changes nothing" do
+      locker = create(:locker, notes: "keep")
+      [{}, { id: [""] }, { id: [] }].each do |selection|
+        patch bulk_edit_lockers_path, params: selection.merge(locker: { notes: "bulk" })
+        expect(response).to redirect_to(lockers_path(anchor: "lockerInventory"))
+        expect(flash[:notice]).to be_nil
+        expect(flash[:alert]).to eq("Select at least one locker.")
+        expect(locker.reload.notes).to eq("keep")
+      end
+      expect { patch bulk_edit_lockers_path, params: { bulk_delete: "1" } }.not_to change(Locker, :count)
+      expect(flash[:alert]).to eq("Select at least one locker.")
+    end
+
     it "PATCH update answers an invalid JSON edit with the field errors and the sentence to show as error" do
       locker = create(:locker, specifier: "E-1")
       other = create(:locker, specifier: "E-2")

@@ -76,6 +76,15 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(flash[:alert]).to eq("Please select another public goal")
     end
 
+    it "refuses a staff announcement with no audience and saves nothing" do
+      sign_in_as(:staff)
+      expect {
+        post announcements_path, params: { announcement: { description: "Hello" } }
+      }.not_to change(Announcement, :count)
+      expect(response).to redirect_to(new_announcement_path)
+      expect(flash[:alert]).to include("The announcement was not created.")
+    end
+
     it "lets an admin create any audience through the staff controller" do
       sign_in_as(:admin)
       expect {
@@ -211,18 +220,26 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(Announcement.last).to have_attributes(user_id: admin.id, public_goal: "all", active: true, end_date: Date.new(2030, 1, 1))
     end
 
-    # public_goal is not validated, so an admin can save an audience nothing ever displays (e.g. "regular_user", a typo, or even blank)
-    it "accepts a typo'd or blank public_goal" do
+    it "refuses a typo'd or blank audience and saves nothing" do
       sign_in_as(:admin)
       expect {
         post admin_announcements_path, params: { announcement: { description: "Typo", public_goal: "evryone" } }
-      }.to change(Announcement, :count).by(1)
-      expect(flash[:notice]).to eq("You've successfully created an announcement for Evryone")
+      }.not_to change(Announcement, :count)
+      expect(response).to redirect_to(new_admin_announcement_path)
+      expect(flash[:alert]).to include("The announcement was not created.", "Public goal")
       expect {
         post admin_announcements_path, params: { announcement: { description: "Blank" } }
-      }.to change(Announcement, :count).by(1) # saved, then the flash line raises on nil.capitalize
-      expect(response).to have_http_status(:internal_server_error)
-      expect(Announcement.last.public_goal).to be_nil
+      }.not_to change(Announcement, :count)
+      expect(response).to redirect_to(new_admin_announcement_path)
+      expect(flash[:alert]).to include("The announcement was not created.")
+    end
+
+    it "refuses to change an announcement to an unknown audience" do
+      sign_in_as(:admin)
+      news = create(:announcement, :all, description: "Keep")
+      patch admin_announcement_path(news), params: { announcement: { public_goal: "evryone" } }
+      expect(flash[:alert]).to include("The announcement was not updated.")
+      expect(news.reload.public_goal).to eq("all")
     end
 
     it "requires the announcement param" do
@@ -307,14 +324,17 @@ RSpec.describe "Content pages (part 2)", type: :request do
       expect(response.body).not_to include("Staff-only news")
     end
 
-    # 'regular_user' announcements are never displayed to anyone (the partial only checks that one exists, then renders the 'all' ones a second time)
-    it "never shows regular_user announcements and renders 'all' twice for signed-in users when one exists" do
+    it "shows regular_user announcements to signed-in users only, once, apart from the 'all' ones" do
       ann!("regular_user", "Regular-only news")
       ann!("all", "Everyone news")
-      sign_in_as(:regular)
       get root_path
       expect(response.body).not_to include("Regular-only news")
-      expect(response.body.scan("Everyone news").size).to eq(2)
+      expect(response.body.scan("Everyone news").size).to eq(1)
+
+      sign_in_as(:regular)
+      get root_path
+      expect(response.body.scan("Regular-only news").size).to eq(1)
+      expect(response.body.scan("Everyone news").size).to eq(1)
       expect(response.body).to include("To All Users", "To All Visitors")
     end
 
@@ -344,27 +364,27 @@ RSpec.describe "Content pages (part 2)", type: :request do
         expect(other).to be_present
       end
 
-      it "answers a guest with 204 without looking anything up or inserting" do
-        expect(AnnouncementDismiss).not_to receive(:create)
-        expect(AnnouncementDismiss).not_to receive(:new)
+      it "refuses a guest without inserting anything" do
         put dismiss_announcements_path(announcement_id: news.id)
-        expect(response).to have_http_status(:no_content)
+        expect(response).to have_http_status(:unauthorized)
         expect(AnnouncementDismiss.count).to eq(0)
       end
 
-      it "silently ignores an unknown announcement id" do
+      it "answers an unknown announcement id with 404 and inserts nothing" do
         sign_in_as(:regular)
         expect {
           put dismiss_announcements_path(announcement_id: 0)
         }.not_to change(AnnouncementDismiss, :count)
-        expect(response).to have_http_status(:no_content)
+        expect(response).to have_http_status(:not_found)
       end
 
-      # no uniqueness on (user, announcement), so repeated dismisses pile up duplicate rows
-      it "creates a duplicate row on a repeated dismiss" do
+      it "keeps one row when the same announcement is dismissed again" do
         user = sign_in_as(:regular)
-        2.times { put dismiss_announcements_path(announcement_id: news.id) }
-        expect(AnnouncementDismiss.where(user: user, announcement: news).count).to eq(2)
+        2.times do
+          put dismiss_announcements_path(announcement_id: news.id)
+          expect(response).to have_http_status(:no_content)
+        end
+        expect(AnnouncementDismiss.where(user: user, announcement: news).count).to eq(1)
       end
 
       it "dismissal survives the expiry window: an expired announcement stays hidden, a re-activated one stays dismissed" do

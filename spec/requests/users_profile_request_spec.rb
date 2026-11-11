@@ -179,6 +179,19 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(response.body).to include(user.username)
     end
 
+    it "lists a skill earned only through a proficient project, for the owner and for staff" do
+      granted = create(:certification, user: user, training_session: nil, training: nil, level: "Intermediate")
+      create(:proficient_project_session, certification: granted, user: user, level: "Intermediate",
+                                          proficient_project: create(:proficient_project,
+                                                                     training: create(:training, name_en: "Soldering EN")))
+      [user, staff].each do |viewer|
+        login!(viewer)
+        get user_path(user.username)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Soldering EN").and include("Intermediate")
+      end
+    end
+
     it "username lookup is case-insensitive" do
       get user_path(user.username.upcase)
       expect(response).to have_http_status(:ok)
@@ -815,6 +828,51 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       get likes_user_path(other.username)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Liked Thing")
+    end
+  end
+
+  describe "GET /:username/likes filtered by category" do
+    let!(:tagged) { create(:repository, user_id: other.id, title: "Tagged Thing", share_type: "public") }
+    let!(:untagged) { create(:repository, user_id: other.id, title: "Plain Thing", share_type: "public") }
+
+    before do
+      CategoryOption.find_or_create_by!(name: "Wearable")
+      Category.create!(repository_id: tagged.id, name: "Wearable")
+      [tagged, untagged].each { |repo| Like.create!(user_id: user.id, repository_id: repo.id) }
+      login!(user)
+    end
+
+    def listed
+      %w[Tagged\ Thing Plain\ Thing].select { |title| response.body.include?(title) }
+    end
+
+    it "lists every like without a category" do
+      get likes_user_path(user.username)
+      expect(listed).to eq(["Tagged Thing", "Plain Thing"])
+    end
+
+    it "lists only the likes filed under a known category slug" do
+      get likes_user_path(user.username, category: "wearable")
+      expect(listed).to eq(["Tagged Thing"])
+    end
+
+    it "lists nothing for an unknown category slug" do
+      get likes_user_path(user.username, category: "nonsense")
+      expect(response).to have_http_status(:ok)
+      expect(listed).to be_empty
+    end
+
+    it "ignores unknown slugs in a list of categories and lists nothing when none is known" do
+      get "/#{user.username}/likes?category[]=wearable&category[]=nonsense"
+      expect(listed).to eq(["Tagged Thing"])
+      get "/#{user.username}/likes?category[]=nonsense"
+      expect(listed).to be_empty
+    end
+
+    it "lists nothing when the category is not text or a list of text" do
+      get "/#{user.username}/likes?category[wearable]=wearable"
+      expect(response).to have_http_status(:ok)
+      expect(listed).to be_empty
     end
   end
 

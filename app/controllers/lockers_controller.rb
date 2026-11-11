@@ -110,7 +110,9 @@ class LockersController < AdminAreaController
 
   def bulk_edit
     # The Javascript on the frontend populates params[:id] with the selected locker IDs
-    if params[:bulk_delete]
+    if Array.wrap(params[:id]).compact_blank.empty?
+      flash[:alert] = I18n.t('errors.lockers.bulk_none_selected')
+    elsif params[:bulk_delete]
       bulk_delete_lockers
     else
       bulk_update_lockers
