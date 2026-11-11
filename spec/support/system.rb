@@ -9,6 +9,10 @@ Capybara.server = :puma, { Silent: true }
 Capybara.default_max_wait_time = 5
 Capybara.save_path = Rails.root.join("tmp", "capybara")
 
+# The browser is reused across examples, so an example that resizes it must not
+# leave the next one a narrower window (the navbar collapses below 1600px).
+SYSTEM_WINDOW_SIZE = [1600, 1000].freeze
+
 # Chrome sometimes answers "Node with given id does not belong to the document"
 # (an UnknownError) when Turbo swaps the page between Capybara finding and
 # using an element under CPU load. Treat it like a stale element so Capybara
@@ -31,7 +35,7 @@ Capybara.register_driver :headless_chrome do |app|
   options.add_argument("--no-sandbox")
   options.add_argument("--disable-gpu")
   options.add_argument("--disable-dev-shm-usage")
-  options.add_argument("--window-size=1600,1000")
+  options.add_argument("--window-size=#{SYSTEM_WINDOW_SIZE.join(',')}")
   # Hermetic browser: WebMock only guards Ruby HTTP, Chrome would otherwise
   # reach the real internet (Cloudflare Turnstile, CDNs, fonts). Everything
   # except the local Capybara server fails DNS, so results do not depend on
@@ -50,7 +54,7 @@ end
 # rspec-rails 8 — use a hook so every system spec gets our chromium config.
 RSpec.configure do |config|
   config.before(:each, type: :system) do
-    driven_by :headless_chrome, screen_size: [1600, 1000]
+    driven_by :headless_chrome, screen_size: SYSTEM_WINDOW_SIZE
   end
 
   # Fail on SEVERE browser console entries unless allowlisted
@@ -58,8 +62,10 @@ RSpec.configure do |config|
   # example that deliberately triggers an error.
   config.after(:each, type: :system) do |example|
     # Always drain: the Chrome session is reused across examples, so skipped
-    # entries would otherwise leak into the next example.
-    errors = JsErrorCheck.collect(page)
+    # entries would otherwise leak into the next example. collect leaves the
+    # page first, so a request or timer still running on it cannot log later.
+    errors = JsErrorCheck.collect(page, leave_page: true)
+    page.current_window.resize_to(*SYSTEM_WINDOW_SIZE) if page.current_window.size != SYSTEM_WINDOW_SIZE
     next if example.metadata[:js_errors] == :allow
     next unless example.exception.nil?
 

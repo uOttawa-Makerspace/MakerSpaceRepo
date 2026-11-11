@@ -62,12 +62,18 @@ module JsErrorCheck
 
   module_function
 
-  def collect(page)
+  # With leave_page, the page path is read first and the session is then reset
+  # (the browser goes to about:blank) before the log is read, so nothing the
+  # page still had in flight (a request, a timer, a transition) can be logged
+  # after the drain and blamed on the next example. Use it once, at the end of
+  # an example.
+  def collect(page, leave_page: false)
     path = begin
       URI.parse(page.current_url.to_s).path
     rescue StandardError
       ""
     end
+    page.reset_session! if leave_page
     entries = begin
       page.driver.browser.logs.get(:browser)
     rescue StandardError

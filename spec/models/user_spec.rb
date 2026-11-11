@@ -209,10 +209,20 @@ RSpec.describe User, type: :model do
     end
 
     context "#created_this_year" do
+      include ActiveSupport::Testing::TimeHelpers
+
       it "should return users created this year" do
         expect {
-          14.times { create(:user, :regular_user, created_at: Date.today) }
+          14.times { create(:user, :regular_user, created_at: Time.current) }
         }.to change { User.created_this_year.count }.by(14)
+      end
+
+      it "counts users created now on the last evening of the year in local time" do
+        travel_to(Time.zone.local(2026, 12, 31, 22)) do # 03:00 UTC on 1 January
+          expect {
+            2.times { create(:user, :regular_user, created_at: Time.current) }
+          }.to change { User.created_this_year.count }.by(2)
+        end
       end
     end
 
