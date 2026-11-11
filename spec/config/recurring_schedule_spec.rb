@@ -50,6 +50,13 @@ RSpec.describe "config/recurring.yml" do
     expect(config["production"]).not_to have_key("google_calendar_sync")
   end
 
+  it "queues unconfirmed Google Calendar changes again every 15 minutes in production and staging" do
+    %w[production staging].each do |env|
+      expect(config.dig(env, "google_calendar_resend")).to include("class" => "GoogleCalendar::ResendJob", "schedule" => "every 15 minutes")
+    end
+    expect(Fugit.parse("every 15 minutes", multi: :fail)).to be_a(Fugit::Cron)
+  end
+
   it "keeps the maintenance jobs that were already scheduled" do
     %w[production staging].each do |env|
       expect(config.fetch(env).keys).to include("clear_solid_queue_finished_jobs", "tap_box_log_cleanup")

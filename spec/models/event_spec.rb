@@ -149,6 +149,13 @@ RSpec.describe Event, type: :model do
         expect(GoogleCalendar::EventPushJob).to have_been_enqueued.with(event.id).exactly(:once)
       end
 
+      it "records the push as pending and keeps it when the queue is down" do
+        event = create(:event, space: space, created_by: creator, google_event_id: "abc123")
+        allow(GoogleCalendar::EventPushJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished)
+        expect { event.push_to_google_later }.not_to raise_error
+        expect(GoogleCalendar::PendingChange.where(action: "push", event_id: event.id)).to exist
+      end
+
       it "keeps the id an event already has" do
         event = create(:event, space: space, created_by: creator, google_event_id: "abc123")
         event.push_to_google_later

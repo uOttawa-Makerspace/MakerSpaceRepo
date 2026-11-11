@@ -15,6 +15,17 @@ RSpec.describe GoogleCalendar::EventDeleteJob, type: :job do
     described_class.perform_now("abc123", calendar_id, 7)
   end
 
+  it "settles the pending removal once the copy is gone, and keeps it when Google fails" do
+    GoogleCalendar::PendingChange.ask_removal(7, "abc123", calendar_id)
+    allow(service).to receive(:delete_event).and_raise(Google::Apis::ServerError.new("down", status_code: 500))
+    described_class.perform_now("abc123", calendar_id, 7)
+    expect(GoogleCalendar::PendingChange.count).to eq(1)
+
+    allow(service).to receive(:delete_event)
+    described_class.perform_now("abc123", calendar_id, 7)
+    expect(GoogleCalendar::PendingChange.count).to eq(0)
+  end
+
   [404, 410].each do |status|
     it "counts a #{status} answer as done" do
       allow(service).to receive(:delete_event).and_raise(client_error(status))

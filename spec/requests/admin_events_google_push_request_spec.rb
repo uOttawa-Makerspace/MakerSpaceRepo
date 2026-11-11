@@ -48,6 +48,16 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
       expect(push_jobs.size).to eq(1)
     end
 
+    it "answers normally and keeps the push for the resend job when the queue is down" do
+      create_events_as_published
+      allow(GoogleCalendar::EventPushJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished, "queue down")
+      expect { post admin_events_path, params: { event: event_attrs } }.to change(Event, :count).by(1)
+      expect(response).to have_http_status(:found)
+      expect(flash[:notice]).to eq("Event created successfully.")
+      event = Event.order(:id).last
+      expect(GoogleCalendar::PendingChange.where(action: "push", event_id: event.id)).to exist
+    end
+
     it "queues nothing when the event is invalid" do
       post admin_events_path, params: { event: event_attrs(utc_end_time: "2027-04-01 09:00") }
       expect(push_jobs).to be_empty
@@ -160,6 +170,15 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
       expect { delete delete_with_scope_admin_event_path(event) }.to change(Event, :count).by(-1)
       expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("g1", calendar_id, event.id).exactly(:once)
       expect(push_jobs).to be_empty
+    end
+
+    it "answers normally and keeps the removal for the resend job when the queue is down" do
+      event = create(:event, space: space, google_event_id: "g1")
+      allow(GoogleCalendar::EventDeleteJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished, "queue down")
+      expect { delete delete_with_scope_admin_event_path(event) }.to change(Event, :count).by(-1)
+      expect(response).to have_http_status(:found)
+      expect(flash[:notice]).to eq("Event deleted.")
+      expect(GoogleCalendar::PendingChange.where(action: "remove", event_id: event.id, google_event_id: "g1")).to exist
     end
 
     it "queues the removal of a destroyed draft that has a Google id" do
