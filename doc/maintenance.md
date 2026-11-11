@@ -185,3 +185,7 @@ Repeated interface pieces are ViewComponents (`view_component` gem) in `app/comp
 
 - A component's Stimulus controller lives in `app/javascript/controllers/`, named after the component (for example `key_request_deny_form_controller.js`), because the controller index only loads files under that directory. Its scoped CSS goes in a partial under `app/javascript/stylesheets/` imported by `application.scss`.
 - Component specs live in `spec/components/` and get `type: :component`, the ViewComponent test helpers and Capybara matchers from `spec/support/view_component.rb`.
+
+## Programs unique index
+
+The release that adds `index_programs_on_user_id_and_program_type` makes the database refuse a second row for the same user and program (Development, Volunteer, Teams). The migration first checks for existing duplicates; if any exist it changes nothing and stops with a message listing the user and the ids of the duplicate rows, to be settled by hand before running it again. The 2026-11-04 backup had none. It builds the index concurrently, and `down` only drops the index and keeps every row. Joining a program (`Program.join`) is an insert that does nothing when the row exists and does not name the index, so code that runs before the migration (for example the `worker` container) still works.

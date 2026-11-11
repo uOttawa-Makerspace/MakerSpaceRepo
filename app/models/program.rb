@@ -12,12 +12,13 @@ class Program < ApplicationRecord
   VOLUNTEER = "Volunteer Program"
   DEV_PROGRAM = "Development Program"
   TEAMS = "Teams Program"
-  UNIQUE_INDEX = "index_programs_on_user_id_and_program_type"
 
-  # Adds the user to the program. The unique index decides a race: the insert does nothing when the user already
-  # holds the program. Returns true when this call added it, false when the user was already in it.
+  # Adds the user to the program. The insert has no named conflict target (ON CONFLICT DO NOTHING), so once the
+  # unique index on (user_id, program_type) exists it does nothing when the user already holds the program, even
+  # under a race, and before the index exists it is a plain insert; it never looks the index up. Returns true when
+  # this call added the row, false when the user was already in the program.
   def self.join(user, program_type)
-    insert({ user_id: user.id, program_type: program_type }, unique_by: UNIQUE_INDEX).rows.any?
+    insert({ user_id: user.id, program_type: program_type }).rows.any?
   end
 
   # Volunteer programs follow the volunteer's last visit to the site: inactive when not seen for two months (or

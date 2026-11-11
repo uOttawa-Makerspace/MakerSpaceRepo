@@ -60,14 +60,7 @@ class VolunteersController < SessionsController
     if current_user.staff?
       flash[:notice] = 'You already have access to the Volunteer Program.'
     else
-      # Check if user is already enrolled to prevent duplicates
-      unless current_user.programs.where(program_type: Program::VOLUNTEER).exists?
-        Program.create!(
-          user_id: current_user.id,
-          program_type: Program::VOLUNTEER,
-          active: true
-        )
-      end
+      Program.join(current_user, Program::VOLUNTEER)
       flash[:notice] = "You've joined the Volunteer Program"
     end
 

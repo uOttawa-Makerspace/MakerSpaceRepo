@@ -50,6 +50,20 @@ RSpec.describe Program, type: :model do
       expect { Program.join(user, Program::VOLUNTEER) }.not_to(change { existing.reload.attributes })
     end
 
+    it "names no index, so it works before the unique index exists and is still safe to repeat" do
+      sql = []
+      listener = ->(*, payload) { sql << payload[:sql] if payload[:sql].start_with?("INSERT INTO \"programs\"") }
+      ActiveSupport::Notifications.subscribed(listener, "sql.active_record") do
+        Program.join(user, Program::TEAMS)
+        Program.join(user, Program::TEAMS)
+      end
+
+      expect(sql.size).to eq(2)
+      expect(sql).to all(match(/ON CONFLICT\s+DO NOTHING/))
+      expect(sql.join).not_to include("index_programs_on_user_id_and_program_type")
+      expect(user.programs.count).to eq(1)
+    end
+
     it "adds a different program next to the first" do
       Program.join(user, Program::DEV_PROGRAM)
       Program.join(user, Program::TEAMS)

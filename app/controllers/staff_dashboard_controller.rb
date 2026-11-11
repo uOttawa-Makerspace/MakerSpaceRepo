@@ -169,7 +169,7 @@ class StaffDashboardController < StaffAreaController
   def add_signed_in_users_to_teams
     if @space.jmts?
       @space.signed_in_users.each do |user|
-        user.programs.find_or_create_by(program_type: Program::TEAMS)
+        Program.join(user, Program::TEAMS)
       end
 
       flash[:notice] = "Successfully added all users to teams program"
