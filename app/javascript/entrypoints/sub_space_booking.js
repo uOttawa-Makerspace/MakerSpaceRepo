@@ -17,13 +17,6 @@ import {
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 
-function updateSelectedCount(checkboxClass, displayId) {
-  const count = document.querySelectorAll(`${checkboxClass}:checked`).length;
-  const el = document.getElementById(displayId);
-  if (!el) return;
-  el.textContent = count > 0 ? `${count} selected` : "";
-}
-
 // The admin user picker. The server does the matching (name or username, at least `minLength`
 // characters), and the list always obeys one rule: it holds only the server's answer for exactly the text
 // now in the box, and nothing when that text is shorter than the minimum.
@@ -132,60 +125,22 @@ document.addEventListener("turbo:load", function () {
     "pending_bookings_select_all",
   );
   if (pendingSelectAll) {
-    // Attach per-checkbox change listeners for the live count
-    document.querySelectorAll(".pending-booking-select").forEach((c) => {
-      c.addEventListener("change", () =>
-        updateSelectedCount(
-          ".pending-booking-select",
-          "pending-selected-count",
-        ),
-      );
-    });
     pendingSelectAll.addEventListener("change", (e) => {
       document.querySelectorAll(".pending-booking-select").forEach((c) => {
         c.checked = e.currentTarget.checked;
       });
-      updateSelectedCount(".pending-booking-select", "pending-selected-count");
     });
   }
 
   // ── User-request select-all ───────────────────────────────────────────────
   const userSelectAll = document.getElementById("userRequestSelectAll");
   if (userSelectAll) {
-    document.querySelectorAll(".user-request-select").forEach((c) => {
-      c.addEventListener("change", () =>
-        updateSelectedCount(".user-request-select", "user-selected-count"),
-      );
-    });
     userSelectAll.addEventListener("change", () => {
       document.querySelectorAll(".user-request-select").forEach((c) => {
         c.checked = userSelectAll.checked;
       });
-      updateSelectedCount(".user-request-select", "user-selected-count");
     });
   }
-
-  // ── Collapse chevron animation ────────────────────────────────────────────
-  document
-    .querySelectorAll('[data-bs-toggle="collapse"]')
-    .forEach((trigger) => {
-      const targetSel = trigger.dataset.bsTarget;
-      const chevron = trigger.querySelector(".admin-chevron");
-      if (!chevron || !targetSel) return;
-      const target = document.querySelector(targetSel);
-      if (!target) return;
-      // Set initial rotation
-      chevron.style.transition = "transform .2s ease";
-      chevron.style.transform = target.classList.contains("show")
-        ? "rotate(0deg)"
-        : "rotate(-90deg)";
-      target.addEventListener("show.bs.collapse", () => {
-        chevron.style.transform = "rotate(0deg)";
-      });
-      target.addEventListener("hide.bs.collapse", () => {
-        chevron.style.transform = "rotate(-90deg)";
-      });
-    });
 
   // ── Identity / supervisor toggle (access-request form) ───────────────────
   const supervisorsContainer = document.getElementById("supervisor-select");

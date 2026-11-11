@@ -8,11 +8,11 @@
       <%= form_with url: bulk_approve_decline_sub_space_booking_index_path, method: :put do |f| %>
         <%= f.hidden_field :bulk_status, value: 'approve' %>
         <div class="modal-body p-4">
-          <!-- Template Checkbox used by JS -->
-          <label class="form-check w-100 mb-2 p-2 border border-secondary-subtle rounded bg-body-tertiary cursor-pointer">
-            <input class="form-check-input ms-0 me-2" type="checkbox" name="sub_space_booking_ids[]" value=""> 
-            <span class="form-check-label fw-medium text-body-emphasis">Template</span>
-          </label>
+          <div class="d-flex gap-2 mb-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="recurringSelectAll">Select all</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="recurringSelectNone">Select none</button>
+          </div>
+          <div id="recurring-checkboxes" class="d-grid gap-2"></div>
         </div>
         <div class="modal-footer bg-body-tertiary border-top border-secondary-subtle">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
