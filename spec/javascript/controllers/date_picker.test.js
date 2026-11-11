@@ -48,6 +48,20 @@ describe("date-picker", () => {
     );
   });
 
+  it("labels the new visible field after a disconnect and reconnect", async () => {
+    await mount({ label: true });
+    const root = document.querySelector("[data-controller]");
+    const parent = root.parentNode;
+    parent.removeChild(root);
+    await settle();
+    expect(root.querySelector("label").getAttribute("for")).toBe("end");
+    picker.altInput = document.createElement("input");
+    parent.appendChild(root);
+    await settle();
+    expect(picker.altInput.id).toBe("end_display");
+    expect(root.querySelector("label").getAttribute("for")).toBe("end_display");
+  });
+
   it("leaves the inputs alone when there is no label", async () => {
     await mount();
     expect(picker.altInput.id).toBe("");

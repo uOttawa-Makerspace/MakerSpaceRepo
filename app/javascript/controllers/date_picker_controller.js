@@ -20,6 +20,9 @@ export default class extends Controller {
   }
 
   disconnect() {
+    // Give the label back to the original input so a later connect finds it again.
+    this.label?.setAttribute("for", this.labelTarget);
+    this.label = null;
     this.picker?.destroy();
   }
 
@@ -28,6 +31,8 @@ export default class extends Controller {
   labelVisibleInput(input) {
     const label = this.element.querySelector(`label[for="${input.id}"]`);
     if (!label) return;
+    this.label = label;
+    this.labelTarget = input.id;
     this.picker.altInput.id = `${input.id}_display`;
     label.setAttribute("for", this.picker.altInput.id);
   }
