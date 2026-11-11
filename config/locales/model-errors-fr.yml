@@ -4,6 +4,10 @@ fr:
   activerecord:
     errors:
       models:
+        project_proposal:
+          attributes:
+            base:
+              semester_incomplete: "Choisissez à la fois une saison et une année, ou aucune des deux."
         proficient_project_session:
           holds_certification: "Cette séance détient une certification et ne peut donc pas être supprimée."
         key_request:

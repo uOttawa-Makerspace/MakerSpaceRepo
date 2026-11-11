@@ -109,6 +109,8 @@ class ProjectProposal < ApplicationRecord
                 'Coût prévu du projet invalide / Estimated cost can not be below 0'
             }
 
+  validate :season_and_year_together, if: -> { season_changed? || year_changed? }
+
   before_save do
     self.youtube_link = nil if youtube_link && !YoutubeID.from(youtube_link)
   end
@@ -151,6 +153,10 @@ class ProjectProposal < ApplicationRecord
     "#{season.capitalize} #{year}" if season && year
   end
 
+  def clear_semester
+    update(season: nil, year: nil)
+  end
+
   def has_user
     !self.user_id.nil?
   end
@@ -163,5 +169,13 @@ class ProjectProposal < ApplicationRecord
     else
       'Not validated'
     end
+  end
+
+  private
+
+  # A semester is a season and a year together. Proposals saved before this rule may hold only one of
+  # them; they are checked when either value is changed, so their other edits are not blocked.
+  def season_and_year_together
+    errors.add(:base, :semester_incomplete) if season.blank? != year.blank?
   end
 end
