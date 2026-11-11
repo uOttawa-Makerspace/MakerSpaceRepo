@@ -32,7 +32,8 @@ RSpec.describe LockerRental, type: :model do
       LockerRental.where(id: rental.id).update_all(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
 
       stale.lock!
-      stale.update!(owned_until: 4.months.from_now)
+      stale.assign_owned_until(4.months.from_now)
+      stale.save!
 
       expect(rental.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
     end
