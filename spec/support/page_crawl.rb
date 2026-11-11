@@ -245,7 +245,7 @@ module PageCrawl
     end
 
     def seed_booking_world
-      ids = %w[Pending Approved Rejected].map { |n| BookingStatus.find_by(name: n) || BookingStatus.create!(name: n) }
+      ids = %w[Pending Approved Declined].map { |n| BookingStatus.find_by(name: n) || BookingStatus.create!(name: n) }
       records[:booking_statuses] = ids
       create(:sub_space_booking, sub_space: records[:sub_space], user: records[:target]).tap do |b|
         b.change_status!(ids.first)
