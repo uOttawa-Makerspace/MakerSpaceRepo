@@ -91,10 +91,10 @@ class Staff::TrainingSessionsController < StaffDashboardController
             )
           next if cert.blank?
 
-          next if cert.destroy
+          next if cert.deactivate(@user)
           flash[
             :alert
-          ] = "Error deleting #{user.username}'s #{@current_training_session.training.name_en} certification."
+          ] = "Error removing #{user.username}'s #{@current_training_session.training.name_en} certification."
         end
     end
 
@@ -143,8 +143,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   def revoke_certification
     cert = @current_training_session.certifications.find(params[:cert_id])
-    if cert.destroy
-      flash[:notice] = "Deleted Successfully"
+    if cert.deactivate(@user)
+      flash[:notice] = "Revoked Successfully"
     else
       flash[:alert] = validation_message(cert, "errors.staff.training_sessions.certification_not_revoked")
     end

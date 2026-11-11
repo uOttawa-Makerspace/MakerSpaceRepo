@@ -86,6 +86,7 @@ fr:
       certifications:
         not_updated: "La certification n'a pas été modifiée."
         not_deleted: "La certification n'a pas été supprimée."
+        restore_duplicate: "La certification n'a pas été rétablie : l'utilisateur détient déjà une certification active pour cette formation et ce niveau."
       job_types:
         not_created: "Le type de travail n'a pas été créé."
         not_updated: "Le type de travail n'a pas été modifié."

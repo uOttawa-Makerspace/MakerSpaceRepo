@@ -28,6 +28,24 @@ class Certification < ApplicationRecord
   # The reason recorded when revoking a project badge deactivates the certification it granted.
   BADGE_REVOKED_REASON = "Project badge revoked"
 
+  # The reason recorded when a trainer drops a trainee from a session or revokes the session's certification.
+  TRAINER_REMOVED_REASON = "Removed by the trainer"
+
+  # Takes the certification out of use without deleting it, recording who did it and why; the row
+  # and its history stay. Deactivated certifications are left out of every default query.
+  def deactivate(staff, reason = TRAINER_REMOVED_REASON)
+    update(active: false, demotion_reason: reason, demotion_staff: staff)
+  end
+
+  # Whether an active certification of the same user, training and level already exists, so
+  # restoring this deactivated one would leave the user holding the same certification twice.
+  def duplicate_held?
+    return false if active
+
+    training_id = training_session&.training_id || proficient_project_session&.proficient_project&.training_id
+    training_id.present? && Certification.held_by(user_id, training_id, level).exists?
+  end
+
   # Every certification (active or not) a user earned through approvals of a proficient project.
   # The project session carries no link to the order item, so user and project identify it.
   def self.for_project(user_id, project_id)

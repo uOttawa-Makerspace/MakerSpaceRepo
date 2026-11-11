@@ -95,6 +95,29 @@ RSpec.describe Admin::CertificationsController, type: :controller do
         )
         expect(flash[:notice]).to eq("Action completed.")
       end
+
+      context "when the trainee was dropped, certified again, and an admin restores the old row" do
+        let(:old) { @certification }
+        let!(:current) do
+          old.update!(active: false, demotion_reason: Certification::TRAINER_REMOVED_REASON, demotion_staff: @admin)
+          create(:certification, user: old.user, training_session: old.training_session, level: old.level)
+        end
+
+        it "refuses the restore and changes nothing" do
+          patch :update, params: { id: old.id, certification: { active: true } }
+          expect(response).to redirect_to demotions_admin_certifications_path
+          expect(flash[:alert]).to eq(I18n.t("errors.admin.certifications.restore_duplicate"))
+          expect(Certification.unscoped.find(old.id).active).to be(false)
+          expect(old.user.certifications.reload.pluck(:id)).to eq([current.id])
+        end
+
+        it "restores the old row once the newer one is deactivated" do
+          current.deactivate(@admin)
+          patch :update, params: { id: old.id, certification: { active: true } }
+          expect(Certification.unscoped.find(old.id).active).to be(true)
+          expect(flash[:notice]).to eq("Action completed.")
+        end
+      end
     end
   end
 

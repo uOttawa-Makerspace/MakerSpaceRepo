@@ -358,4 +358,28 @@ RSpec.describe Certification, type: :model do
       expect(Certification.unscoped.where(id: cert.id)).to exist
     end
   end
+
+  describe "#duplicate_held?" do
+    let(:cert) { create(:certification) }
+
+    it "is false for an active certification" do
+      expect(cert.duplicate_held?).to be(false)
+    end
+
+    it "is false for a deactivated certification when the user holds no other" do
+      cert.update!(active: false)
+      expect(cert.duplicate_held?).to be(false)
+    end
+
+    it "is true for a deactivated certification when an active one of the same training and level exists" do
+      cert.update!(active: false)
+      create(:certification, user: cert.user, training_session: cert.training_session, level: cert.level)
+      expect(cert.duplicate_held?).to be(true)
+    end
+
+    it "is false when the training cannot be found" do
+      cert.update_columns(active: false, training_session_id: nil)
+      expect(Certification.unscoped.find(cert.id).duplicate_held?).to be(false)
+    end
+  end
 end
