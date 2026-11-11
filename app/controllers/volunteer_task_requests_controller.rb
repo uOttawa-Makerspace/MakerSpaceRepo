@@ -150,23 +150,10 @@ class VolunteerTaskRequestsController < SessionsController
     volunteer_task_request.approval == true && ActiveModel::Type::Boolean.new.cast(params[:approval]) == true
   end
 
-  # Completes the join and pays the volunteer's wallet and hours. The award is paid at most once per user and
-  # task, whatever the approval history (CC money rows are only created by this path).
+  # Completes the join and pays the volunteer's wallet and hours (see VolunteerTaskRequest#pay_award).
   def award_approval(volunteer_task_request)
     complete_join(volunteer_task_request)
-    volunteer_task = volunteer_task_request.volunteer_task
-    volunteer = volunteer_task_request.user
-    return if CcMoney.exists?(user_id: volunteer.id, volunteer_task_id: volunteer_task.id)
-
-    volunteer.update_wallet
-    CcMoney.create_cc_money_from_approval(volunteer_task.id, volunteer.id, volunteer_task.cc)
-    volunteer.update_wallet
-    VolunteerHour.create_volunteer_hour_from_approval(
-      volunteer_task.id,
-      volunteer.id,
-      volunteer_task.hours,
-      volunteer_task_request.created_at
-    )
+    volunteer_task_request.pay_award
   end
 
   # Completes the requester's joined row. A row that ended after the lookup (the volunteer left at the
