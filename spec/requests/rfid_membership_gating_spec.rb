@@ -112,12 +112,11 @@ RSpec.describe "RFID tap and membership state (not enforced)", type: :request do
   end
 
   describe "staff dashboard JSON" do
-    # the JSON calls has_active_membership? per signed-in user (a memberships query each),
-    # so with 2+ users Bullet (raising under CI=1) flags an N+1 and the request 500s; skipped here.
-    it "reports membership_status false for a signed-in user with a lapsed membership, without removing them", skip_bullet: true do
+    it "reports membership_status false for a signed-in user with a lapsed membership, without removing them" do
       create(:membership, user: owner, membership_tier: tier, status: "paid", start_date: 60.days.ago, end_date: 1.day.ago)
       active_user = create(:user, :regular_user)
       create(:membership, user: active_user, membership_tier: tier, status: "paid")
+      create(:walk_in_safety_sheet, :is_adult, user: active_user, space: space)
       [owner, active_user].each { |u| create(:lab_session, space: space, user: u, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now) }
       sign_in_as(:staff, space: space)
 
@@ -127,6 +126,8 @@ RSpec.describe "RFID tap and membership state (not enforced)", type: :request do
       expect(users.keys).to match_array([owner.id, active_user.id])
       expect(users[owner.id]["membership_status"]).to be(false)
       expect(users[active_user.id]["membership_status"]).to be(true)
+      expect(users[owner.id]["signed_safety_sheet"]).to be(false)
+      expect(users[active_user.id]["signed_safety_sheet"]).to be(true)
     end
   end
 end

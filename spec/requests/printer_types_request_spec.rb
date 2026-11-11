@@ -46,8 +46,7 @@ RSpec.describe "Printer types", type: :request do
   describe "as admin" do
     before { sign_in_as(:admin) }
 
-    # N+1 pinned
-    it "lists types ordered case-insensitively", skip_bullet: true do
+    it "lists types ordered case-insensitively" do
       create(:printer_type, name: "apple", short_form: "A")
       get printer_types_path
       expect(response).to have_http_status(:ok)
