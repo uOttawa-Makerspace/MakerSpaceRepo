@@ -6,6 +6,15 @@ const searchFilters = [];
 vi.mock("datatables.net-bs5", () => {
   class DataTable {
     static ext = { search: searchFilters };
+    // Stands in for the public cell lookup: settings carry the cells by row.
+    static Api = class {
+      constructor(settings) {
+        this.settings = settings;
+      }
+      cell(row, column) {
+        return { node: () => this.settings.cells?.[row]?.[column] };
+      }
+    };
     constructor(selector, options) {
       this.selector = selector;
       this.options = options;
@@ -173,7 +182,7 @@ describe("date range", () => {
       const cell = document.createElement("td");
       if (sort) cell.dataset.sort = sort;
       cell.textContent = text;
-      return { aoData: [{ anCells: [0, 0, 0, 0, cell] }] };
+      return { cells: [[0, 0, 0, 0, cell]] };
     };
     expect(keep(settings("2026-06-08T10:00:00-04:00"), [], 0)).toBe(true);
     expect(keep(settings("2026-05-01T10:00:00-04:00"), [], 0)).toBe(false);

@@ -9,7 +9,7 @@ function submittedWithinComputedDays(settings, _data, dataIndex) {
 
   // The submitted cell is localised text; its data-sort attribute holds the
   // machine-readable timestamp. Keep rows whose timestamp cannot be read.
-  const cell = settings.aoData?.[dataIndex]?.anCells?.[4];
+  const cell = new DataTable.Api(settings).cell(dataIndex, 4).node();
   const date = new Date(cell?.dataset.sort);
   if (Number.isNaN(date.getTime())) return true;
 
