@@ -273,7 +273,7 @@ class ShopOrderApplier
     apply_membership_by_email(plan)
   end
 
-  # Only a pending membership becomes paid. One that is already paid, revoked or failed is left as it is and
+  # Only a pending membership becomes paid. One that is already paid, revoked, failed or expired is left as it is and
   # reported with the order, so a late or second order cannot reactivate a membership staff took away.
   def apply_referenced_membership(plan)
     membership = Membership.find_by(id: plan.membership_ref)

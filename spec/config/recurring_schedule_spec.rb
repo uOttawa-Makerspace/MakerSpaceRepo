@@ -32,6 +32,13 @@ RSpec.describe "config/recurring.yml" do
     expect(Fugit.parse("every 5 minutes", multi: :fail)).to be_a(Fugit::Cron)
   end
 
+  it "expires stale membership checkouts every day at 4am in production and staging" do
+    %w[production staging].each do |env|
+      expect(config.dig(env, "membership_expiry")).to include("class" => "MembershipExpiryJob", "schedule" => "every day at 4am")
+    end
+    expect(Fugit.parse("every day at 4am", multi: :fail)).to be_a(Fugit::Cron)
+  end
+
   it "mails the CDEL report from production only, on the 1st at midnight" do
     expect(config.dig("production", "cdel_report")).to include("class" => "CdelReportJob", "schedule" => "0 0 1 * *")
     expect(config["staging"]).not_to have_key("cdel_report")
