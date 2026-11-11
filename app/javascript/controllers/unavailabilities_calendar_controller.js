@@ -7,6 +7,20 @@ import interactionPlugin from "@fullcalendar/interaction";
 
 import { makeCalendarAccessible } from "../src/calendar_accessibility.js";
 
+// The hosts listed in the failed-calendars header: a JSON list of strings and
+// nulls, or nothing for a missing, malformed or differently shaped header.
+function failedHosts(header) {
+  try {
+    const hosts = JSON.parse(header);
+    const valid =
+      Array.isArray(hosts) &&
+      hosts.every((host) => host === null || typeof host === "string");
+    return valid ? hosts : [];
+  } catch {
+    return [];
+  }
+}
+
 // Stimulus defines the target, value and outlet accessors at runtime; this
 // tells the type checker.
 const TypedController = /** @type {new () => Controller<HTMLElement> & {
@@ -69,16 +83,15 @@ export default class extends TypedController {
   }
 
   // The feed names, in a header, the hosts of the linked calendars it could
-  // not load (a list; a link whose host could not be read is null). Each is
-  // listed as text; nothing is listed when all loaded.
+  // not load (a JSON list; a link whose host could not be read is null). Each
+  // is listed as text; nothing is listed when all loaded or the header cannot
+  // be read, so the events are never held back by it.
   showFailures(response) {
-    const header = response.headers.get("X-Failed-Calendars");
-    const hosts = header === null ? [] : JSON.parse(header);
     this.listFailures(
-      hosts.map((host) =>
+      failedHosts(response.headers.get("X-Failed-Calendars")).map((host) =>
         this.failureTemplateValue.replace(
           "{host}",
-          host ?? this.unknownHostValue,
+          () => host ?? this.unknownHostValue,
         ),
       ),
     );

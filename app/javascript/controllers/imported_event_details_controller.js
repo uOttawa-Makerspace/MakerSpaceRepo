@@ -49,7 +49,7 @@ export default class extends TypedController {
     this.descriptionTarget.textContent = description;
     this.descriptionTarget.hidden = !description;
     this.sourceTarget.textContent = sourceHost
-      ? this.sourceTemplateValue.replace("{host}", sourceHost)
+      ? this.sourceTemplateValue.replace("{host}", () => sourceHost)
       : this.sourceUnknownValue;
 
     Modal.getOrCreateInstance(this.element).show();

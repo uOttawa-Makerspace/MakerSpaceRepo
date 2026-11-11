@@ -40,6 +40,19 @@ RSpec.describe CalendarHelper, type: :helper do
       end
     end
 
+    it "logs only the file name when a feed file cannot be read" do
+      Dir.mktmpdir("private-folder") do |dir|
+        file = Pathname.new(dir).join("feed.ics")
+        file.write("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:bad\r\nDTSTART:notadate\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n")
+        logged = []
+        allow(Rails.logger).to receive(:error) { |message| logged << message }
+
+        expect(ics_feed(file, name: "x")).to be_failed
+        expect(logged.join).to match(/ICS parse error for feed\.ics/)
+        expect(logged.join).not_to include("private-folder")
+      end
+    end
+
     it "drops events that ended more than two months ago" do
       travel_to(Time.utc(2026, 3, 1, 12, 0)) do
         expect(parse_ics_calendar(path).first[:events]).to eq([])

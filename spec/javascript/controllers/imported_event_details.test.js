@@ -176,6 +176,20 @@ describe("imported event details dialog", () => {
     expect(text("time")).toContain("mars");
   });
 
+  it("shows a host with replacement patterns exactly as it is", async () => {
+    const controller = await boot();
+    controller.show({
+      title: "x",
+      startStr: "2027-03-17T13:00:00-04:00",
+      endStr: "",
+      allDay: false,
+      extendedProps: { sourceHost: "a$&b$1.example" },
+    });
+    expect(text("source")).toBe(
+      "Imported from a linked calendar (a$&b$1.example).",
+    );
+  });
+
   it("gives the focus back to the element that opened it when it closes", async () => {
     const controller = await boot();
     const opener = document.getElementById("opener");

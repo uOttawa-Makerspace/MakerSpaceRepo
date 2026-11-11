@@ -202,6 +202,23 @@ describe("staff unavailabilities calendar", () => {
       ]);
     });
 
+    it("lists nothing, and keeps the events, when the header is malformed or not a list", async () => {
+      const cal = await boot();
+      const events = [{ id: "e" }];
+      for (const raw of ["not json", '{"a":1}', '"host"', "[1]", '["a",{}]']) {
+        const answer = { headers: new Headers({ "X-Failed-Calendars": raw }) };
+        expect(() => cal.options.events.success(events, answer)).not.toThrow();
+        expect(failures().hidden).toBe(true);
+        expect(failures().children).toHaveLength(0);
+      }
+    });
+
+    it("shows a host with replacement patterns exactly as it is", async () => {
+      const cal = await boot();
+      cal.options.events.success([], response(["a$&b$1.example"]));
+      expect(failures().textContent).toBe("a$&b$1.example could not be loaded");
+    });
+
     it("clears the names again when every calendar loads", async () => {
       const cal = await boot();
       cal.options.events.success([], response(["a.example"]));
