@@ -561,5 +561,6 @@ en:
     imported_event:
       title: "Imported event"
       from: "Imported from a linked calendar ({host})."
+      from_unknown: "Imported from a linked calendar."
       all_day: "All day"
       explanation: "It can't be edited or deleted here: change it in that calendar, or remove the link from your imported calendars below."

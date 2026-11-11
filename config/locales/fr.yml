@@ -639,5 +639,6 @@ fr:
     imported_event:
       title: "Événement importé"
       from: "Importé depuis un calendrier lié ({host})."
+      from_unknown: "Importé depuis un calendrier lié."
       all_day: "Toute la journée"
       explanation: "Il ne peut pas être modifié ni supprimé ici : modifiez-le dans ce calendrier, ou retirez le lien de vos calendriers importés ci-dessous."

@@ -12,8 +12,11 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
   timeTarget: HTMLElement,
   descriptionTarget: HTMLElement,
   sourceTarget: HTMLElement,
-  fromValue: string,
-  allDayValue: string,
+  sourceTemplateValue: string,
+  sourceUnknownValue: string,
+  allDayLabelValue: string,
+  localeValue: string,
+  returnFocusTo: HTMLElement | null,
 }} */ (/** @type {unknown} */ (Controller));
 
 // A read-only dialog for an event imported from a linked calendar. The
@@ -22,25 +25,32 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
 // and it only touches its own element.
 export default class extends TypedController {
   static targets = ["title", "time", "description", "source"];
-  static values = { from: String, allDay: String };
+  static values = {
+    sourceTemplate: String,
+    sourceUnknown: String,
+    allDayLabel: String,
+    locale: String,
+  };
+
+  connect() {
+    this.returnFocusTo = null;
+  }
 
   // The event is the calendar's: its title, Toronto-time start and end
   // strings, all-day flag, and the link host and description it carries.
   // The element given as returnFocusTo gets the focus back when the dialog
   // closes.
   show(calendarEvent, returnFocusTo = null) {
-    const { sourceHost = "", description = "" } =
-      calendarEvent.extendedProps || {};
+    const { sourceHost, description } = calendarEvent.extendedProps;
     this.returnFocusTo = returnFocusTo;
 
     this.titleTarget.textContent = calendarEvent.title;
     this.timeTarget.textContent = this.timeText(calendarEvent);
-    this.descriptionTarget.textContent = description || "";
+    this.descriptionTarget.textContent = description;
     this.descriptionTarget.hidden = !description;
-    this.sourceTarget.textContent = this.fromValue.replace(
-      "{host}",
-      sourceHost || "",
-    );
+    this.sourceTarget.textContent = sourceHost
+      ? this.sourceTemplateValue.replace("{host}", sourceHost)
+      : this.sourceUnknownValue;
 
     Modal.getOrCreateInstance(this.element).show();
   }
@@ -64,7 +74,7 @@ export default class extends TypedController {
       last > start
         ? `${this.dateText(start)} – ${this.dateText(last)}`
         : this.dateText(start);
-    return `${days} · ${this.allDayValue}`;
+    return `${days} · ${this.allDayLabelValue}`;
   }
 
   timedText(start, end) {
@@ -89,7 +99,7 @@ export default class extends TypedController {
   }
 
   format(wall, options) {
-    const locale = this.element.ownerDocument.documentElement.lang || "en";
+    const locale = this.localeValue;
     return new Intl.DateTimeFormat(locale, {
       timeZone: "UTC",
       ...options,

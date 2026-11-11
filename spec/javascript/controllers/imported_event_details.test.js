@@ -13,7 +13,7 @@ const { default: ImportedEventDetails } =
   await import("../../../app/javascript/controllers/imported_event_details_controller.js");
 
 const PAGE = `
-<div id="dialog" data-controller="imported-event-details" data-imported-event-details-from-value="Imported from a linked calendar ({host})." data-imported-event-details-all-day-value="All day" data-action="hidden.bs.modal->imported-event-details#returnFocus">
+<div id="dialog" data-controller="imported-event-details" data-imported-event-details-source-template-value="Imported from a linked calendar ({host})." data-imported-event-details-source-unknown-value="Imported from a linked calendar." data-imported-event-details-all-day-label-value="All day" data-imported-event-details-locale-value="en" data-action="hidden.bs.modal->imported-event-details#returnFocus">
   <h5 data-imported-event-details-target="title"></h5>
   <p data-imported-event-details-target="time"></p>
   <p data-imported-event-details-target="description"></p>
@@ -145,6 +145,35 @@ describe("imported event details dialog", () => {
     });
     expect(text("time")).toContain("Mar 17, 2027");
     expect(text("time")).toContain("Mar 18, 2027");
+  });
+
+  it("says a link whose host is not known is a linked calendar, and shows no description when it has none", async () => {
+    const controller = await boot();
+    controller.show({
+      title: "x",
+      startStr: "2027-03-17T13:00:00-04:00",
+      endStr: undefined,
+      allDay: false,
+      extendedProps: { sourceHost: null },
+    });
+    expect(text("source")).toBe("Imported from a linked calendar.");
+    expect(text("description")).toBe("");
+    expect(text("time")).toBe("Mar 17, 2027, 1:00 PM");
+  });
+
+  it("formats the time in the locale it is given", async () => {
+    const controller = await boot();
+    document.getElementById("dialog").dataset.importedEventDetailsLocaleValue =
+      "fr";
+    await settle();
+    controller.show({
+      title: "x",
+      startStr: "2027-03-17",
+      endStr: "2027-03-18",
+      allDay: true,
+      extendedProps: {},
+    });
+    expect(text("time")).toContain("mars");
   });
 
   it("gives the focus back to the element that opened it when it closes", async () => {
