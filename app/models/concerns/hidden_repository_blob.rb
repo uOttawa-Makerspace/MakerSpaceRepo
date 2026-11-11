@@ -2,9 +2,9 @@
 
 # Added to ActiveStorage::Blob (config/initializers/hidden_repository_file_guard.rb).
 module HiddenRepositoryBlob
-  # What can make a stored file belong to a repository: the repository itself, its photos and files, and the
-  # variants made from those (a variant is a blob of its own, attached to a VariantRecord).
-  REPOSITORY_OWNERS = %w[Repository Photo RepoFile ActiveStorage::VariantRecord].freeze
+  # What can make a stored file belong to a repository: its photos and files, and the variants made from
+  # those (a variant is a blob of its own, attached to a VariantRecord). A repository has no attachments of its own.
+  REPOSITORY_OWNERS = %w[Photo RepoFile ActiveStorage::VariantRecord].freeze
 
   # True when the stored file belongs only to hidden repositories: it must not be served. A file that
   # is also attached to something visible, or to nothing to do with repositories, is served. One query
@@ -21,7 +21,6 @@ module HiddenRepositoryBlob
 
   def hidden_repository_owner?(type, owner_id)
     case type
-    when "Repository" then Repository.hidden.exists?(owner_id)
     when "Photo", "RepoFile" then type.constantize.where(id: owner_id, repository_id: Repository.hidden.select(:id)).exists?
     when "ActiveStorage::VariantRecord" then hidden_variant_original?(owner_id)
     else false
