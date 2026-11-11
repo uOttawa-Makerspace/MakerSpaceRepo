@@ -251,6 +251,11 @@ module PageCrawl
       make(:locker) { create(:locker) }
       make(:locker_rental) { create(:locker_rental, :active, rented_by: records[:target], locker: records[:locker]) }
       make(:volunteer_task) { create(:volunteer_task, space: records[:space]) }
+      # the volunteer directory lists active and inactive volunteers with their rows
+      make(:volunteers) do
+        [create(:program, :volunteer_program, user: records[:target], active: true),
+         create(:program, :volunteer_program, user: create(:user, :regular_user), active: false)]
+      end
       make(:volunteer_hour) { create(:volunteer_hour, user: records[:target]) }
       make(:key) { create(:key, space: records[:space]) }
       make(:key_request) do
