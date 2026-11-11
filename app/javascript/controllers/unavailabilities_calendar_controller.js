@@ -47,6 +47,13 @@ export default class extends TypedController {
     });
   }
 
+  // Only the staff member's own unavailabilities can be edited; an event
+  // imported from a calendar feed is shown but does nothing when clicked.
+  editOwn(event) {
+    if (event.extendedProps?.eventType !== "unavailability") return;
+    this.unavailabilityFormOutlet.openForEdit(event);
+  }
+
   calendarOptions() {
     return {
       plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin, interactionPlugin],
@@ -63,8 +70,7 @@ export default class extends TypedController {
       selectMinDistance: 30,
       height: "80vh",
       events: this.feedUrlValue,
-      eventClick: (info) =>
-        this.unavailabilityFormOutlet.openForEdit(info.event),
+      eventClick: (info) => this.editOwn(info.event),
       select: (info) =>
         this.unavailabilityFormOutlet.openForRange({
           start: info.startStr,

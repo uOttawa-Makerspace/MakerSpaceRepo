@@ -349,6 +349,7 @@ RSpec.describe "Staff unavailabilities", type: :request do
         titles = response.parsed_body.map { |r| r["title"] }
         expect(titles).to eq(["External - Dentist"])
         expect(response.parsed_body.first["extendedProps"]["name"]).to eq("#{staff.name} External Unavailability")
+        expect(response.parsed_body.first["extendedProps"]).not_to have_key("eventType")
       end
 
       it "silently drops an external feed that fails to download" do

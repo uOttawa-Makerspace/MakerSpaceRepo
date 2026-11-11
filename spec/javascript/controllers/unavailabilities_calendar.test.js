@@ -124,10 +124,20 @@ describe("staff unavailabilities calendar", () => {
 
   it("opens the unavailability dialog for a clicked event and a selected range", async () => {
     const cal = await boot();
-    cal.options.eventClick({ event: { id: "e" } });
+    const own = { id: "e", extendedProps: { eventType: "unavailability" } };
+    cal.options.eventClick({ event: own });
     cal.options.select({ startStr: "s", endStr: "t" });
-    expect(form.openForEdit).toHaveBeenCalledWith({ id: "e" });
+    expect(form.openForEdit).toHaveBeenCalledWith(own);
     expect(form.openForRange).toHaveBeenCalledWith({ start: "s", end: "t" });
+  });
+
+  it("does not open the edit dialog for an event imported from a calendar feed", async () => {
+    form.openForEdit.mockClear();
+    const cal = await boot();
+    cal.options.eventClick({
+      event: { id: "a/../b?x#y", extendedProps: { name: "Feed" } },
+    });
+    expect(form.openForEdit).not.toHaveBeenCalled();
   });
 
   it("makes the calendar accessible whenever a view is mounted", async () => {

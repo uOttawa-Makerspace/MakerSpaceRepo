@@ -330,6 +330,20 @@ describe("openForEdit", () => {
     );
   });
 
+  it("encodes an id with reserved characters in the form and delete actions", () => {
+    controller().openForEdit(fcEvent({ id: "a/../b?x#y" }));
+    const encoded = "a%2F..%2Fb%3Fx%23y";
+    expect(form().getAttribute("action")).toBe(
+      `/staff/unavailabilities/${encoded}`,
+    );
+    expect($("delete_single_form").getAttribute("action")).toBe(
+      `/staff/unavailabilities/${encoded}/delete_with_scope`,
+    );
+    expect($("delete_all_form").getAttribute("action")).toBe(
+      `/staff/unavailabilities/${encoded}/delete_with_scope`,
+    );
+  });
+
   it("writes the times in Toronto time", () => {
     controller().openForEdit(fcEvent());
     expect($("start_time_field").value).toBe("2027-03-17T13:00");
