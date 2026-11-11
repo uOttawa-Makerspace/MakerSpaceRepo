@@ -1298,6 +1298,20 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(rental.reload).to have_attributes(owned_until: nil, notified_of_cancellation_at: nil)
     end
 
+    it "is cleared when staff move the locker and the end date together" do
+      log_in!(staff)
+      patch locker_rental_path(rental),
+            params: { locker_rental: { state: "active", locker_id: create(:locker).id, owned_until: 4.months.from_now.to_date.to_s } }
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+      expect(rental.owned_until.to_date).to eq(4.months.from_now.to_date)
+    end
+
+    it "is kept when staff move only the locker" do
+      log_in!(staff)
+      patch locker_rental_path(rental), params: { locker_rental: { state: "active", locker_id: create(:locker).id } }
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+    end
+
     it "is kept when staff move the end date earlier" do
       log_in!(staff)
       patch locker_rental_path(rental), params: { locker_rental: { owned_until: 10.days.ago.to_date.to_s } }
