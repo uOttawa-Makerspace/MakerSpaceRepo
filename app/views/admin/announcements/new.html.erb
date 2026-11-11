@@ -37,10 +37,10 @@
                 </div>
               </div>
               <div class="mb-3 col-md-4"></div>
-              <div class="mb-3 col-md-4 text-center">
+              <div class="mb-3 col-md-4 text-center" data-controller="date-picker">
                 <%= f.label :end_date, 'End Date (Optional)', class: 'form-label' %>
-                <%= f.date_field :end_date, autocomplete: 'off', class: 'form-control mb-3', id: 'end_date', placeholder: 'Select date...' %>
-                <button class="btn btn-danger btn-sm" type="button" onclick="clearEndDate();">Clear End Date</button>
+                <%= f.date_field :end_date, autocomplete: 'off', class: 'form-control mb-3', id: 'end_date', placeholder: 'Select date...', data: { date_picker_target: 'input' } %>
+                <button class="btn btn-danger btn-sm" type="button" data-action="date-picker#clear">Clear End Date</button>
               </div>
               <div class="col-md-4"></div>
             </div>
@@ -54,26 +54,3 @@
     </div>
   </div>
 </section>
-
-<script type="text/javascript">
-  let endDatePicker;
-
-  document.addEventListener('DOMContentLoaded', function() {
-    // Initialize flatpickr
-    endDatePicker = flatpickr("#end_date", {
-      enableTime: false,
-      dateFormat: "Y-m-d",
-      minDate: "today",
-      altInput: true,
-      altFormat: "F j, Y",
-      allowInput: false
-    });
-  });
-
-  // Clear end date function
-  function clearEndDate() {
-    if (endDatePicker) {
-      endDatePicker.clear();
-    }
-  }
-</script>

@@ -28,11 +28,6 @@ module JsErrorCheck
     # the home/changelog hours widget calls /open_hours, which
     # fetches external ICS feeds (unreachable in tests: 500).
     { id: "js-error-07", path: %r{/open_hours}, message: %r{/open_hours - Failed to load resource: .* 500} },
-    # announcements/new inline script uses a global flatpickr that is not loaded.
-    { id: "js-error-08", path: %r{/admin/announcements/new}, message: /announcements\/new \d+:\d+ Uncaught ReferenceError: flatpickr is not defined/ },
-    # admin_training_sessions.js and badges.js bind listeners on missing elements.
-    { id: "js-error-09", path: %r{/assets/admin_training_sessions-}, message: /admin_training_sessions-[\w-]+\.js .*Cannot read properties of null \(reading 'addEventListener'\)/ },
-    { id: "js-error-09", path: %r{/assets/badges-}, message: /badges-[\w-]+\.js .*Cannot read properties of null \(reading 'addEventListener'\)/ },
     # the badge SVG is rendered with empty width/height attributes.
     { id: "js-error-10", path: %r{/badges/\d+}, message: /Error: <svg> attribute (width|height): Unexpected end of attribute/ },
     # the admin calendar script requests its JSON endpoints with an

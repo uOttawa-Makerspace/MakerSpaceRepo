@@ -33,7 +33,9 @@ const PAGE = `
 <svg id="badge"><circle r="1"/></svg>
 <button id="add-to-linkedin"></button>
 <button id="downloadSVG"></button>
-<button id="downloadPNG"></button>`;
+<button id="downloadPNG"></button>
+<table id="badge-table"></table>
+<table id="awarded-badge-table"></table>`;
 
 async function load(page = PAGE) {
   document.body.innerHTML = page;
@@ -59,6 +61,18 @@ describe("selects and tables", () => {
     expect(byEl("pp2")).toBeDefined();
     expect(byEl("grant_user_select")).toBeDefined();
     expect(byEl("revoke_user_select")).toBeDefined();
+    expect(tables).toEqual(["#badge-table", "#awarded-badge-table"]);
+  });
+
+  it("creates no table and does not throw on a page without the tables", async () => {
+    const withoutTables = PAGE.replace(/<table[^>]*><\/table>/g, "");
+    await expect(load(withoutTables)).resolves.toBeUndefined();
+    expect(tables).toEqual([]);
+  });
+
+  it("does not throw on a page without the download and LinkedIn buttons", async () => {
+    const withoutButtons = PAGE.replace(/<button[^>]*><\/button>/g, "");
+    await expect(load(withoutButtons)).resolves.toBeUndefined();
     expect(tables).toEqual(["#badge-table", "#awarded-badge-table"]);
   });
 

@@ -121,8 +121,8 @@ RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
       end
       expect(page).to have_content("Completed (Waiting for Payment)")
       expect(page).to have_content("Price: $15.00") # 12.50 base fee + 2.50 option
-      # the Invoice button label shows its icon markup as text
-      expect(page).to have_link("<i class='fa fa-download'></i> Invoice")
+      expect(page).to have_link("Invoice")
+      expect(page).to have_css("a[href='#{job_order_invoice_path(job_order_id: order.id)}'] i.fa-download")
       accept_confirm { click_button "Mark as Paid" }
       expect(page).to have_content("Paid (Waiting for Pick-Up)")
       accept_confirm { click_button "Mark as Picked Up" }

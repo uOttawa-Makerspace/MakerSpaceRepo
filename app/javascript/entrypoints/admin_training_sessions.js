@@ -1,6 +1,6 @@
 const { debounce } = /** @type {any} */ (window);
 
-document.getElementById("training_session_searchbar").addEventListener(
+document.getElementById("training_session_searchbar")?.addEventListener(
   "keyup",
   debounce(function (e) {
     let formData = document.getElementById("training_session_searchbar").value;
