@@ -14,6 +14,15 @@ class Membership
     extend ActiveSupport::Concern
 
     class_methods do
+      # Member and tier pairs that have more than one pending membership, as [user_id, tier_id, [membership ids]],
+      # oldest first. Reads only.
+      def pending_duplicates
+        pending.group_by { |m| [m.user_id, m.membership_tier_id] }
+               .select { |_pair, rows| rows.size > 1 }
+               .map { |(user_id, tier_id), rows| [user_id, tier_id, rows.map(&:id).sort] }
+               .sort
+      end
+
       # The Shopify invoice URL that pays the user's pending membership for the tier (made now if there is none).
       # Shopify not answering raises.
       def begin_purchase(user, tier_id)
