@@ -38,7 +38,7 @@
               </div>
               <div class="mb-3 col-md-4"></div>
               <div class="mb-3 col-md-4 text-center" data-controller="date-picker">
-                <%= f.label :end_date, 'End Date (Optional)', class: 'form-label' %>
+                <%= f.label :end_date, 'End Date (Optional)', for: 'end_date', class: 'form-label' %>
                 <%= f.date_field :end_date, autocomplete: 'off', class: 'form-control mb-3', id: 'end_date', placeholder: 'Select date...', data: { date_picker_target: 'input' } %>
                 <button class="btn btn-danger btn-sm" type="button" data-action="date-picker#clear">Clear End Date</button>
               </div>

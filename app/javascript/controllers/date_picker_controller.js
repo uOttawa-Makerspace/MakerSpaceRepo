@@ -16,10 +16,20 @@ export default class extends Controller {
       altFormat: "F j, Y",
       allowInput: false,
     });
+    this.labelVisibleInput(input);
   }
 
   disconnect() {
     this.picker?.destroy();
+  }
+
+  // flatpickr hides the original input and shows a copy without an id, which leaves the
+  // label pointing at a hidden field. Point the label at the visible copy instead.
+  labelVisibleInput(input) {
+    const label = this.element.querySelector(`label[for="${input.id}"]`);
+    if (!label) return;
+    this.picker.altInput.id = `${input.id}_display`;
+    label.setAttribute("for", this.picker.altInput.id);
   }
 
   clear() {
