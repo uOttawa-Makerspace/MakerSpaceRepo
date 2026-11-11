@@ -202,11 +202,25 @@ RSpec.describe Membership, type: :model do
       expect(fake.calls.size).to eq(2) # one create, one fetch
     end
 
-    it "#checkout_link raises when no draft order exists after one was created" do
-      stub_shopify_admin!
+    it "#checkout_link serves the draft from its own creation even when Shopify does not show it yet, once" do
+      fake = stub_shopify_admin!
+      fake.draft_missing = true
       m = create(:membership, user: user, membership_tier: tier, status: "pending")
-      allow(m).to receive(:create_and_store_remote_draft_order)
-      expect { m.checkout_link }.to raise_error(/no draft order/)
+      expect(m.checkout_link).to eq(fake.invoice_url)
+      expect(fake.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
+      expect(fake.deleted_ids).to be_empty
+      expect(m.reload).to be_pending
+      expect(m.shopify_draft_order_id).to eq(fake.draft_id)
+    end
+
+    it "#checkout_link deletes its new draft and raises when the membership can no longer take one" do
+      fake = stub_shopify_admin!
+      m = create(:membership, user: user, membership_tier: tier, status: "pending")
+      allow(m).to receive(:create_remote_draft_order).and_wrap_original do |original, *args|
+        original.call(*args).tap { Membership.where(id: m.id).update_all(status: "revoked") }
+      end
+      expect { m.checkout_link }.to raise_error(/no draft order to serve/)
+      expect(fake.deleted_ids).to eq([fake.draft_id])
     end
 
     it "#checkout_link raises when Shopify does not answer the draft order check" do
@@ -216,11 +230,14 @@ RSpec.describe Membership, type: :model do
       expect { m.checkout_link }.to raise_error(/did not answer/)
     end
 
-    it "#checkout_link is nil for a draft Shopify no longer has" do
+    it "#checkout_link replaces a draft Shopify no longer has, keeping the membership pending" do
       fake = stub_shopify_admin!
       fake.missing_ids << "gid://shopify/DraftOrder/9001"
+      fake.draft_id = "gid://shopify/DraftOrder/9002"
       m = create(:membership, user: user, membership_tier: tier, status: "pending", shopify_draft_order_id: "gid://shopify/DraftOrder/9001")
-      expect(m.checkout_link).to be_nil
+      expect(m.checkout_link).to eq(fake.invoice_url)
+      expect(m.reload).to be_pending
+      expect(m.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
     end
 
     describe ".begin_purchase" do
@@ -283,34 +300,32 @@ RSpec.describe Membership, type: :model do
         expect(fake.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
       end
 
-      it "marks the checkout failed and starts a new one when its draft is gone" do
+      it "replaces a draft Shopify no longer has on the same checkout, without a failed row" do
         Membership.begin_purchase(user, tier.id)
         fake.missing_ids << old_id
         fake.draft_id = new_id
+        fake.invoice_urls[new_id] = "https://shop.example.test/invoices/new"
 
-        Membership.begin_purchase(user, tier.id)
+        expect(Membership.begin_purchase(user, tier.id)).to eq("https://shop.example.test/invoices/new")
 
-        expect(user.memberships.failed.sole.shopify_draft_order_id).to eq(old_id)
-        expect(user.memberships.pending.sole.shopify_draft_order_id).to eq(new_id)
+        expect(user.memberships.sole).to be_pending
+        expect(user.memberships.sole.shopify_draft_order_id).to eq(new_id)
+        expect(user.memberships.failed).to be_empty
+        expect(fake.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(2)
       end
 
-      it "does not fail a checkout whose draft was replaced by another request, and uses that checkout" do
+      it "serves the draft another request stored when this one holds an out-of-date row" do
         Membership.begin_purchase(user, tier.id)
         stale = Membership.find(user.memberships.sole.id)
-        stale.update_column(:shopify_draft_order_id, old_id)
-        Membership.find(stale.id).update_column(:shopify_draft_order_id, new_id)
+        Membership.where(id: stale.id).update_all(shopify_draft_order_id: new_id)
+        fake.invoice_urls[new_id] = "https://shop.example.test/invoices/winner"
         fake.missing_ids << old_id
 
-        expect(stale.checkout_link).to be_nil
+        expect(stale.checkout_link).to eq("https://shop.example.test/invoices/winner")
 
-        expect(stale.reload).to be_pending
-        expect(Membership.begin_purchase(user, tier.id)).to eq(fake.invoice_url)
-        expect(user.memberships.count).to eq(1)
-      end
-
-      it "raises rather than loop when the checkout keeps changing under it" do
-        allow_any_instance_of(Membership).to receive(:checkout_link).and_return(nil)
-        expect { Membership.begin_purchase(user, tier.id) }.to raise_error(/did not settle/)
+        expect(user.memberships.sole.shopify_draft_order_id).to eq(new_id)
+        expect(user.memberships.failed).to be_empty
+        expect(fake.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
       end
     end
 
@@ -368,18 +383,11 @@ RSpec.describe Membership, type: :model do
 
     describe "status changes from pending" do
       %w[paid failed revoked].each do |status|
-        it "mark_failed_if_pending and mark_paid_if_pending leave a #{status} membership as it is" do
+        it "mark_paid_if_pending leaves a #{status} membership as it is" do
           m = create(:membership, user: user, membership_tier: tier, status: status)
-          expect(m.mark_failed_if_pending).to be(false)
           expect(m.mark_paid_if_pending).to be(false)
           expect(m.reload.status).to eq(status)
         end
-      end
-
-      it "mark_failed_if_pending fails a pending membership" do
-        m = create(:membership, user: user, membership_tier: tier, status: "pending")
-        expect(m.mark_failed_if_pending).to be(true)
-        expect(m.reload.status).to eq("failed")
       end
     end
 

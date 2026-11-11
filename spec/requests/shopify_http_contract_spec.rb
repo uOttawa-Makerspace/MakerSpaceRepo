@@ -31,8 +31,8 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
                                duration: 120, internal_price: 25, external_price: 40)
     end
 
-    it "creates the draft order then fetches its invoice URL, and redirects the user to it" do
-      creates = stub_draft_order_create(draft_id)
+    it "creates the draft order, takes the invoice URL from its answer without fetching it, and redirects the user to it" do
+      creates = stub_draft_order_create(draft_id, invoice_url: invoice_url)
       fetches = stub_draft_order_fetch(draft_id, invoice_url: invoice_url)
       shop_log_in!(user)
 
@@ -59,6 +59,11 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
         }
       )
 
+      expect(create[:body]["query"]).to include("invoiceUrl")
+      expect(fetches).to be_empty
+
+      post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+      expect(response.location).to eq(invoice_url)
       expect(fetches.size).to eq(1)
       fetch = fetches.first
       expect_shopify_auth(fetch)
@@ -241,8 +246,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       expect(ShopifyAPI::Context.api_version).to eq("")
       load Rails.root.join("config/initializers/shopify_api.rb")
 
-      creates = stub_draft_order_create(draft_id)
-      stub_draft_order_fetch(draft_id, invoice_url: invoice_url)
+      creates = stub_draft_order_create(draft_id, invoice_url: invoice_url)
       expect(membership_for_checkout.checkout_link).to eq(invoice_url)
 
       expect(creates.size).to eq(1)
@@ -260,8 +264,7 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
       allow(Rails.application.credentials).to receive(:dig).with(:test, :shopify)
                                                             .and_return(ShopifyHttpHelpers::FAKE_SHOPIFY_CONFIG)
 
-      creates = stub_draft_order_create(draft_id)
-      stub_draft_order_fetch(draft_id, invoice_url: invoice_url)
+      creates = stub_draft_order_create(draft_id, invoice_url: invoice_url)
       expect(membership_for_checkout.checkout_link).to eq(invoice_url)
       expect(creates.first[:url]).to eq("https://fake-shop.myshopify.com/admin/api/2025-01/graphql.json")
     end

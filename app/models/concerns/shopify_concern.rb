@@ -278,7 +278,7 @@ module ShopifyConcern
       fetch_shopify_draft_order
     end
 
-    # Creates the draft on Shopify and returns [its gid, the line items sent]; stores nothing, so a caller that must
+    # Creates the draft on Shopify and returns [its gid, the line items sent, its invoice URL]; stores nothing, so a caller that must
     # decide under a lock whether to keep it (LockerRental#checkout_link) can do the Shopify call outside the lock.
     def create_remote_draft_order
       create_draft_order = <<~QUERY
@@ -286,6 +286,7 @@ module ShopifyConcern
           draftOrderCreate(input: $input) {
             draftOrder {
               id
+              invoiceUrl
             }
             userErrors {
               field
@@ -316,7 +317,7 @@ module ShopifyConcern
         raise "No draft order data received: #{resp.body}"
       end
 
-      [draft_order_data["id"], variables.dig(:input, :lineItems)]
+      [draft_order_data["id"], variables.dig(:input, :lineItems), draft_order_data["invoiceUrl"]]
     end
 
     # The tags of the draft: the environment's operating tag (what the paid webhook routes on). A model may add

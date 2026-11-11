@@ -123,13 +123,48 @@ RSpec.describe Membership, "purchase under concurrency", type: :model do
     expect(paid.last.start_date).to eq(paid.first.end_date)
   end
 
-  it "does not fail a checkout whose draft another request replaced while this one was asking Shopify about it" do
+  it "serves one new draft to two requests that both find the stored draft gone, one of them stopped after its delete" do
     old_id = "gid://shopify/DraftOrder/1"
     new_id = "gid://shopify/DraftOrder/2"
     membership = Membership.claim_pending(member, tier.id)
     membership.update_column(:shopify_draft_order_id, old_id)
-    fake.draft_prices[new_id] = tier.price(member).to_s
     fake.missing_ids << old_id
+    fake.draft_id = new_id
+    fake.invoice_urls[new_id] = "https://shop.example.test/invoices/new"
+
+    first = nil
+    paused = Queue.new
+    resume = Queue.new
+    allow_any_instance_of(Membership).to receive(:delete_draft).and_wrap_original do |original, *args|
+      result = original.call(*args)
+      if Thread.current == first
+        first = nil
+        paused << true
+        resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
+      end
+      result
+    end
+
+    one = in_thread do
+      first = Thread.current
+      Membership.find(membership.id).checkout_link
+    end
+    ThreadPause.await(paused)
+    two_link = Membership.find(membership.id).checkout_link
+    resume << true
+
+    expect(two_link).to eq("https://shop.example.test/invoices/new")
+    expect(one.value).to eq("https://shop.example.test/invoices/new")
+    expect(Membership.where(user_id: member.id).pluck(:status, :shopify_draft_order_id)).to eq([["pending", new_id]])
+    expect(fake.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
+  end
+
+  it "serves the old draft when its payment is applied while the checkout is being repriced" do
+    old_id = fake.draft_id
+    membership = Membership.claim_pending(member, tier.id)
+    link = Membership.find(membership.id).checkout_link
+    tier.update!(external_price: 55)
+    fake.draft_id = "gid://shopify/DraftOrder/2"
 
     first = nil
     paused = Queue.new
@@ -149,10 +184,13 @@ RSpec.describe Membership, "purchase under concurrency", type: :model do
       Membership.begin_purchase(User.find(member.id), tier.id)
     end
     ThreadPause.await(paused)
-    Membership.where(id: membership.id).update_all(shopify_draft_order_id: new_id)
+    fake.lose_delete_race = :paid # Shopify completes the draft as the delete arrives
+    expect(Membership.find(membership.id).mark_paid_if_pending).to be(true)
     resume << true
 
-    expect(one.value).to eq(fake.invoice_url)
-    expect(Membership.where(user_id: member.id).pluck(:status, :shopify_draft_order_id)).to eq([["pending", new_id]])
+    expect(one.value).to eq(link)
+    paid = Membership.find(membership.id)
+    expect([paid.status, paid.shopify_draft_order_id]).to eq(["paid", old_id])
+    expect(fake.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
   end
 end

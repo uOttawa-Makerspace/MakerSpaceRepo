@@ -20,7 +20,7 @@ module ShopSpecHelpers
   class FakeShopifyAdmin
     Response = Struct.new(:code, :body)
     attr_reader :calls
-    attr_accessor :draft_status, :delete_user_errors, :draft_missing, :delete_returns_nothing, :missing_ids, :invoice_url, :draft_id, :fully_paid, :user_errors, :metafields, :status, :draft_statuses, :draft_pages, :fixed_cursor, :lose_delete_race, :on_query, :draft_prices
+    attr_accessor :draft_status, :delete_user_errors, :draft_missing, :delete_returns_nothing, :missing_ids, :invoice_url, :draft_id, :fully_paid, :user_errors, :metafields, :status, :draft_statuses, :draft_pages, :fixed_cursor, :lose_delete_race, :on_query, :draft_prices, :invoice_urls
 
     def initialize
       @calls = []
@@ -35,6 +35,7 @@ module ShopSpecHelpers
       @delete_returns_nothing = false
       @missing_ids = []
       @draft_status = "OPEN"
+      @invoice_urls = {} # draft gid => invoice URL (default @invoice_url)
       @draft_prices = {} # draft gid => unit price of its first line, remembered from draftOrderCreate
       @draft_statuses = {} # draft gid => status, for the getDraftOrder answer (default @draft_status)
       @draft_pages = [] # the draftOrders listing: one Array of { "id", "status", "tags" } nodes per page
@@ -61,7 +62,7 @@ module ShopSpecHelpers
       elsif query.include?("draftOrderCreate")
         @draft_prices[@draft_id] = variables.dig(:input, :lineItems, 0, :originalUnitPrice)
         Response.new(200, { "data" => { "draftOrderCreate" => {
-          "draftOrder" => (@user_errors.empty? ? { "id" => @draft_id } : nil), "userErrors" => @user_errors
+          "draftOrder" => (@user_errors.empty? ? { "id" => @draft_id, "invoiceUrl" => @invoice_urls.fetch(@draft_id, @invoice_url) } : nil), "userErrors" => @user_errors
         } } })
       elsif query.include?("draftOrderDelete") && @lose_delete_race
         id = variables.dig(:input, :id)
@@ -77,7 +78,7 @@ module ShopSpecHelpers
         price = @draft_prices[variables[:id]]
         line_items = price ? { "nodes" => [{ "originalUnitPriceSet" => { "shopMoney" => { "amount" => price } } }] } : { "nodes" => [] }
         Response.new(200, { "data" => { "draftOrder" => {
-          "id" => @draft_id, "invoiceUrl" => @invoice_url, "status" => @draft_statuses.fetch(variables[:id], @draft_status),
+          "id" => variables[:id], "invoiceUrl" => @invoice_urls.fetch(variables[:id], @invoice_url), "status" => @draft_statuses.fetch(variables[:id], @draft_status),
           "tags" => @draft_pages.flatten.find { |n| n["id"] == variables[:id] }&.fetch("tags", nil) || [],
           "lineItems" => line_items,
           "order" => { "id" => "gid://shopify/Order/1", "fullyPaid" => @fully_paid }

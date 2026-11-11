@@ -187,16 +187,15 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(admin_client.deleted_ids).to eq(["gid://shopify/DraftOrder/9001"])
       end
 
-      it "marks a pending membership whose draft order no longer exists failed and starts a new one" do
+      it "gives a pending membership whose draft order no longer exists a new draft order, on the same membership" do
         post memberships_path, params: { membership: { membership_tier_id: tier.id } }
-        old = user.memberships.first
-        admin_client.missing_ids << old.shopify_draft_order_id
+        membership = user.memberships.sole
+        admin_client.missing_ids << membership.shopify_draft_order_id
         admin_client.draft_id = "gid://shopify/DraftOrder/9002"
         post memberships_path, params: { membership: { membership_tier_id: tier.id } }
-        expect(old.reload.status).to eq("failed")
-        expect(old.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
-        fresh = user.memberships.pending.sole
-        expect(fresh.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
+        expect(user.memberships.sole).to eq(membership)
+        expect(membership.reload).to be_pending
+        expect(membership.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
         expect(response.location).to eq("https://shop.example.test/invoices/abc")
       end
 

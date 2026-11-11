@@ -40,11 +40,6 @@ class Membership < ApplicationRecord
     end
   end
 
-  # Pending -> failed, the same way; a paid, revoked or failed membership is never touched.
-  def mark_failed_if_pending
-    change_if_pending({}, status: 'failed')
-  end
-
   def membership_title
     membership_tier.title(I18n.locale)
   end
