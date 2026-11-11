@@ -13,9 +13,12 @@ class PopularHour < ApplicationRecord
   # Folds the head count of the hour in progress into the running mean of its (weekday, hour) row, for every
   # space that has people in it. Weekday and hour are read in Time.zone, the same zone the lab session window
   # is cut in, so the row does not depend on the host's clock. Run hourly (config/recurring.yml). The hours it
-  # has recorded are noted in Setting, so a backfill leaves them alone.
+  # has recorded are noted in Setting, so a backfill leaves them alone, and a second run in an hour that is already
+  # recorded does nothing.
   def self.record_current_hour!(now = Time.zone.now)
     with_fold_lock do
+      next if recorded_live?(now)
+
       record_hour!(now)
       note_live_run(now)
     end
@@ -77,19 +80,29 @@ class PopularHour < ApplicationRecord
   end
   private_class_method :note_live_run
 
+  def self.recorded_live?(now)
+    through = Setting.get(LIVE_THROUGH_KEY).presence
+    through.present? && Time.zone.parse(through) >= now.beginning_of_hour
+  end
+  private_class_method :recorded_live?
+
+  # Average visits per matching weekday for each (weekday, hour) of each space over the period. created_at is
+  # stored in UTC, so weekday and hour are read in the app time zone, the same zone the hourly counter uses.
   def self.popular_hours_per_period(start_date, end_date)
     lab_sessions_in_space =
       LabSession.between_dates_picked(
         start_date.beginning_of_day,
         end_date.end_of_day
       )
+    zone = Time.zone.tzinfo.identifier
     data = {}
     Space.all.each do |space|
       data[space.id] = {}
       (0..6).each do |weekday|
         s =
           lab_sessions_in_space.where(
-            "extract(dow from created_at) = ?",
+            "extract(dow from (created_at AT TIME ZONE 'UTC' AT TIME ZONE ?)) = ?",
+            zone,
             weekday
           ).where(space: space)
         data[space.id][weekday] = {}
@@ -98,7 +111,11 @@ class PopularHour < ApplicationRecord
             data[space.id][weekday][hour] = 0
           else
             data[space.id][weekday][hour] = (
-              s.where("extract('hour' from created_at) = ?", hour).count.to_f /
+              s.where(
+                "extract('hour' from (created_at AT TIME ZONE 'UTC' AT TIME ZONE ?)) = ?",
+                zone,
+                hour
+              ).count.to_f /
                 (start_date..end_date).count { |date| weekday == date.wday }
             ).round(2)
           end

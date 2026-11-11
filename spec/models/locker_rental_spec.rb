@@ -986,6 +986,12 @@ RSpec.describe LockerRental, type: :model do
       end
     end
 
+    it "uses the local date: late on 31 December Eastern is still the fall semester" do
+      travel_to(Time.zone.local(2026, 12, 31, 22)) do # 03:00 UTC on 1 January
+        expect(end_of_this_semester).to eq(DateTime.new(2026, 12).end_of_month)
+      end
+    end
+
     it "is applied to the rental by record_payment when owned_until is blank" do
       rental = create(:locker_rental, :await_payment)
       rental.update_column(:owned_until, nil)

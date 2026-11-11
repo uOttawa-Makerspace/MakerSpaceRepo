@@ -196,6 +196,18 @@ RSpec.describe User, type: :model do
       end
     end
 
+    context "around the new year in local time" do
+      include ActiveSupport::Testing::TimeHelpers
+
+      it "counts a user created on 31 December Eastern in that year, late that evening" do
+        travel_to(Time.zone.local(2026, 12, 31, 22)) do # 03:00 UTC on 1 January
+          mine = create(:user, :regular_user, created_at: Time.zone.local(2026, 12, 31, 10))
+          expect(User.created_this_year).to include(mine)
+          expect(User.not_created_this_year).not_to include(mine)
+        end
+      end
+    end
+
     context "#created_this_year" do
       it "should return users created this year" do
         expect {

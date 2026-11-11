@@ -262,8 +262,9 @@ RSpec.describe Admin::ReportGeneratorController, type: :controller, skip_bullet:
       info = ivar(:info)
       expect(info.keys).to eq([alpha.id])
       # 2026-03-10 is a Tuesday (wday 2); two Tuesdays in the 14 days -> 2 visits / 2 days
-      expect(info[alpha.id][2][15]).to eq(1.0)
-      expect(info[alpha.id][2][14]).to eq(0.0)
+      # 15:00 UTC is 11:00 Eastern (daylight time from 8 March)
+      expect(info[alpha.id][2][11]).to eq(1.0)
+      expect(info[alpha.id][2][15]).to eq(0.0)
       expect(controller.params[:report_type]).to eq("popular_hours")
     end
   end

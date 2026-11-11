@@ -27,6 +27,27 @@ RSpec.describe "scheduled maintenance" do
       expect(PopularHour.where(space_id: space.id).where.not(id: popular.id).pluck(:count).uniq - [0, nil]).to be_empty
     end
 
+    it "folds an hour once when the task runs twice in it" do
+      popular = row
+      create(:lab_session, space: space, sign_in_time: now - 10.minutes, sign_out_time: now + 1.hour, created_at: now - 10.minutes)
+
+      PopularHour.record_current_hour!(now)
+      PopularHour.record_current_hour!(now + 3.minutes)
+
+      expect(popular.reload.count).to eq(1)
+    end
+
+    it "folds the next hour after an earlier one was recorded" do
+      popular = row
+      next_hour = row(hour: 16)
+      create(:lab_session, space: space, sign_in_time: now - 10.minutes, sign_out_time: now + 2.hours, created_at: now - 10.minutes)
+
+      PopularHour.record_current_hour!(now)
+      PopularHour.record_current_hour!(now + 1.hour)
+
+      expect([popular.reload.count, next_hour.reload.count]).to eq([1, 1])
+    end
+
     it "leaves a space with nobody in it alone" do
       popular = row
       PopularHour.record_current_hour!(now)

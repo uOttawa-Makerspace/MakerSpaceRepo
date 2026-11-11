@@ -53,8 +53,7 @@ RSpec.describe PopularHour, type: :model do
   end
 
   describe ".popular_hours_per_period" do
-    # the hour/weekday buckets use extract(... from created_at) on the UTC column, so a 10:15 local (Toronto) visit is counted in the 14:00/15:00 UTC bucket
-    it "returns a 7x24 grid per space of average visits per matching weekday in the period (UTC buckets)" do
+    it "returns a 7x24 grid per space of average visits per matching weekday in the period, in local time" do
       space = create(:space)
       # 2027-03-01 is a Monday; a two-week window has 2 Mondays.
       start_date = Date.new(2027, 3, 1)
@@ -66,11 +65,33 @@ RSpec.describe PopularHour, type: :model do
       data = PopularHour.popular_hours_per_period(start_date, end_date)
       expect(data[space.id].keys).to eq((0..6).to_a)
       expect(data[space.id][1].keys).to eq((0..23).to_a)
-      utc_hour = Time.zone.local(2027, 3, 1, 10, 15).utc.hour
-      expect(utc_hour).not_to eq(10)
-      expect(data[space.id][1][utc_hour]).to eq(1.0)
-      expect(data[space.id][1][10]).to eq(0.0)
-      expect(data[space.id][2][utc_hour]).to eq(0.0)
+      expect(data[space.id][1][10]).to eq(1.0)
+      expect(data[space.id][1][Time.zone.local(2027, 3, 1, 10, 15).utc.hour]).to eq(0.0)
+      expect(data[space.id][2][10]).to eq(0.0)
+    end
+
+    it "puts a late-evening local visit on its local weekday, not the next UTC day" do
+      space = create(:space)
+      # Monday 22:30 Eastern is Tuesday 03:30 UTC
+      create(:lab_session, space: space, user: create(:user, :regular_user),
+                           created_at: Time.zone.local(2027, 3, 1, 22, 30))
+      data = PopularHour.popular_hours_per_period(Date.new(2027, 3, 1), Date.new(2027, 3, 7))
+      expect(data[space.id][1][22]).to eq(1.0)
+      expect(data[space.id][2][3]).to eq(0.0)
+    end
+
+    it "keeps the local hour on both sides of the spring daylight-saving change" do
+      space = create(:space)
+      # 2027-03-13 is a Saturday (EST, UTC-5); 2027-03-15 is a Monday (EDT, UTC-4)
+      create(:lab_session, space: space, user: create(:user, :regular_user),
+                           created_at: Time.zone.local(2027, 3, 13, 22, 30))
+      create(:lab_session, space: space, user: create(:user, :regular_user),
+                           created_at: Time.zone.local(2027, 3, 15, 22, 30))
+      data = PopularHour.popular_hours_per_period(Date.new(2027, 3, 13), Date.new(2027, 3, 15))
+      expect(data[space.id][6][22]).to eq(1.0)
+      expect(data[space.id][1][22]).to eq(1.0)
+      expect(data[space.id][0][3]).to eq(0.0)
+      expect(data[space.id][2][2]).to eq(0.0)
     end
 
     it "reports 0 for a weekday that does not occur in the period" do
