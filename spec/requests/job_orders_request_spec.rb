@@ -919,6 +919,18 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(order.reload.assigned_staff).to eq(staff)
     end
 
+    it "does not email again when the same staff member is assigned again" do
+      order = order_with_task!(owner: owner)
+      http_login!(admin)
+      perform_enqueued_jobs do
+        patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+        patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      end
+
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(order.reload.assigned_staff).to eq(staff)
+    end
+
     it "does NOT email when the admin assigns themselves" do
       order = order_with_task!(owner: owner)
       http_login!(admin)

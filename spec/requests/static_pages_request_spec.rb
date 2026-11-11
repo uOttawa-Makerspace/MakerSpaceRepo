@@ -308,6 +308,19 @@ RSpec.describe "Static pages", type: :request do
       expect(recent).not_to include(priv)
     end
 
+    it "renders a card with the owner and photo for each of several recent repositories" do
+      repos = create_list(:repository, 3)
+      get root_path
+      expect(response).to have_http_status(:ok)
+      page = Nokogiri::HTML(response.body)
+      repos.each do |repo|
+        card = page.css("a.card").find { |node| node.text.include?(repo.title) }
+        expect(card).to be_present
+        expect(card.text).to include(repo.owner.username)
+        expect(card.at_css("img")["src"]).to include("active_storage")
+      end
+    end
+
     it "lists contact infos flagged show_hours (name order)" do
       create(:contact_info, name: "Zeta Lab", show_hours: true)
       create(:contact_info, name: "Alpha Lab", show_hours: true)
@@ -328,7 +341,7 @@ RSpec.describe "Static pages", type: :request do
       user.programs.create!(program_type: Program::VOLUNTEER)
       space = create(:space, name: "Task Lab")
       open_task = create(:volunteer_task, space: space, title: "Sweep the workshop floor")
-      closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "closed")
+      closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "completed")
       [open_task, closed_task].each do |task|
         create(:volunteer_task_join, :active, volunteer_task: task, user: user, user_type: "Volunteer")
       end

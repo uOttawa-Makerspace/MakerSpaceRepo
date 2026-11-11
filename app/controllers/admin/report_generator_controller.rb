@@ -215,8 +215,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         end
       )
         .includes(:space)
-        .includes(training_session: %i[course_name training])
-        .includes(training: [:skill])
+        .includes(training_session: [:course_name, { training: :skill }])
     @space_count = {}
     @space_count['unknown'] = 0
 
@@ -226,6 +225,8 @@ class Admin::ReportGeneratorController < AdminAreaController
     @skill_count = {}
 
     @training_count = {}
+
+    preload_project_trainings(@certs)
 
     # For each certification in our database
     @certs.each do |cert|
@@ -257,7 +258,7 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # Count by skill and name
-      skill_name = cert.training.skill.name
+      skill_name, training_name = training_labels(cert)
       if !@skill_count.has_key?(skill_name)
         @skill_count[skill_name] = 1
       else
@@ -265,7 +266,6 @@ class Admin::ReportGeneratorController < AdminAreaController
       end
 
       # get cert training topic (?)
-      training_name = cert.training.name_en
       if !@training_count.has_key?(training_name)
         @training_count[training_name] = 1
       else
@@ -284,7 +284,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           TrainingSession.all
         end
-      ).includes(:training, :space, :user)
+      ).includes(:training, :space)
 
     @training_sessions = @training_sessions.unscope(:order)
 
@@ -467,7 +467,7 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           ProjectKit.all
         end
-      )
+      ).includes(:proficient_project, :user)
 
     @pp_hash = {}
 
@@ -491,8 +491,8 @@ class Admin::ReportGeneratorController < AdminAreaController
         else
           TrainingSession.all
         end
-      ).includes(:users, :user, :trainings)
-    @spaces = Space.order(name: :asc).includes(:certifications)
+      )
+    @spaces = Space.order(name: :asc)
 
     @monthly_average = monthly_attendee_averages(report_days)
   end
@@ -506,19 +506,49 @@ class Admin::ReportGeneratorController < AdminAreaController
     Date.new(2015, 6, 1)..Date.current
   end
 
-  # Certificates per training session for each month that starts within the
-  # days and has certificates, the whole month in the application time zone,
-  # named with its year ("March 2026").
+  # Certificates per training session for each month the days overlap that
+  # has certificates, in the application time zone, named with its year
+  # ("March 2026"). A month the days only partly cover counts the
+  # certificates inside the report window.
   def monthly_attendee_averages(days)
-    months = days.select { |day| day.day == 1 }
+    months = days.map(&:beginning_of_month).uniq
     months.each_with_object({}) do |month, averages|
-      certs = Certification.where(created_at: month.in_time_zone.all_month)
+      certs = certifications_in_month(month)
       count = certs.count
       next if count.zero?
 
       sessions = certs.pluck(:training_session_id).uniq.count
       averages[month.strftime('%B %Y')] = count.to_f / sessions
     end
+  end
+
+  # The training a certificate was earned for: its session's, else its
+  # proficient project's.
+  def certificate_training(cert)
+    cert.training_session&.training ||
+      cert.proficient_project_session&.proficient_project&.training
+  end
+
+  # Certificates earned through a proficient project have no session, so
+  # their training is loaded through the project, for those alone.
+  def preload_project_trainings(certs)
+    sessionless = certs.reject(&:training_session)
+    ActiveRecord::Associations::Preloader.new(
+      records: sessionless,
+      associations: { proficient_project_session: { proficient_project: { training: :skill } } }
+    ).call
+  end
+
+  # The skill and training names a certificate counts under, "unknown" for
+  # one whose training cannot be found.
+  def training_labels(cert)
+    training = certificate_training(cert)
+    [training&.skill&.name || "unknown", training&.name_en || "unknown"]
+  end
+
+  def certifications_in_month(month)
+    certs = Certification.where(created_at: month.in_time_zone.all_month)
+    @date_specified ? certs.where(created_at: @report_window) : certs
   end
 
   def popular_hours
