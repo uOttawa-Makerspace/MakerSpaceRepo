@@ -438,7 +438,6 @@ document.addEventListener("turbo:load", function () {
 
   // ---- Delete (DELETE) ----------------------------------------------------
   function deleteEvent() {
-    if (!confirm("Delete this booking?")) return;
     const id = document.getElementById("sub_space_booking_id").value;
     makeRequest(
       new Request(`/sub_space_booking/${id}/delete/${id}`, {
@@ -453,7 +452,6 @@ document.addEventListener("turbo:load", function () {
   }
 
   function deleteRecurringEvent() {
-    if (!confirm("Delete this and all remaining occurrences?")) return;
     const id = document.getElementById("sub_space_booking_id").value;
     makeRequest(
       new Request(`/sub_space_booking/${id}/delete_remaining_recurring`, {

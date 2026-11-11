@@ -17,6 +17,9 @@ en:
       delete: "Delete the drop-off location \"%{name}\"?"
     bookings:
       delete: "Delete this booking?"
+      delete_remaining: "Delete this and all remaining occurrences?"
+    unsaved_changes:
+      exit: "Are you sure you want to exit? All changes will be lost."
     announcements:
       delete: "Delete this announcement?"
     teams:
@@ -138,6 +141,9 @@ fr:
       delete: "Supprimer le lieu de dépôt « %{name} »?"
     bookings:
       delete: "Supprimer cette réservation?"
+      delete_remaining: "Supprimer cette réservation et toutes les occurrences suivantes?"
+    unsaved_changes:
+      exit: "Voulez-vous vraiment quitter? Toutes les modifications seront perdues."
     announcements:
       delete: "Supprimer cette annonce?"
     teams:

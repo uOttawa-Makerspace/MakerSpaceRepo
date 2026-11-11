@@ -469,7 +469,7 @@ describe("existing booking", () => {
     expect(requests).toEqual([]);
   });
 
-  it("deletes after confirmation and not without it", async () => {
+  it("deletes the booking when the delete button is clicked", async () => {
     const cal = boot();
     stubFetch(() => reply(JSON.stringify(booking())));
     click(cal);
@@ -477,11 +477,6 @@ describe("existing booking", () => {
     requests.length = 0;
     stubFetch(() => reply("{}"));
 
-    vi.stubGlobal("confirm", () => false);
-    $("bookDelete").click();
-    expect(requests).toEqual([]);
-
-    vi.stubGlobal("confirm", () => true);
     $("bookDelete").click();
     await flush();
     expect(requests[0]).toMatchObject({
@@ -491,7 +486,7 @@ describe("existing booking", () => {
     expect(cal.refetched).toBe(1);
   });
 
-  it("deletes the rest of a series after confirmation", async () => {
+  it("deletes the rest of a series from its own button", async () => {
     const cal = boot();
     stubFetch(() =>
       reply(JSON.stringify(booking({ recurring_booking_id: 3 }))),
@@ -501,11 +496,6 @@ describe("existing booking", () => {
     requests.length = 0;
     stubFetch(() => reply("{}"));
 
-    vi.stubGlobal("confirm", () => false);
-    $("bookRecurringDeleteRest").click();
-    expect(requests).toEqual([]);
-
-    vi.stubGlobal("confirm", () => true);
     $("bookRecurringDeleteRest").click();
     await flush();
     expect(requests[0]).toMatchObject({

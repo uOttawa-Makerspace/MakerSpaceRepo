@@ -81,7 +81,7 @@ const T = (name) => `data-unavailability-form-target="${name}"`;
 const A = (action) => `data-action="${action}"`;
 export const UNAVAILABILITY_MODAL_HTML = `
 <div id="content">
-<div class="modal fade" id="unavailabilityModal" data-controller="unavailability-form"
+<div class="modal fade" id="unavailabilityModal" data-controller="unavailability-form" data-unavailability-form-exit-message-value="Are you sure you want to exit? All changes will be lost."
   ${A("hide.bs.modal->unavailability-form#confirmExit hidden.bs.modal->unavailability-form#reset show.bs.modal->unavailability-form#proposeTimes")}>
   <h5 id="unavailabilityModalLabel" ${T("label")}>Add Unavailability</h5>
   <form id="unavailForm" action="/staff/unavailabilities" method="post" ${T("form")} ${A("submit->unavailability-form#sendInstants")}>
