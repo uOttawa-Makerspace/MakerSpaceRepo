@@ -99,6 +99,12 @@ Rehearsed on a copy of a recent backup: 344 rules (18 events, 326 unavailabiliti
 
 The release that adds the unique index on `announcement_dismisses (user_id, announcement_id)` needs no manual step; `web` runs the migration on boot. If any user has more than one dismissal row for the same announcement, the migration stops, changing nothing, and says how many pairs. Remove the extra rows by hand (they are exact repeats), then deploy again. Rolling back only drops the index.
 
+### Deploy step: one pending volunteer hour per submission
+
+The release that adds the partial unique index on `volunteer_hours (user_id, volunteer_task_id, date_of_task, total_time)` for rows with `approval IS NULL` needs no manual step; `web` runs the migration on boot. If a person already has two identical pending hours the migration stops, lists the ids and changes nothing; settle those rows by hand (staff can approve or reject one), then deploy again.
+
+`bundle exec rake volunteer_awards:duplicates` lists, read only, the users who hold more than one task award (`cc_moneys` row) for the same task. It prints ids and changes nothing. No unique index is added on `cc_moneys` until the listing is empty.
+
 ### Failed and overdue job alerts
 
 The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:

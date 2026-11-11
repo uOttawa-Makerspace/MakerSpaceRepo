@@ -242,6 +242,8 @@ fr:
               inclusion: "Vous devez accepter les conditions de la renonciation."
         volunteer_hour:
           attributes:
+            base:
+              duplicate_pending: "Vous avez déjà envoyé ces heures pour cette tâche et ce jour; elles sont en attente de révision."
             volunteer_task_id:
               not_joined: "n'est pas une tâche à laquelle ce bénévole participe ou qu'il a terminée"
         locker_rental:

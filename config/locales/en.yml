@@ -212,6 +212,8 @@ en:
               inclusion: "You must accept the terms of the waiver."
         volunteer_hour:
           attributes:
+            base:
+              duplicate_pending: "You already sent these hours for this task and day; they are awaiting review."
             volunteer_task_id:
               not_joined: "is not a task this volunteer is on or has completed"
         locker_rental:
