@@ -134,6 +134,18 @@ RSpec.describe "users:merge_duplicates" do
     expect(primary.decided_booking_requests).to contain_exactly(declined)
   end
 
+  it "moves the trainer of a session that awarded certifications to the kept user" do
+    kept = create(:user, :staff)
+    trainer = create(:user, :staff)
+    awarded = create(:training_session_with_certifications, user: trainer).reload
+
+    send(:merge_record, kept, trainer)
+
+    expect(User.unscoped.exists?(trainer.id)).to be(false)
+    expect(awarded.reload.user_id).to eq(kept.id)
+    expect(awarded.certifications.count).to eq(2)
+  end
+
   it "keeps one membership of a training session both users attended, and moves the others" do
     shared = create(:training_session)
     only_duplicate = create(:training_session)

@@ -5,8 +5,11 @@ class TrainingSession < ApplicationRecord
   # The instructor, including one whose account was soft-deleted: past sessions keep their instructor.
   belongs_to :user, -> { including_deleted }, optional: true
   belongs_to :space, optional: true
-  has_many :certifications, dependent: :destroy
-  has_many :exams, dependent: :destroy
+  has_many :certifications
+  # Every certification the session awarded, demoted ones too (certifications are active-only by default):
+  # a session that awarded any, or has exams, cannot be deleted.
+  has_many :awarded_certifications, -> { unscope(where: :active) }, class_name: "Certification", dependent: :restrict_with_error
+  has_many :exams, dependent: :restrict_with_error
   # This used to be a has_many
   #has_many :users, through: :training_sessions_users, uniq: true
   has_and_belongs_to_many :users
@@ -17,6 +20,7 @@ class TrainingSession < ApplicationRecord
   validates :level, presence: true
   validates :space, presence: true
   validate :is_staff
+  validate :locked_fields_unchanged, on: :session_edit
   before_save :check_course
 
   default_scope -> { order(updated_at: :desc) }
@@ -79,6 +83,23 @@ class TrainingSession < ApplicationRecord
 
   def completed?
     certifications.any?
+  end
+
+  # Saving with `context: :session_edit` (the staff and admin edit paths) enforces the lock; other writes,
+  # such as merging a duplicate trainer into another account, are not edits of the session.
+  # The fields a certification copies from its session: once the session has awarded any
+  # certification (demoted ones included) they can no longer change.
+  LOCKED_ONCE_AWARDED = %w[training_id level user_id].freeze
+
+  def editable?
+    !awarded_certifications.exists?
+  end
+
+  # True when the attributes would change a locked field of a session that no longer allows it.
+  def locked_change?(attributes)
+    return false if editable?
+
+    attributes.to_h.any? { |name, value| LOCKED_ONCE_AWARDED.include?(name.to_s) && self[name].to_s != value.to_s }
   end
 
   CertifyResult = Struct.new(:duplicates, :failed, :self_skipped, keyword_init: true) do
@@ -154,6 +175,10 @@ class TrainingSession < ApplicationRecord
   end
 
   private
+
+  def locked_fields_unchanged
+    errors.add(:base, :locked_once_awarded) if changed.intersect?(LOCKED_ONCE_AWARDED) && !editable?
+  end
 
   def check_course
     self.course = nil if course == "no course"

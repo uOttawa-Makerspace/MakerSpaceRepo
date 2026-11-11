@@ -336,6 +336,24 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(flash[:notice]).to eq("Proficient Project has been successfully deleted.")
       end
 
+      it "refuses to delete a project whose sessions hold certifications, keeping all of it" do
+        record = create(:proficient_project_session, proficient_project: project)
+        expect { delete proficient_project_path(project) }
+          .not_to change { [ProficientProject.count, ProficientProjectSession.count, Certification.unscoped.count] }
+        expect(Certification.unscoped.exists?(record.certification_id)).to be(true)
+        expect(response).to redirect_to(proficient_project_path(project))
+        expect(flash[:alert]).to start_with("The proficient project was not deleted.")
+        expect(flash[:alert]).to include("proficient project sessions")
+      end
+
+      it "answers 422 for JSON when the project cannot be deleted" do
+        create(:proficient_project_session, proficient_project: project)
+        delete proficient_project_path(project, format: :json)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"].to_sentence).to include("proficient project sessions")
+        expect(ProficientProject.exists?(project.id)).to be(true)
+      end
+
       it "answers 204 for JSON" do
         delete proficient_project_path(project, format: :json)
         expect(response).to have_http_status(:no_content)
@@ -582,7 +600,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "gives each approval its own certification, so deleting one project never destroys another's" do
+    it "gives each approval its own certification" do
       other_project = create(:proficient_project, training: training, level: project.level, title: "Second widget")
       second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
       content_sign_in_as(:admin)
@@ -592,8 +610,8 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       end.to change(Certification, :count).by(1)
       certs = ProficientProjectSession.where(proficient_project: [project, other_project]).pluck(:certification_id)
       expect(certs.uniq.size).to eq(2)
-      ProficientProjectSession.find_by(proficient_project: project).destroy
-      expect(Certification.where(id: certs.last)).to exist
+      expect(ProficientProjectSession.find_by(proficient_project: project).destroy).to be(false)
+      expect(Certification.where(id: certs)).to exist
     end
   end
 

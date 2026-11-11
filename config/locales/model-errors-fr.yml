@@ -4,6 +4,8 @@ fr:
   activerecord:
     errors:
       models:
+        proficient_project_session:
+          holds_certification: "Cette séance détient une certification et ne peut donc pas être supprimée."
         key_request:
           attributes:
             user:
@@ -71,7 +73,11 @@ fr:
             training_id:
               blank: "Une formation doit être sélectionnée"
         training_session:
+          locked_once_awarded: "La formation, le niveau et le formateur ne peuvent plus être modifiés une fois que la séance a délivré des certifications."
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette séance de formation a délivré des certifications ou a des examens, elle ne peut donc pas être supprimée."
             training:
               blank: "Un sujet de formation est requis"
             user:

@@ -49,9 +49,7 @@ class Admin::TrainingsController < AdminAreaController
 
   def destroy
     @changed_training = Training.find(params["id"])
-    flash[
-      :notice
-    ] = "Training removed successfully" if @changed_training.destroy
+    flash_write(@changed_training, "trainings.not_deleted", "Training removed successfully", destroy: true) { @changed_training.destroy }
     redirect_to admin_trainings_path
   end
 

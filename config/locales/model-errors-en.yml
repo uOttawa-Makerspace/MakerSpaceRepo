@@ -4,6 +4,8 @@ en:
   activerecord:
     errors:
       models:
+        proficient_project_session:
+          holds_certification: "This session holds a certification, so it cannot be deleted."
         key_request:
           attributes:
             user:
@@ -71,7 +73,11 @@ en:
             training_id:
               blank: "A training must be selected"
         training_session:
+          locked_once_awarded: "The training, level and trainer cannot be changed once the session has awarded certifications."
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "This training session has awarded certifications or has exams, so it cannot be deleted."
             training:
               blank: "A training subject is required"
             user:

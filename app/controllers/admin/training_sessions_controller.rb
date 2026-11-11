@@ -53,7 +53,8 @@ class Admin::TrainingSessionsController < AdminAreaController
 
   def update
     flash_write(@training_session, "training_sessions.not_updated", "Updated Successfully") do
-      @training_session.update(training_session_params)
+      @training_session.assign_attributes(training_session_params)
+      @training_session.save(context: :session_edit)
     end
     redirect_back(fallback_location: root_path)
   end

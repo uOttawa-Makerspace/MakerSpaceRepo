@@ -195,7 +195,7 @@
           <td><%= training.training_sessions.length %></td>
           <td><%= training.certifications.length %></td>
           <td><%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, admin_training_url(id: training.id), method: :delete, action: :destroy, class: 'btn btn-default',
-                                                                                   data: { confirm: 'Deleting a training will delete ALL its Sessions and Certifications! Ok to confirm' } %></td>
+                                                                                   data: { confirm: t('confirm_delete.training') } %></td>
         </tr>
       <% end %>
     </table>

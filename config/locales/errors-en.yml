@@ -25,6 +25,7 @@ en:
         not_updated: "The training session was not updated."
         not_deleted: "The training session was not deleted."
         certification_not_revoked: "The certification was not removed."
+        locked_once_awarded: "The training, level and trainer of a completed training session cannot be changed."
       my_calendar:
         space_required: "Choose a space to show its calendar."
         space_not_assigned: "You are not assigned to this space."
@@ -75,6 +76,8 @@ en:
       training_sessions:
         not_updated: "The training session was not updated."
         not_deleted: "The training session was not deleted."
+      trainings:
+        not_deleted: "The training was not deleted."
       certifications:
         not_updated: "The certification was not updated."
         not_deleted: "The certification was not deleted."
@@ -186,6 +189,7 @@ en:
         photos_not_read_on_create: "The project was not created because its photos could not be read. Check that they are valid image files and try again."
         photos_not_read_on_update: "The photos could not be read, so they were not added. Your other changes were saved. Check that they are valid image files and try again."
         files_not_pdf: "Make sure you only upload PDFs for the project files"
+        not_deleted: "The proficient project was not deleted."
         not_found: "This project hasn't been found"
         not_in_progress: "This project can only be submitted while it is in progress."
         submit_invalid: "The submission could not be saved. Check the allowed file types:"

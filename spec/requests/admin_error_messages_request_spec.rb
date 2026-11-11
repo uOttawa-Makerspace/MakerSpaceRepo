@@ -89,13 +89,45 @@ RSpec.describe "Admin error messages", type: :request do
       expect(flash[:alert]).to start_with("La séance de formation n'a pas été modifiée. ")
     end
 
-    it "says the session is in use when a record still points at its certifications" do
-      create(:proficient_project_session, level: "Beginner", certification: create(:certification, training_session: session_record))
+    let(:refusal_en) do
+      "The training session was not deleted. " \
+        "This training session has awarded certifications or has exams, so it cannot be deleted."
+    end
+    let(:refusal_fr) do
+      "La séance de formation n'a pas été supprimée. " \
+        "Cette séance de formation a délivré des certifications ou a des examens, elle ne peut donc pas être supprimée."
+    end
+
+    it "says why the session is kept when it awarded certifications, in English and French" do
+      create(:certification, training_session: session_record)
+      delete admin_training_session_path(session_record)
+      expect(flash[:alert]).to eq(refusal_en)
+      delete admin_training_session_path(session_record), params: { locale: "fr" }
+      expect(flash[:alert]).to eq(refusal_fr)
+      expect(TrainingSession.exists?(session_record.id)).to be(true)
+    end
+
+    it "says why the session is kept when its only certification is demoted" do
+      create(:certification, training_session: session_record, active: false)
+      delete admin_training_session_path(session_record)
+      expect(flash[:alert]).to eq(refusal_en)
+    end
+
+    it "says why the session is kept when it has exams, in English and French" do
+      create(:exam, training_session: session_record)
+      delete admin_training_session_path(session_record)
+      expect(flash[:alert]).to eq(refusal_en)
+      delete admin_training_session_path(session_record), params: { locale: "fr" }
+      expect(flash[:alert]).to eq(refusal_fr)
+      expect(TrainingSession.exists?(session_record.id)).to be(true)
+    end
+
+    it "says the session is in use when the database refuses the delete" do
+      allow_any_instance_of(TrainingSession).to receive(:destroy).and_raise(ActiveRecord::InvalidForeignKey)
       delete admin_training_session_path(session_record)
       expect(flash[:alert]).to eq(
         "The training session was not deleted. Other records still use it, so it was left as it is."
       )
-      expect(TrainingSession.exists?(session_record.id)).to be(true)
     end
   end
 

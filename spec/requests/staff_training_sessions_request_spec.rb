@@ -253,6 +253,38 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(record.reload.training_id).to eq(training.id)
       end
 
+      context "when the session already awarded certifications" do
+        let!(:awarded) do
+          create(:training_session_with_certifications, user: trainer, training: training, space: space, level: "Beginner")
+        end
+
+        it "refuses a new training, level or trainer with a message and changes nothing" do
+          other = create(:training, spaces: [space])
+          before = awarded.reload.attributes.slice("training_id", "level", "user_id")
+          [{ level: "Advanced" }, { training_id: other.id }, { user_id: create(:user, :staff).id }].each do |changes|
+            patch staff_training_session_path(awarded), params: { changed_params: changes, added_users: [student.username] }
+            expect(flash[:alert]).to eq("The training, level and trainer of a completed training session cannot be changed.")
+          end
+          expect(awarded.reload.attributes.slice("training_id", "level", "user_id")).to eq(before)
+          expect(awarded.users).not_to include(student)
+          expect(awarded.certifications.map(&:level).uniq).to eq(["Beginner"])
+        end
+
+        it "still accepts a course change" do
+          create(:course_name, name: "Intro")
+          patch staff_training_session_path(awarded), params: { changed_params: { course: "Intro" } }
+          expect(flash[:notice]).to eq("Training session updated succesfully")
+          expect(awarded.reload.course).to eq("Intro")
+        end
+
+        it "hides the edit form on the session page" do
+          get staff_training_session_path(awarded)
+          expect(response.body).not_to include("changed_params[level]")
+          get staff_training_session_path(record)
+          expect(response.body).to include("changed_params[level]")
+        end
+      end
+
       it "answers 404 for a session that no longer exists" do
         id = record.id
         record.destroy
@@ -408,18 +440,60 @@ RSpec.describe "Staff training sessions", type: :request do
     end
 
     describe "DELETE destroy" do
+      let(:refusal_en) do
+        "The training session was not deleted. " \
+          "This training session has awarded certifications or has exams, so it cannot be deleted."
+      end
+      let(:refusal_fr) do
+        "La séance de formation n'a pas été supprimée. " \
+          "Cette séance de formation a délivré des certifications ou a des examens, elle ne peut donc pas être supprimée."
+      end
+
       it "keeps the session and gives the reason when it cannot be destroyed" do
         allow_any_instance_of(TrainingSession).to receive(:destroy) { |s| s.errors.add(:base, "It is in use") && false }
         expect { delete staff_training_session_path(record) }.not_to change(TrainingSession, :count)
         expect(flash[:alert]).to eq("The training session was not deleted. It is in use")
       end
 
-      it "deletes the session, its certifications and exams, redirecting to the staff dashboard" do
+      it "keeps a session that has certifications, and the certifications" do
         cert = create(:certification, training_session: record, training: training)
+        expect { delete staff_training_session_path(record) }
+          .not_to change { [TrainingSession.count, Certification.unscoped.count] }
+        expect(Certification.unscoped.exists?(cert.id)).to be(true)
+        expect(flash[:alert]).to eq(refusal_en)
+      end
+
+      it "gives the reason in French when it has certifications" do
+        create(:certification, training_session: record, training: training)
+        delete staff_training_session_path(record), params: { locale: "fr" }
+        expect(flash[:alert]).to eq(refusal_fr)
+      end
+
+      it "keeps a session whose only certification is demoted, and its exams" do
+        cert = create(:certification, training_session: record, training: training)
+        cert.update!(active: false)
         create(:exam, training_session: record)
         expect { delete staff_training_session_path(record) }
-          .to change(TrainingSession, :count).by(-1).and change(Exam, :count).by(-1)
-        expect(Certification.unscoped.exists?(cert.id)).to be(false)
+          .not_to change { [TrainingSession.count, Certification.unscoped.count, Exam.count] }
+        expect(flash[:alert]).to eq(refusal_en)
+      end
+
+      it "keeps a session that has exams" do
+        create(:exam, training_session: record)
+        expect { delete staff_training_session_path(record) }
+          .not_to change { [TrainingSession.count, Exam.count] }
+        expect(flash[:alert]).to eq(refusal_en)
+      end
+
+      it "gives the reason in French when it has exams" do
+        create(:exam, training_session: record)
+        delete staff_training_session_path(record), params: { locale: "fr" }
+        expect(flash[:alert]).to eq(refusal_fr)
+      end
+
+      it "deletes a session without certifications or exams, redirecting to the staff dashboard" do
+        expect { delete staff_training_session_path(record) }
+          .to change(TrainingSession, :count).by(-1)
         expect(response).to redirect_to(staff_dashboard_index_path)
         expect(flash[:notice]).to eq("Deleted Successfully")
       end

@@ -24,7 +24,7 @@
       <% end %>
     </div>
     <br />
-    <% unless @current_training_session.completed? %>
+    <% if @current_training_session.editable? %>
       <%= form_for staff_training_session_path(@current_training_session), method: 'PATCH', action: 'update' do |f| %>
         <div>Trainer: <%= @staff.name %></div>
         <% if @user.admin? %>
@@ -199,7 +199,7 @@
       <div class="text-center">
     <%= button_to 'Destroy', { action: :destroy },
                   method: :delete,
-                  data: { confirm: 'Cancelling a training session also deletes all corresponding certifications. OK to confirm.' },
+                  data: { confirm: t('confirm_delete.training_session') },
                   class: 'btn btn-danger',
                   style: 'color: #fff;' %>
                 </div>
