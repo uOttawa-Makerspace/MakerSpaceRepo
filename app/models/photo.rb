@@ -17,6 +17,8 @@ class Photo < ApplicationRecord
     attachable.variant :repo_display_wrapper, resize_to_fill: [225*2, 225*2]
   end
 
+  MAX_IMAGE_SIZE = 10.megabytes
+
   ALLOWED_CONTENT_TYPES = %w[
     image/jpeg
     image/png
@@ -30,8 +32,15 @@ class Photo < ApplicationRecord
               if: -> { image_changing? }
             }
   validates :image, presence: true
+  validate :image_within_size_limit, if: :image_changing?
 
   private
+
+  def image_within_size_limit
+    return if attachment_changes['image'].blob.byte_size <= MAX_IMAGE_SIZE
+
+    errors.add(:image, :too_large, max_size: ActiveSupport::NumberHelper.number_to_human_size(MAX_IMAGE_SIZE))
+  end
 
   # Validate only when a different blob is being attached in this save; a form that
   # posts back the blob already attached (signed_id) must not re-check a legacy image.

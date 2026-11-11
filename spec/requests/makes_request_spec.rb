@@ -174,6 +174,15 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(original.reload.make).to eq(0)
     end
 
+    it "rejects a photo over the size limit and saves nothing" do
+      content_login!(maker)
+      big = content_png_upload_of_size(Photo::MAX_IMAGE_SIZE + 1)
+      expect do
+        post makes_create_path(owner.username, original.id), params: make_params(image: big)
+      end.not_to change(Repository, :count)
+      expect(flash[:alert]).to include("larger than 10 MB")
+    end
+
     it "rejects a non-image photo" do
       content_login!(maker)
       expect do

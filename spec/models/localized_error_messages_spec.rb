@@ -290,6 +290,19 @@ RSpec.describe "Localized model error messages" do
     end
   end
 
+  describe Photo do
+    it "localizes the size limit message" do
+      photo = Photo.new(image: { io: StringIO.new("x"), filename: "a.png", content_type: "image/png" })
+      photo.image.blob.byte_size = Photo::MAX_IMAGE_SIZE + 1
+      photo.valid?
+      expect(photo.errors[:image]).to include("is larger than 10 MB")
+      I18n.with_locale(:fr) do
+        photo.valid?
+        expect(photo.errors[:image]).to include("dépasse 10 MB")
+      end
+    end
+  end
+
   describe "staff and event calendars" do
     let(:weekly) { "FREQ=WEEKLY;INTERVAL=1" }
     let(:later) { 2.days.from_now.change(usec: 0) }

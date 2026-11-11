@@ -54,4 +54,10 @@ module ContentSpecHelpers
     File.binwrite(path, content)
     Rack::Test::UploadedFile.new(path, type, original_filename: filename)
   end
+
+  # A PNG upload padded with zeros to +bytes+, generated on the fly.
+  def content_png_upload_of_size(bytes)
+    png_header = File.binread(Rails.root.join("spec/support/assets/avatar.png"), 64)
+    content_named_upload("big.png", content: png_header.ljust(bytes, "\0"), type: "image/png")
+  end
 end

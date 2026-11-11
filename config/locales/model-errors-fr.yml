@@ -200,6 +200,10 @@ fr:
             title:
               blank: "Un titre est requis."
               taken: "Ce titre existe déjà"
+        photo:
+          attributes:
+            image:
+              too_large: "dépasse %{max_size}"
         repository:
           attributes:
             base:
