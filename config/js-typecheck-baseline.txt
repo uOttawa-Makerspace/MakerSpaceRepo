@@ -272,7 +272,6 @@
 1	app/javascript/src/effects.js	TS2339	Property 'style' does not exist on type 'Element'.
 1	app/javascript/src/file_upload.js	TS2339	Property 'replaceWith' does not exist on type 'EventTarget'.
 4	app/javascript/src/forms.js	TS2339	Property 'checked' does not exist on type 'Element'.
-2	app/javascript/src/forms.js	TS2339	Property 'currentTarget' does not exist on type 'Element'.
 4	app/javascript/src/forms.js	TS2339	Property 'dataset' does not exist on type 'Element'.
 1	app/javascript/src/fullcalendar_setup_admin.js	TS2322	Type 'string' is not assignable to type 'number'.
 3	app/javascript/src/fullcalendar_setup_admin.js	TS2339	Property 'checked' does not exist on type 'Element'.

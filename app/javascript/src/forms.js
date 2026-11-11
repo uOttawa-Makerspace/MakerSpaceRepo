@@ -2,14 +2,16 @@
 
 document.addEventListener("turbo:load", function () {
   // Hide and show fields based on checked value of button
-  document.querySelectorAll("[data-toggles]").forEach((optionElement) => {
+  /** @type {NodeListOf<HTMLInputElement>} */ (
+    document.querySelectorAll("[data-toggles]")
+  ).forEach((optionElement) => {
     // When a button changes value
     optionElement.addEventListener("change", function () {
       // Get all elements to hide if checked
       document
         .querySelectorAll(optionElement.dataset.toggles)
         .forEach((target) => {
-          target.hidden = !optionElement.checked;
+          target.toggleAttribute("hidden", !optionElement.checked);
         });
     });
 
