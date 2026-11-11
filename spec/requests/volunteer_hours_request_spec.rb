@@ -160,6 +160,13 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       vol_login!(owner)
     end
 
+    it "stores a form that is submitted twice only once and says the hours are awaiting review" do
+      post volunteer_hours_path, params: hour_params
+      expect { post volunteer_hours_path, params: hour_params }.not_to change(VolunteerHour, :count)
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to eq("You already sent these hours for this task and day; they are awaiting review.")
+    end
+
     it "persists an unprocessed hour for the current user and redirects with a notice" do
       expect { post volunteer_hours_path, params: hour_params }.to change(VolunteerHour, :count).by(1)
       expect(response).to redirect_to(volunteer_hours_path)

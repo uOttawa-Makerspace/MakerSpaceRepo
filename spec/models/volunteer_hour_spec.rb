@@ -154,6 +154,35 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
       expect(row.save_hand_logged(volunteer_task_id: other.id)).to be(true)
     end
 
+    it "refuses a second identical pending hour, in English and French, but not a changed, reviewed or other person's one" do
+      expect(VolunteerHour.new(user: user).save_hand_logged(attrs)).to be(true)
+
+      repeat = VolunteerHour.new(user: user)
+      expect(repeat.save_hand_logged(attrs)).to be(false)
+      expect(repeat.errors.full_messages).to eq(["You already sent these hours for this task and day; they are awaiting review."])
+      I18n.with_locale(:fr) do
+        VolunteerHour.new(user: user).tap { |h| h.save_hand_logged(attrs) }.errors[:base].first.then do |message|
+          expect(message).to start_with("Vous avez déjà envoyé ces heures")
+        end
+      end
+
+      expect(VolunteerHour.new(user: user).save_hand_logged(attrs(total_time: 3))).to be(true)
+      expect(VolunteerHour.new(user: user).save_hand_logged(attrs(date_of_task: 2.days.ago))).to be(true)
+      other = create(:user, :volunteer_with_volunteer_program)
+      create(:volunteer_task_join, :active, user: other, volunteer_task: task)
+      expect(VolunteerHour.new(user: other).save_hand_logged(attrs)).to be(true)
+      expect(VolunteerHour.new(user: user).save_hand_logged(attrs(approval: false))).to be(true)
+    end
+
+    it "lets a pending hour be saved again and refuses editing it into another pending hour" do
+      first = VolunteerHour.new(user: user)
+      first.save_hand_logged(attrs)
+      expect(VolunteerHour.find(first.id).save_hand_logged(volunteer_task_id: task.id)).to be(true)
+      second = VolunteerHour.new(user: user)
+      second.save_hand_logged(attrs(total_time: 3))
+      expect(VolunteerHour.find(second.id).save_hand_logged(total_time: 2)).to be(false)
+    end
+
     it "accepts a task the user has completed" do
       done = create(:volunteer_task)
       create(:volunteer_task_join, :completed, user: user, volunteer_task: done)

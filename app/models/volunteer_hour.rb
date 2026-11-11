@@ -23,6 +23,9 @@ class VolunteerHour < ApplicationRecord
   validate :volunteer_task_worked_on,
            on: :hand_logged,
            if: -> { volunteer_task.present? && (new_record? || will_save_change_to_volunteer_task_id?) }
+  # A hand-logged hour that is still awaiting review may not repeat another pending hour of the same person, task,
+  # day and length (a double click or a resubmitted form). Staff-reviewed hours are not compared.
+  validate :not_a_pending_repeat, on: :hand_logged, if: -> { approval.nil? && total_time.present? && date_of_task.present? }
   scope :approved, -> { where(approval: true) }
   scope :rejected, -> { where(approval: false) }
   scope :not_processed, -> { where(approval: nil) }
@@ -54,6 +57,13 @@ class VolunteerHour < ApplicationRecord
   end
 
   private
+
+  def not_a_pending_repeat
+    repeat = VolunteerHour.not_processed.where(user_id: user_id, volunteer_task_id: volunteer_task_id,
+                                               date_of_task: date_of_task, total_time: total_time.round(2))
+    repeat = repeat.where.not(id: id) if persisted?
+    errors.add(:base, :duplicate_pending) if repeat.exists?
+  end
 
   def volunteer_task_worked_on
     return if VolunteerTaskJoin.worked_on.exists?(user_id: user_id, volunteer_task_id: volunteer_task_id)
