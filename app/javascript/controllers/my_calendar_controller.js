@@ -20,10 +20,19 @@ function tooltipContent(title, description) {
   return content;
 }
 
+// Stimulus defines the target and value accessors at runtime; this tells the
+// type checker.
+const TypedController = /** @type {new () => Controller<HTMLElement> & {
+  calendarTarget: HTMLElement,
+  containerTarget: HTMLElement,
+  spinnerTarget: HTMLElement,
+  feedUrlValue: string,
+}} */ (/** @type {unknown} */ (Controller));
+
 // The staff work calendar: draws a FullCalendar of the shifts, trainings and
 // meetings in the feed of the user's space on the calendar target, and removes
 // it when the element leaves the page.
-export default class extends Controller {
+export default class extends TypedController {
   static targets = ["calendar", "container", "spinner"];
   static values = { feedUrl: String };
 
@@ -32,27 +41,17 @@ export default class extends Controller {
 
     // A page restored from Turbo's cache still holds the markup of the
     // calendar that was drawn before, so start from an empty element.
-    this.ui.calendarTarget.replaceChildren();
-    this.calendar = new Calendar(
-      this.ui.calendarTarget,
-      this.calendarOptions(),
-    );
+    this.calendarTarget.replaceChildren();
+    this.calendar = new Calendar(this.calendarTarget, this.calendarOptions());
 
-    this.ui.containerTarget.style.display = "block";
-    this.ui.spinnerTarget.style.display = "none";
+    this.containerTarget.style.display = "block";
+    this.spinnerTarget.style.display = "none";
     this.calendar.render();
-    this.labelOverlapButton();
   }
 
   disconnect() {
     this.calendar?.destroy();
     this.calendar = null;
-  }
-
-  // Stimulus defines the target and value accessors at runtime; the cast tells
-  // the type checker.
-  get ui() {
-    return /** @type {any} */ (this);
   }
 
   calendarOptions() {
@@ -72,13 +71,15 @@ export default class extends Controller {
           click: () => this.toggleOthersShifts(),
         },
         toggleEventOverlap: {
-          text: "",
+          text: this.overlapLabel(
+            localStorage.fullCalendarEventOverlap === "true",
+          ),
           click: () => this.toggleEventOverlap(),
         },
       },
       scrollTime: "07:00:00",
       height: "80vh",
-      events: this.ui.feedUrlValue,
+      events: this.feedUrlValue,
       eventDidMount: (info) => this.decorateEvent(info),
       eventWillUnmount: (info) => Tooltip.getInstance(info.el)?.dispose(),
       initialDate: localStorage.fullCalendarDefaultDateStaffCalendar,
@@ -101,7 +102,7 @@ export default class extends Controller {
       );
     });
 
-    this.buttonNamed("toggleOthersShifts").innerHTML = this.onlyShowMyShifts
+    this.buttonNamed("toggleOthersShifts").textContent = this.onlyShowMyShifts
       ? "Show All Shifts"
       : "Show My Shifts Only";
   }
@@ -110,15 +111,12 @@ export default class extends Controller {
     const overlap = !this.calendar.getOption("slotEventOverlap");
     localStorage.fullCalendarEventOverlap = overlap;
     this.calendar.setOption("slotEventOverlap", overlap);
-    this.labelOverlapButton();
+    this.buttonNamed("toggleEventOverlap").textContent =
+      this.overlapLabel(overlap);
   }
 
-  labelOverlapButton() {
-    this.buttonNamed("toggleEventOverlap").innerHTML = this.calendar.getOption(
-      "slotEventOverlap",
-    )
-      ? "Disable Event Overlap"
-      : "Enable Event Overlap";
+  overlapLabel(overlap) {
+    return overlap ? "Disable Event Overlap" : "Enable Event Overlap";
   }
 
   buttonNamed(name) {
