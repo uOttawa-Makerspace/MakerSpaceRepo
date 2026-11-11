@@ -55,14 +55,14 @@ RSpec.describe Printer, type: :model do
       printer = create(:printer, :UM2P_01)
       create(:printer_session, printer: printer)
       expect { expect(printer.destroy).to be false }.not_to change { [Printer.count, PrinterSession.count] }
-      expect(printer.errors.full_messages).to eq(["Cannot delete record because dependent printer sessions exist"])
+      expect(printer.errors.full_messages).to eq(["This printer has sessions or issues and cannot be removed."])
     end
 
     it "cannot be destroyed while it has printer issues, and keeps them" do
       printer = create(:printer, :UM2P_01)
       create(:printer_issue, printer: printer)
       expect { expect(printer.destroy).to be false }.not_to change { [Printer.count, PrinterIssue.count] }
-      expect(printer.errors.full_messages).to eq(["Cannot delete record because dependent printer issues exist"])
+      expect(printer.errors.full_messages).to eq(["This printer has sessions or issues and cannot be removed."])
     end
 
     it "can be destroyed when it has neither" do

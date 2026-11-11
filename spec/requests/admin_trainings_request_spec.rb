@@ -262,7 +262,7 @@ RSpec.describe "Admin training area", type: :request do
         it "is refused while a proficient project uses it" do
           create(:proficient_project, training: training)
           expect { delete admin_training_path(training) }.not_to change(Training, :count)
-          expect(flash[:alert]).to include("proficient projects")
+          expect(flash[:alert]).to include("This training has sessions or projects and cannot be deleted.")
         end
 
         it "cascades to its learning modules and their tracks when it has no sessions or projects" do

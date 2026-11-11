@@ -343,14 +343,14 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(Certification.unscoped.exists?(record.certification_id)).to be(true)
         expect(response).to redirect_to(proficient_project_path(project))
         expect(flash[:alert]).to start_with("The proficient project was not deleted.")
-        expect(flash[:alert]).to include("proficient project sessions")
+        expect(flash[:alert]).to include("This project has sessions and cannot be deleted.")
       end
 
       it "answers 422 for JSON when the project cannot be deleted" do
         create(:proficient_project_session, proficient_project: project)
         delete proficient_project_path(project, format: :json)
         expect(response).to have_http_status(:unprocessable_content)
-        expect(response.parsed_body["errors"].to_sentence).to include("proficient project sessions")
+        expect(response.parsed_body["errors"].to_sentence).to include("This project has sessions and cannot be deleted.")
         expect(ProficientProject.exists?(project.id)).to be(true)
       end
 

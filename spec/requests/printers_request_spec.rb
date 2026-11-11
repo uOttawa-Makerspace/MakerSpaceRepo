@@ -111,14 +111,14 @@ RSpec.describe "Printers", type: :request do
       create(:printer_session, printer: um2p)
       expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.not_to change { [Printer.count, PrinterSession.count] }
       expect(flash[:notice]).to be_nil
-      expect(flash[:alert]).to eq("The printer was not removed. Cannot delete record because dependent printer sessions exist")
+      expect(flash[:alert]).to eq("The printer was not removed. This printer has sessions or issues and cannot be removed.")
     end
 
     it "keeps a printer that has printer issues, and its issues, and says why" do
       create(:printer_issue, printer: um2p)
       expect { post remove_printer_printers_path, params: { remove_printer: um2p.id } }.not_to change { [Printer.count, PrinterIssue.count] }
       expect(response).to redirect_to(printers_path)
-      expect(flash[:alert]).to eq("The printer was not removed. Cannot delete record because dependent printer issues exist")
+      expect(flash[:alert]).to eq("The printer was not removed. This printer has sessions or issues and cannot be removed.")
     end
 
     it "alerts when no printer is selected for removal" do
