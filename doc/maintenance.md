@@ -184,6 +184,17 @@ Restoring returns the rows to how they were at the snapshot, so it also drops an
 
 One open checkout per member and tier is enforced by the member's row lock, not by the database, so older data can hold more than one pending membership for a pair. `bin/rails memberships:pending_duplicates` lists each such member and tier pair with the number of pending rows and their ids. It only reads: it changes no row and calls no outside service. Run it in the `web` container (`docker compose -f docker-compose.production.yml exec web bin/rails memberships:pending_duplicates`). Closing the extra drafts and adding a unique index are separate steps that need the maintainers' approval after this list has been reviewed.
 
+### Like and vote counters
+
+`repositories.like` and `comments.upvote` are stored numbers that `Like.give`, `Like.take_back`, `Upvote.cast`, `Upvote.switch` and `Upvote.retract` change together with the row; they should equal the number of likes of the repository and the upvotes minus the downvotes of the comment. Older rows can differ (a like or vote removed or moved by a console command or a user merge did not always move the counter). To see the differences, which changes nothing, then to correct them (owner step, run when the site is quiet and check the list first):
+
+```
+docker compose -f docker-compose.production.yml exec web bin/rails counters:recount
+docker compose -f docker-compose.production.yml exec web bin/rails "counters:recount[apply]"
+```
+
+Applying first writes every row it will change, with its old and new value, to `tmp/counter_recount_<time>.csv` in the `web` container (replaced on the next deploy, so copy it out straight away with `docker compose -f docker-compose.production.yml cp web:/rails/tmp/counter_recount_<time>.csv .`), then sets each listed counter to the number counted inside the same statement. Running the list again afterwards shows nothing. To undo, set the counters back to the `stored` column of that file. No like, vote, repository or comment is changed or removed.
+
 ## Job order chat: extra notification recipients
 
 Every chat message on a job order is emailed, one email per person, to the order's owner, its assigned staff and everyone who has posted in that chat (never to its author). Besides those, the setting `chat_message_extra_recipients` lists extra people who are mailed about every message: user ids and plain email addresses, separated by commas, spaces or new lines. Until the setting is saved it holds the users who were always mailed (`25,1607`). In a Rails console:
