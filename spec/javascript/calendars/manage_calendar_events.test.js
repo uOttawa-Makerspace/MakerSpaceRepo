@@ -244,6 +244,15 @@ describe("staff options", () => {
     );
   });
 
+  it("renders an option that carries no unavailable dates", async () => {
+    await load();
+    setTimes("2027-03-17T10:00", "2027-03-17T11:00");
+    const render = tomInstances[0].config.render.option;
+    const html = render({ text: "Ada", color: "#f00" }, (s) => String(s));
+    expect(html).toContain("Ada");
+    expect(html).not.toContain("Unavailable");
+  });
+
   it("uses a staff colour in the option style only when it is a hex colour", async () => {
     await load();
     setTimes("2027-03-17T10:00", "2027-03-17T11:00");

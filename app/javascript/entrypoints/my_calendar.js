@@ -39,7 +39,7 @@ document.addEventListener("turbo:load", async () => {
           });
 
           document.querySelector(".fc-toggleOthersShifts-button").innerHTML =
-            onlyShowMyShifts ? "Show My Shifts Only" : "Show All Shifts";
+            onlyShowMyShifts ? "Show All Shifts" : "Show My Shifts Only";
         },
       },
       toggleEventOverlap: {

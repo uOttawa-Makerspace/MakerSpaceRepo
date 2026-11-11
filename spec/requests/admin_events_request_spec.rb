@@ -142,6 +142,35 @@ RSpec.describe "Admin events contract", type: :request do
     end
   end
 
+  it "reads a view range without an offset as Eastern time" do
+    eastern = ActiveSupport::TimeZone["America/Toronto"]
+    before_start = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 13, 22), end_time: eastern.local(2027, 3, 13, 23))
+    at_start = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 14, 1), end_time: eastern.local(2027, 3, 14, 2))
+    at_end = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 20, 22), end_time: eastern.local(2027, 3, 20, 23))
+    after_end = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 21, 1), end_time: eastern.local(2027, 3, 21, 2))
+
+    log_in!(admin)
+    delete delete_drafts_admin_events_path, params: {
+      space_id: space.id, view_start_date: "2027-03-14T00:00:00", view_end_date: "2027-03-21T00:00:00"
+    }
+
+    expect(Event.where(id: [before_start, at_start, at_end, after_end]).order(:start_time)).to eq([before_start, after_end])
+  end
+
+  it "reads a view range with an offset as that instant" do
+    eastern = ActiveSupport::TimeZone["America/Toronto"]
+    inside = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 14, 1), end_time: eastern.local(2027, 3, 14, 2))
+    outside = create(:event, :draft, space: space, start_time: eastern.local(2027, 3, 13, 22), end_time: eastern.local(2027, 3, 13, 23))
+
+    log_in!(admin)
+    delete delete_drafts_admin_events_path, params: {
+      space_id: space.id, view_start_date: "2027-03-14T00:00:00-05:00", view_end_date: "2027-03-21T00:00:00-04:00"
+    }
+
+    expect(Event.exists?(inside.id)).to be(false)
+    expect(Event.exists?(outside.id)).to be(true)
+  end
+
   # M61: the batch publish is scoped to the admin's space.
   it "batch publish leaves drafts of another space as drafts and does not push them" do
     travel_to(Time.zone.local(2027, 4, 1, 18, 0)) do

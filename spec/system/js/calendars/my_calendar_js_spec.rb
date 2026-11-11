@@ -43,15 +43,15 @@ RSpec.describe "Staff calendar: toolbar and events", type: :system do
     expect(page).to have_css(".fc-timegrid-event", text: "My shift", visible: :all)
   end
 
-  it "labels the button 'Show My Shifts Only' after the first press and 'Show All Shifts' after the second", js: true, skip_bullet: true do
+  it "labels the button with what pressing it does: 'Show All Shifts' after the first press, 'Show My Shifts Only' after the second", js: true, skip_bullet: true do
     open_calendar
     button = ".fc-toggleOthersShifts-button"
 
     expect(page).to have_css(button, text: "Show My Shifts Only")
     find(button).click
-    expect(page).to have_css(button, text: "Show My Shifts Only")
-    find(button).click
     expect(page).to have_css(button, text: "Show All Shifts")
+    find(button).click
+    expect(page).to have_css(button, text: "Show My Shifts Only")
     expect(page).to have_css(".fc-timegrid-event", text: "Their shift", visible: :all)
   end
 

@@ -288,50 +288,11 @@ function positionSaveButton(hasRecurrence, isEditing) {
 }
 
 // -------------------
-// Populate staff users for the select
-// -------------------
-async function populateStaffSelect() {
-  const staffSelect = document.getElementById("staff_select");
-  if (!staffSelect) return;
-
-  // Only populate if empty
-  if (staffSelect.options.length > 0) return;
-
-  try {
-    const spaceIdElem =
-      document.getElementById("space_id") ||
-      document.querySelector('input[name="event[space_id]"]') ||
-      document.querySelector('input[name="staff_unavailability[space_id]"]');
-
-    if (!spaceIdElem) return;
-
-    const response = await fetch(
-      `/admin/calendar/staff_json/${spaceIdElem.value}`,
-    );
-    if (!response.ok) return;
-
-    const staffData = await response.json();
-
-    staffData.forEach((staff) => {
-      const option = document.createElement("option");
-      option.value = staff.id;
-      option.textContent = staff.name;
-      staffSelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Error fetching staff data:", error);
-  }
-}
-
-// -------------------
 // Full Calendar Event Helpers
 // -------------------
 export function addEventClick() {
   // Reset everything first
   resetModalState();
-
-  // Populate staff options if needed
-  populateStaffSelect();
 
   // Set up event type change listener
   const eventTypeSelect = document.getElementById("event_type_select");
@@ -465,7 +426,7 @@ function openEventForEditing(eventImpl) {
     try {
       const rruleStr = event.extendedProps.rrule;
       rruleData = RRule.fromString(
-        rruleStr.startsWith("RRULE:") ? rruleStr : `RRULE:${rruleStr}`,
+        /^(RRULE|DTSTART)/.test(rruleStr) ? rruleStr : `RRULE:${rruleStr}`,
       ).options;
     } catch (e) {
       console.log("RRule parse error", e);

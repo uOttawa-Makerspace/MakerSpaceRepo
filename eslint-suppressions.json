@@ -19,11 +19,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/calendar.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/cdel_reports.js": {
     "no-unused-vars": {
       "count": 2
@@ -125,7 +120,7 @@
   },
   "app/javascript/src/calendar_helper.js": {
     "complexity": {
-      "count": 6
+      "count": 5
     },
     "no-unused-vars": {
       "count": 2
