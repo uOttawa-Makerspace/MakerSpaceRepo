@@ -17,34 +17,68 @@ RSpec.describe CcMoney, "correcting the purchase email while it is claimed", typ
     User.unscoped.where(id: [admin.id, buyer.id]).delete_all
   end
 
+  def in_thread(&block)
+    Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection(&block)
+    rescue StandardError => e
+      e
+    end
+  end
+
   def blocked_backends
     ActiveRecord::Base.connection.select_value(
       "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()"
     ).to_i
   end
 
-  def correct_on_second_connection
-    Thread.new do
-      ActiveRecord::Base.connection_pool.with_connection do
-        CcMoney.find(row.id).correct_purchase_email("right@example.com", by: admin)
+  # The main thread gives up after ThreadPause::AWAIT_TIMEOUT; the holder is released by then (see `ensure`).
+  def wait_until_blocked
+    deadline = Time.current + ThreadPause::AWAIT_TIMEOUT
+    until blocked_backends.positive?
+      raise "the correction did not block on the row lock" if Time.current > deadline
+
+      Thread.pass
+    end
+  end
+
+  # Locks the row on its own connection, signals, parks until released, then does `work` and commits.
+  def hold_row_lock(parked, release, &work)
+    in_thread do
+      CcMoney.transaction do
+        CcMoney.find(row.id).lock!
+        parked << true
+        release.pop(timeout: ThreadPause::PARKED_TIMEOUT)
+        work.call
       end
     end
   end
 
-  # Runs the correction on a second connection while this one holds the row lock, and lets it go on once it waits.
-  def correct_while_locked
-    thread = nil
-    CcMoney.transaction do
-      row.lock!
-      thread = correct_on_second_connection
-      Timeout.timeout(10) { sleep 0.05 until blocked_backends.positive? }
-      yield
+  def correct_in_thread = in_thread { CcMoney.find(row.id).correct_purchase_email("right@example.com", by: admin) }
+
+  # A holder thread locks the row and parks; once it has signalled, the correction runs on another connection and
+  # blocks on that lock; the holder then does `holder_work` and commits. Returns the correction's outcome.
+  # Both threads are always released and joined, so a failure cannot leave a lock or an insert running into the
+  # example's cleanup.
+  def correct_while_locked(&holder_work)
+    parked = Queue.new
+    release = Queue.new
+    holder = hold_row_lock(parked, release, &holder_work)
+    contender = nil
+    begin
+      ThreadPause.await(parked, "the lock holder")
+      contender = correct_in_thread
+      wait_until_blocked
+    ensure
+      release << true
+      [holder, contender].compact.each(&:join)
     end
-    thread.value
+    raise holder.value if holder.value.is_a?(StandardError)
+
+    contender.value
   end
 
   it "refuses to correct a row that was claimed first" do
-    outcome = correct_while_locked { row.update!(user: buyer, linked: true) }
+    outcome = correct_while_locked { CcMoney.find(row.id).update!(user: buyer, linked: true) }
     expect(outcome).to eq(:already_linked)
     expect(row.reload).to have_attributes(linked: true, purchaser_email: buyer.email, claim_token_generation: 0)
     expect(CcMoneyEmailCorrection.where(cc_money_id: row.id)).to be_empty
