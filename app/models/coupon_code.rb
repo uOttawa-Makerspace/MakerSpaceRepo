@@ -60,7 +60,7 @@ class CouponCode < ApplicationRecord
                                                   .order(:id).lock(User::GUARD_LOCK_MODE).first
         next [:no_coupon, nil] if coupon.nil? || !coupon.user_id.nil? # guard, re-checked on the locked row
 
-        CcMoney.debit!(payer, coupon.cc_cost.to_i)
+        CcMoney.debit!(payer, coupon.cc_cost)
         coupon.update!(user: payer)
         [:claimed, coupon]
       end
