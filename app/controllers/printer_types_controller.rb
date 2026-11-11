@@ -7,7 +7,7 @@ class PrinterTypesController < StaffAreaController
   before_action :ensure_admin
 
   def index
-    @printer_types = PrinterType.all.order("LOWER(name) ASC")
+    @printer_types = PrinterType.includes(:printers).order("LOWER(name) ASC")
   end
 
   def new

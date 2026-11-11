@@ -197,13 +197,13 @@ RSpec.describe "Content pages (part 2)", type: :request do
       end
     end
 
-    # N+1 pinned
-    it "lists all announcements for an admin", skip_bullet: true do
+    it "lists all announcements for an admin" do
       create(:announcement, :volunteer, user: admin, description: "Vol news")
+      create(:announcement, :volunteer, user: create(:user, :staff), description: "Other author news")
       sign_in_as(:admin)
       get admin_announcements_path
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Staff news", "Vol news")
+      expect(response.body).to include("Staff news", "Vol news", "Other author news")
       get new_admin_announcement_path
       expect(response).to have_http_status(:ok)
       get admin_announcement_path(ann)
