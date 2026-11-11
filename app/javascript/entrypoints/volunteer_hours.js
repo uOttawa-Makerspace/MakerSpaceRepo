@@ -3,7 +3,7 @@ document.addEventListener("turbo:load", function () {
     "load",
     function () {
       var forms = document.getElementsByClassName("needs-validation");
-      var validation = Array.prototype.filter.call(forms, function (form) {
+      Array.prototype.forEach.call(forms, function (form) {
         form.addEventListener(
           "submit",
           function (event) {
@@ -11,19 +11,18 @@ document.addEventListener("turbo:load", function () {
               event.preventDefault();
               event.stopPropagation();
             } else {
-              var total_time_hidden =
-                document.getElementById("total_time_hidden");
-              var hour = document.getElementById("hour").value;
-              var minutes = document.getElementById("minutes").value;
-              var total_time = hour + minutes / 60.0;
-              total_time_hidden.value = total_time;
+              // Hours and minutes boxes combine into decimal hours for the hidden field.
+              var hours = Number(form.querySelector("#hours").value);
+              var minutes = Number(form.querySelector("#minutes").value);
+              form.querySelector("#total_time_hidden").value =
+                hours + minutes / 60.0;
             }
             form.classList.add("was-validated");
           },
-          false
+          false,
         );
       });
     },
-    false
+    false,
   );
 });

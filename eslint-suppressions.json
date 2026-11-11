@@ -98,11 +98,6 @@
       "count": 3
     }
   },
-  "app/javascript/entrypoints/volunteer_hours.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/volunteer_tasks.js": {
     "complexity": {
       "count": 2
