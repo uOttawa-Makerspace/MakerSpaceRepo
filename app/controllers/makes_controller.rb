@@ -52,7 +52,7 @@ class MakesController < SessionsController
 
   def set_repository
     @repository =
-      Repository.includes(:owner).find_by(
+      Repository.includes(:owner).find_by!(
         owner: {
           username: params[:user_username]
         },

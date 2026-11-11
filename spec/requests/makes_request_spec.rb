@@ -38,18 +38,17 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(response.body).to include("Original Thing")
     end
 
-    it "500s when the username does not own the id (set_repository returns nil)" do
+    it "answers 404 when the username does not own the id" do
       content_login!(maker)
-      # find_by returns nil and the action dereferences it; should be a 404
       get makes_new_path("somebody-else", original.id)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
 
-    it "500s for a soft-deleted original" do
+    it "answers 404 for a soft-deleted original" do
       original.update_columns(deleted: true)
       content_login!(maker)
       get makes_new_path(owner.username, original.id)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -57,6 +56,17 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
     it "sends a guest to login and creates nothing" do
       expect { post makes_create_path(owner.username, original.id), params: make_params }
         .not_to change(Repository, :count)
+    end
+
+    it "answers 404 and creates nothing when the original is not found" do
+      content_login!(maker)
+      expect { post makes_create_path("somebody-else", original.id), params: make_params }
+        .not_to change(Repository, :count)
+      expect(response).to have_http_status(:not_found)
+      original.update_columns(deleted: true)
+      expect { post makes_create_path(owner.username, original.id), params: make_params }
+        .not_to change(Repository, :count)
+      expect(response).to have_http_status(:not_found)
     end
 
     it "creates a public child repository owned by the maker, +15 reputation, original make counter +1" do
