@@ -122,7 +122,7 @@ RSpec.describe RepositoriesController, type: :controller do
         Repository.last.users << user
         get :edit,
             params: {
-              user_username: user.username,
+              user_username: Repository.last.user_username,
               id: Repository.last.id
             }
         expect(response).to have_http_status(:success)
