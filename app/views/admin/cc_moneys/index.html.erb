@@ -24,6 +24,12 @@
               <%= f.email_field :email, placeholder: "Buyer's email", class: "form-control", required: true %>
               <%= f.submit "Resend", class: "btn btn-primary" %>
             <% end %>
+            <% if (resend = cc_money.latest_claim_email_resend) %>
+              <small class="text-muted"><%= t("admin.cc_money_claim_email.last_resend",
+                                              email: resend.email,
+                                              admin: resend.admin.username,
+                                              at: l(resend.created_at, format: :short)) %></small>
+            <% end %>
           </td>
           <td>
             <%= form_with url: admin_cc_money_purchase_email_path(cc_money), method: :patch, class: "input-group" do |f| %>

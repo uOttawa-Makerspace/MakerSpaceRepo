@@ -4,6 +4,8 @@ en:
     training: "Delete this training? This is refused while it has training sessions or proficient projects."
   # These are used in the navbar and in page titles, headers
   admin:
+    cc_money_claim_email:
+      last_resend: "Last sent to %{email} by %{admin} on %{at}"
     cc_money_purchase_email:
       corrected: "The purchase email for %{cc} CC was changed to %{email} and the claim link was sent there. Earlier links no longer work."
       heading: "Correct the purchase email"
@@ -64,6 +66,8 @@ fr:
     training_session: "Supprimer cette séance de formation? Impossible tant qu'elle a des certifications ou des examens."
     training: "Supprimer cette formation? Impossible tant qu'elle a des séances de formation ou des projets de compétence."
   admin:
+    cc_money_claim_email:
+      last_resend: "Dernier envoi à %{email} par %{admin} le %{at}"
     cc_money_purchase_email:
       corrected: "L'adresse courriel de l'achat de %{cc} CC a été changée pour %{email} et le lien de réclamation y a été envoyé. Les liens précédents ne fonctionnent plus."
       heading: "Corriger l'adresse de l'achat"
