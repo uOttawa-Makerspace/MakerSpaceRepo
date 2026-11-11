@@ -135,7 +135,7 @@
 1	app/javascript/entrypoints/lockers.js	TS2550	Property 'intersection' does not exist on type 'Set<any>'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2025' or later.
 1	app/javascript/entrypoints/my_calendar.js	TS2322	Type 'string' is not assignable to type 'EventSourceInput[]'.
 1	app/javascript/entrypoints/my_calendar.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-3	app/javascript/entrypoints/printer_issues.js	TS2304	Cannot find name 'issueSummary'.
+2	app/javascript/entrypoints/printer_issues.js	TS2304	Cannot find name 'issueSummary'.
 2	app/javascript/entrypoints/printer_issues.js	TS2339	Property 'value' does not exist on type 'Element'.
 1	app/javascript/entrypoints/printers.js	TS2339	Property 'options' does not exist on type 'EventTarget'.
 1	app/javascript/entrypoints/printers.js	TS2339	Property 'selectedIndex' does not exist on type 'EventTarget'.
