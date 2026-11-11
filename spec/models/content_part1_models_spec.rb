@@ -433,9 +433,11 @@ RSpec.describe "Content models (part 1 characterization)" do
   end
 
   describe ProjectKit do
-    it "requires user and proficient_project_id (not existence)" do
+    it "requires a user and an existing proficient project" do
+      project = create(:proficient_project)
       expect(ProjectKit.new).not_to be_valid
-      expect(ProjectKit.new(user: owner, proficient_project_id: 0)).to be_valid
+      expect(ProjectKit.new(user: owner, proficient_project_id: 0)).not_to be_valid
+      expect(ProjectKit.new(user: owner, proficient_project_id: project.id)).to be_valid
     end
 
     it "delivered defaults to falsey" do
