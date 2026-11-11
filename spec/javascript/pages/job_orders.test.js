@@ -167,9 +167,31 @@ describe("date range", () => {
     load();
     $("computed_days").value = "7";
     tick(box("job_type_filter", "Laser"));
-    const keep = searchFilters.at(-1);
+    const keep = searchFilters[0];
     const row = (date) => [0, 0, 0, 0, date];
     expect(keep({}, row("2026-06-08"))).toBe(true);
     expect(keep({}, row("2026-05-01"))).toBe(false);
+  });
+
+  it("registers the date filter once however often the filters change", () => {
+    load();
+    tick(box("job_type_filter", "Laser"));
+    tick(box("job_status_filter", "Open"));
+    tick(box("assigned_to_filter", "Ann"));
+    expect(searchFilters).toHaveLength(1);
+  });
+
+  it("replaces the date filter when the admin page is visited again", () => {
+    load();
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(searchFilters).toHaveLength(1);
+  });
+
+  it("removes the date filter when leaving the admin page", () => {
+    load();
+    window.happyDOM.setURL("http://localhost/job_orders");
+    document.body.innerHTML = "<table class='table'></table>";
+    document.dispatchEvent(new Event("turbo:load"));
+    expect(searchFilters).toHaveLength(0);
   });
 });
