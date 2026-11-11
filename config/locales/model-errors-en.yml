@@ -241,6 +241,11 @@ en:
             title:
               blank: "A title is required."
               taken: "Title already exists"
+        photo:
+          attributes:
+            image:
+              too_large: "is larger than %{max_size}"
+          unreadable: "%{filename} could not be read as a picture. Check that it is a valid image file and try again."
         repository:
           attributes:
             base:
@@ -253,8 +258,8 @@ en:
             password:
               blank: "Password is required for private projects"
             photos:
-              too_long: "Must have between 1 and 5 photos"
-              too_short: "Must have between 1 and 5 photos"
+              too_long: "Must have between 1 and 10 photos"
+              too_short: "Must have between 1 and 10 photos"
         user:
           attributes:
             base:

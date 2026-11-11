@@ -8,6 +8,8 @@ require "rails_helper"
 #   my_tasks                         staff or volunteer-program member (`volunteer_access`)
 #   complete_task (POST)             sign-in + staff or the task's creator
 RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
+  include ContentSpecHelpers
+
   let(:space) { create(:space) }
   let(:staff) { create(:user, :staff) }
   let(:volunteer) { create(:user, :volunteer_with_volunteer_program) }
@@ -252,6 +254,39 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
       expect(task.reload.attributes.values_at("title", "hours")).to eq(["Setup crew", 2])
       expect(task.require_trainings.count).to eq(1)
       expect(task.volunteer_task_joins.count).to eq(1)
+    end
+
+    {
+      "an oversized photo" => [-> { content_png_upload_of_size(Photo::MAX_IMAGE_SIZE + 1) }, "is larger than 10 MB"],
+      "a picture in an unaccepted format" => [-> { content_bmp_upload }, "Image"],
+      "a file that is not a picture" => [-> { content_named_upload("x.png", content: "not an image", type: "image/png") }, "could not be read"]
+    }.each do |label, (upload, message)|
+      it "refuses #{label} on update, saving no other change and showing the message" do
+        expect do
+          patch volunteer_task_path(task), params: task_params(title: "Renamed").merge(images: [instance_exec(&upload)])
+        end.not_to change(Photo, :count)
+        expect(task.reload.title).to eq("Setup crew")
+        expect(response).to redirect_to(edit_volunteer_task_path(task))
+        expect(flash[:alert]).to start_with("The volunteer task was not saved.").and include(message)
+        expect(flash[:notice]).to be_nil
+      end
+
+      it "refuses #{label} on create, creating no task" do
+        expect do
+          post volunteer_tasks_path, params: task_params.merge(images: [instance_exec(&upload)])
+        end.not_to change { [VolunteerTask.count, Photo.count] }
+        expect(response).to redirect_to(new_volunteer_task_path)
+        expect(flash[:alert]).to start_with("The volunteer task was not saved.").and include(message)
+        expect(flash[:notice]).to be_nil
+      end
+    end
+
+    it "keeps a ticked photo when a new photo in the same request is refused" do
+      photo = create(:photo, volunteer_task: task)
+      patch volunteer_task_path(task),
+            params: task_params.merge(images: [content_bmp_upload], deleteimages: [photo.image.filename.to_s])
+      expect(Photo.exists?(photo.id)).to be(true)
+      expect(photo.reload.image).to be_attached
     end
 
     it "edits the other fields of a stored 36 hour task" do

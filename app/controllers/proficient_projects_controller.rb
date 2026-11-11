@@ -86,27 +86,13 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def create
     @proficient_project = ProficientProject.new(proficient_project_params)
-    if @proficient_project.save
-      if params[:training_requirements_id].present?
-        params[:training_requirements_id].each_with_index do |t, i|
-            @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
-        end
-        
-      end
-      begin
-        create_photos
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        Rails.logger.warn("[proficient_projects#create] photos not read: #{e.class}")
-        @proficient_project.destroy
-        redirect_to request.path,
-                    alert: I18n.t("errors.shop.projects.photos_not_read_on_create")
-      else
-        create_files
-        redirect_to proficient_project_path(@proficient_project.id),
-                    notice: "Proficient Project successfully created."
-      end
+    case save_new_project
+    when :created
+      create_files
+      redirect_to proficient_project_path(@proficient_project.id),
+                  notice: "Proficient Project successfully created."
+    when :refused
+      redirect_to request.path, alert: @photo_refusal
     else
       @training_levels ||= TrainingSession.return_levels
       @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
@@ -144,20 +130,12 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def update
-    replace_training_requirements
-    if @proficient_project.update(proficient_project_params)
-      begin
-        update_media
-      rescue FastImage::ImageFetchFailure,
-             FastImage::UnknownImageType,
-             FastImage::SizeNotFound => e
-        Rails.logger.warn("[proficient_projects#update] photos not read: #{e.class}")
-        flash[:alert_yellow] = I18n.t("errors.shop.projects.photos_not_read_on_update")
-        redirect_to proficient_project_path(@proficient_project.id)
-      else
-        flash[:notice] = "Proficient Project successfully updated."
-        redirect_to proficient_project_path(@proficient_project.id)
-      end
+    case save_project_changes
+    when :updated
+      flash[:notice] = "Proficient Project successfully updated."
+      redirect_to proficient_project_path(@proficient_project.id)
+    when :refused
+      redirect_to edit_proficient_project_path(@proficient_project), alert: @photo_refusal
     else
       flash[:alert] = validation_message(@proficient_project, "errors.shop.projects.update_invalid")
       @training_categories = Training.all.order(:name_en).pluck(:name_en, :id)
@@ -334,18 +312,49 @@ class ProficientProjectsController < DevelopmentProgramsController
     end
   end
 
-  def create_photos
-    return unless params["images"].present?
-      params["images"].each do |img|
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          proficient_project_id: @proficient_project.id,
-          width: dimension.first,
-          height: dimension.last
-        )
+  # Saves the new project with its requirements and photos in one transaction: :created,
+  # :invalid (the project failed validation) or :refused (a photo was refused, so nothing is
+  # stored; the reason is in @photo_refusal).
+  def save_new_project
+    ProficientProject.transaction do
+      if @proficient_project.save
+        create_training_requirements
+        create_photos
+        :created
+      else
+        :invalid
       end
-    
+    end
+  rescue Photo::Refused => e
+    @photo_refusal = "#{I18n.t('errors.shop.projects.photos_refused_on_create')} #{e.message}"
+    :refused
+  end
+
+  def create_training_requirements
+    Array(params[:training_requirements_id]).each_with_index do |t, i|
+      @proficient_project.create_training_requirements(t, params[:training_requirements_level][i])
+    end
+  end
+
+  def create_photos
+    Photo.create_from_uploads!(Array(params["images"]), proficient_project_id: @proficient_project.id)
+  end
+
+  # Saves the edit with its requirements and media in one transaction: :updated, :invalid (the
+  # project failed validation, so nothing is saved) or :refused as for a new project.
+  def save_project_changes
+    outcome = :invalid
+    ProficientProject.transaction do
+      replace_training_requirements
+      raise ActiveRecord::Rollback unless @proficient_project.update(proficient_project_params)
+
+      update_media
+      outcome = :updated
+    end
+    outcome
+  rescue Photo::Refused => e
+    @photo_refusal = "#{I18n.t('errors.shop.projects.photos_refused_on_update')} #{e.message}"
+    :refused
   end
 
   def create_files
@@ -388,30 +397,17 @@ class ProficientProjectsController < DevelopmentProgramsController
     update_videos
   end
 
+  # New photos are added before any ticked one is removed, so a refused photo leaves the existing
+  # photos untouched. Removing a record deletes only its row here; Active Storage deletes the
+  # stored file after the surrounding transaction has committed, so a failed save keeps the files.
   def update_photos
-    ticked = ticked_ids("deleteimages")
-    @proficient_project.photos.where(id: ticked).find_each do |img|
-      img.image.purge
-      img.destroy
-    end
-
-    Array(params["images"]).each do |img|
-      dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-      Photo.create(
-        image: img,
-        proficient_project_id: @proficient_project.id,
-        width: dimension.first,
-        height: dimension.last
-      )
-    end
+    create_photos
+    @proficient_project.photos.where(id: ticked_ids("deleteimages")).find_each(&:destroy)
   end
 
   def update_files
     ticked = ticked_ids("deletefiles")
-    @proficient_project.repo_files.where(id: ticked).find_each do |f|
-      f.file.purge
-      f.destroy
-    end
+    @proficient_project.repo_files.where(id: ticked).find_each(&:destroy)
 
     Array(params["files"]).each do |f|
       repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
@@ -427,8 +423,8 @@ class ProficientProjectsController < DevelopmentProgramsController
     return if ticked.empty?
 
     @proficient_project.videos.each do |f|
-      purged = f.video.attachments.where(id: ticked).each(&:purge)
-      f.destroy if purged.any? && !f.reload.video.attached?
+      removed = f.video.attachments.where(id: ticked).each(&:destroy)
+      f.destroy if removed.any? && !f.reload.video.attached?
     end
   end
 

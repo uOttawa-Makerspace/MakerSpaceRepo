@@ -286,7 +286,20 @@ RSpec.describe "Localized model error messages" do
                       "Project title is already in use.", "Le titre du projet est déjà utilisé.")
       expect_messages(Repository.new(share_type: "private"), :password,
                       "Password is required for private projects", "Un mot de passe est requis pour les projets privés")
-      expect_messages(Repository.new, :photos, "Must have between 1 and 5 photos", "Doit avoir entre 1 et 5 photos")
+      expect_messages(Repository.new, :photos, "Must have between 1 and 10 photos", "Doit avoir entre 1 et 10 photos")
+    end
+  end
+
+  describe Photo do
+    it "localizes the size limit message" do
+      photo = Photo.new(image: { io: StringIO.new("x"), filename: "a.png", content_type: "image/png" })
+      photo.image.blob.byte_size = Photo::MAX_IMAGE_SIZE + 1
+      photo.valid?
+      expect(photo.errors[:image]).to include("is larger than 10 MB")
+      I18n.with_locale(:fr) do
+        photo.valid?
+        expect(photo.errors[:image]).to include("dépasse 10 MB")
+      end
     end
   end
 

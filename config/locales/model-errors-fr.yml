@@ -241,6 +241,11 @@ fr:
             title:
               blank: "Un titre est requis."
               taken: "Ce titre existe déjà"
+        photo:
+          attributes:
+            image:
+              too_large: "dépasse %{max_size}"
+          unreadable: "%{filename} n'a pas pu être lu comme une image. Vérifiez qu'il s'agit d'un fichier image valide et réessayez."
         repository:
           attributes:
             base:
@@ -253,8 +258,8 @@ fr:
             password:
               blank: "Un mot de passe est requis pour les projets privés"
             photos:
-              too_long: "Doit avoir entre 1 et 5 photos"
-              too_short: "Doit avoir entre 1 et 5 photos"
+              too_long: "Doit avoir entre 1 et 10 photos"
+              too_short: "Doit avoir entre 1 et 10 photos"
         user:
           attributes:
             base:

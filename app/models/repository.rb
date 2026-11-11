@@ -84,7 +84,7 @@ class Repository < ApplicationRecord
   validates :password, presence: true, if: :private?
 
   # This seems to work fine for limiting association counts.
-  # Max 5 gallery photos per repository.
+  # Between 1 and 10 gallery photos per repository.
   validates :photos,
             length: {
               maximum: 10,

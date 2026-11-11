@@ -69,17 +69,17 @@ RSpec.describe "Content models (part 1 characterization)" do
       it "requires at least one photo" do
         r = Repository.new(owner: owner, title: "No pics", share_type: "public")
         expect(r).not_to be_valid
-        expect(r.errors[:photos]).to include("Must have between 1 and 5 photos")
+        expect(r.errors[:photos]).to include("Must have between 1 and 10 photos")
       end
 
-      it "allows up to 10 photos although the message says 5" do
+      it "allows up to 10 photos and no more" do
         r = build(:repository, owner: owner, title: "Many")
         9.times { r.photos.build(image: FilesTestHelper.png) }
         expect(r).to be_valid
         r.photos.build(image: FilesTestHelper.png)
         r.photos.build(image: FilesTestHelper.png)
-        # limit is 10, message and comment say 5
         expect(r).not_to be_valid
+        expect(r.errors[:photos]).to include("Must have between 1 and 10 photos")
       end
 
       it "rejects a non-image photo on create" do
