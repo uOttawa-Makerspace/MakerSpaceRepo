@@ -173,7 +173,7 @@ class CcMoney < ApplicationRecord
   # total, else writes the rows and sets the cached users.wallet with update_columns.
   # entries: [[amount, attrs], ...]; amounts are integers >= 0 (0 writes a 0 row, free items).
   def self.debit_all!(user, entries)
-    require_caller_transaction!(:debit!)
+    require_caller_transaction!(:debit_all!)
     amounts = entries.map { |amount, _| Integer(amount) }
     negative = amounts.find(&:negative?)
     raise InvalidAmount, "debit amount must not be negative (#{negative})" if negative
