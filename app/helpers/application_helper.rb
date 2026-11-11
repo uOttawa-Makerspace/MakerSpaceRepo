@@ -195,6 +195,8 @@ module ApplicationHelper
 
   # Options for a button that asks for confirmation: rendered disabled until the controller
   # connects and enables it, so a click before the page script has run cannot skip the prompt.
+  # Splat it into the call and do not pass your own `disabled:` or `data:` next to it: the
+  # later key would replace this one.
   def confirmation_options(message)
     { disabled: true, data: confirmation_data(message) }
   end

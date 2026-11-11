@@ -17,6 +17,7 @@ export default class extends Controller {
     // Stimulus defines messageValue at runtime; the cast tells the type checker.
     if (window.confirm(/** @type {any} */ (this).messageValue)) return;
     event.preventDefault();
+    // Stops other listeners on this element and Turbo's own handlers from acting on a declined click.
     event.stopImmediatePropagation();
   }
 }

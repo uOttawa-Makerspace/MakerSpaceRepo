@@ -50,6 +50,17 @@ RSpec.describe "Announcement forms", type: :system do
     clear_end_date
   end
 
+  it "keeps a past end date when the staff edit form is saved without touching it" do
+    past = create(:announcement, end_date: 10.days.ago.to_date)
+    log_in_as(admin, to: edit_announcement_path(past))
+    expect(page).to have_css("#end_date.flatpickr-input", visible: :all)
+    expect(end_date_value).to eq(past.end_date.to_s)
+    click_button "Update Announcement"
+
+    expect(page).to have_no_current_path(edit_announcement_path(past))
+    expect(past.reload.end_date).to eq(10.days.ago.to_date)
+  end
+
   it "saves an announcement with its end date cleared on the staff edit form" do
     log_in_as(admin, to: edit_announcement_path(announcement))
     clear_end_date
