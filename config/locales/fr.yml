@@ -279,6 +279,12 @@ fr:
       open_page: "Aller à ma demande de clé"
       why_received: "Vous avez reçu ce courriel parce que votre demande de clé a reçu une réponse."
   booking_mailer:
+    declined:
+      subject: "Réservation refusée"
+      hello: "Bonjour %{name},"
+      body: "Votre réservation dans %{room} pour %{description} du %{start} au %{end} a été refusée par un administrateur."
+      open_page: "Aller à la réservation MakerRepo"
+      why_received: "Vous avez reçu ce courriel parce que votre réservation a été refusée."
     access_denied:
       subject:
         declined: "Demande d'accès aux réservations refusée"

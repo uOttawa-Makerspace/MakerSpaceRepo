@@ -17,6 +17,11 @@ class BookingMailerPreview < ActionMailer::Preview
     BookingMailer.send_booking_approved(booking.id)
   end
 
+  def send_booking_declined
+    booking = find_or_build_booking
+    BookingMailer.send_booking_declined(booking.id)
+  end
+
   def send_booking_approval_request_sent
     user_booking_approval = find_or_build_user_booking_approval
     emails = ["admin1@example.com", "admin2@example.com"]

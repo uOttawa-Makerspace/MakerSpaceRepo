@@ -249,6 +249,12 @@ en:
       open_page: "Go to my key request"
       why_received: "You have received this email because your key request was answered."
   booking_mailer:
+    declined:
+      subject: "Booking declined"
+      hello: "Hello %{name},"
+      body: "Your booking in %{room} for %{description} on %{start} to %{end} has been declined by an admin."
+      open_page: "Go to MakerRepo Booking"
+      why_received: "You have received this email because your booking has been declined."
     access_denied:
       subject:
         declined: "Booking access request declined"
