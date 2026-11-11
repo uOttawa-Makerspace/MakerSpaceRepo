@@ -5,10 +5,11 @@ en:
       restore: "Restore this repository?"
     comments:
       delete: "Delete this comment?"
+    key_certifications:
+      delete_file: "Delete this certification file? This cannot be undone."
     certifications:
       reinstate: "Reinstate this certification?"
       delete_permanently: "Delete this certification? This cannot be undone."
-      delete: "Delete this certification?"
     shadowing_shifts:
       cancel: "Cancel this shadowing shift?"
       cancel_for: "Cancel the shadowing shift of %{name}?"
@@ -31,7 +32,6 @@ en:
       delete: "Delete this printer model? A model that still has printers cannot be deleted."
     volunteer_tasks:
       delete: "Delete this volunteer task? This also deletes all the volunteer hours logged for it."
-      delete_task: "Delete this task?"
       submit_for_review: "Submit this task as completed for staff review?"
       submit_for_approval: "Have you completed all the requirements? Submit this task for staff approval?"
       remove_user: "Remove this user from the task?"
@@ -82,7 +82,7 @@ en:
       approve_row: "Approve this proposal?"
       decline_row: "Decline this proposal?"
       delete_row: "Delete this proposal?"
-      create_repository: "Create a repository for this project proposal?"
+      create_repository: "Start a repository for this project proposal?"
       leave: "Leave this project?"
       join: "Join this project?"
       approve: "Approve this project proposal?"
@@ -109,7 +109,7 @@ en:
     discount_codes:
       redeem: "Buy the coupon for %{cc} CC? This cannot be undone."
     training_sessions:
-      certify: "Certify these trainees without the exams? This grants the certification to the user, bypassing the exams."
+      certify: "Certify these trainees without the exams? Every trainee receives the certification, bypassing the exams."
       send_exams: "Send the exams to the users?"
     memberships:
       revoke: "Revoke this membership?"
@@ -126,13 +126,14 @@ fr:
       restore: "Restaurer ce dépôt?"
     comments:
       delete: "Supprimer ce commentaire?"
+    key_certifications:
+      delete_file: "Supprimer ce fichier de certification? Cette action est irréversible."
     certifications:
       reinstate: "Rétablir cette certification?"
       delete_permanently: "Supprimer cette certification? Cette action est irréversible."
-      delete: "Supprimer cette certification?"
     shadowing_shifts:
-      cancel: "Annuler ce quart d'observation?"
-      cancel_for: "Annuler le quart d'observation de %{name}?"
+      cancel: "Annuler ce période d'observation?"
+      cancel_for: "Annuler le période d'observation de %{name}?"
     drop_off_locations:
       delete: "Supprimer le lieu de dépôt « %{name} »?"
     bookings:
@@ -152,7 +153,6 @@ fr:
       delete: "Supprimer ce modèle d'imprimante? Un modèle qui a encore des imprimantes ne peut pas être supprimé."
     volunteer_tasks:
       delete: "Supprimer cette tâche de bénévolat? Toutes les heures de bénévolat qui y sont associées seront aussi supprimées."
-      delete_task: "Supprimer cette tâche?"
       submit_for_review: "Soumettre cette tâche comme terminée pour examen par le personnel?"
       submit_for_approval: "Avez-vous rempli toutes les exigences? Soumettre cette tâche à l'approbation du personnel?"
       remove_user: "Retirer cet utilisateur de la tâche?"
@@ -182,7 +182,7 @@ fr:
       delete_sub_space: "Supprimer ce sous-espace?"
       delete: "Supprimer cet espace et toutes les informations qui s'y rattachent? Sélectionnez OK pour confirmer."
     lockers:
-      delete_size: "Supprimer le format de casier « %{size} »? Cette action est irréversible."
+      delete_size: "Supprimer le taille de casier « %{size} »? Cette action est irréversible."
       delete: "Supprimer ce casier?"
       delete_selected: "Supprimer les casiers sélectionnés?"
     locker_rentals:
@@ -203,7 +203,7 @@ fr:
       approve_row: "Approuver cette proposition?"
       decline_row: "Refuser cette proposition?"
       delete_row: "Supprimer cette proposition?"
-      create_repository: "Créer un dépôt pour cette proposition de projet?"
+      create_repository: "Commencer un dépôt pour cette proposition de projet?"
       leave: "Quitter ce projet?"
       join: "Rejoindre ce projet?"
       approve: "Approuver cette proposition de projet?"
@@ -215,22 +215,22 @@ fr:
     skills:
       delete: "Supprimer ce type de compétence?"
     job_orders:
-      approve_quote: "Approuver cette commande de travail?"
-      deny_quote: "Refuser cette commande de travail?"
+      approve_quote: "Approuver cette commande?"
+      deny_quote: "Refuser cette commande?"
       delete_task: "Supprimer cette tâche?"
-      approve_for_user: "Approuver cette commande de travail au nom de l'utilisateur?"
-      decline_for_user: "Refuser cette commande de travail au nom de l'utilisateur?"
-      resend_quote_reminder: "Renvoyer le courriel de rappel de la soumission?"
+      approve_for_user: "Approuver cette commande au nom de l'utilisateur?"
+      decline_for_user: "Refuser cette commande au nom de l'utilisateur?"
+      resend_quote_reminder: "Renvoyer le courriel de rappel du devis?"
       start_processing: "Commencer le traitement de cette pièce?"
-      mark_paid: "Marquer cette commande de travail comme payée?"
-      mark_picked_up: "Marquer cette commande de travail comme ramassée?"
+      mark_paid: "Marquer cette commande comme payée?"
+      mark_picked_up: "Marquer cette commande comme récupérée?"
       delete_service: "Supprimer le service « %{name} »?"
       delete_service_group: "Supprimer le groupe de services « %{name} »?"
       delete_option: "Supprimer cette option?"
     discount_codes:
       redeem: "Acheter le coupon pour %{cc} CC? Cette action est irréversible."
     training_sessions:
-      certify: "Certifier ces stagiaires sans les examens? La certification sera accordée à l'utilisateur sans passer par les examens."
+      certify: "Certifier ces stagiaires sans les examens? La certification sera accordée à chaque stagiaire, sans passer par les examens."
       send_exams: "Envoyer les examens aux utilisateurs?"
     memberships:
       revoke: "Révoquer cette adhésion?"
