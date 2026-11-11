@@ -85,8 +85,8 @@ class OrderItem < ApplicationRecord
   end
 
   # Revokes the item. The certifications its approvals granted are deactivated like a demotion
-  # (rows and history stay), unless another awarded item of the same user and project still backs
-  # the badge. Revoking a revoked item changes nothing. Returns false, with the reasons on the item
+  # (rows and history stay), unless another awarded item of the same user, training and level still
+  # backs the badge. Revoking a revoked item changes nothing. Returns false, with the reasons on the item
   # and nothing written, when the item does not save; a certification that cannot be saved raises
   # (RecordInvalid) and rolls everything back.
   def revoke(staff)
@@ -139,34 +139,36 @@ class OrderItem < ApplicationRecord
     waiting? || revoked?
   end
 
-  # Revoke and award serialize per user and project: every item of the pair is locked in id order
-  # before any status is read, so two admins acting on sibling items never both see the other as
-  # still awarded. Reloads, so the status read afterwards is the locked one.
+  # Revoke and award serialize per user, training and level: every item of that set is locked in id
+  # order before any status is read, so two admins acting on items that back the same certification
+  # never both see the other as still awarded. Reloads, so the status read afterwards is the locked one.
   def lock_project_items
     project_items.order(:id).lock.pluck(:id)
     reload
   end
 
+  # The user's items for projects of the same training and level, this one included.
   def project_items
     if order
-      OrderItem.where(proficient_project_id: proficient_project_id, order_id: Order.where(user_id: order.user_id).select(:id))
+      OrderItem.where(
+        proficient_project_id: ProficientProject.where(training_id: proficient_project.training_id, level: proficient_project.level).select(:id),
+        order_id: Order.where(user_id: order.user_id).select(:id)
+      )
     else
       OrderItem.where(id: id)
     end
   end
 
   def granted_certifications
-    Certification.for_project(order.user_id, proficient_project_id)
+    Certification.for_projects(order.user_id, proficient_project.training_id, proficient_project.level)
   end
 
+  # A certification the user already holds for the training and level is reused (no project
+  # session, no second row); otherwise a badge a revoke deactivated is restored, or a new one made.
   def grant_badge(staff)
-    cert = granted_certifications.revoked_badges.first
-    if cert
-      cert.update!(active: true, demotion_reason: nil, demotion_staff: nil)
-    else
-      cert = Certification.certify_for_project(order.user_id, proficient_project.training_id, proficient_project.level)
-      return unless cert.previously_new_record?
-    end
+    cert = Certification.certify_for_project(order.user_id, proficient_project.training_id, proficient_project.level, restore: granted_certifications)
+    return unless cert.previously_new_record? || cert.saved_change_to_active?
+
     ProficientProjectSession.create!(
       proficient_project_id: proficient_project.id,
       level: proficient_project.level,

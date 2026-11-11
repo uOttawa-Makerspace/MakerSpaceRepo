@@ -525,7 +525,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(Certification.last).to have_attributes(user_id: buyer.id, level: "Beginner")
         expect(response).to redirect_to(requests_proficient_projects_path) if role == :admin
         expect(response).to redirect_to(proficient_project_path(project)) if role == :staff
-        expect(flash[:notice]).to eq("The project has been approved!  (0 duplicates skipped)")
+        expect(flash[:notice]).to eq("The project has been approved!")
         mail = ActionMailer::Base.deliveries.last
         expect(mail.to).to eq([buyer.email])
         expect(mail.subject).to eq("Your Proficient Project Results")

@@ -278,6 +278,17 @@ RSpec.describe Certification, type: :model do
       expect(Certification.certify_for_project(user.id, training.id, "Beginner")).to be_previously_new_record
     end
 
+    it "certify_for_project reactivates the most recent revoked project badge only when none is held" do
+      project = create(:proficient_project, training: training)
+      granted = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+      create(:proficient_project_session, certification: granted, user: user, proficient_project: project, level: "Beginner")
+      granted.update!(active: false, demotion_reason: Certification::BADGE_REVOKED_REASON)
+      restore = Certification.for_projects(user.id, training.id, "Beginner")
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner", restore: restore)).to eq(granted)
+      expect(granted.reload).to be_active
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner", restore: restore).saved_change_to_active?).to be(false)
+    end
+
     it "certify_for_project raises when the certification cannot be saved" do
       expect { Certification.certify_for_project(user.id, training.id, "Expert") }.to raise_error(ActiveRecord::RecordInvalid)
     end

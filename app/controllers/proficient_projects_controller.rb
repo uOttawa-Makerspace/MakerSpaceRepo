@@ -303,7 +303,7 @@ class ProficientProjectsController < DevelopmentProgramsController
     case (result = award_result(order_item))
     when :awarded
       MsrMailer.send_results_pp(order_item, order_item.order.user, "Passed").deliver_now
-      flash[:notice] = "The project has been approved!  (0 duplicates skipped)"
+      flash[:notice] = "The project has been approved!"
     when :not_waiting
       flash[:error] = I18n.t("errors.shop.projects.not_waiting")
     else
