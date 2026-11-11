@@ -105,7 +105,9 @@ class OrderItem < ApplicationRecord
 
   # Approves a submission that is waiting for approval or was revoked, and grants the project's
   # badge: a certification this user lost to a badge revoke is reactivated (the most recent one),
-  # otherwise a new one is created. Any other status returns false and writes nothing.
+  # otherwise a new one is created unless the user already holds an active one for the same
+  # training and level (then the approval is kept and no second certification is made).
+  # Any other status returns false and writes nothing.
   def award!(staff, attributes = {})
     transaction do
       lock_project_items
@@ -162,7 +164,8 @@ class OrderItem < ApplicationRecord
     if cert
       cert.update!(active: true, demotion_reason: nil, demotion_staff: nil)
     else
-      cert = Certification.create!(user_id: order.user_id, level: proficient_project.level)
+      cert = Certification.certify_for_project(order.user_id, proficient_project.training_id, proficient_project.level)
+      return unless cert.previously_new_record?
     end
     ProficientProjectSession.create!(
       proficient_project_id: proficient_project.id,

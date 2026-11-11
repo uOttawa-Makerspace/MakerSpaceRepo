@@ -600,18 +600,29 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "gives each approval its own certification" do
+    it "approves a second project for the same training and level without a second certification" do
       other_project = create(:proficient_project, training: training, level: project.level, title: "Second widget")
+      second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
+      content_sign_in_as(:admin)
+      post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
+      granted = Certification.find_by!(user_id: buyer.id)
+      expect do
+        post approve_project_proficient_projects_path, params: { oi_id: second.id, order_item: { admin_comments: "x" } }
+      end.not_to change(Certification, :count)
+      expect(second.reload.status).to eq("Awarded")
+      expect(ProficientProjectSession.where(proficient_project: other_project)).to be_empty
+      expect(granted.reload).to be_active
+      expect(ProficientProjectSession.find_by(proficient_project: project).destroy).to be(false)
+    end
+
+    it "still grants a certification for another level of the same training" do
+      other_project = create(:proficient_project, training: training, level: "Advanced", title: "Advanced widget")
       second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
       content_sign_in_as(:admin)
       post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
       expect do
         post approve_project_proficient_projects_path, params: { oi_id: second.id, order_item: { admin_comments: "x" } }
       end.to change(Certification, :count).by(1)
-      certs = ProficientProjectSession.where(proficient_project: [project, other_project]).pluck(:certification_id)
-      expect(certs.uniq.size).to eq(2)
-      expect(ProficientProjectSession.find_by(proficient_project: project).destroy).to be(false)
-      expect(Certification.where(id: certs)).to exist
     end
   end
 

@@ -108,6 +108,13 @@ class Certification < ApplicationRecord
     create(user_id:, training_session_id:, level:)
   end
 
+  # The certification a proficient project of the training grants at the level: the one the user
+  # already holds, or a new one (raising when it cannot be saved). A returned certification that
+  # is not new (previously_new_record?) was already held.
+  def self.certify_for_project(user_id, training_id, level)
+    held_by(user_id, training_id, level).first || create!(user_id:, level:)
+  end
+
   def assign_share_token
     self.share_token = self.class.generate_share_token if share_token.blank?
   end

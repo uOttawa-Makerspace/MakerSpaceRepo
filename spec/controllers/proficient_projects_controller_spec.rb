@@ -397,20 +397,22 @@ RSpec.describe ProficientProjectsController, type: :controller do
         end.to change(Certification, :count).by(1)
       end
 
-      it "creates its own Certification and leaves an existing training certification alone" do
+      it "approves without a second Certification when the user already holds one for that training and level" do
         existing = create(:certification, user: OrderItem.last.order.user, training: @proficient_project.training,
 level: @proficient_project.level)
         expect do
-          post :approve_project,
-            params: {
-              oi_id: OrderItem.last.id,
-              order_item: {
-                admin_comments: ""
+          expect do
+            post :approve_project,
+              params: {
+                oi_id: OrderItem.last.id,
+                order_item: {
+                  admin_comments: ""
+                }
               }
-            }
-        end.to change(Certification, :count).by(1)
-        expect(Certification.exists?(existing.id)).to be(true)
-        expect(ProficientProjectSession.last.certification_id).not_to eq(existing.id)
+          end.not_to change(Certification, :count)
+        end.not_to change(ProficientProjectSession, :count)
+        expect(OrderItem.last.status).to eq("Awarded")
+        expect(existing.reload).to be_active
       end
     end
   end

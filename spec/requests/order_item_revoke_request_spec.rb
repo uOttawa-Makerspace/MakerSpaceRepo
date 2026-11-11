@@ -90,10 +90,10 @@ RSpec.describe "Revoking a project badge", type: :request do
       approve(item)
       approve(other)
       revoke(item)
-      expect(buyer.certifications.count).to eq(2)
+      expect(buyer.certifications.count).to eq(1)
       revoke(other)
       expect(buyer.certifications).to be_empty
-      expect(certifications.count).to eq(2)
+      expect(certifications.count).to eq(1)
     end
 
     it "reactivates exactly one certification when a second item is approved after the first was revoked" do

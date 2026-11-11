@@ -262,6 +262,26 @@ RSpec.describe Certification, type: :model do
         .to change(Certification, :count).by(1)
     end
 
+    it "certify_for_project returns the certification the user already holds for that training and level" do
+      held = Certification.certify_user(ts.id, user.id, "Beginner")
+      expect { expect(Certification.certify_for_project(user.id, training.id, "Beginner")).to eq(held) }
+        .not_to change(Certification, :count)
+      expect(held.previously_new_record?).to be(true)
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner").previously_new_record?).to be(false)
+    end
+
+    it "certify_for_project creates a certification for another level or user, or after the earlier one was deactivated" do
+      held = Certification.certify_user(ts.id, user.id, "Beginner")
+      expect(Certification.certify_for_project(user.id, training.id, "Advanced")).to be_previously_new_record
+      expect(Certification.certify_for_project(create(:user, :regular_user).id, training.id, "Beginner")).to be_previously_new_record
+      held.update!(active: false)
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner")).to be_previously_new_record
+    end
+
+    it "certify_for_project raises when the certification cannot be saved" do
+      expect { Certification.certify_for_project(user.id, training.id, "Expert") }.to raise_error(ActiveRecord::RecordInvalid)
+    end
+
     it "certify_user still certifies a different level, a different user, or after the earlier one was deactivated" do
       first = Certification.certify_user(ts.id, user.id, "Beginner")
       expect { Certification.certify_user(ts.id, user.id, "Advanced") }.to change(Certification, :count).by(1)
