@@ -687,7 +687,7 @@ RSpec.describe "Exams", type: :request do
       expect { perform_enqueued_jobs { create_from_training } }
         .to change(Exam, :count).by(2).and change(ExamQuestion, :count).by(2 * $n_exams_question)
       expect(response).to redirect_to(staff_dashboard_index_path(space_id: session_record.space.id))
-      expect(flash[:notice]).to eq("You've successfully sent exams to all users in this training.")
+      expect(flash[:notice]).to eq("You've successfully sent exams to all users in this training. Each exam has #{$n_exams_question} questions.")
       expect(deliveries.map { |m| [m.to.first, m.subject] })
         .to match_array([[student.email, "An exam was sent to you"], [second_student.email, "An exam was sent to you"]])
       exam = Exam.find_by!(user: student)
@@ -737,6 +737,33 @@ RSpec.describe "Exams", type: :request do
       sign_in_as(:admin)
       expect { perform_enqueued_jobs { create_from_training(empty[:session]) } }.not_to change(Exam, :count)
       expect(response).to redirect_to(staff_training_session_path(empty[:session].id))
+      expect(flash[:alert]).to eq("This training has no questions at this level, so no exams were created.")
+      expect(deliveries).to be_empty
+    end
+
+    context "when the question pool is smaller than the exam size" do
+      let(:fixture) { build_exam_fixture(question_count: 2) }
+
+      it "still creates every exam with all the available questions and tells staff the real count" do
+        second_student
+        expect { perform_enqueued_jobs { create_from_training } }
+          .to change(Exam, :count).by(2).and change(ExamQuestion, :count).by(4)
+        expect(Exam.where(user: [student, second_student]).map { |e| e.exam_questions.count }).to eq([2, 2])
+        expect(flash[:notice]).to eq("You've successfully sent exams to all users in this training. Each exam has 2 questions.")
+        expect(deliveries.size).to eq(2)
+      end
+
+      it "words the count in French, singular and plural" do
+        expect(I18n.t("exams.sent_to_all", count: 1, locale: :fr)).to include("1 question.")
+        expect(I18n.t("exams.sent_to_all", count: 2, locale: :fr)).to include("2 questions.")
+        expect(I18n.t("exams.sent_to_user", name: "Sam", count: 1, locale: :fr)).to include("Sam. Il contient 1 question.")
+      end
+    end
+
+    it "shows a failure and saves nothing when an exam would get no questions" do
+      allow(ExamQuestion).to receive(:create_exam_questions).and_return(0)
+      expect { perform_enqueued_jobs { create_from_training } }.not_to change(Exam, :count)
+      expect(flash[:notice]).to be_nil
       expect(flash[:alert]).to eq("This training has no questions at this level, so no exams were created.")
       expect(deliveries).to be_empty
     end
@@ -803,7 +830,7 @@ RSpec.describe "Exams", type: :request do
       expect(response).to redirect_to(staff_training_session_path(session_record.id))
       expect(deliveries.map(&:to)).to eq([[student.email]])
       expect(deliveries.first.subject).to eq("An exam was sent to you")
-      expect(flash[:notice]).to eq("You've successfully sent the exam to #{student.name}.")
+      expect(flash[:notice]).to eq("You've successfully sent the exam to #{student.name}. It has #{$n_exams_question} questions.")
       expect(Exam.last.exam_questions.count).to eq($n_exams_question)
     end
 
@@ -818,6 +845,25 @@ RSpec.describe "Exams", type: :request do
       sign_in_as(:admin)
       expect { perform_enqueued_jobs { create_for_single_user(empty[:user], empty[:session]) } }.not_to change(Exam, :count)
       expect(response).to redirect_to(staff_training_session_path(empty[:session].id))
+      expect(flash[:alert]).to eq("This training has no questions at this level, so no exams were created.")
+      expect(deliveries).to be_empty
+    end
+
+    context "when the question pool is smaller than the exam size" do
+      let(:fixture) { build_exam_fixture(question_count: 1) }
+
+      it "still creates the exam with all the available questions and tells staff the real count" do
+        expect { perform_enqueued_jobs { create_for_single_user(student) } }.to change { Exam.where(user: student).count }.by(1)
+        expect(Exam.find_by!(user: student).exam_questions.count).to eq(1)
+        expect(flash[:notice]).to eq("You've successfully sent the exam to #{student.name}. It has 1 question.")
+        expect(deliveries.size).to eq(1)
+      end
+    end
+
+    it "shows a failure and saves nothing when the exam would get no questions" do
+      allow(ExamQuestion).to receive(:create_exam_questions).and_return(0)
+      expect { perform_enqueued_jobs { create_for_single_user(student) } }.not_to change(Exam, :count)
+      expect(flash[:notice]).to be_nil
       expect(flash[:alert]).to eq("This training has no questions at this level, so no exams were created.")
       expect(deliveries).to be_empty
     end

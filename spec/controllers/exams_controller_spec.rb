@@ -122,7 +122,7 @@ RSpec.describe ExamsController, type: :controller do
               ).by(n_users * $n_exams_question)
         expect(ActionMailer::Base.deliveries.count).to eq(n_users)
         expect(flash[:notice]).to eq(
-          "You've successfully sent exams to all users in this training."
+          "You've successfully sent exams to all users in this training. Each exam has #{$n_exams_question} questions."
         )
         expect(response).to redirect_to staff_dashboard_index_path(
                       space_id: training_session.space.id
@@ -150,7 +150,7 @@ RSpec.describe ExamsController, type: :controller do
                 $n_exams_question
               )
         expect(flash[:notice]).to eq(
-          "You've successfully sent the exam to #{user.name}."
+          "You've successfully sent the exam to #{user.name}. It has #{$n_exams_question} questions."
         )
         expect(ActionMailer::Base.deliveries.map(&:to)).to eq([[user.email]])
         expect(response).to redirect_to staff_training_session_path(

@@ -192,7 +192,13 @@ fr:
         how_heard_about_us: "Comment avez-vous entendu parler de nous?"
         accept_waiver_html: "En cochant cette case, <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation."
   exams:
-    sent_to_user: "L'examen a été envoyé à %{name}."
+    sent_to_user:
+      one: "L'examen a été envoyé à %{name}. Il contient 1 question."
+      other: "L'examen a été envoyé à %{name}. Il contient %{count} questions."
+    sent_to_all:
+      one: "Les examens ont été envoyés à tous les utilisateurs de cette formation. Chaque examen contient 1 question."
+      other: "Les examens ont été envoyés à tous les utilisateurs de cette formation. Chaque examen contient %{count} questions."
+    no_questions: "Cette formation n'a aucune question à ce niveau; aucun examen n'a donc été créé."
   sessions:
     account_created: "Votre compte a été créé. Veuillez consulter vos courriels pour confirmer votre adresse courriel."
     already_signed_in: "Vous êtes déjà connecté."
