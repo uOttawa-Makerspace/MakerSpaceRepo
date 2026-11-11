@@ -92,39 +92,10 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def json
-    @unavailabilities = StaffUnavailability.where(user_id: current_user.id)
-
-    local_unavails = @unavailabilities.map do |u|
-      duration = (u.end_time.to_time - u.start_time.to_time) * 1000
-
-      rrule_data = helpers.date_formatted_recurrence_rule(u)
-
-      {
-        id: u.id,
-        title: u.title || "Unavailable",
-        start: u.start_time.iso8601,
-        end: u.end_time.iso8601,
-        **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
-        allDay: CalendarTime.all_day?(u.start_time, u.end_time),
-        extendedProps: {
-          description: u.description,
-          eventType: "unavailability",
-          userId: u.user_id,
-          isAdminCreated: u.title&.include?("(Admin)")
-        }
-      }
-    end.compact
-
     feeds = current_user.staff_external_unavailabilities.map { |external| [external, imported_feed(external)] }
-    ics_unavails = feeds.flat_map { |external, feed| imported_events(external.source_host, feed) }
-    failed_hosts = feeds.select { |_external, feed| feed.failed? }.map { |external, _feed| external.source_host }
-    # The failure header is not part of the body's ETag, so a browser must not reuse an earlier answer.
-    response.set_header("Cache-Control", "no-store")
-    response.set_header("X-Failed-Calendars", failed_hosts.to_json) unless failed_hosts.empty?
+    report_failed_calendars(feeds)
 
-    combined_unavailabilities = local_unavails + ics_unavails
-
-    render json: combined_unavailabilities
+    render json: own_unavailability_events + feeds.flat_map { |external, feed| imported_events(external.source_host, feed) }
   end
 
   def update_external_unavailabilities
@@ -146,6 +117,39 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   private
+
+  def own_unavailability_events
+    @unavailabilities = StaffUnavailability.where(user_id: current_user.id)
+
+    @unavailabilities.map do |u|
+      duration = (u.end_time.to_time - u.start_time.to_time) * 1000
+
+      rrule_data = helpers.date_formatted_recurrence_rule(u)
+
+      {
+        id: u.id,
+        title: u.title || "Unavailable",
+        start: u.start_time.iso8601,
+        end: u.end_time.iso8601,
+        **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
+        allDay: CalendarTime.all_day?(u.start_time, u.end_time),
+        extendedProps: {
+          description: u.description,
+          eventType: "unavailability",
+          userId: u.user_id,
+          isAdminCreated: u.title&.include?("(Admin)")
+        }
+      }
+    end.compact
+  end
+
+  # The hosts of the linked calendars that could not be loaded go in a header, a JSON list (null for a link whose
+  # host cannot be read). The header is not part of the body's ETag, so a browser must not reuse an earlier answer.
+  def report_failed_calendars(feeds)
+    failed_hosts = feeds.select { |_external, feed| feed.failed? }.map { |external, _feed| external.source_host }
+    response.set_header("Cache-Control", "no-store")
+    response.set_header("X-Failed-Calendars", failed_hosts.to_json) unless failed_hosts.empty?
+  end
 
   def imported_feed(external)
     helpers.ics_feed(external.ics_url, name: "#{current_user.name} External Unavailability")
