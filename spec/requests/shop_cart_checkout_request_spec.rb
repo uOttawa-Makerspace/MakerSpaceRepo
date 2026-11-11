@@ -396,6 +396,15 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).to match(/cart-text.*fs-4\\?">3</)
     end
 
+    it "the checked-out answer shows legacy fractional amounts exactly, not truncated" do
+      close_cart_before_the_lock
+      item.update_columns(quantity: 2, unit_price: 2.5, total_price: 5.5)
+      order.update_columns(subtotal: 5.5)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response.body).to include("&times; 2 (5.5 CC)")
+      expect(response.body).to include("Total charged: 5.5 CC")
+    end
+
     it "a busy refusal keeps the cart's own badge count and session" do
       add_to_cart(other_project)
       fail_the_lock_with(ActiveRecord::LockWaitTimeout)
