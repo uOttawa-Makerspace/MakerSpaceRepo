@@ -121,15 +121,18 @@ Each item is marked as reported by a `settings` row, `job_alert:failed:<failed e
 
 ### Backfilling the CDEL report
 
-The report mailed on the 1st covers the month just ended. To mail a month again, or one that was missed, give the month as `YYYY-MM` (not later than the current month). Each run sends one mail:
+The report mailed on the 1st covers the month just ended. A month is mailed once: a run first claims `cdel_report_sent:YYYY-MM` in the `settings` table (value `claimed:<time>`), sends the mail, and then sets the value to `sent`, so a second run of the same month (the scheduled task run again, or the commands below) mails nothing. A run whose delivery fails hands its claim back and can be repeated. A run killed in the middle (worker stopped, crash) leaves its `claimed:` value; runs started within 30 minutes skip the month, and after that the next run takes the claim over and sends it (if the crash came right after the mail was sent, the month is mailed twice). To clear a stuck claim at once, run `Setting.where(key: "cdel_report_sent:2026-10").update_all(value: nil)` in a console, then repeat the run. To mail a month that was missed, give the month as `YYYY-MM` (not later than the current month); to mail a month again that was already sent, add `FORCE=1`. Each run sends one mail:
 
 ```
 docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-08]"
 docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-09]"
 docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-10]"
+docker compose -f docker-compose.production.yml exec -e FORCE=1 web bin/rails "reports:send_cdel_report_to_sharepoint[2026-10]"
 ```
 
-From a console, `CdelReportJob.perform_later(month: "2026-08")` does the same.
+The last line mails October again even though it was sent.
+
+From a console, `CdelReportJob.perform_later(month: "2026-08")` does the same, and `force: true` mails the month again.
 
 ### Backfilling the popular hours
 

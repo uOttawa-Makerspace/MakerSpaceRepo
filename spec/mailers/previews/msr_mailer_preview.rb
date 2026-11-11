@@ -79,10 +79,8 @@ class MsrMailerPreview < ActionMailer::Preview
   end
 
   def forgot_password_email
-    MsrMailer.forgot_password(
-      User.first.email,
-      "sample_reset_token"
-    )
+    user = User.first
+    MsrMailer.forgot_password(user.email, user.generate_token_for(:password_reset))
   end
 
   def send_training_report
@@ -206,7 +204,8 @@ class MsrMailerPreview < ActionMailer::Preview
   end
 
   def unlock_account
-    MsrMailer.unlock_account(User.first, "sample_unlock_hash")
+    user = User.first
+    MsrMailer.unlock_account(user, user.generate_token_for(:account_unlock))
   end
 
   def new_printer_issue

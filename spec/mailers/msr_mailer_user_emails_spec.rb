@@ -9,6 +9,11 @@ require "rails_helper"
 RSpec.describe MsrMailer, type: :mailer do
   let(:user) { create(:user, :regular_user) }
 
+  # The decoded body, so a long token is not split by the transfer encoding.
+  def body_text(mail)
+    mail.multipart? ? mail.parts.map { |part| part.body.decoded }.join : mail.body.decoded
+  end
+
   it "confirmation_email links to /confirm with the token" do
     mail = MsrMailer.confirmation_email(user, "TOKEN123")
     expect(mail.to).to eq([user.email])
@@ -42,16 +47,102 @@ RSpec.describe MsrMailer, type: :mailer do
   end
 
   it "forgot_password carries the reset token and says the link lasts 2 hours" do
-    mail = MsrMailer.forgot_password("a@b.co", "RTOKEN")
-    expect(mail.to).to eq(["a@b.co"])
+    token = user.generate_token_for(:password_reset)
+    mail = MsrMailer.forgot_password(user.email, token)
+    expect(mail.to).to eq([user.email])
     expect(mail.subject).to eq("Reset your MakerRepo password")
-    expect(mail.body.encoded).to include("reset_password_form?token=RTOKEN").and include("2 hours")
+    expect(body_text(mail)).to include("reset_password_form?token=#{CGI.escape(token)}").and include("2 hours")
   end
 
   it "unlock_account carries the unlock token" do
-    mail = MsrMailer.unlock_account(user, "UNLOCK1")
+    token = user.generate_token_for(:account_unlock)
+    mail = MsrMailer.unlock_account(user, token)
     expect(mail.to).to eq([user.email])
     expect(mail.subject).to eq("Unlock your MakerRepo Account")
-    expect(mail.body.encoded).to include("/unlock_account?token=UNLOCK1")
+    expect(body_text(mail)).to include("/unlock_account?token=#{CGI.escape(token)}")
+  end
+
+  describe "a link that expires while the mail waits in the queue" do
+    include ActiveJob::TestHelper
+    include ActiveSupport::Testing::TimeHelpers
+
+    let(:logged) { StringIO.new }
+
+    around do |example|
+      original = Rails.logger
+      Rails.logger = ActiveSupport::Logger.new(logged)
+      ActionMailer::Base.deliveries.clear
+      example.run
+    ensure
+      Rails.logger = original
+    end
+
+    def deliver_after(delay, &queue_mail)
+      travel_to(Time.current) do
+        queue_mail.call
+        travel(delay)
+        perform_enqueued_jobs
+      end
+    end
+
+    it "sends a reset mail delivered inside its 2 hours" do
+      deliver_after(119.minutes) { MsrMailer.forgot_password(user.email, user.generate_token_for(:password_reset)).deliver_later }
+
+      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([[user.email]])
+    end
+
+    it "does not send a reset mail delivered after its 2 hours, and logs it without the token" do
+      token = user.generate_token_for(:password_reset)
+      deliver_after(121.minutes) { MsrMailer.forgot_password(user.email, token).deliver_later }
+
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(logged.string).to include("forgot_password not sent", "user #{user.id}")
+      expect(logged.string).not_to include(token.first(20))
+    end
+
+    it "sends an unlock mail delivered inside its hour" do
+      deliver_after(59.minutes) { MsrMailer.unlock_account(user, user.generate_token_for(:account_unlock)).deliver_later }
+
+      expect(ActionMailer::Base.deliveries.map(&:to)).to eq([[user.email]])
+    end
+
+    it "does not send an unlock mail delivered after its hour, and logs it without the token" do
+      token = user.generate_token_for(:account_unlock)
+      deliver_after(61.minutes) { MsrMailer.unlock_account(user, token).deliver_later }
+
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(logged.string).to include("unlock_account not sent", "user #{user.id}")
+      expect(logged.string).not_to include(token.first(20))
+    end
+
+    it "does not send an unlock mail once the account was unlocked meanwhile" do
+      user.update_columns(locked: true, locked_until: 1.hour.from_now)
+      stale = user.generate_token_for(:account_unlock)
+      user.update_columns(locked: false, locked_until: nil)
+      MsrMailer.unlock_account(user, stale).deliver_later
+      perform_enqueued_jobs
+
+      expect(ActionMailer::Base.deliveries).to be_empty
+    end
+
+    it "uses the rule the link pages use: the predicates agree with the token lookup at every moment" do
+      reset = user.generate_token_for(:password_reset)
+      unlock = user.generate_token_for(:account_unlock)
+
+      [0.minutes, 59.minutes, 61.minutes, 119.minutes, 121.minutes].each do |age|
+        travel_to(Time.current + age) do
+          expect(User.password_reset_link_valid?(reset)).to eq(User.find_by_token_for(:password_reset, reset).present?)
+          expect(User.unlock_link_valid?(unlock)).to eq(User.find_by_token_for(:account_unlock, unlock).present?)
+        end
+      end
+      travel_to(Time.current + 90.minutes) do
+        expect([User.password_reset_link_valid?(reset), User.unlock_link_valid?(unlock)]).to eq([true, false])
+      end
+    end
+  end
+
+  it "leaves confirmation and email-change mails alone: they carry no expiring-link check" do
+    expect(MsrMailer.confirmation_email(user, "T").to).to eq([user.email])
+    expect(MsrMailer.email_confirmation_email("n@example.com", user, "T").to).to eq(["n@example.com"])
   end
 end

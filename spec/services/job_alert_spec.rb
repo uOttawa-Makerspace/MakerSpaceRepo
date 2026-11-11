@@ -135,7 +135,7 @@ RSpec.describe JobAlert do
   it "reports a scheduled execution that is overdue, but not one only just due or one in the future" do
     late = schedule(job(class_name: "LateJob"), now - JobAlert::SCHEDULED_OVERDUE_AFTER - 1.minute)
     schedule(job(class_name: "JustDueJob"), now - 1.minute)
-    schedule(job(class_name: "FutureJob"), now + 1.hour)
+    schedule(job(class_name: "FutureJob"), now + 2.hours)
 
     expect(run).to eq(1)
     expect(bodies.first).to include("LateJob", "scheduled", late.id.to_s)

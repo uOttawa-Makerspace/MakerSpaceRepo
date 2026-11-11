@@ -106,7 +106,11 @@ class MsrMailer < ApplicationMailer
   #   mail(to: email, subject: 'New password for MakerRepo')
   # end
 
+  # Mail can wait in the queue or be retried for hours, so the link is checked when the mail is built: one
+  # whose link has expired is not sent (the person asks again).
   def forgot_password(email, token)
+    return skip_expired_link("forgot_password", User.find_by(email: email)&.id) unless User.password_reset_link_valid?(token)
+
     @token = token
     mail(to: email, subject: "Reset your MakerRepo password")
   end
@@ -371,6 +375,8 @@ class MsrMailer < ApplicationMailer
   end
 
   def unlock_account(user, user_hash)
+    return skip_expired_link("unlock_account", user.id) unless User.unlock_link_valid?(user_hash)
+
     @user = user
     @user_hash = user_hash
     mail(to: @user.email, subject: "Unlock your MakerRepo Account")
@@ -379,5 +385,12 @@ class MsrMailer < ApplicationMailer
   def new_printer_issue(issue, recipient_email)
     @issue = issue
     mail(to: recipient_email, subject: "New Printer Issue: #{issue.summary}")
+  end
+
+  private
+
+  # Building no mail makes Action Mailer deliver nothing. The token itself is never logged.
+  def skip_expired_link(mail_name, user_id)
+    Rails.logger.info("MsrMailer##{mail_name} not sent: its link expired before delivery (user #{user_id.inspect})")
   end
 end
