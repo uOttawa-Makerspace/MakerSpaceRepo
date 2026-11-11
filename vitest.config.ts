@@ -15,5 +15,8 @@ export default defineConfig(async ({ mode }) => ({
     unstubGlobals: true,
     restoreMocks: true,
     include: ["spec/javascript/**/*.test.{js,ts}"],
+    // @fullcalendar/rrule reads the rrule package's named exports, which Node
+    // only exposes when the plugin is bundled by Vite like the browser build.
+    server: { deps: { inline: ["@fullcalendar/rrule"] } },
   },
 }));
