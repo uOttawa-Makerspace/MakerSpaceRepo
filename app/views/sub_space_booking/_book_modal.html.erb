@@ -52,8 +52,8 @@
                         Delete...
                     </button>
                     <ul class="dropdown-menu">
-                        <li><%= button_tag "This only", id: "bookRecurringDeleteOne", class: "dropdown-item", **confirmation_options(t("confirmations.bookings.delete")) %></li>
-                        <li><%= button_tag "This and rest", id: "bookRecurringDeleteRest", class: "dropdown-item", **confirmation_options(t("confirmations.bookings.delete_remaining")) %></li>
+                        <li><%= button_tag "This only", type: "button", id: "bookRecurringDeleteOne", class: "dropdown-item", **confirmation_options(t("confirmations.bookings.delete")) %></li>
+                        <li><%= button_tag "This and rest", type: "button", id: "bookRecurringDeleteRest", class: "dropdown-item", **confirmation_options(t("confirmations.bookings.delete_remaining")) %></li>
                     </ul>
                 </div>
                 <button type="button" id="bookCancel" class="btn btn-secondary ms-auto" data-bs-dismiss="modal">Close</button>

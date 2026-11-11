@@ -345,13 +345,15 @@ document.addEventListener("turbo:load", function () {
   document.getElementById("bookClose").addEventListener("click", closeModal);
   document.getElementById("bookSave").addEventListener("click", bookEvent);
   document.getElementById("bookUpdate").addEventListener("click", updateEvent);
-  document.getElementById("bookDelete").addEventListener("click", deleteEvent);
+  document
+    .getElementById("bookDelete")
+    .addEventListener("confirmation:confirmed", deleteEvent);
   document
     .getElementById("bookRecurringDeleteOne")
-    .addEventListener("click", deleteEvent);
+    .addEventListener("confirmation:confirmed", deleteEvent);
   document
     .getElementById("bookRecurringDeleteRest")
-    .addEventListener("click", deleteRecurringEvent);
+    .addEventListener("confirmation:confirmed", deleteRecurringEvent);
   document
     .getElementById("book-recurring")
     .addEventListener("change", toggleRecurring);

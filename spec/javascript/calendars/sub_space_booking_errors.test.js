@@ -50,7 +50,9 @@ async function respond(response) {
       ? Promise.reject(response)
       : Promise.resolve(response),
   );
-  document.getElementById("bookDelete").click();
+  document
+    .getElementById("bookDelete")
+    .dispatchEvent(new CustomEvent("confirmation:confirmed"));
   await settle();
 }
 
