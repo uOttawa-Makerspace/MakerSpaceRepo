@@ -25,6 +25,16 @@ class CcMoney < ApplicationRecord
     create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, cc: cc)
   end
 
+  scope :unlinked, -> { where(linked: false) }
+
+  # A purchase made without an account that nobody has claimed yet.
+  def claimable? = !linked?
+
+  # The signed token in the claim link mailed to the buyer (see CcMoneysController#link_cc_to_user).
+  def claim_token
+    Rails.application.message_verifier(:cc).generate(id)
+  end
+
   # Gives an unlinked purchase to `user`. The row is re-read under its lock, so of two claims racing
   # for the same row only the first writes; the other (or a repeat of the first) returns false and the
   # row keeps its owner. Also false when the row cannot be saved; `linked?` tells the two apart.

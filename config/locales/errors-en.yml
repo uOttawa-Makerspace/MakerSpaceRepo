@@ -64,6 +64,9 @@ en:
     admin:
       still_in_use: "Other records still use it, so it was left as it is."
       record_missing: "A record it refers to no longer exists. Reload the page and try again."
+      cc_money_claim_email:
+        already_linked: "That CC Money has already been added to an account, so no email was sent."
+        email_invalid: "Enter the buyer's email address. No email was sent."
       uni_programs:
         programs_file_missing: "The current programs file is not available on the server."
       time_periods:

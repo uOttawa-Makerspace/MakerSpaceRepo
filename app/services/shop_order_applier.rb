@@ -337,7 +337,7 @@ class ShopOrderApplier
         CcMoney.create!(user_id: user.id, cc: cc)
       else
         new_cc = CcMoney.create!(cc: cc, linked: false)
-        hash = Rails.application.message_verifier(:cc).generate(new_cc.id)
+        hash = new_cc.claim_token
         email = plan.email
         after_commit("cc_claim_mail") { MsrMailer.send_cc_money_email(email, cc, hash).deliver_later }
       end
