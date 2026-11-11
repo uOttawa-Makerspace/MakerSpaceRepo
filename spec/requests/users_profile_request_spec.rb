@@ -192,6 +192,22 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       end
     end
 
+    it "links the profile's web address, shown without its scheme" do
+      user.update_columns(url: "https://example.com/portfolio")
+      get user_path(user.username)
+      expect(response).to have_http_status(:ok)
+      link = Nokogiri::HTML(response.body).at_css("a[href='https://example.com/portfolio']")
+      expect(link.text).to eq("example.com/portfolio")
+      expect(link["rel"]).to eq("noopener noreferrer")
+    end
+
+    it "does not link a stored address that is not http(s)" do
+      user.update_columns(url: "javascript:alert(1)")
+      get user_path(user.username)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("javascript:alert(1)")
+    end
+
     it "username lookup is case-insensitive" do
       get user_path(user.username.upcase)
       expect(response).to have_http_status(:ok)

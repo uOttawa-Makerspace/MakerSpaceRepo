@@ -11,7 +11,7 @@
             <i class="fa-regular fa-clock"></i> <%= t('.joined_on') %> <%= @repo_user.created_at.to_date.to_fs :long %><br />
             <% if @repo_user.url.present? && @repo_user.url.match?(%r{\Ahttps?://}i) %>
                 <i class="fa-solid fa-link"></i>
-                <%= link_to @repo_user.url.sub(%r{\Ahttps?://}i, ''), sanitize_url(@repo_user.url), target: '_blank', rel: 'noopener noreferrer' %><br />
+                <%= link_to @repo_user.url.sub(%r{\Ahttps?://}i, ''), @repo_user.url, target: '_blank', rel: 'noopener noreferrer' %><br />
             <% end %>
             <p><%= t('.skills') %></p>
             <% @certifications.each do |certification| %>
