@@ -1276,6 +1276,7 @@ class User < ApplicationRecord
     UniProgram
       .where(program: program)
       .or(UniProgram.where(program: program_alt))
+      .order(active: :desc, department: :asc, level: :asc)
       .pick(:department)
   end
 

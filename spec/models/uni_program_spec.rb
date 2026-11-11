@@ -107,6 +107,20 @@ RSpec.describe UniProgram, type: :model do
 
       expect(user.department).to eq("EECS")
     end
+
+    it "resolve to the active program's department when both share a name" do
+      create(:uni_program, faculty: "Engineering", program: "Shared Name", department: "Retired Dept", active: false)
+      create(:uni_program, faculty: "Engineering", program: "Shared Name", level: "Doctorate", department: "Active Dept")
+
+      expect(build(:user, program: "Shared Name").department).to eq("Active Dept")
+    end
+
+    it "resolve to the same department every time when all matches are inactive" do
+      create(:uni_program, faculty: "Engineering", program: "Gone", department: "Zeta", active: false)
+      create(:uni_program, faculty: "Engineering", program: "Gone", level: "Doctorate", department: "Alpha", active: false)
+
+      expect(build(:user, program: "Gone").department).to eq("Alpha")
+    end
   end
 
   describe "uniqueness of active programs" do
