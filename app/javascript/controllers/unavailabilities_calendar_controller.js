@@ -14,7 +14,9 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
   containerTarget: HTMLElement,
   spinnerTarget: HTMLElement,
   failuresTarget: HTMLElement,
-  messageValue: string,
+  failureTemplateValue: string,
+  unknownHostValue: string,
+  feedFailureValue: string,
   feedUrlValue: string,
   unavailabilityFormOutlet: { openForAdd(options?: { returnFocusTo?: HTMLElement }): void, openForEdit(event: any): void, openForRange(range: { start: string, end: string }): void },
   importedEventDetailsOutlet: { show(event: any, returnFocusTo?: HTMLElement | null): void },
@@ -25,7 +27,12 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
 // outlet) from it, and removes the calendar when the element leaves the page.
 export default class extends TypedController {
   static targets = ["calendar", "container", "spinner", "failures"];
-  static values = { feedUrl: String, message: String };
+  static values = {
+    feedUrl: String,
+    failureTemplate: String,
+    unknownHost: String,
+    feedFailure: String,
+  };
   static outlets = ["unavailability-form", "imported-event-details"];
 
   connect() {
@@ -61,20 +68,36 @@ export default class extends TypedController {
     }
   }
 
-  // The feed names, in a header, the hosts of the linked calendars it could not
-  // load. Each is listed as text; nothing is listed when all loaded.
+  // The feed names, in a header, the hosts of the linked calendars it could
+  // not load (a list; a link whose host could not be read is null). Each is
+  // listed as text; nothing is listed when all loaded.
   showFailures(response) {
-    const hosts = (response.headers.get("X-Failed-Calendars") || "")
-      .split(",")
-      .filter(Boolean);
+    const header = response.headers.get("X-Failed-Calendars");
+    const hosts = header === null ? [] : JSON.parse(header);
+    this.listFailures(
+      hosts.map((host) =>
+        this.failureTemplateValue.replace(
+          "{host}",
+          host ?? this.unknownHostValue,
+        ),
+      ),
+    );
+  }
+
+  // The feed itself could not be loaded, so any earlier lines are out of date.
+  showFeedFailure() {
+    this.listFailures([this.feedFailureValue]);
+  }
+
+  listFailures(lines) {
     this.failuresTarget.replaceChildren(
-      ...hosts.map((host) => {
+      ...lines.map((text) => {
         const line = document.createElement("div");
-        line.textContent = this.messageValue.replace("{host}", host);
+        line.textContent = text;
         return line;
       }),
     );
-    this.failuresTarget.hidden = hosts.length === 0;
+    this.failuresTarget.hidden = lines.length === 0;
   }
 
   calendarOptions() {
@@ -95,6 +118,7 @@ export default class extends TypedController {
       events: {
         url: this.feedUrlValue,
         success: (_events, response) => this.showFailures(response),
+        failure: () => this.showFeedFailure(),
       },
       eventClick: (info) => this.openEvent(info.event, info.el),
       select: (info) =>

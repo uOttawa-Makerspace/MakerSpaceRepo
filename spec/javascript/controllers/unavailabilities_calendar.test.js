@@ -39,7 +39,7 @@ const { default: UnavailabilitiesCalendar } =
   await import("../../../app/javascript/controllers/unavailabilities_calendar_controller.js");
 
 const PAGE = `
-<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-message-value="{host} could not be loaded" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
+<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-failure-template-value="{host} could not be loaded" data-unavailabilities-calendar-unknown-host-value="a linked calendar" data-unavailabilities-calendar-feed-failure-value="Your calendar could not be loaded" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
   <div id="calendar_container" data-unavailabilities-calendar-target="container" style="display:none">
     <button id="addUnavailabilityButton" data-action="click->unavailabilities-calendar#addUnavailability"></button>
     <div id="calendar" data-unavailabilities-calendar-target="calendar"><p id="stale">old</p></div>
@@ -163,7 +163,9 @@ describe("staff unavailabilities calendar", () => {
 
   describe("linked calendars that could not be loaded", () => {
     const response = (value) => ({
-      headers: new Headers(value ? { "X-Failed-Calendars": value } : {}),
+      headers: new Headers(
+        value ? { "X-Failed-Calendars": JSON.stringify(value) } : {},
+      ),
     });
     const failures = () => document.getElementById("failures");
 
@@ -171,7 +173,7 @@ describe("staff unavailabilities calendar", () => {
       const cal = await boot();
       const kept = cal.options.events.success(
         [{ id: "e" }],
-        response("a.example,<b>b</b>.example"),
+        response(["a.example", "<b>b</b>.example"]),
       );
       expect(kept).toBeUndefined();
       expect(failures().hidden).toBe(false);
@@ -182,9 +184,27 @@ describe("staff unavailabilities calendar", () => {
       expect(failures().querySelector("b")).toBeNull();
     });
 
+    it("names a link whose host could not be read as a linked calendar", async () => {
+      const cal = await boot();
+      cal.options.events.success([], response([null]));
+      expect(failures().textContent).toBe(
+        "a linked calendar could not be loaded",
+      );
+    });
+
+    it("replaces earlier lines with one message when the feed itself fails", async () => {
+      const cal = await boot();
+      cal.options.events.success([], response(["a.example"]));
+      cal.options.events.failure(new Error("down"));
+      expect(failures().hidden).toBe(false);
+      expect([...failures().children].map((c) => c.textContent)).toEqual([
+        "Your calendar could not be loaded",
+      ]);
+    });
+
     it("clears the names again when every calendar loads", async () => {
       const cal = await boot();
-      cal.options.events.success([], response("a.example"));
+      cal.options.events.success([], response(["a.example"]));
       cal.options.events.success([], response(null));
       expect(failures().hidden).toBe(true);
       expect(failures().children).toHaveLength(0);

@@ -556,6 +556,8 @@ en:
 
   staff_unavailabilities:
     could_not_load: "{host} could not be loaded"
+    unknown_calendar: "a linked calendar"
+    feed_failed: "Your calendar could not be loaded. Try reloading the page."
     imported_event:
       title: "Imported event"
       from: "Imported from a linked calendar ({host})."

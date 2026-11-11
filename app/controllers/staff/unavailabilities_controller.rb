@@ -115,11 +115,12 @@ class Staff::UnavailabilitiesController < StaffAreaController
       }
     end.compact
 
-    failed_hosts = []
-    ics_unavails = current_user.staff_external_unavailabilities.flat_map { |external| imported_events(external, failed_hosts) }
+    feeds = current_user.staff_external_unavailabilities.map { |external| [external, imported_feed(external)] }
+    ics_unavails = feeds.flat_map { |external, feed| imported_events(external.source_host, feed) }
+    failed_hosts = feeds.select { |_external, feed| feed.failed? }.map { |external, _feed| external.source_host }
     # The failure header is not part of the body's ETag, so a browser must not reuse an earlier answer.
     response.set_header("Cache-Control", "no-store")
-    response.set_header("X-Failed-Calendars", failed_hosts.compact.join(",")) if failed_hosts.any?
+    response.set_header("X-Failed-Calendars", failed_hosts.to_json) unless failed_hosts.empty?
 
     combined_unavailabilities = local_unavails + ics_unavails
 
@@ -146,17 +147,16 @@ class Staff::UnavailabilitiesController < StaffAreaController
 
   private
 
-  # The events of one linked calendar, marked with where they came from. The host of a link that could not be
-  # loaded is added to failed_hosts: only the host is ever reported, because a private link holds its secret in
-  # the path.
-  def imported_events(external, failed_hosts)
-    failures = []
-    parsed = helpers.parse_ics_calendar(external.ics_url, name: "#{current_user.name} External Unavailability", failures: failures)
-    failed_hosts << external.source_host if parsed.empty? || failures.any?
+  def imported_feed(external)
+    helpers.ics_feed(external.ics_url, name: "#{current_user.name} External Unavailability")
+  end
 
-    parsed.flat_map do |calendar|
+  # The events of one linked calendar, marked with the host of the link they came from. Only the host is ever
+  # sent: a private link holds its secret in the path.
+  def imported_events(host, feed)
+    feed.calendars.flat_map do |calendar|
       calendar[:events].map do |event|
-        event.merge(title: "External - #{event[:title]}", extendedProps: event[:extendedProps].merge(sourceHost: external.source_host))
+        event.merge(title: "External - #{event[:title]}", extendedProps: event.fetch(:extendedProps, {}).merge(sourceHost: host))
       end
     end
   end

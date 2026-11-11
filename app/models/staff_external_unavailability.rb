@@ -4,12 +4,9 @@ class StaffExternalUnavailability < ApplicationRecord
   validates :ics_url, presence: true
   validate :ics_url_is_fetchable, if: -> { ics_url.present? }
 
-  # The host of the link, for showing where an event came from. The path and
-  # query are left out: a private calendar link carries its secret there.
+  # The host of the link, for showing where an event came from (nil when it cannot be read).
   def source_host
-    URI.parse(ics_url).host
-  rescue URI::InvalidURIError
-    nil
+    IcsFetcher.host(ics_url)
   end
 
   private

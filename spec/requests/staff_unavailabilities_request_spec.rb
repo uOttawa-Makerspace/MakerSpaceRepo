@@ -372,9 +372,27 @@ RSpec.describe "Staff unavailabilities", type: :request do
         stub_ics(empty, body: ics_document)
         get json_staff_unavailabilities_path
 
-        expect(response.headers["X-Failed-Calendars"].split(",")).to contain_exactly("down.example.org", "slow.example.org")
+        expect(JSON.parse(response.headers["X-Failed-Calendars"])).to contain_exactly("down.example.org", "slow.example.org")
         expect(response.parsed_body).to eq([])
         expect(response.body + response.headers.to_h.to_s).not_to match(/secret-|key=zzz/)
+      end
+
+      it "reports a link that answers 200 with something that is not a calendar, but not a valid empty calendar" do
+        page = "https://login.example.org/private/secret-login/basic.ics"
+        valid = "https://valid.example.org/basic.ics"
+        [page, valid].each { |url| StaffExternalUnavailability.create!(user: staff, ics_url: url) }
+        stub_request(:get, page).to_return(status: 200, body: "<html><body>Please sign in</body></html>")
+        stub_ics(valid, body: ics_document)
+        get json_staff_unavailabilities_path
+
+        expect(JSON.parse(response.headers["X-Failed-Calendars"])).to eq(["login.example.org"])
+      end
+
+      it "still reports a failed link whose host cannot be read, without a name" do
+        StaffExternalUnavailability.new(user: staff, ics_url: "https://exa mple.org/a.ics").save!(validate: false)
+        get json_staff_unavailabilities_path
+
+        expect(JSON.parse(response.headers["X-Failed-Calendars"])).to eq([nil])
       end
 
       it "tells the browser not to reuse an earlier answer, since the failure header is not part of the body's ETag" do

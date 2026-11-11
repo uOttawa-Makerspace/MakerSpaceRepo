@@ -634,6 +634,8 @@ fr:
 
   staff_unavailabilities:
     could_not_load: "{host} n'a pas pu être chargé"
+    unknown_calendar: "un calendrier lié"
+    feed_failed: "Votre calendrier n'a pas pu être chargé. Essayez de recharger la page."
     imported_event:
       title: "Événement importé"
       from: "Importé depuis un calendrier lié ({host})."
