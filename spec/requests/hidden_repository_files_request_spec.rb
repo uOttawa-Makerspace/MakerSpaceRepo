@@ -92,6 +92,21 @@ RSpec.describe "Files of a deleted repository", type: :request do
     expect(response).to have_http_status(:ok)
   end
 
+  it "leaves a disk URL with a tampered key to the engine, which refuses it" do
+    get "/rails/active_storage/disk/not-a-signed-key/a.png"
+    expect(response).to have_http_status(:not_found)
+  end
+
+  it "leaves a direct upload to the engine when the request names no blob key" do
+    put "/rails/active_storage/disk/not-a-signed-token", params: "x"
+    expect(response).to have_http_status(:not_found)
+  end
+
+  it "leaves a blob URL with a tampered signed id to the engine, which refuses it" do
+    get "/rails/active_storage/blobs/proxy/not-a-signed-id/a.png"
+    expect(response).to have_http_status(:not_found)
+  end
+
   describe "query cost" do
     def attachment_queries(&block)
       count = 0
