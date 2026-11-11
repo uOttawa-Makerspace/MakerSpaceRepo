@@ -341,7 +341,7 @@ RSpec.describe "Owner changes after the quote", type: :request do
 
   # ------------------------------------------------------------ what staff see
 
-  describe "pages", skip_bullet: true do
+  describe "pages" do
     it "shows staff in the timeline who sent the order back and why" do
       order = order_in!(:completed)
       session_login!(owner)

@@ -652,7 +652,7 @@ RSpec.describe "JobOrders gaps", type: :request do
     end
 
     # N+1 pinned
-    it "shows the status history with a timestamp to the admin role, naming the actor only for processing steps", skip_bullet: true do
+    it "shows the status history with a timestamp to the admin role, naming the actor only for processing steps" do
       order = order_with_task!
       advance_to!(order, :staff_approval, by: owner)
       advance_to!(order, :being_processed, by: staff)

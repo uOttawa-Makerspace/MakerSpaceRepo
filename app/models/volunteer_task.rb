@@ -7,6 +7,8 @@ class VolunteerTask < ApplicationRecord
   belongs_to :space, optional: true
   has_many :volunteer_hours, dependent: :destroy
   has_many :volunteer_task_joins, dependent: :destroy
+  # The staff and admins now on the task: the ones the task list names as responsible.
+  has_many :responsible_staff_joins, -> { joined.where(user_type: %w[Staff Admin]) }, class_name: "VolunteerTaskJoin"
   has_many :require_trainings, dependent: :destroy
   has_many :volunteer_task_requests, dependent: :destroy
   has_many :cc_moneys, dependent: :destroy

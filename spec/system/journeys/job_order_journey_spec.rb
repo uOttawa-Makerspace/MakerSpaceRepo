@@ -8,7 +8,7 @@ require "rails_helper"
 # sides chat. Pins current behavior (the landing page's "Start
 # Production" button creates a typeless task, so the wizard's step 1 asks for
 # the job type).
-RSpec.describe "Journey: job order", type: :system, skip_bullet: true do
+RSpec.describe "Journey: job order", type: :system do
   let!(:user) { create(:user, :regular_user) }
   let!(:staff) { create(:user, :admin) }
   let(:fixture) { Rails.root.join("spec/support/assets/test.stl") }

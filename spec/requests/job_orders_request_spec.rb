@@ -1100,7 +1100,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
   describe "GET /job_orders/:id/timeline_modal" do
     # N+1 pinned
-    it "renders the status history (layout: false) newest-first for staff", skip_bullet: true do
+    it "renders the status history (layout: false) newest-first for staff" do
       order = order_with_task!(owner: owner)
       advance_to!(order, :staff_approval)
       http_login!(staff)
@@ -1112,7 +1112,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
     end
 
     # JobOrderStatus#user is optional (rows from before its presence validation have none)
-    it "names a missing actor 'Unknown' instead of raising, on processing and sent-back rows", skip_bullet: true do
+    it "names a missing actor 'Unknown' instead of raising, on processing and sent-back rows" do
       order = order_with_task!(owner: owner)
       advance_to!(order, :being_processed)
       sent_back = order.job_order_statuses.create!(job_status: JobStatus.staff_approval, user: owner, reason: "owner_change")
@@ -1127,7 +1127,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(text).to include("#{I18n.t('job_orders.status_reasons.owner_change')} (By: Unknown)")
     end
 
-    describe "approvals and declines answered for the customer", skip_bullet: true do
+    describe "approvals and declines answered for the customer" do
       let(:order) { order_with_task!(owner: owner).tap { |o| advance_to!(o, :user_approval) } }
 
       def timeline_text
