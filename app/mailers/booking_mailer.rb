@@ -11,8 +11,8 @@ class BookingMailer < ApplicationMailer
     @message =
       "A booking has been made in " + @sub_space.name + " by " + booker_name +
         " for " + @booking.description + " on " +
-        @booking.start_time.to_formatted_s(:long) + " to " +
-        @booking.end_time.to_formatted_s(:long) +
+        long_time(@booking.start_time) + " to " +
+        long_time(@booking.end_time) +
         ". Please check the Booking Admin Panel to approve or decline this booking."
     mail(to: @emails, subject: "Booking needs approval")
   end
@@ -25,8 +25,8 @@ class BookingMailer < ApplicationMailer
       "A booking has been made and automatically approved in " +
         @sub_space.name + " by " + booker_name + " for " +
         @booking.description + " on " +
-        @booking.start_time.to_formatted_s(:long) + " to " +
-        @booking.end_time.to_formatted_s(:long) +
+        long_time(@booking.start_time) + " to " +
+        long_time(@booking.end_time) +
         ". If you want to disable automatic booking for this subspace, go to the admin space page."
 
     mail(to: @emails, subject: "Booking automatically approved.")
@@ -40,8 +40,8 @@ class BookingMailer < ApplicationMailer
     return if @email.blank?
     @message =
       "Your booking in " + @sub_space.name + " for " + @booking.description +
-        " on " + @booking.start_time.to_formatted_s(:long) + " to " +
-        @booking.end_time.to_formatted_s(:long) + " has been approved."
+        " on " + long_time(@booking.start_time) + " to " +
+        long_time(@booking.end_time) + " has been approved."
     mail(to: @email, subject: "Booking approved")
   end
 
@@ -117,6 +117,11 @@ class BookingMailer < ApplicationMailer
       severity: :warning
     )
     [MTC_MAILBOX]
+  end
+
+  # A time in the mail's language (the locale the mail is built in).
+  def long_time(time)
+    I18n.l(time, format: :long)
   end
 
   # The booker's name, marked when the account is deleted; the booking title when it has no user.
