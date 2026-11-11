@@ -20,8 +20,8 @@ const { default: CommentsModal } =
 const { default: VolunteerSearch } =
   await import("../../../app/javascript/controllers/volunteer_search_controller.js");
 
-const { default: EnableWhenReady } =
-  await import("../../../app/javascript/controllers/enable-when-ready_controller.js");
+const { default: Confirmation } =
+  await import("../../../app/javascript/controllers/confirmation_controller.js");
 
 let application;
 const $ = (id) => document.getElementById(id);
@@ -34,7 +34,7 @@ async function mount(html) {
   application.register("launch-custom-modal", LaunchCustomModal);
   application.register("job-order-comments-modal", CommentsModal);
   application.register("volunteer-search", VolunteerSearch);
-  application.register("enable-when-ready", EnableWhenReady);
+  application.register("confirmation", Confirmation);
   await settle();
 }
 
@@ -297,11 +297,50 @@ describe("volunteer-search", () => {
   });
 });
 
-describe("enable-when-ready", () => {
+describe("confirmation", () => {
+  const button = (attrs = "") =>
+    `<button id="go" disabled ${attrs} data-controller="confirmation"
+             data-confirmation-message-value="Sure?"
+             data-action="click->confirmation#ask">Go</button>`;
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  const click = () => {
+    const event = new Event("click", { bubbles: true, cancelable: true });
+    $("go").dispatchEvent(event);
+    return event;
+  };
+
   it("enables a button that was rendered disabled once it connects", async () => {
-    await mount(
-      '<button id="go" disabled data-controller="enable-when-ready">Go</button>',
-    );
+    await mount(button());
     expect($("go").disabled).toBe(false);
+  });
+
+  it("leaves an element that cannot be disabled alone", async () => {
+    await mount(
+      '<a id="go" href="/x" data-controller="confirmation" data-confirmation-message-value="Go?">Go</a>',
+    );
+    expect($("go").hasAttribute("disabled")).toBe(false);
+  });
+
+  it("asks with its message and cancels the click when declined", async () => {
+    const confirm = vi.fn(() => false);
+    vi.stubGlobal("confirm", confirm);
+    await mount(button());
+    const listener = vi.fn();
+    document.body.addEventListener("click", listener);
+    const event = click();
+    expect(confirm).toHaveBeenCalledWith("Sure?");
+    expect(event.defaultPrevented).toBe(true);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("lets the click through when confirmed", async () => {
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => true),
+    );
+    await mount(button());
+    expect(click().defaultPrevented).toBe(false);
   });
 });

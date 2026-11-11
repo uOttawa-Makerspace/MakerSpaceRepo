@@ -113,7 +113,7 @@
         <td>
           <%= link_to 'Visit', staff_training_session_url(sesh), class: 'btn btn-link' %>
           <%= link_to 'Download', training_report_staff_training_session_path(id: sesh.id, format: 'xlsx'), action: :training_report, class: 'btn btn-link' %>
-          <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, data: { confirm: t('confirm_delete.training_session') }, class: 'btn btn-danger' %>
+          <%= button_to 'Destroy', { action: :destroy, id: sesh.id }, method: :delete, **confirmation_options(t('confirm_delete.training_session')), class: 'btn btn-danger' %>
         </td>
       </tr>
     <% end %>

@@ -100,7 +100,7 @@
                   <td><p><%= order.order_status.name %></p></td>
                   <td><p><%= order.total %></p></td>
                   <td>
-                    <%= button_to 'Delete', order, method: :delete, data: { confirm: 'Are you sure? This will give back the CC points used to purchase this order.' }, class: 'btn btn-danger' %>
+                    <%= button_to 'Delete', order, method: :delete, **confirmation_options('Are you sure? This will give back the CC points used to purchase this order.'), class: 'btn btn-danger' %>
                   </td>
                 </tr>
               <% end %>

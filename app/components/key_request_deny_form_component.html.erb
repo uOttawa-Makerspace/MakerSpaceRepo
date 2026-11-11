@@ -1,5 +1,5 @@
-<%= form_with url: url, method: :patch, class: form_class, data: { confirm: 'Are you sure you want to deny this key request?' } do |f| %>
+<%= form_with url: url, method: :patch, class: form_class do |f| %>
   <%= f.label :denial_reason, 'Reason for denying (optional)', for: field_id, class: 'visually-hidden' %>
   <%= f.text_field :denial_reason, id: field_id, maxlength: KeyRequest::MAX_DENIAL_REASON_LENGTH, placeholder: 'Reason (optional)', class: "form-control #{input_class}" %>
-  <%= f.button type: 'submit', class: button_class do %><% if icon %><i class="bi bi-x-lg"></i> <% end %>Deny<% end %>
+  <%= f.button type: 'submit', class: button_class, **helpers.confirmation_options('Are you sure you want to deny this key request?') do %><% if icon %><i class="bi bi-x-lg"></i> <% end %>Deny<% end %>
 <% end %>

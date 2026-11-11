@@ -408,14 +408,14 @@ RSpec.describe "Admin keys", type: :request do
       expect(ActionMailer::Base.deliveries.sole.body.decoded).to include("Supervisor must be a professor")
     end
 
-    it "asks for confirmation on the deny form of the requests page and the request page" do
+    it "asks for confirmation on the deny button of the requests page and the request page" do
       get requests_admin_keys_path
       form = Nokogiri::HTML(response.body).at_css("form[action='#{deny_key_request_admin_keys_path(id: kr.id)}']")
-      expect(form["data-confirm"]).to eq("Are you sure you want to deny this key request?")
+      expect(form.at_css("button[disabled]")["data-confirmation-message-value"]).to eq("Are you sure you want to deny this key request?")
       expect(form.at_css("label[for='denial_reason_#{kr.id}']")).to be_present
       get key_request_path(kr.id)
       page_form = Nokogiri::HTML(response.body).at_css("form[action='#{deny_key_request_admin_keys_path(id: kr.id)}']")
-      expect(page_form["data-confirm"]).to be_present
+      expect(page_form.at_css("button[disabled]")["data-confirmation-message-value"]).to be_present
       expect(page_form.at_css("input#denial_reason_#{kr.id}")).to be_present
     end
 

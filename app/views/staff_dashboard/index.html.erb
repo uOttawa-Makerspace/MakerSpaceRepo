@@ -23,12 +23,12 @@
     <caption id="user-count" class="text-center fs-3" align="top">
         <span id="SpaceUserCount"><%= pluralize @space.signed_in_users.count, 'user' %> inside <%= @space.name %></span>
         <div class="d-flex justify-content-around">
-            <%= button_to staff_dashboard_sign_out_all_users_path, method: :post, class: 'btn btn-danger', form: { data: { turbo_confirm: 'Are you sure you want to sign out all users?' } } do %>
+            <%= button_to staff_dashboard_sign_out_all_users_path, method: :post, class: 'btn btn-danger', **confirmation_options('Are you sure you want to sign out all users?') do %>
                 <i class="fa-solid fa-right-from-bracket"></i> Sign Out All Users
             <% end %>
             <% if @space.jmts? %>
                 <%= button_to staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, form_class: 'btn btn-primary', class: 'btn p-0',
-                              data: { confirm: 'Are you sure you want to add all signed in users to the teams program?' } do %>
+                              **confirmation_options('Are you sure you want to add all signed in users to the teams program?') do %>
                     <i class="fa-solid fa-users"></i> Add Signed In Users to Teams Program
                 <% end %>
             <% end %>

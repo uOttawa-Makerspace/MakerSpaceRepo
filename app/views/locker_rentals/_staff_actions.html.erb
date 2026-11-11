@@ -28,7 +28,7 @@
                                           <%= check_box_tag 'locker_rental[indefinite]', '1', false, class: 'form-check-input', id: 'indefinite_checkout', data: { indefinite_target: 'owned_until_checkout' } %>
                                           <%= label_tag 'indefinite_checkout', 'Indefinite', class: 'form-check-label small' %>
                                         </div>
-                                        <%= f.button name: 'locker_rental[state]', value: 'await_payment', class: 'btn btn-success w-100 mt-auto', **confirmed_until_ready('Send payment notification to the user?') do %>
+                                        <%= f.button name: 'locker_rental[state]', value: 'await_payment', class: 'btn btn-success w-100 mt-auto', **confirmation_options('Send payment notification to the user?') do %>
                                             <i class="fa-solid fa-paper-plane"></i> Send to Checkout
                                         <% end %>
                                     <% end %>
@@ -55,7 +55,7 @@
                                   <%= check_box_tag 'locker_rental[indefinite]', '1', @locker_rental.indefinite?, class: 'form-check-input', id: 'indefinite_assign', data: { indefinite_target: 'owned_until_assign' } %>
                                   <%= label_tag 'indefinite_assign', 'Indefinite', class: 'form-check-label small' %>
                                 </div>
-                                <%= f.button name: 'locker_rental[state]', value: 'active', class: 'btn btn-info w-100 mt-auto', **confirmed_until_ready('Assign this locker immediately?') do %>
+                                <%= f.button name: 'locker_rental[state]', value: 'active', class: 'btn btn-info w-100 mt-auto', **confirmation_options('Assign this locker immediately?') do %>
                                     <%= @locker_rental.active? ? 'Move Locker' : 'Assign Now' %>
                                 <% end %>
                             <% end %>
@@ -78,7 +78,7 @@
                             </p>
                             <%= form_with model: @locker_rental do |f| %>
                                 <%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
-                                <%= f.button name: 'locker_rental[state]', value: 'cancelled', class: 'btn btn-outline-danger w-100 mt-auto', **confirmed_until_ready('Are you sure you want to cancel this locker?') do %>
+                                <%= f.button name: 'locker_rental[state]', value: 'cancelled', class: 'btn btn-outline-danger w-100 mt-auto', **confirmation_options('Are you sure you want to cancel this locker?') do %>
                                     <% if @locker_rental.active? %>
                                         <i class="fa-solid fa-ban"></i> End Rental
                                     <% else %>
