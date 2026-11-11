@@ -25,6 +25,24 @@ class Certification < ApplicationRecord
         }
   scope :inactive, -> { unscoped.where(active: false) }
 
+  # The reason recorded when revoking a project badge deactivates the certification it granted.
+  BADGE_REVOKED_REASON = "Project badge revoked"
+
+  # Every certification (active or not) a user earned through approvals of a proficient project.
+  # The project session carries no link to the order item, so user and project identify it.
+  def self.for_project(user_id, project_id)
+    unscoped.where(
+      user_id: user_id,
+      id: ProficientProjectSession.where(proficient_project_id: project_id).select(:certification_id)
+    )
+  end
+
+  # Inactive certifications that a badge revoke deactivated (not ones demoted by hand), the most
+  # recently deactivated first. Call on a relation from .for_project.
+  def self.revoked_badges
+    where(active: false, demotion_reason: BADGE_REVOKED_REASON).order(updated_at: :desc, id: :desc)
+  end
+
   # A badge page is addressed by its share token, or by the numeric id older links use.
   # Tokens always contain a non-digit, so an all-digit key is an id.
   def self.find_for_badge_page!(key)

@@ -116,4 +116,66 @@ RSpec.describe OrderItem, type: :model do
       expect(OrderItem.completed_order).to contain_exactly(a)
     end
   end
+
+  describe "revoking and awarding a project badge" do
+    let(:staff) { create(:user, :staff) }
+    let(:buyer) { create(:user) }
+    let(:item) do
+      create(:order_item, order: create(:order, :completed, user_id: buyer.id), status: "Waiting for approval")
+    end
+    let(:certification) { Certification.unscoped.find_by!(user_id: buyer.id) }
+
+    before { item.award!(staff, admin_comments: "ok") }
+
+    it "deactivates the granted certification on revoke" do
+      expect(item.revoke(staff)).to be(true)
+      expect(item).to be_revoked
+      expect(certification).not_to be_active
+      expect(certification.demotion_staff).to eq(staff)
+    end
+
+    it "keeps the certification and its session when revoking" do
+      item.revoke(staff)
+      expect(Certification.unscoped.where(user_id: buyer.id).count).to eq(1)
+      expect(ProficientProjectSession.count).to eq(1)
+    end
+
+    it "changes nothing when revoking a revoked item" do
+      item.revoke(staff)
+      expect { expect(item.revoke(staff)).to be(true) }.not_to change { certification.reload.attributes }
+    end
+
+    it "restores the certification when a revoked item is awarded again" do
+      item.revoke(staff)
+      expect(item.award!(staff)).to be(true)
+      expect(certification).to be_active
+      expect(item).to be_awarded
+    end
+
+    it "refuses to award an awarded item again" do
+      expect(item.award!(staff)).to be(false)
+      expect(ProficientProjectSession.count).to eq(1)
+    end
+
+    it "does not award an item that is in progress" do
+      other = create(:order_item, order: create(:order, :completed, user_id: buyer.id), status: "In progress")
+      expect(other.award!(staff)).to be(false)
+      expect(other.reload.status).to eq("In progress")
+    end
+
+    it "reports false with the reasons on the item, and writes nothing, when the revoke does not save" do
+      item.update_column(:quantity, 0)
+      expect(item.revoke(staff)).to be(false)
+      expect(item.errors[:quantity]).to be_present
+      expect(item.reload.status).to eq("Awarded")
+      expect(certification).to be_active
+    end
+
+    it "reports false with the order error for an item that has no order" do
+      orphan = OrderItem.new(proficient_project: create(:proficient_project), quantity: 1, status: "Awarded")
+      orphan.save(validate: false)
+      expect(orphan.revoke(staff)).to be(false)
+      expect(orphan.errors[:order]).to be_present
+    end
+  end
 end

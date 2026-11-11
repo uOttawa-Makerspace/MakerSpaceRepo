@@ -80,11 +80,11 @@ class UserBookingApproval < ApplicationRecord
     return unless will_save_change_to_status? || will_save_change_to_decided_at?
     return if NEXT_STATUSES.fetch(status_in_database, []).include?(status)
 
-    errors.add(:base, "This request was already #{status_in_database}.")
+    errors.add(:base, :"already_#{status_in_database}")
   end
 
   def account_not_deleted
-    errors.add(:base, "The account that sent this request has been deleted.") if user&.deleted?
+    errors.add(:base, :account_deleted) if user&.deleted?
   end
 
   def mirror_status_in_approved_column

@@ -79,6 +79,7 @@
      # 2. Find the match in the SAFE list. 
      # Brakeman sees that 'report_to_render' comes from 'allowed_reports', not 'params'.
      report_to_render = allowed_reports.find { |r| r == params[:report_type] }
+     report_to_render = 'popular_hours_per_period' if report_to_render == 'popular_hours' && @date_specified
   %>
 
   <% if report_to_render %>

@@ -114,8 +114,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).not_to include(I18n.t("job_orders.public_page.admin_page"))
     end
 
-    # N+1 pinned
-    it "splits draft orders (partly created) from submitted ones", skip_bullet: true do
+    it "splits draft orders (partly created) from submitted ones" do
       draft = order_with_task!(owner: owner, status_key: :draft)
       empty_draft = make_job_order!(owner: owner, status_key: :draft)
       submitted = order_with_task!(owner: owner, status_key: :staff_approval)
@@ -407,6 +406,15 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(response.body).to include('name="redirect_step"')
     end
 
+    it "submits each entry card with a plain submit button and no inline script handler" do
+      http_login!(owner)
+      seed_job_types!
+      get new_job_orders_path
+      page = Nokogiri::HTML(response.body)
+      expect(page.css("form button[type=submit]").size).to be >= 2
+      expect(page.css("[onclick]")).to be_empty
+    end
+
     it "shows the Ready to Make card with its type when the type exists" do
       http_login!(owner)
       seed_job_types!
@@ -448,9 +456,24 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       http_login!(owner)
       delete job_order_path(order)
       expect(response).to redirect_to(job_orders_path)
-      expect(flash[:notice]).to eq("Job order deleted successfully.")
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.deleted"))
       expect(order.reload.is_deleted).to be(true)
       expect(JobOrder.where(id: order.id, is_deleted: false)).to be_empty
+    end
+
+    it "words the flash in the visitor's language" do
+      order = order_with_task!(owner: owner)
+      http_login!(owner)
+      delete job_order_path(order, locale: "fr")
+      expect(flash[:notice]).to eq(I18n.t("job_orders.alerts.deleted", locale: :fr))
+      expect(flash[:notice]).not_to eq(I18n.t("job_orders.alerts.deleted", locale: :en))
+    end
+
+    it "asks for the delete confirmation in the visitor's language on the order page" do
+      order = order_with_task!(owner: owner)
+      http_login!(owner)
+      get job_order_path(order, locale: "fr")
+      expect(response.body).to include(CGI.escapeHTML(I18n.t("job_orders.are_you_sure_you_want_to_delete", locale: :fr)))
     end
 
     it "sends the admin back to the admin index" do
@@ -558,7 +581,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
     it "requires staff/admin (a regular user is bounced to root)" do
       http_login!(owner)
-      patch job_order_quote_path(order), params: quote_params(order, order.job_tasks.first)
+      patch_quote order, quote_params(order, order.job_tasks.first)
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.cannot_access_area"))
     end
@@ -569,7 +592,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       it "saves task quote, staff comments, chat message, sets USER_APPROVAL and emails the quote" do
         task = order.job_tasks.first
         expect do
-          patch job_order_quote_path(order), params: quote_params(order, task)
+          patch_quote order, quote_params(order, task)
         end.to change { ActionMailer::Base.deliveries.size }.by(1)
 
         expect(response).to redirect_to(job_order_path(order))
@@ -599,8 +622,8 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "switches to the re-approved wording after a second quote submission" do
         task = order.job_tasks.first
-        patch job_order_quote_path(order), params: quote_params(order, task)
-        patch job_order_quote_path(order), params: quote_params(order, task)
+        patch_quote order, quote_params(order, task)
+        patch_quote order, quote_params(order, task)
 
         second = ActionMailer::Base.deliveries.last
         expect(second.subject)
@@ -609,7 +632,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "attaches staff files and prefixes stored filenames with the order id" do
         task = order.job_tasks.first
-        patch job_order_quote_path(order), params: quote_params(order, task).merge(
+        patch_quote order, quote_params(order, task).merge(
           "task_#{task.id}_staff_files" => [FilesTestHelper.stl]
         )
         task.reload
@@ -621,7 +644,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       it "replaces job quote line items from submitted params" do
         order.job_quote_line_items.create!(description: "old", price: 1)
         task = order.job_tasks.first
-        patch job_order_quote_path(order), params: quote_params(order, task).merge(
+        patch_quote order, quote_params(order, task).merge(
           job_quote_line_items: {
             "0" => { description: "Expedited SLA resin", price: "12.5" },
             "1" => { description: "", price: "" }
@@ -634,8 +657,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       it "declines: sets DECLINED, emails the user, no USER_APPROVAL status" do
         task = order.job_tasks.first
         expect do
-          patch job_order_quote_path(order),
-                params: quote_params(order, task).merge(approved: "false")
+          patch_quote order, quote_params(order, task).merge(approved: "false")
         end.to change { ActionMailer::Base.deliveries.size }.by(1)
 
         expect(status_names(order)).to end_with("Declined")
@@ -648,8 +670,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
 
       it "blank approved just flashes the error and renders nothing (204)" do
         task = order.job_tasks.first
-        patch job_order_quote_path(order),
-              params: quote_params(order, task).merge(approved: "")
+        patch_quote order, quote_params(order, task).merge(approved: "")
         expect(response.status).to eq(204)
         expect(response.body).to be_blank
         expect(flash[:alert]).to eq(I18n.t("errors.job_orders.quote_choice_missing"))
@@ -898,6 +919,18 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(order.reload.assigned_staff).to eq(staff)
     end
 
+    it "does not email again when the same staff member is assigned again" do
+      order = order_with_task!(owner: owner)
+      http_login!(admin)
+      perform_enqueued_jobs do
+        patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+        patch job_order_assign_staff_path(order), params: { staff_id: staff.id }
+      end
+
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(order.reload.assigned_staff).to eq(staff)
+    end
+
     it "does NOT email when the admin assigns themselves" do
       order = order_with_task!(owner: owner)
       http_login!(admin)
@@ -995,8 +1028,7 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
   # ------------------------------------------------------- admin / settings
 
   describe "GET /job_orders/admin" do
-    # N+1 pinned
-    it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)", skip_bullet: true do
+    it "lists non-draft orders for staff and keeps the drafts out (no # anchor markers)" do
       draft = make_job_order!(owner: owner, status_key: :draft)
       listed = order_with_task!(owner: owner, status_key: :staff_approval)
 

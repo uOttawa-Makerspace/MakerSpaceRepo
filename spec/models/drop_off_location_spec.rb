@@ -7,7 +7,5 @@ RSpec.describe DropOffLocation, type: :model do
     end
   end
 
-  it "has no validations (a blank name is valid)" do
-    expect(DropOffLocation.new).to be_valid
-  end
+  it { should validate_presence_of(:name) }
 end

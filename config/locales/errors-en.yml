@@ -58,6 +58,8 @@ en:
       unexpected:
         title: "Something went wrong on our side"
         text: "An unexpected error stopped this page. Please try again. If it keeps happening, contact the makerspace staff and quote the reference below."
+    faqs:
+      not_created: "The FAQ entry was not created."
     admin:
       still_in_use: "Other records still use it, so it was left as it is."
       record_missing: "A record it refers to no longer exists. Reload the page and try again."
@@ -102,6 +104,7 @@ en:
         sub_space_not_renamed: "The sub space was not renamed."
         booking_limit_missing: "Choose a sub space and enter the number of hours for the limit you want to change."
         approval_limit_missing: "Choose a sub space and enter the number of hours for the automatic approval limit."
+        limit_not_whole_number: "The limit must be a whole number of hours, or -1 to remove it."
         confirmation_mismatch: "The text you typed does not match the space name, so nothing was deleted."
         not_deleted: "The space was not deleted."
         calendar_space_missing: "The calendar URLs were not saved because no space was chosen. Reload the page and try again."
@@ -118,6 +121,8 @@ en:
         not_deleted: "The key was not deleted."
         not_assigned: "The key was not assigned."
         not_revoked: "The key was not revoked."
+        holder_not_found: "The selected key holder was not found."
+        deposit_return_date_invalid: "Enter the deposit return date as a valid date."
         request_not_approved: "The key request was not approved."
         request_not_denied: "The key request was not denied."
         request_not_waiting: "This key request is no longer waiting for approval, so it was left as it is."
@@ -128,6 +133,7 @@ en:
         not_registered: "The reader was not registered."
         not_updated: "The reader was not updated."
       settings:
+        category_in_use: "The category is used by projects, so it was not removed."
         course_not_added: "The course was not added."
         course_not_removed: "The course was not removed."
         course_not_renamed: "The course was not renamed."
@@ -198,7 +204,7 @@ en:
       cancel_active: "Please contact administration for cancelling a locker"
       cancel_pending_only: "You can only cancel a pending request"
       stale: "This locker rental changed while you had the page open (it is now %{state}). Reload it and review before acting."
-      draft_not_removed_staff: "Locker rental cancelled, but its Shopify checkout could not be removed. A payment made on it will appear under \"Paid, needs a decision\". The error was reported."
+      draft_not_removed_staff: 'Locker rental cancelled, but its Shopify checkout could not be removed. A payment made on it will appear under "Paid, needs a decision". The error was reported.'
       draft_not_removed_renter: "Your request was cancelled. If you still see a payment link, don't use it; staff have been notified."
       not_renewable: "This locker rental is not renewable."
       renewal_failed: "Could not start renewal:"
@@ -243,6 +249,8 @@ en:
       issue_not_created: "The printer issue was not created."
       issue_not_updated: "The printer issue was not updated."
       issue_not_deleted: "The printer issue was not deleted."
+      issue_delete_admin_only: "Only admins can delete printer issues."
+      printer_not_removed: "The printer was not removed."
       notification_not_sent: "The printer issue was created, but the maintenance notification email could not be queued, so it was not sent."
     help:
       not_received: "Your issue was not submitted."
@@ -255,7 +263,6 @@ en:
       not_updated: "The project was not updated."
       proposal_not_linked: "The project was not linked to the project proposal."
       member_not_added: "The user was not added to the repository."
-      member_not_removed: "The user was not removed from the repository."
       ownership_not_transferred: "The ownership of the repository was not transferred."
     proposals:
       not_created: "The project proposal was not created."

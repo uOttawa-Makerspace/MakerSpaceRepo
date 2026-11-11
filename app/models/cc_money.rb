@@ -25,6 +25,17 @@ class CcMoney < ApplicationRecord
     create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, cc: cc)
   end
 
+  # Gives an unlinked purchase to `user`. The row is re-read under its lock, so of two claims racing
+  # for the same row only the first writes; the other (or a repeat of the first) returns false and the
+  # row keeps its owner. Also false when the row cannot be saved; `linked?` tells the two apart.
+  def link_to(user)
+    with_lock do
+      next false if linked?
+
+      update(user: user, linked: true)
+    end
+  end
+
   # Wallet lock, the shared start of every CC spend. Inside the caller's transaction (raises
   # ArgumentError if none is open), it locks the user row FOR NO KEY UPDATE
   # (User::GUARD_LOCK_MODE) and returns the locked user. House lock order: the user row FIRST,

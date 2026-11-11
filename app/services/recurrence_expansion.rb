@@ -45,12 +45,43 @@ module RecurrenceExpansion
     # enumerate_occurrences is private in IceCube but is the only variant taking a
     # closing time; lazy.first(limit + 1) stops enumeration early (the extra one
     # only detects truncation).
-    found = if wall_clock?(rule, start_time)
-              wall_clock_occurrences(rule, start_time, from, to)
-            else
-              enumerate(rule, start_time, from, to)
-            end.first(limit + 1)
+    found = without_exdates(candidates(rule, start_time, from, to), rule_string).first(limit + 1)
     Result.new(found.first(limit), found.size > limit)
+  end
+
+  def candidates(rule, start_time, from, to)
+    if wall_clock?(rule, start_time)
+      wall_clock_occurrences(rule, start_time, from, to)
+    else
+      enumerate(rule, start_time, from, to)
+    end
+  end
+
+  # The occurrences minus those named by an EXDATE line. An excluded occurrence
+  # still counts against COUNT, so this runs after the rule has been applied.
+  def without_exdates(times, rule_string)
+    excluded = exdate_instants(rule_string)
+    return times if excluded.empty?
+
+    times.reject { |time| excluded.include?(time.to_i) }
+  end
+
+  # Epoch seconds of every EXDATE value in a stored rule (a line may list
+  # several, comma separated). A stamp ending in Z is an instant; one without
+  # is wall-clock time in the line's TZID, or in Toronto when it names none
+  # (as the calendar views read it). A value that is not a date-time is skipped.
+  def exdate_instants(rule_string)
+    lines(rule_string).select { |l| l.start_with?("EXDATE") }.flat_map do |line|
+      params, values = line.delete_prefix("EXDATE").split(":", 2)
+      zone = ActiveSupport::TimeZone[params.to_s[/TZID=([^;:]+)/, 1] || RecurrenceRule::ZONE.name] || RecurrenceRule::ZONE
+      values.to_s.split(",").filter_map { |value| exdate_instant(value.strip, zone) }
+    end.to_set
+  end
+
+  def exdate_instant(value, zone)
+    return unless value.match?(/\A\d{8}T\d{6}Z?\z/)
+
+    (value.end_with?("Z") ? Time.zone.parse(value) : zone.parse(value)).to_i
   end
 
   def wall_clock?(rule, start_time)

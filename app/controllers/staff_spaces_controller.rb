@@ -13,7 +13,7 @@ class StaffSpacesController < StaffAreaController
         user = User.find_by(username: user_name)
         next unless user
         # Make staff if not
-        user.update(role: "staff") unless user.staff?
+        User.promote_to_staff!([user.id], actor: current_user)
         # Add spaces
         space_list.each do |space|
           StaffSpace.find_or_create_by(space_id: space, user_id: user.id)
