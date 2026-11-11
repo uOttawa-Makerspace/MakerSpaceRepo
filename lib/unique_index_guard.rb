@@ -7,6 +7,7 @@
 #   add_unique_index_concurrently :likes, %i[user_id repository_id], name: "idx_..."
 #   add_unique_index_concurrently :locker_rentals, :locker_id, name: "idx_...", where: "state IN ('active')"
 #
+# - A table without an id column (uni_programs) is listed by physical row address (ctid) instead.
 # - Rows with a NULL in any index column never count as duplicates (as in the index itself).
 # - The index is built CONCURRENTLY. An INVALID leftover of that name (a cancelled earlier build) is dropped and
 #   rebuilt; a VALID one is kept.
@@ -43,13 +44,14 @@ module UniqueIndexGuard
     quoted = columns.map { |c| quote_column_name(c) }
     conditions = quoted.map { |c| "#{c} IS NOT NULL" }
     conditions << "(#{where})" if where
+    row_id = column_exists?(table, :id) ? "id" : "ctid::text"
     rows = select_rows(<<~SQL.squish)
-      SELECT array_to_string(array_agg(id ORDER BY id), ','), #{quoted.map { |c| "#{c}::text" }.join(', ')}
+      SELECT array_to_string(array_agg(#{row_id} ORDER BY #{row_id}), ','), #{quoted.map { |c| "#{c}::text" }.join(', ')}
       FROM #{quote_table_name(table)}
       WHERE #{conditions.join(' AND ')}
       GROUP BY #{quoted.join(', ')}
       HAVING count(*) > 1
-      ORDER BY min(id)
+      ORDER BY min(#{row_id})
     SQL
     rows.map { |row| [row.first, row.drop(1)] }
   end
