@@ -13,15 +13,13 @@ class SearchController < SessionsController
   ].freeze
 
   def explore
-    scope = in_requested_categories(Repository.public_repos.order([sort_order].to_h))
+    scope = in_requested_categories(Repository.public_repos.with_card_data.order([sort_order].to_h))
 
     @pagy, @repositories = pagy(scope, limit: 12)
   end
 
   def search
-    scope = Repository.public_repos
-                      .includes(:owner)
-                      .includes(photos: { image_attachment: :blob })
+    scope = Repository.public_repos.with_card_data
 
     scope = scope.fuzzy_search(@query) if @query
 
@@ -44,14 +42,14 @@ class SearchController < SessionsController
 
     repos1 =
       if (category = SLUG_TO_OLD_CATEGORY[params[:slug]])
-        Repository.public_repos.where(category: category).distinct
+        Repository.public_repos.with_card_data.where(category: category).distinct
       else
         []
       end
 
     repos2 =
       if (name = SLUG_TO_CATEGORY_MODEL[params[:slug]])
-        Repository.public_repos.where(
+        Repository.public_repos.with_card_data.where(
           id: Category.where(name: name).where.not(repository_id: nil).select(:repository_id)
         ).to_a
       else
@@ -60,7 +58,7 @@ class SearchController < SessionsController
 
     repos3 =
       if (category_option = CategoryOption.find_by(name: name))
-        Repository.public_repos.where(
+        Repository.public_repos.with_card_data.where(
           id: Category.where(category_option_id: category_option.id).select(:repository_id)
         ).to_a
       else
@@ -85,6 +83,7 @@ class SearchController < SessionsController
 
     repos = Repository
               .public_repos
+              .with_card_data
               .where(id: Equipment.where(name: name).select(:repository_id))
               .to_a
               .sort_by { |s| -s[sort_arr.first].to_i }

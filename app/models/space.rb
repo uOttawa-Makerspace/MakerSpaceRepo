@@ -63,8 +63,8 @@ class Space < ApplicationRecord
   end
 
   # For tables that show each user's previous visit.
-  def signed_in_users_with_history
-    with_visit_history(signed_in_users)
+  def signed_in_users_with_history(with_sheets: false)
+    with_visit_history(signed_in_users, with_sheets: with_sheets)
   end
 
   def recently_signed_out_users
@@ -94,12 +94,18 @@ class Space < ApplicationRecord
   end
   private :visible_lab_sessions
 
-  # The dashboard rows show each user's previous visit; load what they read in one go.
-  def with_visit_history(users)
-    ActiveRecord::Associations::Preloader.new(
-      records: users,
-      associations: [:lab_sessions]
-    ).call
+  # A user query for this space's dashboard rows: spaces that ask for a walk-in safety sheet show
+  # whether each user has signed one, so those rows load the sheets with the users.
+  def including_walk_in_sheets(users)
+    needs_walk_in_safety_sheet? ? users.includes(:walk_in_safety_sheets) : users
+  end
+
+  # Loads what the dashboard rows read: each user's visits and, with with_sheets in a space that
+  # asks for a walk-in sheet, their sheets (only signed-in rows show those).
+  def with_visit_history(users, with_sheets: false)
+    associations = [:lab_sessions]
+    associations << :walk_in_safety_sheets if with_sheets && needs_walk_in_safety_sheet?
+    ActiveRecord::Associations::Preloader.new(records: users, associations: associations).call
     users
   end
   private :with_visit_history
