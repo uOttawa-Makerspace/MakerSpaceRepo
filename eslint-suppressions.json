@@ -72,14 +72,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/staff_printers.js": {
-    "no-empty": {
-      "count": 1
-    },
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/sub_space_booking.js": {
     "complexity": {
       "count": 2
