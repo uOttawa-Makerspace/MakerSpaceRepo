@@ -36,6 +36,10 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       get makes_new_path(owner.username, original.id)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Original Thing")
+      # form_for on the repository posts its fields under "repository", and the files as images[]
+      expect(response.body).to include('name="repository[title]"')
+      expect(response.body).to include('name="repository[description]"')
+      expect(response.body).to include('name="images[]"')
     end
 
     it "answers 404 when the username does not own the id" do
@@ -127,6 +131,26 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       made = Repository.find_by(title: "My Make")
       expect(made.categories.pluck(:name)).to eq(["Laser"])
       expect(made.equipments.pluck(:name)).to eq(["Cutter"])
+    end
+
+    it "creates the make from the images[] files the form posts" do
+      content_login!(maker)
+      params = { repository: { title: "From Form", description: "x" },
+                 images: [content_png_upload, content_png_upload] }
+      expect { post makes_create_path(owner.username, original.id), params: params }
+        .to change(Repository, :count).by(1)
+      made = Repository.find_by(title: "From Form")
+      expect(made.photos.count).to eq(2)
+      expect(response).to redirect_to("/#{maker.username}/#{made.slug}")
+    end
+
+    it "rejects a non-image among the posted images[] and saves nothing" do
+      content_login!(maker)
+      params = { repository: { title: "Bad Form", description: "x" }, images: [content_stl_upload] }
+      expect { post makes_create_path(owner.username, original.id), params: params }
+        .not_to change(Repository, :count)
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to start_with("The make was not saved.")
     end
 
     it "re-renders new with a validation message when no photos are sent" do
