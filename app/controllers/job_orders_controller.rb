@@ -202,7 +202,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
       @job_order.prefix_file_names
       post_user_comment
       begin
-        JobOrderMailer.send_job_quote(@job_order.id).deliver_now
+        JobOrderMailer.send_job_quote(@job_order.id, false, params[:user_comments]).deliver_now
       rescue StandardError => e
         report_unexpected(e, job_order_id: @job_order.id, operation: "quote email")
         mail_failed = true

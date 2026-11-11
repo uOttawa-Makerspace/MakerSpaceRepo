@@ -73,6 +73,13 @@
   <strong>Total général :</strong> CAD <%= number_to_currency(@job_order.total_price, locale: :fr) %>
 </p>
 
+<% if @user_comments %>
+  <div style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    <strong><%= t("job_order_mailer.quote_notes", locale: :fr) %></strong>
+    <%= simple_format(h(@user_comments), {}, sanitize: false) %>
+  </div>
+<% end %>
+
 <!-- ENGLISH SECTION -->
 <hr style="margin: 25px 0; border: none; border-top: 1px solid #dddddd;">
 
@@ -135,6 +142,13 @@
 
   <strong>Grand Total:</strong> CAD <%= number_to_currency(@job_order.total_price, locale: :en) %>
 </p>
+
+<% if @user_comments %>
+  <div style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+    <strong><%= t("job_order_mailer.quote_notes", locale: :en) %></strong>
+    <%= simple_format(h(@user_comments), {}, sanitize: false) %>
+  </div>
+<% end %>
 
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
   <tbody>

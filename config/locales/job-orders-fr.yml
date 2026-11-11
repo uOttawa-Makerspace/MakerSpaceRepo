@@ -35,3 +35,5 @@ fr:
     pricing:
       title: "Tarifs"
       text: "Les tarifs internes et externes varient selon le service. Les matériaux sont vendus séparément. Une consultation d’une heure est offerte gratuitement."
+  job_order_mailer:
+    quote_notes: "Note du personnel :"

@@ -101,6 +101,21 @@ RSpec.describe JobOrderMailer, type: :mailer do
       expect(delivered.last.body.encoded).to include("This is a reminder that admins have approved a Job Order.")
     end
 
+    it "shows the staff note in the French and the English half, as escaped paragraphs" do
+      described_class.send_job_quote(order.id, false, "Line one <i>x</i>\n\nLine two").deliver_now
+
+      body = delivered.last.body.decoded
+      expect(body.scan("Line one &lt;i&gt;x&lt;/i&gt;").size).to eq(2)
+      expect(body).to include("Note du personnel :", "Note from the staff:", "<p>Line two</p>")
+    end
+
+    it "omits the note block when the note is blank or absent" do
+      [nil, "  "].each do |blank|
+        described_class.send_job_quote(order.id, false, blank).deliver_now
+        expect(delivered.last.body.decoded).not_to include("Note from the staff:")
+      end
+    end
+
     it "switches to the re-approved wording once the order has more than one USER_APPROVAL row" do
       order.job_order_statuses.create!(job_status: JobStatus.user_approval, user: staff)
       described_class.send_job_quote(order.id).deliver_now
