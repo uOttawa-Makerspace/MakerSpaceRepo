@@ -36,6 +36,8 @@ class RepositoriesController < SessionsController
                 only: %i[link_to_pp add_member remove_member]
   before_action :check_editable, only: %i[edit update]
   before_action :check_ownership, only: %i[destroy add_member remove_member]
+  # After the permission checks, so who owns a locked repository is never told to someone turned away
+  before_action :require_owner_address, only: %i[edit update destroy add_like]
   # Same rule as the show page's link form: members, staff and admin
   before_action :check_link_permission, only: :link_to_pp
 
@@ -396,6 +398,14 @@ class RepositoriesController < SessionsController
                     .or(Repository.where(slug: id))
                     .or(Repository.where(title: id))
                     .first!
+    raise ActiveRecord::RecordNotFound if ReservedUsernames.include?(params[:user_username])
+  end
+
+  # Views are found by key alone so old links keep working (redirect_to_owner_url sends them to the owner), and the
+  # password form accepts the username the guest used. Changing actions must name the owner, and a first segment
+  # that is a reserved app prefix is never a username (set_repository).
+  def require_owner_address
+    raise ActiveRecord::RecordNotFound unless @repository.user_username.to_s.casecmp?(params[:user_username].to_s)
   end
 
   def repository_params

@@ -1337,6 +1337,44 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
     end
   end
 
+  describe "a username that does not own the repository" do
+    before { content_login!(owner) }
+
+    it "answers 404 to an update through a reserved first segment and changes nothing" do
+      patch "/job_orders/#{repo.id}", params: { repository: { title: "Hijacked" } }
+      expect(response).to have_http_status(:not_found)
+      expect(repo.reload.title).to eq("Laser Lamp")
+    end
+
+    it "answers 404 to a delete through a reserved first segment and keeps the repository" do
+      expect { delete "/locker_rentals/#{repo.id}" }.not_to change(Repository.unscoped, :count)
+      expect(response).to have_http_status(:not_found)
+      expect(repo.reload.deleted).to be_falsey
+    end
+
+    it "answers 404 to an update, delete, like and edit under another username" do
+      patch repository_path(stranger.username, repo.slug), params: { repository: { title: "Hijacked" } }
+      expect(response).to have_http_status(:not_found)
+      expect { delete repository_path(stranger.username, repo.slug) }.not_to change(Repository.unscoped, :count)
+      expect(response).to have_http_status(:not_found)
+      expect { post add_like_repository_path(stranger.username, repo.slug) }.not_to change(Like, :count)
+      expect(response).to have_http_status(:not_found)
+      get edit_repository_path(stranger.username, repo.slug)
+      expect(response).to have_http_status(:not_found)
+      expect(repo.reload.title).to eq("Laser Lamp")
+    end
+
+    it "answers 404 to a view through a reserved first segment" do
+      get "/locker_sizes/#{repo.id}"
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "still accepts the owner's username in any letter case for an update" do
+      patch repository_path(owner.username.upcase, repo.slug), params: { repository: { title: "Renamed" } }
+      expect(repo.reload.title).to eq("Renamed")
+    end
+  end
+
   describe "GET /repositories/populate_users" do
     # the search term is a token Faker names cannot produce
     let!(:zelda) { create(:user, :regular_user, name: "Zeldaxqzv Searchable") }
