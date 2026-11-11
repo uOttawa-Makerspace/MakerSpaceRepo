@@ -1061,6 +1061,24 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).to include(pending.order_items.first.proficient_project.title)
     end
 
+    it "the admin all-orders table shows 'Open' for open carts without pricing them (no per-row queries)" do
+      shop_log_in!(admin)
+      queries_for = lambda do
+        sqls = []
+        sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
+        get orders_path
+        ActiveSupport::Notifications.unsubscribe(sub)
+        sqls.size
+      end
+      cart_for(create(:user, :regular_user), 10)
+      queries_for.call # warm-up (first-request caches)
+      one = queries_for.call
+      2.times { |i| cart_for(create(:user, :regular_user), 11 + i) }
+      three = queries_for.call
+      expect(three).to eq(one)
+      expect(response.body.scan("<td><p>Open</p></td>").size).to eq(3)
+    end
+
     it "does not show the all-orders table to staff" do
       pending = cart_for(other, 77)
       shop_log_in!(staff)
