@@ -29,14 +29,16 @@ class ProficientProject < ApplicationRecord
   # too; the column is an integer, so a fraction would be silently truncated).
   validates :cc, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
 
-  validates :title, presence: true, uniqueness: true
-  before_save :capitalize_title
-  
+  # The title is capitalised first, so the uniqueness check compares the text that gets stored.
+  # Both only run when the title is new or changed, so a project saved before this rule stays editable.
+  before_validation :capitalize_title, if: :will_save_change_to_title?
+  validates :title, presence: true
+  validates :title, uniqueness: { case_sensitive: false }, if: :will_save_change_to_title?
 
   scope :filter_by_level, ->(level) { where(level: level) }
 
   def capitalize_title
-    self.title = title.capitalize
+    self.title = title.capitalize if title
   end
 
   def self.filter_by_attribute(attribute, value)

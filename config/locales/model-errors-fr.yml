@@ -89,6 +89,8 @@ fr:
           attributes:
             proficient_project_id:
               taken: "Ce projet est déjà un préalable"
+            required_project:
+              circular: "ne peut pas dépendre de lui-même, directement ou par d'autres projets requis"
         time_period:
           attributes:
             end_date:

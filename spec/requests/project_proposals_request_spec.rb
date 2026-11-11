@@ -1181,13 +1181,19 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "DELETE destroy" do
-    it "does nothing for guests, owners and staff (action returns without rendering: 204)" do
+    it "refuses guests, owners and staff with a redirect and an alert" do
       [nil, owner, create(:user, :staff)].each do |user|
         content_login!(user) if user
         expect { delete project_proposal_path(pending) }.not_to change(ProjectProposal, :count)
-        # `return unless admin?` renders nothing, so a refused delete answers 204 instead of a redirect/alert
-        expect(response).to have_http_status(:no_content)
+        expect(response).to redirect_to(project_proposals_path)
+        expect(flash[:alert]).to eq("Only admins can delete project proposals.")
       end
+    end
+
+    it "answers 403 to JSON when not an admin" do
+      content_login!(owner)
+      expect { delete project_proposal_path(pending, format: :json) }.not_to change(ProjectProposal, :count)
+      expect(response).to have_http_status(:forbidden)
     end
 
     it "deletes for an admin, both routes, cascading joins and categories, not repositories" do

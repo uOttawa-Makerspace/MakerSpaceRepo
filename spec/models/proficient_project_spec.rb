@@ -67,7 +67,7 @@ RSpec.describe ProficientProject, type: :model do
         should validate_presence_of(:title).with_message("A title is required.")
       end
       it do
-        should validate_uniqueness_of(:title).with_message(
+        should validate_uniqueness_of(:title).case_insensitive.with_message(
                  "Title already exists"
                )
       end
@@ -94,6 +94,34 @@ RSpec.describe ProficientProject, type: :model do
   end
 
   describe "Model methods" do
+    context "title case" do
+      it "is normalised before the uniqueness check" do
+        create(:proficient_project, title: "Cool widget")
+        pp = build(:proficient_project, title: "cool widget")
+        expect(pp).not_to be_valid
+        expect(pp.errors[:title]).to be_present
+      end
+
+      it "keeps an existing project editable for other fields" do
+        pp = create(:proficient_project, title: "Dup")
+        other = create(:proficient_project, title: "Other")
+        other.update_columns(title: "DUP")
+        expect(other.reload.update(description: "changed")).to be(true)
+        expect(other.reload.title).to eq("DUP")
+        expect(pp.reload.title).to eq("Dup")
+      end
+    end
+
+    context "clearing the title" do
+      it "is invalid with a presence error and leaves the title nil" do
+        pp = create(:proficient_project, title: "Keep me")
+        pp.title = nil
+        expect { pp.valid? }.not_to raise_error
+        expect(pp.title).to be_nil
+        expect(pp.errors[:title]).to be_present
+      end
+    end
+
     context "#capitalize_title" do
       it "should capitalize the title" do
         pp = build(:proficient_project, title: "abc")

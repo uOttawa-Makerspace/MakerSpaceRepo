@@ -145,10 +145,10 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
       end
 
-      it "the uniqueness check is on the raw title but the stored title is capitalized: 'cool widget' duplicates are not caught" do
-        post proficient_projects_path, params: project_params(title: "cool widget")
-        # uniqueness runs before capitalize_title; "Cool widget" and "cool widget" both validate then collide in value
-        expect(ProficientProject.where(title: "Cool widget").count).to eq(2)
+      it "refuses a title that differs from an existing one only by letter case" do
+        expect { post proficient_projects_path, params: project_params(title: "cool widget") }.not_to change(ProficientProject, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(ProficientProject.where(title: "Cool widget").count).to eq(1)
       end
 
       it "creates training requirements from parallel arrays" do

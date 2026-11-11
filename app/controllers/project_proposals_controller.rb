@@ -7,6 +7,7 @@ class ProjectProposalsController < SessionsController
   before_action :current_user
   before_action :signed_in, only: %i[edit update approve decline create_revision join_project_proposal unjoin_project_proposal user_projects]
   before_action :require_admin, only: %i[approve decline]
+  before_action :require_admin_to_delete, only: :destroy
   before_action :require_owner_or_admin, only: %i[edit update]
   before_action :require_visible_proposal, only: :show
   before_action :redirect_to_canonical_url, only: %i[show edit]
@@ -268,7 +269,6 @@ class ProjectProposalsController < SessionsController
 
   # DELETE /project_proposals/1
   def destroy
-    return unless current_user.admin?
     @project_proposal.destroy
     respond_to do |format|
       format.html do
@@ -348,6 +348,18 @@ class ProjectProposalsController < SessionsController
 
     redirect_to project_proposals_path,
                 alert: 'Only admins can review project proposals.'
+  end
+
+  def require_admin_to_delete
+    return if current_user.admin?
+
+    respond_to do |format|
+      format.html do
+        redirect_to project_proposals_path,
+                    alert: 'Only admins can delete project proposals.'
+      end
+      format.json { head :forbidden }
+    end
   end
 
   def require_owner_or_admin
