@@ -64,6 +64,23 @@ RSpec.describe "Project proposal semester", type: :request do
       expect(semester).to eq([nil, nil])
     end
 
+    it "sends an admin to the list when the proposal does not exist" do
+      content_sign_in_as(:admin)
+      delete project_proposal_semester_path(project_proposal_id: "no-such-proposal")
+      expect(response).to redirect_to(project_proposals_path)
+      expect(flash[:alert]).to eq("Project proposal not found")
+      expect(semester).to eq(["fall", 2024])
+    end
+
+    it "keeps the semester and says so when the proposal cannot be saved" do
+      proposal.update_columns(title: nil)
+      content_sign_in_as(:admin)
+      delete project_proposal_semester_path(proposal)
+      expect(response).to redirect_to(project_proposal_path(proposal))
+      expect(flash[:alert]).to eq("The semester was not cleared.")
+      expect(semester).to eq(["fall", 2024])
+    end
+
     %i[regular staff].each do |role|
       it "refuses a #{role} and keeps the semester" do
         content_sign_in_as(role)

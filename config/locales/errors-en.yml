@@ -284,6 +284,7 @@ en:
       ownership_not_transferred: "The ownership of the repository was not transferred."
       not_restored: "The repository was not restored."
     proposals:
+      not_found: "Project proposal not found"
       not_created: "The project proposal was not created."
       not_updated: "The project proposal was not updated."
       semester_not_cleared: "The semester was not cleared."
