@@ -60,6 +60,14 @@ class Event < ApplicationRecord
     google_calendar_id.presence || GoogleCalendar::EventPublisher.calendar_id_for(space)
   end
 
+  # Makes the event a draft. The Google ids are cleared because Google does not let a removed event's id be
+  # created again; a later publish chooses a new one. Returns false when the event cannot be saved. The caller
+  # reads google_event_id and google_calendar first and, once this has committed, queues the removal of the
+  # Google copy with Event.remove_from_google_later.
+  def unpublish(by:)
+    update(draft: true, updated_by: by, google_event_id: nil, google_calendar_id: nil)
+  end
+
   # Queues the removal of a destroyed event's copy in Google Calendar. Takes what was read from the event
   # (id, google_event_id and google_calendar) before it was destroyed.
   def self.remove_from_google_later(google_event_id, calendar_id, event_id)

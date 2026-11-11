@@ -29,6 +29,23 @@ RSpec.describe Event, type: :model do
     end
   end
 
+  describe "#unpublish" do
+    let(:admin) { create(:user, :admin) }
+
+    it "makes the event a draft, clears its Google ids, records who did it and queues nothing" do
+      event = create(:event, space: space, created_by: creator, draft: false, google_event_id: "abc", google_calendar_id: "cal")
+      expect { expect(event.unpublish(by: admin)).to be(true) }.not_to have_enqueued_job
+      expect(event.reload).to have_attributes(draft: true, google_event_id: nil, google_calendar_id: nil, updated_by: admin)
+    end
+
+    it "returns false and keeps the event published when it cannot be saved" do
+      event = create(:event, space: space, created_by: creator, draft: false, google_event_id: "abc")
+      allow(event).to receive(:update).and_return(false)
+      expect(event.unpublish(by: admin)).to be(false)
+      expect(event.reload).to have_attributes(draft: false, google_event_id: "abc")
+    end
+  end
+
   describe "validations" do
     it "is valid with the factory defaults" do
       expect(build_event).to be_valid

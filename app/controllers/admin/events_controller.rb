@@ -285,18 +285,6 @@ class Admin::EventsController < AdminAreaController
     redirect_back(fallback_location: admin_calendar_index_path)
   end
 
-  # Takes a published event back to draft and removes its Google copy.
-  def unpublish
-    @event = Event.find(params[:id])
-    if unpublish_event(@event)
-      flash[:notice] = "Event unpublished successfully."
-    else
-      flash[:alert] = validation_message(@event, "failed_saves.event_unpublish")
-    end
-
-    redirect_back(fallback_location: admin_calendar_index_path)
-  end
-
   def delete_drafts
     space_id = params[:space_id]
     return redirect_back(fallback_location: admin_calendar_index_path, alert: "Space ID is required.") if space_id.blank?
@@ -460,18 +448,6 @@ class Admin::EventsController < AdminAreaController
     google_event_id = event.google_event_id
     calendar_id = event.google_calendar
     Event.remove_from_google_later(google_event_id, calendar_id, event.id) if event.destroy
-  end
-
-  # Makes the event a draft and queues the removal of its Google copy (read before the ids are cleared). The
-  # Google ids are cleared because Google does not let a removed event's id be created again; a later publish
-  # chooses a new one.
-  def unpublish_event(event)
-    google_event_id = event.google_event_id
-    calendar_id = event.google_calendar
-    return false unless event.update(draft: true, updated_by: current_user, google_event_id: nil, google_calendar_id: nil)
-
-    Event.remove_from_google_later(google_event_id, calendar_id, event.id)
-    true
   end
 
   def build_occurrence_event(title)

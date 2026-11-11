@@ -236,10 +236,10 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
     end
   end
 
-  describe "PATCH unpublish" do
+  describe "DELETE publication" do
     it "makes a published event a draft and queues the removal of its Google copy, once" do
       event = create(:event, space: space, draft: false, google_event_id: "abc123", google_calendar_id: calendar_id)
-      patch unpublish_admin_event_path(event)
+      delete admin_event_publication_path(event)
       expect(event.reload.draft).to be(true)
       expect(event.google_event_id).to be_nil
       expect(event.google_calendar_id).to be_nil
@@ -250,13 +250,13 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
 
     it "removes the copy from the calendar of the space when none is recorded" do
       event = create(:event, space: space, draft: false, google_event_id: "abc123")
-      patch unpublish_admin_event_path(event)
+      delete admin_event_publication_path(event)
       expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("abc123", GoogleCalendar::EventPublisher.calendar_id_for(space), event.id)
     end
 
     it "queues nothing for an event that never reached Google" do
       event = create(:event, space: space, draft: false)
-      patch unpublish_admin_event_path(event)
+      delete admin_event_publication_path(event)
       expect(event.reload.draft).to be(true)
       expect(delete_jobs).to be_empty
     end
@@ -264,14 +264,14 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
     it "queues nothing and keeps the event published when it cannot be saved" do
       event = create(:event, space: space, draft: false, google_event_id: "abc123")
       allow_any_instance_of(Event).to receive(:update).and_return(false)
-      patch unpublish_admin_event_path(event)
+      delete admin_event_publication_path(event)
       expect(delete_jobs).to be_empty
       expect(flash[:alert]).to start_with(I18n.t("failed_saves.event_unpublish"))
     end
 
     it "gives the event a new Google id when it is published again" do
       event = create(:event, space: space, draft: false, google_event_id: "abc123")
-      patch unpublish_admin_event_path(event)
+      delete admin_event_publication_path(event)
       patch publish_admin_event_path(event)
       expect(event.reload.draft).to be(false)
       expect(event.google_event_id).to match(/\A[0-9a-v]{32}\z/).and(satisfy { |id| id != "abc123" })
