@@ -38,7 +38,7 @@ module AnnouncementsHelper
     volunteers: ["alert-warning", "To Volunteers:"]
   }.freeze
   def return_active(a)
-    if (a.end_date == nil) or (a.end_date >= Date.today)
+    if (a.end_date == nil) or (a.end_date >= Time.zone.today)
       case a.active
       when true
         "Yes"
