@@ -34,24 +34,27 @@ module Api
         errors.delete(:base)
         return render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: errors) if errors.any?
 
-        if help.save
-          version = attrs[:app_version].presence
-          text = help.comments.to_plain_text
-          if current_user
-            MsrMailer.issue_email(help.name, help.email, help.subject, text, nil, version).deliver_later
-          else
-            # Anonymous: never mail the caller-supplied address (mail relay). Team only, reporter in Reply-To.
-            MsrMailer.issue_email_to_team(help.name, help.email, help.subject, text, version).deliver_later
-          end
+        if help.save && help.file_issue
+          deliver_request(help, attrs[:app_version].presence)
           render json: { status: "accepted" }, status: :accepted
         else
-          # The GitHub issue could not be opened: nothing was saved or sent.
+          # The GitHub issue could not be opened: the report stays saved, nothing is mailed.
           render_error(:service_unavailable, "Could not submit the request, please try again later",
                        status: :service_unavailable)
         end
       end
 
       private
+
+      def deliver_request(help, version)
+        text = help.comments.to_plain_text
+        if current_user
+          MsrMailer.issue_email(help.name, help.email, help.subject, text, nil, version).deliver_later
+        else
+          # Anonymous: never mail the caller-supplied address (mail relay). Team only, reporter in Reply-To.
+          MsrMailer.issue_email_to_team(help.name, help.email, help.subject, text, version).deliver_later
+        end
+      end
 
       # Unknown fields are ignored. Non-string values are rejected as blank/invalid by the checks.
       def support_params

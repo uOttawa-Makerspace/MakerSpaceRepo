@@ -55,11 +55,20 @@ RSpec.describe "Admin drop-off locations", type: :request do
       expect(DropOffLocation.last.name).to eq("Lab door")
     end
 
-    # DropOffLocation has no validations: a blank/missing name is saved, so the "Input is invalid" branch is unreachable.
-    it "saves a blank name" do
-      expect { post admin_drop_off_locations_path, params: { name: "" } }.to change(DropOffLocation, :count).by(1)
-      expect(flash[:notice]).to eq("Drop-off Location added successfully!")
-      expect(flash[:alert]).to be_nil
+    it "refuses a blank or missing name" do
+      expect { post admin_drop_off_locations_path, params: { name: "" } }.not_to change(DropOffLocation, :count)
+      expect(response).to redirect_to(admin_drop_off_locations_path)
+      expect(flash[:alert]).to eq("Input is invalid")
+      expect { post admin_drop_off_locations_path, params: { name: "  " } }.not_to change(DropOffLocation, :count)
+      expect { post admin_drop_off_locations_path }.not_to change(DropOffLocation, :count)
+      expect(flash[:alert]).to eq("Input is invalid")
+    end
+
+    it "keeps the name when it is renamed to a blank one" do
+      patch admin_drop_off_location_path(location), params: { drop_off_location: { name: "" } }
+      expect(response).to redirect_to(admin_drop_off_locations_path)
+      expect(flash[:alert]).to eq("Input is invalid")
+      expect(location.reload.name).to eq("Dock")
     end
 
     it "renames from drop_off_location[name]" do
@@ -69,10 +78,10 @@ RSpec.describe "Admin drop-off locations", type: :request do
       expect(location.reload.name).to eq("Dock 2")
     end
 
-    # update reads params[:drop_off_location][:name] unguarded: no nested param is a NoMethodError 500.
-    it "update 500s when the nested param is missing" do
+    it "update without the nested param redirects with the missing-parameter message and keeps the name" do
       patch admin_drop_off_location_path(location)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to match(/drop_off_location/)
       expect(location.reload.name).to eq("Dock")
     end
 

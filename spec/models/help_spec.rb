@@ -16,16 +16,29 @@ RSpec.describe Help, type: :model do
     expect(Help.new(valid_attrs(comments: ""))).not_to be_valid
   end
 
-  it "creates a GitHub issue on create and stores the issue number (stubbed in test)" do
+  it "saves without calling GitHub" do
+    expect_any_instance_of(GithubIssuesService).not_to receive(:create_issue)
     help = Help.create!(valid_attrs)
-    expect(help.gh_issue_number.to_s).to eq("111")
+    expect(help.gh_issue_number).to be_nil
   end
 
-  it "aborts the save when no issue number comes back" do
+  it "opens a GitHub issue on file_issue and stores the issue number (stubbed in test)" do
+    help = Help.create!(valid_attrs)
+    expect(help.file_issue).to be(true)
+    expect(help.reload.gh_issue_number.to_s).to eq("111")
+  end
+
+  it "keeps the saved report and adds an error when no issue number comes back" do
     allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: nil })
-    help = Help.new(valid_attrs)
-    expect(help.save).to be(false)
+    help = Help.create!(valid_attrs)
+    expect(help.file_issue).to be(false)
     expect(help.errors[:base]).to include("Internal error while submitting issue.")
+    expect(help.reload.gh_issue_number).to be_nil
+  end
+
+  it "treats a failed GitHub call (false) as no issue" do
+    allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
+    expect(Help.create!(valid_attrs).file_issue).to be(false)
   end
 
   describe ".defang" do
@@ -43,6 +56,7 @@ RSpec.describe Help, type: :model do
     allow_any_instance_of(GithubIssuesService).to receive(:create_issue) { |_s, **kw| seen = kw; { number: 1 } }
     help = Help.new(valid_attrs(comments: "hi @someone #1"))
     help.save!
+    help.file_issue
     expect(seen[:reporter]).to eq(help.name)
     expect(seen[:title]).to eq(help.subject)
     expect(seen[:body]).to eq(help.comments)

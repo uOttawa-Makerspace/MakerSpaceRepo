@@ -74,7 +74,7 @@ class Admin::EventsController < AdminAreaController
         start_time: @start_time,
         end_time: @end_time,
         recurrence_rule: event_params[:recurrence_rule].presence,
-        created_by_id: current_user.id,
+        updated_by: current_user,
         space_id: event_params[:space_id],
         event_type: event_params[:event_type],
         training_id: event_params[:training_id],
@@ -116,6 +116,7 @@ class Admin::EventsController < AdminAreaController
           start_time: old_date_new_time_start,
           end_time: old_date_new_time_end,
           recurrence_rule: rule_to_use,
+          updated_by: current_user,
           event_type: event_params[:event_type],
           training_id: event_params[:training_id],
           language: event_params[:language],
@@ -136,7 +137,7 @@ class Admin::EventsController < AdminAreaController
 
         @event.push_to_google_later
 
-        flash[:notice] = "Unavailability updated successfully."
+        flash[:notice] = "Event updated successfully."
       else
         flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
       end
@@ -165,7 +166,7 @@ class Admin::EventsController < AdminAreaController
       occurrence_start = parse_time(params[:start_date])
       return redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.start_date_required")) unless occurrence_start
 
-      @event.update!(recurrence_rule: series_rule.without_occurrence(occurrence_start))
+      @event.update!(recurrence_rule: series_rule.without_occurrence(occurrence_start), updated_by: current_user)
       @event.push_to_google_later
       redirect_back(fallback_location: admin_calendar_index_path, notice: "This occurrence deleted.")
       
@@ -173,7 +174,7 @@ class Admin::EventsController < AdminAreaController
       occurrence_start = parse_time(params[:start_date])
       return redirect_back(fallback_location: admin_calendar_index_path, alert: t("admin_events.start_date_required")) unless occurrence_start
 
-      @event.update!(recurrence_rule: series_rule.ending_before(occurrence_start))
+      @event.update!(recurrence_rule: series_rule.ending_before(occurrence_start), updated_by: current_user)
       @event.push_to_google_later
       redirect_back(fallback_location: admin_calendar_index_path, notice: "This and following deleted.")
       
@@ -261,7 +262,7 @@ class Admin::EventsController < AdminAreaController
       failures = []
 
       Event.where(space_id: space_id, start_time: @view_start..@view_end, draft: true).find_each do |event|
-        if event.update(draft: false)
+        if event.update(draft: false, updated_by: current_user)
           event.push_to_google_later
           updated_count += 1
         else
@@ -273,7 +274,7 @@ class Admin::EventsController < AdminAreaController
       return redirect_back(fallback_location: admin_calendar_index_path, notice: "#{updated_count} event(s) published.")
     else
       @event = Event.find(params[:id])
-      if @event.update(draft: false)
+      if @event.update(draft: false, updated_by: current_user)
         @event.push_to_google_later
         flash[:notice] = "Event published successfully."
       else
@@ -401,7 +402,7 @@ class Admin::EventsController < AdminAreaController
     raise ActiveRecord::RecordInvalid, @new_event unless @new_event.valid?
 
     series_updated = Event.transaction do
-      next false unless @event.update(recurrence_rule: updated_rule)
+      next false unless @event.update(recurrence_rule: updated_rule, updated_by: current_user)
 
       @new_event.save!
       attach_participants(@new_event, participants)
@@ -432,6 +433,7 @@ class Admin::EventsController < AdminAreaController
     new_event.draft = true
     new_event.google_event_id = nil
     new_event.google_calendar_id = nil
+    new_event.updated_by = nil
     new_event.save!
 
     event.event_assignments.each do |assignment|

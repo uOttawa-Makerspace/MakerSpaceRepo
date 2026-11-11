@@ -88,10 +88,16 @@ RSpec.describe "Admin settings", type: :request do
       expect(CategoryOption.count).to eq(1)
     end
 
-    # add_* read params[:x][:name] without a guard, so a request missing the wrapper param is a 500 NoMethodError instead of a clean alert
-    it "answers 500 when the wrapper param is missing" do
-      post add_category_admin_settings_path
-      expect(response).to have_http_status(:internal_server_error)
+    it "answers with the missing-parameter message when the wrapper param is missing" do
+      {
+        add_category_admin_settings_path => "category_option",
+        add_area_admin_settings_path => "area_option",
+        add_equipment_admin_settings_path => "equipment_option"
+      }.each do |path, param|
+        expect { post path }.not_to change { [CategoryOption.count, AreaOption.count, EquipmentOption.count] }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq(I18n.t("errors.generic.parameter_missing", param: param))
+      end
     end
 
     it "adds and removes an area option" do
@@ -110,17 +116,45 @@ RSpec.describe "Admin settings", type: :request do
       expect { instance_exec(&all_calls[:remove_equipment]) }.to change(EquipmentOption, :count).by(-1)
     end
 
-    # remove_* with the select left unset (param absent, not "") skips the guard and reports success while deleting nothing
-    it "claims success when no option id was submitted" do
+    it "asks for a selection when no option id was submitted" do
       expect { post remove_category_admin_settings_path }.not_to change(CategoryOption, :count)
-      expect(flash[:notice]).to eq("Category removed successfully!")
+      expect(flash[:alert]).to eq("Please select a category.")
+      expect(flash[:notice]).to be_nil
       post remove_category_admin_settings_path, params: { remove_category: "" }
       expect(flash[:alert]).to eq("Please select a category.")
+      post remove_equipment_admin_settings_path
+      expect(flash[:alert]).to eq("Please select a piece of equipment.")
     end
 
-    it "claims success when the id to remove does not exist" do
+    it "renames only an existing equipment option and refuses a blank name" do
+      post rename_equipment_admin_settings_path, params: { equipment_option: { name: "Lathe" } }
+      expect(flash[:alert]).to eq("Please select a piece of equipment.")
+      expect(flash[:notice]).to be_nil
+      post rename_equipment_admin_settings_path, params: { rename_equipment: 0, equipment_option: { name: "Lathe" } }
+      expect(flash[:alert]).to eq("Please select a piece of equipment.")
+      expect(flash[:notice]).to be_nil
+      post rename_equipment_admin_settings_path, params: { rename_equipment: equipment.id, equipment_option: { name: "" } }
+      expect(flash[:alert]).to eq("Invalid equipment name.")
+      expect(equipment.reload.name).to eq("Mill")
+      post rename_equipment_admin_settings_path, params: { rename_equipment: equipment.id, equipment_option: { name: "Lathe" } }
+      expect(flash[:notice]).to eq("Equipment renamed successfully!")
+      expect(equipment.reload.name).to eq("Lathe")
+    end
+
+    it "asks for a selection when the id to remove does not exist" do
       post remove_area_admin_settings_path, params: { remove_area: 0 }
-      expect(flash[:notice]).to eq("Area removed successfully!")
+      expect(flash[:alert]).to eq("Please select an area.")
+      expect(flash[:notice]).to be_nil
+      post remove_equipment_admin_settings_path, params: { remove_equipment: 0 }
+      expect(flash[:alert]).to eq("Please select a piece of equipment.")
+    end
+
+    it "keeps a category option that projects still use and says so" do
+      create(:category, category_option: category)
+      expect { instance_exec(&all_calls[:remove_category]) }.not_to change(CategoryOption, :count)
+      expect(response).to redirect_to(admin_settings_path)
+      expect(flash[:alert]).to eq(I18n.t("errors.admin.settings.category_in_use"))
+      expect(flash[:notice]).to be_nil
     end
 
     it "removes a card reader" do

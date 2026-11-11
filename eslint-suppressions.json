@@ -54,11 +54,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/learning_modules.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/locker_rentals.js": {
     "no-unused-vars": {
       "count": 6

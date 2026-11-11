@@ -16,6 +16,19 @@ RSpec.describe Event, type: :model do
                     end_time: Time.utc(2027, 4, 1, 15, 0) }.merge(attrs))
   end
 
+  describe "last editor" do
+    it "is optional" do
+      expect(build_event).to be_valid
+      expect(build_event.updated_by).to be_nil
+    end
+
+    it "is a user, kept apart from the creator" do
+      editor = create(:user, :admin)
+      event = create(:event, space: space, created_by: creator, updated_by: editor)
+      expect(event.reload).to have_attributes(created_by: creator, updated_by: editor)
+    end
+  end
+
   describe "validations" do
     it "is valid with the factory defaults" do
       expect(build_event).to be_valid
@@ -184,6 +197,19 @@ RSpec.describe Event, type: :model do
         expect(GoogleCalendar::EventPublisher.calendar_id_for(create(:space, name: "Makerspace")))
           .to eq("c_g1bk6ctpenjeko2dourrr0h6pc@group.calendar.google.com")
       end
+    end
+  end
+
+  describe "a stored repeat rule with an unreadable start" do
+    let(:bad_rule) { "DTSTART;TZID=Nowhere/Land:20270401T100000\nRRULE:FREQ=DAILY" }
+
+    it "still saves an unrelated change, but validates a changed rule" do
+      event = build_event.tap(&:save!)
+      event.update_column(:recurrence_rule, bad_rule)
+      event.reload
+      expect(event.update(title: "Renamed")).to be(true)
+      expect(event.update(recurrence_rule: "#{bad_rule}\nEXDATE:20270402T140000Z")).to be(false)
+      expect(event.errors[:recurrence_rule]).to eq([RecurrenceRuleValidator::UNPARSEABLE])
     end
   end
 end
