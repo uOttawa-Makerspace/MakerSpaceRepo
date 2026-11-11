@@ -90,7 +90,7 @@ RSpec.describe "Error messages", type: :request do
 
     it "names a failed make in French" do
       content_login!(owner)
-      post makes_create_path(owner.username, repo.id), params: { repo.title => { title: "", description: "x", photos_attributes: { "0" => { image: content_png_upload } } } }.merge(fr)
+      post makes_create_path(owner.username, repo.id), params: { repository: { title: "", description: "x", photos_attributes: { "0" => { image: content_png_upload } } } }.merge(fr)
       expect(flash[:alert]).to start_with("La réalisation n'a pas été enregistrée. ")
     end
   end

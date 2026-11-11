@@ -18,7 +18,7 @@ class MakesController < SessionsController
         r.user_id = @user.id
         r.users << @user
         r.share_type = 'public'
-        r.photos_attributes = make_params[:photos_attributes]
+        r.photos_attributes = make_params[:photos_attributes] || []
         r.slug =
           "#{r.id}.#{r.title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')}"
       end
@@ -43,7 +43,7 @@ class MakesController < SessionsController
   private
 
   def make_params
-    params.require(@repository.title).permit(
+    params.require(:repository).permit(
       :title,
       :description,
       photos_attributes: %i[id image _destroy]

@@ -20,8 +20,8 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
   end
 
   def make_params(title: "My Make", description: "built it", image: content_png_upload)
-    # The param root is the ORIGINAL repository's title (params.require(@repository.title)).
-    { original.title => { title: title, description: description,
+    # The form posts its fields under the "repository" key.
+    { repository: { title: title, description: description,
                           photos_attributes: { "0" => { image: image } } } }
   end
 
@@ -129,13 +129,16 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(made.equipments.pluck(:name)).to eq(["Cutter"])
     end
 
-    it "500s when no photos_attributes are sent (nested attributes got nil)" do
+    it "re-renders new with a validation message when no photos are sent" do
       content_login!(maker)
-      params = { original.title => { title: "No Photo", description: "x" } }
+      params = { repository: { title: "No Photo", description: "x" } }
       expect { post makes_create_path(owner.username, original.id), params: params }
         .not_to change(Repository, :count)
-      # photos_attributes = nil raises ArgumentError instead of a validation error
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to start_with("The make was not saved.")
+      expect(flash[:alert]).to include("Photos")
+      expect(original.reload.make).to eq(0)
+      expect(maker.reload.reputation).to eq(0)
     end
 
     it "an invalid make (blank title) re-renders new with 200 and an alert" do
@@ -154,17 +157,17 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       end.not_to change(Repository, :count)
     end
 
-    it "redirects with the parameter_missing alert when the title-keyed root is absent" do
+    it "redirects with the parameter_missing alert when the repository root is absent" do
       content_login!(maker)
-      post makes_create_path(owner.username, original.id), params: { repository: { title: "x" } }
+      post makes_create_path(owner.username, original.id), params: { title: "x" }
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to include("Original Thing")
+      expect(flash[:alert]).to include("repository")
     end
 
     context "on a private original" do
       let!(:secret) { create(:repository, :private, owner: owner, title: "Hush", users: [owner]) }
       let(:secret_params) do
-        { secret.title => { title: "Leak", description: "d", photos_attributes: { "0" => { image: content_png_upload } } } }
+        { repository: { title: "Leak", description: "d", photos_attributes: { "0" => { image: content_png_upload } } } }
       end
 
       it "refuses new and create without the password" do
