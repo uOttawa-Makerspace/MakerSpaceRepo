@@ -89,6 +89,14 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       end
     end
 
+    it "renders the badge svg without empty width or height attributes" do
+      get badge_path(cert)
+      svg = Nokogiri::HTML(response.body).at_css("svg[role=img]")
+      expect(svg).to be_present
+      expect(svg.attributes.keys).not_to include("width", "height")
+      expect(svg["viewbox"]).to eq("0 0 100 100")
+    end
+
     it "lists the training's skills tokens" do
       training.update!(list_of_skills_en: "Design,Safety")
       get badge_path(cert)
