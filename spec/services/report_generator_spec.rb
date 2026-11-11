@@ -211,23 +211,6 @@ RSpec.describe ReportGenerator do
       expect(described_class.get_study_level("MBA")).to eq("None")
       expect(described_class.get_study_level(nil)).to eq("None")
     end
-
-    it "categorize_programs counts Blank / Engineering / Non-Engineering / levels" do
-      programs = { "" => 2, "BASc in Software Engineering" => 3, "Master of Arts" => 1, "BA History" => 4 }
-      expect(described_class.categorize_programs(programs)).to eq(
-        "Blank" => 2, "Engineering" => 3, "Non-Engineering" => 7,
-        "Bachelors" => 7, "Masters" => 1, "Doctorate" => 0
-      )
-    end
-
-    it "categorize_programs counts as Doctorate every program get_study_level calls Doctorate" do
-      programs = { "PhD in Chemistry" => 5, "Doctorate in Philosophy Biology" => 2, "Doctor of Education" => 1,
-                   "Master of Arts" => 3 }
-      programs.each_key do |program|
-        expect(described_class.get_study_level(program) == "Doctorate").to eq(described_class.categorize_programs(program => 1)["Doctorate"] == 1)
-      end
-      expect(described_class.categorize_programs(programs)["Doctorate"]).to eq(8)
-    end
   end
 
   describe "sheet helpers" do

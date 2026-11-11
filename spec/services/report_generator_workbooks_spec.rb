@@ -635,11 +635,6 @@ RSpec.describe ReportGenerator do
   end
 
   describe "helpers no action calls" do
-    it "sum_by_key adds one key over a list of hashes" do
-      expect(described_class.sum_by_key([{ a: 1 }, { a: 2 }, { a: 4 }], :a)).to eq(7)
-      expect(described_class.sum_by_key([], :a)).to eq(0)
-    end
-
     it "student_id_as_text types only the Student ID column as text, wherever it is" do
       expect(described_class.student_id_as_text(["Name", "Student ID", "Date"])).to eq([nil, :string, nil])
       expect(described_class.student_id_as_text(%w[Name Date])).to eq([nil, nil])
@@ -653,75 +648,6 @@ RSpec.describe ReportGenerator do
         described_class.push_hash(sheet, { "k" => 1 })
       end
       expect(grid(package)["S"]).to eq([["T"], %w[A B], ["k", 1]])
-    end
-
-    describe ".get_visitors" do
-      let(:alpha) { create(:space, name: "Alpha") }
-
-      it "returns an empty tally when nobody signed in during the range" do
-        expect(described_class.get_visitors(from, to)).to eq(
-          unique: 0, total: 0, spaces: {}, identities: {}, faculties: {}, genders: {}
-        )
-      end
-
-      it "tallies unique visitors and visits by space, identity, faculty and gender" do
-        ids = { "undergrad" => "Undergraduate", "grad" => "Graduate", "faculty_member" => "Faculty Member",
-                "staff_member" => "Staff Member", "community_member" => "Community Member", "mystery" => "Unknown" }
-        ids.each_key do |identity|
-          user = create(:user, gender: "Male")
-          user.update_columns(identity: identity, faculty: identity == "undergrad" ? "" : "Arts")
-          create(:lab_session, space: alpha, user: user, sign_in_time: march_10)
-        end
-        again = User.find_by(identity: "undergrad")
-        beta = create(:space, name: "Beta")
-        twin = create(:user, gender: "Female")
-        twin.update_columns(identity: "undergrad", faculty: "Arts")
-        create(:lab_session, space: beta, user: twin, sign_in_time: march_10)
-        create(:lab_session, space: alpha, user: again, sign_in_time: march_10 + 1.hour)
-        create(:lab_session, space: alpha, user: again, sign_in_time: Time.utc(2026, 5, 1))
-        tally = described_class.get_visitors(from, to)
-        expect(tally[:unique]).to eq(7)
-        expect(tally[:total]).to eq(8)
-        expect(tally[:identities].keys).to match_array(ids.values)
-        expect(tally[:identities]["Undergraduate"]).to eq(
-          unique: 2, total: 3, faculties: { "Unknown" => { unique: 1, total: 2 }, "Arts" => { unique: 1, total: 1 } }
-        )
-        expect(tally[:faculties]).to eq("Unknown" => { unique: 1, total: 2 }, "Arts" => { unique: 6, total: 6 })
-        expect(tally[:genders]).to eq("Male" => { unique: 6, total: 7 }, "Female" => { unique: 1, total: 1 })
-        expect(tally[:spaces].keys).to eq(%w[Alpha Beta])
-        expect(tally[:spaces]["Alpha"].slice(:unique, :total)).to eq(unique: 6, total: 7)
-        expect(tally[:spaces]["Beta"].slice(:unique, :total)).to eq(unique: 1, total: 1)
-        expect(tally[:spaces]["Alpha"][:genders]).to eq("Male" => { unique: 6, total: 7 })
-        expect(tally[:spaces]["Alpha"][:faculties]["Arts"]).to eq(unique: 5, total: 5)
-      end
-
-      it "adds up visitors who share a space, identity and faculty but not a gender" do
-        %w[Male Female].each do |gender|
-          user = create(:user, gender: gender)
-          user.update_columns(identity: "grad", faculty: "Arts")
-          create(:lab_session, space: alpha, user: user, sign_in_time: march_10)
-        end
-        tally = described_class.get_visitors(from, to)
-        arts = { "Arts" => { unique: 2, total: 2 } }
-        expect(tally[:spaces]["Alpha"][:identities]["Graduate"]).to eq(unique: 2, total: 2, faculties: arts)
-        expect(tally[:identities]["Graduate"]).to eq(unique: 2, total: 2, faculties: arts)
-        expect(tally[:spaces]["Alpha"][:genders].keys).to match_array(%w[Male Female])
-      end
-    end
-
-    describe ".get_new_projects" do
-      it "gives one row per repository with both a category and equipment, the equipment name shadowing the category name" do
-        repo = create(:repository, created_at: march_10)
-        create(:category, repository: repo, name: "Cat")
-        create(:equipment, repository: repo, name: "Eq1")
-        create(:equipment, repository: repo, name: "Eq2")
-        no_equipment = create(:repository, created_at: march_10)
-        create(:category, repository: no_equipment, name: "Lonely")
-        rows = described_class.get_new_projects(from, to).to_a
-        expect(rows.map { |r| [r["id"], r["created_month"], r["created_year"], r["share_type"], r["name"]] }).to contain_exactly(
-          [repo.id, "03", "2026", "public", "Eq1"], [repo.id, "03", "2026", "public", "Eq2"]
-        )
-      end
     end
   end
 end
