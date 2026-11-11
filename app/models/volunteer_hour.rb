@@ -36,9 +36,14 @@ class VolunteerHour < ApplicationRecord
   end
 
   # Sets the attributes and saves them as hand-logged hours (see the validations above).
+  # False, with the same message as the validation, when a simultaneous identical submission got through the
+  # check first and the unique index on pending hours refused this one.
   def save_hand_logged(attributes)
     assign_attributes(attributes)
     save(context: :hand_logged)
+  rescue ActiveRecord::RecordNotUnique
+    errors.add(:base, :duplicate_pending)
+    false
   end
 
   def self.create_volunteer_hour_from_approval(
