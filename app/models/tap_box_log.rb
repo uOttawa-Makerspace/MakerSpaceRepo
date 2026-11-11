@@ -19,14 +19,12 @@ class TapBoxLog < ApplicationRecord
 
   scope :recent, -> { order(created_at: :desc).limit(500) }
 
-  # The unregistered-reader trace can be triggered by anyone (even bounded), so it is
-  # never pushed live to the staff console; it stays in the console's history.
-  after_create_commit :broadcast_log, unless: :unknown_reader_trace?
-
   # Generic Log
 
+  # Every log row is written here. The row is pushed to the staff console once the real commit has happened, also
+  # when the caller is inside a transaction (a row that is rolled back is never shown).
   def self.log!(event_type:, message:, card_number: nil, user: nil, space: nil, mac_address: nil, details: nil)
-    create!(
+    log = create!(
       event_type: event_type,
       message: message,
       card_number: card_number,
@@ -35,6 +33,8 @@ class TapBoxLog < ApplicationRecord
       mac_address: mac_address,
       details: details
     )
+    ActiveRecord.after_all_transactions_commit { log.broadcast_log }
+    log
   rescue StandardError => e
     # A log row that cannot be written must not break the tap or the job that wrote it.
     HandledError.report(e, source: "tap_box_log.log!", event_type: event_type)
@@ -400,18 +400,25 @@ class TapBoxLog < ApplicationRecord
     where("created_at < ?", days.days.ago).delete_all
   end
 
-  private
-
-  def unknown_reader_trace?
-    message == UNKNOWN_READER_MESSAGE
-  end
-
+  # Pushes the row to the staff console. The unregistered-reader trace can be triggered by anyone (even bounded),
+  # so it is never pushed live; it stays in the console's history. A failed push is reported and never raised:
+  # the row is already stored.
   def broadcast_log
+    return if unknown_reader_trace?
+
     Turbo::StreamsChannel.broadcast_prepend_to(
       "tap_box_console",
       target: "console-body",
       partial: "staff/tap_box_console/log_row",
       locals: { log: self, streamed: true }
     )
+  rescue StandardError => e
+    HandledError.report(e, source: "tap_box_log.broadcast_log", event_type: event_type)
+  end
+
+  private
+
+  def unknown_reader_trace?
+    message == UNKNOWN_READER_MESSAGE
   end
 end

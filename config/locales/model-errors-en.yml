@@ -61,6 +61,8 @@ en:
               inclusion: "A level is required."
         space:
           attributes:
+            base:
+              popular_hours_not_created: "The space could not be created because its popular hours could not be stored. Try again."
             name:
               blank: "A name is required for the space"
               taken: "Space already exists"

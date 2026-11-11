@@ -34,8 +34,6 @@ class Space < ApplicationRecord
   REFUSAL_KEY = :"restrict_dependent_destroy.has_many"
   before_destroy :refuse_deletion_while_history_exists, prepend: true
 
-  after_create :create_popular_hours, unless: -> { Rails.env.test? }
-
   validates :name,
             presence: true,
             uniqueness: true
@@ -110,18 +108,33 @@ class Space < ApplicationRecord
   end
   private :with_visit_history
 
-    def create_popular_hours
-      # Optimization: Prepare data in memory
-      records = []
-      (0..6).each do |weekday|
-        (0..23).each do |hour|
-          records << { space_id: id, hour: hour, day: weekday, created_at: Time.current, updated_at: Time.current }
-        end
-      end
-      
-      # Single SQL Insert
-      PopularHour.insert_all(records)
+  # Saves a new space together with its popular hour rows in one transaction, so a space is never left without
+  # them. Returns whether it saved; a validation failure, or a failed insert (reported, and added to the errors),
+  # stores nothing.
+  def save_with_popular_hours
+    transaction do
+      next false unless save
+
+      create_popular_hours
+      true
     end
+  rescue ActiveRecord::ActiveRecordError => e
+    HandledError.report(e, source: "space.save_with_popular_hours")
+    errors.add(:base, :popular_hours_not_created)
+    false
+  end
+
+  # One row per weekday and hour for the space; does nothing when it already has its rows, so it is safe to run
+  # twice.
+  def create_popular_hours
+    return if popular_hours.exists?
+
+    now = Time.current
+    records = (0..6).flat_map do |weekday|
+      (0..23).map { |hour| { space_id: id, hour: hour, day: weekday, created_at: now, updated_at: now } }
+    end
+    PopularHour.insert_all(records)
+  end
 
   def makerspace?
     name.eql?("Makerspace")

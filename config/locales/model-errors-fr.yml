@@ -61,6 +61,8 @@ fr:
               inclusion: "Un niveau est requis."
         space:
           attributes:
+            base:
+              popular_hours_not_created: "L'espace n'a pas pu être créé, car ses heures d'affluence n'ont pas pu être enregistrées. Réessayez."
             name:
               blank: "Un nom est requis pour l'espace"
               taken: "Cet espace existe déjà"

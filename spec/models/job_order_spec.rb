@@ -275,22 +275,25 @@ RSpec.describe JobOrder, type: :model do
     end
   end
 
-  describe "#set_filename (after_save)" do
+  describe "#prefix_file_names" do
     it "prefixes stored user file blobs with the order id, twice-save safe" do
       order = create(:job_order, user: create(:user, :regular_user))
       order.update!(user_files: [FilesTestHelper.stl])
+      expect(order.user_files.first.filename.to_s).to eq("test.stl")
+      order.prefix_file_names
 
       blob = order.user_files.first
-      expect(blob.filename.to_s).to eq("#{order.id}_test.stl")
+      expect(blob.reload.filename.to_s).to eq("#{order.id}_test.stl")
 
-      order.update!(comments: "again")
+      order.prefix_file_names
       expect(order.user_files.first.reload.filename.to_s).to eq("#{order.id}_test.stl")
     end
 
     it "prefixes staff files the same way" do
       order = create(:job_order, user: create(:user, :regular_user))
       order.update!(staff_files: [FilesTestHelper.stl])
-      expect(order.staff_files.first.filename.to_s).to eq("#{order.id}_test.stl")
+      order.prefix_file_names
+      expect(order.reload.staff_files.first.filename.to_s).to eq("#{order.id}_test.stl")
     end
   end
 

@@ -14,7 +14,7 @@ class Admin::SpacesController < AdminAreaController
 
   def create
     space = Space.new(space_params)
-    flash_write(space, "spaces.not_created", "Space created successfully!") { space.save }
+    flash_write(space, "spaces.not_created", "Space created successfully!") { space.save_with_popular_hours }
     redirect_back(fallback_location: root_path)
   end
 

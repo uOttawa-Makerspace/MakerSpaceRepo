@@ -458,6 +458,34 @@ RSpec.describe "Learning area", type: :request do
       expect(lm.scorm_package_files.map { |f| f.filename.to_s }).to match_array(%w[imsmanifest.xml start.html])
     end
 
+    it "queues ExtractScormJob when an update uploads a new zip" do
+      zip = ScormZipHelper.create_scorm_zip
+      expect do
+        patch learning_area_path(learning_module), params: { learning_module: { scorm_package: zip } }
+      end.to have_enqueued_job(ExtractScormJob).with(learning_module.id)
+      expect(learning_module.reload.scorm_status).to eq("pending")
+    end
+
+    it "queues the job once per upload, not again on the next plain update" do
+      zip = ScormZipHelper.create_scorm_zip
+      patch learning_area_path(learning_module), params: { learning_module: { scorm_package: zip } }
+      expect do
+        patch learning_area_path(learning_module), params: { learning_module: { title: "Renamed again" } }
+      end.not_to have_enqueued_job(ExtractScormJob)
+    end
+
+    it "queues no extraction when an update removes the package" do
+      perform_enqueued_jobs do
+        patch learning_area_path(learning_module), params: { learning_module: { scorm_package: ScormZipHelper.create_scorm_zip } }
+      end
+      expect(learning_module.reload.scorm_package_files).to be_attached
+      patch learning_area_path(learning_module), params: { learning_module: { scorm_package: "" } }
+      expect(enqueued_jobs.map { |job| job["job_class"] }).not_to include("ExtractScormJob")
+      expect(learning_module.reload.scorm_package).not_to be_attached
+      perform_enqueued_jobs
+      expect(learning_module.reload.scorm_package_files).not_to be_attached
+    end
+
     it "does not queue the job when a non-zip update leaves the package untouched" do
       expect do
         patch learning_area_path(learning_module), params: { learning_module: { title: "Renamed" } }

@@ -26,6 +26,43 @@ RSpec.describe User do
     end
   end
 
+  describe "#change_role! cable disconnect" do
+    let(:calls) { [] }
+
+    before do
+      allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
+        double("remote").tap { |remote| allow(remote).to receive(:disconnect) { calls << current_user.id } }
+      end
+    end
+
+    it "closes the connections of a staff member or admin demoted below staff, once" do
+      staff = create(:user, :staff)
+      staff.change_role!("regular_user")
+      expect(calls).to eq([staff.id])
+    end
+
+    it "does not close them on a promotion or a change between staff and admin" do
+      user = create(:user, :regular_user)
+      %w[staff admin staff].each { |role| user.change_role!(role) }
+      expect(calls).to be_empty
+    end
+
+    it "closes them after the outer transaction commits, and not when it rolls back" do
+      kept = create(:user, :staff)
+      undone = create(:user, :staff)
+      User.transaction do
+        kept.change_role!("regular_user")
+        expect(calls).to be_empty
+      end
+      expect(calls).to eq([kept.id])
+      User.transaction do
+        undone.change_role!("regular_user")
+        raise ActiveRecord::Rollback
+      end
+      expect(calls).to eq([kept.id])
+    end
+  end
+
   describe "#sync_programs!" do
     let(:user) { create(:user) }
 

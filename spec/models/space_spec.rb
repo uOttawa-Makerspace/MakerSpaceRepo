@@ -95,15 +95,38 @@ RSpec.describe Space, type: :model do
       end
     end
 
-    context "#after_create :create_popular_hours" do
-      it "should create popular hours after creating space" do
-        # Enable callback temporarily for this specific test
-        Space.set_callback(:create, :after, :create_popular_hours)
-        
-        expect { create(:space) }.to change(PopularHour, :count).by(168)
-        
-        # Disable it again so other tests stay fast
-        Space.skip_callback(:create, :after, :create_popular_hours)
+    context "#save_with_popular_hours" do
+      it "saves the space and its 168 rows together" do
+        space = Space.new(name: "Delta")
+        expect { expect(space.save_with_popular_hours).to be(true) }.to change(PopularHour, :count).by(168)
+        expect(space).to be_persisted
+      end
+
+      it "returns false and stores nothing for an invalid space" do
+        expect { expect(Space.new(name: "").save_with_popular_hours).to be(false) }.not_to change { [Space.count, PopularHour.count] }
+      end
+
+      it "rolls the space back, reports and adds an error when the rows cannot be inserted" do
+        allow(PopularHour).to receive(:insert_all).and_raise(ActiveRecord::StatementInvalid, "boom")
+        space = Space.new(name: "Epsilon")
+        expect(Rails.error).to receive(:report).with(instance_of(ActiveRecord::StatementInvalid), hash_including(handled: true))
+        expect(space.save_with_popular_hours).to be(false)
+        expect(Space.exists?(name: "Epsilon")).to be(false)
+        expect(space.errors[:base]).not_to be_empty
+      end
+    end
+
+    context "#create_popular_hours" do
+      it "creates a row for every weekday and hour" do
+        space = create(:space)
+        expect { space.create_popular_hours }.to change { space.popular_hours.count }.from(0).to(168)
+        expect(space.popular_hours.pluck(:day, :hour)).to match_array((0..6).to_a.product((0..23).to_a))
+      end
+
+      it "does nothing when the space already has its rows" do
+        space = create(:space)
+        space.create_popular_hours
+        expect { space.create_popular_hours }.not_to change(PopularHour, :count)
       end
     end
 
@@ -262,7 +285,7 @@ RSpec.describe Space, type: :model do
       expect { space.destroy }.to change(Shift, :count).by(-1)
     end
 
-    it "does not create popular hours in the test environment (callback is skipped)" do
+    it "does not create popular hours when a space is saved" do
       expect { create(:space) }.not_to change(PopularHour, :count)
     end
   end

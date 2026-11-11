@@ -255,6 +255,12 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(order.staff_comments).to eq("kept")
     end
 
+    it "prefixes the stored name of a staff file added with the comments with the order id" do
+      session_login!(staff)
+      patch job_order_comments_path(order), params: { job_order: { staff_files: [FilesTestHelper.stl] } }
+      expect(order.reload.staff_files.map { |f| f.filename.to_s }).to eq(["#{order.id}_#{FilesTestHelper.stl_name}"])
+    end
+
     it "flashes the generic error when the update is invalid (disallowed staff upload)" do
       session_login!(staff)
       patch job_order_comments_path(order), params: { job_order: { staff_files: [FilesTestHelper.mp4] } }

@@ -60,6 +60,8 @@ class JobTasksController < SessionsController
   def update
     return unless apply_change { apply_task_update! }
 
+    @job_task.prefix_file_names
+
     # The wizard's comments are posted to the order chat once the change has committed. They change neither the bill
     # nor the work, so they never send a quoted order back to staff.
     @job_order.post_chat_message(params[:comments], current_user) if params[:comments].present?

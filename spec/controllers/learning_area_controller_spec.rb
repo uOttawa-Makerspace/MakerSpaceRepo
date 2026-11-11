@@ -261,8 +261,8 @@ RSpec.describe LearningAreaController, type: :controller do
       end
 
       it 'should serve extracted SCORM index' do
-        learning_module =
-          perform_enqueued_jobs { create(:learning_module, :with_scorm_object) }
+        learning_module = create(:learning_module, :with_scorm_object)
+        perform_enqueued_jobs { learning_module.process_scorm_package }
         expect(learning_module.reload.scorm_ready?).to be true
 
         get(:scorm_launch, params: { id: learning_module })
