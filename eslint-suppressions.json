@@ -144,11 +144,6 @@
       "count": 2
     }
   },
-  "app/javascript/src/manage_unavailabilities.js": {
-    "no-unused-vars": {
-      "count": 2
-    }
-  },
   "app/javascript/src/photo_gallery.js": {
     "no-unused-vars": {
       "count": 1
@@ -169,11 +164,6 @@
       "count": 1
     },
     "max-depth": {
-      "count": 1
-    }
-  },
-  "app/javascript/src/unavailabilities_helpers.js": {
-    "complexity": {
       "count": 1
     }
   },
