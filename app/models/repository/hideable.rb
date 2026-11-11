@@ -14,6 +14,11 @@ module Repository::Hideable
 
   included do
     default_scope { where(deleted: false) }
+
+    # Why a hidden repository is hidden, set by whatever hides it. Account restoration brings back only
+    # account_deleted ones. A repository hidden before the reason was recorded has none (NULL) and is
+    # treated as deleted on purpose: nothing brings it back automatically.
+    enum :hidden_reason, { user_deleted: 0, admin_deleted: 1, account_deleted: 2 }, prefix: :hidden, scopes: false
   end
 
   class_methods do
@@ -28,24 +33,29 @@ module Repository::Hideable
     end
   end
 
-  # Hides the repository: its photos, files, comments, likes and makes stay as they were (and so do
-  # the stored files, which are no longer served), and the members lose the reputation creating it
-  # gave them. False, changing nothing, when it is already hidden (a repeated or simultaneous
-  # request). The cached zip is dropped once the transaction commits.
-  def hide!
+  # Hides the repository because of reason (user_deleted or admin_deleted; an account deletion hides
+  # through Repository.release_owned_by!): its photos, files, comments, likes and makes stay as they
+  # were (and so do the stored files, which are no longer served), and the members lose the
+  # reputation creating it gave them. False, changing nothing, when it is already hidden (a repeated
+  # or simultaneous request), and the first reason stays. The cached zip is dropped once the
+  # transaction commits.
+  def hide!(reason:)
+    raise ArgumentError, "unknown reason #{reason.inspect}" unless self.class.hidden_reasons.key?(reason.to_s)
+
     transaction do
       lock!
       next false if deleted?
 
       users.each { |u| u.decrement!(:reputation, creation_reputation) }
-      update_columns(deleted: true, updated_at: Time.current)
+      update_columns(deleted: true, hidden_reason: reason.to_s, updated_at: Time.current)
       ActiveRecord.after_all_transactions_commit { clear_zip_cache }
       true
     end
   end
 
-  # Brings a hidden repository back. The current members get the creation reputation, as they
-  # lost it when it was hidden (a member who joined or left since is treated by what they are now).
+  # Brings a hidden repository back. The current members get the creation reputation back when hiding
+  # took it (user_deleted, admin_deleted; a member who joined or left since is treated by what they
+  # are now); a repository hidden by an account deletion, or before the reason was recorded, lost none.
   # False, changing nothing, when it cannot be restored; errors[:base] then says why (not hidden,
   # because it was already restored; the owner's account is deleted, and restoring that account
   # brings its repositories back; or the owner has another visible repository with the same title).
@@ -57,13 +67,17 @@ module Repository::Hideable
       errors.add(:base, reason) if reason
       next false if reason
 
-      users.each { |u| u.increment!(:reputation, creation_reputation) }
-      update_columns(deleted: false, updated_at: Time.current)
+      users.each { |u| u.increment!(:reputation, creation_reputation) } if reputation_taken_by_hiding?
+      update_columns(deleted: false, hidden_reason: nil, updated_at: Time.current)
       true
     end
   end
 
   private
+
+  def reputation_taken_by_hiding?
+    hidden_user_deleted? || hidden_admin_deleted?
+  end
 
   def creation_reputation
     make_id.present? ? 15 : 25

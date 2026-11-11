@@ -927,7 +927,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_login!(owner)
       expect { delete repository_path(owner.username, repo.slug) }
         .to change(Repository, :count).by(-1).and not_change(Repository.unscoped, :count)
-      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true)
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "user_deleted")
       expect(response).to redirect_to(user_path(owner.username))
       expect(flash[:notice]).to eq("Repository has been successfully deleted.")
       expect(owner.reload.reputation).to eq(75)
@@ -965,6 +965,12 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(ActiveStorage::Blob.pluck(:id)).to match_array(blob_ids)
       expect(make.reload.make_id).to eq(repo.id)
       expect(make.parent).to eq(repo)
+    end
+
+    it "records an admin's deletion as deleted by an admin" do
+      content_sign_in_as(:admin)
+      delete repository_path(owner.username, repo.slug)
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "admin_deleted")
     end
 
     it "answers 404 for the hidden repository's page afterwards" do

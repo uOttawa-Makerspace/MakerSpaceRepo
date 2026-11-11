@@ -29,7 +29,7 @@ RSpec.describe "users:merge_duplicates" do
   it "keeps a hidden repository of the duplicate, with its photo, for the kept user" do
     hidden = create(:repository, owner: duplicate, title: "Hidden One", users: [duplicate])
     photo_ids = hidden.photos.pluck(:id)
-    hidden.hide!
+    hidden.hide!(reason: :user_deleted)
 
     merge
 

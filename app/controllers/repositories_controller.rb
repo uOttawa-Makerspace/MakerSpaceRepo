@@ -166,7 +166,7 @@ class RepositoriesController < SessionsController
   end
 
   def destroy
-    @repository.hide!
+    @repository.hide!(reason: current_user.admin? ? :admin_deleted : :user_deleted)
     respond_to do |format|
       format.html do
         redirect_to user_path(@repository.user_username),

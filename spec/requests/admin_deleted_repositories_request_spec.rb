@@ -8,7 +8,7 @@ RSpec.describe "Admin deleted repositories", type: :request do
   let(:owner) { create(:user, :regular_user) }
   let!(:repo) { create(:repository, owner: owner, title: "Gone Soon", users: [owner]) }
 
-  before { repo.hide! }
+  before { repo.hide!(reason: :user_deleted) }
 
   describe "access" do
     it "sends a guest to sign in and restores nothing" do

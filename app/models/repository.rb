@@ -165,17 +165,19 @@ class Repository < ApplicationRecord
                       .where('NOT EXISTS (SELECT 1 FROM repositories owned WHERE owned.user_id = users.id AND owned.title = ?)',
                              repository.title)
                       .order(:id).lock('FOR SHARE').first
-      changes = new_owner ? { user_id: new_owner.id } : { deleted: true }
+      changes = new_owner ? { user_id: new_owner.id } : { deleted: true, hidden_reason: "account_deleted" }
       repository.update_columns(changes.merge(updated_at: Time.current))
       clear_zip_cache_after_commit(repository)
     end
   end
 
-  # Brings back what release_owned_by! hid: the hidden repositories still owned by the user. A
-  # repository handed to another member has a different owner and stays with them.
+  # Brings back what release_owned_by! hid: the repositories still owned by the user that were hidden
+  # by the account deletion. One the user or an admin deleted, or one hidden before the reason was
+  # recorded, stays hidden. A repository handed to another member has a different owner and stays
+  # with them.
   def self.restore_hidden_for!(user)
-    unscoped.where(user_id: user.id, deleted: true).find_each do |repository|
-      repository.update_columns(deleted: false, updated_at: Time.current)
+    unscoped.where(user_id: user.id, deleted: true, hidden_reason: :account_deleted).find_each do |repository|
+      repository.update_columns(deleted: false, hidden_reason: nil, updated_at: Time.current)
       clear_zip_cache_after_commit(repository)
     end
   end
