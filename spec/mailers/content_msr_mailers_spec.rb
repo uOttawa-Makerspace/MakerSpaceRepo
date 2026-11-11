@@ -92,8 +92,8 @@ RSpec.describe MsrMailer, type: :mailer do
     end
 
     it "takes the previous month in the app time zone when UTC is already in the next month" do
-      # 2026-10-31 23:30 Eastern is already 2026-11-01 03:30 UTC
-      travel_to(Time.zone.local(2026, 10, 31, 23, 30)) do
+      # 2026-11-01 03:30 UTC is 2026-10-31 23:30 Eastern
+      travel_to(Time.utc(2026, 11, 1, 3, 30)) do
         mail = MsrMailer.send_cdel_monthly_report("cdel@example.com")
 
         expect(mail.subject).to eq("CDEL Reports from 2026-09-01 to 2026-09-30")
