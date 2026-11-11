@@ -21,8 +21,8 @@ module PageCrawl
   SKIP_ROUTES = [
     [%r{\A/logout\z}, "destroys the session"],
     [%r{\A/staff_dashboard/sign_out_all_users\z}, "mutates: signs everyone out"],
-    [%r{\A/cc_moneys/redeem\z}, "mutates: credits CC (D-B... redeem is a GET)"],
-    [%r{\A/cc_moneys/link_cc_to_user\z}, "mutates: links CC to a user"],
+    [%r{\A/cc_moneys/redeem\z}, "mutates: credits CC (redeem is POST only)"],
+    [%r{\A/cc_moneys/link_cc_to_user\z}, "needs a mailed claim token"],
     [%r{/join_}, "mutates: joins a program/proposal"],
     [%r{/unjoin_}, "mutates: leaves a proposal"],
     [%r{\A/project_proposals/(un)?join_project_proposal\z}, "mutates"],

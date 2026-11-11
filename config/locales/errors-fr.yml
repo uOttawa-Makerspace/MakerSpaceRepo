@@ -65,6 +65,10 @@ fr:
     admin:
       still_in_use: "D'autres éléments l'utilisent encore, il a donc été laissé tel quel."
       record_missing: "Un élément auquel il fait référence n'existe plus. Rechargez la page et réessayez."
+      cc_money_claim_email:
+        already_linked: "Ces CC Money ont déjà été ajoutés à un compte, aucun courriel n'a donc été envoyé."
+        email_invalid: "Saisissez l'adresse courriel de l'acheteur. Aucun courriel n'a été envoyé."
+        email_mismatch: "Ce Cc Money a été acheté avec une autre adresse courriel. Utilisez l'adresse de l'achat. Aucun courriel n'a été envoyé."
       uni_programs:
         programs_file_missing: "Le fichier des programmes actuels n'est pas disponible sur le serveur."
       time_periods:
@@ -187,7 +191,7 @@ fr:
         token_invalid: "Ce lien n'est pas valide. Ouvrez de nouveau le lien reçu par courriel ou écrivez à uottawa.makerepo@gmail.com."
         not_found: "Cet enregistrement de Cc Money n'existe plus. Si vous pensez qu'il s'agit d'une erreur, écrivez à uottawa.makerepo@gmail.com."
         already_linked: "Le Cc Money a déjà été ajouté à un compte"
-        user_not_found: "Aucun compte n'a été trouvé avec cette adresse courriel. Vérifiez l'adresse et réessayez."
+        not_purchaser: "Ce Cc Money a été acheté avec une autre adresse courriel et ne peut pas être ajouté à ce compte. Connectez-vous avec le compte qui a l'adresse courriel de l'achat ou écrivez à uottawa.makerepo@gmail.com."
         not_linked: "Le Cc Money n'a pas pu être ajouté à ce compte :"
       projects:
         create_invalid: "Le projet n'a pas pu être créé :"

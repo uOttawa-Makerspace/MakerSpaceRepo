@@ -296,6 +296,10 @@ Rails.application.routes.draw do
       resource :restoration, only: :create, module: :deleted_repositories
     end
 
+    resources :cc_moneys, only: :index do
+      resource :claim_email, only: :create, controller: "cc_money_claim_emails"
+    end
+
     resources :job_service_groups, only: %i[new create edit update destroy]
     resources :job_services, only: %i[new create edit update destroy]
     resources :job_options, only: %i[new create edit update destroy]

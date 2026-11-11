@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_11_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -144,11 +144,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_130000) do
 
   create_table "cc_moneys", id: :serial, force: :cascade do |t|
     t.integer "cc"
+    t.integer "claim_token_generation", default: 0, null: false
     t.datetime "created_at", precision: nil, null: false
     t.integer "discount_code_id"
     t.boolean "linked", default: true
     t.integer "order_id"
     t.integer "proficient_project_id"
+    t.string "purchaser_email"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.integer "volunteer_task_id"

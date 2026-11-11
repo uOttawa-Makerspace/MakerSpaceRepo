@@ -366,16 +366,14 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       perform_enqueued_jobs { hook(cc_payload(email: "buyer@example.com", quantity: 2)) }
       row = CcMoney.order(:id).last
       expect([row.user_id, row.cc, row.linked]).to eq([nil, 20, false])
+      expect(row.purchaser_email).to eq("buyer@example.com")
 
       expect(deliveries.size).to eq(1)
       mail = deliveries.first
       expect(mail.to).to eq(["buyer@example.com"])
       expect(mail.subject).to eq("Your CC Money order")
-      token = Rails.application.message_verifier(:cc).generate(row.id)
-      # The mail embeds the token as a URL query param: base64 padding ("==",
-      # present for some id lengths) is percent-escaped there, so compare the
-      # escaped form (identical to the raw token when there is no padding).
-      expect(mail.body.encoded).to include(CGI.escape(token))
+      token = CGI.unescape(mail.body.encoded[/link_cc_to_user\?token=([^"&\s<]+)/, 1])
+      expect(CcMoney.for_claim_token(token)).to eq(row)
     end
 
     it "email lookup is case-insensitive (the users.email column is case-insensitive)" do

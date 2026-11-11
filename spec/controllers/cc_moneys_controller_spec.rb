@@ -13,14 +13,14 @@ RSpec.describe CcMoneysController, type: :controller do
   describe "GET /link_cc_to_user" do
     context "logged in" do
       before(:each) do
-        user = create(:user, :volunteer_with_dev_program)
-        session[:user_id] = user.id
+        @user = create(:user, :volunteer_with_dev_program)
+        session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10_000
       end
 
       it "should return 200 response with token" do
-        new_cc = CcMoney.create(cc: 10, linked: false)
-        hash = Rails.application.message_verifier(:cc).generate(new_cc.id)
+        new_cc = CcMoney.create(cc: 10, linked: false, purchaser_email: @user.email)
+        hash = new_cc.claim_token
         get :link_cc_to_user, params: { token: hash }
         expect(response).to have_http_status(:success)
       end
@@ -39,12 +39,12 @@ RSpec.describe CcMoneysController, type: :controller do
         @user = create(:user, :volunteer_with_dev_program)
         session[:user_id] = @user.id
         session[:expires_at] = Time.zone.now + 10_000
-        @new_cc = CcMoney.create(cc: 10, linked: false)
-        @hash = Rails.application.message_verifier(:cc).generate(@new_cc.id)
+        @new_cc = CcMoney.create(cc: 10, linked: false, purchaser_email: @user.email)
+        @hash = @new_cc.claim_token
       end
 
       it "should put the cc in the wallet" do
-        post :redeem, params: { token: @hash, user: { email: @user.email } }
+        post :redeem, params: { token: @hash }
         expect(response).to redirect_to cc_moneys_path
         expect(flash[:notice]).to eq(
           "The CC Money has been added to #{@user.name}"
@@ -54,7 +54,7 @@ RSpec.describe CcMoneysController, type: :controller do
 
       it "should not put the cc in the wallet (already used)" do
         CcMoney.last.update(linked: true)
-        post :redeem, params: { token: @hash, user: { email: @user.email } }
+        post :redeem, params: { token: @hash }
         expect(response).to redirect_to cc_moneys_path
         expect(flash[:alert]).to eq(
           "The CC Money has already been added to an account"
