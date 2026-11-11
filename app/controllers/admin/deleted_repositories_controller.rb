@@ -4,6 +4,6 @@
 # and bring one back (Admin::DeletedRepositories::RestorationsController).
 class Admin::DeletedRepositoriesController < AdminAreaController
   def index
-    @pagy, @repositories = pagy(Repository.hidden.includes(:owner), limit: 25)
+    @pagy, @repositories = pagy(Repository.hidden.includes(:owner).order(updated_at: :desc, id: :desc), limit: 25)
   end
 end

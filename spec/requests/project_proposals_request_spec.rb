@@ -1498,7 +1498,8 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   describe "a proposal whose only repository was deleted" do
     it "is listed as assigned again, not as completed" do
       done = create(:project_proposal, :completed, title: "Finished Work")
-      done.repositories.first.hide!(reason: :user_deleted)
+      hidden = done.repositories.first
+      hidden.hide!(by: hidden.owner)
       get projects_assigned_project_proposals_path
       expect(response.body).to include("Finished Work")
       get projects_completed_project_proposals_path

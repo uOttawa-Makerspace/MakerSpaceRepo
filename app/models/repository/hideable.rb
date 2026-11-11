@@ -27,27 +27,26 @@ module Repository::Hideable
       unscope(where: :deleted)
     end
 
-    # The hidden repositories, newest change first.
+    # The hidden repositories.
     def hidden
-      including_hidden.where(deleted: true).order(updated_at: :desc, id: :desc)
+      including_hidden.where(deleted: true)
     end
   end
 
-  # Hides the repository because of reason (user_deleted or admin_deleted; an account deletion hides
-  # through Repository.release_owned_by!): its photos, files, comments, likes and makes stay as they
-  # were (and so do the stored files, which are no longer served), and the members lose the
-  # reputation creating it gave them. False, changing nothing, when it is already hidden (a repeated
-  # or simultaneous request), and the first reason stays. The cached zip is dropped once the
-  # transaction commits.
-  def hide!(reason:)
-    raise ArgumentError, "unknown reason #{reason.inspect}" unless self.class.hidden_reasons.key?(reason.to_s)
-
+  # Hides the repository on behalf of user (the member or admin deleting it): its photos, files,
+  # comments, likes and makes stay as they were (and so do the stored files, which are no longer
+  # served), and the members lose the reputation creating it gave them. The reason recorded is
+  # admin_deleted when user is an admin who does not own the repository, user_deleted otherwise (an
+  # owner who is also an admin deleted their own repository). False, changing nothing, when it is
+  # already hidden (a repeated or simultaneous request), and the first reason stays. The cached zip
+  # is dropped once the transaction commits.
+  def hide!(by:)
     transaction do
       lock!
       next false if deleted?
 
       users.each { |u| u.decrement!(:reputation, creation_reputation) }
-      update_columns(deleted: true, hidden_reason: reason.to_s, updated_at: Time.current)
+      update_columns(deleted: true, hidden_reason: deletion_reason_for(by).to_s, updated_at: Time.current)
       ActiveRecord.after_all_transactions_commit { clear_zip_cache }
       true
     end
@@ -73,7 +72,9 @@ module Repository::Hideable
     end
   end
 
-  private
+  def deletion_reason_for(user)
+    user.admin? && user.id != user_id ? :admin_deleted : :user_deleted
+  end
 
   def reputation_taken_by_hiding?
     hidden_user_deleted? || hidden_admin_deleted?

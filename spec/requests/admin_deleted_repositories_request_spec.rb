@@ -8,7 +8,7 @@ RSpec.describe "Admin deleted repositories", type: :request do
   let(:owner) { create(:user, :regular_user) }
   let!(:repo) { create(:repository, owner: owner, title: "Gone Soon", users: [owner]) }
 
-  before { repo.hide!(reason: :user_deleted) }
+  before { repo.hide!(by: repo.owner) }
 
   describe "access" do
     it "sends a guest to sign in and restores nothing" do
@@ -36,6 +36,14 @@ RSpec.describe "Admin deleted repositories", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Gone Soon", owner.username)
       expect(response.body).not_to include("<th>Deleted</th>")
+    end
+
+    it "lists the most recently deleted first" do
+      later = create(:repository, owner: owner, title: "Gone Later", users: [owner])
+      later.hide!(by: owner)
+      content_sign_in_as(:admin)
+      get admin_deleted_repositories_path
+      expect(response.body.index("Gone Later")).to be < response.body.index("Gone Soon")
     end
 
     it "says so when none has been deleted" do

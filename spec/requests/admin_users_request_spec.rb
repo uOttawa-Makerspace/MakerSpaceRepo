@@ -894,7 +894,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     it "keeps a repository the user deleted before the account was deleted hidden" do
       repo = create(:repository, owner: target)
       repo.users << target
-      repo.hide!(reason: :user_deleted)
+      repo.hide!(by: repo.owner)
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       patch restore_user_admin_users_path, params: { id: target.id }
       expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "user_deleted")
@@ -903,7 +903,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
     it "keeps a repository an admin deleted before the account was deleted hidden" do
       repo = create(:repository, owner: target)
       repo.users << target
-      repo.hide!(reason: :admin_deleted)
+      repo.hide!(by: create(:user, :admin))
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       patch restore_user_admin_users_path, params: { id: target.id }
       expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "admin_deleted")
@@ -925,7 +925,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       kept.users << target
       gone = create(:repository, owner: target, title: "Deleted by user")
       gone.users << target
-      gone.hide!(reason: :user_deleted)
+      gone.hide!(by: gone.owner)
       target.update!(reputation: 40)
       delete delete_user_admin_users_path, params: { id: target.id, password: password }
       expect(Repository.unscoped.find(kept.id)).to have_attributes(deleted: true, hidden_reason: "account_deleted")

@@ -9,7 +9,7 @@ RSpec.describe HiddenRepositoryBlob do
 
   it "is true for the photo of a hidden repository and false once it is restored" do
     expect(blob.hidden_by_repository?).to be(false)
-    repo.hide!(reason: :user_deleted)
+    repo.hide!(by: repo.owner)
     expect(blob.hidden_by_repository?).to be(true)
     repo.restore!
     expect(blob.hidden_by_repository?).to be(false)
@@ -18,40 +18,40 @@ RSpec.describe HiddenRepositoryBlob do
   it "is false for a file that belongs to nothing hidden" do
     user = create(:user, :regular_user)
     user.avatar.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "a.png", content_type: "image/png")
-    repo.hide!(reason: :user_deleted)
+    repo.hide!(by: repo.owner)
     expect(user.avatar.blob.hidden_by_repository?).to be(false)
   end
 
   it "is true for the file of a hidden repository" do
     repo_file = create(:repo_file, repository: repo)
-    repo.hide!(reason: :user_deleted)
+    repo.hide!(by: repo.owner)
     expect(repo_file.file.blob.hidden_by_repository?).to be(true)
   end
 
   it "is false for a photo that belongs to no repository" do
     photo_blob = blob
     repo.photos.first.update_columns(repository_id: nil)
-    repo.hide!(reason: :user_deleted)
+    repo.hide!(by: repo.owner)
     expect(photo_blob.hidden_by_repository?).to be(false)
   end
 
   it "is false for a blob attached to a record that is not a repository's" do
     ActiveStorage::Attachment.where(blob_id: blob.id).update_all(record_type: "Elsewhere")
-    repo.hide!(reason: :user_deleted)
+    repo.hide!(by: repo.owner)
     expect(blob.hidden_by_repository?).to be(false)
   end
 
   it "is true for a variant of a hidden repository's photo and false once restored" do
     variant_blob = repo.photos.first.image.variant(:explore).processed.send(:record).image.blob
     expect(variant_blob.hidden_by_repository?).to be(false)
-    repo.hide!(reason: :user_deleted)
+    repo.hide!(by: repo.owner)
     expect(variant_blob.hidden_by_repository?).to be(true)
   end
 
   it "is false for a variant whose record is gone" do
     variant_blob = repo.photos.first.image.variant(:explore).processed.send(:record).image.blob
     ActiveStorage::VariantRecord.delete_all
-    repo.hide!(reason: :user_deleted)
+    repo.hide!(by: repo.owner)
     expect(variant_blob.hidden_by_repository?).to be(false)
   end
 end

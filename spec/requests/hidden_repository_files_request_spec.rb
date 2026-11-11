@@ -41,7 +41,7 @@ RSpec.describe "Files of a deleted repository", type: :request do
   end
 
   context "once the repository is deleted" do
-    let!(:paths) { served_paths(repo).tap { repo.hide!(reason: :user_deleted) } }
+    let!(:paths) { served_paths(repo).tap { repo.hide!(by: repo.owner) } }
 
     it "answers 404 on every route to a guest" do
       paths.each do |name, path|
@@ -79,7 +79,7 @@ RSpec.describe "Files of a deleted repository", type: :request do
     other = create(:repository, owner: owner, title: "Shares The Photo", users: [owner])
     other.photos.first.image.attach(photo_blob)
     path = rails_storage_proxy_path(photo_blob)
-    repo.hide!(reason: :user_deleted)
+    repo.hide!(by: repo.owner)
     get path
     expect(response).to have_http_status(:ok)
   end
@@ -87,7 +87,7 @@ RSpec.describe "Files of a deleted repository", type: :request do
   it "keeps serving files that belong to other records (an avatar)" do
     user = create(:user, :regular_user)
     user.avatar.attach(io: File.open(Rails.root.join("spec/support/assets/avatar.png")), filename: "a.png", content_type: "image/png")
-    repo.hide!(reason: :user_deleted)
+    repo.hide!(by: repo.owner)
     get rails_storage_proxy_path(user.avatar)
     expect(response).to have_http_status(:ok)
   end

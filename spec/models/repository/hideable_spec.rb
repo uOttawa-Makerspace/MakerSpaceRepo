@@ -7,41 +7,83 @@ RSpec.describe Repository::Hideable do
   let!(:repo) { create(:repository, owner: owner, title: "Scope Check", users: [owner]) }
 
   describe "#hide!" do
-    it "hides the repository, takes the creation reputation back once and keeps the rows" do
-      owner.update!(reputation: 100)
-      create(:comment, repository: repo)
-      expect(repo.hide!(reason: :user_deleted)).to be(true)
-      expect(repo.hide!(reason: :user_deleted)).to be(false)
-      expect(owner.reload.reputation).to eq(75)
+    let(:admin) { create(:user, :admin) }
+
+    it "hides the repository" do
+      expect(repo.hide!(by: owner)).to be(true)
       expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true)
+      expect(Repository.find_by(id: repo.id)).to be_nil
+    end
+
+    it "takes the creation reputation back from the members" do
+      owner.update!(reputation: 100)
+      repo.hide!(by: owner)
+      expect(owner.reload.reputation).to eq(75)
+    end
+
+    it "keeps the rows that belong to the repository" do
+      create(:comment, repository: repo)
+      repo.hide!(by: owner)
       expect(Comment.where(repository_id: repo.id).count).to eq(1)
+    end
+
+    it "does nothing the second time" do
+      owner.update!(reputation: 100)
+      repo.hide!(by: owner)
+      expect(repo.hide!(by: owner)).to be(false)
+      expect(owner.reload.reputation).to eq(75)
     end
 
     it "takes 15 reputation back for a make" do
       make = create(:repository, owner: owner, title: "A make", users: [owner], make_id: repo.id)
       owner.update!(reputation: 100)
-      make.hide!(reason: :user_deleted)
+      make.hide!(by: owner)
       expect(owner.reload.reputation).to eq(85)
     end
 
-    it "records the reason, and keeps the first reason when it is hidden again" do
-      repo.hide!(reason: :admin_deleted)
-      repo.hide!(reason: :user_deleted)
+    it "records a deletion by the owner as user_deleted" do
+      repo.hide!(by: owner)
+      expect(Repository.unscoped.find(repo.id).hidden_reason).to eq("user_deleted")
+    end
+
+    it "records a deletion by a member who is not the owner as user_deleted" do
+      member = create(:user, :regular_user)
+      repo.users << member
+      repo.hide!(by: member)
+      expect(Repository.unscoped.find(repo.id).hidden_reason).to eq("user_deleted")
+    end
+
+    it "records a deletion by an admin who is not the owner as admin_deleted" do
+      repo.hide!(by: admin)
       expect(Repository.unscoped.find(repo.id).hidden_reason).to eq("admin_deleted")
     end
 
-    it "refuses a reason it does not know and a missing reason, changing nothing" do
-      expect { repo.hide!(reason: :bored) }.to raise_error(ArgumentError)
-      expect { repo.hide!(reason: nil) }.to raise_error(ArgumentError)
-      expect(Repository.find(repo.id).deleted).to be(false)
+    it "records a deletion by an owner who is also an admin as user_deleted" do
+      owner.update!(role: "admin")
+      repo.hide!(by: owner)
+      expect(Repository.unscoped.find(repo.id).hidden_reason).to eq("user_deleted")
+    end
+
+    it "keeps the first reason when it is hidden again" do
+      repo.hide!(by: admin)
+      repo.hide!(by: owner)
+      expect(Repository.unscoped.find(repo.id).hidden_reason).to eq("admin_deleted")
     end
 
     it "keeps the title reserved for the owner while it is hidden" do
-      repo.hide!(reason: :user_deleted)
+      repo.hide!(by: owner)
       again = build(:repository, owner: owner, title: "Scope Check")
       expect(again).not_to be_valid
       expect(again.errors[:title]).to be_present
       expect(build(:repository, title: "Scope Check")).to be_valid
+    end
+  end
+
+  describe ".hidden" do
+    it "lists only hidden repositories" do
+      repo.hide!(by: owner)
+      create(:repository, owner: owner, title: "Visible")
+      expect(Repository.hidden).to contain_exactly(repo)
     end
   end
 
@@ -51,7 +93,7 @@ RSpec.describe Repository::Hideable do
   end
 
   describe "#restore!" do
-    before { repo.hide!(reason: :user_deleted) }
+    before { repo.hide!(by: owner) }
 
     it "brings the repository back and gives its current members the reputation, only once" do
       owner.update!(reputation: 50)
@@ -85,7 +127,7 @@ RSpec.describe Repository::Hideable do
 
     it "gives the reputation back for a repository an admin deleted" do
       repo.restore!
-      repo.hide!(reason: :admin_deleted)
+      repo.hide!(by: create(:user, :admin))
       owner.update!(reputation: 50)
       repo.restore!
       expect(owner.reload.reputation).to eq(75)
@@ -132,16 +174,24 @@ RSpec.describe Repository::Hideable do
       create(:repository, owner: owner, title: title).tap { |r| r.update_columns(deleted: true, hidden_reason: reason && Repository.hidden_reasons[reason]) }
     end
 
-    it "brings back only the owner's repositories hidden by the account deletion" do
+    it "brings back the owner's repositories hidden by the account deletion, clearing the reason" do
       account = hidden_repo(owner, "By account", :account_deleted)
-      user = hidden_repo(owner, "By user", :user_deleted)
-      admin = hidden_repo(owner, "By admin", :admin_deleted)
+      Repository.restore_hidden_for!(owner)
+      expect(Repository.unscoped.find(account.id)).to have_attributes(deleted: false, hidden_reason: nil)
+    end
+
+    it "leaves the owner's repositories deleted by a user, by an admin, or before the reason was recorded" do
+      by_user = hidden_repo(owner, "By user", :user_deleted)
+      by_admin = hidden_repo(owner, "By admin", :admin_deleted)
       legacy = hidden_repo(owner, "Legacy", nil)
+      Repository.restore_hidden_for!(owner)
+      expect(Repository.unscoped.where(id: [by_user, by_admin, legacy].map(&:id)).pluck(:deleted)).to all(be(true))
+    end
+
+    it "leaves another owner's repository hidden by an account deletion alone" do
       elsewhere = hidden_repo(other, "Not theirs", :account_deleted)
       Repository.restore_hidden_for!(owner)
-      expect(Repository.unscoped.where(id: [account, user, admin, legacy, elsewhere].map(&:id)).order(:id).pluck(:deleted))
-        .to eq([false, true, true, true, true])
-      expect(Repository.unscoped.find(account.id).hidden_reason).to be_nil
+      expect(Repository.unscoped.find(elsewhere.id)).to have_attributes(deleted: true, hidden_reason: "account_deleted")
     end
   end
 end

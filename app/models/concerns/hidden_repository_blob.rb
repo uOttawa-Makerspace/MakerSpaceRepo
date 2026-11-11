@@ -21,8 +21,8 @@ module HiddenRepositoryBlob
 
   def hidden_repository_owner?(type, owner_id)
     case type
-    when "Repository" then Repository.hidden.reorder(nil).exists?(owner_id)
-    when "Photo", "RepoFile" then type.constantize.where(id: owner_id, repository_id: Repository.hidden.reorder(nil).select(:id)).exists?
+    when "Repository" then Repository.hidden.exists?(owner_id)
+    when "Photo", "RepoFile" then type.constantize.where(id: owner_id, repository_id: Repository.hidden.select(:id)).exists?
     when "ActiveStorage::VariantRecord" then hidden_variant_original?(owner_id)
     else false
     end
