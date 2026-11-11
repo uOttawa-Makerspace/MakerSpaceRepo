@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Application } from "@hotwired/stimulus";
 
 const created = [];
 vi.mock("@fullcalendar/core", () => ({
@@ -8,6 +9,7 @@ vi.mock("@fullcalendar/core", () => ({
       this.options = { slotEventOverlap: false, ...options };
       this.eventList = [];
       this.rendered = false;
+      this.destroyed = false;
       created.push(this);
     }
     getOption(name) {
@@ -25,6 +27,9 @@ vi.mock("@fullcalendar/core", () => ({
     render() {
       this.rendered = true;
     }
+    destroy() {
+      this.destroyed = true;
+    }
   },
 }));
 vi.mock("@fullcalendar/rrule", () => ({ default: {} }));
@@ -32,25 +37,37 @@ vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/daygrid", () => ({ default: {} }));
 
 const tooltips = [];
+const disposed = [];
 vi.mock("bootstrap", () => ({
   Tooltip: class {
     constructor(el, options) {
       tooltips.push({ el, options });
     }
+    static getInstance(el) {
+      return el.dataset.tip ? { dispose: () => disposed.push(el) } : null;
+    }
   },
 }));
 
 const PAGE = `
-<input id="space_id" value="3">
-<div id="calendar_container" data-my-calendar style="display:none"><div id="calendar"></div></div>
-<div id="spinner_container"></div>
-<span class="fc-toggleOthersShifts-button"></span>
-<span class="fc-toggleEventOverlap-button"></span>`;
+<div data-controller="my-calendar" data-my-calendar-feed-url-value="/staff/my_calendar/json/3">
+  <div id="calendar_container" data-my-calendar-target="container" style="display:none">
+    <div id="calendar" data-my-calendar-target="calendar"><p id="stale">old</p></div>
+  </div>
+  <div id="spinner_container" data-my-calendar-target="spinner"></div>
+  <span class="fc-toggleOthersShifts-button"></span>
+  <span class="fc-toggleEventOverlap-button"></span>
+</div>
+<span class="fc-toggleOthersShifts-button" id="foreign"></span>`;
 
-function boot() {
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+async function boot() {
   document.body.innerHTML = PAGE;
   created.length = 0;
-  document.dispatchEvent(new Event("turbo:load"));
+  application = Application.start();
+  application.register("my-calendar", MyCalendar);
+  await settle();
   return created[0];
 }
 
@@ -65,33 +82,63 @@ const shift = (id, hasCurrentUser) => {
   };
 };
 
-await import("../../../app/javascript/entrypoints/my_calendar.js");
+const { default: MyCalendar } =
+  await import("../../../app/javascript/controllers/my_calendar_controller.js");
+
+let application;
+
+afterEach(() => {
+  application?.stop();
+  document.body.innerHTML = "";
+});
 
 beforeEach(() => {
   localStorage.clear();
   tooltips.length = 0;
+  disposed.length = 0;
   globalThis.requestAnimationFrame = (fn) => fn();
 });
 
 describe("my calendar", () => {
-  it("does nothing on a page with another calendar", () => {
-    document.body.innerHTML =
-      '<div id="calendar_container"><div id="calendar"></div></div>';
+  it("does nothing without the controller element", async () => {
+    document.body.innerHTML = '<div id="calendar"></div>';
     created.length = 0;
+    application = Application.start();
+    application.register("my-calendar", MyCalendar);
+    await settle();
     document.dispatchEvent(new Event("turbo:load"));
     expect(created).toHaveLength(0);
   });
 
-  it("does nothing on a page without the calendar", () => {
-    document.body.innerHTML = "<p>Not assigned to any space</p>";
-    created.length = 0;
+  it("draws once on its own calendar and clears markup left by a cached page", async () => {
+    const cal = await boot();
+    expect(created).toHaveLength(1);
+    expect(document.getElementById("stale")).toBeNull();
     document.dispatchEvent(new Event("turbo:load"));
-    expect(created).toHaveLength(0);
+    expect(created).toHaveLength(1);
+    expect(cal.destroyed).toBe(false);
   });
 
-  it("reads the events of the space and shows the calendar", () => {
-    const cal = boot();
-    expect(cal.options.eventSources).toBe("/staff/my_calendar/json/3");
+  it("destroys the calendar when the element leaves the page", async () => {
+    const cal = await boot();
+    document.body.innerHTML = "";
+    await settle();
+    expect(cal.destroyed).toBe(true);
+  });
+
+  it("disposes an event's tooltip when the event is removed", async () => {
+    const cal = await boot();
+    const el = document.createElement("div");
+    el.dataset.tip = "1";
+    cal.options.eventWillUnmount({ el });
+    expect(disposed).toEqual([el]);
+    cal.options.eventWillUnmount({ el: document.createElement("div") });
+    expect(disposed).toHaveLength(1);
+  });
+
+  it("reads the events of the space and shows the calendar", async () => {
+    const cal = await boot();
+    expect(cal.options.events).toBe("/staff/my_calendar/json/3");
     expect(cal.rendered).toBe(true);
     expect(document.getElementById("calendar_container").style.display).toBe(
       "block",
@@ -104,10 +151,10 @@ describe("my calendar", () => {
     ).toBe("Enable Event Overlap");
   });
 
-  it("starts at the remembered date and overlap setting", () => {
+  it("starts at the remembered date and overlap setting", async () => {
     localStorage.fullCalendarEventOverlap = "true";
     localStorage.fullCalendarDefaultDateStaffCalendar = "2026-03-02T00:00:00Z";
-    const cal = boot();
+    const cal = await boot();
     expect(cal.options.slotEventOverlap).toBe(true);
     expect(cal.options.initialDate).toBe("2026-03-02T00:00:00Z");
     expect(
@@ -115,8 +162,8 @@ describe("my calendar", () => {
     ).toBe("Disable Event Overlap");
   });
 
-  it("remembers the first day of the view", () => {
-    const cal = boot();
+  it("remembers the first day of the view", async () => {
+    const cal = await boot();
     cal.options.datesSet({
       view: { currentStart: new Date("2026-11-02T00:00:00Z") },
     });
@@ -125,8 +172,8 @@ describe("my calendar", () => {
     );
   });
 
-  it("toggles event overlap, remembers it and relabels the button", () => {
-    const cal = boot();
+  it("toggles event overlap, remembers it and relabels the button", async () => {
+    const cal = await boot();
     cal.options.customButtons.toggleEventOverlap.click();
     expect(cal.options.slotEventOverlap).toBe(true);
     expect(localStorage.fullCalendarEventOverlap).toBe("true");
@@ -141,8 +188,8 @@ describe("my calendar", () => {
     ).toBe("Enable Event Overlap");
   });
 
-  it("hides other people's shifts, then shows them all again", () => {
-    const cal = boot();
+  it("hides other people's shifts, then shows them all again", async () => {
+    const cal = await boot();
     const mine = shift("a", true);
     const theirs = shift("b", false);
     cal.eventList = [mine, theirs];
@@ -153,6 +200,7 @@ describe("my calendar", () => {
     expect(
       document.querySelector(".fc-toggleOthersShifts-button").innerHTML,
     ).toBe("Show All Shifts");
+    expect(document.getElementById("foreign").innerHTML).toBe("");
 
     cal.options.customButtons.toggleOthersShifts.click();
     expect(theirs.props.display).toBe("auto");
@@ -161,8 +209,8 @@ describe("my calendar", () => {
     ).toBe("Show My Shifts Only");
   });
 
-  it("decorates a mounted event with a tooltip, fade in and user colour", () => {
-    const cal = boot();
+  it("decorates a mounted event with a tooltip, fade in and user colour", async () => {
+    const cal = await boot();
     const el = document.createElement("div");
     cal.options.eventDidMount({
       el,
@@ -176,8 +224,8 @@ describe("my calendar", () => {
     expect(tooltips[0].options.title.innerHTML).toBe("Shift<br><i>Desk</i>");
   });
 
-  it("leaves an event without a description or colour plain", () => {
-    const cal = boot();
+  it("leaves an event without a description or colour plain", async () => {
+    const cal = await boot();
     const el = document.createElement("div");
     cal.options.eventDidMount({
       el,
@@ -187,8 +235,8 @@ describe("my calendar", () => {
     expect(tooltips[0].options.title.innerHTML).toBe("Shift");
   });
 
-  it("shows markup in a title or description as text", () => {
-    const cal = boot();
+  it("shows markup in a title or description as text", async () => {
+    const cal = await boot();
     const el = document.createElement("div");
     cal.options.eventDidMount({
       el,
