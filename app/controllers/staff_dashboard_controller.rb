@@ -321,21 +321,15 @@ class StaffDashboardController < StaffAreaController
   end
 
   def search
+    return reject_blank_search if params[:query].blank? && params[:username].blank?
+
+    if params[:username].present?
+      @users = User.where("username = ?", params[:username])
+    else
+      @query = params[:query]
+      @users = User.text_search(@query).order(:updated_at)
+    end
     respond_to do |format|
-      if params[:query].blank? and params[:username].blank?
-        format.html do
-          redirect_to staff_dashboard_index_path, alert: "No search parameters."
-        end
-        format.json { render json: { error: "no params" } }
-      elsif params[:username].present?
-        @users = User.where("username = ?", params[:username])
-      else
-        @query = params[:query]
-        @users =
-          User
-            .text_search(@query)
-            .order(:updated_at)
-      end
       format.html { @users = @users.includes(:lab_sessions) if @query.present? }
       format.json { render json: @users.as_json(only: SEARCH_JSON_FIELDS) }
     end
@@ -365,6 +359,14 @@ class StaffDashboardController < StaffAreaController
   end
 
   private
+
+  # A search with neither a query nor a username: the page goes back to the dashboard, the staff app gets an error object.
+  def reject_blank_search
+    respond_to do |format|
+      format.html { redirect_to staff_dashboard_index_path, alert: "No search parameters." }
+      format.json { render json: { error: "no params" } }
+    end
+  end
 
   # Returns [error, status]; error is nil when the card was linked.
   def link_rfid_error
