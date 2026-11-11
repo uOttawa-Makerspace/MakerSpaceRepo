@@ -313,6 +313,19 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         expect(response.body).to include("Cc cost must be a number of CC points (0 or more)")
       end
 
+      it "refuses a code that is already in use (422, nothing saved)" do
+        create(:coupon_code, :unclaimed, code: "TAKEN-1")
+        expect { post coupon_codes_path, params: { coupon_code: { code: "TAKEN-1", cc_cost: 5, dollar_cost: 3 } } }
+          .not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "refuses a coupon without a positive dollar value" do
+        expect { post coupon_codes_path, params: { coupon_code: { code: "ZERO", cc_cost: 5, dollar_cost: 0 } } }
+          .not_to change(CouponCode, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
       it "refuses a non-numeric price on create with the same message" do
         expect { post coupon_codes_path, params: { coupon_code: { code: "X", cc_cost: "abc", dollar_cost: 3 } } }
           .not_to change(CouponCode, :count)
@@ -495,6 +508,17 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         post redeem_cc_moneys_path, params: { token: token, user: { email: other.email } }
         expect(flash[:alert]).to eq("The CC Money has already been added to an account")
         expect(unlinked.reload.user_id).to eq(user.id)
+      end
+
+      it "does not take over a row another claim linked after this request read it" do
+        shop_log_in!(user)
+        stale = CcMoney.find(unlinked.id)
+        CcMoney.where(id: unlinked.id).update_all(user_id: other.id, linked: true)
+        allow(CcMoney).to receive(:find_by_id).and_return(stale)
+        expect { post redeem_cc_moneys_path, params: { token: token, user: { email: user.email } } }
+          .not_to change { CcMoney.where(user_id: user.id).count }
+        expect(flash[:alert]).to eq("The CC Money has already been added to an account")
+        expect(unlinked.reload.user_id).to eq(other.id)
       end
 
       it "unknown email: says no account was found, points stay unlinked" do

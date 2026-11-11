@@ -23,8 +23,7 @@ class Admin::DropOffLocationsController < AdminAreaController
   end
 
   def update
-    @location.update(name: params[:drop_off_location][:name])
-    if @location.save
+    if @location.update(params.expect(drop_off_location: [:name]))
       flash[:notice] = "Drop-off Location renamed successfully"
     else
       flash[:alert] = "Input is invalid"

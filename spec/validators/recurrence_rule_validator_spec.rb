@@ -111,6 +111,25 @@ RSpec.describe RecurrenceRuleValidator do
     expect(errors_for("DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=DAILY;COUNT=2")).to eq([])
   end
 
+  it "accepts a floating start (no Z, no zone)" do
+    expect(errors_for("DTSTART:20270301T100000\nRRULE:FREQ=DAILY;COUNT=2")).to eq([])
+  end
+
+  it "accepts a start line with no stamp, which the series edits read as no start" do
+    expect(errors_for("DTSTART:\nRRULE:FREQ=DAILY")).to eq([])
+  end
+
+  it "rejects a start line that the series edits cannot read" do
+    [
+      "DTSTART;TZID=Nowhere/Land:20270301T100000\nRRULE:FREQ=DAILY",
+      "DTSTART:garbage\nRRULE:FREQ=DAILY",
+      "DTSTART:20271345T250000Z\nRRULE:FREQ=DAILY",
+      "DTSTART:20270301T150000Z\nDTSTART:garbage\nRRULE:FREQ=DAILY"
+    ].each do |rule|
+      expect(errors_for(rule)).to eq([RecurrenceRuleValidator::UNPARSEABLE]), rule.inspect
+    end
+  end
+
   it "rejects the out-of-range parts that make ice_cube raise NoMethodError" do
     ["FREQ=DAILY;BYYEARDAY=400", "FREQ=WEEKLY;BYMONTHDAY=0"].each do |body|
       expect(errors_for("RRULE:#{body}")).to eq([RecurrenceRuleValidator::UNPARSEABLE]), body

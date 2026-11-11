@@ -46,7 +46,7 @@ RSpec.describe "Job order quotes with a missing service price", type: :request d
       order = make_job_order!(owner: owner, status_key: :staff_approval)
       task = order.job_tasks.create!(title: "Laser job", job_type: job_type, job_service: service)
 
-      expect { patch job_order_quote_path(order), params: quote_params(task, service_price: "") }
+      expect { patch_quote order, quote_params(task, service_price: "") }
         .not_to(change { ActionMailer::Base.deliveries.size })
 
       expect(flash[:alert]).to eq(refusal)
@@ -58,7 +58,7 @@ RSpec.describe "Job order quotes with a missing service price", type: :request d
       order = order_at!(:user_approval, service_price: 3)
       task = order.job_tasks.first
 
-      patch job_order_quote_path(order), params: quote_params(task, service_price: "").merge("job_task_quote_price_#{task.id}" => "99")
+      patch_quote order, quote_params(task, service_price: "").merge("job_task_quote_price_#{task.id}" => "99")
 
       expect(flash[:alert]).to eq(refusal)
       expect(task.reload.job_task_quote.attributes.slice("price", "service_price").values).to eq([10, 3])
@@ -69,7 +69,7 @@ RSpec.describe "Job order quotes with a missing service price", type: :request d
       order = make_job_order!(owner: owner, status_key: :staff_approval)
       task = order.job_tasks.create!(title: "Laser job", job_type: job_type, job_service: service)
 
-      patch job_order_quote_path(order), params: quote_params(task, service_price: "0")
+      patch_quote order, quote_params(task, service_price: "0")
 
       expect(flash[:alert]).to be_nil
       expect(task.reload.job_task_quote.service_price).to eq(0)
@@ -80,7 +80,7 @@ RSpec.describe "Job order quotes with a missing service price", type: :request d
       order = make_job_order!(owner: owner, status_key: :staff_approval)
       task = order.job_tasks.create!(title: "Design")
 
-      patch job_order_quote_path(order), params: { approved: "true", "job_task_quote_price_#{task.id}" => "20" }
+      patch_quote order, { approved: "true", "job_task_quote_price_#{task.id}" => "20" }
 
       expect(flash[:alert]).to be_nil
       expect(task.reload.job_task_quote.service_price).to be_nil

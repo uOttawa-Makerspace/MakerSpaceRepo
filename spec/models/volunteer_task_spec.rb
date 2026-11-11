@@ -40,16 +40,25 @@ end
 
 # Chunk 13 characterization.
 RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model do
-  it "has column defaults and no presence validations once saved" do
+  it "has column defaults when saved without validation" do
     task = VolunteerTask.new.tap { |t| t.save!(validate: false) }
     expect(task.attributes.values_at("title", "description", "status", "joins", "category", "cc"))
       .to eq(["", "", "open", 1, "Other", 0])
     expect(task.hours).to eq(0)
   end
 
-  it "accepts negative cc/joins and arbitrary status" do
-    task = VolunteerTask.new(cc: -1, hours: 2, joins: -3, status: "whatever")
-    expect(task).to be_valid
+  describe "form fields" do
+    it "needs a title, whole CC of 0 or more, at least 1 seat and an open or completed status" do
+      expect(build(:volunteer_task)).to be_valid
+      expect(build(:volunteer_task, title: " ")).not_to be_valid
+      expect(build(:volunteer_task, cc: -1)).not_to be_valid
+      expect(build(:volunteer_task, cc: 1.5)).not_to be_valid
+      expect(build(:volunteer_task, cc: 0)).to be_valid
+      expect(build(:volunteer_task, joins: 0)).not_to be_valid
+      expect(build(:volunteer_task, joins: -3)).not_to be_valid
+      expect(build(:volunteer_task, status: "whatever")).not_to be_valid
+      expect(build(:volunteer_task, status: "completed")).to be_valid
+    end
   end
 
   describe "hours" do
@@ -58,11 +67,11 @@ RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model d
         expect(VolunteerTask.new(hours: hours)).not_to be_valid
         expect(VolunteerTask.new(hours: hours).tap { |t| t.valid?(:task_form) }.errors[:hours]).to be_present
       end
-      expect(VolunteerTask.new(hours: 0.5)).to be_valid
+      expect(VolunteerTask.new(hours: 0.5, title: "Open house")).to be_valid
     end
 
     it "are not checked on a stored task with 0 or 36 hours outside the task form" do
-      zero = VolunteerTask.new(hours: 0).tap { |t| t.save!(validate: false) }
+      zero = VolunteerTask.new(hours: 0, title: "Old task").tap { |t| t.save!(validate: false) }
       long = create(:volunteer_task, hours: 36)
       expect(zero.update(status: "completed")).to be(true)
       expect(long.update(title: "renamed")).to be(true)
@@ -129,7 +138,8 @@ RSpec.describe VolunteerTask, "#remove_user", type: :model do
 
   it "marks the user's joined rows left when they remove themselves, and keeps every row" do
     first = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
-    second = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
+    # a stored duplicate from before joins were unique
+    second = build(:volunteer_task_join, :active, volunteer_task: task, user: user).tap { |j| j.save!(validate: false) }
 
     expect(task.remove_user(user.id, by: user)).to be(true)
     rows = VolunteerTaskJoin.where(id: [first.id, second.id])

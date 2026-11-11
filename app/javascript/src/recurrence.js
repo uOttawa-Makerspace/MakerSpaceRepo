@@ -179,7 +179,7 @@ export function occurrencesOverlapping(ruleText, durationMs, from, to) {
 /*
  * The intervals of a calendar feed entry that overlap the wall-time range
  * [from, to). An entry is either one-off ({ start, end }) or repeating
- * ({ rrule, duration }); its times are Toronto wall-clock strings. A rule that
+ * ({ rrule, duration }, the duration absent for a series with no end); its times are Toronto wall-clock strings. A rule that
  * cannot be read has none. A repeating entry is parsed and expanded once, for
  * the whole range.
  */
@@ -192,7 +192,8 @@ export function entryIntervals(entry, from, to) {
     return overlaps(occurrence, from, to) ? [occurrence] : [];
   }
   try {
-    return occurrencesOverlapping(entry.rrule, entry.duration, from, to);
+    // a series with no end has no duration: each occurrence is a single moment
+    return occurrencesOverlapping(entry.rrule, entry.duration ?? 0, from, to);
   } catch (error) {
     console.warn("Invalid RRULE:", error);
     return [];

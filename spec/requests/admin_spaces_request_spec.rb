@@ -191,30 +191,41 @@ RSpec.describe "Admin spaces", type: :request do
         expect(flash[:alert]).to eq("Choose a sub space and enter the number of hours for the automatic approval limit.")
       end
 
-      # a non-numeric limit is silently stored as 0 (to_i) rather than rejected.
-      it "stores a non-numeric max_hours as 0" do
-        patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id), params: { max_hours: "abc" }
-        expect(room.reload.maximum_booking_duration).to eq(0)
+      it "refuses a limit that is not a whole number of hours and keeps the stored limits" do
+        room.update!(maximum_booking_duration: 3, maximum_booking_hours_per_week: 9, max_automatic_approval_hour: 1)
+        ["abc", "2.5", "-2", "1e3"].each do |bad|
+          patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id), params: { max_hours: bad }
+          expect(response).to redirect_to(edit_admin_space_path(id: space.id))
+          expect(flash[:alert]).to eq("The limit must be a whole number of hours, or -1 to remove it.")
+          patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id), params: { max_weekly_hours: bad }
+          expect(flash[:alert]).to eq("The limit must be a whole number of hours, or -1 to remove it.")
+          patch admin_space_set_max_automatic_approval_hour_path(space_id: space.id, sub_space_id: room.id), params: { auto_approve_hours: bad }
+          expect(flash[:alert]).to eq("The limit must be a whole number of hours, or -1 to remove it.")
+        end
+        expect(room.reload).to have_attributes(maximum_booking_duration: 3, maximum_booking_hours_per_week: 9, max_automatic_approval_hour: 1)
       end
 
-      it "delete_sub_space removes the room together with its bookings and statuses" do
+      it "names the refused limit in French" do
+        patch admin_space_set_max_booking_duration_path(space_id: space.id, sub_space_id: room.id), params: { max_hours: "abc", locale: "fr" }
+        expect(flash[:alert]).to eq("La limite doit être un nombre entier d'heures, ou -1 pour la retirer.")
+      end
+
+      it "delete_sub_space refuses a room that has bookings and keeps the room, bookings and statuses" do
         booking = create(:sub_space_booking, sub_space: room)
         status_id = booking.sub_space_booking_status_id
         delete admin_space_delete_sub_space_path(space_id: space.id, id: room.id)
         expect(response).to redirect_to(edit_admin_space_path(id: space.id))
-        expect(flash[:notice]).to eq("Sub Space deleted!")
-        expect(SubSpace.exists?(room.id)).to be(false)
-        expect(SubSpaceBooking.exists?(booking.id)).to be(false)
-        expect(SubSpaceBookingStatus.exists?(status_id)).to be(false)
+        expect(flash[:alert]).to include("bookings")
+        expect(flash[:notice]).to be_nil
+        expect(SubSpace.exists?(room.id)).to be(true)
+        expect(SubSpaceBooking.exists?(booking.id)).to be(true)
+        expect(SubSpaceBookingStatus.exists?(status_id)).to be(true)
       end
 
-      it "delete_sub_space removes the room and a booking that has no status" do
-        booking = create(:sub_space_booking, sub_space: room)
-        booking.update_column(:sub_space_booking_status_id, nil)
+      it "delete_sub_space removes a room that has no bookings" do
         delete admin_space_delete_sub_space_path(space_id: space.id, id: room.id)
         expect(flash[:notice]).to eq("Sub Space deleted!")
         expect(SubSpace.exists?(room.id)).to be(false)
-        expect(SubSpaceBooking.exists?(booking.id)).to be(false)
       end
     end
 

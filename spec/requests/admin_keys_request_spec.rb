@@ -233,6 +233,18 @@ RSpec.describe "Admin keys", type: :request do
       expect(response.body).to include("Request form awaiting approval")
     end
 
+    it "lists several staff holders with their request status without a query per holder" do
+      3.times do
+        extra = create(:user, :staff)
+        create(:key_request, :status_approved, :all_questions_answered, user: extra, supervisor: supervisor, space: space)
+      end
+
+      get admin_key_assign_path(key)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan(/<option /).size).to be >= 4
+    end
+
     it "assigns an inventory key: key becomes held and a KeyTransaction with the deposit is created" do
       expect {
         patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 25 }
@@ -283,12 +295,11 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.get_latest_key_transaction).to have_attributes(return_date: Date.current, deposit_return_date: Date.current)
     end
 
-    # revoke stamps return_date with Date.today (server/UTC date), so after 20:00 Eastern the key is returned "tomorrow"
-    it "stamps the UTC date as the return date when revoked in the Eastern evening" do
-      travel_to(Time.zone.now.change(hour: 21))
+    it "stamps the app-zone date as the return date when revoked in the Eastern evening" do
+      travel_to(Time.find_zone!("America/Toronto").local(2026, 3, 10, 22, 30))
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
       patch admin_key_revoke_key_path(key)
-      expect(key.get_latest_key_transaction.return_date).to eq(Date.current + 1)
+      expect(key.get_latest_key_transaction.return_date).to eq(Date.new(2026, 3, 10))
     end
 
     it "revokes with a non-zero deposit: deposit stays outstanding unless a return date is given" do
@@ -326,10 +337,20 @@ RSpec.describe "Admin keys", type: :request do
       expect(KeyTransaction.where(key: key).not_returned).to be_empty
     end
 
-    # assign_key does User.find(params[:key][:user_id]) so a missing/unknown user is a RecordNotFound (404) instead of a flash alert
-    it "404s assigning to an unknown user" do
-      patch admin_key_assign_key_path(key), params: { key: { user_id: 0 }, deposit_amount: 1 }
-      expect(response).to have_http_status(:not_found)
+    it "refuses to assign to an unknown user with an alert, changing nothing" do
+      expect { patch admin_key_assign_key_path(key), params: { key: { user_id: 0 }, deposit_amount: 1 } }.not_to change(KeyTransaction, :count)
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("The key was not assigned. The selected key holder was not found.")
+      expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
+    end
+
+    it "refuses an unreadable deposit return date, leaving the key held and its transaction open" do
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 30 }
+      patch admin_key_revoke_key_path(key), params: { deposit_return_date: "not a date" }
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("The key was not revoked. Enter the deposit return date as a valid date.")
+      expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
+      expect(KeyTransaction.where(key: key).not_returned.count).to eq(1)
     end
   end
 

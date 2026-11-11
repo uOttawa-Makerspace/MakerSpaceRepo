@@ -244,7 +244,7 @@ RSpec.describe PrintersController, type: :controller do
               }
         expect(flash[:alert]).to be_nil
         expect(flash[:notice]).to eq("Email sent successfully")
-        expect(response).to have_http_status(:no_content)
+        expect(response).to redirect_to(staff_printers_printers_url)
       end
 
       it "should fail on unknown printers" do
@@ -258,7 +258,7 @@ RSpec.describe PrintersController, type: :controller do
               }
         expect(flash[:notice]).to be_nil
         expect(flash[:alert]).to eq("Error sending message, printer not found")
-        expect(response).to have_http_status(:no_content)
+        expect(response).to redirect_to(staff_printers_printers_url)
       end
 
       it "should fail on unknown users" do
@@ -272,7 +272,7 @@ RSpec.describe PrintersController, type: :controller do
               }
         expect(flash[:notice]).to be_nil
         expect(flash[:alert]).to eq("Error sending message, username not found")
-        expect(response).to have_http_status(:no_content)
+        expect(response).to redirect_to(staff_printers_printers_url)
       end
     end
   end
