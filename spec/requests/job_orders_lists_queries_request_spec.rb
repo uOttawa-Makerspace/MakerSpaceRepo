@@ -73,4 +73,14 @@ RSpec.describe "Job order lists: status queries", type: :request do
     expect(selects).not_to be_empty
     expect(selects.reject { |q| q.match?(/LIMIT/i) }).to eq([])
   end
+
+  it "gives each submitted cell a machine-readable timestamp whatever the language" do
+    session_login!(admin)
+    order = orders!(1, owner: owner).first
+    get admin_job_orders_path, params: { locale: "fr" }
+
+    expect(response).to have_http_status(:ok)
+    cell = Nokogiri::HTML(response.body).at_css("td[data-sort='#{order.created_at.iso8601}']")
+    expect(cell.text.strip).to eq(I18n.l(order.created_at, format: :long, locale: :fr))
+  end
 end

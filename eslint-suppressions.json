@@ -34,11 +34,6 @@
       "count": 2
     }
   },
-  "app/javascript/entrypoints/job_orders.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/job_orders_wizard.js": {
     "no-unused-vars": {
       "count": 1

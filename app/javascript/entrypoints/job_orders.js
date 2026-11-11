@@ -3,11 +3,16 @@ import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 
 // Hides rows submitted more than the computed number of days ago. Registered
 // once per admin page visit; it reads the current value on every redraw.
-function submittedWithinComputedDays(_settings, data, _dataIndex) {
+function submittedWithinComputedDays(settings, _data, dataIndex) {
   const daysField = document.getElementById("computed_days");
   if (!daysField) return true;
 
-  const date = new Date(data[4]);
+  // The submitted cell is localised text; its data-sort attribute holds the
+  // machine-readable timestamp. Keep rows whose timestamp cannot be read.
+  const cell = settings.aoData?.[dataIndex]?.anCells?.[4];
+  const date = new Date(cell?.dataset.sort);
+  if (Number.isNaN(date.getTime())) return true;
+
   const diffDays = Math.floor((new Date() - date) / (1000 * 60 * 60 * 24));
   return diffDays <= parseInt(daysField.value);
 }

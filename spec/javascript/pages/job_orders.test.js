@@ -168,9 +168,17 @@ describe("date range", () => {
     $("computed_days").value = "7";
     tick(box("job_type_filter", "Laser"));
     const keep = searchFilters[0];
-    const row = (date) => [0, 0, 0, 0, date];
-    expect(keep({}, row("2026-06-08"))).toBe(true);
-    expect(keep({}, row("2026-05-01"))).toBe(false);
+    // The visible text is localised; only the data-sort timestamp is read.
+    const settings = (sort, text = "15 juin 2023 à 14:30") => {
+      const cell = document.createElement("td");
+      if (sort) cell.dataset.sort = sort;
+      cell.textContent = text;
+      return { aoData: [{ anCells: [0, 0, 0, 0, cell] }] };
+    };
+    expect(keep(settings("2026-06-08T10:00:00-04:00"), [], 0)).toBe(true);
+    expect(keep(settings("2026-05-01T10:00:00-04:00"), [], 0)).toBe(false);
+    expect(keep(settings(null), [], 0)).toBe(true);
+    expect(keep({}, [], 0)).toBe(true);
   });
 
   it("registers the date filter once however often the filters change", () => {
