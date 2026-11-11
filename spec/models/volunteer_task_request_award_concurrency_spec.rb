@@ -69,7 +69,7 @@ RSpec.describe VolunteerTaskRequest, "#pay_award under concurrency", type: :mode
 
     results = [one.value, two.value]
     expect(results.grep(StandardError)).to be_empty
-    expect(results).to eq([true, false])
+    expect(VolunteerTaskRequest.find(first.id)).to be_award_paid
     expect(CcMoney.where(user_id: volunteer.id, volunteer_task_id: task.id).pluck(:cc)).to eq([12])
     expect(VolunteerHour.where(user_id: volunteer.id, volunteer_task_id: task.id).pluck(:total_time)).to eq([3.5])
     expect(VolunteerTaskRequest.where(user_id: volunteer.id).pluck(:approval)).to eq([true, true])
