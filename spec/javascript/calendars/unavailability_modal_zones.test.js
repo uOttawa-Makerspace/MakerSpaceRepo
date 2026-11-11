@@ -41,13 +41,6 @@ const openForRange = (range) => controller().openForRange(range);
 const $ = (id) => document.getElementById(id);
 const fire = (el, type, init) => el.dispatchEvent(new Event(type, init));
 const submit = () => fire($("unavailForm"), "submit", { cancelable: true });
-const stampToDate = (stamp) =>
-  new Date(
-    stamp.replace(
-      /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?/,
-      "$1-$2-$3T$4:$5:$6Z",
-    ),
-  );
 const hasOffset = (value) => /(Z|[+-]\d{2}:\d{2})$/.test(value);
 
 // Offset of each zone on 2027-03-17, in minutes as getTimezoneOffset reports it
@@ -64,33 +57,20 @@ function openNew(start, end = start) {
   $("end_time_field").value = end;
 }
 
-function fcEvent(start, def = {}) {
+function entry(start, rrule = null) {
   return {
     id: "31",
     allDay: false,
     startStr: start,
     endStr: start,
-    _def: { title: "Lecture", extendedProps: {}, ...def },
+    title: "Lecture",
+    description: "",
+    rrule,
   };
 }
 
-const dailyUntil = (stamp) => ({
-  recurringDef: {
-    typeData: {
-      rruleSet: {
-        _rrule: [
-          {
-            origOptions: {
-              freq: 3,
-              dtstart: new Date(Date.UTC(2027, 2, 10, 10)),
-              until: stampToDate(stamp),
-            },
-          },
-        ],
-      },
-    },
-  },
-});
+const dailyUntil = (stamp) =>
+  `DTSTART:20270310T100000\nRRULE:FREQ=DAILY;UNTIL=${stamp}`;
 
 describe.each(Object.entries(ZONES))(
   "with the browser clock in %s",
@@ -155,12 +135,12 @@ describe.each(Object.entries(ZONES))(
     describe("opening an unavailability from the calendar", () => {
       for (const c of cases.calendarStrings) {
         it(`shows ${c.label} at its Toronto time`, () => {
-          openForEdit(fcEvent(c.start));
+          openForEdit(entry(c.start));
           expect($("start_time_field").value).toBe(c.field);
         });
 
         it(`deletes ${c.label} by its own instant`, () => {
-          openForEdit(fcEvent(c.start));
+          openForEdit(entry(c.start));
           const sent = [...document.querySelectorAll(".delete_start_date")];
           expect(sent.map((input) => input.value)).toEqual([
             c.instant,
@@ -171,7 +151,7 @@ describe.each(Object.entries(ZONES))(
 
       for (const c of cases.untilDates) {
         it(`shows the repeat end date the feed sends for a series ending on ${c.label}`, () => {
-          openForEdit(fcEvent("2027-03-10T10:00:00", dailyUntil(c.served)));
+          openForEdit(entry("2027-03-10T10:00:00", dailyUntil(c.served)));
           expect($("recurrence_until").value).toBe(c.date);
         });
       }

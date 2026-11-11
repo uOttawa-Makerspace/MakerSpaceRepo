@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus";
 import { Collapse, Modal } from "bootstrap";
-import { RRule } from "rrule";
+import { RRule, rrulestr } from "rrule";
 
 import {
   dateValue,
@@ -49,10 +49,9 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
   saveButtonTarget: HTMLInputElement,
   updateDropdownTarget: HTMLElement,
   updateDropdownItemsTarget: HTMLElement,
-  deleteFormsTarget: HTMLElement,
-  deleteSingleFormTarget: HTMLFormElement,
-  deleteFollowingFormTarget: HTMLFormElement,
-  deleteAllFormTarget: HTMLFormElement,
+  methodFieldTarget: HTMLInputElement,
+  deleteChoicesTarget: HTMLElement,
+  deleteFormTargets: HTMLFormElement[],
   deleteStartDateTargets: HTMLInputElement[],
 }} */ (/** @type {unknown} */ (Controller));
 
@@ -87,10 +86,9 @@ export default class extends TypedController {
     "saveButton",
     "updateDropdown",
     "updateDropdownItems",
-    "deleteForms",
-    "deleteSingleForm",
-    "deleteFollowingForm",
-    "deleteAllForm",
+    "methodField",
+    "deleteChoices",
+    "deleteForm",
     "deleteStartDate",
   ];
 
@@ -102,7 +100,7 @@ export default class extends TypedController {
   openForAdd({ returnFocusTo = null } = {}) {
     this.returnFocusTo = returnFocusTo;
     this.formTarget.action = COLLECTION_PATH;
-    this.formTarget.querySelector('input[name="_method"]')?.remove();
+    this.methodFieldTarget.disabled = true;
 
     this.labelTarget.textContent = "Add Unavailability";
     this.saveButtonTarget.value = "Save";
@@ -120,23 +118,23 @@ export default class extends TypedController {
     this.endTimeTarget.value = fieldValue(wallFromCalendar(end));
   }
 
-  // The event is the calendar's: its id, times, title, description and, for a
-  // repeating entry, the rule it was built from.
-  openForEdit(calendarEvent) {
-    const def = calendarEvent._def;
-    const repeats = Boolean(def.recurringDef);
+  // The entry is a plain object (see editableUnavailability): its id, title,
+  // description, all-day flag, the calendar's start and end strings and, for a
+  // repeating entry, the rule text the feed sent.
+  openForEdit(entry) {
+    const repeats = Boolean(entry.rrule);
 
     this.modal.show();
-    this.pointFormAt(calendarEvent.id);
-    this.fillTimes(calendarEvent);
-    this.titleFieldTarget.value = def.title || "";
-    this.descriptionFieldTarget.value = def.extendedProps.description || "";
-    this.restoreRule(def.recurringDef?.typeData?.rruleSet);
+    this.pointFormAt(entry.id);
+    this.fillTimes(entry);
+    this.titleFieldTarget.value = entry.title || "";
+    this.descriptionFieldTarget.value = entry.description || "";
+    this.restoreRule(entry.rrule);
 
     this.labelTarget.textContent = "Edit Unavailability";
     this.saveButtonTarget.value = "Update";
     this.placeSaveButton(repeats);
-    this.showDeleteChoices(calendarEvent, repeats);
+    this.showDeleteChoices(entry, repeats);
   }
 
   get modal() {
@@ -145,37 +143,31 @@ export default class extends TypedController {
 
   pointFormAt(id) {
     this.formTarget.action = `${COLLECTION_PATH}/${encodeURIComponent(id)}`;
-    this.formTarget.querySelector('input[name="_method"]')?.remove();
-    const methodInput = document.createElement("input");
-    methodInput.type = "hidden";
-    methodInput.name = "_method";
-    methodInput.value = "patch";
-    this.formTarget.appendChild(methodInput);
+    this.methodFieldTarget.disabled = false;
   }
 
   // The fields hold Toronto wall-clock times, like the calendar.
-  fillTimes(calendarEvent) {
-    if (calendarEvent.allDay) {
+  fillTimes(entry) {
+    if (entry.allDay) {
       this.allDayTarget.checked = true;
-      const startDate = startOfDay(wallFromCalendar(calendarEvent.startStr));
+      const startDate = startOfDay(wallFromCalendar(entry.startStr));
       this.startTimeTarget.value = fieldValue(startDate);
       this.endTimeTarget.value = fieldValue(startDate + DAY_MS);
       this.endTimeTarget.disabled = true;
     } else {
-      this.startTimeTarget.value = fieldValue(
-        wallFromCalendar(calendarEvent.startStr),
-      );
-      this.endTimeTarget.value = fieldValue(
-        wallFromCalendar(calendarEvent.endStr),
-      );
+      this.startTimeTarget.value = fieldValue(wallFromCalendar(entry.startStr));
+      this.endTimeTarget.value = fieldValue(wallFromCalendar(entry.endStr));
     }
   }
 
-  // Unbuilds the repeat rule of the feed into the repeat fields.
-  restoreRule(ruleSet) {
-    if (!ruleSet) return;
+  // Unbuilds the repeat rule text of the feed into the repeat fields.
+  restoreRule(ruleText) {
+    if (!ruleText) return;
 
-    const rule = new RRule(ruleSet._rrule[0].origOptions);
+    const ruleSet = /** @type {import("rrule").RRuleSet} */ (
+      rrulestr(ruleText, { forceset: true })
+    );
+    const rule = ruleSet.rrules()[0];
     const { freq, byweekday, until, dtstart } = rule.options;
 
     this.optionsTarget.style.display = "block";
@@ -216,33 +208,25 @@ export default class extends TypedController {
     this.updateDropdownTarget.style.display = repeats ? "block" : "none";
   }
 
-  showDeleteChoices(calendarEvent, repeats) {
-    const id = encodeURIComponent(calendarEvent.id);
+  showDeleteChoices(entry, repeats) {
+    const id = encodeURIComponent(entry.id);
     const path = `${COLLECTION_PATH}/${id}/delete_with_scope`;
-    this.deleteScopeForms.forEach((form) => {
+    this.deleteFormTargets.forEach((form) => {
       form.action = path;
+      // Only a repeating entry can be deleted from here on or as a series
+      if (form.dataset.repeatingOnly) {
+        form.style.display = repeats ? "block" : "none";
+      }
     });
-    this.deleteFormsTarget.style.display = "flex";
-
-    const display = repeats ? "block" : "none";
-    this.deleteFollowingFormTarget.style.display = display;
-    this.deleteAllFormTarget.style.display = display;
+    this.deleteChoicesTarget.style.display = "flex";
 
     // The instant of the clicked occurrence
     const occurrenceStart = new Date(
-      instantFromCalendar(calendarEvent.startStr),
+      instantFromCalendar(entry.startStr),
     ).toISOString();
     this.deleteStartDateTargets.forEach((input) => {
       input.value = occurrenceStart;
     });
-  }
-
-  get deleteScopeForms() {
-    return [
-      this.deleteSingleFormTarget,
-      this.deleteFollowingFormTarget,
-      this.deleteAllFormTarget,
-    ];
   }
 
   // ---------------------------------------
@@ -343,7 +327,7 @@ export default class extends TypedController {
     this.weeklyOptionsTarget.style.display = "none";
     new Collapse(this.collapseTarget, { toggle: false }).hide();
     // hide delete forms
-    this.deleteFormsTarget.style.display = "none";
+    this.deleteChoicesTarget.style.display = "none";
     this.returnFocusTo?.focus();
     this.returnFocusTo = null;
   }
