@@ -212,9 +212,7 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
     end
   end
 
-  # under CI=1 Bullet raises on the JSON search (`.includes(lab_sessions: :space)`
-  # is eager-loaded but `as_json` never reads it: unused eager loading). Pinned with skip_bullet.
-  describe "GET /staff_dashboard/search", skip_bullet: true do
+  describe "GET /staff_dashboard/search" do
     it "answers an array of users carrying name, username and email" do
       target = create(:user, :regular_user, name: "Zelda Findable")
 
