@@ -313,24 +313,25 @@ RSpec.describe "Content models (part 1 characterization)" do
   describe Upvote do
     let(:comment) { create(:comment) }
 
-    it "counts down for a downvote and flips by 2 on update" do
-      up = Upvote.create!(user: owner, comment: comment, downvote: true)
+    it "counts down for a downvote and flips by 2 when switched" do
+      Upvote.cast(owner, comment, true)
       expect(comment.reload.upvote).to eq(-1)
-      up.update!(downvote: false)
+      Upvote.switch(owner, comment, false)
       expect(comment.reload.upvote).to eq(1)
     end
 
-    it "does not validate that the comment exists (optional belongs_to, then the callback raises)" do
-      expect { Upvote.create!(user: owner, comment_id: 0) }.to raise_error(NoMethodError)
+    it "does not validate that the comment exists (optional belongs_to); the foreign key refuses the row" do
+      expect { Upvote.create!(user: owner, comment_id: 0) }.to raise_error(ActiveRecord::InvalidForeignKey)
     end
   end
 
   describe Like do
-    it "counters follow create and destroy" do
+    it "counters follow give and take back" do
       repo = create(:repository, owner: owner)
-      like = Like.create!(user: create(:user), repository: repo)
+      fan = create(:user)
+      Like.give(repo, fan)
       expect(repo.reload.like).to eq(1)
-      like.destroy
+      Like.take_back(repo, fan)
       expect(repo.reload.like).to eq(0)
     end
   end

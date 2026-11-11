@@ -112,7 +112,7 @@ RSpec.describe CommentsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         comment = create(:comment)
-        Upvote.create(user_id: user.id, comment_id: comment.id, downvote: false)
+        Upvote.cast(user, comment, false)
         post :vote,
              params: {
                comment_id: comment.id,
@@ -127,7 +127,7 @@ RSpec.describe CommentsController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         comment = create(:comment)
-        Upvote.create(user_id: user.id, comment_id: comment.id, downvote: true)
+        Upvote.cast(user, comment, true)
         post :vote,
              params: {
                comment_id: comment.id,

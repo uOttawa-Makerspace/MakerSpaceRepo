@@ -232,6 +232,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_140000) do
     t.index ["space_id"], name: "index_contact_infos_on_space_id"
   end
 
+  create_table "counter_recount_corrections", force: :cascade do |t|
+    t.string "column_name", null: false
+    t.datetime "created_at", null: false
+    t.integer "new_value", null: false
+    t.integer "old_value"
+    t.bigint "row_id", null: false
+    t.datetime "run_at", null: false
+    t.string "table_name", null: false
+    t.index ["table_name", "row_id"], name: "index_counter_recount_corrections_on_table_name_and_row_id"
+    t.check_constraint "table_name::text = ANY (ARRAY['repositories'::character varying, 'comments'::character varying]::text[])", name: "counter_recount_corrections_table_name_check"
+  end
+
   create_table "coupon_codes", force: :cascade do |t|
     t.integer "cc_cost", null: false
     t.string "code"

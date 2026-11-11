@@ -9,6 +9,7 @@ RSpec.describe "taking back likes and votes under concurrency", type: :model do
 
   let!(:owner) { create(:user, :regular_user) }
   let!(:fan) { create(:user, :regular_user) }
+  let!(:other_fan) { create(:user, :regular_user) }
   let!(:repo) { create(:repository, owner: owner, users: [owner]) }
   let!(:comment) { create(:comment, repository: repo, user: owner, username: owner.username) }
 
@@ -22,7 +23,7 @@ RSpec.describe "taking back likes and votes under concurrency", type: :model do
     attachments.delete_all
     ActiveStorage::Blob.where(id: blob_ids).delete_all
     repo.destroy
-    User.unscoped.where(id: [owner.id, fan.id]).delete_all
+    User.unscoped.where(id: [owner.id, fan.id, other_fan.id]).delete_all
   end
 
   def in_thread(&block)
@@ -57,6 +58,38 @@ RSpec.describe "taking back likes and votes under concurrency", type: :model do
     Thread.pass while blocked_backends.zero? && Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
     resume << true
     [first.value, second.value]
+  end
+
+  it "counts a like once when the same user's request is repeated at the same time" do
+    results = race { Like.give(repo, fan) }
+
+    expect(results).to eq([true, false])
+    expect([Like.where(repository_id: repo.id).count, repo.reload.like]).to eq([1, 1])
+  end
+
+  it "counts both likes when two users like at the same time" do
+    users = Queue.new
+    [fan, other_fan].each { |u| users << u }
+    results = race { Like.give(repo, users.pop) }
+
+    expect(results).to eq([true, true])
+    expect([Like.where(repository_id: repo.id).count, repo.reload.like]).to eq([2, 2])
+  end
+
+  it "counts a vote once when the same user's request is repeated at the same time" do
+    results = race { Upvote.cast(fan, comment, false) }
+
+    expect(results).to eq([true, false])
+    expect([Upvote.where(comment_id: comment.id).count, comment.reload.upvote]).to eq([1, 1])
+  end
+
+  it "counts both votes when two users vote the same way at the same time" do
+    users = Queue.new
+    [fan, other_fan].each { |u| users << u }
+    results = race { Upvote.cast(users.pop, comment, false) }
+
+    expect(results).to eq([true, true])
+    expect([Upvote.where(comment_id: comment.id).count, comment.reload.upvote]).to eq([2, 2])
   end
 
   it "takes a like back once" do
