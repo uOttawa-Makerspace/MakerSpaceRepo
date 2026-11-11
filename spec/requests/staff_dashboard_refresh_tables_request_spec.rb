@@ -101,18 +101,16 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request do
     expect(html).not_to include(elsewhere.email)
   end
 
-  it "answers 304 with no body when the token is the concatenated signed-in user ids (nothing changed)" do
-    refresh(token: "#{latest.id}#{earlier.id}")
+  it "answers 304 with no body when the token is the comma-separated signed-in user ids (nothing changed)" do
+    refresh(token: "#{latest.id},#{earlier.id}")
 
     expect(response).to have_http_status(:not_modified)
     expect(response.body).to be_empty
   end
 
-  # the token is `signed_in_user_ids.join("")`, with no separator, so different
-  # signed-in sets can produce the same token (ids [9_000_001, 7_777_777] and [90_000_017, 777_777]
-  # are both "90000017777777"). The client holding the first set's token gets a 304 for the second set and
-  # keeps showing stale people. A separator-joined token would not collide.
-  it "answers 304 for a different signed-in set whose ids concatenate to the same token" do
+  # Ids [9_000_001, 7_777_777] and [90_000_017, 777_777] concatenate to the same digits; the token
+  # separates ids, so a client holding the first set's token still gets the full payload for the second.
+  it "answers the full payload for a different signed-in set whose ids concatenate to the same digits" do
     third_space = create(:space)
     staff.update!(space: third_space)
     # explicit ids far above any users_id_seq value (the sequence is not rolled back between examples)
@@ -124,7 +122,7 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request do
     create(:lab_session, space: third_space, user: a, sign_in_time: 1.hour.ago, sign_out_time: 3.hours.from_now)
     create(:lab_session, space: third_space, user: b, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
     refresh
-    stale_token = "#{a.id}#{b.id}"
+    stale_token = "#{a.id}#{b.id}" # the unseparated digits a client may still hold
     expect(json["users"].map(&:last)).to eq([a.username, b.username])
 
     # the room changes completely: a and b leave, c and d arrive
@@ -134,13 +132,12 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request do
 
     refresh(token: stale_token)
 
-    expect(stale_token).to eq("#{c.id}#{d.id}")
-    expect(response).to have_http_status(:not_modified) # should be 200 with c and d
-    expect(response.body).to be_empty
+    expect(response).to have_http_status(:ok)
+    expect(json["users"].map(&:last)).to contain_exactly(c.username, d.username)
   end
 
   it "answers the full payload when the token is stale" do
-    refresh(token: "#{earlier.id}#{latest.id}") # same ids, wrong order
+    refresh(token: "#{earlier.id},#{latest.id}") # same ids, wrong order
 
     expect(response).to have_http_status(:ok)
     expect(json["users"].size).to eq(2)

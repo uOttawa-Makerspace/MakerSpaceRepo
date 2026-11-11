@@ -56,11 +56,21 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.body).to include(%(value="#{space.id}"))
     end
 
-    # index calls @spaces.first.id: staff with no StaffSpace (and no space_id) get a 500.
-    it "500s for staff assigned to no space" do
+    it "falls back to the first assigned space when the user's own space is not one they are assigned to" do
+      staff = sign_in_as(:staff)
+      staff.update!(space_id: create(:space, name: "Elsewhere").id)
+      create(:staff_space, user: staff, space: space)
+      get staff_my_calendar_index_path
+      expect(response.body).to include(%(<option selected="selected" value="#{space.id}">))
+      expect(response.body).not_to include("Elsewhere")
+    end
+
+    it "shows an empty state, not an error, for staff assigned to no space" do
       sign_in_as(:staff)
       get staff_my_calendar_index_path
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("not assigned to any space")
+      expect(response.body).not_to include('id="calendar"')
     end
   end
 
@@ -180,13 +190,13 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(many).to eq(few)
     end
 
-    # an unparseable start/end param parses to nil; with any single event in the space the nil comparison 500s (empty space: 200 []).
-    it "500s for an unparseable start param once the space has a single event" do
-      get feed, params: { start: "garbage" }
-      expect(response.parsed_body).to eq([])
+    it "answers 400 for an unparseable start or end param" do
       create(:event, space: space, start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
-      get feed, params: { start: "garbage" }
-      expect(response).to have_http_status(:internal_server_error)
+      [{ start: "garbage" }, { end: "garbage" }, { start: "2027-13-45" }].each do |bad|
+        get feed, params: bad
+        expect(response).to have_http_status(:bad_request)
+        expect(response.parsed_body["error"]).to eq(I18n.t("errors.staff.my_calendar.invalid_date"))
+      end
     end
 
     it "falls back to the raw event when the recurrence rule is malformed (inside the window only)" do

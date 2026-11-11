@@ -29,6 +29,7 @@ en:
       my_calendar:
         space_required: "Choose a space to show its calendar."
         space_not_assigned: "You are not assigned to this space."
+        invalid_date: "The start or end date is not a valid date."
     volunteer:
       hours:
         processed: "This volunteer hour was already processed, so it can no longer be changed or deleted."
@@ -63,6 +64,8 @@ en:
     admin:
       still_in_use: "Other records still use it, so it was left as it is."
       record_missing: "A record it refers to no longer exists. Reload the page and try again."
+      uni_programs:
+        programs_file_missing: "The current programs file is not available on the server."
       time_periods:
         not_created: "The time period was not created."
         not_updated: "The time period was not updated."

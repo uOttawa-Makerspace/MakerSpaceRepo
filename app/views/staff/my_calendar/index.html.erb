@@ -1,11 +1,13 @@
 <% provide(:title, 'My Work Calendar') %>
-<%= vite_javascript_tag 'my_calendar' %>
 
 <div class="my-4">
     <h1>My Work Schedule</h1>
     <p>Your assigned shifts, trainings, meetings, etc. are shown below. <%= link_to "View and manage your unavailabilities here", "/staff/unavailabilities", data: { turbo: true } %>.</p>
 </div>
 
+<% if @space_id.blank? %>
+    <p class="alert alert-info">You are not assigned to any space yet, so there is no calendar to show. Ask an admin to assign you to a space.</p>
+<% else %>
 <div class="mt-4">
     <%= form_tag staff_dashboard_change_space_path, method: :put do %>
         <div class="input-group mb-3">
@@ -16,7 +18,7 @@
     <% end %>
 </div>
 
-<div id="calendar_container">
+<div id="calendar_container" data-my-calendar>
     <div id="calendar"></div>
 </div>
 
@@ -58,3 +60,4 @@
         text-align: center;
     }
 </style>
+<% end %>
