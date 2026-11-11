@@ -299,6 +299,15 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "fills the minutes box with the nearest minute of the stored total" do
+      vol_login!(owner)
+      { 0.33 => [0, 20], 2.5 => [2, 30], 1.99 => [1, 59], 0.0 => [0, 0] }.each do |total, (hours, minutes)|
+        get edit_volunteer_hour_path(make_hour(total_time: total))
+        expect(response.body).to match(/id="hours"[^>]*value="#{hours}"/)
+        expect(response.body).to match(/id="minutes"[^>]*value="#{minutes}"/)
+      end
+    end
+
     it "refuses the owner a form for a processed hour, and still shows staff one" do
       hour = make_hour(approval: true)
       vol_login!(owner)

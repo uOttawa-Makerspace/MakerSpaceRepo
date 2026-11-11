@@ -37,8 +37,7 @@ class VolunteerHoursController < VolunteersController
   def edit
     @volunteer_hour = VolunteerHour.find(params[:id])
     @volunteer_tasks = task_options_for(@volunteer_hour.user_id, @volunteer_hour.volunteer_task_id)
-    @hour = @volunteer_hour.total_time.floor
-    @minutes = ((@volunteer_hour.total_time % 1) * 60).to_i
+    @hour, @minutes = (@volunteer_hour.total_time * 60).round.divmod(60)
   end
 
   def destroy

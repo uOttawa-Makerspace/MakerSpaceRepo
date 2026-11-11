@@ -34,4 +34,13 @@ RSpec.describe "Volunteer hours form", type: :system, skip_bullet: true do
     expect(page).to have_text("Volunteer hour updated")
     expect(hour.reload.total_time).to eq(3.25)
   end
+
+  it "keeps the stored total when an edit changes nothing" do
+    hour = create(:volunteer_hour, user: volunteer, volunteer_task: task, total_time: 0.33, date_of_task: Date.current)
+    log_in_as(volunteer, to: edit_volunteer_hour_path(hour))
+    click_button "Update Volunteer Hour"
+
+    expect(page).to have_text("Volunteer hour updated")
+    expect(hour.reload.total_time).to eq(0.33)
+  end
 end
