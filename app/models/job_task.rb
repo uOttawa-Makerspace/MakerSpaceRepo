@@ -80,7 +80,7 @@ class JobTask < ApplicationRecord
   # Prefixes the stored names of this task's files, and of its options' files, as set by the actions that attach
   # them, once the save has committed.
   def prefix_file_names
-    prefix_blob_names(%w[user_files staff_files], "#{job_order_id}_", already: job_order_id.to_s)
+    prefix_blob_names(%w[user_files staff_files], "#{job_order_id}_")
     JobTaskOption.where(job_task_id: id).each(&:prefix_file_names)
   end
 

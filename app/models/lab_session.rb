@@ -16,9 +16,10 @@ class LabSession < ApplicationRecord
   # NOTE users can be signed in to multiple spaces
   # this returns a relation list. scope to a space or take 1
   scope :active_for_user,
-        ->(user) { where(user: user, sign_out_time: Time.zone.now..) }
+        ->(user) { active.where(user: user) }
 
-  scope :active, -> { where(sign_out_time: Time.zone.now..) }
+  # A session is active while its sign out time is still ahead; one signed out at exactly now is over.
+  scope :active, -> { where(arel_table[:sign_out_time].gt(Time.zone.now)) }
 
   # A user's newest session is the one created last (highest id), whichever space it was in.
   scope :newest_first, -> { order(id: :desc) }
@@ -28,7 +29,7 @@ class LabSession < ApplicationRecord
   end
 
   def sign_out
-    if self.sign_out_time >= Time.zone.now
+    if sign_out_time > Time.zone.now
       self.update(sign_out_time: Time.zone.now)
     end
   end

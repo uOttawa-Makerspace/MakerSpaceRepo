@@ -299,7 +299,6 @@ RSpec.describe "/api/v1 RFID", type: :request do
         travel(RfidTap::REPEAT_WINDOW + 1.second)
         tap(as: caller)
         expect(body).to eq("success" => "RFID sign out")
-        travel(1.second) # time is frozen after travel: let the sign out time pass
         expect(LabSession.where(user: owner).active).to be_empty
       end
     end

@@ -1,4 +1,7 @@
-require Rails.root.join("db/migrate/20261104000004_add_foreign_keys_to_unenforced_references")
+# Rails loads migration files itself; requiring one that is already loaded would run it a second time.
+unless defined?(AddForeignKeysToUnenforcedReferences)
+  require Rails.root.join("db/migrate/20261104000004_add_foreign_keys_to_unenforced_references")
+end
 
 # Validates the foreign keys that the previous migration added NOT VALID, and only
 # those. Validation scans the child table under SHARE UPDATE EXCLUSIVE, which does not

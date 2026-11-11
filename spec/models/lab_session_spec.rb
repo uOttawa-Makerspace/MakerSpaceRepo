@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe LabSession, type: :model do
+  include ActiveSupport::Testing::TimeHelpers
+
   describe "Association" do
     context "belongs_to" do
       it { should belong_to(:user).without_validating_presence }
@@ -44,6 +46,20 @@ RSpec.describe LabSession, type: :model do
             3.days.from_now
           ).count
         ).to eq(3)
+      end
+    end
+
+    context "#active" do
+      it "counts a session as over once its sign out time is reached" do
+        freeze_time do
+          lab_user = create(:user, :regular_user)
+          ending = create(:lab_session, user: lab_user, sign_in_time: 1.hour.ago, sign_out_time: Time.zone.now)
+          ahead = create(:lab_session, user: lab_user, sign_in_time: 1.hour.ago, sign_out_time: 1.second.from_now)
+          expect(LabSession.active).to contain_exactly(ahead)
+          expect(LabSession.active_for_user(lab_user)).to contain_exactly(ahead)
+          expect(ending.reload.sign_out).to be_nil
+          expect(ending.sign_out_time).to eq(Time.zone.now)
+        end
       end
     end
 

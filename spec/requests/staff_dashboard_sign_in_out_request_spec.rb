@@ -239,6 +239,24 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(json).to eq("error" => "no params")
     end
 
+    it "answers the same error object when no parameter is sent at all" do
+      get "/staff_dashboard/search", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("error" => "no params")
+    end
+
+    it "sends a blank page search back to the dashboard with an alert" do
+      get "/staff_dashboard/search", params: { query: "" }
+      expect(response).to redirect_to(staff_dashboard_index_path)
+      expect(flash[:alert]).to eq("No search parameters.")
+    end
+
+    it "finds a user by exact username" do
+      target = create(:user, :regular_user)
+      get "/staff_dashboard/search", params: { username: target.username }, as: :json
+      expect(json.map { |u| u["id"] }).to eq([target.id])
+    end
+
     it "does not expose secrets" do
       create(:user, :regular_user, name: "Secret Holder", access_token: "ghp_secret")
       get "/staff_dashboard/search", params: { query: "Secret Holder" }, as: :json

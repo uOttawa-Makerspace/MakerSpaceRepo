@@ -41,7 +41,6 @@ RSpec.describe "RFID endpoints", type: :request do
       travel(RfidTap::REPEAT_WINDOW + 1.second)
       tap_card
       expect(body[:success]).to eq("RFID sign out")
-      travel(1.second) # time is frozen after travel: let the sign out time pass
       expect(LabSession.where(user: owner).active).to be_empty
     end
 
@@ -249,7 +248,6 @@ RSpec.describe "RFID endpoints", type: :request do
       tap_card
       travel(RfidTap::REPEAT_WINDOW + 1.second)
       expect { tap_card }.to change { TapBoxLog.where(event_type: TapBoxLog::SIGN_OUT).count }.by(1)
-      travel(1.second) # time is frozen after travel: let the sign out time pass
       expect(LabSession.where(user: owner).active).to be_empty
     end
 

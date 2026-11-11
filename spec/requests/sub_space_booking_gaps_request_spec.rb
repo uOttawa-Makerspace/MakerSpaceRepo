@@ -1180,6 +1180,27 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(text).to eq("#{room.name} bookings will require manual approval")
     end
 
+    it "shows no approval rule for a room that does not require approval, even with an automatic-approval hour" do
+      room = create(:sub_space, space: space, approval_required: false, max_automatic_approval_hour: 3,
+                                default_public: true)
+      log_in!(user)
+      get sub_space_booking_index_path, params: { room: room.id }
+
+      expect(response).to have_http_status(:ok)
+      text = Capybara.string(response.body).find("p.alert-info").text.squish
+      expect(text).to eq("#{room.name} bookings (Name and Description of event) are public by default")
+    end
+
+    it "shows no rules notice for a room with no rules and no approval requirement" do
+      room = create(:sub_space, space: space, approval_required: false, default_public: false)
+      log_in!(user)
+      get sub_space_booking_index_path, params: { room: room.id }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("#{room.name} Calendar")
+      expect(Capybara.string(response.body)).not_to have_css("p.alert-info")
+    end
+
     it "404s for an unknown room" do
       log_in!(user)
       get sub_space_booking_index_path, params: { room: 99_999_999 }
