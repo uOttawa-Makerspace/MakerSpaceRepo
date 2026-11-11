@@ -131,22 +131,6 @@ if (document.getElementById("new-photo-input")) {
     parent.parentElement.appendChild(clone);
   });
 }
-[...document.getElementsByClassName("file-remove")].forEach((el) => {
-  el.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    document.getElementById("deletefiles").value += el.id + ",";
-    el.parentElement.parentElement.remove();
-  });
-});
-[...document.getElementsByClassName("image-remove")].forEach((el) => {
-  el.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    document.getElementById("deleteimages").value += el.id + ",";
-    el.parentElement.remove();
-  });
-});
 if (document.getElementById("ignore_past_experiences")) {
   let urls = document
     .getElementById("ignore_past_experiences")

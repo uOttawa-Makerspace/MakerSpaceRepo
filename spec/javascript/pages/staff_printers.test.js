@@ -2,9 +2,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const selects = [];
+const attempts = [];
 vi.mock("tom-select", () => ({
   default: class {
     constructor(target, config) {
+      attempts.push(target);
       const el =
         typeof target === "string" ? document.querySelector(target) : target;
       if (!el) throw new Error("no element");
@@ -31,6 +33,7 @@ const byEl = (id) => selects.find((s) => s.el.id === id);
 async function loadStaffPrinters(html) {
   document.body.innerHTML = html;
   selects.length = 0;
+  attempts.length = 0;
   vi.resetModules();
   await import("../../../app/javascript/entrypoints/staff_printers.js");
   document.dispatchEvent(new Event("turbo:load"));
@@ -42,6 +45,11 @@ const SEND_FORM =
 
 describe("staff_printers", () => {
   afterEach(() => vi.unstubAllGlobals());
+
+  it("builds no selects on a page without the send form", async () => {
+    await loadStaffPrinters("<p>nothing here</p>");
+    expect(attempts).toEqual([]);
+  });
 
   it("fills the user from the last session of the chosen printer", async () => {
     const fetchMock = vi.fn().mockResolvedValue({

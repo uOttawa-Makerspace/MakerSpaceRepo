@@ -180,22 +180,4 @@ describe("attachments", () => {
       expect(document.querySelectorAll(".input-group")).toHaveLength(1);
     },
   );
-
-  it("collects removed file ids and drops their rows", async () => {
-    await load(`<input id="deletefiles" value="">
-      <ul><li><div><a class="file-remove" id="4"></a></div></li></ul>`);
-    const event = new Event("click", { cancelable: true, bubbles: true });
-    $("4").dispatchEvent(event);
-    expect($("deletefiles").value).toBe("4,");
-    expect(event.defaultPrevented).toBe(true);
-    expect(document.querySelector("li")).toBeNull();
-  });
-
-  it("collects removed image ids and drops their tiles", async () => {
-    await load(`<input id="deleteimages" value="">
-      <div id="tile"><a class="image-remove" id="8"></a></div>`);
-    $("8").click();
-    expect($("deleteimages").value).toBe("8,");
-    expect($("tile")).toBeNull();
-  });
 });

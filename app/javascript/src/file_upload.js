@@ -213,17 +213,18 @@ function setupDropZone(dropZone, fileInput) {
     ).length;
     const accept = fileInput.accept || "";
 
-    Array.from(e.dataTransfer.files).forEach((file, i) => {
-      if (accept && !isFileAccepted(file, accept)) return;
-      if (!limit || i + current < limit) {
-        appendFileToPreview(
-          file,
-          previewContainer,
-          fileInput.dataset.fileUploadPrefix,
-          fileInput.dataset.fileUploadSuffix,
-        );
-      }
-    });
+    Array.from(e.dataTransfer.files)
+      .filter((file) => isFileAccepted(file, accept))
+      .forEach((file, i) => {
+        if (!limit || i + current < limit) {
+          appendFileToPreview(
+            file,
+            previewContainer,
+            fileInput.dataset.fileUploadPrefix,
+            fileInput.dataset.fileUploadSuffix,
+          );
+        }
+      });
   });
 }
 

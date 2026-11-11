@@ -41,14 +41,8 @@
 1	app/javascript/entrypoints/application.js	TS2551	Property 'dragover' does not exist on type 'Window & typeof globalThis'. Did you mean 'ondragover'?
 1	app/javascript/entrypoints/application.js	TS2551	Property 'examResponse' does not exist on type 'Window & typeof globalThis'. Did you mean 'Response'?
 1	app/javascript/entrypoints/assign_staff_to_job.js	TS2353	Object literal may only specify known properties, and 'searchPlaceholder' does not exist in type 'RecursivePartial<TomSettings>'.
-2	app/javascript/entrypoints/badges.js	TS2339	Property 'msSaveBlob' does not exist on type 'Navigator'.
-1	app/javascript/entrypoints/badges.js	TS2339	Property 'tomselect' does not exist on type 'Element'.
 1	app/javascript/entrypoints/badges.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-1	app/javascript/entrypoints/badges.js	TS2345	Argument of type 'Element' is not assignable to parameter of type 'string | TomInput'.
 2	app/javascript/entrypoints/badges.js	TS2345	Argument of type 'number' is not assignable to parameter of type 'string'.
-2	app/javascript/entrypoints/badges.js	TS2353	Object literal may only specify known properties, and 'searchPlaceholder' does not exist in type 'RecursivePartial<TomSettings>'.
-1	app/javascript/entrypoints/badges.js	TS2551	Property 'msToBlob' does not exist on type 'HTMLCanvasElement'. Did you mean 'toBlob'?
-2	app/javascript/entrypoints/badges.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 2	app/javascript/entrypoints/calendar.js	TS2304	Cannot find name 'flatpickr'.
 1	app/javascript/entrypoints/calendar.js	TS2304	Cannot find name 'Turbo'.
 1	app/javascript/entrypoints/calendar.js	TS2339	Property 'dataset' does not exist on type 'EventTarget'.
@@ -272,7 +266,6 @@
 1	app/javascript/src/effects.js	TS2339	Property 'style' does not exist on type 'Element'.
 1	app/javascript/src/file_upload.js	TS2339	Property 'replaceWith' does not exist on type 'EventTarget'.
 4	app/javascript/src/forms.js	TS2339	Property 'checked' does not exist on type 'Element'.
-2	app/javascript/src/forms.js	TS2339	Property 'currentTarget' does not exist on type 'Element'.
 4	app/javascript/src/forms.js	TS2339	Property 'dataset' does not exist on type 'Element'.
 1	app/javascript/src/fullcalendar_setup_admin.js	TS2322	Type 'string' is not assignable to type 'number'.
 3	app/javascript/src/fullcalendar_setup_admin.js	TS2339	Property 'checked' does not exist on type 'Element'.

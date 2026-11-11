@@ -25,7 +25,7 @@
   <% end %>
 </td>
 <td><%= jo.id %></td>
-<td data-sort="<%= jo.created_at %>"><%= l(jo.created_at, format: :long) %></td>
+<td data-sort="<%= jo.created_at.utc.iso8601 %>"><%= l(jo.created_at, format: :long) %></td>
 </td>
 <td>
   <% jo.job_tasks.each_with_index do |task, i| %>

@@ -34,11 +34,6 @@
       "count": 2
     }
   },
-  "app/javascript/entrypoints/job_orders.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/job_orders_wizard.js": {
     "no-unused-vars": {
       "count": 1
@@ -69,14 +64,6 @@
   },
   "app/javascript/entrypoints/staff_dashboard.js": {
     "complexity": {
-      "count": 1
-    }
-  },
-  "app/javascript/entrypoints/staff_printers.js": {
-    "no-empty": {
-      "count": 1
-    },
-    "no-unused-vars": {
       "count": 1
     }
   },
