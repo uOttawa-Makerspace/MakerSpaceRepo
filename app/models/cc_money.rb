@@ -21,6 +21,16 @@ class CcMoney < ApplicationRecord
   # A negative debit amount (e.g. a legacy negative price snapshot). Nothing is written.
   class InvalidAmount < ArgumentError; end
 
+  # Task awards held more than once by one user for one task: [[user_id, volunteer_task_id, [row ids]], ...].
+  # Read only; the rows are never changed.
+  def self.duplicate_task_awards
+    where.not(volunteer_task_id: nil)
+         .where.not(user_id: nil)
+         .group(:user_id, :volunteer_task_id)
+         .having("COUNT(*) > 1")
+         .pluck(:user_id, :volunteer_task_id, Arel.sql("ARRAY_AGG(id ORDER BY id)"))
+  end
+
   def self.create_cc_money_from_approval(volunteer_task_id, volunteer_id, cc)
     create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, cc: cc)
   end

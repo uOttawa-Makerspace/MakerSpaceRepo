@@ -114,41 +114,7 @@ class VolunteerTaskRequestsController < SessionsController
 
   def update_approval
     volunteer_task_request = VolunteerTaskRequest.find(params[:id])
-    result = nil
-    volunteer_task_request.with_lock do
-      if volunteer_task_request.approval == true &&
-           ActiveModel::Type::Boolean.new.cast(params[:approval]) == true
-        result = :already_approved
-      elsif volunteer_task_request.update(approval: params[:approval])
-        if volunteer_task_request.approval
-          complete_join(volunteer_task_request)
-          volunteer_task = volunteer_task_request.volunteer_task
-          volunteer_id = volunteer_task_request.user_id
-          volunteer = volunteer_task_request.user
-
-          # The award is paid at most once per user and task, whatever the
-          # approval history (CC money rows are only created by this path).
-          unless CcMoney.exists?(user_id: volunteer_id, volunteer_task_id: volunteer_task.id)
-            volunteer.update_wallet
-            CcMoney.create_cc_money_from_approval(
-              volunteer_task.id,
-              volunteer_id,
-              volunteer_task.cc
-            )
-            volunteer.update_wallet
-            VolunteerHour.create_volunteer_hour_from_approval(
-              volunteer_task.id,
-              volunteer_id,
-              volunteer_task.hours,
-              volunteer_task_request.created_at
-            )
-          end
-        end
-        result = :updated
-      else
-        result = :failed
-      end
-    end
+    result = apply_approval(volunteer_task_request)
 
     case result
     when :already_approved
@@ -158,6 +124,8 @@ class VolunteerTaskRequestsController < SessionsController
         volunteer_task_request.id
       ).deliver
       flash[:notice] = "Task request updated"
+    when :unchanged
+      flash[:notice] = "Task request was not changed"
     else
       flash[:alert] = validation_message(volunteer_task_request, "errors.volunteer.task_requests.not_updated")
     end
@@ -165,6 +133,28 @@ class VolunteerTaskRequestsController < SessionsController
   end
 
   private
+
+  # Applies the staff decision under the request's row lock and says what happened. The award is paid inside
+  # the lock; the caller sends mail afterwards, only when the approval really changed.
+  def apply_approval(volunteer_task_request)
+    volunteer_task_request.with_lock do
+      next :already_approved if already_approved?(volunteer_task_request)
+      next :failed unless volunteer_task_request.update(approval: params[:approval])
+
+      award_approval(volunteer_task_request) if volunteer_task_request.approval
+      volunteer_task_request.saved_change_to_approval? ? :updated : :unchanged
+    end
+  end
+
+  def already_approved?(volunteer_task_request)
+    volunteer_task_request.approval == true && ActiveModel::Type::Boolean.new.cast(params[:approval]) == true
+  end
+
+  # Completes the join and pays the volunteer's wallet and hours (see VolunteerTaskRequest#pay_award).
+  def award_approval(volunteer_task_request)
+    complete_join(volunteer_task_request)
+    volunteer_task_request.pay_award
+  end
 
   # Completes the requester's joined row. A row that ended after the lookup (the volunteer left at the
   # same moment) has nothing left to complete, and the approval carries on.

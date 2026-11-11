@@ -18,12 +18,14 @@
     <% end %>
 </div>
 
-<div id="calendar_container" data-my-calendar>
-    <div id="calendar"></div>
-</div>
+<div data-controller="my-calendar" data-my-calendar-feed-url-value="<%= json_staff_my_calendar_index_path(@space_id) %>">
+    <div id="calendar_container" data-my-calendar-target="container">
+        <div id="calendar" data-my-calendar-target="calendar"></div>
+    </div>
 
-<div id="spinner_container">
-    <div id='spinner' class="spinner-border" role="status"></div>
+    <div id="spinner_container" data-my-calendar-target="spinner">
+        <div id='spinner' class="spinner-border" role="status"></div>
+    </div>
 </div>
 
 <style>

@@ -35,6 +35,7 @@ fr:
         processed: "Cette heure de bénévolat a déjà été traitée. Elle ne peut plus être modifiée ni supprimée."
         not_deleted: "L'heure de bénévolat n'a pas été supprimée."
         approval_not_saved: "L'heure de bénévolat n'a pas été mise à jour."
+        approval_invalid: "L'approbation doit être vrai ou faux; rien n'a été modifié."
       task_requests:
         not_created: "Votre demande pour cette tâche n'a pas été envoyée."
         not_updated: "La demande de tâche n'a pas été mise à jour."

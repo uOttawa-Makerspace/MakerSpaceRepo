@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class StaffDashboardController < StaffAreaController
+  # The only user fields the search JSON sends (what the staff app reads, plus id).
+  SEARCH_JSON_FIELDS = %i[id name username email].freeze
+
   # NOTE: @space is set by StaffAreaController
   
   def index
@@ -334,7 +337,7 @@ class StaffDashboardController < StaffAreaController
             .order(:updated_at)
       end
       format.html { @users = @users.includes(:lab_sessions) if @query.present? }
-      format.json { render json: @users.as_json }
+      format.json { render json: @users.as_json(only: SEARCH_JSON_FIELDS) }
     end
   end
 

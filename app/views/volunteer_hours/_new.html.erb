@@ -25,9 +25,9 @@
             <div class="input-group mx-auto">
               <input id="hours" class="form-control col-6" type="number" required="required" placeholder="Hours" min="0">
               <span class="input-group-text">:</span>
-              <input id="minutes" class="form-control col-6" type="number" required="required" placeholder="Minutes" min="0" max="55" step="5">
+              <input id="minutes" class="form-control col-6" type="number" required="required" placeholder="Minutes" min="0" max="59" step="1">
               <div class="invalid-feedback">
-                Please select the amount of hours worked. (Minutes: Multiple of 5, Min -> 0, Max -> 55)
+                Please select the amount of hours worked. (Minutes: whole minutes, Min -> 0, Max -> 59)
               </div>
             </div>
             <%= f.hidden_field :total_time, id: 'total_time_hidden' %>

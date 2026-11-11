@@ -160,6 +160,13 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       vol_login!(owner)
     end
 
+    it "stores a form that is submitted twice only once and says the hours are awaiting review" do
+      post volunteer_hours_path, params: hour_params
+      expect { post volunteer_hours_path, params: hour_params }.not_to change(VolunteerHour, :count)
+      expect(response).to redirect_to(volunteer_hours_path)
+      expect(flash[:alert]).to eq("You already sent these hours for this task and day; they are awaiting review.")
+    end
+
     it "persists an unprocessed hour for the current user and redirects with a notice" do
       expect { post volunteer_hours_path, params: hour_params }.to change(VolunteerHour, :count).by(1)
       expect(response).to redirect_to(volunteer_hours_path)
@@ -290,6 +297,15 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       vol_login!(owner)
       get edit_volunteer_hour_path(hour)
       expect(response).to have_http_status(:ok)
+    end
+
+    it "fills the minutes box with the nearest minute of the stored total" do
+      vol_login!(owner)
+      { 0.33 => [0, 20], 2.5 => [2, 30], 1.99 => [1, 59], 0.0 => [0, 0] }.each do |total, (hours, minutes)|
+        get edit_volunteer_hour_path(make_hour(total_time: total))
+        expect(response.body).to match(/id="hours"[^>]*value="#{hours}"/)
+        expect(response.body).to match(/id="minutes"[^>]*value="#{minutes}"/)
+      end
     end
 
     it "refuses the owner a form for a processed hour, and still shows staff one" do
@@ -590,11 +606,14 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       expect(hour.reload.approval).to be(false)
     end
 
-    it "resets a processed hour to unprocessed when approval is blank or absent" do
-      hour = make_hour(approval: true)
-      vol_login!(create(:user, :admin))
-      put update_approval_volunteer_hours_path, params: { id: hour.id }
-      expect(hour.reload.approval).to be_nil
+    ["", "maybe", nil].each do |value|
+      it "refuses an approval of #{value.inspect} and leaves a processed hour as it was" do
+        hour = make_hour(approval: true)
+        vol_login!(create(:user, :admin))
+        put update_approval_volunteer_hours_path, params: { id: hour.id, approval: value }.compact
+        expect(flash[:alert]).to eq("The approval must be true or false; nothing was changed.")
+        expect(hour.reload.approval).to be(true)
+      end
     end
 
     it "sends no email and creates no CC money" do

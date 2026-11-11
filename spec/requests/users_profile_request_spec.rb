@@ -874,6 +874,66 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
+  describe "GET /:username/likes with private repositories" do
+    let!(:private_repo) do
+      create(:repository, user_id: other.id, title: "Hidden Thing", share_type: "private", pword: "secret")
+    end
+    let!(:public_repo) { create(:repository, user_id: other.id, title: "Open Thing", share_type: "public") }
+    let(:viewer) { create(:user, :regular_user) }
+
+    before do
+      [private_repo, public_repo].each { |repo| Like.create!(user_id: viewer.id, repository_id: repo.id) }
+    end
+
+    it "lists only the public ones for a viewer who cannot open the private one" do
+      login!(viewer)
+      get likes_user_path(viewer.username)
+      expect(response.body).to include("Open Thing")
+      expect(response.body).not_to include("Hidden Thing")
+    end
+
+    it "lists the private one for a member of the repository" do
+      private_repo.users << viewer
+      login!(viewer)
+      get likes_user_path(viewer.username)
+      expect(response.body).to include("Hidden Thing")
+    end
+
+    it "lists the private one for its owner" do
+      Like.create!(user_id: other.id, repository_id: private_repo.id)
+      login!(other)
+      get likes_user_path(other.username)
+      expect(response.body).to include("Hidden Thing")
+    end
+
+    it "lists the private one for staff and admin" do
+      [staff, admin].each do |person|
+        Like.create!(user_id: person.id, repository_id: private_repo.id)
+        login!(person)
+        get likes_user_path(person.username)
+        expect(response.body).to include("Hidden Thing")
+      end
+    end
+
+    it "lists the private one once its password was entered this session" do
+      login!(viewer)
+      post pass_authenticate_repository_path(other.username, private_repo.id), params: { password: "secret" }
+      get likes_user_path(viewer.username)
+      expect(response.body).to include("Hidden Thing")
+    end
+
+    it "pages only through repositories the viewer may see" do
+      13.times { |i| Like.create!(user_id: viewer.id, repository_id: create(:repository, user_id: other.id, title: "Extra #{i}", share_type: "public").id) }
+      login!(viewer)
+      get likes_user_path(viewer.username)
+      expect(response.body.scan('class="repository-container"').size).to eq(12)
+      expect(response.body).not_to include("Hidden Thing")
+      get likes_user_path(viewer.username, page: 2)
+      expect(response.body.scan('class="repository-container"').size).to eq(2)
+      expect(response.body).not_to include("Hidden Thing")
+    end
+  end
+
   describe "GET /:username/likes filtered by category" do
     let!(:tagged) { create(:repository, user_id: other.id, title: "Tagged Thing", share_type: "public") }
     let!(:untagged) { create(:repository, user_id: other.id, title: "Plain Thing", share_type: "public") }
