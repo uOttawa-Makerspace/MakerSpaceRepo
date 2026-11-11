@@ -193,7 +193,7 @@ docker compose -f docker-compose.production.yml exec web bin/rails counters:reco
 docker compose -f docker-compose.production.yml exec web bin/rails "counters:recount[apply]"
 ```
 
-Applying first writes every row it will change, with its old and new value, to `tmp/counter_recount_<time>.csv` in the `web` container (replaced on the next deploy, so copy it out straight away with `docker compose -f docker-compose.production.yml cp web:/rails/tmp/counter_recount_<time>.csv .`), then sets each listed counter to the number counted inside the same statement. Running the list again afterwards shows nothing. To undo, set the counters back to the `stored` column of that file. No like, vote, repository or comment is changed or removed.
+Applying locks each row that differs, counts its likes or votes again inside that transaction, sets the counter to that number and adds a row to the `counter_recount_corrections` table (table, row id, column, old value, new value, run time). That table is the permanent record of the old values and is only ever added to. A CSV of the same changes is also written to `tmp/counter_recount_<time>_<random>.csv` in the `web` container as a convenience (never overwritten, replaced on the next deploy; copy it out with `docker compose -f docker-compose.production.yml cp web:/rails/tmp/<file> .` if wanted). Running the list again afterwards shows nothing. To undo, set each counter back to `old_value` from `counter_recount_corrections` for the run. No like, vote, repository or comment is changed or removed. The migration that creates the table only adds it; `down` drops that table.
 
 ## Job order chat: extra notification recipients
 
