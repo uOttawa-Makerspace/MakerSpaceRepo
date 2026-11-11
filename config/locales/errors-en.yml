@@ -259,7 +259,7 @@ en:
     users:
       password_not_saved: "Your new password could not be saved because of a problem on our side. Nothing was changed. Please try again. If it keeps happening, contact the makerspace staff and quote reference %{reference}."
       programs_not_updated: "The programs were not updated."
-      programs_staff_only: "Only staff and admins can change a user's programs."
+      staff_only: "You cannot access this area."
     repositories:
       not_updated: "The project was not updated."
       proposal_not_linked: "The project was not linked to the project proposal."

@@ -294,6 +294,11 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(user.programs.count).to eq(0)
     end
 
+    it "sends a guest to the login page and creates no membership" do
+      expect { post join_development_program_development_programs_path }.not_to change(Program, :count)
+      expect(response.location).to start_with("http://www.example.com/login")
+    end
+
     it "joins the program and redirects with a notice" do
       user = log_in!(create(:user, :regular_user))
       expect { post join_development_program_development_programs_path }.to change { user.programs.count }.by(1)

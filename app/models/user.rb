@@ -495,6 +495,17 @@ class User < ApplicationRecord
       .limit(10)
   }
 
+  # Rows for the user pickers (repository owner, team captain, new staff).
+  # Staff match on name and see it; everyone else matches on username and
+  # sees only the id and username, like the directory search.
+  def self.picker_entries(term, viewer)
+    fields = viewer.staff? ? %i[name username] : %i[username]
+    pattern = "%#{sanitize_sql_like(term.to_s)}%"
+    columns = [:id, *fields]
+    where(arel_table[fields.first].matches(pattern)).limit(10).pluck(*columns)
+      .map { |row| columns.zip(row).to_h }
+  end
+
   # Staff-facing substring search over name, email and username (accent- and
   # case-insensitive). LIKE wildcards in the query match literally.
   scope :text_search, ->(query) {
@@ -938,6 +949,24 @@ class User < ApplicationRecord
 
   def admin?
     role == 'admin'
+  end
+
+  # Who may see the private sections of this user's profile. Each section
+  # keeps the audience its tab has always had.
+  def keys_visible_to?(viewer)
+    viewer.staff?
+  end
+
+  def lockers_visible_to?(viewer)
+    viewer == self || viewer.staff?
+  end
+
+  def roles_visible_to?(viewer)
+    viewer.admin?
+  end
+
+  def key_certification_visible_to?(viewer)
+    viewer.admin? || (viewer == self && (staff? || programs.exists?(program_type: Program::TEAMS)))
   end
 
   # Admin lock: blocks new logins for 99 years AND ends every existing session and JWT

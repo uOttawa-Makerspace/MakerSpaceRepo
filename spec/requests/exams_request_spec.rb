@@ -58,11 +58,10 @@ RSpec.describe "Exams", type: :request do
   # ------------------------------------------------------------------- index
 
   describe "GET /exams" do
-    it "renders an empty list for a guest (no sign-in required)" do
+    it "sends a guest to the login page" do
       new_exam
       get exams_path
-      expect(response).to have_http_status(:ok)
-      expect(response.body).not_to include("Start Exam")
+      expect(response.location).to start_with("http://www.example.com/login")
     end
 
     it "lists only the signed-in user's own exams with Start/Resume links" do

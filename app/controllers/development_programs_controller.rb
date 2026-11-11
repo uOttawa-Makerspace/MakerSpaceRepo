@@ -5,6 +5,7 @@ class DevelopmentProgramsController < SessionsController
   skip_authorization only: %i[index join_development_program],
                      reason: "#{Authorization::ROLLOUT_PENDING}index and join_development_program are not behind grant_access"
   before_action :current_user
+  before_action :signed_in, only: :join_development_program
   before_action :with_development_header, except: :index
 
   # HACK: hardcode exception for this controller's index page only

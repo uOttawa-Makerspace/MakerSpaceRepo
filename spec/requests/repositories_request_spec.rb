@@ -1242,17 +1242,25 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response.location).to include("/login")
     end
 
-    it "returns only id, name and username to any signed-in user" do
+    it "gives a regular user only id and username, matched on username" do
       content_login!(stranger)
       get "/repositories/populate_users", params: { search: "zeldaxqzv" }
-      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)["users"]).to be_empty
+      get "/repositories/populate_users", params: { search: zelda.username }
       users = JSON.parse(response.body)["users"]
-      expect(users).to eq([{ "id" => zelda.id, "name" => "Zeldaxqzv Searchable", "username" => zelda.username }])
-      expect(response.body).not_to include("password", "access_token", "email")
+      expect(users).to eq([{ "id" => zelda.id, "username" => zelda.username }])
+      expect(response.body).not_to include("Searchable", "password", "access_token", "email")
+    end
+
+    it "gives staff id, name and username, matched on name" do
+      content_login!(create(:user, :staff))
+      get "/repositories/populate_users", params: { search: "zeldaxqzv" }
+      expect(JSON.parse(response.body)["users"])
+        .to eq([{ "id" => zelda.id, "name" => "Zeldaxqzv Searchable", "username" => zelda.username }])
     end
 
     it "treats % and _ in the search literally instead of as wildcards (review)" do
-      content_login!(stranger)
+      content_login!(create(:user, :staff))
       get "/repositories/populate_users", params: { search: "%" }
       expect(JSON.parse(response.body)["users"]).to be_empty
       get "/repositories/populate_users", params: { search: "Zel_a" }
@@ -1263,7 +1271,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
 
     it "returns at most 10 users (review)" do
       create_list(:user, 12, :regular_user, name: "Crowd Member")
-      content_login!(stranger)
+      content_login!(create(:user, :staff))
       get "/repositories/populate_users", params: { search: "crowd" }
       expect(JSON.parse(response.body)["users"].size).to eq(10)
     end

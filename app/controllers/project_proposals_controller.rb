@@ -5,7 +5,7 @@ class ProjectProposalsController < SessionsController
 
   before_action :set_project_proposal, only: %i[show edit update destroy]
   before_action :current_user
-  before_action :signed_in, only: %i[edit update approve decline create_revision join_project_proposal unjoin_project_proposal]
+  before_action :signed_in, only: %i[edit update approve decline create_revision join_project_proposal unjoin_project_proposal user_projects]
   before_action :require_admin, only: %i[approve decline]
   before_action :require_owner_or_admin, only: %i[edit update]
   before_action :require_visible_proposal, only: :show

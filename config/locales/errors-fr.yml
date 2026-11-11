@@ -259,7 +259,7 @@ fr:
     users:
       password_not_saved: "Votre nouveau mot de passe n'a pas pu être enregistré en raison d'un problème de notre côté. Rien n'a été modifié. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence %{reference}."
       programs_not_updated: "Les programmes n'ont pas été modifiés."
-      programs_staff_only: "Seuls le personnel et les administrateurs peuvent modifier les programmes d'un utilisateur."
+      staff_only: "Vous ne pouvez pas accéder à cette zone."
     repositories:
       not_updated: "Le projet n'a pas été modifié."
       proposal_not_linked: "Le projet n'a pas été lié à la proposition de projet."

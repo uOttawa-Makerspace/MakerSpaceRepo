@@ -131,7 +131,8 @@ RSpec.describe UsersController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         post :flag, params: { flagged_user: user.id, flag: "flag" }
-        expect(response).to redirect_to user_path(user.username)
+        expect(response).to redirect_to root_path
+        expect(flash[:alert]).to eq("You cannot access this area.")
       end
     end
   end
@@ -157,7 +158,8 @@ RSpec.describe UsersController, type: :controller do
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
         put :remove_flag, params: { repo_user_id: user.id, flag_msg: "abc" }
-        expect(response).to redirect_to user_path(user.username)
+        expect(response).to redirect_to root_path
+        expect(flash[:alert]).to eq("You cannot access this area.")
       end
     end
   end
@@ -445,9 +447,7 @@ RSpec.describe UsersController, type: :controller do
           post :change_programs, params: { user_id: user.id, volunteer: 1 }
         }.to change(Program, :count).by(0)
         expect(response).to redirect_to root_path
-        expect(flash[:alert]).to eq(
-          "Only staff and admins can change a user's programs."
-        )
+        expect(flash[:alert]).to eq("You cannot access this area.")
       end
     end
 
@@ -464,6 +464,49 @@ RSpec.describe UsersController, type: :controller do
           "The programs for #{user.name} has been updated!"
         )
       end
+    end
+  end
+
+  describe "show: private profile sections" do
+    let!(:profile_owner) { create(:user, :regular_user).tap { |u| KeyCertification.create!(user: u) } }
+    let(:private_sections) { %i[@keys_owned @keys_supervising @key_cert @locker_rentals @staff_spaces @space_list] }
+
+    def sign_in_as(viewer)
+      session[:user_id] = viewer.id
+      session[:expires_at] = Time.zone.now + 10_000
+    end
+
+    def loaded_sections
+      private_sections.select { |name| @controller.instance_variable_get(name) }
+    end
+
+    it "loads none of them for a guest" do
+      get :show, params: { username: profile_owner.username }
+      expect(loaded_sections).to be_empty
+    end
+
+    it "loads none of them for another regular user" do
+      sign_in_as(create(:user, :regular_user))
+      get :show, params: { username: profile_owner.username }
+      expect(loaded_sections).to be_empty
+    end
+
+    it "loads the locker rentals but not the staff sections for the profile owner" do
+      sign_in_as(profile_owner)
+      get :show, params: { username: profile_owner.username }
+      expect(loaded_sections).to eq(%i[@locker_rentals])
+    end
+
+    it "loads the keys and locker rentals, but not the admin sections, for staff" do
+      sign_in_as(create(:user, :staff))
+      get :show, params: { username: profile_owner.username }
+      expect(loaded_sections).to match_array(%i[@keys_owned @keys_supervising @locker_rentals])
+    end
+
+    it "loads every section for an admin" do
+      sign_in_as(create(:user, :admin))
+      get :show, params: { username: profile_owner.username }
+      expect(loaded_sections).to match_array(private_sections)
     end
   end
 

@@ -29,6 +29,8 @@ class UsersController < SessionsController
                   apply_unlock
                 ]
 
+  before_action :ensure_staff, only: %i[flag unflag remove_flag change_programs]
+
   # Re-authentication (the current password on change_password / change_email) is throttled
   # per signed-in user, one budget shared with every other re-check (see ReauthThrottle).
   include ReauthThrottle
@@ -188,8 +190,7 @@ class UsersController < SessionsController
   end
 
   def flag
-    if params[:flagged_user].present? and params[:flag_message].present? and
-         @user.staff?
+    if params[:flagged_user].present? and params[:flag_message].present?
       @flagged_user = User.find(params[:flagged_user])
       @flagged_user.flagged = true
 
@@ -207,7 +208,7 @@ class UsersController < SessionsController
   end
 
   def unflag
-    if params[:flagged_user].present? and @user.staff?
+    if params[:flagged_user].present?
       @flagged_user = User.find(params[:flagged_user])
       @flagged_user.update(flagged: false, flag_message: nil)
       redirect_to user_path(@flagged_user.username) and return
@@ -217,8 +218,6 @@ class UsersController < SessionsController
   end
 
   def remove_flag
-    redirect_to user_path(@user.username) and return unless @user.staff?
-
     @repo_user = User.find(params[:repo_user_id])
     msg = params[:flag_msg]
     @repo_user.flag_message = @repo_user.flag_message.gsub("; #{msg}", '')
@@ -373,35 +372,26 @@ class UsersController < SessionsController
 
   def change_programs
     user = User.find(params[:user_id])
-    if user.present? && (@user.staff? || @user.admin?)
-      begin
-        programs = user.sync_programs!(
-          development: params[:dev_program].present?,
-          volunteer: params[:volunteer].present?,
-          # JSON never removes teams (the React app does not send it)
-          teams: params[:teams].present? || (json_request? ? nil : false)
-        )
-      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
-        message = validation_message(e.record, 'errors.users.programs_not_updated')
-        return render json: { error: message }, status: :unprocessable_content if json_request?
+    begin
+      programs = user.sync_programs!(
+        development: params[:dev_program].present?,
+        volunteer: params[:volunteer].present?,
+        # JSON never removes teams (the React app does not send it)
+        teams: params[:teams].present? || (json_request? ? nil : false)
+      )
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
+      message = validation_message(e.record, 'errors.users.programs_not_updated')
+      return render json: { error: message }, status: :unprocessable_content if json_request?
 
-        flash[:alert] = message
-        return redirect_to user_path(user.username)
-      end
-      if json_request?
-        render json: { programs: programs }
-        return
-      end
-      flash[:notice] = "The programs for #{user.name} has been updated!"
-      redirect_to user_path(user.username)
-    else
-      if json_request?
-        head :forbidden
-        return
-      end
-      flash[:alert] = I18n.t('errors.users.programs_staff_only')
-      redirect_to root_path
+      flash[:alert] = message
+      return redirect_to user_path(user.username)
     end
+    if json_request?
+      render json: { programs: programs }
+      return
+    end
+    flash[:notice] = "The programs for #{user.name} has been updated!"
+    redirect_to user_path(user.username)
   end
 
   # Private repositories/makes on a profile are visible only to the profile
@@ -459,9 +449,6 @@ class UsersController < SessionsController
         training.learning_modules.where(level: levels).count +
           training.proficient_projects.where(level: levels).count
       end
-    @space_list = Space.all
-    @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
-
     if @user.key_certification.nil? && @user.eql?(@repo_user) &&
          (
            @user.staff? ||
@@ -471,11 +458,7 @@ class UsersController < SessionsController
       key_cert.save
     end
 
-    @keys_owned = @repo_user.keys
-    @keys_supervising = Key.where(supervisor_id: @repo_user.id)
-    @key_cert = @repo_user.key_certification
-
-    @locker_rentals = @repo_user.locker_rentals
+    load_private_profile_sections
 
     respond_to do |format|
       format.html
@@ -508,6 +491,30 @@ class UsersController < SessionsController
   end
 
   private
+
+  # Each private section is loaded only for a viewer who may see it.
+  def load_private_profile_sections
+    if @repo_user.roles_visible_to?(@user)
+      @space_list = Space.all
+      @staff_spaces = @repo_user.staff_spaces.pluck(:space_id)
+    end
+    if @repo_user.keys_visible_to?(@user)
+      @keys_owned = @repo_user.keys
+      @keys_supervising = Key.where(supervisor_id: @repo_user.id)
+    end
+    @key_cert = @repo_user.key_certification if @repo_user.key_certification_visible_to?(@user)
+    @locker_rentals = @repo_user.locker_rentals if @repo_user.lockers_visible_to?(@user)
+  end
+
+  def ensure_staff
+    return if @user.staff?
+
+    if json_request?
+      head :forbidden
+    else
+      redirect_to root_path, alert: I18n.t('errors.users.staff_only')
+    end
+  end
 
   # The normalised email, or '' when none was given or it is longer than an address can be.
   def resend_confirmation_email
