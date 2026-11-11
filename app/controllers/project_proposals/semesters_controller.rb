@@ -5,7 +5,7 @@
 class ProjectProposals::SemestersController < AdminAreaController
   def destroy
     proposal = ProjectProposal.find_by_param(params[:project_proposal_id])
-    return redirect_to(project_proposals_path, alert: "Project proposal not found") unless proposal
+    return redirect_to(project_proposals_path, alert: I18n.t("errors.proposals.not_found")) unless proposal
 
     if proposal.clear_semester
       redirect_to project_proposal_path(proposal), notice: I18n.t("project_proposal.admin.semester_cleared")
