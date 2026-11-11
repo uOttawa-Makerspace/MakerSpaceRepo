@@ -82,23 +82,15 @@ class DevelopmentProgramsController < SessionsController
   end
 
   def join_development_program
-    program =
-      Program.new(user_id: current_user.id, program_type: Program::DEV_PROGRAM)
-    if program.save
+    if Program.join(current_user, Program::DEV_PROGRAM)
       flash[:notice] = "You've joined the Development Program"
       redirect_to development_programs_path
     else
-      redirect_to root_path, alert: join_refusal(program)
+      redirect_to root_path, alert: "You already joined the Program. You can already access it!"
     end
   end
 
   private
-
-  def join_refusal(program)
-    return "You already joined the Program. You can already access it!" if current_user.dev_program?
-
-    validation_message(program, "errors.development_programs.not_joined")
-  end
 
   def grant_access
     return signed_in unless signed_in?

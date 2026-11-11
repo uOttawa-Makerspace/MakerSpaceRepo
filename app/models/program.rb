@@ -12,16 +12,20 @@ class Program < ApplicationRecord
   VOLUNTEER = "Volunteer Program"
   DEV_PROGRAM = "Development Program"
   TEAMS = "Teams Program"
+  UNIQUE_INDEX = "index_programs_on_user_id_and_program_type"
+
+  # Adds the user to the program. The unique index decides a race: the insert does nothing when the user already
+  # holds the program. Returns true when this call added it, false when the user was already in it.
+  def self.join(user, program_type)
+    insert({ user_id: user.id, program_type: program_type }, unique_by: UNIQUE_INDEX).rows.any?
+  end
 
   # Volunteer programs follow the volunteer's last visit to the site: inactive when not seen for two months (or
   # never), active again once seen. Derived from last_seen_at only, so a repeat run changes nothing
   # (config/recurring.yml, nightly).
   def self.refresh_volunteer_activity!(now = Time.current)
     cutoff = now - 2.months
-    # programs has no unique index on (user_id, program_type), only the model validation, so a user can in principle
-    # hold two volunteer rows; as before, only the first one (lowest id) follows the user's last visit.
-    first_rows = where(program_type: VOLUNTEER).group(:user_id).select("MIN(programs.id)")
-    volunteers = where(id: first_rows, user_id: User.select(:id))
+    volunteers = where(program_type: VOLUNTEER, user_id: User.select(:id))
     seen = User.where("users.last_seen_at >= ?", cutoff).select(:id)
 
     # Two set-based statements. Only rows whose value changes are written (and get a new updated_at).

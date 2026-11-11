@@ -108,11 +108,11 @@ RSpec.describe User do
       expect(user.programs.reload.pluck(:program_type)).to eq([Program::VOLUNTEER])
     end
 
-    it "rolls back an earlier leave when a later join is invalid" do
+    it "rolls back an earlier leave when a later join fails" do
       user = create(:user)
       user.programs.create!(program_type: Program::DEV_PROGRAM)
-      allow_any_instance_of(Program).to receive(:valid?).and_return(false)
-      expect { user.sync_programs!(development: false, volunteer: true) }.to raise_error(ActiveRecord::RecordInvalid)
+      allow(Program).to receive(:join).and_raise(ActiveRecord::StatementInvalid, "boom")
+      expect { user.sync_programs!(development: false, volunteer: true) }.to raise_error(ActiveRecord::StatementInvalid)
       expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
     end
   end

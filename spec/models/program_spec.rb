@@ -30,4 +30,39 @@ RSpec.describe Program, type: :model do
       end
     end
   end
+
+  describe ".join" do
+    let(:user) { create(:user) }
+
+    it "adds the program and reports it" do
+      expect(Program.join(user, Program::DEV_PROGRAM)).to be(true)
+      expect(user.programs.pluck(:program_type, :active)).to eq([[Program::DEV_PROGRAM, true]])
+    end
+
+    it "does nothing and reports it when the user already holds the program" do
+      expect(Program.join(user, Program::DEV_PROGRAM)).to be(true)
+      expect(Program.join(user, Program::DEV_PROGRAM)).to be(false)
+      expect(user.programs.count).to eq(1)
+    end
+
+    it "keeps the existing row untouched when joining again" do
+      existing = create(:program, :volunteer_program, user: user, active: false)
+      expect { Program.join(user, Program::VOLUNTEER) }.not_to(change { existing.reload.attributes })
+    end
+
+    it "adds a different program next to the first" do
+      Program.join(user, Program::DEV_PROGRAM)
+      Program.join(user, Program::TEAMS)
+      expect(user.programs.pluck(:program_type)).to match_array([Program::DEV_PROGRAM, Program::TEAMS])
+    end
+  end
+
+  describe "the database" do
+    it "refuses a second row for the same user and program even when validations are skipped" do
+      user = create(:user)
+      create(:program, :volunteer_program, user: user)
+      second = build(:program, :volunteer_program, user: user)
+      expect { second.save!(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+  end
 end

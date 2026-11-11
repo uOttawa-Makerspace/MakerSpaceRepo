@@ -1068,7 +1068,7 @@ class User < ApplicationRecord
         next if wanted.nil?
 
         if wanted
-          programs.find_or_create_by!(program_type: type)
+          Program.join(self, type)
         else
           programs.find_by(program_type: type)&.destroy!
         end
