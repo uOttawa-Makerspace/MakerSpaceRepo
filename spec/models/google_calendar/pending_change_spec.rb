@@ -94,6 +94,14 @@ RSpec.describe GoogleCalendar::PendingChange do
       expect { expect(described_class.resend_due).to eq(0) }.not_to have_enqueued_job(GoogleCalendar::EventPushJob)
     end
 
+    it "lets an overlapping run claim nothing: each change is queued and counted once" do
+      change = described_class.ask_push(7)
+      change.update_columns(updated_at: 20.minutes.ago)
+      expect { expect(described_class.resend_due).to eq(1) }.to have_enqueued_job(GoogleCalendar::EventPushJob).once
+      expect { expect(described_class.resend_due).to eq(0) }.not_to have_enqueued_job(GoogleCalendar::EventPushJob)
+      expect(change.reload.attempts).to eq(1)
+    end
+
     it "keeps counting when the queue is down" do
       allow(GoogleCalendar::EventPushJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished)
       change = described_class.ask_push(7)

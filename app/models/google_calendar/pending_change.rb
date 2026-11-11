@@ -41,9 +41,22 @@ module GoogleCalendar
 
     # Queues the job for every change that has waited long enough and been resent fewer than MAX_RESENDS times;
     # returns how many were queued.
+    # The rows are claimed first, in one statement that counts the try and moves the row out of the due window,
+    # so a run that overlaps this one claims none of them and queues nothing twice.
     def self.resend_due
-      due.order(:id).to_a.count(&:resend)
+      claim_due.sort_by(&:id).count(&:resend)
     end
+
+    # Counts a try on every due row and returns the rows this call claimed.
+    def self.claim_due
+      sql = <<~SQL.squish
+        UPDATE #{table_name} SET attempts = attempts + 1, updated_at = :now
+        WHERE updated_at < :due_before AND attempts < :max_resends
+        RETURNING *
+      SQL
+      find_by_sql([sql, { now: Time.current, due_before: RESEND_AFTER.ago, max_resends: MAX_RESENDS }])
+    end
+    private_class_method :claim_due
 
     # Queues the job that does this change. A queue that cannot take it is reported, not raised: the row stays
     # and the resend job queues it again.
@@ -59,10 +72,10 @@ module GoogleCalendar
       false
     end
 
-    # Counts the try, then queues the job again. The count is kept even when the queue fails, so a queue that
-    # stays down also reaches the limit; the last try is reported as the one after which staff have to look.
+    # Queues the job again for a row whose try was already counted by claim_due. The count is kept even when the
+    # queue fails, so a queue that stays down also reaches the limit; the last try is reported as the one after
+    # which staff have to look.
     def resend
-      increment!(:attempts)
       report_given_up if attempts >= MAX_RESENDS
       enqueue
     end
