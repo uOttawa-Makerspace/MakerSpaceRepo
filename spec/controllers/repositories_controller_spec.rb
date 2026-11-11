@@ -370,7 +370,7 @@ RSpec.describe RepositoriesController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        create(:repository, users: [user])
+        create(:repository, owner: user, users: [user])
         expect {
           delete :destroy,
                  params: {

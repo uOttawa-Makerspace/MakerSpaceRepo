@@ -133,11 +133,16 @@ class Repository < ApplicationRecord
     share_type.eql?('private')
   end
 
-  # Owner (user_id) or member of the habtm `users`. A guest (User.new) is never an owner.
+  # The owner (user_id). A guest (User.new) is never an owner.
   def owned_by?(user)
     return false if user.nil? || user.id.blank?
 
-    user_id == user.id || users.include?(user)
+    user_id == user.id
+  end
+
+  # The owner or a member of the habtm `users`.
+  def editable_by?(user)
+    owned_by?(user) || (user&.id.present? && users.include?(user))
   end
 
   # What deleting an account does to the repositories it owns (repositories.user_id), inside the

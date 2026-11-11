@@ -668,7 +668,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
         delete delete_user_admin_users_path, params: { id: target.id, password: password }
         kept = Repository.find(repo.id)
         expect(kept.user_id).to eq([later, partner].map(&:id).min)
-        expect(kept.owned_by?(partner)).to be(true)
+        expect(kept.editable_by?(partner)).to be(true)
         expect(kept.deleted).to be(false)
         expect(kept.users).not_to include(target)
         expect(Repository.unscoped.find(repo.id).users.unscope(where: :deleted)).to include(target)
