@@ -771,6 +771,33 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(user.programs).to be_empty
     end
 
+    context "when removing a program is refused" do
+      let(:removal) { { user_id: user.id, volunteer: false } }
+
+      before do
+        user.programs.create!(program_type: Program::DEV_PROGRAM)
+        allow_any_instance_of(Program).to receive(:destroy).and_return(false)
+      end
+
+      def expect_refusal
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json["error"]).to start_with("The programs were not updated.")
+        expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
+      end
+
+      it "answers 422 with the error message and keeps the membership" do
+        patch_programs(staff, removal)
+        expect_refusal
+      end
+
+      it "answers 422 as JSON when only the request body is JSON and the client accepts HTML" do
+        login!(staff)
+        patch change_programs_users_path, params: removal.to_json,
+                                          headers: { "Content-Type" => "application/json", "Accept" => "text/html" }
+        expect_refusal
+      end
+    end
+
     it "does not touch the caller's profile (no fall-through to users#update)" do
       patch_programs(staff)
       expect(staff.reload.name).to eq(staff.name)
