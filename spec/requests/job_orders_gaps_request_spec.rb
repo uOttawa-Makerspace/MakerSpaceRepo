@@ -173,16 +173,16 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- unknown / deleted orders
 
   describe "set_job_order for unknown or soft-deleted orders" do
-    it "redirects staff with no_permission for an unknown id and for a soft-deleted order" do
+    it "answers not found and returns to the order list for an unknown id and for a soft-deleted order" do
       session_login!(staff)
       patch job_order_comments_path(job_order_id: 99_999_999), params: { job_order: { staff_comments: "x" } }
-      expect(response).to redirect_to(new_job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
 
       deleted = order_with_task!
       deleted.update!(is_deleted: true)
       patch job_order_comments_path(deleted), params: { job_order: { staff_comments: "x" } }
-      expect(response).to redirect_to(new_job_orders_path)
+      expect(response).to redirect_to(job_orders_path)
       expect(deleted.reload.staff_comments).not_to eq("x")
     end
 
@@ -194,8 +194,8 @@ RSpec.describe "JobOrders gaps", type: :request do
       live = order_with_task!
       session_login!(staff)
       patch job_order_comments_path(deleted, id: live.id), params: { job_order: { staff_comments: "x" } }
-      expect(response).to redirect_to(new_job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
       expect([deleted.reload.staff_comments, live.reload.staff_comments]).not_to include("x")
     end
 
@@ -206,6 +206,53 @@ RSpec.describe "JobOrders gaps", type: :request do
       delete job_order_path(named, job_order_id: other_order.id)
       expect(response).to redirect_to(job_orders_path)
       expect([named.reload.is_deleted, other_order.reload.is_deleted]).to eq([true, false])
+    end
+
+    # Every action that loads the order through the shared lookup.
+    {
+      "DELETE destroy" => [:delete, ->(id) { job_order_path(id) }],
+      "PATCH user_approval" => [:patch, ->(id) { job_order_user_approval_path(id) }],
+      "PATCH start_processing" => [:patch, ->(id) { job_order_start_processing_path(id) }],
+      "PATCH processed" => [:patch, ->(id) { job_order_processed_path(id) }],
+      "PATCH paid" => [:patch, ->(id) { job_order_paid_path(id) }],
+      "PATCH picked_up" => [:patch, ->(id) { job_order_picked_up_path(id) }],
+      "PATCH quote" => [:patch, ->(id) { job_order_quote_path(id) }],
+      "PATCH resend_quote_email" => [:patch, ->(id) { job_order_resend_quote_email_path(id) }],
+      "PATCH comments" => [:patch, ->(id) { job_order_comments_path(id) }],
+      "GET timeline_modal" => [:get, ->(id) { job_order_timeline_modal_path(id) }],
+      "GET invoice" => [:get, ->(id) { job_order_invoice_path(id) }]
+    }.each do |label, (verb, path)|
+      staff_only = %w[start_processing processed paid picked_up quote resend_quote_email comments timeline_modal]
+        .any? { |action| label.end_with?(action) }
+
+      it "#{label}: an unknown id answers not found and returns to the order list" do
+        session_login!(staff)
+        public_send(verb, instance_exec(99_999_999, &path))
+        expect(response).to redirect_to(job_orders_path)
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+      end
+
+      it "#{label}: a deleted order answers not found and returns to the order list" do
+        order = order_with_task!
+        order.update!(is_deleted: true)
+        session_login!(staff)
+        public_send(verb, instance_exec(order.id, &path))
+        expect(response).to redirect_to(job_orders_path)
+        expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
+      end
+
+      it "#{label}: an existing order another customer owns is refused" do
+        order = order_with_task!
+        session_login!(other)
+        public_send(verb, instance_exec(order.id, &path))
+        if staff_only
+          expect(response).to redirect_to(root_path)
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.cannot_access_area"))
+        else
+          expect(response).to redirect_to(new_job_orders_path)
+          expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+        end
+      end
     end
 
     it "treats a non-owner's user_approval like any other protected action (no_permission redirect)" do
@@ -452,13 +499,13 @@ RSpec.describe "JobOrders gaps", type: :request do
       end
     end
 
-    it "redirects a second delete of an already deleted order to new with no_permission" do
+    it "answers not found and returns to the order list on a second delete of an already deleted order" do
       order = order_with_task!
       order.update!(is_deleted: true)
       session_login!(owner)
       delete job_order_path(order)
-      expect(response).to redirect_to(new_job_orders_path)
-      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.no_permission"))
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
     end
 
     # destroy is a soft delete here: the order and its tasks stay.
@@ -643,12 +690,13 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(text).to include("Total: CAD $10.00")
     end
 
-    it "redirects invoice requests for a soft-deleted order to new with no_permission" do
+    it "answers not found and returns to the order list for invoice requests on a soft-deleted order" do
       order = order_with_task!(status_key: :completed)
       order.update!(is_deleted: true)
       session_login!(owner)
       get job_order_invoice_path(order)
-      expect(response).to redirect_to(new_job_orders_path)
+      expect(response).to redirect_to(job_orders_path)
+      expect(flash[:alert]).to eq(I18n.t("job_orders.alerts.job_order_not_found"))
     end
 
     # N+1 pinned

@@ -470,11 +470,15 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   # The order the route names (job_order_id on the nested routes, id on destroy; never an id from the query string),
-  # looked up once; a missing or deleted order gets the same answer as one the viewer may not see.
+  # looked up once. A missing or deleted order sends the viewer back to the order list; one the viewer may not see
+  # is refused.
   def set_job_order
     route = request.path_parameters
     order = JobOrder.not_deleted.find_by(id: route[:job_order_id] || route[:id])
-    if order && (@user.admin? || @user.staff? || @user.id == order.user_id)
+    if order.nil?
+      flash[:alert] = t("job_orders.alerts.job_order_not_found")
+      redirect_to job_orders_path
+    elsif @user.admin? || @user.staff? || @user.id == order.user_id
       @job_order = order
     else
       flash[:alert] = t("job_orders.alerts.no_permission")
