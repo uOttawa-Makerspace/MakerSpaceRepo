@@ -286,7 +286,7 @@ RSpec.describe "Localized model error messages" do
                       "Project title is already in use.", "Le titre du projet est déjà utilisé.")
       expect_messages(Repository.new(share_type: "private"), :password,
                       "Password is required for private projects", "Un mot de passe est requis pour les projets privés")
-      expect_messages(Repository.new, :photos, "Must have between 1 and 5 photos", "Doit avoir entre 1 et 5 photos")
+      expect_messages(Repository.new, :photos, "Must have between 1 and 10 photos", "Doit avoir entre 1 et 10 photos")
     end
   end
 

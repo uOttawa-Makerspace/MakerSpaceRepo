@@ -212,8 +212,8 @@ en:
             password:
               blank: "Password is required for private projects"
             photos:
-              too_long: "Must have between 1 and 5 photos"
-              too_short: "Must have between 1 and 5 photos"
+              too_long: "Must have between 1 and 10 photos"
+              too_short: "Must have between 1 and 10 photos"
         user:
           attributes:
             name:
