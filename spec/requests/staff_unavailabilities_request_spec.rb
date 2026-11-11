@@ -99,11 +99,16 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(flash[:alert]).to eq("Failed to create unavailability: Recurrence rule must include days of the week when using weekly frequency")
       end
 
-      # missing times raise TypeError from Time.parse(nil) (500) instead of a validation alert.
-      it "500s when the times are missing" do
-        post staff_unavailabilities_path, params: { staff_unavailability: { title: "x" } }
-        expect(response).to have_http_status(:internal_server_error)
-        expect(StaffUnavailability.count).to eq(0)
+      it "alerts with the validation message when the times are missing" do
+        expect { post staff_unavailabilities_path, params: { staff_unavailability: { title: "x" } } }.not_to change(StaffUnavailability, :count)
+        expect(response).to redirect_to(staff_unavailabilities_path)
+        expect(flash[:alert]).to eq("Failed to create unavailability: Start time This field is required. and End time This field is required.")
+      end
+
+      it "alerts with the validation message when the times are not times" do
+        expect { post staff_unavailabilities_path, params: payload(utc_start_time: "abc", utc_end_time: "nope") }.not_to change(StaffUnavailability, :count)
+        expect(response).to redirect_to(staff_unavailabilities_path)
+        expect(flash[:alert]).to eq("Failed to create unavailability: Start time This field is required. and End time This field is required.")
       end
 
       it "redirects home with the ParameterMissing message without the nested hash" do
@@ -191,6 +196,17 @@ RSpec.describe "Staff unavailabilities", type: :request do
           expect(series.reload).to have_attributes(title: "Series", recurrence_rule: RULE)
         end
 
+        it "times that are not times flash an alert and change nothing, whatever the scope" do
+          before_count = StaffUnavailability.count
+          %w[non-recurring all this].each do |scope|
+            patch staff_unavailability_path(series), params: payload(title: "Zzz", utc_start_time: "abc", utc_end_time: "2027-03-22T19:00:00Z").merge(update_scope: scope)
+            expect(response).to redirect_to(staff_unavailabilities_path), scope
+            expect(flash[:alert]).to eq("Failed to update unavailability: Start time This field is required."), scope
+          end
+          expect(series.reload).to have_attributes(title: "Series", recurrence_rule: RULE)
+          expect(StaffUnavailability.count).to eq(before_count)
+        end
+
         it "an unknown scope flashes an alert and changes nothing" do
           patch staff_unavailability_path(series), params: payload(title: "Zzz").merge(update_scope: "bogus")
           expect(flash[:alert]).to eq("Invalid update scope.")
@@ -247,11 +263,11 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(series.recurrence_rule).not_to include("20271201")
       end
 
-      # Time.parse raises for it, so the request ends in a server error.
-      it "answers a start_date that is not a time with a server error and leaves the series as it was" do
-        %w[single following].each do |scope|
+      it "refuses a start_date that is not a time like a missing one and leaves the series as it was" do
+        { "single" => "a single occurrence", "following" => "following occurrences" }.each do |scope, words|
           delete delete_with_scope_staff_unavailability_path(series), params: { scope: scope, start_date: "not a date" }
-          expect(response).to have_http_status(:internal_server_error), scope
+          expect(response).to redirect_to(staff_unavailabilities_path), scope
+          expect(flash[:alert]).to eq("Start date is required for deleting #{words}."), scope
         end
         expect(series.reload.recurrence_rule).to eq(RULE)
       end
@@ -307,6 +323,14 @@ RSpec.describe "Staff unavailabilities", type: :request do
         row = response.parsed_body.first
         expect(row["duration"]).to eq(3_600_000.0)
         expect(row["rrule"]).to eq("DTSTART:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO\nEXDATE:20270308T100000\nEXDATE:20270329T110000")
+      end
+
+      it "still lists a series whose stored start line cannot be read, from its own start" do
+        record = create(:staff_unavailability, user: staff, start_time: Time.utc(2027, 3, 1, 15), end_time: Time.utc(2027, 3, 1, 16))
+        record.update_column(:recurrence_rule, "DTSTART;TZID=Nowhere/Land:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
+        get json_staff_unavailabilities_path
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body.first["rrule"]).to eq("DTSTART:20270301T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
       end
 
       it "flags all-day (exactly 24h) records and admin-created titles" do
@@ -391,9 +415,8 @@ RSpec.describe "Staff unavailabilities", type: :request do
 
     it "edits and deletes other users' records (no ownership restriction for admins)" do
       theirs = create(:staff_unavailability, user: staffer, title: "Theirs")
-      # update never sets @unavailability, so admin_managing_other_user? is false and the redirect goes to the staff page (destroy goes to the admin calendar).
       patch staff_unavailability_path(theirs), params: payload(title: "Edited")
-      expect(response).to redirect_to(staff_unavailabilities_path)
+      expect(response).to redirect_to(admin_calendar_index_path)
       expect(theirs.reload.title).to eq("Edited")
       delete staff_unavailability_path(theirs)
       expect(response).to redirect_to(admin_calendar_index_path)

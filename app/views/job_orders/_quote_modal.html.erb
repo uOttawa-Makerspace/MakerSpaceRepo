@@ -2,6 +2,7 @@
   <%= form_for(@job_order, url: job_order_quote_url(@job_order), html: { multipart: true }) do |f| %>
     <div class="modal-body">
       <%= hidden_field_tag :approved, true %>
+      <%= hidden_field_tag :status_row_id, @job_order.latest_status&.id %>
 
       <% @job_order.job_tasks.each do |task| %>
         <% job_task_quote = task.job_task_quote || task.build_job_task_quote %>

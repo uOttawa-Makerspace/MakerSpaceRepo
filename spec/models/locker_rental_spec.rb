@@ -26,6 +26,17 @@ RSpec.describe LockerRental, type: :model do
       expect(rental.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
     end
 
+    it "clears a notice recorded after the record was first loaded, once the row is locked for the edit" do
+      rental.update_columns(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+      stale = LockerRental.find(rental.id)
+      LockerRental.where(id: rental.id).update_all(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+
+      stale.lock!
+      stale.update!(owned_until: 4.months.from_now)
+
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+    end
+
     it "clears it when the rental becomes indefinite" do
       rental.indefinite = "1"
       rental.extend_until(nil)

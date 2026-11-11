@@ -35,6 +35,7 @@ fr:
           attributes:
             cc_cost:
               invalid_cc_cost: "doit être un nombre de points CC (0 ou plus)"
+          claimed_cannot_delete: "Un utilisateur a déjà réclamé ce coupon avec des points CC, il ne peut donc pas être supprimé"
         program:
           attributes:
             user:
@@ -152,6 +153,33 @@ fr:
           attributes:
             photos:
               too_many: "ne peut pas dépasser 5 photos"
+          awarded_cannot_delete: "Cette tâche a des heures approuvées ou des points CC attribués et ne peut pas être supprimée."
+          edit_refused:
+            training_missing: "Une formation requise n'existe pas."
+            no_successor: "Au moins un membre du personnel doit être assigné à cette tâche."
+            add_not_found:
+              staff: "Le membre du personnel à ajouter est introuvable."
+              volunteer: "Le bénévole à ajouter est introuvable."
+            remove_not_on_task:
+              staff: "Le membre du personnel à retirer n'est pas sur cette tâche."
+              volunteer: "Le bénévole à retirer n'est pas sur cette tâche."
+              user: "L'utilisateur à retirer n'est pas sur cette tâche."
+        volunteer_hour:
+          attributes:
+            date_of_task:
+              in_the_future: "ne peut pas être dans le futur"
+        user_booking_approval:
+          already_pending: "Cette demande est déjà en attente."
+          already_approved: "Cette demande a déjà été approuvée."
+          already_declined: "Cette demande a déjà été refusée."
+          already_revoked: "Cette demande a déjà été révoquée."
+          account_deleted: "Le compte qui a envoyé cette demande a été supprimé."
+          already_has_access: "Vous avez déjà accès aux réservations."
+          already_requested: "Vous avez déjà demandé l'accès."
+        volunteer_task_join:
+          attributes:
+            user_id:
+              taken: "est déjà sur cette tâche"
         learning_module:
           attributes:
             title:

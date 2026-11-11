@@ -328,7 +328,7 @@ RSpec.describe "Static pages", type: :request do
       user.programs.create!(program_type: Program::VOLUNTEER)
       space = create(:space, name: "Task Lab")
       open_task = create(:volunteer_task, space: space, title: "Sweep the workshop floor")
-      closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "closed")
+      closed_task = create(:volunteer_task, space: space, title: "Archived chore", status: "completed")
       [open_task, closed_task].each do |task|
         create(:volunteer_task_join, :active, volunteer_task: task, user: user, user_type: "Volunteer")
       end
@@ -546,8 +546,8 @@ RSpec.describe "Static pages", type: :request do
 
     # Happy path: what production serves to the homepage / hours FullCalendar
     # (app/javascript/entrypoints/fullcalendar_setup_homepage.js). Time is frozen
-    # because parse_ics_calendar drops NON-recurring events (and modified instances)
-    # that ended > 2 months ago; recurring series are never dropped.
+    # because parse_ics_calendar drops events (and modified instances) that ended > 2 months ago,
+    # and recurring series whose last day or last counted occurrence was > 2 months ago.
     # The examples run under a UTC process zone (the Docker image sets no TZ); one
     # example also runs under America/Toronto.
     describe "happy path with a Google-style ICS feed" do
@@ -586,7 +586,7 @@ RSpec.describe "Static pages", type: :request do
           stub_request(:get, feed_url).to_return(status: 200, body: ics)
         end
 
-        it "returns one event source keyed by the MD5 of the feed URL, carrying the stored color and 5 events" do
+        it "returns one event source keyed by the MD5 of the feed URL, carrying the stored color and 4 events" do
           expect(sources.size).to eq(1)
           # the source has only id/color/events. There is NO source-level "name"; the JS reads the
           # name from events[0].extendedProps.name, so a source with zero events gets no filter checkbox.
@@ -595,7 +595,7 @@ RSpec.describe "Static pages", type: :request do
           expect(source["color"]).to eq("#112233")
           expect(source["events"].map { |e| e["id"] }).to eq(
             ["oneoff-1@google.com", "allday-1@google.com", "weekly-1@google.com",
-             "weekly-1@google.com_1793628000", "old-series-1@google.com"]
+             "weekly-1@google.com_1793628000"]
           )
           expect(source["events"].map { |e| e.dig("extendedProps", "name") }.uniq).to eq(["Makerspace"])
           expect(source["events"].map { |e| e["groupId"] }.uniq).to eq([source_id])
@@ -705,17 +705,11 @@ RSpec.describe "Static pages", type: :request do
           expect(source["events"].map { |e| e["title"] }).not_to include("Old Workshop")
         end
 
-        it "drops a modified instance that ended more than 2 months ago, but keeps its recurring parent" do
-          # old override (RECURRENCE-ID 2026-06-08) is absent; the parent series is still emitted (it has an rrule)
-          # and still EXDATEs the overridden slot.
-          expect(source["events"].map { |e| e["title"] }).not_to include("Spring Hours (late start)")
-          expect(source["events"].map { |e| e["id"] }.select { |id| id.start_with?("old-series-1@google.com_") }).to eq([])
-          # a series whose UNTIL ended four months ago is still emitted (rrule, EXDATEs), so the
-          # payload grows as feeds age. A fix that drops ended series should flip this expectation.
-          parent = event_named(source, "old-series-1@google.com")
-          expect(parent["rrule"]).to eq(
-            "DTSTART:20260601T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20260629T195959\nEXDATE:20260608T090000"
-          )
+        it "drops a series that ended more than 2 months ago together with its old modified instance" do
+          expect(source["events"].map { |e| e["title"] }).not_to include("Spring Hours", "Spring Hours (late start)")
+          expect(source["events"].map { |e| e["id"] }.grep(/old-series-1@google.com/)).to eq([])
+          # a series that is still running keeps its rrule and its overridden slot as an exdate
+          expect(event_named(source, "weekly-1@google.com")["rrule"]).to include("EXDATE:20261102T090000")
         end
       end
 
@@ -732,7 +726,7 @@ RSpec.describe "Static pages", type: :request do
         expect(sources.map { |s| s["id"] }).to eq([Digest::MD5.hexdigest(other_url), Digest::MD5.hexdigest(feed_url)])
         expect(sources.map { |s| s["color"] }).to eq(%w[#00aa00 #aa0000])
         expect(sources.map { |s| s["events"].map { |e| e.dig("extendedProps", "name") }.uniq }).to eq([["Electronics Lab"], ["Wood Shop"]])
-        expect(sources.map { |s| s["events"].size }).to eq([5, 5])
+        expect(sources.map { |s| s["events"].size }).to eq([4, 4])
         expect(sources.map { |s| s["events"].map { |e| e["groupId"] }.uniq }).to eq(sources.map { |s| [s["id"]] })
       end
 

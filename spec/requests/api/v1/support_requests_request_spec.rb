@@ -147,11 +147,13 @@ RSpec.describe "POST /api/v1/support_requests", type: :request do
     end
   end
 
-  it "answers 503, saves nothing and sends nothing when the GitHub issue cannot be opened" do
+  it "answers 503, keeps the report without an issue number and sends nothing when the GitHub issue cannot be opened" do
     allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
     expect do
       perform_enqueued_jobs { post_request }
-    end.not_to(change { [Help.count, deliveries.size] })
+    end.to change(Help, :count).by(1)
+    expect(deliveries).to be_empty
+    expect(Help.last.gh_issue_number).to be_nil
     expect(response).to have_http_status(:service_unavailable)
     expect(body["error"]["code"]).to eq("service_unavailable")
   end

@@ -59,11 +59,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/learning_modules.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/lockers.js": {
     "complexity": {
       "count": 1
