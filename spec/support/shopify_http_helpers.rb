@@ -67,9 +67,9 @@ module ShopifyHttpHelpers
     seen
   end
 
-  def stub_draft_order_create(draft_id)
+  def stub_draft_order_create(draft_id, invoice_url: nil)
     stub_shopify_graphql("mutation draftOrderCreate",
-                         { "draftOrderCreate" => { "draftOrder" => { "id" => draft_id }, "userErrors" => [] } })
+                         { "draftOrderCreate" => { "draftOrder" => { "id" => draft_id, "invoiceUrl" => invoice_url }, "userErrors" => [] } })
   end
 
   def stub_draft_order_fetch(draft_id, invoice_url:, fully_paid: false)

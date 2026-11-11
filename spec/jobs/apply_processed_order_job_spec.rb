@@ -172,15 +172,28 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
   # ------------------------------------------------------------ memberships
 
   describe "membership path" do
-    let!(:pending) { create(:membership, user: user, membership_tier: tier, status: "pending") }
+    let!(:pending) { create(:membership, user: user, membership_tier: tier, status: "pending", start_date: nil, end_date: nil) }
+    let(:reports) { [] }
 
-    it "marks the referenced pending membership paid (dates untouched)" do
-      before_dates = pending.slice(:start_date, :end_date)
-      hook(membership_payload(pending.id))
+    before { allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] } }
+
+    it "marks the referenced pending membership paid, starting now" do
+      frozen = Time.utc(2026, 2, 3, 10)
+      order = travel_to(frozen) { hook(membership_payload(pending.id)) }
       pending.reload
+      expect(order.reload.last_error).to be_nil
+      expect(ProcessedOrder.refused).to be_empty
       expect(pending.status).to eq("paid")
-      expect(pending.slice(:start_date, :end_date)).to eq(before_dates)
+      expect(pending.start_date).to eq(frozen)
+      expect(pending.end_date).to eq(Time.zone.at(frozen) + tier.duration.days)
       expect(Membership.count).to eq(1)
+    end
+
+    it "stacks two memberships paid by orders delivered together" do
+      second = create(:membership, user: user, membership_tier: tier, status: "pending", start_date: nil, end_date: nil)
+      hook(membership_payload(pending.id, id: 7020))
+      hook(membership_payload(second.id, id: 7021))
+      expect(second.reload.start_date).to eq(pending.reload.end_date)
     end
 
     it "accepts a comma-separated tag string too" do
@@ -209,6 +222,43 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       pending.update!(status: "revoked")
       hook(membership_payload(pending.id, id: 7002))
       expect(pending.reload.status).to eq("revoked")
+    end
+
+    %w[revoked failed].each do |status|
+      it "leaves a #{status} membership as it is when a first delivery of its order arrives, and reports it" do
+        pending.update!(status: status)
+        order = hook(membership_payload(pending.id, id: 7010))
+        expect(order).to have_attributes(status: "applied")
+        expect(pending.reload.status).to eq(status)
+        expect(order.reload.last_error).to eq("refused: membership #{pending.id} is #{status}, not pending")
+        expect(ProcessedOrder.refused).to eq([order])
+        expect(reports.map { |e, _| e.class }).to eq([ShopOrderApplier::MembershipNotPending])
+        expect(reports.first.last[:context]).to include(shopify_order_id: order.provider_ref)
+      end
+    end
+
+    it "changes nothing and reports a second order that names a membership that is already paid" do
+      hook(membership_payload(pending.id, id: 7011))
+      paid_attributes = pending.reload.attributes
+      reports.clear
+      second = hook(membership_payload(pending.id, id: 7012))
+      expect(second.reload.last_error).to eq("refused: membership #{pending.id} is paid, not pending")
+      expect(pending.reload.attributes).to eq(paid_attributes)
+      expect(reports.map { |e, _| e.class }).to eq([ShopOrderApplier::MembershipNotPending])
+    end
+
+    it "records a reference that names no membership on the applied order, so staff can list it" do
+      order = hook(membership_payload(999_999_999, id: 7013))
+      expect(order.reload).to have_attributes(status: "applied", last_error: "refused: membership reference 999999999 not found")
+      expect(ProcessedOrder.refused).to eq([order])
+      expect(reports.map { |e, _| e.class }).to eq([ShopOrderApplier::UnknownMembership])
+    end
+
+    it "keeps the refusal note within 200 characters" do
+      order = hook(membership_payload("9" * 300, id: 7014))
+      expect(order.reload.last_error.length).to eq(200)
+      expect(order.last_error).to start_with("refused: membership reference 999")
+      expect(ProcessedOrder.refused).to eq([order])
     end
 
     it "accepts the admin_graphql_api_id spelling of an order already applied by its numeric id" do
@@ -263,6 +313,12 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         hook(payload.merge(id: 7004))
         expect { 2.times { hook(payload.merge(id: 7004)) } }.not_to change(Membership, :count)
         expect(user.memberships.where(status: "paid").count).to eq(1)
+      end
+
+      it "stacks the lines of one order" do
+        hook(payload.merge(line_items: [{ title: "1 Day Membership" }, { title: "1 day membership" }]))
+        paid = user.memberships.where(status: "paid").order(:id).to_a
+        expect(paid.last.start_date).to eq(paid.first.end_date)
       end
 
       it "stacks the memberships of two different orders" do
@@ -426,10 +482,10 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
     end
 
     {
-      "a failed membership write" => ->(spec) { spec.allow_any_instance_of(Membership).to spec.receive(:update!).and_raise(ActiveRecord::StatementInvalid, "secret-value") },
+      "a failed membership write" => ->(spec) { spec.allow_any_instance_of(Membership).to spec.receive(:mark_paid_if_pending).and_raise(ActiveRecord::StatementInvalid, "secret-value") },
       "a failed CC write" => ->(spec) { spec.allow(CcMoney).to spec.receive(:create!).and_raise(ActiveRecord::StatementInvalid, "secret-value") },
-      "a validation refusal" => ->(spec) { spec.allow_any_instance_of(Membership).to spec.receive(:update!) { |m| raise ActiveRecord::RecordInvalid, m } },
-      "an unexpected error" => ->(spec) { spec.allow_any_instance_of(Membership).to spec.receive(:update!).and_raise(NoMethodError, "undefined thing") },
+      "a validation refusal" => ->(spec) { spec.allow_any_instance_of(Membership).to spec.receive(:mark_paid_if_pending) { |m| raise ActiveRecord::RecordInvalid, m } },
+      "an unexpected error" => ->(spec) { spec.allow_any_instance_of(Membership).to spec.receive(:mark_paid_if_pending).and_raise(NoMethodError, "undefined thing") },
       "a lock timeout" => ->(spec) { spec.allow(CcMoney).to spec.receive(:create!).and_raise(ActiveRecord::LockWaitTimeout, "x") }
     }.each do |name, failure|
       it "rolls the whole order back, records the attempt and retries after #{name}" do
@@ -441,7 +497,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
         expect(order.last_error).not_to include("secret-value")
         expect(reports.map { |e, _| e.class }).to eq([ApplyProcessedOrderJob::OrderApplyRetrying]) # the early warning only
 
-        allow_any_instance_of(Membership).to receive(:update!).and_call_original
+        allow_any_instance_of(Membership).to receive(:mark_paid_if_pending).and_call_original
         allow(CcMoney).to receive(:create!).and_call_original
         perform(order)
         expect(order.reload).to have_attributes(status: "applied", attempts: 2, last_error: nil)
@@ -459,12 +515,12 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
           { namespace: "makerepo", key: "membership_db_reference", value: pending.id.to_s }
         ]
       )
-      allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
+      allow_any_instance_of(Membership).to receive(:mark_paid_if_pending).and_raise(ActiveRecord::LockWaitTimeout, "x")
       order = hook(payload)
       expect_retry(order)
       expect([rental.reload.state, LockerPayment.count]).to eq(["await_payment", 0])
 
-      allow_any_instance_of(Membership).to receive(:update!).and_call_original
+      allow_any_instance_of(Membership).to receive(:mark_paid_if_pending).and_call_original
       perform(order)
       expect([rental.reload.state, LockerPayment.count, pending.reload.status, order.reload.status])
         .to eq(["active", 1, "paid", "applied"])
@@ -793,7 +849,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       let(:pending) { create(:membership, user: user, membership_tier: tier, status: "pending") }
 
       it "sets the next attempt from the row's attempts: backoff(1) after the first failure, backoff(2) after the second" do
-        allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        allow_any_instance_of(Membership).to receive(:mark_paid_if_pending).and_raise(ActiveRecord::LockWaitTimeout, "x")
         order = hook(membership_payload(pending.id, id: 7420))
         expect(order.next_attempt_at).to be_within(5.seconds).of(Time.current + ProcessedOrder.backoff(1))
         perform(order)
@@ -802,7 +858,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       end
 
       it "marks the order failed and reports it at the 10th failure, and not before" do
-        allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        allow_any_instance_of(Membership).to receive(:mark_paid_if_pending).and_raise(ActiveRecord::LockWaitTimeout, "x")
         order = hook(membership_payload(pending.id, id: 7421))
         order.update_columns(attempts: ProcessedOrder::MAX_ATTEMPTS - 2)
         perform(order)
@@ -820,7 +876,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       end
 
       it "reports OrderApplyRetrying when the row's attempts become 1 and 5 only, ids and error class only" do
-        allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "secret-value")
+        allow_any_instance_of(Membership).to receive(:mark_paid_if_pending).and_raise(ActiveRecord::LockWaitTimeout, "secret-value")
         order = hook(membership_payload(pending.id, id: 7422))
         8.times { perform(order) }
         retrying = reports.select { |e, _| e.is_a?(ApplyProcessedOrderJob::OrderApplyRetrying) }
@@ -830,7 +886,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       end
 
       it "never raises, even when recording the failure raises" do
-        allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        allow_any_instance_of(Membership).to receive(:mark_paid_if_pending).and_raise(ActiveRecord::LockWaitTimeout, "x")
         allow(ProcessedOrder).to receive(:own_transaction).and_raise(ActiveRecord::ConnectionNotEstablished)
         order = ProcessedOrder.receive!(provider: "shopify", order_id: 7423, topic: "orders/paid",
                                         payload: JSON.parse(membership_payload(pending.id, id: 7423).to_json)).first
@@ -838,7 +894,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       end
 
       it "does not touch an order a concurrent run applied while this one was failing" do
-        allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        allow_any_instance_of(Membership).to receive(:mark_paid_if_pending).and_raise(ActiveRecord::LockWaitTimeout, "x")
         allow(ProcessedOrder).to receive(:record_failure!).and_wrap_original do |original, *args|
           ProcessedOrder.where(provider_ref: "7424").update_all(status: "applied") # the other run commits first
           original.call(*args)
@@ -848,11 +904,11 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       end
 
       it "applies a failed order again when it is re-run" do
-        allow_any_instance_of(Membership).to receive(:update!).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        allow_any_instance_of(Membership).to receive(:mark_paid_if_pending).and_raise(ActiveRecord::LockWaitTimeout, "x")
         order = hook(membership_payload(pending.id, id: 7425))
         order.update!(status: "failed")
         expect(order.reload.reapply!).to be(true)
-        allow_any_instance_of(Membership).to receive(:update!).and_call_original
+        allow_any_instance_of(Membership).to receive(:mark_paid_if_pending).and_call_original
         perform(order)
         expect([order.reload.status, pending.reload.status]).to eq(["applied", "paid"])
       end

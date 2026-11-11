@@ -72,3 +72,30 @@ RSpec.describe "shop_orders:reapply" do
     expect { run("1234567") }.to raise_error(SystemExit).and output(/no stored order/).to_stderr
   end
 end
+
+RSpec.describe "shop_orders:refused" do
+  before do
+    Rails.application.load_tasks unless Rake::Task.task_defined?("shop_orders:refused")
+    Rake::Task["shop_orders:refused"].reenable
+  end
+
+  def run = Rake::Task["shop_orders:refused"].invoke
+
+  def stored(id, **attrs)
+    order = ProcessedOrder.receive!(provider: "shopify", order_id: id, topic: "orders/paid", payload: { "id" => id }, name: "##{id}").first
+    order.update!(attrs)
+    order
+  end
+
+  it "lists the applied orders that had a part refused, and no other" do
+    refused = stored(9001, status: "applied", applied_at: Time.current, last_error: "refused: membership 5 is revoked, not pending")
+    stored(9002, status: "applied", applied_at: Time.current)
+    stored(9003, status: "failed", last_error: "refused: not from the applier")
+    expect(ProcessedOrder.refused).to eq([refused])
+    expect { run }.to output(/9001 \(#9001\) applied .*: refused: membership 5 is revoked, not pending/).to_stdout
+  end
+
+  it "says so when there are none" do
+    expect { run }.to output(/no refused orders/).to_stdout
+  end
+end
