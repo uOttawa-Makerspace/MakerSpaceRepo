@@ -491,12 +491,15 @@ RSpec.describe ScormExtractor do
       expect { ExtractScormJob.perform_now(0) }.to raise_error(ActiveRecord::RecordNotFound)
     end
 
-    it "is enqueued after commit whenever a new package is attached, and not on a plain update" do
+    it "is queued by process_scorm_package after a save that attached a package, once, and not after a plain update" do
       lm = create(:learning_module)
-      expect { lm.scorm_package.attach(io: zip_io("imsmanifest.xml" => "<m/>"), filename: "p.zip", content_type: "application/zip"); lm.save! }
-        .to have_enqueued_job(ExtractScormJob).with(lm.id)
-      expect(lm.reload.scorm_status).to eq("pending")
-      expect { lm.update!(title: "Changed title") }.not_to have_enqueued_job(ExtractScormJob)
+      lm.scorm_package = { io: zip_io("imsmanifest.xml" => "<m/>"), filename: "p.zip", content_type: "application/zip" }
+      lm.save!
+      expect(lm.scorm_status).to eq("pending")
+      expect { lm.process_scorm_package }.to have_enqueued_job(ExtractScormJob).with(lm.id)
+      expect { lm.process_scorm_package }.not_to have_enqueued_job(ExtractScormJob)
+      lm.update!(title: "Changed title")
+      expect { lm.process_scorm_package }.not_to have_enqueued_job(ExtractScormJob)
     end
 
     it "uses the :always after-commit enqueue mode" do

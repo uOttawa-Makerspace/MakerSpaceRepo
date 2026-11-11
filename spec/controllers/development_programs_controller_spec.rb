@@ -70,6 +70,16 @@ RSpec.describe DevelopmentProgramsController, type: :controller do
         expect(flash[:notice]).to eq("You've joined the Development Program")
         expect(user.programs.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
       end
+
+      it "says so and adds nothing when the user already joined" do
+        user = create(:user, :regular_user)
+        create(:program, :development_program, user: user)
+        session[:user_id] = user.id
+        post :join_development_program
+        expect(response).to redirect_to root_path
+        expect(flash[:alert]).to eq("You already joined the Program. You can already access it!")
+        expect(user.programs.count).to eq(1)
+      end
     end
   end
 end

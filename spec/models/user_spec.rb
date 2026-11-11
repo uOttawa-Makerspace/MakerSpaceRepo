@@ -196,11 +196,33 @@ RSpec.describe User, type: :model do
       end
     end
 
+    context "around the new year in local time" do
+      include ActiveSupport::Testing::TimeHelpers
+
+      it "counts a user created on 31 December Eastern in that year, late that evening" do
+        travel_to(Time.zone.local(2026, 12, 31, 22)) do # 03:00 UTC on 1 January
+          mine = create(:user, :regular_user, created_at: Time.zone.local(2026, 12, 31, 10))
+          expect(User.created_this_year).to include(mine)
+          expect(User.not_created_this_year).not_to include(mine)
+        end
+      end
+    end
+
     context "#created_this_year" do
+      include ActiveSupport::Testing::TimeHelpers
+
       it "should return users created this year" do
         expect {
-          14.times { create(:user, :regular_user, created_at: Date.today) }
+          14.times { create(:user, :regular_user, created_at: Time.current) }
         }.to change { User.created_this_year.count }.by(14)
+      end
+
+      it "counts users created now on the last evening of the year in local time" do
+        travel_to(Time.zone.local(2026, 12, 31, 22)) do # 03:00 UTC on 1 January
+          expect {
+            2.times { create(:user, :regular_user, created_at: Time.current) }
+          }.to change { User.created_this_year.count }.by(2)
+        end
       end
     end
 
@@ -1185,6 +1207,38 @@ RSpec.describe User, type: :model do
       expect(User.faculty_label("Unlisted")).to eq("Unlisted")
       expect(User.faculty_label("")).to eq("None")
       expect(User.faculty_label(nil)).to eq("None")
+    end
+  end
+
+  describe "private profile section audiences" do
+    let(:owner) { create(:user, :regular_user) }
+    let(:other) { create(:user, :regular_user) }
+    let(:staff) { create(:user, :staff) }
+    let(:admin) { create(:user, :admin) }
+    let(:guest) { User.new }
+
+    it "shows keys to staff and admins only" do
+      expect([guest, other, owner].map { |v| owner.keys_visible_to?(v) }).to all(be(false))
+      expect([staff, admin].map { |v| owner.keys_visible_to?(v) }).to all(be(true))
+    end
+
+    it "shows lockers to the owner, staff and admins" do
+      expect([guest, other].map { |v| owner.lockers_visible_to?(v) }).to all(be(false))
+      expect([owner, staff, admin].map { |v| owner.lockers_visible_to?(v) }).to all(be(true))
+    end
+
+    it "shows roles to admins only" do
+      expect([guest, other, owner, staff].map { |v| owner.roles_visible_to?(v) }).to all(be(false))
+      expect(owner.roles_visible_to?(admin)).to be(true)
+    end
+
+    it "shows key certifications to admins, and to staff or teams members on their own profile" do
+      expect([guest, other, owner, staff].map { |v| owner.key_certification_visible_to?(v) }).to all(be(false))
+      expect(owner.key_certification_visible_to?(admin)).to be(true)
+      expect(staff.key_certification_visible_to?(staff)).to be(true)
+      owner.programs.create!(program_type: Program::TEAMS)
+      expect(owner.key_certification_visible_to?(owner)).to be(true)
+      expect(owner.key_certification_visible_to?(other)).to be(false)
     end
   end
 end

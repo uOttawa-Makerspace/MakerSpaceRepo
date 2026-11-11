@@ -660,6 +660,13 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect_create_refused(proposal_params(photos: [blob.signed_id]))
     end
 
+    it "stores no file named by the signed id of an executable in the project_files field" do
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("MZ" + ("\x00" * 200)), filename: "run.exe", content_type: "application/x-msdownload")
+      expect { post project_proposals_path, params: proposal_params(project_files: [blob.signed_id]) }
+        .not_to change { ActiveStorage::Attachment.where(name: "project_files").count }
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it "stores a new proposal's slug as '<id>.<title>'" do
       post project_proposals_path, params: proposal_params(title: "Zed Title")
       created = ProjectProposal.find_by(title: "Zed Title")
@@ -864,6 +871,13 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(pending.categories.pluck(:name)).to eq(["Old"])
       expect(pending.photos.map { |p| p.filename.to_s }).to eq(["keep.png"])
       expect(pending.project_files.map { |f| f.filename.to_s }).to eq(["keep.txt"])
+    end
+
+    it "attaches no file named by the signed id of an executable in the project_files field" do
+      content_login!(owner)
+      blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new("MZ" + ("\x00" * 200)), filename: "run.exe", content_type: "application/x-msdownload")
+      patch project_proposal_path(pending.id), params: { project_proposal: { title: "Changed", project_files: [blob.signed_id] } }
+      expect(pending.reload.project_files).not_to be_attached
     end
 
     it "keeps the categories when the update is refused with none submitted" do
@@ -1167,13 +1181,19 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
   end
 
   describe "DELETE destroy" do
-    it "does nothing for guests, owners and staff (action returns without rendering: 204)" do
+    it "refuses guests, owners and staff with a redirect and an alert" do
       [nil, owner, create(:user, :staff)].each do |user|
         content_login!(user) if user
         expect { delete project_proposal_path(pending) }.not_to change(ProjectProposal, :count)
-        # `return unless admin?` renders nothing, so a refused delete answers 204 instead of a redirect/alert
-        expect(response).to have_http_status(:no_content)
+        expect(response).to redirect_to(project_proposals_path)
+        expect(flash[:alert]).to eq("Only admins can delete project proposals.")
       end
+    end
+
+    it "answers 403 to JSON when not an admin" do
+      content_login!(owner)
+      expect { delete project_proposal_path(pending, format: :json) }.not_to change(ProjectProposal, :count)
+      expect(response).to have_http_status(:forbidden)
     end
 
     it "deletes for an admin, both routes, cascading joins and categories, not repositories" do
@@ -1457,9 +1477,9 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
       expect(response.body).not_to include("Declined One")
     end
 
-    it "user_projects renders for a guest (empty sets)" do
+    it "user_projects sends a guest to the login page" do
       get user_projects_project_proposals_path
-      expect(response).to have_http_status(:ok)
+      expect(response.location).to start_with("http://www.example.com/login")
     end
 
     it "projects_assigned lists approved, joined proposals without a repository; projects_completed those with one" do

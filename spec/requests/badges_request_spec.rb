@@ -37,6 +37,49 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       expect(other).to be_persisted
     end
 
+    it "lists a badge earned only through a proficient project, and finds it by training name" do
+      project_training = create(:training, name_en: "Soldering EN", skill: skill, has_badge: true)
+      granted = create(:certification, user: earner, training_session: nil, training: nil, level: "Beginner")
+      create(:proficient_project_session, certification: granted, user: earner, level: "Beginner",
+                                          proficient_project: create(:proficient_project, training: project_training))
+      second_project_training = create(:training, name_en: "Sewing EN", skill: skill, has_badge: true)
+      second = create(:certification, user: earner, training_session: nil, training: nil, level: "Advanced")
+      create(:proficient_project_session, certification: second, user: earner, level: "Advanced",
+                                          proficient_project: create(:proficient_project, training: second_project_training))
+      press = create(:training, name_en: "Press EN", skill: skill, has_badge: true)
+      create(:certification, user: earner, training_session: create(:training_session, training: press), training: press, level: "Beginner")
+      log_in!(earner)
+      get badges_path
+      expect(response.body).to include("Soldering EN").and include("Laser EN").and include("Sewing EN").and include("Press EN")
+      get search_badges_path(search: "soldering")
+      expect(response.body).to include("Soldering EN")
+      expect(response.body).not_to include("Laser EN")
+    end
+
+    it "reads the trainings of the listed badges in a constant number of queries" do
+      add_earner = lambda do |project_only|
+        user = create(:user, :regular_user)
+        badge_training = create(:training, skill: skill, has_badge: true)
+        if project_only
+          granted = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+          create(:proficient_project_session, certification: granted, user: user, level: "Beginner",
+                                              proficient_project: create(:proficient_project, training: badge_training))
+        else
+          create(:certification, user: user, training_session: create(:training_session, training: badge_training),
+                                 training: badge_training, level: "Beginner")
+        end
+      end
+      2.times { |i| add_earner.call(i.odd?) }
+      sign_in_as(:staff)
+      get badges_path # warm up
+      few = selects_on("trainings", "training_sessions", "proficient_projects", "proficient_project_sessions") { get badges_path }
+      6.times { |i| add_earner.call(i.odd?) }
+      many = selects_on("trainings", "training_sessions", "proficient_projects", "proficient_project_sessions") { get badges_path }
+
+      expect(response).to have_http_status(:ok)
+      expect(many.size).to eq(few.size)
+    end
+
     it "hides trainings with has_badge=false" do
       training.update!(has_badge: false)
       log_in!(earner)
@@ -87,6 +130,14 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
         get badge_path(cert)
         expect(response.body).to include(colour)
       end
+    end
+
+    it "renders the badge svg without empty width or height attributes" do
+      get badge_path(cert)
+      svg = Nokogiri::HTML(response.body).at_css("svg[role=img]")
+      expect(svg).to be_present
+      expect(svg.attributes.keys).not_to include("width", "height")
+      expect(svg["viewbox"]).to eq("0 0 100 100")
     end
 
     it "lists the training's skills tokens" do
@@ -284,6 +335,11 @@ RSpec.describe "Badges, licenses and the development-program pages", type: :requ
       get "/development_programs/join_development_program"
       expect(response).to have_http_status(:not_found)
       expect(user.programs.count).to eq(0)
+    end
+
+    it "sends a guest to the login page and creates no membership" do
+      expect { post join_development_program_development_programs_path }.not_to change(Program, :count)
+      expect(response.location).to start_with("http://www.example.com/login")
     end
 
     it "joins the program and redirects with a notice" do

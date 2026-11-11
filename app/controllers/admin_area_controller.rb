@@ -2,6 +2,7 @@
 
 class AdminAreaController < SessionsController
   include AdminOnly
+  require_authorization
 
   before_action :current_user
   before_action :ensure_admin

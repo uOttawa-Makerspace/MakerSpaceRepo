@@ -11,7 +11,6 @@ vi.mock("tom-select", () => ({
     }
   },
 }));
-vi.mock("datatables.net-bs5", () => ({ default: class {} }));
 vi.mock("datatables.net-bs5/css/dataTables.bootstrap5.min.css", () => ({}));
 
 await import("../../../app/javascript/entrypoints/locker_rentals.js");

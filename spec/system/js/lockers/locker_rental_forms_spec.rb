@@ -7,6 +7,7 @@ require "rails_helper"
 # hover notes) on the locker rental pages. The payment journey is in
 # spec/system/journeys/locker_journey_spec.rb; its Shopify stubs are reused here.
 RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
+  include ApplicationHelper # end_of_this_semester
   include_context "with lockers on"
 
   before do
@@ -161,10 +162,10 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
       wait_for_app_js
     end
 
-    it "starts the checkout form with its end date enabled and the assign form indefinite" do
+    it "starts the checkout and assign forms with the proposed end date enabled and Indefinite unticked" do
       expect(page).to have_field("owned_until_checkout", disabled: false)
-      expect(page).to have_checked_field("indefinite_assign")
-      expect(page).to have_field("owned_until_assign", disabled: true)
+      expect(page).to have_unchecked_field("indefinite_assign")
+      expect(page).to have_field("owned_until_assign", disabled: false, with: end_of_this_semester.to_date.iso8601)
     end
 
     it "clears and disables the end date while Indefinite is ticked on the checkout form" do
@@ -174,9 +175,20 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
       expect(page).to have_field("owned_until_checkout", disabled: false, with: "")
     end
 
-    it "assigns the locker without an end date and activates the request" do
+    it "assigns the locker with the proposed end date and activates the request" do
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
         pick_in_form "locker_rental_locker_id", "401"
+        accept_confirm { click_button "Assign Now" }
+      end
+      expect(page).to have_text("Locker rental updated")
+      expect(rental.reload).to have_attributes(state: "active", locker_id: locker.id)
+      expect(rental.owned_until.to_date).to eq(end_of_this_semester.to_date)
+    end
+
+    it "assigns the locker without an end date when Indefinite is ticked" do
+      within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
+        pick_in_form "locker_rental_locker_id", "401"
+        check "indefinite_assign"
         accept_confirm { click_button "Assign Now" }
       end
       expect(page).to have_text("Locker rental updated")
@@ -218,6 +230,13 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
       accept_confirm { click_button "End Rental" }
       expect(page).to have_text("This locker request has been finished and cannot be re-enabled.")
       expect(rental.reload.state).to eq("cancelled")
+    end
+
+    it "keeps Indefinite ticked in the move form of an indefinite rental" do
+      rental.update_columns(owned_until: nil)
+      log_in_as(staff_user, to: locker_rental_path(rental))
+      expect(page).to have_checked_field("indefinite_assign")
+      expect(page).to have_field("owned_until_assign", disabled: true)
     end
 
     it "keeps the end date enabled in the move form of a dated rental" do

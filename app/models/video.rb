@@ -3,6 +3,8 @@ class Video < ApplicationRecord
 
   belongs_to :proficient_project, optional: true
   belongs_to :learning_module, optional: true
+  validate :single_parent, if: :parent_changed?
+
   scope :processed, -> { where(processed: true) }
 
   has_many_attached :video
@@ -30,4 +32,16 @@ class Video < ApplicationRecord
                            allow: SNIFFED_VIDEO_TYPES,
                            max_size: -> { MAX_VIDEO_SIZE },
                            name_fallback: false
+
+  private
+
+  def parent_changed?
+    new_record? || will_save_change_to_proficient_project_id? || will_save_change_to_learning_module_id?
+  end
+
+  def single_parent
+    return if proficient_project_id.present? ^ learning_module_id.present?
+
+    errors.add(:base, "A video belongs to either a proficient project or a learning module")
+  end
 end

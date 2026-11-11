@@ -288,50 +288,11 @@ function positionSaveButton(hasRecurrence, isEditing) {
 }
 
 // -------------------
-// Populate staff users for the select
-// -------------------
-async function populateStaffSelect() {
-  const staffSelect = document.getElementById("staff_select");
-  if (!staffSelect) return;
-
-  // Only populate if empty
-  if (staffSelect.options.length > 0) return;
-
-  try {
-    const spaceIdElem =
-      document.getElementById("space_id") ||
-      document.querySelector('input[name="event[space_id]"]') ||
-      document.querySelector('input[name="staff_unavailability[space_id]"]');
-
-    if (!spaceIdElem) return;
-
-    const response = await fetch(
-      `/admin/calendar/staff_json/${spaceIdElem.value}`,
-    );
-    if (!response.ok) return;
-
-    const staffData = await response.json();
-
-    staffData.forEach((staff) => {
-      const option = document.createElement("option");
-      option.value = staff.id;
-      option.textContent = staff.name;
-      staffSelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Error fetching staff data:", error);
-  }
-}
-
-// -------------------
 // Full Calendar Event Helpers
 // -------------------
 export function addEventClick() {
   // Reset everything first
   resetModalState();
-
-  // Populate staff options if needed
-  populateStaffSelect();
 
   // Set up event type change listener
   const eventTypeSelect = document.getElementById("event_type_select");
@@ -365,6 +326,14 @@ export function eventClick(eventImpl) {
 function defaultEnd(start, allDay) {
   if (allDay) return start + DAY_MS;
   return instantToWall(wallToInstant(start) + HOUR_MS);
+}
+
+// The title to edit: the stored one when the feed sends it (an entry with no
+// title sends null, which is an empty field), otherwise the calendar's label
+// without its pencil mark.
+function storedTitle(event) {
+  if ("title" in event.extendedProps) return event.extendedProps.title ?? "";
+  return event.title.replace(/✎/g, "").trim() || "";
 }
 
 function openEventForEditing(eventImpl) {
@@ -444,8 +413,7 @@ function openEventForEditing(eventImpl) {
   );
 
   // TITLE & DESCRIPTION
-  document.getElementById("title").value =
-    event.title.replace(/✎/g, "").trim() || "";
+  document.getElementById("title").value = storedTitle(event);
   document.getElementById("description").value =
     event.extendedProps.description || "";
 
@@ -458,7 +426,7 @@ function openEventForEditing(eventImpl) {
     try {
       const rruleStr = event.extendedProps.rrule;
       rruleData = RRule.fromString(
-        rruleStr.startsWith("RRULE:") ? rruleStr : `RRULE:${rruleStr}`,
+        /^(RRULE|DTSTART)/.test(rruleStr) ? rruleStr : `RRULE:${rruleStr}`,
       ).options;
     } catch (e) {
       console.log("RRule parse error", e);

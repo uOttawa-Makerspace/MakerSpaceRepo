@@ -1,4 +1,7 @@
-<%= form_with model: @learning_module, url: { controller: 'learning_area', action: @learning_module.persisted? ? 'update' : 'create' } do |f| %>
+<%= form_with model: @learning_module,
+    url: { controller: 'learning_area', action: @learning_module.persisted? ? 'update' : 'create' },
+    class: 'useTurbo',
+    data: { controller: 'learning-module-form' } do |f| %>
     <div class="mb-3">
         <%= f.label :title, 'Title', class: 'form-label' %>
         <%= f.text_field :title,
@@ -51,13 +54,14 @@
 
     <div class="mb-3">
         <div class="form-check form-switch">
-            <%= f.check_box :scorm_enabled, class: 'form-check-input', role: 'switch' %>
+            <%= f.check_box :scorm_enabled, class: 'form-check-input', role: 'switch',
+                data: { learning_module_form_target: 'scormToggle', action: 'change->learning-module-form#toggleScorm' } %>
             <%= f.label :scorm_enabled, 'SCORM package', class: 'form-check-label' %>
         </div>
         <div class="form-text">Enable if uploading a SCORM <code>.zip</code> file instead of regular project files.</div>
     </div>
 
-    <fieldset id="regular-files-section">
+    <fieldset id="regular-files-section" data-learning-module-form-target="regularSection">
         <%# Include this to wipe out existing package %>
         <%= f.hidden_field :scorm_package, value: nil %>
         <div class="mb-3">
@@ -83,7 +87,7 @@
                         <i class="fa fa-file-video-o"></i>
                         <span class="small flex-grow-1"><%= video.filename %></span>
                         <span class="small"><%= (video.byte_size / 1.megabyte).round(1) %> MB</span>
-                        <button type="button" class="btn btn-danger btn-sm video-remove" aria-label="<%= t('common.names.remove_video') %>">&times;</button>
+                        <button type="button" class="btn btn-danger btn-sm video-remove" data-action="learning-module-form#removeVideo" aria-label="<%= t('common.names.remove_video') %>">&times;</button>
                     </div>
                 <% end %>
             </div>
@@ -93,7 +97,7 @@
             <%= f.label :photos, 'Gallery', class: 'form-label' %>
             <div class="input-group">
                 <%= f.file_field :photos, multiple: true, class: 'form-control image-upload', aria: { label: t('common.names.select_pictures') } %>
-                <button class="btn btn-success" type="button" id="new-photo-input" aria-label="<%= t('common.names.add_image_input') %>">
+                <button class="btn btn-success" type="button" id="new-photo-input" data-action="learning-module-form#addPhoto" aria-label="<%= t('common.names.add_image_input') %>">
                     <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
@@ -118,6 +122,7 @@
                         </div>
                         <button type="button"
                                 class="btn btn-danger image-remove w-100"
+                                data-action="learning-module-form#removeImage"
                                 aria-label="<%= t('common.names.remove_photo') %>"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 <% end %>
@@ -133,7 +138,7 @@
         </div>
     </fieldset>
 
-    <fieldset id="scorm-section" class="mb-3" style="display: none;">
+    <fieldset id="scorm-section" class="mb-3" style="display: none;" data-learning-module-form-target="scormSection">
         <%# Retain existing attachment when no new file is chosen %>
         <% if @learning_module.scorm_package.attached? %>
             <% if @learning_module.scorm_package.persisted? %>
@@ -160,7 +165,8 @@
     <div class="text-center border-top pt-4">
         <%= f.submit @learning_module.persisted? ? 'Save Changes' : 'Create Learning Module',
                  class: 'btn btn-primary px-4',
-                 id: 'waiting-save-button' %>
+                 id: 'waiting-save-button',
+                 data: { turbo_submits_with: 'Saving (Please wait)...' } %>
         <p class="small text-muted mt-2 mb-0">
             Uploading large SCORM zip files may take a minute. Please do not close or refresh this page.
         </p>

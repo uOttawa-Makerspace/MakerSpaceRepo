@@ -8,7 +8,7 @@ require "rails_helper"
 # (id OR slug OR title, soft-deleted rows excluded by Repository's
 # default_scope); check_auth (show/download_files: admin, staff, the owner by
 # username, or a password the session already passed); check_ownership
-# (edit/update/destroy: admin or a member of repository.users).
+# (edit/update: admin, the owner or a member of repository.users; destroy and member management: admin or the owner).
 #
 # There is no GitHub integration in this controller: the `github` / `github_url`
 # columns are only copied by MakesController (see makes_request_spec.rb).
@@ -117,7 +117,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to redirect_to(repository_path(repo.user_username, repo.slug, page: "2"))
     end
 
-    it "shows the member forms to owners and admin only, the link-to-proposal form to staff too" do
+    it "shows the member forms to owners and admin only, the link-to-proposal form to members and staff too" do
       forms = ->(path) { %w[link_to_pp add_member remove_member].select { |a| response.body.include?("/#{a}") } }
       content_login!(owner)
       get repo_path
@@ -127,6 +127,11 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(forms.call(nil)).to eq(%w[link_to_pp add_member remove_member])
       # staff cannot use the member forms (check_ownership), so they are no longer rendered
       content_sign_in_as(:staff)
+      get repo_path
+      expect(forms.call(nil)).to eq(%w[link_to_pp])
+      member = create(:user, :regular_user)
+      repo.users << member
+      content_login!(member)
       get repo_path
       expect(forms.call(nil)).to eq(%w[link_to_pp])
       content_login!(stranger)
@@ -736,6 +741,17 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(repo.reload.title).to eq("Renamed")
     end
 
+    it "drops the cached zip of the updated repository" do
+      cache_dir = Pathname(Dir.mktmpdir("repository_zips"))
+      allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir)
+      FileUtils.touch(repo.zip_path)
+      content_login!(owner)
+      patch repository_path(owner.username, repo.slug), params: update_params
+      expect(File.exist?(repo.zip_path)).to be(false)
+    ensure
+      FileUtils.rm_rf(cache_dir.to_s)
+    end
+
     it "replaces categories and equipment wholesale (destroy_all then recreate)" do
       Category.create!(name: "Old", repository_id: repo.id)
       content_login!(owner)
@@ -911,10 +927,30 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_login!(owner)
       expect { delete repository_path(owner.username, repo.slug) }
         .to change(Repository, :count).by(-1).and not_change(Repository.unscoped, :count)
-      expect(Repository.unscoped.find(repo.id).deleted).to be(true)
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true)
       expect(response).to redirect_to(user_path(owner.username))
       expect(flash[:notice]).to eq("Repository has been successfully deleted.")
       expect(owner.reload.reputation).to eq(75)
+    end
+
+    it "refuses a member who is not the owner and keeps the repository" do
+      member = create(:user, :regular_user)
+      repo.users << member
+      content_login!(member)
+      expect { delete repository_path(owner.username, repo.slug) }.not_to change(Repository, :count)
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+      expect(response).to redirect_to(repo_path)
+    end
+
+    it "drops the cached zip of the deleted repository" do
+      cache_dir = Pathname(Dir.mktmpdir("repository_zips"))
+      allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir)
+      FileUtils.touch(repo.zip_path)
+      content_login!(owner)
+      delete repository_path(owner.username, repo.slug)
+      expect(File.exist?(repo.zip_path)).to be(false)
+    ensure
+      FileUtils.rm_rf(cache_dir.to_s)
     end
 
     it "keeps photos, files, comments, likes, makes and stored files" do
@@ -1067,13 +1103,13 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       content_login!(stranger)
       patch add_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: repo.id, owner_username: newbie.username } }
-      # add_member runs check_ownership (owner, member or admin)
+      # add_member runs check_ownership (owner or admin)
       expect(repo.reload.users).to eq([owner])
       expect(flash[:alert]).to eq("You are not allowed to perform this action!")
       expect(response).to redirect_to(repo_path)
     end
 
-    it "lets the owner (even when not in users), a collaborator and admin add a member" do
+    it "lets the owner (even when not in users) and admin add a member" do
       orphan = create(:repository, owner: owner, title: "Orphan")
       content_login!(owner)
       patch add_member_repositories_path(owner.username),
@@ -1081,16 +1117,24 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(orphan.reload.users).to eq([newbie])
       expect(flash[:notice]).to eq("This user was added to your repository.")
 
-      content_login!(newbie) # now a collaborator of orphan
-      patch add_member_repositories_path(owner.username),
-            params: { repo_owner: { repository_id: orphan.id, owner_username: stranger.username } }
-      expect(orphan.reload.users).to contain_exactly(newbie, stranger)
-
       third = create(:user, :regular_user)
       content_sign_in_as(:admin)
       patch add_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: orphan.id, owner_username: third.username } }
-      expect(orphan.reload.users).to include(third)
+      expect(orphan.reload.users).to contain_exactly(newbie, third)
+    end
+
+    it "refuses a member who is not the owner adding or removing members" do
+      repo.users << newbie
+      content_login!(newbie)
+      patch add_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_username: stranger.username } }
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+      expect(response).to redirect_to(repo_path)
+      patch remove_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_id: owner.id } }
+      expect(flash[:alert]).to eq("You are not allowed to perform this action!")
+      expect(repo.reload.users).to contain_exactly(owner, newbie)
     end
 
     it "refuses staff adding a member (staff are not repository owners)" do
@@ -1132,6 +1176,16 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       patch remove_member_repositories_path(owner.username),
             params: { repo_owner: { repository_id: repo.id, owner_id: newbie.id } }
       expect(repo.reload.users).to eq([owner])
+    end
+
+    it "remove_member says the user is not a member instead of reporting a removal" do
+      repo.users << newbie
+      content_login!(owner)
+      patch remove_member_repositories_path(owner.username),
+            params: { repo_owner: { repository_id: repo.id, owner_id: stranger.id } }
+      expect(flash[:alert]).to eq("This user is not a member of this repository.")
+      expect(flash[:notice]).to be_nil
+      expect(repo.reload.users).to contain_exactly(owner, newbie)
     end
 
     it "remove_member protects the last member and the owner, and reports unknown users" do
@@ -1256,17 +1310,25 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response.location).to include("/login")
     end
 
-    it "returns only id, name and username to any signed-in user" do
+    it "gives a regular user only id and username, matched on username" do
       content_login!(stranger)
       get "/repositories/populate_users", params: { search: "zeldaxqzv" }
-      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)["users"]).to be_empty
+      get "/repositories/populate_users", params: { search: zelda.username }
       users = JSON.parse(response.body)["users"]
-      expect(users).to eq([{ "id" => zelda.id, "name" => "Zeldaxqzv Searchable", "username" => zelda.username }])
-      expect(response.body).not_to include("password", "access_token", "email")
+      expect(users).to eq([{ "id" => zelda.id, "username" => zelda.username }])
+      expect(response.body).not_to include("Searchable", "password", "access_token", "email")
+    end
+
+    it "gives staff id, name and username, matched on name" do
+      content_login!(create(:user, :staff))
+      get "/repositories/populate_users", params: { search: "zeldaxqzv" }
+      expect(JSON.parse(response.body)["users"])
+        .to eq([{ "id" => zelda.id, "name" => "Zeldaxqzv Searchable", "username" => zelda.username }])
     end
 
     it "treats % and _ in the search literally instead of as wildcards (review)" do
-      content_login!(stranger)
+      content_login!(create(:user, :staff))
       get "/repositories/populate_users", params: { search: "%" }
       expect(JSON.parse(response.body)["users"]).to be_empty
       get "/repositories/populate_users", params: { search: "Zel_a" }
@@ -1277,7 +1339,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
 
     it "returns at most 10 users (review)" do
       create_list(:user, 12, :regular_user, name: "Crowd Member")
-      content_login!(stranger)
+      content_login!(create(:user, :staff))
       get "/repositories/populate_users", params: { search: "crowd" }
       expect(JSON.parse(response.body)["users"].size).to eq(10)
     end

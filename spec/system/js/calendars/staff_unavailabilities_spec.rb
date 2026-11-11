@@ -3,8 +3,8 @@
 require "rails_helper"
 
 # /staff/unavailabilities: the staff member's own calendar of unavailabilities
-# (fullcalendar_setup_staff_unavailabilities.js, unavailabilities_helpers.js,
-# manage_unavailabilities.js, entrypoints/unavailabilities.js). The week shown
+# (the unavailabilities_calendar, unavailability_form and ics_links Stimulus
+# controllers). The week shown
 # is Sun 2027-03-14 .. Sat 2027-03-20.
 
 RSpec.describe "Staff unavailabilities page", type: :system do
@@ -196,6 +196,14 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       expect(page).to have_css("#day_freq_error:not(.d-none)")
       check "day_TU"
       expect(page).to have_css("#day_freq_error.d-none", visible: :all)
+    end
+
+    it "returns the focus to the add button when the dialog is closed", js: true, skip_bullet: true do
+      open_page
+      open_add_modal
+      accept_confirm { page.send_keys(:escape) }
+      expect(page).to have_no_css("#unavailabilityModal.show")
+      expect(page).to have_css("#addUnavailabilityButton:focus")
     end
 
     it "asks before closing and resets the form when closed", js: true, skip_bullet: true do
@@ -397,7 +405,7 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       click_button "New Calendar"
 
       expect(page).to have_css("#link-container input[name='external_calendar[]']", count: 2)
-      expect(page).to have_css("#link-container > #new-link-input", count: 0)
+      expect(page).to have_css("#link-container input[name='external_calendar[]']:not([id])", count: 2)
     end
 
     it "removes a link field with its delete button", js: true, skip_bullet: true do

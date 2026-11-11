@@ -187,6 +187,12 @@ module ApplicationHelper
     }
   end
 
+  # Data attributes and state for a button that asks for confirmation: disabled until the page
+  # script (which registers the confirm prompts) has run and the controller enables it.
+  def confirmed_until_ready(message)
+    { disabled: true, data: { controller: 'enable-when-ready', confirm: message } }
+  end
+
   private
 
   # Forget who was resolved earlier in this request (cookie user, current user,
@@ -212,15 +218,16 @@ module ApplicationHelper
   end
 
   def end_of_this_semester
-    if DateTime.now.month in 9..12
+    today = Date.current
+    if today.month in 9..12
       # End of Fall
-      DateTime.new(DateTime.now.year, 12).end_of_month
-    elsif DateTime.now.month in 1..4
+      DateTime.new(today.year, 12).end_of_month
+    elsif today.month in 1..4
       # End of Winter
-      DateTime.new(DateTime.now.year, 4).end_of_month
-    elsif DateTime.now.month in 5..8
+      DateTime.new(today.year, 4).end_of_month
+    elsif today.month in 5..8
       # End of Summer
-      DateTime.new(DateTime.now.year, 8).end_of_month
+      DateTime.new(today.year, 8).end_of_month
     end
   end
 

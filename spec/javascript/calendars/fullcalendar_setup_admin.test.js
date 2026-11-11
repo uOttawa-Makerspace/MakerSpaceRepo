@@ -242,6 +242,39 @@ describe("loading the calendar", () => {
     expect(created[0].rendered).toBe(false);
   });
 
+  it("quietly makes no request when the space picker has no value", async () => {
+    const fetchMock = stubFetch({});
+    document.body.innerHTML = PAGE;
+    document.getElementById("space_id").value = "";
+    created.length = 0;
+    document.dispatchEvent(new Event("turbo:load"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(console.error).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(created[0].rendered).toBe(false);
+  });
+
+  it("keeps the shifts of an assignment whose user was deleted", async () => {
+    const orphaned = [
+      {
+        id: "shift",
+        color: "#111",
+        events: [
+          {
+            id: "9",
+            title: "Orphan",
+            extendedProps: { name: "Shifts", assignedUsers: [{ id: null }] },
+          },
+        ],
+      },
+    ];
+    stubFetch({ events: orphaned });
+    const cal = await boot();
+    let out;
+    cal.sources.get("staffEvents").events({}, (list) => (out = list));
+    expect(out.map((e) => e.id)).toEqual(["9"]);
+  });
+
   it("lists one checkbox per event type and one per staff member", async () => {
     stubFetch({ imported: calendars });
     await boot();
@@ -411,6 +444,19 @@ describe("staff filters", () => {
     all.dispatchEvent(new Event("change"));
     expect(cal.sources.has("5")).toBe(true);
     expect(cal.sources.has("6")).toBe(true);
+  });
+
+  it("gives the all events and all staff checkboxes their own ids and labels", async () => {
+    stubFetch({});
+    await boot();
+    const events = document.querySelector(".all_events_checkbox");
+    const staff = document.querySelector(".all_checkbox");
+    expect(events.id).not.toBe(staff.id);
+    expect(document.querySelectorAll(`[id="${staff.id}"]`).length).toBe(1);
+    expect(document.querySelector(`label[for="${events.id}"]`)).not.toBeNull();
+    expect(document.querySelector(`label[for="${staff.id}"]`).textContent).toBe(
+      "All Staff",
+    );
   });
 
   it("the all events checkbox toggles every staff events checkbox", async () => {

@@ -33,7 +33,7 @@ class HelpController < SessionsController
       render :show, status: :unprocessable_entity and return
     end
 
-    if @help.save
+    if @help.save && @help.file_issue
       redirect_to help_path, flash_for_copy(queue_issue_copy)
     else
       flash.now[:alert] = validation_message(@help, 'errors.help.not_received')
@@ -59,7 +59,7 @@ class HelpController < SessionsController
     @help = Help.new(attrs.merge(name: current_user.name, email: current_user.email))
     @help.defang_github_text = true # the GitHub issue is public
 
-    if @help.save
+    if @help.save && @help.file_issue
       MsrMailer.issue_email(
         @help.name,
         @help.email,

@@ -144,29 +144,40 @@ RSpec.describe "Admin CDEL reports", type: :request do
       end
     end
 
-    it "range with a missing or unparseable date is a 500" do
-      # params[:start_date].to_date is not guarded, so a missing date (nil) or garbage raises instead of a 400/flash
+    it "range with a missing or unparseable date is a 400 naming the date" do
       get admin_cdel_reports_generate_path, params: { date_format: "range", end_date: "2026-03-31", visitors: "x" }
-      expect(response).to have_http_status(:internal_server_error)
-      get admin_cdel_reports_generate_path, params: range.merge(start_date: "garbage", visitors: "x")
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("Failed to parse start date")
+      get admin_cdel_reports_generate_path, params: range.merge(end_date: "garbage", visitors: "x")
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("Failed to parse end date")
     end
 
-    it "no date_format or an unknown semester term: visitors/certifications dump EVERYTHING (nil..nil), new_users is a 500" do
-      # start_date/end_date return nil for a missing date_format or unknown term; visitors/certifications silently become unbounded dumps named 'dump--.csv', new_users raises on nil.to_date
-      get admin_cdel_reports_generate_path, params: { visitors: "x" }
-      expect(response).to have_http_status(:ok)
-      expect(response.headers["Content-Disposition"]).to include("CEED_visitors_dump--.csv")
-      expect(csv_rows.size).to eq(2)
+    it "an inverted range, or one outside the allowed years, is a 400" do
+      get admin_cdel_reports_generate_path, params: range.merge(start_date: "2026-04-01", visitors: "x")
+      expect(response).to have_http_status(:bad_request)
+      get admin_cdel_reports_generate_path, params: range.merge(start_date: "1990-01-01", visitors: "x")
+      expect(response).to have_http_status(:bad_request)
+    end
 
+    it "no date_format or an unknown semester term is a 400 for every report" do
+      %w[visitors certifications new_users].each do |report|
+        get admin_cdel_reports_generate_path, params: { report => "x" }
+        expect(response).to have_http_status(:bad_request), "#{report} without a date_format"
+        expect(response.body).to eq("Choose a semester or a date range")
+
+        get admin_cdel_reports_generate_path,
+            params: { date_format: "semester", semester_term: "Spring", semester_year: "2025", report => "x" }
+        expect(response).to have_http_status(:bad_request), "#{report} with an unknown term"
+        expect(response.body).to eq("Invalid term")
+      end
+    end
+
+    it "a semester year outside the allowed years is a 400" do
       get admin_cdel_reports_generate_path,
-          params: { date_format: "semester", semester_term: "Spring", semester_year: "2025", certifications: "x" }
-      expect(response).to have_http_status(:ok)
-      expect(response.headers["Content-Disposition"]).to include("CEED_certifications_dump--.csv")
-      expect(csv_rows.size).to eq(2)
-
-      get admin_cdel_reports_generate_path, params: { new_users: "x" }
-      expect(response).to have_http_status(:internal_server_error)
+          params: { date_format: "semester", semester_term: "Fall", semester_year: "0", visitors: "x" }
+      expect(response).to have_http_status(:bad_request)
+      expect(response.body).to eq("Invalid year")
     end
   end
 end

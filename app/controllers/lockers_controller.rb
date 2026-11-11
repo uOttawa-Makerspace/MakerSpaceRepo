@@ -48,7 +48,8 @@ class LockersController < AdminAreaController
 
   # Custom route to create a range of lockers at once
   def create_multiple
-    if locker_range_create_params[:range_start] >= locker_range_create_params[:range_end]
+    numbers = locker_number_range
+    if numbers.nil?
       flash[:alert] = I18n.t('errors.lockers.range_invalid')
       redirect_to lockers_path(anchor: 'lockerInventory')
       return
@@ -56,9 +57,7 @@ class LockersController < AdminAreaController
 
     @lockers =
       Locker.create(
-        (
-          locker_range_create_params[:range_start].to_i..locker_range_create_params[:range_end].to_i
-        ).map do |specifier|
+        numbers.map do |specifier|
           {
             specifier: specifier,
             locker_size_id: locker_range_create_params[:locker_size_id]
@@ -111,7 +110,9 @@ class LockersController < AdminAreaController
 
   def bulk_edit
     # The Javascript on the frontend populates params[:id] with the selected locker IDs
-    if params[:bulk_delete]
+    if Array.wrap(params[:id]).compact_blank.empty?
+      flash[:alert] = I18n.t('errors.lockers.bulk_none_selected')
+    elsif params[:bulk_delete]
       bulk_delete_lockers
     else
       bulk_update_lockers
@@ -142,7 +143,7 @@ class LockersController < AdminAreaController
     if refused.empty?
       flash[:notice] = 'Selected lockers deleted'
     else
-      flash[:alert] = I18n.t('errors.lockers.bulk_not_deleted', lockers: refused.sort_by(&:to_s).to_sentence)
+      flash[:alert] = I18n.t('errors.lockers.bulk_not_deleted', lockers: Locker.sort_specifiers(refused).to_sentence)
     end
   end
 
@@ -165,7 +166,14 @@ class LockersController < AdminAreaController
   # in memory), the one it was asked to have if it was never stored, or its id when it has none.
   def specifiers_of(lockers)
     lockers.map { |locker| locker.specifier_in_database.presence || locker.specifier.presence || "##{locker.id}" }
-           .sort_by(&:to_s).to_sentence
+           .then { |specifiers| Locker.sort_specifiers(specifiers) }.to_sentence
+  end
+
+  # The numbers from the first to the last locker number (equal ends make one locker), or nil when
+  # either end is not a whole number or the last is smaller than the first.
+  def locker_number_range
+    first, last = locker_range_create_params.values_at(:range_start, :range_end).map { |n| Integer(n, 10, exception: false) }
+    (first..last) if first && last && first <= last
   end
 
   def locker_sizes_lineup

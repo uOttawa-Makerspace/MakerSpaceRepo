@@ -51,6 +51,7 @@ class LearningAreaController < DevelopmentProgramsController
   def create
     @learning_module = LearningModule.new(learning_module_params)
     if @learning_module.save
+      @learning_module.process_scorm_package
       redirect_to learning_area_path(@learning_module.id),
                   notice: 'Learning Module has been successfully created.'
     else
@@ -75,6 +76,7 @@ class LearningAreaController < DevelopmentProgramsController
 
   def update
     if @learning_module.update(learning_module_params)
+      @learning_module.process_scorm_package
       redirect_to learning_area_path(@learning_module.id),
                   notice: 'Learning module successfully updated.'
     else
@@ -300,7 +302,6 @@ class LearningAreaController < DevelopmentProgramsController
       :shortcut_name,
       :training_id,
       :level,
-      :cc,
       :subskill,
       :scorm_package,
       :scorm_enabled,

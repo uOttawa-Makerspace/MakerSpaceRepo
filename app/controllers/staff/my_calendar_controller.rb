@@ -5,7 +5,8 @@ class Staff::MyCalendarController < StaffAreaController
     @spaces = Space.all.where(
       id: StaffSpace.where(user_id: current_user.id).pluck(:space_id)
     )
-    @space_id = current_user.space_id || @spaces.first.id
+    # Only a space the page offers can be selected; a stored space the user is no longer assigned to is skipped.
+    @space_id = (@spaces.find_by(id: current_user.space_id) || @spaces.first)&.id
   end
 
   def json
@@ -28,22 +29,24 @@ class Staff::MyCalendarController < StaffAreaController
     end
     
     # Date range
-    start_date = params[:start].present? ? Time.zone.parse(params[:start]) : Time.zone.now - 3.months
-    end_date = params[:end].present? ? Time.zone.parse(params[:end]) : Time.zone.now + 3.months
+    start_date = parse_range_param(params[:start], Time.zone.now - 3.months)
+    end_date = parse_range_param(params[:end], Time.zone.now + 3.months)
+    return render_calendar_error(:invalid_date, :bad_request) if start_date.nil? || end_date.nil?
+
     formatted_events = []
     
+    # Single events outside the date range are left out before anything is read from them.
+    events = events.select { |event| event.recurrence_rule.present? || (event.start_time >= start_date && event.end_time <= end_date) }
+    preload_assignments(events)
+
     events.each do |event|
-      
       if event.recurrence_rule.present?
         # Expand recurring events
         expanded = expand_recurring_event(event, start_date, end_date)
         formatted_events.concat(expanded)
       else
-        # Single events within date range
-        if event.start_time >= start_date && event.end_time <= end_date
-          formatted_events << format_event(event)
-          Rails.logger.info "Added single event #{event.id}"
-        end
+        formatted_events << format_event(event)
+        Rails.logger.info "Added single event #{event.id}"
       end
     end
 
@@ -51,6 +54,15 @@ class Staff::MyCalendarController < StaffAreaController
   end
 
   private
+
+  # The parsed time, the default when the param is absent, nil when it is not a date.
+  def parse_range_param(value, default)
+    return default if value.blank?
+
+    Time.zone.parse(value)
+  rescue ArgumentError
+    nil
+  end
 
   def render_calendar_error(cause, status)
     render json: { error: I18n.t("errors.staff.my_calendar.#{cause}"), reference: error_reference }, status: status
@@ -94,6 +106,16 @@ class Staff::MyCalendarController < StaffAreaController
     expanded_events
   end
 
+  # The assignments (and the staff behind them) of the events that are about to be formatted.
+  def preload_assignments(events)
+    ActiveRecord::Associations::Preloader.new(records: events, associations: { event_assignments: :user }).call
+  end
+
+  # Each staff member's colour in the requested space, read once per request.
+  def space_colors
+    @space_colors ||= StaffSpace.where(space_id: params[:id]).order(id: :desc).pluck(:user_id, :color).to_h
+  end
+
   def format_event(event, start_time = nil, end_time = nil)
     start_time ||= event.start_time
     end_time ||= event.end_time
@@ -106,7 +128,7 @@ class Staff::MyCalendarController < StaffAreaController
 
     background = if event.event_assignments.any?
       "linear-gradient(to right, #{event.event_assignments.map.with_index do |ea, i|
-        c = StaffSpace.find_by(user_id: ea.user_id, space_id: params[:id])&.color || '#3788d8'
+        c = space_colors[ea.user_id] || '#3788d8'
         s = (100.0 / event.event_assignments.size) * i
         e = (100.0 / event.event_assignments.size) * (i + 1)
         "#{c} #{s}%, #{c} #{e}%"

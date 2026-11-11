@@ -86,6 +86,38 @@ class SubSpaceBooking < ApplicationRecord
     end
   end
 
+  # Approves the booking if it is still pending and says whether this call did it, so only one of two
+  # simultaneous approvals goes on to mail the owner. It writes only the status and approval columns
+  # (no validations), so a past pending booking can still be approved.
+  def approve_if_pending!(by:)
+    transaction do
+      claimed = self.class.pending.where(id: id).update_all(
+        booking_status_id: BookingStatus.approved.id, approved_at: Time.current, approved_by_id: by.id
+      )
+      next false if claimed.zero?
+
+      reload
+      write_status_row
+      true
+    end
+  end
+
+  # Declines the booking if it is still pending and says whether this call did it, so only one of two
+  # simultaneous declines goes on to mail the owner. It also clears any earlier approval stamp, and
+  # writes without validations like approve_if_pending!.
+  def decline_if_pending!
+    transaction do
+      claimed = self.class.pending.where(id: id).update_all(
+        booking_status_id: BookingStatus.declined.id, approved_at: nil, approved_by_id: nil
+      )
+      next false if claimed.zero?
+
+      reload
+      write_status_row
+      true
+    end
+  end
+
   # Gives every booking of the list the status, each through change_status!, so the old status rows follow.
   def self.change_status_of!(bookings, status)
     transaction { bookings.each { |booking| booking.change_status!(status) } }

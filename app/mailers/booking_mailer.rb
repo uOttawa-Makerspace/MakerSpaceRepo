@@ -45,6 +45,19 @@ class BookingMailer < ApplicationMailer
     mail(to: @email, subject: "Booking approved")
   end
 
+  # Tells the booker that staff declined the booking. French first, then English, like the access mails.
+  def send_booking_declined(booking_id)
+    @booking = SubSpaceBooking.find(booking_id)
+    @sub_space = @booking.sub_space
+    @email = @booking.user&.email
+
+    return if @email.blank?
+
+    key = "booking_mailer.declined.subject"
+    @subject = "MakerRepo - #{I18n.t(key, locale: :fr)} // #{I18n.t(key, locale: :en)}"
+    mail(to: @email, subject: @subject)
+  end
+
   def send_booking_approval_request_sent(booking_approval_id, emails)
     @user_booking_approval = UserBookingApproval.find(booking_approval_id)
     @user = @user_booking_approval.user

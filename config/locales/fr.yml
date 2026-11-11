@@ -191,6 +191,8 @@ fr:
         business: "Compagnie"
         how_heard_about_us: "Comment avez-vous entendu parler de nous?"
         accept_waiver_html: "En cochant cette case, <strong>J’ACCEPTE ET J’ASSUME PLEINEMENT</strong> tous les risques et dangers pour la santé et la sécurité que peut comporter ma participation."
+  exams:
+    sent_to_user: "L'examen a été envoyé à %{name}."
   sessions:
     account_created: "Votre compte a été créé. Veuillez consulter vos courriels pour confirmer votre adresse courriel."
     already_signed_in: "Vous êtes déjà connecté."
@@ -240,6 +242,8 @@ fr:
               inclusion: "Vous devez accepter les conditions de la renonciation."
         volunteer_hour:
           attributes:
+            base:
+              duplicate_pending: "Vous avez déjà envoyé ces heures pour cette tâche et ce jour; elles sont en attente de révision."
             volunteer_task_id:
               not_joined: "n'est pas une tâche à laquelle ce bénévole participe ou qu'il a terminée"
         locker_rental:
@@ -269,7 +273,22 @@ fr:
     times_required: "Les heures de début et de fin sont requises."
     dates_required: "Les dates de début et de fin sont requises."
     start_date_required: "La date de début est requise."
+  key_request_mailer:
+    denied:
+      subject: "Demande de clé refusée"
+      body: "Votre demande de clé a été examinée et refusée par un administrateur."
+      hello: "Bonjour %{name},"
+      reason: "Raison donnée :"
+      ask_again: "Vous pouvez modifier votre demande de clé et la soumettre de nouveau depuis la page de votre demande."
+      open_page: "Aller à ma demande de clé"
+      why_received: "Vous avez reçu ce courriel parce que votre demande de clé a reçu une réponse."
   booking_mailer:
+    declined:
+      subject: "Réservation refusée"
+      hello: "Bonjour %{name},"
+      body: "Votre réservation dans %{room} pour %{description} du %{start} au %{end} a été refusée par un administrateur."
+      open_page: "Aller à la réservation MakerRepo"
+      why_received: "Vous avez reçu ce courriel parce que votre réservation a été refusée."
     access_denied:
       subject:
         declined: "Demande d'accès aux réservations refusée"
@@ -398,6 +417,7 @@ fr:
       assign_staff_not_staff: "Seul un membre du personnel ou un administrateur peut être assigné à une commande."
       staff_assigned: "%{name} a été assigné à cette commande."
       no_staff_assigned: "Aucun membre du personnel n'est assigné à cette commande."
+      deleted: "La commande a été supprimée."
       job_order_submitted_for_approval: "Votre commande a été soumise à l'approbation du personnel !"
       job_order_updated: "Votre commande a été mise a jour !"
       approval_magic_link_expired: "Le lien d'approbation de la commande suivante n'est pas valide ou a expiré. Veuillez vous connecter pour consulter la page des commandes."
@@ -443,6 +463,8 @@ fr:
       missing_info: "Votre commande n'est pas soumise ! Il manque des informations requises dans les tâches suivantes :"
     timeline:
       unknown_user: "Inconnu"
+      approved_by_html: "Approuvé par %{name} pour le client"
+      declined_by_html: "Refusé par %{name}"
     status_reasons:
       owner_change: "La commande a été modifiée après avoir reçu un devis."
       invoice_mismatch: "Le lien de paiement ne correspondait plus au devis de la commande."

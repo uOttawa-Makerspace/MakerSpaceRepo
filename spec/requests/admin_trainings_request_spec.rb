@@ -249,15 +249,27 @@ RSpec.describe "Admin training area", type: :request do
           expect(flash[:notice]).to eq("Training removed successfully")
         end
 
-        it "cascades to its sessions, the certifications earned, learning modules and their tracks" do
+        it "is refused while a session holds certifications, keeping the training, sessions and certifications" do
           session_record = create(:training_session, training: training)
           cert = create(:certification, training_session: session_record, training: training)
+          expect { delete admin_training_path(training) }
+            .not_to change { [Training.count, TrainingSession.count] }
+          expect(Certification.unscoped.exists?(cert.id)).to be(true)
+          expect(flash[:alert]).to start_with("The training was not deleted.")
+          expect(response).to redirect_to(admin_trainings_path)
+        end
+
+        it "is refused while a proficient project uses it" do
+          create(:proficient_project, training: training)
+          expect { delete admin_training_path(training) }.not_to change(Training, :count)
+          expect(flash[:alert]).to include("proficient projects")
+        end
+
+        it "cascades to its learning modules and their tracks when it has no sessions or projects" do
           lm = create(:learning_module, training: training)
           create(:learning_module_track, learning_module: lm)
           expect { delete admin_training_path(training) }
-            .to change(TrainingSession, :count).by(-1)
-            .and change { Certification.unscoped.where(id: cert.id).count }.by(-1)
-            .and change(LearningModule, :count).by(-1)
+            .to change(LearningModule, :count).by(-1)
             .and change(LearningModuleTrack, :count).by(-1)
         end
 
@@ -315,6 +327,20 @@ RSpec.describe "Admin training area", type: :request do
 
     context "as admin" do
       before { log_in!(admin) }
+
+      it "changes the trainer of an open session" do
+        new_trainer = create(:user, :staff)
+        patch admin_training_session_path(session_record), params: { training_session: { user_id: new_trainer.id } }
+        expect(flash[:notice]).to eq("Updated Successfully")
+        expect(session_record.reload.user).to eq(new_trainer)
+      end
+
+      it "refuses to change the trainer of a session that awarded certifications" do
+        awarded = create(:training_session_with_certifications, user: trainer)
+        patch admin_training_session_path(awarded), params: { training_session: { user_id: create(:user, :staff).id } }
+        expect(flash[:alert]).to include("cannot be changed once the session has awarded")
+        expect(awarded.reload.user).to eq(trainer)
+      end
 
       describe "GET index" do
         it "lists the sessions of the last 30 days by default" do
@@ -404,13 +430,24 @@ RSpec.describe "Admin training area", type: :request do
       end
 
       describe "DELETE destroy" do
-        it "deletes the session with its certifications and exams, redirecting back with a notice" do
+        it "keeps a session that has certifications, with the certifications, and says why" do
           cert = create(:certification, training_session: session_record, training: session_record.training)
+          expect { delete session_path(session_record) }
+            .not_to change { [TrainingSession.count, Certification.unscoped.count] }
+          expect(Certification.unscoped.exists?(cert.id)).to be(true)
+          expect(flash[:alert]).to start_with("The training session was not deleted.")
+        end
+
+        it "keeps a session that has exams" do
           create(:exam, training_session: session_record)
           expect { delete session_path(session_record) }
+            .not_to change { [TrainingSession.count, Exam.count] }
+          expect(flash[:alert]).to include("exams")
+        end
+
+        it "deletes a session without certifications or exams, redirecting back with a notice" do
+          expect { delete session_path(session_record) }
             .to change(TrainingSession, :count).by(-1)
-            .and change { Certification.unscoped.where(id: cert.id).count }.by(-1)
-            .and change(Exam, :count).by(-1)
           expect(flash[:notice]).to eq("Deleted Successfully")
           expect(response).to redirect_to(root_path)
         end

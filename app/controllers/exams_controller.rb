@@ -2,7 +2,7 @@ class ExamsController < SessionsController
   before_action :current_user
   before_action :set_exam
   before_action :signed_in,
-                only: %i[create_from_training create_for_single_user destroy finish_exam]
+                only: %i[index create_from_training create_for_single_user destroy finish_exam]
   before_action :grant_access, only: [:show]
   before_action :check_exam_status, only: [:show]
   before_action :only_admin_access, only: [:destroy]
@@ -18,10 +18,12 @@ class ExamsController < SessionsController
 
   def create_from_training
     training_session = @training_session
-    training_session.users.find_each do |user|
-      create_exam_and_exam_questions(user, training_session)
-      MsrMailer.send_exam(user, training_session).deliver_now
+    users = training_session.users.to_a
+    Exam.transaction do
+      users.each { |user| create_exam_and_exam_questions(user, training_session) }
     end
+    users.each { |user| MsrMailer.send_exam(user, training_session).deliver_later }
+    flash[:notice] = "You've successfully sent exams to all users in this training." if users.any?
     redirect_to staff_dashboard_index_path(space_id: training_session.space.id)
   end
 
@@ -29,8 +31,9 @@ class ExamsController < SessionsController
     training_session = @training_session
     user = User.find(params[:user_id])
     create_exam_and_exam_questions(user, training_session)
+    MsrMailer.send_exam(user, training_session).deliver_later
+    flash[:notice] = I18n.t("exams.sent_to_user", name: user.name)
     redirect_to staff_training_session_path(training_session.id)
-    # SEND EMAIL
   end
 
   def show
@@ -107,7 +110,6 @@ class ExamsController < SessionsController
       $n_exams_question,
       training_session.level
     )
-    flash[:notice] = "You've successfully sent exams to all users in this training."
   end
 
   def set_exam

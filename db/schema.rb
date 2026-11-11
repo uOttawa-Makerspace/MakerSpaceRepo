@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_11_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -61,6 +61,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["announcement_id"], name: "index_announcement_dismisses_on_announcement_id"
+    t.index ["user_id", "announcement_id"], name: "index_announcement_dismisses_on_user_id_and_announcement_id", unique: true
     t.index ["user_id"], name: "index_announcement_dismisses_on_user_id"
   end
 
@@ -303,11 +304,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
     t.string "title"
     t.bigint "training_id"
     t.datetime "updated_at", null: false
+    t.bigint "updated_by_id"
     t.index ["course_name_id"], name: "index_events_on_course_name_id"
     t.index ["created_by_id"], name: "index_events_on_created_by_id"
     t.index ["space_id", "draft"], name: "idx_events_on_space_and_draft"
     t.index ["space_id", "start_time", "end_time"], name: "idx_events_on_space_and_times"
     t.index ["training_id"], name: "index_events_on_training_id"
+    t.index ["updated_by_id"], name: "index_events_on_updated_by_id"
   end
 
   create_table "exam_questions", id: :serial, force: :cascade do |t|
@@ -630,6 +633,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
 
   create_table "key_requests", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.text "denial_reason"
     t.string "emergency_contact"
     t.string "emergency_contact_phone_number"
     t.string "emergency_contact_relation"
@@ -1128,6 +1132,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
     t.string "program_type"
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
+    t.index ["user_id", "program_type"], name: "index_programs_on_user_id_and_program_type", unique: true
     t.index ["user_id"], name: "index_programs_on_user_id"
   end
 
@@ -1736,6 +1741,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id", null: false
     t.integer "volunteer_task_id", null: false
+    t.index ["user_id", "volunteer_task_id", "date_of_task", "total_time"], name: "index_volunteer_hours_on_pending_submission", unique: true, where: "(approval IS NULL)"
     t.index ["user_id"], name: "index_volunteer_hours_on_user_id"
     t.index ["volunteer_task_id"], name: "index_volunteer_hours_on_volunteer_task_id"
   end
@@ -1850,6 +1856,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
   add_foreign_key "events", "spaces"
   add_foreign_key "events", "trainings", on_delete: :nullify
   add_foreign_key "events", "users", column: "created_by_id"
+  add_foreign_key "events", "users", column: "updated_by_id"
   add_foreign_key "exam_questions", "exams"
   add_foreign_key "exam_questions", "questions", on_delete: :nullify
   add_foreign_key "exam_responses", "answers", on_delete: :nullify
@@ -1989,7 +1996,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_09_130000) do
   add_foreign_key "sub_space_bookings", "booking_statuses"
   add_foreign_key "sub_space_bookings", "recurring_bookings"
   add_foreign_key "sub_space_bookings", "sub_space_booking_statuses"
-  add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :cascade
+  add_foreign_key "sub_space_bookings", "sub_spaces", on_delete: :restrict
   add_foreign_key "sub_space_bookings", "users"
   add_foreign_key "sub_space_bookings", "users", column: "approved_by_id"
   add_foreign_key "sub_spaces", "spaces"

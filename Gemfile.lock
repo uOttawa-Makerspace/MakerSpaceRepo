@@ -681,6 +681,9 @@ GEM
     uniform_notifier (1.18.1)
     uri (1.1.2)
     useragent (0.16.11)
+    view_component (4.19.0)
+      actionview (>= 7.1.0)
+      activesupport (>= 7.1.0)
     vite_rails (3.11.1)
       railties (>= 5.1, < 9)
       vite_ruby (~> 3.0, >= 3.2.2)
@@ -798,6 +801,7 @@ DEPENDENCIES
   solid_cache (~> 1.0)
   solid_queue (~> 1.2)
   test-prof
+  view_component (= 4.19.0)
   vite_rails
   web-console
   webmock

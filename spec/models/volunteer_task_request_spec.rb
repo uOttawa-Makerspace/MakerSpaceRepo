@@ -97,8 +97,9 @@ RSpec.describe VolunteerTaskRequest, "status, join lookup and search", type: :mo
     let(:req) { create(:volunteer_task_request) }
 
     it "returns the LAST joined join of the requester on the task" do
-      create(:volunteer_task_join, :active, volunteer_task: req.volunteer_task, user: req.user)
-      newest = create(:volunteer_task_join, :active, volunteer_task: req.volunteer_task, user: req.user)
+      # a stored duplicate from before joins were unique
+      build(:volunteer_task_join, :active, volunteer_task: req.volunteer_task, user: req.user).save!(validate: false)
+      newest = build(:volunteer_task_join, :active, volunteer_task: req.volunteer_task, user: req.user).tap { |j| j.save!(validate: false) }
       create(:volunteer_task_join, :completed, volunteer_task: req.volunteer_task, user: req.user)
       expect(req.volunteer_task_join).to eq(newest)
     end
@@ -140,6 +141,18 @@ RSpec.describe VolunteerTaskRequest, "status, join lookup and search", type: :mo
 
     it "treats an input that is only a prefix as blank" do
       expect(described_class.filter_by_attribute("search_pending=")).to include(hit, miss)
+    end
+  end
+
+  describe "#award_paid? and #pay_award" do
+    let(:request) { create(:volunteer_task_request, :not_processed, user: create(:user, :volunteer_with_volunteer_program), volunteer_task: create(:volunteer_task, cc: 7, hours: 2)) }
+
+    it "pays once and reports the award as paid afterwards" do
+      expect(request).not_to be_award_paid
+      request.pay_award
+      expect(request).to be_award_paid
+      expect { request.pay_award }.not_to change { [CcMoney.count, VolunteerHour.count] }
+      expect(CcMoney.where(user_id: request.user_id).pluck(:cc)).to eq([7])
     end
   end
 end

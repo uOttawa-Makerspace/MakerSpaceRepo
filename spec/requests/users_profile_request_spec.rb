@@ -122,11 +122,90 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
+  describe "GET /:username private sections" do
+    let(:tabs) { %w[keys-manager profile-lockers key-certs-manager adminTabPane] }
+
+    def tabs_shown
+      tabs.select { |id| response.body.include?(%(id="#{id}")) }
+    end
+
+    it "shows a guest and another regular user none of them" do
+      get user_path(user.username)
+      expect(tabs_shown).to be_empty
+      login!(other)
+      get user_path(user.username)
+      expect(tabs_shown).to be_empty
+    end
+
+    it "shows the owner the lockers" do
+      login!(user)
+      get user_path(user.username)
+      expect(tabs_shown).to eq(%w[profile-lockers])
+    end
+
+    it "shows staff the keys and lockers" do
+      login!(staff)
+      get user_path(user.username)
+      expect(tabs_shown).to eq(%w[keys-manager profile-lockers])
+    end
+
+    it "shows staff the key certification upload forms on the first visit to their own profile" do
+      expect(staff.key_certification).to be_nil
+      login!(staff)
+      get user_path(staff.username)
+      expect(response.body).not_to include("You have no key certifications")
+      expect(response.body).to include("pdf_file_1_form")
+    end
+
+    it "shows a Teams member the key certification upload forms on the first visit to their own profile" do
+      user.programs.create!(program_type: Program::TEAMS)
+      login!(user)
+      get user_path(user.username)
+      expect(response.body).not_to include("You have no key certifications")
+      expect(response.body).to include("pdf_file_1_form")
+    end
+
+    it "shows an admin every section" do
+      login!(admin)
+      get user_path(user.username)
+      expect(tabs_shown).to match_array(tabs)
+    end
+  end
+
   describe "GET /:username (show)" do
     it "guest: 200 public profile page" do
       get user_path(user.username)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(user.username)
+    end
+
+    it "lists a skill earned only through a proficient project, for the owner and for staff" do
+      granted = create(:certification, user: user, training_session: nil, training: nil, level: "Intermediate")
+      create(:proficient_project_session, certification: granted, user: user, level: "Intermediate",
+                                          proficient_project: create(:proficient_project,
+                                                                     training: create(:training, name_en: "Soldering EN")))
+      [user, staff].each do |viewer|
+        login!(viewer)
+        get user_path(user.username)
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("Soldering EN").and include("Intermediate")
+      end
+    end
+
+    it "links the profile's web address, shown without its scheme" do
+      user.update_columns(url: "https://example.com/portfolio")
+      get user_path(user.username)
+      expect(response).to have_http_status(:ok)
+      link = Nokogiri::HTML(response.body).at_css("a[href='https://example.com/portfolio']")
+      expect(link.text).to eq("example.com/portfolio")
+      expect(link["rel"]).to eq("noopener noreferrer")
+    end
+
+    it "does not link a stored address that is not http(s)" do
+      user.update_columns(url: "javascript:alert(1)")
+      get user_path(user.username)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("javascript:alert(1)")
     end
 
     it "username lookup is case-insensitive" do
@@ -581,7 +660,8 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     it "regular user cannot flag: redirected to own profile, nothing changes" do
       login!(other)
       post flag_users_path, params: { flagged_user: user.id, flag_message: "x" }
-      expect(response).to redirect_to(user_path(other.username))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
       expect(user.reload.flagged).to be_falsey
     end
 
@@ -594,6 +674,8 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       user.update_columns(flagged: true, flag_message: "; bad")
       login!(other)
       post unflag_users_path, params: { flagged_user: user.id }
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
       expect(user.reload.flagged).to be(true)
       login!(staff)
       post unflag_users_path, params: { flagged_user: user.id }
@@ -608,7 +690,8 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       user.update_columns(flagged: true, flag_message: "; bad")
       login!(other)
       put remove_flag_users_path, params: { repo_user_id: user.id, flag_msg: "bad" }
-      expect(response).to redirect_to(user_path(other.username))
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("You cannot access this area.")
       user.reload
       expect(user.flagged).to be(true)
       expect(user.flag_message).to eq("; bad")
@@ -643,7 +726,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       login!(other)
       post change_programs_users_path, params: { user_id: user.id, volunteer: "1" }
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to eq("Only staff and admins can change a user's programs.")
+      expect(flash[:alert]).to eq("You cannot access this area.")
       expect(user.programs).to be_empty
     end
 
@@ -660,7 +743,7 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     it "flashes an alert and changes nothing when a membership cannot be saved" do
       login!(staff)
       user.programs.create!(program_type: Program::DEV_PROGRAM)
-      allow_any_instance_of(Program).to receive(:valid?).and_return(false)
+      allow_any_instance_of(Program).to receive(:destroy).and_return(false)
       post change_programs_users_path, params: { user_id: user.id, volunteer: "1" }
       expect(response).to redirect_to(user_path(user.username))
       expect(flash[:alert]).to start_with("The programs were not updated.")
@@ -702,6 +785,33 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       patch_programs(other)
       expect(response).to have_http_status(:forbidden)
       expect(user.programs).to be_empty
+    end
+
+    context "when removing a program is refused" do
+      let(:removal) { { user_id: user.id, volunteer: false } }
+
+      before do
+        user.programs.create!(program_type: Program::DEV_PROGRAM)
+        allow_any_instance_of(Program).to receive(:destroy).and_return(false)
+      end
+
+      def expect_refusal
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json["error"]).to start_with("The programs were not updated.")
+        expect(user.programs.reload.pluck(:program_type)).to eq([Program::DEV_PROGRAM])
+      end
+
+      it "answers 422 with the error message and keeps the membership" do
+        patch_programs(staff, removal)
+        expect_refusal
+      end
+
+      it "answers 422 as JSON when only the request body is JSON and the client accepts HTML" do
+        login!(staff)
+        patch change_programs_users_path, params: removal.to_json,
+                                          headers: { "Content-Type" => "application/json", "Accept" => "text/html" }
+        expect_refusal
+      end
     end
 
     it "does not touch the caller's profile (no fall-through to users#update)" do
@@ -761,6 +871,111 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       get likes_user_path(other.username)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Liked Thing")
+    end
+  end
+
+  describe "GET /:username/likes with private repositories" do
+    let!(:private_repo) do
+      create(:repository, user_id: other.id, title: "Hidden Thing", share_type: "private", pword: "secret")
+    end
+    let!(:public_repo) { create(:repository, user_id: other.id, title: "Open Thing", share_type: "public") }
+    let(:viewer) { create(:user, :regular_user) }
+
+    before do
+      [private_repo, public_repo].each { |repo| Like.create!(user_id: viewer.id, repository_id: repo.id) }
+    end
+
+    it "lists only the public ones for a viewer who cannot open the private one" do
+      login!(viewer)
+      get likes_user_path(viewer.username)
+      expect(response.body).to include("Open Thing")
+      expect(response.body).not_to include("Hidden Thing")
+    end
+
+    it "lists the private one for a member of the repository" do
+      private_repo.users << viewer
+      login!(viewer)
+      get likes_user_path(viewer.username)
+      expect(response.body).to include("Hidden Thing")
+    end
+
+    it "lists the private one for its owner" do
+      Like.create!(user_id: other.id, repository_id: private_repo.id)
+      login!(other)
+      get likes_user_path(other.username)
+      expect(response.body).to include("Hidden Thing")
+    end
+
+    it "lists the private one for staff and admin" do
+      [staff, admin].each do |person|
+        Like.create!(user_id: person.id, repository_id: private_repo.id)
+        login!(person)
+        get likes_user_path(person.username)
+        expect(response.body).to include("Hidden Thing")
+      end
+    end
+
+    it "lists the private one once its password was entered this session" do
+      login!(viewer)
+      post pass_authenticate_repository_path(other.username, private_repo.id), params: { password: "secret" }
+      get likes_user_path(viewer.username)
+      expect(response.body).to include("Hidden Thing")
+    end
+
+    it "pages only through repositories the viewer may see" do
+      13.times { |i| Like.create!(user_id: viewer.id, repository_id: create(:repository, user_id: other.id, title: "Extra #{i}", share_type: "public").id) }
+      login!(viewer)
+      get likes_user_path(viewer.username)
+      expect(response.body.scan('class="repository-container"').size).to eq(12)
+      expect(response.body).not_to include("Hidden Thing")
+      get likes_user_path(viewer.username, page: 2)
+      expect(response.body.scan('class="repository-container"').size).to eq(2)
+      expect(response.body).not_to include("Hidden Thing")
+    end
+  end
+
+  describe "GET /:username/likes filtered by category" do
+    let!(:tagged) { create(:repository, user_id: other.id, title: "Tagged Thing", share_type: "public") }
+    let!(:untagged) { create(:repository, user_id: other.id, title: "Plain Thing", share_type: "public") }
+
+    before do
+      CategoryOption.find_or_create_by!(name: "Wearable")
+      Category.create!(repository_id: tagged.id, name: "Wearable")
+      [tagged, untagged].each { |repo| Like.create!(user_id: user.id, repository_id: repo.id) }
+      login!(user)
+    end
+
+    def listed
+      %w[Tagged\ Thing Plain\ Thing].select { |title| response.body.include?(title) }
+    end
+
+    it "lists every like without a category" do
+      get likes_user_path(user.username)
+      expect(listed).to eq(["Tagged Thing", "Plain Thing"])
+    end
+
+    it "lists only the likes filed under a known category slug" do
+      get likes_user_path(user.username, category: "wearable")
+      expect(listed).to eq(["Tagged Thing"])
+    end
+
+    it "lists nothing for an unknown category slug" do
+      get likes_user_path(user.username, category: "nonsense")
+      expect(response).to have_http_status(:ok)
+      expect(listed).to be_empty
+    end
+
+    it "ignores unknown slugs in a list of categories and lists nothing when none is known" do
+      get "/#{user.username}/likes?category[]=wearable&category[]=nonsense"
+      expect(listed).to eq(["Tagged Thing"])
+      get "/#{user.username}/likes?category[]=nonsense"
+      expect(listed).to be_empty
+    end
+
+    it "lists nothing when the category is not text or a list of text" do
+      get "/#{user.username}/likes?category[wearable]=wearable"
+      expect(response).to have_http_status(:ok)
+      expect(listed).to be_empty
     end
   end
 

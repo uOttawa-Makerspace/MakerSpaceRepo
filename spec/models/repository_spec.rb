@@ -161,4 +161,27 @@ RSpec.describe Repository, type: :model do
       end
     end
   end
+
+  describe "#owned_by? and #editable_by?" do
+    let(:owner) { create(:user, :regular_user) }
+    let(:member) { create(:user, :regular_user) }
+    let(:stranger) { create(:user, :regular_user) }
+    let(:repository) { create(:repository, owner: owner).tap { |r| r.users << member } }
+
+    it "names only the owner as owner" do
+      expect(repository.owned_by?(owner)).to be(true)
+      expect(repository.owned_by?(member)).to be(false)
+      expect(repository.owned_by?(stranger)).to be(false)
+      expect(repository.owned_by?(User.new)).to be(false)
+      expect(repository.owned_by?(nil)).to be(false)
+    end
+
+    it "lets the owner and members edit, and nobody else" do
+      expect(repository.editable_by?(owner)).to be(true)
+      expect(repository.editable_by?(member)).to be(true)
+      expect(repository.editable_by?(stranger)).to be(false)
+      expect(repository.editable_by?(User.new)).to be(false)
+      expect(repository.editable_by?(nil)).to be(false)
+    end
+  end
 end

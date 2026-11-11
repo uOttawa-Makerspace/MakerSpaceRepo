@@ -19,6 +19,7 @@ class ShopOrderApplier
   class UnknownLockerRental < StandardError; end
   class UnknownMembership < StandardError; end
   class UnresolvedMembershipOrder < StandardError; end
+  class MembershipNotPending < StandardError; end
   class UnresolvedCcOrder < StandardError; end
   # Shopify refused a metafield lookup for good (an access or invalid-id error): reported once, and the order goes
   # on without that reference. The locker and membership branches that needed it apply nothing (the reference is
@@ -78,6 +79,7 @@ class ShopOrderApplier
 
   def initialize(record)
     @record = record
+    @refusals = []
   end
 
   def call
@@ -89,7 +91,7 @@ class ShopOrderApplier
       next unless order.status == "received"
 
       apply(plan)
-      order.update!(status: "applied", applied_at: Time.current, last_error: nil, leased_until: nil)
+      order.update!(status: "applied", applied_at: Time.current, last_error: ProcessedOrder.refusal_note(@refusals), leased_until: nil)
       @applied_here = true
     end
   rescue StandardError => e
@@ -264,21 +266,35 @@ class ShopOrderApplier
     return if plan.left_unapplied&.include?(:membership)
 
     if plan.membership_ref.present?
-      membership = Membership.find_by(id: plan.membership_ref)
-      if membership
-        membership.update!(status: :paid)
-      else
-        report_unresolved(plan, UnknownMembership, "membership", "references unknown membership #{plan.membership_ref}")
-      end
+      apply_referenced_membership(plan)
       return
     end
 
     apply_membership_by_email(plan)
   end
 
+  # Only a pending membership becomes paid. One that is already paid, revoked or failed is left as it is and
+  # reported with the order, so a late or second order cannot reactivate a membership staff took away.
+  def apply_referenced_membership(plan)
+    membership = Membership.find_by(id: plan.membership_ref)
+    if membership.nil?
+      @refusals << "membership reference #{plan.membership_ref} not found"
+      report_unresolved(plan, UnknownMembership, "membership", "references unknown membership #{plan.membership_ref}")
+    elsif !membership.mark_paid_if_pending
+      refuse_membership(plan, membership)
+    end
+  end
+
+  # Records the refusal on the order (see ProcessedOrder.refused) and reports it.
+  def refuse_membership(plan, membership)
+    detail = "membership #{membership.id} is #{membership.reload.status}, not pending"
+    @refusals << detail
+    report_unresolved(plan, MembershipNotPending, "membership", "references #{detail}", membership_id: membership.id)
+  end
+
   # Fallback when the order carries no membership reference: the customer's email names the user (users.email is
   # case-insensitive) and each line item's title the tier (checkout sells one membership per line, quantity 1).
-  # Each matched tier line is a new membership with the current dates.
+  # Each matched tier line is a new paid membership starting when the member's latest active one ends (or now).
   def apply_membership_by_email(plan)
     if plan.email.blank?
       report_unresolved(plan, UnresolvedMembershipOrder, "membership", "has no membership reference and no customer email")
@@ -297,7 +313,7 @@ class ShopOrderApplier
       tier = MembershipTier.where("LOWER(title_en) = ? OR LOWER(title_fr) = ?", title.downcase, title.downcase).first
       next unless tier
 
-      Membership.create!(user: user, membership_tier: tier, status: :paid)
+      Membership.grant!(user, tier)
       created += 1
     end
     return if created.positive?

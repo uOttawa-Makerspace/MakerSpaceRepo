@@ -12,15 +12,12 @@ class ExamResponsesController < SessionsController
     if response
       response.update(answer_id: answer.id, correct: answer.correct)
     else
-      exam_question_id =
-        ExamQuestion.where(exam_id: exam.id, question_id: question.id).last.id
-      response =
-        ExamResponse.new(
-          exam_question_id: exam_question_id,
-          answer_id: answer.id,
-          correct: answer.correct
-        )
-      response.save!
+      exam_question = exam.exam_questions.where(question_id: question.id).last!
+      ExamResponse.create!(
+        exam_question: exam_question,
+        answer_id: answer.id,
+        correct: answer.correct
+      )
     end
     head :no_content
   end

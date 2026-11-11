@@ -6,6 +6,7 @@ class Admin::DesignDaysController < AdminAreaController
   before_action :make_variables, only: %i[show update data]
   skip_before_action :current_user, only: :data
   skip_before_action :ensure_admin, only: :data
+  skip_authorization only: :data, reason: "Public: the Design Day app reads the schedule without signing in"
 
   # This is a singular resource: create, index, delete are disabled.
   # only show and update are supported.

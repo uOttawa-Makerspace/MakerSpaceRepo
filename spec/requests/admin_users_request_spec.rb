@@ -116,6 +116,39 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "index p=signed_in_users filters by the reader's location" do
+      space = create(:space)
+      reader = create(:pi_reader, pi_location: "Main Room", space: space)
+      other_reader = create(:pi_reader, pi_location: "Back Room", space: space)
+      here = create(:user, :regular_user)
+      there = create(:user, :regular_user)
+      create(:lab_session, user_id: here.id, space: space, mac_address: reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      create(:lab_session, user_id: there.id, space: space, mac_address: other_reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+
+      get admin_users_path(p: "signed_in_users", location: "main room")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(here.username)
+      expect(response.body).not_to include(there.username)
+    end
+
+    it "index p=signed_in_users lists a session once when two readers share an address" do
+      space = create(:space)
+      reader = create(:pi_reader, pi_location: "Main Room", space: space)
+      twin = create(:pi_reader, pi_location: "Main Room", space: space)
+      twin.update_column(:pi_mac_address, reader.pi_mac_address)
+      create(:lab_session, user_id: target.id, space: space, mac_address: reader.pi_mac_address,
+                           sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+
+      get admin_users_path(p: "signed_in_users")
+      appearances = response.body.scan(target.username).size
+      get admin_users_path(p: "signed_in_users", location: "Main Room")
+
+      expect(response.body.scan(target.username).size).to eq(appearances)
+    end
+
     it "index: unknown p redirects with 'Invalid parameters!'" do
       get admin_users_path(p: "bogus")
       expect(response).to redirect_to(admin_users_path)
@@ -262,11 +295,11 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
 
       it "keeps the palette colour as the border and fill, with readable text in the outline, hover and checked states" do
         get manage_roles_admin_users_path
-        rules = response.body.scan(/\.btn-outline-([^\s{]+) \{([^}]*)\}/m).to_h { |name, css| [name, css.scan(/--bs-btn-([\w-]+): ([^;]+);/).to_h] }
+        rules = response.body.scan(/\.btn-outline-space-(\d+) \{([^}]*)\}/m).to_h { |id, css| [id.to_i, css.scan(/--bs-btn-([\w-]+): ([^;]+);/).to_h] }
         ratios = {}
 
         Space.all.each do |space|
-          vars = rules.fetch(space.name)
+          vars = rules.fetch(space.id)
           hex = space.assigned_color_hex
           expect(vars).to include("color" => "var(--bs-body-color)", "border-color" => hex, "hover-bg" => hex,
                                   "hover-border-color" => hex, "active-bg" => hex, "active-border-color" => hex)
@@ -280,6 +313,15 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
         # Outline text is the body colour on the page background, in both themes.
         expect(ratio("#212529", "#ffffff")).to be >= 4.5
         expect(ratio("#dee2e6", "#212529")).to be >= 4.5
+      end
+
+      it "keeps the space name out of the page stylesheet and out of the button class" do
+        space = Space.first
+        space.update_columns(name: "x{color:red} .y")
+        get manage_roles_admin_users_path
+        style = response.body[/<style>.*?<\/style>/m]
+        expect(style).not_to include("color:red")
+        expect(response.body).to include("btn-outline-primary btn-outline-space-#{space.id}")
       end
     end
   end
@@ -545,6 +587,21 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "DELETE /admin/users/delete_user (soft delete)" do
     before { login!(admin) }
 
+    it "refuses an admin who was demoted after the request was authorised" do
+      other_admin = create(:user, :admin)
+      allow(User).to receive(:serialising_account_deletion).and_wrap_original do |original, &block|
+        User.where(id: admin.id).update_all(role: "regular_user")
+        original.call(&block)
+      end
+
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+
+      expect(response).to redirect_to(user_path(target.username))
+      expect(flash[:alert]).to eq("Only admins can delete accounts.")
+      expect(target.reload.deleted).to be(false)
+      expect(other_admin.reload.deleted).to be(false)
+    end
+
     it "requires the admin's own password" do
       delete delete_user_admin_users_path, params: { id: target.id, password: "wrong" }
       expect(response).to redirect_to(user_path(target.username))
@@ -611,7 +668,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
         delete delete_user_admin_users_path, params: { id: target.id, password: password }
         kept = Repository.find(repo.id)
         expect(kept.user_id).to eq([later, partner].map(&:id).min)
-        expect(kept.owned_by?(partner)).to be(true)
+        expect(kept.editable_by?(partner)).to be(true)
         expect(kept.deleted).to be(false)
         expect(kept.users).not_to include(target)
         expect(Repository.unscoped.find(repo.id).users.unscope(where: :deleted)).to include(target)
@@ -1035,6 +1092,17 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(Repository.exists?(repo.id)).to be(false)
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
       expect(Comment.where(repository_id: repo.id).count).to eq(1)
+    end
+
+    it "drops the cached zip of the deleted repository" do
+      cache_dir = Pathname(Dir.mktmpdir("repository_zips"))
+      allow(Repository::ZipCache).to receive(:directory).and_return(cache_dir)
+      repo = create(:repository)
+      FileUtils.touch(repo.zip_path)
+      delete delete_repository_admin_users_path, params: { id: repo.id }
+      expect(File.exist?(repo.zip_path)).to be(false)
+    ensure
+      FileUtils.rm_rf(cache_dir.to_s)
     end
 
     it "unknown id: 404" do

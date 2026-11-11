@@ -205,13 +205,40 @@ RSpec.describe "Key requests", type: :request do
       end
     end
 
-    it "lets the owner edit again after an admin denies the request" do
-      kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true, status: :waiting_for_approval))
-      kr.update!(status: :in_progress)
-      patch key_request_steps_path(key_request_id: kr.id, step: 1), params: { key_request: { phone_number: "613-555-4444" } }
-      expect(kr.reload.phone_number).to eq("613-555-4444")
-      get key_request_path(kr.id)
-      expect(response.body).to include("Edit Request")
+    context "after an admin denied the request" do
+      before do
+        kr.update!(answers.merge(read_lab_rules: true, read_policies: true, read_agreement: true, status: :waiting_for_approval))
+        kr.deny("Supervisor must be a professor")
+      end
+
+      it "shows the owner the denied badge, the reason and the edit link" do
+        get key_request_path(kr.id)
+        doc = Nokogiri::HTML(response.body)
+        expect(doc.css("span.badge.bg-danger").text.squish).to eq("Denied")
+        expect(response.body).to include("Supervisor must be a professor", "Edit Request")
+      end
+
+      it "says no reason was given when there is none" do
+        kr.update!(denial_reason: nil)
+        get key_request_path(kr.id)
+        expect(response.body).to include("No reason was given.")
+      end
+
+      it "lets the owner edit the request" do
+        patch key_request_steps_path(key_request_id: kr.id, step: 1), params: { key_request: { phone_number: "613-555-4444" } }
+        expect(kr.reload).to have_attributes(phone_number: "613-555-4444", status: "denied", denial_reason: "Supervisor must be a professor")
+      end
+
+      it "resubmits for approval, clearing the reason" do
+        patch key_request_steps_path(key_request_id: kr.id, step: 6)
+        expect(response).to redirect_to(key_request_path(kr.id))
+        expect(kr.reload).to have_attributes(status: "waiting_for_approval", denial_reason: nil)
+      end
+
+      it "sends the owner of a denied request to the request page from the index" do
+        get key_requests_path
+        expect(response).to redirect_to(key_request_path(kr.id))
+      end
     end
 
     # :status is not permitted on steps, so the requester cannot self-approve

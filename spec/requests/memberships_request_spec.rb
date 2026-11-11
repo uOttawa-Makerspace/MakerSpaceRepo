@@ -102,7 +102,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
       let!(:admin_client) { stub_shopify_admin! }
       before { shop_log_in!(user) }
 
-      it "creates a pending membership with dates, a Shopify draft order, and redirects to its invoice URL" do
+      it "creates a pending membership without dates, a Shopify draft order, and redirects to its invoice URL" do
         freeze = Time.utc(2026, 3, 1, 12)
         travel_to(freeze) do
           expect { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
@@ -114,8 +114,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         m = Membership.last
         expect(m.user).to eq(user)
         expect(m.status).to eq("pending")
-        expect(m.start_date).to eq(freeze)
-        expect(m.end_date).to eq(Time.zone.at(freeze) + 120.days) # wall-clock days in the app zone (DST aware)
+        expect([m.start_date, m.end_date]).to eq([nil, nil])
         expect(m.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
 
         create_call = admin_client.calls.find { |c| c[:query].include?("draftOrderCreate") }
@@ -133,21 +132,71 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(create_call[:variables][:input][:lineItems].first[:originalUnitPrice]).to eq("25.0")
       end
 
-      it "starts a new membership when the previous active one ends (stacked dates)" do
+      it "starts a purchased membership when it is paid, after the previous active one ends" do
         prior_end = 10.days.from_now.change(usec: 0)
         create(:membership, user: user, membership_tier: tier, status: "paid", end_date: prior_end)
         post memberships_path, params: { membership: { membership_tier_id: tier.id } }
         m = Membership.order(:id).last
-        expect(m.start_date).to be_within(1.second).of(prior_end)
+        expect(m.start_date).to be_nil
+        m.mark_paid_if_pending
+        expect(m.reload.start_date).to be_within(1.second).of(prior_end)
         expect(m.end_date).to be_within(1.second).of(prior_end + 120.days)
       end
 
-      it "when Shopify fails: destroys the pending row and redirects to the user's memberships with an alert" do
+      it "when Shopify fails: keeps the pending row without a draft and redirects to the user's memberships with an alert" do
         admin_client.user_errors = [{ "message" => "boom" }]
         expect { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
-          .not_to change(Membership, :count)
+          .to change { user.memberships.pending.count }.by(1)
+        expect(user.memberships.pending.last.shopify_draft_order_id).to be_nil
         expect(response).to redirect_to(your_memberships_memberships_path)
         expect(flash[:alert]).to include("could not be set up because the payment page could not be created", "quote reference")
+      end
+
+      it "a second purchase of the same tier reuses the pending membership and its draft order" do
+        2.times { post memberships_path, params: { membership: { membership_tier_id: tier.id } } }
+        expect(user.memberships.count).to eq(1)
+        expect(response.location).to eq("https://shop.example.test/invoices/abc")
+        expect(admin_client.calls.count { |c| c[:query].include?("draftOrderCreate") }).to eq(1)
+      end
+
+      it "retries the draft order for the pending membership after a Shopify failure, without a second row" do
+        admin_client.user_errors = [{ "message" => "boom" }]
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        admin_client.user_errors = []
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        expect(user.memberships.count).to eq(1)
+        expect(user.memberships.first.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(response.location).to eq("https://shop.example.test/invoices/abc")
+      end
+
+      it "keeps one pending membership per tier and per user" do
+        other_tier = create(:membership_tier, title_en: "1 Day Membership", duration: 1, internal_price: 5, external_price: 10)
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        post memberships_path, params: { membership: { membership_tier_id: other_tier.id } }
+        expect(user.memberships.pending.pluck(:membership_tier_id)).to contain_exactly(tier.id, other_tier.id)
+        expect(other.memberships.count).to eq(0)
+      end
+
+      it "gives a reused pending membership a draft order at today's price" do
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        tier.update!(internal_price: 30, external_price: 55)
+        admin_client.draft_id = "gid://shopify/DraftOrder/9002"
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        expect(user.memberships.count).to eq(1)
+        expect(user.memberships.first.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
+        expect(admin_client.deleted_ids).to eq(["gid://shopify/DraftOrder/9001"])
+      end
+
+      it "gives a pending membership whose draft order no longer exists a new draft order, on the same membership" do
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        membership = user.memberships.sole
+        admin_client.missing_ids << membership.shopify_draft_order_id
+        admin_client.draft_id = "gid://shopify/DraftOrder/9002"
+        post memberships_path, params: { membership: { membership_tier_id: tier.id } }
+        expect(user.memberships.sole).to eq(membership)
+        expect(membership.reload).to be_pending
+        expect(membership.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9002")
+        expect(response.location).to eq("https://shop.example.test/invoices/abc")
       end
 
       it "a faculty tier creates no membership, makes no Shopify call and redirects home with a notice" do
@@ -241,6 +290,32 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
         expect(m.end_date).to be_within(1.second).of(base_end + 5.days)
       end
 
+      it "refuses the same grant submitted again within a minute, so a double submit adds one membership" do
+        freeze = Time.utc(2026, 3, 1, 12)
+        travel_to(freeze) { post admin_create_membership_memberships_path, params: params }
+        travel_to(freeze + 30.seconds) do
+          expect { post admin_create_membership_memberships_path, params: params }.not_to change(Membership, :count)
+        end
+        expect(flash[:alert]).to eq("The same custom membership was just added for this member.")
+        expect(other.memberships.count).to eq(1)
+      end
+
+      it "adds the same grant again after a minute, and a different length at once" do
+        freeze = Time.utc(2026, 3, 1, 12)
+        travel_to(freeze) { post admin_create_membership_memberships_path, params: params }
+        travel_to(freeze + 10.seconds) do
+          post admin_create_membership_memberships_path, params: params.merge(extend_days: 7)
+        end
+        travel_to(freeze + 61.seconds) { post admin_create_membership_memberships_path, params: params }
+        expect(other.memberships.count).to eq(3)
+      end
+
+      it "does not treat another member's recent grant as a duplicate" do
+        post admin_create_membership_memberships_path, params: params
+        expect { post admin_create_membership_memberships_path, params: { user_id: user.id, extend_days: 5 } }
+          .to change { user.memberships.count }.by(1)
+      end
+
       it "rejects zero/blank/negative days with an alert" do
         ["0", "", "-3", "abc"].each do |days|
           expect { post admin_create_membership_memberships_path, params: { user_id: other.id, extend_days: days } }
@@ -297,6 +372,16 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
       patch revoke_membership_path(membership)
       expect(response).to have_http_status(:unauthorized)
       expect(membership.reload.status).to eq("paid")
+    end
+
+    %w[pending failed revoked].each do |status|
+      it "refuses an admin revoking a #{status} membership, with a message, and changes nothing" do
+        unpaid = create(:membership, user: other, membership_tier: tier, status: status)
+        shop_log_in!(admin)
+        expect { patch revoke_membership_path(unpaid) }.not_to(change { unpaid.reload.attributes })
+        expect(flash[:alert]).to eq("This membership is #{status}, not paid, so it cannot be revoked.")
+        expect(flash[:notice]).to be_nil
+      end
     end
 
     it "lets an admin revoke, redirecting back to the referer" do

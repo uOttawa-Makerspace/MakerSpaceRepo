@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 class Printer < ApplicationRecord
-  has_many :printer_sessions, dependent: :destroy
-  has_many :printer_issues
+  # A printer with sessions or issues cannot be deleted: its history is kept.
+  has_many :printer_sessions, dependent: :restrict_with_error
+  has_many :printer_issues, dependent: :restrict_with_error
   belongs_to :printer_type, optional: true
   scope :show_options,
         -> {
@@ -12,12 +13,14 @@ class Printer < ApplicationRecord
 
   validates :number, presence: true, uniqueness: { scope: :printer_type_id }
 
+  scope :with_type, -> { includes(:printer_type) }
+
   def name
     "#{printer_type&.short_form} - #{number}"
   end
 
   def model_and_number
-    "#{printer_type.name}; #{name}"
+    "#{printer_type&.name}; #{name}"
   end
 
   def self.get_printer_ids(model)
@@ -40,17 +43,17 @@ class Printer < ApplicationRecord
     printer_issues.where(active: true)
   end
 
-  def group_printer_issues
+  def group_printer_issues(except: nil)
     # NOTE this might cause performance issues
     # what is this, O(n^2)?
     # If you ever touch this, checkout the one in printer_issues_controller#index
-    active_printer_issues.group_by do |issue|
+    active_printer_issues.where.not(id: except).group_by do |issue|
       PrinterIssue.summaries.values.detect { |s| issue.summary.include? s } ||
         "Other"
     end
   end
 
-  def count_printer_issues
-    group_printer_issues.transform_values { |issues| issues.count }
+  def count_printer_issues(except: nil)
+    group_printer_issues(except: except).transform_values { |issues| issues.count }
   end
 end

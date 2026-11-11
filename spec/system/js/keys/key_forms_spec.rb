@@ -181,6 +181,36 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       page.execute_script("window.__prints = 0; window.print = function () { window.__prints += 1; };")
     end
 
+    # The page waits one second after the last frame loads before printing.
+    # Holding that timer makes "loaded but not yet printed" a state the spec
+    # controls, instead of one that depends on how fast the frame loads.
+    def hold_print_timers
+      page.execute_script(<<~JS)
+        window.__heldTimers = [];
+        window.__frameLoads = 0;
+        document.querySelectorAll(".key-cert-iframe").forEach(function (frame) {
+          frame.addEventListener("load", function () { window.__frameLoads += 1; });
+        });
+        const realSetTimeout = window.setTimeout;
+        window.setTimeout = function (callback, delay, ...args) {
+          if (delay === 1000) { window.__heldTimers.push(callback); return 0; }
+          return realSetTimeout.call(window, callback, delay, ...args);
+        };
+      JS
+    end
+
+    def held_print_timers
+      page.evaluate_script("window.__heldTimers.length")
+    end
+
+    def frame_loads
+      page.evaluate_script("window.__frameLoads")
+    end
+
+    def release_print_timers
+      page.execute_script("window.__heldTimers.splice(0).forEach(function (callback) { callback(); });")
+    end
+
     def prints
       page.evaluate_script("window.__prints")
     end
@@ -201,8 +231,11 @@ RSpec.describe "Admin key pages", type: :system, skip_bullet: true do
       expect(page).to have_css("iframe.key-cert-iframe", visible: :all, count: 1)
       wait_for_app_js
       count_prints
+      hold_print_timers
       click_button "print-button"
+      wait_until("frames not reloaded") { frame_loads == 1 && held_print_timers == 1 }
       expect(prints).to eq(0)
+      release_print_timers
       wait_until("print not called after frames loaded") { prints == 1 }
     end
   end

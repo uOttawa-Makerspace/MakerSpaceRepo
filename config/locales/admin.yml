@@ -1,4 +1,7 @@
 en:
+  confirm_delete:
+    training_session: "Delete this training session? This is refused while it has certifications or exams."
+    training: "Delete this training? This is refused while it has training sessions or proficient projects."
   # These are used in the navbar and in page titles, headers
   admin:
     general: "General"
@@ -50,6 +53,9 @@ en:
         one: "%{count} error prevented this contact info from being saved:"
         other: "%{count} errors prevented this contact info from being saved:"
 fr:
+  confirm_delete:
+    training_session: "Supprimer cette séance de formation? Impossible tant qu'elle a des certifications ou des examens."
+    training: "Supprimer cette formation? Impossible tant qu'elle a des séances de formation ou des projets de compétence."
   admin:
     contact_infos:
       errors_heading:

@@ -8,7 +8,7 @@ let destroy;
 let flatpickr;
 beforeEach(() => {
   destroy = vi.fn();
-  flatpickr = vi.fn(() => ({ flatpickr: () => ({ destroy }) }));
+  flatpickr = vi.fn(() => ({ destroy }));
   vi.stubGlobal("flatpickr", flatpickr);
 });
 vi.mock("../../../app/javascript/src/fullcalendar_setup_admin", () => ({}));
@@ -130,16 +130,21 @@ describe("admin calendar entrypoint", () => {
     expect(visit).toHaveBeenCalledWith(window.location, { action: "replace" });
   });
 
-  it("releases the copy dialog date pickers when it closes", () => {
+  it("keeps the copy dialog date pickers working when it closes", () => {
     document.body.innerHTML = `<button id="addEventButton"></button>
       <button id="refresh_calendar"></button><div id="copyEventsModal"></div>`;
     destroy.mockClear();
+    const errors = [];
+    const onError = (e) => errors.push(e.error ?? e.message);
+    window.addEventListener("error", onError);
     document.dispatchEvent(new Event("turbo:load"));
 
     document
       .getElementById("copyEventsModal")
       .dispatchEvent(new Event("hide.bs.modal"));
+    window.removeEventListener("error", onError);
 
-    expect(destroy).toHaveBeenCalledTimes(2);
+    expect(errors).toEqual([]);
+    expect(destroy).not.toHaveBeenCalled();
   });
 });

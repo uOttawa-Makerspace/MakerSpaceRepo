@@ -8,9 +8,10 @@ class Admin::UniProgramsController < AdminAreaController
   end
 
   def current_programs
-    # program_data = CSV.read("#{Rails.root}/lib/assets/programs.csv")
-    # send_data program_data, type: 'text/csv', filename: 'huh.csv'
-    send_file Rails.root.join("/lib/assets/programs.csv")
+    file = Rails.root.join("lib/assets/programs.csv")
+    return send_file(file, type: "text/csv") if file.exist?
+
+    redirect_to admin_uni_programs_index_path, alert: I18n.t("errors.admin.uni_programs.programs_file_missing")
   end
 
   # Takes in a csv file, parses and verifies all

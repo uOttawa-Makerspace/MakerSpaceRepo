@@ -32,6 +32,16 @@ RSpec.describe ProficientProject, type: :model do
       it { should have_many(:cc_moneys) }
       it { should have_many(:order_items) }
       it { should have_many(:project_kits) }
+      it { should have_many(:proficient_project_sessions).dependent(:restrict_with_error) }
+      it "refuses to be deleted while sessions hold certifications, keeping everything" do
+        record = create(:proficient_project_session)
+        project = record.proficient_project
+        cert = record.certification
+
+        expect { project.destroy }.not_to change { [ProficientProject.count, ProficientProjectSession.count, Certification.unscoped.count] }
+        expect(project.errors.full_messages.to_sentence).to include("proficient project sessions")
+        expect(Certification.unscoped.exists?(cert.id)).to be(true)
+      end
       it "dependent destroy: should destroy project kits if destroyed" do
         proficient_project = create(:proficient_project_with_project_kits)
         expect { proficient_project.destroy }.to change { ProjectKit.count }.by(
@@ -57,7 +67,7 @@ RSpec.describe ProficientProject, type: :model do
         should validate_presence_of(:title).with_message("A title is required.")
       end
       it do
-        should validate_uniqueness_of(:title).with_message(
+        should validate_uniqueness_of(:title).case_insensitive.with_message(
                  "Title already exists"
                )
       end
@@ -84,6 +94,34 @@ RSpec.describe ProficientProject, type: :model do
   end
 
   describe "Model methods" do
+    context "title case" do
+      it "is normalised before the uniqueness check" do
+        create(:proficient_project, title: "Cool widget")
+        pp = build(:proficient_project, title: "cool widget")
+        expect(pp).not_to be_valid
+        expect(pp.errors[:title]).to be_present
+      end
+
+      it "keeps an existing project editable for other fields" do
+        pp = create(:proficient_project, title: "Dup")
+        other = create(:proficient_project, title: "Other")
+        other.update_columns(title: "DUP")
+        expect(other.reload.update(description: "changed")).to be(true)
+        expect(other.reload.title).to eq("DUP")
+        expect(pp.reload.title).to eq("Dup")
+      end
+    end
+
+    context "clearing the title" do
+      it "is invalid with a presence error and leaves the title nil" do
+        pp = create(:proficient_project, title: "Keep me")
+        pp.title = nil
+        expect { pp.valid? }.not_to raise_error
+        expect(pp.title).to be_nil
+        expect(pp.errors[:title]).to be_present
+      end
+    end
+
     context "#capitalize_title" do
       it "should capitalize the title" do
         pp = build(:proficient_project, title: "abc")

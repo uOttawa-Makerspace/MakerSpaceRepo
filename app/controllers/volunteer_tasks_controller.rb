@@ -3,6 +3,8 @@
 class VolunteerTasksController < SessionsController
   include VolunteerTasksHelper
   include VolunteerAreaAccess
+  skip_authorization only: :complete_task,
+                     reason: "#{Authorization::ROLLOUT_PENDING}checked by task_owner_or_staff"
   before_action -> { @with_volunteer_header = true }
   before_action :staff_access, except: %i[show index my_tasks complete_task]
   before_action :volunteer_access, only: %i[show index my_tasks]

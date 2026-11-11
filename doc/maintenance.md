@@ -68,6 +68,10 @@ The locker notices migration must run before the first 8:30am run of the locker 
 
 Post-deploy step for this release (Google Calendar webhook): run `bin/rails runner 'GoogleCalendar::WebhookRegistrar.register!'` once, right after the deploy. Channels registered before this release have no token, and the webhook refuses their pushes (401) until they are re-registered; there is no grace period for them. The same applies whenever `secret_key_base` is rotated: every channel's token is derived from it, so every channel is refused until it is re-registered with the same command.
 
+### Deploy step: key request denial reason
+
+The release that adds `key_requests.denial_reason` (migration `20261110120000`) adds one nullable text column and changes no row. Key requests gain a fourth status, `denied`, stored as the integer 3; the existing statuses keep 0, 1 and 2. Code from before the release cannot read a denied request (it fails on the unknown status), so deploy `web` and `worker` together, as usual, and do not roll back to the old code once a request has been denied. Rolling the migration back refuses while any request is denied or has a stored reason, naming the counts; export those rows and clear them first.
+
 ### Deploy step: booking status column
 
 The release that adds `sub_space_bookings.booking_status_id` copies each booking's status into it when the migration runs, and from then on the app reads only that column. Old code writes a status only to the old status table (the `worker` container, which is separate from `web`, may still run the old code; so may the old `web` container until compose has replaced it), which would leave the column empty or stale. So deploy in this order:
@@ -90,6 +94,16 @@ The migration `StoreRepeatRulesInTorontoTime` (20261109130000) rewrites the stor
 - Rolling it back (`bin/rails db:migrate:down VERSION=20261109130000`) puts the recorded old text back, skips rows deleted since, and drops the record table. It refuses, changing nothing, while any rewritten rule has been edited since; the message gives the count. Those rules can be listed with `SELECT r.table_name, r.record_id FROM recurrence_rule_rewrites r JOIN events e ON r.table_name = 'events' AND e.id = r.record_id WHERE e.recurrence_rule IS DISTINCT FROM r.new_rule` (and the same with `staff_unavailabilities`).
 
 Rehearsed on a copy of a recent backup: 344 rules (18 events, 326 unavailabilities), all rewritten, none left as they were; every rewritten rule gave the same start, feed text, Google lines and server occurrences; down restored the rules exactly (checksums of the rule and of every other column equal to before); a second up gave the same text; a down after one rule was edited refused and changed nothing.
+
+### Deploy step: one dismissal per user and announcement
+
+The release that adds the unique index on `announcement_dismisses (user_id, announcement_id)` needs no manual step; `web` runs the migration on boot. If any user has more than one dismissal row for the same announcement, the migration stops, changing nothing, and says how many pairs. Remove the extra rows by hand (they are exact repeats), then deploy again. Rolling back only drops the index.
+
+### Deploy step: one pending volunteer hour per submission
+
+The release that adds the partial unique index on `volunteer_hours (user_id, volunteer_task_id, date_of_task, total_time)` for rows with `approval IS NULL` needs no manual step; `web` runs the migration on boot. If a person already has two identical pending hours the migration stops, lists the ids and changes nothing; settle those rows by hand (staff can approve or reject one), then deploy again.
+
+`bundle exec rake volunteer_awards:duplicates` lists, read only, the users who hold more than one task award (`cc_moneys` row) for the same task. It prints ids and changes nothing. No unique index is added on `cc_moneys` until the listing is empty.
 
 ### Failed and overdue job alerts
 
@@ -117,15 +131,18 @@ Each item is marked as reported by a `settings` row, `job_alert:failed:<failed e
 
 ### Backfilling the CDEL report
 
-The report mailed on the 1st covers the month just ended. To mail a month again, or one that was missed, give the month as `YYYY-MM` (not later than the current month). Each run sends one mail:
+The report mailed on the 1st covers the month just ended. A month is mailed once: a run first claims `cdel_report_sent:YYYY-MM` in the `settings` table (value `claimed:<time>`), sends the mail, and then sets the value to `sent`, so a second run of the same month (the scheduled task run again, or the commands below) mails nothing. A run whose delivery fails hands its claim back and can be repeated. A run killed in the middle (worker stopped, crash) leaves its `claimed:` value; runs started within 30 minutes skip the month, and after that the next run takes the claim over and sends it (if the crash came right after the mail was sent, the month is mailed twice). To clear a stuck claim at once, run `Setting.where(key: "cdel_report_sent:2026-10").update_all(value: nil)` in a console, then repeat the run. To mail a month that was missed, give the month as `YYYY-MM` (not later than the current month); to mail a month again that was already sent, add `FORCE=1`. Each run sends one mail:
 
 ```
 docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-08]"
 docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-09]"
 docker compose -f docker-compose.production.yml exec web bin/rails "reports:send_cdel_report_to_sharepoint[2026-10]"
+docker compose -f docker-compose.production.yml exec -e FORCE=1 web bin/rails "reports:send_cdel_report_to_sharepoint[2026-10]"
 ```
 
-From a console, `CdelReportJob.perform_later(month: "2026-08")` does the same.
+The last line mails October again even though it was sent.
+
+From a console, `CdelReportJob.perform_later(month: "2026-08")` does the same, and `force: true` mails the month again.
 
 ### Backfilling the popular hours
 
@@ -174,3 +191,18 @@ Deleting a repository hides it (`repositories.deleted`); nothing is removed, and
 Repository downloads are cached as zips in `tmp/repository_zips`. The cache is limited by `REPOSITORY_ZIP_CACHE_MAX_BYTES` (default 5 GB), the filesystem keeps `REPOSITORY_ZIP_MIN_FREE_BYTES` free (default 5 GB), and a zip larger than `REPOSITORY_ZIP_MAX_CACHED_ZIP_BYTES` (default 1 GB) is streamed instead of kept. An hourly job trims the cache (least recently used first) and removes partial zips older than an hour. Everything in `tmp/repository_zips` can be deleted at any time; zips are rebuilt on demand.
 
 The cache lives in the `repository_zips` Docker volume (`staging_repository_zips` on staging), mounted at `/rails/tmp/repository_zips` in both the `web` and `worker` services, so it survives deploys and the hourly job manages the same files the web service writes. Emptying it is safe: `docker compose -f docker-compose.production.yml exec web sh -c 'rm -f /rails/tmp/repository_zips/*'` (or remove the volume). `df` inside the container measures the host filesystem behind the volume. If the free space cannot be read (unexpected `df` output) a request applies only the size cap, the problem is reported, and the hourly job evicts nothing that run.
+
+## Help requests whose GitHub issue failed
+
+When GitHub does not return an issue number, the help request is still saved and the sender is told it was not submitted. These rows have an empty `gh_issue_number`. Find them in a console with `Help.where(gh_issue_number: nil)`. A retry by the sender creates a new row; the earlier one stays as the record of the attempt. Nothing deletes these rows.
+
+## Interface components
+
+Repeated interface pieces are ViewComponents (`view_component` gem) in `app/components/`, named `<Thing>Component`. The directory is autoloaded like the other `app/` directories.
+
+- A component's Stimulus controller lives in `app/javascript/controllers/`, named after the component (for example `key_request_deny_form_controller.js`), because the controller index only loads files under that directory. Its scoped CSS goes in a partial under `app/javascript/stylesheets/` imported by `application.scss`.
+- Component specs live in `spec/components/` and get `type: :component`, the ViewComponent test helpers and Capybara matchers from `spec/support/view_component.rb`.
+
+## Programs unique index
+
+The release that adds `index_programs_on_user_id_and_program_type` makes the database refuse a second row for the same user and program (Development, Volunteer, Teams). The migration first checks for existing duplicates; if any exist it changes nothing and stops with a message listing the user and the ids of the duplicate rows, to be settled by hand before running it again. The 2026-11-04 backup had none. It builds the index concurrently, and `down` only drops the index and keeps every row. Joining a program (`Program.join`) is an insert that does nothing when the row exists and does not name the index, so code that runs before the migration (for example the `worker` container) still works.

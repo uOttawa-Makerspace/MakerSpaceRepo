@@ -5,6 +5,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
   before_action :current_training_session, except: %i[new create index]
   before_action :changed_params, only: [:update]
   before_action :verify_ownership, except: %i[new create index]
+  before_action :refuse_locked_changes, only: [:update]
   before_action :set_courses_and_levels, only: %i[new show]
 
   def index
@@ -76,7 +77,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
       redirect_back(fallback_location: root_path) and return
     end
 
-    @current_training_session.update(changed_params)
+    @current_training_session.assign_attributes(changed_params)
 
     if params["dropped_users"].present?
       @current_training_session.users -=
@@ -106,7 +107,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
     course_name = CourseName.find_by(name: @current_training_session.course)
     @current_training_session.course_name = course_name if course_name.present?
 
-    if @current_training_session.save
+    if @current_training_session.save(context: :session_edit)
       flash[:notice] = "Training session updated succesfully"
     else
       flash[:alert] = validation_message(@current_training_session, "errors.staff.training_sessions.not_updated")
@@ -207,6 +208,13 @@ class Staff::TrainingSessionsController < StaffDashboardController
       .require(:changed_params)
       .permit(:training_id, :course, :user_id, :level)
       .reject { |_, v| v.blank? }
+  end
+
+  def refuse_locked_changes
+    return unless @current_training_session.locked_change?(changed_params)
+
+    flash[:alert] = I18n.t("errors.staff.training_sessions.locked_once_awarded")
+    redirect_back(fallback_location: root_path)
   end
 
   def verify_ownership

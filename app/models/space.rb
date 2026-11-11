@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Space < ApplicationRecord
-  include CalendarHelper
-
   has_many :pi_readers
   has_many :keys, dependent: :nullify
   has_many :key_requests, dependent: :nullify
@@ -36,8 +34,6 @@ class Space < ApplicationRecord
   REFUSAL_KEY = :"restrict_dependent_destroy.has_many"
   before_destroy :refuse_deletion_while_history_exists, prepend: true
 
-  after_create :create_popular_hours, unless: -> { Rails.env.test? }
-
   validates :name,
             presence: true,
             uniqueness: true
@@ -65,8 +61,8 @@ class Space < ApplicationRecord
   end
 
   # For tables that show each user's previous visit.
-  def signed_in_users_with_history
-    with_visit_history(signed_in_users)
+  def signed_in_users_with_history(with_sheets: false)
+    with_visit_history(signed_in_users, with_sheets: with_sheets)
   end
 
   def recently_signed_out_users
@@ -96,28 +92,49 @@ class Space < ApplicationRecord
   end
   private :visible_lab_sessions
 
-  # The dashboard rows show each user's previous visit; load what they read in one go.
-  def with_visit_history(users)
-    ActiveRecord::Associations::Preloader.new(
-      records: users,
-      associations: [:lab_sessions]
-    ).call
+  # A user query for this space's dashboard rows: spaces that ask for a walk-in safety sheet show
+  # whether each user has signed one, so those rows load the sheets with the users.
+  def including_walk_in_sheets(users)
+    needs_walk_in_safety_sheet? ? users.includes(:walk_in_safety_sheets) : users
+  end
+
+  # Loads what the dashboard rows read: each user's visits and, with with_sheets in a space that
+  # asks for a walk-in sheet, their sheets (only signed-in rows show those).
+  def with_visit_history(users, with_sheets: false)
+    associations = [:lab_sessions]
+    associations << :walk_in_safety_sheets if with_sheets && needs_walk_in_safety_sheet?
+    ActiveRecord::Associations::Preloader.new(records: users, associations: associations).call
     users
   end
   private :with_visit_history
 
-    def create_popular_hours
-      # Optimization: Prepare data in memory
-      records = []
-      (0..6).each do |weekday|
-        (0..23).each do |hour|
-          records << { space_id: id, hour: hour, day: weekday, created_at: Time.current, updated_at: Time.current }
-        end
-      end
-      
-      # Single SQL Insert
-      PopularHour.insert_all(records)
+  # Saves a new space together with its popular hour rows in one transaction, so a space is never left without
+  # them. Returns whether it saved; a validation failure, or a failed insert (reported, and added to the errors),
+  # stores nothing.
+  def save_with_popular_hours
+    transaction do
+      next false unless save
+
+      create_popular_hours
+      true
     end
+  rescue ActiveRecord::ActiveRecordError => e
+    HandledError.report(e, source: "space.save_with_popular_hours")
+    errors.add(:base, :popular_hours_not_created)
+    false
+  end
+
+  # One row per weekday and hour for the space; does nothing when it already has its rows, so it is safe to run
+  # twice.
+  def create_popular_hours
+    return if popular_hours.exists?
+
+    now = Time.current
+    records = (0..6).flat_map do |weekday|
+      (0..23).map { |hour| { space_id: id, hour: hour, day: weekday, created_at: now, updated_at: now } }
+    end
+    PopularHour.insert_all(records)
+  end
 
   def makerspace?
     name.eql?("Makerspace")
@@ -162,103 +179,6 @@ class Space < ApplicationRecord
     linear = assigned_color.map { |c| c / 255.0 }.map { |c| c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055)**2.4 }
     luminance = (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2])
     luminance < 0.179 ? "#ffffff" : "#000000"
-  end
-
-  def weekly_open_hours
-    calendar = staff_needed_calendars.find_by(role: "open_hours")
-    return [] if calendar.blank?
-
-    parsed = parse_ics_calendar(calendar.calendar_url, name: "Open Hours")
-    return [] if parsed.blank?
-
-    events = parsed.first[:events]
-
-    start_of_week = Time.zone.today.beginning_of_week(start_day = :saturday).beginning_of_day
-    end_of_week   = Time.zone.today.end_of_week(start_day = :saturday).end_of_day
-
-    weekly_events = []
-
-    # logger.warn "Events: #{events.inspect}"
-
-    events.each do |ev|
-      next if ev[:start].blank?
-
-      dtstart = Time.zone.parse(ev[:start])
-      dtend =
-        if ev[:end].present?
-          Time.zone.parse(ev[:end])
-        elsif ev[:duration].present?
-          dtstart + (ev[:duration].to_f / 1000.0)
-        else
-          dtstart + 1.hour
-        end
-      
-      if ev[:rrule].present?
-        rule_obj = ev[:rrule]
-        
-        rule = case rule_obj[:freq]&.upcase
-              when "DAILY"   then IceCube::Rule.daily
-              when "WEEKLY"  then IceCube::Rule.weekly
-              when "MONTHLY" then IceCube::Rule.monthly
-              when "YEARLY"  then IceCube::Rule.yearly
-              end
-
-              next if rule.nil?
-              
-        if rule_obj[:byweekday].present?
-          weekday_map = {
-            "su" => 0,
-            "mo" => 1,
-            "tu" => 2,
-            "we" => 3,
-            "th" => 4,
-            "fr" => 5,
-            "sa" => 6
-          }
-
-          mapped_days = rule_obj[:byweekday].map { |d| weekday_map[d] }.compact
-
-          rule.day(*mapped_days) if mapped_days.any?
-        end
-        
-        rule.until(Time.zone.parse(rule_obj[:until])) if rule_obj[:until].present?
-        rule.count(rule_obj[:count]) if rule_obj[:count].present?
-
-        schedule = IceCube::Schedule.new(dtstart, end_time: dtend)
-        schedule.add_recurrence_rule(rule)
-
-        if ev[:exdate].present?
-          ev[:exdate].each do |ex|
-              schedule.add_exception_time(Time.zone.parse(ex))
-            rescue ArgumentError, TypeError
-              next # an exception date that is not a time is skipped
-          end
-        end
-
-        occurrences = schedule.occurrences_between(start_of_week, end_of_week)
-        occurrences.each do |occ|
-          occ_start = occ.start_time.in_time_zone
-          occ_end   = occ.end_time.in_time_zone
-
-          weekly_events << OpenStruct.new(
-            dtstart: occ_start,
-            dtend: occ_end,
-            title: ev[:title]
-          )
-        end
-
-      elsif dtstart >= start_of_week && dtstart <= end_of_week
-        weekly_events << OpenStruct.new(
-          dtstart: dtstart,
-          dtend: dtend,
-          title: ev[:title]
-        )
-      end
-    end
-
-    # logger.warn "WE: #{weekly_events.inspect}"
-
-    weekly_events.sort_by(&:dtstart)
   end
 
   private

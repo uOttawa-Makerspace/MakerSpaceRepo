@@ -131,10 +131,13 @@ onPageLoad("#calendar", async () => {
     console.error("space_id element not found");
     return;
   }
+  // An admin assigned to no space has an empty picker; the page already says so.
+  const spaceId = spaceIdElem.value;
+  if (!spaceId) return;
 
-  const eventsRes = await fetch(
-    "/admin/events/json/" + spaceIdElem.value,
-  ).catch((error) => console.log(error));
+  const eventsRes = await fetch("/admin/events/json/" + spaceId).catch(
+    (error) => console.log(error),
+  );
   const eventsData = await eventsRes.json();
 
   eventsData.forEach((eventSource) => {
@@ -163,7 +166,7 @@ onPageLoad("#calendar", async () => {
       for (const src of eventsData.filter(isEventTypeShown)) {
         for (const ev of src.events) {
           const assigned = (ev.extendedProps.assignedUsers || []).map((u) =>
-            u.id.toString(),
+            String(u.id),
           );
           const visible = !assigned.every((id) => hiddenUserIds.has(id));
           if (visible) filtered.push(ev);
@@ -175,7 +178,7 @@ onPageLoad("#calendar", async () => {
 
   // Init staff unavailabilities
   const res = await fetch(
-    "/admin/calendar/unavailabilities_json/" + spaceIdElem.value,
+    "/admin/calendar/unavailabilities_json/" + spaceId,
   ).catch((error) => console.log(error));
   const data = await res.json();
 
@@ -228,7 +231,7 @@ onPageLoad("#calendar", async () => {
 
   // Init imported calendars
   const importedCalendarsRes = await fetch(
-    "/admin/calendar/imported_calendars_json/" + spaceIdElem.value,
+    "/admin/calendar/imported_calendars_json/" + spaceId,
   ).catch((error) => console.log(error));
   const importedCalendars = await importedCalendarsRes.json();
 
@@ -331,7 +334,12 @@ onPageLoad("#calendar", async () => {
     allCheckboxDiv.className = "m-2 d-flex align-items-center gap-1";
 
     const { checkbox: allEventsCheckbox, label: allEventsLabel } =
-      createCheckboxElement("all", " / ", "#919191", "all_events_checkbox");
+      createCheckboxElement(
+        "all-events",
+        " / ",
+        "#919191",
+        "all_events_checkbox",
+      );
     const { checkbox: allCheckbox, label: allLabel } = createCheckboxElement(
       "all",
       "All Staff",

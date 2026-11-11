@@ -25,6 +25,24 @@ class Certification < ApplicationRecord
         }
   scope :inactive, -> { unscoped.where(active: false) }
 
+  # The reason recorded when revoking a project badge deactivates the certification it granted.
+  BADGE_REVOKED_REASON = "Project badge revoked"
+
+  # Every certification (active or not) a user earned through approvals of a proficient project.
+  # The project session carries no link to the order item, so user and project identify it.
+  def self.for_project(user_id, project_id)
+    unscoped.where(
+      user_id: user_id,
+      id: ProficientProjectSession.where(proficient_project_id: project_id).select(:certification_id)
+    )
+  end
+
+  # Inactive certifications that a badge revoke deactivated (not ones demoted by hand), the most
+  # recently deactivated first. Call on a relation from .for_project.
+  def self.revoked_badges
+    where(active: false, demotion_reason: BADGE_REVOKED_REASON).order(updated_at: :desc, id: :desc)
+  end
+
   # A badge page is addressed by its share token, or by the numeric id older links use.
   # Tokens always contain a non-digit, so an all-digit key is an id.
   def self.find_for_badge_page!(key)
@@ -163,29 +181,53 @@ class Certification < ApplicationRecord
     false
   end
 
-  def self.highest_level
-    high_certs = []
-    
-      all
-      .joins(:training_session)
-      .group_by(&:training)
-      .each do |_, certs|
-        certifications = certs
-        level = certifications.map { |c| c.training_session.level }
-        if level.include?("Advanced")
-          high_certs +=
-            certifications.select { |c| c.training_session.level == "Advanced" }
-        elsif level.include?("Intermediate")
-          high_certs +=
-            certifications.select do |c|
-              c.training_session.level == "Intermediate"
-            end
-        elsif level.include?("Beginner")
-          high_certs +=
-            certifications.select { |c| c.training_session.level == "Beginner" }
+  LEVELS = %w[Beginner Intermediate Advanced].freeze
+
+  # Certifications with their training known in SQL, whether earned in a training session or
+  # through a proficient project.
+  scope :with_training,
+        -> do
+          left_joins(:training_session, proficient_project_session: :proficient_project).joins(
+            "INNER JOIN trainings ON trainings.id = " \
+              "COALESCE(training_sessions.training_id, proficient_projects.training_id)"
+          )
         end
-      end
-    high_certs
+
+  # The top-level certifications of each training (all of them when several share that level),
+  # whether earned in a training session or through a proficient project. A certification
+  # whose training cannot be found is left out.
+  def self.highest_level
+    certs = all.to_a
+    preload_trainings(certs)
+    by_training = certs.select(&:training_known?).group_by(&:training)
+    by_training.reject { |training, _| training.nil? }.flat_map { |_, held| top_ranked(held) }
+  end
+
+  def self.top_ranked(held)
+    ranks = held.map(&:rank)
+    top = ranks.compact.max
+    top ? held.select { |c| c.rank == top } : []
+  end
+  private_class_method :top_ranked
+
+  # Loads the training of each certification, through its session or its proficient project.
+  def self.preload_trainings(certs)
+    by_session, by_project = certs.partition(&:training_session_id)
+    ActiveRecord::Associations::Preloader.new(records: by_session, associations: { training_session: :training }).call
+    ActiveRecord::Associations::Preloader.new(
+      records: by_project,
+      associations: [:training_session, { proficient_project_session: { proficient_project: :training } }]
+    ).call
+  end
+
+  # A session certification ranks by its session's level, a project-only one by its own level.
+  # A level outside Beginner, Intermediate and Advanced has no rank.
+  def rank
+    LEVELS.index(training_session_id ? training_session.level : level)
+  end
+
+  def training_known?
+    training_session_id.present? || proficient_project_session&.proficient_project.present?
   end
 
   # The name of the training behind the certification, in the current language.

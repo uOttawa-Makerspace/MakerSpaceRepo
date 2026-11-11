@@ -58,11 +58,10 @@ RSpec.describe "Exams", type: :request do
   # ------------------------------------------------------------------- index
 
   describe "GET /exams" do
-    it "renders an empty list for a guest (no sign-in required)" do
+    it "sends a guest to the login page" do
       new_exam
       get exams_path
-      expect(response).to have_http_status(:ok)
-      expect(response.body).not_to include("Start Exam")
+      expect(response.location).to start_with("http://www.example.com/login")
     end
 
     it "lists only the signed-in user's own exams with Start/Resume links" do
@@ -362,12 +361,12 @@ RSpec.describe "Exams", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    it "answers 500 when the answer belongs to a question that is not in the exam" do
+    it "answers 404 and stores nothing when the answer belongs to a question that is not in the exam" do
       log_in!(student)
       stranger = create(:question)
       foreign = Answer.create!(question: stranger, correct: true, description: "foreign")
       expect { post_answer(foreign) }.not_to change(ExamResponse, :count)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
 
     it "stores the answer and answers 204 whatever the request format" do
@@ -699,6 +698,31 @@ RSpec.describe "Exams", type: :request do
       expect(exam.expired_at).to be_within(1.minute).of(DateTime.now + 3.days)
     end
 
+    it "creates every exam and redirects even when the mail for one user cannot be delivered" do
+      second_student
+      allow_any_instance_of(MsrMailer).to receive(:send_exam).and_wrap_original do |original, user, *rest|
+        raise Net::SMTPFatalError, "mailbox unavailable" if user == student
+        original.call(user, *rest)
+      end
+      expect { create_from_training }.to change(Exam, :count).by(2)
+      expect(response).to redirect_to(staff_dashboard_index_path(space_id: session_record.space.id))
+      expect(deliveries).to be_empty
+      expect { perform_enqueued_jobs }.to raise_error(Net::SMTPFatalError)
+      expect(Exam.where(user: [student, second_student]).count).to eq(2)
+    end
+
+    it "creates no exam for anyone when one of them cannot be created" do
+      second_student
+      calls = 0
+      allow(ExamQuestion).to receive(:create_exam_questions).and_wrap_original do |original, *args|
+        calls += 1
+        raise ActiveRecord::StatementInvalid, "boom" if calls == 2
+        original.call(*args)
+      end
+      expect { create_from_training }.not_to change(Exam, :count)
+      expect(deliveries).to be_empty
+    end
+
     it "only draws questions of the session's level and trainings" do
       other_level = create(:question, level: "Advanced")
       fixture[:training].questions << other_level
@@ -768,14 +792,18 @@ RSpec.describe "Exams", type: :request do
 
     before { log_in!(session_record.user) }
 
-    it "creates the exam for that user without emailing, and redirects to the staff session page" do
+    it "creates the exam for that user, emails only that user, and redirects to the staff session page" do
+      other = create(:user, :regular_user)
+      session_record.users << other
       expect do
         perform_enqueued_jobs do
           create_for_single_user(student)
         end
       end.to change { Exam.where(user: student).count }.by(1)
       expect(response).to redirect_to(staff_training_session_path(session_record.id))
-      expect(deliveries).to be_empty
+      expect(deliveries.map(&:to)).to eq([[student.email]])
+      expect(deliveries.first.subject).to eq("An exam was sent to you")
+      expect(flash[:notice]).to eq("You've successfully sent the exam to #{student.name}.")
       expect(Exam.last.exam_questions.count).to eq($n_exams_question)
     end
 
@@ -788,9 +816,10 @@ RSpec.describe "Exams", type: :request do
     it "refuses with a message and saves nothing when the training has no questions at that level" do
       empty = build_exam_fixture(question_count: 0)
       sign_in_as(:admin)
-      expect { create_for_single_user(empty[:user], empty[:session]) }.not_to change(Exam, :count)
+      expect { perform_enqueued_jobs { create_for_single_user(empty[:user], empty[:session]) } }.not_to change(Exam, :count)
       expect(response).to redirect_to(staff_training_session_path(empty[:session].id))
       expect(flash[:alert]).to eq("This training has no questions at this level, so no exams were created.")
+      expect(deliveries).to be_empty
     end
 
     it "makes a guest sign in and issues nothing" do

@@ -22,14 +22,49 @@ RSpec.describe LockerRental, type: :model do
     end
 
     it "clears the notice record when owned_until moves later, so the next expiry is announced" do
-      rental.update!(owned_until: 4.months.from_now)
+      rental.extend_until(4.months.from_now)
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+    end
+
+    it "clears a notice recorded after the record was first loaded, once the row is locked for the edit" do
+      rental.update_columns(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+      stale = LockerRental.find(rental.id)
+      LockerRental.where(id: rental.id).update_all(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+
+      stale.lock!
+      stale.assign_owned_until(4.months.from_now)
+      stale.save!
+
       expect(rental.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
     end
 
     it "clears it when the rental becomes indefinite" do
       rental.indefinite = "1"
-      rental.update!(owned_until: nil)
+      rental.extend_until(nil)
       expect(rental.reload.notified_of_cancellation_at).to be_nil
+    end
+
+    it "clears a notice recorded after the instance was loaded, when extended from a stale instance" do
+      stale = LockerRental.find(create(:locker_rental, :active, owned_until: 3.days.ago).id)
+      LockerRental.where(id: stale.id).update_all(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+      expect(stale.extend_until(4.months.from_now)).to be(true)
+      expect(stale.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+    end
+
+    it "keeps the notice when extend_until moves the date earlier" do
+      expect(rental.extend_until(5.days.ago)).to be(true)
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+    end
+
+    it "clears the notice when extend_until makes the rental indefinite, and saves the other attributes" do
+      rental.indefinite = "1"
+      expect(rental.extend_until(nil, staff_notes: "kept")).to be(true)
+      expect(rental.reload).to have_attributes(owned_until: nil, notified_of_cancellation_at: nil, staff_notes: "kept")
+    end
+
+    it "returns false and saves nothing when the rental is invalid" do
+      expect(rental.extend_until(nil)).to be(false)
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: told_at)
     end
 
     it "does not touch a notice recorded on a rental being created" do
@@ -38,7 +73,7 @@ RSpec.describe LockerRental, type: :model do
     end
 
     it "keeps it when owned_until moves earlier or is not changed" do
-      rental.update!(owned_until: 5.days.ago)
+      rental.extend_until(5.days.ago)
       rental.update!(staff_notes: "chasing")
       expect(rental.reload).to have_attributes(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
     end
@@ -46,7 +81,7 @@ RSpec.describe LockerRental, type: :model do
     it "leaves a staff-set contacted flag alone when no notice was recorded" do
       plain = create(:locker_rental, :active, owned_until: 3.days.ago)
       plain.update_columns(contacted_for_clearance: true)
-      plain.update!(owned_until: 2.months.from_now)
+      plain.extend_until(2.months.from_now)
       expect(plain.reload.contacted_for_clearance).to be(true)
     end
   end
@@ -219,6 +254,14 @@ RSpec.describe LockerRental, type: :model do
     it "instance predicates agree with the scopes" do
       expect([reviewing, awaiting, active, cancelled].map(&:pending?)).to eq([true, true, false, false])
       expect([reviewing, awaiting, active, cancelled].map(&:reserves_locker?)).to eq([false, true, true, false])
+    end
+  end
+
+  describe "#indefinite?" do
+    it "is true only for an active rental without an end date" do
+      expect(build(:locker_rental, :active, owned_until: nil)).to be_indefinite
+      expect(build(:locker_rental, :active, owned_until: 1.month.from_now)).not_to be_indefinite
+      expect(build(:locker_rental, owned_until: nil)).not_to be_indefinite
     end
   end
 
@@ -972,6 +1015,12 @@ RSpec.describe LockerRental, type: :model do
           expect(value.zone).to eq("+00:00")
           expect(value.iso8601(9)).to eq(format("%04d-%02d-%02dT23:59:59.999999999+00:00", y, m, d))
         end
+      end
+    end
+
+    it "uses the local date: late on 31 December Eastern is still the fall semester" do
+      travel_to(Time.zone.local(2026, 12, 31, 22)) do # 03:00 UTC on 1 January
+        expect(end_of_this_semester).to eq(DateTime.new(2026, 12).end_of_month)
       end
     end
 

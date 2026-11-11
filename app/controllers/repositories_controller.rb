@@ -34,8 +34,8 @@ class RepositoriesController < SessionsController
   before_action -> { ensure_repository_unlocked(@repository) }, only: :add_like
   before_action :set_member_repository,
                 only: %i[link_to_pp add_member remove_member]
-  before_action :check_ownership,
-                only: %i[edit update destroy add_member remove_member]
+  before_action :check_editable, only: %i[edit update]
+  before_action :check_ownership, only: %i[destroy add_member remove_member]
   # Same rule as the show page's link form: members, staff and admin
   before_action :check_link_permission, only: :link_to_pp
 
@@ -120,7 +120,7 @@ class RepositoriesController < SessionsController
   end
 
   def edit
-    if @repository.owned_by?(@user) || @user.admin?
+    if @repository.editable_by?(@user) || @user.admin?
       @project_proposals =
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
         :project_proposal_id
@@ -149,6 +149,7 @@ class RepositoriesController < SessionsController
 
   def update
     if save_with_categories_and_equipments
+      @repository.clear_zip_cache
       flash[:notice] = "Project updated successfully!"
       redirect_to repository_path(
                     @repository.user_username,
@@ -179,7 +180,7 @@ class RepositoriesController < SessionsController
     current_like = @repository.likes.find_by(user_id: @user.id)
 
     # Members do not like their own repository (a like already given can still be taken back).
-    if current_like.nil? && @repository.owned_by?(@user)
+    if current_like.nil? && @repository.editable_by?(@user)
       flash[:alert] = "You cannot like a project you are a member of"
       return redirect_to repository_path(@repository.user_username, @repository.slug)
     end
@@ -274,16 +275,17 @@ class RepositoriesController < SessionsController
 
     if member.nil?
       flash[:alert] = "Couldn't find user, please try again."
+    elsif !repository.users.include?(member)
+      flash[:alert] = "This user is not a member of this repository."
     elsif repository.users.length == 1
       flash[
         :alert
       ] = "You cannot remove the last person in this repository. Please go to your profile page if you want to delete this repository."
     elsif member.id == repository.user_id
       flash[:alert] = "You cannot remove the current owner of this repository."
-    elsif repository.users.delete(member)
-      flash[:notice] = "This user was removed from your repository."
     else
-      flash[:alert] = I18n.t("errors.repositories.member_not_removed")
+      repository.users.delete(member)
+      flash[:notice] = "This user was removed from your repository."
     end
     redirect_to repository_path(repository.user_username, repository.slug)
   end
@@ -312,17 +314,7 @@ class RepositoriesController < SessionsController
   end
 
   def populate_users
-    # Only the fields the user-search autocompletes read (repositories.js, teams.js, add_new_staff.js)
-    json_data =
-      User
-        .where(
-          "LOWER(name) like LOWER(?)",
-          "%#{User.sanitize_sql_like(params[:search].to_s)}%"
-        )
-        .limit(10)
-        .pluck(:id, :name, :username)
-        .map { |id, name, username| { id: id, name: name, username: username } }
-    render json: { users: json_data }
+    render json: { users: User.picker_entries(params[:search], current_user) }
   end
 
   private
@@ -334,13 +326,19 @@ class RepositoriesController < SessionsController
     @repository.users.each { |u| u.decrement!(:reputation, 5) }
   end
 
-  # Block if user is not authorized to modify repository
+  # Edit and update: the owner, a member or an admin.
+  def check_editable
+    refuse_action unless @user.admin? || @repository.editable_by?(@user)
+  end
+
+  # Delete and member management: the owner or an admin.
   def check_ownership
-    # admins can modify repo
-    unless @user.admin? || @repository.owned_by?(@user)
-      flash[:alert] = "You are not allowed to perform this action!"
-      redirect_to repository_path(denial_username(@repository), @repository.slug)
-    end
+    refuse_action unless @user.admin? || @repository.owned_by?(@user)
+  end
+
+  def refuse_action
+    flash[:alert] = "You are not allowed to perform this action!"
+    redirect_to repository_path(denial_username(@repository), @repository.slug)
   end
 
   def set_member_repository
@@ -349,7 +347,7 @@ class RepositoriesController < SessionsController
   end
 
   def check_link_permission
-    unless @user.staff? || @user.admin? || @repository.owned_by?(@user)
+    unless @user.staff? || @user.admin? || @repository.editable_by?(@user)
       flash[:alert] = "You are not allowed to perform this action!"
       redirect_to repository_path(denial_username(@repository), @repository.slug)
     end

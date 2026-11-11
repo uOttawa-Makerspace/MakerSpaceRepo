@@ -4,7 +4,7 @@ class Admin::AnnouncementsController < AdminAreaController
   layout "admin_area"
 
   def index
-    @announcements = Announcement.all.order(created_at: :asc)
+    @announcements = Announcement.includes(:user).order(created_at: :asc)
   end
 
   def new
@@ -22,11 +22,12 @@ class Admin::AnnouncementsController < AdminAreaController
   def create
     announcement = Announcement.new(announcement_params)
     announcement.user_id = current_user.id
-    if announcement.save!
-      redirect_to admin_announcements_path
-      flash[
-        :notice
-      ] = "You've successfully created an announcement for #{announcement.public_goal.capitalize}"
+    if announcement.save
+      redirect_to admin_announcements_path,
+                  notice: "You've successfully created an announcement for #{announcement.public_goal.capitalize}"
+    else
+      redirect_to new_admin_announcement_path,
+                  alert: validation_message(announcement, "errors.admin.announcements.not_created")
     end
   end
 

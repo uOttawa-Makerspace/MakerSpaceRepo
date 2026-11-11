@@ -142,14 +142,21 @@ RSpec.describe "Content models (part 1 characterization)" do
     end
 
     describe "zip cache" do
-      it "zip_path is tmp/repository_zips/makerepo_<id>.zip and clear_zip_cache removes it after update and destroy" do
+      it "zip_path is tmp/repository_zips/makerepo_<id>.zip and clear_zip_cache removes it" do
+        FileUtils.mkdir_p(File.dirname(repo.zip_path))
+        FileUtils.touch(repo.zip_path)
+        repo.clear_zip_cache
+        expect(File.exist?(repo.zip_path)).to be(false)
+      end
+
+      it "is not cleared by saving or destroying the record itself" do
         FileUtils.mkdir_p(File.dirname(repo.zip_path))
         FileUtils.touch(repo.zip_path)
         repo.update!(description: "changed")
-        expect(File.exist?(repo.zip_path)).to be(false)
-        FileUtils.touch(repo.zip_path)
         repo.destroy
-        expect(File.exist?(repo.zip_path)).to be(false)
+        expect(File.exist?(repo.zip_path)).to be(true)
+      ensure
+        FileUtils.rm_f(repo.zip_path)
       end
 
       it "a missing cache file is not an error and is not reported" do
@@ -333,9 +340,9 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(create(:proficient_project, title: "hELLO WORLD").title).to eq("Hello world")
     end
 
-    it "title uniqueness is case-sensitive on the raw value, run before capitalize" do
+    it "title uniqueness ignores letter case" do
       create(:proficient_project, title: "Widget")
-      expect(build(:proficient_project, title: "widget")).to be_valid
+      expect(build(:proficient_project, title: "widget")).not_to be_valid
       expect(build(:proficient_project, title: "Widget")).not_to be_valid
     end
 
@@ -434,9 +441,10 @@ RSpec.describe "Content models (part 1 characterization)" do
   end
 
   describe ProjectKit do
-    it "requires user and proficient_project_id (not existence)" do
+    it "requires a user and an existing proficient project" do
       expect(ProjectKit.new).not_to be_valid
-      expect(ProjectKit.new(user: owner, proficient_project_id: 0)).to be_valid
+      expect(ProjectKit.new(user: owner, proficient_project_id: 0)).not_to be_valid
+      expect(ProjectKit.new(user: owner, proficient_project: create(:proficient_project))).to be_valid
     end
 
     it "delivered defaults to falsey" do
@@ -461,7 +469,19 @@ RSpec.describe "Content models (part 1 characterization)" do
     end
 
     it "is valid with no file at all (validator only runs when attached)" do
-      expect(Video.new).to be_valid
+      expect(build(:video, proficient_project: create(:proficient_project))).to be_valid
+    end
+
+    it "needs exactly one of a project or a learning module" do
+      expect(Video.new).not_to be_valid
+      expect(build(:video, proficient_project: create(:proficient_project), learning_module: create(:learning_module))).not_to be_valid
+      expect(build(:video, proficient_project: nil, learning_module: create(:learning_module))).to be_valid
+    end
+
+    it "lets an existing video with no parent be edited for other fields" do
+      video = create(:video, proficient_project: create(:proficient_project))
+      video.update_columns(proficient_project_id: nil)
+      expect(video.reload.update(processed: true)).to be(true)
     end
   end
 end

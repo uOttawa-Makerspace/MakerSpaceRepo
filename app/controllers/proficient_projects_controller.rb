@@ -118,13 +118,22 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   def destroy
-    @proficient_project.destroy
-    respond_to do |format|
-      format.html do
-        redirect_to proficient_projects_path,
-                    notice: "Proficient Project has been successfully deleted."
+    if @proficient_project.destroy
+      respond_to do |format|
+        format.html do
+          redirect_to proficient_projects_path,
+                      notice: "Proficient Project has been successfully deleted."
+        end
+        format.json { head :no_content }
       end
-      format.json { head :no_content }
+    else
+      respond_to do |format|
+        format.html do
+          redirect_to proficient_project_path(@proficient_project),
+                      alert: validation_message(@proficient_project, "errors.shop.projects.not_deleted")
+        end
+        format.json { render json: { errors: @proficient_project.errors.full_messages }, status: :unprocessable_content }
+      end
     end
   end
 
@@ -304,26 +313,9 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   # :awarded, :not_waiting, or the RecordInvalid / RecordNotSaved that rolled the award back.
   def award_result(order_item)
-    result = :not_waiting
-    order_item.with_lock { result = :awarded if award_waiting_submission(order_item) }
-    result
+    order_item.award!(@user, order_item_params) ? :awarded : :not_waiting
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
     e
-  end
-
-  def award_waiting_submission(order_item)
-    return false unless order_item.status == "Waiting for approval"
-
-    level = order_item.proficient_project.level
-    cert = Certification.create!(user_id: order_item.order.user_id, level: level)
-    ProficientProjectSession.create!(
-      proficient_project_id: order_item.proficient_project.id,
-      level: level,
-      user_id: @user.id,
-      certification_id: cert.id
-    )
-    order_item.update!(order_item_params.merge({ status: "Awarded" }))
-    true
   end
 
   # Revokes a submission waiting for approval, then mails the result.

@@ -87,7 +87,10 @@ class CommentsController < SessionsController
     adjust_reputation(comment.user, downvote ? 2 : -2) if Upvote.retract(@user, comment, downvote)
   end
 
+  # A deleted author has no reputation to change; the vote itself still counts.
   def adjust_reputation(user, amount)
+    return if user.nil?
+
     user.increment!(:reputation, amount)
   end
 

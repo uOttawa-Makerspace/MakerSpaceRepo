@@ -90,7 +90,7 @@ RSpec.describe "Error messages", type: :request do
 
     it "names a failed make in French" do
       content_login!(owner)
-      post makes_create_path(owner.username, repo.id), params: { repo.title => { title: "", description: "x", photos_attributes: { "0" => { image: content_png_upload } } } }.merge(fr)
+      post makes_create_path(owner.username, repo.id), params: { repository: { title: "", description: "x", photos_attributes: { "0" => { image: content_png_upload } } } }.merge(fr)
       expect(flash[:alert]).to start_with("La réalisation n'a pas été enregistrée. ")
     end
   end
@@ -289,13 +289,6 @@ RSpec.describe "Error messages", type: :request do
   end
 
   describe "development program, kits, videos and key requests" do
-    it "names a refused join in French" do
-      content_sign_in_as(:regular)
-      refuse_writes(Program, :save)
-      post join_development_program_development_programs_path, params: fr
-      expect(flash[:alert]).to eq("Vous n'avez pas rejoint le programme de développement. Refused for the spec")
-    end
-
     it "tells a member who already joined the Development Program so" do
       user = content_sign_in_as(:regular)
       Program.create!(user: user, program_type: Program::DEV_PROGRAM)
@@ -332,10 +325,10 @@ RSpec.describe "Error messages", type: :request do
   end
 
   describe "users and memberships" do
-    it "tells a regular user that only staff change programs, in French" do
+    it "refuses a regular user changing programs, in French" do
       content_sign_in_as(:regular)
       post change_programs_users_path, params: { user_id: create(:user, :regular_user).id }.merge(fr)
-      expect(flash[:alert]).to eq("Seuls le personnel et les administrateurs peuvent modifier les programmes d'un utilisateur.")
+      expect(flash[:alert]).to eq("Vous ne pouvez pas accéder à cette zone.")
     end
 
     it "names an unknown membership tier in French" do

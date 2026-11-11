@@ -1,4 +1,5 @@
 class JobOrder < ApplicationRecord
+  include PrefixedFileNames
   include ShopifyConcern
 
   belongs_to :user, optional: true
@@ -7,7 +8,10 @@ class JobOrder < ApplicationRecord
   belongs_to :job_order_quote, dependent: :destroy, optional: true
   has_many :job_order_options, dependent: :destroy
   # Oldest first, by id: THE order of a job order's statuses (see #latest_status; the history views read it too).
-  has_many :job_order_statuses, -> { order(:id) }, dependent: :destroy
+  has_many :job_order_statuses, -> { order(:id) }, dependent: :destroy, inverse_of: :job_order
+  # The newest status row, for lists: preloaded for a whole page of orders in one query that reads only that row per
+  # order (no status history loaded). Read it through #latest_status.
+  has_one :latest_job_order_status, -> { where(LATEST_STATUS_ROW_SQL) }, class_name: "JobOrderStatus", inverse_of: false
   has_and_belongs_to_many :job_services
   has_many :chat_messages, dependent: :destroy
   belongs_to :assigned_staff, class_name: "User", optional: true
@@ -16,8 +20,6 @@ class JobOrder < ApplicationRecord
   has_many :job_quote_line_items, dependent: :destroy
 
   validate :assigned_staff_must_be_staff, if: :will_save_change_to_assigned_staff_id?
-
-  after_save :set_filename
 
   scope :not_deleted, -> { where(is_deleted: false) }
 
@@ -155,13 +157,13 @@ class JobOrder < ApplicationRecord
   # the lock after the source state is checked and before the status row is written; its validation failures are
   # :change_invalid. The destination's draft rule (#enter_status!) runs in the same transaction, so a refusal undoes
   # everything: the block's writes, the status row, the draft id.
-  def transition!(from:, to:, actor:, approval_token: nil, &changes)
+  # `expected_status_row_id` (optional) is the id of the status row the caller's form was rendered from; a form
+  # submitted twice, or from a page that has since moved on, is refused as :wrong_state once the newest row differs.
+  def transition!(from:, to:, actor:, approval_token: nil, expected_status_row_id: nil, &changes)
     label = "transition! #{Array.wrap(from).map { |s| s&.name }} -> #{to&.name}"
     locked_operation(label) do |latest|
-      next TransitionResult.refused(:wrong_state) if latest.nil? || !Array.wrap(from).include?(latest)
-      if approval_token && self.class.from_approval_token(approval_token)&.id != id
-        next TransitionResult.refused(:link_spent)
-      end
+      refusal = transition_refusal(latest, from, approval_token, expected_status_row_id)
+      next refusal if refusal
 
       apply_change(&changes) if changes
       require_priced_services!(to)
@@ -211,6 +213,11 @@ class JobOrder < ApplicationRecord
   def self.quotable_statuses
     [JobStatus.draft, JobStatus.staff_approval, JobStatus.user_approval, JobStatus.sent_reminder,
      JobStatus.waiting_processed, JobStatus.being_processed, JobStatus.completed, JobStatus.declined]
+  end
+
+  # Every status an order may be declined from: the quotable ones, except an order that is already declined.
+  def self.declinable_statuses
+    quotable_statuses - [JobStatus.declined]
   end
 
   # The approve link is bound to the latest quote boundary: the newest "Waiting for User Approval" row (a re-quote
@@ -341,22 +348,11 @@ class JobOrder < ApplicationRecord
               if: -> { staff_files.attached? }
             }
 
-  def set_filename
-    if user_files.attached?
-      user_files.each do |user_files|
-        unless user_files.filename.to_s.start_with?(id.to_s)
-          user_files.blob.update(filename: "#{id}_#{user_files.filename}")
-        end
-      end
-    end
-
-    return unless staff_files.attached?
-      staff_files.each do |staff_files|
-        unless staff_files.filename.to_s.start_with?(id.to_s)
-          staff_files.blob.update(filename: "#{id}_#{staff_files.filename}")
-        end
-      end
-    
+  # Prefixes the stored names of this order's files, and of its tasks' files, with the order id. Called by the
+  # actions that attach files, once the save has committed.
+  def prefix_file_names
+    prefix_blob_names(%w[user_files staff_files], "#{id}_", already: id.to_s)
+    JobTask.where(job_order_id: id).each(&:prefix_file_names)
   end
 
   # The statuses in which the owner may still change (and delete) the order: before it is quoted.
@@ -557,6 +553,9 @@ class JobOrder < ApplicationRecord
   LATEST_STATUS_ID_SQL = "(SELECT s.job_status_id FROM job_order_statuses s WHERE s.job_order_id = job_orders.id " \
                          "ORDER BY s.id DESC LIMIT 1)"
 
+  LATEST_STATUS_ROW_SQL = "job_order_statuses.id = (SELECT MAX(s.id) FROM job_order_statuses s " \
+                          "WHERE s.job_order_id = job_order_statuses.job_order_id)"
+
   # The order's CURRENT status as a JobStatus (nil without a status row), read now: one query on LATEST_STATUS_ID_SQL,
   # never cached, no association involved. Use it for every decision (locks, guards, what to serve or charge). For
   # display and lists use #latest_status, which honours preloads (but may be a stale preload or a cached read).
@@ -569,6 +568,7 @@ class JobOrder < ApplicationRecord
   # query, its `.last` (the association is ordered by id). A row built but not saved (no id yet) is the newest, as
   # with `.last`: the last of those wins over the persisted rows.
   def latest_status
+    return latest_job_order_status if !job_order_statuses.loaded? && association(:latest_job_order_status).loaded?
     return job_order_statuses.last unless job_order_statuses.loaded?
 
     unsaved, saved = job_order_statuses.to_a.partition { |s| s.id.nil? }
@@ -952,6 +952,22 @@ class JobOrder < ApplicationRecord
   def enter_status!(to, from:, actor:, reason: nil)
     write_status_row!(to, actor, reason)
     settle_draft_order!(from, to)
+  end
+
+  def transition_refusal(latest, from, approval_token, expected_status_row_id)
+    return TransitionResult.refused(:wrong_state) if wrong_state_for_transition?(latest, from, expected_status_row_id)
+    return unless approval_token && self.class.from_approval_token(approval_token)&.id != id
+
+    TransitionResult.refused(:link_spent)
+  end
+
+  def wrong_state_for_transition?(latest, from, expected_status_row_id)
+    latest.nil? || !Array.wrap(from).include?(latest) ||
+      (expected_status_row_id && newest_status_row_id != expected_status_row_id)
+  end
+
+  def newest_status_row_id
+    job_order_statuses.reorder(id: :desc).limit(1).pick(:id)
   end
 
   def write_status_row!(to, actor, reason)

@@ -114,6 +114,7 @@ fr:
         question_12: Question 12
         question_13: Question 13
         question_14: Question 14
+        denial_reason: Motif du refus
         user: Utilisateur
         supervisor: Superviseur
         space: Espace
@@ -145,6 +146,8 @@ fr:
         recurrence_rule: Règle de récurrence
       coupon_code:
         cc_cost: Coût en points CC
+        code: Code
+        dollar_cost: Valeur en dollars
       question:
         images: Images
       order_item:

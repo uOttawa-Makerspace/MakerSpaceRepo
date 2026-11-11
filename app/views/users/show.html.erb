@@ -11,17 +11,17 @@
             <i class="fa-regular fa-clock"></i> <%= t('.joined_on') %> <%= @repo_user.created_at.to_date.to_fs :long %><br />
             <% if @repo_user.url.present? && @repo_user.url.match?(%r{\Ahttps?://}i) %>
                 <i class="fa-solid fa-link"></i>
-                <%= link_to @repo_user.url.sub(%r{\Ahttps?://}i, ''), sanitize_url(@repo_user.url), target: '_blank', rel: 'noopener noreferrer' %><br />
+                <%= link_to @repo_user.url.sub(%r{\Ahttps?://}i, ''), @repo_user.url, target: '_blank', rel: 'noopener noreferrer' %><br />
             <% end %>
             <p><%= t('.skills') %></p>
             <% @certifications.each do |certification| %>
                 <div class="d-flex flex-nowrap justify-content-between">
-                    <% if current_user.staff? %>
+                    <% if current_user.staff? && certification.training_session %>
                         <%= link_to certification.training.localized_name, staff_training_session_path(certification.training_session) %>
                     <% else %>
                         <%= certification.training.localized_name %>
                     <% end %>
-                    <%= certification_status(certification.training_session.level) %>
+                    <%= certification_status(certification.level) %>
                 </div>
             <% end %>
             <% if current_user.staff? || @repo_user == current_user %>

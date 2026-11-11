@@ -56,11 +56,21 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.body).to include(%(value="#{space.id}"))
     end
 
-    # index calls @spaces.first.id: staff with no StaffSpace (and no space_id) get a 500.
-    it "500s for staff assigned to no space" do
+    it "falls back to the first assigned space when the user's own space is not one they are assigned to" do
+      staff = sign_in_as(:staff)
+      staff.update!(space_id: create(:space, name: "Elsewhere").id)
+      create(:staff_space, user: staff, space: space)
+      get staff_my_calendar_index_path
+      expect(response.body).to include(%(<option selected="selected" value="#{space.id}">))
+      expect(response.body).not_to include("Elsewhere")
+    end
+
+    it "shows an empty state, not an error, for staff assigned to no space" do
       sign_in_as(:staff)
       get staff_my_calendar_index_path
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("not assigned to any space")
+      expect(response.body).not_to include('id="calendar"')
     end
   end
 
@@ -108,6 +118,13 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body.first["id"]).to match(/\Aevent-\d+-\d+\z/)
     end
 
+    it "leaves out an occurrence removed from the series with an EXDATE" do
+      create(:event, space: space, title: "Weekly", recurrence_rule: "RRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=4\nEXDATE:20270314T140000Z",
+                     start_time: Time.zone.local(2027, 3, 7, 10), end_time: Time.zone.local(2027, 3, 7, 11))
+      get feed, params: { start: "2027-03-01T00:00:00-05:00", end: "2027-04-01T00:00:00-04:00" }
+      expect(response.parsed_body.map { |e| e["start"] }).to eq(%w[2027-03-07T10:00:00-05:00 2027-03-21T10:00:00-04:00 2027-03-28T10:00:00-04:00])
+    end
+
     it "an event across the DST gap keeps its wall-clock endpoints (2h of clock time is 1h elapsed)" do
       create(:event, space: space, title: "Night", start_time: Time.zone.local(2027, 3, 14, 1, 30), end_time: Time.zone.local(2027, 3, 14, 3, 30))
       get feed, params: { start: "2027-03-14T00:00:00-05:00", end: "2027-03-15T00:00:00-04:00" }
@@ -121,8 +138,7 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body).to eq([])
     end
 
-    # N+1 pinned (format_event reads event_assignments per event; Bullet raises in CI mode)
-    it "defaults the window to now-3 months .. now+3 months", skip_bullet: true do
+    it "defaults the window to now-3 months .. now+3 months" do
       create(:event, space: space, title: "Soon", start_time: Time.zone.local(2027, 4, 1, 9), end_time: Time.zone.local(2027, 4, 1, 10))
       create(:event, space: space, title: "Far", start_time: Time.zone.local(2027, 9, 1, 9), end_time: Time.zone.local(2027, 9, 1, 10))
       get feed
@@ -140,8 +156,7 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body.map { |e| e["id"] }).to eq(["event-#{a.id}"])
     end
 
-    # N+1 pinned (assignment.user and StaffSpace.find_by per assignment)
-    it "colours assigned events by StaffSpace colour and flags the current user", skip_bullet: true do
+    it "colours assigned events by StaffSpace colour and flags the current user" do
       mate = create(:user, :staff)
       StaffSpace.find_by!(user: staff, space: space).update_column(:color, "#111111")
       create(:staff_space, user: mate, space: space).update_column(:color, "#222222")
@@ -153,13 +168,35 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(props["background"]).to eq("linear-gradient(to right, #111111 0.0%, #111111 50.0%, #222222 50.0%, #222222 100.0%);")
     end
 
-    # an unparseable start/end param parses to nil; with any single event in the space the nil comparison 500s (empty space: 200 []).
-    it "500s for an unparseable start param once the space has a single event" do
-      get feed, params: { start: "garbage" }
-      expect(response.parsed_body).to eq([])
+    it "reads assignments, their users and the staff colours in the same number of queries for any number of events" do
+      mate = create(:user, :staff)
+      StaffSpace.find_by!(user: staff, space: space).update_column(:color, "#111111")
+      create(:staff_space, user: mate, space: space).update_column(:color, "#222222")
+      add_duo_events = lambda do |count, from|
+        count.times do |i|
+          ev = create(:event, space: space, title: "Duo #{from + i}", start_time: Time.zone.local(2027, 3, 13, 8 + from + i), end_time: Time.zone.local(2027, 3, 13, 9 + from + i))
+          [staff, mate].each { |u| EventAssignment.create!(event: ev, user: u) }
+        end
+      end
+
+      add_duo_events.call(2, 0)
+      few = selects_on("event_assignments", "staff_spaces") { get feed, params: window }.size
+      add_duo_events.call(3, 2)
+      many = selects_on("event_assignments", "staff_spaces") { get feed, params: window }.size
+
+      expect(response.parsed_body.size).to eq(5)
+      expect(response.parsed_body.map { |e| e.dig("extendedProps", "background") }.uniq)
+        .to eq(["linear-gradient(to right, #111111 0.0%, #111111 50.0%, #222222 50.0%, #222222 100.0%);"])
+      expect(many).to eq(few)
+    end
+
+    it "answers 400 for an unparseable start or end param" do
       create(:event, space: space, start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
-      get feed, params: { start: "garbage" }
-      expect(response).to have_http_status(:internal_server_error)
+      [{ start: "garbage" }, { end: "garbage" }, { start: "2027-13-45" }].each do |bad|
+        get feed, params: bad
+        expect(response).to have_http_status(:bad_request)
+        expect(response.parsed_body["error"]).to eq(I18n.t("errors.staff.my_calendar.invalid_date"))
+      end
     end
 
     it "falls back to the raw event when the recurrence rule is malformed (inside the window only)" do
@@ -184,22 +221,33 @@ RSpec.describe "Staff my calendar", type: :request do
         .tap { |e| e.update_column(:recurrence_rule, rule) }
     end
 
-    it "is expanded within the per-event cap, quickly (MINUTELY over 100 days)" do
-      stored_event("DTSTART:20270101T090000Z\nRRULE:FREQ=MINUTELY")
-      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" }
-      elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
-      expect(response).to have_http_status(:ok)
-      expect(response.parsed_body.size).to eq(Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT)
-      expect(elapsed).to be < 2
+    # Counts the candidate occurrences the rule generates, so the bound is on work done, not on time.
+    def rule_steps
+      steps = 0
+      allow_any_instance_of(IceCube::ValidatedRule).to receive(:next_time).and_wrap_original do |original, *args|
+        steps += 1
+        original.call(*args)
+      end
+      yield
+      steps
     end
 
-    it "returns SECONDLY quickly too" do
-      stored_event("FREQ=SECONDLY")
-      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" }
-      expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 2
-      expect(response.parsed_body.size).to eq(Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT)
+    def expect_expansion_stops_at_cap(rule)
+      cap = Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT
+      stored_event(rule)
+      steps = rule_steps { get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" } }
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.size).to eq(cap)
+      expect(steps).to be_positive
+      expect(steps).to be <= cap + 2 # unbounded: 144,000 candidates for MINUTELY, 8,640,000 for SECONDLY
+    end
+
+    it "is expanded within the per-event cap, generating at most cap + 1 candidates (MINUTELY over 100 days)" do
+      expect_expansion_stops_at_cap("DTSTART:20270101T090000Z\nRRULE:FREQ=MINUTELY")
+    end
+
+    it "stops SECONDLY at the cap too" do
+      expect_expansion_stops_at_cap("FREQ=SECONDLY")
     end
 
     it "leaves a normal rule with fewer occurrences than the cap untouched" do

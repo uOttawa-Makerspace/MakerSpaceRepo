@@ -54,7 +54,7 @@ RSpec.describe "JobOrders gaps", type: :request do
     {
       "destroy" => -> { delete job_order_path(order) },
       "user_approval" => -> { patch job_order_user_approval_path(order), params: { approved: "true" } },
-      "quote" => -> { patch job_order_quote_path(order), params: { approved: "true" } },
+      "quote" => -> { patch_quote order, { approved: "true" } },
       "comments" => -> { patch job_order_comments_path(order), params: { job_order: { staff_comments: "x" } } },
       "processed" => -> { patch job_order_processed_path(order), params: { completed: "true" } },
       "resend_quote_email" => -> { patch job_order_resend_quote_email_path(order) },
@@ -227,6 +227,26 @@ RSpec.describe "JobOrders gaps", type: :request do
       expect(ActionMailer::Base.deliveries.last.to).to eq([order.user.email])
     end
 
+    it "records the customer as the actor when the customer approves or declines a quote" do
+      approved = order_with_task!(status_key: :user_approval)
+      declined = order_with_task!(status_key: :user_approval)
+      session_login!(owner)
+      patch job_order_user_approval_path(approved), params: { approved: "true" }
+      patch job_order_user_approval_path(declined), params: { approved: "false" }
+      expect(approved.job_order_statuses.last.user).to eq(owner)
+      expect(declined.job_order_statuses.last.user).to eq(owner)
+      expect(status_names(declined).last).to eq("Declined")
+    end
+
+    it "records the staff member as the actor when staff decline a quote for the customer" do
+      order = order_with_task!(status_key: :user_approval)
+      session_login!(staff)
+      patch job_order_user_approval_path(order), params: { approved: "false" }
+      expect(status_names(order).last).to eq("Declined")
+      expect(order.job_order_statuses.last.user).to eq(staff)
+      expect(order.job_order_statuses.last.user).not_to eq(order.user)
+    end
+
     it "accepts the SENT_REMINDER state as an origin for a user approval" do
       order = order_with_task!(status_key: :sent_reminder)
       session_login!(owner)
@@ -266,8 +286,7 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- index
 
   describe "GET /job_orders (index) corners" do
-    # N+1 pinned
-    it "lists only the viewer's own, non-deleted orders and skips orders without status rows", skip_bullet: true do
+    it "lists only the viewer's own, non-deleted orders and skips orders without status rows" do
       mine = order_with_task!(status_key: :staff_approval)
       deleted = order_with_task!(status_key: :staff_approval)
       deleted.update!(is_deleted: true)
@@ -378,6 +397,12 @@ RSpec.describe "JobOrders gaps", type: :request do
 
   describe "POST /job_orders (create) corners" do
     before { session_login!(owner) }
+
+    it "prefixes the stored name of a user file sent with the new order with the order id" do
+      post job_orders_path, params: { job_order: { user_files: [FilesTestHelper.stl] }, redirect_step: "1" }
+      order = JobOrder.order(:id).last
+      expect(order.user_files.map { |f| f.filename.to_s }).to eq(["#{order.id}_#{FilesTestHelper.stl_name}"])
+    end
 
     it "re-renders new with the creation-error flash when the order cannot be saved (disallowed upload)" do
       expect do
@@ -533,8 +558,7 @@ RSpec.describe "JobOrders gaps", type: :request do
   # ------------------------------------------------------------- admin / settings / invoice / timeline
 
   describe "admin, settings, invoice and timeline corners" do
-    # N+1 pinned
-    it "renders the admin list for the admin role, newest first, hiding drafts and deleted orders", skip_bullet: true do
+    it "renders the admin list for the admin role, newest first, hiding drafts and deleted orders" do
       older = order_with_task!(status_key: :staff_approval)
       newer = nil
       travel_to(2.minutes.from_now) { newer = order_with_task!(status_key: :user_approval) }

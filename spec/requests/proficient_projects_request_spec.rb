@@ -145,10 +145,10 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
       end
 
-      it "the uniqueness check is on the raw title but the stored title is capitalized: 'cool widget' duplicates are not caught" do
-        post proficient_projects_path, params: project_params(title: "cool widget")
-        # uniqueness runs before capitalize_title; "Cool widget" and "cool widget" both validate then collide in value
-        expect(ProficientProject.where(title: "Cool widget").count).to eq(2)
+      it "refuses a title that differs from an existing one only by letter case" do
+        expect { post proficient_projects_path, params: project_params(title: "cool widget") }.not_to change(ProficientProject, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(ProficientProject.where(title: "Cool widget").count).to eq(1)
       end
 
       it "creates training requirements from parallel arrays" do
@@ -334,6 +334,24 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
           .and change(OrderItem, :count).by(-1)
         expect(response).to redirect_to(proficient_projects_path)
         expect(flash[:notice]).to eq("Proficient Project has been successfully deleted.")
+      end
+
+      it "refuses to delete a project whose sessions hold certifications, keeping all of it" do
+        record = create(:proficient_project_session, proficient_project: project)
+        expect { delete proficient_project_path(project) }
+          .not_to change { [ProficientProject.count, ProficientProjectSession.count, Certification.unscoped.count] }
+        expect(Certification.unscoped.exists?(record.certification_id)).to be(true)
+        expect(response).to redirect_to(proficient_project_path(project))
+        expect(flash[:alert]).to start_with("The proficient project was not deleted.")
+        expect(flash[:alert]).to include("proficient project sessions")
+      end
+
+      it "answers 422 for JSON when the project cannot be deleted" do
+        create(:proficient_project_session, proficient_project: project)
+        delete proficient_project_path(project, format: :json)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"].to_sentence).to include("proficient project sessions")
+        expect(ProficientProject.exists?(project.id)).to be(true)
       end
 
       it "answers 204 for JSON" do
@@ -546,7 +564,16 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries.size).to eq(1)
     end
 
-    ["In progress", "Awarded", "Revoked"].each do |status|
+    it "approves a revoked item, granting the badge again" do
+      item = order_item_for(buyer, status: "Revoked")
+      content_sign_in_as(:staff)
+      expect do
+        post approve_project_proficient_projects_path, params: { oi_id: item.id, order_item: { admin_comments: "x" } }
+      end.to change(ProficientProjectSession, :count).by(1).and change(Certification, :count).by(1)
+      expect(item.reload.status).to eq("Awarded")
+    end
+
+    ["In progress", "Awarded"].each do |status|
       it "does not approve a #{status} item" do
         item = order_item_for(buyer, status: status)
         content_sign_in_as(:staff)
@@ -573,7 +600,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "gives each approval its own certification, so deleting one project never destroys another's" do
+    it "gives each approval its own certification" do
       other_project = create(:proficient_project, training: training, level: project.level, title: "Second widget")
       second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
       content_sign_in_as(:admin)
@@ -583,8 +610,8 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       end.to change(Certification, :count).by(1)
       certs = ProficientProjectSession.where(proficient_project: [project, other_project]).pluck(:certification_id)
       expect(certs.uniq.size).to eq(2)
-      ProficientProjectSession.find_by(proficient_project: project).destroy
-      expect(Certification.where(id: certs.last)).to exist
+      expect(ProficientProjectSession.find_by(proficient_project: project).destroy).to be(false)
+      expect(Certification.where(id: certs)).to exist
     end
   end
 

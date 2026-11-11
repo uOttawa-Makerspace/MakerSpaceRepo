@@ -157,6 +157,19 @@ RSpec.describe ReportGenerator do
       expect(rows[9]).to eq(["Tia Trainee", "tia@example.test"])
     end
 
+    it "shows Unknown for a missing training, instructor or space" do
+      session = create(:training_session, course: "Intro", created_at: march_10)
+      session.users << create(:user, name: "Tia Trainee", email: "tia@example.test")
+      session.update_columns(training_id: nil, user_id: nil, space_id: nil)
+      rows = sheets_of(described_class.generate_training_session_report(session.id)).fetch("Report")
+      expect(rows[1..6]).to eq(
+        [["Training Type", "Unknown"], ["Location", "Unknown"],
+         ["Date", march_10.in_time_zone.strftime("%Y-%m-%d %H:%M")], ["Instructor", "Unknown"],
+         %w[Course Intro], ["Number of Trainees", 1]]
+      )
+      expect(rows[9]).to eq(["Tia Trainee", "tia@example.test"])
+    end
+
     it "raises RecordNotFound for an unknown session id" do
       expect { described_class.generate_training_session_report(0) }.to raise_error(ActiveRecord::RecordNotFound)
     end
@@ -207,10 +220,13 @@ RSpec.describe ReportGenerator do
       )
     end
 
-    it "categorize_programs misses PhD programs although get_study_level calls them Doctorate" do
-      # categorize_programs looks for the literal "Doctorate" while get_study_level also accepts "PhD|Doctor", so PhD students are counted under no level in the Programs breakdown
-      expect(described_class.get_study_level("PhD in Chemistry")).to eq("Doctorate")
-      expect(described_class.categorize_programs({ "PhD in Chemistry" => 5 })["Doctorate"]).to eq(0)
+    it "categorize_programs counts as Doctorate every program get_study_level calls Doctorate" do
+      programs = { "PhD in Chemistry" => 5, "Doctorate in Philosophy Biology" => 2, "Doctor of Education" => 1,
+                   "Master of Arts" => 3 }
+      programs.each_key do |program|
+        expect(described_class.get_study_level(program) == "Doctorate").to eq(described_class.categorize_programs(program => 1)["Doctorate"] == 1)
+      end
+      expect(described_class.categorize_programs(programs)["Doctorate"]).to eq(8)
     end
   end
 

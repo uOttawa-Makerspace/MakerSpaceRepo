@@ -71,25 +71,25 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
       expect(Locker.find_by(specifier: "1").locker_size).to eq(size_small)
     end
 
-    it "is refused by the server for a one-number range" do
+    it "creates the one locker of a one-number range" do
       type_range("50", "50")
       expect(page).to have_css("#newRangeLockersPossible li", text: "50")
       within("#newRangeLockerModal") do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Range end must be larger than range start")
-      expect(Locker.where(specifier: "50")).to be_empty
+      expect(page).to have_text("Lockers created")
+      expect(Locker.where(specifier: "50").count).to eq(1)
     end
 
-    it "compares the range ends as text on the server, so 9 to 10 is refused" do
+    it "creates the lockers of a range such as 9 to 10" do
       type_range("9", "10")
       within("#newRangeLockerModal") do
         select "24x24", from: "locker_size_id", visible: :all
         find("input[type=submit]").click
       end
-      expect(page).to have_text("Range end must be larger than range start")
-      expect(Locker.where(specifier: %w[9 10])).to be_empty
+      expect(page).to have_text("Lockers created")
+      expect(Locker.where(specifier: %w[9 10]).count).to eq(2)
     end
   end
 
@@ -149,15 +149,16 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
       expect(page).to have_no_css("#lockerBulkEditList li")
     end
 
-    it "is refused with a missing-parameter error, so no locker size changes" do
+    it "changes the size of the selected lockers only" do
       select_rows(l1, l3)
       open_modal "Bulk edit", "#lockerBulkEditModal"
       within("#lockerBulkEditModal") do
-        select "24x24", from: "locker_size_id", visible: :all
+        select "24x24", from: "locker_locker_size_id", visible: :all
         click_button "Update Lockers"
       end
-      expect(page).to have_text("The form is missing required information (locker)")
-      expect([l1, l2, l3].map { |l| l.reload.locker_size }).to all(eq(size_small))
+      expect(page).to have_text("Lockers updated")
+      expect([l1, l3].map { |l| l.reload.locker_size }).to all(eq(size_large))
+      expect(l2.reload.locker_size).to eq(size_small)
     end
 
     it "deletes the selected lockers after confirmation" do
@@ -236,13 +237,23 @@ RSpec.describe "Locker inventory dialogs", type: :system, skip_bullet: true do
       wait_until("size not deleted") { !LockerSize.exists?(unused.id) }
     end
 
-    it "shows no options in the size dropdown of the single locker modal" do
+    it "still lists the sizes in the size dropdown of the single locker modal" do
       visit lockers_path
       wait_for_app_js
       open_modal "Make a single locker", "#newLockerModal"
       within("#newLockerModal") do
         find(".ts-wrapper .ts-control").click
-        expect(page).to have_no_css(".ts-dropdown .option")
+        expect(page).to have_css(".ts-dropdown .option", text: "99x99")
+      end
+    end
+
+    it "still lists the sizes in the size dropdown of the range modal" do
+      visit lockers_path
+      wait_for_app_js
+      open_modal "Make a range of lockers", "#newRangeLockerModal"
+      within("#newRangeLockerModal") do
+        find(".ts-wrapper .ts-control").click
+        expect(page).to have_css(".ts-dropdown .option", text: "99x99")
       end
     end
   end

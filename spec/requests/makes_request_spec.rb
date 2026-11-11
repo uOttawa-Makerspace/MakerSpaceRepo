@@ -20,8 +20,8 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
   end
 
   def make_params(title: "My Make", description: "built it", image: content_png_upload)
-    # The param root is the ORIGINAL repository's title (params.require(@repository.title)).
-    { original.title => { title: title, description: description,
+    # The form posts its fields under the "repository" key.
+    { repository: { title: title, description: description,
                           photos_attributes: { "0" => { image: image } } } }
   end
 
@@ -36,20 +36,23 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       get makes_new_path(owner.username, original.id)
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Original Thing")
+      # form_for on the repository posts its fields under "repository", and the files as images[]
+      expect(response.body).to include('name="repository[title]"')
+      expect(response.body).to include('name="repository[description]"')
+      expect(response.body).to include('name="images[]"')
     end
 
-    it "500s when the username does not own the id (set_repository returns nil)" do
+    it "answers 404 when the username does not own the id" do
       content_login!(maker)
-      # find_by returns nil and the action dereferences it; should be a 404
       get makes_new_path("somebody-else", original.id)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
 
-    it "500s for a soft-deleted original" do
+    it "answers 404 for a soft-deleted original" do
       original.update_columns(deleted: true)
       content_login!(maker)
       get makes_new_path(owner.username, original.id)
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -57,6 +60,17 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
     it "sends a guest to login and creates nothing" do
       expect { post makes_create_path(owner.username, original.id), params: make_params }
         .not_to change(Repository, :count)
+    end
+
+    it "answers 404 and creates nothing when the original is not found" do
+      content_login!(maker)
+      expect { post makes_create_path("somebody-else", original.id), params: make_params }
+        .not_to change(Repository, :count)
+      expect(response).to have_http_status(:not_found)
+      original.update_columns(deleted: true)
+      expect { post makes_create_path(owner.username, original.id), params: make_params }
+        .not_to change(Repository, :count)
+      expect(response).to have_http_status(:not_found)
     end
 
     it "creates a public child repository owned by the maker, +15 reputation, original make counter +1" do
@@ -119,13 +133,36 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       expect(made.equipments.pluck(:name)).to eq(["Cutter"])
     end
 
-    it "500s when no photos_attributes are sent (nested attributes got nil)" do
+    it "creates the make from the images[] files the form posts" do
       content_login!(maker)
-      params = { original.title => { title: "No Photo", description: "x" } }
+      params = { repository: { title: "From Form", description: "x" },
+                 images: [content_png_upload, content_png_upload] }
+      expect { post makes_create_path(owner.username, original.id), params: params }
+        .to change(Repository, :count).by(1)
+      made = Repository.find_by(title: "From Form")
+      expect(made.photos.count).to eq(2)
+      expect(response).to redirect_to("/#{maker.username}/#{made.slug}")
+    end
+
+    it "rejects a non-image among the posted images[] and saves nothing" do
+      content_login!(maker)
+      params = { repository: { title: "Bad Form", description: "x" }, images: [content_stl_upload] }
       expect { post makes_create_path(owner.username, original.id), params: params }
         .not_to change(Repository, :count)
-      # photos_attributes = nil raises ArgumentError instead of a validation error
-      expect(response).to have_http_status(:internal_server_error)
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to start_with("The make was not saved.")
+    end
+
+    it "re-renders new with a validation message when no photos are sent" do
+      content_login!(maker)
+      params = { repository: { title: "No Photo", description: "x" } }
+      expect { post makes_create_path(owner.username, original.id), params: params }
+        .not_to change(Repository, :count)
+      expect(response).to have_http_status(:ok)
+      expect(flash[:alert]).to start_with("The make was not saved.")
+      expect(flash[:alert]).to include("Photos")
+      expect(original.reload.make).to eq(0)
+      expect(maker.reload.reputation).to eq(0)
     end
 
     it "an invalid make (blank title) re-renders new with 200 and an alert" do
@@ -144,17 +181,17 @@ RSpec.describe "Makes (HTTP contract)", type: :request do
       end.not_to change(Repository, :count)
     end
 
-    it "redirects with the parameter_missing alert when the title-keyed root is absent" do
+    it "redirects with the parameter_missing alert when the repository root is absent" do
       content_login!(maker)
-      post makes_create_path(owner.username, original.id), params: { repository: { title: "x" } }
+      post makes_create_path(owner.username, original.id), params: { title: "x" }
       expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to include("Original Thing")
+      expect(flash[:alert]).to include("repository")
     end
 
     context "on a private original" do
       let!(:secret) { create(:repository, :private, owner: owner, title: "Hush", users: [owner]) }
       let(:secret_params) do
-        { secret.title => { title: "Leak", description: "d", photos_attributes: { "0" => { image: content_png_upload } } } }
+        { repository: { title: "Leak", description: "d", photos_attributes: { "0" => { image: content_png_upload } } } }
       end
 
       it "refuses new and create without the password" do

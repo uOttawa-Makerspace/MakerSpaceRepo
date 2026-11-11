@@ -233,6 +233,18 @@ RSpec.describe "Admin keys", type: :request do
       expect(response.body).to include("Request form awaiting approval")
     end
 
+    it "lists several staff holders with their request status without a query per holder" do
+      3.times do
+        extra = create(:user, :staff)
+        create(:key_request, :status_approved, :all_questions_answered, user: extra, supervisor: supervisor, space: space)
+      end
+
+      get admin_key_assign_path(key)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan(/<option /).size).to be >= 4
+    end
+
     it "assigns an inventory key: key becomes held and a KeyTransaction with the deposit is created" do
       expect {
         patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 25 }
@@ -283,12 +295,11 @@ RSpec.describe "Admin keys", type: :request do
       expect(key.get_latest_key_transaction).to have_attributes(return_date: Date.current, deposit_return_date: Date.current)
     end
 
-    # revoke stamps return_date with Date.today (server/UTC date), so after 20:00 Eastern the key is returned "tomorrow"
-    it "stamps the UTC date as the return date when revoked in the Eastern evening" do
-      travel_to(Time.zone.now.change(hour: 21))
+    it "stamps the app-zone date as the return date when revoked in the Eastern evening" do
+      travel_to(Time.find_zone!("America/Toronto").local(2026, 3, 10, 22, 30))
       patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 0 }
       patch admin_key_revoke_key_path(key)
-      expect(key.get_latest_key_transaction.return_date).to eq(Date.current + 1)
+      expect(key.get_latest_key_transaction.return_date).to eq(Date.new(2026, 3, 10))
     end
 
     it "revokes with a non-zero deposit: deposit stays outstanding unless a return date is given" do
@@ -326,10 +337,20 @@ RSpec.describe "Admin keys", type: :request do
       expect(KeyTransaction.where(key: key).not_returned).to be_empty
     end
 
-    # assign_key does User.find(params[:key][:user_id]) so a missing/unknown user is a RecordNotFound (404) instead of a flash alert
-    it "404s assigning to an unknown user" do
-      patch admin_key_assign_key_path(key), params: { key: { user_id: 0 }, deposit_amount: 1 }
-      expect(response).to have_http_status(:not_found)
+    it "refuses to assign to an unknown user with an alert, changing nothing" do
+      expect { patch admin_key_assign_key_path(key), params: { key: { user_id: 0 }, deposit_amount: 1 } }.not_to change(KeyTransaction, :count)
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("The key was not assigned. The selected key holder was not found.")
+      expect(key.reload).to have_attributes(status: "inventory", user_id: nil)
+    end
+
+    it "refuses an unreadable deposit return date, leaving the key held and its transaction open" do
+      patch admin_key_assign_key_path(key), params: { key: { user_id: holder.id, supervisor_id: supervisor.id }, deposit_amount: 30 }
+      patch admin_key_revoke_key_path(key), params: { deposit_return_date: "not a date" }
+      expect(response).to redirect_to(admin_keys_path)
+      expect(flash[:alert]).to eq("The key was not revoked. Enter the deposit return date as a valid date.")
+      expect(key.reload).to have_attributes(status: "held", user_id: holder.id)
+      expect(KeyTransaction.where(key: key).not_returned.count).to eq(1)
     end
   end
 
@@ -344,10 +365,87 @@ RSpec.describe "Admin keys", type: :request do
       expect(kr.reload.status).to eq("approved")
     end
 
-    it "denies a waiting request by sending it back to in_progress" do
-      patch deny_key_request_admin_keys_path, params: { id: kr.id }
+    it "denies a waiting request and stores the reason" do
+      patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Supervisor must be a professor" }
       expect(flash[:notice]).to eq("Successfully denied key request.")
-      expect(kr.reload.status).to eq("in_progress")
+      expect(kr.reload).to have_attributes(status: "denied", denial_reason: "Supervisor must be a professor")
+    end
+
+    it "denies a waiting request without a reason" do
+      patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "" }
+      expect(kr.reload).to have_attributes(status: "denied", denial_reason: nil)
+    end
+
+    it "mails the requester in French and English after a denial, with the reason" do
+      perform_enqueued_jobs do
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Supervisor must be a professor" }
+      end
+      mail = ActionMailer::Base.deliveries.sole
+      expect(mail.to).to eq([holder.email])
+      expect(mail.subject).to eq("MakerRepo - Demande de clé refusée // Key request denied")
+      expect(mail.body.decoded).to include("Supervisor must be a professor")
+    end
+
+    it "mails the requester without a reason line when none was given" do
+      perform_enqueued_jobs { patch deny_key_request_admin_keys_path, params: { id: kr.id } }
+      mail = ActionMailer::Base.deliveries.sole
+      expect(mail.body.decoded).not_to include("Reason given:")
+    end
+
+    it "mails once when the same request is denied twice" do
+      perform_enqueued_jobs do
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "First" }
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Second" }
+      end
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(kr.reload.denial_reason).to eq("First")
+    end
+
+    it "mails the reason written at denial even if the owner resubmits before delivery" do
+      patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Supervisor must be a professor" }
+      kr.reload.submit
+      perform_enqueued_jobs
+      expect(ActionMailer::Base.deliveries.sole.body.decoded).to include("Supervisor must be a professor")
+    end
+
+    it "asks for confirmation on the deny form of the requests page and the request page" do
+      get requests_admin_keys_path
+      form = Nokogiri::HTML(response.body).at_css("form[action='#{deny_key_request_admin_keys_path(id: kr.id)}']")
+      expect(form["data-confirm"]).to eq("Are you sure you want to deny this key request?")
+      expect(form.at_css("label[for='denial_reason_#{kr.id}']")).to be_present
+      get key_request_path(kr.id)
+      page_form = Nokogiri::HTML(response.body).at_css("form[action='#{deny_key_request_admin_keys_path(id: kr.id)}']")
+      expect(page_form["data-confirm"]).to be_present
+      expect(page_form.at_css("input#denial_reason_#{kr.id}")).to be_present
+    end
+
+    it "sends no mail when the request is not denied" do
+      kr.update_columns(status: KeyRequest.statuses[:approved])
+      perform_enqueued_jobs { patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "No" } }
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(kr.reload).to have_attributes(status: "approved", denial_reason: nil)
+    end
+
+    it "sends no mail and keeps the request waiting when the reason is too long" do
+      perform_enqueued_jobs do
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "x" * 1001 }
+      end
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(flash[:alert]).to start_with("The key request was not denied.")
+      expect(kr.reload.status).to eq("waiting_for_approval")
+    end
+
+    it "lists a denied request under Denied, not under Waiting or Approved" do
+      kr.deny("No")
+      get requests_admin_keys_path
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.css("table.key-requests-table-denied tbody tr").size).to eq(1)
+      expect(doc.css("table.key-requests-table-approval tbody tr, table.key-requests-table-approved tbody tr")).to be_empty
+    end
+
+    it "shows the reason field next to Deny for a waiting request" do
+      get requests_admin_keys_path
+      expect(response.body).to include('name="denial_reason"')
     end
 
     it "does not approve or deny a request that is not waiting" do

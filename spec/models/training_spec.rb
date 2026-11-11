@@ -12,11 +12,10 @@ RSpec.describe Training, type: :model do
       it { should have_many(:certifications) }
       it { should have_many(:require_trainings) }
       it { should have_many(:proficient_projects) }
-      it "dependent destroy: should destroy training sessions if destroyed" do
+      it "refuses to be deleted while it has training sessions" do
         training = create(:training_with_training_sessions)
-        expect { training.destroy }.to change { TrainingSession.count }.by(
-          -training.training_sessions.count
-        )
+        expect { training.destroy }.not_to change { [Training.count, TrainingSession.count] }
+        expect(training.errors.full_messages.to_sentence).to include("training sessions")
       end
       it "dependent destroy: should destroy require trainings if destroyed" do
         training = create(:training_with_require_trainings)
@@ -24,11 +23,10 @@ RSpec.describe Training, type: :model do
           -training.require_trainings.count
         )
       end
-      it "dependent destroy: should destroy proficient projects if destroyed" do
+      it "refuses to be deleted while it has proficient projects" do
         training = create(:training_with_proficient_projects)
-        expect { training.destroy }.to change { ProficientProject.count }.by(
-          -training.proficient_projects.count
-        )
+        expect { training.destroy }.not_to change { [Training.count, ProficientProject.count] }
+        expect(training.errors.full_messages.to_sentence).to include("proficient projects")
       end
     end
   end

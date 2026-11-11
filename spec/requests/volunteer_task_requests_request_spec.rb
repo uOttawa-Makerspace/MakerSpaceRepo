@@ -350,12 +350,23 @@ RSpec.describe "Volunteer task requests (HTTP contract)", type: :request do
         expect(CcMoney.count).to eq(1)
       end
 
-      it "treats a missing approval param as 'unprocessed': keeps the join and still emails" do
+      it "treats a missing approval param as 'unprocessed': keeps the join and sends no mail as nothing changed" do
         join = create(:volunteer_task_join, :active, volunteer_task: task, user: volunteer)
-        put update_approval_volunteer_task_requests_path, params: { id: req.id }
+        perform_enqueued_jobs { put update_approval_volunteer_task_requests_path, params: { id: req.id } }
         expect(req.reload.approval).to be_nil
         expect(join.reload.state).to eq("joined")
+        expect(flash[:notice]).to eq("Task request was not changed")
         expect(response).to redirect_to(volunteer_task_requests_path)
+        expect(vol_deliveries).to be_empty
+      end
+
+      it "mails once when the approval changes and not again when the same value is sent repeatedly" do
+        approve!("false")
+        expect(vol_deliveries.size).to eq(1)
+        expect { approve!("false") }.not_to change { vol_deliveries.size }
+        expect(flash[:notice]).to eq("Task request was not changed")
+        approve!("true")
+        expect(vol_deliveries.size).to eq(2)
       end
 
       it "gives the reason when the update is refused, and sends no mail" do

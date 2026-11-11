@@ -406,7 +406,7 @@ RSpec.describe "/api/v1/users", type: :request do
 
     it "422s, changing nothing, when a membership cannot be saved" do
       target.programs.create!(program_type: Program::DEV_PROGRAM)
-      allow_any_instance_of(Program).to receive(:valid?).and_return(false)
+      allow_any_instance_of(Program).to receive(:destroy).and_return(false)
       api_send :put, "/api/v1/users/#{target.id}/programs", { development: false, volunteer: true }, as: staff
       expect(response).to have_http_status(:unprocessable_content)
       expect(error["code"]).to eq("validation_failed")

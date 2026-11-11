@@ -20,6 +20,8 @@ module Api
     class BaseController < ActionController::API
       include RateLimitStore
       include ErrorReporting
+      include Authorization
+      require_authorization
       # Unhandled errors answer with a JSON 500 (and are reported) everywhere except
       # test, where they must stay visible to specs. A request spec turns it on with
       # `Api::V1::BaseController.json_internal_errors = true`. Declared first: the
@@ -59,6 +61,8 @@ module Api
       # reach #route_not_found through the catch-all route; an unknown HTTP verb gets
       # Rails' default response.)
 
+      skip_authorization only: :route_not_found, reason: "Public: answers 404 for every unknown path"
+
       # Unknown /api/v1 paths (the catch-all route at the end of the namespace).
       def route_not_found
         render_error(:not_found, "Not found", status: :not_found)
@@ -77,7 +81,10 @@ module Api
       end
 
       def authenticate!
-        return if signed_in?
+        if signed_in?
+          record_authorization!(:authenticated)
+          return
+        end
 
         response.set_header("WWW-Authenticate", 'Bearer realm="makerepo"')
         render_error(:unauthenticated, "Authentication required", status: :unauthorized)
@@ -85,15 +92,27 @@ module Api
 
       def require_staff!
         authenticate!
-        return if performed? || current_user.staff?
+        return if performed?
 
-        render_error(:forbidden, "Not allowed", status: :forbidden)
+        if current_user.staff?
+          record_authorization!(:staff)
+        else
+          authorization_denied
+        end
       end
 
       def require_admin!
         authenticate!
-        return if performed? || current_user.admin?
+        return if performed?
 
+        if current_user.admin?
+          record_authorization!(:admin)
+        else
+          authorization_denied
+        end
+      end
+
+      def authorization_denied
         render_error(:forbidden, "Not allowed", status: :forbidden)
       end
 

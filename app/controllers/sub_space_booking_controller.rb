@@ -332,25 +332,12 @@ class SubSpaceBookingController < SessionsController
   def approve
     sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
 
-    unless sub_space_booking.pending?
+    unless sub_space_booking.approve_if_pending!(by: current_user)
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
       return
     end
 
-    # 1. Update status
-    sub_space_booking.change_status!(BookingStatus.approved)
-    
-    # 2. Stamp the approval with update_columns, so a row that no longer passes
-    # some validation can still be approved. It writes only the approval
-    # columns, never the times, so the past-date rule (it checks only
-    # saves that set or move the times) allows approving a past pending booking.
-    sub_space_booking.update_columns(
-      approved_at: DateTime.now,
-      approved_by_id: current_user.id
-    )
-
-    # 3. Pass the integer ID to align with expected enqueued job arguments
     BookingMailer.send_booking_approved(sub_space_booking.id).deliver_later
 
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
@@ -360,14 +347,14 @@ class SubSpaceBookingController < SessionsController
   def decline
     sub_space_booking = SubSpaceBooking.find(params[:sub_space_booking_id])
 
-    unless sub_space_booking.pending?
+    unless sub_space_booking.decline_if_pending!
       redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                   alert: "Booking for #{sub_space_booking.sub_space.name} is no longer pending."
       return
     end
 
-    sub_space_booking.change_status!(BookingStatus.declined)
-    
+    BookingMailer.send_booking_declined(sub_space_booking.id).deliver_later
+
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
                 notice: "Booking for #{sub_space_booking.sub_space.name} declined successfully."
   end
@@ -388,7 +375,7 @@ class SubSpaceBookingController < SessionsController
 
     booking_ids = apply_bulk_booking_status(bulk_status)
 
-    booking_ids.each { |id| BookingMailer.send_booking_approved(id).deliver_later } if bulk_status == "approve"
+    mail_bulk_result(bulk_status, booking_ids)
     skipped = Array(params[:sub_space_booking_ids]).uniq.size - booking_ids.size
     set_bulk_result_flash(
       booking_ids.size,
@@ -489,7 +476,7 @@ class SubSpaceBookingController < SessionsController
   def series_end_date
     raw = params[:sub_space_booking][:recurring_end]
     Date.parse(raw.to_s) if raw.present?
-  rescue Date::Error
+  rescue ArgumentError
     nil
   end
 
@@ -756,9 +743,9 @@ class SubSpaceBookingController < SessionsController
     booking_ids = []
     SubSpaceBooking.transaction do
       pending = SubSpaceBooking.pending.includes(sub_space_booking_status: :booking_status).where(id: params[:sub_space_booking_ids]).to_a
-      booking_ids = pending.map(&:id)
 
       if bulk_status == "approve"
+        booking_ids = pending.map(&:id)
         SubSpaceBooking.change_status_of!(pending, BookingStatus.approved)
         # update_all bypasses validations identically to update_columns
         SubSpaceBooking.where(id: booking_ids).update_all(
@@ -766,10 +753,16 @@ class SubSpaceBookingController < SessionsController
           approved_by_id: current_user.id
         )
       else
-        SubSpaceBooking.change_status_of!(pending, BookingStatus.declined)
+        booking_ids = pending.select(&:decline_if_pending!).map(&:id)
       end
     end
     booking_ids
+  end
+
+  # Queues the booker's mail for each booking the bulk action changed.
+  def mail_bulk_result(bulk_status, booking_ids)
+    mailer_method = bulk_status == "approve" ? :send_booking_approved : :send_booking_declined
+    booking_ids.each { |id| BookingMailer.public_send(mailer_method, id).deliver_later }
   end
 
   # Notice when something was applied (all_notice when nothing was skipped), alert when something was skipped.

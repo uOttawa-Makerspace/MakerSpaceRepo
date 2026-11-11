@@ -19,11 +19,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/calendar.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/cdel_reports.js": {
     "no-unused-vars": {
       "count": 2
@@ -59,23 +54,8 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/learning_modules.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
-  "app/javascript/entrypoints/locker_rentals.js": {
-    "no-unused-vars": {
-      "count": 6
-    }
-  },
   "app/javascript/entrypoints/lockers.js": {
     "complexity": {
-      "count": 1
-    }
-  },
-  "app/javascript/entrypoints/printer_issues.js": {
-    "no-unused-vars": {
       "count": 1
     }
   },
@@ -118,11 +98,6 @@
       "count": 3
     }
   },
-  "app/javascript/entrypoints/volunteer_hours.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/volunteer_tasks.js": {
     "complexity": {
       "count": 2
@@ -135,7 +110,7 @@
   },
   "app/javascript/src/calendar_helper.js": {
     "complexity": {
-      "count": 6
+      "count": 5
     },
     "no-unused-vars": {
       "count": 2
@@ -169,11 +144,6 @@
       "count": 2
     }
   },
-  "app/javascript/src/manage_unavailabilities.js": {
-    "no-unused-vars": {
-      "count": 2
-    }
-  },
   "app/javascript/src/photo_gallery.js": {
     "no-unused-vars": {
       "count": 1
@@ -194,11 +164,6 @@
       "count": 1
     },
     "max-depth": {
-      "count": 1
-    }
-  },
-  "app/javascript/src/unavailabilities_helpers.js": {
-    "complexity": {
       "count": 1
     }
   },

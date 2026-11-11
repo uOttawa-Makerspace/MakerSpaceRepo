@@ -5,10 +5,11 @@ class Training < ApplicationRecord
 
   has_and_belongs_to_many :spaces
   has_and_belongs_to_many :questions
-  has_many :training_sessions, dependent: :destroy
+  # Sessions and projects hold the certifications awarded, so a training that has them cannot be deleted.
+  has_many :training_sessions, dependent: :restrict_with_error
   has_many :certifications, through: :training_sessions
   has_many :require_trainings, dependent: :destroy
-  has_many :proficient_projects, dependent: :destroy
+  has_many :proficient_projects, dependent: :restrict_with_error
   has_many :learning_modules, dependent: :destroy
   has_many :shifts, dependent: :nullify
   has_many :events, dependent: :nullify

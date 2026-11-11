@@ -4,6 +4,7 @@ class LockerRentalsController < SessionsController
   # Also sets @locker_rental
   before_action :check_permission, except: %i[index new create]
   before_action :refuse_renter_edits_beyond_state, only: :update
+  before_action :refuse_unoffered_request_type, only: :create
   layout 'staff_area', only: [:admin]
   layout 'admin_area', only: [:assign_locker]
 
@@ -145,17 +146,9 @@ class LockerRentalsController < SessionsController
         outcome = :stale
       else
         # Assign new parameters but don't commit yet
-        @locker_rental.assign_attributes(locker_rental_params)
+        @locker_rental.assign_attributes(locker_rental_params.except(:owned_until))
         @locker_rental.decided_by = current_user
-
-        # Requirement: Ideally I would like to have an 'indefinite' option for the date
-        # We check this if the state is changing to active OR if it's already active (Move Locker)
-        if @locker_rental.indefinite == '1'
-          @locker_rental.owned_until = nil
-        elsif (@locker_rental.state_changed?(to: :active) || (current_user.staff? && @locker_rental.active?)) &&
-              @locker_rental.owned_until.blank?
-          @locker_rental.owned_until = end_of_this_semester
-        end
+        assign_requested_owned_until
 
         if renter_state_change_refused?
           outcome = :state_refused
@@ -227,12 +220,8 @@ class LockerRentalsController < SessionsController
     LockerRental.transaction do
       @locker_rental.lock!
       if @locker_rental.renewable?
-        @locker_rental.assign_attributes(
-          state: :await_payment,
-          decided_by: current_user,
-          owned_until: end_of_this_semester
-        )
-        outcome = @locker_rental.save ? :saved : :invalid
+        saved = @locker_rental.extend_until(end_of_this_semester, state: :await_payment, decided_by: current_user)
+        outcome = saved ? :saved : :invalid
       else
         outcome = :not_renewable
       end
@@ -267,6 +256,23 @@ class LockerRentalsController < SessionsController
 
   private
 
+  # Requirement: Ideally I would like to have an 'indefinite' option for the date
+  # We check this if the state is changing to active OR if it's already active (Move Locker)
+  def assign_requested_owned_until
+    date = @locker_rental.owned_until
+    date = locker_rental_params[:owned_until] if locker_rental_params.key?(:owned_until)
+    if @locker_rental.indefinite == '1'
+      date = nil
+    elsif date.blank? && defaults_to_semester_end?
+      date = end_of_this_semester
+    end
+    @locker_rental.assign_owned_until(date)
+  end
+
+  def defaults_to_semester_end?
+    @locker_rental.state_changed?(to: :active) || (current_user.staff? && @locker_rental.active?)
+  end
+
   def check_permission
     # If user accesses a locker rental by ID
     if params[:id].present?
@@ -298,13 +304,29 @@ class LockerRentalsController < SessionsController
     fields.respond_to?(:keys) ? fields.keys : []
   end
 
-  def new_instance_attributes
+  # The request types the form offers this user, as [label, value] pairs.
+  def available_request_types
     # FIXME localize this later
-    @available_fors = {
+    {
       staff: ('CEED staff member' if current_user.staff?),
       student: ('GNG student' if current_user.student?),
       general: 'General request'
     }.compact.invert
+  end
+
+  # A new request must name one of the types the form offers this user (a student cannot file as staff).
+  def refuse_unoffered_request_type
+    return unless current_user.staff? || LockerOption.lockers_enabled
+    return if available_request_types.value?(locker_rental_params[:requested_as].to_s.to_sym)
+
+    @locker_rental = LockerRental.new
+    @locker_rental.errors.add(:requested_as, t('errors.lockers.request_type_not_offered'))
+    new_instance_attributes
+    render :new, status: :unprocessable_content
+  end
+
+  def new_instance_attributes
+    @available_fors = available_request_types
     # Don't allow new request if user already has an active or pending request
     @pending_locker_request = current_user.locker_rentals.pending.first
     @locker_product_info = LockerOption.locker_product_info || { variants: {} }

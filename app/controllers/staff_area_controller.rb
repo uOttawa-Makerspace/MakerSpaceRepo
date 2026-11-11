@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
 class StaffAreaController < SessionsController
+  require_authorization
   before_action :current_user, :default_space, :define_spaces
   before_action :ensure_staff, except: %i[dismiss]
 
   private
 
   def ensure_staff
-    unless signed_in?
-      redirect_to login_path(back_to: login_back_to)
-      return
-    end
+    return redirect_to(login_path(back_to: login_back_to)) unless signed_in?
 
     @user = current_user
-    unless @user.staff? || @user.admin?
+    if @user.staff? || @user.admin?
+      record_authorization!(:staff)
+    else
       redirect_to root_path
       flash[:alert] = 'You cannot access this area.'
     end

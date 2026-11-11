@@ -25,20 +25,9 @@ module JsErrorCheck
     # DNS failure. Extend the host list only with the same kind of resource.
     { id: "js-error-04", path: %r{\Ahttps://(challenges\.cloudflare\.com|cdn\.userway\.org|www\.youtube\.com)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
     # Found by the browser crawl (spec/system/page_crawl_spec.rb).
-    # the 500s of the printers route (printers without sessions) break the
-    # printer pages' fetch + JSON parse.
-    { id: "js-error-05", path: %r{/printers/last_user_assigned_to_printer}, message: %r{last_user_assigned_to_printer - Failed to load resource: .* 500} },
-    { id: "js-error-05", path: %r{/printers/staff_printers\b|/printer_types\b}, message: /(staff_printers|printer_types) 0:0 Uncaught \(in promise\) SyntaxError: Unexpected token '<'/ },
-    # printer_issues.js binds a listener on an element the page lacks.
-    { id: "js-error-06", path: %r{/assets/printer_issues-}, message: /printer_issues-[\w-]+\.js .*Cannot read properties of null \(reading 'addEventListener'\)/ },
     # the home/changelog hours widget calls /open_hours, which
     # fetches external ICS feeds (unreachable in tests: 500).
     { id: "js-error-07", path: %r{/open_hours}, message: %r{/open_hours - Failed to load resource: .* 500} },
-    # announcements/new inline script uses a global flatpickr that is not loaded.
-    { id: "js-error-08", path: %r{/admin/announcements/new}, message: /announcements\/new \d+:\d+ Uncaught ReferenceError: flatpickr is not defined/ },
-    # admin_training_sessions.js and badges.js bind listeners on missing elements.
-    { id: "js-error-09", path: %r{/assets/admin_training_sessions-}, message: /admin_training_sessions-[\w-]+\.js .*Cannot read properties of null \(reading 'addEventListener'\)/ },
-    { id: "js-error-09", path: %r{/assets/badges-}, message: /badges-[\w-]+\.js .*Cannot read properties of null \(reading 'addEventListener'\)/ },
     # the badge SVG is rendered with empty width/height attributes.
     { id: "js-error-10", path: %r{/badges/\d+}, message: /Error: <svg> attribute (width|height): Unexpected end of attribute/ },
     # the admin calendar script requests its JSON endpoints with an
@@ -73,12 +62,18 @@ module JsErrorCheck
 
   module_function
 
-  def collect(page)
+  # With leave_page, the page path is read first and the session is then reset
+  # (the browser goes to about:blank) before the log is read, so nothing the
+  # page still had in flight (a request, a timer, a transition) can be logged
+  # after the drain and blamed on the next example. Use it once, at the end of
+  # an example.
+  def collect(page, leave_page: false)
     path = begin
       URI.parse(page.current_url.to_s).path
     rescue StandardError
       ""
     end
+    page.reset_session! if leave_page
     entries = begin
       page.driver.browser.logs.get(:browser)
     rescue StandardError

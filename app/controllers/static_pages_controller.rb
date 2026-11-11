@@ -56,8 +56,8 @@ class StaticPagesController < SessionsController
       Rails.cache.fetch('StaticPagesRecentRepos', expires_in: 10.minutes) do
         Repository
           .public_repos
+          .with_card_data
           .order(created_at: :desc)
-          .includes(photos: { image_attachment: [blob: { variant_records: :blob }] })
           .limit(15)
           .to_a
       end
@@ -121,11 +121,10 @@ class StaticPagesController < SessionsController
 
   def join_team_program
     if signed_in?
-      if current_user.programs.exists?(program_type: Program::TEAMS)
-        flash[:alert] = 'You are already part of the Teams Program.'
-      else
-        current_user.programs.create(program_type: Program::TEAMS)
+      if Program.join(current_user, Program::TEAMS)
         flash[:notice] = 'You have successfully joined the Teams Program! See below for more information.'
+      else
+        flash[:alert] = 'You are already part of the Teams Program.'
       end
     else
       flash[:alert] = 'You need to sign in to join the Teams Program.'

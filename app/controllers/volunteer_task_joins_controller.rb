@@ -3,6 +3,8 @@
 class VolunteerTaskJoinsController < SessionsController
   include VolunteerAreaAccess
 
+  skip_authorization only: :remove,
+                     reason: "#{Authorization::ROLLOUT_PENDING}checked inline (staff or the joined user)"
   before_action :signed_in
   before_action :volunteer_access, only: :create
 
@@ -18,31 +20,11 @@ class VolunteerTaskJoinsController < SessionsController
           current_user.id
         end
       volunteer_join.user_type = volunteer_join.user.role.capitalize
-      if volunteer_join.save!
-        flash[
-          :notice
-        ] = "An user was successfully joined to this volunteer task."
-        staff_join =
-          volunteer_task
-            .volunteer_task_joins
-            .joined
-            .where(
-              "volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?",
-              "Staff",
-              "Admin"
-            )
-            .last
-        staff_id = staff_join&.user&.id
-        MsrMailer.send_notification_to_staff_for_joining_task(
-          volunteer_task.id,
-          volunteer_join.user_id,
-          staff_id
-        ).deliver
-        MsrMailer.send_notification_to_volunteer_for_joining_task(
-          volunteer_task.id,
-          volunteer_join.user_id,
-          staff_id
-        ).deliver
+      if volunteer_join.save
+        flash[:notice] = "An user was successfully joined to this volunteer task."
+        notify_joined(volunteer_task, volunteer_join)
+      else
+        flash[:alert] = volunteer_join.errors.full_messages.to_sentence
       end
     else
       flash[:alert] = "This task is already full"
@@ -70,6 +52,18 @@ class VolunteerTaskJoinsController < SessionsController
   end
 
   private
+
+  def notify_joined(volunteer_task, volunteer_join)
+    staff_join =
+      volunteer_task
+        .volunteer_task_joins
+        .joined
+        .where("volunteer_task_joins.user_type = ? OR volunteer_task_joins.user_type = ?", "Staff", "Admin")
+        .last
+    staff_id = staff_join&.user&.id
+    MsrMailer.send_notification_to_staff_for_joining_task(volunteer_task.id, volunteer_join.user_id, staff_id).deliver
+    MsrMailer.send_notification_to_volunteer_for_joining_task(volunteer_task.id, volunteer_join.user_id, staff_id).deliver
+  end
 
   def volunteer_task_joins_params
     params.require(:volunteer_task_join).permit(:volunteer_task_id, :user_id)

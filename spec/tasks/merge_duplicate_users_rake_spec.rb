@@ -146,6 +146,18 @@ RSpec.describe "users:merge_duplicates" do
     expect(primary.decided_booking_requests).to contain_exactly(declined)
   end
 
+  it "moves the trainer of a session that awarded certifications to the kept user" do
+    kept = create(:user, :staff)
+    trainer = create(:user, :staff)
+    awarded = create(:training_session_with_certifications, user: trainer).reload
+
+    send(:merge_record, kept, trainer)
+
+    expect(User.unscoped.exists?(trainer.id)).to be(false)
+    expect(awarded.reload.user_id).to eq(kept.id)
+    expect(awarded.certifications.count).to eq(2)
+  end
+
   it "keeps one membership of a training session both users attended, and moves the others" do
     shared = create(:training_session)
     only_duplicate = create(:training_session)
@@ -275,6 +287,19 @@ RSpec.describe "users:merge_duplicates" do
       [create(:user), create(:user)]
     end
 
+    it "closes the open connections of the merged duplicate once it is deleted, and of nobody else" do
+      primary, duplicate = duplicated_pair
+      disconnected = []
+      allow(ActionCable.server.remote_connections).to receive(:where) do |current_user:|
+        double("remote").tap { |remote| allow(remote).to receive(:disconnect) { disconnected << current_user.id } }
+      end
+
+      send(:merge_users_into_one, [duplicate, primary], [], [])
+
+      expect(User.unscoped.exists?(duplicate.id)).to be(false)
+      expect(disconnected).to eq([duplicate.id])
+    end
+
     it "skips the pair whose sheets differ, merges the other pair and reports both" do
       good_primary, good_duplicate = duplicated_pair
       bad_primary, bad_duplicate = duplicated_pair
@@ -312,6 +337,18 @@ RSpec.describe "users:merge_duplicates" do
       User.where(id: [first.id, second.id]).update_all(username: "same")
       expect(send(:rename_duplicated_username, "same", [first.id, second.id])).to be_nil
       expect($stdout.string).to include("left alone: same (every holder is in a skipped pair)")
+    end
+
+    it "renames only the deleted holders when exactly one holder of the username is active" do
+      ActiveRecord::Base.connection.remove_index :users, name: "index_users_on_lowercase_username" # rolled back with the example
+      active, gone = duplicated_pair
+      User.where(id: [active.id, gone.id]).update_all(username: "same")
+      User.where(id: gone.id).update_all(deleted: true)
+
+      send(:rename_duplicated_username, "same")
+
+      expect(active.reload.username).to eq("same")
+      expect(User.unscoped.find(gone.id).username).to match(/\Asame\d{3}\z/)
     end
 
     it "lists the ids of the accounts in skipped pairs" do
@@ -362,6 +399,41 @@ RSpec.describe "users:merge_duplicates" do
       expect(renamed.map { |entry| entry["previous_username"] }).to eq(["sharedname"])
       expect($stdout.string).to include("Merged 0 pairs, skipped 1 pairs.")
       expect($stdout.string).to include("Usernames left duplicated because their pair was skipped: sharedname")
+    end
+  end
+
+  describe "programs" do
+    def held_types(user) = Program.where(user_id: user.id).order(:id).pluck(:program_type)
+
+    it "moves the programs only the duplicate holds and keeps the ones the primary holds" do
+      create(:program, :development_program, user: primary)
+      create(:program, :volunteer_program, user: duplicate)
+
+      merge
+
+      expect(held_types(primary)).to match_array([Program::DEV_PROGRAM, Program::VOLUNTEER])
+      expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    end
+
+    it "drops the duplicate's row only when the primary holds the same program with the same data" do
+      at = 3.days.ago.change(usec: 0)
+      kept = create(:program, :volunteer_program, user: primary, created_at: at)
+      create(:program, :volunteer_program, user: duplicate, created_at: at)
+
+      merge
+
+      expect(Program.where(user_id: primary.id).pluck(:id)).to eq([kept.id])
+      expect(Program.where(user_id: duplicate.id)).to be_empty
+    end
+
+    it "stops without deleting anything when both hold the program with different data" do
+      create(:program, :volunteer_program, user: primary, active: true)
+      create(:program, :volunteer_program, user: duplicate, active: false)
+
+      expect { merge }.to raise_error(UserMergeRefused, /programs rows/)
+
+      expect(Program.where(user_id: [primary.id, duplicate.id]).count).to eq(2)
+      expect(User.unscoped.exists?(duplicate.id)).to be(true)
     end
   end
 

@@ -37,9 +37,21 @@ class Repository < ApplicationRecord
              class_name: 'Repository',
              foreign_key: 'make_id',
              optional: true
-  after_commit :clear_zip_cache, on: %i[update destroy]
 
   scope :public_repos, -> { where(share_type: 'public') }
+
+  # The repositories a viewer may open: public ones, and private ones the viewer owns or is a member
+  # of, or has unlocked with the password (unlocked_ids); staff and admins see all. The same rule as
+  # SessionsController#repository_unlocked?, as a scope.
+  def self.viewable_by(viewer, unlocked_ids = [])
+    return all if viewer.staff?
+
+    member_ids = unscoped.joins(:users).where(users: { id: viewer.id }).select(:id)
+    public_repos.or(where(user_id: viewer.id)).or(where(id: member_ids)).or(where(id: unlocked_ids))
+  end
+
+  # What a repository card shows: the owner's username and the first photo.
+  scope :with_card_data, -> { includes(:owner, photos: { image_attachment: :blob }) }
 
   scope :fuzzy_search,
         ->(query) do
@@ -125,11 +137,16 @@ class Repository < ApplicationRecord
     share_type.eql?('private')
   end
 
-  # Owner (user_id) or member of the habtm `users`. A guest (User.new) is never an owner.
+  # The owner (user_id). A guest (User.new) is never an owner.
   def owned_by?(user)
     return false if user.nil? || user.id.blank?
 
-    user_id == user.id || users.include?(user)
+    user_id == user.id
+  end
+
+  # The owner or a member of the habtm `users`.
+  def editable_by?(user)
+    owned_by?(user) || (user&.id.present? && users.include?(user))
   end
 
   # What deleting an account does to the repositories it owns (repositories.user_id), inside the

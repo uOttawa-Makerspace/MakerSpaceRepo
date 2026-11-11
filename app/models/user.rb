@@ -61,6 +61,9 @@ class User < ApplicationRecord
   # Raised by User.change_roles! when the change would leave no usable admin.
   class LastAdminError < StandardError; end
 
+  # Raised by User.delete_account! when the acting user is no longer an admin.
+  class NotAdminError < StandardError; end
+
   # The one wording, used by the admin UI and the API.
   LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
   LAST_ADMIN_LOCK_MESSAGE = "You cannot lock the last admin."
@@ -354,9 +357,9 @@ class User < ApplicationRecord
     with_lock do
       request = user_booking_approvals.build(date: Time.current, comments: comments, identity: identity)
       if booking_approval?
-        request.errors.add(:base, "You already have booking access.")
+        request.errors.add(:base, :already_has_access)
       elsif booking_access_pending?
-        request.errors.add(:base, "You have already requested access.")
+        request.errors.add(:base, :already_requested)
       else
         request.save
       end
@@ -410,6 +413,16 @@ class User < ApplicationRecord
     [locked, locked_until&.to_i]
   end
 
+  # Whether a password reset or unlock link is still accepted: the same lookup the links' pages use, so the
+  # mailer (at delivery) and the controller (at click) cannot disagree.
+  def self.password_reset_link_valid?(token)
+    find_by_token_for(:password_reset, token).present?
+  end
+
+  def self.unlock_link_valid?(token)
+    find_by_token_for(:account_unlock, token).present?
+  end
+
   scope :no_waiver_users, -> { where(read_and_accepted_waiver_form: false) }
   
   scope :between_dates_picked, ->(start_date, end_date) {
@@ -440,11 +453,11 @@ class User < ApplicationRecord
   }
   
   scope :not_created_this_year, -> {
-    where.not(created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year)
+    where.not(created_at: Time.current.beginning_of_year..Time.current.end_of_year)
   }
   
   scope :created_this_year, -> {
-    where(created_at: DateTime.now.beginning_of_year..DateTime.now.end_of_year)
+    where(created_at: Time.current.beginning_of_year..Time.current.end_of_year)
   }
   
   scope :staff, -> { where(role: %w[admin staff]) }
@@ -492,10 +505,21 @@ class User < ApplicationRecord
       .limit(10)
   }
 
+  # Rows for the user pickers (repository owner, team captain, new staff).
+  # Staff match on name and see it; everyone else matches on username and
+  # sees only the id and username, like the directory search.
+  def self.picker_entries(term, viewer)
+    fields = viewer.staff? ? %i[name username] : %i[username]
+    pattern = "%#{sanitize_sql_like(term.to_s)}%"
+    columns = [:id, *fields]
+    where(arel_table[fields.first].matches(pattern)).limit(10).pluck(*columns)
+      .map { |row| columns.zip(row).to_h }
+  end
+
   # Staff-facing substring search over name, email and username (accent- and
-  # case-insensitive). The caller escapes LIKE wildcards if it wants literal matching.
+  # case-insensitive). LIKE wildcards in the query match literally.
   scope :text_search, ->(query) {
-    pattern = "%#{query}%"
+    pattern = "%#{sanitize_sql_like(query.to_s)}%"
     where(
       "LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR
                            LOWER(UNACCENT(email)) like LOWER(UNACCENT(?)) OR
@@ -580,10 +604,13 @@ class User < ApplicationRecord
   # another member, or is hidden when there is none, and a lab session still open is ended now, so a
   # deleted user is not listed as in a space. Every other row (visits, certifications, training)
   # stays as it was. Raises LastAdminError for the last usable admin. Returns false, doing nothing,
-  # if the account was already deleted by another request.
-  def self.delete_account!(user)
+  # if the account was already deleted by another request. With an actor, the actor's role is read
+  # again once the admin rows are locked, and NotAdminError is raised if they are no longer an admin.
+  def self.delete_account!(user, actor:)
     serialising_account_deletion do
       guarding_last_admin!([user.id]) do
+        raise NotAdminError unless actor && where(id: actor.id, role: "admin").exists?
+
         next false if user.lock!(GUARD_LOCK_MODE).deleted?
 
         Repository.release_owned_by!(user)
@@ -618,6 +645,19 @@ class User < ApplicationRecord
       where(id: user_ids).order(:id).each do |user|
         Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{new_role}' by Admin##{actor&.id}"
         user.change_role!(new_role)
+      end
+    end
+  end
+
+  # Promotes users below staff to staff, re-reading each role once the rows are locked, so a user
+  # made staff or admin in the meantime is left as they are. Takes the locks of change_roles! and
+  # never removes an admin, so it needs no last-admin check.
+  def self.promote_to_staff!(user_ids, actor: nil)
+    user_ids = Array(user_ids)
+    guarding_last_admin!(user_ids, only_if: -> { false }) do
+      where(id: user_ids).merge(where(role: nil).or(where.not(role: %w[staff admin]))).order(:id).each do |user|
+        Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to 'staff' by Admin##{actor&.id}"
+        user.change_role!("staff")
       end
     end
   end
@@ -921,6 +961,24 @@ class User < ApplicationRecord
     role == 'admin'
   end
 
+  # Who may see the private sections of this user's profile. Each section
+  # keeps the audience its tab has always had.
+  def keys_visible_to?(viewer)
+    viewer.staff?
+  end
+
+  def lockers_visible_to?(viewer)
+    viewer == self || viewer.staff?
+  end
+
+  def roles_visible_to?(viewer)
+    viewer.admin?
+  end
+
+  def key_certification_visible_to?(viewer)
+    viewer.admin? || (viewer == self && (staff? || programs.exists?(program_type: Program::TEAMS)))
+  end
+
   # Admin lock: blocks new logins for 99 years AND ends every existing session and JWT
   # for good by bumping token_version. The bump is a SQL increment (not
   # token_version + 1 computed from a possibly stale in-memory value), so a password
@@ -943,7 +1001,7 @@ class User < ApplicationRecord
   # sign out, password change/reset, admin lock, demotion from staff/admin. A
   # still-valid session simply reconnects and is re-checked at the handshake.
   # Best effort: it runs after the change is already committed (mostly from the
-  # after_update_commit below; the solid_cable broadcast is an INSERT that can fail),
+  # change_role!, the merge task and bump_token_version!; the solid_cable broadcast is an INSERT that can fail),
   # so a failure is reported, never raised.
   # Rescues StandardError, not just ActiveRecordError: any broadcast failure (Timeout,
   # a raw PG error from the pool, ActionCable server errors) must not 500 a role change,
@@ -955,15 +1013,25 @@ class User < ApplicationRecord
     Rails.error.report(e, handled: true)
   end
 
-  # Role and soft-delete writes skip validations only (a row that is invalid for an
-  # unrelated legacy reason must still be demotable/deletable); callbacks run, so the
-  # after_update_commit below (cable_access_lost?) closes the connections once, after
-  # the real commit, even inside an outer transaction.
+  # Marks the email confirmed. Skips validations, like change_role!, so a row that no longer passes
+  # them (older data) is still confirmed.
+  def confirm_email!
+    self.confirmed = true
+    save!(validate: false)
+    self
+  end
+
+  # Role writes skip validations only (a row that is invalid for an unrelated legacy reason must still be
+  # demotable). A demotion from staff or admin closes the user's open websocket connections once the real commit
+  # has happened, also when this runs inside an outer transaction (StaffDashboardChannel authorizes at subscribe
+  # time only, so an open connection would otherwise keep receiving broadcasts).
   def change_role!(new_role)
     raise ArgumentError, "unknown role #{new_role.inspect}" unless ROLES.include?(new_role)
 
+    was_staff = staff?
     self.role = new_role
     save!(validate: false)
+    ActiveRecord.after_all_transactions_commit { disconnect_cable! } if was_staff && !staff?
     self
   end
 
@@ -1004,13 +1072,6 @@ class User < ApplicationRecord
     change_deactivation!(false)
   end
 
-  # Demoted from staff/admin, soft-deleted or deactivated: such a connection must not
-  # keep receiving broadcasts (StaffDashboardChannel authorizes at subscribe time
-  # only; the handshake already refuses deleted/deactivated users on reconnect).
-  after_update_commit :disconnect_cable!, if: :cable_access_lost?
-  # A block, not the method symbol: Rails de-duplicates commit callbacks by method name.
-  after_destroy_commit { disconnect_cable! }
-
   def staff?
     role.in?(%w[staff admin])
   end
@@ -1041,7 +1102,7 @@ class User < ApplicationRecord
         next if wanted.nil?
 
         if wanted
-          programs.find_or_create_by!(program_type: type)
+          Program.join(self, type)
         else
           programs.find_by(program_type: type)&.destroy!
         end
@@ -1355,10 +1416,5 @@ class User < ApplicationRecord
 
   def translate_faculty
     self.faculty = FACULTY_TRANSLATIONS[faculty] if FACULTY_TRANSLATIONS.key?(faculty)
-  end
-
-  def cable_access_lost?
-    demoted = saved_change_to_role? && role_before_last_save.in?(%w[staff admin]) && !staff?
-    demoted || (saved_change_to_deleted? && !AuthEligibility.allowed?(self))
   end
 end

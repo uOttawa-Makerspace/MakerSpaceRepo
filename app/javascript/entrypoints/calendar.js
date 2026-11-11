@@ -54,20 +54,12 @@ function updateColor(userId, color) {
 
 /* For the event modal */
 onPageLoad("#addEventButton", () => {
-  const fp1 = flatpickr("#source_range", {
+  flatpickr("#source_range", {
     mode: "range",
     dateFormat: "Y-m-d",
   });
 
-  const fp2 = flatpickr("#target_date", {
+  flatpickr("#target_date", {
     dateFormat: "Y-m-d",
   });
-
-  let copyEventsModal = document.getElementById("copyEventsModal");
-  if (copyEventsModal) {
-    copyEventsModal.addEventListener("hide.bs.modal", (e) => {
-      fp1.flatpickr().destroy();
-      fp2.flatpickr().destroy();
-    });
-  }
 });

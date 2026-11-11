@@ -161,6 +161,8 @@ en:
         business: "Business"
         how_heard_about_us: "How did you hear about us?"
         accept_waiver_html: "By checking this box, <strong>I ACCEPT AND FULLY ASSUME</strong> all such (health and safety) risks, dangers and hazards which may be associated with my participation."
+  exams:
+    sent_to_user: "You've successfully sent the exam to %{name}."
   sessions:
     account_created: "Account has been created, please look in your emails to confirm your email address."
     already_signed_in: "You are already signed in."
@@ -210,6 +212,8 @@ en:
               inclusion: "You must accept the terms of the waiver."
         volunteer_hour:
           attributes:
+            base:
+              duplicate_pending: "You already sent these hours for this task and day; they are awaiting review."
             volunteer_task_id:
               not_joined: "is not a task this volunteer is on or has completed"
         locker_rental:
@@ -239,7 +243,22 @@ en:
     times_required: "Start and end times are required."
     dates_required: "Start and end dates are required."
     start_date_required: "Start date is required."
+  key_request_mailer:
+    denied:
+      subject: "Key request denied"
+      body: "Your key request has been reviewed and denied by an admin."
+      hello: "Hello %{name},"
+      reason: "Reason given:"
+      ask_again: "You may edit your key request and submit it again from your key request page."
+      open_page: "Go to my key request"
+      why_received: "You have received this email because your key request was answered."
   booking_mailer:
+    declined:
+      subject: "Booking declined"
+      hello: "Hello %{name},"
+      body: "Your booking in %{room} for %{description} on %{start} to %{end} has been declined by an admin."
+      open_page: "Go to MakerRepo Booking"
+      why_received: "You have received this email because your booking has been declined."
     access_denied:
       subject:
         declined: "Booking access request declined"
@@ -320,6 +339,7 @@ en:
       assign_staff_not_staff: "Only a staff member or an admin can be assigned to a job order."
       staff_assigned: "%{name} has been assigned to this job order."
       no_staff_assigned: "No staff has been assigned to this job order."
+      deleted: "Job order deleted successfully."
       job_order_submitted_for_approval: "Your job order has been submitted for staff approval!"
       job_order_updated: "Your job order has been updated!"
       approval_magic_link_expired: "The following Job Order Approval link is invalid or has expired. Please Sign In to look at the Job Order Page."
@@ -365,6 +385,8 @@ en:
       missing_info: "Your job order is not submitted! The following tasks are missing required information:"
     timeline:
       unknown_user: "Unknown"
+      approved_by_html: "Approved by %{name} for the customer"
+      declined_by_html: "Declined by %{name}"
     status_reasons:
       owner_change: "The order was changed after it had been quoted."
       invoice_mismatch: "The payment link no longer matched the order's quote."

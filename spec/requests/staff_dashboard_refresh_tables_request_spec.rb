@@ -7,14 +7,11 @@ require "rails_helper"
 # users/certification/has_membership/expiration_date/is_student/signed_sheet,
 # that the staff dashboard's tap-in modal reads). The latest sign-in is the
 # first of Space#signed_in_users, which is ordered by sign_out_time DESC.
-#
-# under CI=1 Bullet raises on this endpoint with 2+ signed-in users: the
-# signed_in partial calls `user.walk_in_safety_sheets.any?` per row (N+1; Bullet asks for
-# `.includes(:walk_in_safety_sheets)`). Pinned with skip_bullet, as for the other pinned N+1s.
-RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: true do
+RSpec.describe "Staff dashboard refresh_tables", type: :request do
   include StaffDashboardSpecHelpers
 
-  let!(:space) { create(:space) }
+  # A space that asks for a walk-in safety sheet, so each signed-in row checks it.
+  let!(:space) { create(:space, name: "MTC") }
   let!(:other_space) { create(:space) }
   let!(:staff) { sign_in_as(:staff, space: space) }
 
@@ -86,6 +83,7 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
     expect(html).to include(latest.email, earlier.email, "/#{latest.username}", "/#{earlier.username}")
     expect(html).to include("Has a Community Membership") # latest: student with an active membership
     expect(html.scan("data-user-id=").size).to eq(2)
+    expect(html.scan("Did not sign sheet").size).to eq(2)
     expect(html).not_to include(gone.email)
     expect(html).not_to include(elsewhere.email)
     # each row has the sign-out button for that username
@@ -103,18 +101,16 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
     expect(html).not_to include(elsewhere.email)
   end
 
-  it "answers 304 with no body when the token is the concatenated signed-in user ids (nothing changed)" do
-    refresh(token: "#{latest.id}#{earlier.id}")
+  it "answers 304 with no body when the token is the comma-separated signed-in user ids (nothing changed)" do
+    refresh(token: "#{latest.id},#{earlier.id}")
 
     expect(response).to have_http_status(:not_modified)
     expect(response.body).to be_empty
   end
 
-  # the token is `signed_in_user_ids.join("")`, with no separator, so different
-  # signed-in sets can produce the same token (ids [9_000_001, 7_777_777] and [90_000_017, 777_777]
-  # are both "90000017777777"). The client holding the first set's token gets a 304 for the second set and
-  # keeps showing stale people. A separator-joined token would not collide.
-  it "answers 304 for a different signed-in set whose ids concatenate to the same token" do
+  # Ids [9_000_001, 7_777_777] and [90_000_017, 777_777] concatenate to the same digits; the token
+  # separates ids, so a client holding the first set's token still gets the full payload for the second.
+  it "answers the full payload for a different signed-in set whose ids concatenate to the same digits" do
     third_space = create(:space)
     staff.update!(space: third_space)
     # explicit ids far above any users_id_seq value (the sequence is not rolled back between examples)
@@ -126,7 +122,7 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
     create(:lab_session, space: third_space, user: a, sign_in_time: 1.hour.ago, sign_out_time: 3.hours.from_now)
     create(:lab_session, space: third_space, user: b, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
     refresh
-    stale_token = "#{a.id}#{b.id}"
+    stale_token = "#{a.id}#{b.id}" # the unseparated digits a client may still hold
     expect(json["users"].map(&:last)).to eq([a.username, b.username])
 
     # the room changes completely: a and b leave, c and d arrive
@@ -136,13 +132,12 @@ RSpec.describe "Staff dashboard refresh_tables", type: :request, skip_bullet: tr
 
     refresh(token: stale_token)
 
-    expect(stale_token).to eq("#{c.id}#{d.id}")
-    expect(response).to have_http_status(:not_modified) # should be 200 with c and d
-    expect(response.body).to be_empty
+    expect(response).to have_http_status(:ok)
+    expect(json["users"].map(&:last)).to contain_exactly(c.username, d.username)
   end
 
   it "answers the full payload when the token is stale" do
-    refresh(token: "#{earlier.id}#{latest.id}") # same ids, wrong order
+    refresh(token: "#{earlier.id},#{latest.id}") # same ids, wrong order
 
     expect(response).to have_http_status(:ok)
     expect(json["users"].size).to eq(2)
