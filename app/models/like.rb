@@ -12,7 +12,7 @@ class Like < ApplicationRecord
   # Nothing is counted in that case.
   def self.give(repository, user)
     transaction do
-      repository.likes.build(user_id: user.id).save && Repository.update_counters(repository.id, like: 1).positive?
+      repository.likes.build(user_id: user.id).save && count_on(repository, 1)
     end
   rescue ActiveRecord::RecordNotUnique
     false
@@ -23,7 +23,15 @@ class Like < ApplicationRecord
   def self.take_back(repository, user)
     transaction do
       like = repository.likes.lock.find_by(user_id: user.id)
-      like.present? && like.destroy.present? && Repository.update_counters(repository.id, like: -1).positive?
+      like.present? && like.destroy.present? && count_on(repository, -1)
     end
   end
+
+  # Moves the repository's counter. If no row was touched the repository is gone: the error rolls back the like
+  # that was just changed instead of leaving it uncounted.
+  def self.count_on(repository, amount)
+    Repository.update_counters(repository.id, like: amount).positive? ||
+      raise(ActiveRecord::RecordNotFound, "Repository #{repository.id} is gone; the like was not changed")
+  end
+  private_class_method :count_on
 end

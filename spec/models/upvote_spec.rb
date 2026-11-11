@@ -120,4 +120,25 @@ RSpec.describe Upvote, type: :model do
       expect(Upvote.count).to eq(0)
     end
   end
+
+  describe "when no comment row is counted" do
+    let(:user) { create(:user, :regular_user) }
+    let(:comment) { create(:comment) }
+
+    it "rolls back a cast" do
+      allow(Comment).to receive(:update_counters).and_return(0)
+      expect { Upvote.cast(user, comment, false) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Upvote.count).to eq(0)
+    end
+
+    it "rolls back a switch and a retract" do
+      Upvote.cast(user, comment, false)
+      allow(Comment).to receive(:update_counters).and_return(0)
+
+      expect { Upvote.switch(user, comment, true) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Upvote.sole.downvote).to be(false)
+      expect { Upvote.retract(user, comment, false) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Upvote.count).to eq(1)
+    end
+  end
 end

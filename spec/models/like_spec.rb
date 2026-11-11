@@ -85,5 +85,21 @@ RSpec.describe Like, type: :model do
       expect { Like.give(create(:repository), create(:user, :regular_user)) }.to raise_error(ActiveRecord::StatementInvalid)
       expect(Like.count).to eq(0)
     end
+
+    it "rolls back the like when no repository row was counted" do
+      allow(Repository).to receive(:update_counters).and_return(0)
+      expect { Like.give(create(:repository), create(:user, :regular_user)) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Like.count).to eq(0)
+    end
+
+    it "rolls back the removal when no repository row was counted" do
+      repo = create(:repository)
+      user = create(:user, :regular_user)
+      Like.give(repo, user)
+      allow(Repository).to receive(:update_counters).and_return(0)
+
+      expect { Like.take_back(repo, user) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(Like.count).to eq(1)
+    end
   end
 end

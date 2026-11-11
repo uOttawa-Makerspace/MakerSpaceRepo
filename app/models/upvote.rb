@@ -45,8 +45,11 @@ class Upvote < ApplicationRecord
     downvote ? -1 : 1
   end
 
+  # Moves the comment's counter. If no row was touched the comment is gone: the error rolls back the vote that was
+  # just changed instead of leaving it uncounted.
   def self.count_on(comment, amount)
-    Comment.update_counters(comment.id, upvote: amount).positive?
+    Comment.update_counters(comment.id, upvote: amount).positive? ||
+      raise(ActiveRecord::RecordNotFound, "Comment #{comment.id} is gone; the vote was not changed")
   end
   private_class_method :count_on
 end
