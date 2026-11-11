@@ -1,0 +1,47 @@
+<% content_for :preheader do %><%= @subject %><% end %>
+<% content_for :team_name do %>The MakerRepo Team<% end %>
+<% content_for :why_received do %>
+  <%= t("key_request_mailer.denied.why_received", locale: :fr) %>
+  <br>
+  <%= t("key_request_mailer.denied.why_received", locale: :en) %>
+<% end %>
+
+<% %i[fr en].each do |locale| %>
+  <% if locale == :en %>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+  <% end %>
+  <div lang="<%= locale %>">
+    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+      <%= t("key_request_mailer.denied.hello", name: @user.name, locale: locale) %>
+    </p>
+    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+      <%= t("key_request_mailer.denied.body", locale: locale) %>
+    </p>
+    <% if @reason.present? %>
+      <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+        <%= t("key_request_mailer.denied.reason", locale: locale) %><br>
+        <span style="font-style: italic"><%= @reason %></span>
+      </p>
+    <% end %>
+    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
+      <%= t("key_request_mailer.denied.ask_again", locale: locale) %>
+    </p>
+    <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
+      <tbody>
+        <tr>
+          <td align="left" style="font-family: sans-serif; font-size: 14px; vertical-align: top; padding-bottom: 15px;" valign="top">
+            <table role="presentation" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: auto;">
+              <tbody>
+                <tr>
+                  <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
+                    <a href="<%= key_request_url(@key_request.id, locale: locale) %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t("key_request_mailer.denied.open_page", locale: locale) %></a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+<% end %>

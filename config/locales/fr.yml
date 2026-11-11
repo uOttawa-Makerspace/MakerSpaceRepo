@@ -269,6 +269,15 @@ fr:
     times_required: "Les heures de début et de fin sont requises."
     dates_required: "Les dates de début et de fin sont requises."
     start_date_required: "La date de début est requise."
+  key_request_mailer:
+    denied:
+      subject: "Demande de clé refusée"
+      body: "Votre demande de clé a été examinée et refusée par un administrateur."
+      hello: "Bonjour %{name},"
+      reason: "Raison donnée :"
+      ask_again: "Vous pouvez modifier votre demande de clé et la soumettre de nouveau depuis la page de votre demande."
+      open_page: "Aller à ma demande de clé"
+      why_received: "Vous avez reçu ce courriel parce que votre demande de clé a reçu une réponse."
   booking_mailer:
     access_denied:
       subject:

@@ -365,10 +365,87 @@ RSpec.describe "Admin keys", type: :request do
       expect(kr.reload.status).to eq("approved")
     end
 
-    it "denies a waiting request by sending it back to in_progress" do
-      patch deny_key_request_admin_keys_path, params: { id: kr.id }
+    it "denies a waiting request and stores the reason" do
+      patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Supervisor must be a professor" }
       expect(flash[:notice]).to eq("Successfully denied key request.")
-      expect(kr.reload.status).to eq("in_progress")
+      expect(kr.reload).to have_attributes(status: "denied", denial_reason: "Supervisor must be a professor")
+    end
+
+    it "denies a waiting request without a reason" do
+      patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "" }
+      expect(kr.reload).to have_attributes(status: "denied", denial_reason: nil)
+    end
+
+    it "mails the requester in French and English after a denial, with the reason" do
+      perform_enqueued_jobs do
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Supervisor must be a professor" }
+      end
+      mail = ActionMailer::Base.deliveries.sole
+      expect(mail.to).to eq([holder.email])
+      expect(mail.subject).to eq("MakerRepo - Demande de clé refusée // Key request denied")
+      expect(mail.body.decoded).to include("Supervisor must be a professor")
+    end
+
+    it "mails the requester without a reason line when none was given" do
+      perform_enqueued_jobs { patch deny_key_request_admin_keys_path, params: { id: kr.id } }
+      mail = ActionMailer::Base.deliveries.sole
+      expect(mail.body.decoded).not_to include("Reason given:")
+    end
+
+    it "mails once when the same request is denied twice" do
+      perform_enqueued_jobs do
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "First" }
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Second" }
+      end
+      expect(ActionMailer::Base.deliveries.size).to eq(1)
+      expect(kr.reload.denial_reason).to eq("First")
+    end
+
+    it "mails the reason written at denial even if the owner resubmits before delivery" do
+      patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "Supervisor must be a professor" }
+      kr.reload.submit
+      perform_enqueued_jobs
+      expect(ActionMailer::Base.deliveries.sole.body.decoded).to include("Supervisor must be a professor")
+    end
+
+    it "asks for confirmation on the deny form of the requests page and the request page" do
+      get requests_admin_keys_path
+      form = Nokogiri::HTML(response.body).at_css("form[action='#{deny_key_request_admin_keys_path(id: kr.id)}']")
+      expect(form["data-confirm"]).to eq("Are you sure you want to deny this key request?")
+      expect(form.at_css("label[for='denial_reason_#{kr.id}']")).to be_present
+      get key_request_path(kr.id)
+      page_form = Nokogiri::HTML(response.body).at_css("form[action='#{deny_key_request_admin_keys_path(id: kr.id)}']")
+      expect(page_form["data-confirm"]).to be_present
+      expect(page_form.at_css("input#denial_reason_#{kr.id}")).to be_present
+    end
+
+    it "sends no mail when the request is not denied" do
+      kr.update_columns(status: KeyRequest.statuses[:approved])
+      perform_enqueued_jobs { patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "No" } }
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(kr.reload).to have_attributes(status: "approved", denial_reason: nil)
+    end
+
+    it "sends no mail and keeps the request waiting when the reason is too long" do
+      perform_enqueued_jobs do
+        patch deny_key_request_admin_keys_path, params: { id: kr.id, denial_reason: "x" * 1001 }
+      end
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(flash[:alert]).to start_with("The key request was not denied.")
+      expect(kr.reload.status).to eq("waiting_for_approval")
+    end
+
+    it "lists a denied request under Denied, not under Waiting or Approved" do
+      kr.deny("No")
+      get requests_admin_keys_path
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.css("table.key-requests-table-denied tbody tr").size).to eq(1)
+      expect(doc.css("table.key-requests-table-approval tbody tr, table.key-requests-table-approved tbody tr")).to be_empty
+    end
+
+    it "shows the reason field next to Deny for a waiting request" do
+      get requests_admin_keys_path
+      expect(response.body).to include('name="denial_reason"')
     end
 
     it "does not approve or deny a request that is not waiting" do

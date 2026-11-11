@@ -68,6 +68,10 @@ The locker notices migration must run before the first 8:30am run of the locker 
 
 Post-deploy step for this release (Google Calendar webhook): run `bin/rails runner 'GoogleCalendar::WebhookRegistrar.register!'` once, right after the deploy. Channels registered before this release have no token, and the webhook refuses their pushes (401) until they are re-registered; there is no grace period for them. The same applies whenever `secret_key_base` is rotated: every channel's token is derived from it, so every channel is refused until it is re-registered with the same command.
 
+### Deploy step: key request denial reason
+
+The release that adds `key_requests.denial_reason` (migration `20261110120000`) adds one nullable text column and changes no row. Key requests gain a fourth status, `denied`, stored as the integer 3; the existing statuses keep 0, 1 and 2. Code from before the release cannot read a denied request (it fails on the unknown status), so deploy `web` and `worker` together, as usual, and do not roll back to the old code once a request has been denied. Rolling the migration back refuses while any request is denied or has a stored reason, naming the counts; export those rows and clear them first.
+
 ### Deploy step: booking status column
 
 The release that adds `sub_space_bookings.booking_status_id` copies each booking's status into it when the migration runs, and from then on the app reads only that column. Old code writes a status only to the old status table (the `worker` container, which is separate from `web`, may still run the old code; so may the old `web` container until compose has replaced it), which would leave the column empty or stale. So deploy in this order:
@@ -174,3 +178,10 @@ The cache lives in the `repository_zips` Docker volume (`staging_repository_zips
 ## Help requests whose GitHub issue failed
 
 When GitHub does not return an issue number, the help request is still saved and the sender is told it was not submitted. These rows have an empty `gh_issue_number`. Find them in a console with `Help.where(gh_issue_number: nil)`. A retry by the sender creates a new row; the earlier one stays as the record of the attempt. Nothing deletes these rows.
+
+## Interface components
+
+Repeated interface pieces are ViewComponents (`view_component` gem) in `app/components/`, named `<Thing>Component`. The directory is autoloaded like the other `app/` directories.
+
+- A component's Stimulus controller lives in `app/javascript/controllers/`, named after the component (for example `key_request_deny_form_controller.js`), because the controller index only loads files under that directory. Its scoped CSS goes in a partial under `app/javascript/stylesheets/` imported by `application.scss`.
+- Component specs live in `spec/components/` and get `type: :component`, the ViewComponent test helpers and Capybara matchers from `spec/support/view_component.rb`.

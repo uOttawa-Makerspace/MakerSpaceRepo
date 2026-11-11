@@ -43,7 +43,8 @@ module PageCrawl
     [%r{\A/learning_area/:id/scorm_launch\z}, "SCORM package launch"],
     [%r{\A/open_hours\z}, "fetches external ICS calendars"],
     [%r{\A/rfid/get_unset_rfids\z}, "consumes RFID reader state"],
-    [%r{\A/kiosk}, "kiosk screens (device-bound)"]
+    [%r{\A/kiosk}, "kiosk screens (device-bound)"],
+    [%r{\A/_system_test_entrypoint\z}, "test-only route added by the view_component gem"]
   ].freeze
 
   # Segments that are not routable params in this crawl.
