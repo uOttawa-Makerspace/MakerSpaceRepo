@@ -7,6 +7,19 @@ import { Tooltip } from "bootstrap";
 
 import { applyEventBackground } from "../src/calendar_background.js";
 
+// The title and description are free text, so they go in as text nodes and
+// never as markup.
+function tooltipContent(title, description) {
+  const content = document.createElement("span");
+  content.append(title);
+  if (description) {
+    const note = document.createElement("i");
+    note.textContent = description;
+    content.append(document.createElement("br"), note);
+  }
+  return content;
+}
+
 document.addEventListener("turbo:load", async () => {
   // The staff layout loads this entrypoint on the calendar page, and the
   // listener outlives that page under Turbo. Other staff pages have a
@@ -77,11 +90,10 @@ document.addEventListener("turbo:load", async () => {
 
       // create event tooltip
       new Tooltip(info.el, {
-        title:
-          info.event.title +
-          (info.event.extendedProps.description
-            ? `<br><i>${info.event.extendedProps.description}</i>`
-            : ""),
+        title: tooltipContent(
+          info.event.title,
+          info.event.extendedProps.description,
+        ),
         html: true,
       });
 
