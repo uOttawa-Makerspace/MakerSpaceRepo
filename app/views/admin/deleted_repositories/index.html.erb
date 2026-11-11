@@ -20,7 +20,7 @@
             <td><%= repository.owner&.username || 'Deleted account' %></td>
             <td>
               <%= button_to 'Restore', admin_deleted_repository_restoration_path(repository),
-                            class: 'btn btn-primary', **confirmation_options('Restore this repository?') %>
+                            class: 'btn btn-primary', **confirmation_options(t('confirmations.repositories.restore')) %>
             </td>
           </tr>
         <% end %>

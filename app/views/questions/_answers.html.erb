@@ -4,7 +4,7 @@
     <%= af.rich_text_area :description, placeholder: 'Write the answers here...', class: "form-control h-auto #{return_answer_border_color(af.object)}", required: true %>
     <% unless af.object.correct %>
       <% if af.object.persisted? %>
-        <%= button_tag 'Remove', type: 'submit', form: "remove-answer-#{af.object.id}", class: 'btn btn-danger text-white float-end', **confirmation_options('Are you sure?') %>
+        <%= button_tag 'Remove', type: 'submit', form: "remove-answer-#{af.object.id}", class: 'btn btn-danger text-white float-end', **confirmation_options(t('confirmations.questions.remove_answer')) %>
       <% else %>
         <%= link_to 'Remove', edit_question_path(id: @question.id, n_answers: @answers.count - 1), class: 'btn btn-danger text-white float-end' %>
       <% end %>

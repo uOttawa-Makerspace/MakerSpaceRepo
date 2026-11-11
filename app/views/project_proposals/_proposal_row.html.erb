@@ -33,13 +33,13 @@
 
                 <% if signed_in? && current_user.admin? %>
                     <% unless project_proposal.approved? %>
-                        <%= button_to approve_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-success py-0 px-2', title: 'Approve', **confirmation_options('Approve this proposal?') do %>
+                        <%= button_to approve_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-success py-0 px-2', title: 'Approve', **confirmation_options(t('confirmations.project_proposals.approve_row')) do %>
                             <i class="fa-solid fa-check"></i>
                         <% end %>
                     <% end %>
 
                     <% unless project_proposal.not_approved? %>
-                        <%= button_to decline_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-danger py-0 px-2', title: 'Decline', **confirmation_options('Decline this proposal?') do %>
+                        <%= button_to decline_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-sm btn-danger py-0 px-2', title: 'Decline', **confirmation_options(t('confirmations.project_proposals.decline_row')) do %>
                             <i class="fa-solid fa-xmark"></i>
                         <% end %>
                     <% end %>
@@ -52,7 +52,7 @@
 
                 <% if signed_in? && current_user.admin? %>
                     <%= button_to project_proposal_path(project_proposal), method: :delete,
-                                  class: 'btn btn-sm btn-outline-danger py-0 px-2', title: 'Delete proposal', **confirmation_options('Delete this proposal?') do %>
+                                  class: 'btn btn-sm btn-outline-danger py-0 px-2', title: 'Delete proposal', **confirmation_options(t('confirmations.project_proposals.delete_row')) do %>
                         <i class="fa-solid fa-trash"></i>
                     <% end %>
                 <% end %>

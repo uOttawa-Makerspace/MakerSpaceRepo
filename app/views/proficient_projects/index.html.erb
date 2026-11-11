@@ -41,7 +41,7 @@
                                   <p><h6 class="text-center my-auto"><strong><%= pp.training.localized_name %></strong></h6></p>
                                 </div>
                                 <div class="col-3 float-end">
-                                  <%= button_to 'Delete', proficient_project_path(pp.id), method: :delete, class: 'btn btn-danger float-end', style: 'opacity: 0.5', **confirmation_options('Are you sure? This will delete the Learning Module.') if current_user.admin? %>
+                                  <%= button_to 'Delete', proficient_project_path(pp.id), method: :delete, class: 'btn btn-danger float-end', style: 'opacity: 0.5', **confirmation_options(t('confirmations.proficient_projects.delete_learning_module')) if current_user.admin? %>
                                 </div>
                               </div>
                             </div>

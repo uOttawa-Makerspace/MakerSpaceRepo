@@ -57,7 +57,7 @@
                       <%= button_to revoke_membership_path(membership),
                                     method: :patch,
                                     class: "btn btn-sm btn-outline-danger ms-2",
-                                    **confirmation_options("Are you sure you want to revoke this membership?") do %>
+                                    **confirmation_options(t('confirmations.memberships.revoke')) do %>
                         ✖
                       <% end %>
                     <% end %>

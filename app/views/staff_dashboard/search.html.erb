@@ -51,7 +51,7 @@
   <div class="table-responsive">
     <p id="user-count" class="text-center">Users inside <%= @space.name %>: <%= @space.signed_in_users.count %></p>
     <div class="container text-center mx-auto">
-      <%= button_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, method: :post, class: 'btn btn-secondary mx-auto text-center', **confirmation_options('Are you sure you want to sign out all users?') %>
+      <%= button_to 'Sign Out All Users', staff_dashboard_sign_out_all_users_path, method: :post, class: 'btn btn-secondary mx-auto text-center', **confirmation_options(t('confirmations.staff_dashboard.sign_out_all')) %>
     </div>
     <table class="staff-users-table text-center mb-5 table table-striped" data-datatable>
       <thead class="table-primary">

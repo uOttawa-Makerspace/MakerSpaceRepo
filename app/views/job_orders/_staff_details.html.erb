@@ -37,12 +37,12 @@
         </button>
       <% elsif [JobStatus.user_approval, JobStatus.sent_reminder].include?(jo.latest_status.job_status) %>
         <div class="d-flex flex-row gap-2 justify-content-center">
-          <%= button_to 'Approve', job_order_user_approval_path(jo, approved: true), method: :patch, class: 'btn btn-primary', **confirmation_options('Are you sure you want to approve the Job Order on behalf of the user?') %>
-          <%= button_to 'Reject', job_order_user_approval_path(jo, approved: false), method: :patch, class: 'btn btn-danger', **confirmation_options('Are you sure you want to decline the Job Order on behalf of the user?') %>
-          <%= button_to 'Reminder', job_order_resend_quote_email_path(jo), method: :patch, class: 'btn btn-info', **confirmation_options('Are you sure you want to resend a quote reminder email?') %>
+          <%= button_to 'Approve', job_order_user_approval_path(jo, approved: true), method: :patch, class: 'btn btn-primary', **confirmation_options(t('confirmations.job_orders.approve_for_user')) %>
+          <%= button_to 'Reject', job_order_user_approval_path(jo, approved: false), method: :patch, class: 'btn btn-danger', **confirmation_options(t('confirmations.job_orders.decline_for_user')) %>
+          <%= button_to 'Reminder', job_order_resend_quote_email_path(jo), method: :patch, class: 'btn btn-info', **confirmation_options(t('confirmations.job_orders.resend_quote_reminder')) %>
         </div>
       <% elsif jo.latest_status.job_status == JobStatus.waiting_processed %>
-        <%= button_to 'Start Processing', job_order_start_processing_path(jo, start_processing: true), method: :patch, class: 'btn btn-primary my-2', **confirmation_options('Are you sure you want to start the processing off the part?') %>
+        <%= button_to 'Start Processing', job_order_start_processing_path(jo, start_processing: true), method: :patch, class: 'btn btn-primary my-2', **confirmation_options(t('confirmations.job_orders.start_processing')) %>
       <% elsif jo.latest_status.job_status == JobStatus.being_processed %>
         <button 
             class="btn btn-primary" 
@@ -52,10 +52,10 @@
       <% elsif jo.latest_status.job_status == JobStatus.completed %>
         <div class="d-flex justify-content-between align-items-center">
           <span><strong>Price: </strong><%= number_to_currency(jo.total_price) %></span>
-          <%= button_to 'Mark as Paid', job_order_paid_path(jo, paid: true), method: :patch, class: 'btn btn-primary my-2', **confirmation_options('Are you sure you want to mark the job order as paid?') %>
+          <%= button_to 'Mark as Paid', job_order_paid_path(jo, paid: true), method: :patch, class: 'btn btn-primary my-2', **confirmation_options(t('confirmations.job_orders.mark_paid')) %>
         </div>
       <% elsif jo.latest_status.job_status == JobStatus.paid %>
-        <%= button_to 'Mark as Picked Up', job_order_picked_up_path(jo, picked_up: true), method: :patch, class: 'btn btn-primary my-2', **confirmation_options('Are you sure you want to mark the job order as picked up?') %>
+        <%= button_to 'Mark as Picked Up', job_order_picked_up_path(jo, picked_up: true), method: :patch, class: 'btn btn-primary my-2', **confirmation_options(t('confirmations.job_orders.mark_picked_up')) %>
       <% end %>
 
       <% if ![JobStatus.declined, JobStatus.paid, JobStatus.picked_up].include?(jo.latest_status.job_status) %>

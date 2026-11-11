@@ -73,7 +73,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         shop_log_in!(user)
         get new_discount_code_path
         expect(response).to have_http_status(:ok)
-        expect(response.body.scan("Are you sure you want to buy the coupon").size).to eq(2)
+        expect(response.body.scan("Buy the coupon for").size).to eq(2)
         expect(response.body).to include("$5 off our MakerStore")
         expect(response.body).to include("$10 off our MakerStore")
         expect(response.body).not_to include("$99 off")
