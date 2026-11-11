@@ -129,10 +129,8 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
       staff_opens_request(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
         select "JA-1", from: "locker_rental_locker_id"
-        # the "Indefinite" box starts checked for a request with
-        # no end date, so a plain "Assign Now" makes an indefinite rental.
-        expect(page).to have_checked_field("Indefinite")
-        uncheck_and_confirm "Indefinite"
+        # the "Indefinite" box starts unticked and the end date is proposed
+        expect(page).to have_unchecked_field("Indefinite")
         accept_confirm { click_button "Assign Now" }
       end
       expect(page).to have_text("Locker rental updated")
@@ -188,13 +186,14 @@ RSpec.describe "Journey: locker rental", type: :system, skip_bullet: true do
     end
   end
 
-  it "pinned: plain Assign Now makes an indefinite rental and the user's locker index lists it as indefinite" do
+  it "staff ticks Indefinite when assigning, and the user's locker index lists the rental as indefinite" do
     rental = request_locker_as_user("Indefinite by default")
     as_actor(:staff) do
       log_in_as(staff)
       staff_opens_request(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
         select "JA-1", from: "locker_rental_locker_id"
+        check "Indefinite"
         accept_confirm { click_button "Assign Now" }
       end
       expect(page).to have_text("Locker rental updated")

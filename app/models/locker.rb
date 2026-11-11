@@ -13,7 +13,25 @@ class Locker < ApplicationRecord
   validates :specifier, uniqueness: true
   validates :locker_size, presence: true
 
-  scope :order_by_specifier, -> { order specifier: :asc }
+  # Numbers first, by value ("2" before "10"), then any other names as text.
+  scope :order_by_specifier,
+        -> do
+          order(
+            Arel.sql("(specifier ~ '^[0-9]{1,18}$') DESC NULLS LAST"),
+            Arel.sql("CASE WHEN specifier ~ '^[0-9]{1,18}$' THEN specifier::bigint END"),
+            Arel.sql('specifier ASC NULLS LAST')
+          )
+        end
+
+  # The same order for a list of specifiers already in memory.
+  def self.sort_specifiers(specifiers)
+    specifiers.sort_by do |specifier|
+      next [2, 0, ''] if specifier.nil?
+
+      text = specifier.to_s
+      text.match?(/\A[0-9]{1,18}\z/) ? [0, text.to_i, text] : [1, 0, text]
+    end
+  end
 
   # Because :public is reserved
   scope :public_shown, -> { where(available: true) }
@@ -24,7 +42,7 @@ class Locker < ApplicationRecord
         ->(audience = nil) do
           lockers = where.not(
             id: joins(:locker_rentals).where(locker_rentals: { state: :active }).select(:id)
-          ).distinct
+          )
 
           # If an audience is provided (e.g. 'staff' or 'gng'), filter the available lockers
           # Using present? prevents empty strings from accidentally filtering out everything

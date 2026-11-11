@@ -149,21 +149,3 @@ describe("validateRange", () => {
     expect(() => validateRange()).not.toThrow();
   });
 });
-
-describe("requested-as handler of the inventory script", () => {
-  it("hides and disables the course fieldset on any change, as a select has no checked state", () => {
-    document.body.innerHTML = `
-      <select id="locker_rental_requested_as">
-        <option value="general">General</option>
-        <option value="student" selected>Student</option>
-      </select>
-      <fieldset id="repo-select"></fieldset>`;
-    document.dispatchEvent(new Event("turbo:load"));
-    document
-      .getElementById("locker_rental_requested_as")
-      .dispatchEvent(new Event("change"));
-    const fieldset = document.getElementById("repo-select");
-    expect(fieldset.hidden).toBe(true);
-    expect(fieldset.disabled).toBe(true);
-  });
-});

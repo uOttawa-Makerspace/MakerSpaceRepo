@@ -193,6 +193,25 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include("Submit request")
     end
 
+    it "preselects the only request type, and asks a student to choose between several" do
+      log_in!(owner)
+      get new_locker_rental_path
+      expect(response.body).to match(%r{<option selected="selected" value="general">General request</option>})
+      expect(response.body).not_to include("Choose one")
+
+      log_in!(create(:user, :student))
+      get new_locker_rental_path
+      expect(response.body).to include('<option value="">Choose one</option>')
+      expect(response.body).not_to include('selected="selected" value="student"')
+    end
+
+    it "keeps the chosen request type selected when a student's request is refused" do
+      log_in!(create(:user, :student))
+      post locker_rentals_path, params: { locker_rental: { requested_as: "student", section_name: "A4" } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to match(%r{<option selected="selected" value="student">GNG student</option>})
+    end
+
     it "shows the audience-filtered available counts (a community user sees 'general' only)" do
       log_in!(owner)
       size = create(:locker_size)
@@ -296,6 +315,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect do
           post locker_rentals_path,
                params: { locker_rental: {
+                 requested_as: "general",
                  notes: "try to sneak",
                  state: "active",
                  locker_id: locker.id
@@ -310,7 +330,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       it "forces rented_by_id to the signed-in user (cannot request for someone else)" do
         expect do
           post locker_rentals_path,
-               params: { locker_rental: { rented_by_id: other.id } }
+               params: { locker_rental: { requested_as: "general", rented_by_id: other.id } }
         end.to change(LockerRental, :count).by(1)
         expect(LockerRental.order(:id).last.rented_by).to eq(owner)
       end
@@ -319,7 +339,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         LockerOption.lockers_enabled = false
 
         expect do
-          post locker_rentals_path, params: { locker_rental: { notes: "x" } }
+          post locker_rentals_path, params: { locker_rental: { requested_as: "general", notes: "x" } }
         end.not_to change(LockerRental, :count)
         expect(response).to redirect_to(locker_rentals_path)
         expect(flash[:alert])
@@ -331,7 +351,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
         log_in!(owner)
         expect do
-          post locker_rentals_path, params: { locker_rental: { notes: "second" } }
+          post locker_rentals_path, params: { locker_rental: { requested_as: "general", notes: "second" } }
         end.not_to change(LockerRental, :count)
 
         expect(response).to have_http_status(:unprocessable_content)
@@ -340,6 +360,25 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
           .to include("Rented by already has a request under review")
         expect(response.body).not_to include("You have a pending request for a locker")
         expect(response.body).to include('name="locker_rental[notes]"')
+      end
+
+      it "refuses a request type the form does not offer this user, or none" do
+        log_in!(create(:user, :student))
+        ["staff", ""].each do |type|
+          expect do
+            post locker_rentals_path, params: { locker_rental: { requested_as: type, notes: "x" } }
+          end.not_to change(LockerRental, :count)
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(response.body).to include(I18n.t("errors.lockers.request_type_not_offered"))
+        end
+      end
+
+      it "accepts a request type the form offers this user" do
+        log_in!(create(:user, :student))
+        expect do
+          post locker_rentals_path, params: { locker_rental: { requested_as: "general", notes: "x" } }
+        end.to change(LockerRental, :count).by(1)
+        expect(LockerRental.order(:id).last.requested_as).to eq("general")
       end
 
       it "validates the GNG student field bundle on create" do
@@ -381,6 +420,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
             post locker_rentals_path,
                  params: {
                    locker_rental: {
+                     requested_as: "staff",
                      rented_by_id: tenant.id,
                      locker_id: locker.id,
                      state: "active"
@@ -460,6 +500,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       it "honors an explicit owned_until and lets indefinite ('1') clear the date" do
         post locker_rentals_path,
              params: { locker_rental: {
+               requested_as: "staff",
                rented_by_id: create(:user).id,
                locker_id: create(:locker).id,
                state: "active",
@@ -470,6 +511,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
         post locker_rentals_path,
              params: { locker_rental: {
+               requested_as: "staff",
                rented_by_id: create(:user).id,
                locker_id: create(:locker).id,
                state: "active",
@@ -485,6 +527,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         perform_enqueued_jobs do
           post locker_rentals_path,
                params: { locker_rental: {
+                 requested_as: "staff",
                  rented_by_id: tenant.id,
                  locker_id: locker.id,
                  state: "await_payment",
@@ -508,6 +551,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         post locker_rentals_path,
              params: {
                locker_rental: {
+                 requested_as: "staff",
                  locker_id: create(:locker).id,
                  state: "active",
                  rented_by_username: tenant.username
@@ -523,6 +567,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect do
           post locker_rentals_path,
                params: { locker_rental: {
+                 requested_as: "staff",
                  rented_by_id: create(:user).id,
                  locker_id: reserved.locker_id,
                  state: "active"
@@ -539,6 +584,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         expect do
           post locker_rentals_path,
                params: { locker_rental: {
+                 requested_as: "staff",
                  rented_by_id: create(:user).id,
                  locker_id: create(:locker).id,
                  state: "active"
@@ -553,6 +599,7 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
         log_in!(admin)
         post locker_rentals_path,
              params: { locker_rental: {
+               requested_as: "staff",
                rented_by_id: create(:user).id,
                locker_id: create(:locker).id,
                state: "active"
@@ -594,6 +641,48 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       expect(response.body).to include(general_locker.specifier)
       expect(response.body).to include("Staff Internal Notes")
       expect(response.body).to include("Locker Inventory")
+    end
+
+    it "renders the confirming staff action buttons disabled until the page script enables them" do
+      log_in!(staff)
+      get locker_rental_path(reviewing_rental!)
+
+      assert_select "button[data-confirm]", count: 3
+      assert_select "button[data-confirm]:not([disabled])", count: 0
+      assert_select "button[data-confirm]:not([data-controller='enable-when-ready'])", count: 0
+    end
+
+    describe "the Indefinite box of the assign form" do
+      before { log_in!(staff) }
+
+      it "starts unticked, with the end date proposed, for a request without an end date" do
+        rental = reviewing_rental!
+        rental.update_columns(owned_until: nil)
+
+        get locker_rental_path(rental)
+
+        assert_select "input#indefinite_assign:not([checked])"
+        assert_select "input#owned_until_assign[value=?]", end_of_this_semester.to_date.iso8601
+      end
+
+      it "starts unticked for a request that already has an end date" do
+        rental = reviewing_rental!
+        rental.update_columns(owned_until: Time.zone.local(2031, 4, 30))
+
+        get locker_rental_path(rental)
+
+        assert_select "input#indefinite_assign:not([checked])"
+        assert_select "input#owned_until_assign[value=?]", "2031-04-30"
+      end
+
+      it "starts ticked for a rental that is indefinite" do
+        rental = create(:locker_rental, :active)
+        rental.update_columns(owned_until: nil)
+
+        get locker_rental_path(rental)
+
+        assert_select "input#indefinite_assign[checked]"
+      end
     end
 
     it "denies strangers with a redirect to the index and an alert" do
@@ -1187,6 +1276,41 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
     end
   end
 
+  # ------------------------------------------------------- expiry notice reset on date changes
+
+  describe "expiry notice after the end date moves" do
+    let(:told_at) { 2.days.ago.change(usec: 0) }
+    let(:rental) do
+      create(:locker_rental, :active, rented_by: owner, owned_until: 3.days.ago).tap do |r|
+        r.update_columns(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+      end
+    end
+
+    it "is cleared when staff move the end date later" do
+      log_in!(staff)
+      patch locker_rental_path(rental), params: { locker_rental: { owned_until: 4.months.from_now.to_date.to_s } }
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: nil, contacted_for_clearance: false)
+    end
+
+    it "is cleared when staff make the rental indefinite" do
+      log_in!(staff)
+      patch locker_rental_path(rental), params: { locker_rental: { indefinite: "1" } }
+      expect(rental.reload).to have_attributes(owned_until: nil, notified_of_cancellation_at: nil)
+    end
+
+    it "is kept when staff move the end date earlier" do
+      log_in!(staff)
+      patch locker_rental_path(rental), params: { locker_rental: { owned_until: 10.days.ago.to_date.to_s } }
+      expect(rental.reload).to have_attributes(notified_of_cancellation_at: told_at, contacted_for_clearance: true)
+    end
+
+    it "is cleared when the renter renews" do
+      log_in!(owner)
+      patch renew_locker_rental_path(rental)
+      expect(rental.reload).to have_attributes(state: "await_payment", notified_of_cancellation_at: nil, contacted_for_clearance: false)
+    end
+  end
+
   # ------------------------------------------------------- PATCH renew
 
   describe "PATCH /locker_rentals/:id/renew" do
@@ -1327,6 +1451,15 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
 
     def hold!(rental, reason: "renter_ineligible", id: nil)
       create(:locker_payment, :held, locker_rental: rental, hold_reason: reason, **(id ? { shopify_order_id: id } : {}))
+    end
+
+    it "renders the resolution buttons disabled until the page script enables them" do
+      hold!(rental)
+      log_in!(staff)
+      get locker_rental_path(rental)
+
+      assert_select "form button[name=resolution][data-confirm]", count: 2
+      assert_select "form button[name=resolution][disabled][data-controller='enable-when-ready']", count: 2
     end
 
     it "shows the badge, the section and the alert only while a held payment exists, driven by the scope" do

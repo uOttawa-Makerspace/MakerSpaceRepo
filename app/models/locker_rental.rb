@@ -96,10 +96,6 @@ class LockerRental < ApplicationRecord
   # The virtual attribute `indefinite` lifts the requirement.
   validates :owned_until, presence: true, if: -> { active? && indefinite != '1' }
 
-  # A renewal or extension (owned_until moved later, or made indefinite) makes the earlier expiry notice history:
-  # the next expiry has to be announced again. A column reset on the same row, whichever path changed the date.
-  before_save :reset_expiry_notice, if: :owned_until_moved_later?
-
   # If state ever changes from request, record who did it
   # Which staff member approved the request, or if owner cancelled the request
   validates :decided_by, presence: true, unless: :reviewing?
@@ -316,6 +312,11 @@ class LockerRental < ApplicationRecord
     active? && owned_until && owned_until <= DateTime.current
   end
 
+  # Active with no end date: the rental never expires
+  def indefinite?
+    active? && owned_until.nil?
+  end
+
   def renewable?
     active? && expired?
   end
@@ -493,16 +494,33 @@ class LockerRental < ApplicationRecord
     @attributes.write_from_database('paid_at', row && row['paid_at'])
   end
 
+  # Sets the end date on a saved rental. A later date (or one side being open-ended) makes the earlier expiry
+  # notice history: the next expiry has to be announced again, so the notice flags are cleared with it.
+  # Every writer of owned_until on a saved rental calls this (or #extend_until) instead of assigning the
+  # column. Call it on a row you have just locked (lock!, with_lock): the flags are read from this instance.
+  def assign_owned_until(date)
+    self.owned_until = date
+    return unless notified_of_cancellation_at.present? && owned_until_moved_later?
+
+    self.notified_of_cancellation_at = nil
+    self.contacted_for_clearance = false
+  end
+
+  # Locks and reloads the row, then saves the new end date (and any other attributes) with the notice reset.
+  # Returns whether it saved.
+  def extend_until(date, **attributes)
+    with_lock do
+      assign_attributes(attributes)
+      assign_owned_until(date)
+      save
+    end
+  end
+
   private
 
   def owned_until_moved_later?
-    persisted? && notified_of_cancellation_at.present? && will_save_change_to_owned_until? &&
+    persisted? && will_save_change_to_owned_until? &&
       (owned_until.nil? || owned_until_was.nil? || owned_until > owned_until_was)
-  end
-
-  def reset_expiry_notice
-    self.notified_of_cancellation_at = nil
-    self.contacted_for_clearance = false
   end
 
   # THE place a link is served from: fetch the stored draft, classify it, serve it only when payable. The url, nil
@@ -621,7 +639,9 @@ class LockerRental < ApplicationRecord
   # is held as not_activatable and staff decide.
   def activate_for_payment(payment)
     transaction(requires_new: true) do
-      update!(state: :active, owned_until: owned_until.presence || end_of_this_semester)
+      assign_attributes(state: :active)
+      assign_owned_until(owned_until.presence || end_of_this_semester)
+      save!
     end
     payment
   rescue ActiveRecord::RecordInvalid

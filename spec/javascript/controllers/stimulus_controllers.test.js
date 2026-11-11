@@ -20,6 +20,9 @@ const { default: CommentsModal } =
 const { default: VolunteerSearch } =
   await import("../../../app/javascript/controllers/volunteer_search_controller.js");
 
+const { default: EnableWhenReady } =
+  await import("../../../app/javascript/controllers/enable-when-ready_controller.js");
+
 let application;
 const $ = (id) => document.getElementById(id);
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -31,6 +34,7 @@ async function mount(html) {
   application.register("launch-custom-modal", LaunchCustomModal);
   application.register("job-order-comments-modal", CommentsModal);
   application.register("volunteer-search", VolunteerSearch);
+  application.register("enable-when-ready", EnableWhenReady);
   await settle();
 }
 
@@ -290,5 +294,14 @@ describe("volunteer-search", () => {
     expect(document.querySelector("tr").classList.contains("d-none")).toBe(
       true,
     );
+  });
+});
+
+describe("enable-when-ready", () => {
+  it("enables a button that was rendered disabled once it connects", async () => {
+    await mount(
+      '<button id="go" disabled data-controller="enable-when-ready">Go</button>',
+    );
+    expect($("go").disabled).toBe(false);
   });
 });
