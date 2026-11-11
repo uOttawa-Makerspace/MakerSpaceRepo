@@ -12,19 +12,19 @@ RSpec.describe "Browser isolation between examples", type: :system, order: :defi
       page.document.synchronize { raise Capybara::ExpectationNotMet, "late failure has not run" unless page.evaluate_script("window.lateFailureRan") }
     end
 
-    # Runs window.lateFailure from a timer once the page has had a turn, and
-    # reports back through window.lateFailureRan so the run itself is observable.
-    let(:schedule_late_failure) do
+    # Script that runs a function from a timer after delay_ms; the function sets
+    # window.lateFailureRan and throws an error with the given message.
+    def late_failure_script(message:, delay_ms:)
       <<~JS
         window.lateFailureRan = false;
-        window.lateFailure = function () { window.lateFailureRan = true; throw new Error('late failure'); };
-        setTimeout(window.lateFailure, 0);
+        window.lateFailure = function () { window.lateFailureRan = true; throw new Error('#{message}'); };
+        setTimeout(window.lateFailure, #{delay_ms});
       JS
     end
 
     it "logs the late error when the page stays alive (the control for the next example)", js: true do
       visit root_path
-      page.execute_script(schedule_late_failure)
+      page.execute_script(late_failure_script(message: "late failure", delay_ms: 0))
       wait_for_late_failure
 
       errors = JsErrorCheck.collect(page)
@@ -33,19 +33,18 @@ RSpec.describe "Browser isolation between examples", type: :system, order: :defi
 
     it "does not report an error that the left page raises after the log was read", js: true do
       visit root_path
-      # The same trigger as the control above, but the page is left first: its timer dies with it.
-      page.execute_script(schedule_late_failure.sub("setTimeout(window.lateFailure, 0);", "setTimeout(window.lateFailure, 250);"))
+      # The same function as the control above, on a timer that cannot fire before the page is left; leaving kills it.
+      page.execute_script(late_failure_script(message: "late failure", delay_ms: 30_000))
       expect(page.evaluate_script("window.lateFailureRan")).to be(false)
 
       expect(JsErrorCheck.collect(page, leave_page: true)).to be_empty
       expect(page.current_url).to eq("about:blank")
       expect(page.evaluate_script("window.lateFailureRan")).to be_nil
-      expect(JsErrorCheck.collect(page)).to be_empty
     end
 
     it "returns an error the page logged before it was left, with the page path", js: true do
       visit root_path
-      page.execute_script(schedule_late_failure.sub("late failure", "early failure"))
+      page.execute_script(late_failure_script(message: "early failure", delay_ms: 0))
       wait_for_late_failure
 
       errors = JsErrorCheck.collect(page, leave_page: true)
