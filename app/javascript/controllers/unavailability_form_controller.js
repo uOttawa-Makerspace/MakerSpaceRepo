@@ -141,7 +141,7 @@ export default class extends TypedController {
   }
 
   pointFormAt(id) {
-    this.formTarget.action = `${COLLECTION_PATH}/${id}`;
+    this.formTarget.action = `${COLLECTION_PATH}/${encodeURIComponent(id)}`;
     this.formTarget.querySelector('input[name="_method"]')?.remove();
     const methodInput = document.createElement("input");
     methodInput.type = "hidden";
@@ -214,7 +214,8 @@ export default class extends TypedController {
   }
 
   showDeleteChoices(calendarEvent, repeats) {
-    const path = `${COLLECTION_PATH}/${calendarEvent.id}/delete_with_scope`;
+    const id = encodeURIComponent(calendarEvent.id);
+    const path = `${COLLECTION_PATH}/${id}/delete_with_scope`;
     this.deleteScopeForms.forEach((form) => {
       form.action = path;
     });
