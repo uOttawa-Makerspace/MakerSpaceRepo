@@ -12,7 +12,7 @@ document.addEventListener("turbo:load", async () => {
   // listener outlives that page under Turbo. Other staff pages have a
   // #calendar of their own, so only the marked container is this calendar.
   const calendarEl = document.querySelector("[data-my-calendar] #calendar");
-  if (!calendarEl) return;
+  if (!(calendarEl instanceof HTMLElement)) return;
 
   let onlyShowMyShifts = false;
 
