@@ -922,11 +922,12 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("You are not allowed to perform this action!")
     end
 
-    it "HARD deletes for the owner (the soft-delete flag is not used here), -25 reputation per member" do
+    it "hides the repository for a member and takes 25 reputation back from each member" do
       owner.update!(reputation: 100)
       content_login!(owner)
       expect { delete repository_path(owner.username, repo.slug) }
-        .to change(Repository.unscoped, :count).by(-1)
+        .to change(Repository, :count).by(-1).and not_change(Repository.unscoped, :count)
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "user_deleted")
       expect(response).to redirect_to(user_path(owner.username))
       expect(flash[:notice]).to eq("Repository has been successfully deleted.")
       expect(owner.reload.reputation).to eq(75)
@@ -952,18 +953,47 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       FileUtils.rm_rf(cache_dir.to_s)
     end
 
-    it "removes photos, comments and likes with it" do
+    it "keeps photos, files, comments, likes, makes and stored files" do
       create(:comment, repository: repo, user: stranger)
       create(:like, repository: repo, user: stranger)
+      make = create(:repository, owner: stranger, title: "Made from it", make_id: repo.id)
+      blob_ids = ActiveStorage::Blob.pluck(:id)
       content_sign_in_as(:admin)
       expect { delete repository_path(owner.username, repo.slug) }
-        .to change(Comment, :count).by(-1).and change(Like, :count).by(-1).and change(Photo, :count).by(-1)
+        .to not_change(Comment, :count).and not_change(Like, :count).and not_change(Photo, :count)
+        .and not_change(ActiveStorage::Attachment, :count)
+      expect(ActiveStorage::Blob.pluck(:id)).to match_array(blob_ids)
+      expect(make.reload.make_id).to eq(repo.id)
+      expect(make.parent).to eq(repo)
+    end
+
+    it "records an admin's deletion as deleted by an admin" do
+      content_sign_in_as(:admin)
+      delete repository_path(owner.username, repo.slug)
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "admin_deleted")
+    end
+
+    it "answers 404 for the hidden repository's page afterwards" do
+      content_login!(owner)
+      delete repository_path(owner.username, repo.slug)
+      get repository_path(owner.username, repo.id)
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "does not take the reputation back twice when the repository is deleted again" do
+      owner.update!(reputation: 100)
+      content_login!(owner)
+      delete repository_path(owner.username, repo.slug)
+      delete repository_path(owner.username, repo.slug)
+      expect(response).to have_http_status(:not_found)
+      expect(owner.reload.reputation).to eq(75)
     end
 
     it "lets the owner delete a repository whose users list does not include them" do
       orphan = create(:repository, owner: owner, title: "Orphan")
       content_login!(owner)
       expect { delete repository_path(owner.username, orphan.slug) }.to change(Repository, :count).by(-1)
+      expect(Repository.unscoped.find(orphan.id).deleted).to be(true)
       content_login!(stranger)
       other = create(:repository, owner: owner, title: "Orphan Two")
       expect { delete repository_path(owner.username, other.slug) }.not_to change(Repository, :count)

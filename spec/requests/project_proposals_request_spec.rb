@@ -1495,6 +1495,18 @@ RSpec.describe "Project proposals (HTTP contract)", type: :request do
     end
   end
 
+  describe "a proposal whose only repository was deleted" do
+    it "is listed as assigned again, not as completed" do
+      done = create(:project_proposal, :completed, title: "Finished Work")
+      hidden = done.repositories.first
+      hidden.hide!(by: hidden.owner)
+      get projects_assigned_project_proposals_path
+      expect(response.body).to include("Finished Work")
+      get projects_completed_project_proposals_path
+      expect(response.body).not_to include("Finished Work")
+    end
+  end
+
   describe "JSON contact details" do
     let(:public_keys) do
       %w[id user_id admin_id approved title description youtube_link created_at updated_at area client_type url]

@@ -100,18 +100,6 @@ RSpec.describe Repository, type: :model do
     end
   end
 
-  describe "before destroy" do
-    context "reputation" do
-      it "should lower reputation by 25" do
-        user = create(:user, :regular_user)
-        repo = create(:repository)
-        Repository.find(repo.id).users << User.find(user.id)
-        Repository.find(repo.id).destroy!
-        expect(user.reload.reputation).to eq(-25)
-      end
-    end
-  end
-
   describe "#scopes" do
     context "#between_dates_picked" do
       it "should return one" do

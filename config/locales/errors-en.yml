@@ -272,6 +272,7 @@ en:
       proposal_not_linked: "The project was not linked to the project proposal."
       member_not_added: "The user was not added to the repository."
       ownership_not_transferred: "The ownership of the repository was not transferred."
+      not_restored: "The repository was not restored."
     proposals:
       not_created: "The project proposal was not created."
       not_updated: "The project proposal was not updated."

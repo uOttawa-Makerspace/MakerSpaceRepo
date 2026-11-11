@@ -3,6 +3,7 @@
 class Repository < ApplicationRecord
   include BCrypt
   include Categorizable
+  include Hideable
   require 'bcrypt'
 
   # There's two ways to reach a user, one is the user that created the repo
@@ -32,6 +33,7 @@ class Repository < ApplicationRecord
   has_many :likes, dependent: :destroy
   has_many :makes, class_name: 'Repository', foreign_key: 'make_id', dependent: :nullify
   belongs_to :parent,
+             -> { including_hidden },
              class_name: 'Repository',
              foreign_key: 'make_id',
              optional: true
@@ -93,8 +95,6 @@ class Repository < ApplicationRecord
   #           inclusion: { within: CategoryOption.show_options },
   #           presence: { message: "A category is required."},
   #           length: {maximum: 5, message:"You may only select 5 categories."}
-  default_scope { where(deleted: false) }
-
   scope :between_dates_picked,
         ->(start_date, end_date) do
           where('created_at BETWEEN ? AND ? ', start_date, end_date)
@@ -121,11 +121,6 @@ class Repository < ApplicationRecord
 
   def id_slug
     "#{id}.#{title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')}"
-  end
-
-  # Undo what creating it awarded: 25 for a repository, 15 for a make
-  before_destroy do
-    users.each { |u| u.decrement!(:reputation, make_id.present? ? 15 : 25) }
   end
 
   def thumbnail_variant(variant)
@@ -170,17 +165,19 @@ class Repository < ApplicationRecord
                       .where('NOT EXISTS (SELECT 1 FROM repositories owned WHERE owned.user_id = users.id AND owned.title = ?)',
                              repository.title)
                       .order(:id).lock('FOR SHARE').first
-      changes = new_owner ? { user_id: new_owner.id } : { deleted: true }
+      changes = new_owner ? { user_id: new_owner.id } : { deleted: true, hidden_reason: "account_deleted" }
       repository.update_columns(changes.merge(updated_at: Time.current))
       clear_zip_cache_after_commit(repository)
     end
   end
 
-  # Brings back what release_owned_by! hid: the hidden repositories still owned by the user. A
-  # repository handed to another member has a different owner and stays with them.
+  # Brings back what release_owned_by! hid: the repositories still owned by the user that were hidden
+  # by the account deletion. One the user or an admin deleted, or one hidden before the reason was
+  # recorded, stays hidden. A repository handed to another member has a different owner and stays
+  # with them.
   def self.restore_hidden_for!(user)
-    unscoped.where(user_id: user.id, deleted: true).find_each do |repository|
-      repository.update_columns(deleted: false, updated_at: Time.current)
+    unscoped.where(user_id: user.id, deleted: true, hidden_reason: :account_deleted).find_each do |repository|
+      repository.update_columns(deleted: false, hidden_reason: nil, updated_at: Time.current)
       clear_zip_cache_after_commit(repository)
     end
   end

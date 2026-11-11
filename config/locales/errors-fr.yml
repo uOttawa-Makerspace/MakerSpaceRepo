@@ -272,6 +272,7 @@ fr:
       proposal_not_linked: "Le projet n'a pas été lié à la proposition de projet."
       member_not_added: "L'utilisateur n'a pas été ajouté au dépôt."
       ownership_not_transferred: "La propriété du dépôt n'a pas été transférée."
+      not_restored: "Le dépôt n'a pas été restauré."
     proposals:
       not_created: "La proposition de projet n'a pas été créée."
       not_updated: "La proposition de projet n'a pas été modifiée."

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_11_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_11_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1288,12 +1288,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_11_110000) do
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.string "youtube_link"
+    t.integer "hidden_reason"
     t.index ["category"], name: "index_repositories_on_category", opclass: :gin_trgm_ops, using: :gin
     t.index ["description"], name: "index_repositories_on_description", opclass: :gin_trgm_ops, using: :gin
     t.index ["make_id"], name: "index_repositories_on_make_id"
     t.index ["project_proposal_id"], name: "index_repositories_on_project_proposal_id"
     t.index ["title"], name: "index_repositories_on_title", opclass: :gin_trgm_ops, using: :gin
     t.index ["user_id"], name: "index_repositories_on_user_id"
+    t.check_constraint "hidden_reason IS NULL OR deleted IS TRUE", name: "repositories_hidden_reason_only_when_hidden"
   end
 
   create_table "repositories_users", id: false, force: :cascade do |t|

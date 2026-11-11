@@ -166,7 +166,7 @@ class RepositoriesController < SessionsController
   end
 
   def destroy
-    @repository.clear_zip_cache if @repository.destroy
+    @repository.hide!(by: current_user)
     respond_to do |format|
       format.html do
         redirect_to user_path(@repository.user_username),

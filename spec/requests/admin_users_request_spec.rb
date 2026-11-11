@@ -891,6 +891,50 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(Repository.find_by(id: repo.id)).to eq(repo)
     end
 
+    it "keeps a repository the user deleted before the account was deleted hidden" do
+      repo = create(:repository, owner: target)
+      repo.users << target
+      repo.hide!(by: repo.owner)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "user_deleted")
+    end
+
+    it "keeps a repository an admin deleted before the account was deleted hidden" do
+      repo = create(:repository, owner: target)
+      repo.users << target
+      repo.hide!(by: create(:user, :admin))
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "admin_deleted")
+    end
+
+    it "keeps a repository hidden before the reason was recorded hidden, and its reputation unchanged" do
+      repo = create(:repository, owner: target)
+      repo.users << target
+      repo.update_columns(deleted: true)
+      target.update!(reputation: 40)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: nil)
+      expect(target.reload.reputation).to eq(40)
+    end
+
+    it "brings back only the repositories the account deletion hid, clearing their reason, with no reputation change" do
+      kept = create(:repository, owner: target, title: "Hidden by account")
+      kept.users << target
+      gone = create(:repository, owner: target, title: "Deleted by user")
+      gone.users << target
+      gone.hide!(by: gone.owner)
+      target.update!(reputation: 40)
+      delete delete_user_admin_users_path, params: { id: target.id, password: password }
+      expect(Repository.unscoped.find(kept.id)).to have_attributes(deleted: true, hidden_reason: "account_deleted")
+      patch restore_user_admin_users_path, params: { id: target.id }
+      expect(Repository.unscoped.find(kept.id)).to have_attributes(deleted: false, hidden_reason: nil)
+      expect(Repository.unscoped.find(gone.id).deleted).to be(true)
+      expect(target.reload.reputation).to eq(40)
+    end
+
     it "does not undo a handover: the repository stays with its new owner and the old owner is a member again" do
       partner = create(:user, :regular_user)
       repo = create(:repository, owner: target)
@@ -1083,12 +1127,15 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
   describe "DELETE /admin/users/delete_repository" do
     before { login!(admin) }
 
-    it "destroys any repository and redirects to root" do
+    it "hides any repository, keeps its rows, and redirects to root" do
       repo = create(:repository)
+      create(:comment, repository: repo)
       delete delete_repository_admin_users_path, params: { id: repo.id }
       expect(response).to redirect_to(root_path)
       expect(flash[:notice]).to eq("Repository Deleted!")
       expect(Repository.exists?(repo.id)).to be(false)
+      expect(Repository.unscoped.find(repo.id)).to have_attributes(deleted: true, hidden_reason: "admin_deleted")
+      expect(Comment.where(repository_id: repo.id).count).to eq(1)
     end
 
     it "drops the cached zip of the deleted repository" do

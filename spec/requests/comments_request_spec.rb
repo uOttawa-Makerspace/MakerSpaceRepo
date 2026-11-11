@@ -120,6 +120,13 @@ RSpec.describe "Comments (HTTP contract)", type: :request do
       expect(response).to redirect_to(repository_path(owner.username, repo.id))
     end
 
+    it "deletes the author's comment on a deleted repository and sends them home" do
+      repo.update_columns(deleted: true)
+      content_login!(author)
+      expect { delete comments_destroy_path(comment.id) }.to change(Comment, :count).by(-1)
+      expect(response).to redirect_to(root_path)
+    end
+
     it "refuses the repository owner (not the author) and staff" do
       content_login!(owner)
       expect { delete comments_destroy_path(comment.id) }.not_to change(Comment, :count)
