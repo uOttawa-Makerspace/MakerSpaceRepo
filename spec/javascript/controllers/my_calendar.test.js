@@ -146,9 +146,9 @@ describe("my calendar", () => {
     expect(document.getElementById("spinner_container").style.display).toBe(
       "none",
     );
-    expect(
-      document.querySelector(".fc-toggleEventOverlap-button").innerHTML,
-    ).toBe("Enable Event Overlap");
+    expect(cal.options.customButtons.toggleEventOverlap.text).toBe(
+      "Enable Event Overlap",
+    );
   });
 
   it("starts at the remembered date and overlap setting", async () => {
@@ -157,9 +157,9 @@ describe("my calendar", () => {
     const cal = await boot();
     expect(cal.options.slotEventOverlap).toBe(true);
     expect(cal.options.initialDate).toBe("2026-03-02T00:00:00Z");
-    expect(
-      document.querySelector(".fc-toggleEventOverlap-button").innerHTML,
-    ).toBe("Disable Event Overlap");
+    expect(cal.options.customButtons.toggleEventOverlap.text).toBe(
+      "Disable Event Overlap",
+    );
   });
 
   it("remembers the first day of the view", async () => {
