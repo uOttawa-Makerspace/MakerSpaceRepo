@@ -92,47 +92,10 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   def json
-    @unavailabilities = StaffUnavailability.where(user_id: current_user.id)
+    feeds = current_user.staff_external_unavailabilities.map { |external| [external, imported_feed(external)] }
+    report_failed_calendars(feeds)
 
-    local_unavails = @unavailabilities.map do |u|
-      duration = (u.end_time.to_time - u.start_time.to_time) * 1000
-
-      rrule_data = helpers.date_formatted_recurrence_rule(u)
-
-      {
-        id: u.id,
-        title: u.title || "Unavailable",
-        start: u.start_time.iso8601,
-        end: u.end_time.iso8601,
-        **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
-        allDay: CalendarTime.all_day?(u.start_time, u.end_time),
-        extendedProps: {
-          description: u.description,
-          eventType: "unavailability",
-          userId: u.user_id,
-          isAdminCreated: u.title&.include?("(Admin)")
-        }
-      }
-    end.compact
-
-    ics_unavails = current_user.staff_external_unavailabilities.flat_map do |external|
-      parsed = helpers.parse_ics_calendar(
-        external.ics_url,
-        name: "#{current_user.name} External Unavailability"
-      )
-
-      parsed.flat_map do |calendar|
-        calendar[:events].map do |event|
-          event.merge(
-            title: "External - #{event[:title]}"
-          )
-        end
-      end
-    end
-
-    combined_unavailabilities = local_unavails + ics_unavails
-
-    render json: combined_unavailabilities
+    render json: own_unavailability_events + feeds.flat_map { |external, feed| imported_events(external.source_host, feed) }
   end
 
   def update_external_unavailabilities
@@ -154,6 +117,53 @@ class Staff::UnavailabilitiesController < StaffAreaController
   end
 
   private
+
+  def own_unavailability_events
+    @unavailabilities = StaffUnavailability.where(user_id: current_user.id)
+
+    @unavailabilities.map do |u|
+      duration = (u.end_time.to_time - u.start_time.to_time) * 1000
+
+      rrule_data = helpers.date_formatted_recurrence_rule(u)
+
+      {
+        id: u.id,
+        title: u.title || "Unavailable",
+        start: u.start_time.iso8601,
+        end: u.end_time.iso8601,
+        **(u.recurrence_rule.present? ? { rrule: rrule_data, duration: duration } : {}),
+        allDay: CalendarTime.all_day?(u.start_time, u.end_time),
+        extendedProps: {
+          description: u.description,
+          eventType: "unavailability",
+          userId: u.user_id,
+          isAdminCreated: u.title&.include?("(Admin)")
+        }
+      }
+    end.compact
+  end
+
+  # The hosts of the linked calendars that could not be loaded go in a header, a JSON list (null for a link whose
+  # host cannot be read). The header is not part of the body's ETag, so a browser must not reuse an earlier answer.
+  def report_failed_calendars(feeds)
+    failed_hosts = feeds.select { |_external, feed| feed.failed? }.map { |external, _feed| external.source_host }
+    response.set_header("Cache-Control", "no-store")
+    response.set_header("X-Failed-Calendars", failed_hosts.to_json) unless failed_hosts.empty?
+  end
+
+  def imported_feed(external)
+    helpers.ics_feed(external.ics_url, name: "#{current_user.name} External Unavailability")
+  end
+
+  # The events of one linked calendar, marked with the host of the link they came from. Only the host is ever
+  # sent: a private link holds its secret in the path.
+  def imported_events(host, feed)
+    feed.calendars.flat_map do |calendar|
+      calendar[:events].map do |event|
+        event.merge(title: "External - #{event[:title]}", extendedProps: event.fetch(:extendedProps, {}).merge(sourceHost: host))
+      end
+    end
+  end
 
   def staff_params
     params.require(:staff_unavailability).permit(

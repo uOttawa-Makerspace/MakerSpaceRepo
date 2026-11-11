@@ -28,6 +28,14 @@ module IcsFetcher
     false
   end
 
+  # The host of a link, or nil when it cannot be read. The path and query are left out: a private calendar link
+  # carries its secret there, so only the host is shown to people or written to logs.
+  def self.host(url)
+    URI.parse(url.to_s.strip).host
+  rescue URI::InvalidURIError
+    nil
+  end
+
   # The body of the feed, or nil when the server does not answer with one. Raises Refused for a URL that may not be
   # fetched; network errors are the caller's to rescue.
   def self.get(url, timeout: 10)

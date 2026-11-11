@@ -352,6 +352,62 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(response.parsed_body.first["extendedProps"]).not_to have_key("eventType")
       end
 
+      it "names the host of the link an external event came from, never the link itself" do
+        url = "https://calendar.example.org/private/secret-token-123/basic.ics?key=abc"
+        StaffExternalUnavailability.create!(user: staff, ics_url: url)
+        stub_ics(url, body: ics_document(uid: "e2", summary: "Dentist", start: 3.days.from_now, end: 3.days.from_now + 1.hour))
+        get json_staff_unavailabilities_path
+        expect(response.parsed_body.first["extendedProps"]["sourceHost"]).to eq("calendar.example.org")
+        expect(response.body).not_to include("secret-token-123")
+        expect(response.body).not_to include("key=abc")
+      end
+
+      it "names the host of each linked calendar that could not be loaded in a header, never the link" do
+        down = "https://down.example.org/private/secret-down/basic.ics?key=zzz"
+        slow = "https://slow.example.org/private/secret-slow/basic.ics"
+        empty = "https://empty.example.org/private/secret-empty/basic.ics"
+        [down, slow, empty].each { |url| StaffExternalUnavailability.create!(user: staff, ics_url: url) }
+        stub_ics(down, status: 503)
+        stub_request(:get, slow).to_timeout
+        stub_ics(empty, body: ics_document)
+        get json_staff_unavailabilities_path
+
+        expect(JSON.parse(response.headers["X-Failed-Calendars"])).to contain_exactly("down.example.org", "slow.example.org")
+        expect(response.parsed_body).to eq([])
+        expect(response.body + response.headers.to_h.to_s).not_to match(/secret-|key=zzz/)
+      end
+
+      it "reports a link that answers 200 with something that is not a calendar, but not a valid empty calendar" do
+        page = "https://login.example.org/private/secret-login/basic.ics"
+        valid = "https://valid.example.org/basic.ics"
+        [page, valid].each { |url| StaffExternalUnavailability.create!(user: staff, ics_url: url) }
+        stub_request(:get, page).to_return(status: 200, body: "<html><body>Please sign in</body></html>")
+        stub_ics(valid, body: ics_document)
+        get json_staff_unavailabilities_path
+
+        expect(JSON.parse(response.headers["X-Failed-Calendars"])).to eq(["login.example.org"])
+      end
+
+      it "still reports a failed link whose host cannot be read, without a name" do
+        StaffExternalUnavailability.new(user: staff, ics_url: "https://exa mple.org/a.ics").save!(validate: false)
+        get json_staff_unavailabilities_path
+
+        expect(JSON.parse(response.headers["X-Failed-Calendars"])).to eq([nil])
+      end
+
+      it "tells the browser not to reuse an earlier answer, since the failure header is not part of the body's ETag" do
+        get json_staff_unavailabilities_path
+        expect(response.headers["Cache-Control"]).to eq("no-store")
+      end
+
+      it "sends no failure header when every linked calendar loads" do
+        url = "https://cal.test/fine.ics"
+        StaffExternalUnavailability.create!(user: staff, ics_url: url)
+        stub_ics(url, body: ics_document)
+        get json_staff_unavailabilities_path
+        expect(response.headers).not_to have_key("X-Failed-Calendars")
+      end
+
       it "silently drops an external feed that fails to download" do
         url = "https://cal.test/down.ics"
         StaffExternalUnavailability.create!(user: staff, ics_url: url)

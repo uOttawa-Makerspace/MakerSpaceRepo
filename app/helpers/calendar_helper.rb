@@ -14,35 +14,54 @@ module CalendarHelper
   # The longest COUNT whose end is worked out when deciding whether a series is over.
   MAX_COUNTED_SERIES = 1000
 
-  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil )
-    return [] if ics_url.blank?
+  # What reading a feed gave: its calendars (one holding the events, or none when the server gave no body) and
+  # whether the load failed: no body, a fetch or parse error, or a body with no calendar in it (a web page, say).
+  IcsFeed = Struct.new(:calendars, :failed, keyword_init: true) do
+    alias_method :failed?, :failed
+  end
 
-    background_color = color.presence || generate_color_from_id(ics_url.to_s)
+  # The calendars of a feed (see ics_feed), without the failure flag.
+  def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil)
+    ics_feed(ics_url, name: name, color: color).calendars
+  end
+
+  def ics_feed(ics_url, name: "Unnamed Calendar", color: nil)
+    return IcsFeed.new(calendars: [], failed: false) if ics_url.blank?
+
     group_id = Digest::MD5.hexdigest(ics_url.to_s)
+    events, failed = ics_feed_events(ics_url, group_id, name)
+    calendars = events.nil? ? [] : [{ id: group_id, color: color.presence || generate_color_from_id(ics_url.to_s), events: events }]
+    IcsFeed.new(calendars: calendars, failed: failed)
+  end
 
-    events = []
+  # The events of the feed and whether it failed to load. The events are nil when there is no body to read, and
+  # empty when the feed could not be read (the error is logged by host only: a private link holds its secret in
+  # the path).
+  def ics_feed_events(ics_url, group_id, name)
+    parsed_cals = read_ics_calendars(ics_url)
+    return [nil, true] if parsed_cals.nil?
 
-    begin
-      if ics_url.is_a? Pathname
-        response = File.read(ics_url) 
-        parsed_cals = ::Icalendar::Calendar.parse(response)
-      else
-        body = IcsFetcher.get(ics_url.to_s, timeout: 10)
-        return [] if body.nil?
-        parsed_cals = ::Icalendar::Calendar.parse(body)
+    events = parsed_cals.flat_map do |calendar|
+      # Group events by UID to handle recurrence-id
+      calendar.events.group_by(&:uid).flat_map do |_uid, event_group|
+        ics_event_group(event_group, group_id: group_id, name: name)
       end
-
-      events = parsed_cals.flat_map do |calendar|
-        # Group events by UID to handle recurrence-id
-        calendar.events.group_by(&:uid).flat_map do |_uid, event_group|
-          ics_event_group(event_group, group_id: group_id, name: name)
-        end
-      end
-    rescue StandardError => e
-      Rails.logger.error("ICS parse error for #{ics_url}: #{e.inspect}")
     end
+    [events, parsed_cals.empty?]
+  rescue StandardError => e
+    Rails.logger.error("ICS parse error for #{ics_log_name(ics_url)}: #{e.class}")
+    [[], true]
+  end
 
-    [{ id: group_id, color: background_color, events: events }]
+  def ics_log_name(ics_url)
+    ics_url.is_a?(Pathname) ? ics_url.basename.to_s : IcsFetcher.host(ics_url).to_s
+  end
+
+  def read_ics_calendars(ics_url)
+    return ::Icalendar::Calendar.parse(File.read(ics_url)) if ics_url.is_a?(Pathname)
+
+    body = IcsFetcher.get(ics_url.to_s, timeout: 10)
+    ::Icalendar::Calendar.parse(body) unless body.nil?
   end
 
   # COLOR HELPERS

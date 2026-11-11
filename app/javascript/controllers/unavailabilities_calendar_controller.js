@@ -7,23 +7,47 @@ import interactionPlugin from "@fullcalendar/interaction";
 
 import { makeCalendarAccessible } from "../src/calendar_accessibility.js";
 
+// The hosts listed in the failed-calendars header: a JSON list of strings and
+// nulls, or nothing for a missing, malformed or differently shaped header.
+function failedHosts(header) {
+  try {
+    const hosts = JSON.parse(header);
+    const valid =
+      Array.isArray(hosts) &&
+      hosts.every((host) => host === null || typeof host === "string");
+    return valid ? hosts : [];
+  } catch {
+    return [];
+  }
+}
+
 // Stimulus defines the target, value and outlet accessors at runtime; this
 // tells the type checker.
 const TypedController = /** @type {new () => Controller<HTMLElement> & {
   calendarTarget: HTMLElement,
   containerTarget: HTMLElement,
   spinnerTarget: HTMLElement,
+  failuresTarget: HTMLElement,
+  failureTemplateValue: string,
+  unknownHostValue: string,
+  feedFailureValue: string,
   feedUrlValue: string,
   unavailabilityFormOutlet: { openForAdd(options?: { returnFocusTo?: HTMLElement }): void, openForEdit(event: any): void, openForRange(range: { start: string, end: string }): void },
+  importedEventDetailsOutlet: { show(event: any, returnFocusTo?: HTMLElement | null): void },
 }} */ (/** @type {unknown} */ (Controller));
 
 // The staff member's own unavailabilities: draws a FullCalendar on the
 // calendar target, opens the unavailability dialog (the unavailability-form
 // outlet) from it, and removes the calendar when the element leaves the page.
 export default class extends TypedController {
-  static targets = ["calendar", "container", "spinner"];
-  static values = { feedUrl: String };
-  static outlets = ["unavailability-form"];
+  static targets = ["calendar", "container", "spinner", "failures"];
+  static values = {
+    feedUrl: String,
+    failureTemplate: String,
+    unknownHost: String,
+    feedFailure: String,
+  };
+  static outlets = ["unavailability-form", "imported-event-details"];
 
   connect() {
     // A page restored from Turbo's cache still holds the markup of the
@@ -48,10 +72,45 @@ export default class extends TypedController {
   }
 
   // Only the staff member's own unavailabilities can be edited; an event
-  // imported from a calendar feed is shown but does nothing when clicked.
-  editOwn(event) {
-    if (event.extendedProps?.eventType !== "unavailability") return;
-    this.unavailabilityFormOutlet.openForEdit(event);
+  // imported from a calendar feed opens a read-only view of it instead. The
+  // element is the one clicked, which gets the focus back when the view closes.
+  openEvent(event, element) {
+    if (event.extendedProps?.eventType === "unavailability") {
+      this.unavailabilityFormOutlet.openForEdit(event);
+    } else {
+      this.importedEventDetailsOutlet.show(event, element);
+    }
+  }
+
+  // The feed names, in a header, the hosts of the linked calendars it could
+  // not load (a JSON list; a link whose host could not be read is null). Each
+  // is listed as text; nothing is listed when all loaded or the header cannot
+  // be read, so the events are never held back by it.
+  showFailures(response) {
+    this.listFailures(
+      failedHosts(response.headers.get("X-Failed-Calendars")).map((host) =>
+        this.failureTemplateValue.replace(
+          "{host}",
+          () => host ?? this.unknownHostValue,
+        ),
+      ),
+    );
+  }
+
+  // The feed itself could not be loaded, so any earlier lines are out of date.
+  showFeedFailure() {
+    this.listFailures([this.feedFailureValue]);
+  }
+
+  listFailures(lines) {
+    this.failuresTarget.replaceChildren(
+      ...lines.map((text) => {
+        const line = document.createElement("div");
+        line.textContent = text;
+        return line;
+      }),
+    );
+    this.failuresTarget.hidden = lines.length === 0;
   }
 
   calendarOptions() {
@@ -69,8 +128,12 @@ export default class extends TypedController {
       selectMirror: true,
       selectMinDistance: 30,
       height: "80vh",
-      events: this.feedUrlValue,
-      eventClick: (info) => this.editOwn(info.event),
+      events: {
+        url: this.feedUrlValue,
+        success: (_events, response) => this.showFailures(response),
+        failure: () => this.showFeedFailure(),
+      },
+      eventClick: (info) => this.openEvent(info.event, info.el),
       select: (info) =>
         this.unavailabilityFormOutlet.openForRange({
           start: info.startStr,

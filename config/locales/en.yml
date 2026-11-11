@@ -559,3 +559,14 @@ en:
     section8:
       heading: "8. Modifications"
       content: "MakerRepo may revise these terms of service for its website at any time without notice. By using this website you are agreeing to be bound by the then current version of these terms of service."
+
+  staff_unavailabilities:
+    could_not_load: "{host} could not be loaded"
+    unknown_calendar: "a linked calendar"
+    feed_failed: "Your calendar could not be loaded. Try reloading the page."
+    imported_event:
+      title: "Imported event"
+      from: "Imported from a linked calendar ({host})."
+      from_unknown: "Imported from a linked calendar."
+      all_day: "All day"
+      explanation: "It can't be edited or deleted here: change it in that calendar, or remove the link from your imported calendars below."

@@ -28,6 +28,7 @@ const accessible = vi.fn();
 vi.mock("../../../app/javascript/src/calendar_accessibility.js", () => ({
   makeCalendarAccessible: accessible,
 }));
+const details = { show: vi.fn() };
 const form = {
   openForAdd: vi.fn(),
   openForEdit: vi.fn(),
@@ -38,14 +39,16 @@ const { default: UnavailabilitiesCalendar } =
   await import("../../../app/javascript/controllers/unavailabilities_calendar_controller.js");
 
 const PAGE = `
-<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-unavailability-form-outlet="#modal">
+<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-failure-template-value="{host} could not be loaded" data-unavailabilities-calendar-unknown-host-value="a linked calendar" data-unavailabilities-calendar-feed-failure-value="Your calendar could not be loaded" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
   <div id="calendar_container" data-unavailabilities-calendar-target="container" style="display:none">
     <button id="addUnavailabilityButton" data-action="click->unavailabilities-calendar#addUnavailability"></button>
     <div id="calendar" data-unavailabilities-calendar-target="calendar"><p id="stale">old</p></div>
   </div>
   <div id="spinner_container" data-unavailabilities-calendar-target="spinner"></div>
+  <div id="failures" data-unavailabilities-calendar-target="failures" hidden></div>
 </div>
-<div id="modal" data-controller="unavailability-form"></div>`;
+<div id="modal" data-controller="unavailability-form"></div>
+<div id="details" data-controller="imported-event-details"></div>`;
 
 class FakeForm extends Controller {
   openForAdd(options) {
@@ -59,6 +62,12 @@ class FakeForm extends Controller {
   }
 }
 
+class FakeDetails extends Controller {
+  show(event, returnFocusTo) {
+    details.show(event, returnFocusTo);
+  }
+}
+
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 let application;
 
@@ -67,6 +76,7 @@ async function boot(html = PAGE) {
   created.length = 0;
   application = Application.start();
   application.register("unavailability-form", FakeForm);
+  application.register("imported-event-details", FakeDetails);
   application.register("unavailabilities-calendar", UnavailabilitiesCalendar);
   await settle();
   return created[0];
@@ -95,7 +105,7 @@ describe("staff unavailabilities calendar", () => {
     expect(document.getElementById("stale")).toBeNull();
     document.dispatchEvent(new Event("turbo:load"));
     expect(created).toHaveLength(1);
-    expect(cal.options.events).toBe("/staff/unavailabilities/json");
+    expect(cal.options.events.url).toBe("/staff/unavailabilities/json");
     expect(cal.rendered).toBe(true);
     expect(document.getElementById("calendar_container").style.display).toBe(
       "block",
@@ -131,13 +141,91 @@ describe("staff unavailabilities calendar", () => {
     expect(form.openForRange).toHaveBeenCalledWith({ start: "s", end: "t" });
   });
 
-  it("does not open the edit dialog for an event imported from a calendar feed", async () => {
+  it("shows the read-only details, not the edit dialog, for an event imported from a calendar feed", async () => {
     form.openForEdit.mockClear();
+    details.show.mockClear();
+    const cal = await boot();
+    const imported = { id: "a/../b?x#y", extendedProps: { name: "Feed" } };
+    const el = document.createElement("a");
+    cal.options.eventClick({ event: imported, el });
+    expect(form.openForEdit).not.toHaveBeenCalled();
+    expect(details.show).toHaveBeenCalledWith(imported, el);
+  });
+
+  it("does not show the imported details for the staff member's own event", async () => {
+    details.show.mockClear();
     const cal = await boot();
     cal.options.eventClick({
-      event: { id: "a/../b?x#y", extendedProps: { name: "Feed" } },
+      event: { id: "e", extendedProps: { eventType: "unavailability" } },
     });
-    expect(form.openForEdit).not.toHaveBeenCalled();
+    expect(details.show).not.toHaveBeenCalled();
+  });
+
+  describe("linked calendars that could not be loaded", () => {
+    const response = (value) => ({
+      headers: new Headers(
+        value ? { "X-Failed-Calendars": JSON.stringify(value) } : {},
+      ),
+    });
+    const failures = () => document.getElementById("failures");
+
+    it("names each failed host as text and shows the area", async () => {
+      const cal = await boot();
+      const kept = cal.options.events.success(
+        [{ id: "e" }],
+        response(["a.example", "<b>b</b>.example"]),
+      );
+      expect(kept).toBeUndefined();
+      expect(failures().hidden).toBe(false);
+      expect([...failures().children].map((c) => c.textContent)).toEqual([
+        "a.example could not be loaded",
+        "<b>b</b>.example could not be loaded",
+      ]);
+      expect(failures().querySelector("b")).toBeNull();
+    });
+
+    it("names a link whose host could not be read as a linked calendar", async () => {
+      const cal = await boot();
+      cal.options.events.success([], response([null]));
+      expect(failures().textContent).toBe(
+        "a linked calendar could not be loaded",
+      );
+    });
+
+    it("replaces earlier lines with one message when the feed itself fails", async () => {
+      const cal = await boot();
+      cal.options.events.success([], response(["a.example"]));
+      cal.options.events.failure(new Error("down"));
+      expect(failures().hidden).toBe(false);
+      expect([...failures().children].map((c) => c.textContent)).toEqual([
+        "Your calendar could not be loaded",
+      ]);
+    });
+
+    it("lists nothing, and keeps the events, when the header is malformed or not a list", async () => {
+      const cal = await boot();
+      const events = [{ id: "e" }];
+      for (const raw of ["not json", '{"a":1}', '"host"', "[1]", '["a",{}]']) {
+        const answer = { headers: new Headers({ "X-Failed-Calendars": raw }) };
+        expect(() => cal.options.events.success(events, answer)).not.toThrow();
+        expect(failures().hidden).toBe(true);
+        expect(failures().children).toHaveLength(0);
+      }
+    });
+
+    it("shows a host with replacement patterns exactly as it is", async () => {
+      const cal = await boot();
+      cal.options.events.success([], response(["a$&b$1.example"]));
+      expect(failures().textContent).toBe("a$&b$1.example could not be loaded");
+    });
+
+    it("clears the names again when every calendar loads", async () => {
+      const cal = await boot();
+      cal.options.events.success([], response(["a.example"]));
+      cal.options.events.success([], response(null));
+      expect(failures().hidden).toBe(true);
+      expect(failures().children).toHaveLength(0);
+    });
   });
 
   it("makes the calendar accessible whenever a view is mounted", async () => {

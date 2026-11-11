@@ -40,6 +40,19 @@ RSpec.describe CalendarHelper, type: :helper do
       end
     end
 
+    it "logs only the file name when a feed file cannot be read" do
+      Dir.mktmpdir("private-folder") do |dir|
+        file = Pathname.new(dir).join("feed.ics")
+        file.write("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:bad\r\nDTSTART:notadate\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n")
+        logged = []
+        allow(Rails.logger).to receive(:error) { |message| logged << message }
+
+        expect(ics_feed(file, name: "x")).to be_failed
+        expect(logged.join).to match(/ICS parse error for feed\.ics/)
+        expect(logged.join).not_to include("private-folder")
+      end
+    end
+
     it "drops events that ended more than two months ago" do
       travel_to(Time.utc(2026, 3, 1, 12, 0)) do
         expect(parse_ics_calendar(path).first[:events]).to eq([])
@@ -96,7 +109,29 @@ RSpec.describe CalendarHelper, type: :helper do
       stub_request(:get, url).to_return(status: 200, body: ics(vevent("bad", ["DTSTART:notadate", "SUMMARY:Bad"])))
       allow(Rails.logger).to receive(:error)
       expect(parse_ics_calendar(url).first[:events]).to eq([])
-      expect(Rails.logger).to have_received(:error).with(/ICS parse error for #{Regexp.escape(url)}/)
+      expect(Rails.logger).to have_received(:error).with(/ICS parse error for calendar\.example\b/)
+    end
+
+    it "logs only the host of a link, never its path or query" do
+      secret = "https://calendar.example/private/secret-token/feed.ics?key=abc"
+      stub_request(:get, secret).to_return(status: 200, body: ics(vevent("bad", ["DTSTART:notadate", "SUMMARY:Bad"])))
+      logged = []
+      allow(Rails.logger).to receive(:error) { |message| logged << message }
+      parse_ics_calendar(secret)
+      expect(logged).not_to be_empty
+      expect(logged.join).not_to match(/secret-token|key=abc|feed\.ics/)
+    end
+
+    it "reports a feed as failed when it cannot be fetched, is not a calendar, or cannot be read, but not when it is an empty calendar" do
+      stub_request(:get, url).to_return(status: 404, body: "")
+      expect(ics_feed(url, name: "x")).to be_failed
+      stub_request(:get, url).to_return(status: 200, body: "<html>sign in</html>")
+      expect(ics_feed(url, name: "x")).to be_failed
+      stub_request(:get, url).to_return(status: 200, body: ics(vevent("bad", ["DTSTART:notadate"])))
+      expect(ics_feed(url, name: "x")).to be_failed
+      stub_request(:get, url).to_return(status: 200, body: ics)
+      expect(ics_feed(url, name: "x")).not_to be_failed
+      expect(ics_feed(nil, name: "x")).not_to be_failed
     end
 
     it "uses the given name, and groups the calendar under the md5 of its URL" do

@@ -637,3 +637,14 @@ fr:
     section8:
       heading: "8. Modifications"
       content: "MakerRepo peut réviser ces conditions d'utilisation de son site Web à tout moment sans préavis. En utilisant ce site Web, vous acceptez d'être lié par la version actuelle de ces conditions d'utilisation."
+
+  staff_unavailabilities:
+    could_not_load: "{host} n'a pas pu être chargé"
+    unknown_calendar: "un calendrier lié"
+    feed_failed: "Votre calendrier n'a pas pu être chargé. Essayez de recharger la page."
+    imported_event:
+      title: "Événement importé"
+      from: "Importé depuis un calendrier lié ({host})."
+      from_unknown: "Importé depuis un calendrier lié."
+      all_day: "Toute la journée"
+      explanation: "Il ne peut pas être modifié ni supprimé ici : modifiez-le dans ce calendrier, ou retirez le lien de vos calendriers importés ci-dessous."

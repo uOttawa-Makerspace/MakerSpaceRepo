@@ -9,6 +9,7 @@ require "rails_helper"
 
 RSpec.describe "Staff unavailabilities page", type: :system do
   include ActiveSupport::Testing::TimeHelpers
+  include SpacesSpecHelpers
 
   let!(:space) { create(:space, name: "Calendar Lab") }
   let!(:staff) { create(:user, :staff, name: "Wanda Worker", space_id: space.id) }
@@ -439,6 +440,62 @@ RSpec.describe "Staff unavailabilities page", type: :system do
       expect(page).to have_current_path(staff_unavailabilities_path)
       expect(page).to have_css("#link-container input", count: 1)
       expect(StaffExternalUnavailability.where(user: staff).pluck(:ics_url)).to eq(["https://feeds.example.org/a.ics"])
+    end
+  end
+
+  describe "an event imported from a linked calendar" do
+    let(:feed_url) { "https://feeds.example.org/private/secret-token/dentist.ics" }
+
+    before do
+      create(:staff_external_unavailability, user: staff, ics_url: feed_url)
+      body = ics_document(uid: "feed-1", summary: "Dentist", description: "Bring the forms",
+                          start: Time.utc(2027, 3, 17, 17), end: Time.utc(2027, 3, 17, 19))
+      allow(IcsFetcher).to receive(:get).and_return(nil)
+      allow(IcsFetcher).to receive(:get).with(feed_url, any_args).and_return(body)
+    end
+
+    it "opens a read-only dialog that explains it cannot be changed here", js: true, skip_bullet: true do
+      open_page
+      expect(page).to have_css(".fc-timegrid-event", text: "External - Dentist", visible: :all)
+      page.execute_script("document.getElementById('importedEventModal').addEventListener('shown.bs.modal', function (e) { e.target.dataset.shown = '1'; })")
+      page.all(".fc-timegrid-event", text: "External - Dentist", visible: :all).first.click
+      expect(page).to have_css("#importedEventModal.show[data-shown]")
+
+      within("#importedEventModal.show") do
+        expect(page).to have_css("#importedEventModalLabel", text: "External - Dentist")
+        expect(page).to have_text("1:00")
+        expect(page).to have_text("Bring the forms")
+        expect(page).to have_text("Imported from a linked calendar (feeds.example.org)")
+        expect(page).to have_no_text("secret-token")
+        expect(page).to have_text("can't be edited or deleted here")
+        expect(page).to have_no_button("Save")
+        expect(page).to have_no_button("Update")
+        expect(page).to have_no_button("Delete")
+        click_button "Close"
+      end
+      expect(page).to have_no_css("#importedEventModal.show")
+      expect(page).to have_no_css("#unavailabilityModal.show")
+    end
+  end
+
+  describe "a linked calendar that cannot be loaded" do
+    it "names its host without showing the link", js: true, skip_bullet: true do
+      url = "https://down.example.org/private/secret-token/basic.ics"
+      create(:staff_external_unavailability, user: staff, ics_url: url)
+      allow(IcsFetcher).to receive(:get).and_return(nil)
+      open_page
+
+      expect(page).to have_css("[data-unavailabilities-calendar-target='failures']", text: "down.example.org could not be loaded")
+      expect(page).to have_no_text("secret-token")
+    end
+
+    it "shows no message when the linked calendars load", js: true, skip_bullet: true do
+      create(:staff_external_unavailability, user: staff, ics_url: "https://fine.example.org/a.ics")
+      allow(IcsFetcher).to receive(:get).and_return(ics_document)
+      open_page
+
+      expect(page).to have_css(".fc-timegrid", visible: :all)
+      expect(page).to have_no_text("could not be loaded")
     end
   end
 
