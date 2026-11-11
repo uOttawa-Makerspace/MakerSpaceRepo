@@ -169,7 +169,7 @@
   },
   "app/javascript/src/validation.js": {
     "complexity": {
-      "count": 2
+      "count": 1
     }
   }
 }

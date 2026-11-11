@@ -12,7 +12,6 @@ const errors = () =>
 beforeEach(() => {
   document.body.innerHTML = "";
   window.scrollTo = vi.fn();
-  delete globalThis.photoFiles;
 });
 
 describe("legacy globals", () => {
@@ -68,16 +67,13 @@ describe("validation (repository form)", () => {
     ]);
   });
 
-  it("requires a photo, old or newly chosen", () => {
+  it("requires at least one photo in the image area", () => {
     form("Robot");
     expect(validation()).toBe(false);
     expect(errors()).toEqual(["At least one photo is required."]);
 
-    globalThis.photoFiles = ["a.png"];
+    form("Robot", { photos: 1 });
     expect(validation()).toBe(true);
-
-    globalThis.photoFiles = "not a list";
-    expect(validation()).toBe(false);
   });
 
   it("does not ask for a photo on a form without the image area", () => {

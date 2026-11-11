@@ -15,8 +15,6 @@ const pageGlobals = {
   check_learning_module: "readonly",
   // the flatpickr module sets window.flatpickr when it is imported
   flatpickr: "readonly",
-  // read behind a typeof check: only defined when a page script sets it
-  photoFiles: "readonly",
 };
 
 export default [
