@@ -193,16 +193,14 @@ class VolunteerTasksController < SessionsController
   end
 
   # New photos (at most five) are added before any ticked one is removed, so a refused photo
-  # leaves the existing photos and their stored images untouched. The ticked photos are chosen
-  # first, so a new photo with the same file name is not removed with them.
+  # leaves the existing photos untouched. The ticked photos are chosen first, so a new photo with
+  # the same file name is not removed with them. Removing a photo deletes only its row here; Active
+  # Storage deletes the stored file after the surrounding transaction has committed.
   def update_photos
     ticked = ticked_photos
     uploads = Array(params[:images]).first(5).reject(&:blank?)
     Photo.create_from_uploads!(uploads, volunteer_task_id: @volunteer_task.id)
-    ticked.each do |img|
-      img.image.purge
-      img.destroy
-    end
+    ticked.each(&:destroy)
   end
 
   def ticked_photos

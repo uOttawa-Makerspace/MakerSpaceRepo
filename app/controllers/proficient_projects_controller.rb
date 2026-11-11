@@ -398,21 +398,16 @@ class ProficientProjectsController < DevelopmentProgramsController
   end
 
   # New photos are added before any ticked one is removed, so a refused photo leaves the existing
-  # photos and their stored images untouched.
+  # photos untouched. Removing a record deletes only its row here; Active Storage deletes the
+  # stored file after the surrounding transaction has committed, so a failed save keeps the files.
   def update_photos
     create_photos
-    @proficient_project.photos.where(id: ticked_ids("deleteimages")).find_each do |img|
-      img.image.purge
-      img.destroy
-    end
+    @proficient_project.photos.where(id: ticked_ids("deleteimages")).find_each(&:destroy)
   end
 
   def update_files
     ticked = ticked_ids("deletefiles")
-    @proficient_project.repo_files.where(id: ticked).find_each do |f|
-      f.file.purge
-      f.destroy
-    end
+    @proficient_project.repo_files.where(id: ticked).find_each(&:destroy)
 
     Array(params["files"]).each do |f|
       repo = RepoFile.new(file: f, proficient_project_id: @proficient_project.id)
@@ -428,8 +423,8 @@ class ProficientProjectsController < DevelopmentProgramsController
     return if ticked.empty?
 
     @proficient_project.videos.each do |f|
-      purged = f.video.attachments.where(id: ticked).each(&:purge)
-      f.destroy if purged.any? && !f.reload.video.attached?
+      removed = f.video.attachments.where(id: ticked).each(&:destroy)
+      f.destroy if removed.any? && !f.reload.video.attached?
     end
   end
 

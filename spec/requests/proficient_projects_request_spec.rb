@@ -260,6 +260,30 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(Photo.exists?(photo.id)).to be(false)
       end
 
+      it "removes the stored image of a ticked photo once the update has committed" do
+        photo = create(:photo, proficient_project: project)
+        blob = photo.image.blob
+        perform_enqueued_jobs do
+          patch proficient_project_path(project), params: project_params.merge(deleteimages: "#{photo.id},")
+        end
+        expect(Photo.exists?(photo.id)).to be(false)
+        expect(ActiveStorage::Blob.exists?(blob.id)).to be(false)
+      end
+
+      it "keeps a ticked photo, its row and its stored image, when a later step of the update fails" do
+        photo = create(:photo, proficient_project: project)
+        blob = photo.image.blob
+        allow_any_instance_of(RepoFile).to receive(:save).and_raise(ActiveRecord::StatementInvalid, "boom")
+        perform_enqueued_jobs do
+          patch proficient_project_path(project),
+                params: project_params(title: "Kept title").merge(deleteimages: "#{photo.id},", files: [content_pdf_upload])
+        end
+        expect(response).to have_http_status(:internal_server_error)
+        expect(project.reload.title).to eq("Cool widget")
+        expect(Photo.exists?(photo.id)).to be(true)
+        expect(blob.service.exist?(blob.key)).to be(true)
+      end
+
       it "adds uploaded files and deletes the ticked file" do
         rf = create(:repo_file, proficient_project: project)
         patch proficient_project_path(project),
@@ -335,6 +359,13 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
                 )
           expect(project.reload.training_requirements.pluck(:id)).to include(existing.id)
           expect(requirement_pairs).to contain_exactly([existing.training_id, existing.level], [t2.id, "Advanced"])
+        end
+
+        it "saves nothing, requirements included, when the edit fails validation" do
+          patch proficient_project_path(project),
+                params: project_params(title: "").merge(training_requirements_id: [t2.id], training_requirements_level: ["Advanced"])
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(requirement_pairs).to eq([[existing.training_id, existing.level]])
         end
 
         it "removes every requirement when the form is submitted with none left" do
