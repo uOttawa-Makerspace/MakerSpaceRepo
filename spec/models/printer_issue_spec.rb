@@ -42,5 +42,12 @@ RSpec.describe PrinterIssue, type: :model do
       create(:printer_issue, :extrude_issue, :inactive, printer: printer)
       expect(printer.count_printer_issues).to eq("Nozzle clogged" => 2, "Bed issue" => 1, "Other" => 1)
     end
+
+    it "leaves out the given issue when counting" do
+      kept = create(:printer_issue, :nozzle_clogged, printer: printer)
+      left_out = create(:printer_issue, :bed_issue, printer: printer)
+      expect(printer.count_printer_issues(except: left_out.id)).to eq("Nozzle clogged" => 1)
+      expect(printer.group_printer_issues(except: left_out.id).values.flatten).to eq([kept])
+    end
   end
 end

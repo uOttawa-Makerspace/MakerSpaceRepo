@@ -56,11 +56,13 @@ class StaffDashboardChannel < ApplicationCable::Channel
       locals: {
         space: space,
         signed_in_users:
-          User
-            .strict_loading
-            .where(id: LabSession.active.where(space: space_id).select(:user_id))
-            .includes(certifications: { training_session: %i[training user] })
-            .includes(:lab_sessions),
+          space.including_walk_in_sheets(
+            User
+              .strict_loading
+              .where(id: LabSession.active.where(space: space_id).select(:user_id))
+              .includes(certifications: { training_session: %i[training user] })
+              .includes(:lab_sessions)
+          ),
         signed_out_users: space.recently_signed_out_users_with_history
       }
     )
