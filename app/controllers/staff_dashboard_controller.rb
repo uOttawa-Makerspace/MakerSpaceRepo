@@ -6,10 +6,12 @@ class StaffDashboardController < StaffAreaController
   def index
     # Strict loading because this is used in table views
     # FIXME: Temporarily disabled because of space 119
-    @signed_in_users = User
-      .where(id: LabSession.active.where(space: @space).select(:user_id))
-      .includes(certifications: {training_session: [:training, :user]})
-      .includes(:lab_sessions)
+    @signed_in_users = @space.including_walk_in_sheets(
+      User
+        .where(id: LabSession.active.where(space: @space).select(:user_id))
+        .includes(certifications: {training_session: [:training, :user]})
+        .includes(:lab_sessions)
+    )
 
     respond_to do |format|
       format.html do
@@ -24,6 +26,8 @@ class StaffDashboardController < StaffAreaController
         users_with_certs = User
           .where(id: signed_in_user_ids)
           .includes(certifications: { training_session: :training })
+        with_membership = Membership.active.where(user_id: signed_in_user_ids).reorder(nil).distinct.pluck(:user_id)
+        with_sheet = WalkInSafetySheet.where(user_id: signed_in_user_ids).distinct.pluck(:user_id)
 
         render json: {
           space: @space.as_json,
@@ -37,8 +41,8 @@ class StaffDashboardController < StaffAreaController
                       name: c.training_session&.training&.name_en || "Unknown"
                     }
                     end,
-                    "signed_safety_sheet" => u.walk_in_safety_sheets.any?,
-                    "membership_status" => u.has_active_membership?
+                    "signed_safety_sheet" => with_sheet.include?(u.id),
+                    "membership_status" => with_membership.include?(u.id)
                   }
                 )
               end
@@ -327,10 +331,9 @@ class StaffDashboardController < StaffAreaController
         @users =
           User
             .text_search(@query)
-            .includes(:lab_sessions)
             .order(:updated_at)
       end
-      format.html
+      format.html { @users = @users.includes(:lab_sessions) if @query.present? }
       format.json { render json: @users.as_json }
     end
   end
@@ -459,7 +462,7 @@ class StaffDashboardController < StaffAreaController
       has_membership: latest.has_active_membership?,
       expiration_date: latest.memberships.active.order(end_date: :desc).first&.end_date&.to_date || "",
       is_student: latest.student?,
-      signed_sheet: latest.walk_in_safety_sheets.any?
+      signed_sheet: WalkInSafetySheet.exists?(user_id: latest.id)
     }
   end
 
