@@ -180,7 +180,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
           mail = ActionMailer::Base.deliveries.last
           expect(mail.to).to eq([owner.email])
           expect(mail.subject).to eq("MakerRepo - Réservation refusée // Booking declined")
-          expect(mail.body.encoded).to include("a été refusée par un administrateur").and include("has been declined by an admin")
+          expect(mail.body.encoded).to include("du 03 avril 2027 à 06:00 au 03 avril 2027 à 07:00 a été refusée par un administrateur").and include("on April 03, 2027 06:00 to April 03, 2027 07:00 has been declined by an admin")
         end
 
         it "declining the same booking twice mails the booker only once" do

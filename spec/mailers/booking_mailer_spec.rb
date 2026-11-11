@@ -145,8 +145,9 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(mail.subject).to eq("MakerRepo - Réservation refusée // Booking declined")
       body = mail.body.decoded
       expect(body).to include("Bonjour Pat Booker,")
-      expect(body).to include("Votre réservation dans Laser Room pour Weekly build du March 03, 2027 10:00 au March 03, 2027 11:30 a été refusée")
+      expect(body).to include("Votre réservation dans Laser Room pour Weekly build du 03 mars 2027 à 10:00 au 03 mars 2027 à 11:30 a été refusée")
       expect(body).to include("Your booking in Laser Room for Weekly build on March 03, 2027 10:00 to March 03, 2027 11:30 has been declined by an admin.")
+      expect(body).not_to include("du March")
       expect(body.index("Bonjour")).to be < body.index("Hello")
     end
 
