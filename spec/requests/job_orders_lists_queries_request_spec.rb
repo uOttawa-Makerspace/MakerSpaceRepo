@@ -43,15 +43,15 @@ RSpec.describe "Job order lists: status queries", type: :request do
     expect(many.size).to eq(few.size)
   end
 
-  it "reads the statuses of the owner's orders in a constant number of queries on index", skip_bullet: true do # other N+1s on these lists are pinned
+  it "reads the statuses of the owner's orders in a constant number of queries on index" do
     expect_flat(job_orders_path, owner)
   end
 
-  it "reads the statuses of all orders in a constant number of queries on admin", skip_bullet: true do # other N+1s on these lists are pinned
+  it "reads the statuses of all orders in a constant number of queries on admin" do
     expect_flat(admin_job_orders_path, admin)
   end
 
-  it "does not load the services of the orders on admin, which the list never shows", skip_bullet: true do # other N+1s on this list are pinned
+  it "does not load the services of the orders on admin, which the list never shows" do
     session_login!(admin)
     orders!(2, owner: owner)
     sqls = []
