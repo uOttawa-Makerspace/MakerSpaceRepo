@@ -405,6 +405,21 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
         expect(flash[:alert]).to eq(I18n.t("errors.volunteers.calendar_event_missing"))
       end
 
+      it "reports a refusal by Google the same way" do
+        allow(ShadowingHour).to receive(:create_event).and_raise(Google::Apis::ClientError.new("refused", status_code: 403))
+        expect(HandledError).to receive(:report).with(instance_of(Google::Apis::ClientError), hash_including(source: "volunteers.create_shadowing_shift"))
+        post create_event_volunteers_path, params: params
+        expect(flash[:alert]).to eq(I18n.t("errors.volunteers.calendar_event_missing"))
+      end
+
+      it "does not swallow an error that is not about Google or the network" do
+        allow(ShadowingHour).to receive(:create_event).and_raise(NoMethodError, "bug")
+        expect(HandledError).not_to receive(:report)
+        post create_event_volunteers_path, params: params
+        expect(response).to have_http_status(:internal_server_error)
+        expect(flash[:alert]).not_to eq(I18n.t("errors.volunteers.calendar_event_missing"))
+      end
+
       it "rejects an unknown space name without calling Google" do
         expect(ShadowingHour).not_to receive(:create_event)
         post create_event_volunteers_path, params: params.merge(space: "garage")

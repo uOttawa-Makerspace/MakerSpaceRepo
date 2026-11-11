@@ -221,7 +221,7 @@ class VolunteersController < SessionsController
   def create_calendar_event(shift, user, start_time, end_time)
     event = ShadowingHour.create_event(start_time, end_time, user, params[:space], shift.event_id)
     event.status != 'cancelled'
-  rescue StandardError => e
+  rescue Google::Apis::Error, *GoogleCalendar::EventJob::TRANSIENT_ERRORS => e
     HandledError.report(e, source: 'volunteers.create_shadowing_shift', shadowing_hour_id: shift.id)
     false
   end
