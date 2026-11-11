@@ -204,6 +204,7 @@ fr:
           attributes:
             image:
               too_large: "dépasse %{max_size}"
+          unreadable: "%{filename} n'a pas pu être lu comme une image. Vérifiez qu'il s'agit d'un fichier image valide et réessayez."
         repository:
           attributes:
             base:

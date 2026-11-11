@@ -34,6 +34,25 @@ class Photo < ApplicationRecord
   validates :image, presence: true
   validate :image_within_size_limit, if: :image_changing?
 
+  # Raised when a posted file cannot become a photo; the message says which file and why.
+  class Refused < StandardError; end
+
+  # Creates one photo per posted file for +owner+ (for example proficient_project_id: 3), with the
+  # image's measured size. Raises Refused for the first file that is unreadable or that Photo
+  # refuses, so a caller inside a transaction can roll its whole save back.
+  def self.create_from_uploads!(uploads, **owner)
+    uploads.each { |upload| create_from_upload!(upload, **owner) }
+  end
+
+  def self.create_from_upload!(upload, **owner)
+    width, height = FastImage.size(upload.tempfile, raise_on_failure: true)
+    create!(image: upload, width: width, height: height, **owner)
+  rescue FastImage::FastImageException
+    raise Refused, I18n.t('activerecord.errors.models.photo.unreadable', filename: upload.original_filename.to_s.truncate(60))
+  rescue ActiveRecord::RecordInvalid => e
+    raise Refused, "#{upload.original_filename.to_s.truncate(60)}: #{e.record.errors.full_messages.to_sentence}"
+  end
+
   private
 
   def image_within_size_limit
