@@ -198,22 +198,32 @@ class VolunteersController < SessionsController
     redirect_to calendar_volunteers_path
   end
 
+  # The shift is stored first, with the id its Google Calendar event will have, and the event is created
+  # after that. If the calendar cannot be reached or refuses the event, the shift stays and the staff member is
+  # told the calendar is missing it.
   def create_shadowing_shift(user, space, start_time, end_time)
-    event =
-      ShadowingHour.create_event(start_time, end_time, user, params[:space])
+    shift = ShadowingHour.create!(
+      user_id: user.id,
+      start_time: start_time,
+      end_time: end_time,
+      event_id: SecureRandom.hex(16),
+      space_id: space.id
+    )
 
-    if event.status != 'cancelled'
-      ShadowingHour.create!(
-        user_id: user.id,
-        start_time: start_time,
-        end_time: end_time,
-        event_id: event.id,
-        space_id: space.id
-      )
+    if create_calendar_event(shift, user, start_time, end_time)
       flash[:notice] = 'The shadowing shift has been added'
     else
-      flash[:alert] = I18n.t('errors.volunteers.calendar_event_refused')
+      flash[:alert] = I18n.t('errors.volunteers.calendar_event_missing')
     end
+  end
+
+  # True when Google Calendar holds the shift's event; a failure is reported and answers false.
+  def create_calendar_event(shift, user, start_time, end_time)
+    event = ShadowingHour.create_event(start_time, end_time, user, params[:space], shift.event_id)
+    event.status != 'cancelled'
+  rescue StandardError => e
+    HandledError.report(e, source: 'volunteers.create_shadowing_shift', shadowing_hour_id: shift.id)
+    false
   end
 
   def grant_access_list

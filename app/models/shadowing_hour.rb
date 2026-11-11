@@ -42,7 +42,8 @@ class ShadowingHour < ApplicationRecord
     return authorizer
   end
 
-  def self.create_event(start_time, end_time, user, space)
+  # +event_id+ is the id the Google event is created with, so a repeated call cannot create a second event.
+  def self.create_event(start_time, end_time, user, space, event_id = nil)
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
     attendees =
@@ -56,6 +57,7 @@ class ShadowingHour < ApplicationRecord
 
     event =
       Google::Apis::CalendarV3::Event.new(
+        id: event_id,
         summary: "#{user.name} Shadowing",
         start:
           Google::Apis::CalendarV3::EventDateTime.new(
@@ -109,7 +111,7 @@ class ShadowingHour < ApplicationRecord
     begin
       response = service.delete_event(calendar_id, event_id)
     rescue Google::Apis::ClientError => error
-      return response if error.to_s.include?("Resource has been deleted")
+      return response if already_gone?(error)
 
       HandledError.report(error, source: "shadowing_hour.delete_event", event_id: event_id)
       return "error"
@@ -120,6 +122,14 @@ class ShadowingHour < ApplicationRecord
 
     return response
   end
+
+  GONE_STATUSES = [404, 410].freeze
+
+  # Google no longer has the event, which is what a delete wants.
+  def self.already_gone?(error)
+    error.to_s.include?("Resource has been deleted") || GONE_STATUSES.include?(error.status_code)
+  end
+  private_class_method :already_gone?
 
   private
 

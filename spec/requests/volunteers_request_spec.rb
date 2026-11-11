@@ -369,21 +369,40 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
 
       it "creates the calendar event and a ShadowingHour, redirecting to the calendar" do
         expect(ShadowingHour).to receive(:create_event)
-          .with("2030-05-06T 9:00:00", "2030-05-06T11:30:00", volunteer, "makerspace").and_return(event)
+          .with("2030-05-06T 9:00:00", "2030-05-06T11:30:00", volunteer, "makerspace", /\A[0-9a-f]{32}\z/).and_return(event)
         expect { post create_event_volunteers_path, params: params }.to change(ShadowingHour, :count).by(1)
         expect(response).to redirect_to(calendar_volunteers_path)
         expect(flash[:notice]).to eq("The shadowing shift has been added")
         shift = ShadowingHour.last
-        expect([shift.user_id, shift.event_id, shift.space_id]).to eq([volunteer.id, "evt-123", makerspace.id])
+        expect([shift.user_id, shift.space_id]).to eq([volunteer.id, makerspace.id])
+        expect(shift.event_id).to match(/\A[0-9a-f]{32}\z/)
         expect(shift.start_time.strftime("%H:%M")).to eq("09:00")
         expect(shift.end_time.strftime("%H:%M")).to eq("11:30")
       end
 
-      it "flashes an error and stores nothing when Google reports the event cancelled" do
+      it "stores the shift before the calendar event is created, with the id the event gets" do
+        stored_when_called = nil
+        allow(ShadowingHour).to receive(:create_event) do |_start, _end, _user, _space, event_id|
+          stored_when_called = ShadowingHour.exists?(event_id: event_id)
+          event
+        end
+        post create_event_volunteers_path, params: params
+        expect(stored_when_called).to be(true)
+      end
+
+      it "keeps the shift and tells the staff member when Google reports the event cancelled" do
         allow(ShadowingHour).to receive(:create_event).and_return(double(id: "x", status: "cancelled"))
-        expect { post create_event_volunteers_path, params: params }.not_to change(ShadowingHour, :count)
+        expect { post create_event_volunteers_path, params: params }.to change(ShadowingHour, :count).by(1)
         expect(response).to redirect_to(calendar_volunteers_path)
-        expect(flash[:alert]).to eq("The calendar refused the shadowing shift, so it was not added. Try again, or contact the makerspace staff.")
+        expect(flash[:alert]).to eq(I18n.t("errors.volunteers.calendar_event_missing"))
+      end
+
+      it "keeps the shift, reports the failure and tells the staff member when the Google call raises" do
+        allow(ShadowingHour).to receive(:create_event).and_raise(Faraday::ConnectionFailed, "down")
+        expect(HandledError).to receive(:report).with(instance_of(Faraday::ConnectionFailed), hash_including(source: "volunteers.create_shadowing_shift"))
+        expect { post create_event_volunteers_path, params: params }.to change(ShadowingHour, :count).by(1)
+        expect(response).to redirect_to(calendar_volunteers_path)
+        expect(flash[:alert]).to eq(I18n.t("errors.volunteers.calendar_event_missing"))
       end
 
       it "rejects an unknown space name without calling Google" do
@@ -455,7 +474,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
 
       it "accepts 'brunsfield centre' as a space" do
         brunsfield = create(:space, name: "Brunsfield Centre")
-        expect(ShadowingHour).to receive(:create_event).with(anything, anything, volunteer, "brunsfield centre").and_return(event)
+        expect(ShadowingHour).to receive(:create_event).with(anything, anything, volunteer, "brunsfield centre", anything).and_return(event)
         post create_event_volunteers_path, params: params.merge(space: "brunsfield centre")
         expect(ShadowingHour.last.space_id).to eq(brunsfield.id)
       end

@@ -47,8 +47,8 @@ fr:
       no_user: "Choisissez le bénévole qui fera l'observation."
       not_a_volunteer: "Les séances d'observation ne peuvent être réservées que pour des bénévoles."
       space_not_found: "L'espace sélectionné est introuvable."
-      calendar_event_refused: "Le calendrier a refusé la séance d'observation, elle n'a donc pas été ajoutée. Réessayez ou communiquez avec le personnel du makerspace."
       shift_not_found: "Cette séance est introuvable. Elle a peut-être déjà été annulée."
+      calendar_event_missing: "La séance d'observation a été enregistrée, mais elle n'a pas pu être ajoutée au calendrier. Communiquez avec le personnel du makerspace pour qu'il l'ajoute."
       shift_not_removed: "La séance n'a pas pu être retirée du calendrier, elle n'a donc pas été annulée. Réessayez dans un instant."
     pages:
       reference: "Référence :"

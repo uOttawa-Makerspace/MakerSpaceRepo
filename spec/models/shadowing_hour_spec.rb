@@ -66,6 +66,11 @@ RSpec.describe ShadowingHour, type: :model do
         expect(ShadowingHour.create_event("2030-05-06T 9:00:00", "2030-05-06T11:00:00", user, "makerspace")).to eq(:response)
       end
 
+      it "creates the event with the id it is given, so a repeat cannot create a second event" do
+        expect(service).to receive(:insert_event) { |_calendar_id, event, _opts| expect(event.id).to eq("abc123"); :response }
+        ShadowingHour.create_event("2030-05-06T09:00:00", "2030-05-06T11:00:00", user, "makerspace", "abc123")
+      end
+
       it "uses the brunsfield calendar for any other space string" do
         expect(service).to receive(:insert_event).with(calendars[:brunsfield], anything, anything)
         ShadowingHour.create_event("2030-05-06T09:00:00", "2030-05-06T11:00:00", user, "brunsfield centre")
@@ -101,6 +106,14 @@ RSpec.describe ShadowingHour, type: :model do
         expect(Rails.error).to receive(:report).with(instance_of(Faraday::ConnectionFailed), hash_including(handled: true))
         allow(service).to receive(:delete_event).and_raise(Faraday::ConnectionFailed, "down")
         ShadowingHour.delete_event("e1", "Makerspace")
+      end
+
+      it "counts an event Google answers 404 or 410 for as already removed, without a report" do
+        expect(Rails.error).not_to receive(:report)
+        [404, 410].each do |status|
+          allow(service).to receive(:delete_event).and_raise(Google::Apis::ClientError.new("gone", status_code: status))
+          expect(ShadowingHour.delete_event("e1", "Makerspace")).to be_nil
+        end
       end
 
       it "does not report an already-deleted event" do
