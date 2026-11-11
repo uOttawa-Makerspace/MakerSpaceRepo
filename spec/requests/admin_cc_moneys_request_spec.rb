@@ -101,6 +101,40 @@ RSpec.describe "Admin CC money claim email", type: :request do
       expect(Rails.logger).to have_received(:info).with(/CC claim email for cc_money #{unlinked.id} resent to #{buyer} by user #{admin.id}/)
     end
 
+    it "records the resend: admin, address and row, once per sent resend" do
+      resend
+      expect(unlinked.claim_email_resends.sole).to have_attributes(admin: admin, email: buyer)
+      get admin_cc_moneys_path
+      at = I18n.l(unlinked.claim_email_resends.sole.created_at, format: :short)
+      expect(response.body)
+        .to include(I18n.t("admin.cc_money_claim_email.last_resend", email: buyer, admin: admin.username, at: at))
+    end
+
+    it "still lists the latest resend after the admin who made it is soft-deleted" do
+      resend
+      admin.soft_delete!
+      sign_in_as(:admin)
+      get admin_cc_moneys_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("#{buyer} by #{admin.username}")
+    end
+
+    it "records nothing for a refused resend" do
+      unlinked.update!(purchaser_email: "first@example.com")
+      resend(unlinked, email: "someone.else@example.com")
+      resend(unlinked, email: "nope")
+      resend(linked)
+      expect(CcMoneyClaimEmailResend.count).to eq(0)
+    end
+
+    it "has the resend line in English and French" do
+      %i[en fr].each do |locale|
+        text = I18n.t("admin.cc_money_claim_email.last_resend",
+                      locale: locale, email: "a@b.c", admin: "x", at: "y", raise: true)
+        expect(text).to include("a@b.c")
+      end
+    end
+
     it "refuses a row already linked to an account" do
       resend(linked)
       expect(response).to redirect_to(admin_cc_moneys_path)

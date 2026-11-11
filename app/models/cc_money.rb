@@ -9,6 +9,10 @@ class CcMoney < ApplicationRecord
   has_one :latest_email_correction, -> { order(id: :desc) },
           class_name: "CcMoneyEmailCorrection", inverse_of: :cc_money, dependent: :restrict_with_error
 
+  has_many :claim_email_resends, class_name: "CcMoneyClaimEmailResend", dependent: :restrict_with_error
+  has_one :latest_claim_email_resend, -> { order(id: :desc) },
+          class_name: "CcMoneyClaimEmailResend", inverse_of: :cc_money, dependent: :restrict_with_error
+
   # How long a mailed claim link works. A resend (send_claim_email_to) starts a new window.
   CLAIM_TOKEN_LIFETIME = 30.days
   CLAIM_TOKEN_PURPOSE = :cc_claim
@@ -97,8 +101,9 @@ class CcMoney < ApplicationRecord
   # (`claim_token`), all under the row lock so two resends, or a resend and a claim, cannot interleave.
   # Records `email` as the purchase address when the row has none; an address already recorded is never
   # replaced. Returns :sent, or the reason nothing was changed: :already_linked, :email_invalid or
-  # :email_mismatch (not the recorded purchase address).
-  def send_claim_email_to(email)
+  # :email_mismatch (not the recorded purchase address). A :sent resend is recorded (CcMoneyClaimEmailResend)
+  # with the admin `by` and the address.
+  def send_claim_email_to(email, by:)
     address = email.to_s.strip
     with_lock do
       next :already_linked if linked?
@@ -106,6 +111,7 @@ class CcMoney < ApplicationRecord
       next :email_mismatch unless addressed_to?(address)
 
       update!(purchaser_email: purchaser_email.presence || address, claim_token_generation: claim_token_generation + 1)
+      claim_email_resends.create!(admin: by, email: address)
       :sent
     end
   end

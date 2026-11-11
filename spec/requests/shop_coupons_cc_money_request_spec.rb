@@ -467,7 +467,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
 
       it "refuses a token superseded by a resend and accepts the newer one" do
         old = token
-        unlinked.send_claim_email_to(user.email)
+        unlinked.send_claim_email_to(user.email, by: create(:user, :admin))
         fresh = unlinked.claim_token
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: old }
@@ -579,7 +579,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
 
       it "refuses a token superseded by a resend and changes nothing" do
         old = token
-        unlinked.send_claim_email_to(user.email)
+        unlinked.send_claim_email_to(user.email, by: create(:user, :admin))
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: old }
         expect(flash[:alert]).to eq(invalid_message)
@@ -594,7 +594,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
 
       it "refuses a legacy token once the row was resent" do
         legacy = legacy_token
-        unlinked.send_claim_email_to(user.email)
+        unlinked.send_claim_email_to(user.email, by: create(:user, :admin))
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: legacy }
         expect(flash[:alert]).to eq(invalid_message)

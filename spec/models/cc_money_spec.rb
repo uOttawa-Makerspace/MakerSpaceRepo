@@ -62,6 +62,7 @@ RSpec.describe CcMoney, type: :model do
     include ActiveSupport::Testing::TimeHelpers
 
     let(:buyer) { create(:user, :regular_user) }
+    let(:admin) { create(:user, :admin) }
     let(:row) { CcMoney.create!(cc: 10, linked: false, purchaser_email: buyer.email) }
 
     it "names the row, and stops working after the named lifetime" do
@@ -89,9 +90,9 @@ RSpec.describe CcMoney, type: :model do
 
     it "#send_claim_email_to supersedes older tokens and keeps the stored address" do
       old = row.claim_token
-      expect(row.send_claim_email_to("other@example.com")).to eq(:email_mismatch)
+      expect(row.send_claim_email_to("other@example.com", by: admin)).to eq(:email_mismatch)
       expect(CcMoney.for_claim_token(old)).to eq(row)
-      expect(row.send_claim_email_to(buyer.email.upcase)).to eq(:sent)
+      expect(row.send_claim_email_to(buyer.email.upcase, by: admin)).to eq(:sent)
       expect(row.reload.claim_token_generation).to eq(1)
       expect(row.purchaser_email).to eq(buyer.email)
       expect(CcMoney.for_claim_token(old)).to be_nil
@@ -102,16 +103,16 @@ RSpec.describe CcMoney, type: :model do
 
     it "#send_claim_email_to records the address of a row that has none and refuses a bad address" do
       bare = CcMoney.create!(cc: 5, linked: false)
-      expect(bare.send_claim_email_to("not-an-address")).to eq(:email_invalid)
+      expect(bare.send_claim_email_to("not-an-address", by: admin)).to eq(:email_invalid)
       expect(bare.reload.purchaser_email).to be_nil
-      expect(bare.send_claim_email_to(" Buyer@Example.com ")).to eq(:sent)
+      expect(bare.send_claim_email_to(" Buyer@Example.com ", by: admin)).to eq(:sent)
       expect(bare.reload.purchaser_email).to eq("buyer@example.com")
     end
 
     it "#send_claim_email_to refuses a row claimed meanwhile, even through a stale copy" do
       stale = CcMoney.find(row.id)
       row.link_to(buyer)
-      expect(stale.send_claim_email_to(buyer.email)).to eq(:already_linked)
+      expect(stale.send_claim_email_to(buyer.email, by: admin)).to eq(:already_linked)
       expect(row.reload.claim_token_generation).to eq(0)
     end
 
@@ -124,7 +125,7 @@ RSpec.describe CcMoney, type: :model do
 
     it "#link_to refuses a copy loaded before a resend raised the generation" do
       copy = CcMoney.find(row.id)
-      row.send_claim_email_to(buyer.email)
+      row.send_claim_email_to(buyer.email, by: admin)
       expect(copy.link_to(buyer)).to eq(:superseded)
       expect(row.reload.linked).to be(false)
     end
@@ -384,5 +385,43 @@ RSpec.describe CcMoney, "#correct_purchase_email", type: :model do
     row.correct_purchase_email(buyer.email, by: admin)
     expect(stale.link_to(buyer)).to eq(:superseded)
     expect(row.reload).to be_unclaimed
+  end
+end
+
+RSpec.describe CcMoney, "#send_claim_email_to record", type: :model do
+  include ActiveSupport::Testing::TimeHelpers
+
+  let(:admin) { create(:user, :admin) }
+  let(:buyer) { create(:user, :regular_user) }
+  let(:row) { CcMoney.create!(cc: 10, linked: false, purchaser_email: buyer.email) }
+
+  it "records who resent the claim email, when and to which address, once per resend" do
+    freeze_time do
+      expect(row.send_claim_email_to(buyer.email.upcase, by: admin)).to eq(:sent)
+      expect(row.claim_email_resends.sole)
+        .to have_attributes(admin: admin, email: buyer.email.upcase, created_at: Time.current)
+    end
+    row.send_claim_email_to(buyer.email, by: admin)
+    expect(row.claim_email_resends.count).to eq(2)
+    expect(row.reload.latest_claim_email_resend.email).to eq(buyer.email)
+  end
+
+  it "records nothing when the resend is refused" do
+    expect(row.send_claim_email_to("other@example.com", by: admin)).to eq(:email_mismatch)
+    expect(row.send_claim_email_to("not-an-address", by: admin)).to eq(:email_invalid)
+    stale = CcMoney.find(row.id)
+    row.link_to(buyer)
+    expect(stale.send_claim_email_to(buyer.email, by: admin)).to eq(:already_linked)
+    expect(CcMoneyClaimEmailResend.count).to eq(0)
+  end
+
+  it "keeps its record: a saved resend cannot be changed or removed, nor its row or admin deleted" do
+    row.send_claim_email_to(buyer.email, by: admin)
+    resend = row.claim_email_resends.sole
+    expect { resend.update!(email: "x@example.com") }.to raise_error(ActiveRecord::ReadOnlyRecord)
+    expect { resend.destroy }.to raise_error(ActiveRecord::ReadOnlyRecord)
+    expect(row.destroy).to be(false)
+    expect { admin.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
+    expect(CcMoneyClaimEmailResend.count).to eq(1)
   end
 end

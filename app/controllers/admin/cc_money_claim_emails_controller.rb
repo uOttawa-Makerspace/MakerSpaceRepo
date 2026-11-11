@@ -8,7 +8,7 @@ class Admin::CcMoneyClaimEmailsController < AdminAreaController
     cc_money = CcMoney.find(params[:cc_money_id])
     email = params[:email].to_s.strip
 
-    outcome = cc_money.send_claim_email_to(email)
+    outcome = cc_money.send_claim_email_to(email, by: current_user)
     if outcome == :sent
       send_claim_mail(cc_money, email)
     else
