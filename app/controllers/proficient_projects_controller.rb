@@ -340,18 +340,18 @@ class ProficientProjectsController < DevelopmentProgramsController
     Photo.create_from_uploads!(Array(params["images"]), proficient_project_id: @proficient_project.id)
   end
 
-  # Saves the edit with its requirements and media in one transaction: :updated, :invalid or
-  # :refused as for a new project.
+  # Saves the edit with its requirements and media in one transaction: :updated, :invalid (the
+  # project failed validation, so nothing is saved) or :refused as for a new project.
   def save_project_changes
+    outcome = :invalid
     ProficientProject.transaction do
       replace_training_requirements
-      if @proficient_project.update(proficient_project_params)
-        update_media
-        :updated
-      else
-        :invalid
-      end
+      raise ActiveRecord::Rollback unless @proficient_project.update(proficient_project_params)
+
+      update_media
+      outcome = :updated
     end
+    outcome
   rescue Photo::Refused => e
     @photo_refusal = "#{I18n.t('errors.shop.projects.photos_refused_on_update')} #{e.message}"
     :refused
