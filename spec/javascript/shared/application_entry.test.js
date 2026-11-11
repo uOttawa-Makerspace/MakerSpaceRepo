@@ -104,14 +104,6 @@ describe("page load", () => {
 });
 
 describe("page helpers", () => {
-  it("clearEndDate empties the field and tolerates its absence", () => {
-    document.body.innerHTML = '<input id="end_date" value="2026-01-01">';
-    window.clearEndDate();
-    expect($("end_date").value).toBe("");
-    document.body.innerHTML = "";
-    expect(() => window.clearEndDate()).not.toThrow();
-  });
-
   it("debounce runs the last call after the wait", () => {
     vi.useFakeTimers();
     const fn = vi.fn();

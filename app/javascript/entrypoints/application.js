@@ -69,11 +69,6 @@ document.addEventListener("turbo:load", () => {
   disableTurboUnlessOptedIn();
 });
 
-window.clearEndDate = function () {
-  const endDate = document.getElementById("end_date");
-  if (endDate) endDate.value = "";
-};
-
 window.setSpace = async function () {
   const spaceIdInput = document.getElementById("set_space_id");
   if (!spaceIdInput) return;
