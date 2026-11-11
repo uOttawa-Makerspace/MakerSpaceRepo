@@ -37,9 +37,9 @@
             <td><%= tm.role.humanize.capitalize %></td>
             <td><%= tm.created_at.strftime('%Y-%m-%d') %></td>
             <td>
-              <%= button_to 'Promote', promote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-success', method: :patch, **confirmation_options('Are you sure you want to promote this member?') if tm.role_regular_member? %>
-              <%= button_to 'Demote', demote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-warning', method: :patch, **confirmation_options('Are you sure you want to demote this member?') if tm.role_lead? %>
-              <%= button_to 'Remove', remove_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-danger', method: :delete, **confirmation_options('Are you sure you want to remove this member from the team?') unless tm.role_captain? %>
+              <%= button_to 'Promote', promote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-success', method: :patch, **confirmation_options(t('confirmations.teams.promote', name: tm.user.name)) if tm.role_regular_member? %>
+              <%= button_to 'Demote', demote_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-warning', method: :patch, **confirmation_options(t('confirmations.teams.demote', name: tm.user.name)) if tm.role_lead? %>
+              <%= button_to 'Remove', remove_member_admin_team_path(member_id: tm.user.id), class: 'mb-1 btn btn-danger', method: :delete, **confirmation_options(t('confirmations.teams.remove', name: tm.user.name)) unless tm.role_captain? %>
             </td>
           </tr>
         <% end %>

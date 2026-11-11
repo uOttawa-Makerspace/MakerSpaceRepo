@@ -257,12 +257,12 @@ RSpec.describe "JobTasks gaps", type: :request do
       get job_order_path(order)
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("Add Another Task")
-      expect(response.body).not_to include("Are you sure you want to delete this task?")
+      expect(response.body).not_to include(I18n.t("confirmations.job_orders.delete_task"))
 
       session_login!(owner)
       get job_order_path(order)
       expect(response.body).to include("Add Another Task")
-      expect(response.body).to include("Are you sure you want to delete this task?")
+      expect(response.body).to include(I18n.t("confirmations.job_orders.delete_task"))
     end
 
     it "numbers the next task after the highest existing one when an early task was deleted" do

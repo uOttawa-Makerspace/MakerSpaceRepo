@@ -1,0 +1,242 @@
+en:
+  confirmations:
+    repositories:
+      delete: "Delete the repository \"%{title}\"?"
+      restore: "Restore this repository?"
+    comments:
+      delete: "Delete this comment?"
+    certifications:
+      reinstate: "Reinstate this certification?"
+      delete_permanently: "Delete this certification? This cannot be undone."
+      delete: "Delete this certification?"
+    shadowing_shifts:
+      cancel: "Cancel this shadowing shift?"
+      cancel_for: "Cancel the shadowing shift of %{name}?"
+    drop_off_locations:
+      delete: "Delete the drop-off location \"%{name}\"?"
+    bookings:
+      delete: "Delete this booking?"
+    announcements:
+      delete: "Delete this announcement?"
+    teams:
+      promote: "Promote %{name} to team lead?"
+      demote: "Demote %{name} from team lead?"
+      remove: "Remove %{name} from the team?"
+    staff_dashboard:
+      sign_out_all: "Sign out all users?"
+      add_to_teams: "Add all signed-in users to the teams program?"
+    keys:
+      delete: "Delete this key?"
+    printer_types:
+      delete: "Delete this printer model? A model that still has printers cannot be deleted."
+    volunteer_tasks:
+      delete: "Delete this volunteer task? This also deletes all the volunteer hours logged for it."
+      delete_task: "Delete this task?"
+      submit_for_review: "Submit this task as completed for staff review?"
+      submit_for_approval: "Have you completed all the requirements? Submit this task for staff approval?"
+      remove_user: "Remove this user from the task?"
+      approve_request: "Approve this task? This credits %{cc} CC and logs %{hours} hours for %{name}."
+      deny_request: "Deny the completion request from %{name}?"
+    volunteer_hours:
+      delete: "Delete this volunteer hour entry?"
+    questions:
+      delete: "Delete this question?"
+      delete_image: "Delete this image?"
+      remove_answer: "Remove this answer?"
+    contact_infos:
+      delete: "Delete this contact information?"
+    project_kits:
+      mark_delivered: "Mark this kit as delivered?"
+      delete: "Delete this kit?"
+    exams:
+      submit: "Submit your exam? You cannot change your answers afterwards, and questions left unanswered count as wrong."
+      delete: "Delete this exam?"
+    spaces:
+      update_max_capacity: "Update the maximum capacity of the space?"
+      update_keycode: "Update the keycode of the space?"
+      add_manager: "Add this admin as a space manager?"
+      remove_manager: "Remove this admin from the space managers?"
+      rename: "Change the name of the space?"
+      rename_sub_space: "Rename this sub space?"
+      delete_sub_space: "Delete this sub space?"
+      delete: "Delete this space and all of its related information? Select OK to confirm."
+    lockers:
+      delete_size: "Delete the locker size \"%{size}\"? This cannot be undone."
+      delete: "Delete this locker?"
+      delete_selected: "Delete the selected lockers?"
+    locker_rentals:
+      send_payment_notification: "Send the payment notification to the user?"
+      assign_now: "Assign this locker immediately?"
+      cancel: "Cancel this locker rental?"
+    time_periods:
+      delete: "Delete this time period?"
+    orders:
+      delete: "Delete this order? The CC points used to purchase it are given back."
+      confirm: "Place this order?"
+    proficient_projects:
+      delete: "Delete this project? All purchases are deleted and the CC points spent on it are given back to the users."
+      submit: "Submit this project? Make sure you have dropped it off at the specified location first."
+      remove_requirement: "Remove this project requirement? The project itself is not deleted."
+      delete_learning_module: "Delete this learning module?"
+    project_proposals:
+      approve_row: "Approve this proposal?"
+      decline_row: "Decline this proposal?"
+      delete_row: "Delete this proposal?"
+      create_repository: "Create a repository for this project proposal?"
+      leave: "Leave this project?"
+      join: "Join this project?"
+      approve: "Approve this project proposal?"
+      decline: "Decline this project proposal?"
+      delete: "Delete this project proposal?"
+      approve_titled: "Approve the project proposal \"%{title}\"?"
+      disapprove_titled: "Disapprove the project proposal \"%{title}\"?"
+      delete_titled: "Delete the project proposal \"%{title}\"?"
+    skills:
+      delete: "Delete this skill type?"
+    job_orders:
+      approve_quote: "Approve this job order?"
+      deny_quote: "Deny this job order?"
+      delete_task: "Delete this task?"
+      approve_for_user: "Approve this job order on behalf of the user?"
+      decline_for_user: "Decline this job order on behalf of the user?"
+      resend_quote_reminder: "Resend the quote reminder email?"
+      start_processing: "Start processing this part?"
+      mark_paid: "Mark this job order as paid?"
+      mark_picked_up: "Mark this job order as picked up?"
+      delete_service: "Delete the service \"%{name}\"?"
+      delete_service_group: "Delete the service group \"%{name}\"?"
+      delete_option: "Delete this option?"
+    discount_codes:
+      redeem: "Buy the coupon for %{cc} CC? This cannot be undone."
+    training_sessions:
+      certify: "Certify these trainees without the exams? This grants the certification to the user, bypassing the exams."
+      send_exams: "Send the exams to the users?"
+    memberships:
+      revoke: "Revoke this membership?"
+    coupon_codes:
+      delete: "Delete the coupon code \"%{code}\"?"
+    videos:
+      delete_titled: "Delete this video from \"%{title}\"?"
+    key_requests:
+      deny: "Deny this key request?"
+fr:
+  confirmations:
+    repositories:
+      delete: "Supprimer le dépôt « %{title} »?"
+      restore: "Restaurer ce dépôt?"
+    comments:
+      delete: "Supprimer ce commentaire?"
+    certifications:
+      reinstate: "Rétablir cette certification?"
+      delete_permanently: "Supprimer cette certification? Cette action est irréversible."
+      delete: "Supprimer cette certification?"
+    shadowing_shifts:
+      cancel: "Annuler ce quart d'observation?"
+      cancel_for: "Annuler le quart d'observation de %{name}?"
+    drop_off_locations:
+      delete: "Supprimer le lieu de dépôt « %{name} »?"
+    bookings:
+      delete: "Supprimer cette réservation?"
+    announcements:
+      delete: "Supprimer cette annonce?"
+    teams:
+      promote: "Promouvoir %{name} au rôle de responsable d'équipe?"
+      demote: "Rétrograder %{name} du rôle de responsable d'équipe?"
+      remove: "Retirer %{name} de l'équipe?"
+    staff_dashboard:
+      sign_out_all: "Déconnecter tous les utilisateurs?"
+      add_to_teams: "Ajouter tous les utilisateurs connectés au programme d'équipes?"
+    keys:
+      delete: "Supprimer cette clé?"
+    printer_types:
+      delete: "Supprimer ce modèle d'imprimante? Un modèle qui a encore des imprimantes ne peut pas être supprimé."
+    volunteer_tasks:
+      delete: "Supprimer cette tâche de bénévolat? Toutes les heures de bénévolat qui y sont associées seront aussi supprimées."
+      delete_task: "Supprimer cette tâche?"
+      submit_for_review: "Soumettre cette tâche comme terminée pour examen par le personnel?"
+      submit_for_approval: "Avez-vous rempli toutes les exigences? Soumettre cette tâche à l'approbation du personnel?"
+      remove_user: "Retirer cet utilisateur de la tâche?"
+      approve_request: "Approuver cette tâche? Cela crédite %{cc} CC et enregistre %{hours} heures pour %{name}."
+      deny_request: "Refuser la demande de fin de tâche de %{name}?"
+    volunteer_hours:
+      delete: "Supprimer cette entrée d'heures de bénévolat?"
+    questions:
+      delete: "Supprimer cette question?"
+      delete_image: "Supprimer cette image?"
+      remove_answer: "Retirer cette réponse?"
+    contact_infos:
+      delete: "Supprimer ces coordonnées?"
+    project_kits:
+      mark_delivered: "Marquer cette trousse comme livrée?"
+      delete: "Supprimer cette trousse?"
+    exams:
+      submit: "Soumettre votre examen? Vous ne pourrez plus modifier vos réponses, et les questions sans réponse seront considérées comme fausses."
+      delete: "Supprimer cet examen?"
+    spaces:
+      update_max_capacity: "Modifier la capacité maximale de l'espace?"
+      update_keycode: "Modifier le code d'accès de l'espace?"
+      add_manager: "Ajouter cet administrateur comme gestionnaire de l'espace?"
+      remove_manager: "Retirer cet administrateur des gestionnaires de l'espace?"
+      rename: "Modifier le nom de l'espace?"
+      rename_sub_space: "Renommer ce sous-espace?"
+      delete_sub_space: "Supprimer ce sous-espace?"
+      delete: "Supprimer cet espace et toutes les informations qui s'y rattachent? Sélectionnez OK pour confirmer."
+    lockers:
+      delete_size: "Supprimer le format de casier « %{size} »? Cette action est irréversible."
+      delete: "Supprimer ce casier?"
+      delete_selected: "Supprimer les casiers sélectionnés?"
+    locker_rentals:
+      send_payment_notification: "Envoyer l'avis de paiement à l'utilisateur?"
+      assign_now: "Attribuer ce casier immédiatement?"
+      cancel: "Annuler cette location de casier?"
+    time_periods:
+      delete: "Supprimer cette période?"
+    orders:
+      delete: "Supprimer cette commande? Les points CC utilisés pour l'achat seront remboursés."
+      confirm: "Passer cette commande?"
+    proficient_projects:
+      delete: "Supprimer ce projet? Tous les achats seront supprimés et les points CC dépensés seront remboursés aux utilisateurs."
+      submit: "Soumettre ce projet? Assurez-vous d'abord de l'avoir déposé à l'endroit indiqué."
+      remove_requirement: "Retirer cette exigence du projet? Le projet lui-même n'est pas supprimé."
+      delete_learning_module: "Supprimer ce module d'apprentissage?"
+    project_proposals:
+      approve_row: "Approuver cette proposition?"
+      decline_row: "Refuser cette proposition?"
+      delete_row: "Supprimer cette proposition?"
+      create_repository: "Créer un dépôt pour cette proposition de projet?"
+      leave: "Quitter ce projet?"
+      join: "Rejoindre ce projet?"
+      approve: "Approuver cette proposition de projet?"
+      decline: "Refuser cette proposition de projet?"
+      delete: "Supprimer cette proposition de projet?"
+      approve_titled: "Approuver la proposition de projet « %{title} »?"
+      disapprove_titled: "Désapprouver la proposition de projet « %{title} »?"
+      delete_titled: "Supprimer la proposition de projet « %{title} »?"
+    skills:
+      delete: "Supprimer ce type de compétence?"
+    job_orders:
+      approve_quote: "Approuver cette commande de travail?"
+      deny_quote: "Refuser cette commande de travail?"
+      delete_task: "Supprimer cette tâche?"
+      approve_for_user: "Approuver cette commande de travail au nom de l'utilisateur?"
+      decline_for_user: "Refuser cette commande de travail au nom de l'utilisateur?"
+      resend_quote_reminder: "Renvoyer le courriel de rappel de la soumission?"
+      start_processing: "Commencer le traitement de cette pièce?"
+      mark_paid: "Marquer cette commande de travail comme payée?"
+      mark_picked_up: "Marquer cette commande de travail comme ramassée?"
+      delete_service: "Supprimer le service « %{name} »?"
+      delete_service_group: "Supprimer le groupe de services « %{name} »?"
+      delete_option: "Supprimer cette option?"
+    discount_codes:
+      redeem: "Acheter le coupon pour %{cc} CC? Cette action est irréversible."
+    training_sessions:
+      certify: "Certifier ces stagiaires sans les examens? La certification sera accordée à l'utilisateur sans passer par les examens."
+      send_exams: "Envoyer les examens aux utilisateurs?"
+    memberships:
+      revoke: "Révoquer cette adhésion?"
+    coupon_codes:
+      delete: "Supprimer le code de coupon « %{code} »?"
+    videos:
+      delete_titled: "Supprimer cette vidéo de « %{title} »?"
+    key_requests:
+      deny: "Refuser cette demande de clé?"

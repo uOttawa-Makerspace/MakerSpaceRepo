@@ -50,15 +50,15 @@
                     <% if @user.admin? %>
                         <% if title == "Pending Project Proposals" %>
                             <td>
-                                <%= button_to 'Approve', approve_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-success d-block w-100 btn-sm my-2', **confirmation_options('Are you sure?') %>
-                                <%= button_to 'Disapprove', decline_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-danger d-block w-100 btn-sm', **confirmation_options('Are you sure?') %>
+                                <%= button_to 'Approve', approve_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-success d-block w-100 btn-sm my-2', **confirmation_options(t('confirmations.project_proposals.approve_titled', title: project_proposal.title)) %>
+                                <%= button_to 'Disapprove', decline_project_proposals_path(id: project_proposal.id), method: :post, class: 'btn btn-danger d-block w-100 btn-sm', **confirmation_options(t('confirmations.project_proposals.disapprove_titled', title: project_proposal.title)) %>
                             </td>
                         <% end %>
                         <td>
                             <%= link_to 'Show', project_proposal_path(project_proposal), class: 'btn btn-success d-block w-100 btn-sm' %>
                             <%= link_to 'Edit', edit_project_proposal_path(project_proposal), class: 'btn btn-primary d-block w-100 btn-sm' %>
                             <%= button_to 'Delete', project_proposal, method: :delete,
-                                          class: 'btn btn-danger d-block w-100 btn-sm my-2', **confirmation_options('Are you sure?') %>
+                                          class: 'btn btn-danger d-block w-100 btn-sm my-2', **confirmation_options(t('confirmations.project_proposals.delete_titled', title: project_proposal.title)) %>
                         </td>
                     <% elsif project_proposal.user.eql?(@user) || project_proposal.approved == 1 %>
                         <td><%= link_to 'Show', project_proposal, class: 'btn btn-success d-block w-100 btn-sm' %></td>
