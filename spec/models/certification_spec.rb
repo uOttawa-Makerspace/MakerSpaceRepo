@@ -262,6 +262,37 @@ RSpec.describe Certification, type: :model do
         .to change(Certification, :count).by(1)
     end
 
+    it "certify_for_project returns the certification the user already holds for that training and level" do
+      held = Certification.certify_user(ts.id, user.id, "Beginner")
+      expect { expect(Certification.certify_for_project(user.id, training.id, "Beginner")).to eq(held) }
+        .not_to change(Certification, :count)
+      expect(held.previously_new_record?).to be(true)
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner").previously_new_record?).to be(false)
+    end
+
+    it "certify_for_project creates a certification for another level or user, or after the earlier one was deactivated" do
+      held = Certification.certify_user(ts.id, user.id, "Beginner")
+      expect(Certification.certify_for_project(user.id, training.id, "Advanced")).to be_previously_new_record
+      expect(Certification.certify_for_project(create(:user, :regular_user).id, training.id, "Beginner")).to be_previously_new_record
+      held.update!(active: false)
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner")).to be_previously_new_record
+    end
+
+    it "certify_for_project reactivates the most recent revoked project badge only when none is held" do
+      project = create(:proficient_project, training: training)
+      granted = create(:certification, user: user, training_session: nil, training: nil, level: "Beginner")
+      create(:proficient_project_session, certification: granted, user: user, proficient_project: project, level: "Beginner")
+      granted.update!(active: false, demotion_reason: Certification::BADGE_REVOKED_REASON)
+      restore = Certification.for_projects(user.id, training.id, "Beginner")
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner", restore: restore)).to eq(granted)
+      expect(granted.reload).to be_active
+      expect(Certification.certify_for_project(user.id, training.id, "Beginner", restore: restore).saved_change_to_active?).to be(false)
+    end
+
+    it "certify_for_project raises when the certification cannot be saved" do
+      expect { Certification.certify_for_project(user.id, training.id, "Expert") }.to raise_error(ActiveRecord::RecordInvalid)
+    end
+
     it "certify_user still certifies a different level, a different user, or after the earlier one was deactivated" do
       first = Certification.certify_user(ts.id, user.id, "Beginner")
       expect { Certification.certify_user(ts.id, user.id, "Advanced") }.to change(Certification, :count).by(1)

@@ -525,7 +525,7 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         expect(Certification.last).to have_attributes(user_id: buyer.id, level: "Beginner")
         expect(response).to redirect_to(requests_proficient_projects_path) if role == :admin
         expect(response).to redirect_to(proficient_project_path(project)) if role == :staff
-        expect(flash[:notice]).to eq("The project has been approved!  (0 duplicates skipped)")
+        expect(flash[:notice]).to eq("The project has been approved!")
         mail = ActionMailer::Base.deliveries.last
         expect(mail.to).to eq([buyer.email])
         expect(mail.subject).to eq("Your Proficient Project Results")
@@ -600,18 +600,29 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
-    it "gives each approval its own certification" do
+    it "approves a second project for the same training and level without a second certification" do
       other_project = create(:proficient_project, training: training, level: project.level, title: "Second widget")
+      second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
+      content_sign_in_as(:admin)
+      post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
+      granted = Certification.find_by!(user_id: buyer.id)
+      expect do
+        post approve_project_proficient_projects_path, params: { oi_id: second.id, order_item: { admin_comments: "x" } }
+      end.not_to change(Certification, :count)
+      expect(second.reload.status).to eq("Awarded")
+      expect(ProficientProjectSession.where(proficient_project: other_project)).to be_empty
+      expect(granted.reload).to be_active
+      expect(ProficientProjectSession.find_by(proficient_project: project).destroy).to be(false)
+    end
+
+    it "still grants a certification for another level of the same training" do
+      other_project = create(:proficient_project, training: training, level: "Advanced", title: "Advanced widget")
       second = order_item_for(buyer, status: "Waiting for approval", pp: other_project)
       content_sign_in_as(:admin)
       post approve_project_proficient_projects_path, params: { oi_id: oi.id, order_item: { admin_comments: "x" } }
       expect do
         post approve_project_proficient_projects_path, params: { oi_id: second.id, order_item: { admin_comments: "x" } }
       end.to change(Certification, :count).by(1)
-      certs = ProficientProjectSession.where(proficient_project: [project, other_project]).pluck(:certification_id)
-      expect(certs.uniq.size).to eq(2)
-      expect(ProficientProjectSession.find_by(proficient_project: project).destroy).to be(false)
-      expect(Certification.where(id: certs)).to exist
     end
   end
 

@@ -46,17 +46,21 @@ class Certification < ApplicationRecord
     training_id.present? && Certification.held_by(user_id, training_id, level).exists?
   end
 
-  # Every certification (active or not) a user earned through approvals of a proficient project.
-  # The project session carries no link to the order item, so user and project identify it.
-  def self.for_project(user_id, project_id)
+  # Every certification (active or not) a user earned through approvals of any proficient project
+  # of the training at the level. The project session carries no link to the order item, so user,
+  # training and level identify it. A certification earned in a training session has no project
+  # session and is never in this set.
+  def self.for_projects(user_id, training_id, level)
     unscoped.where(
       user_id: user_id,
-      id: ProficientProjectSession.where(proficient_project_id: project_id).select(:certification_id)
+      id: ProficientProjectSession.where(
+        proficient_project_id: ProficientProject.where(training_id: training_id, level: level).select(:id)
+      ).select(:certification_id)
     )
   end
 
   # Inactive certifications that a badge revoke deactivated (not ones demoted by hand), the most
-  # recently deactivated first. Call on a relation from .for_project.
+  # recently deactivated first. Call on a relation from .for_projects.
   def self.revoked_badges
     where(active: false, demotion_reason: BADGE_REVOKED_REASON).order(updated_at: :desc, id: :desc)
   end
@@ -124,6 +128,20 @@ class Certification < ApplicationRecord
       return existing if existing
     end
     create(user_id:, training_session_id:, level:)
+  end
+
+  # The certification a proficient project of the training grants at the level: the active one the
+  # user already holds, else the most recent one in `restore` (a relation from .for_projects) that a
+  # badge revoke deactivated, which is reactivated, else a new one (raising when it cannot be saved).
+  # A returned certification that is new (previously_new_record?) or reactivated
+  # (saved_change_to_active?) was granted now; any other was already held.
+  def self.certify_for_project(user_id, training_id, level, restore: none)
+    held_by(user_id, training_id, level).first || restore_revoked(restore) || create!(user_id:, level:)
+  end
+
+  def self.restore_revoked(relation)
+    cert = relation.revoked_badges.first
+    cert&.tap { |c| c.update!(active: true, demotion_reason: nil, demotion_staff: nil) }
   end
 
   def assign_share_token

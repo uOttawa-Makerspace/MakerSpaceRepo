@@ -17,22 +17,27 @@ class ExamsController < SessionsController
   end
 
   def create_from_training
-    training_session = @training_session
-    users = training_session.users.to_a
-    Exam.transaction do
-      users.each { |user| create_exam_and_exam_questions(user, training_session) }
+    users = @training_session.users.to_a
+    counts = create_exams(users, @training_session)
+    if counts.nil?
+      flash[:alert] = I18n.t("exams.no_questions")
+    elsif counts.any?
+      send_exams(users, @training_session)
+      flash[:notice] = I18n.t("exams.sent_to_all", count: counts.min)
     end
-    users.each { |user| MsrMailer.send_exam(user, training_session).deliver_later }
-    flash[:notice] = "You've successfully sent exams to all users in this training." if users.any?
-    redirect_to staff_dashboard_index_path(space_id: training_session.space.id)
+    redirect_to staff_dashboard_index_path(space_id: @training_session.space.id)
   end
 
   def create_for_single_user
     training_session = @training_session
     user = User.find(params[:user_id])
-    create_exam_and_exam_questions(user, training_session)
-    MsrMailer.send_exam(user, training_session).deliver_later
-    flash[:notice] = I18n.t("exams.sent_to_user", name: user.name)
+    counts = create_exams([user], training_session)
+    if counts
+      send_exams([user], training_session)
+      flash[:notice] = I18n.t("exams.sent_to_user", name: user.name, count: counts.first)
+    else
+      flash[:alert] = I18n.t("exams.no_questions")
+    end
     redirect_to staff_training_session_path(training_session.id)
   end
 
@@ -96,6 +101,23 @@ class ExamsController < SessionsController
 
   private
 
+  # Creates one exam per user and returns how many questions each got (an exam takes every
+  # question available when the pool is smaller than the configured size). Returns nil, with
+  # nothing saved, when any exam would have no questions.
+  def create_exams(users, training_session)
+    counts = nil
+    Exam.transaction do
+      counts = users.map { |user| create_exam_and_exam_questions(user, training_session) }
+      raise ActiveRecord::Rollback if counts.any?(&:zero?)
+    end
+    counts unless counts.any?(&:zero?)
+  end
+
+  def send_exams(users, training_session)
+    users.each { |user| MsrMailer.send_exam(user, training_session).deliver_later }
+  end
+
+  # Returns the number of questions the new exam holds.
   def create_exam_and_exam_questions(user, training_session)
     new_exam =
       user.exams.new(
@@ -131,8 +153,7 @@ class ExamsController < SessionsController
 
   def require_question_pool
     return if @training_session.training.questions.exists?(level: @training_session.level)
-    flash[:alert] =
-      "This training has no questions at this level, so no exams were created."
+    flash[:alert] = I18n.t("exams.no_questions")
     redirect_to staff_training_session_path(@training_session.id)
   end
 

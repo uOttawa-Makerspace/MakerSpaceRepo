@@ -90,10 +90,10 @@ RSpec.describe "Revoking a project badge", type: :request do
       approve(item)
       approve(other)
       revoke(item)
-      expect(buyer.certifications.count).to eq(2)
+      expect(buyer.certifications.count).to eq(1)
       revoke(other)
       expect(buyer.certifications).to be_empty
-      expect(certifications.count).to eq(2)
+      expect(certifications.count).to eq(1)
     end
 
     it "reactivates exactly one certification when a second item is approved after the first was revoked" do
@@ -105,6 +105,62 @@ RSpec.describe "Revoking a project badge", type: :request do
       expect(certifications.count).to eq(1)
       expect(certifications.first).to be_active
       expect(ProficientProjectSession.count).to eq(2)
+    end
+  end
+
+  context "with approved projects that share a training and level" do
+    let(:other_project) { create(:proficient_project, training: training, level: project.level, title: "Other widget") }
+    let(:other) do
+      create(:order_item, order: create(:order, :completed, user_id: buyer.id), proficient_project: other_project,
+                          status: "Waiting for approval")
+    end
+
+    before do
+      content_sign_in_as(:admin)
+      approve(item)
+      approve(other)
+    end
+
+    it "keeps the one certification while either project still backs it, and restores it without a duplicate" do
+      revoke(item)
+      expect(certifications.count).to eq(1)
+      expect(certifications.reload.first).to be_active
+      revoke(other)
+      expect(certifications.reload.first).not_to be_active
+      approve(item)
+      expect(certifications.count).to eq(1)
+      expect(certifications.reload.first).to be_active
+    end
+
+    it "deactivates the certification when the project that created it is revoked last" do
+      revoke(other)
+      expect(certifications.reload.first).to be_active
+      revoke(item)
+      expect(certifications.reload.first).not_to be_active
+    end
+  end
+
+  context "when the user holds a certification from a training session" do
+    before { content_sign_in_as(:admin) }
+
+    it "never deactivates it by revoking a project" do
+      held = Certification.certify_user(create(:training_session, training: training, level: project.level).id,
+                                        buyer.id, project.level)
+      approve(item)
+      revoke(item)
+      expect(held.reload).to be_active
+      expect(item.reload.status).to eq("Revoked")
+    end
+
+    it "does not reactivate a second certification for a re-approved project" do
+      approve(item)
+      revoke(item)
+      held = Certification.certify_user(create(:training_session, training: training, level: project.level).id,
+                                        buyer.id, project.level)
+      expect { approve(item) }.not_to change { certifications.count }
+      expect(certifications.where(active: true).pluck(:id)).to eq([held.id])
+      expect(held.reload).to be_active
+      expect(item.reload.status).to eq("Awarded")
     end
   end
 

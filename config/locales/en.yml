@@ -162,7 +162,13 @@ en:
         how_heard_about_us: "How did you hear about us?"
         accept_waiver_html: "By checking this box, <strong>I ACCEPT AND FULLY ASSUME</strong> all such (health and safety) risks, dangers and hazards which may be associated with my participation."
   exams:
-    sent_to_user: "You've successfully sent the exam to %{name}."
+    sent_to_user:
+      one: "You've successfully sent the exam to %{name}. It has 1 question."
+      other: "You've successfully sent the exam to %{name}. It has %{count} questions."
+    sent_to_all:
+      one: "You've successfully sent exams to all users in this training. Each exam has 1 question."
+      other: "You've successfully sent exams to all users in this training. Each exam has %{count} questions."
+    no_questions: "This training has no questions at this level, so no exams were created."
   sessions:
     account_created: "Account has been created, please look in your emails to confirm your email address."
     already_signed_in: "You are already signed in."

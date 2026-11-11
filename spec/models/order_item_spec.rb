@@ -152,6 +152,19 @@ RSpec.describe OrderItem, type: :model do
       expect(item).to be_awarded
     end
 
+    it "approves without a second certification when the user already holds one from a training session" do
+      training = item.proficient_project.training
+      held = Certification.certify_user(
+        create(:training_session, training: training, level: item.proficient_project.level).id,
+        create(:user).id, item.proficient_project.level
+      )
+      other = create(:order_item, order: create(:order, :completed, user_id: held.user_id), proficient_project: item.proficient_project,
+                                  status: "Waiting for approval")
+      expect { expect(other.award!(staff)).to be(true) }.not_to change(Certification, :count)
+      expect(other).to be_awarded
+      expect(ProficientProjectSession.where(certification_id: held.id)).to be_empty
+    end
+
     it "refuses to award an awarded item again" do
       expect(item.award!(staff)).to be(false)
       expect(ProficientProjectSession.count).to eq(1)
