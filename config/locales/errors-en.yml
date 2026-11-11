@@ -286,6 +286,7 @@ en:
     proposals:
       not_created: "The project proposal was not created."
       not_updated: "The project proposal was not updated."
+      semester_not_cleared: "The semester was not cleared."
       revision_not_created: "The revision was not created."
       revision_source_missing: "The project proposal to copy for a revision could not be found."
       already_joined: "You already joined this project."

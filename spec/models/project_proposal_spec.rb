@@ -60,6 +60,40 @@ RSpec.describe ProjectProposal, type: :model do
     create(:project_proposal, :not_approved)
   end
 
+  describe "semester" do
+    let(:proposal) { create(:project_proposal, season: :fall, year: 2024) }
+
+    it "accepts a season with a year, or neither" do
+      expect(proposal).to be_valid
+      proposal.assign_attributes(season: nil, year: nil)
+      expect(proposal).to be_valid
+    end
+
+    it "refuses a season without a year, or a year without a season" do
+      proposal.year = nil
+      expect(proposal).not_to be_valid
+      expect(proposal.errors.full_messages).to include("Choose both a season and a year, or neither.")
+      proposal.assign_attributes(season: nil, year: 2025)
+      expect(proposal).not_to be_valid
+    end
+
+    it "still saves other changes to a legacy proposal that has only a season" do
+      proposal.update_columns(year: nil)
+      expect(proposal.reload.update(title: "Renamed")).to be(true)
+    end
+
+    it "clears the season and the year together" do
+      expect(proposal.clear_semester).to be(true)
+      expect(proposal.reload.attributes.values_at("season", "year")).to eq([nil, nil])
+      expect(proposal.active_semester_label).to be_nil
+    end
+
+    it "sorts proposals without a semester last" do
+      none = create(:project_proposal)
+      expect(ProjectProposal.by_semester.to_a.last).to eq(none)
+    end
+  end
+
   describe "scopes" do
     context "#approved" do
       it "should return all approved project proposals" do

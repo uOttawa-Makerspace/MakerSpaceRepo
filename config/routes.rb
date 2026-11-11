@@ -132,6 +132,7 @@ Rails.application.routes.draw do
       get :projects_completed
       get :user_projects
     end
+    resource :semester, only: :destroy, module: :project_proposals
   end
 
   resources :printers, only: %i[index update] do

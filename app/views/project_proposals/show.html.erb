@@ -300,6 +300,11 @@
                         <div class="small text-body-secondary">Currently active for <b><%= @project_proposal.active_semester_label %></b></div>
                     <% end %>
                 <% end %>
+                <% if @project_proposal.active_semester_label %>
+                    <%= button_to t('project_proposal.admin.clear_semester'), project_proposal_semester_path(@project_proposal),
+                                  method: :delete, class: 'btn btn-outline-secondary btn-sm mt-2',
+                                  **confirmation_options(t('project_proposal.admin.clear_semester_confirm')) %>
+                <% end %>
             </div>
         <% end %>
     </section>
