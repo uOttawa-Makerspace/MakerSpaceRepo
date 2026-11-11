@@ -838,13 +838,16 @@ RSpec.describe "Static pages", type: :request do
     it "emails the report to the support inbox for a signed-in user (via POST)" do
       user = sign_in_as(:regular)
       deliveries.clear
-      post report_repository_path(repo), headers: { "HTTP_REFERER" => "http://www.example.com/back" }
+      perform_enqueued_jobs do
+        post report_repository_path(repo), headers: { "HTTP_REFERER" => "http://www.example.com/back" }
+      end
       expect(response).to redirect_to("http://www.example.com/back")
       expect(flash[:alert]).to eq("Repository has been reported")
       expect(deliveries.size).to eq(1)
       expect(deliveries.last.to).to eq(["uottawa.makerepo@gmail.com"])
       expect(deliveries.last.subject).to eq("Repository #{repo.title} reported")
-      expect(deliveries.last.from).to eq([user.email])
+      expect(deliveries.last.from).to eq(["ceedinfo@makerepo.com"])
+      expect(deliveries.last.reply_to).to eq([user.email])
     end
 
     it "redirects to root when there is no referer" do

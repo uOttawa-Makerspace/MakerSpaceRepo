@@ -39,7 +39,7 @@ RSpec.describe ProficientProject, type: :model do
         cert = record.certification
 
         expect { project.destroy }.not_to change { [ProficientProject.count, ProficientProjectSession.count, Certification.unscoped.count] }
-        expect(project.errors.full_messages.to_sentence).to include("proficient project sessions")
+        expect(project.errors.full_messages.to_sentence).to include("This project has sessions and cannot be deleted.")
         expect(Certification.unscoped.exists?(cert.id)).to be(true)
       end
       it "dependent destroy: should destroy project kits if destroyed" do

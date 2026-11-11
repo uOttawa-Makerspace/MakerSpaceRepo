@@ -106,14 +106,14 @@ RSpec.describe "Printer types", type: :request do
       create(:printer_session, printer: printer)
       expect { delete printer_type_path(type) }.not_to change { [PrinterType.count, Printer.count, PrinterSession.count] }
       expect(response).to redirect_to(printer_types_path)
-      expect(flash[:alert]).to eq("Cannot delete record because dependent printers exist")
+      expect(flash[:alert]).to eq("This printer type has printers and cannot be deleted.")
     end
 
     it "refuses to delete a type whose printer has issues, without a server error" do
       printer = create(:printer, printer_type: type, number: "1")
       create(:printer_issue, printer: printer)
       expect { delete printer_type_path(type) }.not_to change { [PrinterType.count, Printer.count, PrinterIssue.count] }
-      expect(flash[:alert]).to eq("Cannot delete record because dependent printers exist")
+      expect(flash[:alert]).to eq("This printer type has printers and cannot be deleted.")
     end
 
     it "redirects update/destroy of an unknown id with an alert" do

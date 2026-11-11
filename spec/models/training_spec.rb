@@ -15,7 +15,7 @@ RSpec.describe Training, type: :model do
       it "refuses to be deleted while it has training sessions" do
         training = create(:training_with_training_sessions)
         expect { training.destroy }.not_to change { [Training.count, TrainingSession.count] }
-        expect(training.errors.full_messages.to_sentence).to include("training sessions")
+        expect(training.errors.full_messages.to_sentence).to include("This training has sessions or projects and cannot be deleted.")
       end
       it "dependent destroy: should destroy require trainings if destroyed" do
         training = create(:training_with_require_trainings)
@@ -26,7 +26,7 @@ RSpec.describe Training, type: :model do
       it "refuses to be deleted while it has proficient projects" do
         training = create(:training_with_proficient_projects)
         expect { training.destroy }.not_to change { [Training.count, ProficientProject.count] }
-        expect(training.errors.full_messages.to_sentence).to include("proficient projects")
+        expect(training.errors.full_messages.to_sentence).to include("This training has sessions or projects and cannot be deleted.")
       end
     end
   end

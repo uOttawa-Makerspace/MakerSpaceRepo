@@ -68,6 +68,9 @@ fr:
               taken: "Cet espace existe déjà"
         sub_space:
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce sous-espace a des réservations et ne peut pas être supprimé."
             name:
               blank: "Un nom est requis pour l'espace"
         require_training:
@@ -87,6 +90,41 @@ fr:
               must_be_staff: "doit faire partie du personnel"
             level:
               blank: "Un niveau est requis"
+        membership_tier:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce niveau d'adhésion a des adhésions et ne peut pas être supprimé."
+        training:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette formation a des séances ou des projets et ne peut pas être supprimée."
+        printer_type:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce type d'imprimante a des imprimantes et ne peut pas être supprimé."
+        printer:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette imprimante a des séances ou des problèmes signalés et ne peut pas être retirée."
+        locker_size:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette taille de casier a des casiers et ne peut pas être supprimée."
+        booking_status:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce statut de réservation est utilisé par des réservations et ne peut pas être supprimé."
+        sub_space_booking_status:
+          attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Cette entrée de statut est encore utilisée par une réservation et ne peut pas être supprimée."
         project_requirement:
           attributes:
             proficient_project_id:
@@ -197,6 +235,9 @@ fr:
               taken: "Ce titre existe déjà"
         proficient_project:
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_many: "Ce projet a des séances et ne peut pas être supprimé."
             title:
               blank: "Un titre est requis."
               taken: "Ce titre existe déjà"
@@ -216,6 +257,9 @@ fr:
               too_short: "Doit avoir entre 1 et 5 photos"
         user:
           attributes:
+            base:
+              restrict_dependent_destroy:
+                has_one: "Cet utilisateur a une carte RFID et ne peut pas être supprimé."
             name:
               special_html_characters: "ne doit pas contenir de caractères HTML spéciaux"
             student_id:
