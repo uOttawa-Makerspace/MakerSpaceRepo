@@ -69,4 +69,18 @@ RSpec.describe "Announcement forms", type: :system do
     expect(page).to have_no_current_path(edit_announcement_path(announcement))
     expect(announcement.reload.end_date).to be_nil
   end
+
+  {
+    "admin new form" => -> { new_admin_announcement_path },
+    "admin edit form" => -> { edit_admin_announcement_path(announcement) },
+    "staff new form" => -> { new_announcement_path },
+    "staff edit form" => -> { edit_announcement_path(announcement) }
+  }.each do |name, path|
+    it "labels the end date field on the #{name}" do
+      log_in_as(admin, to: instance_exec(&path))
+      expect(page).to have_css("#end_date.flatpickr-input", visible: :all)
+      expect(find("label", text: "End Date (Optional)")[:for]).to eq("end_date_display")
+      expect(find_field("End Date (Optional)")[:id]).to eq("end_date_display")
+    end
+  end
 end

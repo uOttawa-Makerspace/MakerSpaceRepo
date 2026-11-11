@@ -114,6 +114,15 @@ RSpec.describe VolunteerTask, "defaults, validation and cascade", type: :model d
     expect(task.errors[:photos]).to eq([" can't exceed 5 photos"])
   end
 
+  it "words the photo limit in French" do
+    task = create(:volunteer_task)
+    6.times { Photo.new(volunteer_task: task).save(validate: false) }
+    I18n.with_locale(:fr) do
+      task.valid?
+      expect(task.errors[:photos]).to eq(["ne peut pas dépasser 5 photos"])
+    end
+  end
+
   it "is valid with exactly 5 photos" do
     task = create(:volunteer_task)
     5.times { Photo.new(volunteer_task: task).save(validate: false) }
