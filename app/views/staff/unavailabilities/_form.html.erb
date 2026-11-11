@@ -6,6 +6,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<%= t('common.close') %>"></button>
             </div>
             <%= form_with url: staff_unavailabilities_path, scope: :staff_unavailability, local: false, html: { class: "useTurbo", id: "unavailForm", data: { unavailability_form_target: "form", action: "submit->unavailability-form#sendInstants" } }  do |f| %>
+                <%= hidden_field_tag "_method", "patch", id: nil, disabled: true, data: { unavailability_form_target: "methodField" } %>
                 <div class="modal-body">
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="all_day_checkbox" data-unavailability-form-target="allDay" data-action="change->unavailability-form#allDayChanged">
@@ -114,25 +115,25 @@
                 </div>
             <% end %>
 
-            <div class="modal-footer second" id="delete_forms" style="display: none" data-unavailability-form-target="deleteForms">
+            <div class="modal-footer second" id="delete_forms" style="display: none" data-unavailability-form-target="deleteChoices">
                 <div class="dropdown show">
                     <button type="button" class="btn btn-primary dropdown-toggle" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Delete
                     </button>
                     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                        <%= form_with url: "#", method: :delete, local: false, html: { class: "useTurbo", id: "delete_single_form", data: { unavailability_form_target: "deleteSingleForm" } } do %>
+                        <%= form_with url: "#", method: :delete, local: false, html: { class: "useTurbo", id: "delete_single_form", data: { unavailability_form_target: "deleteForm" } } do %>
                             <%= hidden_field_tag :scope, "single" %>
                             <%= hidden_field_tag :start_date, nil, class: "delete_start_date", data: { unavailability_form_target: "deleteStartDate" } %>
                             <%= submit_tag "This event", class: "dropdown-item py-2 text-start" %>
                         <% end %>
 
-                        <%= form_with url: "#", method: :delete, local: false, html: { class: "useTurbo", id: "delete_following_form", data: { unavailability_form_target: "deleteFollowingForm" } } do %>
+                        <%= form_with url: "#", method: :delete, local: false, html: { class: "useTurbo", id: "delete_following_form", data: { unavailability_form_target: "deleteForm", repeating_only: true } } do %>
                             <%= hidden_field_tag :scope, "following" %>
                             <%= hidden_field_tag :start_date, nil, class: "delete_start_date", data: { unavailability_form_target: "deleteStartDate" } %>
                             <%= submit_tag "This and following events", class: "dropdown-item py-2 text-start" %>
                         <% end %>
 
-                        <%= form_with url: "#", method: :delete, local: false, html: { class: "useTurbo", id: "delete_all_form", data: { unavailability_form_target: "deleteAllForm" } } do %>
+                        <%= form_with url: "#", method: :delete, local: false, html: { class: "useTurbo", id: "delete_all_form", data: { unavailability_form_target: "deleteForm", repeating_only: true } } do %>
                             <%= hidden_field_tag :scope, "all" %>
                             <%= submit_tag "All events", class: "dropdown-item py-2 text-start" %>
                         <% end %>

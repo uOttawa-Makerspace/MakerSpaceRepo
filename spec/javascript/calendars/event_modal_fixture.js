@@ -85,6 +85,7 @@ export const UNAVAILABILITY_MODAL_HTML = `
   ${A("hide.bs.modal->unavailability-form#confirmExit hidden.bs.modal->unavailability-form#reset show.bs.modal->unavailability-form#proposeTimes")}>
   <h5 id="unavailabilityModalLabel" ${T("label")}>Add Unavailability</h5>
   <form id="unavailForm" action="/staff/unavailabilities" method="post" ${T("form")} ${A("submit->unavailability-form#sendInstants")}>
+    <input type="hidden" name="_method" value="patch" disabled ${T("methodField")}>
     <input type="checkbox" id="all_day_checkbox" ${T("allDay")} ${A("change->unavailability-form#allDayChanged")}>
     <input type="datetime-local" id="start_time_field" ${T("startTime")} ${A("change->unavailability-form#startChanged")}>
     <input type="datetime-local" id="end_time_field" ${T("endTime")} ${A("change->unavailability-form#validateTimeRange")}>
@@ -120,10 +121,10 @@ export const UNAVAILABILITY_MODAL_HTML = `
       </div>
     </div>
   </form>
-  <div id="delete_forms" style="display: none" ${T("deleteForms")}>
-    <form id="delete_single_form" action="#" ${T("deleteSingleForm")}><input class="delete_start_date" name="start_date" ${T("deleteStartDate")}></form>
-    <form id="delete_following_form" action="#" ${T("deleteFollowingForm")}><input class="delete_start_date" name="start_date" ${T("deleteStartDate")}></form>
-    <form id="delete_all_form" action="#" ${T("deleteAllForm")}></form>
+  <div id="delete_forms" style="display: none" ${T("deleteChoices")}>
+    <form id="delete_single_form" action="#" ${T("deleteForm")}><input class="delete_start_date" name="start_date" ${T("deleteStartDate")}></form>
+    <form id="delete_following_form" action="#" data-repeating-only="true" ${T("deleteForm")}><input class="delete_start_date" name="start_date" ${T("deleteStartDate")}></form>
+    <form id="delete_all_form" action="#" data-repeating-only="true" ${T("deleteForm")}></form>
   </div>
 </div>
 </div>`;

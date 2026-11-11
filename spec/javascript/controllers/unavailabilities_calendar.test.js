@@ -134,10 +134,25 @@ describe("staff unavailabilities calendar", () => {
 
   it("opens the unavailability dialog for a clicked event and a selected range", async () => {
     const cal = await boot();
-    const own = { id: "e", extendedProps: { eventType: "unavailability" } };
+    const own = {
+      id: "e",
+      title: "Lecture",
+      allDay: false,
+      startStr: "s",
+      endStr: "t",
+      extendedProps: { eventType: "unavailability", description: "d" },
+    };
     cal.options.eventClick({ event: own });
     cal.options.select({ startStr: "s", endStr: "t" });
-    expect(form.openForEdit).toHaveBeenCalledWith(own);
+    expect(form.openForEdit).toHaveBeenCalledWith({
+      id: "e",
+      title: "Lecture",
+      description: "d",
+      allDay: false,
+      startStr: "s",
+      endStr: "t",
+      rrule: null,
+    });
     expect(form.openForRange).toHaveBeenCalledWith({ start: "s", end: "t" });
   });
 

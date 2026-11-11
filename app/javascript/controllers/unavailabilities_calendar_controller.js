@@ -6,6 +6,10 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
 import { makeCalendarAccessible } from "../src/calendar_accessibility.js";
+import {
+  editableUnavailability,
+  keepFeedRule,
+} from "../src/unavailability_event.js";
 
 // The hosts listed in the failed-calendars header: a JSON list of strings and
 // nulls, or nothing for a missing, malformed or differently shaped header.
@@ -76,7 +80,7 @@ export default class extends TypedController {
   // element is the one clicked, which gets the focus back when the view closes.
   openEvent(event, element) {
     if (event.extendedProps?.eventType === "unavailability") {
-      this.unavailabilityFormOutlet.openForEdit(event);
+      this.unavailabilityFormOutlet.openForEdit(editableUnavailability(event));
     } else {
       this.importedEventDetailsOutlet.show(event, element);
     }
@@ -133,6 +137,7 @@ export default class extends TypedController {
         success: (_events, response) => this.showFailures(response),
         failure: () => this.showFeedFailure(),
       },
+      eventDataTransform: keepFeedRule,
       eventClick: (info) => this.openEvent(info.event, info.el),
       select: (info) =>
         this.unavailabilityFormOutlet.openForRange({

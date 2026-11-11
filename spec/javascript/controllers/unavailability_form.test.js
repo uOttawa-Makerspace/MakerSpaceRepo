@@ -272,49 +272,33 @@ describe("submit", () => {
 
 const form = () => document.querySelector("#unavailabilityModal form");
 
-function fcEvent(overrides = {}) {
-  const { def = {}, ...rest } = overrides;
+function entry(overrides = {}) {
   return {
     id: "31",
     allDay: false,
     startStr: "2027-03-17T13:00:00-04:00",
     endStr: "2027-03-17T15:00:00-04:00",
-    _def: {
-      title: "Lecture",
-      extendedProps: { description: "Calculus" },
-      ...def,
-    },
-    ...rest,
+    title: "Lecture",
+    description: "Calculus",
+    rrule: null,
+    ...overrides,
   };
 }
 
-const weeklyDef = (extra = {}) => ({
-  recurringDef: {
-    typeData: {
-      rruleSet: {
-        _rrule: [
-          {
-            origOptions: {
-              freq: 2,
-              dtstart: new Date(Date.UTC(2027, 2, 15, 14)),
-              byweekday: [0, 2],
-              until: new Date(Date.UTC(2027, 2, 31, 23, 59, 59)),
-              ...extra,
-            },
-          },
-        ],
-      },
-    },
-  },
-});
+// The rule text the feed sends: the Toronto start, then the other lines
+const weekly = ({ days = "MO,WE", until = ";UNTIL=20270331T235959" } = {}) =>
+  `DTSTART:20270315T140000\nRRULE:FREQ=WEEKLY;BYDAY=${days}${until}`;
+const withFreq = (freq) => `DTSTART:20270315T140000\nRRULE:FREQ=${freq}`;
 
 describe("openForEdit", () => {
   it("opens the modal in edit mode against the unavailability URL", () => {
-    controller().openForEdit(fcEvent());
+    controller().openForEdit(entry());
 
     expect(shown).toEqual(["unavailabilityModal"]);
     expect(form().action).toContain("/staff/unavailabilities/31");
-    expect(form().querySelector('input[name="_method"]').value).toBe("patch");
+    const method = form().querySelector('input[name="_method"]');
+    expect(method.value).toBe("patch");
+    expect(method.disabled).toBe(false);
     expect($("unavailabilityModalLabel").textContent).toBe(
       "Edit Unavailability",
     );
@@ -331,7 +315,7 @@ describe("openForEdit", () => {
   });
 
   it("encodes an id with reserved characters in the form and delete actions", () => {
-    controller().openForEdit(fcEvent({ id: "a/../b?x#y" }));
+    controller().openForEdit(entry({ id: "a/../b?x#y" }));
     const encoded = "a%2F..%2Fb%3Fx%23y";
     expect(form().getAttribute("action")).toBe(
       `/staff/unavailabilities/${encoded}`,
@@ -345,19 +329,19 @@ describe("openForEdit", () => {
   });
 
   it("writes the times in Toronto time", () => {
-    controller().openForEdit(fcEvent());
+    controller().openForEdit(entry());
     expect($("start_time_field").value).toBe("2027-03-17T13:00");
     expect($("end_time_field").value).toBe("2027-03-17T15:00");
   });
 
   it("leaves the end date empty for a repeating entry without one", () => {
-    controller().openForEdit(fcEvent({ def: weeklyDef({ until: null }) }));
+    controller().openForEdit(entry({ rrule: weekly({ until: "" }) }));
     expect($("recurrence_until").value).toBe("");
   });
 
   it("checks all-day, snaps to midnight and locks the end", () => {
     controller().openForEdit(
-      fcEvent({ allDay: true, startStr: "2027-03-17", endStr: "2027-03-18" }),
+      entry({ allDay: true, startStr: "2027-03-17", endStr: "2027-03-18" }),
     );
     expect($("all_day_checkbox").checked).toBe(true);
     expect($("end_time_field").disabled).toBe(true);
@@ -366,15 +350,13 @@ describe("openForEdit", () => {
   });
 
   it("falls back to empty title and description", () => {
-    controller().openForEdit(
-      fcEvent({ def: { title: "", extendedProps: {} } }),
-    );
+    controller().openForEdit(entry({ title: "", description: "" }));
     expect($("title").value).toBe("");
     expect($("description").value).toBe("");
   });
 
   it("keeps the single save button and hides the delete choices for one-off entries", () => {
-    controller().openForEdit(fcEvent());
+    controller().openForEdit(entry());
     expect($("modal_buttons").contains($("save_button"))).toBe(true);
     expect($("update_dropdown").style.display).toBe("none");
     expect($("delete_following_form").style.display).toBe("none");
@@ -382,7 +364,7 @@ describe("openForEdit", () => {
   });
 
   it("restores the weekly rule of a repeating entry and moves save into the scope menu", () => {
-    controller().openForEdit(fcEvent({ def: weeklyDef() }));
+    controller().openForEdit(entry({ rrule: weekly() }));
 
     expect($("recurrence_frequency").value).toBe("WEEKLY");
     expect($("recurrence_options").style.display).toBe("block");
@@ -401,48 +383,41 @@ describe("openForEdit", () => {
   it("ticks the day box one place after the rule's weekday number", () => {
     // rrule numbers Monday 0 and Wednesday 2; the boxes run Sunday first, so
     // the page ticks Monday and Wednesday as index+1
-    controller().openForEdit(
-      fcEvent({ def: weeklyDef({ byweekday: [0, 2] }) }),
-    );
+    controller().openForEdit(entry({ rrule: weekly() }));
     expect($("day_MO").checked).toBe(true);
     expect($("day_WE").checked).toBe(true);
     expect($("day_TU").checked).toBe(false);
   });
 
   it("ticks Sunday for a rule on Sunday (weekday 6)", () => {
-    controller().openForEdit(fcEvent({ def: weeklyDef({ byweekday: [6] }) }));
+    controller().openForEdit(entry({ rrule: weekly({ days: "SU" }) }));
     expect($("day_SU").checked).toBe(true);
   });
 
   it("restores daily and monthly rules", () => {
-    controller().openForEdit(
-      fcEvent({ def: weeklyDef({ freq: 3, byweekday: undefined }) }),
-    );
+    controller().openForEdit(entry({ rrule: withFreq("DAILY") }));
     expect($("recurrence_frequency").value).toBe("DAILY");
     expect($("weekly_options").style.display).toBe("none");
-    controller().openForEdit(
-      fcEvent({ def: weeklyDef({ freq: 1, byweekday: undefined }) }),
-    );
+    controller().openForEdit(entry({ rrule: withFreq("MONTHLY") }));
     expect($("recurrence_frequency").value).toBe("MONTHLY");
   });
 
   it("leaves the frequency alone for a rule it has no choice for", () => {
-    controller().openForEdit(
-      fcEvent({ def: weeklyDef({ freq: 0, byweekday: undefined }) }),
-    );
+    controller().openForEdit(entry({ rrule: withFreq("YEARLY") }));
     expect($("recurrence_frequency").value).toBe("");
     expect($("weekly_options").style.display).toBe("none");
   });
 
-  it("keeps a single method field when edited again", () => {
-    controller().openForEdit(fcEvent());
-    controller().openForEdit(fcEvent({ id: "32" }));
+  it("turns the method field on and points at the entry when edited again", () => {
+    controller().openForEdit(entry());
+    controller().openForEdit(entry({ id: "32" }));
     expect(form().querySelectorAll('input[name="_method"]')).toHaveLength(1);
+    expect(form().querySelector('input[name="_method"]').disabled).toBe(false);
     expect(form().action).toContain("/staff/unavailabilities/32");
   });
 
   it("sets the start date for every delete form", () => {
-    controller().openForEdit(fcEvent());
+    controller().openForEdit(entry());
     const values = [...document.querySelectorAll(".delete_start_date")].map(
       (i) => i.value,
     );
@@ -483,12 +458,12 @@ describe("returning focus", () => {
 
 describe("openForAdd", () => {
   it("returns an edit modal to add mode", () => {
-    controller().openForEdit(fcEvent({ def: weeklyDef() }));
+    controller().openForEdit(entry({ rrule: weekly() }));
     controller().openForAdd();
 
     expect(form().action).toContain("/staff/unavailabilities");
     expect(form().action).not.toContain("/31");
-    expect(form().querySelector('input[name="_method"]')).toBeNull();
+    expect(form().querySelector('input[name="_method"]').disabled).toBe(true);
     expect($("unavailabilityModalLabel").textContent).toBe(
       "Add Unavailability",
     );
@@ -499,7 +474,7 @@ describe("openForAdd", () => {
   });
 
   it("leaves the repeat fields and delete buttons as the last edit left them", () => {
-    controller().openForEdit(fcEvent({ def: weeklyDef() }));
+    controller().openForEdit(entry({ rrule: weekly() }));
     controller().openForAdd();
     expect($("recurrence_frequency").value).toBe("WEEKLY");
     expect($("delete_forms").style.display).toBe("flex");
