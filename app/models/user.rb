@@ -61,6 +61,9 @@ class User < ApplicationRecord
   # Raised by User.change_roles! when the change would leave no usable admin.
   class LastAdminError < StandardError; end
 
+  # Raised by User.delete_account! when the acting user is no longer an admin.
+  class NotAdminError < StandardError; end
+
   # The one wording, used by the admin UI and the API.
   LAST_ADMIN_MESSAGE = "You cannot remove the last admin."
   LAST_ADMIN_LOCK_MESSAGE = "You cannot lock the last admin."
@@ -354,9 +357,9 @@ class User < ApplicationRecord
     with_lock do
       request = user_booking_approvals.build(date: Time.current, comments: comments, identity: identity)
       if booking_approval?
-        request.errors.add(:base, "You already have booking access.")
+        request.errors.add(:base, :already_has_access)
       elsif booking_access_pending?
-        request.errors.add(:base, "You have already requested access.")
+        request.errors.add(:base, :already_requested)
       else
         request.save
       end
@@ -503,9 +506,9 @@ class User < ApplicationRecord
   }
 
   # Staff-facing substring search over name, email and username (accent- and
-  # case-insensitive). The caller escapes LIKE wildcards if it wants literal matching.
+  # case-insensitive). LIKE wildcards in the query match literally.
   scope :text_search, ->(query) {
-    pattern = "%#{query}%"
+    pattern = "%#{sanitize_sql_like(query.to_s)}%"
     where(
       "LOWER(UNACCENT(name)) like LOWER(UNACCENT(?)) OR
                            LOWER(UNACCENT(email)) like LOWER(UNACCENT(?)) OR
@@ -590,10 +593,13 @@ class User < ApplicationRecord
   # another member, or is hidden when there is none, and a lab session still open is ended now, so a
   # deleted user is not listed as in a space. Every other row (visits, certifications, training)
   # stays as it was. Raises LastAdminError for the last usable admin. Returns false, doing nothing,
-  # if the account was already deleted by another request.
-  def self.delete_account!(user)
+  # if the account was already deleted by another request. With an actor, the actor's role is read
+  # again once the admin rows are locked, and NotAdminError is raised if they are no longer an admin.
+  def self.delete_account!(user, actor:)
     serialising_account_deletion do
       guarding_last_admin!([user.id]) do
+        raise NotAdminError unless actor && where(id: actor.id, role: "admin").exists?
+
         next false if user.lock!(GUARD_LOCK_MODE).deleted?
 
         Repository.release_owned_by!(user)
@@ -628,6 +634,19 @@ class User < ApplicationRecord
       where(id: user_ids).order(:id).each do |user|
         Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to '#{new_role}' by Admin##{actor&.id}"
         user.change_role!(new_role)
+      end
+    end
+  end
+
+  # Promotes users below staff to staff, re-reading each role once the rows are locked, so a user
+  # made staff or admin in the meantime is left as they are. Takes the locks of change_roles! and
+  # never removes an admin, so it needs no last-admin check.
+  def self.promote_to_staff!(user_ids, actor: nil)
+    user_ids = Array(user_ids)
+    guarding_last_admin!(user_ids, only_if: -> { false }) do
+      where(id: user_ids).merge(where(role: nil).or(where.not(role: %w[staff admin]))).order(:id).each do |user|
+        Rails.logger.info "[ROLE_CHANGE] User##{user.id} role changed from '#{user.role}' to 'staff' by Admin##{actor&.id}"
+        user.change_role!("staff")
       end
     end
   end
@@ -963,6 +982,14 @@ class User < ApplicationRecord
     ActionCable.server.remote_connections.where(current_user: self).disconnect
   rescue StandardError => e
     Rails.error.report(e, handled: true)
+  end
+
+  # Marks the email confirmed. Skips validations, like change_role!, so a row that no longer passes
+  # them (older data) is still confirmed.
+  def confirm_email!
+    self.confirmed = true
+    save!(validate: false)
+    self
   end
 
   # Role and soft-delete writes skip validations only (a row that is invalid for an

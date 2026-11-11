@@ -1,5 +1,7 @@
 class Event < ApplicationRecord
   belongs_to :created_by, class_name: 'User'
+  # Who last edited the event in the admin calendar; empty for an event nobody has edited since it was created.
+  belongs_to :updated_by, class_name: 'User', optional: true
   belongs_to :space
   has_many :event_assignments, dependent: :destroy
   has_many :users, through: :event_assignments, source: :user
@@ -13,8 +15,14 @@ class Event < ApplicationRecord
   validates :training_id, presence: true, if: -> { event_type == 'training' && !draft? }
 
   validate :start_time_must_be_before_end_time
-  validates :recurrence_rule, recurrence_rule: true
+  validates :recurrence_rule, recurrence_rule: true, if: :check_recurrence_rule?
   validate :weekly_frequency_must_contain_days
+
+  # The repeat rule is checked when it changes and when a draft is published (not when an event goes back to draft), so a
+  # stored rule that is no longer valid cannot go live but does not block other edits.
+  def check_recurrence_rule?
+    will_save_change_to_recurrence_rule? || will_save_change_to_draft?(from: true, to: false)
+  end
 
   # Single source of truth for event title formatting across the entire app
   def display_title(include_draft_indicator: true)

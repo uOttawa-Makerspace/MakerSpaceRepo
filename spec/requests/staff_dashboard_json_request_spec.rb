@@ -95,4 +95,17 @@ RSpec.describe "Staff dashboard JSON", type: :request do
 
     expect(response.parsed_body["space_users"].map { |u| u["id"] }).to eq([here.id])
   end
+
+  it "searches names with percent and underscore characters matched literally" do
+    plain = create(:user, :regular_user, name: "Plain Person")
+    pct = create(:user, :regular_user, name: "100% Real")
+    sign_in_as(:staff, space: space)
+
+    get "/staff_dashboard/search", params: { query: "%" }
+    expect(response.body).to include(pct.username)
+    expect(response.body).not_to include(plain.username)
+
+    get "/staff_dashboard/search", params: { query: "_" }
+    expect(response.body).not_to include(plain.username)
+  end
 end

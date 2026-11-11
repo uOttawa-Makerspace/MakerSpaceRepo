@@ -29,28 +29,28 @@ class Help < ApplicationRecord
   # I'd add a length check to comments but this would count HTML characters too
   validates :comments, presence: true
 
-  # this runs after validation
-  before_create :send_github_issue
-  
-  def send_github_issue
-    # create_issue returns false when the GitHub API call fails
-    issue = if defang_github_text
-              GithubIssuesService.new.create_issue(
-                reporter: self.class.defang(name),
-                title: self.class.defang(subject),
-                body: self.class.defang(comments.to_plain_text)
-              )
-            else
-              GithubIssuesService.new.create_issue(
-                reporter: name,
-                title: subject,
-                body: comments
-              )
-            end
-    self.gh_issue_number = issue ? issue[:number] : nil
-    unless self.gh_issue_number
-      errors.add(:base, :issue_submission_failed)
-      throw :abort
+  # Opens the GitHub issue for a saved report and stores its number. Returns true on success.
+  # When GitHub does not answer with an issue number the report stays saved without a number,
+  # the error is added to the record and false is returned. Called by whoever saved the record,
+  # after the save.
+  def file_issue
+    issue = GithubIssuesService.new.create_issue(**issue_fields)
+    number = issue && issue[:number]
+    return update!(gh_issue_number: number) if number
+
+    errors.add(:base, :issue_submission_failed)
+    false
+  end
+
+  private
+
+  # The GitHub issue is public: the anonymous-capable paths defang the user's text.
+  def issue_fields
+    if defang_github_text
+      { reporter: self.class.defang(name), title: self.class.defang(subject),
+        body: self.class.defang(comments.to_plain_text) }
+    else
+      { reporter: name, title: subject, body: comments }
     end
   end
 end

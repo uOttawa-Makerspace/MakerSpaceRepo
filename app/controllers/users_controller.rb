@@ -116,7 +116,7 @@ class UsersController < SessionsController
   def apply_confirmation
     user = User.find_by_token_for(:email_confirmation, params[:token])
     if user
-      user.update(confirmed: true)
+      user.confirm_email!
       MsrMailer.welcome_email(user).deliver_now
       flash[
         :notice
