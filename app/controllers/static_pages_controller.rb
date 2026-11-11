@@ -56,8 +56,8 @@ class StaticPagesController < SessionsController
       Rails.cache.fetch('StaticPagesRecentRepos', expires_in: 10.minutes) do
         Repository
           .public_repos
+          .with_card_data
           .order(created_at: :desc)
-          .includes(photos: { image_attachment: [blob: { variant_records: :blob }] })
           .limit(15)
           .to_a
       end
