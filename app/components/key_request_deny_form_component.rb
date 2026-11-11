@@ -1,4 +1,4 @@
-# One form to deny a key request: an optional reason and a confirmation on the form.
+# One form to deny a key request: an optional reason and a confirmation on the deny button.
 class KeyRequestDenyFormComponent < ViewComponent::Base
   def initialize(key_request:, form_class: nil, input_class: nil, button_class: nil, icon: false)
     @key_request = key_request

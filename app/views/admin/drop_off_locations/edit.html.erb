@@ -11,7 +11,7 @@
             <%= f.submit 'Update Location', class: 'btn btn-primary btn-xl' %>
             <%= link_to 'Back', admin_drop_off_locations_path, class: 'btn btn-secondary' %>
             <%= button_to 'Delete', { controller: 'admin/drop_off_locations', action: :destroy, id: @location.id }, method: :delete,
-                                                                                                                    data: { confirm: 'Are you sure that you want to delete this location ?' },
+                                                                                                                    **confirmation_options('Are you sure that you want to delete this location ?'),
                                                                                                                     class: 'btn btn-danger float-end' %>
         </div>
       </div>

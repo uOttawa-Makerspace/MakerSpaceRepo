@@ -3,7 +3,7 @@
     <%= render 'form' %>
   <div class="mx-auto">
     <%= button_to t('admin.training.delete'), { controller: 'admin/trainings', action: :destroy, id: @training.id }, method: :delete,
-                  data: { confirm: t('confirm_delete.training') },
+                  **confirmation_options(t('confirm_delete.training')),
                   class: 'btn btn-danger', form_class: 'text-center' %>
   </div>
 </section>

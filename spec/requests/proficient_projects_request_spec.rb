@@ -171,15 +171,44 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
           post proficient_projects_path, params: project_params.merge(images: [content_named_upload("x.png", content: "not an image", type: "image/png")])
         end.not_to change(ProficientProject, :count)
         expect(response).to redirect_to(proficient_projects_path)
-        expect(flash[:alert]).to eq("The project was not created because its photos could not be read. Check that they are valid image files and try again.")
+        expect(flash[:alert]).to eq("The project was not created. x.png could not be read as a picture. Check that it is a valid image file and try again.")
       end
 
-      it "an unreadable image on update keeps the other changes and says the photos could not be read" do
+      it "an unreadable image on update saves nothing and names the file" do
         patch proficient_project_path(project),
               params: project_params(title: "Kept title").merge(images: [content_named_upload("x.png", content: "not an image", type: "image/png")])
-        expect(project.reload.title).to eq("Kept title".capitalize)
-        expect(response).to redirect_to(proficient_project_path(project.id))
-        expect(flash[:alert_yellow]).to start_with("The photos could not be read, so they were not added. Your other changes were saved.")
+        expect(project.reload.title).to eq("Cool widget")
+        expect(response).to redirect_to(edit_proficient_project_path(project))
+        expect(flash[:alert]).to eq("The project was not updated. x.png could not be read as a picture. Check that it is a valid image file and try again.")
+        expect(flash[:notice]).to be_nil
+      end
+
+      {
+        "an oversized photo" => [-> { content_png_upload_of_size(Photo::MAX_IMAGE_SIZE + 1) }, "is larger than 10 MB"],
+        "a picture in an unaccepted format" => [-> { content_bmp_upload }, "Image"]
+      }.each do |label, (upload, message)|
+        it "refuses #{label} on create, creating nothing, and shows the photo's message" do
+          expect do
+            post proficient_projects_path, params: project_params.merge(images: [instance_exec(&upload)])
+          end.to change(ProficientProject, :count).by(0).and change(Photo, :count).by(0)
+          expect(response).to redirect_to(proficient_projects_path)
+          expect(flash[:alert]).to start_with("The project was not created.").and include(message)
+          expect(flash[:notice]).to be_nil
+        end
+
+        it "refuses #{label} on update, saving nothing and removing no photo" do
+          kept = create(:photo, proficient_project: project)
+          expect do
+            patch proficient_project_path(project),
+                  params: project_params(title: "Kept title").merge(images: [instance_exec(&upload)], deleteimages: kept.id.to_s)
+          end.not_to change(Photo, :count)
+          expect(project.reload.title).to eq("Cool widget")
+          expect(Photo.exists?(kept.id)).to be(true)
+          expect(kept.reload.image).to be_attached
+          expect(response).to redirect_to(edit_proficient_project_path(project))
+          expect(flash[:alert]).to start_with("The project was not updated.").and include(message)
+          expect(flash[:notice]).to be_nil
+        end
       end
 
       it "accepts allow-listed files (pdf, stl) and flags other content types but still creates the project" do
@@ -229,6 +258,30 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
         # the new upload is also named avatar.png/test.png; the old one was purged by filename
         expect(project.reload.photos.count).to eq(1)
         expect(Photo.exists?(photo.id)).to be(false)
+      end
+
+      it "removes the stored image of a ticked photo once the update has committed" do
+        photo = create(:photo, proficient_project: project)
+        blob = photo.image.blob
+        perform_enqueued_jobs do
+          patch proficient_project_path(project), params: project_params.merge(deleteimages: "#{photo.id},")
+        end
+        expect(Photo.exists?(photo.id)).to be(false)
+        expect(ActiveStorage::Blob.exists?(blob.id)).to be(false)
+      end
+
+      it "keeps a ticked photo, its row and its stored image, when a later step of the update fails" do
+        photo = create(:photo, proficient_project: project)
+        blob = photo.image.blob
+        allow_any_instance_of(RepoFile).to receive(:save).and_raise(ActiveRecord::StatementInvalid, "boom")
+        perform_enqueued_jobs do
+          patch proficient_project_path(project),
+                params: project_params(title: "Kept title").merge(deleteimages: "#{photo.id},", files: [content_pdf_upload])
+        end
+        expect(response).to have_http_status(:internal_server_error)
+        expect(project.reload.title).to eq("Cool widget")
+        expect(Photo.exists?(photo.id)).to be(true)
+        expect(blob.service.exist?(blob.key)).to be(true)
       end
 
       it "adds uploaded files and deletes the ticked file" do
@@ -306,6 +359,13 @@ RSpec.describe "Proficient projects (HTTP contract)", type: :request do
                 )
           expect(project.reload.training_requirements.pluck(:id)).to include(existing.id)
           expect(requirement_pairs).to contain_exactly([existing.training_id, existing.level], [t2.id, "Advanced"])
+        end
+
+        it "saves nothing, requirements included, when the edit fails validation" do
+          patch proficient_project_path(project),
+                params: project_params(title: "").merge(training_requirements_id: [t2.id], training_requirements_level: ["Advanced"])
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(requirement_pairs).to eq([[existing.training_id, existing.level]])
         end
 
         it "removes every requirement when the form is submitted with none left" do

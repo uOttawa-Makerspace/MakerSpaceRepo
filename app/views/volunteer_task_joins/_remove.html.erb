@@ -6,7 +6,7 @@
     <br />
     <br />
     <%= f.submit 'Remove Staff', class: 'btn btn-danger mb-5',
-                                 data: { confirm: 'Are you sure that you want to remove this user?' } %>
+                                 **confirmation_options('Are you sure that you want to remove this user?') %>
   <% end %>
 </div>
 
@@ -18,6 +18,6 @@
     <br />
     <br />
     <%= f.submit 'Remove Volunteer', class: 'btn btn-danger mb-5',
-                                     data: { confirm: 'Are you sure that you want to remove this user?' } %>
+                                     **confirmation_options('Are you sure that you want to remove this user?') %>
   <% end %>
 </div>

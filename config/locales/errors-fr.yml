@@ -36,6 +36,8 @@ fr:
         not_deleted: "L'heure de bénévolat n'a pas été supprimée."
         approval_not_saved: "L'heure de bénévolat n'a pas été mise à jour."
         approval_invalid: "L'approbation doit être vrai ou faux; rien n'a été modifié."
+      tasks:
+        photos_refused: "La tâche de bénévolat n'a pas été enregistrée."
       task_requests:
         not_created: "Votre demande pour cette tâche n'a pas été envoyée."
         not_updated: "La demande de tâche n'a pas été mise à jour."
@@ -201,8 +203,8 @@ fr:
         create_invalid: "Le projet n'a pas pu être créé :"
         update_invalid: "Les modifications n'ont pas pu être enregistrées :"
         not_deleted: "Le projet de compétence n'a pas été supprimé."
-        photos_not_read_on_create: "Le projet n'a pas été créé, car ses photos n'ont pas pu être lues. Vérifiez qu'il s'agit de fichiers image valides et réessayez."
-        photos_not_read_on_update: "Les photos n'ont pas pu être lues et n'ont donc pas été ajoutées. Vos autres modifications ont été enregistrées. Vérifiez qu'il s'agit de fichiers image valides et réessayez."
+        photos_refused_on_create: "Le projet n'a pas été créé."
+        photos_refused_on_update: "Le projet n'a pas été mis à jour."
         files_not_pdf: "Assurez-vous de ne téléverser que des PDF pour les fichiers du projet"
         not_found: "Ce projet est introuvable"
         not_in_progress: "Ce projet ne peut être soumis que lorsqu'il est en cours."

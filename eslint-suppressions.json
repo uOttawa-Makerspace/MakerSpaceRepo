@@ -14,11 +14,6 @@
       "count": 1
     }
   },
-  "app/javascript/entrypoints/application.js": {
-    "complexity": {
-      "count": 1
-    }
-  },
   "app/javascript/entrypoints/cdel_reports.js": {
     "no-unused-vars": {
       "count": 2
@@ -169,7 +164,7 @@
   },
   "app/javascript/src/validation.js": {
     "complexity": {
-      "count": 2
+      "count": 1
     }
   }
 }

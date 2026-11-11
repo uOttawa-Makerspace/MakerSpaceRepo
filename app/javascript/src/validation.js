@@ -41,13 +41,9 @@ export function validation() {
   const oldPhotosCount = document.querySelectorAll(
     "#image-container > div",
   ).length;
-  const newPhotosCount =
-    typeof photoFiles !== "undefined" && Array.isArray(photoFiles)
-      ? photoFiles.length
-      : 0;
   const repoImageContainer = document.querySelector("div.repo-image");
 
-  if (newPhotosCount === 0 && oldPhotosCount === 0 && repoImageContainer) {
+  if (oldPhotosCount === 0 && repoImageContainer) {
     repoImageContainer.before(
       createErrorSpan("At least one photo is required."),
     );

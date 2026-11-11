@@ -17,8 +17,8 @@ RSpec.describe Membership, type: :model do
       expect(Membership.columns_hash["status"].default).to eq("paid") # DB default; the enum default shadows it
     end
 
-    it "knows pending/paid/failed/revoked and rejects anything else" do
-      expect(Membership.statuses.keys).to eq(%w[pending paid failed revoked])
+    it "knows pending/paid/failed/expired/revoked and rejects anything else" do
+      expect(Membership.statuses.keys).to eq(%w[pending paid failed expired revoked])
       expect { Membership.new(status: "bogus") }.to raise_error(ArgumentError)
     end
 
@@ -130,6 +130,7 @@ RSpec.describe Membership, type: :model do
       create(:membership, user: user, membership_tier: tier, status: "pending", end_date: 9.days.from_now)
       create(:membership, user: user, membership_tier: tier, status: "revoked", end_date: 9.days.from_now)
       create(:membership, user: user, membership_tier: tier, status: "failed", end_date: 9.days.from_now)
+      create(:membership, user: user, membership_tier: tier, status: "expired", end_date: 9.days.from_now)
       create(:membership, user: user, membership_tier: tier, status: "paid", end_date: 1.second.ago)
       expect(Membership.active.to_a).to eq([later, soon])
       expect(later.active?).to be(true)
@@ -155,7 +156,7 @@ RSpec.describe Membership, type: :model do
 
   describe "#revocable?" do
     it "is true only for a paid membership" do
-      %w[paid pending failed revoked].each do |status|
+      %w[paid pending failed expired revoked].each do |status|
         expect(Membership.new(status: status)).to have_attributes(revocable?: status == "paid")
       end
     end
@@ -168,7 +169,7 @@ RSpec.describe Membership, type: :model do
       expect(m.reload).to be_revoked
     end
 
-    %w[pending failed revoked].each do |status|
+    %w[pending failed expired revoked].each do |status|
       it "refuses a #{status} membership and changes nothing" do
         m = create(:membership, user: user, membership_tier: tier, status: status)
         expect { m.revoke! }.to raise_error(Membership::NotRevocable, "This membership is #{status}, not paid, so it cannot be revoked.")
@@ -406,7 +407,7 @@ RSpec.describe Membership, type: :model do
     end
 
     describe "status changes from pending" do
-      %w[paid failed revoked].each do |status|
+      %w[paid failed expired revoked].each do |status|
         it "mark_paid_if_pending leaves a #{status} membership as it is" do
           m = create(:membership, user: user, membership_tier: tier, status: status)
           expect(m.mark_paid_if_pending).to be(false)
@@ -429,7 +430,7 @@ RSpec.describe Membership, type: :model do
       expect(user.has_active_membership?).to be_falsey
       create(:membership, user: user, membership_tier: tier, status: "paid", end_date: 5.days.from_now)
       expect(user.has_active_membership?).to be_truthy
-      %w[revoked pending failed].each do |status|
+      %w[revoked pending failed expired].each do |status|
         Membership.update_all(status: status)
         expect(user.reload.has_active_membership?).to be_falsey
       end

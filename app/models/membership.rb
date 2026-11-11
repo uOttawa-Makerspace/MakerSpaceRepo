@@ -1,6 +1,7 @@
 class Membership < ApplicationRecord
   include ShopifyConcern
   include Checkout
+  include Expiry
 
   belongs_to :user
   belongs_to :membership_tier
@@ -12,6 +13,8 @@ class Membership < ApplicationRecord
          paid: 'paid',
          # Legacy rows may be failed; nothing sets it now. Kept so those rows load.
          failed: 'failed',
+         # A checkout never paid, closed by Membership::Expiry. Treated like failed everywhere.
+         expired: 'expired',
          revoked: 'revoked'
        },
        default: 'pending'
@@ -49,7 +52,7 @@ class Membership < ApplicationRecord
     paid? && end_date > Time.current
   end
 
-  # Only a paid membership can be taken away; an unpaid checkout (pending or failed) is not one yet.
+  # Only a paid membership can be taken away; an unpaid checkout (pending, failed or expired) is not one yet.
   def revocable?
     paid?
   end

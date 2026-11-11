@@ -374,7 +374,7 @@ RSpec.describe "Memberships (HTTP contract)", type: :request do
       expect(membership.reload.status).to eq("paid")
     end
 
-    %w[pending failed revoked].each do |status|
+    %w[pending failed expired revoked].each do |status|
       it "refuses an admin revoking a #{status} membership, with a message, and changes nothing" do
         unpaid = create(:membership, user: other, membership_tier: tier, status: status)
         shop_log_in!(admin)

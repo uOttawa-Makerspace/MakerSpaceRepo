@@ -54,4 +54,17 @@ module ContentSpecHelpers
     File.binwrite(path, content)
     Rack::Test::UploadedFile.new(path, type, original_filename: filename)
   end
+
+  # A one-pixel BMP: a picture FastImage can measure but photos do not accept.
+  def content_bmp_upload
+    header = "BM" + [58, 0, 54].pack("Vl<V")
+    dib = [40, 1, 1, 1, 24, 0, 4, 0, 0, 0, 0].pack("VVVvvVVVVVV")
+    content_named_upload("pixel.bmp", content: header + dib + "\0\0\0\0", type: "image/bmp")
+  end
+
+  # A PNG upload padded with zeros to +bytes+, generated on the fly.
+  def content_png_upload_of_size(bytes)
+    png_header = File.binread(Rails.root.join("spec/support/assets/avatar.png"), 64)
+    content_named_upload("big.png", content: png_header.ljust(bytes, "\0"), type: "image/png")
+  end
 end

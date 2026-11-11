@@ -124,12 +124,11 @@ RSpec.describe "Admin calendar: sidebar and toolbar", type: :system do
       expect(page).to have_css(".fc-timegrid-event", text: "Front desk", visible: :all)
     end
 
-    it "unticks that staff member's events checkbox when the address lists them, but still draws the events", js: true, skip_bullet: true do
+    it "unticks that staff member's events checkbox and hides their events when the address lists them", js: true, skip_bullet: true do
       open_admin_calendar("?hidden_staff_events=#{worker.id}")
 
       expect(page).to have_unchecked_field("checkbox-events-#{worker.id}", visible: :all)
-      # the events are fetched before the address is read, so they are still drawn
-      expect(page).to have_css(".fc-timegrid-event", text: "Front desk", visible: :all)
+      expect(page).to have_no_css(".fc-timegrid-event", text: "Front desk", visible: :all)
     end
 
     it "hides the events of everyone with the first slash checkbox", js: true, skip_bullet: true do

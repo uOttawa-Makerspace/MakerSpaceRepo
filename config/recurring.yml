@@ -69,6 +69,11 @@ shared: &shared
     command: "LockerRental.notify_expired_rentals!"
     schedule: every day at 8:30am
 
+  # Deletes the Shopify draft of a membership checkout left unpaid for STALE_AFTER (7 days) and marks it expired (Membership::Expiry).
+  membership_expiry:
+    class: MembershipExpiryJob
+    schedule: every day at 4am
+
   # Keeps one Google Calendar push channel live (stops the old one); see GoogleCalendar::WebhookRegistrar.
   google_calendar_webhook:
     command: "GoogleCalendar::WebhookRegistrar.register!"

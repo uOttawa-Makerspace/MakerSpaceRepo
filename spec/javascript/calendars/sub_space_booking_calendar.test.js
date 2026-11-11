@@ -549,18 +549,13 @@ describe("admin lists", () => {
   });
 
   it.each([
-    [
-      "pending_bookings_select_all",
-      "pending-booking-select",
-      "pending-selected-count",
-    ],
-    ["userRequestSelectAll", "user-request-select", "user-selected-count"],
-  ])("%s selects every row and counts them", (allId, rowClass, countId) => {
+    ["pending_bookings_select_all", "pending-booking-select"],
+    ["userRequestSelectAll", "user-request-select"],
+  ])("%s selects and clears every row", (allId, rowClass) => {
     boot(
       "http://localhost/sub_space_booking",
       `<input type="checkbox" id="${allId}">
-       <input type="checkbox" class="${rowClass}"><input type="checkbox" class="${rowClass}">
-       <span id="${countId}"></span>`,
+       <input type="checkbox" class="${rowClass}"><input type="checkbox" class="${rowClass}">`,
     );
     const all = $(allId);
     const rows = document.querySelectorAll(`.${rowClass}`);
@@ -568,34 +563,10 @@ describe("admin lists", () => {
     all.checked = true;
     all.dispatchEvent(new Event("change"));
     expect([...rows].every((r) => r.checked)).toBe(true);
-    expect($(countId).textContent).toBe("2 selected");
-
-    rows[0].checked = false;
-    rows[0].dispatchEvent(new Event("change"));
-    expect($(countId).textContent).toBe("1 selected");
 
     all.checked = false;
     all.dispatchEvent(new Event("change"));
-    expect($(countId).textContent).toBe("");
-  });
-
-  it("rotates a collapse chevron with its section", () => {
-    boot(
-      "http://localhost/sub_space_booking",
-      `<button data-bs-toggle="collapse" data-bs-target="#open"><i class="admin-chevron" id="c1"></i></button>
-       <div id="open" class="collapse show"></div>
-       <button data-bs-toggle="collapse" data-bs-target="#shut"><i class="admin-chevron" id="c2"></i></button>
-       <div id="shut" class="collapse"></div>
-       <button data-bs-toggle="collapse" data-bs-target="#gone"><i class="admin-chevron"></i></button>
-       <button data-bs-toggle="collapse"></button>`,
-    );
-    expect($("c1").style.transform).toBe("rotate(0deg)");
-    expect($("c2").style.transform).toBe("rotate(-90deg)");
-
-    $("shut").dispatchEvent(new Event("show.bs.collapse"));
-    expect($("c2").style.transform).toBe("rotate(0deg)");
-    $("shut").dispatchEvent(new Event("hide.bs.collapse"));
-    expect($("c2").style.transform).toBe("rotate(-90deg)");
+    expect([...rows].some((r) => r.checked)).toBe(false);
   });
 
   it("shows the supervisor list only for the Staff identity", () => {

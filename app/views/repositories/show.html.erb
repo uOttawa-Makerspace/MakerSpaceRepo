@@ -86,7 +86,7 @@
                               pin_unpin_repository_admin_settings_path(repository_id: @repository.id), method: :patch,
                               class: 'btn btn-primary' %>
                 <%= button_to t('repository.del'), delete_repository_admin_users_path(id: @repository.id), method: :delete,
-                              class: 'btn btn-danger', data: { confirm: 'Are you sure you want to delete this repository?' } %>
+                              class: 'btn btn-danger', **confirmation_options('Are you sure you want to delete this repository?') %>
             </div>
         <% end %>
         <hr />
@@ -189,7 +189,7 @@
             </span>
         </div>
         <div class="report mb-3">
-            <%= button_to "<i class=\"fa-solid fa-flag\"></i> #{t('repository.report_in')}".html_safe, report_repository_path(@repository.id), method: :post, class: 'repository_report btn btn-link p-0', form: { data: { turbo_confirm: t('repository.report_confirm') } } %>
+            <%= button_to "<i class=\"fa-solid fa-flag\"></i> #{t('repository.report_in')}".html_safe, report_repository_path(@repository.id), method: :post, class: 'repository_report btn btn-link p-0', **confirmation_options(t('repository.report_confirm')) %>
             <div class="spinner">
                 <div class="rect1"></div>
                 <div class="rect2"></div>
@@ -303,7 +303,7 @@
                         <% end %>
                         <%= content_tag :div, "#{time_ago_in_words(comment.created_at)} ago", class: 'time' %><br>
                         <% if ((@user.admin?) || (@user.id.equal? comment.user_id)) %>
-                            <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :comments, action: :destroy, id: comment.id }, method: :delete, data: { confirm: 'Are you sure you want to delete this comment?' }, class: 'text-danger float-end' %>
+                            <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :comments, action: :destroy, id: comment.id }, method: :delete, **confirmation_options('Are you sure you want to delete this comment?'), class: 'text-danger float-end' %>
                         <% end %>
                     </div>
                     <div class="comment-content">

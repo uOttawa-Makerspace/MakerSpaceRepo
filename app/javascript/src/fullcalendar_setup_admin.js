@@ -15,7 +15,12 @@ import { applyEventBackground } from "./calendar_background.js";
 onPageLoad("#calendar", async () => {
   const calendarEl = document.getElementById("calendar");
 
-  let hiddenUserIds = new Set();
+  const hiddenUserIds = new Set(
+    new URLSearchParams(window.location.search)
+      .getAll("hidden_staff_events")
+      .flatMap((value) => value.split(","))
+      .filter((id) => id !== ""),
+  );
   const hiddenEventTypes = new Set(
     new URLSearchParams(window.location.search)
       .getAll("hidden_events")
@@ -357,7 +362,6 @@ onPageLoad("#calendar", async () => {
     const hiddenStaffEventsArray = hiddenStaffEvents
       .split(",")
       .filter((id) => id !== "");
-    hiddenUserIds = new Set(hiddenStaffEventsArray);
     allEventsCheckbox.checked = hiddenStaffEventsArray.length === 0;
     allEventsCheckbox.addEventListener("change", (e) => {
       toggleAllStaffEventsCheckboxes();

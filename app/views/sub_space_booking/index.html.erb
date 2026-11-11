@@ -109,7 +109,7 @@
                           <% if @user.admin? || !booking.approved? %>
                             <%= button_to sub_space_booking_edit_path(sub_space_booking_id: booking.id), method: :get, class: 'btn btn-outline-primary' do %><i class="fa-solid fa-pencil"></i><% end %>
                           <% end %>
-                          <%= button_to sub_space_booking_delete_path(sub_space_booking_id: booking.id), method: :delete, data: { confirm: 'Are you sure you want to delete this booking?' }, class: 'btn btn-outline-danger' do %><i class="fa-solid fa-trash"></i><% end %>
+                          <%= button_to sub_space_booking_delete_path(sub_space_booking_id: booking.id), method: :delete, **confirmation_options('Are you sure you want to delete this booking?'), class: 'btn btn-outline-danger' do %><i class="fa-solid fa-trash"></i><% end %>
                         </div>
                       </td>
                     </tr>

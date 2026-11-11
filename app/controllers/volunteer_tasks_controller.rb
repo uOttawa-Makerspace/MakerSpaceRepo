@@ -50,11 +50,10 @@ class VolunteerTasksController < SessionsController
   def create
     @volunteer_task = VolunteerTask.new
     @volunteer_task.user_id = @user.try(:id)
-    if @volunteer_task.update_from_form(volunteer_task_params, by: current_user, **task_edit_params)
-      update_photos
+    if save_task_with_photos(@volunteer_task)
       redirect_to volunteer_tasks_path, notice: "You've successfully created a new Volunteer Task"
     else
-      redirect_to new_volunteer_task_path, alert: @volunteer_task.errors.full_messages.to_sentence
+      redirect_to new_volunteer_task_path, alert: task_refusal(@volunteer_task)
     end
   end
 
@@ -126,12 +125,10 @@ class VolunteerTasksController < SessionsController
 
   def update
     volunteer_task = VolunteerTask.find(params[:id])
-    if volunteer_task.update_from_form(volunteer_task_params, by: current_user, **task_edit_params)
-      @volunteer_task = volunteer_task
-      update_photos
+    if save_task_with_photos(volunteer_task)
       redirect_to volunteer_tasks_path, notice: "Volunteer task updated"
     else
-      redirect_to edit_volunteer_task_path(volunteer_task), alert: volunteer_task.errors.full_messages.to_sentence
+      redirect_to edit_volunteer_task_path(volunteer_task), alert: task_refusal(volunteer_task)
     end
   end
 
@@ -174,29 +171,42 @@ class VolunteerTasksController < SessionsController
     redirect_to root_path
   end
 
+  # Saves the form and the posted photos together: when the form is refused or a photo is
+  # refused, nothing is stored (a photo's reason is added to the task's errors).
+  def save_task_with_photos(task)
+    @volunteer_task = task
+    saved =
+      VolunteerTask.transaction do
+        raise ActiveRecord::Rollback unless task.update_from_form(volunteer_task_params, by: current_user, **task_edit_params)
+
+        update_photos
+        true
+      end
+    saved == true
+  rescue Photo::Refused => e
+    task.errors.add(:base, "#{I18n.t('errors.volunteer.tasks.photos_refused')} #{e.message}")
+    false
+  end
+
+  def task_refusal(task)
+    task.errors.full_messages.to_sentence
+  end
+
+  # New photos (at most five) are added before any ticked one is removed, so a refused photo
+  # leaves the existing photos untouched. The ticked photos are chosen first, so a new photo with
+  # the same file name is not removed with them. Removing a photo deletes only its row here; Active
+  # Storage deletes the stored file after the surrounding transaction has committed.
   def update_photos
-    if params[:deleteimages].present?
-      @volunteer_task.photos.each do |img|
-        if params[:deleteimages].include?(img.image.filename.to_s)
-          img.image.purge
-          img.destroy
-        end
-      end
-    end
+    ticked = ticked_photos
+    uploads = Array(params[:images]).first(5).reject(&:blank?)
+    Photo.create_from_uploads!(uploads, volunteer_task_id: @volunteer_task.id)
+    ticked.each(&:destroy)
+  end
 
-    if params[:images].present?
-      params[:images].first(5).each do |img|
-        next if img.blank?
+  def ticked_photos
+    return [] if params[:deleteimages].blank?
 
-        dimension = FastImage.size(img.tempfile, raise_on_failure: true)
-        Photo.create(
-          image: img,
-          volunteer_task_id: @volunteer_task.id,
-          width: dimension.first,
-          height: dimension.last
-        )
-      end
-    end
+    @volunteer_task.photos.select { |img| params[:deleteimages].include?(img.image.filename.to_s) }
   end
 
   def volunteer_task_params

@@ -98,8 +98,7 @@
                 <div class="d-inline-flex flex-column flex-sm-row gap-1 justify-content-end align-items-end">
                   <%= button_to update_approval_volunteer_task_requests_path(id: req.id, approval: true),
                                 method: :put,
-                                data: { turbo_confirm: "Approve this task? This will credit #{task.cc} CC and log #{task.hours} hours for #{volunteer.name.titleize}.",
-                                        confirm: "Approve this task? This will credit #{task.cc} CC and log #{task.hours} hours for #{volunteer.name.titleize}." },
+                                **confirmation_options("Approve this task? This will credit #{task.cc} CC and log #{task.hours} hours for #{volunteer.name.titleize}."),
                                 class: "btn btn-sm btn-success fw-semibold d-inline-flex align-items-center justify-content-center gap-1 shadow-sm text-white" do %>
                     <i class="fa-solid fa-check"></i>
                     <span>Approve</span>
@@ -107,8 +106,7 @@
 
                   <%= button_to update_approval_volunteer_task_requests_path(id: req.id, approval: false),
                                 method: :put,
-                                data: { turbo_confirm: "Deny this completion request for #{volunteer.name.titleize}?",
-                                        confirm: "Deny this completion request for #{volunteer.name.titleize}?" },
+                                **confirmation_options("Deny this completion request for #{volunteer.name.titleize}?"),
                                 class: "btn btn-sm btn-outline-danger fw-semibold d-inline-flex align-items-center justify-content-center gap-1" do %>
                     <i class="fa-solid fa-xmark"></i>
                     <span>Deny</span>

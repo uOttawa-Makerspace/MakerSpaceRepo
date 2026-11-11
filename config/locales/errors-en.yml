@@ -36,6 +36,8 @@ en:
         not_deleted: "The volunteer hour was not deleted."
         approval_not_saved: "The volunteer hour was not updated."
         approval_invalid: "The approval must be true or false; nothing was changed."
+      tasks:
+        photos_refused: "The volunteer task was not saved."
       task_requests:
         not_created: "Your request for this task was not sent."
         not_updated: "The task request was not updated."
@@ -200,8 +202,8 @@ en:
       projects:
         create_invalid: "The project could not be created:"
         update_invalid: "The changes could not be saved:"
-        photos_not_read_on_create: "The project was not created because its photos could not be read. Check that they are valid image files and try again."
-        photos_not_read_on_update: "The photos could not be read, so they were not added. Your other changes were saved. Check that they are valid image files and try again."
+        photos_refused_on_create: "The project was not created."
+        photos_refused_on_update: "The project was not updated."
         files_not_pdf: "Make sure you only upload PDFs for the project files"
         not_deleted: "The proficient project was not deleted."
         not_found: "This project hasn't been found"

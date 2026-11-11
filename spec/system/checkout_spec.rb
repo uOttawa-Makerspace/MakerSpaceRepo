@@ -68,7 +68,7 @@ RSpec.describe "Checkout", type: :system do
       find("#cart-button").click
       expect(page).to have_current_path(carts_path)
 
-      # the data-confirm prompt is handled by the delegated confirm handler in application.js
+      # the button is disabled until its confirmation controller connects, then asks before ordering
       accept_confirm { click_button "Confirm order" }
 
       expect(page).to have_current_path(orders_path)

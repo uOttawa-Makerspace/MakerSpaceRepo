@@ -647,9 +647,9 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       log_in!(staff)
       get locker_rental_path(reviewing_rental!)
 
-      assert_select "button[data-confirm]", count: 3
-      assert_select "button[data-confirm]:not([disabled])", count: 0
-      assert_select "button[data-confirm]:not([data-controller='enable-when-ready'])", count: 0
+      assert_select "button[data-confirmation-message-value]", count: 3
+      assert_select "button[data-confirmation-message-value]:not([disabled])", count: 0
+      assert_select "button[data-confirmation-message-value]:not([data-controller='confirmation'])", count: 0
     end
 
     describe "the Indefinite box of the assign form" do
@@ -1458,8 +1458,8 @@ RSpec.describe "LockerRentals (HTTP contract)", type: :request do
       log_in!(staff)
       get locker_rental_path(rental)
 
-      assert_select "form button[name=resolution][data-confirm]", count: 2
-      assert_select "form button[name=resolution][disabled][data-controller='enable-when-ready']", count: 2
+      assert_select "form button[name=resolution][data-confirmation-message-value]", count: 2
+      assert_select "form button[name=resolution][disabled][data-controller='confirmation']", count: 2
     end
 
     it "shows the badge, the section and the alert only while a held payment exists, driven by the scope" do

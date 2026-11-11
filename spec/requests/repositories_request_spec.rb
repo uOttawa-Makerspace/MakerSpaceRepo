@@ -50,11 +50,12 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(cookie).to eq({ "/#{owner.username}/#{repo.id}" => "Laser Lamp" })
     end
 
-    it "caps recently_viewed at 5 entries (existing entries kept, newcomer dropped past the cap)" do
-      get repo_path
-      other = create(:repository, owner: owner, title: "Other", users: [owner])
-      get repo_path(other)
-      expect(JSON.parse(CGI.unescape(response.cookies["recently_viewed"])).keys.size).to eq(2)
+    it "keeps the five most recently viewed repositories, newest first, without duplicates" do
+      repos = Array.new(6) { |i| create(:repository, owner: owner, title: "Viewed #{i}", users: [owner]) }
+      repos.each { |r| get repo_path(r) }
+      get repo_path(repos[3])
+      links = JSON.parse(CGI.unescape(cookies[:recently_viewed])).keys
+      expect(links).to eq([3, 5, 4, 2, 1].map { |i| "/#{owner.username}/#{repos[i].id}" })
     end
 
     it "starts the recently_viewed cookie afresh when it holds JSON that is not a list of links" do
@@ -497,6 +498,21 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
+    it "rejects a gallery photo over the size limit with 422" do
+      content_login!(stranger)
+      p = valid_params(title: "BigPic")
+      p[:repository][:photos_attributes] = { "0" => { image: content_png_upload_of_size(Photo::MAX_IMAGE_SIZE + 1) } }
+      expect { post repositories_path(stranger.username), params: p }.not_to change(Repository, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "accepts a gallery photo exactly at the size limit" do
+      content_login!(stranger)
+      p = valid_params(title: "LimitPic")
+      p[:repository][:photos_attributes] = { "0" => { image: content_png_upload_of_size(Photo::MAX_IMAGE_SIZE) } }
+      expect { post repositories_path(stranger.username), params: p }.to change(Repository, :count).by(1)
+    end
+
     it "rejects a non-image gallery upload (content-type validation) with 422" do
       content_login!(stranger)
       p = valid_params(title: "BadPic")
@@ -900,6 +916,26 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
             params: { repository: { photos_attributes: { "0" => { image: content_png_upload }, "1" => { id: photo.id, _destroy: "1" } } } }
       expect(repo.reload.photos.count).to eq(1)
       expect(Photo.exists?(photo.id)).to be(false)
+    end
+
+    it "refuses a new photo over the size limit and keeps the stored one" do
+      content_login!(owner)
+      photo = repo.photos.first
+      big = content_png_upload_of_size(Photo::MAX_IMAGE_SIZE + 1)
+      patch repository_path(owner.username, repo.slug),
+            params: { repository: { photos_attributes: { "0" => { image: big }, "1" => { id: photo.id, _destroy: "1" } } } }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("larger than 10 MB")
+      expect(Photo.exists?(photo.id)).to be(true)
+      expect(repo.reload.photos.count).to eq(1)
+    end
+
+    it "still saves an edit of a repository whose stored photo is over the size limit" do
+      content_login!(owner)
+      repo.photos.first.image.blob.update_column(:byte_size, Photo::MAX_IMAGE_SIZE * 3)
+      patch repository_path(owner.username, repo.slug), params: { repository: { description: "edited" } }
+      expect(response).not_to have_http_status(:unprocessable_content)
+      expect(repo.reload.description).to include("edited")
     end
 
     it "removing every photo fails validation (1..10 photos)" do
