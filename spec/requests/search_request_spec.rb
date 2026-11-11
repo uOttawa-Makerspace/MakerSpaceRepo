@@ -16,8 +16,7 @@ RSpec.describe "Search and explore", type: :request do
   end
 
   describe "GET /explore" do
-    # N+1 pinned
-    it "lists public repositories newest first and never private ones", skip_bullet: true do
+    it "lists public repositories newest first and never private ones" do
       get explore_path
       expect(response).to have_http_status(:ok)
       expect(repos).to eq([pub_robot, pub_laser])
@@ -57,8 +56,7 @@ RSpec.describe "Search and explore", type: :request do
       expect(repos).to eq([])
     end
 
-    # N+1 pinned
-    it "sorts by most_likes and ignores a hostile sort value", skip_bullet: true do
+    it "sorts by most_likes and ignores a hostile sort value" do
       pub_laser.update_columns(like: 5)
       get explore_path(sort: "most_likes")
       expect(repos.first).to eq(pub_laser)
@@ -173,7 +171,7 @@ RSpec.describe "Search and explore", type: :request do
 
   describe "GET /category/:slug and /equipment/:slug" do
     # both pages go through Repository.public_repos, like explore and search
-    it "lists only public repos filed under a legacy category, never private ones", skip_bullet: true do
+    it "lists only public repos filed under a legacy category, never private ones" do
       pub_robot.update_columns(category: "Mobile")
       private_laser.update_columns(category: "Mobile")
       get category_path(slug: "mobile-development")
@@ -202,8 +200,7 @@ RSpec.describe "Search and explore", type: :request do
       expect(repos).to be_empty
     end
 
-    # N+1 pinned
-    it "lists only public repos using a given equipment name", skip_bullet: true do
+    it "lists only public repos using a given equipment name" do
       Equipment.create!(repository_id: pub_robot.id, name: "3d printer")
       Equipment.create!(repository_id: private_laser.id, name: "3d printer")
       get equipment_path(slug: "3d-printer")
