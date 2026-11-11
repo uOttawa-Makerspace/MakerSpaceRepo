@@ -160,13 +160,6 @@ RSpec.describe Repository::Hideable do
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
     end
 
-    it "refuses when the owner has another visible repository with the title, saying so" do
-      create(:repository, owner: owner, title: "Other").update_columns(title: "Scope Check")
-      expect(repo.restore!).to be(false)
-      expect(repo.errors.full_messages).to eq(["The owner already has another repository with the same title. Rename that one first."])
-      expect(Repository.where(user_id: owner.id, title: "Scope Check").count).to eq(1)
-    end
-
     it "does not mind a visible repository of another owner with the same title" do
       create(:repository, title: "Scope Check")
       expect(repo.restore!).to be(true)

@@ -52,6 +52,17 @@ RSpec.describe Repository, type: :model do
       end
     end
 
+    context "title held by a hidden repository" do
+      it "still counts as taken, for the same owner only" do
+        hidden = create(:repository, title: "Hidden Title")
+        hidden.hide!(by: hidden.owner)
+
+        expect(build(:repository, owner: hidden.owner, title: "Hidden Title")).not_to be_valid
+        expect(build(:repository, owner: hidden.owner, title: "hidden title")).to be_valid
+        expect(build(:repository, title: "Hidden Title")).to be_valid
+      end
+    end
+
     context "share type" do
       it { should_not allow_value("Nothing").for(:share_type) }
       it { should allow_value("public", "private").for(:share_type) }

@@ -255,7 +255,6 @@ fr:
             base:
               not_hidden: "Il est déjà restauré."
               owner_deleted: "Le compte du propriétaire est supprimé. Restaurez le compte pour récupérer ses dépôts."
-              title_taken: "Le propriétaire a déjà un autre dépôt avec le même titre. Renommez-le d'abord."
             title:
               blank: "Le titre du projet est requis."
               taken: "Le titre du projet est déjà utilisé."
