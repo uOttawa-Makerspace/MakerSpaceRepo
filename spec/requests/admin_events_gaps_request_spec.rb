@@ -101,6 +101,11 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(flash[:alert]).to eq("Failed to create event: Space must exist and Space This field is required.")
     end
 
+    it "opens the create failure message in French for a French request" do
+      post admin_events_path(locale: "fr"), params: { event: event_attrs(utc_end_time: "2027-04-01 10:00") }
+      expect(flash[:alert]).to start_with("Impossible de créer l'événement :")
+    end
+
     it "flashes the validation failure when the end is not after the start" do
       post admin_events_path, params: { event: event_attrs(utc_end_time: "2027-04-01 10:00") }
       expect(flash[:alert]).to eq("Failed to create event: Start time must be before the end time")
@@ -178,6 +183,12 @@ RSpec.describe "Admin events gaps", type: :request do
       expect(response).to redirect_to(admin_calendar_index_path)
       expect(flash[:alert]).to eq("Start and end times are required.")
       expect(event.reload.title).to eq("Keep")
+    end
+
+    it "opens the update failure message in French for a French request" do
+      event = create(:event, space: space, title: "Keep")
+      patch admin_event_path(event, locale: "fr"), params: { event: event_attrs(utc_end_time: "2027-04-01 09:00") }
+      expect(flash[:alert]).to start_with("Impossible de modifier l'événement :")
     end
 
     it "flashes the validation failure of a non-recurring update and keeps the record" do
@@ -435,6 +446,12 @@ RSpec.describe "Admin events gaps", type: :request do
       patch publish_admin_event_path(event)
       expect(flash[:alert]).to eq("Failed to publish event: Training This field is required.")
       expect(event.reload.draft).to be(true)
+    end
+
+    it "opens the publish failure message in French for a French request" do
+      event = create(:event, :draft, space: space, event_type: "training")
+      patch publish_admin_event_path(event, locale: "fr")
+      expect(flash[:alert]).to start_with("Impossible de publier l'événement :")
     end
 
     it "alerts for a batch publish without view dates and publishes nothing" do

@@ -35,3 +35,5 @@ en:
     pricing:
       title: "Rates & Fees"
       text: "Internal and external rates vary by service. Materials sold separately. One-hour consultations are free."
+  job_order_mailer:
+    quote_notes: "Note from the staff:"

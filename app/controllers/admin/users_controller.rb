@@ -215,7 +215,7 @@ class Admin::UsersController < AdminAreaController
     if user.update(username: params[:rename])
       flash[:notice] = "User renamed successfully"
     else
-      flash[:alert] = "Username invalid: #{user.errors.full_messages.join(', ')}"
+      flash[:alert] = validation_message(user, "failed_saves.username")
     end
     
     redirect_to user_path(user.reload.username)

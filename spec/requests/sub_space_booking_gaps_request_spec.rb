@@ -1052,6 +1052,15 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(ActionMailer::Base.deliveries).to be_empty
     end
 
+    it "deny_access opens its failure message in French for a French request" do
+      applicant = create(:user, :regular_user, booking_approval: true)
+      row = UserBookingApproval.create!(user: applicant, identity: "Other", status: "approved", staff: admin,
+                                        comments: "c", date: Date.new(2027, 1, 1))
+      put deny_access_sub_space_booking_index_path(locale: "fr"), params: { id: row.id, reason: "x" * 1001 }
+
+      expect(flash[:alert]).to start_with("Impossible de refuser ou de révoquer :")
+    end
+
     it "deny_access keeps the user's access and every request when the decision cannot be saved" do
       applicant = create(:user, :regular_user, booking_approval: true)
       rows = 2.times.map do

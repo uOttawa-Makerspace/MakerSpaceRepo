@@ -33,9 +33,11 @@ class JobOrderMailer < ApplicationMailer
     end
   end
 
-  def send_job_quote(job_order_id, reminder = false)
+  # user_comments: the note staff wrote for the customer with the quote, shown in the mail when present.
+  def send_job_quote(job_order_id, reminder = false, user_comments = nil)
     return unless JobOrder.exists?(id: job_order_id)
     @job_order = JobOrder.find(job_order_id)
+    @user_comments = user_comments.presence
 
     @reminder = reminder
     @hash = @job_order.approval_token

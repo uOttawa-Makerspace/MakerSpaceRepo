@@ -1125,6 +1125,11 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(flash[:alert]).to eq("No username provided")
     end
 
+    it "opens the invalid username message in French for a French request" do
+      patch rename_user_admin_users_path(locale: "fr"), params: { id: target.id, rename: "bad name!" }
+      expect(flash[:alert]).to start_with("Nom d'utilisateur invalide :")
+    end
+
     it "invalid or taken username: alert and unchanged" do
       old = target.username
       patch rename_user_admin_users_path, params: { id: target.id, rename: "bad name!" }

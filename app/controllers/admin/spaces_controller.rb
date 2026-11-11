@@ -257,7 +257,7 @@ class Admin::SpacesController < AdminAreaController
         end
       end
     rescue ActiveRecord::RecordInvalid => e
-      flash[:alert] = "Calendars were not saved (nothing changed): #{e.record.errors.full_messages.join(', ')}"
+      flash[:alert] = validation_message(e.record, "failed_saves.calendars")
       return redirect_back(fallback_location: root_path)
     end
 

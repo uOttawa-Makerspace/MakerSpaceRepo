@@ -51,4 +51,20 @@ RSpec.describe AnnouncementsHelper, type: :helper do
       expect(helper.return_active(Announcement.new(active: nil, end_date: nil))).to be_nil
     end
   end
+
+  describe "#return_active across the Toronto day boundary" do
+    it "uses the Toronto date at the end of the day, when UTC is already tomorrow" do
+      travel_to(Time.find_zone("America/Toronto").local(2026, 6, 15, 23, 30)) do
+        ending_today = Announcement.new(active: true, end_date: Date.new(2026, 6, 15))
+        expect(helper.return_active(ending_today)).to eq("Yes")
+      end
+    end
+
+    it "is over the Toronto morning after the end date" do
+      travel_to(Time.find_zone("America/Toronto").local(2026, 6, 16, 0, 30)) do
+        ended = Announcement.new(active: true, end_date: Date.new(2026, 6, 15))
+        expect(helper.return_active(ended)).to eq("Yes but the publishing date is over.")
+      end
+    end
+  end
 end

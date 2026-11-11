@@ -338,6 +338,12 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(other.reload.name).not_to eq("Hijack")
     end
 
+    it "opens the validation failure alert in French for a French request" do
+      login!(user)
+      patch user_path(user.username, locale: "fr"), params: { user: { name: "" } }
+      expect(flash[:alert]).to start_with("Impossible d'enregistrer les modifications.")
+    end
+
     it "validation failure: redirect with alert listing errors, nothing saved" do
       login!(user)
       patch user_path(user.username), params: { user: { name: "" } }

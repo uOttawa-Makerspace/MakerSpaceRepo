@@ -1,0 +1,28 @@
+# The sentence that opens a flash message when a save is refused; the validation messages follow it
+# (see ErrorReporting#validation_message).
+en:
+  failed_saves:
+    unavailability_create: "Failed to create unavailability:"
+    unavailability_update: "Failed to update unavailability:"
+    event_create: "Failed to create event:"
+    event_update: "Failed to update event:"
+    event_publish: "Failed to publish event:"
+    booking_decline: "Failed to decline or revoke:"
+    quick_access_link: "Quick access link not created,"
+    chat_message: "Failed to send message:"
+    username: "Username invalid:"
+    calendars: "Calendars were not saved (nothing changed):"
+    profile: "Could not save changes."
+fr:
+  failed_saves:
+    unavailability_create: "Impossible de créer l'indisponibilité :"
+    unavailability_update: "Impossible de modifier l'indisponibilité :"
+    event_create: "Impossible de créer l'événement :"
+    event_update: "Impossible de modifier l'événement :"
+    event_publish: "Impossible de publier l'événement :"
+    booking_decline: "Impossible de refuser ou de révoquer :"
+    quick_access_link: "Lien d'accès rapide non créé,"
+    chat_message: "Impossible d'envoyer le message :"
+    username: "Nom d'utilisateur invalide :"
+    calendars: "Les calendriers n'ont pas été enregistrés (rien n'a changé) :"
+    profile: "Impossible d'enregistrer les modifications."

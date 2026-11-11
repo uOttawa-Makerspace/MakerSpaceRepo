@@ -43,7 +43,7 @@ class Admin::EventsController < AdminAreaController
     if saved
       flash[:notice] = "Event created successfully."
     else
-      flash[:alert] = "Failed to create event: #{@event.errors.full_messages.to_sentence}"
+      flash[:alert] = validation_message(@event, "failed_saves.event_create")
     end
     redirect_back(fallback_location: admin_calendar_index_path)
   end
@@ -98,7 +98,7 @@ class Admin::EventsController < AdminAreaController
 
         flash[:notice] = "Event updated successfully."
       else
-        flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
+        flash[:alert] = validation_message(@event, "failed_saves.event_update")
       end
     when "all"
       old_date_new_time_start = helpers.combine_date_and_time(
@@ -139,7 +139,7 @@ class Admin::EventsController < AdminAreaController
 
         flash[:notice] = "Event updated successfully."
       else
-        flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
+        flash[:alert] = validation_message(@event, "failed_saves.event_update")
       end
     when "this"
       update_this_occurrence(title, participants)
@@ -187,7 +187,7 @@ class Admin::EventsController < AdminAreaController
     end
   rescue ActiveRecord::RecordInvalid => e
     # A series stored with a sub-daily rule no longer validates.
-    redirect_back(fallback_location: admin_calendar_index_path, alert: "Failed to update event: #{e.record.errors.full_messages.to_sentence}")
+    redirect_back(fallback_location: admin_calendar_index_path, alert: validation_message(e.record, "failed_saves.event_update"))
   end
 
   def json
@@ -278,7 +278,7 @@ class Admin::EventsController < AdminAreaController
         @event.push_to_google_later
         flash[:notice] = "Event published successfully."
       else
-        flash[:alert] = "Failed to publish event: #{@event.errors.full_messages.to_sentence}"
+        flash[:alert] = validation_message(@event, "failed_saves.event_publish")
       end
     end
 
@@ -414,7 +414,7 @@ class Admin::EventsController < AdminAreaController
       @new_event.push_to_google_later
       flash[:notice] = "This event occurrence updated successfully."
     else
-      flash[:alert] = "Failed to update event: #{@event.errors.full_messages.to_sentence}"
+      flash[:alert] = validation_message(@event, "failed_saves.event_update")
     end
   end
 

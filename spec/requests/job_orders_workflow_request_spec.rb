@@ -99,6 +99,25 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(status_names(order).last).to eq("Waiting for User Approval")
     end
 
+    it "puts the staff note for the customer in the quote email, escaped, and leaves the staff comments out" do
+      session_login!(staff)
+      patch_quote order, quote_params(task, user_comments: "Supports <b>needed</b>")
+
+      quote_mail = deliveries.find { |mail| mail.subject.start_with?("Votre commande") }
+      body = quote_mail.body.decoded
+      expect(body).to include("Note from the staff:", "Note du personnel :", "Supports &lt;b&gt;needed&lt;/b&gt;")
+      expect(body).not_to include("<b>needed</b>")
+      expect(body).not_to include("use the big printer")
+    end
+
+    it "leaves the note block out of the quote email when staff wrote none" do
+      session_login!(staff)
+      patch_quote order, quote_params(task, user_comments: "")
+
+      quote_mail = deliveries.find { |mail| mail.subject.start_with?("Votre commande") }
+      expect(quote_mail.body.decoded).not_to include("Note from the staff:")
+    end
+
     it "does not overwrite existing staff_comments with a blank value" do
       order.update!(staff_comments: "original note")
       session_login!(staff)

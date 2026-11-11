@@ -19,7 +19,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
     if @staff_unavailability.save
       flash[:notice] = "Unavailability created#{" for #{target_user.name}" if admin_managing_other_user?}."
     else
-      flash[:alert] = "Failed to create unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
+      flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_create")
     end
 
     redirect_to after_action_path
@@ -238,7 +238,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
       )
       flash[:notice] = "Unavailability updated successfully."
     else
-      flash[:alert] = "Failed to update unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
+      flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
     end
   end
 
@@ -263,7 +263,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
       )
       flash[:notice] = "All occurrences updated successfully."
     else
-      flash[:alert] = "Failed to update unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
+      flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
     end
   end
 
@@ -278,7 +278,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
     updated_rule = series_rule(@staff_unavailability).appending_exdate(exclusion_start_time)
 
     unless @staff_unavailability.update(recurrence_rule: updated_rule)
-      flash[:alert] = "Failed to update unavailability: #{@staff_unavailability.errors.full_messages.to_sentence}"
+      flash[:alert] = validation_message(@staff_unavailability, "failed_saves.unavailability_update")
       return
     end
 
@@ -303,7 +303,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
     @staff_unavailability.update!(recurrence_rule: series_rule(@staff_unavailability).without_occurrence(start))
     redirect_to after_action_path, notice: "This occurrence deleted."
   rescue ActiveRecord::RecordInvalid => e
-    redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
+    redirect_to after_action_path, alert: validation_message(e.record, "failed_saves.unavailability_update")
   end
 
   def delete_following_occurrences
@@ -315,7 +315,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
     @staff_unavailability.update!(recurrence_rule: series_rule(@staff_unavailability).ending_before(start))
     redirect_to after_action_path, notice: "This and following deleted."
   rescue ActiveRecord::RecordInvalid => e
-    redirect_to after_action_path, alert: "Failed to update unavailability: #{e.record.errors.full_messages.to_sentence}"
+    redirect_to after_action_path, alert: validation_message(e.record, "failed_saves.unavailability_update")
   end
 
   def series_rule(unavailability)
@@ -339,6 +339,6 @@ class Staff::UnavailabilitiesController < StaffAreaController
     record = StaffUnavailability.new
     record.errors.add(:start_time, :blank) if parse_time(staff_params[:utc_start_time]).nil?
     record.errors.add(:end_time, :blank) if parse_time(staff_params[:utc_end_time]).nil?
-    flash[:alert] = "Failed to update unavailability: #{record.errors.full_messages.to_sentence}"
+    flash[:alert] = validation_message(record, "failed_saves.unavailability_update")
   end
 end
