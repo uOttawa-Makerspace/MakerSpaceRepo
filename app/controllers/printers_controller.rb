@@ -76,13 +76,7 @@ class PrintersController < StaffAreaController
         .uniq
         .pluck(:name, :id)
     @list_users.unshift(%w[Clear clear])
-    @printer_types = PrinterType.all.order("lower(name) ASC")
-    # Sort by length then by value, solves the "1 then 10" issue
-    @printers_by_type =
-      Printer
-        .all
-        .sort_by { |p| [p.number.length, p.number] }
-        .group_by(&:printer_type)
+    @printer_types = PrinterType.includes(:printers).order("lower(name) ASC")
   end
 
   def staff_printers_updates

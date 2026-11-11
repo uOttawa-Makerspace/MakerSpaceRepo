@@ -39,6 +39,9 @@ class Repository < ApplicationRecord
 
   scope :public_repos, -> { where(share_type: 'public') }
 
+  # What a repository card shows: the owner's username and the first photo.
+  scope :with_card_data, -> { includes(:owner, photos: { image_attachment: :blob }) }
+
   scope :fuzzy_search,
         ->(query) do
           where(
