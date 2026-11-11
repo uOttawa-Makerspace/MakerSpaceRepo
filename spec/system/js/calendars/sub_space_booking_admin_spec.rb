@@ -152,17 +152,33 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       expect(SubSpaceBooking.where(name: "Club night").map { |b| b.booking_status }).to all(eq(@approved_status))
     end
 
-    # The modal has no container for the dates the script builds (an element
-    # that is not in the page), so the script throws and the dialog shows only
-    # its template row.
-    it "opens the select-dates dialog with a single unlabelled template row and logs an error", js: true, skip_bullet: true do
+    it "lists each date of the series in the select-dates dialog, all ticked, with select all and none", js: true, skip_bullet: true do
       open_admin_panel
       find("button[title='Select Specific']").click
 
       expect(page).to have_css("#approveRecurringModal.show", visible: :all)
-      expect(page).to have_css("#approveRecurringModal input[name='sub_space_booking_ids[]']", count: 1, visible: :all)
-      expect(find("#approveRecurringModal input[name='sub_space_booking_ids[]']", visible: :all).value).to eq("")
-      expect(page).to have_no_css("#recurring-checkboxes", visible: :all)
+      boxes = "#approveRecurringModal #recurring-checkboxes input[name='sub_space_booking_ids[]']"
+      expect(page).to have_css(boxes, count: 2, visible: :all)
+      expect(all(boxes, visible: :all).map(&:checked?)).to all(be(true))
+
+      click_button "Select none"
+      expect(all(boxes, visible: :all).map(&:checked?)).to all(be(false))
+      click_button "Select all"
+      expect(all(boxes, visible: :all).map(&:checked?)).to all(be(true))
+    end
+
+    it "approves only the dates left ticked in the dialog", js: true, skip_bullet: true do
+      open_admin_panel
+      find("button[title='Select Specific']").click
+      boxes = "#approveRecurringModal #recurring-checkboxes input[name='sub_space_booking_ids[]']"
+      expect(page).to have_css(boxes, count: 2, visible: :all)
+      all(boxes, visible: :all).last.uncheck
+      click_button "Approve Selected"
+
+      expect(page).to have_text("Bookings approved successfully.")
+      statuses = SubSpaceBooking.where(name: "Club night").order(:start_time).map(&:booking_status)
+      expect(statuses.first).to eq(@approved_status)
+      expect(statuses.last).not_to eq(@approved_status)
     end
   end
 
