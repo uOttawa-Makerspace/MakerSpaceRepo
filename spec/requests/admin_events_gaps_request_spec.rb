@@ -47,7 +47,7 @@ RSpec.describe "Admin events gaps", type: :request do
       context "as a #{role}" do
         before { log_in!(create(:user, trait, booking_approval: true)) if trait }
 
-        it "bounces create, update, delete_with_scope, publish, delete_drafts and copy to / and changes nothing" do
+        it "bounces create, update, delete_with_scope, publish, unpublish, delete_drafts and copy to / and changes nothing" do
           post admin_events_path, params: { event: event_attrs(title: "Intruder") }
           expect_admin_area_bounce(guest: trait.nil?)
 
@@ -60,6 +60,9 @@ RSpec.describe "Admin events gaps", type: :request do
           patch publish_admin_event_path(draft)
           expect_admin_area_bounce(guest: trait.nil?)
 
+          delete admin_event_publication_path(event)
+          expect_admin_area_bounce(guest: trait.nil?)
+
           delete delete_drafts_admin_events_path, params: { space_id: space.id,
                                                             view_start_date: "2000-01-01",
                                                             view_end_date: "2100-01-01" }
@@ -70,6 +73,7 @@ RSpec.describe "Admin events gaps", type: :request do
 
           expect(Event.where(title: "Intruder")).to be_empty
           expect(event.reload.title).to eq("Untouched")
+          expect(event.draft).to be(false)
           expect(Event.exists?(event.id)).to be(true)
           expect(draft.reload.draft).to be(true)
           expect(Event.exists?(draft.id)).to be(true)

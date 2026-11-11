@@ -79,6 +79,11 @@ shared: &shared
     command: "GoogleCalendar::WebhookRegistrar.register!"
     schedule: every sunday at 3am
 
+  # Queues again Google Calendar pushes and removals of events that were never confirmed (GoogleCalendar::PendingChange).
+  google_calendar_resend:
+    class: GoogleCalendar::ResendJob
+    schedule: every 15 minutes
+
   # Mails the maintenance address about failed and overdue background jobs, once each (JobAlert).
   job_alerts:
     class: JobAlertJob

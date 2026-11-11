@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -396,6 +396,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
     t.string "sync_token"
     t.datetime "updated_at", null: false
     t.index ["channel_id"], name: "index_google_calendar_channels_on_channel_id", unique: true
+  end
+
+  create_table "google_calendar_pending_changes", force: :cascade do |t|
+    t.string "action", null: false
+    t.integer "attempts", default: 0, null: false
+    t.string "calendar_id"
+    t.datetime "created_at", null: false
+    t.bigint "event_id", null: false
+    t.string "google_event_id"
+    t.datetime "updated_at", null: false
+    t.index ["action", "event_id", "google_event_id"], name: "index_google_calendar_pending_changes_identity", unique: true, nulls_not_distinct: true
+    t.check_constraint "action::text = ANY (ARRAY['push'::character varying, 'remove'::character varying]::text[])", name: "google_calendar_pending_changes_action_check"
   end
 
   create_table "helps", force: :cascade do |t|

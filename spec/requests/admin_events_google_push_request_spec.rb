@@ -48,6 +48,16 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
       expect(push_jobs.size).to eq(1)
     end
 
+    it "answers normally and keeps the push for the resend job when the queue is down" do
+      create_events_as_published
+      allow(GoogleCalendar::EventPushJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished, "queue down")
+      expect { post admin_events_path, params: { event: event_attrs } }.to change(Event, :count).by(1)
+      expect(response).to have_http_status(:found)
+      expect(flash[:notice]).to eq("Event created successfully.")
+      event = Event.order(:id).last
+      expect(GoogleCalendar::PendingChange.where(action: "push", event_id: event.id)).to exist
+    end
+
     it "queues nothing when the event is invalid" do
       post admin_events_path, params: { event: event_attrs(utc_end_time: "2027-04-01 09:00") }
       expect(push_jobs).to be_empty
@@ -162,6 +172,15 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
       expect(push_jobs).to be_empty
     end
 
+    it "answers normally and keeps the removal for the resend job when the queue is down" do
+      event = create(:event, space: space, google_event_id: "g1")
+      allow(GoogleCalendar::EventDeleteJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished, "queue down")
+      expect { delete delete_with_scope_admin_event_path(event) }.to change(Event, :count).by(-1)
+      expect(response).to have_http_status(:found)
+      expect(flash[:notice]).to eq("Event deleted.")
+      expect(GoogleCalendar::PendingChange.where(action: "remove", event_id: event.id, google_event_id: "g1")).to exist
+    end
+
     it "queues the removal of a destroyed draft that has a Google id" do
       draft = create(:event, :draft, space: space, google_event_id: "g2")
       delete delete_with_scope_admin_event_path(draft)
@@ -214,6 +233,48 @@ RSpec.describe "Admin::EventsController Google Calendar jobs", type: :request do
         expect(GoogleCalendar::EventPushJob).not_to have_been_enqueued.with(bad.id)
         expect(push_jobs.size).to eq(1)
       end
+    end
+  end
+
+  describe "DELETE publication" do
+    it "makes a published event a draft and queues the removal of its Google copy, once" do
+      event = create(:event, space: space, draft: false, google_event_id: "abc123", google_calendar_id: calendar_id)
+      delete admin_event_publication_path(event)
+      expect(event.reload.draft).to be(true)
+      expect(event.google_event_id).to be_nil
+      expect(event.google_calendar_id).to be_nil
+      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("abc123", calendar_id, event.id).exactly(:once)
+      expect(push_jobs).to be_empty
+      expect(flash[:notice]).to eq("Event unpublished successfully.")
+    end
+
+    it "removes the copy from the calendar of the space when none is recorded" do
+      event = create(:event, space: space, draft: false, google_event_id: "abc123")
+      delete admin_event_publication_path(event)
+      expect(GoogleCalendar::EventDeleteJob).to have_been_enqueued.with("abc123", GoogleCalendar::EventPublisher.calendar_id_for(space), event.id)
+    end
+
+    it "queues nothing for an event that never reached Google" do
+      event = create(:event, space: space, draft: false)
+      delete admin_event_publication_path(event)
+      expect(event.reload.draft).to be(true)
+      expect(delete_jobs).to be_empty
+    end
+
+    it "queues nothing and keeps the event published when it cannot be saved" do
+      event = create(:event, space: space, draft: false, google_event_id: "abc123")
+      allow_any_instance_of(Event).to receive(:update).and_return(false)
+      delete admin_event_publication_path(event)
+      expect(delete_jobs).to be_empty
+      expect(flash[:alert]).to start_with(I18n.t("failed_saves.event_unpublish"))
+    end
+
+    it "gives the event a new Google id when it is published again" do
+      event = create(:event, space: space, draft: false, google_event_id: "abc123")
+      delete admin_event_publication_path(event)
+      patch publish_admin_event_path(event)
+      expect(event.reload.draft).to be(false)
+      expect(event.google_event_id).to match(/\A[0-9a-v]{32}\z/).and(satisfy { |id| id != "abc123" })
     end
   end
 

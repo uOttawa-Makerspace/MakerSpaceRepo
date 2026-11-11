@@ -15,12 +15,30 @@ RSpec.describe GoogleCalendar::EventDeleteJob, type: :job do
     described_class.perform_now("abc123", calendar_id, 7)
   end
 
+  it "settles the pending removal once the copy is gone, and keeps it when Google fails" do
+    GoogleCalendar::PendingChange.ask_removal(7, "abc123", calendar_id)
+    allow(service).to receive(:delete_event).and_raise(Google::Apis::ServerError.new("down", status_code: 500))
+    described_class.perform_now("abc123", calendar_id, 7)
+    expect(GoogleCalendar::PendingChange.count).to eq(1)
+
+    allow(service).to receive(:delete_event)
+    described_class.perform_now("abc123", calendar_id, 7)
+    expect(GoogleCalendar::PendingChange.count).to eq(0)
+  end
+
   [404, 410].each do |status|
     it "counts a #{status} answer as done" do
       allow(service).to receive(:delete_event).and_raise(client_error(status))
       expect(Rails.error).not_to receive(:report)
       expect { described_class.perform_now("abc123", calendar_id, 7) }.not_to have_enqueued_job(described_class)
     end
+  end
+
+  it "settles the pending removal when Google answers 404 because the copy is already gone" do
+    GoogleCalendar::PendingChange.ask_removal(7, "abc123", calendar_id)
+    allow(service).to receive(:delete_event).and_raise(client_error(404))
+    described_class.perform_now("abc123", calendar_id, 7)
+    expect(GoogleCalendar::PendingChange.count).to eq(0)
   end
 
   it "reports any other client error and does not retry it" do

@@ -43,14 +43,16 @@ class Event < ApplicationRecord
     end
   end
 
-  # Queues the push of this event to Google Calendar, to be called once the change is committed. Drafts are never
+  # Asks for the push of this event to Google Calendar and queues it, to be called once the change is committed.
+  # The ask is recorded first (GoogleCalendar::PendingChange), so a push that could not be queued is queued again
+  # later. Drafts are never
   # pushed. The Google event id is chosen here, before the first push, so that a retried push cannot create a
   # second copy. The job moves the Google copy first if the event now belongs to another calendar.
   def push_to_google_later
     return if draft
 
     assign_google_event_id
-    GoogleCalendar::EventPushJob.perform_later(id)
+    GoogleCalendar::PendingChange.ask_push(id).enqueue
   end
 
   # The Google calendar that holds this event's Google copy: the recorded one, else the calendar of its space.
@@ -58,12 +60,20 @@ class Event < ApplicationRecord
     google_calendar_id.presence || GoogleCalendar::EventPublisher.calendar_id_for(space)
   end
 
+  # Makes the event a draft. The Google ids are cleared because Google does not let a removed event's id be
+  # created again; a later publish chooses a new one. Returns false when the event cannot be saved. The caller
+  # reads google_event_id and google_calendar first and, once this has committed, queues the removal of the
+  # Google copy with Event.remove_from_google_later.
+  def unpublish(by:)
+    update(draft: true, updated_by: by, google_event_id: nil, google_calendar_id: nil)
+  end
+
   # Queues the removal of a destroyed event's copy in Google Calendar. Takes what was read from the event
   # (id, google_event_id and google_calendar) before it was destroyed.
   def self.remove_from_google_later(google_event_id, calendar_id, event_id)
     return if google_event_id.blank?
 
-    GoogleCalendar::EventDeleteJob.perform_later(google_event_id, calendar_id, event_id)
+    GoogleCalendar::PendingChange.ask_removal(event_id, google_event_id, calendar_id).enqueue
   end
 
   private

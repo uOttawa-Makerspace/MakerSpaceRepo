@@ -2,11 +2,13 @@
 
 module GoogleCalendar
   # Removes a Google Calendar event after its Event was destroyed. It takes the Google event id and the calendar
-  # id, captured before the destroy, because the row is gone by the time the job runs. The event id is only the
-  # key that keeps it from running at the same time as a push of the same event.
+  # id, captured before the destroy, because the row is gone by the time the job runs. The event id is the key that
+  # keeps it from running at the same time as a push of the same event, and names the pending change it settles.
   class EventDeleteJob < EventJob
-    def perform(google_event_id, calendar_id, _event_id)
+    def perform(google_event_id, calendar_id, event_id)
+      started_at = Time.current
       EventPublisher.new.remove(google_event_id, calendar_id)
+      PendingChange.settle(PendingChange::REMOVE, event_id, started_at, google_event_id: google_event_id)
     end
 
     private
