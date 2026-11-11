@@ -289,6 +289,14 @@ RSpec.describe JobOrder, type: :model do
       expect(order.user_files.first.reload.filename.to_s).to eq("#{order.id}_test.stl")
     end
 
+    it "prefixes a file whose name merely begins with the order id digits" do
+      order = create(:job_order, user: create(:user, :regular_user))
+      order.update!(user_files: [FilesTestHelper.stl])
+      order.user_files.first.blob.update!(filename: "#{order.id}abc.stl")
+      order.prefix_file_names
+      expect(order.reload.user_files.first.filename.to_s).to eq("#{order.id}_#{order.id}abc.stl")
+    end
+
     it "prefixes staff files the same way" do
       order = create(:job_order, user: create(:user, :regular_user))
       order.update!(staff_files: [FilesTestHelper.stl])

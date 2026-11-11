@@ -37,6 +37,14 @@ RSpec.describe JobTask, type: :model do
       expect(task.reload.user_files.map { |f| f.filename.to_s }).to eq(["#{order.id}_test.stl"])
     end
 
+    it "prefixes a file whose name merely begins with the order id digits" do
+      task.user_files.attach(FilesTestHelper.stl)
+      task.save!
+      task.user_files.first.blob.update!(filename: "#{order.id}abc.stl")
+      task.prefix_file_names
+      expect(task.reload.user_files.first.filename.to_s).to eq("#{order.id}_#{order.id}abc.stl")
+    end
+
     it "does not prefix the name twice on a later save" do
       task.user_files.attach(FilesTestHelper.stl)
       task.save!
