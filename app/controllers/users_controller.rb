@@ -479,7 +479,7 @@ class UsersController < SessionsController
   def likes
     sort_arr = sort_order
     repo_ids = Like.where(user_id: @user.id).pluck(:repository_id)
-    like_scope = Repository.where(id: repo_ids).order([sort_arr].to_h)
+    like_scope = Repository.viewable_by(@user, authorized_repo_ids).with_card_data.where(id: repo_ids).order([sort_arr].to_h)
 
     like_scope = in_requested_categories(like_scope) if params[:category].present?
     @category_slug = params[:category] if SLUG_TO_CATEGORY_MODEL.key?(params[:category])
