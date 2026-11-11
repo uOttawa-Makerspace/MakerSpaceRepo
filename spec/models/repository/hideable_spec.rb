@@ -53,6 +53,12 @@ RSpec.describe Repository::Hideable do
       expect(Repository.unscoped.find(repo.id).hidden_reason).to eq("user_deleted")
     end
 
+    it "records a deletion by an admin who is a member but not the owner as admin_deleted" do
+      repo.users << admin
+      repo.hide!(by: admin)
+      expect(Repository.unscoped.find(repo.id).hidden_reason).to eq("admin_deleted")
+    end
+
     it "records a deletion by an admin who is not the owner as admin_deleted" do
       repo.hide!(by: admin)
       expect(Repository.unscoped.find(repo.id).hidden_reason).to eq("admin_deleted")

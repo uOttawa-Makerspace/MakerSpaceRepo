@@ -72,6 +72,8 @@ module Repository::Hideable
     end
   end
 
+  private
+
   def deletion_reason_for(user)
     user.admin? && user.id != user_id ? :admin_deleted : :user_deleted
   end
