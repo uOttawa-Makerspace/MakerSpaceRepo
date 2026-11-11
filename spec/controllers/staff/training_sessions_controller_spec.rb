@@ -154,7 +154,7 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
 
   describe "DELETE /revoke_certification" do
     context "logged as admin" do
-      it "should delete certification" do
+      it "should deactivate the certification and keep the row" do
         certification = create(:certification)
         expect do
           patch :revoke_certification,
@@ -164,8 +164,9 @@ RSpec.describe Staff::TrainingSessionsController, type: :controller do
                 }
         end.to change(Certification, :count).by(-1)
         expect(Certification.find_by(id: certification.id)).to eq(nil)
+        expect(Certification.unscoped.find(certification.id).active).to be(false)
         expect(response).to redirect_to user_path(certification.user.username)
-        expect(flash[:notice]).to eq("Deleted Successfully")
+        expect(flash[:notice]).to eq("Revoked Successfully")
       end
     end
   end

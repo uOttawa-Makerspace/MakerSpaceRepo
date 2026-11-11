@@ -292,12 +292,25 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(response).to have_http_status(:not_found)
       end
 
-      it "drops users by username and destroys their certification of this session" do
+      it "drops users by username and deactivates their certification of this session, keeping the row" do
         record.users << student
         cert = create(:certification, user: student, training_session: record, training: training)
+        expect(record.reload.editable?).to be(false)
         patch staff_training_session_path(record), params: { changed_params: { level: "Beginner" }, dropped_users: [student.username] }
         expect(record.reload.users).to be_empty
-        expect(Certification.unscoped.exists?(cert.id)).to be(false)
+        kept = Certification.unscoped.find(cert.id)
+        expect([kept.active, kept.demotion_staff, kept.demotion_reason]).to eq([false, trainer, Certification::TRAINER_REMOVED_REASON])
+        expect(student.certifications.reload).to be_empty
+      end
+
+      it "certifies a dropped trainee again once they are re-added" do
+        record.users << student
+        old = create(:certification, user: student, training_session: record, training: training)
+        patch staff_training_session_path(record), params: { changed_params: { level: "Beginner" }, dropped_users: [student.username] }
+        patch staff_training_session_path(record), params: { changed_params: { level: "Beginner" }, added_users: [student.username] }
+        expect { post certify_trainees_staff_training_session_path(record) }.to change { student.certifications.reload.count }.from(0).to(1)
+        expect(student.certifications.first.id).not_to eq(old.id)
+        expect(Certification.unscoped.find(old.id).active).to be(false)
       end
 
       it "removes a trainee through the remove link rendered on the session page" do
@@ -417,19 +430,21 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(response).to have_http_status(:not_found)
       end
 
-      it "deletes a certification of the session in the URL" do
+      it "deactivates a certification of the session in the URL and keeps the row" do
         cert = create(:certification, user: student, training_session: record, training: training)
-        expect { delete revoke_certification_staff_training_session_path(record), params: { cert_id: cert.id } }
-          .to change { Certification.unscoped.count }.by(-1)
-        expect(response).to redirect_to(user_path(student.username))
-        expect(flash[:notice]).to eq("Deleted Successfully")
-      end
-
-      it "keeps the certification and gives the reason when it cannot be destroyed" do
-        cert = create(:certification, user: student, training_session: record, training: training)
-        allow_any_instance_of(Certification).to receive(:destroy) { |c| c.errors.add(:base, "It is locked") && false }
         expect { delete revoke_certification_staff_training_session_path(record), params: { cert_id: cert.id } }
           .not_to change { Certification.unscoped.count }
+        kept = Certification.unscoped.find(cert.id)
+        expect([kept.active, kept.demotion_staff, kept.demotion_reason]).to eq([false, trainer, Certification::TRAINER_REMOVED_REASON])
+        expect(response).to redirect_to(user_path(student.username))
+        expect(flash[:notice]).to eq("Revoked Successfully")
+      end
+
+      it "keeps the certification active and gives the reason when it cannot be deactivated" do
+        cert = create(:certification, user: student, training_session: record, training: training)
+        allow_any_instance_of(Certification).to receive(:deactivate) { |c| c.errors.add(:base, "It is locked") && false }
+        delete revoke_certification_staff_training_session_path(record), params: { cert_id: cert.id }
+        expect(Certification.unscoped.find(cert.id).active).to be(true)
         expect(flash[:alert]).to eq("The certification was not removed. It is locked")
       end
 
