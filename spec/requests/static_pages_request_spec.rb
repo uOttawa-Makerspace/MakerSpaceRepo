@@ -874,4 +874,34 @@ RSpec.describe "Static pages", type: :request do
       expect(response).to have_http_status(:not_found)
     end
   end
+
+  describe "recently opened list on the homepage" do
+    it "shows only links that are paths on this site and renders the page for a tampered cookie" do
+      sign_in_as(:regular)
+      cookie = {
+        "/someone/12" => "Good one",
+        "//evil.example/x" => "Protocol relative",
+        "javascript:alert(1)" => "Script link",
+        "https://evil.example/" => "Absolute link",
+        "/\\evil.example" => "Backslash",
+        "/\t/evil.example" => "Tab",
+        "/someone/13" => ["not", "a title"]
+      }
+      cookies[:recently_viewed] = JSON.generate(cookie)
+      get root_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('<a href="/someone/12">').and include("Good one")
+      %w[evil.example javascript:alert Protocol Script Absolute Backslash].each { |text| expect(response.body).not_to include(text) }
+      expect(response.body).not_to include("Tab</a>")
+    end
+
+    it "says nothing was opened when the cookie holds no usable link" do
+      sign_in_as(:regular)
+      cookies[:recently_viewed] = '{"javascript:alert(1)":"x"}'
+      get root_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("javascript:alert")
+      expect(response.body).to include(I18n.t("home.shortcuts.no_recently_opened"))
+    end
+  end
 end
