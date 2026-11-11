@@ -93,7 +93,7 @@ class MsrMailer < ApplicationMailer
     @repository = repository
     @user = user
     mail(
-      from: user.email,
+      reply_to: user.email,
       to: "uottawa.makerepo@gmail.com",
       subject: "Repository #{repository.title} reported"
     )

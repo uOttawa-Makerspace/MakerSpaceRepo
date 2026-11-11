@@ -71,10 +71,11 @@ RSpec.describe MsrMailer, type: :mailer do
     expect(mail.subject).to eq("New Project Proposal")
   end
 
-  it "repo_report is sent FROM the reporter's address to the MakerRepo inbox" do
+  it "repo_report is sent from the app's address, replies go to the reporter, and it reaches the MakerRepo inbox" do
     repo = create(:repository, owner: user, title: "Reported Repo")
     mail = deliver(MsrMailer.repo_report(repo, user))
-    expect(mail.from).to eq([user.email])
+    expect(mail.from).to eq(["ceedinfo@makerepo.com"])
+    expect(mail.reply_to).to eq([user.email])
     expect(mail.to).to eq(["uottawa.makerepo@gmail.com"])
     expect(mail.subject).to eq("Repository Reported Repo reported")
   end
