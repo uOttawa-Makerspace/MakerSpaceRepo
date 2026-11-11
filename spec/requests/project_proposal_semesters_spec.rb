@@ -96,6 +96,15 @@ RSpec.describe "Project proposal semester", type: :request do
       expect(response.body).not_to include("Clear semester")
     end
 
+    it "asks for confirmation before clearing, and renders the button disabled until the page script connects it" do
+      content_sign_in_as(:admin)
+      get project_proposal_path(proposal)
+      button = Nokogiri::HTML(response.body).at_css("form[action='#{project_proposal_semester_path(proposal)}'] button")
+      expect(button["data-controller"]).to eq("confirmation")
+      expect(button["data-confirmation-message-value"]).to eq("Clear the active semester of this project proposal?")
+      expect(button["disabled"]).to be_present
+    end
+
     it "does not offer it to the owner" do
       content_login!(owner)
       get project_proposal_path(proposal)
