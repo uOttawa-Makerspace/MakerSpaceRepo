@@ -134,7 +134,8 @@ RSpec.describe "Admin CC money claim email", type: :request do
         expect(flash[:notice]).to include(right.email)
         typo_row.reload
         expect(typo_row.purchaser_email).to eq(right.email)
-        expect(typo_row.email_corrections.sole).to have_attributes(admin: admin, old_email: "typo@example.com", new_email: right.email)
+        expect(typo_row.email_corrections.sole)
+          .to have_attributes(admin: admin, old_email: "typo@example.com", new_email: right.email)
         delivered = mails.select { |m| m.to == [right.email] }
         expect(delivered.size).to eq(1)
         expect(mails.size).to eq(1)
@@ -151,6 +152,15 @@ RSpec.describe "Admin CC money claim email", type: :request do
         expect(response.body).to include(admin_cc_money_purchase_email_path(typo_row))
       end
 
+      it "still lists the correction after the admin who made it is soft-deleted" do
+        correct(typo_row, email: "first@example.com")
+        admin.soft_delete!
+        sign_in_as(:admin)
+        get admin_cc_moneys_path
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("typo@example.com to first@example.com by #{admin.username}")
+      end
+
       it "refuses a claimed row, an invalid address and an unchanged address with a message and no mail or change" do
         correct(linked)
         expect(flash[:alert]).to eq(I18n.t("errors.admin.cc_money_purchase_email.already_linked"))
@@ -158,7 +168,8 @@ RSpec.describe "Admin CC money claim email", type: :request do
         expect(flash[:alert]).to eq(I18n.t("errors.admin.cc_money_purchase_email.email_invalid"))
         correct(typo_row, email: "Typo@example.com")
         expect(flash[:alert]).to eq(I18n.t("errors.admin.cc_money_purchase_email.email_unchanged"))
-        expect(typo_row.reload).to have_attributes(purchaser_email: "typo@example.com", claim_token_generation: 0)
+        expect(typo_row.reload)
+          .to have_attributes(purchaser_email: "typo@example.com", claim_token_generation: 0)
         expect(CcMoneyEmailCorrection.count).to eq(0)
         expect(mails).to be_empty
       end
@@ -169,7 +180,10 @@ RSpec.describe "Admin CC money claim email", type: :request do
             expect(I18n.t("errors.admin.cc_money_purchase_email.#{outcome}", locale: locale, raise: true)).to be_present
           end
         end
-        %i[en fr].each { |locale| expect(I18n.t("admin.cc_money_purchase_email.corrected", locale: locale, cc: 1, email: "a@b.c")).to include("a@b.c") }
+        %i[en fr].each do |locale|
+          notice = I18n.t("admin.cc_money_purchase_email.corrected", locale: locale, cc: 1, email: "a@b.c")
+          expect(notice).to include("a@b.c")
+        end
       end
 
       it "answers 404 for an unknown row" do

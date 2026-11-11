@@ -311,7 +311,7 @@ RSpec.describe Order, ".checkout! transaction boundary", type: :model do
   end
 end
 
-RSpec.describe CcMoney, "#correct_purchase_email!", type: :model do
+RSpec.describe CcMoney, "#correct_purchase_email", type: :model do
   include ActiveSupport::Testing::TimeHelpers
 
   let(:admin) { create(:user, :admin) }
@@ -321,7 +321,7 @@ RSpec.describe CcMoney, "#correct_purchase_email!", type: :model do
   it "writes the normalised address, revokes the old links and records who changed what" do
     old_token = row.claim_token
     freeze_time do
-      expect(row.correct_purchase_email!("  Right@Example.COM ", by: admin)).to eq(:corrected)
+      expect(row.correct_purchase_email("  Right@Example.COM ", by: admin)).to eq(:corrected)
       row.reload
       expect(row.purchaser_email).to eq("right@example.com")
       expect(row.claim_token_generation).to eq(1)
@@ -334,37 +334,37 @@ RSpec.describe CcMoney, "#correct_purchase_email!", type: :model do
   end
 
   it "lets the account with the corrected email claim it and not the one with the old email" do
-    row.correct_purchase_email!(buyer.email, by: admin)
+    row.correct_purchase_email(buyer.email, by: admin)
     expect(row.claimable_by?(buyer)).to be(true)
     expect(row.claimable_by?(create(:user, :regular_user, email: "typo@example.com"))).to be(false)
   end
 
   it "records an address for a legacy row that has none, with no old address" do
     bare = CcMoney.create!(cc: 5, linked: false)
-    expect(bare.correct_purchase_email!("new@example.com", by: admin)).to eq(:corrected)
+    expect(bare.correct_purchase_email("new@example.com", by: admin)).to eq(:corrected)
     expect(bare.email_corrections.sole.old_email).to be_nil
   end
 
   it "refuses a claimed row, even through a stale copy, and writes nothing" do
     stale = CcMoney.find(row.id)
     row.link_to(buyer)
-    expect(stale.correct_purchase_email!("right@example.com", by: admin)).to eq(:already_linked)
+    expect(stale.correct_purchase_email("right@example.com", by: admin)).to eq(:already_linked)
     expect(row.reload.purchaser_email).to eq("typo@example.com")
     expect(row.claim_token_generation).to eq(0)
     expect(row.email_corrections).to be_empty
   end
 
   it "refuses an invalid address and an unchanged one, writing nothing" do
-    expect(row.correct_purchase_email!("not-an-address", by: admin)).to eq(:email_invalid)
-    expect(row.correct_purchase_email!("", by: admin)).to eq(:email_invalid)
-    expect(row.correct_purchase_email!(nil, by: admin)).to eq(:email_invalid)
-    expect(row.correct_purchase_email!(" TYPO@example.com ", by: admin)).to eq(:email_unchanged)
+    expect(row.correct_purchase_email("not-an-address", by: admin)).to eq(:email_invalid)
+    expect(row.correct_purchase_email("", by: admin)).to eq(:email_invalid)
+    expect(row.correct_purchase_email(nil, by: admin)).to eq(:email_invalid)
+    expect(row.correct_purchase_email(" TYPO@example.com ", by: admin)).to eq(:email_unchanged)
     expect(row.reload.claim_token_generation).to eq(0)
     expect(row.email_corrections).to be_empty
   end
 
   it "keeps its record: a saved correction cannot be changed or removed" do
-    row.correct_purchase_email!("right@example.com", by: admin)
+    row.correct_purchase_email("right@example.com", by: admin)
     correction = row.email_corrections.sole
     expect { correction.update!(new_email: "x@example.com") }.to raise_error(ActiveRecord::ReadOnlyRecord)
     expect { correction.destroy }.to raise_error(ActiveRecord::ReadOnlyRecord)
@@ -372,9 +372,16 @@ RSpec.describe CcMoney, "#correct_purchase_email!", type: :model do
     expect(CcMoneyEmailCorrection.count).to eq(1)
   end
 
+  it "keeps accounts with corrections from being hard-deleted, so no record is lost" do
+    row.correct_purchase_email("right@example.com", by: admin)
+    expect { admin.destroy }.to raise_error(ActiveRecord::InvalidForeignKey)
+    expect(CcMoneyEmailCorrection.count).to eq(1)
+    expect(User.unscoped.exists?(admin.id)).to be(true)
+  end
+
   it "makes a link mailed before the correction and held by a stale copy refuse to claim" do
     stale = CcMoney.for_claim_token(row.claim_token)
-    row.correct_purchase_email!(buyer.email, by: admin)
+    row.correct_purchase_email(buyer.email, by: admin)
     expect(stale.link_to(buyer)).to eq(:superseded)
     expect(row.reload).to be_unclaimed
   end

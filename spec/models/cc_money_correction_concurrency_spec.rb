@@ -23,18 +23,22 @@ RSpec.describe CcMoney, "correcting the purchase email while it is claimed", typ
     ).to_i
   end
 
+  def correct_on_second_connection
+    Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        CcMoney.find(row.id).correct_purchase_email("right@example.com", by: admin)
+      end
+    end
+  end
+
   # Runs the correction on a second connection while this one holds the row lock, and lets it go on once it waits.
-  def correct_while_locked(&locked_block)
+  def correct_while_locked
     thread = nil
     CcMoney.transaction do
       row.lock!
-      thread = Thread.new do
-        ActiveRecord::Base.connection_pool.with_connection do
-          CcMoney.find(row.id).correct_purchase_email!("right@example.com", by: admin)
-        end
-      end
+      thread = correct_on_second_connection
       Timeout.timeout(10) { sleep 0.05 until blocked_backends.positive? }
-      locked_block.call
+      yield
     end
     thread.value
   end
@@ -51,6 +55,7 @@ RSpec.describe CcMoney, "correcting the purchase email while it is claimed", typ
     outcome = correct_while_locked { nil }
     expect(outcome).to eq(:corrected)
     expect(stale.link_to(buyer)).to eq(:superseded)
-    expect(row.reload).to have_attributes(linked: false, purchaser_email: "right@example.com", claim_token_generation: 1)
+    expect(row.reload)
+      .to have_attributes(linked: false, purchaser_email: "right@example.com", claim_token_generation: 1)
   end
 end

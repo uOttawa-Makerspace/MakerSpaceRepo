@@ -1844,8 +1844,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_110000) do
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "project_proposals"
   add_foreign_key "categories", "repositories"
-  add_foreign_key "cc_money_email_corrections", "cc_moneys"
-  add_foreign_key "cc_money_email_corrections", "users", column: "admin_id"
+  add_foreign_key "cc_money_email_corrections", "cc_moneys", on_delete: :restrict
+  add_foreign_key "cc_money_email_corrections", "users", column: "admin_id", on_delete: :restrict
   add_foreign_key "cc_moneys", "discount_codes"
   add_foreign_key "cc_moneys", "orders"
   add_foreign_key "cc_moneys", "proficient_projects"
