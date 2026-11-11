@@ -68,6 +68,7 @@ en:
       cc_money_claim_email:
         already_linked: "That CC Money has already been added to an account, so no email was sent."
         email_invalid: "Enter the buyer's email address. No email was sent."
+        email_mismatch: "That CC Money was bought with a different email address. Use the address it was bought with. No email was sent."
       uni_programs:
         programs_file_missing: "The current programs file is not available on the server."
       time_periods:
@@ -189,7 +190,7 @@ en:
         token_invalid: "This link is not valid. Open the link from your email again, or contact uottawa.makerepo@gmail.com."
         not_found: "That CC Money record no longer exists. If you think this is a mistake, contact uottawa.makerepo@gmail.com."
         already_linked: "The CC Money has already been added to an account"
-        user_not_found: "No account with that email address was found. Check the address and try again."
+        not_purchaser: "This CC Money was bought with a different email address, so it cannot be added to this account. Sign in with the account that has the purchase email, or contact uottawa.makerepo@gmail.com."
         not_linked: "The CC Money could not be added to that account:"
       projects:
         create_invalid: "The project could not be created:"

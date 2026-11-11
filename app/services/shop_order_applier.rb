@@ -336,7 +336,7 @@ class ShopOrderApplier
       if user.present?
         CcMoney.create!(user_id: user.id, cc: cc)
       else
-        new_cc = CcMoney.create!(cc: cc, linked: false)
+        new_cc = CcMoney.create!(cc: cc, linked: false, purchaser_email: plan.email)
         hash = new_cc.claim_token
         email = plan.email
         after_commit("cc_claim_mail") { MsrMailer.send_cc_money_email(email, cc, hash).deliver_later }

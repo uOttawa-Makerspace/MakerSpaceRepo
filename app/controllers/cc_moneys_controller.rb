@@ -1,7 +1,7 @@
 class CcMoneysController < SessionsController
   before_action :with_development_header
   before_action :signed_in, only: %i[link_cc_to_user redeem]
-  before_action :set_verifier, only: %i[link_cc_to_user redeem]
+  before_action :load_claim, only: %i[link_cc_to_user redeem]
 
   def index
     if signed_in?
@@ -12,28 +12,12 @@ class CcMoneysController < SessionsController
     end
   end
 
-  def link_cc_to_user
-    @cc_token = params[:token]
-    return refuse_cc(:token_invalid) unless @verifier.valid_message?(@cc_token)
+  # Confirmation page for the purchaser; the claim is checked in load_claim.
+  def link_cc_to_user; end
 
-    @cc_money = CcMoney.find_by_id(@verifier.verify(@cc_token))
-    return refuse_cc(:not_found) if @cc_money.nil?
-
-    refuse_cc(:already_linked) if @cc_money.linked?
-  end
-
+  # Credits the signed-in account only (load_claim has checked it is the purchaser's).
   def redeem
-    cc_id = @verifier.verified(params[:token])
-    return refuse_cc(:token_invalid) if cc_id.nil?
-
-    cc_money = CcMoney.find_by_id(cc_id)
-    return refuse_cc(:not_found) if cc_money.nil?
-    return refuse_cc(:already_linked) if cc_money.linked?
-
-    user = User.find_by(email: user_params[:email])
-    return refuse_cc(:user_not_found) if user.nil?
-
-    link_to(cc_money, user)
+    link_to(@cc_money, current_user)
   end
 
   private
@@ -56,11 +40,19 @@ class CcMoneysController < SessionsController
     redirect_to cc_moneys_path
   end
 
-  def set_verifier
-    @verifier = Rails.application.message_verifier(:cc)
-  end
+  # Finds the row the token names and refuses, with the message for its own cause, a token that is not
+  # valid (garbage, expired, or replaced by a resend), a row that is gone or already claimed, and an
+  # account other than the purchaser's. A redirect here stops the action.
+  def load_claim
+    @cc_token = params[:token]
+    id, generation = CcMoney.verified_claim_token(@cc_token)
+    return refuse_cc(:token_invalid) if id.nil?
 
-  def user_params
-    params.require(:user).permit(:email)
+    @cc_money = CcMoney.find_by_id(id)
+    return refuse_cc(:not_found) if @cc_money.nil?
+    return refuse_cc(:token_invalid) unless @cc_money.claim_generation?(generation)
+    return refuse_cc(:already_linked) if @cc_money.linked?
+
+    refuse_cc(:not_purchaser) unless @cc_money.purchased_by?(current_user)
   end
 end

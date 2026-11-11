@@ -1,13 +1,14 @@
 <section>
   <div class="text-center pb-4">
     <h2 class="fw-bold py-3">Unclaimed CC Money</h2>
-    <p>Purchases made without an account. Enter the buyer's email address to send the claim link again.</p>
+    <p>Purchases made without an account. Enter the buyer's email address to send the claim link again; earlier links then stop working. Only the account with the buyer's email can claim it.</p>
     <table class="table table-striped mb-5">
       <thead class="table-primary">
         <tr class="text-center">
           <th>ID</th>
           <th>CC</th>
           <th>Bought</th>
+          <th>Buyer's email</th>
           <th>Resend claim email</th>
         </tr>
       </thead>
@@ -16,6 +17,7 @@
           <td><%= cc_money.id %></td>
           <td><%= cc_money.cc %></td>
           <td><%= l(cc_money.created_at, format: :short) %></td>
+          <td><%= cc_money.purchaser_email %></td>
           <td>
             <%= form_with url: admin_cc_money_claim_email_path(cc_money), class: "input-group" do |f| %>
               <%= f.email_field :email, placeholder: "Buyer's email", class: "form-control", required: true %>

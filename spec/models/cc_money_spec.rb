@@ -58,6 +58,65 @@ RSpec.describe CcMoney, type: :model do
     end
   end
 
+  describe "claim tokens" do
+    include ActiveSupport::Testing::TimeHelpers
+
+    let(:buyer) { create(:user, :regular_user) }
+    let(:row) { CcMoney.create!(cc: 10, linked: false, purchaser_email: buyer.email) }
+
+    it "signs the row id and generation, and expires after the named lifetime" do
+      expect(CcMoney::CLAIM_TOKEN_LIFETIME).to eq(30.days)
+      token = row.claim_token
+      expect(CcMoney.verified_claim_token(token)).to eq([row.id, 0])
+      travel_to(30.days.from_now - 1.minute) { expect(CcMoney.verified_claim_token(token)).to eq([row.id, 0]) }
+      travel_to(30.days.from_now + 1.minute) { expect(CcMoney.verified_claim_token(token)).to be_nil }
+    end
+
+    it "reads a token signed with the id alone as generation 0 and rejects garbage and other purposes" do
+      verifier = Rails.application.message_verifier(:cc)
+      expect(CcMoney.verified_claim_token(verifier.generate(row.id))).to eq([row.id, 0])
+      expect(CcMoney.verified_claim_token(verifier.generate([row.id, 0], purpose: :other))).to be_nil
+      expect(CcMoney.verified_claim_token("garbage")).to be_nil
+      expect(CcMoney.verified_claim_token(nil)).to be_nil
+    end
+
+    it "#reissue_claim_token! bumps the generation, supersedes older tokens and keeps the stored address" do
+      old = row.claim_token
+      fresh = row.reissue_claim_token!("other@example.com")
+      expect(row.reload.claim_token_generation).to eq(1)
+      expect(row.purchaser_email).to eq(buyer.email)
+      expect(CcMoney.verified_claim_token(fresh)).to eq([row.id, 1])
+      expect(row.claim_generation?(0)).to be(false)
+      expect(row.claim_generation?(1)).to be(true)
+      expect(old).not_to eq(fresh)
+    end
+
+    it "#reissue_claim_token! records the address of a row that has none" do
+      bare = CcMoney.create!(cc: 5, linked: false)
+      bare.reissue_claim_token!(" Buyer@Example.com ")
+      expect(bare.reload.purchaser_email).to eq("buyer@example.com")
+    end
+
+    it "#reissue_claim_token! returns nil for a row claimed meanwhile, even through a stale copy" do
+      stale = CcMoney.find(row.id)
+      row.link_to(buyer)
+      expect(stale.reissue_claim_token!(buyer.email)).to be_nil
+      expect(row.reload.claim_token_generation).to eq(0)
+    end
+
+    it "#purchased_by? compares the normalised purchase email with the user's" do
+      expect(row.purchased_by?(buyer)).to be(true)
+      expect(row.purchased_by?(create(:user, :regular_user))).to be(false)
+      expect(CcMoney.create!(cc: 1, linked: false).purchased_by?(buyer)).to be(false)
+    end
+
+    it "#addressed_to? accepts any address for a row with none and only the stored one otherwise" do
+      expect(CcMoney.create!(cc: 1, linked: false).addressed_to?("a@example.com")).to be(true)
+      expect(row.addressed_to?(buyer.email.upcase)).to be(true)
+      expect(row.addressed_to?("a@example.com")).to be(false)
+    end
+  end
+
   describe ".debit! (the one wallet-debit operation)" do
     # A joinable caller transaction (the fixture transaction is not one).
     def in_caller_transaction(&block)

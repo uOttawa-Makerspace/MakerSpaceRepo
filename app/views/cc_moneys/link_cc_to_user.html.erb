@@ -1,12 +1,8 @@
 <div class="container text-center">
   <h4>Link CC to an user</h4>
-  <p>You can only link this CC points once. Make sure that you are sending it to the correct email.</p>
-  <%= form_for(:user, url: redeem_cc_moneys_path, method: :post) do |f| %>
+  <p>You can only link this CC points once. They will be added to your account (<%= current_user.email %>), which must be the account the purchase was made with.</p>
+  <%= form_with(url: redeem_cc_moneys_path, method: :post) do |f| %>
     <%= hidden_field_tag :token, @cc_token %>
-    <div class="mb-3">
-      <%= f.label :email, class: 'form-label' %>
-      <%= f.email_field :email, placeholder: 'example@gmail.com', class: 'form-control' %>
-    </div>
     <%= f.submit 'Send CC', class: 'btn btn-primary' %>
     <br />
     <br>
