@@ -50,6 +50,68 @@ module PageCrawl
   # Segments that are not routable params in this crawl.
   IGNORED_PATH = [%r{\A/(rails|cable|mission_control|assets|vite|packs|cdn-cgi)(/|\z)}, %r{active_storage}, %r{webhook}].freeze
 
+  # What the crawl expects each route to answer, and the extra request options some routes need.
+  module Expectations
+    # Statuses every page may answer with: a rendered page or a redirect
+    # (for example to the login page). Anything else must be listed below.
+    DEFAULT_STATUSES = [200, 302, 303].freeze
+
+    # Answers other than DEFAULT_STATUSES that are correct for a route. Each entry
+    # names the routes (path spec), the roles it applies to, the statuses and the
+    # reason. A route that should render but answers 404 because the world lacks
+    # its data is a crawl bug: fix the world, do not add an entry here.
+    EXPECTED_STATUSES = [
+      { path: %r{\A/api/v1/}, roles: ROLES, statuses: [401],
+        why: "the API authenticates with a bearer token, not the browser session" },
+      { path: %r{\A/(recede|resume|refresh)_historical_location\z}, roles: ROLES, statuses: [404],
+        why: "Turbo Native routes come after the /:user_username catch-all, which answers first (no such user)" },
+      { path: %r{\A/learning_area/:id/scorm_assets/}, roles: ROLES - %i[guest], statuses: [404],
+        why: "the world's learning module has no uploaded SCORM package" },
+      { path: %r{\A/order_items/:order_item_id/\w+_modal\z}, roles: %i[regular], statuses: [403],
+        why: "the modal is for staff; the signed-in user does not own the order item" },
+      { path: %r{\A/chat_messages\z}, roles: %i[regular], statuses: [403],
+        why: "only the job order's owner, staff and admins read its messages; the signed-in user is not the owner" },
+      { path: %r{\A/admin/certifications/open_modal\z}, roles: %i[guest], statuses: [401],
+        why: "a script request without a session is refused, not redirected" },
+      { path: %r{\A/staff/my_calendar/json/:id\z}, roles: %i[staff], statuses: [403],
+        why: "the crawled staff user is not assigned to the world's space" }
+    ].freeze
+
+    # Extra request options for routes that need more than path params: query
+    # params, headers, a response format. Lambdas receive the world.
+    REQUEST_OPTIONS = {
+      "/chat_messages" => ->(w) { { params: { job_order_id: w.records[:job_order]&.id } } },
+      "/sub_space_booking/get_sub_space_booking" => ->(w) { { params: { id: w.records[:sub_space_booking]&.id } } },
+      "/staff/training_sessions/:id/training_report" => ->(_w) { { format: "xlsx" } },
+      "/staff_dashboard/present_users_report" => ->(_w) { { format: "xlsx" } },
+      "/admin/certifications/open_modal" => lambda { |w|
+        { params: { id: w.records[:certification]&.id }, xhr: true, headers: { "Accept" => "text/javascript" } }
+      }
+    }.freeze
+
+    module_function
+
+    # Entries that apply to this role but matched no answer outside the default
+    # statuses: the table must stay exact, like the pinned 500 table.
+    def stale_entries(visited, role)
+      EXPECTED_STATUSES.select do |e|
+        next false unless e[:roles].include?(role)
+
+        hits = visited.select { |path, status| path.match?(e[:path]) && e[:statuses].include?(status) }
+        hits.empty?
+      end
+    end
+
+    def expected_statuses(route, role)
+      extra = EXPECTED_STATUSES.select { |e| e[:roles].include?(role) && route.path_spec.match?(e[:path]) }
+      DEFAULT_STATUSES + extra.flat_map { |e| e[:statuses] }
+    end
+
+    def request_options(route, world)
+      REQUEST_OPTIONS[route.path_spec]&.call(world) || {}
+    end
+  end
+
   module_function
 
   def routes
@@ -179,7 +241,7 @@ module PageCrawl
       make(:repository) { create(:repository, owner: records[:target]) }
       make(:proficient_project) { create(:proficient_project, training: records[:training]) }
       make(:project_kit) { create(:project_kit, proficient_project: records[:proficient_project]) }
-      make(:learning_module) { create(:learning_module, training: records[:training]) }
+      make(:learning_module) { create(:learning_module, training: records[:training], shortcut_name: "crawl") }
       make(:faq) { create(:faq) }
       make(:announcement) { create(:announcement) }
       make(:project_proposal) { create(:project_proposal) }
@@ -229,7 +291,7 @@ module PageCrawl
       make(:job_task) { records[:job_order]&.job_tasks&.first }
       make(:sub_space_booking) { seed_booking_world }
       records[:slug] = "crawl-slug"
-      records[:shortcut] = "crawl"
+      records[:shortcut] = "crawl" # the learning module's shortcut_name
       records[:subskill] = "crawl"
       records[:filename] = "x.txt"
       records[:file_number] = "1"

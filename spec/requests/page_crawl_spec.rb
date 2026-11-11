@@ -37,7 +37,9 @@ RSpec.describe "Page crawl (request level)", type: :request do
     visited = {}
     skipped = {}
     errors = {}
+    @routes_by_path = {}
     PageCrawl.routes.each do |route|
+      @routes_by_path[route.path_spec] = route
       if (why = PageCrawl.skip_reason(route))
         skipped[route.path_spec] = why
         next
@@ -48,7 +50,9 @@ RSpec.describe "Page crawl (request level)", type: :request do
         next
       end
       visited[route.path_spec] = begin
-        get path
+        options = PageCrawl::Expectations.request_options(route, world)
+        path += ".#{options.delete(:format)}" if options.key?(:format)
+        get path, **options
         errors[route.path_spec] = error_summary if response.status == 500
         response.status
       rescue StandardError => e
@@ -70,6 +74,15 @@ RSpec.describe "Page crawl (request level)", type: :request do
     "#{head} #{msg}".squish.first(400)
   end
 
+  def expected_status?(path, role, status)
+    PageCrawl::Expectations.expected_statuses(@routes_by_path.fetch(path), role).include?(status)
+  end
+
+  # Route, status and the exception (if any) for each failing route
+  def failure_details(paths, visited)
+    paths.map { |p| "#{p} -> #{visited[p]}#{" (#{@errors[p]})" if @errors[p]}" }.join("; ")
+  end
+
   def dump_report(role, visited, skipped, world)
     return unless ENV["CRAWL_REPORT"]
 
@@ -85,9 +98,11 @@ RSpec.describe "Page crawl (request level)", type: :request do
 
       expect(visited.size).to be > 150 # guard: the crawl really visited the app
 
-      failing = visited.select { |_, s| s == 500 || s.is_a?(String) }.keys
+      failing = visited.reject { |path, s| s.is_a?(Integer) && s != 500 && expected_status?(path, role, s) }.keys
       pinned = KNOWN_500.select { |_, roles| roles.key?(role) }.keys
-      expect(failing - pinned).to eq([]), "new 500s as #{role}: #{(failing - pinned).inspect}"
+      expect(failing - pinned).to eq([]), "unexpected answers as #{role}: #{failure_details(failing - pinned, visited)}"
+      stale = PageCrawl::Expectations.stale_entries(visited, role).map { |e| e[:path].source }
+      expect(stale).to eq([]), "expected-status entries no longer matching as #{role}: #{stale.inspect}"
       expect(pinned - failing).to eq([]), "pinned 500s no longer failing as #{role}: #{(pinned - failing).inspect}"
     end
   end
