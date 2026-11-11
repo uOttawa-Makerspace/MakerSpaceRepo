@@ -94,7 +94,10 @@ export default class extends TypedController {
   // ---------------------------------------
   // Opening the dialog
   // ---------------------------------------
-  openForAdd() {
+  // The element given as returnFocusTo gets the focus back when the dialog
+  // closes (the button that opened it).
+  openForAdd({ returnFocusTo = null } = {}) {
+    this.returnFocusTo = returnFocusTo;
     this.formTarget.action = COLLECTION_PATH;
     this.formTarget.querySelector('input[name="_method"]')?.remove();
 
@@ -339,6 +342,8 @@ export default class extends TypedController {
     new Collapse(this.collapseTarget, { toggle: false }).hide();
     // hide delete forms
     this.deleteFormsTarget.style.display = "none";
+    this.returnFocusTo?.focus();
+    this.returnFocusTo = null;
   }
 
   // Set values on modal open

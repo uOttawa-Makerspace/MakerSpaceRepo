@@ -48,8 +48,8 @@ const PAGE = `
 <div id="modal" data-controller="unavailability-form"></div>`;
 
 class FakeForm extends Controller {
-  openForAdd() {
-    form.openForAdd();
+  openForAdd(options) {
+    form.openForAdd(options);
   }
   openForEdit(event) {
     form.openForEdit(event);
@@ -117,6 +117,9 @@ describe("staff unavailabilities calendar", () => {
     await boot();
     document.getElementById("addUnavailabilityButton").click();
     expect(form.openForAdd).toHaveBeenCalledTimes(1);
+    expect(form.openForAdd).toHaveBeenCalledWith({
+      returnFocusTo: document.getElementById("addUnavailabilityButton"),
+    });
   });
 
   it("opens the unavailability dialog for a clicked event and a selected range", async () => {

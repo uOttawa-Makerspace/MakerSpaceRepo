@@ -439,6 +439,34 @@ describe("openForEdit", () => {
   });
 });
 
+describe("returning focus", () => {
+  it("focuses the opening button once the dialog is hidden, and only then", () => {
+    const button = document.createElement("button");
+    document.body.append(button);
+    controller().openForAdd({ returnFocusTo: button });
+    expect(document.activeElement).not.toBe(button);
+    fire($("unavailabilityModal"), "hidden.bs.modal");
+    expect(document.activeElement).toBe(button);
+
+    button.blur();
+    controller().openForAdd();
+    fire($("unavailabilityModal"), "hidden.bs.modal");
+    expect(document.activeElement).not.toBe(button);
+  });
+
+  it("does not return focus to a button after the dialog was opened from the calendar", () => {
+    const button = document.createElement("button");
+    document.body.append(button);
+    controller().openForAdd({ returnFocusTo: button });
+    controller().openForRange({
+      start: "2027-03-17T09:00:00",
+      end: "2027-03-17T10:00:00",
+    });
+    fire($("unavailabilityModal"), "hidden.bs.modal");
+    expect(document.activeElement).not.toBe(button);
+  });
+});
+
 describe("openForAdd", () => {
   it("returns an edit modal to add mode", () => {
     controller().openForEdit(fcEvent({ def: weeklyDef() }));

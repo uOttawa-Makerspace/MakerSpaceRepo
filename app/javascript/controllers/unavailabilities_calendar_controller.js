@@ -14,7 +14,7 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
   containerTarget: HTMLElement,
   spinnerTarget: HTMLElement,
   feedUrlValue: string,
-  unavailabilityFormOutlet: { openForAdd(): void, openForEdit(event: any): void, openForRange(range: { start: string, end: string }): void },
+  unavailabilityFormOutlet: { openForAdd(options?: { returnFocusTo?: HTMLElement }): void, openForEdit(event: any): void, openForRange(range: { start: string, end: string }): void },
 }} */ (/** @type {unknown} */ (Controller));
 
 // The staff member's own unavailabilities: draws a FullCalendar on the
@@ -41,8 +41,10 @@ export default class extends TypedController {
     this.calendar = null;
   }
 
-  addUnavailability() {
-    this.unavailabilityFormOutlet.openForAdd();
+  addUnavailability(event) {
+    this.unavailabilityFormOutlet.openForAdd({
+      returnFocusTo: event.currentTarget,
+    });
   }
 
   calendarOptions() {
