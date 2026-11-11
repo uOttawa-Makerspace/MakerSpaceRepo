@@ -43,4 +43,24 @@ RSpec.describe "Volunteer hours form", type: :system, skip_bullet: true do
     expect(page).to have_text("Volunteer hour updated")
     expect(hour.reload.total_time).to eq(0.33)
   end
+
+  it "keeps the stored total when an hour stored with a minute count that is not a multiple of five is saved untouched" do
+    hour = create(:volunteer_hour, user: volunteer, volunteer_task: task, total_time: 0.32, date_of_task: Date.current)
+    log_in_as(volunteer, to: edit_volunteer_hour_path(hour))
+    expect(find_field("minutes").value).to eq("19")
+    click_button "Update Volunteer Hour"
+
+    expect(page).to have_text("Volunteer hour updated")
+    expect(hour.reload.total_time).to eq(0.32)
+  end
+
+  it "saves any whole minute when the minutes of such an hour are changed" do
+    hour = create(:volunteer_hour, user: volunteer, volunteer_task: task, total_time: 0.32, date_of_task: Date.current)
+    log_in_as(volunteer, to: edit_volunteer_hour_path(hour))
+    fill_in "minutes", with: "59"
+    click_button "Update Volunteer Hour"
+
+    expect(page).to have_text("Volunteer hour updated")
+    expect(hour.reload.total_time).to eq(0.98)
+  end
 end
