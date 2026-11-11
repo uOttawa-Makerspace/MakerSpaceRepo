@@ -120,16 +120,23 @@ class JobOrder
       ActiveRecord::Base.with_connection do |conn|
         return build_report(skipped: true) unless conn.select_value("SELECT pg_try_advisory_lock($1)", "DraftSweep lock", [LOCK_KEY])
 
-        begin
-          yield
-        rescue SignalException => e
-          @escaping ||= e # kept here: an error raised by the unlock below would replace it in flight
-          raise
-        ensure
-          conn.select_value("SELECT pg_advisory_unlock($1)", "DraftSweep unlock", [LOCK_KEY])
-        end
+        result = locked_sweep(conn) { yield }
+        unlock(conn)
+        result
       end
     end
+
+    # Runs the block holding the lock. When it raises, the lock is still released, but a failing unlock is only
+    # reported: it never replaces the exception in flight.
+    def locked_sweep(conn)
+      yield
+    rescue Exception => e # rubocop:disable Lint/RescueException -- released and re-raised, never swallowed
+      @escaping ||= e if e.is_a?(SignalException)
+      guarded("unlock") { unlock(conn) }
+      raise
+    end
+
+    def unlock(conn) = conn.select_value("SELECT pg_advisory_unlock($1)", "DraftSweep unlock", [LOCK_KEY])
 
     def sweep
       # looked up once, first: a missing Completed row fails here, at one defined point, and #run reports it as a
@@ -148,26 +155,37 @@ class JobOrder
     # error: logged at warn level, in the summary only) before it; the drafts not examined are unresolved, the error
     # is reported (once per class, with the others).
     def abort_run(error)
-      if error
-        note_error(error, nil, nil, where: RUN_WHERE)
-        @run_lines.unshift("aborted: #{error.class}: #{error.message}")
-      end
+      @run_lines.unshift("aborted: #{describe(error)}") if error
       if @escaping
-        Rails.logger.warn("[JobOrder::DraftSweep] interrupted: #{@escaping.class}: #{@escaping.message}")
-        @run_lines.unshift("interrupted: #{@escaping.class}#{": #{@escaping.message}" if @escaping.message.present?}")
+        Rails.logger.warn("[JobOrder::DraftSweep] interrupted: #{describe(@escaping)}")
+        @run_lines.unshift("interrupted: #{describe(@escaping)}")
       end
       stop_before(@done, "the run was aborted")
       build_report
     end
 
+    # "Class: message", or the class alone when the message is just the class name (Interrupt's default).
+    def describe(error) = error.message.blank? || error.message == error.class.name ? error.class.name : "#{error.class}: #{error.message}"
+
     # The end of the run, which never fails silently and never raises: each step that raises is reported (minimal
     # context) and the next one still happens; a report is always returned.
     def flush(report, error)
-      report = guarded("abort_run") { abort_run(error) } if error || @escaping
+      report = abort_report(error) if error || @escaping
       report ||= guarded("build_report") { build_report } || failed_report
-      guarded("report_errors") { report_errors }
+      report_errors
       guarded("report_once") { report_once(report) } unless report.ok?
       report
+    end
+
+    # The report of an aborted run. The error is noted first, so it is reported even when building the report fails;
+    # then the report is not ok and names both errors.
+    def abort_report(error)
+      note_error(error, nil, nil, where: RUN_WHERE) if error
+      abort_run(error)
+    rescue StandardError => e
+      note_error(e, nil, nil, where: RUN_WHERE)
+      failed_report(*[error && "aborted: #{describe(error)}", @escaping && "interrupted: #{describe(@escaping)}",
+                      "the report of the abort could not be built: #{describe(e)}"].compact)
     end
 
     def guarded(step)
@@ -181,8 +199,9 @@ class JobOrder
       nil
     end
 
-    def failed_report
-      Report.new(counts: OUTCOMES.index_with(0), unresolved: ["the run's report could not be built"], unresolved_gids: [], skipped: false)
+    def failed_report(*lines)
+      lines = ["the run's report could not be built"] if lines.empty?
+      Report.new(counts: OUTCOMES.index_with(0), unresolved: lines, unresolved_gids: [], skipped: false)
     end
 
     # Stops at a lost connection (the rest unresolved, not examined). The deletes are held to the cap: the up-front
