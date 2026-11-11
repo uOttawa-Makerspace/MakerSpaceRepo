@@ -332,9 +332,7 @@ describe("drop zone", () => {
     expect(names(preview)).toEqual(["a.png", "b.png"]);
   });
 
-  // A dropped file the input does not accept still uses up one of the slots
-  // below the limit, so a valid file after it is turned away.
-  it.skip("does not count a rejected dropped file towards the limit", () => {
+  it("does not count a rejected dropped file towards the limit", () => {
     const { zone, preview } = setup(
       {},
       {
