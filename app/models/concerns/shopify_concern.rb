@@ -30,10 +30,14 @@ module ShopifyConcern
   # include the concern: they skip #ensure_can_use_draft_order, so lockers and memberships must not gain them.
   # Used by the concern's instance methods and by JobOrder (its draft rule, JobOrder::DraftSweep).
   module DraftOrders
-    # THE Admin GraphQL client builder (ShopifyService.admin_client uses it too): starts the session and builds the client.
-    def self.client
-      ShopifyContext.start_session!
-      ShopifyAPI::Clients::Graphql::Admin.new(session: ShopifyAPI::Context.active_session)
+    # THE Admin GraphQL client builder (ShopifyService.admin_client uses it too). Without a session it starts the
+    # configured one; a caller that needs another store or token passes its own session.
+    def self.client(session: nil)
+      unless session
+        ShopifyContext.start_session!
+        session = ShopifyAPI::Context.active_session
+      end
+      ShopifyAPI::Clients::Graphql::Admin.new(session: session)
     end
 
     # One getDraftOrder query that tells three outcomes apart: [:found, draft], [:gone, nil] (HTTP 200 with

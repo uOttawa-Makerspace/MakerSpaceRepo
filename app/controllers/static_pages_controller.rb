@@ -220,7 +220,7 @@ class StaticPagesController < SessionsController
 
     ShopifyContext.ensure_setup!
     sess = ShopifyAPI::Auth::Session.new(shop: MAKERSTORE_SHOP, access_token: access_token)
-    client = ShopifyAPI::Clients::Graphql::Admin.new(session: sess)
+    client = ShopifyConcern::DraftOrders.client(session: sess)
 
     query = <<~QUERY
       query {
