@@ -11,8 +11,10 @@ class Membership < ApplicationRecord
   enum :status, {
          pending: 'pending',
          paid: 'paid',
-         # A checkout never paid, closed by Membership::Expiry (legacy rows may be failed too).
+         # Legacy rows may be failed; nothing sets it now. Kept so those rows load.
          failed: 'failed',
+         # A checkout never paid, closed by Membership::Expiry. Treated like failed everywhere.
+         expired: 'expired',
          revoked: 'revoked'
        },
        default: 'pending'

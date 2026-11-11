@@ -9,18 +9,19 @@ RSpec.describe Membership, "expiry of stale pending memberships", type: :model d
   let(:tier) { create(:membership_tier, title_en: "1 Semester Membership", duration: 120) }
   let(:gid) { fake.draft_id }
 
+  # `age`: how long ago the checkout was last touched.
   def pending_membership(age:, draft: gid, user: member)
     create(:membership, user: user, membership_tier: tier, status: "pending", start_date: nil, end_date: nil,
-                        shopify_draft_order_id: draft, created_at: age.ago)
+                        shopify_draft_order_id: draft, created_at: age.ago, updated_at: age.ago)
   end
 
-  it "deletes the draft of a pending membership older than a week and marks the row failed, keeping it" do
+  it "deletes the draft of a pending membership older than a week and marks the row expired, keeping it" do
     stale = pending_membership(age: 8.days)
 
     expect(Membership.expire_stale_pending!).to eq(expired: 1)
 
     expect(fake.deleted_ids).to eq([gid])
-    expect(stale.reload).to have_attributes(status: "failed", shopify_draft_order_id: gid)
+    expect(stale.reload).to have_attributes(status: "expired", shopify_draft_order_id: gid)
   end
 
   it "leaves a pending membership younger than the threshold alone" do
@@ -32,9 +33,9 @@ RSpec.describe Membership, "expiry of stale pending memberships", type: :model d
     expect(fresh.reload).to be_pending
   end
 
-  it "touches no paid, revoked or failed membership, however old" do
-    %w[paid revoked failed].each do |status|
-      create(:membership, user: member, membership_tier: tier, status: status, shopify_draft_order_id: gid, created_at: 30.days.ago)
+  it "touches no paid, revoked, failed or expired membership, however old" do
+    %w[paid revoked failed expired].each do |status|
+      create(:membership, user: member, membership_tier: tier, status: status, shopify_draft_order_id: gid, created_at: 30.days.ago, updated_at: 30.days.ago)
     end
 
     expect(Membership.expire_stale_pending!).to eq({})
@@ -58,16 +59,16 @@ RSpec.describe Membership, "expiry of stale pending memberships", type: :model d
     expect(Membership.expire_stale_pending!).to eq(expired: 1)
 
     expect(fake.deleted_ids).to be_empty
-    expect(stale.reload).to be_failed
+    expect(stale.reload).to be_expired
   end
 
-  it "fails a stale pending membership that never got a draft without calling Shopify" do
+  it "expires a stale pending membership that never got a draft without calling Shopify" do
     stale = pending_membership(age: 8.days, draft: nil)
 
     expect(Membership.expire_stale_pending!).to eq(expired: 1)
 
     expect(fake.calls).to be_empty
-    expect(stale.reload).to be_failed
+    expect(stale.reload).to be_expired
   end
 
   it "keeps the row pending when Shopify refuses to delete a still payable draft" do
@@ -88,14 +89,61 @@ RSpec.describe Membership, "expiry of stale pending memberships", type: :model d
     expect(Membership.expire_stale_pending!).to eq(error: 1, expired: 1)
 
     expect(stale.reload).to be_pending
-    expect(other.reload).to be_failed
+    expect(other.reload).to be_expired
+  end
+
+  it "marks nothing and deletes nothing when the draft completes between the check and the delete" do
+    fake.lose_delete_race = :paid
+    stale = pending_membership(age: 8.days)
+
+    expect(Membership.expire_stale_pending!).to eq(paid: 1)
+
+    expect(stale.reload).to be_pending
+  end
+
+  it "does not close a checkout the member came back to after the run picked it" do
+    stale = pending_membership(age: 8.days)
+    loaded = Membership.find(stale.id)
+    stale.touch
+
+    expect(loaded.expire_if_stale).to eq(:changed)
+
+    expect(fake.calls).to be_empty
+    expect(stale.reload).to be_pending
+  end
+
+  it "keeps the checkout of a member who buys again, whatever the age of the row, and serves a live draft" do
+    stale = pending_membership(age: 8.days)
+
+    expect(Membership.begin_purchase(member, tier.id)).to eq(fake.invoice_url)
+    expect(Membership.expire_stale_pending!).to eq({})
+
+    expect(fake.deleted_ids).to be_empty
+    expect(member.memberships.pending.pluck(:id)).to eq([stale.id])
+  end
+
+  it "starts a new pending membership when the one being checked out was expired before its draft was stored" do
+    old = pending_membership(age: 1.day, draft: nil)
+    expired_once = false
+    fake.on_query = lambda { |query, _|
+      next if expired_once || !query.include?("draftOrderCreate")
+
+      expired_once = true
+      Membership.where(id: old.id).update_all(status: "expired")
+    }
+
+    expect(Membership.begin_purchase(member, tier.id)).to eq(fake.invoice_url)
+
+    expect(old.reload).to be_expired
+    expect(member.memberships.pending.pluck(:shopify_draft_order_id)).to eq([gid])
+    expect(member.memberships.count).to eq(2)
   end
 
   it "does not overwrite a membership that was paid while the run was in progress" do
     stale = pending_membership(age: 8.days)
     fake.on_query = ->(query, _) { Membership.where(id: stale.id).update_all(status: "paid") if query.include?("draftOrderDelete") }
 
-    expect(Membership.find(stale.id).expire_stale).to eq(:changed)
+    expect(Membership.find(stale.id).expire_if_stale).to eq(:changed)
 
     expect(stale.reload).to be_paid
   end
@@ -106,7 +154,7 @@ RSpec.describe Membership, "expiry of stale pending memberships", type: :model d
       Membership.where(id: stale.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/2") if query.include?("draftOrderDelete")
     }
 
-    expect(Membership.find(stale.id).expire_stale).to eq(:changed)
+    expect(Membership.find(stale.id).expire_if_stale).to eq(:changed)
 
     expect(stale.reload).to be_pending
   end
@@ -118,7 +166,7 @@ RSpec.describe Membership, "expiry of stale pending memberships", type: :model d
     expect(Membership.expire_stale_pending!).to eq({})
 
     expect(fake.deleted_ids).to eq([gid])
-    expect(stale.reload).to be_failed
+    expect(stale.reload).to be_expired
   end
 
   it "does not apply a late payment to an expired checkout" do
@@ -126,7 +174,7 @@ RSpec.describe Membership, "expiry of stale pending memberships", type: :model d
     Membership.expire_stale_pending!
 
     expect(stale.reload.mark_paid_if_pending).to be(false)
-    expect(stale.reload).to be_failed
+    expect(stale.reload).to be_expired
   end
 
   it "lets the member buy again after the checkout expired, on a new pending row" do

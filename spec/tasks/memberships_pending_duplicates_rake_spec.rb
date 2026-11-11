@@ -15,7 +15,7 @@ RSpec.describe "memberships:pending_duplicates" do
 
   def pending(user, tier_for)
     create(:membership, user: user, membership_tier: tier_for, status: "pending", start_date: nil, end_date: nil,
-                        shopify_draft_order_id: "gid://shopify/DraftOrder/#{rand(1_000_000)}")
+                        shopify_draft_order_id: "gid://shopify/DraftOrder/#{(@draft_seq = @draft_seq.to_i + 1)}")
   end
 
   def run = Rake::Task["memberships:pending_duplicates"].invoke
@@ -24,7 +24,7 @@ RSpec.describe "memberships:pending_duplicates" do
     rows = [pending(member, tier), pending(member, tier), pending(member, tier)]
 
     expect { run }.to output(
-      /user #{member.id}, tier #{tier.id}: 3 pending \(ids #{rows.map(&:id).sort.join(", ")}\).*1 pairs, 3 pending memberships/m
+      /user #{member.id}, tier #{tier.id}: 3 pending \(ids #{rows.map(&:id).sort.join(", ")}\).*1 pair, 3 pending memberships/m
     ).to_stdout
   end
 

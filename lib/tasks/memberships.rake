@@ -8,6 +8,9 @@ namespace :memberships do
     pairs.each do |user_id, tier_id, ids|
       puts "user #{user_id}, tier #{tier_id}: #{ids.size} pending (ids #{ids.join(', ')})"
     end
-    puts "#{pairs.size} pairs, #{pairs.sum { |_, _, ids| ids.size }} pending memberships" if pairs.any?
+    if pairs.any?
+      puts "#{ActionController::Base.helpers.pluralize(pairs.size, 'pair')}, " \
+           "#{ActionController::Base.helpers.pluralize(pairs.sum { |_, _, ids| ids.size }, 'pending membership')}"
+    end
   end
 end

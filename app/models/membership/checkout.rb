@@ -13,28 +13,35 @@ class Membership
   module Checkout
     extend ActiveSupport::Concern
 
+    # The membership was closed (no longer pending) while its checkout was being made.
+    class CheckoutClosed < StandardError; end
+
     class_methods do
       # Member and tier pairs that have more than one pending membership, as [user_id, tier_id, [membership ids]],
-      # oldest first. Reads only.
+      # ordered by member, then tier, with the ids ascending. Reads only.
       def pending_duplicates
-        pending.group_by { |m| [m.user_id, m.membership_tier_id] }
-               .select { |_pair, rows| rows.size > 1 }
-               .map { |(user_id, tier_id), rows| [user_id, tier_id, rows.map(&:id).sort] }
-               .sort
+        pending.group(:user_id, :membership_tier_id).having('count(*) > 1').order(:user_id, :membership_tier_id)
+               .pluck(:user_id, :membership_tier_id, Arel.sql('array_agg(id ORDER BY id)'))
       end
 
       # The Shopify invoice URL that pays the user's pending membership for the tier (made now if there is none).
       # Shopify not answering raises.
       def begin_purchase(user, tier_id)
         claim_pending(user, tier_id).checkout_link
+      rescue CheckoutClosed
+        # The membership was closed (expired) after it was claimed and before its draft could be stored: the next
+        # claim cannot return it, so this one starts a new pending membership.
+        claim_pending(user, tier_id).checkout_link
       end
 
       # The user's pending membership for the tier, or a new one. Under the user's row lock, so repeated or
-      # simultaneous purchases share one row. A pending membership has no dates: they are set when it is paid.
+      # simultaneous purchases share one row. A pending membership has no dates: they are set when it is paid. A
+      # reused row is touched: buying again is checkout activity, so it is not expired while the member uses it.
       def claim_pending(user, tier_id)
         user.with_lock do
-          user.memberships.pending.where(membership_tier_id: tier_id).order(:id).first ||
-            user.memberships.create!(membership_tier_id: tier_id)
+          existing = user.memberships.pending.where(membership_tier_id: tier_id).order(:id).first
+          existing&.touch
+          existing || user.memberships.create!(membership_tier_id: tier_id)
         end
       end
     end
@@ -70,6 +77,7 @@ class Membership
       created = { 'id' => new_id, 'invoiceUrl' => invoice_url, 'status' => 'OPEN' }
       return created if keep_or_discard_draft(new_id)
 
+      raise CheckoutClosed, "Membership #{id} is #{status}, not pending" unless pending?
       # The winner's draft may be as new as ours: if Shopify does not show it yet, ask again rather than replace it.
       raise "Membership #{id} has no draft order to serve" if shopify_draft_order_id.blank?
 

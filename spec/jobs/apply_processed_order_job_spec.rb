@@ -224,7 +224,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       expect(pending.reload.status).to eq("revoked")
     end
 
-    %w[revoked failed].each do |status|
+    %w[revoked failed expired].each do |status|
       it "leaves a #{status} membership as it is when a first delivery of its order arrives, and reports it" do
         pending.update!(status: status)
         order = hook(membership_payload(pending.id, id: 7010))
