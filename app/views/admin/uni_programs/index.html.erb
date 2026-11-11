@@ -75,4 +75,26 @@
 </div>
 <% end %>
 
+  <% if @retired_programs.any? %>
+  <hr/>
+  <section class="mb-5">
+    <h2><%= t('admin.retired_programs.heading') %></h2>
+    <p><%= t('admin.retired_programs.note') %></p>
+    <table class="table table-striped text-center">
+      <thead>
+        <th><%= t('admin.retired_programs.program') %></th>
+        <th><%= t('admin.retired_programs.level') %></th>
+        <th><%= t('admin.retired_programs.faculty') %></th>
+      </thead>
+      <% @retired_programs.each do |program| %>
+      <tr>
+        <td><%= program.program %></td>
+        <td><%= program.level %></td>
+        <td><%= program.faculty %></td>
+      </tr>
+      <% end %>
+    </table>
+  </section>
+  <% end %>
+
 </div>

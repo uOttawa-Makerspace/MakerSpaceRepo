@@ -5,6 +5,7 @@ class Admin::UniProgramsController < AdminAreaController
 
   def index
     @uni_programs = UniProgram.active
+    @retired_programs = UniProgram.where(active: false).order(:faculty, :program, :level)
   end
 
   def current_programs

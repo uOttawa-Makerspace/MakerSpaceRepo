@@ -4,6 +4,12 @@ en:
     training: "Delete this training? This is refused while it has training sessions or proficient projects."
   # These are used in the navbar and in page titles, headers
   admin:
+    retired_programs:
+      heading: "Retired programs"
+      note: "Left out of the last import. They are no longer offered on the sign-up and profile forms; users who chose them keep them."
+      program: "Program"
+      level: "Level"
+      faculty: "Faculty"
     cc_money_claim_email:
       last_resend: "Last sent to %{email} by %{admin} on %{at}"
     cc_money_purchase_email:
@@ -66,6 +72,12 @@ fr:
     training_session: "Supprimer cette séance de formation? Impossible tant qu'elle a des certifications ou des examens."
     training: "Supprimer cette formation? Impossible tant qu'elle a des séances de formation ou des projets de compétence."
   admin:
+    retired_programs:
+      heading: "Programmes retirés"
+      note: "Absents du dernier import. Ils ne sont plus offerts dans les formulaires d'inscription et de profil; les personnes qui les ont choisis les conservent."
+      program: "Programme"
+      level: "Niveau"
+      faculty: "Faculté"
     cc_money_claim_email:
       last_resend: "Dernier envoi à %{email} par %{admin} le %{at}"
     cc_money_purchase_email:

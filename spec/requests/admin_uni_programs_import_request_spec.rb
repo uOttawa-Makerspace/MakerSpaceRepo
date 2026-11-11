@@ -122,6 +122,34 @@ RSpec.describe "Admin uni programs import", type: :request do
     end
   end
 
+  describe "retired programs on the index" do
+    before do
+      sign_in_as(:admin)
+      create(:uni_program, program: "Current Program", faculty: "Engineering")
+      create(:uni_program, program: "Retired Program", level: "Doctorate", faculty: "Engineering", active: false)
+    end
+
+    it "lists inactive programs in their own section, apart from the active ones" do
+      get admin_uni_programs_index_path
+
+      expect(response.body).to include("Retired programs", "Retired Program", "Doctorate")
+      expect(response.body.index("Current Program")).to be < response.body.index("Retired programs")
+    end
+
+    it "shows the section in French" do
+      get admin_uni_programs_index_path, params: { locale: "fr" }
+
+      expect(response.body).to include("Programmes retirés", "Retired Program")
+    end
+
+    it "shows no section when nothing is retired" do
+      UniProgram.where(active: false).update_all(active: true)
+      get admin_uni_programs_index_path
+
+      expect(response.body).not_to include("Retired programs")
+    end
+  end
+
   it "keeps a signed-in non-admin out and changes nothing" do
     sign_in_as(:regular)
     create(:uni_program, faculty: "Engineering")
