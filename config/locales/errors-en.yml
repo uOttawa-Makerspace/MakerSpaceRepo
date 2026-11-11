@@ -69,6 +69,10 @@ en:
         already_linked: "That CC Money has already been added to an account, so no email was sent."
         email_invalid: "Enter the buyer's email address. No email was sent."
         email_mismatch: "That CC Money was bought with a different email address. Use the address it was bought with. No email was sent."
+      cc_money_purchase_email:
+        already_linked: "That CC Money has already been added to an account, so its email was not changed and nothing was sent."
+        email_invalid: "Enter a valid email address. Nothing was changed and no email was sent."
+        email_unchanged: "That is already the purchase email. Use Resend to send the claim link again. Nothing was changed."
       uni_programs:
         programs_file_missing: "The current programs file is not available on the server."
       time_periods:

@@ -298,6 +298,7 @@ Rails.application.routes.draw do
 
     resources :cc_moneys, only: :index do
       resource :claim_email, only: :create, controller: "cc_money_claim_emails"
+      resource :purchase_email, only: :update, controller: "cc_money_purchase_emails"
     end
 
     resources :job_service_groups, only: %i[new create edit update destroy]

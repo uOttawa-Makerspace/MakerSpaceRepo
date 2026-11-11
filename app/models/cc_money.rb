@@ -5,6 +5,9 @@ class CcMoney < ApplicationRecord
   belongs_to :volunteer_task, optional: true
   belongs_to :proficient_project, optional: true
   belongs_to :order, optional: true
+  has_many :email_corrections, class_name: "CcMoneyEmailCorrection", dependent: :restrict_with_error
+  has_one :latest_email_correction, -> { order(id: :desc) },
+          class_name: "CcMoneyEmailCorrection", inverse_of: :cc_money, dependent: :restrict_with_error
 
   # How long a mailed claim link works. A resend (send_claim_email_to) starts a new window.
   CLAIM_TOKEN_LIFETIME = 30.days
@@ -107,6 +110,23 @@ class CcMoney < ApplicationRecord
     end
   end
 
+  # An admin fixes the purchase email of an unclaimed row (a mistyped address at checkout). Under the row lock it
+  # writes the normalised address, raises the generation so every link sent before stops working, and records who
+  # changed what in a CcMoneyEmailCorrection. The caller then mails a new link (`claim_token`) to the new address.
+  # Returns :corrected, or the reason nothing was changed: :already_linked, :email_invalid or :email_unchanged.
+  def correct_purchase_email(new_email, by:)
+    address = self.class.normalize_value_for(:purchaser_email, new_email.to_s)
+    with_lock do
+      next :already_linked if linked?
+      next :email_invalid unless valid_purchase_email?(address)
+      next :email_unchanged if address == purchaser_email
+
+      email_corrections.create!(admin: by, old_email: purchaser_email, new_email: address)
+      update!(purchaser_email: address, claim_token_generation: claim_token_generation + 1)
+      :corrected
+    end
+  end
+
   # Gives an unclaimed purchase to `user`. The row is re-read under its lock, so of two claims racing for
   # the same row only the first writes. Returns :linked, :already_linked (the row keeps its owner),
   # :superseded (a resend raised the generation since this copy was loaded, so the link the caller holds is
@@ -170,6 +190,10 @@ class CcMoney < ApplicationRecord
   private_class_method :require_caller_transaction!
 
   private
+
+  def valid_purchase_email?(address)
+    address.match?(URI::MailTo::EMAIL_REGEXP) && User.email_shape_error(address).nil?
+  end
 
   # May a claim mail for this row go to `address`: any address when none is recorded, else the recorded one.
   def addressed_to?(address)

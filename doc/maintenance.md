@@ -111,6 +111,8 @@ The release that adds `purchaser_email` and `claim_token_generation` to `cc_mone
 
 From then on an unclaimed CC purchase can be claimed only by the signed-in account whose email equals the purchase email, and a mailed link expires after 30 days. Unclaimed rows bought before the release have no recorded purchase email, so their old links are refused. Nothing is lost: on `/admin/cc_moneys` an admin enters the buyer's address and presses Resend, which records the address, replaces earlier links and mails a new one. Resending a row always revokes the links sent before.
 
+The same page lets an admin correct the purchase email of an unclaimed row (a mistyped address): the new address replaces the stored one, every earlier link stops working and a new link is mailed to the new address. Each correction is kept in `cc_money_email_corrections` (row, admin, old address, new address, time); those rows are only ever added. The release that adds that table needs no manual step (`web` runs the migration; rolling back drops the table, so export it first once corrections exist).
+
 ### Failed and overdue job alerts
 
 The `job_alerts` task (`JobAlertJob`, every 5 minutes, production and staging) mails the maintenance address (the one set on the printer issues page, `Setting.maintenance_email`) when a background job needs attention. It reports, once each:

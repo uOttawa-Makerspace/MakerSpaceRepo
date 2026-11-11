@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -140,6 +140,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_100000) do
     t.datetime "created_at", precision: nil, null: false
     t.string "name"
     t.datetime "updated_at", precision: nil, null: false
+  end
+
+  create_table "cc_money_email_corrections", force: :cascade do |t|
+    t.integer "cc_money_id", null: false
+    t.integer "admin_id", null: false
+    t.string "old_email"
+    t.string "new_email", null: false
+    t.datetime "created_at", null: false
+    t.index ["admin_id"], name: "index_cc_money_email_corrections_on_admin_id"
+    t.index ["cc_money_id"], name: "index_cc_money_email_corrections_on_cc_money_id"
   end
 
   create_table "cc_moneys", id: :serial, force: :cascade do |t|
@@ -1836,6 +1846,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_100000) do
   add_foreign_key "categories", "category_options"
   add_foreign_key "categories", "project_proposals"
   add_foreign_key "categories", "repositories"
+  add_foreign_key "cc_money_email_corrections", "cc_moneys", on_delete: :restrict
+  add_foreign_key "cc_money_email_corrections", "users", column: "admin_id", on_delete: :restrict
   add_foreign_key "cc_moneys", "discount_codes"
   add_foreign_key "cc_moneys", "orders"
   add_foreign_key "cc_moneys", "proficient_projects"
