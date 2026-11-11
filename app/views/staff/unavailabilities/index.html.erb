@@ -2,10 +2,10 @@
 
 <div class="my-4">
     <h1>My Unavailabilities</h1>
-    <p>Add your schedule unavailabilities (classes, appointments, etc.) by clicking the button below or dragging on the calendar. Click on an event to delete or edit it. <%= link_to "View your work schedule here", "/staff/my_calendar", data: { turbo: true } %>.</p>
+    <p>Add your schedule unavailabilities (classes, appointments, etc.) by clicking the button below or dragging on the calendar. Click on an event to delete or edit it; events imported from a linked calendar open a read-only view instead. <%= link_to "View your work schedule here", "/staff/my_calendar", data: { turbo: true } %>.</p>
 </div>
 
-<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="<%= json_staff_unavailabilities_path %>" data-unavailabilities-calendar-unavailability-form-outlet="#unavailabilityModal">
+<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="<%= json_staff_unavailabilities_path %>" data-unavailabilities-calendar-unavailability-form-outlet="#unavailabilityModal" data-unavailabilities-calendar-imported-event-details-outlet="#importedEventModal">
     <div id="calendar_container" data-unavailabilities-calendar-target="container">
         <button type="button" id="addUnavailabilityButton" class="btn btn-outline-primary my-4" data-action="click->unavailabilities-calendar#addUnavailability">
             + Add Unavailability
@@ -48,6 +48,7 @@
     </template>
 </div>
 
+<%= render 'imported_event' %>
 <%= render 'form' %>
 
 <style>

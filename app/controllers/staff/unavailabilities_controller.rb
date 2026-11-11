@@ -124,7 +124,8 @@ class Staff::UnavailabilitiesController < StaffAreaController
       parsed.flat_map do |calendar|
         calendar[:events].map do |event|
           event.merge(
-            title: "External - #{event[:title]}"
+            title: "External - #{event[:title]}",
+            extendedProps: event[:extendedProps].merge(sourceHost: external.source_host)
           )
         end
       end

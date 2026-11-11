@@ -352,6 +352,16 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(response.parsed_body.first["extendedProps"]).not_to have_key("eventType")
       end
 
+      it "names the host of the link an external event came from, never the link itself" do
+        url = "https://calendar.example.org/private/secret-token-123/basic.ics?key=abc"
+        StaffExternalUnavailability.create!(user: staff, ics_url: url)
+        stub_ics(url, body: ics_document(uid: "e2", summary: "Dentist", start: 3.days.from_now, end: 3.days.from_now + 1.hour))
+        get json_staff_unavailabilities_path
+        expect(response.parsed_body.first["extendedProps"]["sourceHost"]).to eq("calendar.example.org")
+        expect(response.body).not_to include("secret-token-123")
+        expect(response.body).not_to include("key=abc")
+      end
+
       it "silently drops an external feed that fails to download" do
         url = "https://cal.test/down.ics"
         StaffExternalUnavailability.create!(user: staff, ics_url: url)

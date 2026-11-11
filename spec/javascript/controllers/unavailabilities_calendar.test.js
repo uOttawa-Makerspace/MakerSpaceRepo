@@ -28,6 +28,7 @@ const accessible = vi.fn();
 vi.mock("../../../app/javascript/src/calendar_accessibility.js", () => ({
   makeCalendarAccessible: accessible,
 }));
+const details = { show: vi.fn() };
 const form = {
   openForAdd: vi.fn(),
   openForEdit: vi.fn(),
@@ -38,14 +39,15 @@ const { default: UnavailabilitiesCalendar } =
   await import("../../../app/javascript/controllers/unavailabilities_calendar_controller.js");
 
 const PAGE = `
-<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-unavailability-form-outlet="#modal">
+<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-unavailability-form-outlet="#modal" data-unavailabilities-calendar-imported-event-details-outlet="#details">
   <div id="calendar_container" data-unavailabilities-calendar-target="container" style="display:none">
     <button id="addUnavailabilityButton" data-action="click->unavailabilities-calendar#addUnavailability"></button>
     <div id="calendar" data-unavailabilities-calendar-target="calendar"><p id="stale">old</p></div>
   </div>
   <div id="spinner_container" data-unavailabilities-calendar-target="spinner"></div>
 </div>
-<div id="modal" data-controller="unavailability-form"></div>`;
+<div id="modal" data-controller="unavailability-form"></div>
+<div id="details" data-controller="imported-event-details"></div>`;
 
 class FakeForm extends Controller {
   openForAdd(options) {
@@ -59,6 +61,12 @@ class FakeForm extends Controller {
   }
 }
 
+class FakeDetails extends Controller {
+  show(event, returnFocusTo) {
+    details.show(event, returnFocusTo);
+  }
+}
+
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 let application;
 
@@ -67,6 +75,7 @@ async function boot(html = PAGE) {
   created.length = 0;
   application = Application.start();
   application.register("unavailability-form", FakeForm);
+  application.register("imported-event-details", FakeDetails);
   application.register("unavailabilities-calendar", UnavailabilitiesCalendar);
   await settle();
   return created[0];
@@ -131,13 +140,24 @@ describe("staff unavailabilities calendar", () => {
     expect(form.openForRange).toHaveBeenCalledWith({ start: "s", end: "t" });
   });
 
-  it("does not open the edit dialog for an event imported from a calendar feed", async () => {
+  it("shows the read-only details, not the edit dialog, for an event imported from a calendar feed", async () => {
     form.openForEdit.mockClear();
+    details.show.mockClear();
+    const cal = await boot();
+    const imported = { id: "a/../b?x#y", extendedProps: { name: "Feed" } };
+    const el = document.createElement("a");
+    cal.options.eventClick({ event: imported, el });
+    expect(form.openForEdit).not.toHaveBeenCalled();
+    expect(details.show).toHaveBeenCalledWith(imported, el);
+  });
+
+  it("does not show the imported details for the staff member's own event", async () => {
+    details.show.mockClear();
     const cal = await boot();
     cal.options.eventClick({
-      event: { id: "a/../b?x#y", extendedProps: { name: "Feed" } },
+      event: { id: "e", extendedProps: { eventType: "unavailability" } },
     });
-    expect(form.openForEdit).not.toHaveBeenCalled();
+    expect(details.show).not.toHaveBeenCalled();
   });
 
   it("makes the calendar accessible whenever a view is mounted", async () => {

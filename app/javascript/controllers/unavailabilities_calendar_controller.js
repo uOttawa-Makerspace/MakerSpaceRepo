@@ -15,6 +15,7 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
   spinnerTarget: HTMLElement,
   feedUrlValue: string,
   unavailabilityFormOutlet: { openForAdd(options?: { returnFocusTo?: HTMLElement }): void, openForEdit(event: any): void, openForRange(range: { start: string, end: string }): void },
+  importedEventDetailsOutlet: { show(event: any, returnFocusTo?: HTMLElement | null): void },
 }} */ (/** @type {unknown} */ (Controller));
 
 // The staff member's own unavailabilities: draws a FullCalendar on the
@@ -23,7 +24,7 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
 export default class extends TypedController {
   static targets = ["calendar", "container", "spinner"];
   static values = { feedUrl: String };
-  static outlets = ["unavailability-form"];
+  static outlets = ["unavailability-form", "imported-event-details"];
 
   connect() {
     // A page restored from Turbo's cache still holds the markup of the
@@ -48,10 +49,14 @@ export default class extends TypedController {
   }
 
   // Only the staff member's own unavailabilities can be edited; an event
-  // imported from a calendar feed is shown but does nothing when clicked.
-  editOwn(event) {
-    if (event.extendedProps?.eventType !== "unavailability") return;
-    this.unavailabilityFormOutlet.openForEdit(event);
+  // imported from a calendar feed opens a read-only view of it instead. The
+  // element is the one clicked, which gets the focus back when the view closes.
+  openEvent(event, element) {
+    if (event.extendedProps?.eventType === "unavailability") {
+      this.unavailabilityFormOutlet.openForEdit(event);
+    } else {
+      this.importedEventDetailsOutlet.show(event, element);
+    }
   }
 
   calendarOptions() {
@@ -70,7 +75,7 @@ export default class extends TypedController {
       selectMinDistance: 30,
       height: "80vh",
       events: this.feedUrlValue,
-      eventClick: (info) => this.editOwn(info.event),
+      eventClick: (info) => this.openEvent(info.event, info.el),
       select: (info) =>
         this.unavailabilityFormOutlet.openForRange({
           start: info.startStr,
