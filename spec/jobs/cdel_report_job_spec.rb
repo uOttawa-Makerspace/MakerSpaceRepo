@@ -110,6 +110,15 @@ RSpec.describe CdelReportJob, type: :job do
       expect(Setting.get("cdel_report_sent:2026-09")).to eq("sent")
     end
 
+    it "mails nothing and leaves the month unclaimed when a forced claim cannot be taken" do
+      allow(Setting).to receive(:claim).and_return(false)
+      expect { described_class.perform_now(month: "2026-09", force: true) }.not_to raise_error
+
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(Setting.get("cdel_report_sent:2026-09")).to be_nil
+      expect(Setting).to have_received(:claim).once
+    end
+
     it "is mailed again when forced" do
       described_class.perform_now(month: "2026-09")
       described_class.perform_now(month: "2026-09", force: true)

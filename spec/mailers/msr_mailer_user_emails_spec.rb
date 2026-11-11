@@ -100,6 +100,15 @@ RSpec.describe MsrMailer, type: :mailer do
       expect(logged.string).not_to include(token.first(20))
     end
 
+    it "does not send a reset mail with an expired link to an address that matches no user, and logs it" do
+      token = user.generate_token_for(:password_reset)
+      deliver_after(121.minutes) { MsrMailer.forgot_password("nobody-at-all@example.com", token).deliver_later }
+
+      expect(ActionMailer::Base.deliveries).to be_empty
+      expect(logged.string).to include("forgot_password not sent", "user nil")
+      expect(logged.string).not_to include(token.first(20))
+    end
+
     it "sends an unlock mail delivered inside its hour" do
       deliver_after(59.minutes) { MsrMailer.unlock_account(user, user.generate_token_for(:account_unlock)).deliver_later }
 

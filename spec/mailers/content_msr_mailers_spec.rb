@@ -78,4 +78,26 @@ RSpec.describe MsrMailer, type: :mailer do
     expect(mail.to).to eq(["uottawa.makerepo@gmail.com"])
     expect(mail.subject).to eq("Repository Reported Repo reported")
   end
+
+  describe "send_cdel_monthly_report without a month" do
+    include ActiveSupport::Testing::TimeHelpers
+
+    it "covers the previous calendar month" do
+      travel_to(Time.zone.local(2026, 11, 15, 12, 0)) do
+        mail = MsrMailer.send_cdel_monthly_report("cdel@example.com")
+
+        expect(mail.to).to eq(["cdel@example.com"])
+        expect(mail.subject).to eq("CDEL Reports from 2026-10-01 to 2026-10-31")
+      end
+    end
+
+    it "takes the previous month in the app time zone when UTC is already in the next month" do
+      # 2026-10-31 23:30 Eastern is already 2026-11-01 03:30 UTC
+      travel_to(Time.zone.local(2026, 10, 31, 23, 30)) do
+        mail = MsrMailer.send_cdel_monthly_report("cdel@example.com")
+
+        expect(mail.subject).to eq("CDEL Reports from 2026-09-01 to 2026-09-30")
+      end
+    end
+  end
 end
