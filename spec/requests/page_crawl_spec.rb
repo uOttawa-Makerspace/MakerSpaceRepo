@@ -9,7 +9,7 @@ require "rails_helper"
 # reason); an entry that stops failing, or a new 500, fails the example so
 # the table is always exact. Routes the world cannot fill are skipped and
 # listed (set CRAWL_REPORT=1 to dump coverage to tmp/page_crawl_report.json).
-RSpec.describe "Page crawl (request level)", type: :request, skip_bullet: true do
+RSpec.describe "Page crawl (request level)", type: :request do
   # route (path spec) => { role => short reason }
   ALL = PageCrawl::ROLES
   KNOWN_500 = {}.freeze

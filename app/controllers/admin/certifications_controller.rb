@@ -4,7 +4,7 @@ class Admin::CertificationsController < AdminAreaController
   before_action :refuse_duplicate_restore, only: :update
 
   def show
-    @certification = Certification.includes(:training_session).includes(:training).find(params[:id])
+    @certification = Certification.includes(training_session: :training).find(params[:id])
     @earner = @certification.user || raise(ActiveRecord::RecordNotFound)
   end
 
