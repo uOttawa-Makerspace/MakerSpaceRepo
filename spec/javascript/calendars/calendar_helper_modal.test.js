@@ -249,6 +249,16 @@ describe("eventClick", () => {
     expect($("publish_form").style.display).toBe("none");
   });
 
+  it("offers to unpublish a published event and hides the button for a draft", () => {
+    eventClick(fcEvent({ props: { draft: false } }));
+    expect($("unpublish_form").style.display).toBe("block");
+    expect($("unpublish_form").action).toContain(
+      "/admin/events/12/publication",
+    );
+    eventClick(fcEvent({ props: { draft: true } }));
+    expect($("unpublish_form").style.display).toBe("none");
+  });
+
   it("leaves no end date, weekdays or rule of the previous series when a series without an end is opened next", () => {
     const series = (origOptions) =>
       fcEvent({
@@ -437,6 +447,7 @@ describe("eventClick", () => {
       [...$("staff_select").options].map((o) => [o.value, o.textContent]),
     ).toEqual([["4", "Wanda Worker"]]);
     expect($("publish_form").style.display).toBe("none");
+    expect($("unpublish_form").style.display).toBe("none");
     expect($("delete_single_form").action).toContain(
       "/staff/unavailabilities/31/delete_with_scope",
     );
