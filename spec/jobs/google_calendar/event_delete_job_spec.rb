@@ -34,6 +34,13 @@ RSpec.describe GoogleCalendar::EventDeleteJob, type: :job do
     end
   end
 
+  it "settles the pending removal when Google answers 404 because the copy is already gone" do
+    GoogleCalendar::PendingChange.ask_removal(7, "abc123", calendar_id)
+    allow(service).to receive(:delete_event).and_raise(client_error(404))
+    described_class.perform_now("abc123", calendar_id, 7)
+    expect(GoogleCalendar::PendingChange.count).to eq(0)
+  end
+
   it "reports any other client error and does not retry it" do
     allow(service).to receive(:delete_event).and_raise(client_error(403))
     expect(Rails.error).to receive(:report)

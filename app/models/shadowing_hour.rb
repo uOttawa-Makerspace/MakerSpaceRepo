@@ -4,6 +4,9 @@ class ShadowingHour < ApplicationRecord
   belongs_to :space, optional: true
   display_user_for :user
 
+  # Statuses Google answers when the event a delete asks for is already gone.
+  GONE_STATUSES = [404, 410].freeze
+
   # The columns allow NULL and older rows may lack a time, so those rows stay
   # editable for other fields: both times are required for a new row, or when
   # either time is being changed.
@@ -122,8 +125,6 @@ class ShadowingHour < ApplicationRecord
 
     return response
   end
-
-  GONE_STATUSES = [404, 410].freeze
 
   # Google no longer has the event, which is what a delete wants.
   def self.already_gone?(error)
