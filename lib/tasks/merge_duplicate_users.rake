@@ -162,7 +162,7 @@ namespace :users do
     end
 
     # Check if there's one and only one user deleted
-    if users.where(deleted: false) == 1
+    if users.where(deleted: false).count == 1
       # the rest are deleted users, change those instead
       users = users.where(deleted: true)
     end
