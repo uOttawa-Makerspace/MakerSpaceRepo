@@ -81,4 +81,47 @@ RSpec.describe UniProgram, type: :model do
       expect(UniProgram.programs_by_faculty).to eq("Science" => %w[Physics])
     end
   end
+
+  describe "inactive programs" do
+    before do
+      create(:uni_program, faculty: "Engineering", program: "CS")
+      create(:uni_program, faculty: "Engineering", program: "Old Program", active: false)
+    end
+
+    it "are active by default" do
+      expect(create(:uni_program)).to be_active
+    end
+
+    it ".active leaves them out" do
+      expect(UniProgram.active.pluck(:program)).to eq(%w[CS])
+    end
+
+    it ".programs_by_faculty leaves them out, unless one is the program to keep" do
+      expect(UniProgram.programs_by_faculty).to eq("Engineering" => %w[CS])
+      expect(UniProgram.programs_by_faculty(keep: "Old Program")).to eq("Engineering" => ["CS", "Old Program"])
+    end
+
+    it "still resolve to a department for users who have them" do
+      create(:uni_program, faculty: "Engineering", program: "Old Program 2", department: "EECS", active: false)
+      user = build(:user, program: "Old Program 2")
+
+      expect(user.department).to eq("EECS")
+    end
+  end
+
+  describe "uniqueness of active programs" do
+    it "refuses a second active row for the same program, level and faculty" do
+      create(:uni_program, program: "CS", level: "Master's", faculty: "Engineering")
+
+      expect { create(:uni_program, program: "CS", level: "Master's", faculty: "Engineering", department: "Other") }
+        .to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    it "allows an inactive copy" do
+      create(:uni_program, program: "CS", level: "Master's", faculty: "Engineering")
+
+      expect { create(:uni_program, program: "CS", level: "Master's", faculty: "Engineering", active: false) }
+        .not_to raise_error
+    end
+  end
 end

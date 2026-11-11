@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1655,10 +1655,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_120000) do
   end
 
   create_table "uni_programs", id: false, force: :cascade do |t|
+    t.boolean "active", default: true, null: false
     t.string "department", null: false
     t.string "faculty", null: false
     t.string "level", null: false
     t.string "program", null: false
+    t.index ["program", "level", "faculty"], name: "index_uni_programs_on_program_level_faculty_active", unique: true, where: "active"
     t.index ["program"], name: "index_uni_programs_on_program"
   end
 
