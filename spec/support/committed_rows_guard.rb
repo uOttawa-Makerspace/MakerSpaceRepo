@@ -15,6 +15,8 @@
 # lock the example holds; a lock timeout turns an unexpected wait into a failure instead of a hang.
 module CommittedRowsGuard
   IGNORED_TABLES = %w[schema_migrations ar_internal_metadata].freeze
+  # Rows the suite itself seeds (rails_helper's before(:suite)) and keeps between runs.
+  SEEDED_TABLES = %w[order_statuses].freeze
 
   # One UNION ALL query inside a transaction, so the lock timeout (SET LOCAL) ends with it and
   # cannot outlive the count on a connection that goes back to the pool.
@@ -36,12 +38,33 @@ module CommittedRowsGuard
     end
   end
 
+  # Worker test databases persist between runs. A row left by an earlier run is invisible to the
+  # before/after comparison, so the suite refuses to start on a database that is not empty.
+  def self.stale_rows(counts = self.counts)
+    counts.reject { |table, n| n.zero? || SEEDED_TABLES.include?(table) }
+  end
+
+  def self.stale_rows_message(stale)
+    listed = stale.map { |table, n| "#{table} (#{n})" }.join(", ")
+    "The test database already holds rows from an earlier run: #{listed}. Recreate the worker test databases."
+  end
+
+  def self.leaked_message(leaked)
+    message = leaked.map { |table, delta| "#{table} (#{delta.positive? ? '+' : ''}#{delta})" }.join(", ")
+    "This non-transactional example changed committed rows and did not undo it: #{message}"
+  end
+
   def self.leaked(before, after)
     (before.keys & after.keys).filter_map { |t| [t, after[t] - before[t]] if after[t] != before[t] }
   end
 end
 
 RSpec.configure do |config|
+  config.before(:suite) do
+    stale = CommittedRowsGuard.stale_rows
+    abort(CommittedRowsGuard.stale_rows_message(stale)) unless stale.empty?
+  end
+
   config.around(:each) do |example|
     non_transactional = respond_to?(:use_transactional_tests) && !use_transactional_tests
     unless non_transactional
@@ -60,12 +83,9 @@ RSpec.configure do |config|
     ensure
       conn.execute("SET lock_timeout = DEFAULT") if conn.active?
     end
-    next unless example.exception.nil?
 
+    # Checked even when the example failed: its own error stays and the leftovers are added to it.
     leaked = CommittedRowsGuard.leaked(before, CommittedRowsGuard.counts)
-    next if leaked.empty?
-
-    message = leaked.map { |table, delta| "#{table} (#{delta.positive? ? '+' : ''}#{delta})" }.join(", ")
-    raise "This non-transactional example changed committed rows and did not undo it: #{message}"
+    raise CommittedRowsGuard.leaked_message(leaked) unless leaked.empty?
   end
 end
