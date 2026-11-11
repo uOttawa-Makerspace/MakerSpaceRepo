@@ -54,4 +54,17 @@ RSpec.describe HiddenRepositoryBlob do
     repo.hide!(by: repo.owner)
     expect(variant_blob.hidden_by_repository?).to be(false)
   end
+
+  it "is true for a file attached directly to a hidden repository and false once it is restored" do
+    ActiveStorage::Attachment.where(blob_id: blob.id).update_all(record_type: "Repository", record_id: repo.id)
+    expect(blob.hidden_by_repository?).to be(false)
+    repo.hide!(by: repo.owner)
+    expect(blob.hidden_by_repository?).to be(true)
+  end
+
+  it "is false for a hidden repository's file that is also attached to a record of another kind" do
+    create(:user, :regular_user).avatar.attach(blob)
+    repo.hide!(by: repo.owner)
+    expect(blob.hidden_by_repository?).to be(false)
+  end
 end
