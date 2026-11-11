@@ -4,7 +4,7 @@ require "rails_helper"
 
 # /staff/unavailabilities: the staff member's own calendar of unavailabilities
 # (the unavailabilities_calendar, unavailability_form and ics_links Stimulus
-# controllers and unavailabilities_helpers.js). The week shown
+# controllers). The week shown
 # is Sun 2027-03-14 .. Sat 2027-03-20.
 
 RSpec.describe "Staff unavailabilities page", type: :system do

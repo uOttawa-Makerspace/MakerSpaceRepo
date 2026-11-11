@@ -18,7 +18,9 @@ import { UNAVAILABILITY_MODAL_HTML } from "./event_modal_fixture.js";
 
 vi.mock("bootstrap", () => ({
   Modal: class {
-    show() {}
+    static getOrCreateInstance() {
+      return { show() {} };
+    }
   },
   Collapse: class {
     hide() {}
@@ -27,9 +29,15 @@ vi.mock("bootstrap", () => ({
 
 const { default: UnavailabilityForm } =
   await import("../../../app/javascript/controllers/unavailability_form_controller.js");
-const { eventClick, eventCreate } =
-  await import("../../../app/javascript/src/unavailabilities_helpers.js");
 
+let application;
+const controller = () =>
+  application.getControllerForElementAndIdentifier(
+    document.getElementById("unavailabilityModal"),
+    "unavailability-form",
+  );
+const openForEdit = (event) => controller().openForEdit(event);
+const openForRange = (range) => controller().openForRange(range);
 const $ = (id) => document.getElementById(id);
 const fire = (el, type, init) => el.dispatchEvent(new Event(type, init));
 const submit = () => fire($("unavailForm"), "submit", { cancelable: true });
@@ -87,8 +95,6 @@ const dailyUntil = (stamp) => ({
 describe.each(Object.entries(ZONES))(
   "with the browser clock in %s",
   (zone, offsetOn17March) => {
-    let application;
-
     beforeEach(async () => {
       process.env.TZ = zone;
       document.body.innerHTML = UNAVAILABILITY_MODAL_HTML;
@@ -149,12 +155,12 @@ describe.each(Object.entries(ZONES))(
     describe("opening an unavailability from the calendar", () => {
       for (const c of cases.calendarStrings) {
         it(`shows ${c.label} at its Toronto time`, () => {
-          eventClick(fcEvent(c.start));
+          openForEdit(fcEvent(c.start));
           expect($("start_time_field").value).toBe(c.field);
         });
 
         it(`deletes ${c.label} by its own instant`, () => {
-          eventClick(fcEvent(c.start));
+          openForEdit(fcEvent(c.start));
           const sent = [...document.querySelectorAll(".delete_start_date")];
           expect(sent.map((input) => input.value)).toEqual([
             c.instant,
@@ -165,7 +171,7 @@ describe.each(Object.entries(ZONES))(
 
       for (const c of cases.untilDates) {
         it(`shows the repeat end date the feed sends for a series ending on ${c.label}`, () => {
-          eventClick(fcEvent("2027-03-10T10:00:00", dailyUntil(c.served)));
+          openForEdit(fcEvent("2027-03-10T10:00:00", dailyUntil(c.served)));
           expect($("recurrence_until").value).toBe(c.date);
         });
       }
@@ -176,7 +182,7 @@ describe.each(Object.entries(ZONES))(
         (c) => !hasOffset(c.start),
       )) {
         it(`fills ${c.label} at its Toronto time`, () => {
-          eventCreate({ startStr: c.start, endStr: c.start });
+          openForRange({ start: c.start, end: c.start });
           expect($("start_time_field").value).toBe(c.field);
         });
       }

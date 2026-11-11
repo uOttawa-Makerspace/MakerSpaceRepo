@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Application } from "@hotwired/stimulus";
+import { Application, Controller } from "@hotwired/stimulus";
 
 const created = [];
 vi.mock("@fullcalendar/core", () => ({
@@ -28,26 +28,36 @@ const accessible = vi.fn();
 vi.mock("../../../app/javascript/src/calendar_accessibility.js", () => ({
   makeCalendarAccessible: accessible,
 }));
-const eventClick = vi.fn();
-const eventCreate = vi.fn();
-const addUnavailabilityClick = vi.fn();
-vi.mock("../../../app/javascript/src/unavailabilities_helpers.js", () => ({
-  eventClick,
-  eventCreate,
-  addUnavailabilityClick,
-}));
+const form = {
+  openForAdd: vi.fn(),
+  openForEdit: vi.fn(),
+  openForRange: vi.fn(),
+};
 
 const { default: UnavailabilitiesCalendar } =
   await import("../../../app/javascript/controllers/unavailabilities_calendar_controller.js");
 
 const PAGE = `
-<div data-controller="unavailabilities-calendar">
+<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="/staff/unavailabilities/json" data-unavailabilities-calendar-unavailability-form-outlet="#modal">
   <div id="calendar_container" data-unavailabilities-calendar-target="container" style="display:none">
     <button id="addUnavailabilityButton" data-action="click->unavailabilities-calendar#addUnavailability"></button>
     <div id="calendar" data-unavailabilities-calendar-target="calendar"><p id="stale">old</p></div>
   </div>
   <div id="spinner_container" data-unavailabilities-calendar-target="spinner"></div>
-</div>`;
+</div>
+<div id="modal" data-controller="unavailability-form"></div>`;
+
+class FakeForm extends Controller {
+  openForAdd() {
+    form.openForAdd();
+  }
+  openForEdit(event) {
+    form.openForEdit(event);
+  }
+  openForRange(range) {
+    form.openForRange(range);
+  }
+}
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 let application;
@@ -56,6 +66,7 @@ async function boot(html = PAGE) {
   document.body.innerHTML = html;
   created.length = 0;
   application = Application.start();
+  application.register("unavailability-form", FakeForm);
   application.register("unavailabilities-calendar", UnavailabilitiesCalendar);
   await settle();
   return created[0];
@@ -101,19 +112,19 @@ describe("staff unavailabilities calendar", () => {
     expect(cal.destroyed).toBe(true);
   });
 
-  it("puts the dialog in add mode when the add button is clicked", async () => {
-    addUnavailabilityClick.mockClear();
+  it("opens the dialog in add mode when the add button is clicked", async () => {
+    form.openForAdd.mockClear();
     await boot();
     document.getElementById("addUnavailabilityButton").click();
-    expect(addUnavailabilityClick).toHaveBeenCalledTimes(1);
+    expect(form.openForAdd).toHaveBeenCalledTimes(1);
   });
 
   it("opens the unavailability dialog for a clicked event and a selected range", async () => {
     const cal = await boot();
     cal.options.eventClick({ event: { id: "e" } });
-    cal.options.select({ startStr: "s" });
-    expect(eventClick).toHaveBeenCalledWith({ id: "e" });
-    expect(eventCreate).toHaveBeenCalledWith({ startStr: "s" });
+    cal.options.select({ startStr: "s", endStr: "t" });
+    expect(form.openForEdit).toHaveBeenCalledWith({ id: "e" });
+    expect(form.openForRange).toHaveBeenCalledWith({ start: "s", end: "t" });
   });
 
   it("makes the calendar accessible whenever a view is mounted", async () => {

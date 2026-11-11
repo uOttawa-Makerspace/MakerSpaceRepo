@@ -1,239 +1,354 @@
 import { Controller } from "@hotwired/stimulus";
-import { Collapse } from "bootstrap";
+import { Collapse, Modal } from "bootstrap";
 import { RRule } from "rrule";
 
 import {
+  dateValue,
   fieldValue,
+  instantFromCalendar,
   instantToWall,
   startOfDay,
   storedRule,
+  wallFromCalendar,
   wallOfField,
   wallToInstant,
 } from "../src/recurrence.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
+const COLLECTION_PATH = "/staff/unavailabilities";
 
-// The unavailability dialog (add and edit): validates the time range, handles
-// all-day entries and repeat options, and sends the Toronto wall-clock times as
-// instants with the stored recurrence rule when the form is submitted. It only
-// reads and writes inside its own element.
-export default class extends Controller {
-  connect() {
-    this.listeners = new AbortController();
-    const { signal } = this.listeners;
+const FREQUENCY_NAMES = new Map([
+  [RRule.DAILY, "DAILY"],
+  [RRule.WEEKLY, "WEEKLY"],
+  [RRule.MONTHLY, "MONTHLY"],
+]);
 
-    this.frequency = this.input("#recurrence_frequency");
-    this.options = this.find("#recurrence_options");
-    this.weeklyOptions = this.find("#weekly_options");
-    this.untilInput = this.input("#recurrence_until");
-    this.ruleField = this.input("#recurrence_rule_field");
-    this.dayCheckboxes = /** @type {HTMLInputElement[]} */ ([
-      ...this.element.querySelectorAll(".dayCheckbox"),
-    ]);
-    this.allDayCheckbox = this.input("#all_day_checkbox");
-    this.startTimeField = this.input("#start_time_field");
-    this.endTimeField = this.input("#end_time_field");
-    this.timeError = this.find("#time_error");
-    this.dayFreqError = this.find("#day_freq_error");
-    this.saveButton = this.input("#save_button");
+// Stimulus defines the target accessors at runtime; this tells the type checker.
+const TypedController = /** @type {new () => Controller<HTMLElement> & {
+  allDayTarget: HTMLInputElement,
+  startTimeTarget: HTMLInputElement,
+  endTimeTarget: HTMLInputElement,
+  timeErrorTarget: HTMLElement,
+  frequencyTarget: HTMLSelectElement,
+  optionsTarget: HTMLElement,
+  untilTarget: HTMLInputElement,
+  weeklyOptionsTarget: HTMLElement,
+  dayCheckboxTargets: HTMLInputElement[],
+  dayFreqErrorTarget: HTMLElement,
+  utcStartTarget: HTMLInputElement,
+  utcEndTarget: HTMLInputElement,
+  ruleFieldTarget: HTMLInputElement,
+  collapseTarget: HTMLElement,
+  titleFieldTarget: HTMLInputElement,
+  descriptionFieldTarget: HTMLTextAreaElement,
+  labelTarget: HTMLElement,
+  formTarget: HTMLFormElement,
+  modalButtonsTarget: HTMLElement,
+  saveButtonTarget: HTMLInputElement,
+  updateDropdownTarget: HTMLElement,
+  updateDropdownItemsTarget: HTMLElement,
+  deleteFormsTarget: HTMLElement,
+  deleteSingleFormTarget: HTMLFormElement,
+  deleteFollowingFormTarget: HTMLFormElement,
+  deleteAllFormTarget: HTMLFormElement,
+  deleteStartDateTargets: HTMLInputElement[],
+}} */ (/** @type {unknown} */ (Controller));
 
-    this.listenToTimes(signal);
-    this.listenToRepeat(signal);
-    this.listenToModal(signal);
-    this.find("#unavailForm").addEventListener(
-      "submit",
-      () => this.sendInstants(),
-      { signal },
+// The unavailability dialog (add and edit): opens in add, edit or range mode,
+// validates the time range, handles all-day entries and repeat options, and
+// sends the Toronto wall-clock times as instants with the stored recurrence
+// rule when the form is submitted. It only reads and writes inside its own
+// element.
+export default class extends TypedController {
+  static targets = [
+    "allDay",
+    "startTime",
+    "endTime",
+    "timeError",
+    "frequency",
+    "options",
+    "until",
+    "weeklyOptions",
+    "dayCheckbox",
+    "dayFreqError",
+    "utcStart",
+    "utcEnd",
+    "ruleField",
+    "collapse",
+    "titleField",
+    "descriptionField",
+    "label",
+    "form",
+    "modalButtons",
+    "saveButton",
+    "updateDropdown",
+    "updateDropdownItems",
+    "deleteForms",
+    "deleteSingleForm",
+    "deleteFollowingForm",
+    "deleteAllForm",
+    "deleteStartDate",
+  ];
+
+  // ---------------------------------------
+  // Opening the dialog
+  // ---------------------------------------
+  openForAdd() {
+    this.formTarget.action = COLLECTION_PATH;
+    this.formTarget.querySelector('input[name="_method"]')?.remove();
+
+    this.labelTarget.textContent = "Add Unavailability";
+    this.saveButtonTarget.value = "Save";
+    this.modalButtonsTarget.appendChild(this.saveButtonTarget);
+    this.updateDropdownTarget.style.display = "none";
+
+    this.modal.show();
+  }
+
+  // A range dragged on the calendar: the start and end are the calendar's
+  // strings, which already hold Toronto time.
+  openForRange({ start, end }) {
+    this.openForAdd();
+    this.startTimeTarget.value = fieldValue(wallFromCalendar(start));
+    this.endTimeTarget.value = fieldValue(wallFromCalendar(end));
+  }
+
+  // The event is the calendar's: its id, times, title, description and, for a
+  // repeating entry, the rule it was built from.
+  openForEdit(calendarEvent) {
+    const def = calendarEvent._def;
+    const repeats = Boolean(def.recurringDef);
+
+    this.modal.show();
+    this.pointFormAt(calendarEvent.id);
+    this.fillTimes(calendarEvent);
+    this.titleFieldTarget.value = def.title || "";
+    this.descriptionFieldTarget.value = def.extendedProps.description || "";
+    this.restoreRule(def.recurringDef?.typeData?.rruleSet);
+
+    this.labelTarget.textContent = "Edit Unavailability";
+    this.saveButtonTarget.value = "Update";
+    this.placeSaveButton(repeats);
+    this.showDeleteChoices(calendarEvent, repeats);
+  }
+
+  get modal() {
+    return Modal.getOrCreateInstance(this.element);
+  }
+
+  pointFormAt(id) {
+    this.formTarget.action = `${COLLECTION_PATH}/${id}`;
+    this.formTarget.querySelector('input[name="_method"]')?.remove();
+    const methodInput = document.createElement("input");
+    methodInput.type = "hidden";
+    methodInput.name = "_method";
+    methodInput.value = "patch";
+    this.formTarget.appendChild(methodInput);
+  }
+
+  // The fields hold Toronto wall-clock times, like the calendar.
+  fillTimes(calendarEvent) {
+    if (calendarEvent.allDay) {
+      this.allDayTarget.checked = true;
+      const startDate = startOfDay(wallFromCalendar(calendarEvent.startStr));
+      this.startTimeTarget.value = fieldValue(startDate);
+      this.endTimeTarget.value = fieldValue(startDate + DAY_MS);
+      this.endTimeTarget.disabled = true;
+    } else {
+      this.startTimeTarget.value = fieldValue(
+        wallFromCalendar(calendarEvent.startStr),
+      );
+      this.endTimeTarget.value = fieldValue(
+        wallFromCalendar(calendarEvent.endStr),
+      );
+    }
+  }
+
+  // Unbuilds the repeat rule of the feed into the repeat fields.
+  restoreRule(ruleSet) {
+    if (!ruleSet) return;
+
+    const rule = new RRule(ruleSet._rrule[0].origOptions);
+    const { freq, byweekday, until, dtstart } = rule.options;
+
+    this.optionsTarget.style.display = "block";
+    this.weeklyOptionsTarget.style.display = "none";
+    this.restoreFrequency(freq, byweekday);
+
+    const untilDate = until ? dateValue(until.getTime()) : "";
+    this.untilTarget.value = untilDate;
+    // The feed's start is a Toronto wall time already
+    this.ruleFieldTarget.value = storedRule(
+      { freq, byweekday },
+      dtstart.getTime(),
+      untilDate,
     );
   }
 
-  disconnect() {
-    this.listeners?.abort();
-  }
+  restoreFrequency(freq, byweekday) {
+    const name = FREQUENCY_NAMES.get(freq);
+    if (name) this.frequencyTarget.value = name;
+    if (freq !== RRule.WEEKLY) return;
 
-  /** @returns {HTMLElement} */
-  find(selector) {
-    return this.element.querySelector(selector);
-  }
-
-  /** @returns {HTMLInputElement} */
-  input(selector) {
-    return this.element.querySelector(selector);
-  }
-
-  listenToTimes(signal) {
-    this.allDayCheckbox.addEventListener("change", () => this.allDayChanged(), {
-      signal,
-    });
-    // Auto-set end time when start time changes
-    this.startTimeField.addEventListener(
-      "change",
-      () => {
-        if (this.allDayCheckbox.checked) this.snapToAllDay();
-        this.validateTimeRange();
-      },
-      { signal },
-    );
-    // Validate when end time changes manually
-    this.endTimeField.addEventListener(
-      "change",
-      () => this.validateTimeRange(),
-      { signal },
-    );
-  }
-
-  listenToRepeat(signal) {
-    this.frequency.addEventListener("change", () => this.frequencyChanged(), {
-      signal,
-    });
-    [this.untilInput, ...this.dayCheckboxes].forEach((el) => {
-      el.addEventListener("change", () => this.warnWithoutWeekday(), {
-        signal,
-      });
-    });
-    // "Update" radio buttons: keep a click from closing the dropdown
-    this.element
-      .querySelectorAll("#update_dropdown_items *")
-      .forEach((radio) => {
-        radio.addEventListener("click", (e) => e.stopPropagation(), {
-          signal,
-        });
-      });
-  }
-
-  listenToModal(signal) {
-    // Confirm before modal exit
-    this.element.addEventListener("hide.bs.modal", (e) => this.confirmExit(e), {
-      signal,
-    });
-    this.element.addEventListener("hidden.bs.modal", () => this.reset(), {
-      signal,
-    });
-    this.element.addEventListener("show.bs.modal", () => this.proposeTimes(), {
-      signal,
+    this.weeklyOptionsTarget.style.display = "block";
+    byweekday.forEach((day) => {
+      // rrule has MO=0 while we use SU=0...
+      const box =
+        this.dayCheckboxTargets[day + 1] || this.dayCheckboxTargets[0];
+      box.checked = true;
     });
   }
 
+  // A repeating entry saves through the "update this / all" menu.
+  placeSaveButton(repeats) {
+    if (repeats) {
+      this.updateDropdownItemsTarget.appendChild(this.saveButtonTarget);
+    } else {
+      this.modalButtonsTarget.appendChild(this.saveButtonTarget);
+    }
+    this.updateDropdownTarget.style.display = repeats ? "block" : "none";
+  }
+
+  showDeleteChoices(calendarEvent, repeats) {
+    const path = `${COLLECTION_PATH}/${calendarEvent.id}/delete_with_scope`;
+    this.deleteScopeForms.forEach((form) => {
+      form.action = path;
+    });
+    this.deleteFormsTarget.style.display = "flex";
+
+    const display = repeats ? "block" : "none";
+    this.deleteFollowingFormTarget.style.display = display;
+    this.deleteAllFormTarget.style.display = display;
+
+    // The instant of the clicked occurrence
+    const occurrenceStart = new Date(
+      instantFromCalendar(calendarEvent.startStr),
+    ).toISOString();
+    this.deleteStartDateTargets.forEach((input) => {
+      input.value = occurrenceStart;
+    });
+  }
+
+  get deleteScopeForms() {
+    return [
+      this.deleteSingleFormTarget,
+      this.deleteFollowingFormTarget,
+      this.deleteAllFormTarget,
+    ];
+  }
+
+  // ---------------------------------------
+  // Form events
+  // ---------------------------------------
   // The form fields hold Toronto wall-clock times, like the calendar.
   validateTimeRange() {
-    const startDate = wallOfField(this.startTimeField.value);
-    const endDate = wallOfField(this.endTimeField.value);
+    const startDate = wallOfField(this.startTimeTarget.value);
+    const endDate = wallOfField(this.endTimeTarget.value);
     const valid = endDate > startDate;
 
-    this.timeError.classList.toggle("d-none", valid);
-    this.saveButton.disabled = !valid;
-    this.saveButton.classList.toggle("disabled", !valid);
-    return valid;
+    this.timeErrorTarget.classList.toggle("d-none", valid);
+    this.saveButtonTarget.disabled = !valid;
+    this.saveButtonTarget.classList.toggle("disabled", !valid);
   }
 
-  // The rule as it is stored: the start in Toronto time, the end a UTC stamp.
-  buildRule() {
-    if (this.frequency.value === "") {
-      this.ruleField.value = "";
-      return;
-    }
-
-    this.ruleField.value = storedRule(
-      {
-        freq: RRule[this.frequency.value] || RRule.DAILY,
-        byweekday: this.dayCheckboxes
-          .filter((cb) => cb.checked)
-          .map((cb) => RRule[cb.value]),
-      },
-      wallOfField(this.startTimeField.value),
-      this.untilInput.value,
-    );
+  startChanged() {
+    if (this.allDayTarget.checked) this.snapToAllDay();
+    this.validateTimeRange();
   }
 
   snapToAllDay() {
-    const startDate = startOfDay(wallOfField(this.startTimeField.value));
+    const startDate = startOfDay(wallOfField(this.startTimeTarget.value));
 
-    this.startTimeField.value = fieldValue(startDate);
-    this.endTimeField.value = fieldValue(startDate + DAY_MS);
-    this.endTimeField.disabled = true;
+    this.startTimeTarget.value = fieldValue(startDate);
+    this.endTimeTarget.value = fieldValue(startDate + DAY_MS);
+    this.endTimeTarget.disabled = true;
 
-    if (this.frequency.value === "WEEKLY") {
+    if (this.frequencyTarget.value === "WEEKLY") {
       const dayIndex = new Date(startDate).getUTCDay();
-      this.dayCheckboxes.forEach((checkbox, index) => {
+      this.dayCheckboxTargets.forEach((checkbox, index) => {
         checkbox.checked = index === dayIndex;
       });
     }
   }
 
   allDayChanged() {
-    if (this.allDayCheckbox.checked) {
+    if (this.allDayTarget.checked) {
       this.snapToAllDay();
     } else {
-      this.endTimeField.disabled = false;
-      const start = wallToInstant(wallOfField(this.startTimeField.value));
-      this.endTimeField.value = fieldValue(instantToWall(start + HOUR_MS));
+      this.endTimeTarget.disabled = false;
+      const start = wallToInstant(wallOfField(this.startTimeTarget.value));
+      this.endTimeTarget.value = fieldValue(instantToWall(start + HOUR_MS));
     }
     this.validateTimeRange();
   }
 
-  // Manage when frequency changes
   frequencyChanged() {
-    const freq = this.frequency.value;
-    this.options.style.display = freq ? "block" : "none";
-    this.weeklyOptions.style.display = freq === "WEEKLY" ? "block" : "none";
-    this.dayFreqError.classList.add("d-none");
+    const freq = this.frequencyTarget.value;
+    this.optionsTarget.style.display = freq ? "block" : "none";
+    this.weeklyOptionsTarget.style.display =
+      freq === "WEEKLY" ? "block" : "none";
+    this.dayFreqErrorTarget.classList.add("d-none");
 
-    this.dayCheckboxes.forEach((checkbox) => {
+    this.dayCheckboxTargets.forEach((checkbox) => {
       checkbox.checked = false;
     });
-    // Set the weekday of the start if frequency is WEEKLY
+    // Tick the weekday of the start if frequency is WEEKLY
     if (freq === "WEEKLY") {
       const dayIndex = new Date(
-        wallOfField(this.startTimeField.value),
+        wallOfField(this.startTimeTarget.value),
       ).getUTCDay();
-      if (this.dayCheckboxes[dayIndex])
-        this.dayCheckboxes[dayIndex].checked = true;
+      const box = this.dayCheckboxTargets[dayIndex];
+      if (box) box.checked = true;
     }
   }
 
   warnWithoutWeekday() {
-    const none = this.dayCheckboxes.every((checkbox) => !checkbox.checked);
-    this.dayFreqError.classList.toggle("d-none", !none);
+    const none = this.dayCheckboxTargets.every((checkbox) => !checkbox.checked);
+    this.dayFreqErrorTarget.classList.toggle("d-none", !none);
   }
 
+  // A click inside the update menu must not close the dropdown.
+  keepMenuOpen(event) {
+    event.stopPropagation();
+  }
+
+  // ---------------------------------------
+  // Modal events
+  // ---------------------------------------
   confirmExit(event) {
-    const confirmExit = confirm(
+    const confirmed = confirm(
       "Are you sure you want to exit? All changes will be lost.",
     );
-    if (!confirmExit) {
+    if (!confirmed) {
       event.preventDefault();
       event.stopPropagation();
     }
   }
 
   reset() {
-    /** @type {HTMLFormElement} */ (this.find("form")).reset();
-    this.allDayCheckbox.checked = false;
-    this.endTimeField.disabled = false;
-    this.timeError.classList.add("d-none");
-    this.saveButton.disabled = false;
-    this.saveButton.classList.remove("disabled");
+    this.formTarget.reset();
+    this.allDayTarget.checked = false;
+    this.endTimeTarget.disabled = false;
+    this.timeErrorTarget.classList.add("d-none");
+    this.saveButtonTarget.disabled = false;
+    this.saveButtonTarget.classList.remove("disabled");
     // close the recurrence options
-    this.options.style.display = "none";
-    this.weeklyOptions.style.display = "none";
-    // close accordion
-    const accordion = this.find("#accordion .collapse");
-    if (accordion) {
-      new Collapse(accordion, { toggle: false }).hide();
-    }
+    this.optionsTarget.style.display = "none";
+    this.weeklyOptionsTarget.style.display = "none";
+    new Collapse(this.collapseTarget, { toggle: false }).hide();
     // hide delete forms
-    this.find("#delete_forms").style.display = "none";
+    this.deleteFormsTarget.style.display = "none";
   }
 
   // Set values on modal open
   proposeTimes() {
-    if (!this.startTimeField.value) {
+    if (!this.startTimeTarget.value) {
       const now = wallOfField("");
       const nextHour = now - (now % HOUR_MS) + HOUR_MS;
 
-      this.startTimeField.value = fieldValue(nextHour);
-      this.endTimeField.value = fieldValue(nextHour + HOUR_MS);
+      this.startTimeTarget.value = fieldValue(nextHour);
+      this.endTimeTarget.value = fieldValue(nextHour + HOUR_MS);
     }
 
     this.validateTimeRange();
@@ -243,11 +358,31 @@ export default class extends Controller {
   sendInstants() {
     this.buildRule();
 
-    this.input("#utc_start_time").value = new Date(
-      wallToInstant(wallOfField(this.startTimeField.value)),
+    this.utcStartTarget.value = new Date(
+      wallToInstant(wallOfField(this.startTimeTarget.value)),
     ).toISOString();
-    this.input("#utc_end_time").value = new Date(
-      wallToInstant(wallOfField(this.endTimeField.value)),
+    this.utcEndTarget.value = new Date(
+      wallToInstant(wallOfField(this.endTimeTarget.value)),
     ).toISOString();
+  }
+
+  // The rule as it is stored: the start in Toronto time, the end a UTC stamp.
+  buildRule() {
+    const frequency = this.frequencyTarget.value;
+    if (frequency === "") {
+      this.ruleFieldTarget.value = "";
+      return;
+    }
+
+    this.ruleFieldTarget.value = storedRule(
+      {
+        freq: RRule[frequency] || RRule.DAILY,
+        byweekday: this.dayCheckboxTargets
+          .filter((cb) => cb.checked)
+          .map((cb) => RRule[cb.value]),
+      },
+      wallOfField(this.startTimeTarget.value),
+      this.untilTarget.value,
+    );
   }
 }

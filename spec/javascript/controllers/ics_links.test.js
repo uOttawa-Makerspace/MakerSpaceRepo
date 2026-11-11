@@ -7,12 +7,12 @@ import IcsLinks from "../../../app/javascript/controllers/ics_links_controller.j
 const PAGE = `
 <div data-controller="ics-links">
   <form><div id="link-container" data-ics-links-target="list">
-    <div class="row"><input value="https://a.example/x.ics"><button class="del" type="button" data-action="click->ics-links#remove"></button></div>
+    <div class="row" data-ics-links-row><input value="https://a.example/x.ics"><button class="del" type="button" data-action="click->ics-links#remove"></button></div>
   </div>
   <button type="button" id="new-calendar" data-action="click->ics-links#add"></button></form>
-  <div id="new-link-input" style="visibility: hidden;" data-ics-links-target="template">
-    <input value="prefilled"><button class="del" type="button" data-action="click->ics-links#remove"></button>
-  </div>
+  <template data-ics-links-target="template">
+    <div class="row" data-ics-links-row><input><button class="del" type="button" data-action="click->ics-links#remove"></button></div>
+  </template>
 </div>`;
 
 let application;
@@ -29,17 +29,14 @@ afterEach(() => {
 });
 
 describe("imported calendar links", () => {
-  it("adds a blank visible row that is not a second template", async () => {
+  it("adds a blank row each time, leaving the template as it was", async () => {
     await boot();
     document.getElementById("new-calendar").click();
+    document.getElementById("new-calendar").click();
     const rows = document.querySelectorAll("#link-container > div");
-    expect(rows).toHaveLength(2);
-    const added = rows[1];
-    expect(added.querySelector("input").value).toBe("");
-    expect(added.style.visibility).toBe("visible");
-    expect(added.id).toBe("");
-    expect(added.hasAttribute("data-ics-links-target")).toBe(false);
-    expect(document.getElementById("new-link-input")).not.toBeNull();
+    expect(rows).toHaveLength(3);
+    expect(rows[2].querySelector("input").value).toBe("");
+    expect(document.querySelectorAll("input")).toHaveLength(3);
   });
 
   it("removes a row on its delete button, for existing and added rows", async () => {

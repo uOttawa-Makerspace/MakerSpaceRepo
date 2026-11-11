@@ -5,9 +5,9 @@
     <p>Add your schedule unavailabilities (classes, appointments, etc.) by clicking the button below or dragging on the calendar. Click on an event to delete or edit it. <%= link_to "View your work schedule here", "/staff/my_calendar", data: { turbo: true } %>.</p>
 </div>
 
-<div data-controller="unavailabilities-calendar">
+<div data-controller="unavailabilities-calendar" data-unavailabilities-calendar-feed-url-value="<%= json_staff_unavailabilities_path %>" data-unavailabilities-calendar-unavailability-form-outlet="#unavailabilityModal">
     <div id="calendar_container" data-unavailabilities-calendar-target="container">
-        <button type="button" id="addUnavailabilityButton" class="btn btn-outline-primary my-4" data-bs-toggle="modal" data-bs-target="#unavailabilityModal" data-action="click->unavailabilities-calendar#addUnavailability">
+        <button type="button" id="addUnavailabilityButton" class="btn btn-outline-primary my-4" data-action="click->unavailabilities-calendar#addUnavailability">
             + Add Unavailability
         </button>
 
@@ -27,7 +27,7 @@
     <%= form_with url: update_external_unavailabilities_staff_unavailabilities_path, method: :patch, local: false, html: { class: "useTurbo" } do |f| %>
         <div id="link-container" data-ics-links-target="list">
             <% @external_unavailabilities.each_with_index do |calendar, i| %>
-                <div class="d-flex mb-2 gap-1">
+                <div class="d-flex mb-2 gap-1" data-ics-links-row>
                     <%= text_field_tag 'external_calendar[]', calendar.ics_url, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
                     <button class="btn btn-danger calendar-delete-button ms-2" type="button" data-action="click->ics-links#remove">
                         <i class="fa fa-trash"></i>
@@ -38,13 +38,14 @@
         <button type="button" class="btn btn-outline-primary" id="new-calendar" data-action="click->ics-links#add">New Calendar</button>
         <%= f.submit 'Save Calendars', class: 'btn btn-primary' %>
     <% end %>
-    <%# template %>
-    <div class="d-flex mb-2 gap-1" style="visibility: hidden;" id="new-link-input" data-ics-links-target="template">
-        <%= text_field_tag 'external_calendar[]', nil, { class: 'form-control', placeholder: 'Enter ICS URL...' } %>
-        <button class="btn btn-danger calendar-delete-button ms-2" type="button" data-action="click->ics-links#remove">
-            <i class="fa fa-trash"></i>
-        </button>
-    </div>
+    <template data-ics-links-target="template">
+        <div class="d-flex mb-2 gap-1" data-ics-links-row>
+            <%= text_field_tag 'external_calendar[]', nil, { class: 'form-control', placeholder: 'Enter ICS URL...', id: nil } %>
+            <button class="btn btn-danger calendar-delete-button ms-2" type="button" data-action="click->ics-links#remove">
+                <i class="fa fa-trash"></i>
+            </button>
+        </div>
+    </template>
 </div>
 
 <%= render 'form' %>
