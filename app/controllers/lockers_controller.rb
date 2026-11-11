@@ -9,7 +9,7 @@ class LockersController < AdminAreaController
     # For the locker rental form
     # This works on the basis that there's only one active locker rental
     @lockers =
-      Locker.includes(locker_rentals: %i[rented_by decided_by]).includes(
+      Locker.includes(locker_rentals: :rented_by).includes(
         :locker_size
       )
 

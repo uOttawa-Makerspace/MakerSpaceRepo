@@ -427,7 +427,7 @@ class UsersController < SessionsController
     @joined_projects = @repo_user.project_joins
     @photos = photo_hash
     @certifications = @repo_user.certifications.highest_level
-    @skills = Skill.all
+    @skills = Skill.includes(:trainings)
     @proficient_projects_awarded =
       proc do |training|
         training.proficient_projects.where(

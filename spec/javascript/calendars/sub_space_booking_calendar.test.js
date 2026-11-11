@@ -117,6 +117,11 @@ const reply = (
 });
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
+function confirmed(id) {
+  $(id).dispatchEvent(
+    new CustomEvent("confirmation:confirmed", { bubbles: true }),
+  );
+}
 const $ = (id) => document.getElementById(id);
 
 function boot(url = "http://localhost/sub_space_booking?room=4", page = PAGE) {
@@ -469,7 +474,19 @@ describe("existing booking", () => {
     expect(requests).toEqual([]);
   });
 
-  it("deletes after confirmation and not without it", async () => {
+  it("do nothing on a plain click, which the confirmation prompt may still decline", async () => {
+    const cal = boot();
+    stubFetch(() => reply(JSON.stringify(booking())));
+    click(cal);
+    await flush();
+    requests.length = 0;
+    $("bookDelete").click();
+    $("bookRecurringDeleteRest").click();
+    await flush();
+    expect(requests).toEqual([]);
+  });
+
+  it("deletes the booking when the delete button is clicked", async () => {
     const cal = boot();
     stubFetch(() => reply(JSON.stringify(booking())));
     click(cal);
@@ -477,13 +494,9 @@ describe("existing booking", () => {
     requests.length = 0;
     stubFetch(() => reply("{}"));
 
-    vi.stubGlobal("confirm", () => false);
-    $("bookDelete").click();
-    expect(requests).toEqual([]);
-
-    vi.stubGlobal("confirm", () => true);
-    $("bookDelete").click();
+    confirmed("bookDelete");
     await flush();
+    expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({
       url: "/sub_space_booking/12/delete/12",
       method: "DELETE",
@@ -491,7 +504,7 @@ describe("existing booking", () => {
     expect(cal.refetched).toBe(1);
   });
 
-  it("deletes the rest of a series after confirmation", async () => {
+  it("deletes the rest of a series from its own button", async () => {
     const cal = boot();
     stubFetch(() =>
       reply(JSON.stringify(booking({ recurring_booking_id: 3 }))),
@@ -501,12 +514,7 @@ describe("existing booking", () => {
     requests.length = 0;
     stubFetch(() => reply("{}"));
 
-    vi.stubGlobal("confirm", () => false);
-    $("bookRecurringDeleteRest").click();
-    expect(requests).toEqual([]);
-
-    vi.stubGlobal("confirm", () => true);
-    $("bookRecurringDeleteRest").click();
+    confirmed("bookRecurringDeleteRest");
     await flush();
     expect(requests[0]).toMatchObject({
       url: "/sub_space_booking/12/delete_remaining_recurring",
@@ -514,7 +522,7 @@ describe("existing booking", () => {
     });
 
     requests.length = 0;
-    $("bookRecurringDeleteOne").click();
+    confirmed("bookRecurringDeleteOne");
     await flush();
     expect(requests[0].url).toBe("/sub_space_booking/12/delete/12");
   });

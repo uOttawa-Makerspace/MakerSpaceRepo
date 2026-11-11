@@ -25,7 +25,7 @@ class ProficientProjectsController < DevelopmentProgramsController
   before_action :with_development_header
 
   def index
-    @skills = Skill.all
+    @skills = Skill.includes(:trainings)
     @proficient_projects_awarded =
       proc do |training|
         training.proficient_projects.where(

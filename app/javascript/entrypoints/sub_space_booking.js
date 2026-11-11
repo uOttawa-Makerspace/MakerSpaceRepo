@@ -345,13 +345,15 @@ document.addEventListener("turbo:load", function () {
   document.getElementById("bookClose").addEventListener("click", closeModal);
   document.getElementById("bookSave").addEventListener("click", bookEvent);
   document.getElementById("bookUpdate").addEventListener("click", updateEvent);
-  document.getElementById("bookDelete").addEventListener("click", deleteEvent);
+  document
+    .getElementById("bookDelete")
+    .addEventListener("confirmation:confirmed", deleteEvent);
   document
     .getElementById("bookRecurringDeleteOne")
-    .addEventListener("click", deleteEvent);
+    .addEventListener("confirmation:confirmed", deleteEvent);
   document
     .getElementById("bookRecurringDeleteRest")
-    .addEventListener("click", deleteRecurringEvent);
+    .addEventListener("confirmation:confirmed", deleteRecurringEvent);
   document
     .getElementById("book-recurring")
     .addEventListener("change", toggleRecurring);
@@ -438,7 +440,6 @@ document.addEventListener("turbo:load", function () {
 
   // ---- Delete (DELETE) ----------------------------------------------------
   function deleteEvent() {
-    if (!confirm("Delete this booking?")) return;
     const id = document.getElementById("sub_space_booking_id").value;
     makeRequest(
       new Request(`/sub_space_booking/${id}/delete/${id}`, {
@@ -453,7 +454,6 @@ document.addEventListener("turbo:load", function () {
   }
 
   function deleteRecurringEvent() {
-    if (!confirm("Delete this and all remaining occurrences?")) return;
     const id = document.getElementById("sub_space_booking_id").value;
     makeRequest(
       new Request(`/sub_space_booking/${id}/delete_remaining_recurring`, {

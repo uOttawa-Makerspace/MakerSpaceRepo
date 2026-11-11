@@ -15,7 +15,11 @@ export default class extends Controller {
 
   ask(event) {
     // Stimulus defines messageValue at runtime; the cast tells the type checker.
-    if (window.confirm(/** @type {any} */ (this).messageValue)) return;
+    if (window.confirm(/** @type {any} */ (this).messageValue)) {
+      // Lets a script act only after an accepted prompt, whatever the order of click listeners.
+      this.dispatch("confirmed");
+      return;
+    }
     event.preventDefault();
     // Stops other listeners on this element and Turbo's own handlers from acting on a declined click.
     event.stopImmediatePropagation();

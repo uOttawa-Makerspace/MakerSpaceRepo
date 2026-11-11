@@ -26,6 +26,7 @@ const FREQUENCY_NAMES = new Map([
 
 // Stimulus defines the target accessors at runtime; this tells the type checker.
 const TypedController = /** @type {new () => Controller<HTMLElement> & {
+  exitMessageValue: string,
   allDayTarget: HTMLInputElement,
   startTimeTarget: HTMLInputElement,
   endTimeTarget: HTMLInputElement,
@@ -61,6 +62,8 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
 // rule when the form is submitted. It only reads and writes inside its own
 // element.
 export default class extends TypedController {
+  static values = { exitMessage: String };
+
   static targets = [
     "allDay",
     "startTime",
@@ -321,9 +324,7 @@ export default class extends TypedController {
   // Modal events
   // ---------------------------------------
   confirmExit(event) {
-    const confirmed = confirm(
-      "Are you sure you want to exit? All changes will be lost.",
-    );
+    const confirmed = confirm(this.exitMessageValue);
     if (!confirmed) {
       event.preventDefault();
       event.stopPropagation();
