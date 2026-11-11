@@ -77,11 +77,12 @@ class OrderItem < ApplicationRecord
     valid? ? total_price.to_i : nil
   end
 
-  # What a checked-out item was charged, as stored when it was checked out (a whole-CC amount),
-  # or nil for a legacy row that never stored one. Never raises, unlike total_price, which
-  # multiplies the nullable unit_price and quantity.
+  # What a checked-out item was charged, exactly as stored when it was checked out (a whole-CC
+  # amount for current rows; a legacy row may hold a fraction, which is never rounded), or nil for
+  # a legacy row that never stored one. Never raises, unlike total_price, which multiplies the
+  # nullable unit_price and quantity.
   def paid_amount
-    self[:total_price]&.to_i
+    self[:total_price]
   end
 
   # Revokes the item. The certifications its approvals granted are deactivated like a demotion

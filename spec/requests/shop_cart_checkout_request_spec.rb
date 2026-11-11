@@ -388,6 +388,23 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       expect(response.body).to match(/cart-text.*fs-4\\?">0</)
     end
 
+    it "a refused update on a checked-out cart shows the item count of the user's other open cart in the badge" do
+      close_cart_before_the_lock
+      cart_for(user, 5, 6, 7)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response).to have_http_status(:conflict)
+      expect(response.body).to match(/cart-text.*fs-4\\?">3</)
+    end
+
+    it "the checked-out answer shows legacy fractional amounts exactly, not truncated" do
+      close_cart_before_the_lock
+      item.update_columns(quantity: 2, unit_price: 2.5, total_price: 5.5)
+      order.update_columns(subtotal: 5.5)
+      patch order_item_path(item), params: { order_item: { quantity: 3 } }, xhr: true
+      expect(response.body).to include("&times; 2 (5.5 CC)")
+      expect(response.body).to include("Total charged: 5.5 CC")
+    end
+
     it "a busy refusal keeps the cart's own badge count and session" do
       add_to_cart(other_project)
       fail_the_lock_with(ActiveRecord::LockWaitTimeout)
@@ -1059,6 +1076,24 @@ RSpec.describe "Shop cart and checkout (HTTP contract)", type: :request do
       get orders_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(pending.order_items.first.proficient_project.title)
+    end
+
+    it "the admin all-orders table shows 'Open' for open carts without pricing them (no per-row queries)" do
+      shop_log_in!(admin)
+      queries_for = lambda do
+        sqls = []
+        sub = ActiveSupport::Notifications.subscribe("sql.active_record") { |*, p| sqls << p[:sql] }
+        get orders_path
+        ActiveSupport::Notifications.unsubscribe(sub)
+        sqls.size
+      end
+      cart_for(create(:user, :regular_user), 10)
+      queries_for.call # warm-up (first-request caches)
+      one = queries_for.call
+      2.times { |i| cart_for(create(:user, :regular_user), 11 + i) }
+      three = queries_for.call
+      expect(three).to eq(one)
+      expect(response.body.scan("<td><p>Open</p></td>").size).to eq(3)
     end
 
     it "does not show the all-orders table to staff" do

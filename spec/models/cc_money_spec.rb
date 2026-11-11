@@ -236,7 +236,7 @@ RSpec.describe CcMoney, type: :model do
     it "debit_all! refuses to run outside a caller transaction" do
       CcMoney.create!(user: user, cc: 30)
       expect { CcMoney.debit_all!(user, [[1, {}]]) }
-        .to raise_error(ArgumentError, "CcMoney.debit! must run inside the caller's transaction")
+        .to raise_error(ArgumentError, "CcMoney.debit_all! must run inside the caller's transaction")
       expect(user.cc_moneys.pluck(:cc)).to eq([30])
     end
 

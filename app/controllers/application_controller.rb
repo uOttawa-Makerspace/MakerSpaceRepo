@@ -54,12 +54,7 @@ class ApplicationController < ActionController::Base
     end
     session[:order_id] = nil
 
-    if current_user.orders.last.present? &&
-         current_user.orders.last.order_status.name.eql?("In progress")
-      current_user.orders.last
-    else
-      Order.new
-    end
+    current_user.open_cart || Order.new
   end
 
   private
