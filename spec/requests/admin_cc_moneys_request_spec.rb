@@ -59,7 +59,7 @@ RSpec.describe "Admin CC money claim email", type: :request do
       expect(mail.to).to eq([buyer])
       expect(mail.subject).to eq("Your CC Money order")
       expect(mail.body.decoded).to include("/cc_moneys/link_cc_to_user?token=")
-      expect(CcMoney.verified_claim_token(mailed_token(mail))).to eq([unlinked.id, 1])
+      expect(CcMoney.for_claim_token(mailed_token(mail))).to eq(unlinked)
       expect(mail.body.decoded).to include("30 CCs")
       expect(flash[:notice]).to include(buyer)
     end
@@ -70,8 +70,8 @@ RSpec.describe "Admin CC money claim email", type: :request do
       unlinked.reload
       expect(unlinked.purchaser_email).to eq("buyer@example.com")
       expect(unlinked.claim_token_generation).to eq(1)
-      expect(unlinked.claim_generation?(CcMoney.verified_claim_token(old).last)).to be(false)
-      expect(CcMoney.verified_claim_token(mailed_token(mails.last))).to eq([unlinked.id, 1])
+      expect(CcMoney.for_claim_token(old)).to be_nil
+      expect(CcMoney.for_claim_token(mailed_token(mails.last))).to eq(unlinked)
     end
 
     it "refuses an address other than the recorded buyer's and sends nothing" do
@@ -115,10 +115,10 @@ RSpec.describe "Admin CC money claim email", type: :request do
     end
   end
 
-  describe "CcMoney#claimable?" do
+  describe "CcMoney#unclaimed?" do
     it "is true only for an unlinked row" do
-      expect(unlinked).to be_claimable
-      expect(linked).not_to be_claimable
+      expect(unlinked).to be_unclaimed
+      expect(linked).not_to be_unclaimed
     end
   end
 end

@@ -373,7 +373,7 @@ RSpec.describe ApplyProcessedOrderJob, type: :job do
       expect(mail.to).to eq(["buyer@example.com"])
       expect(mail.subject).to eq("Your CC Money order")
       token = CGI.unescape(mail.body.encoded[/link_cc_to_user\?token=([^"&\s<]+)/, 1])
-      expect(CcMoney.verified_claim_token(token)).to eq([row.id, 0])
+      expect(CcMoney.for_claim_token(token)).to eq(row)
     end
 
     it "email lookup is case-insensitive (the users.email column is case-insensitive)" do

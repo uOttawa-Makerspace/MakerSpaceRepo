@@ -6,6 +6,15 @@ class CcMoney < ApplicationRecord
   belongs_to :proficient_project, optional: true
   belongs_to :order, optional: true
 
+  # How long a mailed claim link works. A resend (send_claim_email_to) starts a new window.
+  CLAIM_TOKEN_LIFETIME = 30.days
+  CLAIM_TOKEN_PURPOSE = :cc_claim
+
+  scope :unclaimed, -> { where(linked: false) }
+
+  # The address the purchase was made with; the claim is only for the account with this email.
+  normalizes :purchaser_email, with: ->(email) { email.strip.downcase }
+
   # The balance does not cover the debit. Raised inside the caller's transaction, so it rolls
   # back everything the caller wrote there.
   class InsufficientBalance < StandardError
@@ -35,30 +44,38 @@ class CcMoney < ApplicationRecord
     create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, cc: cc)
   end
 
-  scope :unlinked, -> { where(linked: false) }
-
   # A purchase made without an account that nobody has claimed yet.
-  def claimable? = !linked?
+  def unclaimed? = !linked?
 
-  # How long a mailed claim link works. A resend (reissue_claim_token!) starts a new window.
-  CLAIM_TOKEN_LIFETIME = 30.days
-  CLAIM_TOKEN_PURPOSE = :cc_claim
+  # The row a mailed claim link names, or nil unless the token is ours, unexpired and of the row's current
+  # generation (a resend revokes the links sent before). Raises ActiveRecord::RecordNotFound when the token
+  # is valid but its row no longer exists.
+  def self.for_claim_token(token)
+    id, generation = verified_claim_token(token)
+    return if id.nil?
 
-  # The address the purchase was made with; the claim is only for the account with this email.
-  normalizes :purchaser_email, with: ->(email) { email.strip.downcase }
+    row = find_by_id(id) || raise(ActiveRecord::RecordNotFound, "CcMoney #{id}")
+    row if row.current_claim_generation?(generation)
+  end
+
+  # [id, generation] signed in a token, nil when the token is not a string, is not ours, was tampered with or
+  # has expired.
+  def self.verified_claim_token(token)
+    return unless token.is_a?(String)
+
+    claim_verifier.verified(token, purpose: CLAIM_TOKEN_PURPOSE) || legacy_claim_token(token)
+  end
+  private_class_method :verified_claim_token
+
+  # Temporary: reads a token issued before claim links carried a generation (the bare row id) as generation 0,
+  # so it works only until the row is resent. Remove this 30 days after the release that added generations.
+  def self.legacy_claim_token(token)
+    id = claim_verifier.verified(token)
+    [id, 0] if id.is_a?(Integer)
+  end
+  private_class_method :legacy_claim_token
 
   def self.claim_verifier = Rails.application.message_verifier(:cc)
-
-  # [id, generation] signed in a token read by verified_claim_token, nil when the token is not ours,
-  # tampered with or expired. A token issued before claim links carried a generation is the bare id; it
-  # reads as generation 0, so it works only until the row is resent.
-  def self.verified_claim_token(token)
-    signed = claim_verifier.verified(token, purpose: CLAIM_TOKEN_PURPOSE)
-    return signed if signed
-
-    legacy_id = claim_verifier.verified(token)
-    [legacy_id, 0] if legacy_id.is_a?(Integer)
-  end
 
   # The signed token in the claim link mailed to the buyer (see CcMoneysController#link_cc_to_user). It
   # expires after CLAIM_TOKEN_LIFETIME and stops working when the row's generation moves on.
@@ -66,39 +83,41 @@ class CcMoney < ApplicationRecord
     self.class.claim_verifier.generate([id, claim_token_generation], purpose: CLAIM_TOKEN_PURPOSE, expires_in: CLAIM_TOKEN_LIFETIME)
   end
 
-  # Is a token's generation the row's current one (older links are revoked by a resend).
-  def claim_generation?(generation) = claim_token_generation == generation
+  def current_claim_generation?(generation) = claim_token_generation == generation
 
   # Only the account bought with this email may claim it; rows bought before the email was recorded have none.
-  def purchased_by?(user)
-    purchaser_email.present? && purchaser_email == user.email.to_s.strip.downcase
+  def claimable_by?(user)
+    unclaimed? && purchaser_email.present? && purchaser_email == user.email.to_s.strip.downcase
   end
 
-  # May a claim mail for this row go to `email`: any address when none is recorded, else the recorded one.
-  def addressed_to?(email)
-    purchaser_email.blank? || purchaser_email == self.class.normalize_value_for(:purchaser_email, email)
-  end
-
-  # Revokes the links sent so far and returns a new token, under the row lock so two resends or a resend
-  # and a claim cannot interleave. Records `email` as the purchase address when the row has none (an
-  # address already recorded is never replaced). Nil when the row was claimed meanwhile.
-  def reissue_claim_token!(email)
+  # Revokes the claim links sent so far (raises the generation) so the caller can mail a new one
+  # (`claim_token`), all under the row lock so two resends, or a resend and a claim, cannot interleave.
+  # Records `email` as the purchase address when the row has none; an address already recorded is never
+  # replaced. Returns :sent, or the reason nothing was changed: :already_linked, :email_invalid or
+  # :email_mismatch (not the recorded purchase address).
+  def send_claim_email_to(email)
+    address = email.to_s.strip
     with_lock do
-      next if linked?
+      next :already_linked if linked?
+      next :email_invalid unless address.match?(URI::MailTo::EMAIL_REGEXP)
+      next :email_mismatch unless addressed_to?(address)
 
-      update!(purchaser_email: purchaser_email.presence || email, claim_token_generation: claim_token_generation + 1)
-      claim_token
+      update!(purchaser_email: purchaser_email.presence || address, claim_token_generation: claim_token_generation + 1)
+      :sent
     end
   end
 
-  # Gives an unlinked purchase to `user`. The row is re-read under its lock, so of two claims racing
-  # for the same row only the first writes; the other (or a repeat of the first) returns false and the
-  # row keeps its owner. Also false when the row cannot be saved; `linked?` tells the two apart.
+  # Gives an unclaimed purchase to `user`. The row is re-read under its lock, so of two claims racing for
+  # the same row only the first writes. Returns :linked, :already_linked (the row keeps its owner),
+  # :superseded (a resend raised the generation since this copy was loaded, so the link the caller holds is
+  # revoked) or :not_saved (the update was refused; see `errors`).
   def link_to(user)
+    generation = claim_token_generation
     with_lock do
-      next false if linked?
+      next :already_linked if linked?
+      next :superseded unless current_claim_generation?(generation)
 
-      update(user: user, linked: true)
+      update(user: user, linked: true) ? :linked : :not_saved
     end
   end
 
@@ -149,4 +168,11 @@ class CcMoney < ApplicationRecord
     raise ArgumentError, "CcMoney.#{name} must run inside the caller's transaction"
   end
   private_class_method :require_caller_transaction!
+
+  private
+
+  # May a claim mail for this row go to `address`: any address when none is recorded, else the recorded one.
+  def addressed_to?(address)
+    purchaser_email.blank? || purchaser_email == self.class.normalize_value_for(:purchaser_email, address)
+  end
 end

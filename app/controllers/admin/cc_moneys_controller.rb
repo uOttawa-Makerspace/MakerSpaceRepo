@@ -5,6 +5,6 @@ class Admin::CcMoneysController < AdminAreaController
   layout "admin_area"
 
   def index
-    @cc_moneys = CcMoney.unlinked.order(created_at: :desc)
+    @cc_moneys = CcMoney.unclaimed.order(created_at: :desc)
   end
 end

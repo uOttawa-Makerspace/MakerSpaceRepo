@@ -23,13 +23,13 @@ class CcMoneysController < SessionsController
   private
 
   def link_to(cc_money, user)
-    if cc_money.link_to(user)
+    case cc_money.link_to(user)
+    when :linked
       flash[:notice] = "The CC Money has been added to #{user.name}"
       redirect_to cc_moneys_path
-    elsif cc_money.linked?
-      refuse_cc(:already_linked)
-    else
-      refuse_cc(:not_linked, cc_money)
+    when :already_linked then refuse_cc(:already_linked)
+    when :superseded then refuse_cc(:token_invalid)
+    else refuse_cc(:not_linked, cc_money)
     end
   end
 
@@ -45,14 +45,12 @@ class CcMoneysController < SessionsController
   # account other than the purchaser's. A redirect here stops the action.
   def load_claim
     @cc_token = params[:token]
-    id, generation = CcMoney.verified_claim_token(@cc_token)
-    return refuse_cc(:token_invalid) if id.nil?
-
-    @cc_money = CcMoney.find_by_id(id)
-    return refuse_cc(:not_found) if @cc_money.nil?
-    return refuse_cc(:token_invalid) unless @cc_money.claim_generation?(generation)
+    @cc_money = CcMoney.for_claim_token(@cc_token)
+    return refuse_cc(:token_invalid) if @cc_money.nil?
     return refuse_cc(:already_linked) if @cc_money.linked?
 
-    refuse_cc(:not_purchaser) unless @cc_money.purchased_by?(current_user)
+    refuse_cc(:not_purchaser) unless @cc_money.claimable_by?(current_user)
+  rescue ActiveRecord::RecordNotFound
+    refuse_cc(:not_found)
   end
 end

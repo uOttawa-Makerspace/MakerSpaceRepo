@@ -467,7 +467,8 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
 
       it "refuses a token superseded by a resend and accepts the newer one" do
         old = token
-        fresh = unlinked.reissue_claim_token!(user.email)
+        unlinked.send_claim_email_to(user.email)
+        fresh = unlinked.claim_token
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: old }
         expect(flash[:alert]).to eq(invalid_message)
@@ -578,7 +579,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
 
       it "refuses a token superseded by a resend and changes nothing" do
         old = token
-        unlinked.reissue_claim_token!(user.email)
+        unlinked.send_claim_email_to(user.email)
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: old }
         expect(flash[:alert]).to eq(invalid_message)
@@ -593,7 +594,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
 
       it "refuses a legacy token once the row was resent" do
         legacy = legacy_token
-        unlinked.reissue_claim_token!(user.email)
+        unlinked.send_claim_email_to(user.email)
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: legacy }
         expect(flash[:alert]).to eq(invalid_message)
@@ -617,6 +618,29 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
           .not_to change { CcMoney.where(user_id: user.id).count }
         expect(flash[:alert]).to eq("The CC Money has already been added to an account")
         expect(unlinked.reload.user_id).to eq(other.id)
+      end
+
+      it "refuses a link replaced by a resend between loading the row and redeeming, and credits nothing" do
+        shop_log_in!(user)
+        stale = CcMoney.find(unlinked.id)
+        CcMoney.where(id: unlinked.id).update_all(claim_token_generation: 1)
+        allow(CcMoney).to receive(:find_by_id).and_return(stale)
+        expect { post redeem_cc_moneys_path, params: { token: token } }
+          .not_to change { CcMoney.where(user_id: user.id).count }
+        expect(flash[:alert]).to eq(invalid_message)
+        expect(unlinked.reload.linked).to be(false)
+        expect(user.cc_moneys.sum(:cc)).to eq(0)
+      end
+
+      it "treats a token that is not a string like an invalid one, on the page and on redeem" do
+        shop_log_in!(user)
+        get link_cc_to_user_cc_moneys_path, params: { token: { a: 1 } }
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to eq(invalid_message)
+        post redeem_cc_moneys_path, params: { token: ["x"] }
+        expect(response).to redirect_to(cc_moneys_path)
+        expect(flash[:alert]).to eq(invalid_message)
+        expect(unlinked.reload.linked).to be(false)
       end
 
       it "names the cause in French" do
