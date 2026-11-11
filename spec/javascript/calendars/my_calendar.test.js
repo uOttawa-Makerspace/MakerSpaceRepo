@@ -173,7 +173,7 @@ describe("my calendar", () => {
     });
     expect(el.classList.contains("fade-in")).toBe(true);
     expect(el.getAttribute("style")).toBe("background: #ff0000");
-    expect(tooltips[0].options.title).toBe("Shift<br><i>Desk</i>");
+    expect(tooltips[0].options.title.innerHTML).toBe("Shift<br><i>Desk</i>");
   });
 
   it("leaves an event without a description or colour plain", () => {
@@ -184,6 +184,22 @@ describe("my calendar", () => {
       event: { title: "Shift", extendedProps: {} },
     });
     expect(el.getAttribute("style")).toBeNull();
-    expect(tooltips[0].options.title).toBe("Shift");
+    expect(tooltips[0].options.title.innerHTML).toBe("Shift");
+  });
+
+  it("shows markup in a title or description as text", () => {
+    const cal = boot();
+    const el = document.createElement("div");
+    cal.options.eventDidMount({
+      el,
+      event: {
+        title: "<img src=x onerror=alert(1)>",
+        extendedProps: { description: "<b>bold</b>" },
+      },
+    });
+    const content = tooltips[0].options.title;
+    expect(content.querySelector("img, b")).toBeNull();
+    expect(content.textContent).toBe("<img src=x onerror=alert(1)><b>bold</b>");
+    expect(content.querySelector("i").textContent).toBe("<b>bold</b>");
   });
 });
