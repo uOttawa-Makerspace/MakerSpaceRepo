@@ -11,6 +11,7 @@ class VolunteerHour < ApplicationRecord
   # Each rule is checked when its field is new or changed, so a stored row (for example an
   # approved 36 hour award) stays editable in its other fields.
   MAX_HAND_LOGGED_HOURS = 24
+  PENDING_SUBMISSION_INDEX = "index_volunteer_hours_on_pending_submission"
   validates :total_time,
             numericality: { greater_than: 0, less_than_or_equal_to: MAX_HAND_LOGGED_HOURS },
             on: :hand_logged,
@@ -41,7 +42,9 @@ class VolunteerHour < ApplicationRecord
   def save_hand_logged(attributes)
     assign_attributes(attributes)
     save(context: :hand_logged)
-  rescue ActiveRecord::RecordNotUnique
+  rescue ActiveRecord::RecordNotUnique => e
+    raise unless e.message.include?(PENDING_SUBMISSION_INDEX)
+
     errors.add(:base, :duplicate_pending)
     false
   end

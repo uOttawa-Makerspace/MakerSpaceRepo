@@ -174,6 +174,13 @@ RSpec.describe VolunteerHour, "state and defaults", type: :model do
       expect(VolunteerHour.new(user: user).save_hand_logged(attrs(approval: false))).to be(true)
     end
 
+    it "does not report another unique violation as a repeated submission" do
+      hour = VolunteerHour.new(user: user)
+      allow(hour).to receive(:save).and_raise(ActiveRecord::RecordNotUnique, 'duplicate key value violates unique constraint "some_other_index"')
+      expect { hour.save_hand_logged(attrs) }.to raise_error(ActiveRecord::RecordNotUnique, /some_other_index/)
+      expect(hour.errors).to be_empty
+    end
+
     it "lets a pending hour be saved again and refuses editing it into another pending hour" do
       first = VolunteerHour.new(user: user)
       first.save_hand_logged(attrs)
