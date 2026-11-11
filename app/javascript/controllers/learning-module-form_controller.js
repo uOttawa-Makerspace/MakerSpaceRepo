@@ -38,13 +38,27 @@ export default class extends Controller {
     event.currentTarget.closest(".video-item").remove();
   }
 
+  // Targets are read through Stimulus' typed `targets` set rather than the
+  // generated `...Target` getters, which the type checker cannot see.
   toggleScorm() {
-    if (!this.hasScormToggleTarget) return;
-    const isScorm = this.scormToggleTarget.checked;
-    this.setSection(this.scormSectionTarget, isScorm);
-    this.setSection(this.regularSectionTarget, !isScorm);
+    const toggle = /** @type {HTMLInputElement | null} */ (
+      this.targets.find("scormToggle")
+    );
+    if (!toggle) return;
+    const isScorm = toggle.checked;
+    this.setSection(this.sectionTarget("scormSection"), isScorm);
+    this.setSection(this.sectionTarget("regularSection"), !isScorm);
   }
 
+  /** @param {string} name */
+  sectionTarget(name) {
+    return /** @type {HTMLFieldSetElement} */ (this.targets.find(name));
+  }
+
+  /**
+   * @param {HTMLFieldSetElement} section
+   * @param {boolean} active
+   */
   setSection(section, active) {
     section.style.display = active ? "" : "none";
     section.disabled = !active;
