@@ -1127,6 +1127,60 @@ RSpec.describe "JobOrders (HTTP contract)", type: :request do
       expect(text).to include("#{I18n.t('job_orders.status_reasons.owner_change')} (By: Unknown)")
     end
 
+    describe "approvals and declines answered for the customer", skip_bullet: true do
+      let(:order) { order_with_task!(owner: owner).tap { |o| advance_to!(o, :user_approval) } }
+
+      def timeline_text
+        get job_order_timeline_modal_path(order)
+        Nokogiri::HTML(response.body).text.squish
+      end
+
+      it "names the staff member who approved on the customer's behalf" do
+        http_login!(staff)
+        patch job_order_user_approval_path(order), params: { approved: "true" }
+
+        expect(timeline_text).to include("Approved by #{staff.name} for the customer")
+      end
+
+      it "names the staff member who declined" do
+        http_login!(staff)
+        patch job_order_user_approval_path(order), params: { approved: "false" }
+
+        expect(timeline_text).to include("Declined by #{staff.name}")
+      end
+
+      it "adds no name when the customer answered" do
+        http_login!(owner)
+        patch job_order_user_approval_path(order), params: { approved: "true" }
+        http_login!(staff)
+
+        text = timeline_text
+        expect(text).to include("Waiting to be Processed")
+        expect(text).not_to include("Approved by")
+        expect(text).not_to match(/Waiting to be Processed \(By:/)
+      end
+
+      it "does not show the staff name to the customer on the order page" do
+        http_login!(staff)
+        patch job_order_user_approval_path(order), params: { approved: "true" }
+        http_login!(owner)
+        get job_order_path(order)
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include(staff.name)
+      end
+
+      it "renders an approval row with no recorded actor without claiming a staff member" do
+        http_login!(staff)
+        patch job_order_user_approval_path(order), params: { approved: "true" }
+        order.job_order_statuses.find_by!(job_status: JobStatus.waiting_processed).update_columns(user_id: nil)
+
+        text = timeline_text
+        expect(text).to include("Waiting to be Processed")
+        expect(text).not_to include("Approved by")
+      end
+    end
+
     # Round 2 review 9: no N+1 (runs with Bullet on): statuses and their JobStatus in one query, users only for the
     # rows that name their actor, in one query
     it "loads the history with a fixed number of queries, users only for rows that show them" do

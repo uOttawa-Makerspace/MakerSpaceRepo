@@ -375,6 +375,8 @@ en:
       missing_info: "Your job order is not submitted! The following tasks are missing required information:"
     timeline:
       unknown_user: "Unknown"
+      approved_by_html: "Approved by %{name} for the customer"
+      declined_by_html: "Declined by %{name}"
     status_reasons:
       owner_change: "The order was changed after it had been quoted."
       invoice_mismatch: "The payment link no longer matched the order's quote."

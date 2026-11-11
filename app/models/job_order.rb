@@ -7,7 +7,7 @@ class JobOrder < ApplicationRecord
   belongs_to :job_order_quote, dependent: :destroy, optional: true
   has_many :job_order_options, dependent: :destroy
   # Oldest first, by id: THE order of a job order's statuses (see #latest_status; the history views read it too).
-  has_many :job_order_statuses, -> { order(:id) }, dependent: :destroy
+  has_many :job_order_statuses, -> { order(:id) }, dependent: :destroy, inverse_of: :job_order
   # The newest status row, for lists: preloaded for a whole page of orders in one query that reads only that row per
   # order (no status history loaded). Read it through #latest_status.
   has_one :latest_job_order_status, -> { where(LATEST_STATUS_ROW_SQL) }, class_name: "JobOrderStatus", inverse_of: false
