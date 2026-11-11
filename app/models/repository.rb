@@ -38,6 +38,16 @@ class Repository < ApplicationRecord
 
   scope :public_repos, -> { where(share_type: 'public') }
 
+  # The repositories a viewer may open: public ones, and private ones the viewer owns or is a member
+  # of, or has unlocked with the password (unlocked_ids); staff and admins see all. The same rule as
+  # SessionsController#repository_unlocked?, as a scope.
+  def self.viewable_by(viewer, unlocked_ids = [])
+    return all if viewer.staff?
+
+    member_ids = unscoped.joins(:users).where(users: { id: viewer.id }).select(:id)
+    public_repos.or(where(user_id: viewer.id)).or(where(id: member_ids)).or(where(id: unlocked_ids))
+  end
+
   # What a repository card shows: the owner's username and the first photo.
   scope :with_card_data, -> { includes(:owner, photos: { image_attachment: :blob }) }
 

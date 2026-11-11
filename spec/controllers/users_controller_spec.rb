@@ -580,7 +580,7 @@ RSpec.describe UsersController, type: :controller do
 
   describe "likes" do
     context "likes" do
-      it "should display 2 likes" do
+      it "lists liked public repositories and leaves out private ones the viewer cannot open" do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
@@ -590,7 +590,7 @@ RSpec.describe UsersController, type: :controller do
         Like.create(user_id: user.id, repository_id: repo2.id)
         get :likes, params: { username: user.username }
         expect(response).to have_http_status(:success)
-        expect(@controller.instance_variable_get(:@repositories).count).to eq(2)
+        expect(@controller.instance_variable_get(:@repositories).to_a).to eq([repo1])
       end
     end
   end
