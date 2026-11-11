@@ -208,9 +208,15 @@ RSpec.describe "Shopify Admin GraphQL over real HTTP (WebMock)", type: :request 
     expect(File.read(Rails.root.join("config/initializers/shopify_api.rb"))).to include("ShopifyContext.ensure_setup!")
   end
 
+  it "ShopifyAPI::Clients::Graphql::Admin has a single construction site: ShopifyConcern::DraftOrders.client" do
+    callers = Dir[Rails.root.join("{app,lib}/**/*.rb")].select { |f| File.read(f).include?("Clients::Graphql::Admin") }
+                  .map { |f| Pathname(f).relative_path_from(Rails.root).to_s }
+    expect(callers).to eq(["app/models/concerns/shopify_concern.rb"])
+  end
+
   # The homepage makerstore query is the one deliberate exception: it uses the hard-coded store and
   # only the access token (original behaviour), priming the Context through ensure_setup!, whose result it ignores.
-  it "the homepage makerstore query builds its own hard-coded-shop session and only primes via ensure_setup!" do
+  it "the homepage makerstore query uses its own hard-coded-shop session and only primes via ensure_setup!" do
     src = File.read(Rails.root.join("app/controllers/static_pages_controller.rb"))
     expect(src).to include("uottawa-makerspace.myshopify.com")
     expect(src).to include("ShopifyContext.ensure_setup!")
