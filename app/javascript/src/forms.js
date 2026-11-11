@@ -7,10 +7,9 @@ document.addEventListener("turbo:load", function () {
     optionElement.addEventListener("change", function () {
       // Get all elements to hide if checked
       document
-        .querySelectorAll(optionElement.currentTarget.dataset.toggles)
+        .querySelectorAll(optionElement.dataset.toggles)
         .forEach((target) => {
-          target.hidden = !optionElement.currentTarget.checked;
-          console.log(target.hidden);
+          target.hidden = !optionElement.checked;
         });
     });
 

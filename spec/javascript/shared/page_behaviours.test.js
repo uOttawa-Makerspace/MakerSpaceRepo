@@ -124,9 +124,7 @@ describe("form helpers", () => {
     expect($("x").disabled).toBe(true);
   });
 
-  // The handler reads the element's own (undefined) currentTarget, so it throws
-  // on every change instead of toggling the targets.
-  it.skip("data-toggles shows its targets while checked", () => {
+  it("data-toggles shows its targets while checked", () => {
     document.body.innerHTML = `${field('data-toggles=".t"')}<div class="t"></div>`;
     load();
     expect(document.querySelector(".t").hidden).toBe(true);
