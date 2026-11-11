@@ -40,13 +40,11 @@ class MembershipsController < SessionsController
   end
 
   def revoke
-    membership = Membership.find(params[:id])
-    if membership.revocable?
-      membership.update!(status: 'revoked')
-      flash[:notice] = "Membership revoked successfully."
-    else
-      flash[:alert] = "This membership is #{membership.status}, not paid, so it cannot be revoked."
-    end
+    Membership.find(params[:id]).revoke!
+    flash[:notice] = "Membership revoked successfully."
+    redirect_back(fallback_location: memberships_path)
+  rescue Membership::NotRevocable => e
+    flash[:alert] = e.message
     redirect_back(fallback_location: memberships_path)
   end
 

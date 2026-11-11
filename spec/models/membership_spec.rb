@@ -161,6 +161,22 @@ RSpec.describe Membership, type: :model do
     end
   end
 
+  describe "#revoke!" do
+    it "revokes a paid membership" do
+      m = create(:membership, user: user, membership_tier: tier, status: "paid")
+      m.revoke!
+      expect(m.reload).to be_revoked
+    end
+
+    %w[pending failed revoked].each do |status|
+      it "refuses a #{status} membership and changes nothing" do
+        m = create(:membership, user: user, membership_tier: tier, status: status)
+        expect { m.revoke! }.to raise_error(Membership::NotRevocable, "This membership is #{status}, not paid, so it cannot be revoked.")
+        expect(m.reload.status).to eq(status)
+      end
+    end
+  end
+
   describe "tier delegation and faculty flag" do
     it "delegates duration and renders the title for the current locale" do
       m = Membership.new(user: user, membership_tier: tier)

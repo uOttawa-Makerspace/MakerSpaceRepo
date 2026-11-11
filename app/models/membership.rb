@@ -10,6 +10,7 @@ class Membership < ApplicationRecord
   enum :status, {
          pending: 'pending',
          paid: 'paid',
+         # Legacy rows may be failed; nothing sets it now. Kept so those rows load.
          failed: 'failed',
          revoked: 'revoked'
        },
@@ -51,6 +52,16 @@ class Membership < ApplicationRecord
   # Only a paid membership can be taken away; an unpaid checkout (pending or failed) is not one yet.
   def revocable?
     paid?
+  end
+
+  # The membership was not paid, so there is nothing to revoke.
+  class NotRevocable < StandardError; end
+
+  # Paid -> revoked. Raises NotRevocable, changing nothing, for a membership that is not paid.
+  def revoke!
+    raise NotRevocable, "This membership is #{status}, not paid, so it cannot be revoked." unless revocable?
+
+    update!(status: 'revoked')
   end
 
   def faculty?
