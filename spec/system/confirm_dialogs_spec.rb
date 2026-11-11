@@ -55,4 +55,25 @@ RSpec.describe "Confirm dialogs", type: :system do
     accept_confirm("Sure?") { click_button "Probe go" }
     expect(page.evaluate_script("window.buttonRuns")).to eq(1)
   end
+
+  # No helper waits for page scripts: a confirming button is rendered disabled and
+  # Capybara's click_button only matches enabled buttons, so the click (and the
+  # prompt it raises) waits for that button's own controller, on whichever page
+  # is current. This one connects its controller late.
+  it "waits for a confirming button whose controller connects late" do
+    page.evaluate_script(<<~JS)
+      (() => {
+        window.buttonRuns = 0;
+        const b = document.createElement("button");
+        b.type = "button"; b.id = "late-go"; b.textContent = "Late go"; b.disabled = true;
+        b.dataset.action = "click->confirmation#ask";
+        b.dataset.confirmationMessageValue = "Sure?";
+        document.body.addEventListener("click", (e) => { if (e.target === b) window.buttonRuns += 1; });
+        document.body.prepend(b);
+        setTimeout(() => { b.dataset.controller = "confirmation"; }, 400);
+      })()
+    JS
+    accept_confirm("Sure?") { click_button "Late go" }
+    expect(page.evaluate_script("window.buttonRuns")).to eq(1)
+  end
 end
