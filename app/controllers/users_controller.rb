@@ -236,8 +236,7 @@ class UsersController < SessionsController
       flash[:notice] = 'Profile updated successfully.'
       redirect_to settings_profile_path
     else
-      flash[:alert] = 'Could not save changes. ' +
-        @user.errors.full_messages.join('; ')
+      flash[:alert] = validation_message(@user, "failed_saves.profile")
       redirect_to settings_profile_path
     end
   end

@@ -25,7 +25,7 @@ class QuickAccessLinksController < SessionsController
     else
       redirect_back fallback_location: root_path,
                     alert:
-                      "Quick access link not created, #{qal.errors.full_messages.join(", ")}"
+                      validation_message(qal, "failed_saves.quick_access_link")
     end
   end
 

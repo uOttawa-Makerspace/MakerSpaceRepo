@@ -99,6 +99,11 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(flash[:alert]).to eq("Failed to create unavailability: Recurrence rule must include days of the week when using weekly frequency")
       end
 
+      it "opens the create failure message in French for a French request" do
+        post staff_unavailabilities_path(locale: "fr"), params: { staff_unavailability: { title: "x" } }
+        expect(flash[:alert]).to start_with("Impossible de créer l'indisponibilité :")
+      end
+
       it "alerts with the validation message when the times are missing" do
         expect { post staff_unavailabilities_path, params: { staff_unavailability: { title: "x" } } }.not_to change(StaffUnavailability, :count)
         expect(response).to redirect_to(staff_unavailabilities_path)
@@ -141,6 +146,11 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(flash[:notice]).to eq("Unavailability updated successfully.")
         expect(record.reload).to have_attributes(title: "New")
         expect(record.start_time.utc.iso8601).to eq("2027-03-02T10:00:00Z")
+      end
+
+      it "opens the failure message in French for a French request" do
+        patch staff_unavailability_path(record, locale: "fr"), params: payload(utc_start_time: "2027-03-02T12:00:00Z", utc_end_time: "2027-03-02T11:00:00Z")
+        expect(flash[:alert]).to start_with("Impossible de modifier l'indisponibilité :")
       end
 
       it "reports validation failures" do

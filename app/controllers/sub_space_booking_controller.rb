@@ -120,7 +120,7 @@ class SubSpaceBookingController < SessionsController
                 notice: approval.revoked? ? "Booking access revoked successfully." : "Access request declined successfully."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to sub_space_booking_index_path(anchor: "booking-admin-tab"),
-                alert: "Failed to decline or revoke: #{e.record.errors.full_messages.join(", ")}"
+                alert: validation_message(e.record, "failed_saves.booking_decline")
   end
 
   def bulk_approve_access

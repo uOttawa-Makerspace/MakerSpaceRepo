@@ -408,6 +408,12 @@ RSpec.describe "Admin spaces", type: :request do
         expect(flash[:notice]).to eq("Calendars updated successfully.")
       end
 
+      it "opens the failure flash in French for a French request" do
+        put update_staff_needed_calendars_admin_spaces_path(locale: "fr"),
+            params: { space_id: space.id, staff_needed_calendar: [url], staff_needed_calendar_role: ["bogus"] }
+        expect(flash[:alert]).to start_with("Les calendriers n'ont pas été enregistrés (rien n'a changé) :")
+      end
+
       it "saves nothing and flashes an error when a calendar has an invalid role" do
         keep = StaffNeededCalendar.create!(space: space, calendar_url: "https://old.test/x.ics")
         save_calendars(staff_needed_calendar: [url], staff_needed_calendar_role: ["bogus"])
