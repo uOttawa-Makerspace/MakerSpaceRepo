@@ -238,13 +238,13 @@ RSpec.describe Membership, type: :model do
       expect(m.shopify_draft_order_id).to eq(fake.draft_id)
     end
 
-    it "#checkout_link deletes its new draft and raises CheckoutClosed when the membership can no longer take one" do
+    it "#checkout_link deletes its new draft and raises when the membership can no longer take one" do
       fake = stub_shopify_admin!
       m = create(:membership, user: user, membership_tier: tier, status: "pending")
       allow(m).to receive(:create_remote_draft_order).and_wrap_original do |original, *args|
         original.call(*args).tap { Membership.where(id: m.id).update_all(status: "revoked") }
       end
-      expect { m.checkout_link }.to raise_error(Membership::Checkout::CheckoutClosed, /is revoked, not pending/)
+      expect { m.checkout_link }.to raise_error(/no draft order to serve/)
       expect(fake.deleted_ids).to eq([fake.draft_id])
     end
 

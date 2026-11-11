@@ -139,6 +139,18 @@ RSpec.describe Membership, "expiry of stale pending memberships", type: :model d
     expect(member.memberships.count).to eq(2)
   end
 
+  it "makes no second pending membership when the one being checked out was paid before its draft was stored" do
+    claimed = pending_membership(age: 1.day, draft: nil)
+    fake.on_query = lambda { |query, _|
+      Membership.where(id: claimed.id).update_all(status: "paid") if query.include?("draftOrderCreate")
+    }
+
+    expect { Membership.begin_purchase(member, tier.id) }.to raise_error(/no draft order to serve/)
+
+    expect(member.memberships.pending).to be_empty
+    expect(member.memberships.count).to eq(1)
+  end
+
   it "does not overwrite a membership that was paid while the run was in progress" do
     stale = pending_membership(age: 8.days)
     fake.on_query = ->(query, _) { Membership.where(id: stale.id).update_all(status: "paid") if query.include?("draftOrderDelete") }

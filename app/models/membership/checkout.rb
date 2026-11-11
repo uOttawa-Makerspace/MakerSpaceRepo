@@ -77,7 +77,7 @@ class Membership
       created = { 'id' => new_id, 'invoiceUrl' => invoice_url, 'status' => 'OPEN' }
       return created if keep_or_discard_draft(new_id)
 
-      raise CheckoutClosed, "Membership #{id} is #{status}, not pending" unless pending?
+      raise CheckoutClosed, "Membership #{id} was expired while its draft was being made" if expired?
       # The winner's draft may be as new as ours: if Shopify does not show it yet, ask again rather than replace it.
       raise "Membership #{id} has no draft order to serve" if shopify_draft_order_id.blank?
 

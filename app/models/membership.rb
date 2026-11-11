@@ -52,7 +52,7 @@ class Membership < ApplicationRecord
     paid? && end_date > Time.current
   end
 
-  # Only a paid membership can be taken away; an unpaid checkout (pending or failed) is not one yet.
+  # Only a paid membership can be taken away; an unpaid checkout (pending, failed or expired) is not one yet.
   def revocable?
     paid?
   end
