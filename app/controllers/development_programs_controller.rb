@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class DevelopmentProgramsController < SessionsController
+  require_authorization
+  skip_authorization only: %i[index join_development_program],
+                     reason: "#{Authorization::ROLLOUT_PENDING}index and join_development_program are not behind grant_access"
   before_action :current_user
   before_action :with_development_header, except: :index
 
@@ -98,6 +101,8 @@ class DevelopmentProgramsController < SessionsController
   end
 
   def grant_access
-    signed_in
+    return signed_in unless signed_in?
+
+    record_authorization!(:signed_in)
   end
 end

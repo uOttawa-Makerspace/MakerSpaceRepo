@@ -10,6 +10,8 @@ module Api
     # protection. A signed-in caller's name and email always come from the account.
     # Contract: doc/api/v1/support_requests.md.
     class SupportRequestsController < BaseController
+      skip_authorization only: :create, reason: "Public by contract: anyone may send a support request (rate limited)"
+
       MAX = { name: 200, email: 254, subject: 200, comments: 5000, app_version: 50 }.freeze
 
       rate_limit to: 5, within: 1.minute, only: :create, scope: "api-support", name: "ip-minute",

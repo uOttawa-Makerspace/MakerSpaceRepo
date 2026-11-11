@@ -9,6 +9,8 @@ module Api
       # Sets url options so the disk service can build public floorplan urls.
       include ActiveStorage::SetCurrent
 
+      skip_authorization only: :show, reason: "Public by contract: the Design Day app reads it without signing in"
+
       def show
         render json: DesignDaySerializer.call(design_day)
       end

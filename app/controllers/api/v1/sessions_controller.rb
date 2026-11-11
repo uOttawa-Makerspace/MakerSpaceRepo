@@ -13,6 +13,8 @@ module Api
       rate_limit to: 120, within: 1.minute, only: :refresh, scope: "api-session-refresh", with: :rate_limited
 
       before_action :authenticate!, only: :show
+      skip_authorization only: %i[create refresh destroy],
+                         reason: "Public: the caller proves who they are with credentials or a refresh token in the body"
 
       def create
         login = params.require(:login).to_s
