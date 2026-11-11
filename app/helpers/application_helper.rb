@@ -187,10 +187,16 @@ module ApplicationHelper
     }
   end
 
-  # Data attributes and state for a button that asks for confirmation: disabled until the page
-  # script (which registers the confirm prompts) has run and the controller enables it.
-  def confirmed_until_ready(message)
-    { disabled: true, data: { controller: 'enable-when-ready', confirm: message } }
+  # Data attributes that make a button, link or form ask `message` before it acts (the
+  # confirmation Stimulus controller). It asks on click.
+  def confirmation_data(message)
+    { controller: 'confirmation', action: 'click->confirmation#ask', confirmation_message_value: message }
+  end
+
+  # Options for a button that asks for confirmation: rendered disabled until the controller
+  # connects and enables it, so a click before the page script has run cannot skip the prompt.
+  def confirmation_options(message)
+    { disabled: true, data: confirmation_data(message) }
   end
 
   private

@@ -37,7 +37,7 @@
                     <%= link_to '<i class="fa-solid fa-pencil"></i> Edit'.html_safe, edit_proficient_project_path(@proficient_project.id), class: 'btn btn-secondary' %>
 
                     <%= button_to '<i class="fa-solid fa-trash"></i> Delete'.html_safe, @proficient_project, method: :delete, class: 'btn btn-danger',
-                                  data: { confirm: 'Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.' } %>
+                                  **confirmation_options('Are you sure? This will delete all the purchases and give all the users the CC points used to purchase this project.') %>
                 </div>
         </div>
     <% end %>
@@ -80,7 +80,7 @@
     </div>
 
     <% if @order_item&.status == "In progress" %>
-        <%= form_for :order_item, url: complete_project_proficient_projects_path, method: :put, multipart: true, html: { id: 'submit-project-form' }, data: { confirm: 'Are you sure you want to submit this project? Please make sure you have dropped off your project at the specified location before submitting.' } do |f| %>
+        <%= form_for :order_item, url: complete_project_proficient_projects_path, method: :put, multipart: true, html: { id: 'submit-project-form' } do |f| %>
             <%= hidden_field_tag(:id, @proficient_project.id) %>
             <div class='mb-3'>
                 <%= f.label :user_comments, 'Add comments:', class: 'form-label' %>
@@ -92,7 +92,7 @@
 
             <div class="text-center">
                 <p>If you think you <b>fully</b> understand the proficient project, you can click on the button to complete the proficient project. It will then be reviewed by an admin in about 5 business days.</p>
-                <%= f.submit 'Submit Project', class: 'btn btn-primary' %>
+                <%= f.submit 'Submit Project', class: 'btn btn-primary', **confirmation_options('Are you sure you want to submit this project? Please make sure you have dropped off your project at the specified location before submitting.') %>
                 <br><br>
             </div>
         <% end %>
@@ -147,7 +147,7 @@
                         <p><h6 class="text-center py-3"><strong><%= project_required.training.localized_name %></strong></h6></p>
                     </div>
                     <div class="mb-3">
-                        <%= button_to 'Unfollow', project_requirement, method: :delete, class: 'btn btn-danger', style: 'opacity: 0.5', data: { confirm: 'Are you sure? This will delete the Project Requirement, but not the Project itself.' } if current_user.admin? %>
+                        <%= button_to 'Unfollow', project_requirement, method: :delete, class: 'btn btn-danger', style: 'opacity: 0.5', **confirmation_options('Are you sure? This will delete the Project Requirement, but not the Project itself.') if current_user.admin? %>
                     </div>
                 </form>
                 <a href="<%= proficient_project_path(project_required.id) %>">

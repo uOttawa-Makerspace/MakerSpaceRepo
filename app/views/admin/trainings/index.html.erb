@@ -36,7 +36,7 @@
         <td>
         <%= link_to 'Edit', edit_admin_training_path(t.id), class: 'btn btn-primary' %>
         <%= button_to 'Delete', { controller: 'admin/trainings', action: :destroy, id: t.id }, method: :delete,
-                                                                                               data: { confirm: t('confirm_delete.training') },
+                                                                                               **confirmation_options(t('confirm_delete.training')),
                                                                                                class: 'btn btn-danger', form_class: 'text-center my-2' %>
         </td>
       </tr>

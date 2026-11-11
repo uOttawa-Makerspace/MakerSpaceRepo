@@ -12,7 +12,7 @@ RSpec.describe KeyRequestDenyFormComponent, type: :component do
 
     form = page.find("form")
     expect(form["action"]).to eq("/admin/keys/deny_key_request?id=#{key_request.id}")
-    expect(form["data-confirm"]).to eq("Are you sure you want to deny this key request?")
+    expect(form).to have_css("button[disabled][data-controller='confirmation'][data-confirmation-message-value='Are you sure you want to deny this key request?']")
     expect(page).to have_css("input[name='_method'][value='patch']", visible: :all)
   end
 

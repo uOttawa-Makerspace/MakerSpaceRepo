@@ -26,7 +26,7 @@
           <td><%= t.name %></td>
           <td>
           <%= link_to "Edit", edit_admin_drop_off_location_path(t.id), class:"btn btn-primary" %>
-          <%= button_to "Delete", admin_drop_off_location_path(t.id), method: :delete, data: { confirm: "Are you sure?" }, class:"btn btn-danger my-2" %>
+          <%= button_to "Delete", admin_drop_off_location_path(t.id), method: :delete, **confirmation_options("Are you sure?"), class:"btn btn-danger my-2" %>
           </td>
         </tr>
       <% end %>

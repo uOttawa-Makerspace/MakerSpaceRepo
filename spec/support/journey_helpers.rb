@@ -46,10 +46,8 @@ module JourneyHelpers
   end
 
   # The application's JS entry is a deferred module script, so a click made
-  # right after the page appears can beat it; the data-confirm prompt (a
-  # window.confirm added by that script) is then never shown and the form
-  # submits unprompted, so the confirm modal never appears. The entry sets
-  # this flag as its last statement, after the confirm listeners exist.
+  # right after the page appears can beat it. The entry sets this flag as its
+  # last statement, once its Stimulus controllers are registered.
   def wait_for_app_js
     wait_until("application JS not ready") { page.evaluate_script("document.documentElement.dataset.appJsReady === 'true'") }
   end

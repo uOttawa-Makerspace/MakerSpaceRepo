@@ -498,7 +498,10 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
       expect(form["id"]).to eq("remove-avatar-form")
       expect(form.at_css("input[name=_method]")["value"]).to eq("delete")
       expect(form.ancestors("form")).to be_empty # not nested in the profile form
-      expect(doc.at_css(%(button[form="remove-avatar-form"]))).not_to be_nil
+      button = doc.at_css(%(button[form="remove-avatar-form"]))
+      expect(button).not_to be_nil
+      expect(button["disabled"]).not_to be_nil
+      expect(button["data-confirmation-message-value"]).to eq(I18n.t("settings.profile.delete_avatar_confirm"))
     end
 
     it "remove_avatar with no avatar is a harmless redirect" do

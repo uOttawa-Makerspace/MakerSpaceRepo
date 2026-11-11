@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-# Forms get data-turbo="false" (application.js), so Turbo never shows
-# data-turbo-confirm; a delegated capture handler does.
+# Confirming buttons are rendered disabled and carry the confirmation Stimulus
+# controller, which enables them once connected and asks before they act.
 RSpec.describe "Confirm dialogs", type: :system do
   let(:user) { create(:user, :regular_user) }
 
@@ -24,65 +24,35 @@ RSpec.describe "Confirm dialogs", type: :system do
     expect(user.reload.avatar).not_to be_attached
   end
 
-  # Builds a throwaway form on the page; its own submit listener records runs and
-  # swallows the submit so nothing navigates.
-  def add_form(classes:, attrs:)
-    page.execute_script(<<~JS)
-      window.listenerRuns = 0;
-      const f = document.createElement("form");
-      f.id = "probe"; f.className = "#{classes}"; f.action = "/nowhere"; f.method = "post";
-      #{attrs.map { |k, v| "f.setAttribute('#{k}', '#{v}');" }.join}
-      f.addEventListener("submit", (e) => { window.listenerRuns += 1; e.preventDefault(); });
-      const b = document.createElement("button");
-      b.type = "submit"; b.id = "probe-go"; b.textContent = "Probe go";
-      f.appendChild(b);
-      document.body.prepend(f);
+  # Adds a disabled confirming button the way the server renders one and reports
+  # whether it was disabled at insertion; a click listener further up the page
+  # records the clicks that were not cancelled.
+  def add_confirming_button
+    page.evaluate_script(<<~JS)
+      (() => {
+        window.buttonRuns = 0;
+        const b = document.createElement("button");
+        b.type = "button"; b.id = "probe-go"; b.textContent = "Probe go"; b.disabled = true;
+        b.dataset.controller = "confirmation";
+        b.dataset.action = "click->confirmation#ask";
+        b.dataset.confirmationMessageValue = "Sure?";
+        document.body.addEventListener("click", (e) => { if (e.target === b) window.buttonRuns += 1; });
+        document.body.prepend(b);
+        return b.disabled;
+      })()
     JS
   end
 
-  it "does not run per-form submit listeners when the confirmation is dismissed" do
-    add_form(classes: "", attrs: { "data-confirm" => "Sure?" })
+  it "keeps a confirming button disabled until the controller connects, then enables it" do
+    expect(add_confirming_button).to be(true)
+    expect(page).to have_button("Probe go", disabled: false)
+  end
+
+  it "lets the click through only when the confirmation is accepted" do
+    add_confirming_button
     dismiss_confirm("Sure?") { click_button "Probe go" }
-    expect(page.evaluate_script("window.listenerRuns")).to eq(0)
+    expect(page.evaluate_script("window.buttonRuns")).to eq(0)
     accept_confirm("Sure?") { click_button "Probe go" }
-    expect(page.evaluate_script("window.listenerRuns")).to eq(1)
-  end
-
-  it "prompts natively for a .useTurbo form that only has legacy data-confirm" do
-    add_form(classes: "useTurbo", attrs: { "data-confirm" => "Legacy?" })
-    dismiss_confirm("Legacy?") { click_button "Probe go" }
-    expect(page.evaluate_script("window.listenerRuns")).to eq(0)
-  end
-
-  def add_link(classes:, attrs:)
-    page.execute_script(<<~JS)
-      window.linkRuns = 0;
-      const a = document.createElement("a");
-      a.id = "probe-link"; a.className = "#{classes}"; a.href = "#probe-hit"; a.textContent = "Probe link";
-      #{attrs.map { |k, v| "a.setAttribute('#{k}', '#{v}');" }.join}
-      a.addEventListener("click", (e) => { window.linkRuns += 1; e.preventDefault(); });
-      document.body.prepend(a);
-    JS
-  end
-
-  it "prompts natively for a .useTurbo link with data-turbo-confirm but no data-turbo-method" do
-    add_link(classes: "useTurbo", attrs: { "data-turbo-confirm" => "Visit?" })
-    dismiss_confirm("Visit?") { click_link "Probe link" }
-    expect(page.evaluate_script("window.linkRuns")).to eq(0)
-    accept_confirm("Visit?") { click_link "Probe link" }
-    expect(page.evaluate_script("window.linkRuns")).to eq(1)
-  end
-
-  it "uses the submitter's own message over the form's" do
-    add_form(classes: "", attrs: { "data-confirm" => "Form?" })
-    page.execute_script("document.getElementById('probe-go').setAttribute('data-confirm', 'Button?')")
-    accept_confirm("Button?") { click_button "Probe go" }
-    expect(page.evaluate_script("window.listenerRuns")).to eq(1)
-  end
-
-  it "does not switch Turbo off for an explicit data-turbo=true form" do
-    add_form(classes: "", attrs: { "data-turbo" => "true" })
-    click_button "Probe go"
-    expect(page.evaluate_script("document.getElementById('probe').getAttribute('data-turbo')")).to eq("true")
+    expect(page.evaluate_script("window.buttonRuns")).to eq(1)
   end
 end

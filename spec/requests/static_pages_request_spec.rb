@@ -865,7 +865,8 @@ RSpec.describe "Static pages", type: :request do
     it "renders the report as a confirm-guarded POST button on the repository page" do
       sign_in_as(:regular)
       get repository_path(repo.user_username, repo)
-      expect(response.body).to match(%r{<form[^>]*data-turbo-confirm=[^>]*action="/report_repository/#{repo.id}"|<form[^>]*action="/report_repository/#{repo.id}"[^>]*data-turbo-confirm=})
+      form = Nokogiri::HTML5(response.body).at_css(%(form[action="/report_repository/#{repo.id}"]))
+      expect(form.at_css("button[disabled][data-controller='confirmation']")["data-confirmation-message-value"]).to be_present
     end
 
     it "raises RecordNotFound for an unknown repository (signed in)" do
