@@ -160,7 +160,7 @@
                             <% if vtj.volunteer_task %>
                               <%= link_to volunteer_task_path(vtj.volunteer_task_id), class: "badge bg-info-subtle text-info-emphasis border border-info-subtle text-decoration-none text-start text-truncate d-inline-flex align-items-center gap-1 p-2", style: "max-width: 220px;" do %>
                                 <i class="fa-solid fa-list-check"></i>
-                                <span><%= task.title %></span>
+                                <span><%= vtj.volunteer_task.title %></span>
                               <% end %>
                             <% end %>
                           <% end %>
