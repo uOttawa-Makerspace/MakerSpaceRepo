@@ -37,6 +37,11 @@ class JobOrderMailerPreview < ActionMailer::Preview
     JobOrderMailer.send_job_completed(job_order.id, nil)
   end
 
+  def payment_succeeded_with_message
+    job_order = JobOrder.last || create_job_order_with_files
+    JobOrderMailer.payment_succeeded(job_order.id, "Your items are ready for pickup at the front desk.")
+  end
+
   def payment_succeeded
     job_order = JobOrder.last || create_job_order_with_files
     JobOrderMailer.payment_succeeded(job_order.id)

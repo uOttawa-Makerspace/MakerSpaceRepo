@@ -9,7 +9,7 @@ module LiteralTextScan
   LITERAL_ARGUMENT = /
     (?:link_to|button_to|label_tag|submit_tag|provide|tag\.\w+|content_tag|
        (?:placeholder|title|alt|value|label|aria-label|default):)
-    \s*\(?\s*(?::\w+,\s*)?(['"])([^'"]*[A-Za-z]{2}[^'"]*)\1
+    \s*\(?\s*(?::\w+,\s*)?(['"])((?:\\.|(?!\1)[^\\])*[A-Za-z]{2}(?:\\.|(?!\1)[^\\])*)\1
   /x
 
   # Markup with ERB output, comments, scripts, tags and entities removed leaves only visible text.
@@ -28,8 +28,12 @@ module LiteralTextScan
     source.scan(LITERAL_ARGUMENT).map(&:last).reject { |text| ALLOWED_LITERALS.include?(text) || not_wording?(text) }
   end
 
-  # Links, fragments, markup that is built around a translated label, and field names.
+  # Links, fragments, markup with no text outside its tags, and a string that is one interpolation (optionally after an id prefix).
   def self.not_wording?(text)
-    text.match?(%r{\A(https?:|/|#|<)}) || text.match?(/\A\w*#\{[^}]*\}\w*\z/)
+    text.match?(%r{\A(https?:|/|#)}) || text.match?(/\A(\w+_)?#\{[^}]*\}\z/) || markup_without_text?(text)
+  end
+
+  def self.markup_without_text?(text)
+    text.start_with?("<") && text.gsub(/<[^>]*>/, "").gsub(/#\{[^}]*\}/, "").match?(/\A[^[:alpha:]]*\z/)
   end
 end
