@@ -118,12 +118,12 @@ class VolunteersController < SessionsController
     shift = ShadowingHour.find_by(event_id: params[:event_id]) if params[:event_id].present?
     return refuse_shift(:shift_not_found) if shift.nil?
 
-    if ShadowingHour.delete_event(shift.event_id, shift.space.name) == 'error'
-      refuse_shift(:shift_not_removed)
-    else
-      shift.destroy!
+    case shift.cancel
+    when :removed
       flash[:notice] = 'This shift has been cancelled.'
       redirect_to calendar_volunteers_path
+    when :gone then refuse_shift(:shift_not_found)
+    else refuse_shift(:shift_not_removed)
     end
   end
 

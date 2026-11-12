@@ -47,16 +47,30 @@ class ShadowingHour < ApplicationRecord
     return authorizer
   end
 
-  # Creates the shift's Google event under the shift's own event_id, so doing it again cannot make a second one:
-  # an event that already exists (409) counts as created. Any other failure is raised, for the job to retry or
-  # report. An event Google reports cancelled was removed by hand; it is reported once and not retried.
+  # Creates the shift's Google event under the shift's own event_id, so doing it again cannot make a second one.
+  # Google keeps the id of a deleted event reserved, so an id that already exists (409) is either the event
+  # or one removed by hand: the event is read, and one found cancelled is reported once and not retried. Any
+  # other failure is raised, for the job to retry or report.
+  # Runs under the shift's row lock, so cancelling the shift cannot slip in between the shift being read and
+  # its event being created (which would leave an event nothing removes). Does nothing for a shift that is gone.
   def publish_to_calendar
-    return unless calendar_ready?
+    self.class.transaction do
+      locked = self.class.lock.find_by(id: id)
+      locked&.create_calendar_event
+    end
+  end
 
-    event = self.class.create_event(calendar_time(start_time), calendar_time(end_time), user, space.name.downcase, event_id)
-    report_cancelled if event.status == "cancelled"
-  rescue Google::Apis::ClientError => e
-    raise unless e.status_code == ALREADY_EXISTS_STATUS
+  # Removes the shift's Google event, then the shift, under the same row lock. Answers :removed, :gone (the shift
+  # was already cancelled) or :not_removed (Google did not confirm the removal: the shift is kept).
+  def cancel
+    self.class.transaction do
+      locked = self.class.lock.find_by(id: id)
+      next :gone unless locked
+      next :not_removed if self.class.delete_event(locked.event_id, locked.space.name) == "error"
+
+      locked.destroy!
+      :removed
+    end
   end
 
   # +event_id+ is the id the Google event is created with, so a repeated call cannot create a second event.
@@ -108,6 +122,14 @@ class ShadowingHour < ApplicationRecord
     return response
   end
 
+  # The Google event with this id, in the calendar of the space (a name, any case).
+  def self.get_event(event_id, space)
+    service = Google::Apis::CalendarV3::CalendarService.new
+    service.authorization = authorizer
+    calendars = Rails.application.credentials[Rails.env.to_sym][:calendar]
+    service.get_event(space.downcase == "makerspace" ? calendars[:makerspace] : calendars[:brunsfield], event_id)
+  end
+
   def self.delete_event(event_id, space)
     service = Google::Apis::CalendarV3::CalendarService.new
     service.authorization = authorizer
@@ -145,6 +167,18 @@ class ShadowingHour < ApplicationRecord
     error.to_s.include?("Resource has been deleted") || GONE_STATUSES.include?(error.status_code)
   end
   private_class_method :already_gone?
+
+  protected
+
+  def create_calendar_event
+    return unless calendar_ready?
+
+    self.class.create_event(calendar_time(start_time), calendar_time(end_time), user, space.name.downcase, event_id)
+  rescue Google::Apis::ClientError => e
+    raise unless e.status_code == ALREADY_EXISTS_STATUS
+
+    report_cancelled if self.class.get_event(event_id, space.name).status == "cancelled"
+  end
 
   private
 

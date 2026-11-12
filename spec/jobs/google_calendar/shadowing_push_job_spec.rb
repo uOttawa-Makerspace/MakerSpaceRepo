@@ -45,6 +45,16 @@ RSpec.describe GoogleCalendar::ShadowingPushJob, type: :job do
   it "settles when Google already has the event, so a repeat never makes a second one" do
     GoogleCalendar::PendingChange.ask_shadow_push(shift.id)
     allow(service).to receive(:insert_event).and_raise(Google::Apis::ClientError.new("duplicate", status_code: 409))
+    allow(service).to receive(:get_event).and_return(double(status: "confirmed"))
+    described_class.perform_now(shift.id)
+    expect(GoogleCalendar::PendingChange.count).to eq(0)
+  end
+
+  it "reports once and settles when the id that exists belongs to an event removed by hand" do
+    GoogleCalendar::PendingChange.ask_shadow_push(shift.id)
+    allow(service).to receive(:insert_event).and_raise(Google::Apis::ClientError.new("duplicate", status_code: 409))
+    allow(service).to receive(:get_event).and_return(double(status: "cancelled"))
+    expect(HandledError).to receive(:report).once
     described_class.perform_now(shift.id)
     expect(GoogleCalendar::PendingChange.count).to eq(0)
   end
