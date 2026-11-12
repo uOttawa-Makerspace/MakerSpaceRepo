@@ -35,6 +35,18 @@ RSpec.describe VolunteerTaskJoin, type: :model do
     end
   end
 
+  describe "a save that hits another unique index" do
+    it "re-raises the violation, without a taken error" do
+      join = build(:volunteer_task_join)
+      allow(join).to receive(:_create_record).and_raise(
+        ActiveRecord::RecordNotUnique.new("PG::UniqueViolation: duplicate key value violates unique constraint \"index_volunteer_task_joins_on_something_else\"")
+      )
+
+      expect { join.save! }.to raise_error(ActiveRecord::RecordNotUnique, /something_else/)
+      expect(join.errors[:user_id]).to be_empty
+    end
+  end
+
   describe "#scopes" do
     before(:each) do
       create(:volunteer_task_join, :active)
