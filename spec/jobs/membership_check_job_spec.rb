@@ -127,4 +127,12 @@ RSpec.describe MembershipCheckJob, type: :job do
     expect { described_class.perform_now(rfid, space.id) }.to raise_error(RuntimeError, "boom").and change { TapBoxLog.where(event_type: "error").count }.by(1)
     expect(popups).to be_empty
   end
+
+  it "is discarded without an error row or a popup when the card was deleted while it waited" do
+    data = described_class.new(rfid, space.id).serialize
+    rfid.destroy!
+    expect { ActiveJob::Base.execute(data) }.not_to raise_error
+    expect(TapBoxLog.where(event_type: TapBoxLog::ERROR)).to be_empty
+    expect(popups).to be_empty
+  end
 end

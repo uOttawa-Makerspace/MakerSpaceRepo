@@ -12,7 +12,6 @@ class MembershipCheckJob < ApplicationJob
   # One check per user at a time, so two taps never grant or revoke together
   limits_concurrency to: 1, key: ->(rfid, _space_id) { rfid.user_id }, duration: 1.minutes
 
-  discard_on ActiveJob::DeserializationError
   # Any other failure is logged for the tap box console, then left to fail
   # normally so it shows in the queue dashboard.
   rescue_from(StandardError) do |error|
@@ -20,6 +19,9 @@ class MembershipCheckJob < ApplicationJob
     log_failure(rfid, Space.find_by(id: space_id), error)
     raise error
   end
+  # Declared after the catch-all, which Rails tries last: a tap whose card was
+  # deleted while the job waited is dropped, with nothing left to log.
+  discard_on ActiveJob::DeserializationError
   retry_on UpstreamUnavailable, wait: :polynomially_longer, attempts: 5 do |job, error|
     job.give_up(error)
   end
