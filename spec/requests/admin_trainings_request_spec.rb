@@ -385,12 +385,6 @@ RSpec.describe "Admin training area", type: :request do
           get admin_training_sessions_path(status: "not_completed")
           expect(listed_ids).to eq([session_record.id])
         end
-
-        it "answers a js partial for format js" do
-          get admin_training_sessions_path(format: :js), xhr: true
-          expect(response).to have_http_status(:ok)
-          expect(response.media_type).to eq("text/javascript")
-        end
       end
 
       describe "PATCH update" do

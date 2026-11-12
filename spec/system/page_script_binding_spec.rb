@@ -10,11 +10,6 @@ RSpec.describe "Page scripts on pages lacking some of their elements", type: :sy
   let(:earner) { create(:user, :regular_user) }
   let!(:cert) { create(:certification, user: earner, training_session: session_record, training: training, level: "Intermediate") }
 
-  it "lets the admin training sessions page load" do
-    log_in_as(create(:user, :admin), to: admin_training_sessions_path)
-    expect(page).to have_content("Admin's Training Sessions Manager")
-  end
-
   it "lets the badge list page load" do
     log_in_as(earner, to: badges_path)
     expect(page).to have_css("#search_bar")

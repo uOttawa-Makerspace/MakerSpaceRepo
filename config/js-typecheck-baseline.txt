@@ -29,7 +29,6 @@
 1	app/javascript/entrypoints/add_new_staff.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
 1	app/javascript/entrypoints/admin_spaces.js	TS2353	Object literal may only specify known properties, and 'searchOnKeyUp' does not exist in type 'RecursivePartial<TomSettings>'.
 1	app/javascript/entrypoints/admin_spaces.js	TS2551	Property 'tomselect' does not exist on type 'HTMLElement'. Did you mean 'onselect'?
-1	app/javascript/entrypoints/admin_training_sessions.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/application.js	TS2322	Type '(func: any, wait: any, immediate: any) => (...args: any[]) => void' is not assignable to type '(func: any, wait: any) => (...args: any[]) => void'.
 1	app/javascript/entrypoints/application.js	TS2339	Property 'clearEndDate' does not exist on type 'Window & typeof globalThis'.
 2	app/javascript/entrypoints/application.js	TS2339	Property 'dataset' does not exist on type 'Element'.
