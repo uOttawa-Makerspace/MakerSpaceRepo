@@ -1149,7 +1149,7 @@ class User < ApplicationRecord
   # The spaces this user may switch the staff dashboard to: every space for an admin, otherwise only the
   # spaces they are assigned to.
   def workable_spaces
-    admin? ? Space.all : spaces
+    admin? ? Space.all : Space.where(id: staff_spaces.select(:space_id))
   end
 
   def can_work_in?(space)

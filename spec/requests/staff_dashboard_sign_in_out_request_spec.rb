@@ -353,5 +353,34 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       get "/staff_dashboard", as: :json
       expect(json["space_list"]).to eq([[space.name, space.id]])
     end
+
+    it "lists an assigned space once even when it is assigned twice" do
+      StaffSpace.create!(user: staff, space: other_space)
+      get staff_dashboard_index_path
+      options = Nokogiri::HTML(response.body).css("select#set_space_id option").map { |o| o["value"] }
+      expect(options.sort).to eq([space.id, other_space.id].map(&:to_s).sort)
+    end
+
+    it "shows the current space selected even when unassigned, and switching to it succeeds" do
+      StaffSpace.where(user: staff).destroy_all
+      get staff_dashboard_index_path
+      selected = Nokogiri::HTML(response.body).css("select#set_space_id option[selected]").map { |o| o["value"] }
+      expect(selected).to eq([space.id.to_s])
+
+      put "/staff_dashboard/change_space", params: { space_id: space.id }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(staff.reload.space_id).to eq(space.id)
+    end
+
+    it "tells a staff member with no assigned spaces to ask an admin" do
+      StaffSpace.where(user: staff).destroy_all
+      get staff_dashboard_index_path
+      expect(response.body).to include(I18n.t("common.no_assigned_spaces"))
+    end
+
+    it "does not show the ask-an-admin message to an assigned staff member" do
+      get staff_dashboard_index_path
+      expect(response.body).not_to include(I18n.t("common.no_assigned_spaces"))
+    end
   end
 end

@@ -10,6 +10,7 @@
                    id: 'set_space_id', aria: { label: t('common.names.space') }, class: 'form-select fs-2 w-auto d-inline-block', onchange: 'setSpace()' %>
 </h1>
 
+<%= render "staff_dashboard/no_assigned_spaces" %>
 <%= render 'search' %>
 
 <% if @space.makerspace? %>

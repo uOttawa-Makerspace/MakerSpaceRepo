@@ -28,6 +28,7 @@ class StaffAreaController < SessionsController
   end
 
   def define_spaces
-    @all_spaces ||= current_user.workable_spaces.order(:name)
+    # The page's current space is always listed so the picker shows the space the page is on.
+    @all_spaces ||= current_user.workable_spaces.or(Space.where(id: @space&.id)).order(:name)
   end
 end
