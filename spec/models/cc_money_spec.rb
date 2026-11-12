@@ -264,6 +264,38 @@ RSpec.describe CcMoney, type: :model do
       row = CcMoney.create_cc_money_from_approval(task.id, user.id, 8)
       expect([row.cc, row.user_id, row.volunteer_task_id, row.linked]).to eq([8, user.id, task.id, true])
     end
+
+    it "pays a task to a user only once: a second award writes nothing and returns nil" do
+      task = create(:volunteer_task)
+      CcMoney.create_cc_money_from_approval(task.id, user.id, 8)
+
+      expect { expect(CcMoney.create_cc_money_from_approval(task.id, user.id, 8)).to be_nil }.not_to change(CcMoney, :count)
+      expect(CcMoney.where(user_id: user.id, volunteer_task_id: task.id).sum(:cc)).to eq(8)
+    end
+
+    it "still pays the same task to another user and the same user another task" do
+      task = create(:volunteer_task)
+      CcMoney.create_cc_money_from_approval(task.id, user.id, 8)
+
+      expect(CcMoney.create_cc_money_from_approval(task.id, create(:user).id, 8)).to be_persisted
+      expect(CcMoney.create_cc_money_from_approval(create(:volunteer_task).id, user.id, 8)).to be_persisted
+    end
+  end
+
+  describe "the task award index" do
+    let(:task) { create(:volunteer_task) }
+
+    it "ignores rows that are not task awards, and rows flagged as old double awards" do
+      create(:cc_money, user: user, volunteer_task: task)
+      expect { 2.times { CcMoney.create!(user: user, cc: 5) } }.not_to raise_error
+      expect { CcMoney.create!(user: user, volunteer_task: task, cc: 10, legacy_duplicate: true) }.not_to raise_error
+      expect(user.get_total_cc).to eq(10 + 5 + 5 + 10)
+    end
+
+    it "refuses a second unflagged award for the same user and task" do
+      create(:cc_money, user: user, volunteer_task: task)
+      expect { CcMoney.create!(user: user, volunteer_task: task, cc: 10) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
   end
 
   describe "wallet (User#update_wallet / #get_total_cc)" do
