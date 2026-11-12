@@ -204,6 +204,11 @@ RSpec.describe "/api/v1 training sessions", type: :request do
       expect(error["code"]).to eq("forbidden")
     end
 
+    it "lets an admin who does not own the session certify its trainees" do
+      expect { api_post path, as: admin }.to change(Certification, :count).by(2)
+      expect(response).to have_http_status(:ok)
+    end
+
     it "certifies every enrolled user at the session level for the owner, sending no email" do
       expect { api_post path, as: staff }.to change(Certification, :count).by(2)
       expect(response).to have_http_status(:ok)

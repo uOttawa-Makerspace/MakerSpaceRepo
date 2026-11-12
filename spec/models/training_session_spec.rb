@@ -290,4 +290,23 @@ RSpec.describe TrainingSession, type: :model do
       expect(Certification.where(user_id: student.id).count).to eq(1)
     end
   end
+
+  describe "#editable_by?" do
+    let(:trainer) { create(:user, :staff) }
+    let(:session) { create(:training_session, user: trainer) }
+
+    it "is true for the trainer and for an admin" do
+      expect(session.editable_by?(trainer)).to be(true)
+      expect(session.editable_by?(create(:user, :admin))).to be(true)
+    end
+
+    it "is false for other staff and for a guest" do
+      expect(session.editable_by?(create(:user, :staff))).to be(false)
+      expect(session.editable_by?(User.new)).to be(false)
+    end
+
+    it "is false for a guest when the session has no trainer" do
+      expect(build(:training_session, user: nil).editable_by?(User.new)).to be(false)
+    end
+  end
 end
