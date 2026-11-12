@@ -33,9 +33,9 @@ RSpec.describe "memberships:pending_duplicates" do
     second = create(:membership, user: member, membership_tier: tier, status: "pending", start_date: nil, end_date: nil,
                                  shopify_draft_order_id: nil)
     kept = "membership #{first.id} keep created #{first.created_at.utc.iso8601} " \
-           "draft #{first.shopify_draft_order_id}"
+           "updated #{first.updated_at.utc.iso8601} draft #{first.shopify_draft_order_id}"
 
-    expect { run }.to output(/#{Regexp.escape(kept)}\n.*membership #{second.id} extra created \S+ draft none/m).to_stdout
+    expect { run }.to output(/#{Regexp.escape(kept)}\n.*membership #{second.id} extra created \S+ updated \S+ draft none/m).to_stdout
   end
 
   it "lists a pair with exactly two pending rows" do

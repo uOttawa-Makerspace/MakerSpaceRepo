@@ -12,7 +12,7 @@ namespace :memberships do
       puts "user #{user_id}, tier #{tier_id}: #{ids.size} pending (ids #{ids.join(', ')})"
       Membership.where(id: ids).order(:id).each_with_index do |membership, index|
         puts "  membership #{membership.id} #{index.zero? ? 'keep' : 'extra'} " \
-             "created #{membership.created_at.utc.iso8601} draft #{membership.shopify_draft_order_id || 'none'}"
+             "created #{membership.created_at.utc.iso8601} updated #{membership.updated_at.utc.iso8601} draft #{membership.shopify_draft_order_id || 'none'}"
       end
     end
     next if pairs.empty?
