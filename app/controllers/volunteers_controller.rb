@@ -198,32 +198,27 @@ class VolunteersController < SessionsController
     redirect_to calendar_volunteers_path
   end
 
-  # The shift is stored first, with the id its Google Calendar event will have, and the event is created
-  # after that. If the calendar cannot be reached or refuses the event, the shift stays and the staff member is
-  # told the calendar is missing it.
+  # The shift is stored first, with the id its Google Calendar event will have, together with the record that the
+  # event still has to be created. A job creates the event after that and is tried again until Google has it. If
+  # the job cannot even be queued, the shift stays, the resend job queues it later, and the staff member is told.
   def create_shadowing_shift(user, space, start_time, end_time)
-    shift = ShadowingHour.create!(
-      user_id: user.id,
-      start_time: start_time,
-      end_time: end_time,
-      event_id: SecureRandom.hex(16),
-      space_id: space.id
-    )
+    change = nil
+    ShadowingHour.transaction do
+      shift = ShadowingHour.create!(
+        user_id: user.id,
+        start_time: start_time,
+        end_time: end_time,
+        event_id: SecureRandom.hex(16),
+        space_id: space.id
+      )
+      change = GoogleCalendar::PendingChange.ask_shadow_push(shift.id)
+    end
 
-    if create_calendar_event(shift, user, start_time, end_time)
+    if change.enqueue
       flash[:notice] = 'The shadowing shift has been added'
     else
       flash[:alert] = I18n.t('errors.volunteers.calendar_event_missing')
     end
-  end
-
-  # True when Google Calendar holds the shift's event; a failure is reported and answers false.
-  def create_calendar_event(shift, user, start_time, end_time)
-    event = ShadowingHour.create_event(start_time, end_time, user, params[:space], shift.event_id)
-    event.status != 'cancelled'
-  rescue Google::Apis::Error, *GoogleCalendar::EventJob::TRANSIENT_ERRORS => e
-    HandledError.report(e, source: 'volunteers.create_shadowing_shift', shadowing_hour_id: shift.id)
-    false
   end
 
   def grant_access_list

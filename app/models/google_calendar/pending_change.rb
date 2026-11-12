@@ -6,6 +6,9 @@ module GoogleCalendar
   # and deleted by the job when Google has the change, so a job that could not be queued (the queue database
   # was down) or that ran out of attempts leaves the row behind, and GoogleCalendar::ResendJob queues it again.
   #
+  # A shadowing shift's event is created from the shift (action shadow_push, which names the shadowing hour
+  # instead of an event).
+  #
   # A push is one row per event, a removal one row per Google copy: asking twice leaves one row, and the jobs read
   # the event's state when they run, so a repeat is harmless.
   class PendingChange < ApplicationRecord
@@ -13,6 +16,7 @@ module GoogleCalendar
 
     PUSH = "push"
     REMOVE = "remove"
+    SHADOW_PUSH = "shadow_push"
     # A change is queued again when it has waited this long since it was asked for.
     RESEND_AFTER = 15.minutes
     # Queued again this many times at most; a change that still has not gone through is reported and left for staff.
@@ -20,11 +24,18 @@ module GoogleCalendar
     # Failures of the queue (its database being down, the queue refusing the job).
     QUEUE_ERRORS = [ActiveRecord::ActiveRecordError, ActiveJob::EnqueueError].freeze
 
+    IDENTITY = %i[action event_id google_event_id shadowing_hour_id].freeze
+
     scope :due, -> { where(updated_at: ...RESEND_AFTER.ago, attempts: ...MAX_RESENDS) }
 
     # Records that the event's current state has to reach Google, and returns the row.
     def self.ask_push(event_id)
       ask(PUSH, event_id)
+    end
+
+    # Records that the shadowing shift's Google event has to be created, and returns the row.
+    def self.ask_shadow_push(shadowing_hour_id)
+      ask(SHADOW_PUSH, nil, shadowing_hour_id: shadowing_hour_id)
     end
 
     # Records that the Google copy has to be removed, and returns the row.
@@ -37,6 +48,11 @@ module GoogleCalendar
     # +google_event_id+ names the copy of a removal; a push has none.
     def self.settle(action, event_id, as_of, google_event_id: nil)
       where(action: action, event_id: event_id, google_event_id: google_event_id, updated_at: ..as_of).delete_all
+    end
+
+    # Same for the creation of a shadowing shift's event.
+    def self.settle_shadow_push(shadowing_hour_id, as_of)
+      where(action: SHADOW_PUSH, shadowing_hour_id: shadowing_hour_id, updated_at: ..as_of).delete_all
     end
 
     # Queues the job for every change that has waited long enough and been resent fewer than MAX_RESENDS times;
@@ -61,14 +77,11 @@ module GoogleCalendar
     # Queues the job that does this change. A queue that cannot take it is reported, not raised: the row stays
     # and the resend job queues it again.
     def enqueue
-      if action == PUSH
-        GoogleCalendar::EventPushJob.perform_later(event_id)
-      else
-        GoogleCalendar::EventDeleteJob.perform_later(google_event_id, calendar_id, event_id)
-      end
+      perform_later
       true
     rescue *QUEUE_ERRORS => e
-      Rails.error.report(e, handled: true, context: { job: "GoogleCalendar::PendingChange", action: action, event_id: event_id })
+      Rails.error.report(e, handled: true, context: { job: "GoogleCalendar::PendingChange", action: action, event_id: event_id,
+                                                      shadowing_hour_id: shadowing_hour_id })
       false
     end
 
@@ -81,16 +94,24 @@ module GoogleCalendar
     end
 
     def self.ask(action, event_id, **details)
-      change = upsert({ action: action, event_id: event_id, attempts: 0, **details }, unique_by: %i[action event_id google_event_id], returning: %w[id]).first
+      change = upsert({ action: action, event_id: event_id, attempts: 0, **details }, unique_by: IDENTITY, returning: %w[id]).first
       find(change["id"])
     end
     private_class_method :ask
 
     private
 
+    def perform_later
+      case action
+      when PUSH then GoogleCalendar::EventPushJob.perform_later(event_id)
+      when SHADOW_PUSH then GoogleCalendar::ShadowingPushJob.perform_later(shadowing_hour_id)
+      else GoogleCalendar::EventDeleteJob.perform_later(google_event_id, calendar_id, event_id)
+      end
+    end
+
     def report_given_up
       Rails.error.report(RuntimeError.new("Google Calendar change was not confirmed after #{MAX_RESENDS} resends"),
-                         handled: true, context: { action: action, event_id: event_id, change_id: id })
+                         handled: true, context: { action: action, event_id: event_id, shadowing_hour_id: shadowing_hour_id, change_id: id })
     end
   end
 end

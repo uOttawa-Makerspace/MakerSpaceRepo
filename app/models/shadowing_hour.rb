@@ -6,6 +6,8 @@ class ShadowingHour < ApplicationRecord
 
   # Statuses Google answers when the event a delete asks for is already gone.
   GONE_STATUSES = [404, 410].freeze
+  # What Google answers when an event is created under an id it already has.
+  ALREADY_EXISTS_STATUS = 409
 
   # The columns allow NULL and older rows may lack a time, so those rows stay
   # editable for other fields: both times are required for a new row, or when
@@ -43,6 +45,18 @@ class ShadowingHour < ApplicationRecord
     authorizer.fetch_access_token!
 
     return authorizer
+  end
+
+  # Creates the shift's Google event under the shift's own event_id, so doing it again cannot make a second one:
+  # an event that already exists (409) counts as created. Any other failure is raised, for the job to retry or
+  # report. An event Google reports cancelled was removed by hand; it is reported once and not retried.
+  def publish_to_calendar
+    return unless calendar_ready?
+
+    event = self.class.create_event(calendar_time(start_time), calendar_time(end_time), user, space.name.downcase, event_id)
+    report_cancelled if event.status == "cancelled"
+  rescue Google::Apis::ClientError => e
+    raise unless e.status_code == ALREADY_EXISTS_STATUS
   end
 
   # +event_id+ is the id the Google event is created with, so a repeated call cannot create a second event.
@@ -133,6 +147,21 @@ class ShadowingHour < ApplicationRecord
   private_class_method :already_gone?
 
   private
+
+  # An older row can lack its volunteer, space or times; there is nothing to put on the calendar for it.
+  def calendar_ready?
+    user && space && start_time && end_time
+  end
+
+  def report_cancelled
+    HandledError.report(RuntimeError.new("Google Calendar reports the shadowing shift's event cancelled"),
+                        source: "shadowing_hour.publish_to_calendar", shadowing_hour_id: id)
+  end
+
+  # The calendar's timestamp for a stored time, in the application's (Eastern) time.
+  def calendar_time(time)
+    time.in_time_zone.strftime("%Y-%m-%dT%H:%M:00")
+  end
 
   def times_required?
     new_record? || start_time_changed? || end_time_changed?

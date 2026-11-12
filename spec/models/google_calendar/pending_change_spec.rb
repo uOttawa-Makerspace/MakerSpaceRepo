@@ -18,6 +18,30 @@ RSpec.describe GoogleCalendar::PendingChange do
     end
   end
 
+  describe ".ask_shadow_push" do
+    it "records one row per shadowing shift however many times it is asked" do
+      shift = create(:shadowing_hour)
+      expect { 3.times { described_class.ask_shadow_push(shift.id) } }.to change(described_class, :count).by(1)
+      expect(described_class.last).to have_attributes(action: "shadow_push", event_id: nil, shadowing_hour_id: shift.id, attempts: 0)
+    end
+
+    it "keeps one row for each shift" do
+      expect { 2.times { described_class.ask_shadow_push(create(:shadowing_hour).id) } }.to change(described_class, :count).by(2)
+    end
+
+    it "is removed with the shift it belongs to" do
+      shift = create(:shadowing_hour)
+      described_class.ask_shadow_push(shift.id)
+      expect { shift.destroy! }.to change(described_class, :count).by(-1)
+    end
+
+    it "is refused by the database without a shift, or with an event" do
+      expect { described_class.create!(action: "shadow_push", event_id: 7) }.to raise_error(ActiveRecord::StatementInvalid)
+      expect { described_class.create!(action: "push", event_id: 7, shadowing_hour_id: create(:shadowing_hour).id) }
+        .to raise_error(ActiveRecord::StatementInvalid)
+    end
+  end
+
   describe ".ask_removal" do
     it "records one row per Google copy of the event" do
       expect do
@@ -55,7 +79,27 @@ RSpec.describe GoogleCalendar::PendingChange do
     end
   end
 
+  describe ".settle_shadow_push" do
+    it "deletes the row asked for before the job started, and keeps one asked for again after it" do
+      shift = create(:shadowing_hour)
+      started_at = Time.current
+      described_class.ask_shadow_push(shift.id)
+      expect { described_class.settle_shadow_push(shift.id, started_at - 1.minute) }.not_to change(described_class, :count)
+      expect { described_class.settle_shadow_push(shift.id, started_at + 1.minute) }.to change(described_class, :count).by(-1)
+    end
+
+    it "leaves an event's push alone" do
+      described_class.ask_push(7)
+      expect { described_class.settle_shadow_push(7, Time.current) }.not_to change(described_class, :count)
+    end
+  end
+
   describe "#enqueue" do
+    it "queues the shadowing push job for a shadowing shift" do
+      shift = create(:shadowing_hour)
+      expect { described_class.ask_shadow_push(shift.id).enqueue }.to have_enqueued_job(GoogleCalendar::ShadowingPushJob).with(shift.id)
+    end
+
     it "queues the push job for a push" do
       expect { described_class.ask_push(7).enqueue }.to have_enqueued_job(GoogleCalendar::EventPushJob).with(7)
     end
@@ -77,6 +121,13 @@ RSpec.describe GoogleCalendar::PendingChange do
   end
 
   describe ".resend_due" do
+    it "queues a shadowing shift's event that waited long enough, counting the try" do
+      shift = create(:shadowing_hour)
+      described_class.ask_shadow_push(shift.id).update_columns(updated_at: 20.minutes.ago)
+      expect { expect(described_class.resend_due).to eq(1) }.to have_enqueued_job(GoogleCalendar::ShadowingPushJob).with(shift.id).exactly(:once)
+      expect(described_class.last.attempts).to eq(1)
+    end
+
     it "queues the changes that waited long enough and counts the try" do
       due = described_class.ask_push(7)
       due.update_columns(updated_at: 20.minutes.ago)

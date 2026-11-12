@@ -10,7 +10,7 @@ require "rails_helper"
 #                               volunteer-program member, staff or admin (`grant_access`)
 #   emails, populate_users, volunteer_list, new_event, create_event, delete_event
 #                               staff/admin only (`grant_access_list`)
-# Google Calendar is never reached: ShadowingHour.create_event/delete_event are stubbed.
+# Google Calendar is never reached: ShadowingHour.create_event/delete_event are stubbed (creation runs in a queued job).
 RSpec.describe "Volunteers (HTTP contract)", type: :request do
   HUBSPOT_URL = "https://5oe8xl.share-na3.hsforms.com/20slW0brbQJCsdeEck-8vuQ"
 
@@ -367,10 +367,9 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
 
       before { vol_login!(staff) }
 
-      it "creates the calendar event and a ShadowingHour, redirecting to the calendar" do
-        expect(ShadowingHour).to receive(:create_event)
-          .with("2030-05-06T 9:00:00", "2030-05-06T11:30:00", volunteer, "makerspace", /\A[0-9a-f]{32}\z/).and_return(event)
-        expect { post create_event_volunteers_path, params: params }.to change(ShadowingHour, :count).by(1)
+      it "stores the shift with the id its calendar event will have, queues the event and redirects to the calendar" do
+        expect { post create_event_volunteers_path, params: params }
+          .to change(ShadowingHour, :count).by(1).and have_enqueued_job(GoogleCalendar::ShadowingPushJob)
         expect(response).to redirect_to(calendar_volunteers_path)
         expect(flash[:notice]).to eq("The shadowing shift has been added")
         shift = ShadowingHour.last
@@ -378,46 +377,32 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
         expect(shift.event_id).to match(/\A[0-9a-f]{32}\z/)
         expect(shift.start_time.strftime("%H:%M")).to eq("09:00")
         expect(shift.end_time.strftime("%H:%M")).to eq("11:30")
+        expect(GoogleCalendar::ShadowingPushJob).to have_been_enqueued.with(shift.id)
       end
 
-      it "stores the shift before the calendar event is created, with the id the event gets" do
-        stored_when_called = nil
-        allow(ShadowingHour).to receive(:create_event) do |_start, _end, _user, _space, event_id|
-          stored_when_called = ShadowingHour.exists?(event_id: event_id)
-          event
-        end
+      it "does not reach Google itself, and records the event as waiting until the job has created it" do
+        expect(ShadowingHour).not_to receive(:create_event)
         post create_event_volunteers_path, params: params
-        expect(stored_when_called).to be(true)
+        expect(GoogleCalendar::PendingChange.where(action: "shadow_push").pluck(:shadowing_hour_id)).to eq([ShadowingHour.last.id])
       end
 
-      it "keeps the shift and tells the staff member when Google reports the event cancelled" do
-        allow(ShadowingHour).to receive(:create_event).and_return(double(id: "x", status: "cancelled"))
+      it "creates the calendar event under the shift's id when the queued job runs" do
+        expect(ShadowingHour).to receive(:create_event)
+          .with("2030-05-06T09:00:00", "2030-05-06T11:30:00", volunteer, "makerspace", /\A[0-9a-f]{32}\z/).and_return(event)
+        perform_enqueued_jobs { post create_event_volunteers_path, params: params }
+        expect(GoogleCalendar::PendingChange.count).to eq(0)
+      end
+
+      it "keeps the shift and tells the staff member when the job cannot be queued; the resend job takes it up later" do
+        allow(GoogleCalendar::ShadowingPushJob).to receive(:perform_later).and_raise(ActiveRecord::ConnectionNotEstablished)
         expect { post create_event_volunteers_path, params: params }.to change(ShadowingHour, :count).by(1)
         expect(response).to redirect_to(calendar_volunteers_path)
         expect(flash[:alert]).to eq(I18n.t("errors.volunteers.calendar_event_missing"))
-      end
+        expect(GoogleCalendar::PendingChange.where(action: "shadow_push").count).to eq(1)
 
-      it "keeps the shift, reports the failure and tells the staff member when the Google call raises" do
-        allow(ShadowingHour).to receive(:create_event).and_raise(Faraday::ConnectionFailed, "down")
-        expect(HandledError).to receive(:report).with(instance_of(Faraday::ConnectionFailed), hash_including(source: "volunteers.create_shadowing_shift"))
-        expect { post create_event_volunteers_path, params: params }.to change(ShadowingHour, :count).by(1)
-        expect(response).to redirect_to(calendar_volunteers_path)
-        expect(flash[:alert]).to eq(I18n.t("errors.volunteers.calendar_event_missing"))
-      end
-
-      it "reports a refusal by Google the same way" do
-        allow(ShadowingHour).to receive(:create_event).and_raise(Google::Apis::ClientError.new("refused", status_code: 403))
-        expect(HandledError).to receive(:report).with(instance_of(Google::Apis::ClientError), hash_including(source: "volunteers.create_shadowing_shift"))
-        post create_event_volunteers_path, params: params
-        expect(flash[:alert]).to eq(I18n.t("errors.volunteers.calendar_event_missing"))
-      end
-
-      it "does not swallow an error that is not about Google or the network" do
-        allow(ShadowingHour).to receive(:create_event).and_raise(NoMethodError, "bug")
-        expect(HandledError).not_to receive(:report)
-        post create_event_volunteers_path, params: params
-        expect(response).to have_http_status(:internal_server_error)
-        expect(flash[:alert]).not_to eq(I18n.t("errors.volunteers.calendar_event_missing"))
+        allow(GoogleCalendar::ShadowingPushJob).to receive(:perform_later).and_call_original
+        GoogleCalendar::PendingChange.update_all(updated_at: 1.hour.ago)
+        expect { GoogleCalendar::ResendJob.perform_now }.to have_enqueued_job(GoogleCalendar::ShadowingPushJob).with(ShadowingHour.last.id)
       end
 
       it "rejects an unknown space name without calling Google" do
@@ -490,7 +475,7 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
       it "accepts 'brunsfield centre' as a space" do
         brunsfield = create(:space, name: "Brunsfield Centre")
         expect(ShadowingHour).to receive(:create_event).with(anything, anything, volunteer, "brunsfield centre", anything).and_return(event)
-        post create_event_volunteers_path, params: params.merge(space: "brunsfield centre")
+        perform_enqueued_jobs { post create_event_volunteers_path, params: params.merge(space: "brunsfield centre") }
         expect(ShadowingHour.last.space_id).to eq(brunsfield.id)
       end
     end
