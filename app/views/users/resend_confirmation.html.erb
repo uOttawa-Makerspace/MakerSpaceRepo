@@ -1,13 +1,13 @@
-<% provide(:title, 'Resend confirmation email') %>
+<% provide(:title, t('email_links.resend.title')) %>
 
 <div class="container py-5" style="max-width: 36rem;">
-  <h2 class="mb-3">Resend the confirmation email</h2>
-  <p>Send a new confirmation email to <strong><%= @email %></strong>?</p>
-  <p class="text-muted small">Nothing is sent until you press the button.</p>
+  <h2 class="mb-3"><%= t('email_links.resend.heading') %></h2>
+  <p><%= t('email_links.resend.body_html', email: tag.strong(@email)) %></p>
+  <p class="text-muted small"><%= t('email_links.resend.nothing_sent') %></p>
 
   <div class="d-flex gap-2">
-    <%= button_to 'Send the email', resend_confirmation_users_path,
+    <%= button_to t('email_links.resend.button'), resend_confirmation_users_path,
                   params: { user: { email: @email } }, method: :post, class: 'btn btn-primary' %>
-    <%= link_to 'Cancel', root_path, class: 'btn btn-outline-secondary' %>
+    <%= link_to t('email_links.cancel'), root_path, class: 'btn btn-outline-secondary' %>
   </div>
 </div>
