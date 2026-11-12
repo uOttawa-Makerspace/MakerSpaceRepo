@@ -28,6 +28,16 @@ RSpec.describe "memberships:pending_duplicates" do
     ).to_stdout
   end
 
+  it "marks the lowest id as the row kept and the others as extra, with created time and stored draft id" do
+    first = pending(member, tier)
+    second = create(:membership, user: member, membership_tier: tier, status: "pending", start_date: nil, end_date: nil,
+                                 shopify_draft_order_id: nil)
+    kept = "membership #{first.id} keep created #{first.created_at.utc.iso8601} " \
+           "draft #{first.shopify_draft_order_id}"
+
+    expect { run }.to output(/#{Regexp.escape(kept)}\n.*membership #{second.id} extra created \S+ draft none/m).to_stdout
+  end
+
   it "lists a pair with exactly two pending rows" do
     rows = [pending(member, tier), pending(member, tier)]
 
