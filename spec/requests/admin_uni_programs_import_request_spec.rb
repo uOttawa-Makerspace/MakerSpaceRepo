@@ -129,6 +129,15 @@ RSpec.describe "Admin uni programs import", type: :request do
       create(:uni_program, program: "Retired Program", level: "Doctorate", faculty: "Engineering", active: false)
     end
 
+    it "offers the new faculties box with the value 1 and no stray value" do
+      get admin_uni_programs_index_path
+
+      box = Nokogiri::HTML(response.body).at_css("input[type=checkbox][name=allow_new_programs]")
+      expect(box["value"]).to eq("1")
+      expect(box["class"]).to eq("form-check-input")
+      expect(box["checked"]).to be_nil
+    end
+
     it "lists inactive programs in their own section, apart from the active ones" do
       get admin_uni_programs_index_path
 

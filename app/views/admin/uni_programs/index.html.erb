@@ -9,7 +9,7 @@
       <%= file_field_tag :file, style: 'display: inline;', class: 'form-control', accept: 'text/csv' %>
       <%= submit_tag 'Import File', class: 'btn btn-primary' %>
     </div>
-    <%= check_box_tag :allow_new_programs, class: 'form-check-input' %>
+    <%= check_box_tag :allow_new_programs, '1', false, class: 'form-check-input' %>
     <%= label_tag :allow_new_programs, 'Allow introducing new faculties', class: 'form-check-label' %>
     <% end %>
   </div>
