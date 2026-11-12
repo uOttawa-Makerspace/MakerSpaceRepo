@@ -1,4 +1,4 @@
-<%= form_with model: LockerRental.new, url: locker_rentals_path, method: :post, local: true do |f| %>
+<%= form_with model: LockerRental.new, url: locker_rentals_path, method: :post, local: true, data: { controller: 'locker-picker' } do |f| %>
   <%= f.hidden_field :state, value: 'active' %>
   <%= f.hidden_field :requested_as, value: 'staff' %>
 
@@ -12,7 +12,7 @@
               [label, u.id, { data: { role: (u.role.humanize if u.staff?) } }]
             },
             { include_blank: 'Search for a user by name or username...' },
-            { class: 'form-select', id: 'locker_rental_rented_by_id', required: true, aria: { label: t('common.names.user') } } %>
+            { class: 'form-select', id: 'locker_rental_rented_by_id', required: true, data: { locker_picker_target: 'user' }, aria: { label: t('common.names.user') } } %>
     </div>
 
     <!-- Locker Dropdown -->
@@ -23,7 +23,7 @@
             ["##{locker.specifier}#{size_label}", locker.id, { data: { size: locker.locker_size&.size, staff_only: !locker.available } }]
           },
           { include_blank: 'Search for a locker...' },
-          { class: 'form-select', id: 'locker_rental_locker_id', required: true, aria: { label: t('common.names.locker') } } %>
+          { class: 'form-select', id: 'locker_rental_locker_id', required: true, data: { locker_picker_target: 'locker' }, aria: { label: t('common.names.locker') } } %>
     </div>
 
     <!-- Dates and Indefinite -->
@@ -48,5 +48,4 @@
   </div>
 <% end %>
 
-<%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
 <%= vite_javascript_tag 'locker_admin', 'data-turbo-track': 'reload' %>

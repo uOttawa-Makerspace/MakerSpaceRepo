@@ -53,7 +53,7 @@ RSpec.describe "Journey: locker rental", type: :system do
       expect(page).to have_text("Please near the lab")
       expect(page).to have_text("Staff Actions")
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Send to Checkout')]]") do
-        select "JA-1", from: "locker_rental_locker_id"
+        select "JA-1", from: "locker_rental_locker_id_checkout"
         accept_confirm { click_button "Send to Checkout" }
       end
       expect(page).to have_text("Locker rental updated")
@@ -104,7 +104,7 @@ RSpec.describe "Journey: locker rental", type: :system do
     as_actor(:staff) do
       visit locker_rental_path(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Move Locker')]]") do
-        select "JB-2", from: "locker_rental_locker_id"
+        select "JB-2", from: "locker_rental_locker_id_assign"
         accept_confirm { click_button "Move Locker" }
       end
       expect(page).to have_text("Locker rental updated")
@@ -128,7 +128,7 @@ RSpec.describe "Journey: locker rental", type: :system do
       log_in_as(staff)
       staff_opens_request(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
-        select "JA-1", from: "locker_rental_locker_id"
+        select "JA-1", from: "locker_rental_locker_id_assign"
         # the "Indefinite" box starts unticked and the end date is proposed
         expect(page).to have_unchecked_field("Indefinite")
         accept_confirm { click_button "Assign Now" }
@@ -153,7 +153,7 @@ RSpec.describe "Journey: locker rental", type: :system do
     ActionMailer::Base.deliveries.clear
     as_actor(:staff) do
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Move Locker')]]") do
-        select "JB-2", from: "locker_rental_locker_id"
+        select "JB-2", from: "locker_rental_locker_id_assign"
         accept_confirm { click_button "Move Locker" }
       end
       expect(page).to have_text("Locker rental updated")
@@ -192,7 +192,7 @@ RSpec.describe "Journey: locker rental", type: :system do
       log_in_as(staff)
       staff_opens_request(rental)
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
-        select "JA-1", from: "locker_rental_locker_id"
+        select "JA-1", from: "locker_rental_locker_id_assign"
         check "Indefinite"
         accept_confirm { click_button "Assign Now" }
       end

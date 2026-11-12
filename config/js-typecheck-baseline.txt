@@ -112,8 +112,6 @@
 1	app/javascript/entrypoints/locker_admin.js	TS2339	Property 'disabled' does not exist on type 'Element'.
 2	app/javascript/entrypoints/locker_admin.js	TS2339	Property 'disabled' does not exist on type 'HTMLElement'.
 1	app/javascript/entrypoints/locker_admin.js	TS2339	Property 'value' does not exist on type 'HTMLElement'.
-2	app/javascript/entrypoints/locker_rental_form.js	TS2339	Property 'tomselect' does not exist on type 'Element'.
-2	app/javascript/entrypoints/locker_rental_form.js	TS2345	Argument of type 'Element' is not assignable to parameter of type 'string | TomInput'.
 2	app/javascript/entrypoints/locker_rentals.js	TS2339	Property 'checked' does not exist on type 'Element'.
 2	app/javascript/entrypoints/locker_rentals.js	TS2339	Property 'dataset' does not exist on type 'Element'.
 1	app/javascript/entrypoints/locker_rentals.js	TS2339	Property 'value' does not exist on type 'EventTarget'.
