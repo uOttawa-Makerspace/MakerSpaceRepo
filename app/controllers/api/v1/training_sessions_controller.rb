@@ -126,6 +126,14 @@ module Api
             field = RULE_FIELDS[e.type]
             error(field, e.message) if field && !@errors.key?(field)
           end
+          report_blank_level(candidate) unless level.nil?
+        end
+
+        # A level that is sent but blank is not one of the levels (the model reports it as missing).
+        def report_blank_level(candidate)
+          return if @errors.key?(:level) || !candidate.errors.added?(:level, :blank)
+
+          error(:level, candidate.errors.generate_message(:level, :not_allowed, levels: candidate.levels.join(", ")))
         end
 
         def find_instructor
