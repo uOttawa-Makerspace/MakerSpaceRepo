@@ -20,10 +20,11 @@ module TurnstileHelper
 
   def turnstile_tag(**options)
     options[:class] = ["cf-turnstile", options[:class]].compact.join(" ")
-    options[:data] ||= {}
-    options[:data][:sitekey] = creds[:site_key]
-    options[:data][:controller] = "turnstile"
-    options[:data][:turnstile_unavailable_message_value] = I18n.t("common.captcha_unavailable")
+    options[:data] = (options[:data] || {}).merge(
+      sitekey: creds[:site_key],
+      controller: "turnstile",
+      turnstile_unavailable_message_value: I18n.t("common.captcha_unavailable")
+    )
     tag.div(**options)
   end
 
