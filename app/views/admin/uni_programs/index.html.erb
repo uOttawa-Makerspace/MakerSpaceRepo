@@ -21,9 +21,9 @@
   <% @uni_programs.group_by { |x| x['faculty'] }.each do |faculty, rest| %>
   <div class="mb-5 accordion">
     <div class="card">
-      <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= faculty.gsub(/[ ()]/, '') %>">
+      <div class="card-header position-relative">
         <h2 class="mb-0 text-center" id="accordion-<%= faculty.gsub(/[ ()]/, '') %>-heading">
-          <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-<%= faculty.gsub(/[ ()]/, '') %>" aria-expanded="true">
+          <button class="btn btn-link stretched-link" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-<%= faculty.gsub(/[ ()]/, '') %>" aria-expanded="true">
             <%= faculty %> - <%= rest.count %> programs
           </button>
         </h2>
@@ -33,9 +33,9 @@
         <% rest.group_by { |x| x['department'] }.each { |department, rest| %>
         <div class="mb-5 accordion">
           <div class="card">
-            <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= department.gsub(/[ ()]/, '') %>">
+            <div class="card-header position-relative">
               <h2 class="mb-0 text-center" id="accordion-<%= department.gsub(/[ ()]/, '') %>-heading">
-                <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-<%= department.gsub(/[ ()]/, '') %>" aria-expanded="true">
+                <button class="btn btn-link stretched-link" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-<%= department.gsub(/[ ()]/, '') %>" aria-expanded="true">
                   <%= department %> - <%= rest.count %> programs
                 </button>
               </h2>
