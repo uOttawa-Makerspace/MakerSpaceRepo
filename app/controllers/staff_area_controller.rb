@@ -28,6 +28,7 @@ class StaffAreaController < SessionsController
   end
 
   def define_spaces
-    @all_spaces ||= Space.order(:name)
+    # The user's saved space is always listed so the picker shows the space they are in.
+    @all_spaces ||= current_user.workable_spaces.or(Space.where(id: current_user.space_id)).order(:name)
   end
 end

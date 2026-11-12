@@ -32,8 +32,8 @@ RSpec.describe "Form controls are named", type: :system do
   end
 
   def expect_search_results
-    expect(page).to have_css("input[name='bulk_cert_users[]'][aria-label]")
-    expect(page).to have_css("#select-all[aria-label]")
+    expect(page).to have_css("td.link-table a[aria-label]")
+    expect(page).to have_no_css("input[name='bulk_cert_users[]'], #select-all")
   end
 
   it "names every control on the audited pages" do

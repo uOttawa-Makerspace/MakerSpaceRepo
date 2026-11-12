@@ -1002,6 +1002,11 @@ class User < ApplicationRecord
     viewer == self || viewer.staff?
   end
 
+  # The CC Money balance is private to its owner and staff; reputation is public.
+  def cc_balance_visible_to?(viewer)
+    viewer == self || viewer.staff?
+  end
+
   def roles_visible_to?(viewer)
     viewer.admin?
   end
@@ -1144,6 +1149,16 @@ class User < ApplicationRecord
 
   def staff_in_space?
     staff_spaces.exists?
+  end
+
+  # The spaces this user may switch the staff dashboard to: every space for an admin, otherwise only the
+  # spaces they are assigned to.
+  def workable_spaces
+    admin? ? Space.all : Space.where(id: staff_spaces.select(:space_id))
+  end
+
+  def can_work_in?(space)
+    workable_spaces.exists?(space.id)
   end
 
   def internal?

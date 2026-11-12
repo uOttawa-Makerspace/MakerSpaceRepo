@@ -41,10 +41,13 @@ RSpec.describe StaffDashboardChannel do
     expect(sheet_reads.size).to eq(1)
   end
 
-  it "broadcasts the same tables when a card tap signs a user in" do
+  it "sends the tap-in modal for the user without touching the tables" do
     user = create(:user, :regular_user)
 
-    expect { described_class.send_tap_in(user, space.id) }.to expect_rows_for_three_signed_in_users
+    expect { described_class.send_tap_in(user, space.id) }
+      .to have_broadcasted_to("space_event_#{space.id}").with(a_hash_including("add_user" => a_hash_including("id" => user.id)))
+    expect { described_class.send_tap_in(user, space.id) }
+      .not_to have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
   end
 
   it "broadcasts the same tables when a user is tapped out" do

@@ -166,6 +166,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_200000) do
     t.integer "claim_token_generation", default: 0, null: false
     t.datetime "created_at", precision: nil, null: false
     t.integer "discount_code_id"
+    t.boolean "legacy_duplicate", default: false, null: false
     t.boolean "linked", default: true
     t.integer "order_id"
     t.integer "proficient_project_id"
@@ -176,6 +177,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_200000) do
     t.index ["discount_code_id"], name: "index_cc_moneys_on_discount_code_id"
     t.index ["order_id"], name: "index_cc_moneys_on_order_id"
     t.index ["proficient_project_id"], name: "index_cc_moneys_on_proficient_project_id"
+    t.index ["user_id", "volunteer_task_id"], name: "index_cc_moneys_on_user_and_task_award", unique: true, where: "((volunteer_task_id IS NOT NULL) AND (NOT legacy_duplicate))"
     t.index ["user_id"], name: "index_cc_moneys_on_user_id"
     t.index ["volunteer_task_id"], name: "index_cc_moneys_on_volunteer_task_id"
   end

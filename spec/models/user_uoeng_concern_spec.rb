@@ -184,6 +184,7 @@ RSpec.describe User::UoengConcern, type: :model do
 
     describe "when the upstream cannot give an answer" do
       let!(:membership) { paid_faculty_membership(eng) }
+      transient = ["a timeout", "a refused connection", "a 500 answer"]
 
       {
         "a timeout" => -> { stub_request(:get, id_url).to_timeout },
@@ -201,10 +202,10 @@ RSpec.describe User::UoengConcern, type: :model do
         "a wrong-typed first_name" => -> { stub_api(body: genie.merge("first_name" => ["Ann"])) },
         "a wrong-typed last_name" => -> { stub_api(body: genie.merge("last_name" => 5)) }
       }.each do |failure, arrange|
-        it "keeps the stored membership and reports the result as unknown on #{failure}" do
+        it "keeps the stored membership and reports the result as #{transient.include?(failure) ? "unavailable" : "unknown"} on #{failure}" do
           instance_exec(&arrange)
 
-          expect(eng.validate_uoeng_membership).to eq(:unknown)
+          expect(eng.validate_uoeng_membership).to eq(transient.include?(failure) ? :unavailable : :unknown)
 
           expect(membership.reload.status).to eq("paid")
           expect(Membership.where(user: eng).count).to eq(1)
@@ -233,9 +234,11 @@ RSpec.describe User::UoengConcern, type: :model do
 
           details = error_details
           expect(details).to include("reason" => "uoeng_http_error", "http_status" => 503)
-          expect(details["response"]).to include("keys" => full_answer.keys, "values" => full_answer.slice("student_this_semester", "faculty", "courses_enrolled"))
+          expect(details["response"]).to include("keys" => full_answer.keys, "values" => full_answer.slice("student_this_semester", "faculty"))
           expect(details["response"]["body_size"]).to eq(full_answer.to_json.bytesize)
           expect(details.to_json).not_to match(/Canadian|Tester|ann@example|"F"|BASc/)
+          expect(details["response"]["values"]).not_to have_key("courses_enrolled")
+          expect(details.to_json).not_to include("GNG1103")
         end
 
         it "after an answer of the wrong shape holds the same summary" do
@@ -289,7 +292,7 @@ RSpec.describe User::UoengConcern, type: :model do
 
       it "does not create a membership for a user without one" do
         stub_request(:get, id_url).to_timeout
-        expect(art.validate_uoeng_membership).to eq(:unknown)
+        expect(art.validate_uoeng_membership).to eq(:unavailable)
         expect(art.memberships).to be_empty
       end
 
@@ -301,7 +304,7 @@ RSpec.describe User::UoengConcern, type: :model do
 
       it "answers normally again once the upstream recovers" do
         stub_request(:get, id_url).to_timeout.then.to_return(status: 200, body: not_engineering.to_json)
-        expect(eng.validate_uoeng_membership).to eq(:unknown)
+        expect(eng.validate_uoeng_membership).to eq(:unavailable)
         expect(eng.validate_uoeng_membership).to be_nil
         expect(membership.reload.status).to eq("revoked")
       end

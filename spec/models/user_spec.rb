@@ -1247,6 +1247,11 @@ RSpec.describe User, type: :model do
       expect([owner, staff, admin].map { |v| owner.lockers_visible_to?(v) }).to all(be(true))
     end
 
+    it "shows the CC balance to the owner, staff and admins" do
+      expect([guest, other].map { |v| owner.cc_balance_visible_to?(v) }).to all(be(false))
+      expect([owner, staff, admin].map { |v| owner.cc_balance_visible_to?(v) }).to all(be(true))
+    end
+
     it "shows roles to admins only" do
       expect([guest, other, owner, staff].map { |v| owner.roles_visible_to?(v) }).to all(be(false))
       expect(owner.roles_visible_to?(admin)).to be(true)
