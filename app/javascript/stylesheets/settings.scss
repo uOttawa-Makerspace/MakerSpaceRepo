@@ -129,11 +129,12 @@ div.waiver-button {
   color: #fff;
 
   margin-bottom: 20px;
-  transition: opacity 0.2s;
+  transition: background-color 0.2s;
 
+  // A darker teal on hover: white text on it is 4.89:1.
   &:hover {
     cursor: pointer;
-    opacity: 0.9;
+    background-color: #497979;
   }
 }
 
