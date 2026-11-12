@@ -23,6 +23,7 @@ namespace :lockers do
       exit(2)
     end
     sweep.listed.each { |gid| puts "would close: #{gid}" }
+    sweep.closed.each { |gid| puts "closed: #{gid}" }
     report.counts.each { |outcome, n| puts "#{outcome}: #{n}" }
     report.unresolved.each { |line| warn "not resolved: #{line}" }
     puts apply ? 'applied: listed drafts were closed' : 'nothing changed (add [apply] to close the listed drafts)'

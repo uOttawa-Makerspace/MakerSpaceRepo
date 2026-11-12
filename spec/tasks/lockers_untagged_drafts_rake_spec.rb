@@ -18,7 +18,7 @@ RSpec.describe "lockers:untagged_drafts" do
     task.reenable
   end
 
-  def node(id, tags: [tag], status: "OPEN") = { "id" => id, "status" => status, "tags" => tags }
+  def node(id, tags: [tag], status: "OPEN", created: 3.days.ago) = { "id" => id, "status" => status, "tags" => tags, "createdAt" => created.iso8601 }
 
   def run_task(*args)
     out = StringIO.new
@@ -42,6 +42,8 @@ RSpec.describe "lockers:untagged_drafts" do
   before do
     shopify.draft_pages = [[node(orphan), node(stored), node(marked, tags: [tag, "locker_rental:#{rental.id}"]),
                             node("gid://shopify/DraftOrder/4", tags: ["makerepo_other_locker"]),
+                            node("gid://shopify/DraftOrder/6", tags: [JobOrder.draft_order_operating_tag, "job_order:1"]),
+                            node("gid://shopify/DraftOrder/7", created: 2.hours.ago),
                             node("gid://shopify/DraftOrder/5", status: "COMPLETED")]]
   end
 
@@ -49,7 +51,7 @@ RSpec.describe "lockers:untagged_drafts" do
     out, _err, status = run_task
 
     expect(out).to include("would close: #{orphan}")
-    expect(out).not_to include(stored, marked)
+    expect(out).not_to include(stored, marked, "DraftOrder/6", "DraftOrder/7")
     expect(out).to include("nothing changed")
     expect(status).to be_nil
     expect(shopify.deleted_ids).to be_empty
@@ -57,11 +59,22 @@ RSpec.describe "lockers:untagged_drafts" do
   end
 
   it "closes only the listed orphans with apply, keeping stored, marked, foreign and paid drafts" do
-    _out, _err, status = run_task("apply")
+    out, _err, status = run_task("apply")
 
     expect(shopify.deleted_ids).to eq([orphan])
+    expect(out).to include("closed: #{orphan}")
     expect(status).to be_nil
     expect(rental.reload.shopify_draft_order_id).to eq(stored)
+  end
+
+  it "keeps a draft a rental came to store after the listing was read" do
+    late = create(:locker_rental, :await_payment)
+    shopify.on_query = ->(q, _v) { late.update_column(:shopify_draft_order_id, orphan) if q.include?("shopifyOpenDrafts") }
+    out, = run_task("apply")
+
+    expect(shopify.deleted_ids).to be_empty
+    expect(out).not_to include("closed:")
+    expect(late.reload.shopify_draft_order_id).to eq(orphan)
   end
 
   it "never deletes a draft Shopify reports paid when it is fetched" do
