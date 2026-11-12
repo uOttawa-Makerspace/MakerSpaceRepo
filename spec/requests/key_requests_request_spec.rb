@@ -2,7 +2,7 @@ require "rails_helper"
 
 # Chunk 15: KeyRequestsController (wizard staff / Teams members fill in to
 # request a physical key). Gate `ensure_staff_or_teams_program`: staff, admin
-# or Teams-program members; guests and everyone else go to root with
+# or Teams-program members; guests go to the sign-in page, everyone else to root with
 # "You cannot access this area.". The wizard is an in-place status machine:
 # in_progress -> (step 6) waiting_for_approval -> (admin) approved.
 RSpec.describe "Key requests", type: :request do
@@ -35,7 +35,7 @@ RSpec.describe "Key requests", type: :request do
       steps: -> { get key_request_steps_path(1, step: 1) }
     }
     paths.each do |name, call|
-      %i[guest regular volunteer].each do |role|
+      %i[regular volunteer].each do |role|
         it "#{name}: bounces a #{role} to root" do
           sign_in_as(role)
           instance_exec(&call)
@@ -43,6 +43,18 @@ RSpec.describe "Key requests", type: :request do
           expect(flash[:alert]).to eq("You cannot access this area.")
         end
       end
+    end
+
+    paths.each do |name, call|
+      it "#{name}: sends a guest to the sign-in page" do
+        instance_exec(&call)
+        expect(response.location).to start_with("http://www.example.com/login")
+      end
+    end
+
+    it "remembers the page a guest asked for" do
+      get key_requests_path
+      expect(response).to redirect_to(login_path(back_to: key_requests_path))
     end
 
     it "does not persist a request created by a guest or regular user" do

@@ -4,8 +4,8 @@ require "rails_helper"
 # create_from_training, create_for_single_user, finish_exam, destroy),
 # ExamResponsesController#create and the certification awarded on a pass.
 #
-# ExamsController < SessionsController: #index and #show are open to a guest
-# (index lists nothing; show is gated by `grant_access`: owner or staff/admin).
+# ExamsController < SessionsController: #index and #show send a guest to
+# the sign-in page (show is then gated by `grant_access`: owner or staff/admin).
 # finish_exam (POST) is owner-only, create_from_training / create_for_single_user
 # (POST) are for the session's trainer or an admin, destroy is admin-only.
 # Graded or expired exams reject answers and
@@ -128,10 +128,9 @@ RSpec.describe "Exams", type: :request do
   describe "GET /exams/:id" do
     let!(:exam) { new_exam }
 
-    it "bounces a guest to the root with an alert" do
+    it "sends a guest to the sign-in page, remembering the exam" do
       get exam_path(exam)
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to eq("You cannot access this area.")
+      expect(response).to redirect_to(login_path(back_to: exam_path(exam)))
       expect(exam.reload.status).to eq("not started")
     end
 

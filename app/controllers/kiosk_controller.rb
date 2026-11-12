@@ -1,6 +1,7 @@
 class KioskController < ApplicationController
   layout false, only: :show # no layout
 
+  before_action :signed_in
   before_action :grant_access
 
   def index
