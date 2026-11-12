@@ -33,24 +33,36 @@ RSpec.describe "Accordion headers", type: :system do
       expect(page).to have_css("#{header_css} button[aria-expanded]", minimum: 1)
       header = first(header_css)
       button = header.find("button")
-      panel = find(panel_css(button), visible: :all)
+      target = panel_css(button)
+      panel = find(target, visible: :all)
+      expect(button["aria-expanded"]).to eq("false")
 
       button.click
-      expect(page).to have_css(panel_css(button), visible: :visible)
+      expect(page).to have_css(target, visible: :visible)
       expect(page).to have_no_css(".collapsing")
       expect(button["aria-expanded"]).to eq("true")
       expect(header[:"aria-expanded"]).to be_nil
       button.click
-      expect(page).to have_no_css(panel_css(button), visible: :visible)
+      expect(page).to have_no_css(target, visible: :visible)
       expect(page).to have_no_css(".collapsing")
       expect(button["aria-expanded"]).to eq("false")
 
       click_header_edge(header)
-      expect(page).to have_css(panel_css(button), visible: :visible)
+      expect(page).to have_css(target, visible: :visible)
       expect(page).to have_no_css(".collapsing")
       expect(panel).to be_present
       click_header_edge(header)
-      expect(page).to have_no_css(panel_css(button), visible: :visible)
+      expect(page).to have_no_css(target, visible: :visible)
+      expect(page).to have_no_css(".collapsing")
+
+      # an open panel stays open, with its button marked expanded, after a reload
+      button.click
+      expect(page).to have_css(target, visible: :visible)
+      expect(page).to have_no_css(".collapsing")
+      page.refresh
+      wait_for_page_settled
+      expect(page).to have_css(target, visible: :visible)
+      expect(first(header_css).find("button")["aria-expanded"]).to eq("true")
     end
   end
 
