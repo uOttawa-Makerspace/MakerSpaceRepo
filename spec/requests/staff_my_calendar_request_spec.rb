@@ -138,11 +138,48 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body).to eq([])
     end
 
-    it "defaults the window to now-3 months .. now+3 months" do
+    it "defaults the window to 50 days either side of now" do
       create(:event, space: space, title: "Soon", start_time: Time.zone.local(2027, 4, 1, 9), end_time: Time.zone.local(2027, 4, 1, 10))
       create(:event, space: space, title: "Far", start_time: Time.zone.local(2027, 9, 1, 9), end_time: Time.zone.local(2027, 9, 1, 10))
+      create(:event, space: space, title: "Too far", start_time: Time.zone.local(2027, 6, 1, 9), end_time: Time.zone.local(2027, 6, 1, 10))
       get feed
       expect(response.parsed_body.map { |e| e["title"] }).to eq(["Soon"])
+    end
+
+    it "refuses a range over 100 days and accepts exactly 100" do
+      create(:event, space: space, title: "Later", start_time: Time.zone.local(2029, 6, 1, 9), end_time: Time.zone.local(2029, 6, 1, 10))
+      get feed, params: { start: "2027-01-01T00:00:00-05:00", end: "2030-01-01T00:00:00-05:00" }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.parsed_body["error"]).to eq(I18n.t("errors.staff.my_calendar.range_too_long"))
+      get feed, params: { start: "2029-05-01T00:00:00Z", end: "2029-08-09T00:00:00Z" }
+      expect(response.parsed_body.map { |e| e["title"] }).to eq(["Later"])
+    end
+
+    it "derives a missing bound from the given one" do
+      create(:event, space: space, title: "After", start_time: Time.zone.local(2029, 6, 1, 9), end_time: Time.zone.local(2029, 6, 1, 10))
+      get feed, params: { start: "2029-05-01T00:00:00Z" }
+      expect(response.parsed_body.map { |e| e["title"] }).to eq(["After"])
+      get feed, params: { end: "2029-07-20T00:00:00Z" }
+      expect(response.parsed_body.map { |e| e["title"] }).to eq(["After"])
+      get feed, params: { start: "2029-07-01T00:00:00Z" }
+      expect(response.parsed_body).to eq([])
+    end
+
+    it "accepts the derived and the full 100 day ranges across a clock change" do
+      create(:event, space: space, title: "Spring", start_time: Time.zone.local(2027, 2, 1, 9), end_time: Time.zone.local(2027, 2, 1, 10))
+      get feed, params: { end: "2027-05-10T00:00:00-04:00" }
+      expect(response.parsed_body.map { |e| e["title"] }).to eq(["Spring"])
+      get feed, params: { start: "2027-02-01T00:00:00-05:00", end: "2027-05-12T00:00:00-04:00" }
+      expect(response).to have_http_status(:ok)
+      get feed, params: { start: "2027-02-01T00:00:00-05:00", end: "2027-05-13T00:00:00-04:00" }
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "accepts 100 local days across the autumn clock change and refuses one more" do
+      get feed, params: { start: "2027-08-05T00:00:00-04:00", end: "2027-11-13T00:00:00-05:00" }
+      expect(response).to have_http_status(:ok)
+      get feed, params: { start: "2027-08-05T00:00:00-04:00", end: "2027-11-14T00:00:00-05:00" }
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "filters by event_type and by assigned user" do

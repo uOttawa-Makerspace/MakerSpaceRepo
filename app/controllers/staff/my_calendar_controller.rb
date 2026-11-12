@@ -29,9 +29,9 @@ class Staff::MyCalendarController < StaffAreaController
     end
     
     # Date range
-    start_date = parse_range_param(params[:start], Time.zone.now - 3.months)
-    end_date = parse_range_param(params[:end], Time.zone.now + 3.months)
-    return render_calendar_error(:invalid_date, :bad_request) if start_date.nil? || end_date.nil?
+    start_date, end_date = date_range
+    return render_calendar_error(:invalid_date, :bad_request) if start_date.nil?
+    return render_calendar_error(:range_too_long, :unprocessable_content) if Event.feed_range_too_long?(start_date, end_date)
 
     formatted_events = []
     
@@ -55,13 +55,20 @@ class Staff::MyCalendarController < StaffAreaController
 
   private
 
-  # The parsed time, the default when the param is absent, nil when it is not a date.
-  def parse_range_param(value, default)
-    return default if value.blank?
+  # The parsed time, nil when the param is absent; ArgumentError when it is not a date.
+  def parse_range_param(value)
+    return if value.blank?
 
-    Time.zone.parse(value)
+    Time.zone.parse(value) || raise(ArgumentError)
+  end
+
+  # [start, end], both nil when a bound is not a date; a missing end is 50 days after the start (or now), a missing start the longest span before the end.
+  def date_range
+    start_date = parse_range_param(params[:start])
+    end_date = parse_range_param(params[:end]) || (start_date || Time.zone.now) + 50.days
+    [start_date || end_date - Event::MAX_FEED_RANGE, end_date]
   rescue ArgumentError
-    nil
+    [nil, nil]
   end
 
   def render_calendar_error(cause, status)

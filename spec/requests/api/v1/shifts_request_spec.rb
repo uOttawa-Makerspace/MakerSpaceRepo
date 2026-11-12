@@ -122,6 +122,13 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
     expect(response).to have_http_status(:not_found)
   end
 
+  it "accepts 100 local days across the autumn clock change and refuses one more" do
+    shifts({ start: "2027-08-05T00:00:00-04:00", end: "2027-11-13T00:00:00-05:00" })
+    expect(response).to have_http_status(:ok)
+    shifts({ start: "2027-08-05T00:00:00-04:00", end: "2027-11-14T00:00:00-05:00" })
+    expect(response).to have_http_status(:unprocessable_content)
+  end
+
   it "422s a missing, malformed, reversed or over-long window" do
     shifts({})
     expect(response).to have_http_status(:unprocessable_content)

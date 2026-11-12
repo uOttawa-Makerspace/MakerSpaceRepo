@@ -1,4 +1,13 @@
 class Event < ApplicationRecord
+  # The longest span a calendar feed answers in one request (the staff calendar and the shifts API).
+  MAX_FEED_RANGE = 100.days
+
+  # Whether a feed range is longer than the limit. An hour of slack lets a range counted in local days across a
+  # clock change (an hour longer in seconds) through.
+  def self.feed_range_too_long?(from, to)
+    to - from > MAX_FEED_RANGE + 1.hour
+  end
+
   belongs_to :created_by, class_name: 'User'
   # Who last edited the event in the admin calendar; empty for an event nobody has edited since it was created.
   belongs_to :updated_by, class_name: 'User', optional: true
