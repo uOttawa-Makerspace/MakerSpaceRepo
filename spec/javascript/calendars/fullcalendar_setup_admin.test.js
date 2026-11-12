@@ -576,6 +576,25 @@ describe("calendar options", () => {
     expect(tooltips.at(-1).options.title).toBe("Shift<br><i>Front desk</i>");
   });
 
+  it("shows the title and description of an event as text, never as markup", async () => {
+    stubFetch({});
+    const cal = await boot();
+    cal.options.eventDidMount({
+      el: document.createElement("div"),
+      event: {
+        title: '<img src=x onerror="alert(1)">Tom & "Jerry"',
+        extendedProps: { description: "<script>alert(2)</script>'x'" },
+      },
+    });
+    expect(tooltips.at(-1).options.title).toBe(
+      "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;Tom &amp; &quot;Jerry&quot;" +
+        "<br><i>&lt;script&gt;alert(2)&lt;/script&gt;&#39;x&#39;</i>",
+    );
+    const holder = document.createElement("div");
+    holder.innerHTML = tooltips.at(-1).options.title;
+    expect(holder.querySelector("img, script")).toBeNull();
+  });
+
   it("leaves a plain event undecorated", async () => {
     stubFetch({});
     const cal = await boot();
