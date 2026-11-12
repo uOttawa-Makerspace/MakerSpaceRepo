@@ -97,6 +97,19 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
       wait_for_app_js
     end
 
+    it "shows one searchable control per select after a Turbo visit away and back" do
+      page.execute_script("window.turboDocument = true; Turbo.visit(arguments[0])", admin_locker_rentals_path)
+      expect(page).to have_current_path(admin_locker_rentals_path)
+      expect(page).to have_no_css("#locker_rental_rented_by_id", visible: :all)
+      expect(page.evaluate_script("window.turboDocument")).to be(true)
+      page.go_back
+      expect(page).to have_current_path(assign_locker_locker_rentals_path)
+      wait_until("searchable controls not rebuilt") do
+        page.evaluate_script("!!document.getElementById('locker_rental_rented_by_id')?.tomselect")
+      end
+      expect(page).to have_css(".ts-wrapper", count: 2, visible: :all)
+    end
+
     it "finds a user by name in the searchable user list and shows the picked locker with its size" do
       tom_select "Zelda Tenant (zeldat)", from: "locker_rental_rented_by_id", search: "Zelda", exact: false
       expect(page).to have_css("#locker_rental_rented_by_id + .ts-wrapper .ts-control .item", text: "Zelda Tenant (zeldat)")
