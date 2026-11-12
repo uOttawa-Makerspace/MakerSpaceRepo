@@ -22,6 +22,17 @@
       <div class="username">
         <%= @edit_admin_user.username %>
       </div>
+      <div class="user-info account-state">
+        <% if @edit_admin_user.deactivated? %>
+          <i class="fa-solid fa-user-slash"></i> <%= t('admin.users.show.deactivated_on', date: l(@edit_admin_user.deactivated_at.to_date, format: :long)) %>
+          <%= button_to t('admin.users.show.reactivate'), admin_user_activation_path(@edit_admin_user), method: :post, **confirmation_options(t('confirmations.users.reactivate', name: @edit_admin_user.name)), class: 'btn btn-success btn-sm' %>
+        <% else %>
+          <i class="fa-solid fa-user-check"></i> <%= t('admin.users.show.active') %>
+          <% if @edit_admin_user.deactivatable_by?(current_user) %>
+            <%= button_to t('admin.users.show.deactivate'), admin_user_activation_path(@edit_admin_user), method: :delete, **confirmation_options(t('confirmations.users.deactivate', name: @edit_admin_user.name)), class: 'btn btn-danger btn-sm' %>
+          <% end %>
+        <% end %>
+      </div>
       <% if @edit_admin_user.gender.present? %>
         <div class="user-info">
           <i class="fa-solid fa-transgender"></i> <%= @edit_admin_user.gender %>

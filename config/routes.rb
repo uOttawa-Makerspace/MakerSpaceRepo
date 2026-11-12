@@ -343,6 +343,7 @@ Rails.application.routes.draw do
       member do
         patch :change_email
       end
+      resource :activation, only: %i[create destroy], module: :users
       # member do
       #   get "fetch_spaces"
       #   patch "update_spaces"
