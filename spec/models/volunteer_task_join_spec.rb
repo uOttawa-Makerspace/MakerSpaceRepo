@@ -27,11 +27,11 @@ RSpec.describe VolunteerTaskJoin, type: :model do
       expect(build(:volunteer_task_join, volunteer_task: create(:volunteer_task), user: user, state: "joined")).to be_valid
     end
 
-    it "lets a joined row be ended even when a stored duplicate exists" do
-      first = create(:volunteer_task_join, volunteer_task: task, user: user, state: "joined")
-      dup = build(:volunteer_task_join, volunteer_task: task, user: user, state: "joined").tap { |j| j.save!(validate: false) }
-      expect { dup.finish!(:left, by: user) }.not_to raise_error
-      expect(first.reload).to be_joined
+    it "refuses a second joined row at the database too, with the same message" do
+      create(:volunteer_task_join, volunteer_task: task, user: user, state: "joined")
+      again = build(:volunteer_task_join, volunteer_task: task, user: user, state: "joined")
+      expect(again.save(validate: false)).to be(false)
+      expect(again.errors.full_messages).to eq(["User is already on this task"])
     end
   end
 

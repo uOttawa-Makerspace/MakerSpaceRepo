@@ -98,7 +98,8 @@ class VolunteerTask < ApplicationRecord
     Array(user_ids).each do |user_id|
       user = User.find_by(id: user_id)
       refuse!(:"add_not_found.#{label}") unless user
-      volunteer_task_joins.create!(user: user, user_type: staff ? user.role.capitalize : "Volunteer", active: true)
+      join = volunteer_task_joins.build(user: user, user_type: staff ? user.role.capitalize : "Volunteer", active: true)
+      join.save || raise(ActiveRecord::RecordInvalid, join)
     end
   end
 

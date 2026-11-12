@@ -426,9 +426,9 @@ RSpec.describe "Volunteer tasks (HTTP contract)", type: :request do
     end
 
     it "shows the failing record's message when a join cannot be saved" do
-      allow_any_instance_of(VolunteerTaskJoin).to receive(:save!) do |join|
+      allow_any_instance_of(VolunteerTaskJoin).to receive(:save) do |join|
         join.errors.add(:base, "Join is invalid")
-        raise ActiveRecord::RecordInvalid, join
+        false
       end
       patch volunteer_task_path(task), params: task_params(title: "Renamed").merge(volunteer_id: [volunteer.id])
       expect(flash[:alert]).to eq("Join is invalid")

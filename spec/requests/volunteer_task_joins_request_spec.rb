@@ -79,6 +79,18 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect(vol_deliveries).to be_empty
     end
 
+    it "gives the same refusal when the database catches a second join the validation missed" do
+      big = create(:volunteer_task, joins: 3)
+      create(:volunteer_task_join, volunteer_task: big, user: volunteer, state: "joined", user_type: "Volunteer")
+      allow_any_instance_of(VolunteerTaskJoin).to receive(:valid?).and_return(true)
+      vol_login!(volunteer)
+      ActionMailer::Base.deliveries.clear
+      expect { join!(join_params(task_id: big.id)) }.not_to change(VolunteerTaskJoin, :count)
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("User is already on this task")
+      expect(vol_deliveries).to be_empty
+    end
+
     it "lets a volunteer who left the task join it again" do
       big = create(:volunteer_task, joins: 3)
       create(:volunteer_task_join, :left, volunteer_task: big, user: volunteer)
@@ -237,14 +249,12 @@ RSpec.describe "Volunteer task joins (HTTP contract)", type: :request do
       expect { post remove_volunteer_task_joins_path, params: remove_params }.to change { join.reload.active }.to(false)
     end
 
-    it "ends every joined row of the user and leaves other rows alone" do
-      # a stored duplicate from before joins were unique
-      second = build(:volunteer_task_join, :active, volunteer_task: task, user: volunteer).tap { |j| j.save!(validate: false) }
+    it "ends the joined row of the user and leaves other rows alone" do
       old = create(:volunteer_task_join, :completed, volunteer_task: task, user: volunteer)
       other = create(:volunteer_task_join, :active, volunteer_task: task, user: other_volunteer)
       vol_login!(volunteer)
       expect { post remove_volunteer_task_joins_path, params: remove_params }.not_to change(VolunteerTaskJoin, :count)
-      expect([join, second, old, other].map { |j| j.reload.state }).to eq(%w[left left completed joined])
+      expect([join, old, other].map { |j| j.reload.state }).to eq(%w[left completed joined])
     end
 
     it "refuses a user with no joined row and changes nothing" do
