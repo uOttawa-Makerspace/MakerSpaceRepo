@@ -145,50 +145,50 @@ RSpec.describe "Kiosks", type: :request do
       expect(LabSession.where(user: admin).active.count).to eq(1)
     end
 
-  describe "sign-in log" do
-    let!(:staff) { sign_in_as(:staff) }
+    describe "sign-in log" do
+      let!(:staff) { sign_in_as(:staff) }
 
-    def post_sign(visitor_param, action, space_id: space.id)
-      post kiosk_sign_email_path(space_id), params: { visitor: visitor_param, action => "true" }
-    end
+      def post_sign(visitor_param, action, space_id: space.id)
+        post kiosk_sign_email_path(space_id), params: { visitor: visitor_param, action => "true" }
+      end
 
-    it "logs a sign-in with the kiosk account, visitor, space and time" do
-      freeze_time do
-        expect { post_sign(visitor.username, :entering) }.to change(KioskSignEvent, :count).by(1)
-        expect(KioskSignEvent.last).to have_attributes(
-          actor_id: staff.id, visitor_id: visitor.id, space_id: space.id, action: "sign_in", created_at: Time.zone.now
-        )
+      it "logs a sign-in with the kiosk account, visitor, space and time" do
+        freeze_time do
+          expect { post_sign(visitor.username, :entering) }.to change(KioskSignEvent, :count).by(1)
+          expect(KioskSignEvent.last).to have_attributes(
+            actor_id: staff.id, visitor_id: visitor.id, space_id: space.id, action: "sign_in", created_at: Time.zone.now
+          )
+        end
+      end
+
+      it "logs a sign-out only when a session was ended" do
+        post_sign(visitor.username, :entering)
+        expect { post_sign(visitor.username, :leaving) }.to change(KioskSignEvent, :count).by(1)
+        expect(KioskSignEvent.newest_first.first).to have_attributes(actor_id: staff.id, visitor_id: visitor.id, action: "sign_out")
+        expect { post_sign(visitor.username, :leaving) }.not_to change(KioskSignEvent, :count)
+      end
+
+      it "logs nothing when the visitor was already signed in, for an unknown visitor or space, or with no action" do
+        post_sign(visitor.username, :entering)
+        expect do
+          post_sign(visitor.username, :entering)
+          post_sign("nobody-here", :entering)
+          post_sign(visitor.username, :entering, space_id: 0)
+          post kiosk_sign_email_path(space.id), params: { visitor: visitor.username }
+        end.not_to change(KioskSignEvent, :count)
+      end
+
+      it "logs nothing when the session cannot be saved" do
+        allow(LabSession).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
+        expect { KioskSignEvent.sign_in(actor: staff, visitor: visitor, space: space) }.to raise_error(ActiveRecord::RecordInvalid)
+        expect(KioskSignEvent.count).to eq(0)
+      end
+
+      it "refuses to update or delete a logged row" do
+        event = KioskSignEvent.create!(actor: staff, visitor: visitor, space: space, action: "sign_in", created_at: Time.zone.now)
+        expect { event.update!(action: "sign_out") }.to raise_error(ActiveRecord::ReadOnlyRecord)
+        expect { event.destroy }.to raise_error(ActiveRecord::ReadOnlyRecord)
       end
     end
-
-    it "logs a sign-out only when a session was ended" do
-      post_sign(visitor.username, :entering)
-      expect { post_sign(visitor.username, :leaving) }.to change(KioskSignEvent, :count).by(1)
-      expect(KioskSignEvent.newest_first.first).to have_attributes(actor_id: staff.id, visitor_id: visitor.id, action: "sign_out")
-      expect { post_sign(visitor.username, :leaving) }.not_to change(KioskSignEvent, :count)
-    end
-
-    it "logs nothing when the visitor was already signed in, for an unknown visitor or space, or with no action" do
-      post_sign(visitor.username, :entering)
-      expect do
-        post_sign(visitor.username, :entering)
-        post_sign("nobody-here", :entering)
-        post_sign(visitor.username, :entering, space_id: 0)
-        post kiosk_sign_email_path(space.id), params: { visitor: visitor.username }
-      end.not_to change(KioskSignEvent, :count)
-    end
-
-    it "logs nothing when the session cannot be saved" do
-      allow(LabSession).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
-      expect { KioskSignEvent.sign_in(actor: staff, visitor: visitor, space: space) }.to raise_error(ActiveRecord::RecordInvalid)
-      expect(KioskSignEvent.count).to eq(0)
-    end
-
-    it "refuses to update or delete a logged row" do
-      event = KioskSignEvent.create!(actor: staff, visitor: visitor, space: space, action: "sign_in", created_at: Time.zone.now)
-      expect { event.update!(action: "sign_out") }.to raise_error(ActiveRecord::ReadOnlyRecord)
-      expect { event.destroy }.to raise_error(ActiveRecord::ReadOnlyRecord)
-    end
-  end
   end
 end
