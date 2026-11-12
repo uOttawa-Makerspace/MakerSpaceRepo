@@ -50,6 +50,13 @@ RSpec.describe "The language switch", type: :request do
       expect(response).to redirect_to(root_path)
     end
 
+    it "stays on the sign-in page when the switch is used there, including after a failed sign-in" do
+      patch locale_path, params: { locale: "fr", back_to: "/login" }
+      expect(response).to redirect_to(login_path)
+      patch locale_path, params: { locale: "fr", back_to: "/login_authentication" }
+      expect(response).to redirect_to(login_path)
+    end
+
     it "requires the CSRF token" do
       sign_in
       patch locale_path, params: { locale: "fr" }, without_csrf_token: true
