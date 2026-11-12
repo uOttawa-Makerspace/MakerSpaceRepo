@@ -18,36 +18,38 @@
       <h1 class="title"><%= t('terms_of_service.terms_and_conditions') %></h1>
       <div class="container">
         <h2 class="heading"><%= t('terms_of_service.section1.heading') %></h2>
-        <ul class="terms">
+        <div class="terms">
           <p id="paragraph"><%= t('terms_of_service.section1.content') %></p>
-        </ul>
+        </div>
 
         <h2 class="heading"><%= t('terms_of_service.section2.heading') %></h2>
-        <ol class="terms">
+        <div class="terms">
           <p id="paragraph"><%= t('terms_of_service.section2.intro') %></p>
           <ol class="terms">
             <li><%= t('terms_of_service.section2.items.item1') %></li>
             <li><%= t('terms_of_service.section2.items.item2') %></li>
             <li><%= t('terms_of_service.section2.items.item3') %></li>
             <li><%= t('terms_of_service.section2.items.item4') %></li>
-            <li><%= t('terms_of_service.section2.items.item5') %></li>
-            <ol class="sub-terms">
-              <% t('terms_of_service.section2.sub_items').each do |item| %>
-                <li><%= item %></li>
-              <% end %>
-            </ol>
+            <li><%= t('terms_of_service.section2.items.item5') %>
+              <ol class="sub-terms">
+                <% t('terms_of_service.section2.sub_items').each do |item| %>
+                  <li><%= item %></li>
+                <% end %>
+              </ol>
+            </li>
             <li><%= t('terms_of_service.section2.items.item6') %></li>
           </ol>
-        </ol>
+        </div>
 
         <h2 class="heading"><%= t('terms_of_service.section3.heading') %></h2>
         <ol class="terms">
-          <li><%= t('terms_of_service.section3.items.item1') %></li>
-          <ol class="sub-terms">
-            <% t('terms_of_service.section3.sub_items').each do |item| %>
-              <li><%= item %></li>
-            <% end %>
-          </ol>
+          <li><%= t('terms_of_service.section3.items.item1') %>
+            <ol class="sub-terms">
+              <% t('terms_of_service.section3.sub_items').each do |item| %>
+                <li><%= item %></li>
+              <% end %>
+            </ol>
+          </li>
           <li><%= t('terms_of_service.section3.items.item2') %></li>
         </ol>
 

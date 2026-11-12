@@ -9,10 +9,10 @@
           <% skill.trainings.each do |training| %>
             <% next if training.proficient_projects.blank? %>
               <div class="card"  id="accordion-<%= training.id %>">
-                  <div class="accordion-button card-header" id="header-<%= training.id %>" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="true" aria-controls="training-<%= training.id %>">
+                  <div class="accordion-button card-header" id="header-<%= training.id %>" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>">
                     <div class="col-4 float-end"></div>
                     <div class="col-4 text-center">
-                      <button class="btn btn-link"><%= training.localized_name %></button>
+                      <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="true" aria-controls="training-<%= training.id %>"><%= training.localized_name %></button>
                     </div>
                     <div class="col-4">
                       <%= sanitize(training_status(training.id, current_user.id)) %>
