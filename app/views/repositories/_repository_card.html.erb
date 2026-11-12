@@ -12,7 +12,7 @@
         <p class="line-clamp-3 mb-auto"><%= strip_tags(sanitize(repository.description.truncate(250).split('<br>').first)) %></p>
     <% end %>
     <div class="card-footer d-flex">
-        <span class="fw-bolder me-auto">by <%= link_to repository.user_username, user_path(repository.user_username) %></span>
+        <span class="fw-bolder me-auto"><%= t('common.by') %> <%= link_to repository.user_username, user_path(repository.user_username) %></span>
         <span class="text-primary me-2"><i class="fa-solid fa-heart"></i> <%= repository.like %></span>
         <span title="<%= repository.created_at.to_date.to_fs :long %>"><%= repository.created_at.to_date.to_fs :rfc822 %></span>
     </div>

@@ -1,14 +1,14 @@
 <% if params[:show] == 'repositories' && @repositories.empty? %>
-    <%= tag.div("#{@repo_user.username} doesn't have any repositories yet.", class: 'empty-repo') %>
+    <%= tag.div(t('.none_repositories', username: @repo_user.username), class: 'empty-repo') %>
 <% elsif params[:show] == 'makes' && @makes.empty? %>
-    <%= tag.div("#{@repo_user.username} doesn't have any makes yet.", class: 'empty-repo') %>
+    <%= tag.div(t('.none_makes', username: @repo_user.username), class: 'empty-repo') %>
 <% elsif params[:show] == 'projects_assigned' && @joined_projects.empty? %>
-    <%= tag.div("#{@repo_user.username} doesn't have any joined projects yet.", class: 'empty-repo') %>
+    <%= tag.div(t('.none_joined_projects', username: @repo_user.username), class: 'empty-repo') %>
 <% else %>
     <div class="apple_pagination text-center mb-3">
         <% if @pagy && @pagy.count > 0 %>
             <small class="text-muted d-block mb-2">
-                Displaying repositories <b><%= @pagy.from %></b> - <b><%= @pagy.to %></b> of <b><%= @pagy.count %></b> in total
+                <%= t('.displaying_html', from: @pagy.from, to: @pagy.to, total: @pagy.count) %>
             </small>
         <% end %>
         <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
@@ -41,13 +41,13 @@
                     </div>
                     <div>
                         <% if project_proposal.has_user %>
-                            by <%= link_to project_proposal.user.username, user_path(project_proposal.user.username) %>
+                            <%= t('common.by') %> <%= link_to project_proposal.user.username, user_path(project_proposal.user.username) %>
                         <% else %>
-                            by [Deleted User]
+                            <%= t('.by_deleted_user') %>
                         <% end %>
                     </div>
                     <div>
-                        <%= time_ago_in_words(project_proposal.created_at) %> ago
+                        <%= t('common.time_ago', time: time_ago_in_words(project_proposal.created_at)) %>
                     </div>
                 </div>
             </div>
