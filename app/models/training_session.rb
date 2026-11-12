@@ -102,6 +102,27 @@ class TrainingSession < ApplicationRecord
     attributes.to_h.any? { |name, value| LOCKED_ONCE_AWARDED.include?(name.to_s) && self[name].to_s != value.to_s }
   end
 
+  RosterResult = Struct.new(:saved, :failed_certifications, keyword_init: true) do
+    def saved? = saved
+  end
+
+  # Saves the edited fields, enrols the added users and removes the dropped ones (by username), and
+  # deactivates the dropped trainees' certifications of this session, all in one transaction with the
+  # session row locked. When the session cannot be saved (the reason is left in `errors`) nothing else
+  # is written. A certification that cannot be deactivated does not undo the rest: its user is listed in
+  # `failed_certifications`.
+  def update_roster(attributes, added:, dropped:, by:)
+    failed = []
+    saved = false
+    with_lock do
+      assign_attributes(attributes)
+      self.course_name = CourseName.find_by(name: course) || course_name
+      saved = save(context: :session_edit)
+      failed = replace_roster(User.where(username: added), User.where(username: dropped), by) if saved
+    end
+    RosterResult.new(saved: saved, failed_certifications: failed)
+  end
+
   CertifyResult = Struct.new(:duplicates, :failed, :self_skipped, keyword_init: true) do
     def certified? = failed.empty?
   end
@@ -175,6 +196,14 @@ class TrainingSession < ApplicationRecord
   end
 
   private
+
+  def replace_roster(added, dropped, by)
+    self.users = (users.to_a - dropped.to_a + added.to_a).uniq
+    dropped.filter_map do |user|
+      cert = certifications.find_by(user_id: user.id)
+      user if cert && !cert.deactivate(by)
+    end
+  end
 
   def locked_fields_unchanged
     errors.add(:base, :locked_once_awarded) if changed.intersect?(LOCKED_ONCE_AWARDED) && !editable?

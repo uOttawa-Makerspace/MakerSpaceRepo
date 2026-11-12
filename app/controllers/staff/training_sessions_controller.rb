@@ -77,38 +77,16 @@ class Staff::TrainingSessionsController < StaffDashboardController
       redirect_back(fallback_location: root_path) and return
     end
 
-    @current_training_session.assign_attributes(changed_params)
-
-    if params["dropped_users"].present?
-      @current_training_session.users -=
-        User.where(username: params["dropped_users"])
-      User
-        .where(username: params["dropped_users"])
-        .each do |user|
-          cert =
-            user.certifications.find_by(
-              training_session_id: @current_training_session.id
-            )
-          next if cert.blank?
-
-          next if cert.deactivate(@user)
-          flash[
-            :alert
-          ] = "Error removing #{user.username}'s #{@current_training_session.training.name_en} certification."
-        end
-    end
-
-    @current_training_session.users +=
-      User.where(username: params["added_users"]) if params[
-      "added_users"
-    ].present?
-    @current_training_session.users = @current_training_session.users.uniq
-
-    course_name = CourseName.find_by(name: @current_training_session.course)
-    @current_training_session.course_name = course_name if course_name.present?
-
-    if @current_training_session.save(context: :session_edit)
+    result =
+      @current_training_session.update_roster(
+        changed_params,
+        added: Array(params["added_users"]),
+        dropped: Array(params["dropped_users"]),
+        by: @user
+      )
+    if result.saved?
       flash[:notice] = "Training session updated succesfully"
+      flash_certification_failure(result.failed_certifications.last)
     else
       flash[:alert] = validation_message(@current_training_session, "errors.staff.training_sessions.not_updated")
     end
@@ -208,6 +186,12 @@ class Staff::TrainingSessionsController < StaffDashboardController
       .require(:changed_params)
       .permit(:training_id, :course, :user_id, :level)
       .reject { |_, v| v.blank? }
+  end
+
+  def flash_certification_failure(user)
+    return if user.blank?
+
+    flash[:alert] = "Error removing #{user.username}'s #{@current_training_session.training.name_en} certification."
   end
 
   def refuse_locked_changes

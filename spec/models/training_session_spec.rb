@@ -290,4 +290,50 @@ RSpec.describe TrainingSession, type: :model do
       expect(Certification.where(user_id: student.id).count).to eq(1)
     end
   end
+
+  describe "#update_roster" do
+    let(:trainer) { create(:user, :staff) }
+    let(:session) { create(:training_session, user: trainer, level: "Beginner") }
+    let(:kept) { create(:user) }
+    let(:dropped) { create(:user) }
+    let(:added) { create(:user) }
+
+    before { session.users << [kept, dropped] }
+
+    it "saves the fields, adds and removes users by username without duplicates, and links a course name" do
+      course = create(:course_name, name: "Intro")
+      result = session.update_roster(
+        { "level" => "Advanced", "course" => "Intro" },
+        added: [added.username, added.username, kept.username], dropped: [dropped.username], by: trainer
+      )
+      expect(result).to be_saved
+      session.reload
+      expect([session.level, session.course_name]).to eq(["Advanced", course])
+      expect(session.users).to contain_exactly(kept, added)
+    end
+
+    it "deactivates the dropped trainee's certification of the session and keeps the row" do
+      cert = create(:certification, user: dropped, training_session: session, training: session.training)
+      expect(session.update_roster({}, added: [], dropped: [dropped.username], by: trainer)).to be_saved
+      expect(Certification.unscoped.find(cert.id)).to have_attributes(active: false, demotion_staff: trainer)
+    end
+
+    it "lists the user whose certification could not be deactivated and still applies the rest" do
+      create(:certification, user: dropped, training_session: session, training: session.training)
+      allow_any_instance_of(Certification).to receive(:deactivate).and_return(false)
+      result = session.update_roster({}, added: [added.username], dropped: [dropped.username], by: trainer)
+      expect(result).to be_saved
+      expect(result.failed_certifications).to eq([dropped])
+      expect(session.reload.users).to contain_exactly(kept, added)
+    end
+
+    it "writes nothing when the session is invalid" do
+      cert = create(:certification, user: dropped, training_session: session, training: session.training)
+      result = session.update_roster({ "training_id" => 0 }, added: [added.username], dropped: [dropped.username], by: trainer)
+      expect(result).not_to be_saved
+      expect(session.errors).not_to be_empty
+      expect(session.reload.users).to contain_exactly(kept, dropped)
+      expect(Certification.find(cert.id)).to be_active
+    end
+  end
 end
