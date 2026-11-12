@@ -44,9 +44,21 @@ RSpec.describe CalendarHelper, type: :helper do
 
   def toronto_start(row) = toronto.parse(row["start"])
 
+  # To regenerate the saved rows after changing a fixture or the helper, run
+  #   REGENERATE_FEED_EVENTS=1 bundle exec rspec spec/helpers/calendar_helper_ics_dst_spec.rb
+  # and review the diff of spec/fixtures/files/ics/feed_events.json.
   it "is the same output as the rows saved for the browser spec" do
+    fixtures = Dir[Rails.root.join("spec/fixtures/files/ics/*.ics")].map { |path| File.basename(path, ".ics") }.sort
+    if ENV["REGENERATE_FEED_EVENTS"] == "1"
+      rows = fixtures.to_h { |fixture| [fixture, rows_for(fixture)] }
+      Rails.root.join("spec/fixtures/files/ics/feed_events.json").write("#{JSON.pretty_generate(rows)}\n")
+      next
+    end
+
     saved_rows.each do |fixture, saved|
-      expect(rows_for(fixture)).to eq(saved), "#{fixture} differs from feed_events.json"
+      expect(rows_for(fixture)).to eq(saved),
+                                   "#{fixture} differs from feed_events.json; regenerate it with " \
+                                   "REGENERATE_FEED_EVENTS=1 bundle exec rspec spec/helpers/calendar_helper_ics_dst_spec.rb"
     end
   end
 

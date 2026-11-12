@@ -156,6 +156,8 @@ RSpec.describe "Recurring events across the clock changes", type: :system do
           eventually { series.reload.recurrence_rule.include?("EXDATE") }
           wait_for_reload(page_kind, week)
 
+          # "stored-DTSTART rewrite": every dialog delete or update-all rewrites the stored DTSTART:...Z line as
+          # DTSTART;TZID=America/Toronto with the Toronto wall time, so the exact rules below start that way.
           expect(series.reload.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20270314T073000Z")
           expect(change_day_event(page_kind, week).text).to include("2:30")
         end
