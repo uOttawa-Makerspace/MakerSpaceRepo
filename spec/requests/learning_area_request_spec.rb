@@ -98,6 +98,15 @@ RSpec.describe "Learning area", type: :request do
       expect(response.body).to include(edit_learning_area_path(learning_module))
     end
 
+    it "gives the SCORM player frame a title" do
+      scorm_module = create(:learning_module, :with_scorm_object, training: training, title: "Safety course")
+      ExtractScormJob.perform_now(scorm_module.id)
+      sign_in_as(:regular)
+      get learning_area_path(scorm_module)
+      frame = Nokogiri::HTML(response.body).at_css("iframe[src*='scorm_launch']")
+      expect(frame["title"]).to eq("Safety course")
+    end
+
     it "does NOT show the Edit link to staff" do
       sign_in_as(:staff)
       get learning_area_path(learning_module)
