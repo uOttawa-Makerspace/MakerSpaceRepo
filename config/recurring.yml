@@ -19,6 +19,10 @@ shared: &shared
     class: TapBoxLogCleanupJob
     schedule: every day at 3am
 
+  kiosk_sign_event_cleanup:
+    class: KioskSignEventCleanupJob
+    schedule: every day at 3:15am
+
   prune_api_refresh_tokens:
     command: "ApiRefreshToken.prune!"
     schedule: every day at 3:30am

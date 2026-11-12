@@ -29,23 +29,11 @@ class KioskController < ApplicationController
 
     return head :unprocessable_content if space.nil?
 
-    # Get last session (if it exists)
-    # session has not ended yet if last sign out time is in future
-    last_session = LabSession.where(space: space).active_for_user(visitor).last
     if params[:leaving]
-      # If last session hasn't ended yet, end it now.
-      last_session.sign_out if last_session
+      KioskSignEvent.sign_out(actor: current_user, visitor: visitor, space: space)
       flash[:notice] = "Signing out from #{space.name}, bye #{visitor.name}"
     elsif params[:entering]
-      # create unless last session is still active
-      unless last_session
-        LabSession.create(
-          user: visitor,
-          space_id: space.id,
-          sign_in_time: Time.zone.now,
-          sign_out_time: Time.zone.now + 8.hours
-        )
-      end
+      KioskSignEvent.sign_in(actor: current_user, visitor: visitor, space: space)
       flash[:notice] = "Signing in to #{space.name}, hello #{visitor.name}"
     end
 

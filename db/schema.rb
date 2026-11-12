@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_200000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -755,6 +755,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_200000) do
     t.integer "user_id"
     t.index ["space_id"], name: "index_lab_sessions_on_space_id"
     t.index ["user_id"], name: "index_lab_sessions_on_user_id"
+  end
+
+  create_table "kiosk_sign_events", force: :cascade do |t|
+    t.bigint "actor_id", null: false
+    t.bigint "visitor_id", null: false
+    t.bigint "space_id", null: false
+    t.string "action", null: false
+    t.datetime "created_at", null: false
+    t.index ["actor_id"], name: "index_kiosk_sign_events_on_actor_id"
+    t.index ["created_at"], name: "index_kiosk_sign_events_on_created_at"
+    t.index ["space_id"], name: "index_kiosk_sign_events_on_space_id"
+    t.index ["visitor_id"], name: "index_kiosk_sign_events_on_visitor_id"
+    t.check_constraint "action::text = ANY (ARRAY['sign_in'::character varying, 'sign_out'::character varying]::text[])", name: "kiosk_sign_events_action_check"
   end
 
   create_table "learning_module_tracks", force: :cascade do |t|
@@ -1982,6 +1995,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_200000) do
   add_foreign_key "keys", "users", column: "supervisor_id"
   add_foreign_key "lab_sessions", "spaces"
   add_foreign_key "lab_sessions", "users"
+  add_foreign_key "kiosk_sign_events", "spaces"
+  add_foreign_key "kiosk_sign_events", "users", column: "actor_id"
+  add_foreign_key "kiosk_sign_events", "users", column: "visitor_id"
   add_foreign_key "learning_module_tracks", "learning_modules"
   add_foreign_key "learning_module_tracks", "users"
   add_foreign_key "learning_modules", "trainings"
