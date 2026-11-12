@@ -42,8 +42,6 @@ module PageCrawl
     [%r{/download_files\z}, "streams a zip"],
     [%r{\A/learning_area/:id/scorm_launch\z}, "SCORM package launch"],
     [%r{\A/open_hours\z}, "fetches external ICS calendars"],
-    [%r{\A/rfid/get_unset_rfids\z}, "consumes RFID reader state"],
-    [%r{\A/kiosk}, "kiosk screens (device-bound)"],
     [%r{\A/_system_test_entrypoint\z}, "test-only route added by the view_component gem"]
   ].freeze
 
@@ -75,7 +73,7 @@ module PageCrawl
   # Substitutes :params from the world. Returns [path, nil] or [nil, reason].
   def fill(route, world)
     missing = nil
-    path = route.path_spec.gsub(/:(\w+)/) do
+    path = route.path_spec.gsub(/[:*](\w+)/) do
       value = world.value_for(route.controller, Regexp.last_match(1))
       if value.nil?
         missing ||= Regexp.last_match(1)
@@ -97,10 +95,10 @@ module PageCrawl
     CONTROLLER_KEYS = {
       "learning_area" => :learning_module,
       "unavailabilities" => :staff_unavailability,
-      "my_calendar" => :staff_needed_calendar,
+      "my_calendar" => :space, # staff/my_calendar/json/:id is a space id
       "calendar" => :staff_needed_calendar,
       "sub_space_booking" => :sub_space_booking,
-      "kiosk" => :user,
+      "kiosk" => :space, # the kiosk :id is a space id
       "key_requests" => :key_request,
       "badges" => :certification,
       "faqs" => :faq,
@@ -108,6 +106,7 @@ module PageCrawl
       "staff_spaces" => :staff_space,
       "staff_availabilities" => :staff_availability,
       "walk_in_safety_sheets" => :walk_in_safety_sheet,
+      "project_proposals" => :project_proposal_param, # the canonical URL carries the slug
       "users" => :user,
       "uni_programs" => :uni_program
     }.freeze
@@ -129,7 +128,8 @@ module PageCrawl
       "order_item_id" => :order_item,
       "proficient_project_id" => :proficient_project,
       "project_kit_id" => :project_kit,
-      "key_request_id" => :key_request
+      "key_request_id" => :key_request,
+      "path" => :scorm_path
     }.freeze
 
     # ctx: the running example group (gives access to the job-order seed helpers)
@@ -179,16 +179,27 @@ module PageCrawl
       make(:repository) { create(:repository, owner: records[:target]) }
       make(:proficient_project) { create(:proficient_project, training: records[:training]) }
       make(:project_kit) { create(:project_kit, proficient_project: records[:proficient_project]) }
-      make(:learning_module) { create(:learning_module, training: records[:training]) }
+      make(:learning_module) do
+        # a ready SCORM package, extracted now, so the asset route has a file to serve
+        create(:learning_module, :with_scorm_object, training: records[:training], shortcut_name: "crawl").tap do |lm|
+          ExtractScormJob.perform_now(lm.id)
+        end.reload
+      end
       make(:faq) { create(:faq) }
       make(:announcement) { create(:announcement) }
       make(:project_proposal) { create(:project_proposal) }
+      make(:project_proposal_param) { records[:project_proposal].to_param }
       make(:printer_type) { create(:printer_type, :Random) }
       make(:printer) { create(:printer, :Random) }
       make(:printer_issue) { create(:printer_issue, printer: records[:printer], reporter: records[:target]) }
       make(:locker) { create(:locker) }
       make(:locker_rental) { create(:locker_rental, :active, rented_by: records[:target], locker: records[:locker]) }
       make(:volunteer_task) { create(:volunteer_task, space: records[:space]) }
+      # the volunteer directory lists active and inactive volunteers with their rows
+      make(:volunteers) do
+        [create(:program, :volunteer_program, user: records[:target], active: true),
+         create(:program, :volunteer_program, user: create(:user, :regular_user), active: false)]
+      end
       make(:volunteer_hour) { create(:volunteer_hour, user: records[:target]) }
       make(:key) { create(:key, space: records[:space]) }
       make(:key_request) do
@@ -228,8 +239,9 @@ module PageCrawl
       make(:job_order) { seed_job_order_world }
       make(:job_task) { records[:job_order]&.job_tasks&.first }
       make(:sub_space_booking) { seed_booking_world }
+      records[:scorm_path] = "index.html" # a file inside the learning module's package
       records[:slug] = "crawl-slug"
-      records[:shortcut] = "crawl"
+      records[:shortcut] = "crawl" # the learning module's shortcut_name
       records[:subskill] = "crawl"
       records[:filename] = "x.txt"
       records[:file_number] = "1"
