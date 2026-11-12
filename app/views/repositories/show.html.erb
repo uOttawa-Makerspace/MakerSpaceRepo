@@ -2,7 +2,7 @@
 
 <section class="row">
     <section id="repository-photos" class="col-lg-8 order-lg-first order-last">
-        <% photos = @repository.photos.to_a %>
+        <% photos = @repository.gallery_photos.to_a %>
         <% has_youtube = @repository.youtube_link.present? %>
         <% has_media = has_youtube || photos.any? %>
         <% total_slides = photos.size + (has_youtube ? 1 : 0) %>

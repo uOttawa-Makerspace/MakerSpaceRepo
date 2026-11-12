@@ -218,4 +218,16 @@ RSpec.describe Repository, type: :model do
       expect(repository.editable_by?(nil)).to be(false)
     end
   end
+
+  describe "#gallery_photos" do
+    it "returns the photos in position order with their images and blobs loaded" do
+      repository = create(:repository)
+      create(:photo, repository: repository, position: 2)
+      create(:photo, repository: repository, position: 1)
+      photos = Repository.find(repository.id).gallery_photos.to_a
+      expect(photos.map(&:position)).to eq([0, 1, 2])
+      expect(photos.map(&:id)).to eq(repository.photos.reload.map(&:id))
+      expect(photos).to all(satisfy { |photo| photo.association(:image_attachment).loaded? && photo.image_attachment.association(:blob).loaded? })
+    end
+  end
 end

@@ -44,6 +44,23 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       expect(response.body).to include("Laser Lamp")
     end
 
+    it "renders a repository with several photos without per-photo attachment queries" do
+      create(:photo, repository: repo)
+      create(:photo, repository: repo)
+      queries = []
+      counter = ->(*, payload) { queries << payload[:sql] if payload[:sql].include?('FROM "active_storage_attachments"') }
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { get repo_path }
+      expect(response).to have_http_status(:ok)
+      expect(queries.size).to eq(1)
+    end
+
+    it "renders the edit form for a repository with several photos" do
+      create(:photo, repository: repo)
+      content_login!(owner)
+      get edit_repository_path(repo.user_username, repo.slug)
+      expect(response).to have_http_status(:ok)
+    end
+
     it "writes the repo into the recently_viewed cookie" do
       get repo_path
       cookie = JSON.parse(CGI.unescape(response.cookies["recently_viewed"]))

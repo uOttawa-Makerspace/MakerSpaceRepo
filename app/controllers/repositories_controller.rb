@@ -118,6 +118,10 @@ class RepositoriesController < SessionsController
 
   def edit
     if @repository.editable_by?(@user) || @user.admin?
+      # The form lists every photo with its image and file name.
+      ActiveRecord::Associations::Preloader.new(
+        records: [@repository], associations: { photos: { image_attachment: :blob } }
+      ).call
       @project_proposals =
         ProjectProposal.approved.order(title: :asc).pluck(:title, :id) if params[
         :project_proposal_id
