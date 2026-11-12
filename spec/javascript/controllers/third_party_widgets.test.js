@@ -91,6 +91,30 @@ describe("userway across Turbo renders", () => {
   });
 });
 
+describe("userway on a cached restore", () => {
+  it("replaces vendor nodes already in the incoming body with the live ones", async () => {
+    await mount(`<div id="w" data-controller="userway" data-userway-src-value="https://cdn.example/widget-restore.js"></div>
+      <div class="userway_buttons_wrapper" id="live"></div>`);
+    const newBody = document.createElement("body");
+    newBody.innerHTML =
+      '<div class="userway_buttons_wrapper" id="dead"></div><p id="page"></p>';
+    application
+      .getControllerForElementAndIdentifier(
+        document.getElementById("w"),
+        "userway",
+      )
+      .keepWidget({
+        detail: { newBody },
+      });
+    expect(newBody.querySelectorAll(".userway_buttons_wrapper")).toHaveLength(
+      1,
+    );
+    expect(newBody.querySelector("#live")).not.toBeNull();
+    expect(newBody.querySelector("#dead")).toBeNull();
+    expect(newBody.querySelector("#page")).not.toBeNull();
+  });
+});
+
 describe("turnstile", () => {
   const html = `<div id="t" class="cf-turnstile" data-controller="turnstile" data-sitekey="key123"
     data-turnstile-unavailable-message-value="Check unavailable"></div>`;

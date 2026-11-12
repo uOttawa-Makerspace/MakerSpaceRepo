@@ -43,6 +43,7 @@ RSpec.describe "Accessibility widget across Turbo visits", type: :system do
       w.className = "userway_buttons_wrapper";
       w.dataset.original = "yes";
       window.turboKept = true;
+      window.liveWidget = w;
       document.body.appendChild(w);
     JS
 
@@ -51,6 +52,12 @@ RSpec.describe "Accessibility widget across Turbo visits", type: :system do
     page.execute_script("Turbo.visit('#{login_path}')")
     expect(page).to have_current_path(login_path)
     expect(page.evaluate_script("window.turboKept")).to be(true)
+    expect(page).to have_css(".userway_buttons_wrapper[data-original=yes]", count: 1, visible: :all)
+
+    page.go_back
+    expect(page).to have_current_path(forgot_password_path)
+    expect(page).to have_css(".userway_buttons_wrapper", count: 1, visible: :all)
+    expect(page.evaluate_script("document.querySelector('.userway_buttons_wrapper') === window.liveWidget")).to be(true)
 
     expect(page).to have_css(".userway_buttons_wrapper[data-original=yes]", count: 1, visible: :all)
     expect(page).to have_css("[data-controller=userway]", count: 1, visible: :all)

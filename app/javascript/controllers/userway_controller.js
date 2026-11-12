@@ -22,6 +22,10 @@ export default class extends Controller {
 
   keepWidget(event) {
     const incoming = event.detail.newBody;
+    // A page restored from Turbo's cache holds inert copies of the vendor nodes; the live ones replace them.
+    [...incoming.children]
+      .filter((node) => node.matches(WIDGET_NODES))
+      .forEach((node) => node.remove());
     [...document.body.children]
       .filter((node) => node.matches(WIDGET_NODES) && node !== this.element)
       .forEach((node) => incoming.append(node));
