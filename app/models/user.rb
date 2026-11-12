@@ -858,6 +858,10 @@ class User < ApplicationRecord
     end
   end
 
+  def email_held_by_any_account?
+    User.unscoped.exists?(["lower(email) = ?", email.to_s.strip.downcase])
+  end
+
   def pword=(new_password)
     @pword_plaintext = new_password.to_s
     @pword = Password.create(new_password)
@@ -945,12 +949,25 @@ class User < ApplicationRecord
     [user, new_email] if user && user.email == old_email && user.token_version == version
   end
 
-  # True when the only thing wrong with a new sign-up is that its email already belongs to an account.
+  # True when the only thing stopping a new sign-up is that its email already belongs to an
+  # account: a live one (the uniqueness error) or a deleted one, which the default scope hides
+  # from validation but whose row still holds the address.
   def only_email_taken?
-    return false if valid? || !errors.of_kind?(:email, :taken)
+    return email_held_by_any_account? if valid?
+    return false unless errors.of_kind?(:email, :taken)
 
     errors.delete(:email, :taken)
     errors.empty?
+  end
+
+  # Saves a new account. Returns nil, saving nothing, when another sign-up took the address
+  # between validation and the insert.
+  def save_unless_email_taken
+    save
+  rescue ActiveRecord::RecordNotUnique
+    raise unless email_held_by_any_account?
+
+    nil
   end
 
   def send_password_reset

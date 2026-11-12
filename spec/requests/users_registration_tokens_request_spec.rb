@@ -163,6 +163,71 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
         expect(deliveries.size).to eq(3)
       end
 
+      it "hashes the password once whether the address is free or taken" do
+        allow(BCrypt::Password).to receive(:create).and_call_original
+        sign_up_with(Faker::Internet.unique.email)
+        expect(BCrypt::Password).to have_received(:create).once
+
+        RSpec::Mocks.space.proxy_for(BCrypt::Password).reset
+        allow(BCrypt::Password).to receive(:create).and_call_original
+        sign_up_with(existing.email)
+        expect(BCrypt::Password).to have_received(:create).once
+      end
+
+      it "answers an address held by a deleted account the same way, without mailing it or failing" do
+        deleted = create(:user, :regular_user)
+        deleted.update_columns(deleted: true)
+        expect { sign_up_with(deleted.email) }.not_to change { User.unscoped.count }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+        expect(deliveries).to be_empty
+      end
+
+      it "answers the loser of two simultaneous sign-ups like a normal sign-up" do
+        email = Faker::Internet.unique.email
+        raced = false
+        allow_any_instance_of(User).to receive(:save).and_wrap_original do |original, *args|
+          unless raced
+            raced = true
+            create(:user, :regular_user, email: email)
+          end
+          original.call(*args, **{ validate: false })
+        end
+        sign_up_with(email)
+        expect(User.where(email: email).count).to eq(1)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+      end
+
+      it "answers an address taken after the first check like a normal sign-up" do
+        email = Faker::Internet.unique.email
+        raced = false
+        allow_any_instance_of(User).to receive(:save).and_wrap_original do |original, *args|
+          unless raced
+            raced = true
+            create(:user, :regular_user, email: email)
+          end
+          original.call(*args)
+        end
+        sign_up_with(email)
+        expect(User.where(email: email).count).to eq(1)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+      end
+
+      it "gives a real sign-up and a taken-email attempt the same HTML and JSON responses" do
+        real = Faker::Internet.unique.email
+        sign_up_with(real)
+        html_real = [response.status, response.location, flash[:notice], flash[:alert]]
+        sign_up_with(existing.email)
+        expect([response.status, response.location, flash[:notice], flash[:alert]]).to eq(html_real)
+
+        post users_path, params: { user: registration_params(email: Faker::Internet.unique.email) }, as: :json
+        json_real = [response.status, response.body]
+        post users_path, params: { user: registration_params(email: existing.email) }, as: :json
+        expect([response.status, response.body]).to eq(json_real)
+      end
+
       it "shows other errors but never that the email is taken" do
         expect { sign_up_with(existing.email, username: "bad name!") }.not_to change(User, :count)
         expect(response).to have_http_status(:unprocessable_content)

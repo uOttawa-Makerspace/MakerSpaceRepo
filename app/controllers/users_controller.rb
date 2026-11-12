@@ -52,7 +52,7 @@ class UsersController < SessionsController
 
   def create
     @new_user = User.new(user_params)
-    @new_user.pword = params[:user][:password] if @new_user.valid?
+    hash_sign_up_password if @new_user.valid?
 
     if !verify_turnstile
       flash[:alert] = 'Captcha error, try again.'
@@ -61,21 +61,9 @@ class UsersController < SessionsController
         format.json { render json: {errors: 'captcha failure'}, status: :unprocessable_content }
       end 
     elsif @new_user.only_email_taken?
-      notify_existing_account_of_sign_up(@new_user.email)
-      sign_up_accepted_response
-    elsif @new_user.save
-      hash = @new_user.generate_token_for(:email_confirmation)
-      MsrMailer.confirmation_email(@new_user, hash).deliver_later
-      sign_up_accepted_response
+      answer_taken_email_sign_up
     else
-      # Whether an address already has an account is never told to the visitor.
-      @new_user.errors.delete(:email, :taken)
-      respond_to do |format| 
-        format.html { render 'new', status: :unprocessable_content }
-        format.json do
-          render json: @new_user.errors, status: :unprocessable_content
-        end
-      end
+      create_account_or_show_errors
     end
   end
 
@@ -538,6 +526,44 @@ class UsersController < SessionsController
       format.html { redirect_to root_path, alert: message }
       format.json { render json: { error: message }, status: :forbidden }
     end
+  end
+
+  # The visitor is answered as for a real sign-up, and the same password hashing is done so the
+  # answer takes as long. Nothing is saved; the owner of a live account is told by mail.
+  def answer_taken_email_sign_up
+    hash_sign_up_password
+    notify_existing_account_of_sign_up(@new_user.email)
+    sign_up_accepted_response
+  end
+
+  # The password is hashed once per request, whichever way the sign-up goes.
+  def hash_sign_up_password
+    return if @sign_up_password_hashed
+
+    @new_user.pword = params[:user][:password]
+    @sign_up_password_hashed = true
+  end
+
+  def create_account_or_show_errors
+    saved = @new_user.save_unless_email_taken
+    return answer_taken_email_sign_up if saved.nil?
+    return accept_new_account if saved
+
+    # Whether an address already has an account is never told to the visitor. An address
+    # taken since the first check leaves nothing else to report.
+    @new_user.errors.delete(:email, :taken)
+    return answer_taken_email_sign_up if @new_user.errors.empty?
+
+    respond_to do |format|
+      format.html { render 'new', status: :unprocessable_content }
+      format.json { render json: @new_user.errors, status: :unprocessable_content }
+    end
+  end
+
+  def accept_new_account
+    hash = @new_user.generate_token_for(:email_confirmation)
+    MsrMailer.confirmation_email(@new_user, hash).deliver_later
+    sign_up_accepted_response
   end
 
   def sign_up_accepted_response
