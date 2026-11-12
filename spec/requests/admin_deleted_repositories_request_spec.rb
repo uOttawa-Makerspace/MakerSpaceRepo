@@ -83,14 +83,6 @@ RSpec.describe "Admin deleted repositories", type: :request do
       expect(Repository.unscoped.find(repo.id).deleted).to be(true)
     end
 
-    it "refuses when the owner has another visible repository with the same title" do
-      create(:repository, owner: owner, title: "Other").update_columns(title: "Gone Soon")
-      post admin_deleted_repository_restoration_path(repo.id)
-      expect(response).to redirect_to(admin_deleted_repositories_path)
-      expect(flash[:alert]).to eq("The repository was not restored. The owner already has another repository with the same title. Rename that one first.")
-      expect(Repository.unscoped.find(repo.id).deleted).to be(true)
-    end
-
     it "answers 404 for a repository that is not deleted" do
       visible = create(:repository, owner: owner, title: "Still Here")
       post admin_deleted_repository_restoration_path(visible.id)

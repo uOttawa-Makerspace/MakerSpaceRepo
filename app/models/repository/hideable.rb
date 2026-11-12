@@ -56,8 +56,8 @@ module Repository::Hideable
   # took it (user_deleted, admin_deleted; a member who joined or left since is treated by what they
   # are now); a repository hidden by an account deletion, or before the reason was recorded, lost none.
   # False, changing nothing, when it cannot be restored; errors[:base] then says why (not hidden,
-  # because it was already restored; the owner's account is deleted, and restoring that account
-  # brings its repositories back; or the owner has another visible repository with the same title).
+  # because it was already restored; or the owner's account is deleted, and restoring that account
+  # brings its repositories back). The owner cannot hold the title elsewhere: the title stays taken while hidden.
   def restore!
     transaction do
       lock!
@@ -88,8 +88,7 @@ module Repository::Hideable
 
   def restore_refusal
     return :not_hidden unless deleted?
-    return :owner_deleted unless User.exists?(user_id)
 
-    :title_taken if Repository.exists?(user_id: user_id, title: title)
+    :owner_deleted unless User.exists?(user_id)
   end
 end

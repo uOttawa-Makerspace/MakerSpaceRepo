@@ -77,6 +77,9 @@ class Repository < ApplicationRecord
     ]
   end
 
+  # Hidden repositories hold their title too. The unique index on (user_id, title) enforces the same rule in the
+  # database; a save that loses a race for a title gets the same error as one that fails this validation.
+  TITLE_INDEX = "index_repositories_on_user_id_and_title"
   validates :title, presence: true, uniqueness: { scope: :user_id } # :owner
 
   validates :share_type, inclusion: { in: %w[public private], message: '' }
@@ -214,6 +217,18 @@ class Repository < ApplicationRecord
   rescue SystemCallError => e
     # The stale zip stays on disk until the next build replaces it.
     HandledError.report(e, severity: :warning, source: "repository.clear_zip_cache", repository_id: id)
+  end
+
+  private
+
+  # A save that loses a race for a title runs in its own savepoint, so an enclosing transaction stays usable.
+  def create_or_update(...)
+    transaction(requires_new: true) { super }
+  rescue ActiveRecord::RecordNotUnique => e
+    raise unless e.message.include?(TITLE_INDEX)
+
+    errors.add(:title, :taken)
+    false
   end
 
   # validates :license,
