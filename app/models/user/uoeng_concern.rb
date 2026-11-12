@@ -157,19 +157,14 @@ module User::UoengConcern
       return if uoeng_name.blank?
       return if name.to_s.downcase.include?(uoeng_name.split(" ").first&.downcase.to_s)
 
-      TapBoxLog.log_name_mismatch(user: self, uoeng_name: uoeng_name, card_number: card_number, space: space)
+      TapBoxLog.log_name_mismatch(user: self, card_number: card_number, space: space)
     end
 
     def detect_student_id_mismatch(parsed, card_number, space)
       return unless student_id.present? && parsed["student_number"].present?
       return if parsed["student_number"].to_s == student_id.to_s
 
-      TapBoxLog.log_student_id_mismatch(
-        user: self,
-        uoeng_student_id: parsed["student_number"],
-        card_number: card_number,
-        space: space
-      )
+      TapBoxLog.log_student_id_mismatch(user: self, card_number: card_number, space: space)
     end
   end
 end
