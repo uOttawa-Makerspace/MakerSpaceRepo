@@ -2,15 +2,15 @@
 <section id="repositories-index">
   <div class="like-title"><%= yield(:title) %></div>
   <section class="repository-filter">
-    <div class="sort">sort by/trier par</div>
+    <div class="sort"><%= t('search.equipment.sort_by') %></div>
     <nav>
-      <% sort_type = params[:sort].present? ? params[:sort].gsub('_', ' ').titleize : 'Newest/Plus récent' %>
+      <% sort_type = params[:sort].present? ? t("search.sort_names.#{params[:sort]}", default: params[:sort].gsub('_', ' ').titleize) : t('search.equipment.sort.newest') %>
       <div id="filter-header" class="filter-header"><%= sort_type %> <i class="fa-solid fa-caret-down"></i> </div>
       <ul id="sort-filter" class="filter">
-        <li><%= link_to 'Newest/Plus récent', equipment_path(sort: :newest, slug: params[:slug]) %></li>
-        <li><%= link_to 'Most Likes/Plus d\'Aimes', equipment_path(sort: :most_likes, slug: params[:slug]) %></li>
-        <li><%= link_to 'Most Makes/Plus de fabrications', equipment_path(sort: :most_makes, slug: params[:slug]) %></li>
-        <li><%= link_to 'Recently Updated/Récemment mis à jour', equipment_path(sort: :recently_updated, slug: params[:slug]) %></li>
+        <li><%= link_to t('search.equipment.sort.newest'), equipment_path(sort: :newest, slug: params[:slug]) %></li>
+        <li><%= link_to t('search.equipment.sort.most_likes'), equipment_path(sort: :most_likes, slug: params[:slug]) %></li>
+        <li><%= link_to t('search.equipment.sort.most_makes'), equipment_path(sort: :most_makes, slug: params[:slug]) %></li>
+        <li><%= link_to t('search.equipment.sort.recently_updated'), equipment_path(sort: :recently_updated, slug: params[:slug]) %></li>
       </ul>
     </nav>
   </section>
@@ -26,11 +26,10 @@
         <div class="start">
           <div class="likes"><i class="fa-solid fa-heart"></i><br><%= repository.like %></div>
           <div class="title"><%= link_to repository.title, repository_path(repository.user_username, repository.slug) %></div>
-          <div>by <%= link_to repository.user_username, user_path(repository.user_username) %></div>
-          <div><%= time_ago_in_words(repository.created_at) %> ago</div>
+          <div><%= t('common.by') %> <%= link_to repository.user_username, user_path(repository.user_username) %></div>
+          <div><%= t('common.time_ago', time: time_ago_in_words(repository.created_at)) %></div>
         </div>
       </div>
     </div>
   <% end %>
   </section>
-</section>

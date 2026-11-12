@@ -41,12 +41,12 @@
                     <button class="carousel-control-prev" type="button"
                             data-bs-target="#repositoryCarousel" data-bs-slide="prev">
                         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Previous</span>
+                        <span class="visually-hidden"><%= t('common.previous') %></span>
                     </button>
                     <button class="carousel-control-next" type="button"
                             data-bs-target="#repositoryCarousel" data-bs-slide="next">
                         <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
+                        <span class="visually-hidden"><%= t('common.next') %></span>
                     </button>
                 <% end %>
             </div>
@@ -108,7 +108,7 @@
         </div>
         <% if @repository.featured? %>
             <p class="text-center text-primary">
-                <i class="fa-solid fa-trophy"></i> This is a featured project!
+                <i class="fa-solid fa-trophy"></i> <%= t('.featured') %>
             </p>
         <% end %>
         <hr />
@@ -128,7 +128,7 @@
                     edit_repository_path(@repository.user_username, @repository.id),
                     class: 'btn btn-sm btn-secondary align-top float-end' %>
         <% end %>
-        <p><b><%= t('repository.published') %></b> <%= @repository.created_at.strftime('%b %e %Y') %></p>
+        <p><b><%= t('repository.published') %></b> <%= l(@repository.created_at, format: :published) %></p>
         <% if @repository.repo_files.any? %>
             <div class="clearfix">
                 <b> <%= t('repository.proj_files') %> </b>
@@ -138,7 +138,7 @@
                             <li>
                                 <i class="fa-regular fa-file-lines"></i>
                                 <%= link_to f.file.filename, rails_storage_proxy_path(f.file), target: '_blank', rel: 'noopener' %>
-                                <span><%= f.file.byte_size / 1000 %> KB</span>
+                                <span><%= t('.size_kb', size: f.file.byte_size / 1000) %></span>
                             </li>
                         </ul>
                     <% end %>
@@ -301,7 +301,7 @@
                         <% else %>
                             <div><%= t('users.deleted_user') %></div>
                         <% end %>
-                        <%= content_tag :div, "#{time_ago_in_words(comment.created_at)} ago", class: 'time' %><br>
+                        <%= content_tag :div, t('common.time_ago', time: time_ago_in_words(comment.created_at)), class: 'time' %><br>
                         <% if ((@user.admin?) || (@user.id.equal? comment.user_id)) %>
                             <%= button_to '<i class="fa-solid fa-xmark"></i>'.html_safe, { controller: :comments, action: :destroy, id: comment.id }, method: :delete, **confirmation_options(t('confirmations.comments.delete')), class: 'text-danger float-end' %>
                         <% end %>
