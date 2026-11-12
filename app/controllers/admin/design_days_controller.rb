@@ -3,6 +3,7 @@ class Admin::DesignDaysController < AdminAreaController
   # Sets url options for disk service to generate public urls
   include ActiveStorage::SetCurrent
 
+  before_action :load_current_design_day, only: :data
   before_action :make_variables, only: %i[show update data]
   skip_before_action :current_user, only: :data
   skip_before_action :ensure_admin, only: :data
@@ -42,6 +43,11 @@ class Admin::DesignDaysController < AdminAreaController
   end
 
   private
+
+  # The public read never creates the row.
+  def load_current_design_day
+    @design_day = DesignDay.current
+  end
 
   def make_variables
     @design_day ||= DesignDay.instance

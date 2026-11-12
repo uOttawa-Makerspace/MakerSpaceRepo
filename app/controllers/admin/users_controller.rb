@@ -28,7 +28,7 @@ class Admin::UsersController < AdminAreaController
 
   def index
     unless valid_sort_params?
-      redirect_to admin_users_path, alert: "Invalid parameters!"
+      redirect_to admin_users_path, alert: I18n.t("admin.users.invalid_parameters")
       return
     end
 
@@ -38,20 +38,20 @@ class Admin::UsersController < AdminAreaController
     when "new_users", nil
       load_new_users
     else
-      redirect_to admin_users_path, alert: "Invalid parameters!"
+      redirect_to admin_users_path, alert: I18n.t("admin.users.invalid_parameters")
     end
   end
 
   def search
     unless valid_sort_params?
-      redirect_to admin_users_path, alert: "Invalid parameters!"
+      redirect_to admin_users_path, alert: I18n.t("admin.users.invalid_parameters")
       return
     end
 
     unless params[:q].present?
       @query = ""
       @users = User.none
-      flash.now[:alert] = "Enter a name or email to search."
+      flash.now[:alert] = I18n.t("admin.users.search_query_missing")
       return
     end
 
