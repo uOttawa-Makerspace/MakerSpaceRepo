@@ -175,6 +175,13 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
+    it "accepts 100 local days across the autumn clock change and refuses one more" do
+      get feed, params: { start: "2027-08-05T00:00:00-04:00", end: "2027-11-13T00:00:00-05:00" }
+      expect(response).to have_http_status(:ok)
+      get feed, params: { start: "2027-08-05T00:00:00-04:00", end: "2027-11-14T00:00:00-05:00" }
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it "filters by event_type and by assigned user" do
       assigned = create(:user, :staff)
       a = create(:event, space: space, title: "A", event_type: "shift", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))
