@@ -16,7 +16,7 @@
     <%# ════════════════════════════════════════════════════════ %>
     <%# PROJECT FILES — drag-and-drop upload, no reordering    %>
     <%# ════════════════════════════════════════════════════════ %>
-    <%= label_tag :file, t('repository.proj_files'), class: 'form-label mb-2' %>
+    <%= label_tag :repository_repo_files_attributes, t('repository.proj_files'), class: 'form-label mb-2' %>
     <div class="mb-3 file-upload-drop-zone">
         <div class="input-group">
             <%= file_field_tag 'repository[repo_files_attributes]',
@@ -59,7 +59,7 @@
     <%# GALLERY PHOTOS — drag-and-drop upload, reordering     %>
     <%# ════════════════════════════════════════════════════════ %>
     <div class="mb-3 required">
-        <%= label_tag :photo, t('repository.gallery') , class: 'form-label' %>
+        <%= label_tag :repository_photos, t('repository.gallery') , class: 'form-label' %>
         <div class="file-upload-drop-zone">
             <div class="input-group mb-3">
                 <%= f.file_field :photos, name: 'repository[photos_attributes]',
@@ -151,7 +151,7 @@
     </div>
 
     <div class="mb-3">
-        <%= label_tag(:owner, t('repository.new_owner') , class: 'form-label') %>
+        <%= label_tag(:owner_select, t('repository.new_owner') , class: 'form-label') %>
         <%= select_tag(:owner, '', prompt: t('repository.search_user'), class: 'owner_select form-control', id: 'owner_select', aria: { label: t('repository.new_owner') }, multiple: true, autocomplete: false) %>
     </div>
 
@@ -171,7 +171,7 @@
             </div>
 
             <div id="pass" class="mb-3" style="display: <%= @repository.share_type == 'private' ? 'block' : 'none' %>;">
-                <%= f.label :password, 'Set repository password', class: 'form-label' %>
+                <%= f.label :password, 'Set repository password', for: 'password_repo_field', class: 'form-label' %>
                 <%= password_field :password, nil, placeholder: 'Password', id: 'password_repo_field', 'aria-label': t('common.names.password'), class: 'form-control' %>
             </div>
             <div class="invalid-feedback">

@@ -15,11 +15,11 @@
 
                     <div class="row mb-3">
                         <div class="col">
-                            <%= f.label :start_time, "Start Time", class: "form-label", required: "true" %>
+                            <%= f.label :start_time, "Start Time", for: "start_time_field", class: "form-label", required: "true" %>
                             <%= f.datetime_local_field :start_time, class: "form-control", id: "start_time_field", required: "true", data: { unavailability_form_target: "startTime", action: "change->unavailability-form#startChanged" } %>
                         </div>
                         <div class="col">
-                            <%= f.label :end_time, "End Time", class: "form-label" %>
+                            <%= f.label :end_time, "End Time", for: "end_time_field", class: "form-label" %>
                             <%= f.datetime_local_field :end_time, class: "form-control", id: "end_time_field", disabled: false, data: { unavailability_form_target: "endTime", action: "change->unavailability-form#validateTimeRange" } %>
                         </div>
                     </div>
@@ -75,12 +75,12 @@
                             <div id="customFieldsCollapse" class="accordion-collapse collapse" data-unavailability-form-target="collapse">
                                 <div class="accordion-body">
                                     <div class="mb-3">
-                                        <%= f.label :title, class: "form-label" %>
+                                        <%= f.label :title, for: "title", class: "form-label" %>
                                         <%= f.text_field :title, class: "form-control", id: "title", data: { unavailability_form_target: "titleField" } %>
                                     </div>
 
                                     <div class="mb-3">
-                                        <%= f.label :description, class: "form-label" %>
+                                        <%= f.label :description, for: "description", class: "form-label" %>
                                         <%= f.text_area :description, class: "form-control", rows: 2, id: "description", data: { unavailability_form_target: "descriptionField" } %>
                                     </div>
                                 </div>

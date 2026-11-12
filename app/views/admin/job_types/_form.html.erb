@@ -30,8 +30,8 @@
         </div>
       </div>
 
-      <div class="mb-3">
-        <%= f.label :multiple_files, 'Accept multiple files', required: true %>
+      <div class="mb-3" role="radiogroup" aria-labelledby="job_type_multiple_files_label">
+        <span id="job_type_multiple_files_label" class="d-inline-block">Accept multiple files</span>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :multiple_files, false, class: 'form-check-input' %>

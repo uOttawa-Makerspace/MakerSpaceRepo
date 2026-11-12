@@ -222,7 +222,7 @@
 
             <div class="repo-info-item">
                 <%= form_for :repo_owner, url: { controller: 'repositories', action: 'add_member' }, method: :patch do |f| %>
-                    <%= f.label t('repository.add_member'), class: 'form-label' %>
+                    <%= f.label :owner_username, t('repository.add_member'), class: 'form-label' %>
                     <div class="mb-3 input-group">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
                         <%= f.select(:owner_username, '', { prompt: t('repository.search_user') }, { class: 'form-control', aria: { label: t('repository.search_user') }, data: {user_search_bar: ''} }) %>
@@ -231,7 +231,7 @@
                 <% end %>
 
                 <%= form_for :repo_owner, url: { controller: 'repositories', action: 'remove_member' }, method: :patch do |f| %>
-                    <%= f.label t('repository.rem_mem'), class: 'form-label' %>
+                    <%= f.label :owner_id, t('repository.rem_mem'), for: 'search_users_remove', class: 'form-label' %>
                     <div class="mb-3 input-group">
                         <%= f.hidden_field :repository_id, value: @repository.id %>
                         <%= f.select(:owner_id, @repository.users.pluck(:username, :id), { prompt: t('repository.search_user') }, { class: 'search_users_remove form-control', id: 'search_users_remove', aria: { label: t('repository.rem_mem') } }) %>
@@ -241,7 +241,7 @@
 
                 <% if @user.id == @repository.user_id || @user.admin? %>
                     <%= form_for :repo_owner, url: { controller: 'repositories', action: 'transfer_owner' }, method: :patch do |f| %>
-                        <%= f.label t('repository.trans_own'), class: 'form-label' %>
+                        <%= f.label :owner_id, t('repository.trans_own'), for: 'search_users_transfer', class: 'form-label' %>
                         <div class="mb-3 input-group required">
                             <%= f.hidden_field :repository_id, value: @repository.id %>
                             <%= f.collection_select :owner_id, @repository.users, :id, :username,

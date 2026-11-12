@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Page scripts app/javascript/entrypoints/locker_rentals.js (user request form),
-# locker_rental_form.js (searchable pickers) and locker_admin.js (indefinite box,
+# the locker-picker Stimulus controller (searchable pickers) and locker_admin.js (indefinite box,
 # hover notes) on the locker rental pages. The payment journey is in
 # spec/system/journeys/locker_journey_spec.rb; its Shopify stubs are reused here.
 RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
@@ -177,7 +177,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
 
     it "assigns the locker with the proposed end date and activates the request" do
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
-        pick_in_form "locker_rental_locker_id", "401"
+        pick_in_form "locker_rental_locker_id_assign", "401"
         accept_confirm { click_button "Assign Now" }
       end
       expect(page).to have_text("Locker rental updated")
@@ -187,7 +187,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
 
     it "assigns the locker without an end date when Indefinite is ticked" do
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
-        pick_in_form "locker_rental_locker_id", "401"
+        pick_in_form "locker_rental_locker_id_assign", "401"
         check "indefinite_assign"
         accept_confirm { click_button "Assign Now" }
       end
@@ -197,7 +197,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
 
     it "keeps the request unchanged when the assignment is not confirmed" do
       within(:xpath, "//form[.//button[contains(normalize-space(.),'Assign Now')]]") do
-        pick_in_form "locker_rental_locker_id", "401"
+        pick_in_form "locker_rental_locker_id_assign", "401"
         dismiss_confirm { click_button "Assign Now" }
       end
       expect(page).to have_text("Staff Actions")

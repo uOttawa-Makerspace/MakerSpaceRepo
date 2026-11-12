@@ -52,8 +52,8 @@
         </div>
       </div>
 
-      <div class="mb-3">
-        <%= f.label :required, 'Required? (ex: Onyx for MarkForged)', required: true %>
+      <div class="mb-3" role="radiogroup" aria-labelledby="job_service_required_label">
+        <span id="job_service_required_label" class="d-inline-block">Required? (ex: Onyx for MarkForged)</span>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :required, false, class: 'form-check-input' %>

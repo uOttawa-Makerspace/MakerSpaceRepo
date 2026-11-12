@@ -20,9 +20,9 @@
                                     <p class="card-text text-muted flex-grow-1">
                                         Notify the user by email that their locker is approved and ready for payment.
                                     </p>
-                                    <%= form_with model: @locker_rental do |f| %>
+                                    <%= form_with model: @locker_rental, data: { controller: 'locker-picker' } do |f| %>
                                         <%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
-                                        <%= f.select :locker_id, @locker_select_options, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true, aria: { label: t('common.names.locker') } } %>
+                                        <%= f.select :locker_id, @locker_select_options, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true, id: 'locker_rental_locker_id_checkout', data: { locker_picker_target: 'locker' }, aria: { label: t('common.names.locker') } } %>
                                         <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control mb-2', id: 'owned_until_checkout', aria: { label: t('common.names.owned_until') } %>
                                         <div class="form-check mb-2 text-start">
                                           <%= check_box_tag 'locker_rental[indefinite]', '1', false, class: 'form-check-input', id: 'indefinite_checkout', data: { indefinite_target: 'owned_until_checkout' } %>
@@ -47,9 +47,9 @@
                             <p class="card-text text-muted flex-grow-1">
                                 Immediately assign or move a locker without requiring payment.
                             </p>
-                            <%= form_with model: @locker_rental do |f| %>
+                            <%= form_with model: @locker_rental, data: { controller: 'locker-picker' } do |f| %>
                                 <%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
-                                <%= f.select :locker_id, @locker_select_options, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true, aria: { label: t('common.names.locker') } } %>
+                                <%= f.select :locker_id, @locker_select_options, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true, id: 'locker_rental_locker_id_assign', data: { locker_picker_target: 'locker' }, aria: { label: t('common.names.locker') } } %>
                                 <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control mb-2', id: 'owned_until_assign', aria: { label: t('common.names.owned_until') } %>
                                 <div class="form-check mb-2 text-start">
                                   <%= check_box_tag 'locker_rental[indefinite]', '1', @locker_rental.indefinite?, class: 'form-check-input', id: 'indefinite_assign', data: { indefinite_target: 'owned_until_assign' } %>
@@ -96,5 +96,4 @@
     </div>
 </div>
 
-<%= vite_javascript_tag 'locker_rental_form', 'data-turbo-track': 'reload' %>
 <%= vite_javascript_tag 'locker_admin', 'data-turbo-track': 'reload' %>
