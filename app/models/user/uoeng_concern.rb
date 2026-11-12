@@ -9,19 +9,25 @@ module User::UoengConcern
   # whose message quotes part of the body.
   UnexpectedShape = Class.new(JSON::ParserError)
 
+  # Results that carry no answer about the user. :unavailable means the
+  # upstream failed in a way that may pass (timeout, refused connection, 5xx),
+  # so asking again later can succeed; :unknown means asking again will not
+  # help (other statuses, a malformed body, nothing to look the user up by).
+  NO_ANSWER = %i[unknown unavailable].freeze
+
   included do
     # Verify if user qualifies for a faculty membership. Returns the granted
     # membership, nil when the user is not engineering (any active faculty
-    # membership is revoked), or :unknown when the upstream could not answer:
-    # then the stored memberships are left exactly as they are.
+    # membership is revoked), or :unknown / :unavailable when the upstream
+    # could not answer (see NO_ANSWER): then the stored memberships are left
+    # exactly as they are.
     def validate_uoeng_membership(card_number: nil, space: nil)
       faculty_tier = MembershipTier.find_by!(title_en: "Faculty membership")
 
-      case engineering?(card_number: card_number, space: space)
-      when :unknown then :unknown
-      when true then grant_faculty_membership(faculty_tier)
-      else revoke_faculty_memberships(faculty_tier, card_number: card_number, space: space)
-      end
+      answer = engineering?(card_number: card_number, space: space)
+      return answer if NO_ANSWER.include?(answer)
+
+      answer ? grant_faculty_membership(faculty_tier) : revoke_faculty_memberships(faculty_tier, card_number: card_number, space: space)
     end
 
     private
@@ -53,12 +59,12 @@ module User::UoengConcern
       nil
     end
 
-    # true, false, or :unknown when the upstream gave no usable answer.
+    # true, false, or :unknown / :unavailable when the upstream gave no usable answer.
     def engineering?(card_number: nil, space: nil)
       return faculty == "Engineering" if Rails.env.test?
 
       details = uoeng_details(card_number: card_number, space: space)
-      return :unknown if details == :unknown
+      return details if NO_ANSWER.include?(details)
 
       unless details
         TapBoxLog.log_no_queryable_identifier(user: self, card_number: card_number, space: space)
@@ -78,8 +84,9 @@ module User::UoengConcern
     end
 
     # The parsed answer (a Hash), false when the user cannot be looked up, or
-    # :unknown when the upstream timed out, refused, answered with a non-200
-    # status or sent a body that does not have the expected shape.
+    # :unavailable when the upstream timed out, refused the connection or
+    # answered 5xx, or :unknown when it answered another non-200 status or sent
+    # a body that does not have the expected shape.
     def uoeng_details(card_number: nil, space: nil)
       creds = Rails.application.credentials.dig(Rails.env.to_sym, :uoeng) || {}
 
@@ -111,13 +118,13 @@ module User::UoengConcern
     rescue Excon::Error::Timeout => e
       elapsed = ((Time.current - api_start) * 1000).round(1)
       TapBoxLog.log_api_timeout(user: self, elapsed_ms: elapsed, exception: e, card_number: card_number, space: space)
-      uoeng_unknown(e)
+      uoeng_no_answer(e, :unavailable)
     rescue JSON::ParserError => e
       TapBoxLog.log_api_bad_json(user: self, exception: e, response: response, card_number: card_number, space: space)
       uoeng_unknown(UpstreamError.new("uOEng answer: #{TapBoxLog.bad_json_reason(e)}"))
     rescue Excon::Error => e
       TapBoxLog.log_engineering_check_error(user: self, exception: e, card_number: card_number, space: space)
-      uoeng_unknown(e)
+      uoeng_no_answer(e, :unavailable)
     end
 
     # Every field the check reads may be missing or null, but when present it
@@ -144,12 +151,16 @@ module User::UoengConcern
         card_number: card_number,
         space: space
       )
-      uoeng_unknown(UpstreamError.new("uOEng answered HTTP #{response.status}"))
+      uoeng_no_answer(UpstreamError.new("uOEng answered HTTP #{response.status}"), response.status >= 500 ? :unavailable : :unknown)
     end
 
     def uoeng_unknown(error)
+      uoeng_no_answer(error, :unknown)
+    end
+
+    def uoeng_no_answer(error, kind)
       Rails.error.report(error, handled: true, context: { user_id: id })
-      :unknown
+      kind
     end
 
     def detect_name_mismatch(details, card_number, space)

@@ -283,7 +283,7 @@ RSpec.describe "RFID endpoints", type: :request do
       }.to have_enqueued_job(CardTapJob).with(rfid, other_space.id)
                                          .and have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
       expect(old_session.reload.sign_out_time).to be <= Time.zone.now
-      expect { perform_enqueued_jobs }.to have_broadcasted_to("space_event_#{other_space.id}").with(
+      expect { 2.times { perform_enqueued_jobs } }.to have_broadcasted_to("space_event_#{other_space.id}").with(
         a_hash_including("add_user" => a_hash_including("id" => owner.id))
       ).and have_broadcasted_to("signed_in_table_space_#{other_space.id}").from_channel(Turbo::StreamsChannel)
     end

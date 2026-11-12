@@ -7,10 +7,6 @@ RSpec.describe CardTapJob, type: :job do
   let(:user) { create(:user, :regular_user) }
   let(:rfid) { create(:rfid, user: user) }
 
-  before do
-    create(:membership_tier, title_en: "Faculty membership", title_fr: "Adhesion de la faculte", internal_price: 0, external_price: 0, duration: 4.months.to_i)
-  end
-
   it "is queued on the default queue" do
     expect(described_class.new.queue_name).to eq("default")
   end
@@ -21,47 +17,13 @@ RSpec.describe CardTapJob, type: :job do
     expect(described_class.concurrency_key.call(rfid, 42)).to eq(42)
   end
 
-  it "validates the uOEng membership for the card owner in the tapped space" do
-    expect(user).to receive(:validate_uoeng_membership).with(card_number: rfid.card_number, space: space)
-    allow(rfid).to receive(:user).and_return(user)
-    described_class.perform_now(rfid, space.id)
-  end
-
-  it "pushes the add_user modal to the space event stream" do
-    expect { described_class.perform_now(rfid, space.id) }.to have_broadcasted_to("space_event_#{space.id}").with(a_hash_including("add_user"))
-  end
-
-  it "sends a table update on the signed-in table stream too" do
+  it "sends the table update on the signed-in table stream" do
     expect { described_class.perform_now(rfid, space.id) }.to have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
   end
 
-  it "logs an error row and re-raises when the membership check fails" do
-    allow_any_instance_of(User).to receive(:validate_uoeng_membership).and_raise(RuntimeError, "uoeng down")
-    expect { described_class.perform_now(rfid, space.id) }.to raise_error(RuntimeError, "uoeng down").and change { TapBoxLog.where(event_type: "error").count }.by(1)
-    expect(TapBoxLog.where(event_type: "error").last).to have_attributes(user_id: user.id, space_id: space.id, card_number: rfid.card_number)
-  end
-
-  it "still broadcasts the modal and does not fail when the membership check could not get an answer" do
-    allow_any_instance_of(User).to receive(:validate_uoeng_membership).and_return(:unknown)
+  it "queues the membership check for the same card and space, and sends no popup itself" do
     expect { described_class.perform_now(rfid, space.id) }
-      .to have_broadcasted_to("space_event_#{space.id}").with(a_hash_including("add_user"))
-    expect(TapBoxLog.where(event_type: "error")).to be_empty
-  end
-
-  it "still broadcasts the modal when the upstream answer has an unexpected shape" do
-    user.update!(student_id: "300000009")
-    allow(Rails.env).to receive(:test?).and_return(false)
-    allow(Rails.application.credentials).to receive(:dig).and_call_original
-    allow(Rails.application.credentials).to receive(:dig).with(:test, :uoeng).and_return(query_by_id: "https://uoeng.example.test/by_id/", student_information_key: "k")
-    stub_request(:get, %r{uoeng.example.test}).to_return(status: 200, body: { "courses_enrolled" => "GNG1103" }.to_json)
-    expect { described_class.perform_now(rfid, space.id) }
-      .to have_broadcasted_to("space_event_#{space.id}").with(a_hash_including("add_user"))
-  end
-
-  it "logs an error row but still broadcasts the modal when the Faculty membership tier is missing" do
-    MembershipTier.where(title_en: "Faculty membership").destroy_all
-    expect { described_class.perform_now(rfid, space.id) }
-      .to have_broadcasted_to("space_event_#{space.id}").with(a_hash_including("add_user"))
-      .and change { TapBoxLog.where(event_type: "error").count }.by(1)
+      .to have_enqueued_job(MembershipCheckJob).with(rfid, space.id)
+      .and not_have_broadcasted_to("space_event_#{space.id}")
   end
 end

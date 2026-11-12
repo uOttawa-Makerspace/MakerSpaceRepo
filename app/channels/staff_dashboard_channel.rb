@@ -12,13 +12,10 @@ class StaffDashboardChannel < ApplicationCable::Channel
     stream_from "space_event_#{params[:space_id]}"
   end
 
-  # RFID tap job finished executing and validated membership
-  # Notify staff dashboard with a modal
+  # The membership check for a tap has finished: notify the staff dashboard
+  # with a modal about the person who tapped in. The tables are updated
+  # separately, by broadcast_table_updates.
   def self.send_tap_in(user, space_id)
-    # Send HTML table update
-    broadcast_table_updates(space_id)
-
-    # Send modal notification
     ActionCable.server.broadcast(
       "space_event_#{space_id}",
       {
