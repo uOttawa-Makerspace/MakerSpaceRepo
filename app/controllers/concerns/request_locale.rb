@@ -9,10 +9,19 @@ module RequestLocale
   # I18n::InvalidLocale.
   def switch_locale(&action)
     session[:locale] = request_locale
+    remember_chosen_locale
     I18n.with_locale(request_locale, &action)
   end
 
   private
+
+  # A signed-in user who picks a language with ?locale= has it saved, so mail to them is sent in it.
+  def remember_chosen_locale
+    chosen = params[:locale].to_s.presence_in(I18n.available_locales.map(&:to_s))
+    return unless chosen && signed_in? && current_user.locale != chosen
+
+    current_user.update_column(:locale, chosen)
+  end
 
   def request_locale
     available = I18n.available_locales.map(&:to_s)
