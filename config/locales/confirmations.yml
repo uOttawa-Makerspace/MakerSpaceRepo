@@ -124,6 +124,9 @@ en:
       delete_titled: "Delete this video from \"%{title}\"?"
     key_requests:
       deny: "Deny this key request?"
+    users:
+      deactivate: "Deactivate the account of %{name}? They are signed out everywhere and cannot sign in until it is reactivated. Nothing they made is deleted."
+      reactivate: "Reactivate the account of %{name}? They can sign in again."
 fr:
   confirmations:
     repositories:
@@ -250,3 +253,6 @@ fr:
       delete_titled: "Supprimer cette vidéo de « %{title} »?"
     key_requests:
       deny: "Refuser cette demande de clé?"
+    users:
+      deactivate: "Désactiver le compte de %{name}? Cette personne est déconnectée partout et ne peut plus se connecter tant que le compte n'est pas réactivé. Rien de ce qu'elle a créé n'est supprimé."
+      reactivate: "Réactiver le compte de %{name}? Cette personne pourra se connecter de nouveau."

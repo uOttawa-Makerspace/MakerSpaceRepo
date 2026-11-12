@@ -7,6 +7,17 @@ en:
     users:
       invalid_parameters: "Invalid parameters!"
       search_query_missing: "Enter a name or email to search."
+      show:
+        active: "Account active"
+        deactivated_on: "Account deactivated on %{date}"
+        deactivate: "Deactivate account"
+        reactivate: "Reactivate account"
+      activation:
+        deactivated: "Account deactivated."
+        reactivated: "Account reactivated."
+        already_deactivated: "Account was already deactivated."
+        already_active: "Account was already active."
+        self_refused: "You cannot deactivate your own account."
     retired_programs:
       heading: "Retired programs"
       note: "Left out of the last import. They are no longer offered on the sign-up and profile forms; users who chose them keep them."
@@ -78,6 +89,17 @@ fr:
     users:
       invalid_parameters: "Paramètres invalides!"
       search_query_missing: "Saisissez un nom ou un courriel à rechercher."
+      show:
+        active: "Compte actif"
+        deactivated_on: "Compte désactivé le %{date}"
+        deactivate: "Désactiver le compte"
+        reactivate: "Réactiver le compte"
+      activation:
+        deactivated: "Compte désactivé."
+        reactivated: "Compte réactivé."
+        already_deactivated: "Le compte était déjà désactivé."
+        already_active: "Le compte était déjà actif."
+        self_refused: "Vous ne pouvez pas désactiver votre propre compte."
     retired_programs:
       heading: "Programmes retirés"
       note: "Absents du dernier import. Ils ne sont plus offerts dans les formulaires d'inscription et de profil; les personnes qui les ont choisis les conservent."

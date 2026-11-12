@@ -1108,6 +1108,15 @@ class User < ApplicationRecord
     change_deactivation!(false)
   end
 
+  # Only an admin may deactivate an account, and never their own.
+  def deactivatable_by?(actor)
+    actor.admin? && actor.id != id
+  end
+
+  def deactivated?
+    deactivated_at.present?
+  end
+
   def staff?
     role.in?(%w[staff admin])
   end
