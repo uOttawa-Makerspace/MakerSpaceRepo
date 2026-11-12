@@ -275,7 +275,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
         paid = @job_order.transition!(from: JobStatus.completed, to: JobStatus.paid, actor: @user)
         if paid.ok?
           flash[:notice] = t("job_orders.alerts.updated_job_status_to_x", status: JobStatus.paid.t_name)
-          JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
+          JobOrderMailer.payment_succeeded(@job_order.id, staff_completion_message).deliver_now
         else
           # the order is Completed but not Paid: say so, and no "updated" notice that would suggest otherwise
           flash.delete(:notice)
@@ -290,6 +290,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     end
 
     redirect_to job_order_path(@job_order.id)
+  end
+
+  # The staff message typed in the completion modal, only when staff chose to email it.
+  def staff_completion_message
+    params[:message] if params[:send_email] == "true"
   end
 
   # Marking an order paid tells the customer it is ready for pickup. Only the transition that actually moves the
