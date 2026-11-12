@@ -883,10 +883,13 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       end
     end
 
-    it "gives LockerRental and Membership no delete-by-gid method at all" do
+    # LockerRental's own reconcile_orphan_draft! is public for LockerRental::DraftSweep; like the job order's it fetches
+    # the draft and refuses one whose tags do not name the rental before it deletes.
+    it "gives LockerRental and Membership no delete-by-gid method at all, but the marker-checked reconcile" do
       [LockerRental, Membership].each do |model|
         names = model.public_methods + model.new.public_methods
-        expect(names.grep(/delete.*draft|draft.*delete|reconcile_orphan/) - %i[destroy_shopify_draft_order]).to be_empty
+        allowed = %i[destroy_shopify_draft_order] + (model == LockerRental ? %i[reconcile_orphan_draft!] : [])
+        expect(names.grep(/delete.*draft|draft.*delete|reconcile_orphan/) - allowed).to be_empty
       end
     end
 

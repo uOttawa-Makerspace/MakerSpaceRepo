@@ -27,8 +27,9 @@ shared: &shared
     command: "RateLimitCounter.prune!"
     schedule: every 5 minutes
 
-  # Reclaims Shopify drafts no job order points at (orphans of a rollback after a Shopify create).
-  # Same code as `rake job_orders:sweep_orphan_drafts` (JobOrder::DraftSweep).
+  # Reclaims Shopify drafts no job order and no locker rental points at (orphans of a rollback or a crash after a
+  # Shopify create). The job-order part is the code of `rake job_orders:sweep_orphan_drafts` (JobOrder::DraftSweep);
+  # the locker part is LockerRental::DraftSweep.
   job_order_draft_sweep:
     class: JobOrderDraftSweepJob
     schedule: every hour at minute 42
