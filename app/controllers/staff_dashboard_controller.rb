@@ -50,7 +50,7 @@ class StaffDashboardController < StaffAreaController
                 )
               end
               .as_json,
-          space_list: Space.all.pluck(:name, :id)
+          space_list: current_user.workable_spaces.pluck(:name, :id)
         }
       end
     end
@@ -231,6 +231,9 @@ class StaffDashboardController < StaffAreaController
     if new_space.nil?
       http_status = :not_found
       message = "Space not found"
+    elsif !current_user.can_work_in?(new_space)
+      http_status = :not_found
+      message = "You are not assigned to that space"
     elsif current_user.update(space_id: new_space.id)
       @space = new_space
       flash[:notice] = "Space changed successfully"

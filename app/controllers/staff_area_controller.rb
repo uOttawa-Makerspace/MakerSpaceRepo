@@ -28,6 +28,6 @@ class StaffAreaController < SessionsController
   end
 
   def define_spaces
-    @all_spaces ||= Space.order(:name)
+    @all_spaces ||= current_user.workable_spaces.order(:name)
   end
 end

@@ -265,6 +265,8 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
   end
 
   describe "PUT /staff_dashboard/change_space" do
+    before { StaffSpace.create!(user: staff, space: other_space) }
+
     it "moves the staff member to the space and answers {status: ok}" do
       put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
       expect(response).to have_http_status(:ok)
@@ -313,6 +315,43 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(response).to have_http_status(:found)
       expect(flash[:alert]).to eq("Space not found")
       expect(staff.reload.space_id).to eq(space.id)
+    end
+
+    it "refuses a space the staff member is not assigned to and keeps their current space" do
+      StaffSpace.where(user: staff).destroy_all
+      StaffSpace.create!(user: staff, space: space)
+      put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
+      expect(response).to have_http_status(:not_found)
+      expect(json).to eq("status" => "error", "error" => "You are not assigned to that space")
+      expect(staff.reload.space_id).to eq(space.id)
+
+      put "/staff_dashboard/change_space", params: { space_id: other_space.id }
+      expect(flash[:alert]).to eq("You are not assigned to that space")
+      expect(staff.reload.space_id).to eq(space.id)
+    end
+
+    it "refuses every space for a staff member with no assignments" do
+      StaffSpace.where(user: staff).destroy_all
+      put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
+      expect(response).to have_http_status(:not_found)
+      expect(staff.reload.space_id).to eq(space.id)
+    end
+
+    it "lets an admin switch to any space" do
+      admin = sign_in_as(:admin, space: space)
+      put "/staff_dashboard/change_space", params: { space_id: other_space.id }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(admin.reload.space_id).to eq(other_space.id)
+    end
+
+    it "offers only the assigned spaces in the picker and the JSON space_list" do
+      StaffSpace.where(user: staff).destroy_all
+      StaffSpace.create!(user: staff, space: space)
+      get staff_dashboard_index_path
+      options = Nokogiri::HTML(response.body).css("select#set_space_id option").map { |o| o["value"] }.compact_blank
+      expect(options).to eq([space.id.to_s])
+      get "/staff_dashboard", as: :json
+      expect(json["space_list"]).to eq([[space.name, space.id]])
     end
   end
 end

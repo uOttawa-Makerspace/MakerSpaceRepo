@@ -1146,6 +1146,16 @@ class User < ApplicationRecord
     staff_spaces.exists?
   end
 
+  # The spaces this user may switch the staff dashboard to: every space for an admin, otherwise only the
+  # spaces they are assigned to.
+  def workable_spaces
+    admin? ? Space.all : spaces
+  end
+
+  def can_work_in?(space)
+    workable_spaces.exists?(space.id)
+  end
+
   def internal?
     INTERNAL_IDENTITIES.include?(identity)
   end
