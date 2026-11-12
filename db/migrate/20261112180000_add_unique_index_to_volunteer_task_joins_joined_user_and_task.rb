@@ -30,13 +30,17 @@ class AddUniqueIndexToVolunteerTaskJoinsJoinedUserAndTask < ActiveRecord::Migrat
 
     transaction do
       execute <<~SQL.squish
-        UPDATE volunteer_task_joins j
-        SET state = e.old_state, active = e.old_active, state_changed_at = e.old_state_changed_at,
-            state_changed_by_id = e.old_state_changed_by_id, updated_at = e.old_updated_at
-        FROM volunteer_task_join_duplicate_endings e
-        WHERE e.volunteer_task_join_id = j.id AND e.restored_at IS NULL AND j.state = e.new_state
+        WITH restored AS (
+          UPDATE volunteer_task_joins j
+          SET state = e.old_state, active = e.old_active, state_changed_at = e.old_state_changed_at,
+              state_changed_by_id = e.old_state_changed_by_id, updated_at = e.old_updated_at
+          FROM volunteer_task_join_duplicate_endings e
+          WHERE e.volunteer_task_join_id = j.id AND e.restored_at IS NULL AND j.state = e.new_state
+          RETURNING e.id AS record_id
+        )
+        UPDATE volunteer_task_join_duplicate_endings SET restored_at = now()
+        WHERE id IN (SELECT record_id FROM restored)
       SQL
-      execute "UPDATE volunteer_task_join_duplicate_endings SET restored_at = now() WHERE restored_at IS NULL"
     end
   end
 

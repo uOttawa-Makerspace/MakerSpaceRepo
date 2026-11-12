@@ -140,6 +140,7 @@ RSpec.describe AddUniqueIndexToVolunteerTaskJoinsJoinedUserAndTask do
     migrate(:down)
 
     expect(row(newer)["state"]).to eq("left")
+    expect(records.map(&:last)).to eq([false])
   end
 
   it "the index refuses a second joined row but allows repeated ended rows" do
