@@ -1,5 +1,6 @@
 en:
   common:
+    captcha_unavailable: "The security check could not be loaded. Turn off any content blocker for this page and reload it to submit this form."
     close: "Close"
     remove: "Remove"
     add: "Add"
@@ -127,6 +128,7 @@ en:
     summer: "Spring-Summer"
 fr:
   common:
+    captcha_unavailable: "La vérification de sécurité n'a pas pu être chargée. Désactivez tout bloqueur de contenu pour cette page et rechargez-la pour envoyer ce formulaire."
     close: "Fermer"
     remove: "Retirer"
     add: "Ajouter"

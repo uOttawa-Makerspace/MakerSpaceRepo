@@ -19,10 +19,11 @@ module JsErrorCheck
     # the 500 from GET /locker_rentals for an indefinite active
     # rental is logged by Chrome as a SEVERE resource error.
     { id: "js-error-03", path: %r{/locker_rentals(\z|\s)}, message: /locker_rentals - Failed to load resource: the server responded with a status of 500/ },
-    # pages load third-party scripts straight from the internet
-    # (Cloudflare Turnstile, UserWay widget). The system browser resolves no
-    # external host (see --host-resolver-rules in system.rb), so each logs a
-    # DNS failure. Extend the host list only with the same kind of resource.
+    # Pages load third-party scripts (Cloudflare Turnstile, UserWay widget)
+    # after the page has loaded, and ignore a failed load. The system browser
+    # resolves no external host (see --host-resolver-rules in system.rb), and
+    # Chrome still logs each blocked fetch as a resource error whatever the page
+    # does with it. Extend the host list only with the same kind of resource.
     { id: "js-error-04", path: %r{\Ahttps://(challenges\.cloudflare\.com|cdn\.userway\.org|www\.youtube\.com)/}, message: /Failed to load resource: net::ERR_NAME_NOT_RESOLVED/ },
     # Found by the browser crawl (spec/system/page_crawl_spec.rb).
     # the home/changelog hours widget calls /open_hours, which
