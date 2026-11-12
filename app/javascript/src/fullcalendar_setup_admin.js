@@ -12,6 +12,16 @@ import { eventClick, eventCreate } from "./calendar_helper.js";
 import { onPageLoad } from "./on_page";
 import { applyEventBackground } from "./calendar_background.js";
 
+// Titles and descriptions come from imported calendars, so they are text, never markup.
+const escapeHtml = (text) =>
+  String(text).replace(
+    /[&<>"']/g,
+    (char) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        char
+      ],
+  );
+
 onPageLoad("#calendar", async () => {
   const calendarEl = document.getElementById("calendar");
 
@@ -83,9 +93,9 @@ onPageLoad("#calendar", async () => {
       // create event tooltip
       new Tooltip(info.el, {
         title:
-          info.event.title +
+          escapeHtml(info.event.title) +
           (info.event.extendedProps.description
-            ? `<br><i>${info.event.extendedProps.description}</i>`
+            ? `<br><i>${escapeHtml(info.event.extendedProps.description)}</i>`
             : ""),
         html: true,
       });

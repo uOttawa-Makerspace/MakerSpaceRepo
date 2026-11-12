@@ -118,7 +118,7 @@ async function initHomepageCalendar() {
         const label = document.createElement("label");
         label.className = "form-check-label mt-1";
         label.htmlFor = `filter-${sourceId}`;
-        label.innerHTML = sourceName;
+        label.textContent = sourceName;
 
         checkboxWrapper.appendChild(checkbox);
         checkboxWrapper.appendChild(label);

@@ -8,7 +8,7 @@ require "rails_helper"
 # 2027-03-14 at 02:00, back Sunday 2027-11-07 at 02:00). The browser expands
 # them with @fullcalendar/rrule in the Toronto zone; the same strings are drawn
 # in spec/javascript/calendars/rrule_feed_dst.test.js. Each example also lists
-# what the server's own expansion (RecurrenceExpansion, used by the staff
+# what the server's own expansion (RecurringSeries, used by the staff
 # calendar and the shifts API) gives for the same series, so the two can be
 # compared.
 RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", type: :request do
@@ -20,7 +20,7 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
   def stamp(time) = time.utc.strftime("%Y%m%dT%H%M%SZ")
 
   def server_occurrences(rule, start)
-    RecurrenceExpansion.occurrences(rule, start, start, start + 27.days, 10).occurrences.map { |time| time.iso8601 }
+    series_starts(rule, start, start, start + 27.days, 10).map(&:iso8601)
   end
 
   # Each scenario: the first occurrence, the rule as stored, the rule the feeds send and the occurrences the
@@ -164,7 +164,7 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
   end
 
   # A series that lasts across the change itself. The feeds send its length as one number of milliseconds, so the
-  # browser adds it to the wall time; the server (RecurrenceExpansion) only lists start times and callers add the
+  # browser adds it to the wall time; the server (RecurringSeries) only lists start times and callers add the
   # length in real time. (Disagreement, named "timed series length across a clock change": the 01:00 occurrence of
   # 2027-03-14 ends at 03:00 on the page, one real hour later, and at 04:00 daylight time when measured in real
   # time. See rrule_feed_dst.test.js.)
@@ -181,7 +181,7 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
     end
 
     it "is expanded by the server with the clock-change occurrence at 01:00 standard time, ending at 04:00 in real time" do
-      occurrences = RecurrenceExpansion.occurrences(stored, start, start, start + 27.days, 10).occurrences
+      occurrences = series_starts(stored, start, start, start + 27.days, 10)
       expect(occurrences.map(&:iso8601)).to eq(
         %w[2027-03-07T01:00:00-05:00 2027-03-14T01:00:00-05:00 2027-03-21T01:00:00-04:00 2027-03-28T01:00:00-04:00]
       )
@@ -268,12 +268,11 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
           expect(rows.dig("paris-spring@ics.test", "rrule")).to eq("DTSTART:20270307T030000\nRRULE:FREQ=WEEKLY;BYDAY=SU")
         end
 
-        # Disagreement, named "cancelled instance still sent": a cancelled instance is sent as an event of its own,
-        # and a cancelled series is sent like any other.
-        it "sends cancelled instances and cancelled series like any other event" do
+        # A cancelled instance is only an exclusion of its series and a cancelled series is left out.
+        it "sends the series with its cancelled instance excluded, and nothing for the cancelled instance or series" do
           rows = sent(feed, "recurrence_id_cancelled")
           expect(rows).to eq(fixture_rows("recurrence_id_cancelled"))
-          expect(rows.keys).to contain_exactly("cancelled@ics.test", "cancelled@ics.test_1805032800", "cancelled-series@ics.test")
+          expect(rows.keys).to contain_exactly("cancelled@ics.test")
         end
       end
     end

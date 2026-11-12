@@ -9,9 +9,10 @@ require "rails_helper"
 # spec/fixtures/files/ics/feed_events.json, which spec/javascript/calendars/rrule_feed_dst.test.js draws the way the
 # browser does and spec/requests/calendar_rrule_feed_dst_request_spec.rb checks each feed against.
 #
-# These examples pin today's behaviour, including where it disagrees with what the file means. Each disagreement
-# has a name in the comment above the example; the slices that move imported calendars onto the server's own
-# expansion change those examples and rename nothing else.
+# These examples pin the behaviour of the browser rows, including where the browser's own wall-time repeat
+# disagrees with what the file means (each has a name in the comment above the example). The server side of an
+# imported calendar is ImportedCalendar (spec/models/imported_calendar_spec.rb), which reads the file correctly; the
+# later slice that sends occurrences to the browser removes these disagreements.
 RSpec.describe CalendarHelper, type: :helper do
   include ActiveSupport::Testing::TimeHelpers
 
@@ -37,7 +38,7 @@ RSpec.describe CalendarHelper, type: :helper do
   # The occurrences the server's own engine (used by the staff calendar and the shifts API) gives for a rule text, in
   # Toronto time, starting at the Toronto wall time `from`.
   def server_occurrences(rule, start, count: 12)
-    RecurrenceExpansion.occurrences(rule, start, start, start + 200.days, count).occurrences
+    series_starts(rule, start, start, start + 200.days, count)
   end
 
   def starts(times) = times.map { |time| time.in_time_zone(toronto).strftime("%Y-%m-%dT%H:%M") }
@@ -214,47 +215,46 @@ RSpec.describe CalendarHelper, type: :helper do
   describe "a cancelled instance and a cancelled series (STATUS:CANCELLED)" do
     let(:rows) { rows_for("recurrence_id_cancelled") }
 
-    # Disagreement, named "cancelled still drawn": STATUS is never read. The cancelled instance is sent as an event of
-    # its own at the time it was cancelled for (so the date the series excludes is drawn anyway), and a cancelled
-    # series is sent like a live one.
-    it "sends the cancelled instance as an event" do
+    # Was the disagreement named "cancelled still drawn" (STATUS was never read). A cancelled instance is only an
+    # exclusion now: the series leaves its date out and nothing is sent for it, and a cancelled series is left out.
+    it "leaves the cancelled instance out of the series and sends nothing for it" do
       expect(row(rows, "cancelled@ics.test")["rrule"]).to eq("DTSTART:20270307T100000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20270314T100000")
-      expect(row(rows, "cancelled@ics.test_1805032800")).to include(
-        "title" => "Sunday class (cancelled)", "start" => "2027-03-14T10:00:00", "end" => "2027-03-14T11:00:00"
-      )
+      expect(row(rows, "cancelled@ics.test_1805032800")).to be_nil
     end
 
-    it "sends the cancelled series with its repeat rule" do
-      expect(row(rows, "cancelled-series@ics.test")).to include(
-        "title" => "Cancelled Monday series", "rrule" => "DTSTART:20270315T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO"
-      )
+    it "sends nothing for the cancelled series" do
+      expect(row(rows, "cancelled-series@ics.test")).to be_nil
+      expect(rows.size).to eq(1)
     end
   end
 
   describe "a series with an end (UNTIL)" do
     let(:rows) { rows_for("until") }
 
-    it "sends a date UNTIL as midnight Toronto wall time" do
+    # A date UNTIL is sent as the end of that day (it was midnight, which cut a timed series' last day short); the
+    # parts of the rule are in the order the file library writes them.
+    it "sends a date UNTIL as the end of that Toronto day" do
       expect(row(rows, "until-date@ics.test")["rrule"])
-        .to eq("DTSTART:20270307T000000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20270328T000000")
+        .to eq("DTSTART:20270307T000000\nRRULE:FREQ=WEEKLY;UNTIL=20270328T235959;BYDAY=SU")
     end
 
     it "sends a UTC UNTIL as Toronto wall time" do
       expect(row(rows, "until-utc@ics.test")["rrule"])
-        .to eq("DTSTART:20270307T100000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20270321T100000")
+        .to eq("DTSTART:20270307T100000\nRRULE:FREQ=WEEKLY;UNTIL=20270321T100000;BYDAY=SU")
       expect(row(rows, "until-utc-fall@ics.test")["rrule"])
-        .to eq("DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20271107T013000")
+        .to eq("DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;UNTIL=20271107T013000;BYDAY=SU")
     end
 
-    # Disagreement, named "UNTIL sent as wall time": the browser reads the bare UNTIL as the same wall time and
-    # includes the last day (3 occurrences in the file, 3 drawn). The server's engine reads a bare UNTIL as UTC, so
-    # given the sent text it ends a day (or four hours) early and drops the last occurrence.
-    it "gives a text the server's engine cuts one occurrence short" do
+    # The browser reads the bare UNTIL as the same wall time and includes the last day (4 occurrences in the
+    # date UNTIL file and 3 in the UTC one, all drawn). The server's engine reads a date as the end of that Toronto day and a bare time as Toronto wall
+    # time, so given the sent text it also keeps the last occurrence (it used to read the bare UNTIL as UTC and
+    # drop it).
+    it "gives a text the server's engine keeps whole" do
       date_until = row(rows, "until-date@ics.test")
-      expect(starts(server_occurrences(date_until["rrule"], toronto_start(date_until)))).to eq(%w[2027-03-07T00:00 2027-03-14T00:00 2027-03-21T00:00])
+      expect(starts(server_occurrences(date_until["rrule"], toronto_start(date_until)))).to eq(%w[2027-03-07T00:00 2027-03-14T00:00 2027-03-21T00:00 2027-03-28T00:00])
 
       utc_until = row(rows, "until-utc@ics.test")
-      expect(starts(server_occurrences(utc_until["rrule"], toronto_start(utc_until)))).to eq(%w[2027-03-07T10:00 2027-03-14T10:00])
+      expect(starts(server_occurrences(utc_until["rrule"], toronto_start(utc_until)))).to eq(%w[2027-03-07T10:00 2027-03-14T10:00 2027-03-21T10:00])
 
       as_filed = "DTSTART:20270307T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20270321T140000Z"
       expect(starts(server_occurrences(as_filed, toronto.local(2027, 3, 7, 10)))).to eq(%w[2027-03-07T10:00 2027-03-14T10:00 2027-03-21T10:00])
@@ -265,8 +265,8 @@ RSpec.describe CalendarHelper, type: :helper do
     let(:rows) { rows_for("count") }
 
     it "sends the count in the rule" do
-      expect(row(rows, "count-spring@ics.test")["rrule"]).to eq("DTSTART:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3")
-      expect(row(rows, "count-fall@ics.test")["rrule"]).to eq("DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3")
+      expect(row(rows, "count-spring@ics.test")["rrule"]).to eq("DTSTART:20270307T023000\nRRULE:FREQ=WEEKLY;COUNT=3;BYDAY=SU")
+      expect(row(rows, "count-fall@ics.test")["rrule"]).to eq("DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;COUNT=3;BYDAY=SU")
     end
 
     it "counts the repeated hour once in the server's expansion" do
@@ -285,17 +285,15 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(row(rows, "first-sunday-november@ics.test")["rrule"]).to eq("DTSTART:20271003T013000\nRRULE:FREQ=MONTHLY;BYDAY=SU;BYSETPOS=1")
     end
 
-    # Disagreement, named "BYSETPOS ignored by the server": the browser honours BYSETPOS (last weekday of each
-    # month, the second Sunday of each month); IceCube, which the server's engine uses, drops it without a message
-    # and lists every weekday (every Sunday).
-    it "gives a text the server's engine expands as if BYSETPOS were not there" do
+    # The server's engine honours BYSETPOS (it used to drop it without a message and list every weekday or Sunday).
+    it "gives a text the server's engine expands with BYSETPOS applied" do
       last = row(rows, "last-weekday@ics.test")
-      expect(starts(server_occurrences(last["rrule"], toronto_start(last), count: 6)))
-        .to eq(%w[2027-02-26T09:00 2027-03-01T09:00 2027-03-02T09:00 2027-03-03T09:00 2027-03-04T09:00 2027-03-05T09:00])
+      expect(starts(server_occurrences(last["rrule"], toronto_start(last), count: 4)))
+        .to eq(%w[2027-02-26T09:00 2027-03-31T09:00 2027-04-30T09:00 2027-05-31T09:00])
 
       second = row(rows, "second-sunday-march@ics.test")
-      expect(starts(server_occurrences(second["rrule"], toronto_start(second), count: 6)))
-        .to eq(%w[2027-02-14T02:30 2027-02-21T02:30 2027-02-28T02:30 2027-03-07T02:30 2027-03-14T03:30 2027-03-21T02:30])
+      expect(starts(server_occurrences(second["rrule"], toronto_start(second), count: 4)))
+        .to eq(%w[2027-02-14T02:30 2027-03-14T03:30 2027-04-11T02:30 2027-05-09T02:30])
     end
   end
 end

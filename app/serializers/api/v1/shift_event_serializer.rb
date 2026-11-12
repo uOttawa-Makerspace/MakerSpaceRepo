@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "ice_cube"
-
 module Api
   module V1
     # Published shift events of a space inside a window, shaped for FullCalendar:
@@ -57,14 +55,13 @@ module Api
       end
 
       def expand(event, from, to, colors, limit = MAX_OCCURRENCES_PER_EVENT)
-        found = RecurrenceExpansion.occurrences(event.recurrence_rule, event.start_time, from, to, limit)
-        duration = event.end_time - event.start_time
+        found = RecurringSeries.for_record(event).occurrences_starting_in(from..to, limit: limit)
         items = found.occurrences.map do |occ|
-          format(event, colors, occ, occ + duration).merge(id: "event-#{event.id}-#{occ.to_i}")
+          format(event, colors, occ.starts_at, occ.ends_at).merge(id: "event-#{event.id}-#{occ.starts_at.to_i}")
         end
         Result.new(items, found.truncated)
       rescue StandardError => e
-        # A rule IceCube cannot parse (or any other expansion error): report it, with
+        # A rule the repeat library cannot parse (or any other expansion error): report it, with
         # the event id only, then show the event once if it is inside the window
         # (legacy behaviour).
         Rails.error.report(e, handled: true, context: { event_id: event.id })

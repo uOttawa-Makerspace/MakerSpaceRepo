@@ -317,9 +317,9 @@ describe("a modified instance of an imported series", () => {
 });
 
 describe("a cancelled imported instance and a cancelled imported series", () => {
-  // Disagreement "cancelled still drawn": the instance cancelled for 2027-03-14 is drawn on 2027-03-14 as an event
-  // of its own, and the cancelled series is drawn every Monday.
-  it("draws the cancelled instance on its day", () => {
+  // The instance cancelled for 2027-03-14 is only an exclusion of its series (the feed sends no event of its own for
+  // it), and the cancelled series is not sent at all.
+  it("leaves the cancelled instance's day out", () => {
     const series = rowOf("recurrence_id_cancelled", "cancelled@ics.test");
     expect(drawnRow(series, SPRING_FROM, FIVE_WEEKS)).toEqual(
       at(
@@ -328,20 +328,9 @@ describe("a cancelled imported instance and a cancelled imported series", () => 
         "11:00:00",
       ),
     );
-    const cancelled = rowOf(
-      "recurrence_id_cancelled",
-      "cancelled@ics.test_1805032800",
-    );
-    expect(drawnRow(cancelled, SPRING_FROM, FIVE_WEEKS)).toEqual(
-      at(["2027-03-14"], "10:00:00", "11:00:00"),
-    );
-  });
-
-  it("draws the cancelled series", () => {
-    const row = rowOf("recurrence_id_cancelled", "cancelled-series@ics.test");
-    expect(drawnRow(row, SPRING_FROM, FIVE_WEEKS)).toEqual(
-      at(["2027-03-15", "2027-03-22", "2027-03-29"], "10:00:00", "11:00:00"),
-    );
+    expect(feedRows.recurrence_id_cancelled.map((row) => row.id)).toEqual([
+      "cancelled@ics.test",
+    ]);
   });
 });
 

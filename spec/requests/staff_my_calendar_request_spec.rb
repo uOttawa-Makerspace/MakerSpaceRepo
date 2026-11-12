@@ -4,7 +4,7 @@ require "rails_helper"
 
 # Staff::MyCalendarController (index page + JSON feed). The feed is built from
 # Event rows (not Shift, which no controller uses). The app zone is Eastern;
-# recurring events are expanded with IceCube from the event's own start_time, so
+# recurring events are expanded by RecurringSeries from the event's own start_time, so
 # the wall-clock hour is kept across the DST jump (Sun 2027-03-14 in Toronto).
 # travel_to goes BEFORE login: sessions expire (session[:expires_at]) relative to
 # the clock at login time.
@@ -224,7 +224,7 @@ RSpec.describe "Staff my calendar", type: :request do
     # Counts the candidate occurrences the rule generates, so the bound is on work done, not on time.
     def rule_steps
       steps = 0
-      allow_any_instance_of(IceCube::ValidatedRule).to receive(:next_time).and_wrap_original do |original, *args|
+      allow_any_instance_of(RRule::Frequency).to receive(:advance).and_wrap_original do |original, *args|
         steps += 1
         original.call(*args)
       end
@@ -232,22 +232,33 @@ RSpec.describe "Staff my calendar", type: :request do
       steps
     end
 
-    def expect_expansion_stops_at_cap(rule)
-      cap = Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT
-      stored_event(rule)
+    # No stored rule is finer than daily (the validator refuses them), so the series refuses one without
+    # stepping through it; the failure is reported with the event id and the event is shown once.
+    def expect_refused_without_stepping(rule)
+      event = stored_event(rule)
+      allow(Rails.error).to receive(:report).and_call_original
       steps = rule_steps { get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" } }
       expect(response).to have_http_status(:ok)
-      expect(response.parsed_body.size).to eq(cap)
-      expect(steps).to be_positive
-      expect(steps).to be <= cap + 2 # unbounded: 144,000 candidates for MINUTELY, 8,640,000 for SECONDLY
+      expect(response.parsed_body.map { |e| e["id"] }).to eq(["event-#{event.id}"])
+      expect(Rails.error).to have_received(:report)
+        .with(kind_of(RecurringSeries::UnsupportedRule), hash_including(handled: true, context: hash_including(event_id: event.id)))
+      expect(steps).to eq(0) # refused before the repeat library is touched (unbounded: 144,000 candidates for MINUTELY)
     end
 
-    it "is expanded within the per-event cap, generating at most cap + 1 candidates (MINUTELY over 100 days)" do
-      expect_expansion_stops_at_cap("DTSTART:20270101T090000Z\nRRULE:FREQ=MINUTELY")
+    it "is refused without stepping through it (MINUTELY over 100 days)" do
+      expect_refused_without_stepping("DTSTART:20270101T090000Z\nRRULE:FREQ=MINUTELY")
     end
 
-    it "stops SECONDLY at the cap too" do
-      expect_expansion_stops_at_cap("FREQ=SECONDLY")
+    it "refuses SECONDLY too" do
+      expect_refused_without_stepping("FREQ=SECONDLY")
+    end
+
+    it "still caps a daily rule per event" do
+      stub_const("Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT", 5)
+      stored_event("FREQ=DAILY")
+      steps = rule_steps { get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" } }
+      expect(response.parsed_body.size).to eq(5)
+      expect(steps).to be <= 10 # the walk stops after the sixth day, not at the end of the 100 days
     end
 
     it "leaves a normal rule with fewer occurrences than the cap untouched" do

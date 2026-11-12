@@ -52,6 +52,11 @@ const sources = [
   },
   { id: "nameless", events: [{ extendedProps: {} }] },
 ];
+const markupSource = {
+  id: "markup",
+  color: "#333",
+  events: [{ extendedProps: { name: "<img src=x onerror=alert(1)>Lab" } }],
+};
 
 const stubFetch = (response) =>
   vi.stubGlobal(
@@ -167,6 +172,18 @@ describe("open hours calendar", () => {
 });
 
 describe("space filters", () => {
+  it("shows a source name as text, never as markup", async () => {
+    sources.push(markupSource);
+    try {
+      await show();
+    } finally {
+      sources.pop();
+    }
+    const labels = [...document.querySelectorAll("#filters label")];
+    expect(labels.at(-1).textContent).toBe("<img src=x onerror=alert(1)>Lab");
+    expect(document.querySelector("#filters img")).toBeNull();
+  });
+
   it("lists one checked box per named source, coloured like the source", async () => {
     await show();
     const boxes = [...document.querySelectorAll("#filters input")];

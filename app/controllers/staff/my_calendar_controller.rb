@@ -69,41 +69,20 @@ class Staff::MyCalendarController < StaffAreaController
   end
 
   def expand_recurring_event(event, start_date, end_date)
-    require 'ice_cube'
-    
-    expanded_events = []
-    
-    begin
-      # Bounded: rules stored before validation existed (e.g. MINUTELY)
-      # must not pin a worker. Same caps as the /api/v1 shifts serializer.
-      found = RecurrenceExpansion.occurrences(
-        event.recurrence_rule, event.start_time, start_date, end_date,
-        Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT
-      )
-
-      # Calculate duration
-      duration = event.end_time - event.start_time
-
-      found.occurrences.each do |occurrence|
-        occurrence_end = occurrence + duration
-
-        formatted_event = format_event(event, occurrence, occurrence_end)
-        # Create unique ID using timestamp to avoid collisions
-        formatted_event[:id] = "event-#{event.id}-#{occurrence.to_i}"
-
-        expanded_events << formatted_event
-      end
-
-    rescue => e
-      # Report it (event id only), then fall back: return the
-      # original event if within date range
-      report_unexpected(e, event_id: event.id)
-      if event.start_time >= start_date && event.end_time <= end_date
-        expanded_events << format_event(event)
-      end
+    # Bounded: rules stored before validation existed (e.g. MINUTELY)
+    # must not pin a worker. Same caps as the /api/v1 shifts serializer.
+    found = RecurringSeries.for_record(event).occurrences_starting_in(
+      start_date..end_date, limit: Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT
+    )
+    found.occurrences.map do |occurrence|
+      # The occurrence's own start in the id keeps ids unique within the series.
+      format_event(event, occurrence.starts_at, occurrence.ends_at).merge(id: "event-#{event.id}-#{occurrence.starts_at.to_i}")
     end
-    
-    expanded_events
+  rescue => e
+    # Report it (event id only), then fall back: return the
+    # original event if within date range
+    report_unexpected(e, event_id: event.id)
+    event.start_time >= start_date && event.end_time <= end_date ? [format_event(event)] : []
   end
 
   # The assignments (and the staff behind them) of the events that are about to be formatted.
