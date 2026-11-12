@@ -35,8 +35,19 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
   # FREQ => the message for it, or nil when allowed; any other FREQ is unparseable.
   FREQUENCIES = { "DAILY" => nil, "WEEKLY" => nil, "MONTHLY" => nil, "YEARLY" => nil,
                   "SECONDLY" => MESSAGE, "MINUTELY" => MESSAGE, "HOURLY" => MESSAGE }.freeze
-  # The repeat library accepts these parts without checking their numbers.
-  NUMBER_RANGES = { "BYMONTH" => 1..12, "BYMONTHDAY" => 1..31, "BYYEARDAY" => 1..366 }.freeze
+  # Part => what its value looks like, for the parts the repeat library would take without checking:
+  # weekdays with an optional ordinal (1 to 53, signed), and numbers in range (a sign counts from the end).
+  WEEKDAY = "(?:MO|TU|WE|TH|FR|SA|SU)"
+  LIST = ->(item) { /\A#{item}(?:,#{item})*\z/ }
+  VALUE_FORMATS = {
+    "BYDAY" => LIST.call("[+-]?(?:[1-9]|[1-4]\\d|5[0-3])?#{WEEKDAY}"),
+    "WKST" => /\A#{WEEKDAY}\z/,
+    "BYMONTH" => LIST.call("(?:[1-9]|1[0-2])"),
+    "BYMONTHDAY" => LIST.call("[+-]?(?:[1-9]|[12]\\d|3[01])"),
+    "BYYEARDAY" => LIST.call("[+-]?(?:[1-9]\\d?|[12]\\d\\d|3[0-5]\\d|36[0-6])")
+  }.freeze
+  # Rule part names are upper case and known; anything else is not a repeat rule.
+  KNOWN_PARTS = (%w[FREQ COUNT UNTIL INTERVAL] + PART_ERRORS.keys + VALUE_FORMATS.keys).freeze
 
   # nil when valid, else the message.
   def self.error_for(value)
@@ -51,22 +62,24 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
 
   # nil when one RRULE body is allowed, else the message.
   def self.body_error(body)
-    parts = body.split(";").map { |part| part.split("=", 2).map(&:strip).then { |k, v| [k.to_s.upcase, v.to_s] } }
-    return UNPARSEABLE unless parts.count { |key, _| key == "FREQ" } == 1
+    parts = body.split(";").map { |part| part.split("=", 2).map(&:strip).then { |key, value| [key.to_s, value.to_s] } }
+    return UNPARSEABLE unless known_parts?(parts.map(&:first))
 
     parts.filter_map { |key, _| PART_ERRORS[key] }.first || value_error(parts.to_h, body)
   end
 
-  # The message for the frequency or a number the repeat library would take without checking, else nil.
-  def self.value_error(values, body)
-    FREQUENCIES.fetch(values["FREQ"], UNPARSEABLE) || (UNPARSEABLE unless numbers_in_range?(values) && readable?(body))
+  # One FREQ, and every part name known and in upper case.
+  def self.known_parts?(keys)
+    keys.count("FREQ") == 1 && (keys - KNOWN_PARTS).empty?
   end
 
-  # Every part with an allowed range has only numbers inside it.
-  def self.numbers_in_range?(values)
-    NUMBER_RANGES.all? do |key, range|
-      values[key].to_s.split(",").all? { |n| range.cover?(Integer(n, 10, exception: false).to_i.abs) }
-    end
+  # The message for the frequency or a value the repeat library would take without checking, else nil.
+  def self.value_error(values, body)
+    FREQUENCIES.fetch(values["FREQ"], UNPARSEABLE) || (UNPARSEABLE unless formats_ok?(values) && readable?(body))
+  end
+
+  def self.formats_ok?(values)
+    VALUE_FORMATS.all? { |key, format| !values.key?(key) || values[key].match?(format) }
   end
 
   def self.readable?(body)

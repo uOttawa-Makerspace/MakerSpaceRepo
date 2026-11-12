@@ -136,6 +136,31 @@ RSpec.describe RecurrenceRuleValidator do
     end
   end
 
+  it "accepts weekdays with an ordinal from 1 to 53, signed, for any frequency" do
+    ["FREQ=MONTHLY;BYDAY=2MO", "FREQ=MONTHLY;BYDAY=-1FR,+2TU", "FREQ=YEARLY;BYDAY=53MO", "FREQ=WEEKLY;BYDAY=MO,SU", "FREQ=DAILY;WKST=SU"].each do |body|
+      expect(errors_for("RRULE:#{body}")).to eq([]), body
+    end
+  end
+
+  it "rejects a BYDAY or WKST that is not a weekday with a valid ordinal" do
+    ["FREQ=WEEKLY;BYDAY=XX", "FREQ=MONTHLY;BYDAY=54MO", "FREQ=MONTHLY;BYDAY=0MO", "FREQ=MONTHLY;BYDAY=-54FR", "FREQ=WEEKLY;BYDAY=mo",
+     "FREQ=WEEKLY;BYDAY=", "FREQ=WEEKLY;BYDAY=MO,,TU", "FREQ=WEEKLY;WKST=XX", "FREQ=WEEKLY;WKST=MO,TU"].each do |body|
+      expect(errors_for("RRULE:#{body}")).to eq([RecurrenceRuleValidator::UNPARSEABLE]), body
+    end
+  end
+
+  it "rejects a negative or out-of-range BYMONTH, which cannot count from the end" do
+    ["FREQ=YEARLY;BYMONTH=-1", "FREQ=YEARLY;BYMONTH=0", "FREQ=YEARLY;BYMONTH=13", "FREQ=YEARLY;BYMONTH=1,-2"].each do |body|
+      expect(errors_for("RRULE:#{body}")).to eq([RecurrenceRuleValidator::UNPARSEABLE]), body
+    end
+  end
+
+  it "rejects lower-case and unknown rule part names" do
+    ["freq=daily", "FREQ=DAILY;until=20270331", "FREQ=DAILY;byday=MO", "FREQ=DAILY;X-FOO=1", "FREQ=DAILY;BYWKST=1", "FREQ=DAILY;;COUNT=2"].each do |body|
+      expect(errors_for("RRULE:#{body}")).to eq([RecurrenceRuleValidator::UNPARSEABLE]), body
+    end
+  end
+
   it "does not hide an error that is not about the rule's text" do
     allow(RRule::Rule).to receive(:new).and_raise("bug")
     expect { errors_for("RRULE:FREQ=DAILY") }.to raise_error("bug")
