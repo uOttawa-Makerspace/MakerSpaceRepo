@@ -288,6 +288,7 @@ RSpec.describe "CSRF protection", type: :request do
     it "a cookie-authenticated JSON PUT (staff_dashboard/change_space) works without a token" do
       staff = create(:user, :staff)
       space = create(:space)
+      StaffSpace.create!(user: staff, space: space)
       post login_authentication_path,
            params: { username_email: staff.username, password: password }.to_json, headers: json_headers,
            without_csrf_token: true

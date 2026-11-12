@@ -12,6 +12,7 @@ en:
     sign_in: "Sign in"
     sign_out: "Sign out"
     shopping_cart: "Cart"
+    no_assigned_spaces: "You are not assigned to any space. Ask an admin to assign you."
     names:
       space: "Space"
       supervisor: "Supervisor"
@@ -138,6 +139,7 @@ fr:
     sign_in: "Enregistrer l'arrivée"
     sign_out: "Enregistrer le départ"
     shopping_cart: "Panier"
+    no_assigned_spaces: "Aucun espace ne vous est assigné. Demandez à un administrateur de vous en assigner un."
     names:
       space: "Espace"
       supervisor: "Superviseur"

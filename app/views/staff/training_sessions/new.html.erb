@@ -3,8 +3,9 @@
 
     <h2 class="my-3">
       New
-      <strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id), id: 'set_space_id', aria: { label: t('common.names.space') }, class: 'form-select fs-3 w-auto d-inline-block pe-0', onchange: 'setSpace()' %></strong>
+      <strong><%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name, @space.id), id: 'set_space_id', aria: { label: t('common.names.space') }, class: 'form-select fs-3 w-auto d-inline-block pe-0', onchange: 'setSpace()' %></strong>
       Training Session</h2>
+    <%= render "staff_dashboard/no_assigned_spaces" %>
 
     <%= form_for @new_training_session, url: { action: 'create', controller: 'staff/training_sessions' } do |f| %>
       <%= f.hidden_field :space_id, value: @space.id %>
