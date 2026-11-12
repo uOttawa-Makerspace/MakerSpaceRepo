@@ -206,7 +206,7 @@ RSpec.describe CalendarHelper, type: :helper do
       reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
       expect(events.map { |e| e[:id] }).to eq(["fine"])
       expect(reports.size).to eq(1)
-      expect(reports.first.last).to include(kinds: { "ICS event has no usable start" => 2 }, event_uids: %w[nostart nostart-single],
+      expect(reports.first.last).to include(kinds: { "ICS event has no usable start" => 2 }, event_uids: %w[nostart nostart-single].map { |uid| Digest::SHA256.hexdigest(uid)[0, 12] },
                                             calendar: Digest::MD5.hexdigest(url))
     end
 
@@ -250,7 +250,7 @@ RSpec.describe CalendarHelper, type: :helper do
       events = nil
       reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
       expect(events.map { |e| e[:title] }).to eq(["Weekly"])
-      expect(reports.map { |_, context| [context[:kinds], context[:event_uids]] }).to eq([[{ "ICS event has no usable start" => 1 }, ["rec"]]])
+      expect(reports.map { |_, context| [context[:kinds], context[:event_uids]] }).to eq([[{ "ICS event has no usable start" => 1 }, [Digest::SHA256.hexdigest("rec")[0, 12]]]])
     end
 
     ["FREQ=WEEKLY;BYDAY=MO,TU,TH;COUNT=6", "FREQ=MONTHLY;BYDAY=1MO,-1FR;COUNT=6"].each do |rule|

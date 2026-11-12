@@ -39,6 +39,8 @@ RSpec.describe ImportedCalendar do
          .map { |occurrence| occurrence.starts_at.in_time_zone(toronto).strftime("%Y-%m-%dT%H:%M") }
   end
 
+  def uid_digest(uid) = Digest::SHA256.hexdigest(uid)[0, 12]
+
   def reported
     reports = []
     subscriber = Class.new { define_method(:report) { |error, handled:, severity:, context:, source:| reports << [error, context] } }.new
@@ -302,7 +304,7 @@ RSpec.describe ImportedCalendar do
       expect(entries.map(&:uid)).to eq(%w[fine rec])
       expect(reports.size).to eq(1)
       expect(reports.first.last).to include(calendar: Digest::MD5.hexdigest(url), kinds: { "ICS event has no usable start" => 2 },
-                                            event_uids: %w[nostart rec])
+                                            event_uids: %w[nostart rec].map { |uid| uid_digest(uid) })
     end
 
     # One example per class of rule that fails the checks stored rules pass: it is reported once (event uid and calendar
@@ -336,7 +338,7 @@ RSpec.describe ImportedCalendar do
         expect(calendar.entries.first).to have_attributes(series: nil, starts_at: Time.utc(2027, 2, 15, 15), ends_at: Time.utc(2027, 2, 15, 16))
         expect(calendar.entries.last.series).not_to be_nil
         expect(reports.size).to eq(1)
-        expect(reports.first.last).to include(calendar: Digest::MD5.hexdigest(url), event_uids: ["odd"])
+        expect(reports.first.last).to include(calendar: Digest::MD5.hexdigest(url), event_uids: [uid_digest("odd")])
         expect(reports.first.last[:kinds].values).to eq([1])
         expect(reports.first.first.message).not_to include(rule, "secret-token")
         expect(reports.first.last.to_s).not_to include(rule, "secret-token")
@@ -355,7 +357,7 @@ RSpec.describe ImportedCalendar do
       expect(calendar).not_to be_failed
       expect(calendar.entries.map(&:uid)).to eq(["fine"])
       expect(reports.map { |error, context| [error.class, context[:kinds], context[:event_uids]] })
-        .to eq([[ImportedCalendar::Problem, { "TypeError" => 1 }, ["boom"]]])
+        .to eq([[ImportedCalendar::Problem, { "TypeError" => 1 }, [uid_digest("boom")]]])
       expect(reports.first.first.message).not_to include("bug")
     end
 
@@ -508,11 +510,12 @@ RSpec.describe ImportedCalendar do
       expect(reports.first.last.to_s).not_to include("secret-token")
     end
 
-    it "cuts an event uid short in the report" do
-      long = "u" * 300
-      body = ics(vevent(long, "DTEND:20270215T160000Z", "SUMMARY:No start"))
+    it "reports a short digest of an event uid, never the uid (it can be an email address)" do
+      body = ics(vevent("someone@example.test", "DTEND:20270215T160000Z", "SUMMARY:No start"))
       reports = reported { entries_of(body) }
-      expect(reports.first.last[:event_uids].first.length).to be <= 120
+      expect(reports.first.last[:event_uids]).to eq([uid_digest("someone@example.test")])
+      expect(reports.first.last[:event_uids].first.length).to eq(12)
+      expect(reports.first.last.to_s).not_to include("someone@example.test")
     end
 
     it "does not keep an empty body" do

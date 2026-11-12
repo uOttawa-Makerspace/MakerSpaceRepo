@@ -28,7 +28,6 @@ class ImportedCalendar
   REBUILD_GRACE = 10.seconds
   CIPHER = "aes-256-gcm"
   MAX_EVENTS = 5000
-  MAX_UID = 120
   MAX_UIDS_REPORTED = 5
   # Changes whenever the code that makes entries changes, so a cached entry is never read by other code.
   VERSION = Digest::SHA256.hexdigest(%w[models/imported_calendar models/recurring_series validators/recurrence_rule_validator]
@@ -247,11 +246,11 @@ class ImportedCalendar
   # returns nil so the caller leaves the event out. report_problems sends them as one report.
   def report_later(kind, uid = nil)
     @problems[kind] += 1
-    @problem_uids << uid.to_s.truncate(MAX_UID) if uid && @problem_uids.size < MAX_UIDS_REPORTED
+    @problem_uids << Digest::SHA256.hexdigest(uid.to_s)[0, 12] if uid && @problem_uids.size < MAX_UIDS_REPORTED
     nil
   end
 
-  # One report per feed build: how many problems of each kind, and the first few event uids. Never the link, the rule
+  # One report per feed build: how many problems of each kind, and short digests of the first few event uids (a uid can be an email address). Never the link, the rule
   # or any text of the feed.
   def report_problems(error = nil)
     return if @problems.empty? && error.nil?
