@@ -29,7 +29,8 @@ module GoogleCalendar
       key = credentials.slice(:private_key, :client_email, :project_id, :private_key_id, :type)
       authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
         json_key_io: StringIO.new(key.to_json, "r"),
-        scope: "https://www.googleapis.com/auth/calendar"
+        scope: "https://www.googleapis.com/auth/calendar",
+        default_connection: GoogleApiTimeouts.token_connection
       )
       authorizer.sub = "volunteer@makerepo.com"
       authorizer.fetch_access_token!

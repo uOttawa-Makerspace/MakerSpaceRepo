@@ -176,7 +176,8 @@ class SubSpaceBooking < ApplicationRecord
     authorizer =
       Google::Auth::ServiceAccountCredentials.make_creds(
         json_key_io: StringIO.new(@config.to_json, "r"),
-        scope: scope
+        scope: scope,
+        default_connection: GoogleApiTimeouts.token_connection
       )
 
     authorizer.sub = "volunteer@makerepo.com"

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_170000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -415,11 +415,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_160000) do
     t.integer "attempts", default: 0, null: false
     t.string "calendar_id"
     t.datetime "created_at", null: false
-    t.bigint "event_id", null: false
+    t.bigint "event_id"
     t.string "google_event_id"
+    t.bigint "shadowing_hour_id"
     t.datetime "updated_at", null: false
-    t.index ["action", "event_id", "google_event_id"], name: "index_google_calendar_pending_changes_identity", unique: true, nulls_not_distinct: true
-    t.check_constraint "action::text = ANY (ARRAY['push'::character varying, 'remove'::character varying]::text[])", name: "google_calendar_pending_changes_action_check"
+    t.index ["action", "event_id", "google_event_id", "shadowing_hour_id"], name: "index_google_calendar_pending_changes_identity", unique: true, nulls_not_distinct: true
+    t.check_constraint "action::text = 'shadow_push'::text AND shadowing_hour_id IS NOT NULL AND event_id IS NULL OR action::text <> 'shadow_push'::text AND shadowing_hour_id IS NULL AND event_id IS NOT NULL", name: "google_calendar_pending_changes_subject_check"
+    t.check_constraint "action::text = ANY (ARRAY['push'::character varying, 'remove'::character varying, 'shadow_push'::character varying]::text[])", name: "google_calendar_pending_changes_action_check"
   end
 
   create_table "helps", force: :cascade do |t|
@@ -1917,6 +1919,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_160000) do
   add_foreign_key "exam_responses", "exam_questions", on_delete: :nullify
   add_foreign_key "exams", "training_sessions"
   add_foreign_key "exams", "users"
+  add_foreign_key "google_calendar_pending_changes", "shadowing_hours", on_delete: :cascade
   add_foreign_key "job_options_types", "job_options"
   add_foreign_key "job_options_types", "job_types"
   add_foreign_key "job_order_options", "job_options"

@@ -48,7 +48,7 @@ en:
       not_a_volunteer: "Shadowing shifts can only be booked for volunteers."
       space_not_found: "The selected space was not found."
       shift_not_found: "This shift has not been found. It may already have been cancelled."
-      calendar_event_missing: "The shadowing shift was saved, but it could not be added to the calendar. Contact the makerspace staff so they can add it."
+      calendar_event_missing: "The shadowing shift was saved, but it could not be sent to the calendar yet. It will be tried again automatically; if it is still missing from the calendar in an hour, contact the makerspace staff."
       shift_not_removed: "The shift could not be removed from the calendar, so it was not cancelled. Try again in a moment."
     pages:
       reference: "Reference:"
