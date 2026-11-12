@@ -288,7 +288,7 @@
                                       <span class="text-body-secondary">Proficient Projects</span>
                                       <span class="fw-semibold text-body-emphasis"><%= next_projects_done %> / <%= next_projects_total %></span>
                                     </div>
-                                    <div class="progress bg-body-secondary" role="progressbar" aria-valuenow="<%= next_projects_pct %>" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress bg-body-secondary" role="progressbar" aria-label="<%= t('common.names.progress_projects') %>" aria-valuenow="<%= next_projects_pct %>" aria-valuemin="0" aria-valuemax="100">
                                       <div class="progress-bar bg-success" style="width: <%= next_projects_pct %>%"></div>
                                     </div>
                                   </div>
@@ -301,7 +301,7 @@
                                       <span class="text-body-secondary">Learning Modules</span>
                                       <span class="fw-semibold text-body-emphasis"><%= next_modules_done %> / <%= next_modules_total %></span>
                                     </div>
-                                    <div class="progress bg-body-secondary" role="progressbar" aria-valuenow="<%= next_modules_pct %>" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress bg-body-secondary" role="progressbar" aria-label="<%= t('common.names.progress_modules') %>" aria-valuenow="<%= next_modules_pct %>" aria-valuemin="0" aria-valuemax="100">
                                       <div class="progress-bar bg-info" style="width: <%= next_modules_pct %>%"></div>
                                     </div>
                                   </div>
