@@ -354,11 +354,20 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       expect(json["space_list"]).to eq([[space.name, space.id]])
     end
 
-    it "lists an assigned space once even when it is assigned twice" do
+    it "lists each of two different assigned spaces once" do
+      StaffSpace.where(user: staff).destroy_all
+      StaffSpace.create!(user: staff, space: space)
       StaffSpace.create!(user: staff, space: other_space)
       get staff_dashboard_index_path
-      options = Nokogiri::HTML(response.body).css("select#set_space_id option").map { |o| o["value"] }
+      options = Nokogiri::HTML(response.body).css("select#set_space_id option").map { |o| o["value"] }.compact_blank
       expect(options.sort).to eq([space.id, other_space.id].map(&:to_s).sort)
+    end
+
+    it "refuses a second identical space assignment" do
+      StaffSpace.where(user: staff).destroy_all
+      StaffSpace.create!(user: staff, space: space)
+      expect { StaffSpace.create!(user: staff, space: space) }.to raise_error(ActiveRecord::RecordNotUnique)
+      expect(StaffSpace.where(user: staff, space: space).count).to eq(1)
     end
 
     it "shows the current space selected even when unassigned, and switching to it succeeds" do

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_190000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1521,6 +1521,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_190000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["space_id", "user_id"], name: "idx_staff_spaces_space_user"
+    t.index ["user_id", "space_id"], name: "index_staff_spaces_on_user_id_and_space_id", unique: true
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
   end
 
