@@ -6,6 +6,7 @@ en:
   admin:
     users:
       invalid_parameters: "Invalid parameters!"
+      search_by: "Search by..."
       search_query_missing: "Enter a name or email to search."
     retired_programs:
       heading: "Retired programs"
@@ -77,6 +78,7 @@ fr:
   admin:
     users:
       invalid_parameters: "Paramètres invalides!"
+      search_by: "Rechercher par..."
       search_query_missing: "Saisissez un nom ou un courriel à rechercher."
     retired_programs:
       heading: "Programmes retirés"
