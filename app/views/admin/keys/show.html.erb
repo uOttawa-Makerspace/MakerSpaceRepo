@@ -129,7 +129,7 @@
           <div class="mb-5">
             <h5><%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
             <div class="ratio ratio-16x9">
-              <iframe class="key-cert-iframe" src="<%= url_for(@key.display_user.key_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
+              <iframe class="key-cert-iframe" title="<%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>" src="<%= url_for(@key.display_user.key_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
             </div>
           </div>
         <% else %>
@@ -149,7 +149,7 @@
           <div class="mb-5">
             <h5><%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>:</h5>
             <div class="ratio ratio-16x9">
-              <iframe class="key-cert-iframe" src="<%= url_for(@key.display_user.key_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
+              <iframe class="key-cert-iframe" title="<%= KeyCertification::FILE_NAMES[i - 1].gsub('-', ' ').humanize %>" src="<%= url_for(@key.display_user.key_certification.send("pdf_file_#{i}")) %>" allowfullscreen></iframe>
             </div>
           </div>
         <% else %>

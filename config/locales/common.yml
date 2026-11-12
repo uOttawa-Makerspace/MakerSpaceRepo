@@ -97,6 +97,9 @@ en:
       video_thumbnail: "Video thumbnail"
       thumbnail_number: "Thumbnail %{number}"
       clear_search: "Clear search"
+      video_frame: "Video: %{title}"
+      ceed_calendar_frame: "Calendar of events at CEED facilities"
+      wiki_resource_frame: "Wiki resource for %{title}"
   semester:
     fall: "Fall"
     winter: "Winter"
@@ -200,6 +203,9 @@ fr:
       video_thumbnail: "Vignette de la vidéo"
       thumbnail_number: "Vignette %{number}"
       clear_search: "Effacer la recherche"
+      video_frame: "Vidéo : %{title}"
+      ceed_calendar_frame: "Calendrier des événements des installations du CEED"
+      wiki_resource_frame: "Ressource du wiki pour %{title}"
   semester:
     fall: "Automne"
     winter: "Hiver"

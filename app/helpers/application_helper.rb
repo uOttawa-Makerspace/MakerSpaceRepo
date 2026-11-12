@@ -216,8 +216,8 @@ module ApplicationHelper
     curr_page.empty? ? base_title : curr_page + " | " + base_title
   end
 
-  def youtube_video(url)
-    render partial: "partials/streaming", locals: { url: url }
+  def youtube_video(url, title)
+    render partial: "partials/streaming", locals: { url: url, title: title }
   end
 
   def load_rakes
