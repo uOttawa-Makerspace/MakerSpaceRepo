@@ -34,10 +34,22 @@ RSpec.describe "Translated templates" do
     stripped.gsub(/<[^>]*>/m, " ").gsub(/&\w+;/, " ").split(/\s+/).grep(/[[:alpha:]]/) - ALLOWED_LITERALS
   end
 
-  # A quoted English string handed to a helper that renders it, such as link_to 'Text', path.
+  # Text-bearing HTML attributes written out in the markup, such as alt="Logo" or placeholder="Email".
+  def literal_attributes(source)
+    markup = source.gsub(/<%#.*?%>/m, "").gsub(/<%.*?%>/m, "")
+    markup.scan(/\b(?:alt|title|aria-label|placeholder|value|label)=(["'])([^"']*[A-Za-z]{2}[^"']*)\1/).map(&:last) - ALLOWED_LITERALS
+  end
+
+  # A quoted English string handed to a helper that renders it: link_to 'Text', path; tag.p 'Text';
+  # content_tag :p, 'Text'; placeholder: 'Text'; or t('key', default: 'Text').
+  LITERAL_ARGUMENT = /
+    (?:link_to|button_to|label_tag|submit_tag|provide|tag\.\w+|content_tag|
+       (?:placeholder|title|alt|value|label|aria-label|default):)
+    \s*\(?\s*(?::\w+,\s*)?(['"])([^'"]*[A-Za-z]{2}[^'"]*)\1
+  /x
+
   def literal_arguments(source)
-    source.scan(/(?:link_to|button_to|label_tag|submit_tag|provide|placeholder:|title:|aria-label:)\s*\(?[:\w]*,?\s*(['"])([^'"]*[A-Za-z]{2}[^'"]*)\1/)
-      .map(&:last).reject { |text| ALLOWED_LITERALS.include?(text) || text.match?(%r{\A(https?:|/|#)}) }
+    source.scan(LITERAL_ARGUMENT).map(&:last).reject { |text| ALLOWED_LITERALS.include?(text) || text.match?(%r{\A(https?:|/|#)}) }
   end
 
   TRANSLATED_TEMPLATES.each do |path|
@@ -45,6 +57,7 @@ RSpec.describe "Translated templates" do
       source = Rails.root.join(path).read
 
       expect(visible_literals(source)).to eq([])
+      expect(literal_attributes(source)).to eq([])
       expect(literal_arguments(source)).to eq([])
     end
   end
