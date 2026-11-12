@@ -39,6 +39,22 @@ class Printer < ApplicationRecord
     PrinterSession.order(created_at: :desc).where(printer_id: printer_id).first
   end
 
+  # Opens an in-use session for the user and closes the printer's previous one, in one
+  # transaction that holds the printer's row lock, so two assignments cannot both close the
+  # same previous session and leave two sessions in use.
+  def assign_to!(user)
+    with_lock do
+      previous = Printer.get_last_number_session(id)
+      printer_sessions.build(user: user, in_use: true).save!
+      previous.update!(in_use: false) if previous&.in_use?
+    end
+  end
+
+  # Closes the printer's last session (a printer that never had one has nothing to close).
+  def release!
+    with_lock { Printer.get_last_number_session(id)&.update!(in_use: false) }
+  end
+
   def active_printer_issues
     printer_issues.where(active: true)
   end

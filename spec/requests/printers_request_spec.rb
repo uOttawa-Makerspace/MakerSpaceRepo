@@ -280,6 +280,19 @@ RSpec.describe "Printers", type: :request do
       expect(json).to eq([["alert", "Please add both printer and user."]])
     end
 
+    it "refuses an unknown printer or user with its own alert and creates nothing" do
+      expect do
+        patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: 0, user_id: user.id } }
+        expect(response).to have_http_status(:bad_request)
+        expect(json).to eq([["alert", I18n.t("errors.printers.printer_not_found")]])
+        link(0)
+        expect(response).to have_http_status(:bad_request)
+        expect(json).to eq([["alert", I18n.t("errors.printers.user_not_found")]])
+        patch link_printer_to_user_printers_path(format: :json), params: { printer: { printer_id: 0, user_id: "clear" } }
+        expect(json).to eq([["alert", I18n.t("errors.printers.printer_not_found")]])
+      end.not_to change(PrinterSession, :count)
+    end
+
     it "redirects HTML requests to the staff printers page" do
       link(user.id, format: :html)
       expect(response).to redirect_to(staff_printers_printers_path)

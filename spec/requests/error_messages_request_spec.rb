@@ -215,7 +215,10 @@ RSpec.describe "Error messages", type: :request do
     end
 
     it "names a session that could not be saved" do
-      refuse_writes(PrinterSession, :save)
+      allow_any_instance_of(PrinterSession).to receive(:save!) do |record|
+        record.errors.add(:base, "Refused for the spec")
+        raise ActiveRecord::RecordInvalid, record
+      end
       link(create(:user, :regular_user).id)
       expect(JSON.parse(response.body)).to eq([["alert", "The printer was not linked to the user. Refused for the spec"]])
     end
