@@ -17,8 +17,8 @@
             </div>
         </div>
         <div class="form-group my-3">
-            <%= f.label :description, value: 'Issue description (optional)', class: 'form-label' %>
-            <%= f.trix_editor :description, class: 'form-control' %>
+            <%= f.label :description, 'Issue description (optional)', id: 'printer_issue_description_label', class: 'form-label' %>
+            <%= f.trix_editor :description, class: 'form-control', aria: { labelledby: 'printer_issue_description_label' } %>
         </div>
         <%= f.submit 'Submit issue', class: 'btn btn-primary' %>
         <%= link_to 'Back', printer_issues_path, class: 'btn btn-secondary float-end' %>

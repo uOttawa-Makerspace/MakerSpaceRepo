@@ -17,8 +17,8 @@
           <div class="row">
             <div class="col-md-12">
               <div class="mb-3">
-                <%= f.label :name, 'Select a Space or enter a custom name', class: 'form-label' %>
-                <%= f.select :space_id, options_from_collection_for_select(Space.all, :id, :name), {}, class: 'form-select form-control' %>
+                <%= f.label :space_id, 'Select a Space or enter a custom name', id: 'contact_info_space_label', class: 'form-label' %>
+                <%= f.select :space_id, options_from_collection_for_select(Space.all, :id, :name), {}, class: 'form-select form-control', aria: { labelledby: 'contact_info_space_label' } %>
               </div>
 
               <div class="mb-3 form-floating">
@@ -48,17 +48,17 @@
 
               <div class="mb-3">
                 <%= f.fields_for :opening_hours do |h| %>
-                  <%= h.label :target_en, 'Target Audience (English)', class: 'form-label' %>
-                  <%= h.trix_editor :target_en, class: 'repo form-control', style: 'height: auto!important;' %>
+                  <%= h.label :target_en, 'Target Audience (English)', id: h.field_id(:target_en, :label), class: 'form-label' %>
+                  <%= h.trix_editor :target_en, class: 'repo form-control', style: 'height: auto!important;', aria: { labelledby: h.field_id(:target_en, :label) } %>
 
-                  <%= h.label :target_fr, 'Target Audience (French)', class: 'form-label' %>
-                  <%= h.trix_editor :target_fr, class: 'repo form-control', style: 'height: auto!important;' %>
+                  <%= h.label :target_fr, 'Target Audience (French)', id: h.field_id(:target_fr, :label), class: 'form-label' %>
+                  <%= h.trix_editor :target_fr, class: 'repo form-control', style: 'height: auto!important;', aria: { labelledby: h.field_id(:target_fr, :label) } %>
 
-                  <%= h.label :notes_en, 'Notes (English)', class: 'form-label' %>
-                  <%= h.trix_editor :notes_en, class: 'repo form-control', style: 'height: auto!important;' %>
+                  <%= h.label :notes_en, 'Notes (English)', id: h.field_id(:notes_en, :label), class: 'form-label' %>
+                  <%= h.trix_editor :notes_en, class: 'repo form-control', style: 'height: auto!important;', aria: { labelledby: h.field_id(:notes_en, :label) } %>
 
-                  <%= h.label :notes_fr, 'Notes (French)', class: 'form-label' %>
-                  <%= h.trix_editor :notes_fr, class: 'repo form-control', style: 'height: auto!important;' %>
+                  <%= h.label :notes_fr, 'Notes (French)', id: h.field_id(:notes_fr, :label), class: 'form-label' %>
+                  <%= h.trix_editor :notes_fr, class: 'repo form-control', style: 'height: auto!important;', aria: { labelledby: h.field_id(:notes_fr, :label) } %>
                 <% end %>
               </div>
 

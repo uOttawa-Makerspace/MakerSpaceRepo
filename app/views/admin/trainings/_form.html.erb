@@ -40,8 +40,10 @@
 
         <div class="mb-3">
             <h4>List of Skills</h4>
-                <%= f.select :list_of_skills_en, Training.all_skills_en, { multiple: true, selected: @skills_en } %>
-                <%= f.select :list_of_skills_fr, Training.all_skills_fr, { multiple: true, selected: @skills_fr } %>
+                <%= f.label :list_of_skills_en, t('admin.training.los_en'), id: 'training_list_of_skills_en_label', class: 'form-label' %>
+                <%= f.select :list_of_skills_en, Training.all_skills_en, { multiple: true, selected: @skills_en }, { aria: { labelledby: 'training_list_of_skills_en_label' } } %>
+                <%= f.label :list_of_skills_fr, t('admin.training.los_fr'), id: 'training_list_of_skills_fr_label', class: 'form-label' %>
+                <%= f.select :list_of_skills_fr, Training.all_skills_fr, { multiple: true, selected: @skills_fr }, { aria: { labelledby: 'training_list_of_skills_fr_label' } } %>
         </div>
 
         <div class="col-md-12 form-group my-3 text-center">

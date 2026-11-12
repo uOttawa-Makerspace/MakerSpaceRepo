@@ -22,8 +22,8 @@
                                     </p>
                                     <%= form_with model: @locker_rental do |f| %>
                                         <%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
-                                        <%= f.select :locker_id, @locker_select_options, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true } %>
-                                        <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control mb-2', id: 'owned_until_checkout' %>
+                                        <%= f.select :locker_id, @locker_select_options, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true, aria: { label: t('common.names.locker') } } %>
+                                        <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control mb-2', id: 'owned_until_checkout', aria: { label: t('common.names.owned_until') } %>
                                         <div class="form-check mb-2 text-start">
                                           <%= check_box_tag 'locker_rental[indefinite]', '1', false, class: 'form-check-input', id: 'indefinite_checkout', data: { indefinite_target: 'owned_until_checkout' } %>
                                           <%= label_tag 'indefinite_checkout', 'Indefinite', class: 'form-check-label small' %>
@@ -49,8 +49,8 @@
                             </p>
                             <%= form_with model: @locker_rental do |f| %>
                                 <%= hidden_field_tag :expected_state, @locker_rental.state, id: nil %>
-                                <%= f.select :locker_id, @locker_select_options, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true } %>
-                                <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control mb-2', id: 'owned_until_assign' %>
+                                <%= f.select :locker_id, @locker_select_options, { include_blank: 'Select a locker' }, { class: 'form-select mb-2', required: true, aria: { label: t('common.names.locker') } } %>
+                                <%= f.date_field :owned_until, value: @locker_rental.owned_until || end_of_this_semester, class: 'form-control mb-2', id: 'owned_until_assign', aria: { label: t('common.names.owned_until') } %>
                                 <div class="form-check mb-2 text-start">
                                   <%= check_box_tag 'locker_rental[indefinite]', '1', @locker_rental.indefinite?, class: 'form-check-input', id: 'indefinite_assign', data: { indefinite_target: 'owned_until_assign' } %>
                                   <%= label_tag 'indefinite_assign', 'Indefinite', class: 'form-check-label small' %>

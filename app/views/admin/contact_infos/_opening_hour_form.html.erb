@@ -28,7 +28,7 @@
                         <%# To remove the seconds and milliseconds option%>
                         <div class="col-2">
                             <%#%= h.label "#{day}_closed_all_day", 'Closed all day?'.humanize, class: 'form-label' %>
-                            <%= h.select "#{day}_closed_all_day", OpeningHour.defined_enums["#{day}_closed_all_day"].keys, {}, { class: 'form-select w-auto' } %>
+                            <%= h.select "#{day}_closed_all_day", OpeningHour.defined_enums["#{day}_closed_all_day"].keys, {}, { class: 'form-select w-auto', aria: { label: t('common.names.closed_all_day', day: day.to_s.humanize) } } %>
                         </div>
                         <%= h.label "#{day}_opening", day.to_s.humanize, class: 'form-label col-3' %>
                         <fieldset class="col-7 row row-cols-3" data-toggled-by="#<%= h.field_id("#{day}_closed_all_day", index: nil) %>">
@@ -48,12 +48,12 @@
         </fieldset>
         <div class="row row-cols-lg-2 my-3">
             <div>
-                <%= h.label :notes_en, 'English footer notes', class: 'form-label' %>
-                <%= h.trix_editor :notes_en, class: 'form-control' %>
+                <%= h.label :notes_en, 'English footer notes', id: h.field_id(:notes_en, :label), class: 'form-label' %>
+                <%= h.trix_editor :notes_en, class: 'form-control', aria: { labelledby: h.field_id(:notes_en, :label) } %>
             </div>
             <div>
-                <%= h.label :notes_fr, 'French footer notes', class: 'form-label' %>
-                <%= h.trix_editor :notes_fr, class: 'form-control' %>
+                <%= h.label :notes_fr, 'French footer notes', id: h.field_id(:notes_fr, :label), class: 'form-label' %>
+                <%= h.trix_editor :notes_fr, class: 'form-control', aria: { labelledby: h.field_id(:notes_fr, :label) } %>
             </div>
         </div>
     <% end %>

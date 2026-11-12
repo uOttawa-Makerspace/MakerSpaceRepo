@@ -5,7 +5,7 @@
   <br>
   <div class="search-form">
     <%= form_tag search_admin_users_path, method: :get do %>
-      <%= select_tag 'filter', options_for_select(%w[Name Email Username]), prompt: 'Search by...' %>
+      <%= select_tag 'filter', options_for_select(%w[Name Email Username]), prompt: 'Search by...', aria: { label: t('common.names.search_by') } %>
       <%= text_field_tag 'q', nil, placeholder: 'Search users...', class: 'profile-text' %>
       <%= submit_tag 'Search', class: 'save-button' %>
     <% end %>
@@ -94,7 +94,7 @@
       <!-- pagination code ends -->
 
       <br><br>
-      <%= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt: 'Add a certification to selected users...' %>
+      <%= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt: 'Add a certification to selected users...', aria: { label: t('common.names.certification_to_add') } %>
       <%= submit_tag 'Add', class: 'save-button' %>
     <% end %>
   <% elsif @query.present? %>

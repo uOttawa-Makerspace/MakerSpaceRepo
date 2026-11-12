@@ -5,10 +5,10 @@
     <div class="row">
       <div class="col-xl-6 offset-xl-3 col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
         <div class="mb-5">
-          <label for="deposit_return_date">Deposit Return Date - $<%= @key.get_latest_key_transaction.deposit_amount %></label>
+          <label for="deposit-return-date">Deposit Return Date - $<%= @key.get_latest_key_transaction.deposit_amount %></label>
           <div class="input-group">
             <%= text_field_tag :deposit_return_date, (Time.zone.today.to_s if @key.get_latest_key_transaction.deposit_amount.zero?), id: 'deposit-return-date', autocomplete: 'off', class: 'form-control inanimate', required: true %>
-            <button class="btn btn-danger" id="deposit-return-date-clear" type="button">
+            <button class="btn btn-danger" id="deposit-return-date-clear" type="button" aria-label="<%= t('common.names.clear_deposit_return_date') %>">
               <i class="fa fa-times"></i>
             </button>
           </div>

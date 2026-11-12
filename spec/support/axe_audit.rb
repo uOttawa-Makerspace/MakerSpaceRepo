@@ -36,10 +36,12 @@ module AxeAudit
 
     def strict? = !ENV["AXE_STRICT"].to_s.match?(/\A(0|false|no)\z/i)
 
-    def run(page)
+    # `only:` restricts the audit to the named axe rule ids (for focused specs).
+    def run(page, only: nil)
       started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       Axe::Configuration.instance.legacy_mode = true
-      run = Axe::API::Run.new.according_to(*TAGS).excluding(*EXCLUDED).skipping(*SKIPPED_RULES)
+      run = Axe::API::Run.new.excluding(*EXCLUDED)
+      run = only ? run.checking_only(*only) : run.according_to(*TAGS).skipping(*SKIPPED_RULES)
       Axe::Core.new(page).call(run).results.violations
     ensure
       @seconds += Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
@@ -87,10 +89,10 @@ module AxeAudit
     expect(page).to have_no_css(LOADING_MARKERS)
   end
 
-  def audit_accessibility(label = nil)
+  def audit_accessibility(label = nil, only: nil)
     wait_for_page_settled
     path = URI.parse(page.current_url).request_uri
-    found = AxeAudit.record(AxeAudit.run(page), path, label)
+    found = AxeAudit.record(AxeAudit.run(page, only: only), path, label)
     return if found.empty? || !AxeAudit.strict?
 
     raise "axe: #{found.size} accessibility violation(s) on #{path}:\n" +
