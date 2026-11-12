@@ -157,15 +157,19 @@ RSpec.describe RecurringSeries do
       expect(times(starting(zulu, at(2027, 3, 1), at(2027, 4, 1))).size).to eq(2)
     end
 
+    it "leaves a UNTIL with Z alone, whatever the time" do
+      zulu = series("RRULE:FREQ=DAILY;UNTIL=20270304T110000Z", at(2027, 3, 1, 6), at(2027, 3, 1, 7))
+      expect(times(starting(zulu, at(2027, 3, 1), at(2027, 4, 1))).size).to eq(4)
+    end
+
     it "takes a VALUE=DATE exclusion as that day's midnight" do
       all_day = series("RRULE:FREQ=DAILY;COUNT=3\nEXDATE;VALUE=DATE:20270314", at(2027, 3, 13), at(2027, 3, 14))
       expect(times(starting(all_day, at(2027, 3, 1), at(2027, 4, 1)))).to eq(%w[2027-03-13T00:00:00-05:00 2027-03-15T00:00:00-04:00])
     end
 
-    it "keeps elapsed time for an HOURLY rule stored before validation, across the fall-back hour" do
-      hourly = series("RRULE:FREQ=HOURLY;COUNT=3", at(2027, 11, 7, 0), at(2027, 11, 7, 0, 30))
-      expect(times(starting(hourly, at(2027, 11, 1), at(2027, 12, 1))))
-        .to eq(%w[2027-11-07T00:00:00-04:00 2027-11-07T01:00:00-04:00 2027-11-07T01:00:00-05:00])
+    it "refuses a rule finer than daily when the series is built" do
+      expect { series("RRULE:FREQ=HOURLY;COUNT=3", at(2027, 11, 7, 0), at(2027, 11, 7, 0, 30)) }
+        .to raise_error(described_class::UnsupportedRule, /HOURLY/)
     end
 
     it "raises for a rule the library cannot read" do

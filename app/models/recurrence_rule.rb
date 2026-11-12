@@ -11,6 +11,7 @@ class RecurrenceRule
   STAMP = "%Y%m%dT%H%M%SZ"
   WALL_STAMP = "%Y%m%dT%H%M%S"
   ZONE = ActiveSupport::TimeZone["America/Toronto"]
+  EXDATE_VALUE = /\A\d{8}(T\d{6}Z?)?\z/
 
   # The instant of a DTSTART line, or nil when it has none or cannot be read
   # (readers then fall back to the series start).
@@ -42,6 +43,32 @@ class RecurrenceRule
   end
   private_class_method :parse_start
 
+  # Non-blank lines, each stripped (CRLF and leading whitespace tolerated). The
+  # validator, rule_body and the controllers' parser all read lines this way.
+  def self.lines(value)
+    value.to_s.split("\n").filter_map { |line| line.strip.presence }
+  end
+
+  # The bare rule body ("FREQ=DAILY;COUNT=3") of a stored value, which may carry an
+  # RRULE: prefix and DTSTART/EXDATE lines.
+  def self.rule_body(rule_string)
+    line = lines(rule_string).find { |l| l.start_with?("RRULE:") } || "RRULE:#{rule_string}"
+    line.gsub("RRULE:", "").strip
+  end
+
+  # Epoch seconds of every EXDATE value in a stored rule (a line may list
+  # several, comma separated). A stamp ending in Z is an instant; one without
+  # is wall-clock time in the line's TZID, or in Toronto when it names none
+  # (as the calendar views read it). A plain date (VALUE=DATE) is that day's
+  # midnight in the zone. Any other value is skipped.
+  def self.exdate_instants(rule_string)
+    lines(rule_string).grep(/\AEXDATE/).flat_map do |line|
+      params, values = line.delete_prefix("EXDATE").split(":", 2)
+      zone = ActiveSupport::TimeZone[params.to_s[/TZID=([^;:]+)/, 1].to_s] || ZONE
+      values.to_s.split(",").filter_map { |value| value.strip.match?(EXDATE_VALUE) ? zone.parse(value.strip).to_i : nil }
+    end.to_set
+  end
+
   # `series_start` stands in for a rule stored without a DTSTART.
   def initialize(text, series_start)
     @text = text
@@ -53,7 +80,7 @@ class RecurrenceRule
   # series start, then the other lines with every UTC stamp (UNTIL, EXDATE)
   # in Toronto wall-clock time, so a series ends on its last Toronto day.
   def in_toronto_time
-    lines = RecurrenceExpansion.lines(@text).reject { |l| l.start_with?("DTSTART") }
+    lines = self.class.lines(@text).reject { |l| l.start_with?("DTSTART") }
     (["DTSTART:#{wall_stamp(@series_start)}"] + lines.map { |l| in_wall_time(l) }).join("\n")
   end
 
@@ -94,7 +121,7 @@ class RecurrenceRule
   # The bare RRULE body, the DTSTART as a UTC time (nil when there is none) and
   # the other lines of a stored rule.
   def parts(text)
-    lines = RecurrenceExpansion.lines(text)
+    lines = self.class.lines(text)
     rrule = lines.find { |l| l.start_with?("RRULE:") }&.delete_prefix("RRULE:")
     dtstart = lines.find { |l| l.start_with?("DTSTART") }
     [rrule, dtstart && self.class.start_of(dtstart)&.utc, lines.reject { |l| l.start_with?("RRULE:", "DTSTART") }]

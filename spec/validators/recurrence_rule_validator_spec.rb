@@ -103,7 +103,7 @@ RSpec.describe RecurrenceRuleValidator do
     expect(RecurrenceRule.new(rule, nil).without_occurrence(Time.utc(2027, 3, 2, 15))).to eq(
       "DTSTART;TZID=America/Toronto:20270301T100000\nRRULE:FREQ=DAILY;COUNT=2\nEXDATE:20270302T150000Z"
     )
-    expect(RecurrenceExpansion.rule_body(rule)).to eq("FREQ=DAILY;COUNT=2")
+    expect(RecurrenceRule.rule_body(rule)).to eq("FREQ=DAILY;COUNT=2")
   end
 
   it "accepts a rule whose start is a UTC stamp or Toronto wall-clock time" do

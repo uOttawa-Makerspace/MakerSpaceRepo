@@ -28,14 +28,17 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
 
   MAX_LENGTH = 2000
   TOO_LONG = "is too long (maximum is #{MAX_LENGTH} characters)"
-  FORBIDDEN_PARTS = %w[BYHOUR BYMINUTE BYSECOND BYSETPOS].freeze
-  # The repeat library accepts these parts without checking their numbers or, for
-  # BYWEEKNO, stored rules have never allowed them.
-  UNSUPPORTED_PARTS = %w[BYWEEKNO].freeze
+  # Part => the message for a rule that has it. BYWEEKNO is something stored rules have
+  # never allowed; the others multiply daily occurrences.
+  PART_ERRORS = { "BYWEEKNO" => UNPARSEABLE, "BYHOUR" => MESSAGE, "BYMINUTE" => MESSAGE,
+                  "BYSECOND" => MESSAGE, "BYSETPOS" => MESSAGE }.freeze
+  # FREQ => the message for it, or nil when allowed; any other FREQ is unparseable.
+  FREQUENCIES = { "DAILY" => nil, "WEEKLY" => nil, "MONTHLY" => nil, "YEARLY" => nil,
+                  "SECONDLY" => MESSAGE, "MINUTELY" => MESSAGE, "HOURLY" => MESSAGE }.freeze
+  # The repeat library accepts these parts without checking their numbers.
   NUMBER_RANGES = { "BYMONTH" => 1..12, "BYMONTHDAY" => 1..31, "BYYEARDAY" => 1..366 }.freeze
 
-  # nil when valid, else the message. The frequency is taken from the PARSED rule
-  # (its last FREQ), never from a regex over the text.
+  # nil when valid, else the message.
   def self.error_for(value)
     value = value.to_s
     return TOO_LONG if value.length > MAX_LENGTH
@@ -43,34 +46,26 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
     bodies = rule_bodies(value)
     return UNPARSEABLE if bodies.empty? || !readable_starts?(value)
 
-    bodies.each do |body|
-      error = body_error(body)
-      return error if error
-    end
-    nil
+    bodies.filter_map { |body| body_error(body) }.first
   end
 
   # nil when one RRULE body is allowed, else the message.
   def self.body_error(body)
-    keys = body.split(";").map { |part| part.split("=", 2).first.to_s.strip.upcase }
-    return UNPARSEABLE unless keys.include?("FREQ")
-    return UNPARSEABLE if keys.count("FREQ") > 1 || keys.intersect?(UNSUPPORTED_PARTS)
-    return MESSAGE if keys.intersect?(FORBIDDEN_PARTS)
+    parts = body.split(";").map { |part| part.split("=", 2).map(&:strip).then { |k, v| [k.to_s.upcase, v.to_s] } }
+    return UNPARSEABLE unless parts.count { |key, _| key == "FREQ" } == 1
 
-    frequency_error(body)
+    parts.filter_map { |key, _| PART_ERRORS[key] }.first || value_error(parts.to_h, body)
   end
 
-  def self.frequency_error(body)
-    parts = body.split(";").to_h { |part| part.split("=", 2).map(&:strip) }
-    return UNPARSEABLE unless parts["FREQ"].to_s.match?(/\A[A-Z]+\z/)
-    return MESSAGE unless ALLOWED_FREQUENCIES.include?(parts["FREQ"])
-
-    UNPARSEABLE unless numbers_in_range?(parts) && readable?(body)
+  # The message for the frequency or a number the repeat library would take without checking, else nil.
+  def self.value_error(values, body)
+    FREQUENCIES.fetch(values["FREQ"], UNPARSEABLE) || (UNPARSEABLE unless numbers_in_range?(values) && readable?(body))
   end
 
-  def self.numbers_in_range?(parts)
+  # Every part with an allowed range has only numbers inside it.
+  def self.numbers_in_range?(values)
     NUMBER_RANGES.all? do |key, range|
-      parts[key].to_s.split(",").all? { |n| n.match?(/\A-?\d+\z/) && range.cover?(n.to_i.abs) }
+      values[key].to_s.split(",").all? { |n| range.cover?(Integer(n, 10, exception: false).to_i.abs) }
     end
   end
 
@@ -84,13 +79,13 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
 
   # Every DTSTART line must be a start the series edits (RecurrenceRule) can read.
   def self.readable_starts?(value)
-    RecurrenceExpansion.lines(value).select { |l| l.start_with?("DTSTART") }.all? { |l| RecurrenceRule.readable_start?(l) }
+    RecurrenceRule.lines(value).select { |l| l.start_with?("DTSTART") }.all? { |l| RecurrenceRule.readable_start?(l) }
   end
 
   # The RRULE: lines (what the forms produce), stripped like the controllers' parser.
   # A value with no RRULE: line yields no bodies, so it is rejected.
   def self.rule_bodies(value)
-    RecurrenceExpansion.lines(value).select { |l| l.start_with?("RRULE:") }
+    RecurrenceRule.lines(value).select { |l| l.start_with?("RRULE:") }
                        .map { |l| l.delete_prefix("RRULE:").strip }
   end
 end

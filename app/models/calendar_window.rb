@@ -7,7 +7,6 @@
 class CalendarWindow
   MAX_SPAN = 100.days
   ZONE = RecurrenceRule::ZONE
-  OFFSET = /T.*(Z|[+-]\d{2}:?\d{2})\z/i
 
   class Invalid < StandardError; end
 
@@ -17,11 +16,10 @@ class CalendarWindow
     new(instant(start_param), instant(end_param))
   end
 
+  # ZONE.parse reads an offset or Z as that instant, and a value without one as Toronto wall time.
   def self.instant(value)
-    text = value.to_s.strip
-    # A blank value parses to nil, which the rescue below reports like any unreadable one.
-    (text.match?(OFFSET) ? Time.iso8601(text) : ZONE.parse(text)).in_time_zone(ZONE)
-  rescue ArgumentError, NoMethodError
+    ZONE.parse(value.to_s.strip).in_time_zone(ZONE)
+  rescue ArgumentError, NoMethodError # a blank value parses to nil
     raise Invalid, I18n.t("errors.calendar.window_invalid")
   end
   private_class_method :instant

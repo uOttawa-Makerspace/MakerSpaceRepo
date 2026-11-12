@@ -37,7 +37,7 @@ RSpec.describe CalendarHelper, type: :helper do
   # The occurrences the server's own engine (used by the staff calendar and the shifts API) gives for a rule text, in
   # Toronto time, starting at the Toronto wall time `from`.
   def server_occurrences(rule, start, count: 12)
-    RecurrenceExpansion.occurrences(rule, start, start, start + 200.days, count).occurrences
+    series_starts(rule, start, start, start + 200.days, count)
   end
 
   def starts(times) = times.map { |time| time.in_time_zone(toronto).strftime("%Y-%m-%dT%H:%M") }

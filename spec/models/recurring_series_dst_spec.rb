@@ -2,16 +2,16 @@
 
 require "rails_helper"
 
-# RecurrenceExpansion across the America/Toronto DST changes. A
+# RecurringSeries reading a stored rule across the America/Toronto DST changes. A
 # DAILY/WEEKLY/MONTHLY/YEARLY rule repeats a wall-clock time:
 #   spring-forward 2027-03-14: 02:30 does not exist and moves forward to 03:30 EDT;
 #   fall-back 2026-11-01: 01:30 happens twice and is listed once, at the first
 #   (EDT) instant. a plain walk of the wall clock would list it twice and count both against COUNT.
-RSpec.describe RecurrenceExpansion do
+RSpec.describe RecurringSeries, "stored rules" do
   let(:zone) { ActiveSupport::TimeZone["Eastern Time (US & Canada)"] }
 
   def local(*parts) = zone.local(*parts)
-  def starts(rule, start, from, to, limit = 500) = described_class.occurrences(rule, start, from, to, limit).occurrences.map(&:iso8601)
+  def starts(rule, start, from, to, limit = 500) = series_starts(rule, start, from, to, limit).map(&:iso8601)
 
   describe "spring-forward (2027-03-14)" do
     it "moves a nonexistent 02:30 forward to 03:30 EDT on the day of the change only" do
@@ -87,9 +87,11 @@ RSpec.describe RecurrenceExpansion do
       end
     end
 
-    it "leaves an HOURLY legacy rule's elapsed hours alone (both 01:00 hours are real)" do
-      expect(starts("RRULE:FREQ=HOURLY;COUNT=3", local(2026, 11, 1, 0, 0), local(2026, 10, 1), local(2026, 12, 1)))
-        .to eq(%w[2026-11-01T00:00:00-04:00 2026-11-01T01:00:00-04:00 2026-11-01T01:00:00-05:00])
+    it "refuses a rule finer than daily (no stored rule has one), without walking it" do
+      %w[HOURLY MINUTELY SECONDLY].each do |freq|
+        expect { series_starts("RRULE:FREQ=#{freq};COUNT=3", local(2026, 11, 1, 0, 0), local(2026, 10, 1), local(2026, 12, 1), 5) }
+          .to raise_error(RecurringSeries::UnsupportedRule, /#{freq}/)
+      end
     end
   end
 
@@ -113,17 +115,17 @@ RSpec.describe RecurrenceExpansion do
       from = local(2026, 11, 2)
       days_before = ((from - start) / 1.day).ceil # 1096
       result = nil
-      steps = rule_steps { result = described_class.occurrences("RRULE:FREQ=DAILY;COUNT=100000", start, from, from + 300.years, 500) }
+      steps = rule_steps { result = series_result("RRULE:FREQ=DAILY;COUNT=100000", start, from, from + 300.years, 500) }
       expect(result.occurrences.size).to eq(500)
       expect(result.truncated).to be(true)
-      expect(result.occurrences.first.iso8601).to eq("2026-11-02T09:00:00-05:00")
+      expect(result.occurrences.first.starts_at.iso8601).to eq("2026-11-02T09:00:00-05:00")
       expect(steps).to be <= days_before + 501 + 2 # eager: ~100000
     end
   end
 
   it "still stops at the limit and reports truncation" do
-    result = described_class.occurrences("RRULE:FREQ=DAILY", local(2026, 10, 25, 1, 30), local(2026, 10, 25), local(2026, 12, 1), 3)
-    expect(result.occurrences.map(&:iso8601)).to eq(%w[2026-10-25T01:30:00-04:00 2026-10-26T01:30:00-04:00 2026-10-27T01:30:00-04:00])
+    result = series_result("RRULE:FREQ=DAILY", local(2026, 10, 25, 1, 30), local(2026, 10, 25), local(2026, 12, 1), 3)
+    expect(result.occurrences.map { |o| o.starts_at.iso8601 }).to eq(%w[2026-10-25T01:30:00-04:00 2026-10-26T01:30:00-04:00 2026-10-27T01:30:00-04:00])
     expect(result.truncated).to be(true)
   end
 
@@ -165,8 +167,8 @@ RSpec.describe RecurrenceExpansion do
 
     it "applies to a rule without COUNT and counts truncation after the exclusion" do
       rule = "RRULE:FREQ=DAILY\nEXDATE:20270105T150000Z"
-      result = described_class.occurrences(rule, start, start, start + 5.days, 2)
-      expect(result.occurrences.map(&:iso8601)).to eq(%w[2027-01-04T10:00:00-05:00 2027-01-06T10:00:00-05:00])
+      result = series_result(rule, start, start, start + 5.days, 2)
+      expect(result.occurrences.map { |o| o.starts_at.iso8601 }).to eq(%w[2027-01-04T10:00:00-05:00 2027-01-06T10:00:00-05:00])
       expect(result.truncated).to be(true)
     end
   end

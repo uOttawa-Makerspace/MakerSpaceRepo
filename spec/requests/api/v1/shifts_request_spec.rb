@@ -163,29 +163,33 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
       steps
     end
 
+    # No stored rule is finer than daily (the validator refuses them), so the series refuses one instead of
+    # stepping through it: the failure is reported with the event id and the event is shown once.
     %w[MINUTELY SECONDLY].each do |freq|
-      it "caps a FREQ=#{freq} event per event, quickly, and flags the truncation" do
-        stored_shift("FREQ=#{freq}")
+      it "refuses a FREQ=#{freq} event without stepping through it, reports it and shows the event once" do
+        ev = stored_shift("FREQ=#{freq}")
+        allow(Rails.error).to receive(:report).and_call_original
         steps = rule_steps { shifts(wide) }
         expect(response).to have_http_status(:ok)
-        expect(body.size).to eq(500)
-        expect(response.headers["X-Truncated"]).to eq("true")
-        expect(body.first.keys).to eq(%w[id title start end allDay extendedProps])
-        expect(steps).to be <= 20_000 # the gem steps in batches (18,501 for SECONDLY); unbounded is 144k (MINUTELY) and 8.6M (SECONDLY)
+        expect(body.map { |r| r["id"] }).to eq(["event-#{ev.id}"])
+        expect(response.headers["X-Truncated"]).to be_nil
+        expect(Rails.error).to have_received(:report)
+          .with(kind_of(RecurringSeries::UnsupportedRule), hash_including(handled: true, context: { event_id: ev.id }))
+        expect(steps).to be <= 501 # unbounded: 144k (MINUTELY) and 8.6M (SECONDLY)
       end
     end
 
-    it "bounds the cost of a sub-hourly rule whose DTSTART is far in the past" do
+    it "does not step through a sub-minute rule whose DTSTART is far in the past" do
       stored_shift("FREQ=MINUTELY", start_time: t0 - 2.years, end_time: t0 - 2.years + 1.hour)
       steps = rule_steps { shifts({ start: t0.iso8601, end: (t0 + 1.day).iso8601 }) }
-      expect(body.size).to eq(500)
-      expect(steps).to be <= 20_000 # unbounded: ~1M walking from DTSTART
+      expect(body).to be_empty
+      expect(steps).to be <= 501 # unbounded: ~1M walking from DTSTART
     end
 
     it "caps the whole response across events and keeps the earliest first" do
       stub_const("Api::V1::ShiftEventSerializer::MAX_ITEMS", 12)
       stub_const("Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT", 5)
-      3.times { |i| stored_shift("FREQ=HOURLY", start_time: t0 + i.minutes) }
+      3.times { |i| stored_shift("FREQ=DAILY", start_time: t0 + i.minutes) }
       shifts(wide)
       expect(body.size).to eq(12)
       expect(response.headers["X-Truncated"]).to eq("true")

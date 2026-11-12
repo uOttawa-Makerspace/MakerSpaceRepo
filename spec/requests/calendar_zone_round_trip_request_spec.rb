@@ -116,7 +116,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
             # daily at 23:00 Toronto time, the latest hour of the day the modal offers
             start = Time.zone.parse("2027-03-01T23:00")
             rule = "DTSTART:#{start.utc.strftime('%Y%m%dT%H%M%SZ')}\nRRULE:FREQ=DAILY;UNTIL=#{c['until']}"
-            found = RecurrenceExpansion.occurrences(rule, start, start, start + 1.year, 400).occurrences
+            found = series_starts(rule, start, start, start + 1.year, 400)
             expect(found.last.strftime("%Y-%m-%d %H:%M")).to eq("#{c['date']} 23:00")
           end
         end
@@ -179,7 +179,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
               let(:start) { Time.iso8601(c["start"]).in_time_zone(toronto) }
 
               it "expands on the server to the instants of the table" do
-                found = RecurrenceExpansion.occurrences(text, start, start, start + 60.days, 50).occurrences
+                found = series_starts(text, start, start, start + 60.days, 50)
                 expect(found.map { |t| t.utc.iso8601(3) }).to eq(c["occurrences"])
               end
 
@@ -232,7 +232,7 @@ RSpec.describe "Calendar times whatever the server process zone", type: :request
         end
 
         it "expands on the server to the same instants, without the excluded one" do
-          found = RecurrenceExpansion.occurrences(stored, start.in_time_zone, start, start + 1.month, 50).occurrences
+          found = series_starts(stored, start.in_time_zone, start, start + 1.month, 50)
           expect(found.map { |t| t.utc.iso8601 }).to eq(
             %w[2027-03-15T14:00:00Z 2027-03-22T14:00:00Z 2027-03-24T14:00:00Z
                2027-03-29T14:00:00Z 2027-03-31T14:00:00Z]

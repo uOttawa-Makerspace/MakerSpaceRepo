@@ -334,7 +334,7 @@ RSpec.describe CalendarHelper, type: :helper do
     it "does not expand a series whose COUNT is above the limit, so it is kept without a report" do
       body = ics(vevent("long", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Long", "RRULE:FREQ=DAILY;COUNT=#{CalendarHelper::MAX_COUNTED_SERIES + 1}"]))
       stub_request(:get, url).to_return(status: 200, body: body)
-      expect(RecurrenceExpansion).not_to receive(:occurrences)
+      expect(RecurringSeries).not_to receive(:new)
       events = nil
       expect(reported_ics_problems { events = parse_ics_calendar(url).first[:events] }).to eq([])
       expect(events.map { |e| e[:id] }).to eq(["long"])
