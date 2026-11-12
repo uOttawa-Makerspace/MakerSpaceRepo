@@ -42,8 +42,6 @@ module PageCrawl
     [%r{/download_files\z}, "streams a zip"],
     [%r{\A/learning_area/:id/scorm_launch\z}, "SCORM package launch"],
     [%r{\A/open_hours\z}, "fetches external ICS calendars"],
-    [%r{\A/rfid/get_unset_rfids\z}, "consumes RFID reader state"],
-    [%r{\A/kiosk}, "kiosk screens (device-bound)"],
     [%r{\A/_system_test_entrypoint\z}, "test-only route added by the view_component gem"]
   ].freeze
 
@@ -100,7 +98,7 @@ module PageCrawl
       "my_calendar" => :space, # staff/my_calendar/json/:id is a space id
       "calendar" => :staff_needed_calendar,
       "sub_space_booking" => :sub_space_booking,
-      "kiosk" => :user,
+      "kiosk" => :space, # the kiosk :id is a space id
       "key_requests" => :key_request,
       "badges" => :certification,
       "faqs" => :faq,

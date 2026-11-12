@@ -18,7 +18,17 @@ module PageCrawl
         [%r{\A/volunteers/}, "Volunteer Program pages"],
         [%r{\A/(questions|printer_issues|key_requests|key_certifications)(/|\z)}, "staff and admin pages"],
         [%r{\A/locker_rentals/(admin|expired|assign_locker)\z}, "staff locker pages"],
-        [%r{\A/project_kits/(new|populate_kit_users)\z}, "staff kit pages"]
+        [%r{\A/project_kits/(new|populate_kit_users)\z}, "staff kit pages"],
+        [%r{\A/kiosk(/|\z)}, "kiosk screens (grant_access: staff and admins)"],
+        [%r{\A/rfid/get_unset_rfids\z}, "reader data (signed_in and grant_access)"],
+        [%r{\A/(coupon_codes|videos|printer_types|lockers)(/|\z)}, "admin management pages"],
+        [%r{\A/printers(/printer_data|/last_user_assigned_to_printer)?\z}, "admin and staff printer pages"],
+        [%r{\A/announcements(/|\z)}, "staff announcement pages"],
+        [%r{\A/(volunteer_tasks|volunteer_task_requests|volunteer_hours)(/|\z)}, "Volunteer Program pages"],
+        [%r{\A/sub_space_booking/(users|get_sub_space_booking)\z}, "staff booking lookups"],
+        [%r{\A/job_orders/:job_order_id/timeline_modal\z}, "the order's owner and staff"],
+        [%r{\A/locker_rentals/:id\z}, "the renter and staff"],
+        [%r{\A/proficient_projects/requests\z}, "staff project requests"]
       ].freeze
 
       # roles: who the entry applies to; status: an Integer, or :redirect (302 or
@@ -78,6 +88,10 @@ module PageCrawl
           why: "the search needs a query; without one the user is sent back" },
 
         # Redirects for visitors who are not asked to sign in
+        { path: %r{\A/rfid/get_unset_rfids\z}, roles: %i[regular], status: :redirect, to: HOME,
+          why: "reader data is for staff and admins" },
+        { path: %r{\A/kiosk(/|\z)}, roles: UNTRUSTED, status: :redirect, to: HOME,
+          why: "kiosk screens are for staff and admins; anyone else is sent home" },
         { path: %r{\A/(key_requests|key_certifications)(/|\z)}, roles: %i[guest regular], status: :redirect, to: HOME,
           why: "pages for staff and Teams members; anyone else is sent home" },
         { path: %r{\A/exams/:id\z}, roles: %i[guest regular], status: :redirect, to: HOME,
