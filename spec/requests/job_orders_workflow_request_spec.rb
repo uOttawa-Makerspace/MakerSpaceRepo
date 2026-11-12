@@ -331,14 +331,23 @@ RSpec.describe "JobOrders workflow", type: :request do
       expect(status_names(order)).to end_with("Paid (Waiting for Pick-Up)")
     end
 
-    # a zero-price order is auto-paid and ONLY the payment_succeeded
-    # mail goes out; the staff-authored completion message is dropped.
-    it "drops the completion message when a zero-price order is auto-paid" do
+    # a zero-price order is auto-paid and only the payment_succeeded mail goes out;
+    # the staff-authored message is included in it when staff chose to send it.
+    it "includes the staff message in the payment mail when a zero-price order is auto-paid" do
       task.build_job_task_quote(price: 0, service_price: 0, service_quantity: 0).save!
       patch job_order_processed_path(order),
-            params: { completed: "true", send_email: "true", message: "<p>Custom note</p>" }
+            params: { completed: "true", send_email: "true", message: "<p>Custom note</p><script>x()</script>" }
 
       expect(status_names(order)).to end_with("Paid (Waiting for Pick-Up)")
+      expect(deliveries.map(&:subject)).to eq(["Your Job Order ##{order.id} is now ready for pickup"])
+      expect(deliveries.last.body.encoded).to include("Custom note")
+      expect(deliveries.last.body.encoded).not_to include("<script>")
+    end
+
+    it "sends the payment mail without a message when a zero-price order is processed without send_email" do
+      task.build_job_task_quote(price: 0, service_price: 0, service_quantity: 0).save!
+      patch job_order_processed_path(order), params: { completed: "true", message: "<p>Custom note</p>" }
+
       expect(deliveries.map(&:subject)).to eq(["Your Job Order ##{order.id} is now ready for pickup"])
       expect(deliveries.last.body.encoded).not_to include("Custom note")
     end
