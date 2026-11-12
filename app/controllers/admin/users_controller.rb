@@ -22,8 +22,6 @@ class Admin::UsersController < AdminAreaController
 
   SEARCHABLE_FILTERS = %w[Name Email Username].freeze
 
-  ASSIGNABLE_ROLES = %w[admin staff regular_user volunteer].freeze
-
   LAST_SIGN_IN_SQL = "(SELECT MAX(lab_sessions.sign_in_time) FROM lab_sessions WHERE lab_sessions.user_id = users.id)"
 
   def index
@@ -199,7 +197,7 @@ class Admin::UsersController < AdminAreaController
     @volunteers = User.joins(:programs)
                       .where(programs: { program_type: Program::VOLUNTEER })
                       .order(Arel.sql("lower(name) ASC"))
-    @roles = ASSIGNABLE_ROLES
+    @roles = User::ASSIGNABLE_ROLES
     @space_list = Space.all
 
     @admin_spaces = build_user_spaces_hash(@admins)
@@ -269,7 +267,7 @@ class Admin::UsersController < AdminAreaController
   def valid_role_update_params?
     params[:role].present? && 
       params[:user_ids].is_a?(Array) && 
-      ASSIGNABLE_ROLES.include?(params[:role])
+      User::ASSIGNABLE_ROLES.include?(params[:role])
   end
 
   # ============================================
@@ -426,7 +424,7 @@ class Admin::UsersController < AdminAreaController
   # ============================================
 
   def update_user_roles
-    # ASSIGNABLE_ROLES and the integer ids were validated by valid_role_update_params?;
+    # User::ASSIGNABLE_ROLES and the integer ids were validated by valid_role_update_params?;
     # the last-admin guard, transaction and audit log live in User.change_roles!.
     User.change_roles!(params[:user_ids], params[:role], actor: @user)
   end

@@ -57,6 +57,8 @@ class User < ApplicationRecord
   }.freeze
 
   ROLES = %w[regular_user admin staff volunteer].freeze
+  # Roles an admin may assign from the admin screen or the API, in display order.
+  ASSIGNABLE_ROLES = %w[admin staff regular_user volunteer].freeze
 
   # Raised by User.change_roles! when the change would leave no usable admin.
   class LastAdminError < StandardError; end
