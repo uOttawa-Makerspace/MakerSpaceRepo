@@ -168,6 +168,8 @@ en:
       access_approve_failed: "The access request could not be approved:"
       js:
         failed_title: "Booking failed"
+        updated_title: "Booking updated"
+        updated: "The booking was saved."
         feed: "The bookings could not be loaded. Reload the page to try again."
         unavailable_title: "Booking unavailable"
         unavailable: "This booking could not be opened."

@@ -127,12 +127,13 @@ RSpec.describe "Accessibility baseline", type: :request do
       expect(labels).to eq(%w[Espace Superviseur])
     end
 
-    it "translates the navbar toggler and the user selection names" do
+    it "translates the navbar toggler and the user list link names" do
       get root_path(locale: "fr")
       expect(Nokogiri::HTML(response.body).css("button.navbar-toggler").pluck("aria-label")).to include("Basculer la navigation")
       log_in!(create(:user, :admin))
       get admin_users_path(locale: "fr")
-      expect(Nokogiri::HTML(response.body).at_css("input#select-all")["aria-label"]).to eq("Sélectionner tous les utilisateurs")
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.css("td.link-table a[aria-label]").pluck("aria-label")).to all(eq("Voir l’utilisateur")).and(be_present)
     end
 
     it "keeps literal English aria-labels out of the views" do

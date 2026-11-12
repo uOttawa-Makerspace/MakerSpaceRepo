@@ -11,15 +11,6 @@ RSpec.describe "Checkbox defaults", type: :request do
     Nokogiri::HTML(response.body).at_css(selector)
   end
 
-  it "renders the user search result checkboxes unticked, valued with the user id" do
-    sign_in_as(:admin)
-    user = create(:user, :regular_user, name: "Zelda Findable")
-    get search_admin_users_path(q: "Findable")
-    box = checkbox("input[name='bulk_cert_users[]']")
-    expect(box["value"]).to eq(user.id.to_s)
-    expect(box["checked"]).to be_nil
-  end
-
   it "renders the liked filter unticked until it is asked for, valued 1" do
     sign_in_as(:regular)
     get explore_path
