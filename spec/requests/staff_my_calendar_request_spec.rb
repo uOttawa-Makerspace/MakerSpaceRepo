@@ -242,7 +242,7 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body.map { |e| e["id"] }).to eq(["event-#{event.id}"])
       expect(Rails.error).to have_received(:report)
         .with(kind_of(RecurringSeries::UnsupportedRule), hash_including(handled: true, context: hash_including(event_id: event.id)))
-      expect(steps).to be <= 501 # unbounded: 144,000 candidates for MINUTELY, 8,640,000 for SECONDLY
+      expect(steps).to eq(0) # refused before the repeat library is touched (unbounded: 144,000 candidates for MINUTELY)
     end
 
     it "is refused without stepping through it (MINUTELY over 100 days)" do
@@ -256,8 +256,9 @@ RSpec.describe "Staff my calendar", type: :request do
     it "still caps a daily rule per event" do
       stub_const("Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT", 5)
       stored_event("FREQ=DAILY")
-      get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" }
+      steps = rule_steps { get feed, params: { start: "2027-01-01T00:00:00Z", end: "2027-04-11T00:00:00Z" } }
       expect(response.parsed_body.size).to eq(5)
+      expect(steps).to be <= 10 # the walk stops after the sixth day, not at the end of the 100 days
     end
 
     it "leaves a normal rule with fewer occurrences than the cap untouched" do

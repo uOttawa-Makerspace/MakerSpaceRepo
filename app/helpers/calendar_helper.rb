@@ -328,13 +328,10 @@ module CalendarHelper
     return ArgumentError.new("#{out_of_range} is out of range") if out_of_range
 
     start = start_time.in_time_zone(RecurrenceRule::ZONE)
-    rule = convert_rrule_to_string(rrule_obj)
-    begin
-      series = RecurringSeries.new(rule: rule, starts_at: start, ends_at: start)
-      series.occurrences_starting_in(start..cutoff, limit: count).occurrences.size == count
-    rescue ArgumentError => e
-      e # the repeat library cannot expand the rule
-    end
+    series = RecurringSeries.new(rule: convert_rrule_to_string(rrule_obj), starts_at: start, ends_at: start)
+    series.occurrences_starting_in(start..cutoff, limit: count).occurrences.size == count
+  rescue ArgumentError => e
+    e # the repeat library cannot expand the rule
   end
 
   # The first part of the rule whose value is outside what RFC 5545 allows (the repeat library fails or

@@ -88,9 +88,9 @@ RSpec.describe RecurringSeries, "stored rules" do
     end
 
     it "refuses a rule finer than daily (no stored rule has one), without walking it" do
-      %w[HOURLY MINUTELY SECONDLY].each do |freq|
+      %w[HOURLY MINUTELY SECONDLY hourly].each do |freq|
         expect { series_starts("RRULE:FREQ=#{freq};COUNT=3", local(2026, 11, 1, 0, 0), local(2026, 10, 1), local(2026, 12, 1), 5) }
-          .to raise_error(RecurringSeries::UnsupportedRule, /#{freq}/)
+          .to raise_error(RecurringSeries::UnsupportedRule, /#{freq}/i)
       end
     end
   end

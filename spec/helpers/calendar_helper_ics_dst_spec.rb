@@ -246,8 +246,8 @@ RSpec.describe CalendarHelper, type: :helper do
         .to eq("DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20271107T013000")
     end
 
-    # The browser reads the bare UNTIL as the same wall time and includes the last day (3 occurrences in the file,
-    # 3 drawn). The server's engine reads a date as the end of that Toronto day and a bare time as Toronto wall
+    # The browser reads the bare UNTIL as the same wall time and includes the last day (4 occurrences in the
+    # date UNTIL file and 3 in the UTC one, all drawn). The server's engine reads a date as the end of that Toronto day and a bare time as Toronto wall
     # time, so given the sent text it also keeps the last occurrence (it used to read the bare UNTIL as UTC and
     # drop it).
     it "gives a text the server's engine keeps whole" do

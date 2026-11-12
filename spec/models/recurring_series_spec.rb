@@ -11,8 +11,6 @@ RSpec.describe RecurringSeries do
 
   def starting(series, from, to, limit: 500) = series.occurrences_starting_in(from..to, limit: limit)
 
-  def overlapping(series, from, to, limit: 500) = series.occurrences_overlapping(from..to, limit: limit)
-
   def times(result) = result.occurrences.map { |o| o.starts_at.iso8601 }
 
   describe "the spring-forward Sunday (2027-03-14)" do
@@ -59,25 +57,6 @@ RSpec.describe RecurringSeries do
     end
   end
 
-  describe "windows" do
-    let(:overnight) { series("RRULE:FREQ=DAILY", at(2027, 5, 1, 22), at(2027, 5, 2, 6)) }
-
-    it "returns an occurrence that began before the window when it overlaps it" do
-      from = at(2027, 5, 10, 3)
-      expect(times(overlapping(overnight, from, at(2027, 5, 10, 4)))).to eq(%w[2027-05-09T22:00:00-04:00])
-      expect(times(starting(overnight, from, at(2027, 5, 10, 4)))).to eq([])
-    end
-
-    it "does not return an occurrence that ended before the window or starts after it" do
-      expect(overlapping(overnight, at(2027, 5, 10, 6), at(2027, 5, 10, 22)).occurrences).to be_empty
-    end
-
-    it "carries the original start and no override" do
-      occurrence = starting(overnight, at(2027, 5, 10), at(2027, 5, 11)).occurrences.first
-      expect([occurrence.original_start, occurrence.override]).to eq([occurrence.starts_at, nil])
-    end
-  end
-
   describe "COUNT and exclusions" do
     it "counts an excluded occurrence against COUNT" do
       rule = "DTSTART:20270501T100000Z\nRRULE:FREQ=DAILY;COUNT=3\nEXDATE:20270502T100000Z"
@@ -100,11 +79,9 @@ RSpec.describe RecurringSeries do
   describe "limits" do
     let(:daily) { series("RRULE:FREQ=DAILY", at(2027, 5, 1, 6), at(2027, 5, 1, 7)) }
 
-    it "stops at the limit and says it was cut short, for both kinds of window" do
-      [method(:starting), method(:overlapping)].each do |read|
-        result = read.call(daily, at(2027, 5, 1), at(2027, 8, 1), limit: 3)
-        expect([result.occurrences.size, result.truncated]).to eq([3, true])
-      end
+    it "stops at the limit and says it was cut short" do
+      result = starting(daily, at(2027, 5, 1), at(2027, 8, 1), limit: 3)
+      expect([result.occurrences.size, result.truncated]).to eq([3, true])
     end
 
     it "is not truncated when the occurrences fit exactly" do
@@ -198,6 +175,84 @@ RSpec.describe RecurringSeries do
       paris = ActiveSupport::TimeZone["Europe/Paris"]
       weekly = series("RRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3", paris.local(2027, 3, 21, 9), paris.local(2027, 3, 21, 10))
       expect(times(starting(weekly, at(2027, 3, 1), at(2027, 5, 1))).map { |t| t[0, 19] }).to eq(%w[2027-03-21T09:00:00 2027-03-28T09:00:00 2027-04-04T09:00:00])
+    end
+  end
+
+  describe "a window far from the series start" do
+    # Repeat-library steps (one per period) taken while the block runs: a bound on the work, not on the time.
+    def steps
+      count = 0
+      allow_any_instance_of(RRule::Frequency).to receive(:advance).and_wrap_original do |original, *args|
+        count += 1
+        original.call(*args)
+      end
+      yield
+      count
+    end
+
+    # What walking from the original start gives: the gem asked directly, as the series did before it moved its start.
+    def walked(rule, start, from, to)
+      RRule::Rule.new(rule, dtstart: start, tzid: zone.tzinfo.name).between(from, to).map(&:to_i)
+    end
+
+    {
+      "every third day at the skipped 02:30" => ["FREQ=DAILY;INTERVAL=3", [2026, 10, 26, 2, 30]],
+      "every second week on Monday and Wednesday, started on a Wednesday" => ["FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE", [2026, 10, 28, 9]],
+      "every second month on the 31st (a short month cannot hold the start)" => ["FREQ=MONTHLY;INTERVAL=2", [2026, 1, 31, 10]],
+      "every third month on the last day" => ["FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=-1", [2026, 3, 14, 10]],
+      "every second month on the last weekday" => ["FREQ=MONTHLY;INTERVAL=2;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1", [2026, 10, 30, 9]],
+      "every second year on 29 February" => ["FREQ=YEARLY;INTERVAL=2", [2028, 2, 29, 12]],
+      "yearly on the second Sunday of March at 02:30" => ["FREQ=YEARLY;BYMONTH=3;BYDAY=SU;BYSETPOS=2", [2026, 3, 8, 2, 30]],
+      "every second day at 01:30, in the repeated hour on 2028-11-05" => ["FREQ=DAILY;INTERVAL=2;UNTIL=20290101T050000Z", [2026, 11, 1, 1, 30]],
+      "weekly with no interval" => ["FREQ=WEEKLY;BYDAY=SU", [2026, 11, 1, 1, 30]]
+    }.each do |name, (rule, start_parts)|
+      it "gives the occurrences of a walk from the original start: #{name}" do
+        start = at(*start_parts)
+        series = series("RRULE:#{rule}", start, start + 1.hour)
+        [[at(2028, 10, 25), at(2028, 11, 15)], [at(2029, 3, 1), at(2029, 4, 15)], [at(2031, 1, 1), at(2031, 2, 1)]].each do |from, to|
+          expect(starting(series, from, to).occurrences.map { |o| o.starts_at.to_i }).to eq(walked(rule, start, from, to)), "#{from.to_date}"
+        end
+      end
+    end
+
+    it "costs a few steps for a window in the year 9000, with an interval and without" do
+      start = at(2026, 11, 2, 9)
+      [["FREQ=WEEKLY;INTERVAL=2;BYDAY=MO", 3], ["FREQ=DAILY;INTERVAL=3", 7], ["FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=5", 2],
+       ["FREQ=YEARLY;INTERVAL=2;BYMONTH=1;BYMONTHDAY=3", 1], ["FREQ=WEEKLY;BYDAY=MO", 4]].each do |rule, expected|
+        result = nil
+        taken = steps { result = starting(series("RRULE:#{rule}", start, start + 1.hour), at(9000, 1, 1), at(9000, 1, 20)) }
+        expect(result.occurrences.size).to be >= 1, rule
+        expect(result.occurrences.size).to be <= expected + 1, rule
+        expect(taken).to be <= 12, rule
+      end
+    end
+
+    it "walks a COUNT series from its start and stops at its end, however far the window is" do
+      start = at(2026, 11, 2, 9)
+      daily = series("RRULE:FREQ=WEEKLY;INTERVAL=2;COUNT=10", start, start + 1.hour)
+      result = nil
+      taken = steps { result = starting(daily, at(9000, 1, 1), at(9000, 1, 20)) }
+      expect([result.occurrences, result.truncated]).to eq([[], false])
+      expect(taken).to be <= 12
+    end
+
+    it "stops a rule that never matches within a hundred years of where it starts walking" do
+      start = at(2026, 11, 2, 9)
+      bound = (RecurringSeries::MAX_YEARS * 12) + 12
+      ["FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=30;COUNT=3", "FREQ=MONTHLY;BYMONTH=2;BYMONTHDAY=30;COUNT=3",
+       "FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=30", "FREQ=MONTHLY;BYMONTH=2;BYMONTHDAY=30"].each do |rule|
+        [[at(2026, 12, 1), at(2027, 1, 1)], [at(9000, 1, 1), at(9000, 1, 20)]].each do |from, to|
+          result = nil
+          taken = steps { result = starting(series("RRULE:#{rule}", start, start + 1.hour), from, to) }
+          expect(result.occurrences).to be_empty, rule
+          expect(taken).to be <= bound, rule
+        end
+      end
+    end
+
+    it "reads a lower-case until like the gem's upper-case one" do
+      lower = series("RRULE:FREQ=DAILY;until=20270303", at(2027, 3, 1, 22), at(2027, 3, 1, 23))
+      expect(times(starting(lower, at(2027, 3, 1), at(2027, 4, 1))).size).to eq(3)
     end
   end
 

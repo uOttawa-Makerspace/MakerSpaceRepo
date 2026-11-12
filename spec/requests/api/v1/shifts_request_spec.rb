@@ -175,7 +175,7 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
         expect(response.headers["X-Truncated"]).to be_nil
         expect(Rails.error).to have_received(:report)
           .with(kind_of(RecurringSeries::UnsupportedRule), hash_including(handled: true, context: { event_id: ev.id }))
-        expect(steps).to be <= 501 # unbounded: 144k (MINUTELY) and 8.6M (SECONDLY)
+        expect(steps).to eq(0) # refused before the repeat library is touched (unbounded: 144k for MINUTELY)
       end
     end
 
@@ -183,14 +183,15 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
       stored_shift("FREQ=MINUTELY", start_time: t0 - 2.years, end_time: t0 - 2.years + 1.hour)
       steps = rule_steps { shifts({ start: t0.iso8601, end: (t0 + 1.day).iso8601 }) }
       expect(body).to be_empty
-      expect(steps).to be <= 501 # unbounded: ~1M walking from DTSTART
+      expect(steps).to eq(0) # unbounded: ~1M walking from DTSTART
     end
 
     it "caps the whole response across events and keeps the earliest first" do
       stub_const("Api::V1::ShiftEventSerializer::MAX_ITEMS", 12)
       stub_const("Api::V1::ShiftEventSerializer::MAX_OCCURRENCES_PER_EVENT", 5)
       3.times { |i| stored_shift("FREQ=DAILY", start_time: t0 + i.minutes) }
-      shifts(wide)
+      steps = rule_steps { shifts(wide) }
+      expect(steps).to be <= 30 # 3 events, each stops after its sixth day
       expect(body.size).to eq(12)
       expect(response.headers["X-Truncated"]).to eq("true")
     end

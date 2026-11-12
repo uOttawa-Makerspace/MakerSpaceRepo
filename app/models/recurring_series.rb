@@ -12,13 +12,23 @@
 # (UnsupportedRule): the validator has never allowed one, and none is stored.
 class RecurringSeries
   ZONE = RecurrenceRule::ZONE
-  SUB_DAILY = /FREQ=(SECONDLY|MINUTELY|HOURLY)/
+  SUB_DAILY = /FREQ=(SECONDLY|MINUTELY|HOURLY)/i
   # An UNTIL with no Z: a date, or a date and a time.
-  LOCAL_UNTIL = /UNTIL=(?<date>\d{8})(?<time>(?>(?:T\d{6})?))(?![\dZ])/
+  LOCAL_UNTIL = /UNTIL=(?<date>\d{8})(?<time>(?>(?:T\d{6})?))(?![\dZ])/i
+
+  # A walk never goes on longer than this past where it starts: it bounds a rule that
+  # never matches (a 30th of February), whatever window was asked for.
+  MAX_YEARS = 100
+  DAYS = ->(from, to) { (to.to_date - from.to_date).to_i }
+  MONTHS = ->(from, to) { ((to.year - from.year) * 12) + to.month - from.month }
+  # FREQ => the unit a period is counted in, how many units one period is, and how to count them between two times.
+  PERIODS = { "DAILY" => [:days, 1, DAYS], "WEEKLY" => [:days, 7, DAYS],
+              "MONTHLY" => [:months, 1, MONTHS], "YEARLY" => [:months, 12, MONTHS] }.freeze
+  NO_SHIFT = [:days, 1, ->(*) { 0 }].freeze
 
   class UnsupportedRule < ArgumentError; end
 
-  Occurrence = Data.define(:starts_at, :ends_at, :original_start, :all_day, :override)
+  Occurrence = Data.define(:starts_at, :ends_at, :all_day)
   Result = Data.define(:occurrences, :truncated)
 
   # `record` is an Event or StaffUnavailability.
@@ -41,27 +51,17 @@ class RecurringSeries
     @gem_start = @zone.local(*starts_at.to_a[0, 6].reverse)
   end
 
-  # `window` is a Range of instants (CalendarWindow#to_range).
-  # Occurrences that start in the window (the /api/v1 and staff app contract).
+  # Occurrences that start in the window, a Range of instants (the /api/v1 and staff app contract).
   def occurrences_starting_in(window, limit:)
     collect(starts_between(window.begin, window.end), limit)
   end
 
-  # Occurrences that overlap the window, including one that began before it.
-  def occurrences_overlapping(window, limit:)
-    overlapping = starts_between(window.begin - @lookback, window.end)
-                  .select { |start| ends_at(start) > window.begin && start < window.end }
-    collect(overlapping, limit)
-  end
-
   private
 
-  # What a start needs to become an occurrence: all-day or not, how far it reaches,
-  # and how far back an occurrence can start and still overlap a window.
+  # What a start needs to become an occurrence: all-day or not, and how far it reaches.
   def measure(ends_at)
     @all_day = CalendarTime.all_day?(@starts_at, ends_at)
     @span = @all_day ? { days: 1 } : { seconds: ends_at - @starts_at }
-    @lookback = ends_at(@starts_at) - @starts_at + 1.hour
   end
 
   def collect(starts, limit)
@@ -70,7 +70,7 @@ class RecurringSeries
   end
 
   def occurrence(start)
-    Occurrence.new(starts_at: start, ends_at: ends_at(start), original_start: start, all_day: @all_day, override: nil)
+    Occurrence.new(starts_at: start, ends_at: ends_at(start), all_day: @all_day)
   end
 
   def ends_at(start) = start.advance(@span)
@@ -81,11 +81,29 @@ class RecurringSeries
   # fall-back night needs the explicit mapping below, because the gem resolves
   # that wall time to the first instant and would otherwise drop the start.
   def starts_between(from, to)
-    rule = RRule::Rule.new(rule_body, dtstart: @gem_start, tzid: @zone.tzinfo.name, max_year: to.year + 1)
+    body = rule_body
+    start = walk_start(from, body)
+    rule = RRule::Rule.new(body, dtstart: start, tzid: @zone.tzinfo.name, max_year: start.year + MAX_YEARS)
     rule.each(floor_date: from + (@gem_start - @starts_at)).lazy
         .take_while { |time| time <= to }
         .map { |time| time == @gem_start ? @starts_at : time.in_time_zone(@zone) }
         .select { |time| time >= from && !@excluded.include?(time.to_i) }
+  end
+
+  # Where the gem starts walking. With COUNT the series start (the count is taken from it). Without,
+  # the gem walks from its start whenever there is an INTERVAL, so the start moves forward by whole
+  # periods, in the series zone, to a little before `from`: the same wall time and phase, so the same
+  # occurrences from there on. A start the move cannot keep (the 31st in a short month, a skipped
+  # wall time) goes back one period at a time.
+  def walk_start(from, body)
+    unit, size, elapsed = PERIODS.fetch(body[/FREQ=(\w+)/i, 1].to_s.upcase, NO_SHIFT)
+    step = size * [body[/INTERVAL=(\d+)/i, 1].to_i, 1].max
+    periods = body.match?(/COUNT=/i) ? 0 : (elapsed.call(@gem_start, from) / step) - 1
+    periods.downto(1) do |count|
+      shifted = @gem_start.advance(unit => count * step)
+      return shifted if shifted.advance(unit => -count * step) == @gem_start
+    end
+    @gem_start
   end
 
   # The bare rule body, with a UNTIL that has no Z read in the series zone: a date
