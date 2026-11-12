@@ -130,6 +130,19 @@ RSpec.describe TapBoxLog, type: :model do
       expect(row.details["backtrace"].size).to be <= 5
     end
 
+    it "stores the faculty and this-semester flag of a not-engineering row, never the enrolled courses" do
+      row = TapBoxLog.log_not_engineering(
+        user: user,
+        api_details: { "faculty" => "Arts", "student_this_semester" => true, "courses_enrolled" => ["GNG1103"] }
+      )
+      expect(row.reload.details).to eq("reason" => "not_engineering", "student_this_semester" => true, "faculty" => "Arts")
+    end
+
+    it "keeps the student number and email on a no-usable-identifier row" do
+      row = TapBoxLog.log_no_queryable_identifier(user: user)
+      expect(row.reload.details).to include("student_id" => user.student_id, "email" => user.email)
+    end
+
     it "membership-check loggers use the membership_check or warning/error types" do
       expect(TapBoxLog.log_not_engineering(user: user, api_details: { "faculty" => "Arts" }).event_type).to eq("membership_check")
       expect(TapBoxLog.log_membership_revocation(user: user, revoked_count: 1, revoked_ids: [1]).event_type).to eq("membership_check")
@@ -151,7 +164,7 @@ RSpec.describe TapBoxLog, type: :model do
 
       expect(summary).to eq(
         body_size: body.bytesize, content_type: "application/json", keys: %w[sex faculty student_this_semester courses_enrolled],
-        values: { "faculty" => "GENIE", "student_this_semester" => true, "courses_enrolled" => ["GNG1103", "Integer", "Hash"] }
+        values: { "faculty" => "GENIE", "student_this_semester" => true }
       )
     end
 

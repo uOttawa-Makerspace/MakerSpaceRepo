@@ -152,28 +152,6 @@ class TrainingSession < ApplicationRecord
     %w[General Beginner Intermediate Advanced]
   end
 
-  def self.filter_by_attribute(value)
-    if value.present?
-      if value == "search="
-        all
-      else
-        value = value.split("=").last.gsub("+", " ").gsub("%20", " ")
-        joins(:user).where(
-          "LOWER(trainings.name_en) LIKE LOWER(?) OR
-           LOWER(users.name) LIKE LOWER(?) OR
-           CAST(to_char(training_sessions.created_at, 'HH:MI mon DD YYYY') AS text) LIKE LOWER(?) OR
-           LOWER(training_sessions.course) LIKE LOWER(?)",
-          "%#{value}%",
-          "%#{value}%",
-          "%#{value}%",
-          "%#{value}%"
-        )
-      end
-    else
-      all
-    end
-  end
-
   private
 
   def locked_fields_unchanged

@@ -246,12 +246,6 @@ RSpec.describe TrainingSession, type: :model do
       expect(TrainingSession.by_trainers(a.user_id)).to eq([a])
       expect(TrainingSession.by_training(b.training_id)).to eq([b])
     end
-
-    it "filter_by_attribute strips the search= prefix and matches the training name" do
-      a = create(:training_session, level: "Beginner")
-      create(:training_session, level: "Beginner")
-      expect(TrainingSession.joins(:training).filter_by_attribute("search=#{a.training.name_en.tr(' ', '+')}")).to eq([a])
-    end
   end
 
   describe "#certify_trainees! and the instructor" do

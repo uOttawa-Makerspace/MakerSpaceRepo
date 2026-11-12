@@ -37,18 +37,9 @@ class Admin::TrainingSessionsController < AdminAreaController
 
     @sessions = @sessions.by_status(params[:status]) if params[:status].present?
 
-    if params[:search].present?
-      @sessions = @sessions.filter_by_attribute(params[:search])
-    end
-
     #pagination
     @pagy, @sessions =
       pagy(@sessions.preload(:training, :user, :certifications, :users), limit: 20)
-
-    respond_to do |format|
-      format.js
-      format.html
-    end
   end
 
   def update
