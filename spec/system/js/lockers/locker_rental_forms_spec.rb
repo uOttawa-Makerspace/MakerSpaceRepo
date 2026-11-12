@@ -3,7 +3,7 @@
 require "rails_helper"
 
 # Page scripts app/javascript/entrypoints/locker_rentals.js (user request form),
-# locker_rental_form.js (searchable pickers) and locker_admin.js (indefinite box,
+# the locker-picker Stimulus controller (searchable pickers) and locker_admin.js (indefinite box,
 # hover notes) on the locker rental pages. The payment journey is in
 # spec/system/journeys/locker_journey_spec.rb; its Shopify stubs are reused here.
 RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do

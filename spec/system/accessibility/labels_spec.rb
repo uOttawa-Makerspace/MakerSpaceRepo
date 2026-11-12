@@ -19,6 +19,8 @@ RSpec.describe "Labels point at their controls", type: :system do
   end
 
   # Pages where an unrelated control (named by another slice) still fails axe's label rule.
+  # The profile page's tab panes name tab buttons that are not rendered for every role (a separate defect).
+  let(:labelledby_exempt) { %w[/:username] }
   let(:axe_exempt) { %w[/admin/uni_programs /volunteer_tasks/:id/edit] }
 
   # ids named by the given attribute selector that no element carries, as "tag attribute=id" strings
@@ -58,6 +60,7 @@ RSpec.describe "Labels point at their controls", type: :system do
       visit path
       wait_for_page_settled
       refs = dangling("label[for]", "for").map { |r| "#{spec} #{r}" }
+      refs += dangling("[aria-labelledby]", "aria-labelledby").map { |r| "#{spec} #{r}" } unless labelledby_exempt.include?(spec)
       axe = axe_exempt.include?(spec) ? [] : label_violations.map { |selector| "#{spec} axe label #{selector}" }
       refs + axe
     end
