@@ -220,8 +220,7 @@ class TapBoxLog < ApplicationRecord
       details: {
         reason: "not_engineering",
         student_this_semester: api_details["student_this_semester"],
-        faculty: api_details["faculty"],
-        courses_enrolled: api_details["courses_enrolled"]
+        faculty: api_details["faculty"]
       }
     )
   end
