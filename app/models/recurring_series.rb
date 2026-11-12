@@ -16,7 +16,7 @@ class RecurringSeries
   # An UNTIL with no Z: a date, or a date and a time.
   LOCAL_UNTIL = /UNTIL=(?<date>\d{8})(?<time>(?>(?:T\d{6})?))(?![\dZ])/i
 
-  # A walk never goes on longer than this past where it starts: it bounds a rule that
+  # A walk never goes on longer than this past where it starts (and never past the window): it bounds a rule that
   # never matches (a 30th of February), whatever window was asked for.
   MAX_YEARS = 100
   DAYS = ->(from, to) { (to.to_date - from.to_date).to_i }
@@ -65,12 +65,8 @@ class RecurringSeries
   end
 
   def collect(starts, limit)
-    found = starts.first(limit + 1).map { |start| occurrence(start) }
+    found = starts.first(limit + 1).map { |start| Occurrence.new(starts_at: start, ends_at: ends_at(start), all_day: @all_day) }
     Result.new(occurrences: found.first(limit), truncated: found.size > limit)
-  end
-
-  def occurrence(start)
-    Occurrence.new(starts_at: start, ends_at: ends_at(start), all_day: @all_day)
   end
 
   def ends_at(start) = start.advance(@span)
@@ -83,18 +79,16 @@ class RecurringSeries
   def starts_between(from, to)
     body = rule_body
     start = walk_start(from, body)
-    rule = RRule::Rule.new(body, dtstart: start, tzid: @zone.tzinfo.name, max_year: start.year + MAX_YEARS)
+    rule = RRule::Rule.new(body, dtstart: start, tzid: @zone.tzinfo.name, max_year: [start.year + MAX_YEARS, to.year + 1].min)
     rule.each(floor_date: from + (@gem_start - @starts_at)).lazy
         .take_while { |time| time <= to }
         .map { |time| time == @gem_start ? @starts_at : time.in_time_zone(@zone) }
         .select { |time| time >= from && !@excluded.include?(time.to_i) }
   end
 
-  # Where the gem starts walking. With COUNT the series start (the count is taken from it). Without,
-  # the gem walks from its start whenever there is an INTERVAL, so the start moves forward by whole
-  # periods, in the series zone, to a little before `from`: the same wall time and phase, so the same
-  # occurrences from there on. A start the move cannot keep (the 31st in a short month, a skipped
-  # wall time) goes back one period at a time.
+  # Where the gem starts walking: the series start with COUNT (the count is taken from it). Without, the
+  # start moves forward by whole periods in the series zone to a little before `from` (same wall time and
+  # phase, so the same occurrences); a start the move cannot keep (the 31st, a skipped time) goes back a period.
   def walk_start(from, body)
     unit, size, elapsed = PERIODS.fetch(body[/FREQ=(\w+)/i, 1].to_s.upcase, NO_SHIFT)
     step = size * [body[/INTERVAL=(\d+)/i, 1].to_i, 1].max

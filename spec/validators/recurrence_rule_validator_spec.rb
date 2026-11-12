@@ -161,6 +161,55 @@ RSpec.describe RecurrenceRuleValidator do
     end
   end
 
+  it "rejects a rule that repeats a part name, so the last value cannot hide the first" do
+    ["FREQ=DAILY;BYMONTH=99;BYMONTH=2", "FREQ=DAILY;COUNT=1;COUNT=9999999999", "FREQ=DAILY;FREQ=WEEKLY", "FREQ=WEEKLY;BYDAY=XX;BYDAY=MO"].each do |body|
+      expect(errors_for("RRULE:#{body}")).to eq([RecurrenceRuleValidator::UNPARSEABLE]), body
+    end
+  end
+
+  describe "a rule that never has an occurrence" do
+    let(:never) { I18n.t("errors.calendar.rule_never_repeats") }
+    let(:start) { RecurrenceRule::ZONE.local(2027, 1, 31, 9) }
+
+    def steps
+      count = 0
+      allow_any_instance_of(RRule::Frequency).to receive(:advance).and_wrap_original do |original, *args|
+        count += 1
+        original.call(*args)
+      end
+      yield
+      count
+    end
+
+    it "is refused, with a message in English and French" do
+      ["FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30", "FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=30", "FREQ=YEARLY;BYMONTH=4;BYMONTHDAY=31",
+       "FREQ=MONTHLY;BYMONTH=2;BYMONTHDAY=31;INTERVAL=2", "FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30;COUNT=3"].each do |body|
+        expect(errors_for("RRULE:#{body}")).to eq([never]), body
+      end
+      expect(never).to include("never")
+      I18n.with_locale(:fr) { expect(errors_for("RRULE:FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=30")).to eq([I18n.t("errors.calendar.rule_never_repeats")]) }
+      expect(I18n.t("errors.calendar.rule_never_repeats", locale: :fr)).not_to eq(never)
+    end
+
+    it "is judged from the series start, which the rule can depend on" do
+      expect(described_class.error_for("RRULE:FREQ=MONTHLY;BYMONTH=2", start)).to eq(never) # the 31st of February
+      expect(described_class.error_for("RRULE:FREQ=MONTHLY;BYMONTH=2", RecurrenceRule::ZONE.local(2027, 1, 15, 9))).to be_nil
+    end
+
+    it "accepts rules that repeat rarely or have already ended" do
+      ["FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29", "FREQ=YEARLY;INTERVAL=9", "FREQ=MONTHLY;BYDAY=5MO", "FREQ=WEEKLY;INTERVAL=5;BYDAY=MO",
+       "FREQ=DAILY;UNTIL=20200101T000000Z", "FREQ=DAILY;COUNT=1"].each do |body|
+        expect(described_class.error_for("RRULE:#{body}", start)).to be_nil, body
+      end
+    end
+
+    it "takes a few steps for a normal rule, and a bounded number for a rule that never matches" do
+      expect(steps { described_class.error_for("RRULE:FREQ=WEEKLY;BYDAY=MO,WE", start) }).to be <= 3
+      expect(steps { described_class.error_for("RRULE:FREQ=DAILY", start) }).to be <= 3
+      expect(steps { described_class.error_for("RRULE:FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30", start) }).to be <= 12 * 366
+    end
+  end
+
   it "does not hide an error that is not about the rule's text" do
     allow(RRule::Rule).to receive(:new).and_raise("bug")
     expect { errors_for("RRULE:FREQ=DAILY") }.to raise_error("bug")

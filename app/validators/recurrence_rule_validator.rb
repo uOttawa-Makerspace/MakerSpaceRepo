@@ -22,10 +22,12 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
   def validate_each(record, attribute, value)
     return if value.blank?
 
-    error = self.class.error_for(value)
+    error = self.class.error_for(value, record.try(:start_time) || DEFAULT_START)
     record.errors.add(attribute, error) if error
   end
 
+  DEFAULT_START = RecurrenceRule::ZONE.local(2000, 1, 3, 9) # when the record has no start
+  HORIZON_YEARS = 9 # a rule has an occurrence this soon after its start, plus its INTERVAL (a leap day can be 8 years off)
   MAX_LENGTH = 2000
   TOO_LONG = "is too long (maximum is #{MAX_LENGTH} characters)"
   # Part => the message for a rule that has it. BYWEEKNO is something stored rules have
@@ -50,32 +52,43 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
   KNOWN_PARTS = (%w[FREQ COUNT UNTIL INTERVAL] + PART_ERRORS.keys + VALUE_FORMATS.keys).freeze
 
   # nil when valid, else the message.
-  def self.error_for(value)
+  def self.error_for(value, start = DEFAULT_START)
     value = value.to_s
     return TOO_LONG if value.length > MAX_LENGTH
 
     bodies = rule_bodies(value)
     return UNPARSEABLE if bodies.empty? || !readable_starts?(value)
 
-    bodies.filter_map { |body| body_error(body) }.first
+    bodies.filter_map { |body| body_error(body, start) }.first
   end
 
   # nil when one RRULE body is allowed, else the message.
-  def self.body_error(body)
+  def self.body_error(body, start)
     parts = body.split(";").map { |part| part.split("=", 2).map(&:strip).then { |key, value| [key.to_s, value.to_s] } }
     return UNPARSEABLE unless known_parts?(parts.map(&:first))
 
-    parts.filter_map { |key, _| PART_ERRORS[key] }.first || value_error(parts.to_h, body)
+    parts.filter_map { |key, _| PART_ERRORS[key] }.first || value_error(parts.to_h, body, start)
   end
 
-  # One FREQ, and every part name known and in upper case.
+  # A FREQ, no part name twice (the last value would hide the first), every name known and in upper case.
   def self.known_parts?(keys)
-    keys.count("FREQ") == 1 && (keys - KNOWN_PARTS).empty?
+    keys.include?("FREQ") && keys.uniq == keys && (keys - KNOWN_PARTS).empty?
   end
 
-  # The message for the frequency or a value the repeat library would take without checking, else nil.
-  def self.value_error(values, body)
-    FREQUENCIES.fetch(values["FREQ"], UNPARSEABLE) || (UNPARSEABLE unless formats_ok?(values) && readable?(body))
+  # The message for the frequency, a value the library would take unchecked, or a rule with no occurrence, else nil.
+  def self.value_error(values, body, start)
+    FREQUENCIES.fetch(values["FREQ"], UNPARSEABLE) ||
+      (UNPARSEABLE unless formats_ok?(values) && readable?(body)) ||
+      (I18n.t("errors.calendar.rule_never_repeats") if never_repeats?(values, body, start))
+  end
+
+  # No occurrence soon after the start (COUNT and UNTIL end a series; they do not make its pattern empty).
+  def self.never_repeats?(values, body, start)
+    pattern = body.gsub(/;?(?:COUNT|UNTIL)=[^;]*/i, "")
+    start = start.in_time_zone(RecurrenceRule::ZONE)
+    series = RecurringSeries.new(rule: pattern, starts_at: start, ends_at: start + 1.hour)
+    horizon = start + (HORIZON_YEARS + values["INTERVAL"].to_i.clamp(1, 100)).years
+    series.occurrences_starting_in(start..horizon, limit: 1).occurrences.empty?
   end
 
   def self.formats_ok?(values)

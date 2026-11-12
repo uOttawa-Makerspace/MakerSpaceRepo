@@ -6,6 +6,7 @@ fr:
       staff_not_in_space: "Ce membre du personnel ne fait pas partie de cet espace."
       color_invalid: "Cette couleur n'est pas valide."
       color_not_saved: "La couleur du personnel n'a pas pu être enregistrée."
+      rule_never_repeats: "ne se répète jamais : aucune date ne correspond à cette règle (par exemple le 30 février). Modifiez les jours ou les mois."
     generic:
       unexpected: "Une erreur inattendue s'est produite de notre côté. Veuillez réessayer. Si le problème persiste, communiquez avec le personnel du makerspace en indiquant la référence %{reference}."
       not_found: "Cette page ou cet élément est introuvable. Il a peut-être été supprimé, ou le lien est erroné."
