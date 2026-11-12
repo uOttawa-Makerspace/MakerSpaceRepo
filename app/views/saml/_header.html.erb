@@ -26,7 +26,7 @@
 
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav ms-auto align-items-xl-baseline">
-          <% locales_change.each do |locale| %>
+          <% (local_assigns.fetch(:switch, true) ? locales_change : []).each do |locale| %>
             <li class="nav-item">
               <%= render 'layouts/locale_switch', locale:, css: 'nav-link' %>
             </li>

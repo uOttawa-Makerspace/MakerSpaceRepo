@@ -171,8 +171,8 @@ class ApplicationController < ActionController::Base
   # Same-site paths only: url_from drops foreign hosts, and anything
   # unsafe_redirect_path? refuses (a backslash, a control character, a leading "//")
   # is refused outright.
-  def safe_back_to
-    target = params[:back_to].to_s
+  def safe_back_to(target = params[:back_to])
+    target = target.to_s
     return if unsafe_redirect_path?(target)
 
     safe = url_from(target)

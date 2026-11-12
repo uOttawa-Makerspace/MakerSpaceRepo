@@ -12,7 +12,7 @@ RSpec.describe "The language switch", type: :request do
   describe "PATCH /locale" do
     it "saves the language for a signed-in user, sets the page language and returns to the page" do
       sign_in
-      patch locale_path, params: { locale: "fr", back_to: "/memberships?x=1" }
+      patch locale_path, params: { locale: "fr", return_to: "/memberships?x=1" }
 
       expect(user.reload.locale).to eq("fr")
       expect(response).to redirect_to("/memberships?x=1")
@@ -42,18 +42,18 @@ RSpec.describe "The language switch", type: :request do
     end
 
     it "goes to the home page when the return address is off-site or missing" do
-      patch locale_path, params: { locale: "fr", back_to: "https://evil.example/x" }
+      patch locale_path, params: { locale: "fr", return_to: "https://evil.example/x" }
       expect(response).to redirect_to(root_path)
-      patch locale_path, params: { locale: "fr", back_to: "//evil.example" }
+      patch locale_path, params: { locale: "fr", return_to: "//evil.example" }
       expect(response).to redirect_to(root_path)
       patch locale_path, params: { locale: "fr" }
       expect(response).to redirect_to(root_path)
     end
 
     it "stays on the sign-in page when the switch is used there, including after a failed sign-in" do
-      patch locale_path, params: { locale: "fr", back_to: "/login" }
+      patch locale_path, params: { locale: "fr", return_to: "/login" }
       expect(response).to redirect_to(login_path)
-      patch locale_path, params: { locale: "fr", back_to: "/login_authentication" }
+      patch locale_path, params: { locale: "fr", return_to: "/login_authentication" }
       expect(response).to redirect_to(login_path)
     end
 
@@ -109,12 +109,21 @@ RSpec.describe "The language switch", type: :request do
     end
   end
 
+  describe "pages with their own form" do
+    it "keeps the sign-in page's back_to fields unique and the redirect page free of the switch" do
+      get login_path(back_to: "/carts")
+      back_tos = Nokogiri::HTML(response.body).css("input[name=back_to]").map { |i| i["value"] }
+      expect(back_tos).to all(eq("/carts"))
+      expect(response.body).to include('action="/locale"')
+    end
+  end
+
   describe "the header form" do
     it "is a post form with the token, naming the other language and the current page" do
       get memberships_path
       form = response.body[/<form[^>]*action="\/locale".*?<\/form>/m]
 
-      expect(form).to include('name="_method" value="patch"', 'name="locale" value="fr"', "back_to", "authenticity_token")
+      expect(form).to include('name="_method" value="patch"', 'name="locale" value="fr"', "return_to", "authenticity_token")
     end
   end
 end
