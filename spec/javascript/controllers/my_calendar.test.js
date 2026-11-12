@@ -32,7 +32,6 @@ vi.mock("@fullcalendar/core", () => ({
     }
   },
 }));
-vi.mock("@fullcalendar/rrule", () => ({ default: {} }));
 vi.mock("@fullcalendar/timegrid", () => ({ default: {} }));
 vi.mock("@fullcalendar/daygrid", () => ({ default: {} }));
 

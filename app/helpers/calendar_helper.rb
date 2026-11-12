@@ -205,34 +205,6 @@ module CalendarHelper
     ActiveSupport::TimeZone["America/Toronto"]
   end
 
-  def convert_to_js_rrule(openstruct_obj)
-    js_rrule = {}
-    
-    js_rrule[:freq] = openstruct_obj.frequency.downcase if openstruct_obj.frequency
-    
-    js_rrule[:interval] = openstruct_obj.interval if openstruct_obj.interval
-    
-    if openstruct_obj.by_day
-      js_rrule[:byweekday] = openstruct_obj.by_day.map do |day|
-        day.downcase[0..1] # maybe not needed but who knows anymore
-      end
-    end
-    
-    js_rrule[:until] = openstruct_obj.until if openstruct_obj.until
-    
-    js_rrule[:count] = openstruct_obj.count if openstruct_obj.count
-    
-    %w[by_second by_minute by_hour by_month_day by_year_day 
-      by_week_number by_month by_set_position].each do |field|
-      value = openstruct_obj.send(field)
-      js_rrule[field.to_sym] = value if value
-    end
-    
-    js_rrule[:wkst] = openstruct_obj.week_start if openstruct_obj.week_start
-    
-    js_rrule
-  end
-
   private
 
   # The calendar events for one UID: the series (or single event) itself, then each modified instance of it.
@@ -360,14 +332,14 @@ module CalendarHelper
     found.is_a?(StandardError) ? found : found.occurrences.size == count
   end
 
-  # The occurrences of a rule before the cutoff, or the ArgumentError IceCube raises for a rule it does not support.
+  # The occurrences of a rule before the cutoff, or the ArgumentError the repeat library raises for a rule it does not support.
   def expand_counted_series(rule_string, start, cutoff, count)
     RecurrenceExpansion.occurrences(rule_string, start, start, cutoff, count)
   rescue ArgumentError => e
     e
   end
 
-  # The first part of the rule whose value is outside what RFC 5545 allows (IceCube fails with a method error on
+  # The first part of the rule whose value is outside what RFC 5545 allows (the repeat library fails or
   # some of these, and accepts others silently), or nil. Only the parts convert_rrule_to_string passes on are
   # checked. A BY part with a sign may count from the end, so only its size is checked.
   def out_of_range_rule_part(rrule_obj)

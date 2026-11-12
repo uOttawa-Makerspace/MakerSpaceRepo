@@ -1,6 +1,5 @@
 import { Controller } from "@hotwired/stimulus";
 import { Calendar } from "@fullcalendar/core";
-import rrulePlugin from "@fullcalendar/rrule";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { Tooltip } from "bootstrap";
@@ -56,7 +55,7 @@ export default class extends TypedController {
 
   calendarOptions() {
     return {
-      plugins: [timeGridPlugin, dayGridPlugin, rrulePlugin],
+      plugins: [timeGridPlugin, dayGridPlugin],
       timeZone: "America/Toronto",
       initialView: "timeGridWeek",
       headerToolbar: {

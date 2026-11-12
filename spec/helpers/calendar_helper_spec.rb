@@ -264,18 +264,18 @@ RSpec.describe CalendarHelper, type: :helper do
     end
 
     it "keeps a counted series whose rule cannot be expanded, reports it, and still lists the other events" do
-      unreadable = ["FREQ=WEEKLY;BYWEEKNO=3;COUNT=2", "FREQ=DAILY;BYYEARDAY=400;COUNT=2", "FREQ=WEEKLY;INTERVAL=0;COUNT=2", "FREQ=MONTHLY;BYMONTH=13;COUNT=2"]
+      unreadable = ["FREQ=DAILY;BYYEARDAY=400;COUNT=2", "FREQ=WEEKLY;INTERVAL=0;COUNT=2", "FREQ=MONTHLY;BYMONTH=13;COUNT=2"]
       vevents = unreadable.each_with_index.map do |rule, i|
         vevent("bad#{i}", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Bad #{i}", "RRULE:#{rule}"])
       end
       stub_request(:get, url).to_return(status: 200, body: ics(*vevents, vevent("fine", ["DTSTART:20270115T150000Z", "DTEND:20270115T160000Z", "SUMMARY:Fine"])))
       events = nil
       reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
-      expect(events.map { |e| e[:id] }).to eq(%w[bad0 bad1 bad2 bad3 fine])
-      expect(reports.map { |_, context| context[:event_uid] }).to eq(%w[bad0 bad1 bad2 bad3])
+      expect(events.map { |e| e[:id] }).to eq(%w[bad0 bad1 bad2 fine])
+      expect(reports.map { |_, context| context[:event_uid] }).to eq(%w[bad0 bad1 bad2])
       expect(reports.map { |_, context| context[:error_class] }).to all(eq("ArgumentError"))
       expect(reports.map(&:first)).to eq(
-        ["Invalid rule validation type: BYWEEKNO", "by_year_day is out of range", "interval is out of range", "by_month is out of range"]
+        ["by_year_day is out of range", "interval is out of range", "by_month is out of range"]
       )
     end
 
@@ -568,21 +568,6 @@ RSpec.describe CalendarHelper, type: :helper do
       value = Object.new
       def value.to_s = "2027-01-01 05:00:00 UTC"
       expect(safe_to_time(value)).to be_nil
-    end
-  end
-
-  describe "#convert_to_js_rrule" do
-    it "maps every present field to the JS rrule keys, shortening the weekdays to two letters" do
-      rule = OpenStruct.new(frequency: "WEEKLY", interval: 2, by_day: %w[MO WE], until: "2027-06-01", count: 4,
-                            by_hour: [9], by_month: [1], week_start: "SU")
-      expect(convert_to_js_rrule(rule)).to eq(
-        freq: "weekly", interval: 2, byweekday: %w[mo we], until: "2027-06-01", count: 4,
-        by_hour: [9], by_month: [1], wkst: "SU"
-      )
-    end
-
-    it "is empty for a rule with nothing set" do
-      expect(convert_to_js_rrule(OpenStruct.new)).to eq({})
     end
   end
 end
