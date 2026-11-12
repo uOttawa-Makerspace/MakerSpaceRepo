@@ -20,6 +20,9 @@ RUN addgroup -g 1000 -S rails && \
     adduser -u 1000 -S -G rails -h /rails -s /bin/sh rails
 
 # Runtime environment flags
+# RAILS_ENV defaults to staging. Production gets RAILS_ENV=production only from
+# docker-compose.production.yml, so a container started without that file
+# (docker run, a one-off task) must pass -e RAILS_ENV=production itself.
 ENV RAILS_ENV="staging" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_PATH="/usr/local/bundle" \
