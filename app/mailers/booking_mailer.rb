@@ -1,35 +1,24 @@
 class BookingMailer < ApplicationMailer
+  helper_method :booker_name
+
   # Receives the mails meant for a space's managers when the space has none.
   MTC_MAILBOX = "mtc@uottawa.ca"
 
+  # The mails to staff are written in the recipient's saved language (see ApplicationMailer#mail): a mail to several
+  # managers at once is in the site's default language. Subjects come from booking_mailer.<action>.subject.
   def send_booking_needs_approval(booking_id)
     @booking = SubSpaceBooking.find(booking_id)
     @sub_space = SubSpace.find(@booking.sub_space_id)
 
     return if @sub_space.approval_required == false
-    @emails = manager_emails(@booking.sub_space.space)
-    @message =
-      "A booking has been made in " + @sub_space.name + " by " + booker_name +
-        " for " + @booking.description + " on " +
-        @booking.start_time.to_formatted_s(:long) + " to " +
-        @booking.end_time.to_formatted_s(:long) +
-        ". Please check the Booking Admin Panel to approve or decline this booking."
-    mail(to: @emails, subject: "Booking needs approval")
+
+    mail(to: manager_emails(@sub_space.space))
   end
 
   def send_booking_automatically_approved(booking_id)
     @booking = SubSpaceBooking.find(booking_id)
     @sub_space = SubSpace.find(@booking.sub_space_id)
-    @emails = manager_emails(@booking.sub_space.space)
-    @message =
-      "A booking has been made and automatically approved in " +
-        @sub_space.name + " by " + booker_name + " for " +
-        @booking.description + " on " +
-        @booking.start_time.to_formatted_s(:long) + " to " +
-        @booking.end_time.to_formatted_s(:long) +
-        ". If you want to disable automatic booking for this subspace, go to the admin space page."
-
-    mail(to: @emails, subject: "Booking automatically approved.")
+    mail(to: manager_emails(@sub_space.space))
   end
 
   def send_booking_approved(booking_id)
@@ -64,12 +53,7 @@ class BookingMailer < ApplicationMailer
 
     return if emails.empty? || @user.deleted?
 
-    @message =
-      "A user by the name of " + @user.name +
-        " has requested to be a room booker in makeroom. Please go to the
-                <a href='https://makerepo.com/sub_space_booking'>MakeRepo Booking</a> admin
-                panel to approve or deny this request."
-    mail(to: emails, subject: "Booking approval request sent")
+    mail(to: emails)
   end
 
   def send_booking_approval_request_approved(booking_approval_id)

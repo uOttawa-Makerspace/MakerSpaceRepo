@@ -30,6 +30,21 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
     perform_enqueued_jobs { yield }
   end
 
+  # The mail's visible text, with markup and entities resolved.
+  def text_of(mail)
+    Nokogiri::HTML(mail.body.decoded).text.squish
+  end
+
+  # A room in a space whose only manager saved French.
+  let(:french_manager) { create(:user, :admin, locale: "fr") }
+  let(:french_booking) do
+    space = create(:space)
+    space.space_managers << french_manager
+    create(:sub_space_booking, sub_space: create(:sub_space, space: space, approval_required: true, name: "Atelier"),
+                               user: booker, description: "Weekly build",
+                               start_time: booking.start_time, end_time: booking.end_time)
+  end
+
   describe ".send_booking_needs_approval" do
     it "mails every space manager with the booking summary" do
       described_class.send_booking_needs_approval(booking.id).deliver_now
@@ -47,14 +62,51 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(mail.body.encoded).not_to include("Robot Club")
     end
 
-    it "marks the booker of a deleted account in the managers' language" do
+    it "marks the booker of a deleted account in the mail's language, not the sender's" do
       booker.update_columns(deleted: true)
 
-      described_class.send_booking_needs_approval(booking.id).deliver_now
-      expect(delivered.last.body.encoded).to include("by Pat Booker (deleted account) for Weekly build")
-
       I18n.with_locale(:fr) { described_class.send_booking_needs_approval(booking.id).deliver_now }
-      expect(delivered.last.body.decoded).to include("by Pat Booker (compte supprimé) for Weekly build")
+      expect(delivered.last.body.decoded).to include("by Pat Booker (deleted account) for Weekly build")
+
+      deliver_later_and_perform { described_class.send_booking_needs_approval(french_booking.id).deliver_later }
+      expect(delivered.last.body.decoded).to include("par Pat Booker (compte supprimé) pour Weekly build")
+    end
+
+    it "is written in French for a sole manager who saved French, even when queued from an English page" do
+      I18n.with_locale(:en) do
+        deliver_later_and_perform { described_class.send_booking_needs_approval(french_booking.id).deliver_later }
+      end
+
+      mail = delivered.sole
+      expect(mail.to).to eq([french_manager.email])
+      expect(mail.subject).to eq("Réservation à approuver")
+      body = text_of(mail)
+      expect(body).to include("Bonjour,")
+      expect(body).to include(
+        "Une réservation a été faite dans Atelier par Pat Booker pour Weekly build " \
+        "du 03 mars 2027 à 10:00 au 03 mars 2027 à 11:30. " \
+        "Veuillez consulter le panneau d'administration des réservations pour approuver ou refuser cette réservation."
+      )
+      expect(body).to include("Ouvrir le panneau")
+      expect(body).not_to include("Hello", "March")
+    end
+
+    it "is written in the default language when it goes to several managers, whatever they saved" do
+      managed_space.space_managers.first.update!(locale: "fr")
+      I18n.with_locale(:fr) { described_class.send_booking_needs_approval(booking.id).deliver_now }
+
+      mail = delivered.sole
+      expect(mail.subject).to eq("Booking needs approval")
+      expect(text_of(mail)).to include("Hello,", "Visit Panel")
+    end
+
+    it "shows the booking description as text, never as markup" do
+      booking.update_columns(description: "<b>loud</b> & <script>x</script>")
+      described_class.send_booking_needs_approval(booking.id).deliver_now
+
+      body = delivered.sole.body.decoded
+      expect(body).to include("&lt;b&gt;loud&lt;/b&gt; &amp; &lt;script&gt;x&lt;/script&gt;")
+      expect(body).not_to include("<script>x")
     end
 
     it "falls back to the booking title when the booking has no user" do
@@ -113,6 +165,21 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(delivered.size).to eq(1)
       expect(delivered.last.to).to eq(["mtc@uottawa.ca"])
       expect(delivered.last.subject).to eq("Booking automatically approved.")
+    end
+
+    it "is written in French for a sole manager who saved French" do
+      deliver_later_and_perform { described_class.send_booking_automatically_approved(french_booking.id).deliver_later }
+
+      mail = delivered.sole
+      expect(mail.to).to eq([french_manager.email])
+      expect(mail.subject).to eq("Réservation approuvée automatiquement")
+      body = text_of(mail)
+      expect(body).to include(
+        "Une réservation a été faite et approuvée automatiquement dans Atelier par Pat Booker pour Weekly build " \
+        "du 03 mars 2027 à 10:00 au 03 mars 2027 à 11:30. Pour désactiver l'approbation automatique"
+      )
+      expect(body).to include("Vous avez reçu ce courriel parce qu'une réservation a été approuvée automatiquement.")
+      expect(body).not_to include("Hello", "March")
     end
   end
 
@@ -177,6 +244,22 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
       expect(mail.to).to eq(["a@uottawa.ca", "b@uottawa.ca"])
       expect(mail.subject).to eq("Booking approval request sent")
       expect(mail.body.encoded).to include("A user by the name of Pat Booker has requested to be a room booker in makeroom.")
+      expect(text_of(mail)).to include("Please go to the MakerRepo Booking admin panel to approve or deny this request.")
+    end
+
+    it "is written in French for a sole recipient who saved French, with the applicant's name as text" do
+      booker.update_column(:name, "Pat <b>Booker</b>") # older rows predate the name check
+      recipient = create(:user, :admin, locale: "fr")
+      deliver_later_and_perform { described_class.send_booking_approval_request_sent(uba.id, [recipient.email]).deliver_later }
+
+      mail = delivered.sole
+      expect(mail.subject).to eq("Demande d'accès aux réservations envoyée")
+      expect(text_of(mail)).to include(
+        "Pat <b>Booker</b> a demandé l'accès aux réservations de salles dans makeroom. " \
+        "Veuillez aller au panneau d'administration Réservation MakerRepo pour approuver ou refuser cette demande."
+      )
+      expect(mail.body.decoded).to match(%r{<a href="https?://[^"/]+/sub_space_booking#booking-admin-tab">Réservation MakerRepo</a>})
+      expect(mail.body.decoded).not_to include("<b>Booker")
     end
 
     it "sends nothing for an empty recipient list" do
@@ -225,11 +308,6 @@ RSpec.describe BookingMailer, :booking_clock, type: :mailer do
     def answered(status, reason: nil)
       UserBookingApproval.create!(user: booker, identity: "Other", comments: "c", date: Date.new(2027, 1, 1),
                                   status: status, decided_at: Time.current, reason: reason)
-    end
-
-    # The mail's visible text, with markup and entities resolved.
-    def text_of(mail)
-      Nokogiri::HTML(mail.body.decoded).text.squish
     end
 
     it "tells the requester in French and English that the request was declined, and why" do
