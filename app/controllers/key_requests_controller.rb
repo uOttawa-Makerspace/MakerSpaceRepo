@@ -1,4 +1,5 @@
 class KeyRequestsController < SessionsController
+  before_action :signed_in
   before_action :ensure_staff_or_teams_program
   before_action :check_key_request, only: %i[new create]
   before_action :set_key_request, only: %i[show steps update_steps]

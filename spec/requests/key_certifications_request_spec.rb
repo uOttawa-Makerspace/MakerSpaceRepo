@@ -2,7 +2,7 @@ require "rails_helper"
 
 # Chunk 12: KeyCertificationsController (uploaded safety-training PDFs of
 # staff / Teams members). Gate: staff, admin or Teams-program member
-# (`ensure_staff_or_teams_program`); everyone else (guests too) goes to root
+# (`ensure_staff_or_teams_program`); everyone else goes to root, guests to the sign-in page,
 # with "You cannot access this area.". Writes (update, destroy_pdf) only act
 # when the key certification belongs to the current user: for anyone else
 # (admins included) they silently do nothing.
@@ -16,7 +16,7 @@ RSpec.describe "Key certifications", type: :request do
     create(:user, :regular_user).tap { |u| Program.create!(user: u, program_type: Program::TEAMS) }
   end
 
-  %i[guest regular volunteer].each do |role|
+  %i[regular volunteer].each do |role|
     it "bounces a #{role} from show/update/destroy_pdf" do
       sign_in_as(role)
       get key_certification_path(key_cert)
@@ -26,6 +26,14 @@ RSpec.describe "Key certifications", type: :request do
       expect(response).to redirect_to(root_path)
       expect(key_cert.reload.pdf_file_1).not_to be_attached
     end
+  end
+
+  it "sends a guest to the sign-in page, remembering the page, and changes nothing" do
+    get key_certification_path(key_cert)
+    expect(response).to redirect_to(login_path(back_to: key_certification_path(key_cert)))
+    patch key_certification_path(key_cert), params: { pdf_file_1: pdf }
+    expect(response).to redirect_to(login_path)
+    expect(key_cert.reload.pdf_file_1).not_to be_attached
   end
 
   it "lets the owner show the page" do

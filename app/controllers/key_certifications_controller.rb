@@ -1,4 +1,5 @@
 class KeyCertificationsController < SessionsController
+  before_action :signed_in
   before_action :ensure_staff_or_teams_program
   before_action :set_key_certification, only: %i[update show destroy_pdf]
 

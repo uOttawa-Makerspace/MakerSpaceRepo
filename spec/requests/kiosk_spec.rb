@@ -2,7 +2,7 @@ require "rails_helper"
 
 # Chunk 15: KioskController. A kiosk is a browser left logged in as a staff
 # or admin user; there is no device token. Everything is gated by
-# `current_user.staff? || current_user.admin?`; guests and regular users are
+# `current_user.staff? || current_user.admin?`; guests are sent to the sign-in page and regular users are
 # bounced to root with "You cannot access this area.". Once in, the kiosk lets
 # the session holder sign ANY user (looked up by username or email, no password)
 # in or out of any space.
@@ -22,13 +22,25 @@ RSpec.describe "Kiosks", type: :request do
       "GET /kiosk/:id/edit" => -> { get edit_kiosk_path(space.id) },
       "POST /kiosk/:id/sign_email" => -> { post kiosk_sign_email_path(space.id), params: { visitor: visitor.username, entering: "true" } }
     }.each do |label, action|
-      %i[guest regular volunteer].each do |role|
+      %i[regular volunteer].each do |role|
         it "#{label} bounces a #{role}" do
           sign_in_as(role)
           instance_exec(&action)
           expect_bounced
         end
       end
+    end
+
+    it "GET /kiosk sends a guest to the sign-in page, remembering the page" do
+      get kiosk_index_path
+      expect(response).to redirect_to(login_path(back_to: kiosk_index_path))
+    end
+
+    it "GET /kiosk/:id and its edit page send a guest to the sign-in page" do
+      get kiosk_path(space.id)
+      expect(response).to redirect_to(login_path(back_to: kiosk_path(space.id)))
+      get edit_kiosk_path(space.id)
+      expect(response).to redirect_to(login_path(back_to: edit_kiosk_path(space.id)))
     end
 
     it "does not create a lab session for a guest posting sign_email" do
