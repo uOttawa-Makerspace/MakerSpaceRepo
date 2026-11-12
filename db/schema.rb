@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_200100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -907,6 +907,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_180000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["membership_tier_id"], name: "index_memberships_on_membership_tier_id"
+    t.index ["user_id", "membership_tier_id", "end_date"], name: "index_memberships_on_user_tier_and_end_date_when_paid", unique: true, where: "((status)::text = 'paid'::text)"
     t.index ["user_id"], name: "index_memberships_on_user_id"
   end
 
@@ -1519,6 +1520,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_180000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.index ["space_id", "user_id"], name: "idx_staff_spaces_space_user"
+    t.index ["user_id", "space_id"], name: "index_staff_spaces_on_user_id_and_space_id", unique: true
     t.index ["user_id"], name: "index_staff_spaces_on_user_id"
   end
 
