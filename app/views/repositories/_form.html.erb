@@ -7,9 +7,9 @@
         <div class="form-text"><%= t('repository.title_msg') %></div>
     </div>
     <div class="mb-3">
-        <%= f.label :description, class: 'form-label' %>
+        <%= f.trix_label :description, class: 'form-label' %>
         <div>
-            <%= f.trix_editor :description, class: 'form-control', 'aria-label': Repository.human_attribute_name(:description), style: 'height: auto!important;', required: true %>
+            <%= f.trix_editor :description, class: 'form-control', style: 'height: auto!important;', required: true %>
         </div>
     </div>
 

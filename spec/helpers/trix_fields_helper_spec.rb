@@ -19,7 +19,7 @@ RSpec.describe TrixFieldsHelper, type: :helper do
           placeholder: "Description...",
           class: "form-control mb-5",
           id: "redactor",
-          'aria-label': "Description"
+          aria: { label: "Description" }
         )
       ""
     end

@@ -9,7 +9,7 @@
           <div class="pr-5 pl-5 text-center">
             <div class="text-start">
               <input id="job-order-message" value="<%= @message %>" type="hidden" name="message">
-              <trix-editor input="job-order-message"></trix-editor>
+              <trix-editor input="job-order-message" aria-label="<%= t('common.names.completed_email_message') %>"></trix-editor>
             </div>
             <%= hidden_field_tag :completed, true %>
             <%= hidden_field_tag :send_email, true %>
