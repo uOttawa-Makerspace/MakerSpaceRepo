@@ -43,6 +43,14 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
     pick("book-end", finish)
   end
 
+  # A booking saved or deleted through the modal answers with an empty 204 and
+  # the page then reloads to show the server's notice. The notice exists only
+  # on the reloaded page, so waiting for it waits for the reload to finish
+  # instead of querying the old document while it is being replaced.
+  def expect_notice_after_reload(text)
+    expect(page).to have_css("#flash .alert", text: text)
+  end
+
   def stored(booking)
     booking.reload.start_time.in_time_zone(eastern).strftime("%Y-%m-%d %H:%M")
   end
@@ -106,6 +114,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       fill_booking
       click_button "bookSave"
 
+      expect_notice_after_reload("Booking for Laser Room created successfully.")
       expect(page).to have_no_css("#bookModal.show", visible: :all)
       expect(page).to have_css(".fc-timegrid-event", text: "Laser practice - Cutting acrylic", visible: :all)
       booking = SubSpaceBooking.find_by!(name: "Laser practice")
@@ -149,6 +158,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       select "Weekly", from: "book-recurring-type"
       click_button "bookSave"
 
+      expect_notice_after_reload("Booking for Laser Room created successfully.")
       expect(page).to have_no_css("#bookModal.show", visible: :all)
       expect(page).to have_css(".fc-timegrid-event", text: "Laser practice", visible: :all)
       bookings = SubSpaceBooking.where(name: "Laser practice").order(:start_time)
@@ -216,6 +226,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       check "book-blocking"
       click_button "bookSave"
 
+      expect_notice_after_reload("Booking for Laser Room created successfully.")
       expect(page).to have_no_css("#bookModal.show", visible: :all)
       expect(SubSpaceBooking.find_by!(name: "Closed").blocking).to be(true)
     end
@@ -280,6 +291,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       open_booking
       accept_confirm("Delete this booking?") { click_button "bookDelete" }
 
+      expect_notice_after_reload("Booking for Laser Room deleted successfully.")
       expect(page).to have_no_css(".fc-timegrid-event", text: "Team lab", visible: :all)
       expect(SubSpaceBooking.exists?(booking.id)).to be(false)
     end
@@ -351,6 +363,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       click_button "Delete..."
       accept_confirm("Delete this booking?") { click_button "bookRecurringDeleteOne" }
 
+      expect_notice_after_reload("Booking for Laser Room deleted successfully.")
       expect(page).to have_no_css("#bookModal.show", visible: :all)
       expect(SubSpaceBooking.where(name: "Club night").count).to eq(1)
     end
@@ -361,6 +374,7 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       click_button "Delete..."
       accept_confirm("Delete this and all remaining occurrences?") { click_button "bookRecurringDeleteRest" }
 
+      expect_notice_after_reload("Remaining bookings for Laser Room deleted successfully.")
       expect(page).to have_no_css(".fc-timegrid-event", text: "Club night", visible: :all)
       expect(SubSpaceBooking.where(name: "Club night")).to be_empty
     end
