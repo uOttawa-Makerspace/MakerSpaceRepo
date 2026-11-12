@@ -131,7 +131,7 @@ module PageCrawl
         { path: %r{\A/key_requests\z}, roles: %i[staff admin], status: :redirect,
           to: %r{\A/key_requests/new\z}, why: "the user has no key request yet" },
         { path: %r{\A/key_certifications/:id\z}, roles: %i[staff], status: :redirect,
-          to: %r{\A/new\.}, why: "known defect: redirects to the sign-up route (users_path) instead of the profile" },
+          to: %r{\A/[^/]+\z}, why: "the certification belongs to another user; the staff member is sent to their profile" },
         { path: %r{\A/staff/training_sessions/:id(/training_report)?\z}, roles: %i[staff], status: :redirect,
           to: %r{\A/staff/training_sessions/new\z}, why: "the session belongs to another staff member" },
         { path: %r{\A/staff_dashboard/user_profile\z}, roles: %i[staff admin], status: :redirect,

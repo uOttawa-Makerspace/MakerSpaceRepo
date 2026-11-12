@@ -37,7 +37,7 @@ RSpec.describe "Key certifications", type: :request do
   it "redirects staff who are not the owner to their own user page with an alert" do
     other = log_in!(create(:user, :staff))
     get key_certification_path(key_cert)
-    expect(response).to redirect_to(users_path(other.username))
+    expect(response).to redirect_to(user_path(other.username))
     expect(flash[:alert]).to eq("You cannot access this page")
   end
 
@@ -54,7 +54,7 @@ RSpec.describe "Key certifications", type: :request do
     get key_certification_path(mine)
     expect(response).to have_http_status(:ok)
     get key_certification_path(key_cert)
-    expect(response).to redirect_to(users_path(member.username))
+    expect(response).to redirect_to(user_path(member.username))
   end
 
   describe "PATCH update" do

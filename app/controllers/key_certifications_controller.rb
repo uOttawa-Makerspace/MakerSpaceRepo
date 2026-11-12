@@ -4,7 +4,7 @@ class KeyCertificationsController < SessionsController
 
   def show
     if !@user.eql?(@key_certification.user) && !@user.admin?
-      redirect_to users_path(@user.username),
+      redirect_to user_path(@user.username),
                   alert: "You cannot access this page"
     end
   end
