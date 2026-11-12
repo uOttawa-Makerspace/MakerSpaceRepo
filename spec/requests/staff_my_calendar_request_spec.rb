@@ -4,7 +4,7 @@ require "rails_helper"
 
 # Staff::MyCalendarController (index page + JSON feed). The feed is built from
 # Event rows (not Shift, which no controller uses). The app zone is Eastern;
-# recurring events are expanded with IceCube from the event's own start_time, so
+# recurring events are expanded by RecurringSeries from the event's own start_time, so
 # the wall-clock hour is kept across the DST jump (Sun 2027-03-14 in Toronto).
 # travel_to goes BEFORE login: sessions expire (session[:expires_at]) relative to
 # the clock at login time.
@@ -224,7 +224,7 @@ RSpec.describe "Staff my calendar", type: :request do
     # Counts the candidate occurrences the rule generates, so the bound is on work done, not on time.
     def rule_steps
       steps = 0
-      allow_any_instance_of(IceCube::ValidatedRule).to receive(:next_time).and_wrap_original do |original, *args|
+      allow_any_instance_of(RRule::Frequency).to receive(:advance).and_wrap_original do |original, *args|
         steps += 1
         original.call(*args)
       end

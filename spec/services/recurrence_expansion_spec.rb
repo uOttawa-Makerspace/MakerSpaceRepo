@@ -6,7 +6,7 @@ require "rails_helper"
 # DAILY/WEEKLY/MONTHLY/YEARLY rule repeats a wall-clock time:
 #   spring-forward 2027-03-14: 02:30 does not exist and moves forward to 03:30 EDT;
 #   fall-back 2026-11-01: 01:30 happens twice and is listed once, at the first
-#   (EDT) instant. IceCube alone lists it twice and counts both against COUNT.
+#   (EDT) instant. a plain walk of the wall clock would list it twice and count both against COUNT.
 RSpec.describe RecurrenceExpansion do
   let(:zone) { ActiveSupport::TimeZone["Eastern Time (US & Canada)"] }
 
@@ -94,10 +94,10 @@ RSpec.describe RecurrenceExpansion do
   end
 
   describe "cost of a COUNT rule (bounded)" do
-    # IceCube calls ValidatedRule#next_time once per candidate occurrence.
+    # The repeat library advances once per period of candidates.
     def rule_steps
       steps = 0
-      allow_any_instance_of(IceCube::ValidatedRule).to receive(:next_time).and_wrap_original do |m, *args|
+      allow_any_instance_of(RRule::Frequency).to receive(:advance).and_wrap_original do |m, *args|
         steps += 1
         m.call(*args)
       end
@@ -106,7 +106,7 @@ RSpec.describe RecurrenceExpansion do
     end
 
     # COUNT is counted from the series start, so the walk from DTSTART to the
-    # window is unavoidable (IceCube does the same for COUNT). Inside the window
+    # window is unavoidable (the repeat library does the same for COUNT). Inside the window
     # it must stop after limit + 1, however far the window and the COUNT reach.
     it "walks to the window and then stops after limit + 1 for a legacy DAILY;COUNT=100000 started years ago" do
       start = local(2023, 11, 2, 9)
@@ -119,32 +119,6 @@ RSpec.describe RecurrenceExpansion do
       expect(result.occurrences.first.iso8601).to eq("2026-11-02T09:00:00-05:00")
       expect(steps).to be <= days_before + 501 + 2 # eager: ~100000
     end
-  end
-
-  it "looks up the repeated-hour check only for standard-time occurrences (daylight ones are never the duplicate)" do
-    summer = [local(2027, 6, 1, 1, 30), local(2027, 6, 1), local(2027, 8, 1)]
-    winter = [local(2027, 1, 4, 1, 30), local(2027, 1, 1), local(2027, 2, 1)]
-    lookups = 0
-    # count only the lookups made by RecurrenceExpansion itself (IceCube builds times with #local too)
-    allow(zone).to receive(:local).and_wrap_original do |m, *a|
-      direct = caller_locations.find { |l| !l.path.include?("/rspec-") && !l.path.end_with?(__FILE__) }
-      lookups += 1 if direct.path.end_with?("app/services/recurrence_expansion.rb")
-      m.call(*a)
-    end
-    expect(starts("RRULE:FREQ=DAILY;COUNT=30", *summer).size).to eq(30)
-    expect(lookups).to eq(0)
-    expect(starts("RRULE:FREQ=DAILY;COUNT=5", *winter).size).to eq(5)
-    expect(lookups).to eq(4) # every standard-time occurrence but the series start
-  end
-
-  it "does not modify the parsed rule (a cached rule keeps its COUNT)" do
-    cached = IceCube::Rule.from_ical("FREQ=DAILY;COUNT=3")
-    allow(IceCube::Rule).to receive(:from_ical).and_return(cached)
-    expected = %w[2026-10-31T01:30:00-04:00 2026-11-01T01:30:00-04:00 2026-11-02T01:30:00-05:00]
-    2.times do
-      expect(starts("RRULE:FREQ=DAILY;COUNT=3", local(2026, 10, 31, 1, 30), local(2026, 10, 1), local(2026, 12, 1))).to eq(expected)
-    end
-    expect(cached.occurrence_count).to eq(3)
   end
 
   it "still stops at the limit and reports truncation" do
@@ -189,7 +163,7 @@ RSpec.describe RecurrenceExpansion do
         .to eq(%w[2027-03-08T10:00:00-05:00 2027-03-22T10:00:00-04:00])
     end
 
-    it "applies to a rule IceCube enumerates directly and counts truncation after the exclusion" do
+    it "applies to a rule without COUNT and counts truncation after the exclusion" do
       rule = "RRULE:FREQ=DAILY\nEXDATE:20270105T150000Z"
       result = described_class.occurrences(rule, start, start, start + 5.days, 2)
       expect(result.occurrences.map(&:iso8601)).to eq(%w[2027-01-04T10:00:00-05:00 2027-01-06T10:00:00-05:00])

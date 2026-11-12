@@ -151,11 +151,11 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
       shift(attrs).tap { |e| e.update_column(:recurrence_rule, rule) }
     end
 
-    # IceCube rule steps (one per candidate occurrence) taken while the block runs. A
+    # Repeat-library steps (one per period of candidates) taken while the block runs. A
     # deterministic bound on expansion work: wall-clock limits failed under gate load.
     def rule_steps
       steps = 0
-      allow_any_instance_of(IceCube::ValidatedRule).to receive(:next_time).and_wrap_original do |m, *args|
+      allow_any_instance_of(RRule::Frequency).to receive(:advance).and_wrap_original do |m, *args|
         steps += 1
         m.call(*args)
       end
@@ -171,7 +171,7 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
         expect(body.size).to eq(500)
         expect(response.headers["X-Truncated"]).to eq("true")
         expect(body.first.keys).to eq(%w[id title start end allDay extendedProps])
-        expect(steps).to be <= 501 # an unbounded expansion of the window takes 144k (MINUTELY)
+        expect(steps).to be <= 20_000 # the gem steps in batches (18,501 for SECONDLY); unbounded is 144k (MINUTELY) and 8.6M (SECONDLY)
       end
     end
 
@@ -179,7 +179,7 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
       stored_shift("FREQ=MINUTELY", start_time: t0 - 2.years, end_time: t0 - 2.years + 1.hour)
       steps = rule_steps { shifts({ start: t0.iso8601, end: (t0 + 1.day).iso8601 }) }
       expect(body.size).to eq(500)
-      expect(steps).to be <= 501 # unbounded: 1440 for the day, ~1M walking from DTSTART
+      expect(steps).to be <= 20_000 # unbounded: ~1M walking from DTSTART
     end
 
     it "caps the whole response across events and keeps the earliest first" do

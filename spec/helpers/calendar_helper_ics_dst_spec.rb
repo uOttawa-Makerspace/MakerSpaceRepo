@@ -246,15 +246,16 @@ RSpec.describe CalendarHelper, type: :helper do
         .to eq("DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20271107T013000")
     end
 
-    # Disagreement, named "UNTIL sent as wall time": the browser reads the bare UNTIL as the same wall time and
-    # includes the last day (3 occurrences in the file, 3 drawn). The server's engine reads a bare UNTIL as UTC, so
-    # given the sent text it ends a day (or four hours) early and drops the last occurrence.
-    it "gives a text the server's engine cuts one occurrence short" do
+    # The browser reads the bare UNTIL as the same wall time and includes the last day (3 occurrences in the file,
+    # 3 drawn). The server's engine reads a date as the end of that Toronto day and a bare time as Toronto wall
+    # time, so given the sent text it also keeps the last occurrence (it used to read the bare UNTIL as UTC and
+    # drop it).
+    it "gives a text the server's engine keeps whole" do
       date_until = row(rows, "until-date@ics.test")
-      expect(starts(server_occurrences(date_until["rrule"], toronto_start(date_until)))).to eq(%w[2027-03-07T00:00 2027-03-14T00:00 2027-03-21T00:00])
+      expect(starts(server_occurrences(date_until["rrule"], toronto_start(date_until)))).to eq(%w[2027-03-07T00:00 2027-03-14T00:00 2027-03-21T00:00 2027-03-28T00:00])
 
       utc_until = row(rows, "until-utc@ics.test")
-      expect(starts(server_occurrences(utc_until["rrule"], toronto_start(utc_until)))).to eq(%w[2027-03-07T10:00 2027-03-14T10:00])
+      expect(starts(server_occurrences(utc_until["rrule"], toronto_start(utc_until)))).to eq(%w[2027-03-07T10:00 2027-03-14T10:00 2027-03-21T10:00])
 
       as_filed = "DTSTART:20270307T150000Z\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20270321T140000Z"
       expect(starts(server_occurrences(as_filed, toronto.local(2027, 3, 7, 10)))).to eq(%w[2027-03-07T10:00 2027-03-14T10:00 2027-03-21T10:00])
@@ -285,17 +286,15 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(row(rows, "first-sunday-november@ics.test")["rrule"]).to eq("DTSTART:20271003T013000\nRRULE:FREQ=MONTHLY;BYDAY=SU;BYSETPOS=1")
     end
 
-    # Disagreement, named "BYSETPOS ignored by the server": the browser honours BYSETPOS (last weekday of each
-    # month, the second Sunday of each month); IceCube, which the server's engine uses, drops it without a message
-    # and lists every weekday (every Sunday).
-    it "gives a text the server's engine expands as if BYSETPOS were not there" do
+    # The server's engine honours BYSETPOS (it used to drop it without a message and list every weekday or Sunday).
+    it "gives a text the server's engine expands with BYSETPOS applied" do
       last = row(rows, "last-weekday@ics.test")
-      expect(starts(server_occurrences(last["rrule"], toronto_start(last), count: 6)))
-        .to eq(%w[2027-02-26T09:00 2027-03-01T09:00 2027-03-02T09:00 2027-03-03T09:00 2027-03-04T09:00 2027-03-05T09:00])
+      expect(starts(server_occurrences(last["rrule"], toronto_start(last), count: 4)))
+        .to eq(%w[2027-02-26T09:00 2027-03-31T09:00 2027-04-30T09:00 2027-05-31T09:00])
 
       second = row(rows, "second-sunday-march@ics.test")
-      expect(starts(server_occurrences(second["rrule"], toronto_start(second), count: 6)))
-        .to eq(%w[2027-02-14T02:30 2027-02-21T02:30 2027-02-28T02:30 2027-03-07T02:30 2027-03-14T03:30 2027-03-21T02:30])
+      expect(starts(server_occurrences(second["rrule"], toronto_start(second), count: 4)))
+        .to eq(%w[2027-02-14T02:30 2027-03-14T03:30 2027-04-11T02:30 2027-05-09T02:30])
     end
   end
 end
