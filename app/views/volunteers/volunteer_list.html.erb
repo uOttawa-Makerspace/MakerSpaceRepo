@@ -160,7 +160,7 @@
                             <% if vtj.volunteer_task %>
                               <%= link_to volunteer_task_path(vtj.volunteer_task_id), class: "badge bg-info-subtle text-info-emphasis border border-info-subtle text-decoration-none text-start text-truncate d-inline-flex align-items-center gap-1 p-2", style: "max-width: 220px;" do %>
                                 <i class="fa-solid fa-list-check"></i>
-                                <span><%= vtj.volunteer_task.title %></span>
+                                <span><%= task.title %></span>
                               <% end %>
                             <% end %>
                           <% end %>
@@ -282,12 +282,10 @@
                     <td class="py-3">
                       <% if v.volunteer_task_joins.any? %>
                         <div class="d-flex flex-column gap-1">
-                          <% v.volunteer_task_joins.each do |vtj| %>
-                            <% if vtj.volunteer_task %>
-                              <%= link_to volunteer_task_path(vtj.volunteer_task_id), class: "badge bg-secondary-subtle text-body-secondary border border-secondary-subtle text-decoration-none text-start text-truncate d-inline-flex align-items-center gap-1 p-2", style: "max-width: 220px;" do %>
-                                <i class="fa-solid fa-list-check"></i>
-                                <span><%= vtj.volunteer_task.title %></span>
-                              <% end %>
+                          <% v.volunteer_task_joins.filter_map(&:volunteer_task).uniq.each do |task| %>
+                            <%= link_to volunteer_task_path(task.id), class: "badge bg-secondary-subtle text-body-secondary border border-secondary-subtle text-decoration-none text-start text-truncate d-inline-flex align-items-center gap-1 p-2", style: "max-width: 220px;" do %>
+                              <i class="fa-solid fa-list-check"></i>
+                              <span><%= task.title %></span>
                             <% end %>
                           <% end %>
                         </div>

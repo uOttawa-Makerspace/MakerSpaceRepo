@@ -114,6 +114,22 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
     end
   end
 
+  describe "GET /volunteers/volunteer_list previous tasks" do
+    it "lists each task once, however many times the volunteer joined and left it" do
+      volunteer = create(:user, :unactive_volunteer_with_volunteer_program, name: "Abe")
+      task = create(:volunteer_task, title: "Repeat chore")
+      create(:volunteer_task_join, :left, volunteer_task: task, user: volunteer)
+      create(:volunteer_task_join, :not_active, volunteer_task: task, user: volunteer)
+      create(:volunteer_task_join, :completed, volunteer_task: create(:volunteer_task, title: "One-off chore"), user: volunteer)
+      vol_login!(create(:user, :staff))
+
+      get volunteer_list_volunteers_path
+
+      expect(response.body.scan(%(href="#{volunteer_task_path(task.id)}")).size).to eq(1)
+      expect(response.body.scan("One-off chore").size).to eq(1)
+    end
+  end
+
   describe "GET /volunteers/emails" do
     it "lists volunteer emails: all, active and inactive" do
       a = create(:user, :volunteer_with_volunteer_program)
