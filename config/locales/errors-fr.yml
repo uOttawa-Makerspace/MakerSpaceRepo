@@ -267,7 +267,6 @@ fr:
       printer_and_user_required: "Veuillez ajouter l'imprimante et l'utilisateur."
       printer_not_found: "Cette imprimante n'existe plus. Rechargez la page et choisissez de nouveau une imprimante."
       user_not_found: "Cet utilisateur n'existe plus. Choisissez de nouveau un utilisateur."
-      session_not_created: "L'imprimante n'a pas été associée à l'utilisateur."
       issue_not_created: "Le problème d'imprimante n'a pas été créé."
       issue_not_updated: "Le problème d'imprimante n'a pas été modifié."
       issue_not_deleted: "Le problème d'imprimante n'a pas été supprimé."

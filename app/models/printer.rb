@@ -45,7 +45,7 @@ class Printer < ApplicationRecord
   def assign_to!(user)
     with_lock do
       previous = Printer.get_last_number_session(id)
-      printer_sessions.build(user: user, in_use: true).save!
+      printer_sessions.create!(user: user, in_use: true)
       previous.update!(in_use: false) if previous&.in_use?
     end
   end

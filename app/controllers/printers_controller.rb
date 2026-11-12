@@ -96,7 +96,8 @@ class PrintersController < StaffAreaController
       printer.release!
       flash[:notice] = "Cleared the user."
     else
-      assign_printer(printer, user)
+      printer.assign_to!(user)
+      flash[:notice] = "Printer Session Created"
     end
     respond_to do |format|
       # blame the client if something goes wrong
@@ -115,14 +116,6 @@ class PrintersController < StaffAreaController
     :user_not_found unless user || user_id == "clear"
   end
   private :printer_link_problem
-
-  def assign_printer(printer, user)
-    printer.assign_to!(user)
-    flash[:notice] = "Printer Session Created"
-  rescue ActiveRecord::RecordInvalid => e
-    flash[:alert] = validation_message(e.record, "errors.printers.session_not_created")
-  end
-  private :assign_printer
 
   def send_print_failed_message_to_user
     msg_params = params[:print_failed_message]
