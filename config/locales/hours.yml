@@ -2,6 +2,8 @@ en:
   hours:
     title: "Hours of Operation"
     disclaimer: "Schedules are subject to change at any time, without notice."
+    day: "Day"
+    times: "Hours"
     student_title: "Student hours"
     public_title: "Community hours"
     summer_title: "Summer hours"
@@ -20,6 +22,8 @@ fr:
   hours:
     title: "Heures d'Ouverture"
     disclaimer: "Les horaires sont susceptibles d'être modifiés à tout moment, sans préavis."
+    day: "Jour"
+    times: "Heures"
     student_title: "Horaires pour les étudiants"
     public_title: "Horaires pour la communauté"
     summer_title: "Horaires d'été"
