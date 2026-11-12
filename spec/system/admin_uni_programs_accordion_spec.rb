@@ -19,9 +19,12 @@ RSpec.describe "Admin uni programs accordion", type: :system do
     expect(page).to have_css("#{faculty}.collapse.show")
     expect(page).to have_no_css(".collapsing")
     expect(page).to have_no_css(programs, text: "Software Engineering", visible: :visible)
+    department_button = find("button[data-bs-target='#{department}']")
+    expect(department_button["aria-expanded"]).to eq("false")
 
     find(".card-header", text: /EECS - 1 programs/).click
     expect(page).to have_css("#{department}.collapse.show")
+    expect(page).to have_css("button[data-bs-target='#{department}'][aria-expanded='true']")
     expect(page).to have_no_css(".collapsing")
     expect(page).to have_css(programs, text: "Software Engineering", visible: :visible)
 
