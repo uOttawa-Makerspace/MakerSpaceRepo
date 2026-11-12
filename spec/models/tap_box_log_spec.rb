@@ -164,7 +164,7 @@ RSpec.describe TapBoxLog, type: :model do
 
       expect(summary).to eq(
         body_size: body.bytesize, content_type: "application/json", keys: %w[sex faculty student_this_semester courses_enrolled],
-        values: { "faculty" => "GENIE", "student_this_semester" => true, "courses_enrolled" => ["GNG1103", "Integer", "Hash"] }
+        values: { "faculty" => "GENIE", "student_this_semester" => true }
       )
     end
 

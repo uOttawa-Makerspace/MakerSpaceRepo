@@ -233,9 +233,11 @@ RSpec.describe User::UoengConcern, type: :model do
 
           details = error_details
           expect(details).to include("reason" => "uoeng_http_error", "http_status" => 503)
-          expect(details["response"]).to include("keys" => full_answer.keys, "values" => full_answer.slice("student_this_semester", "faculty", "courses_enrolled"))
+          expect(details["response"]).to include("keys" => full_answer.keys, "values" => full_answer.slice("student_this_semester", "faculty"))
           expect(details["response"]["body_size"]).to eq(full_answer.to_json.bytesize)
           expect(details.to_json).not_to match(/Canadian|Tester|ann@example|"F"|BASc/)
+          expect(details["response"]["values"]).not_to have_key("courses_enrolled")
+          expect(details.to_json).not_to include("GNG1103")
         end
 
         it "after an answer of the wrong shape holds the same summary" do

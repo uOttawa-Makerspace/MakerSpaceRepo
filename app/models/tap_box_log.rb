@@ -356,7 +356,7 @@ class TapBoxLog < ApplicationRecord
   # type, and for a JSON object the key names and the few values the membership
   # check reads. The body itself is never stored, because a real answer also
   # carries personal fields the app does not use.
-  UOENG_LOGGED_VALUES = %w[student_this_semester faculty courses_enrolled].freeze
+  UOENG_LOGGED_VALUES = %w[student_this_semester faculty].freeze
 
   def self.uoeng_response_summary(response)
     return if response.nil?
@@ -385,7 +385,6 @@ class TapBoxLog < ApplicationRecord
     case value
     when nil, true, false then value
     when String then value.truncate(100)
-    when Array then value.first(20).map { |item| loggable_value(item) }
     else value.class.name
     end
   end
