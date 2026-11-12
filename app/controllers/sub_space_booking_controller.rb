@@ -263,7 +263,6 @@ class SubSpaceBookingController < SessionsController
            .where.not(id: @sub_space_booking.id)
            .overlapping(@sub_space_booking.start_time.utc, @sub_space_booking.end_time.utc)
            .any?
-      flash[:alert] = "This time slot is already booked."
       respond_to do |format|
         format.json do
           render json: {
@@ -271,7 +270,9 @@ class SubSpaceBookingController < SessionsController
                  },
                  status: :unprocessable_content
         end
-        format.html { redirect_to sub_space_booking_edit_path }
+        format.html do
+          redirect_to sub_space_booking_edit_path, alert: "This time slot is already booked."
+        end
       end
 
       return
@@ -305,14 +306,14 @@ class SubSpaceBookingController < SessionsController
     end
 
     if @sub_space_booking.update(sub_space_booking_update_params)
-      flash[:notice] = "Successfully updated booking"
       respond_to do |format|
         format.json { render json: { status: "ok" }, status: :ok }
         format.html do
           redirect_to sub_space_booking_index_path(
                         anchor: "booking-calendar-tab",
                         room: @sub_space_booking.sub_space_id
-                      )
+                      ),
+                      notice: "Successfully updated booking"
         end
       end
     else
@@ -526,7 +527,7 @@ class SubSpaceBookingController < SessionsController
   # The record's own checks already passed in create: a series occurrence
   # differs from the first only by its date, and past ones are skipped; save!
   # still runs them. Renders nothing:
-  # returns nil when booked, or a failure ({ errors:, alert:, timeslot: }) for
+  # returns nil when booked, or a failure ({ errors:, alert: }) for
   # the caller to render.
   def book_occurrence(booking, recurring_booking: nil, send_email: true)
     sub_space = booking.sub_space
@@ -540,7 +541,7 @@ class SubSpaceBookingController < SessionsController
           .overlapping(booking.start_time.utc, booking.end_time.utc)
           .any?
       return { errors: ["TimeSlot This time slot is already booked."],
-               alert: "This time slot is already booked.", timeslot: true }
+               alert: "This time slot is already booked." }
     end
 
     # Check time violations
@@ -618,12 +619,11 @@ class SubSpaceBookingController < SessionsController
                                  room: params[:sub_space_booking][:sub_space_id])
   end
 
-  # JSON: 422 with the errors (a timeslot conflict also leaves the flash alert,
-  # as before). HTML: back to the room's calendar with the alert.
+  # JSON: 422 with the errors (the page shows them without reloading, so no
+  # flash is set). HTML: back to the room's calendar with the alert.
   def render_booking_failure(failure)
     respond_to do |format|
       format.json do
-        flash[:alert] = failure[:alert] if failure[:timeslot]
         render json: { errors: failure[:errors] }, status: :unprocessable_content
       end
       format.html { redirect_to booking_calendar_path, alert: failure[:alert] }
@@ -638,7 +638,6 @@ class SubSpaceBookingController < SessionsController
                      date: booking.start_time.to_date.iso8601, reason: failure[:alert])
     respond_to do |format|
       format.json do
-        flash[:alert] = summary
         render json: { errors: failure[:errors], summary: summary }, status: :unprocessable_content
       end
       format.html { redirect_to booking_calendar_path, alert: summary }
@@ -654,7 +653,6 @@ class SubSpaceBookingController < SessionsController
                      booked: booked, total: booked + failures.size, failed: failed_dates.join(", "))
     respond_to do |format|
       format.json do
-        flash[:alert] = summary
         render json: { errors: failures.first.last[:errors], booked: booked, failed: failed_dates,
                        summary: summary },
                status: :unprocessable_content
@@ -663,7 +661,7 @@ class SubSpaceBookingController < SessionsController
     end
   end
 
-  # JSON: an empty 204, as before (the page refetches the calendar). HTML:
+  # JSON: an empty 204, as before (the page reloads to show the notice). HTML:
   # back to the room's calendar with the notice (there is no create template).
   def render_booking_success(sub_space)
     flash[:notice] = "Booking for #{sub_space.name} created successfully."
