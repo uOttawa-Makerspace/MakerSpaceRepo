@@ -31,6 +31,16 @@ RSpec.describe "Admin::Users::Activations", type: :request do
       expect(target.deleted).to be(false)
     end
 
+    it "says so when the account is already deactivated, changing nothing" do
+      target.deactivate!
+      version = target.reload.token_version
+      login!(admin)
+      delete admin_user_activation_path(target)
+
+      expect(flash[:notice]).to eq(I18n.t("admin.users.activation.already_deactivated"))
+      expect(target.reload.token_version).to eq(version)
+    end
+
     it "refuses an admin deactivating their own account" do
       login!(admin)
       delete admin_user_activation_path(admin)
@@ -80,6 +90,16 @@ RSpec.describe "Admin::Users::Activations", type: :request do
       expect(response).to have_http_status(:found).or have_http_status(:ok)
       get settings_profile_path
       expect(response).to have_http_status(:ok)
+    end
+
+    it "says so when the account is already active, changing nothing" do
+      target.reactivate!
+      version = target.reload.token_version
+      login!(admin)
+      post admin_user_activation_path(target)
+
+      expect(flash[:notice]).to eq(I18n.t("admin.users.activation.already_active"))
+      expect(target.reload.token_version).to eq(version)
     end
 
     it "bounces a non-admin and changes nothing" do

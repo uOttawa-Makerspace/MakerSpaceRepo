@@ -6,8 +6,8 @@ class Admin::Users::ActivationsController < AdminAreaController
   before_action :load_user
 
   def create
-    @target.reactivate!
-    redirect_to admin_user_path(@target), notice: t("admin.users.activation.reactivated")
+    changed = @target.reactivate!
+    redirect_to admin_user_path(@target), notice: t("admin.users.activation.#{changed ? 'reactivated' : 'already_active'}")
   end
 
   def destroy
@@ -15,8 +15,8 @@ class Admin::Users::ActivationsController < AdminAreaController
       return redirect_to admin_user_path(@target), alert: t("admin.users.activation.self_refused")
     end
 
-    @target.deactivate!
-    redirect_to admin_user_path(@target), notice: t("admin.users.activation.deactivated")
+    changed = @target.deactivate!
+    redirect_to admin_user_path(@target), notice: t("admin.users.activation.#{changed ? 'deactivated' : 'already_deactivated'}")
   rescue User::LastAdminError => e
     redirect_to admin_user_path(@target), alert: e.message
   end
