@@ -179,10 +179,10 @@ RSpec.describe "Printers", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
-    it "printer_data redirects HTML to root and returns nested JSON" do
+    it "printer_data refuses a plain page request and returns nested JSON" do
       create(:printer_issue, printer: um2p)
       get printer_data_printers_path
-      expect(response).to redirect_to(root_path)
+      expect(response).to have_http_status(:not_acceptable)
       get printer_data_printers_path(format: :json)
       expect(response).to have_http_status(:ok)
       row = json.find { |t| t["id"] == um2p.printer_type_id }

@@ -49,7 +49,9 @@ class Admin::UsersController < AdminAreaController
     end
 
     unless params[:q].present?
-      redirect_back(fallback_location: root_path, alert: "Invalid parameters!")
+      @query = ""
+      @users = User.none
+      flash.now[:alert] = "Enter a name or email to search."
       return
     end
 

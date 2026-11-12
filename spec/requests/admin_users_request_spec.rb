@@ -180,10 +180,11 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response.body).to include(idle.username)
     end
 
-    it "search without q redirects back with 'Invalid parameters!'" do
+    it "search without q shows the search page with a message to enter a name or email" do
       get search_admin_users_path
-      expect(response).to redirect_to(root_path)
-      expect(flash[:alert]).to eq("Invalid parameters!")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Enter a name or email to search")
+      expect(response.body).not_to include("No results")
     end
 
     it "search with at least one hit renders the result" do
