@@ -46,7 +46,31 @@ RSpec.describe "Membership check from a profile", type: :request do
       stub_api(body: not_engineering)
       run_check
       expect(m.reload.status).to eq("revoked")
+      expect(flash[:alert_yellow]).to eq(I18n.t("membership_checks.not_eligible_ended"))
+    end
+
+    it "only says not eligible when there was no faculty membership to end" do
+      stub_api(body: not_engineering)
+      run_check
       expect(flash[:alert_yellow]).to eq(I18n.t("membership_checks.not_eligible"))
+    end
+
+    it "says so, and asks nothing of the service, for a user with no student number and no uOttawa email" do
+      unlookable = create(:user, :regular_user, student_id: nil, email: "someone@example.com")
+      m = create(:membership, user: unlookable, membership_tier: tier, status: "paid", end_date: 1.month.from_now)
+      post user_membership_check_path(unlookable.username)
+      expect(flash[:alert]).to eq(I18n.t("membership_checks.not_queryable"))
+      expect(m.reload.status).to eq("paid")
+      expect(a_request(:get, %r{\A#{api_base}})).not_to have_been_made
+    end
+
+    it "shares one quota between spellings of the same username" do
+      stub_api(body: genie)
+      2.times { run_check }
+      post user_membership_check_path(target.username.upcase)
+      post user_membership_check_path(target.username)
+      expect(flash[:alert]).to eq(I18n.t("membership_checks.rate_limited"))
+      expect(a_request(:get, %r{\A#{api_base}/by_id/})).to have_been_made.times(3)
     end
 
     it "changes nothing and says so when the service is unavailable" do
@@ -95,6 +119,15 @@ RSpec.describe "Membership check from a profile", type: :request do
       run_check
       expect(response).to redirect_to(root_path)
       expect(a_request(:get, %r{\A#{api_base}})).not_to have_been_made
+    end
+
+    it "does not use up the checked user's quota" do
+      4.times { run_check }
+      get logout_path
+      sign_in_as(:staff, space: space)
+      stub_api(body: genie)
+      run_check
+      expect(flash[:notice]).to eq(I18n.t("membership_checks.granted"))
     end
 
     it "does not show the button on a profile" do

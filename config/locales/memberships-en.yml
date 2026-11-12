@@ -64,7 +64,9 @@ en:
         cancelled: "Cancelled"
   membership_checks:
     granted: "Faculty membership granted."
-    not_eligible: "Not eligible for a faculty membership. Any active faculty membership was ended."
+    not_eligible: "Not eligible for a faculty membership."
+    not_eligible_ended: "Not eligible for a faculty membership. The active faculty membership was ended."
+    not_queryable: "This user has no student number or uOttawa email on file, so the check could not run. Nothing was changed."
     unavailable: "The faculty membership check could not reach the university service. Nothing was changed; try again later."
     rate_limited: "Too many membership checks. Please wait a minute."
     button: "Check faculty membership"

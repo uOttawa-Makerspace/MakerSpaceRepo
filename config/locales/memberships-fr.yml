@@ -61,7 +61,9 @@ fr:
         cancelled: "Annulé"
   membership_checks:
     granted: "Adhésion faculté accordée."
-    not_eligible: "Non admissible à l'adhésion faculté. Toute adhésion faculté active a été terminée."
+    not_eligible: "Non admissible à l'adhésion faculté."
+    not_eligible_ended: "Non admissible à l'adhésion faculté. L'adhésion faculté active a été terminée."
+    not_queryable: "Cet utilisateur n'a ni numéro étudiant ni courriel uOttawa au dossier; la vérification n'a pas pu être faite. Rien n'a été modifié."
     unavailable: "La vérification de l'adhésion faculté n'a pas pu joindre le service de l'université. Rien n'a été modifié; réessayez plus tard."
     rate_limited: "Trop de vérifications d'adhésion. Veuillez patienter une minute."
     button: "Vérifier l'adhésion faculté"
