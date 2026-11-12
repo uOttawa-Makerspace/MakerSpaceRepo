@@ -19,12 +19,11 @@ module TurnstileHelper
   end
 
   def turnstile_tag(**options)
-    provide(:insert_turnstile_scripts, true)
-  
     options[:class] = ["cf-turnstile", options[:class]].compact.join(" ")
     options[:data] ||= {}
     options[:data][:sitekey] = creds[:site_key]
-  
+    options[:data][:controller] = "turnstile"
+    options[:data][:turnstile_unavailable_message_value] = I18n.t("common.captcha_unavailable")
     tag.div(**options)
   end
 

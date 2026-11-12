@@ -35,11 +35,6 @@
     <%= favicon_link_tag '/favicon.ico' %>
     <%= favicon_link_tag '/apple-touch-icon.png', rel: 'apple-touch-icon', type: 'image/png' %>
 
-    <% if yield(:insert_turnstile_scripts) %>
-      <link rel="preconnect" href="https://challenges.cloudflare.com">
-      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-    <% end %>
-
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <meta name="description" content="MakerRepo is the uOttawa Makerspace's platform. Share and download projects for 3D printers, CNCs, Arduino and much more!" />
@@ -55,8 +50,6 @@
     </main>
     <%= render 'layouts/footer' %>
 
-    <%# Move 3rd-party widget to the bottom of body so it doesn't block CSS/HTML rendering %>
-    <script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "va12Fyrpbl");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script>
-    <noscript><div id="noscript-warning">Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></div></noscript>
+    <%= render 'layouts/accessibility_widget' %>
   </body>
 </html>
