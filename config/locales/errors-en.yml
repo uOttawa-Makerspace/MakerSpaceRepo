@@ -268,7 +268,6 @@ en:
       printer_and_user_required: "Please add both printer and user."
       printer_not_found: "That printer no longer exists. Reload the page and choose a printer again."
       user_not_found: "That user no longer exists. Choose a user again."
-      session_not_created: "The printer was not linked to the user."
       issue_not_created: "The printer issue was not created."
       issue_not_updated: "The printer issue was not updated."
       issue_not_deleted: "The printer issue was not deleted."

@@ -54,5 +54,32 @@ RSpec.describe Printer, type: :model do
         ).to eq(@pt_1_2.number)
       end
     end
+
+    describe "#assign_to!" do
+      let(:user) { create(:user, :regular_user) }
+
+      it "opens an in-use session and closes the previous one that was in use" do
+        previous = create(:printer_session, printer_id: @pt_1_2.id, in_use: true)
+        @pt_1_2.assign_to!(user)
+        expect(previous.reload.in_use).to be(false)
+        expect(Printer.get_last_number_session(@pt_1_2.id)).to have_attributes(user_id: user.id, in_use: true)
+      end
+
+      it "works for a printer with no sessions" do
+        expect { @pt_1_2.assign_to!(user) }.to change { @pt_1_2.printer_sessions.count }.from(0).to(1)
+      end
+    end
+
+    describe "#release!" do
+      it "closes the last session and creates none" do
+        session = create(:printer_session, printer_id: @pt_1_2.id, in_use: true)
+        expect { @pt_1_2.release! }.not_to change(PrinterSession, :count)
+        expect(session.reload.in_use).to be(false)
+      end
+
+      it "does nothing for a printer with no sessions" do
+        expect { @pt_1_2.release! }.not_to change(PrinterSession, :count)
+      end
+    end
   end
 end

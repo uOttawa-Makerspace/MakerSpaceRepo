@@ -87,18 +87,17 @@ class PrintersController < StaffAreaController
     link_params = params.require(:printer).permit(:printer_id, :user_id)
     printer_id = link_params[:printer_id]
     user_id = link_params[:user_id]
-    last_session = Printer.get_last_number_session(printer_id)
-    printer_session = PrinterSession.new(printer_id: printer_id, user_id: user_id, in_use: true)
-    if (problem = printer_link_problem(printer_id, user_id))
+    clear = user_id == "clear"
+    printer = Printer.find_by(id: printer_id) if printer_id.present?
+    user = User.find_by(id: user_id) unless user_id.blank? || clear
+    if (problem = printer_link_problem(printer_id, user_id, printer, user))
       flash[:alert] = I18n.t("errors.printers.#{problem}")
-    elsif user_id == "clear"
-      last_session&.update(in_use: false)
+    elsif clear
+      printer.release!
       flash[:notice] = "Cleared the user."
-    elsif printer_session.save
-      last_session.update(in_use: false) if last_session&.in_use?
-      flash[:notice] = "Printer Session Created"
     else
-      flash[:alert] = validation_message(printer_session, "errors.printers.session_not_created")
+      printer.assign_to!(user)
+      flash[:notice] = "Printer Session Created"
     end
     respond_to do |format|
       # blame the client if something goes wrong
@@ -110,11 +109,11 @@ class PrintersController < StaffAreaController
   end
 
   # Why a printer cannot be linked to a user (a key under errors.printers), or nil.
-  def printer_link_problem(printer_id, user_id)
+  def printer_link_problem(printer_id, user_id, printer, user)
     return :printer_and_user_required if printer_id.blank? || user_id.blank?
-    return :printer_not_found unless Printer.exists?(printer_id)
+    return :printer_not_found unless printer
 
-    :user_not_found unless user_id == "clear" || User.exists?(user_id)
+    :user_not_found unless user || user_id == "clear"
   end
   private :printer_link_problem
 
