@@ -205,9 +205,9 @@ RSpec.describe CalendarHelper, type: :helper do
       events = nil
       reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
       expect(events.map { |e| e[:id] }).to eq(["fine"])
-      expect(reports.map(&:first)).to all(eq("ICS event has no usable start"))
-      expect(reports.map { |_, context| context[:event_uid] }).to eq(%w[nostart nostart-single])
-      expect(reports.first.last[:calendar]).to eq(Digest::MD5.hexdigest(url))
+      expect(reports.size).to eq(1)
+      expect(reports.first.last).to include(kinds: { "ICS event has no usable start" => 2 }, event_uids: %w[nostart nostart-single],
+                                            calendar: Digest::MD5.hexdigest(url))
     end
 
     it "gives a recurring event without an end no end time and no duration" do
@@ -250,7 +250,7 @@ RSpec.describe CalendarHelper, type: :helper do
       events = nil
       reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
       expect(events.map { |e| e[:title] }).to eq(["Weekly"])
-      expect(reports.map { |message, context| [message, context[:event_uid]] }).to eq([["ICS event has no usable start", "rec"]])
+      expect(reports.map { |_, context| [context[:kinds], context[:event_uids]] }).to eq([[{ "ICS event has no usable start" => 1 }, ["rec"]]])
     end
 
     ["FREQ=WEEKLY;BYDAY=MO,TU,TH;COUNT=6", "FREQ=MONTHLY;BYDAY=1MO,-1FR;COUNT=6"].each do |rule|

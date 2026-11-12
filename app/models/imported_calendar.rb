@@ -28,12 +28,17 @@ class ImportedCalendar
   REBUILD_GRACE = 10.seconds
   CIPHER = "aes-256-gcm"
   MAX_EVENTS = 5000
+  MAX_UID = 120
+  MAX_UIDS_REPORTED = 5
   # Changes whenever the code that makes entries changes, so a cached entry is never read by other code.
   VERSION = Digest::SHA256.hexdigest(%w[models/imported_calendar models/recurring_series validators/recurrence_rule_validator]
                                        .map { |name| Rails.root.join("app/#{name}.rb").read }.join)
 
   # `recurrence_id` is the original instant of a modified instance (nil otherwise); `series` is nil for a one-off.
   # `ends_at` is nil when the event has no end.
+  # What is reported (its message holds no text from the feed).
+  Problem = Class.new(StandardError)
+
   Entry = Data.define(:uid, :recurrence_id, :summary, :description, :all_day, :starts_at, :ends_at, :series) do
     # The row key in the calendar: a modified instance is told apart from its series by its original instant.
     def key = recurrence_id ? "#{uid}_#{recurrence_id.to_i}" : uid
@@ -75,26 +80,33 @@ class ImportedCalendar
 
   # The block's value, kept for ten minutes, encrypted (Marshal, which is safe here: only the application can have
   # written a value that decrypts), never under the link itself (it holds the secret of a private calendar). A nil is
-  # not kept, so neither is a failure. A copy that cannot be decrypted is reported and made again.
+  # not kept, so neither is a failure. A copy that cannot be read is reported and made again.
   def self.cached(key, fresh: false, &block)
     sealed = Rails.cache.fetch(key, expires_in: CACHE_FOR, race_condition_ttl: REBUILD_GRACE, force: fresh, skip_nil: true) do
       value = block.call
-      value && cipher.encrypt_and_sign(value)
+      value && cipher(key.first).encrypt_and_sign(value)
     end
-    sealed && cipher.decrypt_and_verify(sealed)
-  rescue ActiveSupport::MessageEncryptor::InvalidMessage => e
-    raise if fresh
+    return unless sealed
 
-    Rails.logger.error("ICS cache copy unreadable: #{e.class}")
-    Rails.error.report(e, handled: true, severity: :warning, context: { source: "imported calendar cache" })
-    cached(key, fresh: true, &block)
+    unseal(sealed, key.first) || (cached(key, fresh: true, &block) unless fresh)
   end
 
-  # The key comes from the application secret, so it needs no setting of its own and changes with it (a copy made
-  # under the old secret is reported, made again, and gone within ten minutes).
-  def self.cipher
+  # The value of a cached copy, or nil (reported, with the class of the error and no link) when it cannot be read: it
+  # was sealed under another secret, or by other code (Marshal cannot load it).
+  def self.unseal(sealed, kind)
+    cipher(kind).decrypt_and_verify(sealed)
+  rescue ActiveSupport::MessageEncryptor::InvalidMessage, ArgumentError, TypeError => e
+    Rails.logger.error("ICS cache copy unreadable: #{e.class}")
+    Rails.error.report(Problem.new("imported calendar cache copy unreadable: #{e.class}"), handled: true, severity: :warning,
+                                                                                           context: { cache: kind })
+    nil
+  end
+
+  # One key per kind of cached value, from the application secret, so it needs no setting of its own and changes with it
+  # (a copy made under the old secret is reported, made again, and gone within ten minutes).
+  def self.cipher(kind)
     ActiveSupport::MessageEncryptor.new(
-      Rails.application.key_generator.generate_key("imported calendar body", ActiveSupport::MessageEncryptor.key_len(CIPHER)),
+      Rails.application.key_generator.generate_key("imported calendar #{kind}", ActiveSupport::MessageEncryptor.key_len(CIPHER)),
       cipher: CIPHER, serializer: Marshal
     )
   end
@@ -108,6 +120,8 @@ class ImportedCalendar
     @fetched = false
     @failed = false
     @unknown_zones = Set.new
+    @problems = Hash.new(0)
+    @problem_uids = []
   end
 
   # Whether the feed could not be read: no body, a fetch or parse error, or a body with no calendar in it.
@@ -122,7 +136,7 @@ class ImportedCalendar
     @fetched = !body.nil?
     @failed, @entries = body ? entries_of(body, fresh) : [true, []]
   rescue StandardError => e
-    Rails.logger.error("ICS parse error for #{IcsFetcher.host(@url)}: #{e.class}")
+    report_failure(e)
     @entries = []
     @fetched = @failed = true
   end
@@ -135,13 +149,23 @@ class ImportedCalendar
     self.class.cached(key, fresh: fresh) { read_calendars(body) }
   end
 
+  # A feed that cannot be parsed is reported once, with the entries (so it is kept like any other result).
   def read_calendars(body)
     calendars = Icalendar::Calendar.parse(body)
     events = calendars.flat_map(&:events)
-    report_problem("ICS feed has more than #{MAX_EVENTS} events; the first #{MAX_EVENTS} are kept") if events.size > MAX_EVENTS
+    report_later("too many events") if events.size > MAX_EVENTS
     entries = events.first(MAX_EVENTS).group_by(&:uid).flat_map { |_uid, group| group_entries(group) }
-    @unknown_zones.each { |tzid| report_problem("unknown time zone #{tzid}; read as Toronto time") }
+    @unknown_zones.each { report_later("unknown time zone") }
+    report_problems
     [calendars.empty?, entries]
+  rescue StandardError => e
+    report_failure(e)
+    report_problems(Problem.new("imported calendar could not be read: #{e.class}"))
+    [true, []]
+  end
+
+  def report_failure(error)
+    Rails.logger.error("ICS parse error for #{IcsFetcher.host(@url)}: #{error.class}")
   end
 
   # The entries of one UID: the series (or single event) itself, then each modified instance of it that is not
@@ -157,7 +181,7 @@ class ImportedCalendar
   def guarded(event)
     yield
   rescue StandardError => e
-    report_problem(e, event.uid)
+    report_later(e.class.name, event.uid)
   end
 
   def master_entry(event, overrides)
@@ -179,7 +203,7 @@ class ImportedCalendar
   # The entry for the event's own times, or nil (reported) when it has no usable start.
   def entry_for(event, recurrence_id)
     starts_at = zoned_time(event.dtstart)
-    return report_problem("ICS event has no usable start", event.uid) if starts_at.nil?
+    return report_later("ICS event has no usable start", event.uid) if starts_at.nil?
 
     Entry.new(uid: event.uid.to_s, recurrence_id: recurrence_id, summary: event.summary&.to_s, description: event.description&.to_s,
               all_day: event.dtstart.is_a?(Icalendar::Values::Date), starts_at: starts_at,
@@ -202,7 +226,7 @@ class ImportedCalendar
     problem = RecurrenceRuleValidator.error_for("RRULE:#{event.rrule.first.value_ical}", entry.starts_at, RecurrenceRuleValidator::IMPORTED)
     return series_entry(entry, event, overrides) unless problem
 
-    report_problem(problem, event.uid)
+    report_later(problem, event.uid)
     kept(entry)
   end
 
@@ -219,12 +243,21 @@ class ImportedCalendar
 
   def cutoff = Time.current - KEEP_FOR
 
-  # Reports something that cannot be placed on the calendar, by event uid and calendar digest (never the link or the
-  # rule); returns nil so the caller leaves the event out.
-  def report_problem(problem, uid = nil)
-    error = problem.is_a?(StandardError) ? problem : ArgumentError.new(problem)
-    Rails.error.report(error, handled: true, severity: :warning,
-                              context: { event_uid: uid.to_s, calendar: @id, error_class: error.class.name })
+  # Notes something that cannot be placed on the calendar, by kind (a fixed text, or an error class) and the event's uid;
+  # returns nil so the caller leaves the event out. report_problems sends them as one report.
+  def report_later(kind, uid = nil)
+    @problems[kind] += 1
+    @problem_uids << uid.to_s.truncate(MAX_UID) if uid && @problem_uids.size < MAX_UIDS_REPORTED
     nil
+  end
+
+  # One report per feed build: how many problems of each kind, and the first few event uids. Never the link, the rule
+  # or any text of the feed.
+  def report_problems(error = nil)
+    return if @problems.empty? && error.nil?
+
+    error ||= Problem.new("#{@problems.values.sum} events of an imported calendar could not be read as written")
+    Rails.error.report(error, handled: true, severity: :warning,
+                              context: { calendar: @id, kinds: @problems.to_h, event_uids: @problem_uids })
   end
 end
