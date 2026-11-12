@@ -105,7 +105,11 @@ The release that adds the unique index on `announcement_dismisses (user_id, anno
 
 The release that adds the partial unique index on `volunteer_hours (user_id, volunteer_task_id, date_of_task, total_time)` for rows with `approval IS NULL` needs no manual step; `web` runs the migration on boot. If a person already has two identical pending hours the migration stops, lists the ids and changes nothing; settle those rows by hand (staff can approve or reject one), then deploy again.
 
-`bundle exec rake volunteer_awards:duplicates` lists, read only, the users who hold more than one task award (`cc_moneys` row) for the same task. It prints ids and changes nothing. No unique index is added on `cc_moneys` until the listing is empty.
+`bundle exec rake volunteer_awards:duplicates` lists, read only, the users who hold more than one task award (`cc_moneys` row) for the same task. It prints ids and changes nothing. 
+
+### Deploy step: one task award per user and task
+
+The release that adds `index_cc_moneys_on_user_and_task_award` makes the database refuse a second `cc_moneys` row for the same user and volunteer task. `web` runs the migration on boot; it needs no manual step. The 2026-11-01 backup holds 8 user and task pairs (31 extra rows) that were paid more than once. Those old awards are kept: people may have spent them, and nothing is deleted, reversed or changed in amount. The migration adds `cc_moneys.legacy_duplicate` (default false), sets it true on every row after the first of each existing pair, and builds a partial unique index on `(user_id, volunteer_task_id)` for rows with a task that are not flagged. It prints each pair with the row it kept and the rows it flagged. If one of the extra rows was created after the migration started it stops, flags nothing and lists the ids. Balances are unchanged (`get_total_cc` still sums every row). Paying an award the index refuses counts as already paid: nothing is written and no hour is added. `down` drops the index and the column, which restores the table exactly; re-running `up` flags the same rows. `rake volunteer_awards:duplicates` still lists the old pairs, flagged or not.
 
 ### Deploy step: claiming unclaimed CC Money
 

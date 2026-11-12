@@ -47,8 +47,20 @@ class CcMoney < ApplicationRecord
          .pluck(:user_id, :volunteer_task_id, Arel.sql("ARRAY_AGG(id ORDER BY id)"))
   end
 
+  # The unique index that lets a volunteer task pay one user once (rows flagged legacy_duplicate are the old
+  # double awards it ignores).
+  TASK_AWARD_INDEX = "index_cc_moneys_on_user_and_task_award"
+
+  # Pays a task's CC money to a volunteer. Returns the new row, or nil when the user already holds an award for
+  # the task (the database refuses a second one), in which case nothing is written.
   def self.create_cc_money_from_approval(volunteer_task_id, volunteer_id, cc)
-    create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, cc: cc)
+    transaction(requires_new: true) do
+      create(volunteer_task_id: volunteer_task_id, user_id: volunteer_id, cc: cc)
+    end
+  rescue ActiveRecord::RecordNotUnique => e
+    raise unless e.message.include?(TASK_AWARD_INDEX)
+
+    nil
   end
 
   # A purchase made without an account that nobody has claimed yet.

@@ -22,7 +22,8 @@ RSpec.describe "volunteer_awards:duplicates" do
   end
 
   it "lists the ids of an award held twice and changes no row" do
-    rows = [create(:cc_money, user: user, volunteer_task: task, cc: 5), create(:cc_money, user: user, volunteer_task: task, cc: 5)]
+    rows = [create(:cc_money, user: user, volunteer_task: task, cc: 5),
+            create(:cc_money, user: user, volunteer_task: task, cc: 5, legacy_duplicate: true)]
     before = CcMoney.order(:id).pluck(:id, :cc, :user_id, :volunteer_task_id)
 
     expect { Rake::Task["volunteer_awards:duplicates"].invoke }
