@@ -21,6 +21,24 @@ RSpec.describe MsrMailer, type: :mailer do
     expect(mail.body.encoded).to include("/confirm?token=TOKEN123")
   end
 
+  describe "sign_up_attempt_email" do
+    it "goes to the existing address in French then English, linking to sign in and reset password" do
+      mail = MsrMailer.sign_up_attempt_email(user.email.upcase)
+      expect(mail.to).to eq([user.email])
+      expect(mail.subject).to eq(
+        "MakerRepo - Quelqu'un a tenté de s'inscrire avec votre courriel // Someone tried to sign up with your email"
+      )
+      text = CGI.unescapeHTML(body_text(mail))
+      expect(text).to include("Quelqu'un a tenté de créer").and include("Someone tried to create")
+      expect(text.index("Quelqu'un a tenté de créer")).to be < text.index("Someone tried to create")
+      expect(text).to include("/login").and include("/forgot_password")
+    end
+
+    it "sends nothing when no account has the address" do
+      expect(MsrMailer.sign_up_attempt_email("nobody@example.com").message).to be_a(ActionMailer::Base::NullMail)
+    end
+  end
+
   it "welcome_email points at the login page" do
     mail = MsrMailer.welcome_email(user)
     expect(mail.to).to eq([user.email])

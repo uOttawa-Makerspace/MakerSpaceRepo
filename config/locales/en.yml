@@ -570,3 +570,13 @@ en:
       from_unknown: "Imported from a linked calendar."
       all_day: "All day"
       explanation: "It can't be edited or deleted here: change it in that calendar, or remove the link from your imported calendars below."
+  msr_mailer:
+    sign_up_attempt:
+      subject: "Someone tried to sign up with your email"
+      hello: "Hello %{name},"
+      body: "Someone tried to create a MakerRepo account with this email address, but it already has an account. No new account was created."
+      if_you: "If it was you, sign in to your existing account. If you have forgotten your password, you can reset it."
+      if_not: "If it was not you, you can ignore this email: your account has not changed."
+      sign_in: "Sign in"
+      reset_password: "Reset my password"
+      why_received: "You have received this email because a sign-up was attempted with your email address."

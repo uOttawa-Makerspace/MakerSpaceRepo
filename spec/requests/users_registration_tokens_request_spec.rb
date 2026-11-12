@@ -116,12 +116,130 @@ RSpec.describe "User registration and tokens (HTTP contract)", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    it "rejects a duplicate email regardless of case" do
-      existing = create(:user, :regular_user)
-      expect {
-        post users_path, params: { user: registration_params(email: existing.email.upcase) }
-      }.not_to change(User, :count)
-      expect(response).to have_http_status(:unprocessable_content)
+    describe "when the email already belongs to an account" do
+      let!(:existing) { create(:user, :regular_user) }
+      let(:created_notice) { "Account has been created, please look in your emails to confirm your email address." }
+
+      def sign_up_with(email, **overrides)
+        perform_enqueued_jobs { post users_path, params: { user: registration_params(email: email, **overrides) } }
+      end
+
+      it "answers like a successful sign-up, creates nothing, and mails the existing address" do
+        expect { sign_up_with(existing.email) }.not_to change(User, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+        expect(deliveries.size).to eq(1)
+        expect(deliveries.first.to).to eq([existing.email])
+        expect(deliveries.first.subject).to include("Someone tried to sign up with your email")
+        expect(deliveries.first.body.to_s).to include("/forgot_password")
+      end
+
+      it "matches the address regardless of case" do
+        expect { sign_up_with(existing.email.upcase) }.not_to change(User, :count)
+        expect(response).to redirect_to(root_path)
+        expect(deliveries.map(&:to)).to eq([[existing.email]])
+      end
+
+      it "gives the same redirect and message as a new address" do
+        sign_up_with(existing.email)
+        taken = [response.status, response.location, flash[:notice]]
+        sign_up_with(Faker::Internet.unique.email)
+        expect([response.status, response.location, flash[:notice]]).to eq(taken)
+      end
+
+      it "json: answers 201 with the same message" do
+        expect { post users_path, params: { user: registration_params(email: existing.email) }, as: :json }
+          .not_to change(User, :count)
+        expect(response).to have_http_status(:created)
+        expect(JSON.parse(response.body)).to eq("message" => created_notice)
+      end
+
+      it "sends at most three notices an hour to one address, answering the same each time" do
+        5.times do
+          sign_up_with(existing.email)
+          expect(response).to redirect_to(root_path)
+          expect(flash[:notice]).to eq(created_notice)
+        end
+        expect(deliveries.size).to eq(3)
+      end
+
+      it "hashes the password once whether the address is free or taken" do
+        allow(BCrypt::Password).to receive(:create).and_call_original
+        sign_up_with(Faker::Internet.unique.email)
+        expect(BCrypt::Password).to have_received(:create).once
+
+        RSpec::Mocks.space.proxy_for(BCrypt::Password).reset
+        allow(BCrypt::Password).to receive(:create).and_call_original
+        sign_up_with(existing.email)
+        expect(BCrypt::Password).to have_received(:create).once
+      end
+
+      it "answers an address held by a deleted account the same way, without mailing it or failing" do
+        deleted = create(:user, :regular_user)
+        deleted.update_columns(deleted: true)
+        expect { sign_up_with(deleted.email) }.not_to change { User.unscoped.count }
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+        expect(deliveries).to be_empty
+      end
+
+      it "answers the loser of two simultaneous sign-ups like a normal sign-up" do
+        email = Faker::Internet.unique.email
+        raced = false
+        allow_any_instance_of(User).to receive(:save).and_wrap_original do |original, *args|
+          unless raced
+            raced = true
+            create(:user, :regular_user, email: email)
+          end
+          original.call(*args, **{ validate: false })
+        end
+        sign_up_with(email)
+        expect(User.where(email: email).count).to eq(1)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+      end
+
+      it "answers an address taken after the first check like a normal sign-up" do
+        email = Faker::Internet.unique.email
+        raced = false
+        allow_any_instance_of(User).to receive(:save).and_wrap_original do |original, *args|
+          unless raced
+            raced = true
+            create(:user, :regular_user, email: email)
+          end
+          original.call(*args)
+        end
+        sign_up_with(email)
+        expect(User.where(email: email).count).to eq(1)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:notice]).to eq(created_notice)
+      end
+
+      it "gives a real sign-up and a taken-email attempt the same HTML and JSON responses" do
+        real = Faker::Internet.unique.email
+        sign_up_with(real)
+        html_real = [response.status, response.location, flash[:notice], flash[:alert]]
+        sign_up_with(existing.email)
+        expect([response.status, response.location, flash[:notice], flash[:alert]]).to eq(html_real)
+
+        post users_path, params: { user: registration_params(email: Faker::Internet.unique.email) }, as: :json
+        json_real = [response.status, response.body]
+        post users_path, params: { user: registration_params(email: existing.email) }, as: :json
+        expect([response.status, response.body]).to eq(json_real)
+      end
+
+      it "shows other errors but never that the email is taken" do
+        expect { sign_up_with(existing.email, username: "bad name!") }.not_to change(User, :count)
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).not_to include("already been taken")
+        expect(deliveries).to be_empty
+      end
+
+      it "json: other errors do not list the email" do
+        post users_path, params: { user: registration_params(email: existing.email, username: "bad name!") }, as: :json
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(JSON.parse(response.body)).not_to have_key("email")
+      end
     end
 
     it "requires the waiver" do

@@ -7,6 +7,16 @@ class MsrMailer < ApplicationMailer
     mail(to: @user.email, subject: "Makerepo | Please confirm your email")
   end
 
+  # Sent to an address that already has an account when someone tries to sign up with it.
+  # French first, then English. Nothing is sent when no account has the address any more.
+  def sign_up_attempt_email(email)
+    @user = User.where("lower(email) = ?", email.to_s.strip.downcase).first
+    return if @user.nil?
+
+    @subject = "MakerRepo - #{I18n.t('msr_mailer.sign_up_attempt.subject', locale: :fr)} // #{I18n.t('msr_mailer.sign_up_attempt.subject', locale: :en)}"
+    mail(to: @user.email, subject: @subject)
+  end
+
   def email_confirmation_email(new_email, user, token)
     @new_email = new_email
     @user = user
