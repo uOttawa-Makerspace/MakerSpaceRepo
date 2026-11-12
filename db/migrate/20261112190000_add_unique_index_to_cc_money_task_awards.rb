@@ -34,10 +34,10 @@ class AddUniqueIndexToCcMoneyTaskAwards < ActiveRecord::Migration[8.1]
   # The first row of each pair keeps counting; every later row is the extra award and is flagged.
   def flag_existing_duplicates(started_at)
     groups = duplicate_pairs
-    say "#{groups.size} user and task pair(s) hold more than one award (the 2026-11-04 backup had 8)"
+    extras = groups.flat_map { |_user, _task, ids| ids.drop(1) }
+    say "#{groups.size} user and task group(s) hold more than one award, with #{extras.size} extra award row(s)"
     return if groups.empty?
 
-    extras = groups.flat_map { |_user, _task, ids| ids.drop(1) }
     refuse_recent(extras, started_at)
     groups.each do |user, task, ids|
       say "user_id=#{user} volunteer_task_id=#{task}: kept #{ids.first}, flagged #{ids.drop(1).join(',')}", true
