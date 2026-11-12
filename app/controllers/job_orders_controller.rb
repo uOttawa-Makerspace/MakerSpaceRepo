@@ -275,7 +275,7 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
         paid = @job_order.transition!(from: JobStatus.completed, to: JobStatus.paid, actor: @user)
         if paid.ok?
           flash[:notice] = t("job_orders.alerts.updated_job_status_to_x", status: JobStatus.paid.t_name)
-          JobOrderMailer.payment_succeeded(@job_order.id).deliver_now
+          JobOrderMailer.payment_succeeded(@job_order.id, staff_completion_message).deliver_now
         else
           # the order is Completed but not Paid: say so, and no "updated" notice that would suggest otherwise
           flash.delete(:notice)
@@ -423,6 +423,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   # The editable "processed" mail text for this order, blank when that row is missing.
+  # The staff message typed in the completion modal, only when staff chose to email it.
+  def staff_completion_message
+    params[:message] if params[:send_email] == "true"
+  end
+
   def processed_message_text
     JobOrderMessage.find_by(name: "processed")&.retrieve_message(@job_order.id)
   end

@@ -7,6 +7,9 @@
 $primary: #e24829;
 // Smallest bold size that counts as large text (14pt): used for text on the orange.
 $large-text-size: 1.167rem;
+// Brand orange fill on the dark theme: the lightest shade of the $primary hue with
+// white text at 4.5:1 or more (4.53:1), so white text of any size passes WCAG AA.
+$primary-dark: #d93d1d;
 $primary-text: #c43c1f;
 $primary-text-dark: #ff6b4a;
 $secondary: #707070;
