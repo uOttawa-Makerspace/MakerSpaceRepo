@@ -116,7 +116,7 @@
 
                     <% locales_change.each do |locale| %>
                         <li class="nav-item">
-                            <%= link_to t('name', locale:), url_for(request.query_parameters.merge(locale:)), class: 'nav-link px-xxxl-2 text-nowrap' %>
+                            <%= render 'layouts/locale_switch', locale:, css: 'nav-link px-xxxl-2 text-nowrap' %>
                         </li>
                     <% end %>
                 </ul>

@@ -41,7 +41,7 @@ RSpec.describe "SAML IdP", type: :request do
   end
 
   def c18_form_action
-    Nokogiri::HTML(response.body).at_css("form")&.[]("action")
+    Nokogiri::HTML(response.body).at_css("form:not([action='/locale'])")&.[]("action")
   end
 
   # Decodes the SAMLResponse hidden field of the saml_post page.
@@ -884,6 +884,7 @@ RSpec.describe "SAML IdP", type: :request do
         spoofed = authn_request(issuer: "wikijs.makerepo.com", acs: "https://evil.example.com/steal")
         post "/saml/auth", params: { SAMLRequest: spoofed, submit: "current_user" }
         expect(c18_form_action).to eq(wikijs_acs)
+        expect(Nokogiri::HTML(response.body).css("form").size).to eq(1) # the auto-submitted form is the only one
       end
 
       it "refuses with 403 when the SP config requires a signed request and the request is not signed" do

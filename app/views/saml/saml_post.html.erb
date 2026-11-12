@@ -1,4 +1,4 @@
-<%= render 'saml/header' %>
+<%= render 'saml/header', switch: false %>
 
 <% if @saml_request.issuer === "wiki-server.makerepo.com" && !@current_user.staff? %>
     <div class="alert alert-danger" role="alert">

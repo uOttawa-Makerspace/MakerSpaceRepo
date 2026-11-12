@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_210000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_220000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1761,6 +1761,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_210000) do
     t.string "identity"
     t.datetime "last_seen_at", precision: nil
     t.datetime "last_signed_in_time", precision: nil
+    t.string "locale"
     t.boolean "locked", default: false
     t.datetime "locked_until", precision: nil
     t.string "name"
@@ -1784,6 +1785,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_210000) do
     t.index ["name"], name: "index_users_on_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["space_id"], name: "index_users_on_space_id"
     t.index ["username"], name: "index_users_on_username", opclass: :gin_trgm_ops, using: :gin
+    t.check_constraint "locale::text = ANY (ARRAY['en'::character varying, 'fr'::character varying]::text[])", name: "users_locale_supported"
   end
 
   create_table "videos", id: :serial, force: :cascade do |t|
