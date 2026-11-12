@@ -250,4 +250,23 @@ RSpec.describe Rfid, type: :model do
       expect(Rfid.link_to_user!(other.card_number, user)).to eq("user already has a card; unlink it first")
     end
   end
+
+  describe ".unlinked_for" do
+    let(:space) { create(:space) }
+    let(:other_space) { create(:space) }
+    let(:reader) { create(:pi_reader, space: space) }
+    let(:other_reader) { create(:pi_reader, space: other_space) }
+    let!(:older) { create(:rfid, user: nil, mac_address: reader.pi_mac_address).tap { |c| c.update_columns(updated_at: 2.minutes.ago) } }
+    let!(:newer) { create(:rfid, user: nil, mac_address: other_reader.pi_mac_address).tap { |c| c.update_columns(updated_at: 1.minute.ago) } }
+
+    before { create(:rfid, user: create(:user), mac_address: reader.pi_mac_address) }
+
+    it "lists unlinked cards tapped at the user's space readers, newest first" do
+      expect(Rfid.unlinked_for(build(:user, space: space))).to eq([older])
+    end
+
+    it "lists unlinked cards of every space's readers when the user has no space" do
+      expect(Rfid.unlinked_for(build(:user, space: nil))).to eq([newer, older])
+    end
+  end
 end

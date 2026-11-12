@@ -17,8 +17,7 @@ module Api
                               fields: { linked: ["must be false (only unlinked cards are listed)"] })
         end
 
-        macs = PiReader.where(space: current_user.space || Space.all).pluck(:pi_mac_address)
-        cards = Rfid.recent_unset.where(mac_address: macs).first(LIMIT)
+        cards = Rfid.unlinked_for(current_user).first(LIMIT)
         render json: cards.map { |c| { card_number: c.card_number, tapped_at: c.updated_at.utc.iso8601 } }
       end
     end
