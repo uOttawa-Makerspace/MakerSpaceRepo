@@ -430,6 +430,68 @@ class LockerRental < ApplicationRecord
     false
   end
 
+  # Whether the stored draft `gid` is the invoice the database backs: the rental is waiting for payment and its stored
+  # shopify_draft_order_id is this draft. Any other draft of a rental is one nobody can still be asked to pay.
+  def self.backs_draft?(gid, state:, stored_gid:) = state.to_s == 'await_payment' && stored_gid == gid
+
+  def backs_draft?(gid) = self.class.backs_draft?(gid, state: state, stored_gid: shopify_draft_order_id)
+
+  class OrphanDraftRefused < StandardError; end
+
+  # LockerRental::DraftSweep's decision about the listed draft `gid` marked for rental `rental_id`, made AND carried out
+  # under ONE row lock (a rental can be moved back to await_payment meanwhile): the rental is re-read, and only a draft
+  # it does not back is deleted (never one Shopify reports paid), then the stored id is dropped when it is this draft.
+  # No rental row is deleted or changed otherwise. A rental whose row is gone has no lock to take: its draft is settled
+  # the same way. Returns a ShopifyDraftSweep::Outcome: done(:kept | :deleted | :cleared), or refused (:delete_cap when
+  # `may_delete` is false and the draft is not backed, :draft_not_voidable, :busy, :deadlock).
+  def self.reconcile_orphan_draft!(rental_id, gid, may_delete:)
+    own_transaction('LockerRental.reconcile_orphan_draft!') do
+      rental = lock.find_by(id: rental_id)
+      next ShopifyDraftSweep::Outcome.done(:kept) if rental&.backs_draft?(gid)
+      next ShopifyDraftSweep::Outcome.refused(:delete_cap) unless may_delete
+
+      outcome = settle_orphan_draft(gid, "the draft order is not marked for locker rental ##{rental_id} of this environment") do |tags|
+        marked_for?(tags, rental_id)
+      end
+      rental.forget_draft_order_id(gid) if rental && outcome != :kept
+      ShopifyDraftSweep::Outcome.done(outcome)
+    end
+  rescue ActiveRecord::LockWaitTimeout => e
+    ShopifyDraftSweep::Outcome.refused(:busy, e)
+  rescue ActiveRecord::Deadlocked => e
+    ShopifyDraftSweep::Outcome.refused(:deadlock, e)
+  rescue OrphanDraftRefused => e
+    ShopifyDraftSweep::Outcome.refused(:draft_not_voidable, e)
+  end
+
+  # :kept (paid: it became an order, the payment record), :cleared (Shopify no longer has it) or :deleted. The draft is
+  # fetched first and must carry tags the block accepts (this environment's tag and the expected marker, or none); a
+  # paid draft is never sent a delete. Refuses (OrphanDraftRefused) anything else.
+  def self.settle_orphan_draft(gid, refusal)
+    state, draft = ShopifyConcern::DraftRemoval.fetch_or_raise(gid)
+    return :cleared if state == :gone
+    raise OrphanDraftRefused, refusal unless yield(draft['tags'])
+    return :kept if ShopifyConcern::DraftRemoval.paid?(draft)
+    raise OrphanDraftRefused, "the draft order has the unknown status #{draft['status'].inspect}" unless ShopifyConcern::DraftRemoval.payable?(draft)
+
+    delete_orphan_draft(gid)
+  end
+
+  def self.delete_orphan_draft(gid)
+    result = ShopifyConcern::DraftRemoval.call(gid)
+    return { deleted: :deleted, gone: :cleared, completed: :kept }.fetch(result.outcome) unless result.outcome == :open
+
+    raise OrphanDraftRefused, "Shopify did not delete the draft order: #{result.user_errors.map { |e| e['message'] }.join(', ')}"
+  end
+  private_class_method :delete_orphan_draft
+
+  # Forgets the stored draft id, only if it is still `gid` (a conditional UPDATE, never over a newer draft).
+  # Public for .reconcile_orphan_draft!.
+  def forget_draft_order_id(gid)
+    self.class.where(id: id, shopify_draft_order_id: gid).update_all(shopify_draft_order_id: nil)
+    @attributes.write_from_database('shopify_draft_order_id', nil) if shopify_draft_order_id == gid
+  end
+
   # Fetch checkout link from shopify. Returns nil if API call fails or checkout is not possible now.
   # A stored draft is just fetched. When there is none it is created on Shopify first, outside any lock (no HTTP
   # call runs under the row lock), then stored only if, under the row lock, the rental is still awaiting payment
@@ -599,12 +661,6 @@ class LockerRental < ApplicationRecord
     report_checkout_failure(e, 'delete_unused_shopify_draft_order')
   end
 
-  # Forgets the stored draft id, only if it is still `gid` (a conditional UPDATE, never over a newer draft).
-  def forget_draft_order_id(gid)
-    self.class.where(id: id, shopify_draft_order_id: gid).update_all(shopify_draft_order_id: nil)
-    @attributes.write_from_database('shopify_draft_order_id', nil) if shopify_draft_order_id == gid
-  end
-
   # A callable telling whether a payload line item is this rental's locker line, built once from the expected
   # variant (production) or title (elsewhere); nil when the rental has no locker (no draft can exist).
   def locker_line_matcher
@@ -682,6 +738,11 @@ class LockerRental < ApplicationRecord
 
   # Definitions for the shopify concern
 
+  # The environment's operating tag plus the marker that names the rental (LockerRental::DraftSweep reconciles by it).
+  def shopify_draft_order_tags
+    [self.class.draft_order_operating_tag, self.class.draft_marker_tag(id)]
+  end
+
   def shopify_draft_order_line_items
     if Rails.env.production?
       [{ quantity: 1, variantId: locker.locker_size.shopify_gid }]
@@ -705,4 +766,7 @@ class LockerRental < ApplicationRecord
   def self.shopify_draft_order_key_name
     'locker'
   end
+
+  # The marker every locker draft carries (#shopify_draft_order_tags): which rental it was made for.
+  def self.draft_marker_name = 'locker_rental'
 end

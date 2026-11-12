@@ -516,19 +516,7 @@ class JobOrder < ApplicationRecord
   end
 
   # The marker every job-order draft carries (JobOrder#shopify_draft_order_tags): which order it was made for.
-  DRAFT_MARKER = /\Ajob_order:(\d+)\z/
-
-  def self.draft_marker_tag(order_id) = "job_order:#{order_id}"
-
-  # The order id a draft's tags name: the one job-order marker, nil when there is none or two different ones.
-  def self.draft_marker_order_id(tags)
-    ids = draft_tag_list(tags).filter_map { |t| DRAFT_MARKER.match(t)&.captures&.first&.to_i }.uniq
-    ids.first if ids.one?
-  end
-
-  # Whether a draft with these tags is THIS environment's draft of order `order_id` (the one rule the sweep lists by
-  # and re-verifies before it deletes).
-  def self.marked_for?(tags, order_id) = draft_order_processable?(tags) && draft_marker_order_id(tags) == order_id
+  def self.draft_marker_name = "job_order"
 
   # Shopify's DraftOrderStatus: OPEN and INVOICE_SENT drafts are unpaid and payable (the invoice link works);
   # COMPLETED is paid (it became an order). Every place that decides whether a draft is paid or payable asks here.

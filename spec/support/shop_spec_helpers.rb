@@ -51,7 +51,7 @@ module ShopSpecHelpers
       @on_query&.call(query, variables)
       return Response.new(@status, nil) unless @status == 200
 
-      if query.include?("jobOrderOpenDrafts")
+      if query.include?("shopifyOpenDrafts")
         index = variables[:after].to_s.delete_prefix("page-").then { |i| i.empty? ? 0 : i.to_i }
         more = @fixed_cursor ? true : index + 1 < @draft_pages.size
         Response.new(200, { "data" => { "draftOrders" => {

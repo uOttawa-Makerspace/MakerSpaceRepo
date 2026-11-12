@@ -139,6 +139,26 @@ module ShopifyConcern
     def shopify_draft_order_key_name
       raise NotImplementedError, "Must define shopify_draft_order_key_name on model including ShopifyConcern"
     end
+
+    # The marker a model's drafts carry beside the operating tag, naming the record the draft was made for
+    # ("<draft_marker_name>:<id>"): what ShopifyDraftSweep reconciles by. A model that sweeps its drafts defines the name
+    # and lists the marker in #shopify_draft_order_tags.
+    def draft_marker_name
+      raise NotImplementedError, "Must define draft_marker_name on a model whose drafts are swept"
+    end
+
+    def draft_marker_tag(record_id) = "#{draft_marker_name}:#{record_id}"
+
+    # The record id a draft's tags name: the one marker of this model, nil when there is none or two different ones.
+    def draft_marker_record_id(tags)
+      pattern = /\A#{Regexp.escape(draft_marker_name)}:(\d+)\z/
+      ids = draft_tag_list(tags).filter_map { |t| pattern.match(t)&.captures&.first&.to_i }.uniq
+      ids.first if ids.one?
+    end
+
+    # Whether a draft with these tags is THIS environment's draft of the record `record_id` (the one rule the sweep
+    # lists by and re-verifies before it deletes).
+    def marked_for?(tags, record_id) = draft_order_processable?(tags) && draft_marker_record_id(tags) == record_id
   end
 
   def shopify_is_paid

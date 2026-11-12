@@ -20,7 +20,7 @@ module RescueGuard
     # record_failure! stores the error on the row and reports it; it never raises
     "app/jobs/apply_processed_order_job.rb" => 1,
     # the run keeps the error and flush reports it, or the signal is re-raised after the flush
-    "app/models/job_order/draft_sweep.rb" => 2
+    "app/models/shopify_draft_sweep.rb" => 2
   }.freeze
 end
 
