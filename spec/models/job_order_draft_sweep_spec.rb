@@ -103,7 +103,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
     order = order_with_draft!(:staff_approval, stored: "gid://shopify/DraftOrder/1")
     locked = []
     allow_any_instance_of(JobOrder).to receive(:lock!).and_wrap_original { |m, *a| locked << true; m.call(*a) }
-    shopify.on_query = ->(q, _v) { expect(locked).not_to be_empty unless q.include?("jobOrderOpenDrafts") }
+    shopify.on_query = ->(q, _v) { expect(locked).not_to be_empty unless q.include?("shopifyOpenDrafts") }
     sweep(draft_node("gid://shopify/DraftOrder/1", order))
 
     expect(shopify.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
@@ -262,7 +262,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       report = sweep(pages: [[draft_node("gid://shopify/DraftOrder/1", order)]])
 
       expect(report.unresolved.first).to include("cursor", "repeated")
-      expect(shopify.calls.count { |c| c[:query].include?("jobOrderOpenDrafts") }).to eq(2)
+      expect(shopify.calls.count { |c| c[:query].include?("shopifyOpenDrafts") }).to eq(2)
       expect(shopify.deleted_ids).to eq(["gid://shopify/DraftOrder/1"])
     end
 
@@ -270,7 +270,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       stub_const("JobOrder::DraftSweep::MAX_PAGES", 3)
       report = sweep(pages: Array.new(6) { [] })
 
-      expect(shopify.calls.count { |c| c[:query].include?("jobOrderOpenDrafts") }).to eq(3)
+      expect(shopify.calls.count { |c| c[:query].include?("shopifyOpenDrafts") }).to eq(3)
       expect(report.unresolved.first).to include("more than 3 pages")
     end
 
@@ -971,7 +971,7 @@ RSpec.describe JobOrder::DraftSweep, type: :model do
       expect { JobOrder.const_get(:DraftDeletion).delete_unless_completed!("gid://shopify/DraftOrder/1") }.to raise_error(ArgumentError, /marker/)
 
       tags = "#{operating_tag}, job_order:#{order.id}"
-      expect(JobOrder.draft_marker_order_id(tags)).to eq(order.id)
+      expect(JobOrder.draft_marker_record_id(tags)).to eq(order.id)
       expect(JobOrder.marked_for?(tags, order.id)).to be(true)
       expect(JobOrder.marked_for?("#{operating_tag}, job_order:#{order.id}, job_order:#{order.id + 1}", order.id)).to be(false)
     end
