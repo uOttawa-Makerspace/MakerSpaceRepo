@@ -108,7 +108,11 @@ RSpec.describe "Public repository pages in English and French", type: :request d
   describe "repository page" do
     def repo_url = repository_path(repo.user_username, repo.slug)
 
-    before { repo.update_columns(youtube_link: "https://www.youtube.com/watch?v=dQw4w9WgXcQ") }
+    before do
+      2.times do
+        Photo.create!(repository_id: repo.id, image: Rack::Test::UploadedFile.new(Rails.root.join("spec/support/assets/avatar.png"), "image/png"))
+      end
+    end
 
     it "keeps the English wording" do
       repo.update_columns(featured: true)

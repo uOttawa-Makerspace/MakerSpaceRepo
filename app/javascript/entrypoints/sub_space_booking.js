@@ -435,6 +435,7 @@ document.addEventListener("turbo:load", function () {
         body: JSON.stringify(data),
       }),
       btn,
+      bookingText("updated"),
     );
   }
 
@@ -467,16 +468,23 @@ document.addEventListener("turbo:load", function () {
     );
   }
 
-  function showToast(title, text) {
+  // The toast is red for a problem and green for a success.
+  function showToast(title, text, success = false) {
     const toastEl = document.getElementById("booking_toast");
     if (!toastEl) return;
+    const tone = success ? ["success", "danger"] : ["danger", "success"];
+    for (const el of [toastEl, toastEl.querySelector(".toast-header")]) {
+      el?.classList.add(`text-bg-${tone[0]}`);
+      el?.classList.remove(`text-bg-${tone[1]}`);
+    }
     document.getElementById("toast_title").innerText = title;
     document.getElementById("toast_text").innerText = text;
     Toast.getOrCreateInstance(toastEl).show();
   }
 
   // ---- Shared fetch handler -----------------------------------------------
-  function makeRequest(request, triggerBtn) {
+  // successText, when given, is shown as a success toast once the save worked.
+  function makeRequest(request, triggerBtn, successText = "") {
     requestResult(request)
       .then((result) => {
         const { ok, text } = result;
@@ -510,13 +518,7 @@ document.addEventListener("turbo:load", function () {
             const message = rest.join(" ");
 
             if (["DurationHour", "DurationWeek", "TimeSlot"].includes(type)) {
-              const toastEl = document.getElementById("booking_toast");
-              if (toastEl) {
-                document.getElementById("toast_text").innerText = message;
-                document.getElementById("toast_title").innerText =
-                  "Booking failed";
-                Toast.getOrCreateInstance(toastEl).show();
-              }
+              showToast(bookingText("failedTitle"), message);
               closeModal();
               window.scrollTo(0, 0);
             } else {
@@ -536,6 +538,8 @@ document.addEventListener("turbo:load", function () {
           // Success — close modal and reload calendar data
           closeModal();
           bookedCalendar.refetchEvents();
+          if (successText)
+            showToast(bookingText("updatedTitle"), successText, true);
           // If a hard redirect is needed (delete etc.), reload
           if (parsed === null) window.location.reload();
         }

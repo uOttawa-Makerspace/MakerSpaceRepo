@@ -248,6 +248,22 @@ RSpec.describe JobOrderMailer, type: :mailer do
       expect(delivered.last.bcc).to eq(["uottawa.makerepo@gmail.com"])
     end
 
+    it "payment_succeeded includes a sanitized staff message when one is given" do
+      described_class.payment_succeeded(order.id, "<p>Pick up at desk</p><script>alert(1)</script>").deliver_now
+      body = delivered.last.body.decoded
+      expect(body).to include("Pick up at desk")
+      expect(body).not_to include("<script>")
+    end
+
+    it "payment_succeeded adds no message paragraph when none or a blank one is given" do
+      described_class.payment_succeeded(order.id).deliver_now
+      plain = delivered.last.body.decoded.scan("<p ").size
+      described_class.payment_succeeded(order.id, "").deliver_now
+      expect(delivered.last.body.decoded.scan("<p ").size).to eq(plain)
+      described_class.payment_succeeded(order.id, "Note").deliver_now
+      expect(delivered.last.body.decoded.scan("<p ").size).to eq(plain + 1)
+    end
+
     # the "View Order" button of the pickup mail links to the pay page,
     # which renders a 500 for orders that are already PAID.
     it "payment_succeeded links the order's pay page (a link that 500s once the order is PAID)" do

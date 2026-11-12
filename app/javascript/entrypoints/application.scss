@@ -39,11 +39,48 @@ $grid-breakpoints: (
   --secondary-text: #{$secondary-text-dark};
   --bs-primary-text-emphasis: #{$primary-text-dark};
 
+  // The orange fill on the dark theme is darker than on the light theme, so white
+  // text on it reaches 4.5:1. Bootstrap bakes these colours in at compile time,
+  // so each component that fills with the primary colour is set here.
+  --bs-primary: #{$primary-dark};
+  --bs-primary-rgb:
+    #{red($primary-dark)}, #{green($primary-dark)}, #{blue($primary-dark)};
+  --bs-nav-pills-link-active-bg: #{$primary-dark};
+  --bs-dropdown-link-active-bg: #{$primary-dark};
+  --bs-pagination-active-bg: #{$primary-dark};
+  --bs-pagination-active-border-color: #{$primary-dark};
+  --bs-list-group-active-bg: #{$primary-dark};
+  --bs-list-group-active-border-color: #{$primary-dark};
+  .btn-primary {
+    --bs-btn-bg: #{$primary-dark};
+    --bs-btn-border-color: #{$primary-dark};
+    --bs-btn-focus-shadow-rgb: #{to-rgb(
+        mix(color-contrast($primary-dark), $primary-dark, 15%)
+      )};
+    --bs-btn-hover-bg: #{shade-color($primary-dark, 15%)};
+    --bs-btn-hover-border-color: #{shade-color($primary-dark, 20%)};
+    --bs-btn-active-bg: #{shade-color($primary-dark, 20%)};
+    --bs-btn-active-border-color: #{shade-color($primary-dark, 25%)};
+    --bs-btn-disabled-bg: #{$primary-dark};
+    --bs-btn-disabled-border-color: #{$primary-dark};
+  }
+  .form-check-input:checked {
+    background-color: #{$primary-dark};
+    border-color: #{$primary-dark};
+  }
+  .progress-bar {
+    background-color: #{$primary-dark};
+  }
+
   // Bootstrap draws these with the background shades; on the dark page they
   // need the lighter text shades to stay readable.
   .btn-outline-primary {
     --bs-btn-color: #{$primary-text-dark};
     --bs-btn-border-color: #{$primary-text-dark};
+    --bs-btn-hover-bg: #{$primary-dark};
+    --bs-btn-hover-border-color: #{$primary-dark};
+    --bs-btn-active-bg: #{$primary-dark};
+    --bs-btn-active-border-color: #{$primary-dark};
   }
   .btn-outline-secondary {
     --bs-btn-color: #{$secondary-text-dark};

@@ -25,9 +25,10 @@ vi.mock("../../../app/javascript/src/csrf", () => ({ csrfHeaders: (h) => h }));
 const PAGE = `
 <div id="booking_toast"
   data-failed-title="Booking failed"
+  data-updated-title="Booking updated" data-updated="Saved."
   data-feed="Bookings not loaded"
   data-unavailable-title="Booking unavailable" data-unavailable="Could not open it">
-  <strong id="toast_title"></strong><div id="toast_text"></div>
+  <div class="toast-header"><strong id="toast_title"></strong></div><div id="toast_text"></div>
 </div>
 <div id="booked-calendar"></div>
 <div id="bookModal"></div>
@@ -120,6 +121,47 @@ describe("a failed booking request", () => {
       ),
     );
     expect(toast()).toBe("This time slot is already booked.");
+  });
+});
+
+describe("a saved booking update", () => {
+  const save = async (response) => {
+    global.fetch = vi.fn(() => Promise.resolve(response));
+    document.getElementById("bookUpdate").click();
+    await settle();
+  };
+  const toastEl = () => document.getElementById("booking_toast");
+
+  it("shows a green success message without reloading", async () => {
+    await save(reply(200, JSON.stringify({ status: "ok" })));
+    expect(title()).toBe("Booking updated");
+    expect(toast()).toBe("Saved.");
+    expect(toastEl().classList.contains("text-bg-success")).toBe(true);
+    expect(toastEl().classList.contains("text-bg-danger")).toBe(false);
+  });
+
+  it("returns to the red style for the next failure", async () => {
+    await save(reply(200, JSON.stringify({ status: "ok" })));
+    await save(reply(500, ""));
+    expect(title()).toBe("Booking failed");
+    expect(toastEl().classList.contains("text-bg-danger")).toBe(true);
+    expect(toastEl().classList.contains("text-bg-success")).toBe(false);
+  });
+
+  it.each(["TimeSlot Slot taken.", "DurationHour Too long."])(
+    "a field error (%s) after a success shows the red style only",
+    async (error) => {
+      await save(reply(200, JSON.stringify({ status: "ok" })));
+      await save(reply(422, JSON.stringify({ errors: [error] })));
+      expect(title()).toBe("Booking failed");
+      expect(toastEl().classList.contains("text-bg-danger")).toBe(true);
+      expect(toastEl().classList.contains("text-bg-success")).toBe(false);
+    },
+  );
+
+  it("shows no success message after a delete", async () => {
+    await respond(reply(200, JSON.stringify({ status: "ok" })));
+    expect(toast()).toBe("");
   });
 });
 

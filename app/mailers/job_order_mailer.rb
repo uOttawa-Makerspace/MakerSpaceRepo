@@ -151,9 +151,10 @@ class JobOrderMailer < ApplicationMailer
     )
   end
 
-  def payment_succeeded(job_order_id)
+  def payment_succeeded(job_order_id, message = nil)
     return unless JobOrder.where(id: job_order_id).present?
     @job_order = JobOrder.find(job_order_id)
+    @message = sanitize(message) if message.present?
 
     mail(
       to: @job_order.user.email,
