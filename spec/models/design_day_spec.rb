@@ -62,10 +62,14 @@ RSpec.describe DesignDay, type: :model do
       expect(DesignDay.instance.day).to eq(Time.zone.today)
     end
 
-    it "returns the latest existing one" do
-      create(:design_day, day: Date.new(2025, 3, 1))
-      latest = create(:design_day, day: Date.new(2026, 3, 1))
-      expect(DesignDay.instance).to eq(latest)
+    it "returns the existing one without creating another" do
+      existing = create(:design_day, day: Date.new(2026, 3, 1))
+      expect { expect(DesignDay.instance).to eq(existing) }.not_to change(DesignDay.unscoped, :count)
+    end
+
+    it "refuses a second design day at the database" do
+      create(:design_day)
+      expect { create(:design_day) }.to raise_error(ActiveRecord::RecordNotUnique)
     end
   end
 end
