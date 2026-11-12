@@ -15,9 +15,11 @@
 # Not supported, because no feed in use needs them and nothing reads them: RDATE, and RANGE=THISANDFUTURE on a
 # RECURRENCE-ID (the instance is treated as one instance). An event with either is read without it.
 #
-# The feed's body is cached for ten minutes, encrypted (a private link's calendar is private), under a key made
-# from a digest of the link. A series whose rule the engine refuses, and an event with no usable start, are
-# reported and left out so the rest of the feed still loads.
+# The feed's body, and the entries made from it, are cached for ten minutes, encrypted (a private link's calendar is
+# private): the body under a digest of the link, the entries under a digest of the body and of the code that made them.
+# A rule that does not pass the checks stored rules pass (value ranges, never repeating) is reported and the event is
+# shown once at its own start; an event that cannot be read at all is reported and left out; an event with no usable
+# start is reported and left out; so one bad event never empties the feed. A feed keeps its first MAX_EVENTS events.
 class ImportedCalendar
   ZONE = RecurrenceRule::ZONE
   KEEP_FOR = 2.months
@@ -25,6 +27,10 @@ class ImportedCalendar
   # What a reader of the cached entry that is already being rebuilt keeps serving for.
   REBUILD_GRACE = 10.seconds
   CIPHER = "aes-256-gcm"
+  MAX_EVENTS = 5000
+  # Changes whenever the code that makes entries changes, so a cached entry is never read by other code.
+  VERSION = Digest::SHA256.hexdigest(%w[models/imported_calendar models/recurring_series validators/recurrence_rule_validator]
+                                       .map { |name| Rails.root.join("app/#{name}.rb").read }.join)
 
   # `recurrence_id` is the original instant of a modified instance (nil otherwise); `series` is nil for a one-off.
   # `ends_at` is nil when the event has no end.
@@ -41,39 +47,55 @@ class ImportedCalendar
   end
 
   # The time of an icalendar date or date-time, in its own zone: a date is midnight in `date_zone`, a time with no
-  # zone (or one icalendar cannot resolve) is Toronto wall time. Nil for no value.
-  def self.time_of(value, date_zone = ZONE)
+  # zone is Toronto wall time, and a zone name that is neither IANA nor Windows (a custom name with its own
+  # VTIMEZONE) keeps the instant and is Toronto, yielding the name to the block if there is one. Nil for no value.
+  def self.time_of(value, date_zone = ZONE, &unknown)
     return if value.nil?
     return date_zone.local(value.year, value.month, value.day) if value.is_a?(Icalendar::Values::Date) || value.instance_of?(::Date)
 
+    zone = zone_of(value, &unknown)
     raw = value.value
     return ZONE.local(raw.year, raw.month, raw.day, raw.hour, raw.min, raw.sec) if raw.instance_of?(::DateTime) && raw.offset.zero?
 
-    value.to_time.in_time_zone(zone_named(Array(value.ical_params["tzid"]).first))
+    value.to_time.in_time_zone(zone)
   end
 
-  # The IANA or Windows zone name as a zone; Toronto for any other (a custom name with its own VTIMEZONE).
-  def self.zone_named(tzid)
-    ActiveSupport::TimeZone[tzid.to_s] || ActiveSupport::TimeZone[Icalendar::Offset::WindowsToIana::WINDOWS_TO_IANA[tzid].to_s] || ZONE
+  # The zone a time is in: the IANA or Windows zone its TZID names, else Toronto.
+  def self.zone_of(value)
+    tzid = Array(value.ical_params["tzid"]).first
+    zone = ActiveSupport::TimeZone[tzid.to_s] || ActiveSupport::TimeZone[Icalendar::Offset::WindowsToIana::WINDOWS_TO_IANA[tzid].to_s]
+    yield tzid if tzid && zone.nil? && block_given?
+    zone || ZONE
   end
 
-  # The feed body, or nil when the server gave none. A copy is kept for ten minutes, encrypted, never under the
-  # link itself (it holds the secret of a private calendar); only a body is kept, not a failure.
+  # The feed body, or nil when the server gave none (or an empty one).
   def self.body(url, fresh: false)
-    key = ["ics-body", Digest::SHA256.hexdigest(url)]
+    cached(["ics-body", Digest::SHA256.hexdigest(url)], fresh: fresh) { IcsFetcher.get(url, timeout: 10).presence }
+  end
+
+  # The block's value, kept for ten minutes, encrypted (Marshal, which is safe here: only the application can have
+  # written a value that decrypts), never under the link itself (it holds the secret of a private calendar). A nil is
+  # not kept, so neither is a failure. A copy that cannot be decrypted is reported and made again.
+  def self.cached(key, fresh: false, &block)
     sealed = Rails.cache.fetch(key, expires_in: CACHE_FOR, race_condition_ttl: REBUILD_GRACE, force: fresh, skip_nil: true) do
-      body = IcsFetcher.get(url, timeout: 10)
-      body && cipher.encrypt_and_sign(body)
+      value = block.call
+      value && cipher.encrypt_and_sign(value)
     end
     sealed && cipher.decrypt_and_verify(sealed)
+  rescue ActiveSupport::MessageEncryptor::InvalidMessage => e
+    raise if fresh
+
+    Rails.logger.error("ICS cache copy unreadable: #{e.class}")
+    Rails.error.report(e, handled: true, severity: :warning, context: { source: "imported calendar cache" })
+    cached(key, fresh: true, &block)
   end
 
   # The key comes from the application secret, so it needs no setting of its own and changes with it (a copy made
-  # under the old secret is then unreadable, and gone within ten minutes).
+  # under the old secret is reported, made again, and gone within ten minutes).
   def self.cipher
     ActiveSupport::MessageEncryptor.new(
       Rails.application.key_generator.generate_key("imported calendar body", ActiveSupport::MessageEncryptor.key_len(CIPHER)),
-      cipher: CIPHER
+      cipher: CIPHER, serializer: Marshal
     )
   end
 
@@ -85,6 +107,7 @@ class ImportedCalendar
     @entries = []
     @fetched = false
     @failed = false
+    @unknown_zones = Set.new
   end
 
   # Whether the feed could not be read: no body, a fetch or parse error, or a body with no calendar in it.
@@ -97,9 +120,7 @@ class ImportedCalendar
   def read(fresh)
     body = self.class.body(@url, fresh: fresh)
     @fetched = !body.nil?
-    calendars = body ? Icalendar::Calendar.parse(body) : []
-    @failed = calendars.empty?
-    @entries = calendars.flat_map { |calendar| calendar.events.group_by(&:uid).flat_map { |_uid, group| group_entries(group) } }
+    @failed, @entries = body ? entries_of(body, fresh) : [true, []]
   rescue StandardError => e
     Rails.logger.error("ICS parse error for #{IcsFetcher.host(@url)}: #{e.class}")
     @entries = []
@@ -108,19 +129,42 @@ class ImportedCalendar
 
   private
 
+  # Whether the feed is unreadable, and its entries: made once per body (and per version of this code), then kept.
+  def entries_of(body, fresh)
+    key = ["ics-entries", VERSION, Digest::SHA256.hexdigest(body)]
+    self.class.cached(key, fresh: fresh) { read_calendars(body) }
+  end
+
+  def read_calendars(body)
+    calendars = Icalendar::Calendar.parse(body)
+    events = calendars.flat_map(&:events)
+    report_problem("ICS feed has more than #{MAX_EVENTS} events; the first #{MAX_EVENTS} are kept") if events.size > MAX_EVENTS
+    entries = events.first(MAX_EVENTS).group_by(&:uid).flat_map { |_uid, group| group_entries(group) }
+    @unknown_zones.each { |tzid| report_problem("unknown time zone #{tzid}; read as Toronto time") }
+    [calendars.empty?, entries]
+  end
+
   # The entries of one UID: the series (or single event) itself, then each modified instance of it that is not
   # cancelled.
   def group_entries(group)
     master = group.find { |event| event.recurrence_id.nil? }
     overrides = group.select { |event| event.recurrence_id.present? }
-    [master && master_entry(master, overrides), *overrides.map { |event| override_entry(event) }].compact
+    [master && guarded(master) { master_entry(master, overrides) },
+     *overrides.map { |event| guarded(event) { override_entry(event) } }].compact
+  end
+
+  # One event that cannot be read is reported and left out; it never stops the rest of the feed.
+  def guarded(event)
+    yield
+  rescue StandardError => e
+    report_problem(e, event.uid)
   end
 
   def master_entry(event, overrides)
     return if cancelled?(event)
 
     entry = entry_for(event, nil)
-    entry && (event.rrule.present? ? series_entry(entry, event, overrides) : kept(entry))
+    entry && (event.rrule.present? ? repeating_entry(entry, event, overrides) : kept(entry))
   end
 
   def override_entry(event)
@@ -134,12 +178,17 @@ class ImportedCalendar
 
   # The entry for the event's own times, or nil (reported) when it has no usable start.
   def entry_for(event, recurrence_id)
-    starts_at = ImportedCalendar.time_of(event.dtstart)
-    return report("ICS event has no usable start", event) if starts_at.nil?
+    starts_at = zoned_time(event.dtstart)
+    return report_problem("ICS event has no usable start", event.uid) if starts_at.nil?
 
-    all_day = event.dtstart.is_a?(Icalendar::Values::Date)
-    Entry.new(uid: event.uid, recurrence_id: recurrence_id, summary: event.summary, description: event.description, all_day: all_day,
-              starts_at: starts_at, ends_at: ImportedCalendar.time_of(event.dtend, starts_at.time_zone), series: nil)
+    Entry.new(uid: event.uid.to_s, recurrence_id: recurrence_id, summary: event.summary&.to_s, description: event.description&.to_s,
+              all_day: event.dtstart.is_a?(Icalendar::Values::Date), starts_at: starts_at,
+              ends_at: zoned_time(event.dtend, starts_at.time_zone), series: nil)
+  end
+
+  # A time of the event; a zone name that cannot be resolved is noted, to be reported once for the feed.
+  def zoned_time(value, date_zone = ZONE)
+    ImportedCalendar.time_of(value, date_zone) { |tzid| @unknown_zones << tzid.to_s }
   end
 
   # A single event or modified instance, unless it ended more than two months ago.
@@ -147,14 +196,21 @@ class ImportedCalendar
     entry if (entry.ends_at || entry.starts_at) >= cutoff
   end
 
-  # A repeating event, unless the series ended more than two months ago (by UNTIL or after its COUNT). A rule the
-  # engine refuses is reported and the series left out.
+  # A repeating event. A rule that fails the checks stored rules pass is reported and the event is shown once, at its
+  # own start.
+  def repeating_entry(entry, event, overrides)
+    problem = RecurrenceRuleValidator.error_for("RRULE:#{event.rrule.first.value_ical}", entry.starts_at, RecurrenceRuleValidator::IMPORTED)
+    return series_entry(entry, event, overrides) unless problem
+
+    report_problem(problem, event.uid)
+    kept(entry)
+  end
+
+  # The series, unless it ended more than two months ago (by UNTIL or after its COUNT).
   def series_entry(entry, event, overrides)
     ends_at = entry.ends_at || (entry.all_day ? entry.starts_at.advance(days: 1) : entry.starts_at)
     series = RecurringSeries.from_ics(event, overrides, starts_at: entry.starts_at, ends_at: ends_at)
     entry.with(series: series) unless ended?(series)
-  rescue ArgumentError, RRule::InvalidRRule => e
-    report(e, event)
   end
 
   def ended?(series)
@@ -163,11 +219,12 @@ class ImportedCalendar
 
   def cutoff = Time.current - KEEP_FOR
 
-  # Reports an event that cannot be placed on the calendar; returns nil so the caller leaves it out.
-  def report(problem, event)
+  # Reports something that cannot be placed on the calendar, by event uid and calendar digest (never the link or the
+  # rule); returns nil so the caller leaves the event out.
+  def report_problem(problem, uid = nil)
     error = problem.is_a?(StandardError) ? problem : ArgumentError.new(problem)
     Rails.error.report(error, handled: true, severity: :warning,
-                              context: { event_uid: event.uid.to_s, calendar: @id, error_class: error.class.name })
+                              context: { event_uid: uid.to_s, calendar: @id, error_class: error.class.name })
     nil
   end
 end

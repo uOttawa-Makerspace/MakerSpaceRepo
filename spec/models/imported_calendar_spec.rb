@@ -304,24 +304,75 @@ RSpec.describe ImportedCalendar do
         .to eq([["ICS event has no usable start", "nostart", Digest::MD5.hexdigest(url)], ["ICS event has no usable start", "rec", Digest::MD5.hexdigest(url)]])
     end
 
-    it "reports a rule the engine refuses and leaves that series out" do
+    # One example per class of rule that fails the checks stored rules pass: it is reported once (event uid and calendar
+    # digest, never the link or the rule) and the event is shown once, at its own start, as a single event.
+    {
+      "a value out of range" => "FREQ=DAILY;BYYEARDAY=400",
+      "a month out of range" => "FREQ=YEARLY;BYMONTH=13",
+      "a day of the month of 0" => "FREQ=MONTHLY;BYMONTHDAY=0",
+      "a day of the month of 32" => "FREQ=MONTHLY;BYMONTHDAY=32",
+      "a week number of 0" => "FREQ=YEARLY;BYWEEKNO=0",
+      "a week number of 54" => "FREQ=YEARLY;BYWEEKNO=54",
+      "a set position of 0" => "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=0",
+      "a set position of 367" => "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=367",
+      "a weekday ordinal of 0" => "FREQ=MONTHLY;BYDAY=0MO",
+      "a weekday ordinal of 54" => "FREQ=MONTHLY;BYDAY=54MO",
+      "a monthly weekday ordinal of 53" => "FREQ=MONTHLY;BYDAY=53MO",
+      "a date that never comes" => "FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=30",
+      "an interval of 0" => "FREQ=WEEKLY;INTERVAL=0",
+      "a rule finer than daily" => "FREQ=HOURLY"
+    }.each do |label, rule|
+      it "reports #{label} and shows the event once, at its own start, with the rest of the feed intact" do
+        body = ics(
+          vevent("odd", "DTSTART:20270215T150000Z", "DTEND:20270215T160000Z", "SUMMARY:Odd", "RRULE:#{rule}"),
+          vevent("fine", "DTSTART:20270215T150000Z", "SUMMARY:Fine", "RRULE:FREQ=WEEKLY")
+        )
+        calendar = nil
+        reports = reported { serve(body); calendar = described_class.load(url, name: "x", color: "#000") }
+        expect(calendar).not_to be_failed
+        expect(calendar.entries.map(&:uid)).to eq(%w[odd fine])
+        expect(calendar.entries.first).to have_attributes(series: nil, starts_at: Time.utc(2027, 2, 15, 15), ends_at: Time.utc(2027, 2, 15, 16))
+        expect(calendar.entries.last.series).not_to be_nil
+        expect(reports.size).to eq(1)
+        expect(reports.first.last).to include(event_uid: "odd", calendar: Digest::MD5.hexdigest(url))
+        expect(reports.first.first.message).not_to include(rule, "secret-token")
+      end
+    end
+
+    it "reports an event that raises while it is read, leaves out only that event, and never empties the feed" do
       body = ics(
-        vevent("hourly", "DTSTART:20270215T150000Z", "SUMMARY:Often", "RRULE:FREQ=HOURLY"),
-        vevent("zero", "DTSTART:20270215T150000Z", "SUMMARY:Never", "RRULE:FREQ=WEEKLY;INTERVAL=0"),
+        vevent("boom", "DTSTART:20270215T150000Z", "SUMMARY:Boom", "RRULE:FREQ=WEEKLY"),
         vevent("fine", "DTSTART:20270215T150000Z", "SUMMARY:Fine", "RRULE:FREQ=WEEKLY")
+      )
+      original = RecurringSeries.method(:from_ics)
+      allow(RecurringSeries).to receive(:from_ics) { |master, *rest, **options| master.uid.to_s == "boom" ? raise(TypeError, "bug") : original.call(master, *rest, **options) }
+      calendar = nil
+      reports = reported { serve(body); calendar = described_class.load(url, name: "x", color: "#000") }
+      expect(calendar).not_to be_failed
+      expect(calendar.entries.map(&:uid)).to eq(["fine"])
+      expect(reports.map { |error, context| [error.class, context[:event_uid]] }).to eq([[TypeError, "boom"]])
+    end
+
+    it "keeps the first events of a feed with too many, and reports it once" do
+      stub_const("ImportedCalendar::MAX_EVENTS", 2)
+      body = ics(3.times.map { |i| vevent("e#{i}", "DTSTART:20270215T150000Z", "SUMMARY:E#{i}") })
+      entries = nil
+      reports = reported { entries = entries_of(body) }
+      expect(entries.map(&:uid)).to eq(%w[e0 e1])
+      expect(reports.map { |error, _| error.message }).to eq(["ICS feed has more than 2 events; the first 2 are kept"])
+    end
+
+    it "reads a zone name that is neither IANA nor Windows as Toronto and reports it once per feed, not per event" do
+      body = ics(
+        vevent("a", "DTSTART;TZID=Nowhere/Land:20270215T090000", "SUMMARY:A"),
+        vevent("b", "DTSTART;TZID=Nowhere/Land:20270216T090000", "DTEND;TZID=Nowhere/Land:20270216T100000", "SUMMARY:B"),
+        vevent("c", "DTSTART;TZID=Elsewhere:20270217T090000", "SUMMARY:C")
       )
       entries = nil
       reports = reported { entries = entries_of(body) }
-      expect(entries.map(&:uid)).to eq(["fine"])
-      expect(reports.map { |_, context| [context[:event_uid], context[:error_class]] })
-        .to eq([["hourly", "RecurringSeries::UnsupportedRule"], ["zero", "RRule::InvalidRRule"]])
-    end
-
-    it "leaves out a series whose rule can never match, without a report" do
-      body = ics(vevent("never", "DTSTART:20270215T150000Z", "SUMMARY:Never", "RRULE:FREQ=DAILY;BYYEARDAY=400"))
-      entries = nil
-      expect(reported { entries = entries_of(body) }).to eq([])
-      expect(entries).to eq([])
+      expect(entries.size).to eq(3)
+      expect(reports.map { |error, _| error.message }).to contain_exactly("unknown time zone Nowhere/Land; read as Toronto time",
+                                                                          "unknown time zone Elsewhere; read as Toronto time")
     end
   end
 
@@ -395,17 +446,56 @@ RSpec.describe ImportedCalendar do
       expect(store.instance_variable_get(:@data)).to be_empty
     end
 
-    it "keeps the body encrypted, under a key that does not hold the link" do
+    it "keeps the body and the entries encrypted, under keys that do not hold the link" do
       load_calendar
       data = store.instance_variable_get(:@data)
-      expect(data.keys.size).to eq(1)
-      expect(data.keys.first).to eq("ics-body/#{Digest::SHA256.hexdigest(url)}")
-      expect(data.keys.first).not_to include("secret-token")
+      expect(data.keys.size).to eq(2)
+      expect(data.keys.join).not_to include("secret-token")
+      expect(data.keys).to include("ics-body/#{Digest::SHA256.hexdigest(url)}")
 
       raw = store.read(["ics-body", Digest::SHA256.hexdigest(url)])
       expect(raw).to be_a(String)
       expect(raw).not_to include("Private class", "BEGIN:VCALENDAR")
       expect(described_class.cipher.decrypt_and_verify(raw)).to eq(body)
+      entries_key = data.keys.find { |key| key.start_with?("ics-entries/") }
+      expect(data[entries_key].value.to_s).not_to include("Private class")
+    end
+
+    it "does not parse or expand a feed it already has the entries of, and the entries equal the first read" do
+      rec = ics(vevent("rec", "DTSTART:20270215T150000Z", "DTEND:20270215T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=5", "EXDATE:20270222T150000Z"))
+      allow(IcsFetcher).to receive(:get).with(url, timeout: 10).and_return(rec)
+      first = load_calendar.entries
+      expect(Icalendar::Calendar).not_to receive(:parse)
+      expect(RecurringSeries).not_to receive(:from_ics)
+      again = load_calendar.entries
+      expect(again.map { |e| [e.uid, e.starts_at, e.series.rule] }).to eq(first.map { |e| [e.uid, e.starts_at, e.series.rule] })
+      expect(again.first.series.occurrences_starting_in(everything, limit: 10).occurrences.size).to eq(4)
+    end
+
+    it "parses again when the feed changes, and when a fresh load is asked for" do
+      load_calendar
+      allow(IcsFetcher).to receive(:get).with(url, timeout: 10).and_return(body.sub("Private class", "Changed class"))
+      expect(load_calendar(fresh: true).entries.first.summary).to eq("Changed class")
+    end
+
+    it "does not keep an empty body" do
+      allow(IcsFetcher).to receive(:get).with(url, timeout: 10).and_return("")
+      expect(load_calendar).to be_failed
+      expect(store.instance_variable_get(:@data)).to be_empty
+    end
+
+    it "reports a copy it cannot decrypt (without the link), then reads the feed again" do
+      load_calendar
+      store.write(["ics-body", Digest::SHA256.hexdigest(url)], "not a sealed copy")
+      calendar = nil
+      logged = []
+      allow(Rails.logger).to receive(:error) { |message| logged << message }
+      reports = reported { calendar = load_calendar }
+      expect(calendar).not_to be_failed
+      expect(calendar.entries.map(&:uid)).to eq(["a"])
+      expect(reports.map { |error, _| error.class }).to eq([ActiveSupport::MessageEncryptor::InvalidMessage])
+      expect(logged.join).to match(/ICS cache copy unreadable: ActiveSupport::MessageEncryptor::InvalidMessage/)
+      expect(logged.join).not_to include("secret-token")
     end
   end
 end
