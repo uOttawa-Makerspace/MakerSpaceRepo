@@ -145,11 +145,11 @@
         
         <!-- TomSelect Quick Jump Search -->
         <div class="card bg-body-tertiary border border-secondary-subtle rounded-3 p-3 p-md-4 mb-4 shadow-sm">
-          <label for="training-search-select" class="form-label fw-semibold text-body-emphasis d-flex align-items-center gap-2 mb-2">
+          <label for="training-search-select" id="training-search-label" class="form-label fw-semibold text-body-emphasis d-flex align-items-center gap-2 mb-2">
             <i class="fa-solid fa-magnifying-glass text-primary"></i>
             <span>Quick Jump to Tool / Certification:</span>
           </label>
-          <select id="training-search-select" class="form-select" placeholder="Search a tool or certification (e.g. Mill, 3D Printer, Laser)...">
+          <select id="training-search-select" class="form-select" aria-labelledby="training-search-label" placeholder="Search a tool or certification (e.g. Mill, 3D Printer, Laser)...">
             <option value="">Search a tool or certification...</option>
             <% @skills.each do |skill| %>
               <optgroup label="<%= skill.name %>">

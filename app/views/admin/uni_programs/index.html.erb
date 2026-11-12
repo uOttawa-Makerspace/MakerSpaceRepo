@@ -6,7 +6,7 @@
     <%= form_tag admin_uni_programs_import_programs_path, method: :post, multipart: true, class: 'w-100' do %>
     <p>Upload CSV file to update programs. Programs missing from the file are marked inactive and no longer offered on the sign-up and profile forms</p>
     <div class="input-group mb-3">
-      <%= file_field_tag :file, style: 'display: inline;', class: 'form-control', accept: 'text/csv' %>
+      <%= file_field_tag :file, style: 'display: inline;', class: 'form-control', accept: 'text/csv', aria: { label: t('common.names.programs_file') } %>
       <%= submit_tag 'Import File', class: 'btn btn-primary' %>
     </div>
     <%= check_box_tag :allow_new_programs, '1', false, class: 'form-check-input' %>

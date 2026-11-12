@@ -189,7 +189,7 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
 
     it "search labels the filter select for assistive technology" do
       get search_admin_users_path(q: target.username)
-      expect(response.body).to match(/<select[^>]*id="filter"[^>]*aria-label="Search by..."|<select[^>]*aria-label="Search by..."[^>]*id="filter"/)
+      expect(response.body).to match(/<select[^>]*id="filter"[^>]*aria-label="Search by"|<select[^>]*aria-label="Search by"[^>]*id="filter"/)
     end
 
     it "search with at least one hit renders the result" do

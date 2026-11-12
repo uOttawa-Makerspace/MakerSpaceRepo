@@ -20,19 +20,19 @@
                 <b>Select to what public you want this to appear</b> <br />
                 <div class="d-inline-block text-start form-check">
                   <%= f.radio_button :public_goal, 'volunteer', style: 'display:inline', class: 'form-check-input' %>
-                  <%= f.label :public_goal, 'Volunteers', style: 'display:inline', class: 'form-label' %>
+                  <%= f.label :public_goal, 'Volunteers', value: 'volunteer', style: 'display:inline', class: 'form-label' %>
                   <br />
                   <%= f.radio_button :public_goal, 'regular_user', style: 'display:inline', class: 'form-check-input' %>
-                  <%= f.label :public_goal, 'All Users', style: 'display:inline', class: 'form-label' %>
+                  <%= f.label :public_goal, 'All Users', value: 'regular_user', style: 'display:inline', class: 'form-label' %>
                   <br />
                   <%= f.radio_button :public_goal, 'staff', style: 'display:inline', class: 'form-check-input' %>
-                  <%= f.label :public_goal, 'Staff', style: 'display:inline', class: 'form-label' %>
+                  <%= f.label :public_goal, 'Staff', value: 'staff', style: 'display:inline', class: 'form-label' %>
                   <br />
                   <%= f.radio_button :public_goal, 'admin', style: 'display:inline', class: 'form-check-input' %>
-                  <%= f.label :public_goal, 'Admins', style: 'display:inline', class: 'form-label' %>
+                  <%= f.label :public_goal, 'Admins', value: 'admin', style: 'display:inline', class: 'form-label' %>
                   <br />
                   <%= f.radio_button :public_goal, 'all', style: 'display:inline', class: 'form-check-input' %>
-                  <%= f.label :public_goal, 'All Visitors (Even not signed in)', style: 'display:inline', class: 'form-label' %>
+                  <%= f.label :public_goal, 'All Visitors (Even not signed in)', value: 'all', style: 'display:inline', class: 'form-label' %>
                   <br />
                   <br />
                 </div>
@@ -41,10 +41,10 @@
                 <b>Select if this announcements is active</b> <br />
                 <div class="d-inline-block text-start">
                   <%= f.radio_button :active, true, style: 'display:inline' %>
-                  <%= f.label :active, 'Yes', style: 'display:inline', class: 'form-label' %>
+                  <%= f.label :active, 'Yes', value: true, style: 'display:inline', class: 'form-label' %>
                   <br />
                   <%= f.radio_button :active, false, style: 'display:inline' %>
-                  <%= f.label :active, 'No', style: 'display:inline', class: 'form-label' %>
+                  <%= f.label :active, 'No', value: false, style: 'display:inline', class: 'form-label' %>
                   <br />
                 </div>
               </div>

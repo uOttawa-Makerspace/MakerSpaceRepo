@@ -9,8 +9,8 @@
           <%= f.text_field :name, class: 'form-control', required: true %>
         </div>
         <div class="mb-3">
-          <%= label_tag :captain, 'Team Captain', class: 'form-label' %>
-          <%= select_tag :captain, '', class: 'form-control', id: 'search_users_add' %>
+          <%= label_tag :captain, 'Team Captain', for: 'search_users_add', id: 'team_captain_label', class: 'form-label' %>
+          <%= select_tag :captain, '', class: 'form-control', id: 'search_users_add', aria: { labelledby: 'team_captain_label' } %>
         </div>
 
         <div class="text-center">

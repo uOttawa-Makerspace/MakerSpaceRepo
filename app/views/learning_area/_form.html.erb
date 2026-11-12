@@ -32,12 +32,13 @@
     </div>
 
     <div class="mb-3">
-        <%= f.label :subskill, 'Subskill (optional)', class: 'form-label' %>
+        <%= f.label :subskill, 'Subskill (optional)', id: 'learning_module_subskill_label', class: 'form-label' %>
         <%= f.select :subskill,
             options_for_select(@subskills, @learning_module.subskill),
          { include_blank: "Select or type a new subskill..." },
          { class: 'form-select',
-             data: { controller: 'tomselect' } } %>
+             data: { controller: 'tomselect' },
+             aria: { labelledby: 'learning_module_subskill_label' } } %>
         <div class="form-text">Learning modules with the same subskill become merged together and accessible under a subskill page</div>
     </div>
 
