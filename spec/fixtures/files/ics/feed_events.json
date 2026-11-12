@@ -1,0 +1,254 @@
+{
+  "all_day": [
+    {
+      "id": "allday-spring@ics.test",
+      "title": "All day spring",
+      "allDay": true,
+      "start": "2027-03-07T00:00:00",
+      "end": "2027-03-08T00:00:00",
+      "rrule": "DTSTART:20270307T000000\nRRULE:FREQ=WEEKLY;BYDAY=SU",
+      "duration": 86400000
+    },
+    {
+      "id": "allday-fall@ics.test",
+      "title": "All day fall without the change day",
+      "allDay": true,
+      "start": "2027-10-31T00:00:00",
+      "end": "2027-11-01T00:00:00",
+      "rrule": "DTSTART:20271031T000000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20271107T000000",
+      "duration": 86400000
+    }
+  ],
+  "bysetpos": [
+    {
+      "id": "last-weekday@ics.test",
+      "title": "Last weekday of the month",
+      "allDay": false,
+      "start": "2027-02-26T09:00:00",
+      "end": "2027-02-26T10:00:00",
+      "rrule": "DTSTART:20270226T090000\nRRULE:FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1",
+      "duration": 3600000
+    },
+    {
+      "id": "second-sunday-march@ics.test",
+      "title": "Second Sunday at 02:30",
+      "allDay": false,
+      "start": "2027-02-14T02:30:00",
+      "end": "2027-02-14T03:30:00",
+      "rrule": "DTSTART:20270214T023000\nRRULE:FREQ=MONTHLY;BYDAY=SU;BYSETPOS=2",
+      "duration": 3600000
+    },
+    {
+      "id": "first-sunday-november@ics.test",
+      "title": "First Sunday at 01:30",
+      "allDay": false,
+      "start": "2027-10-03T01:30:00",
+      "end": "2027-10-03T02:30:00",
+      "rrule": "DTSTART:20271003T013000\nRRULE:FREQ=MONTHLY;BYDAY=SU;BYSETPOS=1",
+      "duration": 3600000
+    }
+  ],
+  "count": [
+    {
+      "id": "count-spring@ics.test",
+      "title": "Three Sundays at 02:30",
+      "allDay": false,
+      "start": "2027-03-07T02:30:00",
+      "end": "2027-03-07T03:30:00",
+      "rrule": "DTSTART:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3",
+      "duration": 3600000
+    },
+    {
+      "id": "count-fall@ics.test",
+      "title": "Three Sundays at 01:30",
+      "allDay": false,
+      "start": "2027-10-31T01:30:00",
+      "end": "2027-10-31T02:30:00",
+      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3",
+      "duration": 3600000
+    }
+  ],
+  "exdate_repeated_hour": [
+    {
+      "id": "exdate-utc@ics.test",
+      "title": "Without the second 01:30",
+      "allDay": false,
+      "start": "2027-10-31T01:30:00",
+      "end": "2027-10-31T02:30:00",
+      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20271107T013000",
+      "duration": 3600000
+    },
+    {
+      "id": "exdate-first@ics.test",
+      "title": "Without the first 01:30",
+      "allDay": false,
+      "start": "2027-10-31T01:30:00",
+      "end": "2027-10-31T02:30:00",
+      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20271107T013000",
+      "duration": 3600000
+    },
+    {
+      "id": "exdate-local@ics.test",
+      "title": "Without 01:30 as wall time",
+      "allDay": false,
+      "start": "2027-10-31T01:30:00",
+      "end": "2027-10-31T02:30:00",
+      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20271107T013000",
+      "duration": 3600000
+    }
+  ],
+  "floating": [
+    {
+      "id": "floating-spring@ics.test",
+      "title": "Floating spring 02:30",
+      "allDay": false,
+      "start": "2027-03-07T02:30:00",
+      "end": "2027-03-07T03:30:00",
+      "rrule": "DTSTART:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU",
+      "duration": 3600000
+    },
+    {
+      "id": "floating-fall@ics.test",
+      "title": "Floating fall 01:30",
+      "allDay": false,
+      "start": "2027-10-31T01:30:00",
+      "end": "2027-10-31T02:30:00",
+      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU",
+      "duration": 3600000
+    }
+  ],
+  "paris_tzid": [
+    {
+      "id": "paris-spring@ics.test",
+      "title": "Paris spring",
+      "allDay": false,
+      "start": "2027-03-07T03:00:00",
+      "end": "2027-03-07T04:00:00",
+      "rrule": "DTSTART:20270307T030000\nRRULE:FREQ=WEEKLY;BYDAY=SU",
+      "duration": 3600000
+    },
+    {
+      "id": "paris-fall@ics.test",
+      "title": "Paris fall",
+      "allDay": false,
+      "start": "2027-10-24T03:00:00",
+      "end": "2027-10-24T04:00:00",
+      "rrule": "DTSTART:20271024T030000\nRRULE:FREQ=WEEKLY;BYDAY=SU",
+      "duration": 3600000
+    }
+  ],
+  "recurrence_id_cancelled": [
+    {
+      "id": "cancelled@ics.test",
+      "title": "Sunday class",
+      "allDay": false,
+      "start": "2027-03-07T10:00:00",
+      "end": "2027-03-07T11:00:00",
+      "rrule": "DTSTART:20270307T100000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20270314T100000",
+      "duration": 3600000
+    },
+    {
+      "id": "cancelled@ics.test_1805032800",
+      "title": "Sunday class (cancelled)",
+      "allDay": false,
+      "start": "2027-03-14T10:00:00",
+      "end": "2027-03-14T11:00:00"
+    },
+    {
+      "id": "cancelled-series@ics.test",
+      "title": "Cancelled Monday series",
+      "allDay": false,
+      "start": "2027-03-15T10:00:00",
+      "end": "2027-03-15T11:00:00",
+      "rrule": "DTSTART:20270315T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO",
+      "duration": 3600000
+    }
+  ],
+  "recurrence_id_moved": [
+    {
+      "id": "moved@ics.test",
+      "title": "Sunday class",
+      "allDay": false,
+      "start": "2027-03-07T10:00:00",
+      "end": "2027-03-07T11:00:00",
+      "rrule": "DTSTART:20270307T100000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20270314T100000",
+      "duration": 3600000
+    },
+    {
+      "id": "moved@ics.test_1805032800",
+      "title": "Sunday class (moved to Monday)",
+      "allDay": false,
+      "start": "2027-03-15T14:00:00",
+      "end": "2027-03-15T15:00:00"
+    }
+  ],
+  "toronto_tzid": [
+    {
+      "id": "spring-0230@ics.test",
+      "title": "Spring 02:30",
+      "allDay": false,
+      "start": "2027-03-07T02:30:00",
+      "end": "2027-03-07T03:30:00",
+      "rrule": "DTSTART:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU",
+      "duration": 3600000
+    },
+    {
+      "id": "fall-0130@ics.test",
+      "title": "Fall 01:30",
+      "allDay": false,
+      "start": "2027-10-31T01:30:00",
+      "end": "2027-10-31T02:30:00",
+      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU",
+      "duration": 3600000
+    }
+  ],
+  "until": [
+    {
+      "id": "until-date@ics.test",
+      "title": "All day until a date",
+      "allDay": true,
+      "start": "2027-03-07T00:00:00",
+      "end": "2027-03-08T00:00:00",
+      "rrule": "DTSTART:20270307T000000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20270328T000000",
+      "duration": 86400000
+    },
+    {
+      "id": "until-utc@ics.test",
+      "title": "Until the third Sunday, as UTC",
+      "allDay": false,
+      "start": "2027-03-07T10:00:00",
+      "end": "2027-03-07T11:00:00",
+      "rrule": "DTSTART:20270307T100000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20270321T100000",
+      "duration": 3600000
+    },
+    {
+      "id": "until-utc-fall@ics.test",
+      "title": "Until the first 01:30 of the change day",
+      "allDay": false,
+      "start": "2027-10-31T01:30:00",
+      "end": "2027-10-31T02:30:00",
+      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20271107T013000",
+      "duration": 3600000
+    }
+  ],
+  "windows_timezone": [
+    {
+      "id": "windows-spring@ics.test",
+      "title": "Windows spring 02:30",
+      "allDay": false,
+      "start": "2027-03-07T02:30:00",
+      "end": "2027-03-07T03:30:00",
+      "rrule": "DTSTART:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU",
+      "duration": 3600000
+    },
+    {
+      "id": "windows-fall@ics.test",
+      "title": "Windows fall 01:30",
+      "allDay": false,
+      "start": "2027-10-31T01:30:00",
+      "end": "2027-10-31T02:30:00",
+      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU",
+      "duration": 3600000
+    }
+  ]
+}
