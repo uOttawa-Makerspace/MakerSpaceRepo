@@ -1,4 +1,4 @@
-<div class="tab-pane fade show active" id="admin-roles" role="tabpanel" aria-labelledby="admin-roles-tab">
+<div class="tab-pane fade show active" id="admin-roles" role="tabpanel" aria-labelledby="admin-roles-pill">
   <div class="row">
     <%= form_tag set_role_admin_users_path, method: :patch, class: 'row' do %>
       <%= hidden_field_tag :'user_ids[]', @repo_user.id %>
