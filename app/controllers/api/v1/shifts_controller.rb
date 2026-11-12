@@ -17,7 +17,7 @@ module Api
         if from && to
           if to < from
             errors[:end] = ["must not be before start"]
-          elsif to - from > Event::MAX_FEED_RANGE
+          elsif Event.feed_range_too_long?(from, to)
             errors[:end] = ["range must be at most #{Event::MAX_FEED_RANGE.in_days.to_i} days"]
           end
         end

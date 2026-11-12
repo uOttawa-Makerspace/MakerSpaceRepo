@@ -165,6 +165,16 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body).to eq([])
     end
 
+    it "accepts the derived and the full 100 day ranges across a clock change" do
+      create(:event, space: space, title: "Spring", start_time: Time.zone.local(2027, 2, 1, 9), end_time: Time.zone.local(2027, 2, 1, 10))
+      get feed, params: { end: "2027-05-10T00:00:00-04:00" }
+      expect(response.parsed_body.map { |e| e["title"] }).to eq(["Spring"])
+      get feed, params: { start: "2027-02-01T00:00:00-05:00", end: "2027-05-12T00:00:00-04:00" }
+      expect(response).to have_http_status(:ok)
+      get feed, params: { start: "2027-02-01T00:00:00-05:00", end: "2027-05-13T00:00:00-04:00" }
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it "filters by event_type and by assigned user" do
       assigned = create(:user, :staff)
       a = create(:event, space: space, title: "A", event_type: "shift", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))

@@ -31,7 +31,7 @@ class Staff::MyCalendarController < StaffAreaController
     # Date range
     start_date, end_date = date_range
     return render_calendar_error(:invalid_date, :bad_request) if start_date.nil?
-    return render_calendar_error(:range_too_long, :unprocessable_content) if end_date - start_date > Event::MAX_FEED_RANGE
+    return render_calendar_error(:range_too_long, :unprocessable_content) if Event.feed_range_too_long?(start_date, end_date)
 
     formatted_events = []
     
