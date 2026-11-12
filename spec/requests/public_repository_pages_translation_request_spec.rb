@@ -84,6 +84,15 @@ RSpec.describe "Public repository pages in English and French", type: :request d
       expect(text).to include("sort by/trier par", "Newest/Plus récent", "Most Likes/Plus d'Aimes", "Most Makes/Plus de fabrications", "Recently Updated/Récemment mis à jour")
     end
 
+    it "closes the equipment listing before the footer" do
+      visit(equipment_path(slug: "laser-cutter"), "en")
+      expect(response.body.scan(/<section\b/).size).to eq(response.body.scan(%r{</section>}).size)
+      page = Nokogiri::HTML(response.body)
+      expect(page.at_css("#repositories-index #repositories-container")).to be_present
+      expect(page.at_css("footer")).to be_present
+      expect(page.at_css("#repositories-index footer")).to be_nil
+    end
+
     it "is in French for the equipment page" do
       text = visit(equipment_path(slug: "laser-cutter"), "fr")
       expect(text).to include("trier par", "Plus récent", "Plus d'Aimes")
