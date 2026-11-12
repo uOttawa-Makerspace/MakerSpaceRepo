@@ -33,9 +33,9 @@
     </div>
 
     <div class="mb-3 required">
-        <%= f.label :client_type, t('project_proposal.new.client_type'), class: 'form-label mb-0' %>
+        <span id="project_proposal_client_type_label" class="form-label d-inline-block mb-0"><%= t('project_proposal.new.client_type') %></span>
         <div class="form-text"><%= t('project_proposal.new.client_type_sub') %></div>
-        <div class='checkbox-list form-check d-grid gap-2'>
+        <div class='checkbox-list form-check d-grid gap-2' role="radiogroup" aria-labelledby="project_proposal_client_type_label">
             <div>
                 <%= f.radio_button :client_type, 'Organization / Organisation',
                                    checked: @project_proposal.client_type.blank? || @project_proposal.client_type == 'Organization / Organisation',
@@ -58,9 +58,9 @@
     </div>
 
     <div class="mb-3 required">
-        <%= f.label :client_interest, t('project_proposal.new.client_level_of_interest'), class: 'form-label mb-0' %>
+        <span id="project_proposal_client_interest_label" class="form-label d-inline-block mb-0"><%= t('project_proposal.new.client_level_of_interest') %></span>
         <div class="form-text"><%= t('project_proposal.new.client_level_of_interest_sub') %></div>
-        <div class='checkbox-list form-check d-grid gap-2'>
+        <div class='checkbox-list form-check d-grid gap-2' role="radiogroup" aria-labelledby="project_proposal_client_interest_label">
             <div>
                 <%= f.radio_button :client_interest, 'Low / Faible',
                                    checked: @project_proposal.client_interest.blank? || @project_proposal.client_interest == 'Low / Faible',
@@ -108,7 +108,7 @@
         </div>
     </div>
 
-    <%= label_tag :file, t('project_proposal.new.project_files'), class: 'form-label' %>
+    <%= label_tag :files_, t('project_proposal.new.project_files'), class: 'form-label' %>
     <div class="mb-3">
         <div class="input-group mb-3">
             <%= file_field_tag 'files[]', type: :files, multiple: true, class: 'form-control files_', aria: { label: t('project_proposal.new.project_files') } %>
@@ -119,7 +119,7 @@
     </div>
 
     <div class="mb-3">
-        <%= label_tag :gallery, t('project_proposal.new.gallery'), class: 'form-label' %>
+        <%= f.label :photos, t('project_proposal.new.gallery'), class: 'form-label' %>
         <div class="file-upload-drop-zone">
             <div class="input-group mb-3">
                 <%= f.file_field :photos,
@@ -161,7 +161,7 @@
     </div>
 
     <div class="mb-3">
-        <%= f.label :equipments, t('project_proposal.new.possible_tech_involved'), id: 'project_proposal_technology_involved_label', class: 'form-label' %>
+        <%= f.label :equipments, t('project_proposal.new.possible_tech_involved'), for: 'project_proposal_technology_involved', id: 'project_proposal_technology_involved_label', class: 'form-label' %>
         <%= f.hidden_field :equipments, id: 'project_proposal_technology_involved', class: 'form-control text-dark' %>
         <trix-editor input="project_proposal_technology_involved" aria-labelledby="project_proposal_technology_involved_label"></trix-editor>
     </div>
@@ -203,9 +203,9 @@
     </div>
 
     <div class="mb-3 required">
-        <%= f.label :project_type, t('project_proposal.new.project_type'), class: 'form-label mb-0' %>
+        <span id="project_proposal_project_type_label" class="form-label d-inline-block mb-0"><%= t('project_proposal.new.project_type') %></span>
         <div class="form-text"><%= t('project_proposal.new.project_type_sub') %></div>
-        <div class='checkbox-list form-check d-grid gap-2'>
+        <div class='checkbox-list form-check d-grid gap-2' role="radiogroup" aria-labelledby="project_proposal_project_type_label">
             <div>
                 <%= f.radio_button :project_type, 'General',
                                    checked: @project_proposal.project_type.blank? || @project_proposal.project_type == 'General',

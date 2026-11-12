@@ -14,7 +14,7 @@ RSpec.describe "Labels point at their controls", type: :system do
     /staff/unavailabilities /volunteers/new_event /volunteer_tasks/new /volunteer_tasks/:id/edit
     /volunteer_hours/new /volunteer_hours/:id/edit /announcements/new /announcements/:id/edit
     /:username /:user_username/new /:user_username/:id/edit /:user_username/:id
-    /makes/:user_username/:id/new
+    /makes/:user_username/:id/new /project_proposals/new /project_proposals/:id/edit /admin/job_types/:id/edit /admin/settings
     ]
   end
 
