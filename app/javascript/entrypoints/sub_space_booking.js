@@ -518,13 +518,7 @@ document.addEventListener("turbo:load", function () {
             const message = rest.join(" ");
 
             if (["DurationHour", "DurationWeek", "TimeSlot"].includes(type)) {
-              const toastEl = document.getElementById("booking_toast");
-              if (toastEl) {
-                document.getElementById("toast_text").innerText = message;
-                document.getElementById("toast_title").innerText =
-                  "Booking failed";
-                Toast.getOrCreateInstance(toastEl).show();
-              }
+              showToast(bookingText("failedTitle"), message);
               closeModal();
               window.scrollTo(0, 0);
             } else {

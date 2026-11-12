@@ -148,6 +148,17 @@ describe("a saved booking update", () => {
     expect(toastEl().classList.contains("text-bg-success")).toBe(false);
   });
 
+  it.each(["TimeSlot Slot taken.", "DurationHour Too long."])(
+    "a field error (%s) after a success shows the red style only",
+    async (error) => {
+      await save(reply(200, JSON.stringify({ status: "ok" })));
+      await save(reply(422, JSON.stringify({ errors: [error] })));
+      expect(title()).toBe("Booking failed");
+      expect(toastEl().classList.contains("text-bg-danger")).toBe(true);
+      expect(toastEl().classList.contains("text-bg-success")).toBe(false);
+    },
+  );
+
   it("shows no success message after a delete", async () => {
     await respond(reply(200, JSON.stringify({ status: "ok" })));
     expect(toast()).toBe("");
