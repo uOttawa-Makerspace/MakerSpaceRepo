@@ -450,7 +450,9 @@ class LockerRental < ApplicationRecord
       next ShopifyDraftSweep::Outcome.done(:kept) if rental&.backs_draft?(gid)
       next ShopifyDraftSweep::Outcome.refused(:delete_cap) unless may_delete
 
-      outcome = settle_orphan_draft(gid, rental_id)
+      outcome = settle_orphan_draft(gid, "the draft order is not marked for locker rental ##{rental_id} of this environment") do |tags|
+        marked_for?(tags, rental_id)
+      end
       rental.forget_draft_order_id(gid) if rental && outcome != :kept
       ShopifyDraftSweep::Outcome.done(outcome)
     end
@@ -463,18 +465,17 @@ class LockerRental < ApplicationRecord
   end
 
   # :kept (paid: it became an order, the payment record), :cleared (Shopify no longer has it) or :deleted. The draft is
-  # fetched first and must carry this environment's tag and exactly this rental's marker; a paid draft is never sent a
-  # delete.
-  def self.settle_orphan_draft(gid, rental_id)
+  # fetched first and must carry tags the block accepts (this environment's tag and the expected marker, or none); a
+  # paid draft is never sent a delete. Refuses (OrphanDraftRefused) anything else.
+  def self.settle_orphan_draft(gid, refusal)
     state, draft = ShopifyConcern::DraftRemoval.fetch_or_raise(gid)
     return :cleared if state == :gone
-    raise OrphanDraftRefused, "the draft order is not marked for locker rental ##{rental_id} of this environment" unless marked_for?(draft['tags'], rental_id)
+    raise OrphanDraftRefused, refusal unless yield(draft['tags'])
     return :kept if ShopifyConcern::DraftRemoval.paid?(draft)
     raise OrphanDraftRefused, "the draft order has the unknown status #{draft['status'].inspect}" unless ShopifyConcern::DraftRemoval.payable?(draft)
 
     delete_orphan_draft(gid)
   end
-  private_class_method :settle_orphan_draft
 
   def self.delete_orphan_draft(gid)
     result = ShopifyConcern::DraftRemoval.call(gid)
