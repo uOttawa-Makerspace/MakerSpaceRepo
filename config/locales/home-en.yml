@@ -2,7 +2,6 @@ en:
   home:
     show_more: "Show more"
     show_all: "Show All"
-    follow_us: "Follow us"
     explore:
       header: "Explore"
       subtext: "Browse completed student projects"
@@ -84,5 +83,3 @@ en:
       welcome_subheader: "This is <b>CEED's</b> repository website"
       hour_header: "Space hours this week"
       view_hours: "View full hours"
-    socials:
-      subtext: "Stay up to date with our socials"
