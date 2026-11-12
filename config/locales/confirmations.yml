@@ -18,6 +18,8 @@ en:
     bookings:
       delete: "Delete this booking?"
       delete_remaining: "Delete this and all remaining occurrences?"
+    events:
+      unpublish: "Unpublish this event? It goes back to a draft and is removed from the Google calendar. For a repeating event, the whole series is unpublished, not only this occurrence."
     unsaved_changes:
       exit: "Are you sure you want to exit? All changes will be lost."
     announcements:
@@ -142,6 +144,8 @@ fr:
     bookings:
       delete: "Supprimer cette réservation?"
       delete_remaining: "Supprimer cette réservation et toutes les occurrences suivantes?"
+    events:
+      unpublish: "Retirer la publication de cet événement? Il redevient un brouillon et est retiré du calendrier Google. Pour un événement récurrent, toute la série est dépubliée, pas seulement cette occurrence."
     unsaved_changes:
       exit: "Voulez-vous vraiment quitter? Toutes les modifications seront perdues."
     announcements:

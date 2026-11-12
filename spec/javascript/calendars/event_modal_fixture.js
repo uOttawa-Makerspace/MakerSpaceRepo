@@ -68,6 +68,7 @@ export const EVENT_MODAL_HTML = `
   </form>
   <div id="publish_and_delete_forms" style="display: none;">
     <form id="publish_form" action="#" style="display: none;"></form>
+    <form id="unpublish_form" action="#" style="display: none;"></form>
     <form id="delete_single_form" action="#"><input class="delete_start_date" name="start_date"></form>
     <form id="delete_following_form" action="#"><input class="delete_start_date" name="start_date"></form>
     <form id="delete_all_form" action="#"></form>

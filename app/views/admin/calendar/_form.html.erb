@@ -174,6 +174,10 @@
                     <%= submit_tag "Publish", class: "btn btn-info" %>
                 <% end %>
 
+                <%= form_with url: "#", method: :delete, local: false, html: { class: "useTurbo", id: "unpublish_form", style: "display: none;" } do %>
+                    <%= submit_tag "Unpublish", class: "btn btn-outline-secondary", **confirmation_options(t("confirmations.events.unpublish")) %>
+                <% end %>
+
                 <div class="btn-group dropup position-relative">
                     <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                         Delete

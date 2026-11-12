@@ -88,6 +88,36 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(single.reload.draft).to be(false)
     end
 
+    it "offers to unpublish a published event and not a draft", js: true, skip_bullet: true do
+      open_admin_calendar
+      open_event("Team sync")
+      expect(page).to have_css("#unpublish_form", visible: :visible)
+      expect(find("#unpublish_form", visible: :all)[:action]).to end_with("/admin/events/#{single.id}/publication")
+      expect(page).to have_button("Unpublish")
+    end
+
+    it "keeps the event published when the unpublish confirmation is refused", js: true, skip_bullet: true do
+      open_admin_calendar
+      open_event("Team sync")
+      dismiss_confirm("Unpublish this event?") { click_button "Unpublish" }
+
+      expect(single.reload.draft).to be(false)
+      expect(page).to have_css("#eventModal[data-shown=true]")
+    end
+
+    it "unpublishes a published event from the modal and shows it as a draft", js: true, skip_bullet: true do
+      open_admin_calendar
+      open_event("Team sync")
+      accept_confirm(/Unpublish this event\?.*whole series/) { click_button "Unpublish" }
+
+      expect(page).to have_text("Event unpublished successfully.")
+      expect(single.reload.draft).to be(true)
+      wait_for_admin_calendar_scripts
+      open_event("Team sync")
+      expect(page).to have_css("#publish_form", visible: :visible)
+      expect(page).to have_css("#unpublish_form", visible: :hidden)
+    end
+
     it "saves changes to the title, the type and the assigned staff", js: true, skip_bullet: true do
       create(:event_assignment, event: single, user: worker)
       open_admin_calendar
@@ -215,6 +245,17 @@ RSpec.describe "Admin calendar: editing and deleting events", type: :system do
       expect(page).to have_text("Event updated successfully.")
       expect(series.reload.title).to eq("Open lab (all)")
       expect(Event.count).to eq(2)
+    end
+
+    it "unpublishes the whole series from one occurrence", js: true, skip_bullet: true do
+      series = create_series
+      open_admin_calendar
+      open_event("Open lab", index: 1)
+      accept_confirm(/whole series/) { click_button "Unpublish" }
+
+      expect(page).to have_text("Event unpublished successfully.")
+      expect(series.reload.draft).to be(true)
+      expect(Event.where(title: "Open lab").count).to eq(1)
     end
 
     it "removes one occurrence by excluding its date", js: true, browser_zone: "America/Toronto", skip_bullet: true do

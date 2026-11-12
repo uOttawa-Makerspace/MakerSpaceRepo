@@ -115,6 +115,7 @@ function resetModalState() {
   // Hide publish/delete footer
   document.getElementById("publish_and_delete_forms").style.display = "none";
   document.getElementById("publish_form").style.display = "none";
+  document.getElementById("unpublish_form").style.display = "none";
   document.getElementById("delete_following_form").style.display = "none";
   document.getElementById("delete_all_form").style.display = "none";
 
@@ -538,6 +539,17 @@ function openEventForEditing(eventImpl) {
     publishForm.style.display = "block";
   } else {
     publishForm.style.display = "none";
+  }
+
+  // HANDLE UNPUBLISH BUTTON (published events only)
+  const unpublishForm = /** @type {HTMLFormElement} */ (
+    document.getElementById("unpublish_form")
+  );
+  if (!event.extendedProps.draft && !isUnavailability) {
+    unpublishForm.action = `/admin/events/${id}/publication`;
+    unpublishForm.style.display = "block";
+  } else {
+    unpublishForm.style.display = "none";
   }
 
   // HANDLE DELETE BUTTONS
