@@ -1,17 +1,14 @@
 # frozen_string_literal: true
 
-# a recurrence_rule is blank or an RRULE whose FREQ is DAILY, WEEKLY,
-# MONTHLY or YEARLY. Sub-daily rules (SECONDLY/MINUTELY/HOURLY) are refused
-# because the calendars expand them on every load.
+# A recurrence_rule is blank or one RRULE whose FREQ is DAILY, WEEKLY, MONTHLY or YEARLY (sub-daily rules are
+# refused: calendars expand them on every load), with known upper-case parts, none twice, and an occurrence soon
+# after the start. BYHOUR/BYMINUTE/BYSECOND/BYSETPOS are refused (they multiply daily occurrences).
 #
-# Requires the "RRULE:" line format the forms produce: an optional start line,
-# either "DTSTART;TZID=America/Toronto:<wall time>" (what the calendars write)
-# or "DTSTART:<UTC stamp>Z" (older rules), then
-# "RRULE:FREQ=...;BYDAY=..;UNTIL=..;COUNT=..", plus EXDATE lines added by the
-# occurrence editors. The RRULE and DTSTART lines are checked (a DTSTART must be
-# readable by RecurrenceRule); EXDATE lines are not. A bare "FREQ=..." is
-# rejected because the calendar's series edits (RecurrenceRule) cannot read it.
-# BYHOUR/BYMINUTE/BYSECOND/BYSETPOS are rejected (they multiply daily occurrences).
+# Requires the "RRULE:" line format the forms produce: an optional start line, either
+# "DTSTART;TZID=America/Toronto:<wall time>" or "DTSTART:<UTC stamp>Z" (older rules), then
+# "RRULE:FREQ=...;BYDAY=..;UNTIL=..;COUNT=..", plus EXDATE lines added by the occurrence editors. The RRULE and
+# DTSTART lines are checked (a DTSTART must be readable by RecurrenceRule); EXDATE lines are not. A bare "FREQ=.."
+# is refused because the series edits (RecurrenceRule) cannot read it.
 #
 #   validates :recurrence_rule, recurrence_rule: true
 class RecurrenceRuleValidator < ActiveModel::EachValidator
@@ -37,19 +34,23 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
   # FREQ => the message for it, or nil when allowed; any other FREQ is unparseable.
   FREQUENCIES = { "DAILY" => nil, "WEEKLY" => nil, "MONTHLY" => nil, "YEARLY" => nil,
                   "SECONDLY" => MESSAGE, "MINUTELY" => MESSAGE, "HOURLY" => MESSAGE }.freeze
-  # Part => what its value looks like, for the parts the repeat library would take without checking:
-  # weekdays with an optional ordinal (1 to 53, signed), and numbers in range (a sign counts from the end).
+  # Part => what its value looks like, for the parts the repeat library would take without checking.
   WEEKDAY = "(?:MO|TU|WE|TH|FR|SA|SU)"
   LIST = ->(item) { /\A#{item}(?:,#{item})*\z/ }
   VALUE_FORMATS = {
-    "BYDAY" => LIST.call("[+-]?(?:[1-9]|[1-4]\\d|5[0-3])?#{WEEKDAY}"),
     "WKST" => /\A#{WEEKDAY}\z/,
     "BYMONTH" => LIST.call("(?:[1-9]|1[0-2])"),
     "BYMONTHDAY" => LIST.call("[+-]?(?:[1-9]|[12]\\d|3[01])"),
     "BYYEARDAY" => LIST.call("[+-]?(?:[1-9]\\d?|[12]\\d\\d|3[0-5]\\d|36[0-6])")
   }.freeze
+  # BYDAY by FREQ (RFC 5545): no ordinal for daily and weekly, 1 to 5 for monthly (and yearly with BYMONTH), 1 to 53 for
+  # yearly. The repeat library raises on an ordinal the frequency cannot have.
+  BYDAY_FORMATS = {
+    "DAILY" => WEEKDAY, "WEEKLY" => WEEKDAY, "MONTHLY" => "(?:[+-]?[1-5])?#{WEEKDAY}",
+    "YEARLY" => "(?:[+-]?(?:[1-9]|[1-4]\\d|5[0-3]))?#{WEEKDAY}"
+  }.transform_values { |item| LIST.call(item) }.freeze
   # Rule part names are upper case and known; anything else is not a repeat rule.
-  KNOWN_PARTS = (%w[FREQ COUNT UNTIL INTERVAL] + PART_ERRORS.keys + VALUE_FORMATS.keys).freeze
+  KNOWN_PARTS = (%w[FREQ COUNT UNTIL INTERVAL BYDAY] + PART_ERRORS.keys + VALUE_FORMATS.keys).freeze
 
   # nil when valid, else the message.
   def self.error_for(value, start = DEFAULT_START)
@@ -58,8 +59,9 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
 
     bodies = rule_bodies(value)
     return UNPARSEABLE if bodies.empty? || !readable_starts?(value)
+    return I18n.t("errors.calendar.rule_one_line") if bodies.size > 1 # a series only ever uses the first
 
-    bodies.filter_map { |body| body_error(body, start) }.first
+    body_error(bodies.first, start)
   end
 
   # nil when one RRULE body is allowed, else the message.
@@ -92,7 +94,8 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
   end
 
   def self.formats_ok?(values)
-    VALUE_FORMATS.all? { |key, format| !values.key?(key) || values[key].match?(format) }
+    frequency = values["FREQ"] == "YEARLY" && values.key?("BYMONTH") ? "MONTHLY" : values["FREQ"]
+    VALUE_FORMATS.merge("BYDAY" => BYDAY_FORMATS.fetch(frequency)).all? { |key, format| !values.key?(key) || values[key].match?(format) }
   end
 
   def self.readable?(body)

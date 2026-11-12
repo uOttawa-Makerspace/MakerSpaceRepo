@@ -66,8 +66,8 @@ RSpec.describe RecurrenceRuleValidator do
     end
   end
 
-  it "rejects a sub-daily rule hidden behind a valid one" do
-    expect(errors_for("RRULE:FREQ=DAILY\nRRULE:FREQ=MINUTELY")).to eq([RecurrenceRuleValidator::MESSAGE])
+  it "rejects a sub-daily rule hidden behind a valid one (a second RRULE line is refused)" do
+    expect(errors_for("RRULE:FREQ=DAILY\nRRULE:FREQ=MINUTELY")).to eq([I18n.t("errors.calendar.rule_one_line")])
   end
 
   it "rejects a repeated FREQ even when the last one is allowed" do
@@ -136,10 +136,28 @@ RSpec.describe RecurrenceRuleValidator do
     end
   end
 
-  it "accepts weekdays with an ordinal from 1 to 53, signed, for any frequency" do
-    ["FREQ=MONTHLY;BYDAY=2MO", "FREQ=MONTHLY;BYDAY=-1FR,+2TU", "FREQ=YEARLY;BYDAY=53MO", "FREQ=WEEKLY;BYDAY=MO,SU", "FREQ=DAILY;WKST=SU"].each do |body|
+  it "accepts BYDAY ordinals as RFC 5545 allows them for each frequency" do
+    ["FREQ=MONTHLY;BYDAY=2MO", "FREQ=MONTHLY;BYDAY=-1FR,+2TU", "FREQ=MONTHLY;BYDAY=5MO,-5SU", "FREQ=YEARLY;BYDAY=53MO", "FREQ=YEARLY;BYDAY=-53MO,20TU",
+     "FREQ=YEARLY;BYMONTH=3;BYDAY=5MO", "FREQ=WEEKLY;BYDAY=MO,SU", "FREQ=DAILY;BYDAY=MO,TU", "FREQ=DAILY;WKST=SU"].each do |body|
       expect(errors_for("RRULE:#{body}")).to eq([]), body
     end
+  end
+
+  it "refuses an ordinal that does not fit the frequency, without raising (the repeat library raises on some)" do
+    ["FREQ=MONTHLY;BYDAY=53MO", "FREQ=MONTHLY;BYDAY=6MO", "FREQ=MONTHLY;BYDAY=-6FR", "FREQ=YEARLY;BYMONTH=3;BYDAY=53MO", "FREQ=YEARLY;BYMONTH=3;BYDAY=6MO",
+     "FREQ=WEEKLY;BYDAY=2MO", "FREQ=WEEKLY;BYDAY=-1FR", "FREQ=DAILY;BYDAY=1MO"].each do |body|
+      expect { expect(errors_for("RRULE:#{body}")).to eq([RecurrenceRuleValidator::UNPARSEABLE]) }.not_to raise_error, body
+    end
+  end
+
+  it "refuses a rule with more than one RRULE line, without expanding any of them" do
+    many = "DTSTART:20270301T150000Z\n#{Array.new(40) { 'RRULE:FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30' }.join("\n")}"
+    taken = 0
+    allow_any_instance_of(RRule::Frequency).to receive(:advance).and_wrap_original { |m, *a| taken += 1; m.call(*a) }
+    expect(errors_for(many)).to eq([I18n.t("errors.calendar.rule_one_line")])
+    expect(errors_for("RRULE:FREQ=DAILY\nRRULE:FREQ=WEEKLY;BYDAY=MO")).to eq([I18n.t("errors.calendar.rule_one_line")])
+    expect(taken).to eq(0)
+    expect(I18n.t("errors.calendar.rule_one_line", locale: :fr)).not_to eq(I18n.t("errors.calendar.rule_one_line"))
   end
 
   it "rejects a BYDAY or WKST that is not a weekday with a valid ordinal" do
