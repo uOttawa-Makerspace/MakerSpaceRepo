@@ -181,8 +181,9 @@ RSpec.describe "GET /api/v1/spaces/:id/shifts", type: :request do
 
     it "does not step through a sub-minute rule whose DTSTART is far in the past" do
       stored_shift("FREQ=MINUTELY", start_time: t0 - 2.years, end_time: t0 - 2.years + 1.hour)
+      inside = shift(start_time: t0 + 1.hour, end_time: t0 + 2.hours) # the refused series is outside the window, so it is not listed
       steps = rule_steps { shifts({ start: t0.iso8601, end: (t0 + 1.day).iso8601 }) }
-      expect(body).to be_empty
+      expect(body.map { |r| r["id"] }).to eq(["event-#{inside.id}"])
       expect(steps).to eq(0) # unbounded: ~1M walking from DTSTART
     end
 
