@@ -7,6 +7,8 @@ class VolunteerTaskJoin < ApplicationRecord
 
   class NotJoined < StandardError; end
 
+  JOINED_INDEX = "index_volunteer_task_joins_on_task_and_user_when_joined"
+
   ENDINGS = %w[completed left removed].freeze
 
   # joined: on the task now. The other three are the endings: the task's request was approved (completed),
@@ -35,4 +37,17 @@ class VolunteerTaskJoin < ApplicationRecord
   scope :active, -> { where(active: true) }
   scope :not_active, -> { where(active: false) }
   scope :user_type_volunteer, -> { where(user_type: "Volunteer") }
+
+  private
+
+  # A save that loses a race for the same user and task runs in its own savepoint, so an enclosing
+  # transaction stays usable, and fails with the same error as the uniqueness validation.
+  def create_or_update(...)
+    transaction(requires_new: true) { super }
+  rescue ActiveRecord::RecordNotUnique => e
+    raise unless e.message.include?(JOINED_INDEX)
+
+    errors.add(:user_id, :taken)
+    false
+  end
 end

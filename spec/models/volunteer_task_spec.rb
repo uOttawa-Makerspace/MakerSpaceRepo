@@ -145,13 +145,11 @@ RSpec.describe VolunteerTask, "#remove_user", type: :model do
   let(:user) { create(:user, :volunteer) }
   let(:staff) { create(:user, :staff) }
 
-  it "marks the user's joined rows left when they remove themselves, and keeps every row" do
+  it "marks the user's joined row left when they remove themselves, and keeps the row" do
     first = create(:volunteer_task_join, :active, volunteer_task: task, user: user)
-    # a stored duplicate from before joins were unique
-    second = build(:volunteer_task_join, :active, volunteer_task: task, user: user).tap { |j| j.save!(validate: false) }
 
     expect(task.remove_user(user.id, by: user)).to be(true)
-    rows = VolunteerTaskJoin.where(id: [first.id, second.id])
+    rows = VolunteerTaskJoin.where(id: first.id)
     expect(rows.pluck(:state, :active, :state_changed_by_id).uniq).to eq([["left", false, user.id]])
     expect(rows.map(&:state_changed_at)).to all(be_present)
   end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_170000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1800,6 +1800,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_170000) do
 
   add_check_constraint "volunteer_hours", "date_of_task IS NOT NULL", name: "volunteer_hours_date_of_task_present_check", validate: false
 
+  create_table "volunteer_task_join_duplicate_endings", force: :cascade do |t|
+    t.bigint "volunteer_task_join_id", null: false
+    t.bigint "kept_join_id", null: false
+    t.string "old_state", null: false
+    t.boolean "old_active"
+    t.datetime "old_state_changed_at"
+    t.bigint "old_state_changed_by_id"
+    t.datetime "old_updated_at", null: false
+    t.string "new_state", null: false
+    t.datetime "ended_at", default: -> { "now()" }, null: false
+    t.datetime "restored_at"
+    t.index ["volunteer_task_join_id"], name: "index_join_duplicate_endings_on_join_id"
+  end
+
   create_table "volunteer_task_join_state_changes", force: :cascade do |t|
     t.bigint "volunteer_task_join_id", null: false
     t.string "old_state", null: false
@@ -1821,6 +1835,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_170000) do
     t.datetime "state_changed_at"
     t.bigint "state_changed_by_id"
     t.index ["state_changed_by_id"], name: "index_volunteer_task_joins_on_state_changed_by_id"
+    t.index ["volunteer_task_id", "user_id"], name: "index_volunteer_task_joins_on_task_and_user_when_joined", unique: true, where: "((state)::text = 'joined'::text)"
     t.index ["user_id"], name: "index_volunteer_task_joins_on_user_id"
     t.index ["volunteer_task_id"], name: "index_volunteer_task_joins_on_volunteer_task_id"
     t.index ["volunteer_task_id", "state"], name: "index_volunteer_task_joins_on_volunteer_task_id_and_state"
