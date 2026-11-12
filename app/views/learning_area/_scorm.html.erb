@@ -23,6 +23,7 @@
             You need to have javascript enabled to view this learning module!
         </noscript>
         <iframe src="<%= scorm_launch_learning_area_path(learning_module) %>"
+                title="<%= learning_module.title %>"
                 width="100%"
                 height="680px"
                 class="d-block border rounded"
@@ -72,7 +73,7 @@
 <% if learning_module.extract_valid_urls.present? %>
     <div class="border-top mt-3 pt-3">
         <% learning_module.extract_valid_urls.each do |url| %>
-            <iframe width="100%" height="600px" src="<%= url %>" class="d-block border-0"></iframe>
+            <iframe width="100%" height="600px" src="<%= url %>" title="<%= learning_module.title %>" class="d-block border-0"></iframe>
         <% end %>
     </div>
 <% end %>
