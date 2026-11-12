@@ -22,7 +22,7 @@
         <% direction = params[:direction] == 'asc' ? 'desc' : 'asc' %>
         <table class="admin-table table table-striped">
           <thead class="table-primary">
-            <th><%= check_box_tag 'select-all' %></th>
+            <th><%= check_box_tag 'select-all', '1', false, class: 'form-check-input', 'aria-label': t('common.names.select_all_users') %></th>
             <th>
               <%= link_to 'Username', sort: 'username', direction: direction, q: params[:q], filter: params[:filter] %>
               <% if params[:sort] == "username" %>
@@ -52,7 +52,7 @@
           </thead>
           <% @users.each do |user| %>
             <tr>
-              <td><center><%= check_box_tag 'bulk_cert_users[]', user.id, class: 'form-check-input' %></center></td>
+              <td><center><%= check_box_tag 'bulk_cert_users[]', user.id, false, class: 'form-check-input', 'aria-label': t('common.names.select_user', name: user.username) %></center></td>
               <td><%= link_to user.username.to_s, admin_user_path(user) %></td>
               <td><%= user.name %></td>
               <td>
