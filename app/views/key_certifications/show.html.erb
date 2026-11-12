@@ -44,7 +44,7 @@
                 <div class="cert-body">
                   <% if attachment.attached? %>
                     <div class="ratio ratio-16x9">
-                      <iframe src="<%= url_for(attachment) %>" loading="lazy" allowfullscreen></iframe>
+                      <iframe title="<%= file_name %>" src="<%= url_for(attachment) %>" loading="lazy" allowfullscreen></iframe>
                     </div>
                   <% else %>
                     <div class="empty-state">
@@ -94,7 +94,7 @@
                   <div class="cert-body">
                     <% if attachment.attached? %>
                       <div class="ratio ratio-16x9">
-                        <iframe src="<%= url_for(attachment) %>" loading="lazy" allowfullscreen></iframe>
+                        <iframe title="<%= file_name %>" src="<%= url_for(attachment) %>" loading="lazy" allowfullscreen></iframe>
                       </div>
                     <% else %>
                       <div class="empty-state">
