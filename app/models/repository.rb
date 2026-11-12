@@ -126,6 +126,11 @@ class Repository < ApplicationRecord
     "#{id}.#{title.downcase.gsub(/[^0-9a-z ]/i, '').gsub(/\s+/, '-')}"
   end
 
+  # The gallery photos in display order, with the image attachments and blobs the gallery reads.
+  def gallery_photos
+    photos.includes(image_attachment: :blob)
+  end
+
   def thumbnail_variant(variant)
     return unless photos.any?
     

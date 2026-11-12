@@ -51,7 +51,7 @@ RSpec.describe "Repositories (HTTP contract)", type: :request do
       counter = ->(*, payload) { queries << payload[:sql] if payload[:sql].include?('FROM "active_storage_attachments"') }
       ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { get repo_path }
       expect(response).to have_http_status(:ok)
-      expect(queries.size).to be <= 2
+      expect(queries.size).to eq(1)
     end
 
     it "renders the edit form for a repository with several photos" do
