@@ -5,9 +5,9 @@
   <br>
   <div class="search-form">
     <%= form_tag search_admin_users_path, method: :get do %>
-      <%= select_tag 'filter', options_for_select(%w[Name Email Username]), prompt: 'Search by...' %>
+      <%= select_tag 'filter', options_for_select(%w[Name Email Username]), prompt: t('admin.users.search_by'), 'aria-label': t('admin.users.search_by') %>
       <%= text_field_tag 'q', nil, placeholder: 'Search users...', class: 'profile-text' %>
-      <%= submit_tag 'Search', class: 'save-button' %>
+      <%= submit_tag 'Search', class: 'save-button fw-bold fs-5' %>
     <% end %>
   </div>
   <br>
