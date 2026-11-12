@@ -223,6 +223,31 @@ RSpec.describe RecurrenceRuleValidator do
     end
   end
 
+  it "refuses a monthly weekday ordinal above five, which the repeat library raises a TypeError for" do
+    expect(errors_for("RRULE:FREQ=MONTHLY;BYDAY=53MO")).to eq([RecurrenceRuleValidator::UNPARSEABLE])
+    expect(errors_for("RRULE:FREQ=MONTHLY;BYDAY=5MO,-1FR")).to eq([])
+    expect(errors_for("RRULE:FREQ=YEARLY;BYDAY=53MO")).to eq([])
+  end
+
+  describe "for the rules of an imported calendar" do
+    def imported(rule) = described_class.error_for("RRULE:#{rule}", RecurrenceRule::ZONE.local(2027, 1, 5, 9), described_class::IMPORTED)
+
+    it "allows BYSETPOS and BYWEEKNO, which stored rules refuse" do
+      expect(imported("FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1")).to be_nil
+      expect(imported("FREQ=YEARLY;BYWEEKNO=3;BYDAY=MO")).to be_nil
+      expect(errors_for("RRULE:FREQ=MONTHLY;BYDAY=MO;BYSETPOS=1")).to eq([RecurrenceRuleValidator::MESSAGE])
+      expect(errors_for("RRULE:FREQ=YEARLY;BYWEEKNO=3")).to eq([RecurrenceRuleValidator::UNPARSEABLE])
+    end
+
+    it "checks their values and still refuses what the engine cannot expand" do
+      %w[FREQ=MONTHLY;BYDAY=MO;BYSETPOS=0 FREQ=MONTHLY;BYDAY=MO;BYSETPOS=367 FREQ=YEARLY;BYWEEKNO=0 FREQ=YEARLY;BYWEEKNO=54].each do |rule|
+        expect(imported(rule)).to eq(RecurrenceRuleValidator::UNPARSEABLE), rule
+      end
+      expect(imported("FREQ=HOURLY")).to eq(RecurrenceRuleValidator::MESSAGE)
+      expect(imported("FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=30")).to eq(I18n.t("errors.calendar.rule_never_repeats"))
+    end
+  end
+
   it "is applied by Event and StaffUnavailability" do
     expect(Event.validators_on(:recurrence_rule).map(&:class)).to include(described_class)
     expect(StaffUnavailability.validators_on(:recurrence_rule).map(&:class)).to include(described_class)

@@ -48,26 +48,39 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
     "BYMONTHDAY" => LIST.call("[+-]?(?:[1-9]|[12]\\d|3[01])"),
     "BYYEARDAY" => LIST.call("[+-]?(?:[1-9]\\d?|[12]\\d\\d|3[0-5]\\d|36[0-6])")
   }.freeze
+  # What a rule may contain, by where it comes from. Stored rules have never allowed BYWEEKNO and BYSETPOS (see
+  # PART_ERRORS); an imported calendar's rules may have them, with values in range.
+  STORED = { part_errors: PART_ERRORS, formats: VALUE_FORMATS }.freeze
+  IMPORTED = {
+    part_errors: PART_ERRORS.except("BYWEEKNO", "BYSETPOS"),
+    formats: VALUE_FORMATS.merge(
+      "BYWEEKNO" => LIST.call("[+-]?(?:[1-9]|[1-4]\\d|5[0-3])"),
+      "BYSETPOS" => LIST.call("[+-]?(?:[1-9]\\d?|[12]\\d\\d|3[0-5]\\d|36[0-6])")
+    )
+  }.freeze
+
+  ORDINAL_LIMITS = { "MONTHLY" => 5 }.freeze
+
   # Rule part names are upper case and known; anything else is not a repeat rule.
   KNOWN_PARTS = (%w[FREQ COUNT UNTIL INTERVAL] + PART_ERRORS.keys + VALUE_FORMATS.keys).freeze
 
-  # nil when valid, else the message.
-  def self.error_for(value, start = DEFAULT_START)
+  # nil when valid, else the message. `mode` is STORED (the default) or IMPORTED.
+  def self.error_for(value, start = DEFAULT_START, mode = STORED)
     value = value.to_s
     return TOO_LONG if value.length > MAX_LENGTH
 
     bodies = rule_bodies(value)
     return UNPARSEABLE if bodies.empty? || !readable_starts?(value)
 
-    bodies.filter_map { |body| body_error(body, start) }.first
+    bodies.filter_map { |body| body_error(body, start, mode) }.first
   end
 
   # nil when one RRULE body is allowed, else the message.
-  def self.body_error(body, start)
+  def self.body_error(body, start, mode)
     parts = body.split(";").map { |part| part.split("=", 2).map(&:strip).then { |key, value| [key.to_s, value.to_s] } }
     return UNPARSEABLE unless known_parts?(parts.map(&:first))
 
-    parts.filter_map { |key, _| PART_ERRORS[key] }.first || value_error(parts.to_h, body, start)
+    parts.filter_map { |key, _| mode[:part_errors][key] }.first || value_error(parts.to_h, body, start, mode)
   end
 
   # A FREQ, no part name twice (the last value would hide the first), every name known and in upper case.
@@ -76,9 +89,9 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
   end
 
   # The message for the frequency, a value the library would take unchecked, or a rule with no occurrence, else nil.
-  def self.value_error(values, body, start)
+  def self.value_error(values, body, start, mode)
     FREQUENCIES.fetch(values["FREQ"], UNPARSEABLE) ||
-      (UNPARSEABLE unless formats_ok?(values) && readable?(body)) ||
+      (UNPARSEABLE unless formats_ok?(values, mode[:formats]) && readable?(body)) ||
       (I18n.t("errors.calendar.rule_never_repeats") if never_repeats?(values, body, start))
   end
 
@@ -91,8 +104,15 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
     series.occurrences_starting_in(start..horizon, limit: 1).occurrences.empty?
   end
 
-  def self.formats_ok?(values)
-    VALUE_FORMATS.all? { |key, format| !values.key?(key) || values[key].match?(format) }
+  def self.formats_ok?(values, formats)
+    formats.all? { |key, format| !values.key?(key) || values[key].match?(format) } && ordinals_ok?(values)
+  end
+
+  # The weekday ordinals RFC 5545 allows by FREQ: at most five in a month. (The repeat library raises a TypeError
+  # for a monthly 53rd weekday.)
+  def self.ordinals_ok?(values)
+    limit = ORDINAL_LIMITS[values["FREQ"]] or return true
+    values["BYDAY"].to_s.scan(/\d+/).all? { |ordinal| ordinal.to_i <= limit }
   end
 
   def self.readable?(body)
