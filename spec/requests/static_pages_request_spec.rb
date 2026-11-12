@@ -552,6 +552,19 @@ RSpec.describe "Static pages", type: :request do
       expect(page.at_css("#opening-hours").text).to include("Bring your card")
     end
 
+    it "shows a day with only one time saved by that time alone" do
+      contact.opening_hours.create!(target_en: "Partial", target_fr: "Partiel", closed_all_week: :open,
+                                    thursday_closed_all_day: :open, thursday_opening: "10:00",
+                                    friday_closed_all_day: :open, friday_closing: "16:00")
+
+      get hours_path
+
+      rows = Nokogiri::HTML(response.body).css("#opening-hours section").last.css("tbody tr")
+      expect(rows.to_h { |tr| [tr.at_css("th").text.strip, tr.at_css("td").text.strip] }).to eq(
+        "Thursday" => "From 10:00", "Friday" => "Until 16:00"
+      )
+    end
+
     it "shows the French text when the locale is French" do
       get hours_path, params: { locale: "fr" }
 

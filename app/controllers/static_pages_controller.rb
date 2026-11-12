@@ -93,7 +93,7 @@ class StaticPagesController < SessionsController
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
     respond_to do |format|
       format.html do
-        @opening_hours = @contact_info.includes(:opening_hours).map { |contact| Api::V1::ContactInfoSerializer.call(contact) }
+        @contact_info = @contact_info.includes(:opening_hours)
         render :hours
       end
       format.json do
