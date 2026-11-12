@@ -59,3 +59,10 @@ fr:
         expired: "Expirée"
         revoked: "Révoqué"
         cancelled: "Annulé"
+  membership_checks:
+    granted: "Adhésion faculté accordée."
+    not_eligible: "Non admissible à l'adhésion faculté. Toute adhésion faculté active a été terminée."
+    unavailable: "La vérification de l'adhésion faculté n'a pas pu joindre le service de l'université. Rien n'a été modifié; réessayez plus tard."
+    rate_limited: "Trop de vérifications d'adhésion. Veuillez patienter une minute."
+    button: "Vérifier l'adhésion faculté"
+    button_title: "Lancer la même vérification d'adhésion faculté qu'un passage de carte"

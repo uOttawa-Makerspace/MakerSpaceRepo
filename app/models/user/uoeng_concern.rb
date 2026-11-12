@@ -24,6 +24,11 @@ module User::UoengConcern
       end
     end
 
+    # Only staff may run the faculty membership check for a user from the profile.
+    def membership_checkable_by?(staff)
+      staff.staff?
+    end
+
     private
 
     def grant_faculty_membership(faculty_tier)

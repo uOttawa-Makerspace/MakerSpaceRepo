@@ -59,6 +59,11 @@
                         <div class="d-flex">
                             <%= render 'users/membership_tag', user: @repo_user %>
                         </div>
+                        <% if @repo_user.membership_checkable_by?(current_user) %>
+                            <%= button_to t('membership_checks.button'), user_membership_check_path(@repo_user.username),
+                                          method: :post, title: t('membership_checks.button_title'),
+                                          class: 'btn btn-sm btn-outline-secondary mt-1' %>
+                        <% end %>
                     <% end %>
                 </div>
                 <div>
