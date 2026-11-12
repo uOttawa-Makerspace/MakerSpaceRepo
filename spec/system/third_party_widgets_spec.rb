@@ -33,3 +33,26 @@ RSpec.describe "Blocked third-party widgets", type: :system do
     expect(page).to have_css("input[type=submit]")
   end
 end
+
+RSpec.describe "Accessibility widget across Turbo visits", type: :system do
+  it "keeps one widget after several Turbo visits" do
+    visit login_path
+    # Stand-in for what the vendor script adds to the body.
+    page.execute_script(<<~JS)
+      var w = document.createElement("div");
+      w.className = "userway_buttons_wrapper";
+      w.dataset.original = "yes";
+      window.turboKept = true;
+      document.body.appendChild(w);
+    JS
+
+    page.execute_script("Turbo.visit('#{forgot_password_path}')")
+    expect(page).to have_current_path(forgot_password_path)
+    page.execute_script("Turbo.visit('#{login_path}')")
+    expect(page).to have_current_path(login_path)
+    expect(page.evaluate_script("window.turboKept")).to be(true)
+
+    expect(page).to have_css(".userway_buttons_wrapper[data-original=yes]", count: 1, visible: :all)
+    expect(page).to have_css("[data-controller=userway]", count: 1, visible: :all)
+  end
+end

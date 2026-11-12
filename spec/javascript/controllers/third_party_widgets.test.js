@@ -73,6 +73,24 @@ describe("userway", () => {
   });
 });
 
+describe("userway across Turbo renders", () => {
+  it("moves the vendor nodes into the incoming body and leaves other nodes", async () => {
+    await mount(`<div id="w" data-controller="userway" data-userway-src-value="https://cdn.example/widget-turbo.js"
+      data-action="turbo:before-render@document->userway#keepWidget"></div>
+      <div class="userway_buttons_wrapper" id="vendor"></div><p id="page"></p>`);
+    const newBody = document.createElement("body");
+    document.dispatchEvent(
+      new CustomEvent("turbo:before-render", { detail: { newBody } }),
+    );
+    expect(newBody.querySelectorAll(".userway_buttons_wrapper")).toHaveLength(
+      1,
+    );
+    expect(newBody.querySelector("#vendor")).not.toBeNull();
+    expect(newBody.querySelector("#page")).toBeNull();
+    expect(newBody.querySelector("#w")).toBeNull();
+  });
+});
+
 describe("turnstile", () => {
   const html = `<div id="t" class="cf-turnstile" data-controller="turnstile" data-sitekey="key123"
     data-turnstile-unavailable-message-value="Check unavailable"></div>`;
@@ -88,6 +106,28 @@ describe("turnstile", () => {
         sitekey: "key123",
       },
     );
+  });
+
+  it("renders one check after a disconnect and reconnect, removing the first", async () => {
+    window.turnstile = {
+      render: vi.fn().mockReturnValueOnce("id1").mockReturnValueOnce("id2"),
+      remove: vi.fn(),
+    };
+    await mount(html);
+    scripts()[0].dispatchEvent(new Event("load"));
+    await settle();
+    const element = document.getElementById("t");
+    element.append(document.createElement("iframe"));
+    element.dataset.controller = "";
+    await settle();
+    expect(window.turnstile.remove).toHaveBeenCalledWith("id1");
+    // Turbo restoring a cached snapshot: the element comes back holding the old iframe.
+    element.dataset.controller = "turnstile";
+    await settle();
+    scripts().at(-1).dispatchEvent(new Event("load"));
+    await settle();
+    expect(element.querySelectorAll("iframe")).toHaveLength(0);
+    expect(window.turnstile.render).toHaveBeenCalledTimes(2);
   });
 
   it("shows a message in its element when the script cannot be loaded", async () => {

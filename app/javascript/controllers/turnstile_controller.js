@@ -17,9 +17,15 @@ export default class extends Controller {
   disconnect() {
     this.cancel?.();
     this.notice?.remove();
+    if (this.widgetId !== undefined) {
+      /** @type {any} */ (window).turnstile?.remove(this.widgetId);
+      this.widgetId = undefined;
+    }
   }
 
   load() {
+    // A page restored from Turbo's cache already holds the rendered check; start from an empty element.
+    this.element.replaceChildren();
     loadScript(API)
       .then(() => this.render())
       .catch(() => this.showUnavailable());
@@ -27,7 +33,7 @@ export default class extends Controller {
 
   render() {
     if (!this.element.isConnected) return;
-    /** @type {any} */ (window).turnstile.render(this.element, {
+    this.widgetId = /** @type {any} */ (window).turnstile.render(this.element, {
       sitekey: /** @type {HTMLElement} */ (this.element).dataset.sitekey,
     });
   }
