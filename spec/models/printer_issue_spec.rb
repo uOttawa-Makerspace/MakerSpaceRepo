@@ -17,6 +17,21 @@ RSpec.describe PrinterIssue, type: :model do
     end
   end
 
+  describe "#resolve!" do
+    it "marks the issue inactive and is safe to repeat" do
+      issue = create(:printer_issue)
+      2.times { issue.resolve! }
+      expect(issue.reload.active).to be(false)
+    end
+
+    it "raises and keeps the issue active when it is invalid" do
+      issue = create(:printer_issue)
+      issue.update_columns(summary: "")
+      expect { issue.resolve! }.to raise_error(ActiveRecord::RecordInvalid)
+      expect(issue.reload.active).to be(true)
+    end
+  end
+
   describe ".summaries" do
     it "lists the three canned summaries" do
       expect(PrinterIssue.summaries).to eq(

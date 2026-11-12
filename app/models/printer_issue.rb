@@ -15,6 +15,11 @@ class PrinterIssue < ApplicationRecord
   #                 bed_issue: 'Bed issue' }, validate: false
   # I wish we had normalization here, that's 7.1+ too
 
+  # Marks the issue as resolved. Safe to repeat. Raises RecordInvalid when the issue itself is invalid.
+  def resolve!
+    update!(active: false)
+  end
+
   def self.summaries
     {
       nozzle_clogged: "Nozzle clogged",
