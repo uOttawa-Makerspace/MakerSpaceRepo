@@ -732,6 +732,7 @@ Rails.application.routes.draw do
     end
 
     get "likes", on: :member
+    resource :membership_check, only: :create, path: "membership_check"
     patch "change_password", on: :member
   end
 

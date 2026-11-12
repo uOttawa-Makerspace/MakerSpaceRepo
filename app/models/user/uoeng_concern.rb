@@ -30,6 +30,21 @@ module User::UoengConcern
       answer ? grant_faculty_membership(faculty_tier) : revoke_faculty_memberships(faculty_tier, card_number: card_number, space: space)
     end
 
+    # Only staff may run the faculty membership check for a user from the profile.
+    def membership_checkable_by?(staff)
+      staff.staff?
+    end
+
+    # Whether uOEng can be asked about this user: by student number, or by a
+    # uOttawa email address.
+    def uoeng_queryable?
+      student_id.present? || email.to_s.ends_with?("@uottawa.ca")
+    end
+
+    def active_faculty_membership_count
+      memberships.active.joins(:membership_tier).where(membership_tiers: { title_en: "Faculty membership" }).count
+    end
+
     private
 
     def grant_faculty_membership(faculty_tier)
@@ -90,14 +105,9 @@ module User::UoengConcern
     def uoeng_details(card_number: nil, space: nil)
       creds = Rails.application.credentials.dig(Rails.env.to_sym, :uoeng) || {}
 
-      url =
-        if student_id.present?
-          "#{creds[:query_by_id]}#{student_id}"
-        elsif email.to_s.ends_with?("@uottawa.ca")
-          "#{creds[:query_by_email]}#{email}"
-        else
-          return false
-        end
+      return false unless uoeng_queryable?
+
+      url = student_id.present? ? "#{creds[:query_by_id]}#{student_id}" : "#{creds[:query_by_email]}#{email}"
 
       fetch_uoeng_details(url, creds[:student_information_key], card_number, space)
     end
