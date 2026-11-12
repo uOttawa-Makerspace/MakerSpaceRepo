@@ -1179,6 +1179,26 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe "#save_unless_email_taken" do
+    it "answers nil and saves nothing when the email was taken between validation and the insert" do
+      existing = create(:user)
+      newcomer = build(:user, email: existing.email)
+      allow(newcomer).to receive(:valid?).and_return(true)
+
+      expect { expect(newcomer.save_unless_email_taken).to be_nil }.not_to change(User.unscoped, :count)
+    end
+
+    it "re-raises a unique violation that is not about the email and creates no account" do
+      existing = create(:user)
+      newcomer = build(:user, username: existing.username.upcase)
+      allow(newcomer).to receive(:valid?).and_return(true)
+
+      expect { newcomer.save_unless_email_taken }.to raise_error(ActiveRecord::RecordNotUnique, /username/)
+      expect(User.unscoped.where("lower(username) = ?", existing.username.downcase).count).to eq(1)
+      expect(newcomer).not_to be_persisted
+    end
+  end
+
   describe ".email_shape_error" do
     it "names the problem for a malformed address, in the current locale" do
       expect(User.email_shape_error("not-an-address")).to be_present
