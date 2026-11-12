@@ -28,8 +28,8 @@
         <%= f.select :job_type_id, options_from_collection_for_select(JobType.all, :id, :name, @job_service_group.job_type_id.presence || ''), {}, class: 'form-control form-select' %>
       </div>
 
-      <div class="mb-3">
-        <%= f.label :text_field, 'Accept text-field input', required: true %>
+      <div class="mb-3" role="radiogroup" aria-labelledby="job_service_group_text_field_label">
+        <span id="job_service_group_text_field_label" class="d-inline-block">Accept text-field input</span>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :text_field, 'false', class: 'form-check-input' %>

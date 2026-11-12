@@ -84,7 +84,7 @@
 
             <!-- Staff Files -->
             <div class="form-group my-3">
-              <%= label_tag "task_#{task.id}_staff_files", 'Staff Files (GCode, PDF, etc.)' %>
+              <%= label_tag "task_#{task.id}_staff_files_", 'Staff Files (GCode, PDF, etc.)' %>
               <%= file_field_tag "task_#{task.id}_staff_files[]", multiple: true, class: 'form-control inanimate mb-2' %>
             </div>
           </div>
@@ -134,8 +134,8 @@
 
       <!-- User Comments -->
       <div class="form-group mb-3">
-        <%= f.label :user_comments, 'Comments for the user (will send as a chat)' %>
-        <%= text_field_tag :user_comments, nil, placeholder: 'I will need to add supports', class: 'form-control inanimate mb-2' %>
+        <%= label_tag :quote_user_comments, 'Comments for the user (will send as a chat)' %>
+        <%= text_field_tag :user_comments, nil, id: 'quote_user_comments', placeholder: 'I will need to add supports', class: 'form-control inanimate mb-2' %>
       </div>
 
       <div class="form-group mb-3">

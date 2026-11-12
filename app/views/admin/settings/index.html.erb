@@ -88,8 +88,8 @@
     <div class="col-md-6">
       <h5>Course Options</h5><hr>
       <%= form_with url: { controller: 'admin/settings', action: 'add_course' }, class: 'mb-4' do |f| %>
-        <%= f.label :create_course, class: 'form-label profile-label' %>
-        <%= f.text_field :name, class: 'profile-text', placeholder: 'Write a unique name...' %>
+        <%= label_tag :create_course_name, 'Create course', class: 'form-label profile-label' %>
+        <%= f.text_field :name, id: 'create_course_name', class: 'profile-text', placeholder: 'Write a unique name...' %>
         <%= f.submit 'Create', class: 'btn btn-primary' %>
       <% end %>
       <%= form_with url: { controller: 'admin/settings', action: 'remove_course' }, class: 'mb-4', method: :delete do |f| %>

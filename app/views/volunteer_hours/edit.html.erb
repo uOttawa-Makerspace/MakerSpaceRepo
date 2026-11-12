@@ -12,7 +12,7 @@
             <div class="row">
               <div class="col-md-12">
                 <div class="mb-3 text-center">
-                  <%= f.label :volunteer_task, 'Volunteer Task', class: 'form-label' %>
+                  <%= f.label :volunteer_task_id, 'Volunteer Task', class: 'form-label' %>
                   <%= f.select :volunteer_task_id, @volunteer_tasks, {}, { class: 'form-control form-select', 'data-live-search': 'true' } %>
                 </div>
               </div>
@@ -26,7 +26,7 @@
                 </div>
               </div>
               <div class="col-md-6">
-                <%= f.label :amount_of_hours_worked, class: 'form-label' %>
+                <%= f.label :amount_of_hours_worked, for: 'hours', class: 'form-label' %>
                 <div class="input-group">
                   <input id="hours" class="form-control col-4" type="number" required="required" placeholder="Hours" min="0" value="<%= @hour %>">
                   <span class="input-group-text">:</span>

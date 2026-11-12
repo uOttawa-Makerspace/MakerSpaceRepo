@@ -24,7 +24,7 @@
       </div>
 
       <div class="form-group col-lg-6 mx-auto mb-3">
-        <%= f.label :job_type_ids, 'Job Type' %>
+        <%= f.label :job_type_ids, 'Job Type', for: 'job_type_ids_option' %>
         <%= f.select :job_type_ids, options_from_collection_for_select(JobType.all, :id, :name, @job_option.job_type_ids.presence || ''), {}, { class: 'form-control form-select', multiple: true, id: 'job_type_ids_option', aria: { label: t('common.names.job_type') } } %>
       </div>
 
@@ -38,8 +38,8 @@
         </div>
       </div>
 
-      <div class="mb-3">
-        <%= f.label :need_files, 'Need files?', required: true %>
+      <div class="mb-3" role="radiogroup" aria-labelledby="job_option_need_files_label">
+        <span id="job_option_need_files_label" class="d-inline-block">Need files?</span>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :need_files, false, class: 'form-check-input' %>
@@ -52,8 +52,8 @@
         </div>
       </div>
 
-      <div class="mb-3">
-        <%= f.label :is_job_wide, 'Applies to all tasks in job order?', required: true %>
+      <div class="mb-3" role="radiogroup" aria-labelledby="job_option_is_job_wide_label">
+        <span id="job_option_is_job_wide_label" class="d-inline-block">Applies to all tasks in job order?</span>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :is_job_wide, false, class: 'form-check-input' %>

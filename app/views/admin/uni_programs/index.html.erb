@@ -22,25 +22,25 @@
   <div class="mb-5 accordion">
     <div class="card">
       <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= faculty.gsub(/[ ()]/, '') %>" aria-expanded="true">
-        <h2 class="mb-0 text-center">
+        <h2 class="mb-0 text-center" id="accordion-<%= faculty.gsub(/[ ()]/, '') %>-heading">
           <button class="btn btn-link" type="button">
             <%= faculty %> - <%= rest.count %> programs
           </button>
         </h2>
       </div>
-      <div id="accordion-<%= faculty.gsub(/[ ()]/, '') %>" class="collapse" aria-labelledby="<%= faculty %>">
+      <div id="accordion-<%= faculty.gsub(/[ ()]/, '') %>" class="collapse" aria-labelledby="accordion-<%= faculty.gsub(/[ ()]/, '') %>-heading">
         <% if faculty == "Engineering" then %>
         <% rest.group_by { |x| x['department'] }.each { |department, rest| %>
         <div class="mb-5 accordion">
           <div class="card">
             <div class="card-header" data-bs-toggle="collapse" data-bs-target="#accordion-<%= department.gsub(/[ ()]/, '') %>" aria-expanded="true">
-              <h2 class="mb-0 text-center">
+              <h2 class="mb-0 text-center" id="accordion-<%= department.gsub(/[ ()]/, '') %>-heading">
                 <button class="btn btn-link" type="button">
                   <%= department %> - <%= rest.count %> programs
                 </button>
               </h2>
             </div>
-            <div id="#accordion-<%= department.gsub(/[ ()]/, '') %>" class="show" aria-labelledby="<%= department %>">
+            <div id="#accordion-<%= department.gsub(/[ ()]/, '') %>" class="show" aria-labelledby="accordion-<%= department.gsub(/[ ()]/, '') %>-heading">
               <table class="mb-5 table table-striped text-center">
                 <thead>
                   <th>Program</th>
