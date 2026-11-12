@@ -198,6 +198,15 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response.body).to include(target.username)
     end
 
+    it "search lists every hit with its selection checkbox unticked and named" do
+      get search_admin_users_path(q: target.username, filter: "Username")
+      boxes = Nokogiri::HTML(response.body).css("input[name='bulk_cert_users[]']")
+      expect(boxes.size).to be >= 1
+      expect(boxes.map { |b| b["checked"] }).to all(be_nil)
+      expect(boxes.map { |b| b["aria-label"] }).to all(include(target.username))
+      expect(Nokogiri::HTML(response.body).at_css("input#select-all")["checked"]).to be_nil
+    end
+
     it "search shows when a hit last signed in" do
       create(:lab_session, user: target, sign_in_time: 3.hours.ago, sign_out_time: 2.hours.ago)
       get search_admin_users_path(q: target.username, filter: "Username")
