@@ -55,7 +55,7 @@
       "allDay": false,
       "start": "2027-03-07T02:30:00",
       "end": "2027-03-07T03:30:00",
-      "rrule": "DTSTART:20270307T023000\nRRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3",
+      "rrule": "DTSTART:20270307T023000\nRRULE:FREQ=WEEKLY;COUNT=3;BYDAY=SU",
       "duration": 3600000
     },
     {
@@ -64,7 +64,7 @@
       "allDay": false,
       "start": "2027-10-31T01:30:00",
       "end": "2027-10-31T02:30:00",
-      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU;COUNT=3",
+      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;COUNT=3;BYDAY=SU",
       "duration": 3600000
     }
   ],
@@ -146,22 +146,6 @@
       "end": "2027-03-07T11:00:00",
       "rrule": "DTSTART:20270307T100000\nRRULE:FREQ=WEEKLY;BYDAY=SU\nEXDATE:20270314T100000",
       "duration": 3600000
-    },
-    {
-      "id": "cancelled@ics.test_1805032800",
-      "title": "Sunday class (cancelled)",
-      "allDay": false,
-      "start": "2027-03-14T10:00:00",
-      "end": "2027-03-14T11:00:00"
-    },
-    {
-      "id": "cancelled-series@ics.test",
-      "title": "Cancelled Monday series",
-      "allDay": false,
-      "start": "2027-03-15T10:00:00",
-      "end": "2027-03-15T11:00:00",
-      "rrule": "DTSTART:20270315T100000\nRRULE:FREQ=WEEKLY;BYDAY=MO",
-      "duration": 3600000
     }
   ],
   "recurrence_id_moved": [
@@ -209,7 +193,7 @@
       "allDay": true,
       "start": "2027-03-07T00:00:00",
       "end": "2027-03-08T00:00:00",
-      "rrule": "DTSTART:20270307T000000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20270328T000000",
+      "rrule": "DTSTART:20270307T000000\nRRULE:FREQ=WEEKLY;UNTIL=20270328T235959;BYDAY=SU",
       "duration": 86400000
     },
     {
@@ -218,7 +202,7 @@
       "allDay": false,
       "start": "2027-03-07T10:00:00",
       "end": "2027-03-07T11:00:00",
-      "rrule": "DTSTART:20270307T100000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20270321T100000",
+      "rrule": "DTSTART:20270307T100000\nRRULE:FREQ=WEEKLY;UNTIL=20270321T100000;BYDAY=SU",
       "duration": 3600000
     },
     {
@@ -227,7 +211,7 @@
       "allDay": false,
       "start": "2027-10-31T01:30:00",
       "end": "2027-10-31T02:30:00",
-      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20271107T013000",
+      "rrule": "DTSTART:20271031T013000\nRRULE:FREQ=WEEKLY;UNTIL=20271107T013000;BYDAY=SU",
       "duration": 3600000
     }
   ],

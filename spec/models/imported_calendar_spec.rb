@@ -1,0 +1,411 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+# An ICS feed read onto the same engine as the stored events. The fetch is stubbed at the boundary (IcsFetcher.get);
+# the fixtures are the ones the browser rows are pinned against (spec/helpers/calendar_helper_ics_dst_spec.rb), and
+# here the instants are the ones the files mean: both 2027 clock changes (forward 2027-03-14, back 2027-11-07).
+RSpec.describe ImportedCalendar do
+  include ActiveSupport::Testing::TimeHelpers
+
+  let(:url) { "https://calendar.example.test/private/secret-token/feed.ics" }
+  let(:toronto) { ActiveSupport::TimeZone["America/Toronto"] }
+  let(:everything) { Time.utc(2027, 1, 1)..Time.utc(2028, 12, 31) }
+
+  around { |example| travel_to(Time.utc(2027, 2, 1, 12)) { example.run } }
+
+  def fixture(name) = Rails.root.join("spec/fixtures/files/ics/#{name}.ics").read
+
+  def serve(body)
+    allow(IcsFetcher).to receive(:get).with(url, timeout: 10).and_return(body)
+  end
+
+  def ics(*vevents)
+    (["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//spec//EN"] + vevents.flatten + ["END:VCALENDAR"]).join("\r\n") + "\r\n"
+  end
+
+  def vevent(uid, *lines) = ["BEGIN:VEVENT", "UID:#{uid}", "DTSTAMP:20270101T000000Z", *lines, "END:VEVENT"]
+
+  def entries_of(body, **options)
+    serve(body)
+    described_class.load(url, name: "Hours", color: "#123456", **options).entries
+  end
+
+  def entry(entries, uid, recurrence_id: nil) = entries.find { |e| e.uid == uid && e.recurrence_id&.to_i == recurrence_id&.to_i }
+
+  # The Toronto wall times of a series' first occurrences.
+  def starts(entry, count: 6)
+    entry.series.occurrences_starting_in(everything, limit: count).occurrences
+         .map { |occurrence| occurrence.starts_at.in_time_zone(toronto).strftime("%Y-%m-%dT%H:%M") }
+  end
+
+  def reported
+    reports = []
+    subscriber = Class.new { define_method(:report) { |error, handled:, severity:, context:, source:| reports << [error, context] } }.new
+    Rails.error.subscribe(subscriber)
+    yield
+    reports
+  ensure
+    Rails.error.unsubscribe(subscriber)
+  end
+
+  describe ".load" do
+    it "gives the id (a digest of the link), colour, name and the entries with their display attributes" do
+      body = ics(vevent("a", "DTSTART:20270215T150000Z", "DTEND:20270215T160000Z", "SUMMARY:Open", "DESCRIPTION:Walk in"))
+      serve(body)
+      calendar = described_class.load(url, name: "Hours", color: "#123456")
+
+      expect(calendar).to have_attributes(id: Digest::MD5.hexdigest(url), color: "#123456", name: "Hours")
+      expect(calendar).not_to be_failed
+      expect(calendar).to be_fetched
+      expect(calendar.entries.size).to eq(1)
+      expect(calendar.entries.first).to have_attributes(
+        uid: "a", key: "a", summary: "Open", description: "Walk in", all_day: false, series: nil,
+        starts_at: Time.utc(2027, 2, 15, 15), ends_at: Time.utc(2027, 2, 15, 16)
+      )
+    end
+
+    it "is failed and not fetched when the server gives no body" do
+      serve(nil)
+      calendar = described_class.load(url, name: "x", color: "#000")
+      expect(calendar).to be_failed
+      expect(calendar).not_to be_fetched
+      expect(calendar.entries).to eq([])
+    end
+
+    it "is failed but fetched for a body that is not a calendar, or cannot be read, and not failed for an empty calendar" do
+      serve("<html>sign in</html>")
+      expect(described_class.load(url, name: "x", color: "#000")).to be_failed
+      serve(ics(vevent("bad", "DTSTART:notadate")))
+      unreadable = described_class.load(url, name: "x", color: "#000")
+      expect(unreadable).to be_failed
+      expect(unreadable).to be_fetched
+      expect(unreadable.entries).to eq([])
+      serve(ics)
+      expect(described_class.load(url, name: "x", color: "#000")).not_to be_failed
+    end
+
+    it "logs only the host of a link, never its path" do
+      serve(ics(vevent("bad", "DTSTART:notadate")))
+      logged = []
+      allow(Rails.logger).to receive(:error) { |message| logged << message }
+      described_class.load(url, name: "x", color: "#000")
+      expect(logged.join).to match(/ICS parse error for calendar\.example\.test: /)
+      expect(logged.join).not_to match(/secret-token|feed\.ics/)
+    end
+
+    it "is failed and fetched when the link may not be fetched, without any request" do
+      calendar = described_class.load("http://127.0.0.1/feed.ics", name: "x", color: "#000")
+      expect(calendar).to be_failed
+      expect(calendar).to be_fetched
+      expect(a_request(:any, /./)).not_to have_been_made
+    end
+  end
+
+  describe "a calendar in the Toronto zone" do
+    let(:entries) { entries_of(fixture("toronto_tzid")) }
+
+    it "keeps the wall time across both clock changes (a time that does not exist moves forward, a repeated one is listed once)" do
+      expect(starts(entry(entries, "spring-0230@ics.test"))).to eq(%w[2027-03-07T02:30 2027-03-14T03:30 2027-03-21T02:30 2027-03-28T02:30 2027-04-04T02:30 2027-04-11T02:30])
+      expect(starts(entry(entries, "fall-0130@ics.test"), count: 4)).to eq(%w[2027-10-31T01:30 2027-11-07T01:30 2027-11-14T01:30 2027-11-21T01:30])
+    end
+
+    it "has the length of the event" do
+      series = entry(entries, "spring-0230@ics.test").series
+      occurrence = series.occurrences_starting_in(everything, limit: 2).occurrences.last
+      expect(occurrence.ends_at - occurrence.starts_at).to eq(3600)
+    end
+  end
+
+  describe "a calendar in the Europe/Paris zone" do
+    let(:entries) { entries_of(fixture("paris_tzid")) }
+
+    # Paris changes its clocks on 2027-03-28 and 2027-10-31, Toronto on 2027-03-14 and 2027-11-07, so in between 09:00
+    # in Paris is 04:00 in Toronto.
+    it "repeats 09:00 in Paris, which is 04:00 Toronto time for two weeks after each Toronto change" do
+      expect(entry(entries, "paris-spring@ics.test").starts_at.time_zone.name).to eq("Europe/Paris")
+      expect(starts(entry(entries, "paris-spring@ics.test"), count: 4)).to eq(%w[2027-03-07T03:00 2027-03-14T04:00 2027-03-21T04:00 2027-03-28T03:00])
+      expect(starts(entry(entries, "paris-fall@ics.test"), count: 4)).to eq(%w[2027-10-24T03:00 2027-10-31T04:00 2027-11-07T03:00 2027-11-14T03:00])
+    end
+  end
+
+  describe "a calendar with a Windows zone name and its own VTIMEZONE" do
+    let(:entries) { entries_of(fixture("windows_timezone")) }
+
+    it "reads the zone as Eastern time and keeps the wall time across the clock changes" do
+      spring = entry(entries, "windows-spring@ics.test")
+      expect(spring.starts_at.time_zone.name).to eq("America/New_York")
+      expect(starts(spring, count: 3)).to eq(%w[2027-03-07T02:30 2027-03-14T03:30 2027-03-21T02:30])
+      expect(starts(entry(entries, "windows-fall@ics.test"), count: 3)).to eq(%w[2027-10-31T01:30 2027-11-07T01:30 2027-11-14T01:30])
+    end
+  end
+
+  describe "a calendar with no zone (floating times)" do
+    it "reads the times as Toronto wall time" do
+      entries = entries_of(fixture("floating"))
+      expect(entry(entries, "floating-spring@ics.test").starts_at).to eq(toronto.local(2027, 3, 7, 2, 30))
+      expect(entry(entries, "floating-spring@ics.test").starts_at.time_zone).to eq(toronto)
+      expect(starts(entry(entries, "floating-fall@ics.test"), count: 3)).to eq(%w[2027-10-31T01:30 2027-11-07T01:30 2027-11-14T01:30])
+    end
+  end
+
+  describe "all-day series (VALUE=DATE)" do
+    let(:entries) { entries_of(fixture("all_day")) }
+
+    it "is all day, one Toronto day long, with whole days across the clock change" do
+      spring = entry(entries, "allday-spring@ics.test")
+      expect(spring).to have_attributes(all_day: true, starts_at: toronto.local(2027, 3, 7), ends_at: toronto.local(2027, 3, 8))
+      change_day = spring.series.occurrences_starting_in(everything, limit: 2).occurrences.last
+      expect(change_day.starts_at).to eq(toronto.local(2027, 3, 14))
+      expect(change_day.ends_at).to eq(toronto.local(2027, 3, 15))
+      expect(change_day.all_day).to be(true)
+    end
+
+    it "leaves out a date exclusion (the Toronto midnight of that day)" do
+      fall = entry(entries, "allday-fall@ics.test")
+      expect(starts(fall, count: 3)).to eq(%w[2027-10-31T00:00 2027-11-14T00:00 2027-11-21T00:00])
+    end
+
+    it "gives an all-day event with no end a one-day length" do
+      entries = entries_of(ics(vevent("day", "DTSTART;VALUE=DATE:20270315", "SUMMARY:Closed", "RRULE:FREQ=DAILY;COUNT=2")))
+      series = entries.first.series
+      expect(entries.first.ends_at).to be_nil
+      expect(series.occurrences_starting_in(everything, limit: 1).occurrences.first.all_day).to be(true)
+    end
+  end
+
+  describe "an exclusion in the hour the clocks repeat" do
+    let(:entries) { entries_of(fixture("exdate_repeated_hour")) }
+
+    # The 01:30 of the change day is listed once, at its first instant (05:30Z). An exclusion of that instant, or of the
+    # zoned wall time (which is the first one), removes the day; one of the second instant (06:30Z) is a different
+    # instant and removes nothing.
+    it "removes the day for the first 01:30 and the zoned wall time, and keeps it for the second 01:30" do
+      expect(starts(entry(entries, "exdate-first@ics.test"), count: 3)).to eq(%w[2027-10-31T01:30 2027-11-14T01:30 2027-11-21T01:30])
+      expect(starts(entry(entries, "exdate-local@ics.test"), count: 3)).to eq(%w[2027-10-31T01:30 2027-11-14T01:30 2027-11-21T01:30])
+      expect(starts(entry(entries, "exdate-utc@ics.test"), count: 3)).to eq(%w[2027-10-31T01:30 2027-11-07T01:30 2027-11-14T01:30])
+    end
+  end
+
+  describe "a modified instance (RECURRENCE-ID)" do
+    let(:entries) { entries_of(fixture("recurrence_id_moved")) }
+
+    it "excludes the original instant from the series and lists the moved instance once, as an event of its own" do
+      expect(starts(entry(entries, "moved@ics.test"), count: 4)).to eq(%w[2027-03-07T10:00 2027-03-21T10:00 2027-03-28T10:00 2027-04-04T10:00])
+      moved = entry(entries, "moved@ics.test", recurrence_id: toronto.local(2027, 3, 14, 10))
+      expect(moved).to have_attributes(summary: "Sunday class (moved to Monday)", starts_at: toronto.local(2027, 3, 15, 14), series: nil,
+                                       key: "moved@ics.test_1805032800")
+      expect(entries.size).to eq(2)
+    end
+  end
+
+  describe "a cancelled instance and a cancelled series (STATUS:CANCELLED)" do
+    let(:entries) { entries_of(fixture("recurrence_id_cancelled")) }
+
+    it "leaves the cancelled instance out of the series, draws nothing for it, and drops the cancelled series" do
+      expect(entries.map(&:uid)).to eq(["cancelled@ics.test"])
+      expect(starts(entries.first, count: 4)).to eq(%w[2027-03-07T10:00 2027-03-21T10:00 2027-03-28T10:00 2027-04-04T10:00])
+    end
+  end
+
+  describe "a series with an end (UNTIL)" do
+    let(:entries) { entries_of(fixture("until")) }
+
+    it "keeps the last day of a date UNTIL" do
+      expect(starts(entry(entries, "until-date@ics.test"))).to eq(%w[2027-03-07T00:00 2027-03-14T00:00 2027-03-21T00:00 2027-03-28T00:00])
+    end
+
+    it "keeps the occurrence a UTC UNTIL names" do
+      expect(starts(entry(entries, "until-utc@ics.test"))).to eq(%w[2027-03-07T10:00 2027-03-14T10:00 2027-03-21T10:00])
+      expect(starts(entry(entries, "until-utc-fall@ics.test"))).to eq(%w[2027-10-31T01:30 2027-11-07T01:30])
+    end
+
+    it "keeps the last day of a date UNTIL for a timed series" do
+      body = ics(vevent("timed", "DTSTART;TZID=America/Toronto:20270307T100000", "DTEND;TZID=America/Toronto:20270307T110000",
+                        "RRULE:FREQ=WEEKLY;BYDAY=SU;UNTIL=20270321", "SUMMARY:Timed"))
+      expect(starts(entries_of(body).first)).to eq(%w[2027-03-07T10:00 2027-03-14T10:00 2027-03-21T10:00])
+    end
+  end
+
+  describe "a series with a COUNT" do
+    it "counts the repeated hour once" do
+      entries = entries_of(fixture("count"))
+      expect(starts(entry(entries, "count-fall@ics.test"))).to eq(%w[2027-10-31T01:30 2027-11-07T01:30 2027-11-14T01:30])
+      expect(starts(entry(entries, "count-spring@ics.test"))).to eq(%w[2027-03-07T02:30 2027-03-14T03:30 2027-03-21T02:30])
+    end
+  end
+
+  describe "a rule with BYSETPOS or BYWEEKNO" do
+    let(:entries) { entries_of(fixture("bysetpos")) }
+
+    it "applies BYSETPOS (the last weekday of the month, the second Sunday, the first Sunday)" do
+      expect(starts(entry(entries, "last-weekday@ics.test"), count: 4)).to eq(%w[2027-02-26T09:00 2027-03-31T09:00 2027-04-30T09:00 2027-05-31T09:00])
+      expect(starts(entry(entries, "second-sunday-march@ics.test"), count: 4)).to eq(%w[2027-02-14T02:30 2027-03-14T03:30 2027-04-11T02:30 2027-05-09T02:30])
+      expect(starts(entry(entries, "first-sunday-november@ics.test"), count: 3)).to eq(%w[2027-10-03T01:30 2027-11-07T01:30 2027-12-05T01:30])
+    end
+
+    it "applies BYWEEKNO" do
+      body = ics(vevent("week", "DTSTART;TZID=America/Toronto:20270104T090000", "DTEND;TZID=America/Toronto:20270104T100000",
+                        "RRULE:FREQ=YEARLY;BYWEEKNO=3;BYDAY=MO;COUNT=2", "SUMMARY:Week 3"))
+      expect(starts(entries_of(body).first, count: 3)).to eq(%w[2027-01-18T09:00 2028-01-17T09:00])
+    end
+  end
+
+  describe "what is left out" do
+    it "drops a single event that ended more than two months ago and keeps a series that has not ended" do
+      body = ics(
+        vevent("old", "DTSTART:20261001T150000Z", "DTEND:20261001T160000Z", "SUMMARY:Old"),
+        vevent("rec", "DTSTART:20261001T150000Z", "DTEND:20261001T160000Z", "SUMMARY:Rec", "RRULE:FREQ=DAILY")
+      )
+      expect(entries_of(body).map(&:uid)).to eq(["rec"])
+    end
+
+    it "drops a series by its UNTIL or COUNT only when its last occurrence was more than two months ago" do
+      stamp = "DTSTART:20261001T150000Z"
+      body = ics(
+        vevent("until-old", stamp, "SUMMARY:A", "RRULE:FREQ=DAILY;UNTIL=20261010T150000Z"),
+        vevent("count-old", stamp, "SUMMARY:B", "RRULE:FREQ=WEEKLY;COUNT=3"),
+        vevent("until-recent", stamp, "SUMMARY:C", "RRULE:FREQ=DAILY;UNTIL=20270120T150000Z"),
+        vevent("count-straddles", stamp, "SUMMARY:D", "RRULE:FREQ=WEEKLY;COUNT=40"),
+        vevent("count-huge", stamp, "SUMMARY:E", "RRULE:FREQ=YEARLY;COUNT=5000")
+      )
+      expect(entries_of(body).map(&:uid)).to eq(%w[until-recent count-straddles count-huge])
+    end
+
+    it "lists a recent modified instance of a series that ended, and one whose master is not in the feed" do
+      body = ics(
+        vevent("rec", "DTSTART:20261001T150000Z", "DTEND:20261001T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=3"),
+        vevent("rec", "RECURRENCE-ID:20261008T150000Z", "DTSTART:20270108T170000Z", "DTEND:20270108T180000Z", "SUMMARY:Moved"),
+        vevent("orphan", "RECURRENCE-ID;VALUE=DATE:20270112", "DTSTART;VALUE=DATE:20270112", "DTEND;VALUE=DATE:20270113", "SUMMARY:Alone"),
+        vevent("ancient", "RECURRENCE-ID:20260101T150000Z", "DTSTART:20260101T170000Z", "SUMMARY:Ancient")
+      )
+      expect(entries_of(body).map(&:summary)).to eq(%w[Moved Alone])
+    end
+
+    it "keeps single events and modified instances without an end, judging their age by the start" do
+      body = ics(
+        vevent("day", "DTSTART;VALUE=DATE:20270112", "SUMMARY:All day"),
+        vevent("old", "DTSTART:20261001T150000Z", "SUMMARY:Old")
+      )
+      expect(entries_of(body).map(&:summary)).to eq(["All day"])
+    end
+
+    it "reports an event with no start and leaves it out, and still lists the others" do
+      body = ics(
+        vevent("fine", "DTSTART:20270215T150000Z", "DTEND:20270215T160000Z", "SUMMARY:Fine"),
+        vevent("nostart", "DTEND:20270215T160000Z", "SUMMARY:Broken", "RRULE:FREQ=DAILY;COUNT=2"),
+        vevent("rec", "DTSTART:20270215T150000Z", "DTEND:20270215T160000Z", "SUMMARY:Weekly", "RRULE:FREQ=WEEKLY;COUNT=4"),
+        vevent("rec", "RECURRENCE-ID:20270222T150000Z", "DTEND:20270222T180000Z", "SUMMARY:No start")
+      )
+      entries = nil
+      reports = reported { entries = entries_of(body) }
+      expect(entries.map(&:uid)).to eq(%w[fine rec])
+      expect(reports.map { |error, context| [error.message, context[:event_uid], context[:calendar]] })
+        .to eq([["ICS event has no usable start", "nostart", Digest::MD5.hexdigest(url)], ["ICS event has no usable start", "rec", Digest::MD5.hexdigest(url)]])
+    end
+
+    it "reports a rule the engine refuses and leaves that series out" do
+      body = ics(
+        vevent("hourly", "DTSTART:20270215T150000Z", "SUMMARY:Often", "RRULE:FREQ=HOURLY"),
+        vevent("zero", "DTSTART:20270215T150000Z", "SUMMARY:Never", "RRULE:FREQ=WEEKLY;INTERVAL=0"),
+        vevent("fine", "DTSTART:20270215T150000Z", "SUMMARY:Fine", "RRULE:FREQ=WEEKLY")
+      )
+      entries = nil
+      reports = reported { entries = entries_of(body) }
+      expect(entries.map(&:uid)).to eq(["fine"])
+      expect(reports.map { |_, context| [context[:event_uid], context[:error_class]] })
+        .to eq([["hourly", "RecurringSeries::UnsupportedRule"], ["zero", "RRule::InvalidRRule"]])
+    end
+
+    it "leaves out a series whose rule can never match, without a report" do
+      body = ics(vevent("never", "DTSTART:20270215T150000Z", "SUMMARY:Never", "RRULE:FREQ=DAILY;BYYEARDAY=400"))
+      entries = nil
+      expect(reported { entries = entries_of(body) }).to eq([])
+      expect(entries).to eq([])
+    end
+  end
+
+  describe ".time_of" do
+    def value(line) = Icalendar::Calendar.parse(ics(vevent("a", line))).first.events.first.dtstart
+
+    it "reads a date as midnight in the given zone (Toronto by default)" do
+      expect(described_class.time_of(value("DTSTART;VALUE=DATE:20270315"))).to eq(toronto.local(2027, 3, 15))
+      paris = ActiveSupport::TimeZone["Europe/Paris"]
+      expect(described_class.time_of(value("DTSTART;VALUE=DATE:20270315"), paris)).to eq(paris.local(2027, 3, 15))
+    end
+
+    it "keeps the instant and zone of a UTC or zoned time and reads a floating one as Toronto wall time" do
+      expect(described_class.time_of(value("DTSTART:20270315T150000Z"))).to eq(Time.utc(2027, 3, 15, 15))
+      expect(described_class.time_of(value("DTSTART:20270315T150000Z")).time_zone.name).to eq("UTC")
+      expect(described_class.time_of(value("DTSTART:20270315T090000"))).to eq(toronto.local(2027, 3, 15, 9))
+      expect(described_class.time_of(value("DTSTART;TZID=Europe/Paris:20270315T090000"))).to eq(Time.utc(2027, 3, 15, 8))
+    end
+
+    it "reads a zone name it cannot resolve at its own offset instant, in Toronto" do
+      body = ics("BEGIN:VTIMEZONE", "TZID:Custom Zone", "BEGIN:STANDARD", "DTSTART:16010101T000000", "TZOFFSETFROM:+0200", "TZOFFSETTO:+0200", "END:STANDARD",
+                 "END:VTIMEZONE", vevent("a", "DTSTART;TZID=Custom Zone:20270315T090000"))
+      time = described_class.time_of(Icalendar::Calendar.parse(body).first.events.first.dtstart)
+      expect(time).to eq(Time.utc(2027, 3, 15, 7))
+      expect(time.time_zone).to eq(toronto)
+    end
+
+    it "is nil for no value" do
+      expect(described_class.time_of(nil)).to be_nil
+    end
+  end
+
+  describe "the cached body" do
+    let(:store) { ActiveSupport::Cache::MemoryStore.new }
+    let(:body) { ics(vevent("a", "DTSTART:20270215T150000Z", "DTEND:20270215T160000Z", "SUMMARY:Private class")) }
+
+    before do
+      allow(Rails).to receive(:cache).and_return(store)
+      allow(IcsFetcher).to receive(:get).with(url, timeout: 10).and_return(body)
+    end
+
+    def load_calendar(**options) = described_class.load(url, name: "x", color: "#000", **options)
+
+    it "reads the link once for a repeated load within ten minutes, then again after" do
+      2.times { expect(load_calendar.entries.map(&:uid)).to eq(["a"]) }
+      expect(IcsFetcher).to have_received(:get).once
+      travel(11.minutes)
+      load_calendar
+      expect(IcsFetcher).to have_received(:get).twice
+    end
+
+    it "reads the link again, and keeps the new copy, when asked for a fresh load" do
+      load_calendar
+      newer = body.sub("Private class", "Changed class")
+      allow(IcsFetcher).to receive(:get).with(url, timeout: 10).and_return(newer)
+      expect(load_calendar.entries.first.summary).to eq("Private class")
+      expect(load_calendar(fresh: true).entries.first.summary).to eq("Changed class")
+      expect(load_calendar.entries.first.summary).to eq("Changed class")
+      expect(IcsFetcher).to have_received(:get).twice
+    end
+
+    it "does not keep a failure: no body, or an error from the fetch" do
+      allow(IcsFetcher).to receive(:get).with(url, timeout: 10).and_return(nil, body)
+      expect(load_calendar).to be_failed
+      expect(load_calendar).not_to be_failed
+      expect(IcsFetcher).to have_received(:get).twice
+
+      allow(IcsFetcher).to receive(:get).with(url, timeout: 10).and_raise(IcsFetcher::Refused, "host is not public")
+      store.clear
+      expect(load_calendar).to be_failed
+      expect(store.instance_variable_get(:@data)).to be_empty
+    end
+
+    it "keeps the body encrypted, under a key that does not hold the link" do
+      load_calendar
+      data = store.instance_variable_get(:@data)
+      expect(data.keys.size).to eq(1)
+      expect(data.keys.first).to eq("ics-body/#{Digest::SHA256.hexdigest(url)}")
+      expect(data.keys.first).not_to include("secret-token")
+
+      raw = store.read(["ics-body", Digest::SHA256.hexdigest(url)])
+      expect(raw).to be_a(String)
+      expect(raw).not_to include("Private class", "BEGIN:VCALENDAR")
+      expect(described_class.cipher.decrypt_and_verify(raw)).to eq(body)
+    end
+  end
+end

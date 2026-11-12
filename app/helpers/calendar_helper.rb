@@ -1,67 +1,25 @@
 module CalendarHelper
-  # The values RFC 5545 allows for the BY parts of a repeat rule, and whether the value may be negative.
-  ICS_RULE_PART_LIMITS = {
-    by_year_day: [1..366, true],
-    by_month_day: [1..31, true],
-    by_week_number: [1..53, true],
-    by_month: [1..12, false],
-    by_set_position: [1..366, true]
-  }.freeze
-
-  # One BYDAY value: a weekday, optionally with a number (and sign) saying which one of the period.
-  ICS_BY_DAY = /\A(?:[+-]?(?<number>\d+))?(?:MO|TU|WE|TH|FR|SA|SU)\z/
-
-  # The longest COUNT whose end is worked out when deciding whether a series is over.
-  MAX_COUNTED_SERIES = 1000
-
   # What reading a feed gave: its calendars (one holding the events, or none when the server gave no body) and
   # whether the load failed: no body, a fetch or parse error, or a body with no calendar in it (a web page, say).
   IcsFeed = Struct.new(:calendars, :failed, keyword_init: true) do
     alias_method :failed?, :failed
   end
 
+  # A date-only UNTIL: the series runs through the end of that day.
+  ICS_DATE_UNTIL = /UNTIL=(\d{8})(?![\dT])/
+
   # The calendars of a feed (see ics_feed), without the failure flag.
   def parse_ics_calendar(ics_url, name: "Unnamed Calendar", color: nil)
     ics_feed(ics_url, name: name, color: color).calendars
   end
 
+  # The rows the calendar pages draw for an imported calendar (ImportedCalendar), repeating events as a rule text.
   def ics_feed(ics_url, name: "Unnamed Calendar", color: nil)
     return IcsFeed.new(calendars: [], failed: false) if ics_url.blank?
 
-    group_id = Digest::MD5.hexdigest(ics_url.to_s)
-    events, failed = ics_feed_events(ics_url, group_id, name)
-    calendars = events.nil? ? [] : [{ id: group_id, color: color.presence || generate_color_from_id(ics_url.to_s), events: events }]
-    IcsFeed.new(calendars: calendars, failed: failed)
-  end
-
-  # The events of the feed and whether it failed to load. The events are nil when there is no body to read, and
-  # empty when the feed could not be read (the error is logged by host only: a private link holds its secret in
-  # the path).
-  def ics_feed_events(ics_url, group_id, name)
-    parsed_cals = read_ics_calendars(ics_url)
-    return [nil, true] if parsed_cals.nil?
-
-    events = parsed_cals.flat_map do |calendar|
-      # Group events by UID to handle recurrence-id
-      calendar.events.group_by(&:uid).flat_map do |_uid, event_group|
-        ics_event_group(event_group, group_id: group_id, name: name)
-      end
-    end
-    [events, parsed_cals.empty?]
-  rescue StandardError => e
-    Rails.logger.error("ICS parse error for #{ics_log_name(ics_url)}: #{e.class}")
-    [[], true]
-  end
-
-  def ics_log_name(ics_url)
-    ics_url.is_a?(Pathname) ? ics_url.basename.to_s : IcsFetcher.host(ics_url).to_s
-  end
-
-  def read_ics_calendars(ics_url)
-    return ::Icalendar::Calendar.parse(File.read(ics_url)) if ics_url.is_a?(Pathname)
-
-    body = IcsFetcher.get(ics_url.to_s, timeout: 10)
-    ::Icalendar::Calendar.parse(body) unless body.nil?
+    calendar = ImportedCalendar.load(ics_url.to_s, name: name, color: color.presence || generate_color_from_id(ics_url.to_s))
+    rows = calendar.entries.map { |entry| ics_row(entry, calendar) }
+    IcsFeed.new(calendars: calendar.fetched? ? [{ id: calendar.id, color: calendar.color, events: rows }] : [], failed: calendar.failed?)
   end
 
   # COLOR HELPERS
@@ -115,31 +73,6 @@ module CalendarHelper
     (l1 + 0.05) / (l2 + 0.05)
   end
 
-  # RRULE HELPERS
-  def convert_rrule_to_string(rrule_obj)
-    parts = []
-    
-    parts << "FREQ=#{rrule_obj.frequency}" if rrule_obj.frequency
-    parts << "INTERVAL=#{rrule_obj.interval}" if rrule_obj.interval && rrule_obj.interval != 1
-    parts << "BYDAY=#{rrule_obj.by_day.join(',')}" if rrule_obj.by_day&.any?
-    parts << "BYMONTHDAY=#{rrule_obj.by_month_day.join(',')}" if rrule_obj.by_month_day&.any?
-    parts << "BYMONTH=#{rrule_obj.by_month.join(',')}" if rrule_obj.by_month&.any?
-    parts << "BYYEARDAY=#{rrule_obj.by_year_day.join(',')}" if rrule_obj.by_year_day&.any?
-    parts << "BYWEEKNO=#{rrule_obj.by_week_number.join(',')}" if rrule_obj.by_week_number&.any?
-    parts << "BYSETPOS=#{rrule_obj.by_set_position.join(',')}" if rrule_obj.by_set_position&.any?
-    
-    if rrule_obj.until
-      until_time = safe_to_time(rrule_obj.until)
-      # Toronto wall-clock time, like the DTSTART the feed sends with it
-      parts << "UNTIL=#{until_time.in_time_zone(RecurrenceRule::ZONE).strftime('%Y%m%dT%H%M%S')}" if until_time
-    end
-    
-    parts << "COUNT=#{rrule_obj.count}" if rrule_obj.count
-    parts << "WKST=#{rrule_obj.week_start}" if rrule_obj.week_start
-    
-    parts.join(';')
-  end
-  
   # The repeat rule as the calendar views read it (see RecurrenceRule#in_toronto_time).
   def date_formatted_recurrence_rule(event)
     return if event.recurrence_rule.blank?
@@ -155,225 +88,27 @@ module CalendarHelper
     keep_date.in_time_zone(RecurrenceRule::ZONE).change(hour: time.hour, min: time.min, sec: time.sec)
   end
 
-  # A point in time as UTC. Dates and times without a zone (all-day dates,
-  # floating times, a bare UNTIL) are Toronto wall-clock time, whatever zone the
-  # server process runs in; values with a Z or a TZID keep their own instant.
-  def safe_to_time(value)
-    return nil if value.nil?
-
-    wall = wall_clock(value)
-    (wall ? toronto_local(wall) : instant(value))&.getutc # nil for text that is not a time
-  rescue ArgumentError, RangeError
-    nil # not a time
-  end
-
-  # The date or zoneless date-time in the value (a date object, a floating
-  # time, or the bare YYYYMMDD of a recurrence UNTIL), or nil when the value
-  # carries its own zone.
-  def wall_clock(value)
-    return Date.strptime(value, "%Y%m%d") if value.is_a?(String) && value.match?(/\A\d{8}\z/)
-
-    raw = value.is_a?(Icalendar::Values::DateTime) ? value.value : value
-    raw if floating_time?(raw) || calendar_date?(raw)
-  end
-
-  # icalendar leaves a plain DateTime with no offset for a time with no zone and
-  # for a TZID it cannot resolve (for example a custom name with no VTIMEZONE);
-  # both are read as Toronto time. A resolved TZID gives a zoned value, and a
-  # plain DateTime with an offset is an instant.
-  def floating_time?(raw)
-    raw.instance_of?(::DateTime) && raw.offset.zero?
-  end
-
-  def calendar_date?(raw)
-    raw.is_a?(Icalendar::Values::Date) || (raw.is_a?(::Date) && !raw.is_a?(::DateTime))
-  end
-
-  def toronto_local(wall)
-    toronto_zone.local(wall.year, wall.month, wall.day, wall.try(:hour).to_i, wall.try(:min).to_i, wall.try(:sec).to_i)
-  end
-
-  # Text (a recurrence UNTIL) is read in Toronto; feed values (icalendar dates
-  # and date-times) and Ruby times convert themselves. Anything else is not a time.
-  def instant(value)
-    return toronto_zone.parse(value) if value.is_a?(String)
-
-    value.to_time if value.respond_to?(:to_time)
-  end
-
-  def toronto_zone
-    ActiveSupport::TimeZone["America/Toronto"]
-  end
-
   private
 
-  # The calendar events for one UID: the series (or single event) itself, then each modified instance of it.
-  def ics_event_group(event_group, group_id:, name:)
-    main_event = event_group.find { |e| e.recurrence_id.nil? }
-    modified_instances = event_group.select { |e| e.recurrence_id.present? }
-
-    results = []
-    if main_event
-      main_hash = ics_main_event(main_event, modified_instances, group_id: group_id, name: name)
-      results << main_hash if main_hash
-    end
-    modified_instances.each do |modified|
-      instance_hash = ics_modified_instance(modified, group_id: group_id, name: name)
-      results << instance_hash if instance_hash
-    end
-    results
-  end
-
-  # The calendar entry for a single or recurring event, or nil when it ended more than two months ago (a single
-  # event) or has no usable start (reported, so the rest of the feed still loads).
-  def ics_main_event(main_event, modified_instances, group_id:, name:)
-    start_time = safe_to_time(main_event.dtstart)
-    end_time = safe_to_time(main_event.dtend)
-    return report_ics_event_problem("ICS event has no usable start", main_event, group_id) if start_time.nil?
-
-    rrule_obj = main_event.rrule&.first
-    return if skip_ics_event?(main_event, rrule_obj, start_time, end_time, group_id)
-
-    event_hash = {
-      id: main_event.uid,
-      groupId: group_id,
-      title: main_event.summary,
-      extendedProps: {
-        name: name,
-        description: main_event.description,
-      },
-      allDay: main_event.dtstart.is_a?(Icalendar::Values::Date),
-      display: 'auto',
-      start: toronto_iso(start_time),
-      end: toronto_iso(end_time)
+  def ics_row(entry, calendar)
+    row = {
+      id: entry.key, groupId: calendar.id, title: entry.summary,
+      extendedProps: { name: calendar.name, description: entry.description },
+      allDay: entry.all_day, display: "auto", start: toronto_iso(entry.starts_at), end: toronto_iso(entry.ends_at)
     }
-    event_hash.merge!(ics_recurrence(main_event, rrule_obj, modified_instances, start_time, end_time)) if rrule_obj.present?
-    event_hash
+    row.merge!(ics_recurrence(entry)) if entry.series
+    row
   end
 
-  def ics_recurrence(main_event, rrule_obj, modified_instances, start_time, end_time)
-    rrule_string_parts = []
-
-    dtstart_toronto = start_time.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-    rrule_string_parts << "DTSTART:#{dtstart_toronto}"
-
-    rrule_line = convert_rrule_to_string(rrule_obj)
-    rrule_string_parts << "RRULE:#{rrule_line}"
-
-    ics_exdates(main_event, modified_instances).each do |d|
-      exdate_str = d.in_time_zone("America/Toronto")&.strftime("%Y%m%dT%H%M%S")
-      rrule_string_parts << "EXDATE:#{exdate_str}"
-    end
-
-    recurrence = { rrule: rrule_string_parts.join("\n") }
-    recurrence[:duration] = (end_time - start_time).to_i * 1000 if end_time
+  # The rule as the browser reads it: Toronto wall time throughout, a date UNTIL through the end of its day.
+  def ics_recurrence(entry)
+    text = RecurrenceRule.new(entry.series.rule, entry.starts_at).in_toronto_time.sub(ICS_DATE_UNTIL, 'UNTIL=\\1T235959')
+    recurrence = { rrule: text }
+    recurrence[:duration] = (entry.ends_at - entry.starts_at).to_i * 1000 if entry.ends_at
     recurrence
   end
 
-  # The dates left out of a series: its own exception dates and the original dates of its modified instances.
-  def ics_exdates(main_event, modified_instances)
-    all_exdates = main_event.exdate.map(&:value).flatten.map { |d| safe_to_time(d) }
-    all_exdates += modified_instances.map { |modified| safe_to_time(modified.recurrence_id) }
-    all_exdates.compact.uniq
-  end
-
-  # A modified instance of a series, listed as an event of its own; nil when it ended more than two months ago.
-  def ics_modified_instance(modified, group_id:, name:)
-    start_time = safe_to_time(modified.dtstart)
-    end_time = safe_to_time(modified.dtend)
-    return report_ics_event_problem("ICS event has no usable start", modified, group_id) if start_time.nil?
-
-    return if stale_event?(end_time || start_time)
-
-    {
-      id: "#{modified.uid}_#{safe_to_time(modified.recurrence_id)&.to_i}",
-      groupId: group_id,
-      title: modified.summary,
-      extendedProps: {
-        name: name,
-        description: modified.description,
-      },
-      allDay: modified.dtstart.is_a?(Icalendar::Values::Date),
-      start: toronto_iso(start_time),
-      end: toronto_iso(end_time)
-    }
-  end
-
-  # Whether an event no longer needs showing: a single event that ended, or a series that stopped, more than two
-  # months ago.
-  # An unreadable series rule is reported and the series kept (the calendar view decides what to do with it).
-  def skip_ics_event?(main_event, rrule_obj, start_time, end_time, group_id)
-    over = rrule_obj.present? ? series_ended?(rrule_obj, start_time) : stale_event?(end_time || start_time)
-    report_ics_event_problem(over, main_event, group_id) if over.is_a?(StandardError)
-    over == true
-  end
-
-  # Whether a repeating series stopped (by its UNTIL date, or after its COUNT occurrences) more than two months
-  # ago. A series that never ends, or whose end cannot be worked out, is not ended.
-  def series_ended?(rrule_obj, start_time)
-    cutoff = Time.now.utc - 2.months
-    until_time = safe_to_time(rrule_obj.until)
-    return true if until_time && until_time < cutoff
-
-    counted_series_ended_before?(rrule_obj, start_time, cutoff)
-  end
-
-  # Whether all the occurrences of a series with a COUNT fall before the cutoff. A very long count is not worked
-  # out: the series is kept. A rule that cannot be read gives the error describing why instead of true or false.
-  def counted_series_ended_before?(rrule_obj, start_time, cutoff)
-    count = rrule_obj.count.to_i
-    return false unless count.between?(1, MAX_COUNTED_SERIES)
-
-    out_of_range = out_of_range_rule_part(rrule_obj)
-    return ArgumentError.new("#{out_of_range} is out of range") if out_of_range
-
-    start = start_time.in_time_zone(RecurrenceRule::ZONE)
-    series = RecurringSeries.new(rule: convert_rrule_to_string(rrule_obj), starts_at: start, ends_at: start)
-    series.occurrences_starting_in(start..cutoff, limit: count).occurrences.size == count
-  rescue ArgumentError => e
-    e # the repeat library cannot expand the rule
-  end
-
-  # The first part of the rule whose value is outside what RFC 5545 allows (the repeat library fails or
-  # some of these, and accepts others silently), or nil. Only the parts convert_rrule_to_string passes on are
-  # checked. A BY part with a sign may count from the end, so only its size is checked.
-  def out_of_range_rule_part(rrule_obj)
-    return :interval unless rrule_obj.interval.nil? || rrule_obj.interval.to_i >= 1
-    return :by_day unless Array(rrule_obj.by_day).all? { |token| valid_by_day?(token) }
-
-    ICS_RULE_PART_LIMITS.find { |part, (limit, signed)| !values_within?(rrule_obj.public_send(part), limit, signed) }&.first
-  end
-
-  def values_within?(values, limit, signed)
-    Array(values).all? do |value|
-      number = Integer(value.to_s, 10, exception: false)
-      number && limit.cover?(signed ? number.abs : number)
-    end
-  end
-
-  def valid_by_day?(token)
-    match = ICS_BY_DAY.match(token.to_s)
-    match.present? && (match[:number].nil? || match[:number].to_i.between?(1, 53))
-  end
-
-  # Whether an event's last moment (its end, else its start) is more than two months ago. An event with
-  # no time at all is not stale.
-  def stale_event?(last_moment)
-    last_moment.present? && last_moment < (Time.now.utc - 2.months)
-  end
-
   def toronto_iso(time)
-    time&.in_time_zone("America/Toronto")&.strftime("%Y-%m-%dT%H:%M:%S")
-  end
-
-  # Reports an event that cannot be placed on the calendar; returns nil so the caller leaves it out.
-  def report_ics_event_problem(problem, event, group_id)
-    error = problem.is_a?(StandardError) ? problem : ArgumentError.new(problem)
-    Rails.error.report(
-      error,
-      handled: true, severity: :warning,
-      context: { event_uid: event.uid.to_s, calendar: group_id, error_class: error.class.name }
-    )
-    nil
+    time&.in_time_zone(RecurrenceRule::ZONE)&.strftime("%Y-%m-%dT%H:%M:%S")
   end
 end

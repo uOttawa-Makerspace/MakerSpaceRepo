@@ -268,12 +268,11 @@ RSpec.describe "Repeat rules sent by the calendar feeds across clock changes", t
           expect(rows.dig("paris-spring@ics.test", "rrule")).to eq("DTSTART:20270307T030000\nRRULE:FREQ=WEEKLY;BYDAY=SU")
         end
 
-        # Disagreement, named "cancelled instance still sent": a cancelled instance is sent as an event of its own,
-        # and a cancelled series is sent like any other.
-        it "sends cancelled instances and cancelled series like any other event" do
+        # A cancelled instance is only an exclusion of its series and a cancelled series is left out.
+        it "sends the series with its cancelled instance excluded, and nothing for the cancelled instance or series" do
           rows = sent(feed, "recurrence_id_cancelled")
           expect(rows).to eq(fixture_rows("recurrence_id_cancelled"))
-          expect(rows.keys).to contain_exactly("cancelled@ics.test", "cancelled@ics.test_1805032800", "cancelled-series@ics.test")
+          expect(rows.keys).to contain_exactly("cancelled@ics.test")
         end
       end
     end

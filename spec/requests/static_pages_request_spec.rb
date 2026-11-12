@@ -668,7 +668,7 @@ RSpec.describe "Static pages", type: :request do
             # rrule is a newline-joined STRING (DTSTART/RRULE/EXDATE lines), not an
             # object; it relies on @fullcalendar/rrule parsing it. DTSTART, UNTIL and EXDATE are all
             # Toronto wall-clock time with no TZID/Z, the one frame of reference rrule.js reads.
-            "rrule" => "DTSTART:20261026T090000\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20261221T185959\n" \
+            "rrule" => "DTSTART:20261026T090000\nRRULE:FREQ=WEEKLY;UNTIL=20261221T185959;BYDAY=MO,WE\n" \
                        "EXDATE:20261028T090000\nEXDATE:20261102T090000",
             "duration" => 28_800_000
           )
@@ -682,13 +682,14 @@ RSpec.describe "Static pages", type: :request do
           override_id = "weekly-1@google.com_1793628000"
           expect(source["events"].count { |e| e["id"] == override_id }).to eq(1)
           # The id suffix 1793628000 is the RECURRENCE-ID epoch: 2026-11-02T14:00:00Z == 09:00 EST (the original slot).
-          # Override is its own event: no rrule/duration/display keys.
+          # Override is its own event: no rrule/duration keys.
           expect(event_named(source, override_id)).to eq(
             "id" => override_id,
             "groupId" => source_id,
             "title" => "Open Hours (late start)",
             "extendedProps" => { "name" => "Makerspace", "description" => "Late start" },
             "allDay" => false,
+            "display" => "auto",
             "start" => "2026-11-02T13:00:00",
             "end" => "2026-11-02T17:00:00"
           )

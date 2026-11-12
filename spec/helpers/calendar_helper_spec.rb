@@ -4,8 +4,11 @@ RSpec.describe CalendarHelper, type: :helper do
   include ActiveSupport::Testing::TimeHelpers
 
   describe "#parse_ics_calendar" do
-    let(:path) do
-      Rails.root.join("spec/support/assets/MakerRepo Test Calendar_d1ee6078f7d085e62d99150ed598526f1ead2068937d30d9b3a93b48e4b17dc0@group.calendar.google.com.ics")
+    let(:path) { "https://calendar.example/maker.ics" }
+
+    before do
+      body = Rails.root.join("spec/support/assets/MakerRepo Test Calendar_d1ee6078f7d085e62d99150ed598526f1ead2068937d30d9b3a93b48e4b17dc0@group.calendar.google.com.ics").read
+      stub_request(:get, path).to_return(status: 200, body: body)
     end
 
     it "returns no calendars for a blank url" do
@@ -37,19 +40,6 @@ RSpec.describe CalendarHelper, type: :helper do
         # all-day dates are calendar dates in Toronto
         expect(event[:start]).to eq("2025-11-16T00:00:00")
         expect(event[:end]).to eq("2025-11-17T00:00:00")
-      end
-    end
-
-    it "logs only the file name when a feed file cannot be read" do
-      Dir.mktmpdir("private-folder") do |dir|
-        file = Pathname.new(dir).join("feed.ics")
-        file.write("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:bad\r\nDTSTART:notadate\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n")
-        logged = []
-        allow(Rails.logger).to receive(:error) { |message| logged << message }
-
-        expect(ics_feed(file, name: "x")).to be_failed
-        expect(logged.join).to match(/ICS parse error for feed\.ics/)
-        expect(logged.join).not_to include("private-folder")
       end
     end
 
@@ -159,11 +149,11 @@ RSpec.describe CalendarHelper, type: :helper do
         vevent("count-recent", ["DTSTART:20261201T150000Z", "DTEND:20261201T160000Z", "SUMMARY:D", "RRULE:FREQ=WEEKLY;COUNT=10"]),
         vevent("count-straddles", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:E", "RRULE:FREQ=WEEKLY;COUNT=40"]),
         vevent("count-huge", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:F", "RRULE:FREQ=YEARLY;COUNT=5000"]),
-        vevent("unreadable", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:G", "RRULE:FREQ=WEEKLY;BYWEEKNO=3;COUNT=2"])
+        vevent("weekno", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:G", "RRULE:FREQ=WEEKLY;BYWEEKNO=3;COUNT=2"])
       )
       stub_request(:get, url).to_return(status: 200, body: body)
       expect(parse_ics_calendar(url).first[:events].map { |e| e[:id] })
-        .to eq(%w[until-recent count-recent count-straddles count-huge unreadable])
+        .to eq(%w[until-recent count-recent count-straddles count-huge weekno])
     end
 
     it "still lists a modified instance of a series that has ended when the instance is recent" do
@@ -185,7 +175,7 @@ RSpec.describe CalendarHelper, type: :helper do
       event = parse_ics_calendar(url).first[:events].first
       lines = event[:rrule].split("\n")
       expect(lines.first).to eq("DTSTART:20270105T100000")
-      expect(lines[1]).to start_with("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;UNTIL=20271230T190000")
+      expect(lines[1].delete_prefix("RRULE:").split(";")).to contain_exactly("FREQ=WEEKLY", "INTERVAL=2", "BYDAY=TU,TH", "UNTIL=20271230T190000")
       expect(lines.last).to eq("EXDATE:20270119T100000")
       expect(event[:duration]).to eq(90 * 60 * 1000)
     end
@@ -263,42 +253,6 @@ RSpec.describe CalendarHelper, type: :helper do
       expect(reports.map { |message, context| [message, context[:event_uid]] }).to eq([["ICS event has no usable start", "rec"]])
     end
 
-    it "keeps a counted series whose rule cannot be expanded, reports it, and still lists the other events" do
-      unreadable = ["FREQ=DAILY;BYYEARDAY=400;COUNT=2", "FREQ=WEEKLY;INTERVAL=0;COUNT=2", "FREQ=MONTHLY;BYMONTH=13;COUNT=2"]
-      vevents = unreadable.each_with_index.map do |rule, i|
-        vevent("bad#{i}", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Bad #{i}", "RRULE:#{rule}"])
-      end
-      stub_request(:get, url).to_return(status: 200, body: ics(*vevents, vevent("fine", ["DTSTART:20270115T150000Z", "DTEND:20270115T160000Z", "SUMMARY:Fine"])))
-      events = nil
-      reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
-      expect(events.map { |e| e[:id] }).to eq(%w[bad0 bad1 bad2 fine])
-      expect(reports.map { |_, context| context[:event_uid] }).to eq(%w[bad0 bad1 bad2])
-      expect(reports.map { |_, context| context[:error_class] }).to all(eq("ArgumentError"))
-      expect(reports.map(&:first)).to eq(
-        ["by_year_day is out of range", "interval is out of range", "by_month is out of range"]
-      )
-    end
-
-    {
-      "FREQ=YEARLY;BYYEARDAY=0" => "by_year_day", "FREQ=YEARLY;BYYEARDAY=367" => "by_year_day", "FREQ=YEARLY;BYYEARDAY=-367" => "by_year_day",
-      "FREQ=MONTHLY;BYMONTHDAY=0" => "by_month_day", "FREQ=MONTHLY;BYMONTHDAY=32" => "by_month_day", "FREQ=MONTHLY;BYMONTHDAY=-32" => "by_month_day",
-      "FREQ=YEARLY;BYWEEKNO=0" => "by_week_number", "FREQ=YEARLY;BYWEEKNO=54" => "by_week_number", "FREQ=YEARLY;BYWEEKNO=-54" => "by_week_number",
-      "FREQ=YEARLY;BYMONTH=0" => "by_month", "FREQ=YEARLY;BYMONTH=13" => "by_month",
-      "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=0" => "by_set_position", "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=367" => "by_set_position",
-      "FREQ=MONTHLY;BYDAY=MO;BYSETPOS=-367" => "by_set_position",
-      "FREQ=MONTHLY;BYDAY=0MO" => "by_day", "FREQ=MONTHLY;BYDAY=54MO" => "by_day", "FREQ=MONTHLY;BYDAY=-54FR" => "by_day",
-      "FREQ=WEEKLY;INTERVAL=0" => "interval"
-    }.each do |rule, part|
-      it "keeps the series and reports it when #{rule} has a value outside its allowed range" do
-        body = ics(vevent("odd", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Odd", "RRULE:#{rule};COUNT=2"]))
-        stub_request(:get, url).to_return(status: 200, body: body)
-        events = nil
-        reports = reported_ics_problems { events = parse_ics_calendar(url).first[:events] }
-        expect(events.map { |e| e[:id] }).to eq(["odd"])
-        expect(reports.map(&:first)).to eq(["#{part} is out of range"])
-      end
-    end
-
     ["FREQ=WEEKLY;BYDAY=MO,TU,TH;COUNT=6", "FREQ=MONTHLY;BYDAY=1MO,-1FR;COUNT=6"].each do |rule|
       it "lists #{rule} without reporting its weekday list" do
         body = ics(vevent("days", ["DTSTART:20261201T150000Z", "DTEND:20261201T160000Z", "SUMMARY:Days", "RRULE:#{rule}"]))
@@ -310,36 +264,6 @@ RSpec.describe CalendarHelper, type: :helper do
         expect(events.first[:rrule]).to include("BYDAY=#{rule[/BYDAY=([^;]+)/, 1]}")
       end
     end
-
-    describe "the allowed ranges of a repeat rule" do
-      let(:rule_class) { Struct.new(:interval, :by_day, :by_year_day, :by_month_day, :by_week_number, :by_month, :by_set_position, keyword_init: true) }
-
-      def out_of_range(**parts)
-        send(:out_of_range_rule_part, rule_class.new(**parts))
-      end
-
-      it "accepts the values at the edges of every range" do
-        expect(out_of_range(interval: 1, by_day: %w[MO -1FR +53SU 5TU], by_year_day: %w[1 -1 366 -366], by_month_day: %w[1 -31 31],
-                            by_week_number: %w[1 53 -53], by_month: %w[1 12], by_set_position: %w[1 -1 366 -366])).to be_nil
-        expect(out_of_range).to be_nil
-      end
-
-      it "refuses a value that is not a number" do
-        expect(out_of_range(by_month_day: %w[x])).to eq(:by_month_day)
-        expect(out_of_range(by_set_position: ["1.5"])).to eq(:by_set_position)
-        expect(out_of_range(by_day: ["1"])).to eq(:by_day)
-      end
-    end
-
-    it "does not expand a series whose COUNT is above the limit, so it is kept without a report" do
-      body = ics(vevent("long", ["DTSTART:20260801T150000Z", "DTEND:20260801T160000Z", "SUMMARY:Long", "RRULE:FREQ=DAILY;COUNT=#{CalendarHelper::MAX_COUNTED_SERIES + 1}"]))
-      stub_request(:get, url).to_return(status: 200, body: body)
-      expect(RecurringSeries).not_to receive(:new)
-      events = nil
-      expect(reported_ics_problems { events = parse_ics_calendar(url).first[:events] }).to eq([])
-      expect(events.map { |e| e[:id] }).to eq(["long"])
-    end
-
   end
 
   describe "#parse_ics_calendar with all-day events" do
@@ -396,7 +320,7 @@ RSpec.describe CalendarHelper, type: :helper do
                                        "RRULE:FREQ=WEEKLY;UNTIL=20261231", "EXDATE;VALUE=DATE:20261106"]))
           event = events_for(body).first
           expect(event[:start]).to eq("2026-10-30T00:00:00")
-          expect(event[:rrule]).to eq("DTSTART:20261030T000000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T000000\nEXDATE:20261106T000000")
+          expect(event[:rrule]).to eq("DTSTART:20261030T000000\nRRULE:FREQ=WEEKLY;UNTIL=20261231T235959\nEXDATE:20261106T000000")
         end
 
         it "reads a floating time as Toronto wall-clock time" do
@@ -425,27 +349,6 @@ RSpec.describe CalendarHelper, type: :helper do
           expect(events_for(body).first).to include(allDay: false, start: "2026-10-30T11:00:00", end: "2026-10-30T12:00:00")
         end
       end
-    end
-  end
-
-  describe "#safe_to_time" do
-    it "keeps the instant of a date-time that has an offset" do
-      expect(safe_to_time(DateTime.new(2026, 11, 1, 9, 0, 0, "+02:00"))).to eq(Time.utc(2026, 11, 1, 7, 0))
-    end
-
-    it "reads a date-time with no offset as Toronto wall-clock time" do
-      expect(safe_to_time(DateTime.new(2026, 10, 30, 9, 0, 0))).to eq(Time.utc(2026, 10, 30, 13, 0))
-    end
-
-    it "reads a time zone name it cannot resolve as Toronto, and keeps one it can resolve" do
-      body = ["BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT", "UID:z", "DTSTAMP:20260101T000000Z",
-              "DTSTART;TZID=Bogus/Zone:20261030T013000", "DTEND;TZID=Bogus/Zone:20261030T023000",
-              "END:VEVENT", "BEGIN:VEVENT", "UID:p", "DTSTAMP:20260101T000000Z",
-              "DTSTART;TZID=Europe/Paris:20261030T013000", "DTEND;TZID=Europe/Paris:20261030T023000",
-              "END:VEVENT", "END:VCALENDAR"].join("\r\n") + "\r\n"
-      events = Icalendar::Calendar.parse(body).first.events.index_by { |e| e.uid.to_s }
-      expect(safe_to_time(events["z"].dtstart)).to eq(Time.utc(2026, 10, 30, 5, 30))
-      expect(safe_to_time(events["p"].dtstart)).to eq(Time.utc(2026, 10, 30, 0, 30))
     end
   end
 
@@ -480,30 +383,6 @@ RSpec.describe CalendarHelper, type: :helper do
     end
   end
 
-  describe "#convert_rrule_to_string" do
-    it "joins every present part, the end in Toronto wall-clock time, and leaves an interval of one out" do
-      rule = OpenStruct.new(frequency: "WEEKLY", interval: 1, by_day: %w[MO WE], by_month_day: [1, 2], by_month: [3],
-                            by_year_day: [100], by_week_number: [5], by_set_position: [-1],
-                            until: Time.utc(2027, 6, 1, 12), count: 5, week_start: "SU")
-      expect(convert_rrule_to_string(rule)).to eq(
-        "FREQ=WEEKLY;BYDAY=MO,WE;BYMONTHDAY=1,2;BYMONTH=3;BYYEARDAY=100;BYWEEKNO=5;BYSETPOS=-1;" \
-        "UNTIL=20270601T080000;COUNT=5;WKST=SU"
-      )
-    end
-
-    it "writes an interval other than one and skips empty and missing parts" do
-      rule = OpenStruct.new(frequency: "DAILY", interval: 3, by_day: [], by_month_day: nil, until: nil, count: nil, week_start: nil)
-      expect(convert_rrule_to_string(rule)).to eq("FREQ=DAILY;INTERVAL=3")
-      expect(convert_rrule_to_string(OpenStruct.new)).to eq("")
-    end
-
-    it "leaves UNTIL out when it cannot be read as a time" do
-      unreadable = Object.new
-      def unreadable.to_s = "never"
-      expect(convert_rrule_to_string(OpenStruct.new(frequency: "DAILY", until: unreadable))).to eq("FREQ=DAILY")
-    end
-  end
-
   describe "#date_formatted_recurrence_rule" do
     let(:start_time) { Time.utc(2027, 5, 5, 13, 0) }
 
@@ -530,44 +409,6 @@ RSpec.describe CalendarHelper, type: :helper do
       result = combine_date_and_time(Time.utc(2027, 5, 6, 1, 2, 3), Time.utc(2020, 1, 1, 13, 45, 30))
       expect(result).to eq(Time.utc(2027, 5, 5, 12, 45, 30))
       expect(result.time_zone.name).to eq("America/Toronto")
-    end
-  end
-
-  describe "#safe_to_time" do
-    it "is nil for nil and for text that is not a time" do
-      expect(safe_to_time(nil)).to be_nil
-      expect(safe_to_time(Object.new.tap { |o| def o.to_time = raise(ArgumentError, "bad") })).to be_nil
-      unreadable = Object.new
-      def unreadable.to_s = "never"
-      expect(safe_to_time(unreadable)).to be_nil
-    end
-
-    it "does not hide an error that is not about the value being a time" do
-      broken = Object.new.tap { |o| def o.to_time = raise("bug") }
-      expect { safe_to_time(broken) }.to raise_error("bug")
-    end
-
-    it "returns UTC for a time, a non-UTC time and a date" do
-      expect(safe_to_time(Time.utc(2027, 1, 1, 5))).to eq(Time.utc(2027, 1, 1, 5))
-      zoned = Time.new(2027, 1, 1, 5, 0, 0, "-05:00")
-      expect(safe_to_time(zoned)).to eq(Time.utc(2027, 1, 1, 10))
-      expect(safe_to_time(zoned)).to be_utc
-      expect(safe_to_time(Date.new(2027, 1, 1)).utc?).to be(true)
-    end
-
-    it "is nil for a string that is not a time, and parses one that is" do
-      expect(safe_to_time("garbage")).to be_nil
-      expect(safe_to_time("2027-01-01 05:00:00 UTC")).to eq(Time.utc(2027, 1, 1, 5))
-    end
-
-    it "is nil for a value that cannot be a time" do
-      expect(safe_to_time(Object.new)).to be_nil
-    end
-
-    it "is nil for a value that is neither text nor a time, even when its text reads as one" do
-      value = Object.new
-      def value.to_s = "2027-01-01 05:00:00 UTC"
-      expect(safe_to_time(value)).to be_nil
     end
   end
 end

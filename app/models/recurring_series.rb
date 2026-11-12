@@ -36,6 +36,21 @@ class RecurringSeries
     new(rule: record.recurrence_rule, starts_at: record.start_time.in_time_zone(ZONE), ends_at: record.end_time)
   end
 
+  # An imported (ICS) event: its repeat rule as the file wrote it (UNTIL as given, UTC or a date), and the instants
+  # left out of it: its exception dates and the original instants of its modified instances (RECURRENCE-ID),
+  # which are listed on their own. `starts_at` and `ends_at` are the event's, in its zone. A date exception date is
+  # midnight in the series zone.
+  def self.from_ics(master, overrides, starts_at:, ends_at:)
+    zone = starts_at.time_zone
+    values = master.exdate.flat_map { |exdate| exdate.is_a?(Icalendar::Values::Helpers::Array) ? exdate.value : [exdate] }
+    values += overrides.map(&:recurrence_id)
+    left_out = values.filter_map { |value| ImportedCalendar.time_of(value, zone) }.uniq
+    lines = ["RRULE:#{master.rrule.first.value_ical}"] + left_out.map { |time| "EXDATE:#{time.utc.strftime(RecurrenceRule::STAMP)}" }
+    new(rule: lines.join("\n"), starts_at: starts_at, ends_at: ends_at)
+  end
+
+  attr_reader :rule
+
   # `starts_at` is a TimeWithZone; the series repeats the wall time of its zone.
   # Exclusions are the rule's own EXDATE lines, read as instants.
   def initialize(rule:, starts_at:, ends_at:)
