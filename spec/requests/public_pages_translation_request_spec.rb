@@ -17,9 +17,9 @@ RSpec.describe "Public pages in English and French", type: :request do
 
   def sidebar_en
     [
-      "Licenses", "Common Create - Attribution", "Common Create - Attribution - Share Alike",
-      "Common Create - Attribution - No Derivatives", "Common Create - Attribution - Non-Commerical",
-      "Attribution - Non-Commerical - Share Alike", "Attribution - Non-Commerical - No Derivatives"
+      "Licenses", "Creative Commons - Attribution", "Creative Commons - Attribution - Share Alike",
+      "Creative Commons - Attribution - No Derivatives", "Creative Commons - Attribution - Non-Commercial",
+      "Attribution - Non-Commercial - Share Alike", "Attribution - Non-Commercial - No Derivatives"
     ]
   end
 
@@ -45,11 +45,11 @@ RSpec.describe "Public pages in English and French", type: :request do
   # helper => [English title, English terms, a French term]
   def license_pages
     {
-      licenses_cca_path: ["Common Creative - Attribution", [freedom, adapt, attribution], "Attribution — Vous devez"],
-      licenses_ccasa_path: ["Common Creative - Attribution - Share Alike", [freedom, adapt, share_alike], "Partage dans les mêmes conditions — Si vous remixez"],
-      licenses_ccand_path: ["Common Creative - Attribution - No Derivatives", ["No-Derivatives — #{no_derivatives}", freedom], "Pas de modification — Si vous remixez"],
-      licenses_ccanc_path: ["Common Creative - Attribution - Non-Commercial", [non_commercial, adapt], "Pas d'utilisation commerciale — Vous n'êtes pas autorisé"],
-      licenses_ancsa_path: ["Attribution - Non-commercial - Share Alike", [non_commercial, share_alike, adapt], "Partage dans les mêmes conditions — Si vous remixez"],
+      licenses_cca_path: ["Creative Commons - Attribution", [freedom, adapt, attribution], "Attribution — Vous devez"],
+      licenses_ccasa_path: ["Creative Commons - Attribution - Share Alike", [freedom, adapt, share_alike], "Partage dans les mêmes conditions — Si vous remixez"],
+      licenses_ccand_path: ["Creative Commons - Attribution - No Derivatives", ["No-Derivatives — #{no_derivatives}", freedom], "Pas de modification — Si vous remixez"],
+      licenses_ccanc_path: ["Creative Commons - Attribution - Non-Commercial", [non_commercial, adapt], "Pas d'utilisation commerciale — Vous n'êtes pas autorisé"],
+      licenses_ancsa_path: ["Attribution - Non-Commercial - Share Alike", [non_commercial, share_alike, adapt], "Partage dans les mêmes conditions — Si vous remixez"],
       licenses_ancnd_path: ["Attribution - Non-Commercial - No Derivatives", ["No Derivatives — #{no_derivatives}", non_commercial], "Pas de modification — Si vous remixez"]
     }
   end
