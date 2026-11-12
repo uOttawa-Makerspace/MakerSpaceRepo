@@ -82,4 +82,18 @@ RSpec.describe UniqueIndexGuard do
     ActiveRecord::Migration.suppress_messages { builder.remove_unique_index_concurrently(:uig_scratch, name: index) }
     expect(found).to be_nil
   end
+
+  it "names duplicate rows of a table without an id column by their row address" do
+    conn.create_table(:uig_scratch_keyless, id: false, force: true) { |t| t.integer :a }
+    conn.execute("INSERT INTO uig_scratch_keyless (a) VALUES (1), (1), (2)")
+
+    expect do
+      ActiveRecord::Migration.suppress_messages do
+        builder.add_unique_index_concurrently(:uig_scratch_keyless, :a, name: "index_uig_scratch_keyless_on_a")
+      end
+    end.to raise_error(UniqueIndexGuard::DuplicatesFound, /a=1 -> ids \(0,1\),\(0,2\)/)
+    expect(conn.select_value("SELECT count(*) FROM uig_scratch_keyless")).to eq(3)
+  ensure
+    conn.drop_table(:uig_scratch_keyless, if_exists: true)
+  end
 end

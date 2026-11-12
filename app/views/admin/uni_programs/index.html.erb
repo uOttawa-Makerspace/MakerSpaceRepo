@@ -4,7 +4,7 @@
   <%= link_to 'Download University Programs', admin_uni_programs_current_programs_path, class: 'btn btn-primary m-3' %>
   <div class="mb-3">
     <%= form_tag admin_uni_programs_import_programs_path, method: :post, multipart: true, class: 'w-100' do %>
-    <p>Upload CSV file to replace programs table</p>
+    <p>Upload CSV file to update programs. Programs missing from the file are marked inactive and no longer offered on the sign-up and profile forms</p>
     <div class="input-group mb-3">
       <%= file_field_tag :file, style: 'display: inline;', class: 'form-control', accept: 'text/csv' %>
       <%= submit_tag 'Import File', class: 'btn btn-primary' %>
@@ -74,5 +74,27 @@
   </div>
 </div>
 <% end %>
+
+  <% if @retired_programs.any? %>
+  <hr/>
+  <section class="mb-5">
+    <h2><%= t('admin.retired_programs.heading') %></h2>
+    <p><%= t('admin.retired_programs.note') %></p>
+    <table class="table table-striped text-center">
+      <thead>
+        <th><%= t('admin.retired_programs.program') %></th>
+        <th><%= t('admin.retired_programs.level') %></th>
+        <th><%= t('admin.retired_programs.faculty') %></th>
+      </thead>
+      <% @retired_programs.each do |program| %>
+      <tr>
+        <td><%= program.program %></td>
+        <td><%= program.level %></td>
+        <td><%= program.faculty %></td>
+      </tr>
+      <% end %>
+    </table>
+  </section>
+  <% end %>
 
 </div>
