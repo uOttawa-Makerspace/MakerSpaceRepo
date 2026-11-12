@@ -48,12 +48,12 @@
         </fieldset>
         <div class="row row-cols-lg-2 my-3">
             <div>
-                <%= h.label :notes_en, 'English footer notes', id: h.field_id(:notes_en, :label), class: 'form-label' %>
-                <%= h.trix_editor :notes_en, class: 'form-control', aria: { labelledby: h.field_id(:notes_en, :label) } %>
+                <%= h.trix_label :notes_en, 'English footer notes', class: 'form-label' %>
+                <%= h.trix_editor :notes_en, class: 'form-control' %>
             </div>
             <div>
-                <%= h.label :notes_fr, 'French footer notes', id: h.field_id(:notes_fr, :label), class: 'form-label' %>
-                <%= h.trix_editor :notes_fr, class: 'form-control', aria: { labelledby: h.field_id(:notes_fr, :label) } %>
+                <%= h.trix_label :notes_fr, 'French footer notes', class: 'form-label' %>
+                <%= h.trix_editor :notes_fr, class: 'form-control' %>
             </div>
         </div>
     <% end %>

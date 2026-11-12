@@ -48,17 +48,17 @@
 
               <div class="mb-3">
                 <%= f.fields_for :opening_hours do |h| %>
-                  <%= h.label :target_en, 'Target Audience (English)', id: h.field_id(:target_en, :label), class: 'form-label' %>
-                  <%= h.trix_editor :target_en, class: 'repo form-control', style: 'height: auto!important;', aria: { labelledby: h.field_id(:target_en, :label) } %>
+                  <%= h.trix_label :target_en, 'Target Audience (English)', class: 'form-label' %>
+                  <%= h.trix_editor :target_en, class: 'repo form-control', style: 'height: auto!important;' %>
 
-                  <%= h.label :target_fr, 'Target Audience (French)', id: h.field_id(:target_fr, :label), class: 'form-label' %>
-                  <%= h.trix_editor :target_fr, class: 'repo form-control', style: 'height: auto!important;', aria: { labelledby: h.field_id(:target_fr, :label) } %>
+                  <%= h.trix_label :target_fr, 'Target Audience (French)', class: 'form-label' %>
+                  <%= h.trix_editor :target_fr, class: 'repo form-control', style: 'height: auto!important;' %>
 
-                  <%= h.label :notes_en, 'Notes (English)', id: h.field_id(:notes_en, :label), class: 'form-label' %>
-                  <%= h.trix_editor :notes_en, class: 'repo form-control', style: 'height: auto!important;', aria: { labelledby: h.field_id(:notes_en, :label) } %>
+                  <%= h.trix_label :notes_en, 'Notes (English)', class: 'form-label' %>
+                  <%= h.trix_editor :notes_en, class: 'repo form-control', style: 'height: auto!important;' %>
 
-                  <%= h.label :notes_fr, 'Notes (French)', id: h.field_id(:notes_fr, :label), class: 'form-label' %>
-                  <%= h.trix_editor :notes_fr, class: 'repo form-control', style: 'height: auto!important;', aria: { labelledby: h.field_id(:notes_fr, :label) } %>
+                  <%= h.trix_label :notes_fr, 'Notes (French)', class: 'form-label' %>
+                  <%= h.trix_editor :notes_fr, class: 'repo form-control', style: 'height: auto!important;' %>
                 <% end %>
               </div>
 

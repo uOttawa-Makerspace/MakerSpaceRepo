@@ -11,15 +11,14 @@
     </div>
 
     <div class="mb-3">
-        <%= f.label :description, 'Description', for: 'redactor', class: 'form-label' %>
+        <%= f.trix_label :description, 'Description', for: 'redactor', class: 'form-label' %>
         <div class="form-text mb-1">
             You can input a <code>wiki.makerepo.com</code> link and the page will be displayed.
         </div>
         <%= f.trix_editor :description,
             placeholder: 'Description of the learning module…',
             class: 'form-control',
-            id: 'redactor',
-            'aria-label': t('common.names.description') %>
+            id: 'redactor' %>
     </div>
 
     <%= f.label :shortcut_name, 'Shortcut permanent link to this learning module', class: 'form-label' %>

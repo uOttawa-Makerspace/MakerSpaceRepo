@@ -14,8 +14,8 @@
               <%= f.label :title, 'Title', for: 'repository_title', class: 'form-label' %>
               <%= f.text_field :title, id: 'repository_title', placeholder: 'Title of the proficient project...', class: 'form-control mb-5', required: true %>
 
-              <%= f.label :description, 'Description (You can now input a wiki.makerepo.com link and the page will be displayed)', for: 'redactor', id: 'proficient_project_description_label', class: 'form-label' %>
-              <%= f.trix_editor :description, placeholder: 'Description of the proficient project...', class: 'form-control mb-5', id: 'redactor', required: true, aria: { labelledby: 'proficient_project_description_label' } %>
+              <%= f.trix_label :description, 'Description (You can now input a wiki.makerepo.com link and the page will be displayed)', for: 'redactor', class: 'form-label' %>
+              <%= f.trix_editor :description, placeholder: 'Description of the proficient project...', class: 'form-control mb-5', id: 'redactor', required: true %>
 
               <%= f.label :training_id, 'Category', for: 'training_id_field', class: 'form-label' %>
               <%= f.select(:training_id, @training_categories, {}, { class: 'form-control form-select mb-5', id: 'training_id_field', aria: { label: t('common.names.category') } }) %>

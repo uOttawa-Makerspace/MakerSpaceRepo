@@ -67,7 +67,6 @@ en:
       select_all_requests: "Select all requests"
       confirm_order_total: "Confirm order, the total is %{total} CC"
       description: "Description"
-      description_wiki_hint: "Description (You can now input a wiki.makerepo.com link and the page will be displayed)"
       remove_video: "Remove video"
       add_image_input: "Add image input"
       remove_photo: "Remove photo"
@@ -121,6 +120,7 @@ en:
       new_equipment_name: "New equipment name"
       job_order_processed_message: "Job order processed default email"
       print_failed_message: "Print failed default email"
+      completed_email_message: "Email message to the customer"
       owned_until: "Owned until"
       closed_all_day: "%{day} closed all day?"
   semester:
@@ -196,7 +196,6 @@ fr:
       select_all_requests: "Sélectionner toutes les demandes"
       confirm_order_total: "Confirmer la commande, le total est de %{total} CC"
       description: "Description"
-      description_wiki_hint: "Description (Vous pouvez maintenant saisir un lien wiki.makerepo.com et la page sera affichée)"
       remove_video: "Retirer la vidéo"
       add_image_input: "Ajouter un champ d'image"
       remove_photo: "Retirer la photo"
@@ -250,6 +249,7 @@ fr:
       new_equipment_name: "Nouveau nom de l'équipement"
       job_order_processed_message: "Courriel par défaut : commande traitée"
       print_failed_message: "Courriel par défaut : impression échouée"
+      completed_email_message: "Message du courriel au client"
       owned_until: "Attribué jusqu'au"
       closed_all_day: "%{day} fermé toute la journée?"
   semester:

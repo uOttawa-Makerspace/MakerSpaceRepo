@@ -6,7 +6,7 @@
             <%= f.text_field :title, class: 'form-control', required: true %>
             <div class="form-text mb-3">Great repository names are short and memorable.</div>
 
-            <%= f.label :description, class: 'form-label' %>
+            <%= f.trix_label :description, class: 'form-label' %>
             <%= f.trix_editor :description, class: 'form-control mb-3', style: 'height: auto!important;', required: true %>
 
             <div class="mb-3">
