@@ -292,11 +292,6 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
     redirect_to job_order_path(@job_order.id)
   end
 
-  # The staff message typed in the completion modal, only when staff chose to email it.
-  def staff_completion_message
-    params[:message] if params[:send_email] == "true"
-  end
-
   # Marking an order paid tells the customer it is ready for pickup. Only the transition that actually moves the
   # order from Completed to Paid sends it, so a second click, or the zero-total path in #processed, sends nothing more.
   def paid
@@ -428,6 +423,11 @@ JobStatus.sent_reminder, JobStatus.completed].include?(@job_order.latest_status&
   end
 
   # The editable "processed" mail text for this order, blank when that row is missing.
+  # The staff message typed in the completion modal, only when staff chose to email it.
+  def staff_completion_message
+    params[:message] if params[:send_email] == "true"
+  end
+
   def processed_message_text
     JobOrderMessage.find_by(name: "processed")&.retrieve_message(@job_order.id)
   end
