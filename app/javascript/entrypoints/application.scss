@@ -54,6 +54,9 @@ $grid-breakpoints: (
   .btn-primary {
     --bs-btn-bg: #{$primary-dark};
     --bs-btn-border-color: #{$primary-dark};
+    --bs-btn-focus-shadow-rgb: #{to-rgb(
+        mix(color-contrast($primary-dark), $primary-dark, 15%)
+      )};
     --bs-btn-hover-bg: #{shade-color($primary-dark, 15%)};
     --bs-btn-hover-border-color: #{shade-color($primary-dark, 20%)};
     --bs-btn-active-bg: #{shade-color($primary-dark, 20%)};

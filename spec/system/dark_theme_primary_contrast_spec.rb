@@ -36,8 +36,8 @@ RSpec.describe "Dark theme primary colour contrast", type: :system, skip_bullet:
     set_theme("dark")
     visit forgot_password_path
     expect(page).to have_css("html[data-bs-theme='dark']")
-    expect(style_of(".btn-primary", "backgroundColor")).to eq("rgb(217, 61, 29)")
-    expect(white_ratio(style_of(".btn-primary", "backgroundColor"))).to be >= 4.5
+    expect(style_of("main .btn-primary", "backgroundColor")).to eq("rgb(217, 61, 29)")
+    expect(white_ratio(style_of("main .btn-primary", "backgroundColor"))).to be >= 4.5
     find("main .btn-primary", match: :first).hover
     expect_style("main .btn-primary", "backgroundColor", "rgb(184, 52, 25)")
   end
