@@ -149,13 +149,6 @@ class ProficientProjectsController < DevelopmentProgramsController
     end
   end
 
-  def open_modal
-    @proficient_project_modal = ProficientProject.find(params[:id])
-    @order_item = current_order.order_items.new
-    @user_order_items = current_user.order_items.completed_order
-    respond_to { |format| format.js }
-  end
-
   def proficient_project_modal
     @proficient_project = ProficientProject.find(params[:proficient_project_id])
     render layout: false
