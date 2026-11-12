@@ -359,7 +359,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."],
                                          "summary" => message)
-      expect(flash[:alert]).to eq(message)
+      expect(flash[:alert]).to be_nil
       expect(flash[:notice]).to be_nil
       expect(RecurringBooking.count).to eq(0)
     end
@@ -530,7 +530,7 @@ RSpec.describe "Sub space booking gaps", :booking_clock, type: :request do
       }
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body).to eq("errors" => ["TimeSlot This time slot is already booked."])
-      expect(flash[:alert]).to eq("This time slot is already booked.")
+      expect(flash[:alert]).to be_nil
       expect(booking.reload.name).not_to eq("Moved")
     end
 

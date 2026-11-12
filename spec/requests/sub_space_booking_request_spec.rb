@@ -728,6 +728,24 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
       expect(response).to have_http_status(:ok)
     end
 
+    it "answers a JSON update without leaving a notice for the next page" do
+      log_in!(owner)
+      booking = owned_booking
+      patch update_path(booking), as: :json, params: {
+        sub_space_booking: {
+          start_time: "2027-03-03 12:00", end_time: "2027-03-03 13:00",
+          name: "Moved", description: "D"
+        }
+      }
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to eq("status" => "ok")
+      expect(booking.reload.name).to eq("Moved")
+
+      get sub_space_booking_index_path
+      expect(flash[:notice]).to be_nil
+      expect(response.body).not_to include("Successfully updated booking")
+    end
+
     it "non-owners can't reach update either" do
       log_in!(other)
       booking = owned_booking
