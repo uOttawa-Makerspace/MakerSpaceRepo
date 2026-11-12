@@ -107,7 +107,7 @@ class RfidTap
   end
 
   def open_session(user)
-    LabSession.create_session(user: user, mac_address: @mac_address, space_id: @space_id)
+    LabSession.sign_in(user, @space, mac_address: @mac_address)
   end
 
   def finish_toggle(rfid, toggle)

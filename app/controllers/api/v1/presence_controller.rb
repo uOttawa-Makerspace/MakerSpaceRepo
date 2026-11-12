@@ -8,7 +8,7 @@ module Api
       before_action :find_space
 
       def show
-        users = SpacePresence.users_in(@space).order(:id)
+        users = @space.signed_in_users_relation.order(:id)
                              .includes(certifications: { training_session: :training }).with_attached_avatar.to_a
         ids = users.map(&:id)
         signed = WalkInSafetySheet.where(user_id: ids).distinct.pluck(:user_id).to_set
@@ -27,12 +27,12 @@ module Api
 
       def create
         user = find_user!(params.require(:username))
-        SpacePresence.sign_in(user, @space)
+        LabSession.sign_in(user, @space)
         head :no_content
       end
 
       def destroy
-        SpacePresence.sign_out(find_user!(params[:username]), @space)
+        LabSession.sign_out(find_user!(params[:username]), @space)
         head :no_content
       end
 

@@ -99,7 +99,7 @@ RSpec.describe StaffDashboardController, type: :controller do
       end
 
       it "reports an unexpected failure with a reference and shows no exception text" do
-        allow(LabSession).to receive(:create).and_raise(ActiveRecord::StatementInvalid, "secret sql detail")
+        allow(LabSession).to receive(:sign_in).and_raise(ActiveRecord::StatementInvalid, "secret sql detail")
         create(:user, :regular_user, username: "Bob1")
         allow(Rails.error).to receive(:report)
         post :import_excel, params: { file: fixture_file_upload(Rails.root.join("spec/support/assets", "excel-login.xlsx")) }

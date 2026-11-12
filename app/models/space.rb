@@ -60,6 +60,12 @@ class Space < ApplicationRecord
       .uniq
   end
 
+  # The same people as signed_in_users, as a User relation (the API lists them with their
+  # certifications and avatars loaded). Soft-deleted accounts are left out by the User default scope.
+  def signed_in_users_relation
+    User.where(id: lab_sessions.active.where.not(user_id: nil).select(:user_id))
+  end
+
   # For tables that show each user's previous visit.
   def signed_in_users_with_history(with_sheets: false)
     with_visit_history(signed_in_users, with_sheets: with_sheets)

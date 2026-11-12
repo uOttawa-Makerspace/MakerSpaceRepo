@@ -34,16 +34,48 @@ class LabSession < ApplicationRecord
     end
   end
 
-  # Create a session for a user in a space; raises when it cannot be saved.
-  def self.create_session(user:, mac_address:, space_id:)
-    LabSession.create!(
-      user: user,
-      sign_in_time: Time.zone.now,
-      sign_out_time: Time.zone.now + 6.hours,
-      mac_address: mac_address,
-      space_id: space_id,
-    )
+  # How long a sign in lasts, whichever way it happened (dashboard, API, import, card tap).
+  LENGTH = 6.hours
+
+  # Signs the user in to the space for LENGTH. Idempotent: a user who is already
+  # in the space keeps their session. The user's row is locked so two requests
+  # for one user run one after the other. Returns true when a session was
+  # created; raises when it cannot be saved.
+  def self.sign_in(user, space, mac_address: nil)
+    transaction do
+      lock_user(user)
+      now = Time.zone.now
+      next false if active.where(user_id: user.id, space_id: space.id).exists?
+
+      create!(user_id: user.id, space_id: space.id, mac_address: mac_address, sign_in_time: now, sign_out_time: now + LENGTH)
+      true
+    end
   end
+
+  # Ends every active session the user has in this space, and none in another
+  # space. Idempotent. Returns the number of sessions ended.
+  def self.sign_out(user, space)
+    transaction do
+      lock_user(user)
+      end_active_sessions(where(user_id: user.id, space_id: space.id))
+    end
+  end
+
+  # Ends every active session in the space. Returns the number of sessions ended.
+  def self.sign_out_all(space)
+    end_active_sessions(where(space_id: space.id))
+  end
+
+  def self.end_active_sessions(sessions)
+    now = Time.zone.now
+    sessions.where(arel_table[:sign_out_time].gt(now)).update_all(sign_out_time: now, updated_at: now)
+  end
+  private_class_method :end_active_sessions
+
+  def self.lock_user(user)
+    User.unscoped.where(id: user.id).lock("FOR NO KEY UPDATE").take
+  end
+  private_class_method :lock_user
 
   # Sign out only active sessions This was called sign_out but it conflicted
   # with the one in ApplicationHelper
