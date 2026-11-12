@@ -28,12 +28,20 @@ module PageCrawl
         [%r{\A/sub_space_booking/(users|get_sub_space_booking)\z}, "staff booking lookups"],
         [%r{\A/job_orders/:job_order_id/timeline_modal\z}, "the order's owner and staff"],
         [%r{\A/locker_rentals/:id\z}, "the renter and staff"],
-        [%r{\A/proficient_projects/requests\z}, "staff project requests"]
+        [%r{\A/proficient_projects/requests\z}, "staff project requests"],
+        [%r{\A/faq/(new|:id/edit)\z}, "editing the FAQ is for admins"],
+        [%r{\A/(learning_area|proficient_projects)/(new|:id/edit)\z}, "creating and editing is for admins"],
+        # The crawl's records belong to another user (records[:target]), so these owner-only pages refuse the
+        # signed-in regular user
+        [%r{\A/job_orders/(:id|:job_order_id/(invoice|task/:id/edit))\z}, "an order of another user"],
+        [%r{\A/exams/:id\z}, "an exam of another user"],
+        [%r{\A/sub_space_booking/:\w+/edit\z}, "a booking of another user"],
+        [%r{\A/project_proposals/:id(/edit)?\z}, "a proposal of another user"]
       ].freeze
 
       # roles: who the entry applies to; status: an Integer, or :redirect (302 or
       # 303) with `to` matching the redirect's path; path: matches the route spec.
-      ANSWERS = [
+      LISTED = [
         { path: %r{\A/api/v1/(?!design_day\z|contact_infos\z)}, roles: ALL, status: 401,
           why: "the API authenticates with a bearer token, not the browser session" },
         { path: %r{\A/api/v1/(design_day|contact_infos)\z}, roles: ALL, status: 200,
@@ -135,6 +143,30 @@ module PageCrawl
         { path: %r{\A/:user_username/:id/password_entry\z}, roles: ALL, status: :redirect, to: %r{\A/[^/]+/\d+\z},
           why: "the repository has no password, so its page is shown" }
       ].freeze
+
+      # Pages a guest may get a 200 for. Any other guest 200 fails the crawl.
+      PUBLIC = [
+        [%r{\A/\z}, "home page"],
+        [%r{\A/(about|contact|hours|calendar|get_involved|resources|labs|explore|help|faq)\z},
+         "public information pages"],
+        [%r{\A/(changelog|terms_of_service)\z}, "changelog and terms"],
+        [%r{\A/search\z}, "public search"],
+        [%r{\A/(category|equipment)/:slug\z}, "public category and equipment pages"],
+        [%r{\A/template/(file|category|equipment|certification)\z}, "static page templates (no layout, no data)"],
+        [%r{\A/(login|new|forgot_password)\z}, "sign-in, sign-up and password pages"],
+        [%r{\A/check_signed_in\z}, "answers whether a session exists, for the React app"],
+        [%r{\A/licenses/\w+\z}, "licence texts"],
+        [%r{\A/getting-started/[\w-]+\z}, "getting-started guides"],
+        [%r{\A/project_proposals(/projects_assigned|/projects_completed|/new)?\z},
+         "public proposals; a visitor may submit one with a captcha"],
+        [%r{\A/(cc_moneys|memberships|volunteers|development_programs|job_orders/landing)\z},
+         "landing and index pages that ask a visitor to sign in"],
+        [%r{\A/badges/:id\z}, "public badge page"],
+        [%r{\A/:username\z}, "public profile"],
+        [%r{\A/:user_username/:id\z}, "public repository"]
+      ].freeze
+
+      ANSWERS = (LISTED + PUBLIC.map { |re, why| { path: re, roles: %i[guest], status: 200, why: why } }).freeze
     end
   end
 end

@@ -27,7 +27,7 @@ module PageCrawl
       return true if Table::ANSWERS.any? { |e| covers?(e, path_spec, role, answer) }
 
       status, target = answer
-      return !refusal_expected?(path_spec, role) if status == 200
+      return role != :guest && !refusal_expected?(path_spec, role) if status == 200
       return redirect_by_default?(role, target) if [302, 303].include?(status)
 
       false
