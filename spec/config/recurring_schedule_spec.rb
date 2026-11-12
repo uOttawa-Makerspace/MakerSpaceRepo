@@ -59,7 +59,7 @@ RSpec.describe "config/recurring.yml" do
 
   it "keeps the maintenance jobs that were already scheduled" do
     %w[production staging].each do |env|
-      expect(config.fetch(env).keys).to include("clear_solid_queue_finished_jobs", "tap_box_log_cleanup")
+      expect(config.fetch(env).keys).to include("clear_solid_queue_finished_jobs", "tap_box_log_cleanup", "kiosk_sign_event_cleanup")
     end
   end
 

@@ -35,5 +35,12 @@ class KioskSignEvent < ApplicationRecord
     end
   end
 
+  # Rows are kept one year. Deletes the older ones in batches with a relation-level delete (the rows themselves
+  # are read-only); returns how many went. Running it again finds nothing more to delete.
+  def self.purge_old!(batch_size: 1000)
+    cutoff = 1.year.ago
+    where(created_at: ...cutoff).in_batches(of: batch_size).delete_all
+  end
+
   def readonly? = persisted? || super
 end
