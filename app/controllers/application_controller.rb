@@ -182,6 +182,8 @@ class ApplicationController < ActionController::Base
   end
   helper_method :login_back_to, :safe_back_to
 
+  def saved_user_locale = (current_user.locale if signed_in?)
+
   # A form post or call without a required field: the HTML request goes to the home
   # page with a message naming the field, a JSON request gets the same message.
   def parameter_missing(exception)

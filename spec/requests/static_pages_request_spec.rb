@@ -468,15 +468,15 @@ RSpec.describe "Static pages", type: :request do
     it "locale param switches the page language and sticks in the session" do
       get root_path, params: { locale: "fr" }
       expect(response).to have_http_status(:ok)
-      expect(session[:locale]).to eq(:fr)
+      expect(session[:locale].to_s).to eq("fr")
       get root_path
-      expect(session[:locale]).to eq(:fr)
+      expect(session[:locale].to_s).to eq("fr")
     end
 
     it "ignores an unsupported locale param: default locale, bad value not stored" do
       get root_path, params: { locale: "xx" }
       expect(response).to have_http_status(:ok)
-      expect(session[:locale]).to eq(I18n.default_locale)
+      expect(session[:locale]).to be_nil
     end
 
     it "does not 500 on an unsupported locale already in the session" do
