@@ -504,6 +504,16 @@ RSpec.describe "Volunteers (HTTP contract)", type: :request do
         expect(flash[:alert]).to eq("The shift could not be removed from the calendar, so it was not cancelled. Try again in a moment.")
       end
 
+      it "tells the staff member the shift was not found when another request cancelled it first" do
+        stale = ShadowingHour.find(shift.id)
+        ShadowingHour.where(id: shift.id).delete_all
+        allow(ShadowingHour).to receive(:find_by).with(event_id: "evt-9").and_return(stale)
+        expect(ShadowingHour).not_to receive(:delete_event)
+        delete delete_event_volunteers_path(event_id: "evt-9")
+        expect(response).to redirect_to(calendar_volunteers_path)
+        expect(flash[:alert]).to eq("This shift has not been found. It may already have been cancelled.")
+      end
+
       it "alerts for an unknown or missing event_id without calling Google" do
         expect(ShadowingHour).not_to receive(:delete_event)
         delete delete_event_volunteers_path(event_id: "nope")

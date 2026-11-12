@@ -48,9 +48,11 @@ RSpec.describe ShadowingHour, "creating the event while the shift is cancelled",
     cancelling = in_thread { described_class.find(shift.id).cancel }
     deadline = Time.current + 5
     Thread.pass while blocked_backends.zero? && Time.current < deadline
+    blocked = blocked_backends.positive?
     resume << true
 
-    creating.value
+    expect(creating.value).not_to be_a(Exception)
+    expect(blocked).to be(true), "the cancel was never seen waiting for the shift's row lock"
     expect(cancelling.value).to eq(:removed)
     expect(Array.new(log.size) { log.pop }).to eq(%i[inserted deleted])
     expect(described_class.exists?(shift.id)).to be(false)
