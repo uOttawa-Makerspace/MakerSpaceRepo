@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # An append-only record of one kiosk sign-in or sign-out: the staff or admin account that was logged in at the
-# kiosk (actor), the visitor it signed, the space and the time. Rows are never updated or deleted.
+# kiosk (actor), the visitor it signed, the space and the time. Rows are never updated by the app; the daily cleanup deletes rows older than one year.
 class KioskSignEvent < ApplicationRecord
   belongs_to :actor, -> { including_deleted }, class_name: "User"
   belongs_to :visitor, -> { including_deleted }, class_name: "User"
