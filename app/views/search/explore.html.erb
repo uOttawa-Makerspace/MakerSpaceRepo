@@ -41,7 +41,7 @@ end %>
                 <% if signed_in? %>
                     <div class="form-check">
                         <%= label_tag :liked, t('explore.liked'), class: 'form-check-label' %>
-                        <%= check_box_tag :liked, params[:liked].present?, class: 'form-check-input', form: "SearchForm" %>
+                        <%= check_box_tag :liked, '1', params[:liked].present?, class: 'form-check-input', form: "SearchForm" %>
                     </div>
                 <% end %>
                 <% SearchController::SLUG_TO_CATEGORY_MODEL.each do |slug, name| %>
