@@ -108,6 +108,7 @@ module PageCrawl
       "staff_spaces" => :staff_space,
       "staff_availabilities" => :staff_availability,
       "walk_in_safety_sheets" => :walk_in_safety_sheet,
+      "project_proposals" => :project_proposal_param, # the canonical URL carries the slug
       "users" => :user,
       "uni_programs" => :uni_program
     }.freeze
@@ -189,6 +190,7 @@ module PageCrawl
       make(:faq) { create(:faq) }
       make(:announcement) { create(:announcement) }
       make(:project_proposal) { create(:project_proposal) }
+      make(:project_proposal_param) { records[:project_proposal].to_param }
       make(:printer_type) { create(:printer_type, :Random) }
       make(:printer) { create(:printer, :Random) }
       make(:printer_issue) { create(:printer_issue, printer: records[:printer], reporter: records[:target]) }
