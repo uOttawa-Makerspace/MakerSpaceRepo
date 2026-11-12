@@ -318,6 +318,7 @@ RSpec.describe ImportedCalendar do
       "a weekday ordinal of 0" => "FREQ=MONTHLY;BYDAY=0MO",
       "a weekday ordinal of 54" => "FREQ=MONTHLY;BYDAY=54MO",
       "a monthly weekday ordinal of 53" => "FREQ=MONTHLY;BYDAY=53MO",
+      "a yearly weekday ordinal of 53 in a month" => "FREQ=YEARLY;BYMONTH=2;BYDAY=53MO",
       "a date that never comes" => "FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=30",
       "an interval of 0" => "FREQ=WEEKLY;INTERVAL=0",
       "a rule finer than daily" => "FREQ=HOURLY"

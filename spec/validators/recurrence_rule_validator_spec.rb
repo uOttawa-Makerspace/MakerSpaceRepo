@@ -66,8 +66,8 @@ RSpec.describe RecurrenceRuleValidator do
     end
   end
 
-  it "rejects a sub-daily rule hidden behind a valid one" do
-    expect(errors_for("RRULE:FREQ=DAILY\nRRULE:FREQ=MINUTELY")).to eq([RecurrenceRuleValidator::MESSAGE])
+  it "rejects a sub-daily rule hidden behind a valid one (a second RRULE line is refused)" do
+    expect(errors_for("RRULE:FREQ=DAILY\nRRULE:FREQ=MINUTELY")).to eq([I18n.t("errors.calendar.rule_one_line")])
   end
 
   it "rejects a repeated FREQ even when the last one is allowed" do
@@ -136,10 +136,28 @@ RSpec.describe RecurrenceRuleValidator do
     end
   end
 
-  it "accepts weekdays with an ordinal from 1 to 53, signed, for any frequency" do
-    ["FREQ=MONTHLY;BYDAY=2MO", "FREQ=MONTHLY;BYDAY=-1FR,+2TU", "FREQ=YEARLY;BYDAY=53MO", "FREQ=WEEKLY;BYDAY=MO,SU", "FREQ=DAILY;WKST=SU"].each do |body|
+  it "accepts BYDAY ordinals as RFC 5545 allows them for each frequency" do
+    ["FREQ=MONTHLY;BYDAY=2MO", "FREQ=MONTHLY;BYDAY=-1FR,+2TU", "FREQ=MONTHLY;BYDAY=5MO,-5SU", "FREQ=YEARLY;BYDAY=53MO", "FREQ=YEARLY;BYDAY=-53MO,20TU",
+     "FREQ=YEARLY;BYMONTH=2;BYDAY=5MO", "FREQ=WEEKLY;BYDAY=MO,SU", "FREQ=DAILY;BYDAY=MO,TU", "FREQ=DAILY;WKST=SU"].each do |body|
       expect(errors_for("RRULE:#{body}")).to eq([]), body
     end
+  end
+
+  it "refuses an ordinal that does not fit the frequency, without raising (the repeat library raises on some)" do
+    ["FREQ=MONTHLY;BYDAY=53MO", "FREQ=MONTHLY;BYDAY=6MO", "FREQ=MONTHLY;BYDAY=-6FR", "FREQ=YEARLY;BYMONTH=3;BYDAY=53MO", "FREQ=YEARLY;BYMONTH=3;BYDAY=6MO",
+     "FREQ=WEEKLY;BYDAY=2MO", "FREQ=WEEKLY;BYDAY=-1FR", "FREQ=DAILY;BYDAY=1MO"].each do |body|
+      expect { expect(errors_for("RRULE:#{body}")).to eq([RecurrenceRuleValidator::UNPARSEABLE]) }.not_to raise_error, body
+    end
+  end
+
+  it "refuses a rule with more than one RRULE line, without expanding any of them" do
+    many = "DTSTART:20270301T150000Z\n#{Array.new(40) { 'RRULE:FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30' }.join("\n")}"
+    taken = 0
+    allow_any_instance_of(RRule::Frequency).to receive(:advance).and_wrap_original { |m, *a| taken += 1; m.call(*a) }
+    expect(errors_for(many)).to eq([I18n.t("errors.calendar.rule_one_line")])
+    expect(errors_for("RRULE:FREQ=DAILY\nRRULE:FREQ=WEEKLY;BYDAY=MO")).to eq([I18n.t("errors.calendar.rule_one_line")])
+    expect(taken).to eq(0)
+    expect(I18n.t("errors.calendar.rule_one_line", locale: :fr)).not_to eq(I18n.t("errors.calendar.rule_one_line"))
   end
 
   it "rejects a BYDAY or WKST that is not a weekday with a valid ordinal" do
@@ -197,7 +215,7 @@ RSpec.describe RecurrenceRuleValidator do
     end
 
     it "accepts rules that repeat rarely or have already ended" do
-      ["FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29", "FREQ=YEARLY;INTERVAL=9", "FREQ=MONTHLY;BYDAY=5MO", "FREQ=WEEKLY;INTERVAL=5;BYDAY=MO",
+      ["FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29", "FREQ=YEARLY;BYMONTH=2;BYDAY=5MO", "FREQ=YEARLY;BYMONTH=2;BYDAY=-1MO,5TU,5WE,5TH,5FR,5SA,5SU", "FREQ=YEARLY;INTERVAL=9", "FREQ=MONTHLY;BYDAY=5MO", "FREQ=WEEKLY;INTERVAL=5;BYDAY=MO",
        "FREQ=DAILY;UNTIL=20200101T000000Z", "FREQ=DAILY;COUNT=1"].each do |body|
         expect(described_class.error_for("RRULE:#{body}", start)).to be_nil, body
       end
@@ -206,7 +224,8 @@ RSpec.describe RecurrenceRuleValidator do
     it "takes a few steps for a normal rule, and a bounded number for a rule that never matches" do
       expect(steps { described_class.error_for("RRULE:FREQ=WEEKLY;BYDAY=MO,WE", start) }).to be <= 3
       expect(steps { described_class.error_for("RRULE:FREQ=DAILY", start) }).to be <= 3
-      expect(steps { described_class.error_for("RRULE:FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30", start) }).to be <= 12 * 366
+      expect(steps { described_class.error_for("RRULE:FREQ=YEARLY;BYMONTH=2;BYDAY=5MO", start) }).to be <= 45 # one step a year until 2044
+      expect(steps { described_class.error_for("RRULE:FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30", start) }).to be <= 42 * 366 # the 40-year horizon, to the end of its year
     end
   end
 
@@ -223,10 +242,10 @@ RSpec.describe RecurrenceRuleValidator do
     end
   end
 
-  it "refuses a monthly weekday ordinal above five, which the repeat library raises a TypeError for" do
-    expect(errors_for("RRULE:FREQ=MONTHLY;BYDAY=53MO")).to eq([RecurrenceRuleValidator::UNPARSEABLE])
-    expect(errors_for("RRULE:FREQ=MONTHLY;BYDAY=5MO,-1FR")).to eq([])
-    expect(errors_for("RRULE:FREQ=YEARLY;BYDAY=53MO")).to eq([])
+  it "refuses a yearly weekday ordinal above five when the rule has BYMONTH, which the repeat library raises a TypeError for" do
+    expect(errors_for("RRULE:FREQ=YEARLY;BYMONTH=2;BYDAY=53MO")).to eq([RecurrenceRuleValidator::UNPARSEABLE])
+    expect(described_class.error_for("RRULE:FREQ=YEARLY;BYMONTH=2;BYDAY=53MO", RecurrenceRule::ZONE.local(2027, 1, 5, 9), described_class::IMPORTED))
+      .to eq(RecurrenceRuleValidator::UNPARSEABLE)
   end
 
   describe "for the rules of an imported calendar" do

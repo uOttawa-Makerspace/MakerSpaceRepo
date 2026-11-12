@@ -6,6 +6,7 @@ en:
       staff_not_in_space: "That staff member is not on this space."
       color_invalid: "That colour is not valid."
       color_not_saved: "The staff colour could not be saved."
+      rule_one_line: "has more than one RRULE line. Use one repeat rule."
       rule_never_repeats: "never repeats: no date matches this rule (for example 30 February). Change the days or months."
     generic:
       unexpected: "Something unexpected went wrong on our side. Please try again. If it keeps happening, contact the makerspace staff and quote reference %{reference}."
