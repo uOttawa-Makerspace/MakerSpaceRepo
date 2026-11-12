@@ -1,4 +1,7 @@
 class Event < ApplicationRecord
+  # The longest span a calendar feed answers in one request (the staff calendar and the shifts API).
+  MAX_FEED_RANGE = 100.days
+
   belongs_to :created_by, class_name: 'User'
   # Who last edited the event in the admin calendar; empty for an event nobody has edited since it was created.
   belongs_to :updated_by, class_name: 'User', optional: true

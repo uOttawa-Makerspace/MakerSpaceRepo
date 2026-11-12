@@ -6,8 +6,6 @@ module Api
     # Events of type "shift" (the Shift model/table is retired; this data lives in
     # events, which the admin calendar still creates).
     class ShiftsController < BaseController
-      MAX_RANGE = 100.days
-
       before_action :require_staff!
 
       def index
@@ -19,8 +17,8 @@ module Api
         if from && to
           if to < from
             errors[:end] = ["must not be before start"]
-          elsif to - from > MAX_RANGE
-            errors[:end] = ["range must be at most #{MAX_RANGE.in_days.to_i} days"]
+          elsif to - from > Event::MAX_FEED_RANGE
+            errors[:end] = ["range must be at most #{Event::MAX_FEED_RANGE.in_days.to_i} days"]
           end
         end
         return render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: errors) if errors.any?

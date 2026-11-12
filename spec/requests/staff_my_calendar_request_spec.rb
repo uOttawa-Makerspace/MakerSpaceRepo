@@ -155,6 +155,16 @@ RSpec.describe "Staff my calendar", type: :request do
       expect(response.parsed_body.map { |e| e["title"] }).to eq(["Later"])
     end
 
+    it "derives a missing bound from the given one" do
+      create(:event, space: space, title: "After", start_time: Time.zone.local(2029, 6, 1, 9), end_time: Time.zone.local(2029, 6, 1, 10))
+      get feed, params: { start: "2029-05-01T00:00:00Z" }
+      expect(response.parsed_body.map { |e| e["title"] }).to eq(["After"])
+      get feed, params: { end: "2029-07-20T00:00:00Z" }
+      expect(response.parsed_body.map { |e| e["title"] }).to eq(["After"])
+      get feed, params: { start: "2029-07-01T00:00:00Z" }
+      expect(response.parsed_body).to eq([])
+    end
+
     it "filters by event_type and by assigned user" do
       assigned = create(:user, :staff)
       a = create(:event, space: space, title: "A", event_type: "shift", start_time: Time.zone.local(2027, 3, 13, 9), end_time: Time.zone.local(2027, 3, 13, 10))

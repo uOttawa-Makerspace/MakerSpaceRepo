@@ -1,10 +1,6 @@
 class Staff::MyCalendarController < StaffAreaController
   layout "staff_area"
 
-  # The same span limit as the /api/v1 shifts feed; a request with neither bound asks for 50 days either side of now.
-  MAX_RANGE = Api::V1::ShiftsController::MAX_RANGE
-  DEFAULT_HALF_RANGE = MAX_RANGE / 2
-
   def index
     @spaces = Space.all.where(
       id: StaffSpace.where(user_id: current_user.id).pluck(:space_id)
@@ -33,9 +29,9 @@ class Staff::MyCalendarController < StaffAreaController
     end
     
     # Date range
-    start_date = parse_range_param(params[:start], Time.zone.now - DEFAULT_HALF_RANGE)
-    end_date = parse_range_param(params[:end], Time.zone.now + DEFAULT_HALF_RANGE)
-    return render_range_error(start_date, end_date) unless range_valid?(start_date, end_date)
+    start_date, end_date = date_range
+    return render_calendar_error(:invalid_date, :bad_request) if start_date.nil?
+    return render_calendar_error(:range_too_long, :unprocessable_content) if end_date - start_date > Event::MAX_FEED_RANGE
 
     formatted_events = []
     
@@ -59,23 +55,20 @@ class Staff::MyCalendarController < StaffAreaController
 
   private
 
-  # The parsed time, the default when the param is absent, nil when it is not a date.
-  def parse_range_param(value, default)
-    return default if value.blank?
+  # The parsed time, nil when the param is absent; ArgumentError when it is not a date.
+  def parse_range_param(value)
+    return if value.blank?
 
-    Time.zone.parse(value)
+    Time.zone.parse(value) || raise(ArgumentError)
+  end
+
+  # [start, end], both nil when a bound is not a date; a missing end is 50 days after the start (or now), a missing start the longest span before the end.
+  def date_range
+    start_date = parse_range_param(params[:start])
+    end_date = parse_range_param(params[:end]) || (start_date || Time.zone.now) + 50.days
+    [start_date || end_date - Event::MAX_FEED_RANGE, end_date]
   rescue ArgumentError
-    nil
-  end
-
-  def range_valid?(start_date, end_date)
-    start_date.present? && end_date.present? && end_date - start_date <= MAX_RANGE
-  end
-
-  def render_range_error(start_date, end_date)
-    return render_calendar_error(:invalid_date, :bad_request) if start_date.nil? || end_date.nil?
-
-    render_calendar_error(:range_too_long, :unprocessable_content)
+    [nil, nil]
   end
 
   def render_calendar_error(cause, status)
