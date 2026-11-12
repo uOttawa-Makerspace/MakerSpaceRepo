@@ -291,7 +291,7 @@ RSpec.describe "RFID endpoints", type: :request do
     it "leaves the user signed in where they were when the switch cannot create the new session" do
       other_space = create(:space)
       tap_card
-      allow(LabSession).to receive(:create_session).and_raise(ActiveRecord::RecordInvalid)
+      allow(LabSession).to receive(:sign_in).and_raise(ActiveRecord::RecordInvalid)
       expect {
         RfidTap.call(card: rfid.card_number, space: other_space, mac_address: nil)
       }.to raise_error(ActiveRecord::RecordInvalid)

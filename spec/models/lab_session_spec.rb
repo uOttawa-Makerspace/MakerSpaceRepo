@@ -96,7 +96,72 @@ RSpec.describe LabSession, type: :model do
     end
   end
 
-  describe "Methods" do
-    context "#"
+  describe ".sign_in" do
+    let(:space) { create(:space) }
+    let(:user) { create(:user, :regular_user) }
+
+    it "opens a session of LabSession::LENGTH and says so" do
+      freeze_time do
+        expect(LabSession.sign_in(user, space)).to be(true)
+        row = LabSession.sole
+        expect(row).to have_attributes(user_id: user.id, space_id: space.id, sign_in_time: Time.zone.now,
+                                       sign_out_time: Time.zone.now + 6.hours, mac_address: nil)
+      end
+      expect(LabSession::LENGTH).to eq(6.hours)
+    end
+
+    it "records the reader's mac address" do
+      LabSession.sign_in(user, space, mac_address: "aa:bb")
+      expect(LabSession.sole.mac_address).to eq("aa:bb")
+    end
+
+    it "keeps the session of a user already in the space" do
+      LabSession.sign_in(user, space)
+      expect(LabSession.sign_in(user, space)).to be(false)
+      expect(LabSession.where(user_id: user.id).count).to eq(1)
+    end
+
+    it "signs in again once the earlier session ended, and to another space while in the first" do
+      create(:lab_session, user: user, space: space, sign_in_time: 3.hours.ago, sign_out_time: 1.hour.ago)
+      expect(LabSession.sign_in(user, space)).to be(true)
+      expect(LabSession.sign_in(user, create(:space))).to be(true)
+      expect(LabSession.active_for_user(user).count).to eq(2)
+    end
+  end
+
+  describe ".sign_out" do
+    let(:space) { create(:space) }
+    let(:other_space) { create(:space) }
+    let(:user) { create(:user, :regular_user) }
+
+    it "ends every active session in the space and leaves other spaces and ended sessions alone" do
+      freeze_time do
+        a = create(:lab_session, user: user, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+        b = create(:lab_session, user: user, space: space, sign_in_time: 1.hour.ago, sign_out_time: 3.hours.from_now)
+        elsewhere = create(:lab_session, user: user, space: other_space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+        ended_at = 1.hour.ago
+        ended = create(:lab_session, user: user, space: space, sign_in_time: 3.hours.ago, sign_out_time: ended_at)
+
+        expect(LabSession.sign_out(user, space)).to eq(2)
+        expect([a, b].map { |row| row.reload.sign_out_time }).to all(eq(Time.zone.now))
+        expect(elsewhere.reload.sign_out_time).to be > Time.zone.now
+        expect(ended.reload.sign_out_time).to eq(ended_at)
+      end
+    end
+
+    it "does nothing for a user who is not in the space" do
+      expect(LabSession.sign_out(user, space)).to eq(0)
+    end
+  end
+
+  describe ".sign_out_all" do
+    it "ends every active session in the space, for every user, and no other space" do
+      space = create(:space)
+      mine = create_list(:lab_session, 2, space: space, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      elsewhere = create(:lab_session, sign_in_time: 1.hour.ago, sign_out_time: 2.hours.from_now)
+      expect(LabSession.sign_out_all(space)).to eq(2)
+      expect(mine.map { |row| row.reload.sign_out_time }).to all(be <= Time.zone.now)
+      expect(elsewhere.reload.sign_out_time).to be > Time.zone.now
+    end
   end
 end

@@ -43,7 +43,7 @@ RSpec.describe RfidTap, "under concurrency", type: :model do
     first = nil
     paused = Queue.new
     resume = Queue.new
-    allow(LabSession).to receive(:create_session).and_wrap_original do |original, *args, **kwargs|
+    allow(LabSession).to receive(:sign_in).and_wrap_original do |original, *args, **kwargs|
       created = original.call(*args, **kwargs)
       if Thread.current == first
         first = nil

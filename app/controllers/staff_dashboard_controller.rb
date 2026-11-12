@@ -122,29 +122,13 @@ class StaffDashboardController < StaffAreaController
     redirect_to staff_dashboard_index_path
   end
 
-  # Signs each listed user out of their latest active session. Users who are not
+  # Signs each listed user out of their active sessions in the current space. Users who are not
   # signed in, and usernames that match no user, change nothing and are reported
   # back (flash for HTML; JSON lists signed_out, not_signed_in and not_found).
   def sign_out_users
-    # An array of strings, or a single string, is accepted; blanks, hashes and repeats are ignored.
-    dropped = params[:dropped_users]
-    dropped = [dropped] if dropped.is_a?(String)
-    usernames = (dropped.is_a?(Array) ? dropped : [])
-                      .select { |name| name.is_a?(String) }.map(&:strip).reject(&:blank?).uniq(&:downcase)
+    usernames = dropped_usernames
     users = User.where(username: usernames).to_a
-    signed_out = []
-    not_signed_in = []
-
-    users.each do |user|
-      # get only the latest session, if they're not signed out yet
-      session = LabSession.active_for_user(user).last
-      if session
-        session.sign_out
-        signed_out << user
-      else
-        not_signed_in << user
-      end
-    end
+    signed_out, not_signed_in = users.partition { |user| LabSession.sign_out(user, @space).positive? }
     # users.username is case-insensitive (citext), so compare the same way.
     found = users.map { |user| user.username.downcase }
     not_found = usernames.reject { |name| found.include?(name.downcase) }
@@ -184,12 +168,7 @@ class StaffDashboardController < StaffAreaController
   end
 
   def sign_out_all_users
-    space = @space
-
-    space.signed_in_users.each do |user|
-      # Lab sessions where sign out did not happen yet (greater than time now)
-      LabSession.active_for_user(user).last&.sign_out
-    end
+    LabSession.sign_out_all(@space)
     respond_to do |format|
       format.html do
         redirect_to staff_dashboard_index_path(space_id: @space.id)
@@ -199,27 +178,13 @@ class StaffDashboardController < StaffAreaController
   end
 
   def sign_in_users
-    alert = []
-
     # Staff dashboard changed, but we keep compat with app.
     user_query = params[:added_users] || params[:username]
 
-    users = User.where(username: user_query).find_each do |user|
-      lab_session =
-        LabSession.new(
-          user_id: user.id,
-          space_id: @space.id,
-          sign_in_time: Time.zone.now,
-          sign_out_time: Time.zone.now + 6.hours
-        )
-      alert << user.name unless lab_session.save
-    end
+    User.where(username: user_query).find_each { |user| LabSession.sign_in(user, @space) }
 
     respond_to do |format|
-      format.html do
-        flash[:alert] = "Error signing #{alert.join(', ')} in" if alert.length > 0
-        redirect_to staff_dashboard_index_path(space_id: @space.id)
-      end
+      format.html { redirect_to staff_dashboard_index_path(space_id: @space.id) }
       format.js { load_table_context }
       format.json { render json: { status: 'ok' } }
     end
@@ -404,6 +369,15 @@ class StaffDashboardController < StaffAreaController
     [nil, I18n.t("errors.staff.dashboard.card_changing"), :conflict]
   end
 
+  # An array of strings, or a single string, is accepted; blanks, hashes and repeats are ignored.
+  def dropped_usernames
+    dropped = params[:dropped_users]
+    dropped = [dropped] if dropped.is_a?(String)
+    return [] unless dropped.is_a?(Array)
+
+    dropped.grep(String).map(&:strip).reject(&:blank?).uniq(&:downcase)
+  end
+
   IMPORT_EXTENSIONS = %w[.xls .xlsx].freeze
 
   def refuse_import(cause, **options)
@@ -419,7 +393,7 @@ class StaffDashboardController < StaffAreaController
     end
   end
 
-  # Signs in the user named on each row (by email, name or username, first column) for eight hours;
+  # Signs in the user named on each row (by email, name or username, first column) for the standard session length;
   # returns the cell values that matched no user.
   def sign_in_listed_users(spreadsheet)
     not_found = []
@@ -432,12 +406,7 @@ class StaffDashboardController < StaffAreaController
         not_found << user_data
         next
       end
-      LabSession.create(
-        user: user.last,
-        space_id: @space.id,
-        sign_in_time: Time.zone.now,
-        sign_out_time: Time.zone.now + 8.hours
-      )
+      LabSession.sign_in(user.last, @space)
     end
     not_found
   end
