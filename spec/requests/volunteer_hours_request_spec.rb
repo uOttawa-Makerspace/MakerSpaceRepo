@@ -9,6 +9,7 @@ require "rails_helper"
 # pages and `update_approval` add staff-only. `edit`, `update` and `destroy` add
 # owner-or-staff (owners only while the hour is unprocessed on update).
 RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
   let(:task) { create(:volunteer_task, title: "booth") }
   let(:owner) { create(:user, :volunteer_with_volunteer_program) }
   let(:other_volunteer) { create(:user, :volunteer_with_volunteer_program) }
@@ -199,7 +200,6 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
       "a non-numeric total_time" => [{ total_time: "abc" }, "Total time is not a number"],
       "more than 24 hours" => [{ total_time: 24.5 }, "Total time must be less than or equal to 24"],
       "a total_time beyond decimal(9,2)" => [{ total_time: 99_999_999_999 }, "Total time must be less than or equal to 24"],
-      "a future date" => [{ date_of_task: (Date.current + 1).to_s }, "Date of task cannot be in the future"],
       "a far-future date" => [{ date_of_task: "2999-01-01" }, "Date of task cannot be in the future"]
     }.each do |label, (overrides, message)|
       it "refuses #{label}, stores nothing and says why" do
@@ -207,6 +207,20 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
         expect { post volunteer_hours_path, params: params }.not_to change(VolunteerHour, :count)
         expect(response).to redirect_to(volunteer_hours_path)
         expect(flash[:alert]).to eq(message)
+      end
+    end
+
+    # 21:00 in Toronto is already the next day in UTC: "future" is judged on the app-zone date
+    it "refuses a future date and accepts today's date late in the evening in Toronto" do
+      travel_to(ActiveSupport::TimeZone["America/Toronto"].local(2026, 11, 12, 21, 0)) do
+        expect(Time.current.utc.to_date).to eq(Date.new(2026, 11, 13))
+
+        post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(date_of_task: "2026-11-13") }
+        expect(flash[:alert]).to eq("Date of task cannot be in the future")
+        expect(VolunteerHour.count).to eq(0)
+
+        post volunteer_hours_path, params: { volunteer_hour: hour_params[:volunteer_hour].merge(date_of_task: "2026-11-12") }
+        expect(VolunteerHour.pluck(:date_of_task).map(&:to_date)).to eq([Date.new(2026, 11, 12)])
       end
     end
 
@@ -479,7 +493,9 @@ RSpec.describe "Volunteer hours (HTTP contract)", type: :request do
     it "refuses 0 hours and a future date on an edit" do
       hour = make_hour
       vol_login!(owner)
-      patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 0, date_of_task: (Date.current + 2).to_s } }
+      travel_to(ActiveSupport::TimeZone["America/Toronto"].local(2026, 11, 12, 12, 0)) do
+        patch volunteer_hour_path(hour), params: { volunteer_hour: { total_time: 0, date_of_task: "2026-11-14" } }
+      end
       expect(flash[:alert]).to eq("Total time must be greater than 0 and Date of task cannot be in the future")
       expect(hour.reload.total_time).to eq(3)
     end

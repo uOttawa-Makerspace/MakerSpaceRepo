@@ -170,9 +170,11 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
     it "approves only the dates left ticked in the dialog", js: true, skip_bullet: true do
       open_admin_panel
       find("button[title='Select Specific']").click
+      wait_for_modal_ready("#approveRecurringModal")
       boxes = "#approveRecurringModal #recurring-checkboxes input[name='sub_space_booking_ids[]']"
       expect(page).to have_css(boxes, count: 2, visible: :all)
-      all(boxes, visible: :all).last.uncheck
+      last_date = SubSpaceBooking.where(name: "Club night").order(:start_time).last
+      uncheck_and_confirm("rc_#{last_date.id}")
       click_button "Approve Selected"
 
       expect(page).to have_text("Bookings approved successfully.")
