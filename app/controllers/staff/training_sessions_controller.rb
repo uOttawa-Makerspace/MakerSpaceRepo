@@ -48,7 +48,9 @@ class Staff::TrainingSessionsController < StaffDashboardController
     @new_training_session = TrainingSession.new(default_params)
     course_name = CourseName.find_by(name: @new_training_session.course)
     @new_training_session.course_name = course_name if course_name.present?
-    if @new_training_session.save
+    return refuse_creation(I18n.t("errors.staff.training_sessions.instructor_not_assignable")) unless @new_training_session.instructor_assignable_by?(@user)
+
+    if @new_training_session.open_by(@user)
       respond_to do |format|
         format.html do
           redirect_to staff_training_session_path(@new_training_session.id)
@@ -58,13 +60,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
         end
       end
     else
-      message = validation_message(@new_training_session, "errors.staff.training_sessions.not_created")
-      respond_to do |format|
-        format.html do
-          redirect_back(fallback_location: root_path, alert: message)
-        end
-        format.json { render json: { created: false, error: message, reference: error_reference } }
-      end
+      refuse_creation(validation_message(@new_training_session, "errors.staff.training_sessions.not_created"))
     end
   end
 
@@ -152,13 +148,18 @@ class Staff::TrainingSessionsController < StaffDashboardController
 
   private
 
-  # The React app always sends user_id. Only an admin may pick another instructor;
-  # for everyone else the instructor is the current staff user.
+  def refuse_creation(message)
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: root_path, alert: message) }
+      format.json { render json: { created: false, error: message, reference: error_reference } }
+    end
+  end
+
+  # The instructor is the user named by the form (the React app always sends one), or the current user.
+  # `TrainingSession#instructor_assignable_by?` decides whether the current user may name them.
   def default_params
-    instructor_id =
-      @user.admin? && params[:user_id].present? ? params[:user_id] : current_user.id
     {
-      user_id: instructor_id,
+      user_id: params[:user_id].presence || current_user.id,
       training_id: params[:training_id],
       course: params[:course],
       space_id: params[:training_session][:space_id],

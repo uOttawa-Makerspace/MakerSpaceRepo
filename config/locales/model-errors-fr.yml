@@ -89,11 +89,15 @@ fr:
                 has_many: "Cette séance de formation a délivré des certifications ou a des examens, elle ne peut donc pas être supprimée."
             training:
               blank: "Un sujet de formation est requis"
+              not_offered_in_space: "n'est pas offerte dans cet espace"
             user:
               blank: "Un formateur est requis"
               must_be_staff: "doit faire partie du personnel"
             level:
               blank: "Un niveau est requis"
+              not_allowed: "doit être l'un de : %{levels}"
+            course:
+              too_long: "doit être une chaîne d'au plus 255 caractères"
         membership_tier:
           attributes:
             base:
