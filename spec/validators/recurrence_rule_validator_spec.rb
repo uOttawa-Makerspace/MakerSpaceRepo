@@ -130,14 +130,14 @@ RSpec.describe RecurrenceRuleValidator do
     end
   end
 
-  it "rejects the out-of-range parts that make ice_cube raise NoMethodError" do
-    ["FREQ=DAILY;BYYEARDAY=400", "FREQ=WEEKLY;BYMONTHDAY=0"].each do |body|
+  it "rejects out-of-range numbers the repeat library would accept" do
+    ["FREQ=DAILY;BYYEARDAY=400", "FREQ=WEEKLY;BYMONTHDAY=0", "FREQ=YEARLY;BYMONTH=13", "FREQ=MONTHLY;BYMONTHDAY=1,x", "FREQ=YEARLY;BYWEEKNO=20;BYDAY=MO"].each do |body|
       expect(errors_for("RRULE:#{body}")).to eq([RecurrenceRuleValidator::UNPARSEABLE]), body
     end
   end
 
   it "does not hide an error that is not about the rule's text" do
-    allow(IceCube::Rule).to receive(:from_ical).and_raise("bug")
+    allow(RRule::Rule).to receive(:new).and_raise("bug")
     expect { errors_for("RRULE:FREQ=DAILY") }.to raise_error("bug")
   end
 

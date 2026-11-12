@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "ice_cube"
-
 # a recurrence_rule is blank or an RRULE whose FREQ is DAILY, WEEKLY,
 # MONTHLY or YEARLY. Sub-daily rules (SECONDLY/MINUTELY/HOURLY) are refused
 # because the calendars expand them on every load.
@@ -31,10 +29,13 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
   MAX_LENGTH = 2000
   TOO_LONG = "is too long (maximum is #{MAX_LENGTH} characters)"
   FORBIDDEN_PARTS = %w[BYHOUR BYMINUTE BYSECOND BYSETPOS].freeze
-  ALLOWED_CLASSES = [IceCube::DailyRule, IceCube::WeeklyRule, IceCube::MonthlyRule, IceCube::YearlyRule].freeze
+  # The repeat library accepts these parts without checking their numbers or, for
+  # BYWEEKNO, stored rules have never allowed them.
+  UNSUPPORTED_PARTS = %w[BYWEEKNO].freeze
+  NUMBER_RANGES = { "BYMONTH" => 1..12, "BYMONTHDAY" => 1..31, "BYYEARDAY" => 1..366 }.freeze
 
   # nil when valid, else the message. The frequency is taken from the PARSED rule
-  # (IceCube applies the last FREQ), never from a regex over the text.
+  # (its last FREQ), never from a regex over the text.
   def self.error_for(value)
     value = value.to_s
     return TOO_LONG if value.length > MAX_LENGTH
@@ -53,17 +54,32 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
   def self.body_error(body)
     keys = body.split(";").map { |part| part.split("=", 2).first.to_s.strip.upcase }
     return UNPARSEABLE unless keys.include?("FREQ")
-    return UNPARSEABLE if keys.count("FREQ") > 1
+    return UNPARSEABLE if keys.count("FREQ") > 1 || keys.intersect?(UNSUPPORTED_PARTS)
     return MESSAGE if keys.intersect?(FORBIDDEN_PARTS)
 
-    begin
-      rule = IceCube::Rule.from_ical(body)
-    rescue ArgumentError, NoMethodError
-      # ice_cube raises ArgumentError for a malformed rule, and NoMethodError for some out-of-range parts
-      # (BYYEARDAY=400, BYMONTHDAY=0). Anything else is a bug and is not hidden.
-      return UNPARSEABLE
+    frequency_error(body)
+  end
+
+  def self.frequency_error(body)
+    parts = body.split(";").to_h { |part| part.split("=", 2).map(&:strip) }
+    return UNPARSEABLE unless parts["FREQ"].to_s.match?(/\A[A-Z]+\z/)
+    return MESSAGE unless ALLOWED_FREQUENCIES.include?(parts["FREQ"])
+
+    UNPARSEABLE unless numbers_in_range?(parts) && readable?(body)
+  end
+
+  def self.numbers_in_range?(parts)
+    NUMBER_RANGES.all? do |key, range|
+      parts[key].to_s.split(",").all? { |n| n.match?(/\A-?\d+\z/) && range.cover?(n.to_i.abs) }
     end
-    MESSAGE unless ALLOWED_CLASSES.include?(rule.class)
+  end
+
+  def self.readable?(body)
+    RRule::Rule.new(body, dtstart: Time.utc(2000), tzid: "UTC")
+    true
+  rescue RRule::InvalidRRule, ArgumentError, NoMethodError
+    # The gem raises InvalidRRule for COUNT and INTERVAL, ArgumentError for a date it cannot read. Anything else is a bug and is not hidden.
+    false
   end
 
   # Every DTSTART line must be a start the series edits (RecurrenceRule) can read.
