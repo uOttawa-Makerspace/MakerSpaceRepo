@@ -15,88 +15,76 @@
     <h2>Search results for "<%= @query %>"</h2>
   <% end %>
   <% if @users.any? %>
-  <%= form_tag admin_users_path, method: :post do %>
-      <% if !@users.any? %>
-        <p style="color:gray">There are no users signed in.</p>
-      <% else %>
-        <% direction = params[:direction] == 'asc' ? 'desc' : 'asc' %>
-        <table class="admin-table table table-striped">
-          <thead class="table-primary">
-            <th><%= check_box_tag 'select-all', '1', false, class: 'form-check-input', 'aria-label': t('common.names.select_all_users') %></th>
-            <th>
-              <%= link_to 'Username', sort: 'username', direction: direction, q: params[:q], filter: params[:filter] %>
-              <% if params[:sort] == "username" %>
-                <i class="fa-solid fa-sort-<%= direction %>"></i>
-              <% end %>
-            </th>
-            <th>
-              <%= link_to 'Name', sort: 'name', direction: direction, q: params[:q], filter: params[:filter] %>
-              <% if params[:sort] == "name" %>
-                <i class="fa-solid fa-sort-<%= direction %>"></i>
-              <% end %>
-            </th>
-            <th>
-              <%= link_to 'Signed in', sort: 'lab_sessions.sign_in_time', direction: direction, q: params[:q], filter: params[:filter] %>
-              <% if params[:sort] == "lab_sessions.sign_in_time" %>
-                <i class="fa-solid fa-sort-<%= direction %>"></i>
-              <% end %>
-            </th>
-            <th>
-              <%= link_to 'Joined', sort: 'users.created_at', direction: direction, q: params[:q], filter: params[:filter] %>
-              <% if params[:sort] == "users.created_at" %>
-                <i class="fa-solid fa-sort-<%= direction %>"></i>
-              <% end %>
-            </th>
-            <th>Edit</th>
-            <th>View</th>
-          </thead>
-          <% @users.each do |user| %>
-            <tr>
-              <td><center><%= check_box_tag 'bulk_cert_users[]', user.id, false, class: 'form-check-input', 'aria-label': t('common.names.select_user', name: user.username) %></center></td>
-              <td><%= link_to user.username.to_s, admin_user_path(user) %></td>
-              <td><%= user.name %></td>
-              <td>
-                <% last_session = user.lab_sessions.max_by(&:id) %>
-                <% if last_session %>
-                  <%= time_ago_in_words(last_session.sign_in_time) %> ago
-                <% else %>
-                  -
-                <% end %>
-              </td>
-              <td><%= time_ago_in_words(user.created_at) %> ago</td>
-              <td class="link-table"><%= link_to '<i class="fa-solid fa-pencil" aria-hidden="true"></i>'.html_safe, edit_admin_user_path(user), aria: { label: t('common.names.edit_user') } %></td>
-              <td class="link-table"><%= link_to '<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>'.html_safe, admin_user_path(user), aria: { label: t('common.names.view_user') } %></td>
-            </tr>
+    <% direction = params[:direction] == 'asc' ? 'desc' : 'asc' %>
+    <table class="admin-table table table-striped">
+      <thead class="table-primary">
+        <th>
+          <%= link_to 'Username', sort: 'username', direction: direction, q: params[:q], filter: params[:filter] %>
+          <% if params[:sort] == "username" %>
+            <i class="fa-solid fa-sort-<%= direction %>"></i>
           <% end %>
-        </table>
-      <% end %>
-
-      <!-- pagination code starts -->
-      <% if params[:page].nil? %>
-        <% page_number = 1 %>
-      <% else %>
-        <% page_number = Integer(params[:page]) %>
-      <% end %>
-      <table class="pagination">
+        </th>
+        <th>
+          <%= link_to 'Name', sort: 'name', direction: direction, q: params[:q], filter: params[:filter] %>
+          <% if params[:sort] == "name" %>
+            <i class="fa-solid fa-sort-<%= direction %>"></i>
+          <% end %>
+        </th>
+        <th>
+          <%= link_to 'Signed in', sort: 'lab_sessions.sign_in_time', direction: direction, q: params[:q], filter: params[:filter] %>
+          <% if params[:sort] == "lab_sessions.sign_in_time" %>
+            <i class="fa-solid fa-sort-<%= direction %>"></i>
+          <% end %>
+        </th>
+        <th>
+          <%= link_to 'Joined', sort: 'users.created_at', direction: direction, q: params[:q], filter: params[:filter] %>
+          <% if params[:sort] == "users.created_at" %>
+            <i class="fa-solid fa-sort-<%= direction %>"></i>
+          <% end %>
+        </th>
+        <th>Edit</th>
+        <th>View</th>
+      </thead>
+      <% @users.each do |user| %>
         <tr>
+          <td><%= link_to user.username.to_s, admin_user_path(user) %></td>
+          <td><%= user.name %></td>
           <td>
-            <% if page_number>1 %>
-              <%= link_to '< Previous page', page: page_number - 1, q: params[:q], filter: params[:filter], sort: params[:sort], direction: params[:direction] %>
+            <% last_session = user.lab_sessions.max_by(&:id) %>
+            <% if last_session %>
+              <%= time_ago_in_words(last_session.sign_in_time) %> ago
+            <% else %>
+              -
             <% end %>
           </td>
-          <td>
-            <% if page_number<@pagy.pages %>
-              <%= link_to 'Next page >', page: page_number + 1, q: params[:q], filter: params[:filter], sort: params[:sort], direction: params[:direction] %>
-            <% end %>
-          </td>
+          <td><%= time_ago_in_words(user.created_at) %> ago</td>
+          <td class="link-table"><%= link_to '<i class="fa-solid fa-pencil" aria-hidden="true"></i>'.html_safe, edit_admin_user_path(user), aria: { label: t('common.names.edit_user') } %></td>
+          <td class="link-table"><%= link_to '<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>'.html_safe, admin_user_path(user), aria: { label: t('common.names.view_user') } %></td>
         </tr>
-      </table>
-      <!-- pagination code ends -->
+      <% end %>
+    </table>
 
-      <br><br>
-      <%= select_tag 'bulk_certifications', options_from_collection_for_select(EquipmentOption.show_options, :name, :name), prompt: 'Add a certification to selected users...', aria: { label: t('common.names.certification_to_add') } %>
-      <%= submit_tag 'Add', class: 'save-button' %>
-    <% end %>
+  <!-- pagination code starts -->
+  <% if params[:page].nil? %>
+    <% page_number = 1 %>
+  <% else %>
+    <% page_number = Integer(params[:page]) %>
+  <% end %>
+  <table class="pagination">
+    <tr>
+      <td>
+        <% if page_number>1 %>
+          <%= link_to '< Previous page', page: page_number - 1, q: params[:q], filter: params[:filter], sort: params[:sort], direction: params[:direction] %>
+        <% end %>
+      </td>
+      <td>
+        <% if page_number<@pagy.pages %>
+          <%= link_to 'Next page >', page: page_number + 1, q: params[:q], filter: params[:filter], sort: params[:sort], direction: params[:direction] %>
+        <% end %>
+      </td>
+    </tr>
+  </table>
+  <!-- pagination code ends -->
   <% elsif @query.present? %>
     No results
   <% end %>

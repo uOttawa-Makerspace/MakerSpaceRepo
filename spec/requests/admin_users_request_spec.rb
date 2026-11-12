@@ -198,13 +198,22 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response.body).to include(target.username)
     end
 
-    it "search lists every hit with its selection checkbox unticked and named" do
+    it "the list shows each user as a row with no selection checkboxes or bulk form", skip_bullet: true do
+      get admin_users_path
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.css("table#admin-index td a[href='#{admin_user_path(target)}']")).not_to be_empty
+      expect(doc.css("input[type=checkbox], input#select-all")).to be_empty
+      expect(doc.css("form[action='#{admin_users_path}']")).to be_empty
+      expect(doc.css("table#admin-index th").size).to eq(5)
+      expect(doc.at_css("table#admin-index td.link-table").parent.css("td").size).to eq(5)
+    end
+
+    it "search lists every hit as a row linking to the user, with no selection checkboxes or bulk form" do
       get search_admin_users_path(q: target.username, filter: "Username")
-      boxes = Nokogiri::HTML(response.body).css("input[name='bulk_cert_users[]']")
-      expect(boxes.size).to be >= 1
-      expect(boxes.map { |b| b["checked"] }).to all(be_nil)
-      expect(boxes.map { |b| b["aria-label"] }).to all(include(target.username))
-      expect(Nokogiri::HTML(response.body).at_css("input#select-all")["checked"]).to be_nil
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.css("table.admin-table td a[href='#{admin_user_path(target)}']")).not_to be_empty
+      expect(doc.css("input[type=checkbox], input#select-all, select#bulk_certifications")).to be_empty
+      expect(doc.css("form[action='#{admin_users_path}']")).to be_empty
     end
 
     it "search shows when a hit last signed in" do
