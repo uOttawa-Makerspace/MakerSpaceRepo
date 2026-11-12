@@ -202,7 +202,8 @@ class Staff::TrainingSessionsController < StaffDashboardController
   end
 
   def verify_ownership
-    return if @user.admin? || @current_training_session.user == @user
+    return if @current_training_session.editable_by?(@user)
+
     flash[:alert] = "Can't access training session"
     redirect_to new_staff_training_session_path
   end

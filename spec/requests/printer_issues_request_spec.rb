@@ -192,6 +192,14 @@ RSpec.describe "Printer issues", type: :request do
         expect(issue.reload.active).to be false
       end
 
+      it "422s with the validation errors and leaves the issue active when the issue is invalid" do
+        issue.update_columns(summary: "")
+        post resolve_printer_issue_path(issue), as: :json
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.parsed_body["errors"]).to eq(["Summary This field is required."])
+        expect(issue.reload.active).to be true
+      end
+
       it "404s for an unknown issue" do
         post resolve_printer_issue_path(0), as: :json
         expect(response).to have_http_status(:not_found)

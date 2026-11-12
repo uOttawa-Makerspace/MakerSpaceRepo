@@ -40,12 +40,8 @@ class RfidController < SessionsController
   # signed up users
   def get_unset_rfids
     rfids = []
-    mac_addresses =
-      PiReader.where(space: @user.space || Space.all).pluck(:pi_mac_address)
-
     Rfid
-      .recent_unset
-      .where(mac_address: mac_addresses)
+      .unlinked_for(@user)
       .first(5)
       .each do |card|
         rfids << {

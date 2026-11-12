@@ -91,6 +91,13 @@ class TrainingSession < ApplicationRecord
   # certification (demoted ones included) they can no longer change.
   LOCKED_ONCE_AWARDED = %w[training_id level user_id].freeze
 
+  # Admins and the session's own trainer may open, change and certify it.
+  def editable_by?(user)
+    return false if user.id.blank?
+
+    user.admin? || user_id == user.id
+  end
+
   def editable?
     !awarded_certifications.exists?
   end

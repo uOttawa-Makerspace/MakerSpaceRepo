@@ -20,7 +20,7 @@ module Api
                               fields: { active: params.key?(:active) ? ["must be false"] : ["is required"] })
         end
 
-        issue.update!(active: false)
+        issue.resolve!
         head :no_content
       end
     end
