@@ -142,38 +142,38 @@
                 <%= render partial: 'users/tabs/home', locals: { user: @user, repo_user: @repo_user } %>
             </div>
             <% if !@repo_user.deleted? %>
-                <div class="tab-pane fade" id="badges-manager" role="tabpanel" aria-labelledby="badges-tab">
+                <div class="tab-pane fade" id="badges-manager" role="tabpanel">
                     <%= render partial: 'users/tabs/badges', locals: { acclaim_data: @acclaim_data } %>
                 </div>
-                <div class="tab-pane fade" id="programs-manager" role="tabpanel" aria-labelledby="badges-tab">
+                <div class="tab-pane fade" id="programs-manager" role="tabpanel" aria-labelledby="programs-tab">
                     <%= render partial: 'users/tabs/programs', locals: { user: @user, repo_user: @repo_user } %>
                 </div>
-                <div class="tab-pane fade" id="profile-skills" role="tabpanel" aria-labelledby="profile-tab">
+                <div class="tab-pane fade" id="profile-skills" role="tabpanel" aria-labelledby="skills-tab">
                     <%= render partial: 'users/tabs/skills', locals: { skills: @skills } %>
                 </div>
                 <% if current_user.staff? || @repo_user == current_user %>
-                    <div class="tab-pane fade" id="profile-safety-sheets" role="tabpanel" aria-labelledby="safety-sheets-tab">
+                    <div class="tab-pane fade" id="profile-safety-sheets" role="tabpanel" <%= "aria-labelledby=safety-sheets-tab" if @repo_user == current_user %>>
                         <%= render partial: 'users/tabs/safety_sheets' %>
                     </div>
-                    <div class="tab-pane fade" id="profile-lockers" role="tabpanel" aria-labelledby="lockers-tab">
+                    <div class="tab-pane fade" id="profile-lockers" role="tabpanel" <%= "aria-labelledby=lockers-tab" if @repo_user == current_user %>>
                         <%= render partial: 'users/tabs/lockers' %>
                     </div>
                 <% end %>
                 <% if @user.staff? %>
-                    <div class="tab-pane fade" id="certifications-manager" role="tabpanel" aria-labelledby="profile-tab">
+                    <div class="tab-pane fade" id="certifications-manager" role="tabpanel" aria-labelledby="certifications-tab">
                         <%= render partial: 'users/tabs/certifications', locals: { user: @user, repo_user: @repo_user } %>
                     </div>
-                    <div class="tab-pane fade" id="keys-manager" role="tabpanel" aria-labelledby="profile-tab">
+                    <div class="tab-pane fade" id="keys-manager" role="tabpanel" aria-labelledby="keys-tab">
                         <%= render partial: 'users/tabs/keys' %>
                     </div>
                 <% end %>
                 <% if (@user.staff? || @user.programs.pluck(:program_type).include?(Program::TEAMS)) && @user.eql?(@repo_user) || @user.admin? %>
-                    <div class="tab-pane fade" id="key-certs-manager" role="tabpanel" aria-labelledby="profile-tab">
+                    <div class="tab-pane fade" id="key-certs-manager" role="tabpanel" aria-labelledby="key-certs-tab">
                         <%= render partial: 'users/tabs/key_certs' %>
                     </div>
                 <% end %>
                 <% if @user.admin? %>
-                    <div class="tab-pane fade" id="adminTabPane" role="tabpanel">
+                    <div class="tab-pane fade" id="adminTabPane" role="tabpanel" aria-labelledby="admin-tab">
                         <div class="d-flex align-items-start">
                             <div class="nav flex-column nav-underline me-5 text-nowrap" role="tablist" aria-orientation="vertical">
                                 <a class="nav-link active" id="admin-roles-pill" data-bs-toggle="pill" href="#admin-roles" role="tab" aria-controls="admin-roles" aria-selected="true">Roles</a>
@@ -194,7 +194,7 @@
         </div>
                 <% end %>
             <% else %>
-                <div class="tab-pane fade" id="user-restore" role="tabpanel" aria-labelledby="profile-tab">
+                <div class="tab-pane fade" id="user-restore" role="tabpanel" aria-labelledby="restore-tab">
                     <div class="row mb-1 text-center">
                         <span class="fw-bold text-danger"> Restoring a user will remove the deleted flag from their profile.</span>
                         <br></br>
@@ -218,7 +218,7 @@
     <section class="mb-3">
         <%= render partial: 'users/repositories', locals: { repositories: @repositories } %>
     </section>
-    <div id="modal-window" class="modal hide fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div id="modal-window" class="modal hide fade" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content" id="cert-modal"></div>
         </div>
