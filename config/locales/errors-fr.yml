@@ -168,6 +168,8 @@ fr:
       access_approve_failed: "La demande d'accès n'a pas pu être approuvée :"
       js:
         failed_title: "Échec de la réservation"
+        updated_title: "Réservation modifiée"
+        updated: "La réservation a été enregistrée."
         feed: "Les réservations n'ont pas pu être chargées. Rechargez la page pour réessayer."
         unavailable_title: "Réservation indisponible"
         unavailable: "Cette réservation n'a pas pu être ouverte."

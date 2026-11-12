@@ -275,6 +275,30 @@ RSpec.describe "Sub-space booking calendar", :booking_clock, type: :system do
       expect(stored(booking)).to eq("2027-03-16 14:00")
     end
 
+    it "tells the user the booking was updated without reloading the page", js: true, skip_bullet: true do
+      open_calendar(admin)
+      page.execute_script("window.sameDocument = 'yes'")
+      open_booking
+      fill_in "book-name", with: "Team lab (renamed)"
+      click_button "bookUpdate"
+
+      expect(page).to have_css("#booking_toast.show.text-bg-success", text: "Booking updated")
+      expect(page).to have_css("#toast_text", text: "The booking was saved.")
+      expect(page).to have_css(".fc-timegrid-event", text: "Team lab (renamed)", visible: :all)
+      expect(page.evaluate_script("window.sameDocument")).to eq("yes")
+    end
+
+    it "tells a French-speaking user in French", js: true, skip_bullet: true do
+      log_in_as(admin, to: sub_space_booking_index_path(room: subspace.id, start: "2027-03-16", locale: "fr"))
+      expect(page).to have_css("#booked-calendar .fc-view")
+      open_booking
+      fill_in "book-name", with: "Team lab (renamed)"
+      click_button "bookUpdate"
+
+      expect(page).to have_css("#booking_toast.show", text: "Réservation modifiée")
+      expect(page).to have_css("#toast_text", text: "La réservation a été enregistrée.")
+    end
+
     it "rejects an end before the start without sending", js: true, skip_bullet: true do
       open_calendar(admin)
       open_booking
