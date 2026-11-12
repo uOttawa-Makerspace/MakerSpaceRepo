@@ -25,6 +25,29 @@ RSpec.describe Repository, type: :model do
     end
   end
 
+  describe "a save that hits a unique violation" do
+    it "turns a lost race for the title into a title error" do
+      existing = create(:repository, title: "Race Title")
+      repo = build(:repository, owner: existing.owner, title: "Race Title")
+      allow(repo).to receive(:_create_record).and_raise(
+        ActiveRecord::RecordNotUnique.new("PG::UniqueViolation: duplicate key value violates unique constraint \"#{Repository::TITLE_INDEX}\"")
+      )
+
+      expect(repo.save(validate: false)).to be(false)
+      expect(repo.errors.added?(:title, :taken)).to be(true)
+    end
+
+    it "re-raises a violation of any other unique index, without a title error" do
+      repo = build(:repository)
+      allow(repo).to receive(:_create_record).and_raise(
+        ActiveRecord::RecordNotUnique.new("PG::UniqueViolation: duplicate key value violates unique constraint \"index_repositories_on_something_else\"")
+      )
+
+      expect { repo.save! }.to raise_error(ActiveRecord::RecordNotUnique, /something_else/)
+      expect(repo.errors[:title]).to be_empty
+    end
+  end
+
   describe "Scopes" do
     context "public_repo" do
       it "should only get private repos" do

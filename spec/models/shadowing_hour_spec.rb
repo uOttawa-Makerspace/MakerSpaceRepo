@@ -77,6 +77,18 @@ RSpec.describe ShadowingHour, type: :model do
       end
     end
 
+    describe ".get_event" do
+      it "reads the makerspace calendar for the makerspace, in any case" do
+        expect(service).to receive(:get_event).with(calendars[:makerspace], "e1").and_return(:found)
+        expect(ShadowingHour.get_event("e1", "MakerSpace")).to eq(:found)
+      end
+
+      it "reads the brunsfield calendar for the Brunsfield Centre" do
+        expect(service).to receive(:get_event).with(calendars[:brunsfield], "e2").and_return(:found)
+        expect(ShadowingHour.get_event("e2", "Brunsfield Centre")).to eq(:found)
+      end
+    end
+
     describe "#publish_to_calendar" do
       let(:space) { create(:space, name: "Makerspace") }
       let(:shift) do
