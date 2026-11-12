@@ -648,3 +648,13 @@ fr:
       from_unknown: "Importé depuis un calendrier lié."
       all_day: "Toute la journée"
       explanation: "Il ne peut pas être modifié ni supprimé ici : modifiez-le dans ce calendrier, ou retirez le lien de vos calendriers importés ci-dessous."
+  msr_mailer:
+    sign_up_attempt:
+      subject: "Quelqu'un a tenté de s'inscrire avec votre courriel"
+      hello: "Bonjour %{name},"
+      body: "Quelqu'un a tenté de créer un compte MakerRepo avec cette adresse courriel, mais elle a déjà un compte. Aucun nouveau compte n'a été créé."
+      if_you: "Si c'était vous, connectez-vous à votre compte existant. Si vous avez oublié votre mot de passe, vous pouvez le réinitialiser."
+      if_not: "Si ce n'était pas vous, vous pouvez ignorer ce courriel : votre compte n'a pas changé."
+      sign_in: "Se connecter"
+      reset_password: "Réinitialiser mon mot de passe"
+      why_received: "Vous avez reçu ce courriel parce qu'une inscription a été tentée avec votre adresse courriel."

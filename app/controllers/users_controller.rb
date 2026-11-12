@@ -60,16 +60,16 @@ class UsersController < SessionsController
         format.html { render :new, status: :unprocessable_content }
         format.json { render json: {errors: 'captcha failure'}, status: :unprocessable_content }
       end 
+    elsif @new_user.only_email_taken?
+      notify_existing_account_of_sign_up(@new_user.email)
+      sign_up_accepted_response
     elsif @new_user.save
       hash = @new_user.generate_token_for(:email_confirmation)
       MsrMailer.confirmation_email(@new_user, hash).deliver_later
-      
-      message = I18n.t('sessions.account_created')
-      respond_to do |format|
-        format.html { redirect_to root_path, notice: message }
-        format.json { render json: { message: message }, status: :created }
-      end
+      sign_up_accepted_response
     else
+      # Whether an address already has an account is never told to the visitor.
+      @new_user.errors.delete(:email, :taken)
       respond_to do |format| 
         format.html { render 'new', status: :unprocessable_content }
         format.json do
@@ -538,6 +538,22 @@ class UsersController < SessionsController
       format.html { redirect_to root_path, alert: message }
       format.json { render json: { error: message }, status: :forbidden }
     end
+  end
+
+  def sign_up_accepted_response
+    message = I18n.t('sessions.account_created')
+    respond_to do |format|
+      format.html { redirect_to root_path, notice: message }
+      format.json { render json: { message: message }, status: :created }
+    end
+  end
+
+  # Tells the owner of an existing account that someone tried to sign up with their address.
+  # At most MAIL_PER_ADDRESS_LIMIT such mails an hour per address; the visitor's answer is the same either way.
+  def notify_existing_account_of_sign_up(email)
+    return unless mail_budget_left?('sign-up-attempt', email)
+
+    MsrMailer.sign_up_attempt_email(email).deliver_later
   end
 
   def sign_up_throttled

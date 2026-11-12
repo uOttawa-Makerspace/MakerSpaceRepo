@@ -945,6 +945,14 @@ class User < ApplicationRecord
     [user, new_email] if user && user.email == old_email && user.token_version == version
   end
 
+  # True when the only thing wrong with a new sign-up is that its email already belongs to an account.
+  def only_email_taken?
+    return false if valid? || !errors.of_kind?(:email, :taken)
+
+    errors.delete(:email, :taken)
+    errors.empty?
+  end
+
   def send_password_reset
     MsrMailer.forgot_password(email, generate_token_for(:password_reset)).deliver_later
   end
