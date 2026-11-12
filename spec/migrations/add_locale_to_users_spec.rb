@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "rails_helper"
-require Rails.root.join("db/migrate/20261112210000_add_locale_to_users")
+require Rails.root.join("db/migrate/20261112220000_add_locale_to_users")
 
 RSpec.describe AddLocaleToUsers do
   let(:conn) { ActiveRecord::Base.connection }
