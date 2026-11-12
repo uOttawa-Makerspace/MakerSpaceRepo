@@ -321,6 +321,26 @@ RSpec.describe "Staff training sessions", type: :request do
         expect(record.reload.users).to be_empty
       end
 
+      it "changes nothing when the session cannot be saved: no user added or dropped" do
+        enrolled = create(:user, :regular_user)
+        record.users << enrolled
+        patch staff_training_session_path(record),
+              params: { changed_params: { training_id: 0 }, added_users: [student.username], dropped_users: [enrolled.username] }
+        expect(flash[:alert]).to eq("The training session was not updated. Training A training subject is required")
+        expect(record.reload.users).to eq([enrolled])
+      end
+
+      it "keeps the certification of a dropped trainee active when the session cannot be saved" do
+        record.users << student
+        cert = create(:certification, user: student, training_session: record, training: training)
+        trainer.update_column(:role, "regular_user")
+        log_in!(create(:user, :admin))
+        patch staff_training_session_path(record), params: { changed_params: { level: "Beginner" }, dropped_users: [student.username] }
+        expect(flash[:alert]).to start_with("The training session was not updated.")
+        expect(record.reload.users).to eq([student])
+        expect(Certification.unscoped.find(cert.id).active).to be(true)
+      end
+
       it "refuses to change the trainer unless admin" do
         other = create(:user, :staff)
         patch staff_training_session_path(record), params: { changed_params: { user_id: other.id } }
