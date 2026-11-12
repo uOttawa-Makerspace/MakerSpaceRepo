@@ -138,7 +138,7 @@ RSpec.describe RecurrenceRuleValidator do
 
   it "accepts BYDAY ordinals as RFC 5545 allows them for each frequency" do
     ["FREQ=MONTHLY;BYDAY=2MO", "FREQ=MONTHLY;BYDAY=-1FR,+2TU", "FREQ=MONTHLY;BYDAY=5MO,-5SU", "FREQ=YEARLY;BYDAY=53MO", "FREQ=YEARLY;BYDAY=-53MO,20TU",
-     "FREQ=YEARLY;BYMONTH=3;BYDAY=5MO", "FREQ=WEEKLY;BYDAY=MO,SU", "FREQ=DAILY;BYDAY=MO,TU", "FREQ=DAILY;WKST=SU"].each do |body|
+     "FREQ=YEARLY;BYMONTH=2;BYDAY=5MO", "FREQ=WEEKLY;BYDAY=MO,SU", "FREQ=DAILY;BYDAY=MO,TU", "FREQ=DAILY;WKST=SU"].each do |body|
       expect(errors_for("RRULE:#{body}")).to eq([]), body
     end
   end
@@ -215,7 +215,7 @@ RSpec.describe RecurrenceRuleValidator do
     end
 
     it "accepts rules that repeat rarely or have already ended" do
-      ["FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29", "FREQ=YEARLY;INTERVAL=9", "FREQ=MONTHLY;BYDAY=5MO", "FREQ=WEEKLY;INTERVAL=5;BYDAY=MO",
+      ["FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29", "FREQ=YEARLY;BYMONTH=2;BYDAY=5MO", "FREQ=YEARLY;BYMONTH=2;BYDAY=-1MO,5TU,5WE,5TH,5FR,5SA,5SU", "FREQ=YEARLY;INTERVAL=9", "FREQ=MONTHLY;BYDAY=5MO", "FREQ=WEEKLY;INTERVAL=5;BYDAY=MO",
        "FREQ=DAILY;UNTIL=20200101T000000Z", "FREQ=DAILY;COUNT=1"].each do |body|
         expect(described_class.error_for("RRULE:#{body}", start)).to be_nil, body
       end
@@ -224,7 +224,8 @@ RSpec.describe RecurrenceRuleValidator do
     it "takes a few steps for a normal rule, and a bounded number for a rule that never matches" do
       expect(steps { described_class.error_for("RRULE:FREQ=WEEKLY;BYDAY=MO,WE", start) }).to be <= 3
       expect(steps { described_class.error_for("RRULE:FREQ=DAILY", start) }).to be <= 3
-      expect(steps { described_class.error_for("RRULE:FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30", start) }).to be <= 12 * 366
+      expect(steps { described_class.error_for("RRULE:FREQ=YEARLY;BYMONTH=2;BYDAY=5MO", start) }).to be <= 45 # one step a year until 2044
+      expect(steps { described_class.error_for("RRULE:FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30", start) }).to be <= 42 * 366 # the 40-year horizon, to the end of its year
     end
   end
 

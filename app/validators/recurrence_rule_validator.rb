@@ -24,11 +24,10 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
   end
 
   DEFAULT_START = RecurrenceRule::ZONE.local(2000, 1, 3, 9) # when the record has no start
-  HORIZON_YEARS = 9 # a rule has an occurrence this soon after its start, plus its INTERVAL (a leap day can be 8 years off)
+  HORIZON_YEARS = 40 # per INTERVAL: the longest gap between leap days on one weekday (2100 is not a leap year)
   MAX_LENGTH = 2000
   TOO_LONG = "is too long (maximum is #{MAX_LENGTH} characters)"
-  # Part => the message for a rule that has it. BYWEEKNO is something stored rules have
-  # never allowed; the others multiply daily occurrences.
+  # Part => the message for a rule that has it (BYWEEKNO was never allowed; the others multiply daily occurrences).
   PART_ERRORS = { "BYWEEKNO" => UNPARSEABLE, "BYHOUR" => MESSAGE, "BYMINUTE" => MESSAGE,
                   "BYSECOND" => MESSAGE, "BYSETPOS" => MESSAGE }.freeze
   # FREQ => the message for it, or nil when allowed; any other FREQ is unparseable.
@@ -89,7 +88,7 @@ class RecurrenceRuleValidator < ActiveModel::EachValidator
     pattern = body.gsub(/;?(?:COUNT|UNTIL)=[^;]*/i, "")
     start = start.in_time_zone(RecurrenceRule::ZONE)
     series = RecurringSeries.new(rule: pattern, starts_at: start, ends_at: start + 1.hour)
-    horizon = start + (HORIZON_YEARS + values["INTERVAL"].to_i.clamp(1, 100)).years
+    horizon = start + [HORIZON_YEARS * values["INTERVAL"].to_i.clamp(1, 100), RecurringSeries::MAX_YEARS].min.years
     series.occurrences_starting_in(start..horizon, limit: 1).occurrences.empty?
   end
 
