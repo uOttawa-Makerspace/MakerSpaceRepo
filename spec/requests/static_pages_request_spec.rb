@@ -525,6 +525,73 @@ RSpec.describe "Static pages", type: :request do
     end
   end
 
+  describe "GET /hours (saved opening hours)" do
+    let!(:contact) { create(:contact_info, name: "Main Lab", show_hours: true) }
+
+    before do
+      contact.opening_hours.create!(
+        target_en: "Student hours", target_fr: "Horaires etudiants", closed_all_week: :open,
+        monday_closed_all_day: :open, monday_opening: "09:00", monday_closing: "17:30",
+        tuesday_closed_all_day: :closed, wednesday_closed_all_day: :hidden,
+        notes_en: "<div>Bring your card</div>", notes_fr: "<div>Apportez votre carte</div>"
+      )
+    end
+
+    it "shows each saved period as a table of days with times, closed days and notes" do
+      get hours_path
+
+      page = Nokogiri::HTML(response.body)
+      table = page.at_css("#opening-hours table")
+      expect(table.at_css("caption").text).to include("Student hours")
+      expect(page.at_css("#opening-hours").text).to include("Main Lab")
+      expect(table.css("th[scope=col]").map { |th| th.text.strip }).to eq(%w[Day Hours])
+      rows = table.css("tbody tr").to_h { |tr| [tr.at_css("th").text.strip, tr.at_css("td").text.strip] }
+      expect(rows["Monday"]).to eq("09:00 - 17:30")
+      expect(rows["Tuesday"]).to eq("CLOSED")
+      expect(rows).not_to have_key("Wednesday")
+      expect(page.at_css("#opening-hours").text).to include("Bring your card")
+    end
+
+    it "shows a day with only one time saved by that time alone" do
+      contact.opening_hours.create!(target_en: "Partial", target_fr: "Partiel", closed_all_week: :open,
+                                    thursday_closed_all_day: :open, thursday_opening: "10:00",
+                                    friday_closed_all_day: :open, friday_closing: "16:00")
+
+      get hours_path
+
+      rows = Nokogiri::HTML(response.body).css("#opening-hours section").last.css("tbody tr")
+      expect(rows.to_h { |tr| [tr.at_css("th").text.strip, tr.at_css("td").text.strip] }).to eq(
+        "Thursday" => "From 10:00", "Friday" => "Until 16:00"
+      )
+    end
+
+    it "shows the French text when the locale is French" do
+      get hours_path, params: { locale: "fr" }
+
+      expect(response.body).to include("Horaires etudiants", "Lundi", "Apportez votre carte")
+    end
+
+    it "says a period closed all week is closed and lists no days" do
+      contact.opening_hours.create!(target_en: "Summer", target_fr: "Ete", closed_all_week: :closed)
+
+      get hours_path
+
+      summer = Nokogiri::HTML(response.body).css("#opening-hours section").find { |node| node.text.include?("Summer") }
+      expect(summer.text).to include("CLOSED")
+      expect(summer.css("table")).to be_empty
+    end
+
+    it "leaves out periods hidden for the week and contacts not flagged to show hours" do
+      contact.opening_hours.create!(target_en: "Secret", target_fr: "Secret", closed_all_week: :hidden)
+      other = create(:contact_info, name: "Other Lab", show_hours: false)
+      other.opening_hours.create!(target_en: "Other hours", target_fr: "Autres", closed_all_week: :open)
+
+      get hours_path
+
+      expect(response.body).not_to include("Secret", "Other hours")
+    end
+  end
+
   describe "GET /hours.json" do
     it "is an empty list while no contact info is flagged show_hours" do
       create(:contact_info, name: "Unlisted", show_hours: false)

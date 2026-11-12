@@ -9,6 +9,8 @@ RSpec.describe "Translated templates" do
   TRANSLATED_TEMPLATES = %w[
     app/views/static_pages/about.html.erb
     app/views/static_pages/contact.html.erb
+    app/views/static_pages/hours.html.erb
+    app/views/static_pages/_opening_hours.html.erb
     app/views/licenses/_license.html.erb
     app/views/licenses/common_creative_attribution.html.erb
     app/views/licenses/common_creative_attribution_share_alike.html.erb

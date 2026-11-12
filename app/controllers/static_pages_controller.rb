@@ -92,7 +92,10 @@ class StaticPagesController < SessionsController
   def hours
     @contact_info = ContactInfo.where(show_hours: true).order(name: :asc)
     respond_to do |format|
-      format.html { render :hours }
+      format.html do
+        @contact_info = @contact_info.includes(:opening_hours)
+        render :hours
+      end
       format.json do
         render json: @contact_info.as_json(
           include: :opening_hours,
