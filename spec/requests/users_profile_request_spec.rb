@@ -122,6 +122,32 @@ RSpec.describe "Users profile (HTTP contract)", type: :request do
     end
   end
 
+  describe "GET /:username CC balance" do
+    before { create(:cc_money, user: user, cc: 37) }
+
+    def balance_shown?
+      response.body.match?(/37\s*<img[^>]*class="ccs"/)
+    end
+
+    it "shows the owner and staff the balance" do
+      [user, staff, admin].each do |viewer|
+        login!(viewer)
+        get user_path(user.username)
+        expect(balance_shown?).to be(true)
+      end
+    end
+
+    it "hides the balance from another signed-in user and a guest but keeps reputation" do
+      get user_path(user.username)
+      expect(balance_shown?).to be(false)
+      expect(response.body).to include("Reputation")
+      login!(other)
+      get user_path(user.username)
+      expect(balance_shown?).to be(false)
+      expect(response.body).to include("Reputation")
+    end
+  end
+
   describe "GET /:username private sections" do
     let(:tabs) { %w[keys-manager profile-lockers key-certs-manager adminTabPane] }
 

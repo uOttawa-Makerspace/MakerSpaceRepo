@@ -49,11 +49,13 @@
                     <% if @repo_user.staff? %>
                         <p class="text-secondary fw-bold" >Makerepo <%= @repo_user.role.humanize %></p>
                     <% end %>
-                    <span>
-                        <b><%= @repo_user.get_total_cc %> <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs' %></b>
-                    </span>
-                    <div class="vr">
-                    </div>
+                    <% if @repo_user.cc_balance_visible_to?(current_user) %>
+                        <span>
+                            <b><%= @repo_user.get_total_cc %> <%= vite_image_tag 'images/cc.png', alt: 'CC', class: 'ccs' %></b>
+                        </span>
+                        <div class="vr">
+                        </div>
+                    <% end %>
                     <span><%= @repo_user.reputation %> Reputation</span>
                     <% if @repo_user == current_user || current_user.staff? %>
                         <div class="d-flex">

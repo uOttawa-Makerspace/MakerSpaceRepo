@@ -1002,6 +1002,11 @@ class User < ApplicationRecord
     viewer == self || viewer.staff?
   end
 
+  # The CC Money balance is private to its owner and staff; reputation is public.
+  def cc_balance_visible_to?(viewer)
+    viewer == self || viewer.staff?
+  end
+
   def roles_visible_to?(viewer)
     viewer.admin?
   end
