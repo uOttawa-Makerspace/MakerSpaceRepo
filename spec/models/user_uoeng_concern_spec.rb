@@ -166,6 +166,22 @@ RSpec.describe User::UoengConcern, type: :model do
       expect(logs.map(&:event_type)).to include(TapBoxLog::WARNING)
     end
 
+    it "stores only the differing field in the student-id mismatch row" do
+      stub_api(body: { "student_number" => "999999999", "student_this_semester" => true, "faculty" => "GENIE" })
+      eng.validate_uoeng_membership
+      row = logs.find { |l| l.details&.dig("reason") == "student_id_mismatch" }
+      expect(row.details).to include("differing_field" => "student number")
+      expect(row.message + row.details.to_json).not_to include("999999999", eng.student_id)
+    end
+
+    it "stores only the differing field in the name mismatch row" do
+      stub_api(body: { "first_name" => "Zzyzx", "last_name" => "Q", "student_this_semester" => true, "faculty" => "GENIE" })
+      eng.validate_uoeng_membership
+      row = logs.find { |l| l.details&.dig("reason") == "name_mismatch" }
+      expect(row.details).to include("differing_field" => "name")
+      expect(row.message + row.details.to_json).not_to include("Zzyzx", eng.name)
+    end
+
     describe "when the upstream cannot give an answer" do
       let!(:membership) { paid_faculty_membership(eng) }
 

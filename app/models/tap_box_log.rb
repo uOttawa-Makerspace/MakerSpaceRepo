@@ -237,33 +237,32 @@ class TapBoxLog < ApplicationRecord
     )
   end
 
-  def self.log_name_mismatch(user:, uoeng_name:, card_number: nil, space: nil)
+  # Only the name of the field that differs is stored, never the uOEng value.
+  def self.log_name_mismatch(user:, card_number: nil, space: nil)
     log!(
       event_type: WARNING,
-      message: "Name mismatch: uOEng says '#{uoeng_name}' but account is '#{user.name}'",
+      message: "Name mismatch: uOEng and the account differ in name",
       card_number: card_number,
       user: user,
       space: space,
       details: {
         reason: "name_mismatch",
-        uoeng_name: uoeng_name,
-        makerepo_name: user.name,
+        differing_field: "name",
         suggestion: "Student may have linked someone else's card, or changed their name"
       }
     )
   end
 
-  def self.log_student_id_mismatch(user:, uoeng_student_id:, card_number: nil, space: nil)
+  def self.log_student_id_mismatch(user:, card_number: nil, space: nil)
     log!(
       event_type: WARNING,
-      message: "Student ID mismatch: account has '#{user.student_id}' but uOEng returned '#{uoeng_student_id}'",
+      message: "Student ID mismatch: uOEng and the account differ in student number",
       card_number: card_number,
       user: user,
       space: space,
       details: {
         reason: "student_id_mismatch",
-        makerepo_student_id: user.student_id,
-        uoeng_student_id: uoeng_student_id,
+        differing_field: "student number",
         suggestion: "Student may have mistyped their student number during sign-up"
       }
     )
