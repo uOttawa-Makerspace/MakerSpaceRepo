@@ -257,9 +257,9 @@ class StaffDashboardController < StaffAreaController
     end
   end
 
-  # Staying in the current space is always allowed; any other space needs an assignment (or admin).
+  # Staying in the space the user already holds is always allowed; any other space needs an assignment (or admin).
   def switch_refused?(new_space)
-    new_space != @space && !current_user.can_work_in?(new_space)
+    new_space.id != current_user.space_id && !current_user.can_work_in?(new_space)
   end
 
   # Links a card to a user through Rfid.link_to_user!, so a card no reader ever

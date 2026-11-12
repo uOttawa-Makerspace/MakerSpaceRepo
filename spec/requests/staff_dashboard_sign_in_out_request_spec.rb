@@ -382,5 +382,17 @@ RSpec.describe "Staff dashboard sign in/out (JSON contract)", type: :request do
       get staff_dashboard_index_path
       expect(response.body).not_to include(I18n.t("common.no_assigned_spaces"))
     end
+
+    it "refuses a staff member with no saved space and no assignments, even for the fallback space" do
+      loner = sign_in_as(:staff, space: nil)
+      expect(loner.reload.space_id).to be_nil
+      put "/staff_dashboard/change_space", params: { space_id: Space.first.id }, as: :json
+      expect(response).to have_http_status(:not_found)
+      expect(json["error"]).to eq("You are not assigned to that space")
+      expect(loner.reload.space_id).to be_nil
+
+      get staff_dashboard_index_path
+      expect(response.body).to include(I18n.t("common.no_assigned_spaces"))
+    end
   end
 end
