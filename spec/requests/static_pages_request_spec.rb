@@ -397,6 +397,18 @@ RSpec.describe "Static pages", type: :request do
       expect(response.body.scan("10:00 - 13:00").size).to eq(1)
     end
 
+    it "leaves out a task whose joins have all ended, however many rows there are" do
+      user = sign_in_as(:regular)
+      user.programs.create!(program_type: Program::VOLUNTEER)
+      task = create(:volunteer_task, space: create(:space), title: "Twice ended chore")
+      create(:volunteer_task_join, :left, volunteer_task: task, user: user, user_type: "Volunteer")
+      create(:volunteer_task_join, :not_active, volunteer_task: task, user: user, user_type: "Volunteer")
+
+      get root_path
+
+      expect(response.body).not_to include("Twice ended chore")
+    end
+
     it "leaves out inactive joins and shows at most five tasks, newest first" do
       user = sign_in_as(:regular)
       user.programs.create!(program_type: Program::VOLUNTEER)
