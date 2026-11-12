@@ -4,6 +4,9 @@ en:
     training: "Delete this training? This is refused while it has training sessions or proficient projects."
   # These are used in the navbar and in page titles, headers
   admin:
+    users:
+      invalid_parameters: "Invalid parameters!"
+      search_query_missing: "Enter a name or email to search."
     retired_programs:
       heading: "Retired programs"
       note: "Left out of the last import. They are no longer offered on the sign-up and profile forms; users who chose them keep them."
@@ -72,6 +75,9 @@ fr:
     training_session: "Supprimer cette séance de formation? Impossible tant qu'elle a des certifications ou des examens."
     training: "Supprimer cette formation? Impossible tant qu'elle a des séances de formation ou des projets de compétence."
   admin:
+    users:
+      invalid_parameters: "Paramètres invalides!"
+      search_query_missing: "Saisissez un nom ou un courriel à rechercher."
     retired_programs:
       heading: "Programmes retirés"
       note: "Absents du dernier import. Ils ne sont plus offerts dans les formulaires d'inscription et de profil; les personnes qui les ont choisis les conservent."

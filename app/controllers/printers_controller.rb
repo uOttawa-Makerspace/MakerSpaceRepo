@@ -169,7 +169,7 @@ class PrintersController < StaffAreaController
         end
 
     respond_to do |format|
-      format.html { redirect_to root_path }
+      format.html { head :not_acceptable }
       format.json { render json: data }
     end
   end

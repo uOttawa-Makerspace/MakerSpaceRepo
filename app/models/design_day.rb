@@ -13,6 +13,12 @@ class DesignDay < ApplicationRecord
     any? ? first : create(day: Time.zone.today, sheet_key: '', is_live: false)
   end
 
+  # The row that is saved, or an unsaved default with the values instance would create.
+  # Reads use this so they never write.
+  def self.current
+    first || new(day: Time.zone.today, sheet_key: "", is_live: false)
+  end
+
   def can_be_published?
     is_live && sheet_key.present?
   end
