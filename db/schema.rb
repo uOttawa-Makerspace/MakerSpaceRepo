@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_190000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_12_230000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -279,6 +279,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_190000) do
     t.boolean "is_live"
     t.string "sheet_key"
     t.boolean "show_floorplans", default: true
+    t.index "(true)", name: "index_design_days_single_row", unique: true
   end
 
   create_table "discount_codes", id: :serial, force: :cascade do |t|

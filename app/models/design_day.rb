@@ -9,8 +9,11 @@ class DesignDay < ApplicationRecord
 
   default_scope { order(day: :desc) }
 
+  # The database allows one row. When two first visits race, the loser's insert is refused and it reads the winner's row.
   def self.instance
-    any? ? first : create(day: Time.zone.today, sheet_key: '', is_live: false)
+    first || transaction(requires_new: true) { create!(day: Time.zone.today, sheet_key: "", is_live: false) }
+  rescue ActiveRecord::RecordNotUnique
+    first
   end
 
   # The row that is saved, or an unsaved default with the values instance would create.
