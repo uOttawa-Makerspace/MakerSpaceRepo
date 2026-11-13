@@ -41,7 +41,7 @@
                             <div id="cert-details" style="display:inline">
                                 <%= certification.training.localized_name %> <br>
                                 <%= certification.trainer.name %> <br>
-                                <%= l(certification.updated_at, format: '%B %d, %Y') %>
+                                <%= l(certification.updated_at, format: :certified_on) %>
                             </div>
                             <br/>
                         </div>

@@ -1,4 +1,7 @@
 en:
+  time:
+    formats:
+      certified_on: "%B %d, %Y"
   staff_dashboard:
     welcome_to: "Welcome to"
     visit: "%{time} ago at %{space}"
@@ -92,6 +95,9 @@ en:
       no_search_parameters: "No search parameters."
 
 fr:
+  time:
+    formats:
+      certified_on: "%-d %B %Y"
   staff_dashboard:
     welcome_to: "Bienvenue à"
     visit: "il y a %{time} à %{space}"
