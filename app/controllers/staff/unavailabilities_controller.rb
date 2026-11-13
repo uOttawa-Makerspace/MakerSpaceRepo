@@ -96,8 +96,7 @@ class Staff::UnavailabilitiesController < StaffAreaController
   # those of their linked calendars.
   def json
     window = CalendarWindow.bounded(params)
-    name = "#{current_user.name} External Unavailability"
-    calendars = current_user.staff_external_unavailabilities.map { |external| [external, external.calendar(name: name)] }
+    calendars = current_user.staff_external_unavailabilities.map { |external| [external, external.fetch_calendar(current_user.name)] }
     report_failed_calendars(calendars)
 
     render json: own_unavailability_rows(window) + calendars.flat_map { |external, calendar|

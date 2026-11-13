@@ -4,11 +4,11 @@ class StaffExternalUnavailability < ApplicationRecord
   validates :ics_url, presence: true
   validate :ics_url_is_fetchable, if: -> { ics_url.present? }
 
-  # The linked calendar, under the display `name` the pages show.
-  def calendar(name: nil) = ImportedCalendar.load(ics_url, name: name, color: nil)
+  # Fetches the linked calendar (or reads its cached copy), named for the pages after its owner, `owner_name`.
+  def fetch_calendar(owner_name = nil) = ImportedCalendar.load(ics_url, name: "#{owner_name} External Unavailability", color: nil)
 
-  # The occurrences of its calendar's entries in the window (a CalendarWindow).
-  def occurrences_in(window) = calendar.occurrences_in(window)
+  # The occurrences in the window (a CalendarWindow) of the linked calendar, which this fetches (see fetch_calendar).
+  def occurrences_in(window) = fetch_calendar.occurrences_in(window)
 
   # The host of the link, for showing where an event came from (nil when it cannot be read).
   def source_host
