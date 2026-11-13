@@ -80,7 +80,8 @@ class PrintersController < StaffAreaController
   end
 
   def staff_printers_updates
-    @printer_types = PrinterType.all.order("lower(name) ASC")
+    @printer_types = PrinterType.includes(printers: :printer_issues).order("lower(name) ASC")
+    @last_sessions = Printer.last_sessions(@printer_types.flat_map(&:printers))
   end
 
   def link_printer_to_user

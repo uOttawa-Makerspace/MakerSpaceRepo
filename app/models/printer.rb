@@ -23,10 +23,6 @@ class Printer < ApplicationRecord
     "#{printer_type&.name}; #{name}"
   end
 
-  def self.get_printer_ids(model)
-    PrinterType.find_by(name: model).printers.pluck(:id)
-  end
-
   def self.get_last_model_session(printer_model)
     PrinterSession
       .joins(:printer_type)
@@ -37,6 +33,14 @@ class Printer < ApplicationRecord
 
   def self.get_last_number_session(printer_id)
     PrinterSession.order(created_at: :desc).where(printer_id: printer_id).first
+  end
+
+  # The latest session of each of the printers, keyed by printer id (a printer that never had one
+  # is absent), with the users loaded; one query however many printers.
+  def self.last_sessions(printers)
+    PrinterSession.where(printer_id: printers.map(&:id)).includes(:user)
+                  .select("DISTINCT ON (printer_sessions.printer_id) printer_sessions.*")
+                  .order("printer_sessions.printer_id", created_at: :desc).index_by(&:printer_id)
   end
 
   # Opens an in-use session for the user and closes the printer's previous one, in one
@@ -63,13 +67,23 @@ class Printer < ApplicationRecord
     # NOTE this might cause performance issues
     # what is this, O(n^2)?
     # If you ever touch this, checkout the one in printer_issues_controller#index
-    active_printer_issues.where.not(id: except).group_by do |issue|
-      PrinterIssue.summaries.values.detect { |s| issue.summary.include? s } ||
-        "Other"
-    end
+    group_issues_by_summary(active_printer_issues.where.not(id: except))
+  end
+
+  # The same grouping read from the printer's loaded issues, for a page that lists many printers.
+  def group_loaded_printer_issues
+    group_issues_by_summary(printer_issues.select(&:active))
   end
 
   def count_printer_issues(except: nil)
     group_printer_issues(except: except).transform_values { |issues| issues.count }
+  end
+
+  private
+
+  def group_issues_by_summary(issues)
+    issues.group_by do |issue|
+      PrinterIssue.summaries.values.detect { |s| issue.summary.include? s } || "Other"
+    end
   end
 end
