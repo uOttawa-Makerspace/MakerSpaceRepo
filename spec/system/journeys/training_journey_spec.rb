@@ -47,7 +47,7 @@ RSpec.describe "Journey: training exam", type: :system do
       answer_all(correct: true)
       accept_confirm { click_button "Finish Exam" }
       expect(page).to have_current_path(exams_path)
-      expect(page).to have_text("Score: 100. You passed the exam.")
+      expect_flash("Score: 100. You passed the exam.")
       expect(page).to have_css("tr", text: "Passed")
     end
     expect(exam.reload.status).to eq("passed")
@@ -99,7 +99,7 @@ RSpec.describe "Journey: training exam", type: :system do
       log_in_as(user, to: exam_path(exam))
       answer_all(correct: false)
       accept_confirm { click_button "Finish Exam" }
-      expect(page).to have_text("Score: 0. You failed the exam.")
+      expect_flash("Score: 0. You failed the exam.")
     end
     expect(exam.reload.status).to eq("failed")
     expect(Certification.where(user_id: user.id)).to be_empty

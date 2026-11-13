@@ -43,7 +43,7 @@ RSpec.describe "Journey: key request", type: :system do
       choose "key_request_read_agreement_true"
       click_button "Submit Form"
 
-      expect(page).to have_text("You have successfully submitted the key request form")
+      expect_flash("You have successfully submitted the key request form")
       expect(page).to have_text("Waiting for approval")
     end
     key_request = KeyRequest.find_by!(user: requester)
@@ -57,7 +57,7 @@ RSpec.describe "Journey: key request", type: :system do
       click_button "Waiting for Approval" # accordion
       expect(page).to have_css("#collapseOne.show")
       click_button "Approve"
-      expect(page).to have_text("Successfully approved key request.")
+      expect_flash("Successfully approved key request.")
     end
     expect(key_request.reload.status).to eq("approved")
 

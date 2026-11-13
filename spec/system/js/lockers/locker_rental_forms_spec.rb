@@ -193,7 +193,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
         pick_in_form "locker_rental_locker_id_assign", "401"
         accept_confirm { click_button "Assign Now" }
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
       expect(rental.reload).to have_attributes(state: "active", locker_id: locker.id)
       expect(rental.owned_until.to_date).to eq(end_of_this_semester.to_date)
     end
@@ -204,7 +204,7 @@ RSpec.describe "Locker rental forms", type: :system, skip_bullet: true do
         check "indefinite_assign"
         accept_confirm { click_button "Assign Now" }
       end
-      expect(page).to have_text("Locker rental updated")
+      expect_flash("Locker rental updated")
       expect(rental.reload).to have_attributes(state: "active", locker_id: locker.id, owned_until: nil)
     end
 

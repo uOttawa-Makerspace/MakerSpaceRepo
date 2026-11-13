@@ -49,7 +49,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       fill_in "comments", with: "Capstone laser cutting"
       click_button "Submit Request"
 
-      expect(page).to have_text("Access request submitted successfully.")
+      expect_flash("Access request submitted successfully.")
       request = UserBookingApproval.find_by!(user: newcomer)
       expect(request.identity).to eq("Other")
       expect(request.comments).to eq("Capstone laser cutting")
@@ -105,7 +105,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       check "booking_#{first.id}"
       find("button[form=bulkApproveDeclineForm][value=approve]").click
 
-      expect(page).to have_text("Bookings approved successfully.")
+      expect_flash("Bookings approved successfully.")
       expect(first.reload.booking_status).to eq(@approved_status)
       expect(second.reload.booking_status).to eq(@pending_status)
     end
@@ -115,7 +115,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       find("#pending_bookings_select_all").check
       click_button "Bulk Reject Selected"
 
-      expect(page).to have_text("Bookings declined successfully.")
+      expect_flash("Bookings declined successfully.")
       expect([first, second].map { |b| b.reload.booking_status }).to all(eq(@declined_status))
     end
 
@@ -123,7 +123,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       open_admin_panel
       within(find("tr", text: "Soldering club")) { click_button "Approve" }
 
-      expect(page).to have_text("approved successfully")
+      expect_flash("approved successfully")
       expect(first.reload.booking_status).to eq(@approved_status)
     end
   end
@@ -148,7 +148,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       open_admin_panel
       find("button[title='Approve All']").click
 
-      expect(page).to have_text("Bookings approved successfully.")
+      expect_flash("Bookings approved successfully.")
       expect(SubSpaceBooking.where(name: "Club night").map { |b| b.booking_status }).to all(eq(@approved_status))
     end
 
@@ -177,7 +177,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       uncheck_and_confirm("rc_#{last_date.id}")
       click_button "Approve Selected"
 
-      expect(page).to have_text("Bookings approved successfully.")
+      expect_flash("Bookings approved successfully.")
       statuses = SubSpaceBooking.where(name: "Club night").order(:start_time).map(&:booking_status)
       expect(statuses.first).to eq(@approved_status)
       expect(statuses.last).not_to eq(@approved_status)
@@ -200,7 +200,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       expect(page).to have_checked_field(class: "user-request-select", count: 2)
 
       find("button[form='bulkApproveAccessForm']").click
-      expect(page).to have_text("All selected access requests approved successfully.")
+      expect_flash("All selected access requests approved successfully.")
       expect(requester_one.reload.booking_approval).to be(true)
       expect(requester_two.reload.booking_approval).to be(true)
     end
@@ -209,7 +209,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       open_admin_panel
       find("button[form='approve-access-#{requester_one.user_booking_approvals.first.id}']").click
 
-      expect(page).to have_css("#flash", text: "Access request approved successfully.")
+      expect_flash("Access request approved successfully.")
       expect(requester_one.reload.booking_approval).to be(true)
       expect(requester_two.reload.booking_approval).to be(false)
     end
@@ -219,7 +219,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       fill_in "Reason for declining Rex Requester (optional)", with: "Not a GNG student", enable_aria_label: true
       click_button "Decline Rex Requester", enable_aria_label: true
 
-      expect(page).to have_text("Access request declined successfully.")
+      expect_flash("Access request declined successfully.")
       expect(requester_two.user_booking_approvals.first)
         .to have_attributes(status: "declined", reason: "Not a GNG student", decided_by_id: admin.id)
       expect(requester_one.user_booking_approvals.first.status).to eq("pending")
@@ -231,7 +231,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       fill_in "Reason for revoking Rita Requester's access (optional)", with: "Misused the room", enable_aria_label: true
       click_button "Revoke"
 
-      expect(page).to have_text("Booking access revoked successfully.")
+      expect_flash("Booking access revoked successfully.")
       expect(requester_one.user_booking_approvals.first).to have_attributes(status: "revoked", reason: "Misused the room")
       expect(requester_one.reload.booking_approval).to be(false)
     end
@@ -249,7 +249,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       tom_select "Rita Requester", from: "user_booking_select", search: "Rita"
       click_button "Permit Access"
 
-      expect(page).to have_text("Access granted successfully.")
+      expect_flash("Access granted successfully.")
       expect(requester_one.reload.booking_approval).to be(true)
     end
 
@@ -333,7 +333,7 @@ RSpec.describe "Sub-space booking: access and admin panel", :booking_clock, type
       tom_select "Rita Requester", from: "user_booking_select", search: "quokka"
       click_button "Permit Access"
 
-      expect(page).to have_text("Access granted successfully.")
+      expect_flash("Access granted successfully.")
       expect(requester_one.reload.booking_approval).to be(true)
     end
 

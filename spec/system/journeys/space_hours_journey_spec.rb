@@ -31,7 +31,7 @@ RSpec.describe "Journey: space contact info and hours", type: :system do
       fill_in "contact_info_opening_hours_attributes_0_monday_opening", with: "09:00AM"
       fill_in "contact_info_opening_hours_attributes_0_monday_closing", with: "05:30PM"
       click_button "Edit Contact Info"
-      expect(page).to have_text("Contact Info updated")
+      expect_flash("Contact Info updated")
     end
 
     info.reload

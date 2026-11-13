@@ -23,7 +23,7 @@ RSpec.describe "Blocked third-party widgets", type: :system do
     check "user_read_and_accepted_waiver_form"
     find("form.form input[type=submit]").click
 
-    expect(page).to have_text("Account has been created")
+    expect_flash("Account has been created")
     expect(User.find_by(username: "blockedwidgets")).to be_present
   end
 

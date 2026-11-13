@@ -27,7 +27,7 @@ RSpec.describe "Journey: identity", type: :system do
     find("form.form input[type=submit]").click
 
     expect(page).to have_current_path(root_path)
-    expect(page).to have_text("Account has been created, please look in your emails to confirm your email address.")
+    expect_flash("Account has been created, please look in your emails to confirm your email address.")
 
     created = User.find_by!(username: "jessjourney")
     expect(created.confirmed).to be(false)
@@ -41,7 +41,7 @@ RSpec.describe "Journey: identity", type: :system do
     expect(created.reload.confirmed).to be(false)
     click_button "Confirm my email"
     expect(page).to have_current_path(root_path)
-    expect(page).to have_text("The email has been confirmed, you can now fully use your Makerepo Account !")
+    expect_flash("The email has been confirmed, you can now fully use your Makerepo Account !")
     expect(created.reload.confirmed).to be(true)
     welcome = deliver_mail.find { |m| m.to == ["jess.journey@example.com"] && m.subject != mail.subject }
     expect(welcome).to be_present
@@ -59,7 +59,7 @@ RSpec.describe "Journey: identity", type: :system do
     audit_accessibility("profile settings")
     fill_in "user_name", with: "Jess Renamed"
     click_button "Save Changes"
-    expect(page).to have_text("Profile updated successfully.")
+    expect_flash("Profile updated successfully.")
     expect(page).to have_css("input#user_name[value='Jess Renamed']")
     expect(created.reload.name).to eq("Jess Renamed")
 

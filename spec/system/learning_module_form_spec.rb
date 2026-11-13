@@ -24,7 +24,7 @@ RSpec.describe "Learning module form", type: :system do
     fill_in "repository_title", with: "Turbo module"
     click_button "Create Learning Module"
 
-    expect(page).to have_content("Learning Module has been successfully created.")
+    expect_flash("Learning Module has been successfully created.")
     expect(LearningModule.find_by(title: "Turbo module").photos).not_to be_attached
   end
 
@@ -56,7 +56,7 @@ RSpec.describe "Learning module form", type: :system do
     open_new_form_through_turbo
     fill_in "repository_title", with: "History module"
     click_button "Create Learning Module"
-    expect(page).to have_content("Learning Module has been successfully created.")
+    expect_flash("Learning Module has been successfully created.")
 
     page.go_back
     expect(page).to have_button("Create Learning Module", disabled: false)
