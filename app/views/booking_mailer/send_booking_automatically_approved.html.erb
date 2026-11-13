@@ -1,18 +1,11 @@
-<% content_for :preheader do %>
-  Makerepo - Booking
-<% end %>
+<% content_for :preheader do %><%= message.subject %><% end %>
+<% content_for :team_name do %>The MakerRepo Team<% end %>
+<% content_for :why_received do %><%= t(".why_received") %><% end %>
 
-<% content_for :team_name do %>
-  The MakerRepo Team
-<% end %>
-
-<% content_for :why_received do %>
-  You have received this email because a booking has been automatically approved.
-<% end %>
-
-<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Hello,</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;"><%= t("booking_mailer.staff.hello") %></p>
 <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">
-  <%= sanitize(@message) %>
+  <%= t(".body", room: @sub_space.name, booker: booker_name, description: @booking.description,
+        start: l(@booking.start_time.in_time_zone, format: :long), end: l(@booking.end_time.in_time_zone, format: :long)) %>
 </p>
 <table role="presentation" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
   <tbody>
@@ -22,7 +15,7 @@
           <tbody>
             <tr>
               <td style="font-family: sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #e55426ff;" valign="top" align="center" bgcolor="#e55426ff">
-                <a href="<%= sub_space_booking_index_url(anchor: 'booking-admin-tab') %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;">Visit Panel</a>
+                <a href="<%= sub_space_booking_index_url(anchor: 'booking-admin-tab') %>" target="_blank" style="border: solid 1px #e55426ff; border-radius: 5px; box-sizing: border-box; cursor: pointer; display: inline-block; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; background-color: #e55426ff; border-color: #e55426ff; color: #ffffff;"><%= t("booking_mailer.staff.open_panel") %></a>
               </td>
             </tr>
           </tbody>

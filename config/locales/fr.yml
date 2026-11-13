@@ -307,6 +307,22 @@ fr:
       ask_again: "Vous pouvez envoyer une nouvelle demande depuis la page des réservations."
       open_page: "Aller à la réservation MakerRepo"
       why_received: "Vous avez reçu ce courriel parce que votre demande d'accès aux réservations a reçu une réponse."
+    staff:
+      hello: "Bonjour,"
+      open_panel: "Ouvrir le panneau"
+    send_booking_needs_approval:
+      subject: "Réservation à approuver"
+      body: "Une réservation a été faite dans %{room} par %{booker} pour %{description} du %{start} au %{end}. Veuillez consulter le panneau d'administration des réservations pour approuver ou refuser cette réservation."
+      why_received: "Vous avez reçu ce courriel parce qu'une réservation nécessitant une approbation a été demandée."
+    send_booking_automatically_approved:
+      subject: "Réservation approuvée automatiquement"
+      body: "Une réservation a été faite et approuvée automatiquement dans %{room} par %{booker} pour %{description} du %{start} au %{end}. Pour désactiver l'approbation automatique des réservations de ce sous-espace, allez à la page d'administration de l'espace."
+      why_received: "Vous avez reçu ce courriel parce qu'une réservation a été approuvée automatiquement."
+    send_booking_approval_request_sent:
+      subject: "Demande d'accès aux réservations envoyée"
+      body_html: "%{name} a demandé l'accès aux réservations de salles dans makeroom. Veuillez aller au panneau d'administration %{panel} pour approuver ou refuser cette demande."
+      panel: "Réservation MakerRepo"
+      why_received: "Vous avez reçu ce courriel parce qu'un utilisateur a demandé l'accès aux réservations."
   sub_space_booking:
     access_status:
       none: "Vous n'avez pas encore demandé l'accès aux réservations."

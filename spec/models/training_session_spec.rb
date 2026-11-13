@@ -285,6 +285,46 @@ RSpec.describe TrainingSession, type: :model do
     end
   end
 
+  describe "opening a session" do
+    let(:space) { create(:space) }
+    let(:training) { create(:training, spaces: [space]) }
+    let(:staff) { create(:user, :staff) }
+    let(:admin) { create(:user, :admin) }
+    let(:attributes) { { user: staff, space: space, training: training, level: "Beginner" } }
+
+    it "saves a session whose training is offered in its space" do
+      session = TrainingSession.new(attributes)
+      expect(session.open_by(staff)).to be(true)
+      expect(session).to be_persisted
+    end
+
+    it "refuses a level that is not allowed, a training not offered in the space and a long course" do
+      session = TrainingSession.new(attributes.merge(level: "Wizard", training: create(:training), course: "x" * 256))
+      expect(session.open_by(staff)).to be(false)
+      expect(session.errors.map(&:type)).to include(:not_allowed, :not_offered_in_space, :too_long)
+      expect(session).not_to be_persisted
+    end
+
+    it "leaves these rules off when an existing session is edited or created without them" do
+      session = create(:training_session, user: staff, level: "Beginner")
+      expect(session.training.spaces).not_to include(session.space)
+      expect(session.update_roster({ "level" => "Advanced" }, added: [], dropped: [], by: staff)).to be_saved
+      expect(session.reload.level).to eq("Advanced")
+    end
+
+    it "lets an admin name any instructor and anyone else only themselves" do
+      session = TrainingSession.new(attributes)
+      expect(session.instructor_assignable_by?(admin)).to be(true)
+      expect(session.instructor_assignable_by?(staff)).to be(true)
+      expect(session.instructor_assignable_by?(create(:user, :staff))).to be(false)
+    end
+
+    it "saves nothing when the actor may not name the instructor" do
+      expect(TrainingSession.new(attributes).open_by(create(:user, :staff))).to be(false)
+      expect(TrainingSession.count).to eq(0)
+    end
+  end
+
   describe "#update_roster" do
     let(:trainer) { create(:user, :staff) }
     let(:session) { create(:training_session, user: trainer, level: "Beginner") }

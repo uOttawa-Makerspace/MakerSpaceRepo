@@ -10,9 +10,12 @@
 # The guard compares per-table row counts taken before the example and after it, over every
 # application table. It is an `around` hook so the second count runs once the example's own
 # `after` hooks (and any cleanup hook in spec/support) are done, and it counts on a connection
-# checked out of the pool for the purpose, never the example's connection. By then the example's
+# checked out of the pool for the purpose, never the example's connection: a request returns that
+# connection to the pool and a thread of the example may have taken it since. By then the example's
 # threads have finished and its transactions have ended, so the plain COUNT cannot wait on a row
 # lock the example holds; a lock timeout turns an unexpected wait into a failure instead of a hang.
+# The example's own lock waits (its `after` cleanup included) are bounded by the lock_timeout every
+# test connection starts with (config/database.yml), so the guard sets nothing on them.
 module CommittedRowsGuard
   IGNORED_TABLES = %w[schema_migrations ar_internal_metadata].freeze
   # Rows the suite itself seeds (rails_helper's before(:suite)) and keeps between runs.
@@ -73,16 +76,7 @@ RSpec.configure do |config|
     end
 
     before = CommittedRowsGuard.counts
-    # Bound every lock wait of this example's connection, including its own `after` cleanup (which
-    # runs inside example.run): a thread of the example still holding a row lock then fails the
-    # example after ThreadPause::LOCK_TIMEOUT instead of hanging the worker. Reset before the connection is reused.
-    conn = ActiveRecord::Base.connection
-    conn.execute("SET lock_timeout = '#{ThreadPause::LOCK_TIMEOUT}s'")
-    begin
-      example.run
-    ensure
-      conn.execute("SET lock_timeout = DEFAULT") if conn.active?
-    end
+    example.run
 
     # Checked even when the example failed: its own error stays and the leftovers are added to it.
     leaked = CommittedRowsGuard.leaked(before, CommittedRowsGuard.counts)

@@ -11,26 +11,22 @@ class KioskSignEvent < ApplicationRecord
 
   scope :newest_first, -> { order(created_at: :desc, id: :desc) }
 
-  # Starts a session for the visitor unless one is active in the space, and logs it. Returns the log row, or nil
-  # when the visitor was already signed in (nothing changed, so nothing is logged).
+  # Starts a session for the visitor through LabSession.sign_in unless one is active in the space, and logs it.
+  # Returns the log row, or nil when the visitor was already signed in (nothing changed, so nothing is logged).
   def self.sign_in(actor:, visitor:, space:)
     transaction do
-      next if LabSession.where(space: space).active_for_user(visitor).exists?
+      next unless LabSession.sign_in(visitor, space)
 
-      now = Time.zone.now
-      LabSession.create!(user: visitor, space: space, sign_in_time: now, sign_out_time: now + 8.hours)
-      create!(actor: actor, visitor: visitor, space: space, action: "sign_in", created_at: now)
+      create!(actor: actor, visitor: visitor, space: space, action: "sign_in", created_at: Time.zone.now)
     end
   end
 
-  # Ends the visitor's latest active session in the space and logs it. Returns the log row, or nil when the
-  # visitor was not signed in.
+  # Ends the visitor's active sessions in the space through LabSession.sign_out and logs it. Returns the log row,
+  # or nil when the visitor was not signed in.
   def self.sign_out(actor:, visitor:, space:)
     transaction do
-      session = LabSession.where(space: space).active_for_user(visitor).last
-      next unless session
+      next if LabSession.sign_out(visitor, space).zero?
 
-      session.sign_out
       create!(actor: actor, visitor: visitor, space: space, action: "sign_out", created_at: Time.zone.now)
     end
   end

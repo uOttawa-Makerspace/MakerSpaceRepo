@@ -179,6 +179,17 @@ RSpec.describe "/api/v1 training sessions", type: :request do
       end
     end
 
+    it "422s a blank level with the list of levels, and reports every rule at once" do
+      ["", " "].each do |blank|
+        api_post "/api/v1/training_sessions", payload.merge(level: blank), as: admin
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(error["fields"]).to eq("level" => ["must be one of Beginner, Intermediate, Advanced"])
+      end
+      api_post "/api/v1/training_sessions", payload.merge(level: "Wizard", course: "x" * 256), as: admin
+      expect(error["fields"]).to eq("level" => ["must be one of Beginner, Intermediate, Advanced"],
+                                    "course" => ["must be a string of at most 255 characters"])
+    end
+
     it "400s malformed JSON" do
       post "/api/v1/training_sessions", params: "{", headers: json_headers.merge(auth(staff))
       expect(response).to have_http_status(:bad_request)
