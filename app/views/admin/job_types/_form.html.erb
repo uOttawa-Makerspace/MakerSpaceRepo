@@ -2,7 +2,7 @@
   <%= form_for([:admin, @job_type]) do |f| %>
     <% if @job_type.errors.any? %>
       <div id="error_explanation">
-        <h2><%= pluralize(@job_type.errors.count, 'error') %> prohibited this service from being saved:</h2>
+        <h2><%= t('admin_pages.job_settings.service_errors_heading', count: @job_type.errors.count) %></h2>
 
         <ul>
           <% @job_type.errors.full_messages.each do |message| %>
@@ -14,38 +14,38 @@
 
     <div class="text-center">
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :name, 'Name of the Job Type' %>
+        <%= f.label :name, t('admin_pages.job_settings.job_type_name') %>
         <%= f.text_field :name, class: 'form-control', required: true %>
       </div>
 
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :description, 'Description of the Job Type' %>
+        <%= f.label :description, t('admin_pages.job_settings.job_type_description') %>
         <%= f.text_field :description, class: 'form-control' %>
       </div>
 
       <div class="form-group col-lg-6 mx-auto mb-3">
-        <%= f.trix_label :comments, 'Comments (To be shown at the bottom of the page)' %>
+        <%= f.trix_label :comments, t('admin_pages.job_settings.comments') %>
         <div class="text-start">
           <%= f.trix_editor :comments, class: 'form-control', style: 'height: auto!important;' %>
         </div>
       </div>
 
       <div class="mb-3" role="radiogroup" aria-labelledby="job_type_multiple_files_label">
-        <span id="job_type_multiple_files_label" class="d-inline-block">Accept multiple files</span>
+        <span id="job_type_multiple_files_label" class="d-inline-block"><%= t('admin_pages.job_settings.multiple_files') %></span>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :multiple_files, false, class: 'form-check-input' %>
-          <%= f.label :multiple_files, 'No', class: 'form-check-label', value: false %>
+          <%= f.label :multiple_files, t('admin_pages.common.no'), class: 'form-check-label', value: false %>
         </div>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :multiple_files, true, class: 'form-check-input' %>
-          <%= f.label :multiple_files, 'Yes', class: 'form-check-label', value: true %>
+          <%= f.label :multiple_files, t('admin_pages.common.yes'), class: 'form-check-label', value: true %>
         </div>
       </div>
 
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :service_fee, 'Service Fee' %>
+        <%= f.label :service_fee, t('admin_pages.job_settings.service_fee') %>
         <div class="input-group mb-3">
           <div class="input-group-prepend">
             <span class="input-group-text">$</span>

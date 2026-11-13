@@ -2,14 +2,14 @@
   <table class="<%= "table text-center m-0 #{table_name}" %>">
     <thead class="table-primary">
     <tr>
-      <th>Key<span onclick="sortTable('<%= table_name %>', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>User<span onclick="sortTable('<%= table_name %>', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Supervisor<span onclick="sortTable('<%= table_name %>', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Key given on<span onclick="sortTable('<%= table_name %>', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Deposit Amount<span onclick="sortTable('<%= table_name %>', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Return Date<span onclick="sortTable('<%= table_name %>', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Deposit Return Date<span onclick="sortTable('<%= table_name %>', 6)"><i class="fa-solid fa-arrow-down"></i></span></th>
-      <th>Actions</th>
+      <th><%= t('admin_pages.key_transactions.key') %><span onclick="sortTable('<%= table_name %>', 0)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.common.user') %><span onclick="sortTable('<%= table_name %>', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.common.supervisor') %><span onclick="sortTable('<%= table_name %>', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.key_transactions.key_given_on') %><span onclick="sortTable('<%= table_name %>', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.key_transactions.deposit_amount') %><span onclick="sortTable('<%= table_name %>', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.key_transactions.return_date') %><span onclick="sortTable('<%= table_name %>', 5)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.key_transactions.deposit_return_date') %><span onclick="sortTable('<%= table_name %>', 6)"><i class="fa-solid fa-arrow-down"></i></span></th>
+      <th><%= t('admin_pages.common.actions') %></th>
     </tr>
     </thead>
 
@@ -21,11 +21,11 @@
         <td><%= link_to kt.key.supervisor.name, user_path(kt.key.supervisor.username) if kt.key&.supervisor %></td>
         <td><%= kt.created_at.strftime('%Y-%m-%d') %></td>
         <td>$<%= kt.deposit_amount %></td>
-        <td><%= kt.return_date.nil? ? 'Not Returned' : kt.return_date %></td>
-        <td><%= kt.deposit_return_date.nil? ? 'Not Returned' : kt.deposit_return_date %></td>
+        <td><%= kt.return_date.nil? ? t('admin_pages.common.not_returned') : kt.return_date %></td>
+        <td><%= kt.deposit_return_date.nil? ? t('admin_pages.common.not_returned') : kt.deposit_return_date %></td>
         <td>
-          <%= link_to 'Show', admin_key_transaction_path(id: kt.id), class: 'w-100 py-1 btn btn-primary' %>
-          <%= link_to 'Return Deposit', edit_admin_key_transaction_path(id: kt.id), class: 'w-100 py-1 btn btn-primary' if show_edit %>
+          <%= link_to t('admin_pages.common.show'), admin_key_transaction_path(id: kt.id), class: 'w-100 py-1 btn btn-primary' %>
+          <%= link_to t('admin_pages.key_transactions.return_deposit'), edit_admin_key_transaction_path(id: kt.id), class: 'w-100 py-1 btn btn-primary' if show_edit %>
         </td>
       </tr>
     <% end %>

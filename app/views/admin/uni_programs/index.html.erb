@@ -1,21 +1,21 @@
 <div class="text-center">
   <br />
-  <h2 class="fw-bold">University Programs</h2>
-  <%= link_to 'Download University Programs', admin_uni_programs_current_programs_path, class: 'btn btn-primary m-3' %>
+  <h2 class="fw-bold"><%= t('admin.uni_programs') %></h2>
+  <%= link_to t('admin_area.uni_programs.download'), admin_uni_programs_current_programs_path, class: 'btn btn-primary m-3' %>
   <div class="mb-3">
     <%= form_tag admin_uni_programs_import_programs_path, method: :post, multipart: true, class: 'w-100' do %>
-    <p>Upload CSV file to update programs. Programs missing from the file are marked inactive and no longer offered on the sign-up and profile forms</p>
+    <p><%= t('admin_area.uni_programs.upload_intro') %></p>
     <div class="input-group mb-3">
       <%= file_field_tag :file, style: 'display: inline;', class: 'form-control', accept: 'text/csv', aria: { label: t('common.names.programs_file') } %>
-      <%= submit_tag 'Import File', class: 'btn btn-primary' %>
+      <%= submit_tag t('admin_area.uni_programs.import'), class: 'btn btn-primary' %>
     </div>
     <%= check_box_tag :allow_new_programs, '1', false, class: 'form-check-input' %>
-    <%= label_tag :allow_new_programs, 'Allow introducing new faculties', class: 'form-check-label' %>
+    <%= label_tag :allow_new_programs, t('admin_area.uni_programs.allow_new_faculties'), class: 'form-check-label' %>
     <% end %>
   </div>
   <hr/>
   <% if @uni_programs.empty? %>
-  <h2>No Programs...</h2>
+  <h2><%= t('admin_area.uni_programs.none') %></h2>
   <% end %>
   <%# This shows duplicated programs under multiple faculties/levels, intentional %>
   <% @uni_programs.group_by { |x| x['faculty'] }.each do |faculty, rest| %>
@@ -24,7 +24,7 @@
       <div class="card-header position-relative">
         <h2 class="mb-0 text-center" id="accordion-<%= faculty.gsub(/[ ()]/, '') %>-heading">
           <button class="btn btn-link stretched-link" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-<%= faculty.gsub(/[ ()]/, '') %>" aria-expanded="false">
-            <%= faculty %> - <%= rest.count %> programs
+            <%= t('admin_area.uni_programs.group_count', name: faculty, number: rest.count) %>
           </button>
         </h2>
       </div>
@@ -36,15 +36,15 @@
             <div class="card-header position-relative">
               <h2 class="mb-0 text-center" id="accordion-<%= department.gsub(/[ ()]/, '') %>-heading">
                 <button class="btn btn-link stretched-link" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-<%= department.gsub(/[ ()]/, '') %>" aria-expanded="false">
-                  <%= department %> - <%= rest.count %> programs
+                  <%= t('admin_area.uni_programs.group_count', name: department, number: rest.count) %>
                 </button>
               </h2>
             </div>
             <div id="accordion-<%= department.gsub(/[ ()]/, '') %>" class="collapse" aria-labelledby="accordion-<%= department.gsub(/[ ()]/, '') %>-heading">
               <table class="mb-5 table table-striped text-center">
                 <thead>
-                  <th>Program</th>
-                  <th>Level</th>
+                  <th><%= t('admin.retired_programs.program') %></th>
+                  <th><%= t('admin.retired_programs.level') %></th>
                 </thead>
                 <% rest.sort_by { |x| x['program'] }.each do |program| %>
                 <tr>
@@ -59,8 +59,8 @@
       <% } else %>
       <table class="mb-5 table table-striped text-center">
         <thead>
-          <th>Program</th>
-          <th>Level</th>
+          <th><%= t('admin.retired_programs.program') %></th>
+          <th><%= t('admin.retired_programs.level') %></th>
         </thead>
         <% rest.sort_by { |x| x['program'] }.each do |program| %>
         <tr>

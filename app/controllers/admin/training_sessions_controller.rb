@@ -43,7 +43,7 @@ class Admin::TrainingSessionsController < AdminAreaController
   end
 
   def update
-    flash_write(@training_session, "training_sessions.not_updated", "Updated Successfully") do
+    flash_write(@training_session, "training_sessions.not_updated", t("admin_area.training_sessions.flash.updated")) do
       @training_session.assign_attributes(training_session_params)
       @training_session.save(context: :session_edit)
     end
@@ -51,7 +51,7 @@ class Admin::TrainingSessionsController < AdminAreaController
   end
 
   def destroy
-    flash_write(@training_session, "training_sessions.not_deleted", "Deleted Successfully", destroy: true) { @training_session.destroy }
+    flash_write(@training_session, "training_sessions.not_deleted", t("admin_area.training_sessions.flash.deleted"), destroy: true) { @training_session.destroy }
     redirect_back(fallback_location: root_path)
   end
 

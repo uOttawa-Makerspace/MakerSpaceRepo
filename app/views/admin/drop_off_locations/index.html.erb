@@ -1,14 +1,14 @@
 <section>
   <div class="text-center pb-4">
-    <h2 class="fw-bold py-3">Drop-Off Location Manager</h2>
+    <h2 class="fw-bold py-3"><%= t('admin_pages.drop_off_locations.manager') %></h2>
 
     <%= form_with url: {controller: "admin/drop_off_locations", action: "create"} do |f| %>
       <div class="container">
         <div class="row text-center">
           <div class="col-md-12 form-group input-group">
-            <span class="input-group-text">New Drop Off Location</span>
-            <%= f.text_field :name, placeholder: "Write a location", class: 'form-control', required: true %>
-            <%= f.submit "Create Location", class: "btn btn-secondary btn-xl" %>
+            <span class="input-group-text"><%= t('admin_pages.drop_off_locations.new_label') %></span>
+            <%= f.text_field :name, placeholder: t('admin_pages.drop_off_locations.placeholder'), class: 'form-control', required: true %>
+            <%= f.submit t('admin_pages.drop_off_locations.create'), class: "btn btn-secondary btn-xl" %>
           </div>
         </div>
       </div>
@@ -17,16 +17,16 @@
     <table class="table table-striped mb-5">
       <thead class="table-primary">
       <tr class="text-center">
-        <th>Drop-Off Location</th>
-        <th>Action</th>
+        <th><%= t('admin_pages.drop_off_locations.column') %></th>
+        <th><%= t('admin_pages.common.action') %></th>
       </tr>
       </thead>
       <% @locations.each do |location| %>
         <tr>
           <td><%= location.name %></td>
           <td>
-          <%= link_to "Edit", edit_admin_drop_off_location_path(location.id), class:"btn btn-primary" %>
-          <%= button_to "Delete", admin_drop_off_location_path(location.id), method: :delete, **confirmation_options(t('confirmations.drop_off_locations.delete', name: location.name)), class:"btn btn-danger my-2" %>
+          <%= link_to t('admin_pages.common.edit'), edit_admin_drop_off_location_path(location.id), class:"btn btn-primary" %>
+          <%= button_to t('admin_pages.common.delete'), admin_drop_off_location_path(location.id), method: :delete, **confirmation_options(t('confirmations.drop_off_locations.delete', name: location.name)), class:"btn btn-danger my-2" %>
           </td>
         </tr>
       <% end %>

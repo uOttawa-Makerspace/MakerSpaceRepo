@@ -9,7 +9,7 @@
       </ul>
     </div>
   <% end %>
-  <h2 class="text-center py-3 fw-bold">Create a new Contact Info</h2>
+  <h2 class="text-center py-3 fw-bold"><%= t('admin_pages.contact_infos.new_title') %></h2>
   <div class="container my-3">
     <div class="row">
       <div class="col-lg-12">
@@ -17,54 +17,54 @@
           <div class="row">
             <div class="col-md-12">
               <div class="mb-3">
-                <%= f.label :space_id, 'Select a Space or enter a custom name', id: 'contact_info_space_label', class: 'form-label' %>
+                <%= f.label :space_id, t('admin_pages.contact_infos.select_space'), id: 'contact_info_space_label', class: 'form-label' %>
                 <%= f.select :space_id, options_from_collection_for_select(Space.all, :id, :name), {}, class: 'form-select form-control', aria: { labelledby: 'contact_info_space_label' } %>
               </div>
 
               <div class="mb-3 form-floating">
-                <%= f.text_field :url, placeholder: 'Write the url for the space', class: 'form-control' %>
-                <%= f.label :url, 'URL of the Space', class: 'form-label' %>
+                <%= f.text_field :url, placeholder: t('admin_pages.contact_infos.url_placeholder'), class: 'form-control' %>
+                <%= f.label :url, t('admin_pages.contact_infos.url_label'), class: 'form-label' %>
               </div>
 
               <div class="mb-3 form-floating">
-                <%= f.email_field :email, placeholder: "Write the space's email here", class: 'form-control', required: true %>
-                <%= f.label :email, 'Email', class: 'form-label' %>
+                <%= f.email_field :email, placeholder: t('admin_pages.contact_infos.email_placeholder'), class: 'form-control', required: true %>
+                <%= f.label :email, t('admin_pages.common.email'), class: 'form-label' %>
               </div>
 
               <div class="mb-3 form-floating">
-                <%= f.text_field :address, placeholder: "Write the space's address here", class: 'form-control' %>
-                <%= f.label :address, 'Address', class: 'form-label' %>
+                <%= f.text_field :address, placeholder: t('admin_pages.contact_infos.address_placeholder'), class: 'form-control' %>
+                <%= f.label :address, t('admin_pages.common.address'), class: 'form-label' %>
               </div>
 
               <div class="mb-3 form-floating">
-                <%= f.text_field :phone_number, placeholder: "Write the space's phone number", class: 'form-control' %>
-                <%= f.label :phone_number, 'Phone Number', class: 'form-label' %>
+                <%= f.text_field :phone_number, placeholder: t('admin_pages.contact_infos.phone_placeholder'), class: 'form-control' %>
+                <%= f.label :phone_number, t('admin_pages.common.phone_number'), class: 'form-label' %>
               </div>
 
               <div class="mb-3">
                 <%= f.check_box(:show_hours, checked: true) %>
-                <%= f.label :show_hours, 'Show Hours', class: 'form-label' %>
+                <%= f.label :show_hours, t('admin_pages.contact_infos.show_hours'), class: 'form-label' %>
               </div>
 
               <div class="mb-3">
                 <%= f.fields_for :opening_hours do |h| %>
-                  <%= h.trix_label :target_en, 'Target Audience (English)', class: 'form-label' %>
+                  <%= h.trix_label :target_en, t('admin_pages.contact_infos.target_en'), class: 'form-label' %>
                   <%= h.trix_editor :target_en, class: 'repo form-control', style: 'height: auto!important;' %>
 
-                  <%= h.trix_label :target_fr, 'Target Audience (French)', class: 'form-label' %>
+                  <%= h.trix_label :target_fr, t('admin_pages.contact_infos.target_fr'), class: 'form-label' %>
                   <%= h.trix_editor :target_fr, class: 'repo form-control', style: 'height: auto!important;' %>
 
-                  <%= h.trix_label :notes_en, 'Notes (English)', class: 'form-label' %>
+                  <%= h.trix_label :notes_en, t('admin_pages.contact_infos.notes_en'), class: 'form-label' %>
                   <%= h.trix_editor :notes_en, class: 'repo form-control', style: 'height: auto!important;' %>
 
-                  <%= h.trix_label :notes_fr, 'Notes (French)', class: 'form-label' %>
+                  <%= h.trix_label :notes_fr, t('admin_pages.contact_infos.notes_fr'), class: 'form-label' %>
                   <%= h.trix_editor :notes_fr, class: 'repo form-control', style: 'height: auto!important;' %>
                 <% end %>
               </div>
 
             </div>
             <div class="col-lg-12 text-center">
-              <%= f.submit 'Create Contact Info', class: 'btn btn-secondary btn-xl' %>
+              <%= f.submit t('admin_pages.contact_infos.submit_create'), class: 'btn btn-secondary btn-xl' %>
             </div>
           </div>
         <% end %>

@@ -52,6 +52,19 @@ RSpec.describe AnnouncementsHelper, type: :helper do
     end
   end
 
+  describe "in French" do
+    around { |example| I18n.with_locale(:fr) { travel_to(Time.zone.local(2026, 6, 15, 12)) { example.run } } }
+
+    it "labels the audience in French" do
+      expect(helper.return_public("regular_user")).to eq("Tous les utilisateurs")
+    end
+
+    it "gives the state in French" do
+      expect(helper.return_active(Announcement.new(active: false, end_date: nil))).to eq("Non")
+      expect(helper.return_active(Announcement.new(active: true, end_date: Date.current - 1))).to eq("Oui, mais la date de publication est passée.")
+    end
+  end
+
   describe "#return_active across the Toronto day boundary" do
     it "uses the Toronto date at the end of the day, when UTC is already tomorrow" do
       travel_to(Time.find_zone("America/Toronto").local(2026, 6, 15, 23, 30)) do

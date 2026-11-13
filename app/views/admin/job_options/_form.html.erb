@@ -2,7 +2,7 @@
   <%= form_for([:admin, @job_option]) do |f| %>
     <% if @job_option.errors.any? %>
       <div id="error_explanation">
-        <h2><%= pluralize(@job_option.count, 'error') %> prohibited this option from being saved:</h2>
+        <h2><%= t('admin_pages.job_settings.option_errors_heading', count: @job_option.errors.count) %></h2>
 
         <ul>
           <% @job_option.errors.full_messages.each do |message| %>
@@ -14,22 +14,22 @@
 
     <div class="text-center">
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :name, 'Name of the Service Group' %>
+        <%= f.label :name, t('admin_pages.job_settings.service_group_name') %>
         <%= f.text_field :name, class: 'form-control', required: true %>
       </div>
 
       <div class="form-group col-lg-6 mx-auto mb-3">
-        <%= f.label :description, 'Description' %>
+        <%= f.label :description, t('admin_pages.common.description') %>
         <%= f.text_area :description, class: 'form-control' %>
       </div>
 
       <div class="form-group col-lg-6 mx-auto mb-3">
-        <%= f.label :job_type_ids, 'Job Type', for: 'job_type_ids_option' %>
+        <%= f.label :job_type_ids, t('admin_pages.job_settings.job_type'), for: 'job_type_ids_option' %>
         <%= f.select :job_type_ids, options_from_collection_for_select(JobType.all, :id, :name, @job_option.job_type_ids.presence || ''), {}, { class: 'form-control form-select', multiple: true, id: 'job_type_ids_option', aria: { label: t('common.names.job_type') } } %>
       </div>
 
       <div class="col-lg-6 text-center mx-auto mb-3">
-        <%= f.label :fee, 'Fees ($)' %>
+        <%= f.label :fee, t('admin_pages.job_settings.fees') %>
         <div class="input-group mb-3">
           <div class="input-group-prepend">
             <span class="input-group-text">$</span>
@@ -39,30 +39,30 @@
       </div>
 
       <div class="mb-3" role="radiogroup" aria-labelledby="job_option_need_files_label">
-        <span id="job_option_need_files_label" class="d-inline-block">Need files?</span>
+        <span id="job_option_need_files_label" class="d-inline-block"><%= t('admin_pages.job_settings.need_files') %></span>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :need_files, false, class: 'form-check-input' %>
-          <%= f.label :need_files, 'No', class: 'form-check-label', value: false %>
+          <%= f.label :need_files, t('admin_pages.common.no'), class: 'form-check-label', value: false %>
         </div>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :need_files, true, class: 'form-check-input' %>
-          <%= f.label :need_files, 'Yes', class: 'form-check-label', value: true %>
+          <%= f.label :need_files, t('admin_pages.common.yes'), class: 'form-check-label', value: true %>
         </div>
       </div>
 
       <div class="mb-3" role="radiogroup" aria-labelledby="job_option_is_job_wide_label">
-        <span id="job_option_is_job_wide_label" class="d-inline-block">Applies to all tasks in job order?</span>
+        <span id="job_option_is_job_wide_label" class="d-inline-block"><%= t('admin_pages.job_settings.job_wide') %></span>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :is_job_wide, false, class: 'form-check-input' %>
-          <%= f.label :is_job_wide, 'No', class: 'form-check-label', value: false %>
+          <%= f.label :is_job_wide, t('admin_pages.common.no'), class: 'form-check-label', value: false %>
         </div>
 
         <div class="form-check form-check-inline">
           <%= f.radio_button :is_job_wide, true, class: 'form-check-input' %>
-          <%= f.label :is_job_wide, 'Yes', class: 'form-check-label', value: true %>
+          <%= f.label :is_job_wide, t('admin_pages.common.yes'), class: 'form-check-label', value: true %>
         </div>
       </div>
 

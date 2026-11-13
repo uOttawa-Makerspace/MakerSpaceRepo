@@ -1,14 +1,14 @@
 <section>
   <div class="text-center pb-4">
-    <h2 class="py-3 fw-bold">Admin's Skill Manager</h2>
+    <h2 class="py-3 fw-bold"><%= t('admin_area.skills.manager') %></h2>
 
     <%= form_with url: { controller: 'admin/skills', action: 'create' } do |f| %>
       <div class="container">
         <div class="row text-center">
           <div class="col-md-12 form-group input-group">
-            <span class="input-group-text">Name</span>
-            <%= f.text_field :name, placeholder: 'Write a skill type', class: 'form-control', required: true %>
-            <%= f.submit 'Create Skill Type', class: 'btn btn-secondary btn-xl' %>
+            <span class="input-group-text"><%= t('admin_area.skills.name') %></span>
+            <%= f.text_field :name, placeholder: t('admin_area.skills.skill_type_placeholder'), class: 'form-control', required: true %>
+            <%= f.submit t('admin_area.skills.create'), class: 'btn btn-secondary btn-xl' %>
           </div>
         </div>
       </div>
@@ -17,17 +17,16 @@
     <table class="table table-striped mb-5">
       <thead class="table-primary">
         <tr class="text-center">
-          <th>Skill Type</th>
-          <th>Action</th>
+          <th><%= t('admin_area.skills.skill_type') %></th>
+          <th><%= t('admin_area.skills.action') %></th>
         </tr>
       </thead>
 
-      <% @skills.each do |t| %>
+      <% @skills.each do |skill| %>
         <tr>
-          <td><%= t.name %></td>
+          <td><%= skill.name %></td>
           <td>
-          <%= link_to 'Edit', edit_admin_skill_path(t.id), class: 'btn btn-primary' %>
-          <%#= button_to "Delete", admin_skill_path(t.id), method: :delete, data: { confirm: "Are you sure?" }, class:"btn btn-danger my-2" %>
+          <%= link_to t('admin_area.skills.edit'), edit_admin_skill_path(skill.id), class: 'btn btn-primary' %>
           </td>
         </tr>
       <% end %>

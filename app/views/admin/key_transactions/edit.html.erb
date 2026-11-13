@@ -1,5 +1,5 @@
 <section>
-  <h2 class="mb-3 fw-bold py-3 text-center">Return Deposit</h2>
+  <h2 class="mb-3 fw-bold py-3 text-center"><%= t('admin_pages.key_transactions.return_deposit') %></h2>
 
   <%= form_for @key_transaction, url: { controller: 'admin/key_transactions', action: 'update' } do |f| %>
     <div class="row">
@@ -15,7 +15,7 @@
         </div>
 
         <div class="text-center">
-          <%= f.submit 'Update Deposit', class: 'btn btn-primary' %>
+          <%= f.submit t('admin_pages.key_transactions.update_deposit'), class: 'btn btn-primary' %>
         </div>
       </div>
     </div>

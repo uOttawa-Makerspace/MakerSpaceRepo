@@ -1,49 +1,49 @@
-<% provide(:title, 'Manage Users') %>
+<% provide(:title, t('admin_area.users.index.title')) %>
 
 <div class="edit-column">
-  <div class="setting-title">Manage Users</div>
+  <div class="setting-title"><%= t('admin_area.users.index.title') %></div>
   <br>
   <div class="search-form">
     <%= form_tag search_admin_users_path, method: :get do %>
-      <%= select_tag 'filter', options_for_select(%w[Name Email Username]), prompt: t('common.names.search_by'), aria: { label: t('common.names.search_by') } %>
-      <%= text_field_tag 'q', nil, placeholder: 'Search users...', class: 'profile-text' %>
-      <%= submit_tag 'Search', class: 'save-button fw-bold fs-5' %>
+      <%= select_tag 'filter', options_for_select(admin_user_search_filters), prompt: t('common.names.search_by'), aria: { label: t('common.names.search_by') } %>
+      <%= text_field_tag 'q', nil, placeholder: t('admin_area.users.index.search_placeholder'), class: 'profile-text' %>
+      <%= submit_tag t('common.names.search'), class: 'save-button fw-bold fs-5' %>
     <% end %>
   </div>
   <br>
   <% if @query.present? %>
-    <h2>Search results for "<%= @query %>"</h2>
+    <h2><%= t('admin_area.users.search.results_for', query: @query) %></h2>
   <% end %>
   <% if @users.any? %>
     <% direction = params[:direction] == 'asc' ? 'desc' : 'asc' %>
     <table class="admin-table table table-striped">
       <thead class="table-primary">
         <th>
-          <%= link_to 'Username', sort: 'username', direction: direction, q: params[:q], filter: params[:filter] %>
+          <%= link_to t('admin_area.users.columns.username'), sort: 'username', direction: direction, q: params[:q], filter: params[:filter] %>
           <% if params[:sort] == "username" %>
             <i class="fa-solid fa-sort-<%= direction %>"></i>
           <% end %>
         </th>
         <th>
-          <%= link_to 'Name', sort: 'name', direction: direction, q: params[:q], filter: params[:filter] %>
+          <%= link_to t('admin_area.users.columns.name'), sort: 'name', direction: direction, q: params[:q], filter: params[:filter] %>
           <% if params[:sort] == "name" %>
             <i class="fa-solid fa-sort-<%= direction %>"></i>
           <% end %>
         </th>
         <th>
-          <%= link_to 'Signed in', sort: 'lab_sessions.sign_in_time', direction: direction, q: params[:q], filter: params[:filter] %>
+          <%= link_to t('admin_area.users.columns.signed_in'), sort: 'lab_sessions.sign_in_time', direction: direction, q: params[:q], filter: params[:filter] %>
           <% if params[:sort] == "lab_sessions.sign_in_time" %>
             <i class="fa-solid fa-sort-<%= direction %>"></i>
           <% end %>
         </th>
         <th>
-          <%= link_to 'Joined', sort: 'users.created_at', direction: direction, q: params[:q], filter: params[:filter] %>
+          <%= link_to t('admin_area.users.columns.joined'), sort: 'users.created_at', direction: direction, q: params[:q], filter: params[:filter] %>
           <% if params[:sort] == "users.created_at" %>
             <i class="fa-solid fa-sort-<%= direction %>"></i>
           <% end %>
         </th>
-        <th>Edit</th>
-        <th>View</th>
+        <th><%= t('admin_area.users.columns.edit') %></th>
+        <th><%= t('admin_area.users.columns.view') %></th>
       </thead>
       <% @users.each do |user| %>
         <tr>
@@ -52,12 +52,12 @@
           <td>
             <% last_session = user.lab_sessions.max_by(&:id) %>
             <% if last_session %>
-              <%= time_ago_in_words(last_session.sign_in_time) %> ago
+              <%= t('admin_area.time_ago', time: time_ago_in_words(last_session.sign_in_time)) %>
             <% else %>
               -
             <% end %>
           </td>
-          <td><%= time_ago_in_words(user.created_at) %> ago</td>
+          <td><%= t('admin_area.time_ago', time: time_ago_in_words(user.created_at)) %></td>
           <td class="link-table"><%= link_to '<i class="fa-solid fa-pencil" aria-hidden="true"></i>'.html_safe, edit_admin_user_path(user), aria: { label: t('common.names.edit_user') } %></td>
           <td class="link-table"><%= link_to '<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>'.html_safe, admin_user_path(user), aria: { label: t('common.names.view_user') } %></td>
         </tr>
@@ -74,18 +74,18 @@
     <tr>
       <td>
         <% if page_number>1 %>
-          <%= link_to '< Previous page', page: page_number - 1, q: params[:q], filter: params[:filter], sort: params[:sort], direction: params[:direction] %>
+          <%= link_to t('admin_area.previous_page'), page: page_number - 1, q: params[:q], filter: params[:filter], sort: params[:sort], direction: params[:direction] %>
         <% end %>
       </td>
       <td>
         <% if page_number<@pagy.pages %>
-          <%= link_to 'Next page >', page: page_number + 1, q: params[:q], filter: params[:filter], sort: params[:sort], direction: params[:direction] %>
+          <%= link_to t('admin_area.next_page'), page: page_number + 1, q: params[:q], filter: params[:filter], sort: params[:sort], direction: params[:direction] %>
         <% end %>
       </td>
     </tr>
   </table>
   <!-- pagination code ends -->
   <% elsif @query.present? %>
-    No results
+    <%= t('admin_area.users.search.no_results') %>
   <% end %>
 </div>

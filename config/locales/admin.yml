@@ -151,7 +151,7 @@ fr:
     teams: "Équipes"
     uni_programs: "Programmes Universitaires"
     training:
-      title: "Nouvelle entraînement"
+      title: "Nouvelle formation"
       name_en: "Nom en anglais:"
       name_fr: "Nom en français:"
       skill: "Type de compétence:"
@@ -160,6 +160,6 @@ fr:
       los_en: "Liste des compétences (anglais)"
       los_fr: "Liste des compétences (français)"
       spaces: "Espaces"
-      create: "Créer une entraînement"
-      update: "Réviser entraînement"
-      delete: "Effacer"
+      create: "Créer la formation"
+      update: "Mettre à jour la formation"
+      delete: "Supprimer"

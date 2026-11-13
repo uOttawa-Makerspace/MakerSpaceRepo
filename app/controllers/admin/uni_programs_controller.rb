@@ -23,7 +23,7 @@ class Admin::UniProgramsController < AdminAreaController
 
     @result = UniProgram::Import.new(file.read, allow_new_faculties: params[:allow_new_programs].present?).run
   rescue StandardError => e # Grab any error, display to user
-    flash[:alert] = "Programs upload error: #{e}"
+    flash[:alert] = t("admin_area.uni_programs.flash.upload_error", error: e)
   else
     flash[:notice] = upload_summary(@result)
   ensure
@@ -33,7 +33,7 @@ class Admin::UniProgramsController < AdminAreaController
   private
 
   def upload_summary(result)
-    "Upload complete, #{result.found} programs found " \
-      "(#{result.added} added, #{result.updated} updated, #{result.restored} restored, #{result.retired} retired)"
+    t("admin_area.uni_programs.flash.upload_complete", found: result.found, added: result.added,
+                                                         updated: result.updated, restored: result.restored, retired: result.retired)
   end
 end

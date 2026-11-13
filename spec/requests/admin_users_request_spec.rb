@@ -246,6 +246,21 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
+    it "show gives visit times in the app time zone (Toronto), whatever the server's own zone" do
+      original_tz = ENV.fetch("TZ", nil)
+      ENV["TZ"] = "Asia/Tokyo"
+      travel_to(Time.zone.local(2026, 11, 13, 16, 0)) do
+        create(:lab_session, user: target, sign_in_time: Time.zone.local(2026, 11, 13, 9, 15),
+                             sign_out_time: Time.zone.local(2026, 11, 13, 11, 45, 30))
+        get admin_user_path(target)
+      end
+
+      cells = Nokogiri::HTML(response.body).css(".admin-table td").map { |td| td.text.strip }
+      expect(cells.first(2)).to eq(["November 13, 2026 09:15:00", "November 13, 2026 11:45:30"])
+    ensure
+      ENV["TZ"] = original_tz
+    end
+
     it "show links the web address of a user only when it is an http(s) address" do
       target.update_columns(url: "https://example.org/me")
       get admin_user_path(target)
@@ -524,6 +539,14 @@ RSpec.describe "Admin::Users (HTTP contract)", type: :request do
 
       expect(User.where(role: "staff").count).to be >= 8
       expect(many.size).to eq(few.size)
+    end
+
+    it "answers a script request like a form submit: the role changes and it redirects back" do
+      patch set_role_admin_users_path(format: :js), params: { role: "staff", user_ids: [target.id] },
+                                                    headers: { "HTTP_REFERER" => "http://www.example.com/admin/users/manage_roles" }, xhr: true
+
+      expect(response).to redirect_to("http://www.example.com/admin/users/manage_roles")
+      expect(target.reload.role).to eq("staff")
     end
 
     it "json: head 200" do

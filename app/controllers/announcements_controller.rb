@@ -35,7 +35,7 @@ class AnnouncementsController < StaffAreaController
     @announcement.user_id = current_user.id
     if @announcement.save
       redirect_to announcements_path,
-                  notice: "You've successfully created an announcement for #{@announcement.public_goal.capitalize}"
+                  notice: t("admin_pages.announcements.flash.created", audience: t(@announcement.public_goal, scope: "admin_pages.announcements.audiences"))
     else
       redirect_to new_announcement_path,
                   alert: validation_message(@announcement, "errors.announcements.not_created")

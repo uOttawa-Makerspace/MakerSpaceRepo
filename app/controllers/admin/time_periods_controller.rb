@@ -19,7 +19,7 @@ class Admin::TimePeriodsController < AdminAreaController
     @time_period = TimePeriod.new(time_period_params)
     if @time_period.save
       redirect_to admin_time_periods_path
-      flash[:notice] = "You have successfully created a new time period!"
+      flash[:notice] = I18n.t("admin_pages.time_periods.flash.created")
     else
       flash.now[:alert] = validation_message(@time_period, "errors.admin.time_periods.not_created")
       render :new, status: :unprocessable_content
@@ -28,13 +28,13 @@ class Admin::TimePeriodsController < AdminAreaController
 
   def update
     time_period = TimePeriod.find(params[:id])
-    flash_write(time_period, "time_periods.not_updated", "Time Period updated") { time_period.update(time_period_params) }
+    flash_write(time_period, "time_periods.not_updated", I18n.t("admin_pages.time_periods.flash.updated")) { time_period.update(time_period_params) }
     redirect_to admin_time_periods_path
   end
 
   def destroy
     time_period = TimePeriod.find(params[:id])
-    flash_write(time_period, "time_periods.not_deleted", "Time Period Deleted", destroy: true) { time_period.destroy }
+    flash_write(time_period, "time_periods.not_deleted", I18n.t("admin_pages.time_periods.flash.deleted"), destroy: true) { time_period.destroy }
     redirect_to admin_time_periods_path
   end
 

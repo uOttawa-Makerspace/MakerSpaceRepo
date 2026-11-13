@@ -1,16 +1,16 @@
 <section>
   <div class="text-center">
-    <h2>Editing <b><%= @location.name %></b></h2>
+    <h2><%= t('admin_pages.drop_off_locations.editing_html', name: @location.name) %></h2>
     <br />
     <%= form_for @location, url: { controller: 'admin/drop_off_locations', action: 'update' } do |f| %>
       <div class="container">
         <div class="row text-center">
           <div class="col-md-12 form-group input-group">
-            <span class="input-group-text">Drop-Off Location name</span>
-            <%= f.text_field :name, placeholder: 'Write a unique name...', class: 'form-control', required: true %>
-            <%= f.submit 'Update Location', class: 'btn btn-primary btn-xl' %>
-            <%= link_to 'Back', admin_drop_off_locations_path, class: 'btn btn-secondary' %>
-            <%= button_to 'Delete', { controller: 'admin/drop_off_locations', action: :destroy, id: @location.id }, method: :delete,
+            <span class="input-group-text"><%= t('admin_pages.drop_off_locations.name_label') %></span>
+            <%= f.text_field :name, placeholder: t('admin_pages.drop_off_locations.unique_placeholder'), class: 'form-control', required: true %>
+            <%= f.submit t('admin_pages.drop_off_locations.update'), class: 'btn btn-primary btn-xl' %>
+            <%= link_to t('admin_pages.common.back'), admin_drop_off_locations_path, class: 'btn btn-secondary' %>
+            <%= button_to t('admin_pages.common.delete'), { controller: 'admin/drop_off_locations', action: :destroy, id: @location.id }, method: :delete,
                                                                                                                     **confirmation_options(t('confirmations.drop_off_locations.delete', name: @location.name)),
                                                                                                                     class: 'btn btn-danger float-end' %>
         </div>

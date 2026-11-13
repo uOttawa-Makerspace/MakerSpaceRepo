@@ -1,15 +1,15 @@
 <section>
   <div class="text-center pb-4">
-    <h2 class="fw-bold py-3">Unclaimed CC Money</h2>
-    <p>Purchases made without an account. Enter the buyer's email address to send the claim link again; earlier links then stop working. Only the account with the buyer's email can claim it.</p>
+    <h2 class="fw-bold py-3"><%= t('admin_pages.cc_moneys.title') %></h2>
+    <p><%= t('admin_pages.cc_moneys.intro') %></p>
     <table class="table table-striped mb-5">
       <thead class="table-primary">
         <tr class="text-center">
-          <th>ID</th>
-          <th>CC</th>
-          <th>Bought</th>
-          <th>Buyer's email</th>
-          <th>Resend claim email</th>
+          <th><%= t('admin_pages.cc_moneys.id') %></th>
+          <th><%= t('admin_pages.cc_moneys.cc') %></th>
+          <th><%= t('admin_pages.cc_moneys.bought') %></th>
+          <th><%= t('admin_pages.cc_moneys.buyer_email') %></th>
+          <th><%= t('admin_pages.cc_moneys.resend_claim') %></th>
           <th><%= t("admin.cc_money_purchase_email.heading") %></th>
         </tr>
       </thead>
@@ -21,8 +21,8 @@
           <td><%= cc_money.purchaser_email %></td>
           <td>
             <%= form_with url: admin_cc_money_claim_email_path(cc_money), class: "input-group" do |f| %>
-              <%= f.email_field :email, placeholder: "Buyer's email", class: "form-control", required: true %>
-              <%= f.submit "Resend", class: "btn btn-primary" %>
+              <%= f.email_field :email, placeholder: t("admin_pages.cc_moneys.buyer_email"), class: "form-control", required: true %>
+              <%= f.submit t("admin_pages.cc_moneys.resend"), class: "btn btn-primary" %>
             <% end %>
             <% if (resend = cc_money.latest_claim_email_resend) %>
               <small class="text-muted"><%= t("admin.cc_money_claim_email.last_resend",

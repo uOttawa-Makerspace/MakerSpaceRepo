@@ -69,6 +69,71 @@ RSpec.describe "Admin spaces", type: :request do
       expect(response.body).to include("Room A")
     end
 
+    it "counts each training's sessions and active certifications, across spaces, without a query per session" do
+      laser = create(:training, name_en: "Laser", spaces: [space])
+      create(:training, name_en: "Mill", spaces: [space])
+      sessions = [space, space, create(:space)].map { |where| create(:training_session, training: laser, space: where) }
+      sessions.each_with_index { |ts, i| create_list(:certification, 2 - (i / 2), training_session: ts, training: laser) }
+      sessions.first.certifications.first.update_columns(active: false)
+
+      get edit_admin_space_path(space)
+
+      expect(response).to have_http_status(:ok)
+      rows = Nokogiri::HTML(response.body).css("table tr").map { |tr| tr.css("td").map { |td| td.text.strip } }
+      expect(rows).to include(["Laser", "3", "4", ""], ["Mill", "0", "0", ""])
+    end
+
+    it "gives every calendar colour input its own id and an accessible name, keeping each saved colour" do
+      StaffNeededCalendar.create!(space: space, calendar_url: "https://x.test/a.ics", color: "#112233")
+      StaffNeededCalendar.create!(space: space, calendar_url: "https://x.test/b.ics", color: "#445566")
+
+      get edit_admin_space_path(space)
+
+      page = Nokogiri::HTML(response.body)
+      inputs = page.css("#link-container input[type=color]")
+      expect(inputs.map { |input| input["value"] }).to match_array(%w[#112233 #445566])
+      expect(inputs.map { |input| input["id"] }.uniq.size).to eq(2)
+      expect(page.css("input[type=color][id]").map { |input| input["id"] }).to all(start_with("staff_needed_calendar_color_"))
+      expect(page.css("#colorpicker")).to be_empty
+      expect(page.css("input[type=color]").map { |input| input["aria-label"] }).to all(be_present)
+    end
+
+    it "gives every calendar name, url and role input its own id and an accessible name, keeping the submitted names" do
+      StaffNeededCalendar.create!(space: space, name: "A", calendar_url: "https://x.test/a.ics", color: "#112233")
+      StaffNeededCalendar.create!(space: space, name: "B", calendar_url: "https://x.test/b.ics", color: "#445566")
+
+      get edit_admin_space_path(space)
+
+      page = Nokogiri::HTML(response.body)
+      { "staff_needed_calendar_name[]" => "input", "staff_needed_calendar[]" => "input", "staff_needed_calendar_role[]" => "select" }.each do |name, tag|
+        saved = page.css("#link-container #{tag}[name='#{name}']")
+        expect(saved.map { |field| field["id"] }.uniq.size).to eq(2)
+        expect(page.css("#{tag}[name='#{name}']").map { |field| field["aria-label"] }).to all(be_present)
+        expect(page.css("#new-link-input #{tag}[name='#{name}']").map { |field| field["id"] }).to eq([nil])
+      end
+      ids = page.css("#link-container [id]").map { |node| node["id"] }
+      expect(ids).to eq(ids.uniq)
+    end
+
+    it "gives every element on the page a unique id, with two sub spaces" do
+      create(:sub_space, space: space, name: "Room B")
+
+      get edit_admin_space_path(space)
+
+      page = Nokogiri::HTML(response.body)
+      ids = page.css("[id]").map { |node| node["id"] }
+      expect(ids.tally.select { |_id, count| count > 1 }).to be_empty
+      expect(page.css("input[type=hidden][name=space_id]").size).to be >= 5
+      expect(page.css("input[name=name]").map { |input| input["aria-label"] }).to all(be_present)
+    end
+
+    it "gives the new calendar row a colour the colour input accepts" do
+      get edit_admin_space_path(space)
+
+      colour = Nokogiri::HTML(response.body).at_css("#new-link-input input[type=color]")["value"]
+      expect(colour).to match(/\A#\h{6}\z/)
+    end
+
     it "edit 404s for an unknown space" do
       get edit_admin_space_path(0)
       expect(response).to have_http_status(:not_found)

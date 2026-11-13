@@ -1,107 +1,106 @@
-<% provide(:title, 'Admin Area | General Settings') %>
+<% provide(:title, t('admin_pages.settings.page_title')) %>
 
 <section>
   <br><br>
   <div class="row">
     <div class="col-md-6">
-      <h5>Category options</h5><hr>
+      <h5><%= t('admin_pages.settings.category_options') %></h5><hr>
       <%= form_for @cat_option, url: { controller: 'admin/settings', action: 'add_category' } do |f| %>
-        <%= f.label :name, 'Add a category', class: 'form-label profile-label' %>
+        <%= f.label :name, t('admin_pages.settings.add_category'), class: 'form-label profile-label' %>
         <%= f.text_field :name, class: 'profile-text' %>
-        <%= f.submit 'Add', class: 'btn btn-primary' %>
+        <%= f.submit t('admin_pages.common.add'), class: 'btn btn-primary' %>
       <% end %>
       <br>
       <%= form_for @cat_option, url: { controller: 'admin/settings', action: 'remove_category' } do |f| %>
-        <%= label_tag :remove_category, 'Remove a category', class: 'form-label profile-label' %>
-        <%= select_tag :remove_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: 'profile-select form-select', include_blank: 'Select a category...' %>
-        <%= f.submit 'Remove', class: 'btn btn-primary' %>
+        <%= label_tag :remove_category, t('admin_pages.settings.remove_category'), class: 'form-label profile-label' %>
+        <%= select_tag :remove_category, options_from_collection_for_select(CategoryOption.show_options, :id, :name), class: 'profile-select form-select', include_blank: t('admin_pages.settings.select_category') %>
+        <%= f.submit t('admin_pages.common.remove'), class: 'btn btn-primary' %>
       <% end %>
       <br><br>
     </div>
     <div class="col-md-6">
-      <h5>Area options</h5><hr>
+      <h5><%= t('admin_pages.settings.area_options') %></h5><hr>
       <%= form_for @area_option, url: { controller: 'admin/settings', action: 'add_area' } do |f| %>
-        <%= f.label :name, 'Add an area', class: 'form-label profile-label' %>
+        <%= f.label :name, t('admin_pages.settings.add_area'), class: 'form-label profile-label' %>
         <%= f.text_field :name, class: 'profile-text' %>
-        <%= f.submit 'Add', class: 'btn btn-primary' %>
+        <%= f.submit t('admin_pages.common.add'), class: 'btn btn-primary' %>
       <% end %>
       <br>
       <%= form_for @area_option, url: { controller: 'admin/settings', action: 'remove_area' } do |f| %>
-        <%= label_tag :remove_area, 'Remove an area', class: 'form-label profile-label' %>
-        <%= select_tag :remove_area, options_from_collection_for_select(AreaOption.show_options, :id, :name), class: 'profile-select form-select', include_blank: 'Select an area...' %>
-        <%= f.submit 'Remove', class: 'btn btn-primary' %>
+        <%= label_tag :remove_area, t('admin_pages.settings.remove_area'), class: 'form-label profile-label' %>
+        <%= select_tag :remove_area, options_from_collection_for_select(AreaOption.show_options, :id, :name), class: 'profile-select form-select', include_blank: t('admin_pages.settings.select_area') %>
+        <%= f.submit t('admin_pages.common.remove'), class: 'btn btn-primary' %>
       <% end %>
       <br><br>
     </div>
     <div class="col-md-6">
-      <h5>Equipment options</h5><hr><br>
+      <h5><%= t('admin_pages.settings.equipment_options') %></h5><hr><br>
       <%= form_for @equip_option, url: { controller: 'admin/settings', action: 'add_equipment' } do |f| %>
-        <%= f.label :name, 'Add equipment', class: 'form-label profile-label' %>
+        <%= f.label :name, t('admin_pages.settings.add_equipment'), class: 'form-label profile-label' %>
         <%= f.text_field :name, class: 'profile-text' %>
-        <%= f.submit 'Add', class: 'btn btn-primary' %>
+        <%= f.submit t('admin_pages.common.add'), class: 'btn btn-primary' %>
       <% end %>
       <br>
       <%= form_for @equip_option, url: { controller: 'admin/settings', action: 'remove_equipment' } do |f| %>
-        <%= label_tag :remove_equipment, 'Remove equipment', class: 'form-label profile-label' %>
-        <%= select_tag :remove_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: 'profile-select form-select', include_blank: 'Select a piece of equipment...' %>
-        <%= f.submit 'Remove', class: 'btn btn-primary' %>
+        <%= label_tag :remove_equipment, t('admin_pages.settings.remove_equipment'), class: 'form-label profile-label' %>
+        <%= select_tag :remove_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: 'profile-select form-select', include_blank: t('admin_pages.settings.select_equipment') %>
+        <%= f.submit t('admin_pages.common.remove'), class: 'btn btn-primary' %>
       <% end %>
       <br>
       <%= form_for @equip_option, url: { controller: 'admin/settings', action: 'rename_equipment' } do |f| %>
-        <%= label_tag :rename_equipment, 'Rename equipment', class: 'form-label profile-label' %>
-        <%= select_tag :rename_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: 'profile-select form-select', include_blank: 'Select...' %>
+        <%= label_tag :rename_equipment, t('admin_pages.settings.rename_equipment'), class: 'form-label profile-label' %>
+        <%= select_tag :rename_equipment, options_from_collection_for_select(EquipmentOption.show_options, :id, :name), class: 'profile-select form-select', include_blank: t('admin_pages.settings.select') %>
         <%= f.text_field :name, class: 'profile-text', id: 'rename_equipment_text', aria: { label: t('common.names.new_equipment_name') } %>
-        <%= f.submit 'Rename', class: 'btn btn-primary' %>
+        <%= f.submit t('admin_pages.common.rename'), class: 'btn btn-primary' %>
       <% end %>
       <br><br>
     </div>
     <div class="col-md-6">
-      <h5>Card reader options</h5><hr>
+      <h5><%= t('admin_pages.settings.card_reader_options') %></h5><hr>
       <br>
       <%= form_for @pi_option, url: { controller: 'admin/settings', action: 'remove_pi' } do |f| %>
-        <%= label_tag :remove_pi, 'Remove card reader', class: 'form-label profile-label' %>
-        <%= select_tag :remove_pi, options_from_collection_for_select(PiReader.all, :id, :pi_mac_with_location), class: 'profile-select form-select', include_blank: 'Select a card reader...' %>
-        <%= f.submit 'Remove', class: 'btn btn-primary' %>
+        <%= label_tag :remove_pi, t('admin_pages.settings.remove_card_reader'), class: 'form-label profile-label' %>
+        <%= select_tag :remove_pi, options_from_collection_for_select(PiReader.all, :id, :pi_mac_with_location), class: 'profile-select form-select', include_blank: t('admin_pages.settings.select_card_reader') %>
+        <%= f.submit t('admin_pages.common.remove'), class: 'btn btn-primary' %>
       <% end %>
       <br><br>
     </div>
     <div class="col-md-6">
       <div class="mb-5">
-        <h5>Job Order Processed default email</h5><hr/>
-        <p>[QUOTED_BALANCE] = Balance given to user, [PRINT_ID] = Job Order ID</p>
+        <h5><%= t('admin_pages.settings.processed_email') %></h5><hr/>
+        <p><%= t('admin_pages.settings.processed_placeholders') %></p>
         <%= form_for @job_order_processed_message, url: update_job_order_processed_admin_settings_path do |f| %>
           <%= f.trix_editor :message, class: 'repo form-control mb-2', style: 'height: auto!important;', aria: { label: t('common.names.job_order_processed_message') } %>
 
-          <%= f.submit 'Update', class: 'btn btn-primary' %>
+          <%= f.submit t('admin_pages.common.update'), class: 'btn btn-primary' %>
         <% end %>
       </div>
       <div>
-        <h5>Print Failed default email</h5><hr/>
-        <p>[PRINTER_NUMBER] = Printer number, [PRINT_OWNER_NAME] = Print owner full name,
-          [PRINT_OWNER_USERNAME] = Print owner username, [STAFF_NOTES] = Staff notes</p>
+        <h5><%= t('admin_pages.settings.print_failed_email') %></h5><hr/>
+        <p><%= t('admin_pages.settings.print_failed_placeholders') %></p>
         <%= form_for @print_failed_message, url: update_print_failed_message_admin_settings_path do |f| %>
           <%= f.trix_editor :message, class: 'repo form-control mb-2', style: 'height: auto!important;', aria: { label: t('common.names.print_failed_message') } %>
-          <%= f.submit 'Update', class: 'btn btn-primary' %>
+          <%= f.submit t('admin_pages.common.update'), class: 'btn btn-primary' %>
         <% end %>
       </div>
     </div>
     <div class="col-md-6">
-      <h5>Course Options</h5><hr>
+      <h5><%= t('admin_pages.settings.course_options') %></h5><hr>
       <%= form_with url: { controller: 'admin/settings', action: 'add_course' }, class: 'mb-4' do |f| %>
-        <%= label_tag :create_course_name, 'Create course', class: 'form-label profile-label' %>
-        <%= f.text_field :name, id: 'create_course_name', class: 'profile-text', placeholder: 'Write a unique name...' %>
-        <%= f.submit 'Create', class: 'btn btn-primary' %>
+        <%= label_tag :create_course_name, t('admin_pages.settings.create_course'), class: 'form-label profile-label' %>
+        <%= f.text_field :name, id: 'create_course_name', class: 'profile-text', placeholder: t('admin_pages.settings.unique_placeholder') %>
+        <%= f.submit t('admin_pages.common.create'), class: 'btn btn-primary' %>
       <% end %>
       <%= form_with url: { controller: 'admin/settings', action: 'remove_course' }, class: 'mb-4', method: :delete do |f| %>
-        <%= label_tag :remove_course_id, 'Remove course', class: 'form-label profile-label' %>
-        <%= select_tag :id, options_from_collection_for_select(CourseName.all.order(:name), :id, :name), id: 'remove_course_id', class: 'profile-select form-select', include_blank: 'Select a course...' %>
-        <%= f.submit 'Remove', class: 'btn btn-primary' %>
+        <%= label_tag :remove_course_id, t('admin_pages.settings.remove_course'), class: 'form-label profile-label' %>
+        <%= select_tag :id, options_from_collection_for_select(CourseName.all.order(:name), :id, :name), id: 'remove_course_id', class: 'profile-select form-select', include_blank: t('admin_pages.settings.select_course') %>
+        <%= f.submit t('admin_pages.common.remove'), class: 'btn btn-primary' %>
       <% end %>
       <%= form_with url: { controller: 'admin/settings', action: 'rename_course' }, class: 'mb-4', method: :patch do |f| %>
-        <%= label_tag :rename_course_id, 'Rename course', class: 'form-label profile-label' %>
-        <%= select_tag :id, options_from_collection_for_select(CourseName.all.order(:name), :id, :name), id: 'rename_course_id', class: 'profile-select form-select', include_blank: 'Select a course...' %>
-        <%= f.text_field :name, class: 'profile-text', placeholder: 'Write a unique name...' %>
-        <%= f.submit 'Rename', class: 'btn btn-primary' %>
+        <%= label_tag :rename_course_id, t('admin_pages.settings.rename_course'), class: 'form-label profile-label' %>
+        <%= select_tag :id, options_from_collection_for_select(CourseName.all.order(:name), :id, :name), id: 'rename_course_id', class: 'profile-select form-select', include_blank: t('admin_pages.settings.select_course') %>
+        <%= f.text_field :name, class: 'profile-text', placeholder: t('admin_pages.settings.unique_placeholder') %>
+        <%= f.submit t('admin_pages.common.rename'), class: 'btn btn-primary' %>
       <% end %>
     </div>
   </div>

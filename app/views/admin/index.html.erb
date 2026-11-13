@@ -1,24 +1,24 @@
-<% provide(:title, 'Settings') %>
+<% provide(:title, t('admin_area.home.title')) %>
 
 <section>
 
   <br />
 
   <ul class="list-group list-unstyled text-center">
-    <li><%= link_to 'General Settings', admin_settings_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Lockers', lockers_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Announcements', admin_announcements_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Reports', admin_report_generator_index_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Skill Types', admin_skills_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Manage Trainings', admin_trainings_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Training Sessions', admin_training_sessions_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Manage Spaces', admin_spaces_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Manage Roles', manage_roles_admin_users_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Contact Info', admin_contact_infos_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Drop-Off Locations', admin_drop_off_locations_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Deleted Repositories', admin_deleted_repositories_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Unclaimed CC Money', admin_cc_moneys_path, class: 'list-group-item list-group-item-action' %></li>
-    <li><%= link_to 'Programs', admin_uni_programs_index_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.general_settings'), admin_settings_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.lockers'), lockers_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.announcements'), admin_announcements_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.reports'), admin_report_generator_index_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.skill_types'), admin_skills_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.manage_trainings'), admin_trainings_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.training_sessions'), admin_training_sessions_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.manage_spaces'), admin_spaces_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.manage_roles'), manage_roles_admin_users_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.contact_info'), admin_contact_infos_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.drop_off_locations'), admin_drop_off_locations_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.deleted_repositories'), admin_deleted_repositories_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.unclaimed_cc_money'), admin_cc_moneys_path, class: 'list-group-item list-group-item-action' %></li>
+    <li><%= link_to t('admin_area.home.programs'), admin_uni_programs_index_path, class: 'list-group-item list-group-item-action' %></li>
   </ul>
   <br />
 </section>

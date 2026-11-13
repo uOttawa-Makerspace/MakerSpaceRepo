@@ -1,11 +1,11 @@
 <%= form_tag(bulk_add_users_staff_spaces_path, method: :post) do %>
   <div class="row">
     <div class="col-6">
-      <h3 class="py-1">Users to be made staff</h3>
+      <h3 class="py-1"><%= t('admin_pages.add_new_staff.heading') %></h3>
       <div class="mb-3">
-        <%= label_tag(:new_staff_select, 'Add new staff members', class: 'form-label') %>
+        <%= label_tag(:new_staff_select, t('common.names.new_staff'), class: 'form-label') %>
         <%= select_tag 'user_ids[]', '', 
-              include_blank: 'Choose User...',
+              include_blank: t('admin_pages.add_new_staff.choose_user'),
               class: 'new_staff_select form-control w-75',
               id: 'new_staff_select',
               aria: { label: t('common.names.new_staff') },
@@ -15,7 +15,7 @@
     </div>
 
     <div class="col-6">
-      <h3 class="py-1">Assigned Spaces</h3>
+      <h3 class="py-1"><%= t('admin_pages.add_new_staff.assigned_spaces') %></h3>
       <div class="field form-group">
         <div class="checkbox-inline">
           <% @space_list.each do |space| %>
@@ -25,7 +25,7 @@
           <% end %>
         </div>
       </div>
-      <button type="submit" class="btn btn-success mt-3 w-25 mx-auto">Confirm Changes</button>
+      <button type="submit" class="btn btn-success mt-3 w-25 mx-auto"><%= t('admin_pages.add_new_staff.confirm') %></button>
     </div>
   </div>
 <% end %>

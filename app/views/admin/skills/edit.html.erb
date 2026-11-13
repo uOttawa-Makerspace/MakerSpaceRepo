@@ -1,17 +1,17 @@
 <section>
   <div class="text-center">
-    <h2 class="fw-bold my-3">Editing <b><%= @skill.name.capitalize %></b></h2>
+    <h2 class="fw-bold my-3"><%= t('admin_area.skills.editing_html', name: @skill.name.capitalize) %></h2>
     <%= form_for @skill, url: { controller: 'admin/skills', action: 'update' } do |f| %>
       <div class="container mb-3">
         <div class="input-group">
-            <span class="input-group-text">Skill Type:</span>
-            <%= f.text_field :name, placeholder: 'Write a unique name...', class: 'form-control', required: true %>
-            <%= f.submit 'Update Skills', class: 'btn btn-primary btn-xl' %>
-            <%= link_to 'Back', admin_skills_path, class: 'btn btn-secondary' %>
+            <span class="input-group-text"><%= t('admin_area.skills.skill_type_label') %></span>
+            <%= f.text_field :name, placeholder: t('admin_area.skills.name_placeholder'), class: 'form-control', required: true %>
+            <%= f.submit t('admin_area.skills.update'), class: 'btn btn-primary btn-xl' %>
+            <%= link_to t('admin_area.skills.back'), admin_skills_path, class: 'btn btn-secondary' %>
         </div>
       </div>
     <% end %>
-    <%= button_to 'Delete', { controller: 'admin/skills', action: :destroy, id: @skill.id }, method: :delete,
+    <%= button_to t('common.delete'), { controller: 'admin/skills', action: :destroy, id: @skill.id }, method: :delete,
                                                                                              **confirmation_options(t('confirmations.skills.delete')),
                                                                                              class: 'btn btn-danger ' %>
   </div>
