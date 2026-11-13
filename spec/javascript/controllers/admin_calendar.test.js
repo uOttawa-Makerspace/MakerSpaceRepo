@@ -289,6 +289,16 @@ describe("loading the calendar", () => {
     expect(calendar.drawn.events).toBeUndefined();
   });
 
+  it("asks again after a failed request when a filter redraws the same range", async () => {
+    stubFetch({ ok: false });
+    const calendar = await boot();
+    stubFetch();
+    await click("checkbox-cal1");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(titles(calendar.drawn.imported)).toEqual(["Hours"]);
+  });
+
   it("paints the filter boxes in their colours", async () => {
     await boot();
 
