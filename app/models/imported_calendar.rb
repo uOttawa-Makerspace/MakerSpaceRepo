@@ -44,7 +44,7 @@ class ImportedCalendar
 
     # Its occurrences that overlap the window (a CalendarWindow), each carrying this entry.
     def occurrences_in(window)
-      return series.occurrences_in(window).map { |occurrence| occurrence.with(entry: self) } if series
+      return series.occurrences_in(window, entry: self) if series
 
       window.overlaps?(starts_at, ends_at) ? [RecurringSeries::Occurrence.new(starts_at:, ends_at:, all_day:, entry: self)] : []
     end
