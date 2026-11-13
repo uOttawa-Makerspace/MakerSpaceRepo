@@ -28,6 +28,13 @@ RSpec.describe "Staff dashboard in French", type: :request do
     expect(page_text).not_to include("Welcome to", "Sign Out All Users", "Last Seen")
   end
 
+  it "listens for table updates on the stream of its own language" do
+    get staff_dashboard_index_path, params: { locale: "fr" }
+    french = Turbo::StreamsChannel.signed_stream_name(StaffDashboardChannel.table_stream(space.id, :fr))
+
+    expect(Nokogiri::HTML(response.body).css("turbo-cable-stream-source").pluck("signed-stream-name")).to eq([french])
+  end
+
   it "names the previous visit in French" do
     returning = create(:user, :regular_user)
     create(:lab_session, user: returning, space: space, sign_in_time: 3.hours.ago, sign_out_time: 61.minutes.ago)

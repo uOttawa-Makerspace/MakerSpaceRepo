@@ -281,11 +281,11 @@ RSpec.describe "RFID endpoints", type: :request do
       expect {
         post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: other_reader.pi_mac_address }, as: :json
       }.to have_enqueued_job(CardTapJob).with(rfid, other_space.id)
-                                         .and have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
+                                         .and have_broadcasted_to(StaffDashboardChannel.table_stream(space.id, :en)).from_channel(Turbo::StreamsChannel)
       expect(old_session.reload.sign_out_time).to be <= Time.zone.now
       expect { 2.times { perform_enqueued_jobs } }.to have_broadcasted_to("space_event_#{other_space.id}").with(
         a_hash_including("add_user" => a_hash_including("id" => owner.id))
-      ).and have_broadcasted_to("signed_in_table_space_#{other_space.id}").from_channel(Turbo::StreamsChannel)
+      ).and have_broadcasted_to(StaffDashboardChannel.table_stream(other_space.id, :en)).from_channel(Turbo::StreamsChannel)
     end
 
     it "leaves the user signed in where they were when the switch cannot create the new session" do
@@ -314,7 +314,7 @@ RSpec.describe "RFID endpoints", type: :request do
     it "broadcasts a table update (and no modal) to the signed-in table stream on sign out" do
       tap_card
       travel(RfidTap::REPEAT_WINDOW + 1.second)
-      expect { tap_card }.to have_broadcasted_to("signed_in_table_space_#{space.id}").from_channel(Turbo::StreamsChannel)
+      expect { tap_card }.to have_broadcasted_to(StaffDashboardChannel.table_stream(space.id, :en)).from_channel(Turbo::StreamsChannel)
       expect { tap_card }.not_to have_broadcasted_to("space_event_#{space.id}")
     end
 
