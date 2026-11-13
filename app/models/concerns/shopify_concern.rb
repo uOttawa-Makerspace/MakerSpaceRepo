@@ -161,10 +161,6 @@ module ShopifyConcern
     def marked_for?(tags, record_id) = draft_order_processable?(tags) && draft_marker_record_id(tags) == record_id
   end
 
-  def shopify_is_paid
-    shopify_draft_order&.dig('order', 'fullyPaid') == true
-  end
-
   def shopify_draft_order_key_name
     self.class.shopify_draft_order_key_name
   end
