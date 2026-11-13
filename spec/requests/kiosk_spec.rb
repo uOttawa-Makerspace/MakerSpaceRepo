@@ -81,13 +81,13 @@ RSpec.describe "Kiosks", type: :request do
   describe "POST /kiosk/:id/sign_email" do
     before { sign_in_as(:staff) }
 
-    it "signs a visitor in by username with an 8 hour session and redirects to the kiosk" do
+    it "signs a visitor in by username with a 6 hour session and redirects to the kiosk" do
       expect { post kiosk_sign_email_path(space.id), params: { visitor: visitor.username, entering: "true" } }.to change(LabSession, :count).by(1)
       expect(response).to redirect_to(kiosk_path(space.id))
       expect(flash[:notice]).to eq("Signing in to #{space.name}, hello #{visitor.name}")
       ls = LabSession.last
       expect(ls).to have_attributes(user_id: visitor.id, space_id: space.id)
-      expect(ls.sign_out_time - ls.sign_in_time).to be_within(5.seconds).of(8.hours)
+      expect(ls.sign_out_time - ls.sign_in_time).to be_within(5.seconds).of(6.hours)
     end
 
     it "signs a visitor in by email" do
@@ -107,6 +107,12 @@ RSpec.describe "Kiosks", type: :request do
       expect(response).to redirect_to(kiosk_path(space.id))
       expect(flash[:notice]).to eq("Signing out from #{space.name}, bye #{visitor.name}")
       expect(LabSession.where(user: visitor).active).to be_empty
+    end
+
+    it "ends every active session the visitor has in the space and logs one row" do
+      2.times { LabSession.create!(user: visitor, space: space, sign_in_time: 1.hour.ago, sign_out_time: 5.hours.from_now) }
+      expect { post kiosk_sign_email_path(space.id), params: { visitor: visitor.username, leaving: "true" } }.to change(KioskSignEvent, :count).by(1)
+      expect(LabSession.where(user: visitor, space: space).active).to be_empty
     end
 
     it "flashes a sign-out notice even when there was nothing to end" do

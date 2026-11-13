@@ -25,7 +25,8 @@ namespace :lockers do
     sweep.listed.each { |gid| puts "would close: #{gid}" }
     sweep.closed.each { |gid| puts "closed: #{gid}" }
     report.counts.each { |outcome, n| puts "#{outcome}: #{n}" }
-    report.unresolved.each { |line| warn "not resolved: #{line}" }
+    # The report, not a warning: Kernel#warn prints nothing when Ruby warnings are off (RUBYOPT=-W0).
+    report.unresolved.each { |line| $stderr.puts "not resolved: #{line}" } # rubocop:disable Style/StderrPuts
     puts apply ? 'applied: listed drafts were closed' : 'nothing changed (add [apply] to close the listed drafts)'
     exit(1) unless report.ok?
   end

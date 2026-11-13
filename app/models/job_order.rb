@@ -865,8 +865,17 @@ class JobOrder < ApplicationRecord
 
   # the draft id and the fingerprint of the quote it was created from are written in one UPDATE. The line
   # items the concern sent were built from the same #quote_snapshot as #quote_fingerprint.
-  def store_shopify_draft_order_id(new_id, _line_items)
+  def store_shopify_draft_order_id(new_id)
     update_columns(shopify_draft_order_id: new_id, shopify_draft_order_fingerprint: quote_fingerprint)
+  end
+
+  # A job order makes its draft only inside #checkout_link_under_lock: the order row is locked and its stored id
+  # cleared, so no other request can store a draft meanwhile and the new one is stored straight away. A draft whose
+  # transaction rolls back afterwards is one no order points at, which JobOrder::DraftSweep removes.
+  def create_shopify_draft_order
+    new_id, = create_remote_draft_order
+    store_shopify_draft_order_id(new_id)
+    fetch_shopify_draft_order
   end
 
   # Loads the quote options of the snapshot's quotes in one query (a no-op for quotes that already have them).

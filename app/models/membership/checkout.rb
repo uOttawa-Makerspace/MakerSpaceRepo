@@ -6,10 +6,11 @@ class Membership
   # one payable draft at any moment.
   #
   # Concurrency: the user's row lock serializes claiming a pending membership (Shopify itself is called outside any
-  # lock). Every change to a membership's draft id or status is a conditional UPDATE from the state the caller saw
-  # (Membership#change_if_pending), so a request holding an out-of-date view of the row changes nothing: it adopts a
-  # draft only while the row has none and releases only the draft it deleted. A draft that loses such a race is
-  # deleted, and the loser serves the winner's draft.
+  # lock). A new draft is stored under the membership's row lock, read again, only while the membership is pending
+  # and has none (ShopifyConcern#keep_draft_order_id_unless_taken); every other change to its draft id or status is a
+  # conditional UPDATE from the state the caller saw (Membership#change_if_pending), so a request holding an
+  # out-of-date view of the row changes nothing and releases only the draft it deleted. A draft that loses such a
+  # race is deleted, and the loser serves the winner's draft.
   module Checkout
     extend ActiveSupport::Concern
 
@@ -75,7 +76,7 @@ class Membership
     def create_and_adopt_draft
       new_id, _, invoice_url = create_remote_draft_order
       created = { 'id' => new_id, 'invoiceUrl' => invoice_url, 'status' => 'OPEN' }
-      return created if keep_or_discard_draft(new_id)
+      return created if keep_draft_order_id_unless_taken(new_id)
 
       raise CheckoutClosed, "Membership #{id} was expired while its draft was being made" if expired?
       # The winner's draft may be as new as ours: if Shopify does not show it yet, ask again rather than replace it.
@@ -102,7 +103,7 @@ class Membership
     # If the old draft cannot be deleted (reported) the member keeps it and pays the price its open invoice shows.
     def replace_draft(draft)
       stale_id = shopify_draft_order_id
-      unless delete_draft(stale_id, 'stale')
+      unless delete_stale_draft(stale_id)
         return draft || raise("Draft order #{stale_id} is gone from Shopify but could not be released")
       end
 
@@ -111,45 +112,24 @@ class Membership
       fetch_or_create_draft || raise("Draft order #{shopify_draft_order_id} is not on Shopify right after it was made")
     end
 
-    # ShopifyConcern's hook for a draft it has just created.
-    def store_shopify_draft_order_id(new_id, _line_items)
-      keep_or_discard_draft(new_id)
+    # Read under the row lock by #keep_draft_order_id_unless_taken: only a pending membership takes a new draft.
+    def may_take_draft_order? = pending?
+
+    # Storing a new draft is checkout activity, so the pending membership is not expired while the member pays.
+    def store_shopify_draft_order_id(new_id)
+      update_columns(shopify_draft_order_id: new_id, updated_at: Time.current)
     end
 
-    # The draft was just created on Shopify (no lock held); keep it only if no other request stored one first. A
-    # draft that lost the race, or could not be stored, is deleted, so one membership has one payable draft. True
-    # when this draft was kept.
-    def keep_or_discard_draft(new_id)
-      kept = adopt_draft(new_id)
-      discard_unused_draft(new_id) unless kept
-      kept
-    rescue StandardError
-      discard_unused_draft(new_id)
-      raise
-    end
-
-    # Stores the draft id when the membership is still pending and has none; either way the row is read again, so
-    # it holds whichever draft won. True when this draft was stored.
-    def adopt_draft(new_id)
-      stored = change_if_pending({ shopify_draft_order_id: nil }, shopify_draft_order_id: new_id)
-      reload
-      stored
-    end
-
-    def discard_unused_draft(gid)
-      delete_draft(gid, 'unused')
-    end
-
-    # Deletes the draft on Shopify. True when it is deleted or gone. False when it was paid meanwhile, and false
-    # (reported) when it is still open or Shopify could not be asked: the draft is then still payable.
-    def delete_draft(gid, what)
+    # Deletes the stored draft on Shopify. True when it is deleted or gone. False when it was paid meanwhile, and
+    # false (reported) when it is still open or Shopify could not be asked: the draft is then still payable.
+    def delete_stale_draft(gid)
       outcome = ShopifyConcern::DraftRemoval.call(gid).outcome
-      raise "Shopify did not delete the #{what} draft order #{gid}" if outcome == :open
+      raise "Shopify did not delete the stale draft order #{gid}" if outcome == :open
 
       outcome != :completed
     rescue StandardError => e
       Rails.error.report(e, handled: true, severity: :error,
-                            context: { membership_id: id, step: "delete_#{what}_shopify_draft_order" })
+                            context: { membership_id: id, step: 'delete_stale_shopify_draft_order' })
       false
     end
   end

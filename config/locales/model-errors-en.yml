@@ -89,11 +89,15 @@ en:
                 has_many: "This training session has awarded certifications or has exams, so it cannot be deleted."
             training:
               blank: "A training subject is required"
+              not_offered_in_space: "is not offered in this space"
             user:
               blank: "A trainer is required"
               must_be_staff: "must be staff"
             level:
               blank: "A level is required"
+              not_allowed: "must be one of %{levels}"
+            course:
+              too_long: "must be a string of at most 255 characters"
         membership_tier:
           attributes:
             base:

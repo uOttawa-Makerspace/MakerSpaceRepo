@@ -362,7 +362,7 @@ RSpec.describe Membership, type: :model do
       before { allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] } }
 
       it "deletes it and re-raises when storing its id fails" do
-        allow(m).to receive(:adopt_draft).and_raise(ActiveRecord::LockWaitTimeout, "x")
+        allow(m).to receive(:lock!).and_raise(ActiveRecord::LockWaitTimeout, "x")
         expect { m.checkout_link }.to raise_error(ActiveRecord::LockWaitTimeout)
         expect(fake.deleted_ids).to eq(["gid://shopify/DraftOrder/9001"])
         expect(m.reload.shopify_draft_order_id).to be_nil
@@ -403,6 +403,32 @@ RSpec.describe Membership, type: :model do
         error, opts = reports.first
         expect(error.message).to include("did not delete the unused draft order")
         expect(opts[:context]).to include(membership_id: m.id, step: "delete_unused_shopify_draft_order")
+      end
+
+      it "leaves an unused draft that was paid meanwhile alone, without a report" do
+        fake.delete_user_errors = [{ "field" => "id", "message" => "completed" }]
+        fake.draft_statuses["gid://shopify/DraftOrder/9001"] = "COMPLETED"
+        m.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/1")
+        Membership.find(m.id).send(:create_shopify_draft_order)
+        expect(reports).to be_empty
+        expect(m.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/1")
+      end
+
+      it "the loser of the race holds the winner's id, read from the row" do
+        stale = Membership.find(m.id)
+        m.update_column(:shopify_draft_order_id, "gid://shopify/DraftOrder/1")
+        stale.send(:create_shopify_draft_order)
+        expect(stale.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/1")
+      end
+    end
+
+    it "storing a new draft counts as checkout activity (updated_at moves to now)" do
+      stub_shopify_admin!
+      m = travel_to(10.days.ago) { create(:membership, user: user, membership_tier: tier, status: "pending") }
+      freeze_time do
+        m.checkout_link
+        expect(m.reload.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/9001")
+        expect(m.updated_at).to eq(Time.current)
       end
     end
 

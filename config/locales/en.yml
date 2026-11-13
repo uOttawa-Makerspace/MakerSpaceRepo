@@ -277,6 +277,22 @@ en:
       ask_again: "You may send a new request from the booking page."
       open_page: "Go to MakerRepo Booking"
       why_received: "You have received this email because your booking access request was answered."
+    staff:
+      hello: "Hello,"
+      open_panel: "Visit Panel"
+    send_booking_needs_approval:
+      subject: "Booking needs approval"
+      body: "A booking has been made in %{room} by %{booker} for %{description} on %{start} to %{end}. Please check the Booking Admin Panel to approve or decline this booking."
+      why_received: "You have received this email because a booking requiring approval has been requested."
+    send_booking_automatically_approved:
+      subject: "Booking automatically approved."
+      body: "A booking has been made and automatically approved in %{room} by %{booker} for %{description} on %{start} to %{end}. If you want to disable automatic booking for this subspace, go to the admin space page."
+      why_received: "You have received this email because a booking has been automatically approved."
+    send_booking_approval_request_sent:
+      subject: "Booking approval request sent"
+      body_html: "A user by the name of %{name} has requested to be a room booker in makeroom. Please go to the %{panel} admin panel to approve or deny this request."
+      panel: "MakerRepo Booking"
+      why_received: "You have received this email because a user has requested booking access."
   sub_space_booking:
     access_status:
       none: "You have not requested booking access yet."

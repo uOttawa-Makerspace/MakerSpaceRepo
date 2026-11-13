@@ -733,7 +733,9 @@ RSpec.describe "Content pages (part 2)", type: :request do
     it "re-renders a form that posts again, and the retry succeeds" do
       allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return(false)
       post help_path, params: params
-      expect(response.body).not_to include('name="_method"')
+      help_form = Nokogiri::HTML(response.body).at_css("form[action='#{help_path}']")
+      expect(help_form["method"]).to eq("post")
+      expect(help_form.at_css("input[name='_method']")).to be_nil
       allow_any_instance_of(GithubIssuesService).to receive(:create_issue).and_return({ number: 5 })
       expect { post help_path, params: params }.to change(Help, :count).by(1)
       expect(response).to redirect_to(help_path)
