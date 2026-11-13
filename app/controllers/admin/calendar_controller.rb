@@ -23,6 +23,7 @@ class Admin::CalendarController < AdminAreaController
     end
     .sort_by { |user| user[:name].downcase }
     flash[:alert] = "You are not assigned to any spaces." if @spaces.empty?
+    load_sidebar
   end
 
   # Per staff member of the space: their unavailabilities in the window (CalendarWindow), stored ones and those of
@@ -66,9 +67,36 @@ class Admin::CalendarController < AdminAreaController
 
   private
 
+  # The space the calendar shows is the one the space picker shows: the admin's own space when it is offered, else
+  # the first one. Its sidebar lists its event types, its staff and its imported calendars.
+  def load_sidebar
+    space_id = (@spaces.find_by(id: @space_id) || @spaces.first)&.id
+    return if space_id.nil?
+
+    @calendar_space_id = space_id
+    @hidden = %i[hidden_staff hidden_staff_events hidden_events hidden_calendars].index_with { |param| params[param].to_s.split(",") }
+    @event_types = Event.where(space_id: space_id).distinct.order(:event_type).pluck(:event_type)
+    @sidebar_staff = sidebar_staff(space_id)
+    @imported_calendars = StaffNeededCalendar.where(space_id: space_id).where.not(calendar_url: [nil, ""]).map do |calendar|
+      { id: ImportedCalendar.id_for(calendar.calendar_url), name: imported_name(calendar),
+        color: calendar.color.presence || helpers.generate_color_from_id(calendar.calendar_url) }
+    end
+  end
+
   # The staff whose unavailabilities the calendar shows: the space's staff and admins.
   def calendar_staff(space_id)
     User.where(id: StaffSpace.where(space_id: space_id).select(:user_id), role: %w[admin staff])
+  end
+
+  # The calendar staff with their colour, those with unavailabilities (stored, or an external calendar) first, each
+  # part by name.
+  def sidebar_staff(space_id)
+    colors = StaffSpace.where(space_id: space_id).pluck(:user_id, :color).to_h
+    busy = StaffUnavailability.where(user_id: colors.keys).distinct.pluck(:user_id) |
+           StaffExternalUnavailability.where(user_id: colors.keys).distinct.pluck(:user_id)
+    calendar_staff(space_id).pluck(:id, :name)
+                            .map { |id, name| { id: id, name: name, color: colors[id], busy: busy.include?(id) } }
+                            .sort_by { |member| [member[:busy] ? 0 : 1, member[:name].to_s.downcase] }
   end
 
   def stored_unavailability_row(unavailability, staff)

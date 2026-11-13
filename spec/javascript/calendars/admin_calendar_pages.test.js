@@ -11,7 +11,6 @@ beforeEach(() => {
   flatpickr = vi.fn(() => ({ destroy }));
   vi.stubGlobal("flatpickr", flatpickr);
 });
-vi.mock("../../../app/javascript/src/fullcalendar_setup_admin", () => ({}));
 vi.mock("../../../app/javascript/src/manage_calendar_events", () => ({}));
 vi.mock("../../../app/javascript/src/calendar_helper", () => ({
   addEventClick: vi.fn(),

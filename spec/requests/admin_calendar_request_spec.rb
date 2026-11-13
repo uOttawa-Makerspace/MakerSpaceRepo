@@ -501,6 +501,80 @@ RSpec.describe "Admin calendar contract", type: :request do
     end
   end
 
+  describe "GET index sidebar" do
+    let(:page_html) { Nokogiri::HTML(response.body) }
+
+    before do
+      log_in!(admin)
+      admin.update_column(:space_id, space.id)
+      StaffSpace.create!(user: admin, space: space, color: "#111111")
+    end
+
+    def labels(container)
+      page_html.css("##{container} label").map { |label| label.text.strip }
+    end
+
+    it "lists every event type of the space, staff with unavailabilities first, and the imported calendars" do
+      create(:event, space: space, event_type: "shift", start_time: Time.utc(2020, 1, 1, 14), end_time: Time.utc(2020, 1, 1, 15))
+      create(:event, space: space, event_type: "meeting", start_time: Time.utc(2027, 1, 1, 14), end_time: Time.utc(2027, 1, 1, 15))
+      StaffSpace.create!(user: staff, space: space, color: "#222222")
+      StaffSpace.create!(user: create(:user, :regular_user), space: space, color: "#333333")
+      StaffUnavailability.create!(user: staff, start_time: Time.utc(2027, 1, 1, 14), end_time: Time.utc(2027, 1, 1, 15))
+      StaffNeededCalendar.create!(space: space, calendar_url: "https://calendar.example/open.ics", name: "", color: "#123456")
+
+      get admin_calendar_index_path
+
+      expect(labels("events_checkbox_container")).to eq(%w[Meeting Shift])
+      expect(labels("staff_checkbox_container")).to eq(["/", "All Staff", "/", staff.name, "/", "#{admin.name} (0 unavailabilities)"])
+      calendar_box = page_html.at_css("#calendars_checkbox_container input")
+      expect(calendar_box["value"]).to eq(Digest::MD5.hexdigest("https://calendar.example/open.ics"))
+      expect(calendar_box["data-color"]).to eq("#123456")
+      expect(labels("calendars_checkbox_container")).to eq(["Unnamed Calendar"])
+      expect(page_html.at_css("#imported_calendars_status")["hidden"]).not_to be_nil
+    end
+
+    it "counts an external calendar as having unavailabilities" do
+      StaffExternalUnavailability.create!(user: admin, ics_url: "https://calendar.example/admin.ics")
+
+      get admin_calendar_index_path
+
+      expect(labels("staff_checkbox_container")).to include(admin.name)
+    end
+
+    it "unticks the boxes the address lists as hidden" do
+      StaffSpace.create!(user: staff, space: space)
+      create(:event, space: space, event_type: "shift")
+
+      get admin_calendar_index_path, params: { hidden_staff: staff.id.to_s, hidden_staff_events: "#{admin.id},0", hidden_events: "shift" }
+
+      checked = page_html.css("#checkbox_container input[type=checkbox]").to_h { |box| [box["id"], box.key?("checked")] }
+      expect(checked).to include("checkbox-all" => false, "checkbox-all-events" => false, "checkbox-#{staff.id}" => false,
+                                 "checkbox-#{admin.id}" => true, "checkbox-events-#{admin.id}" => false,
+                                 "checkbox-events-#{staff.id}" => true, "checkbox-shift" => false)
+      expect(page_html.at_css("#imported_calendars_status").text).to eq("No calendars found")
+    end
+
+    it "feeds the calendar from the space the space picker shows" do
+      other = create(:space)
+      admin.update_column(:space_id, other.id)
+
+      get admin_calendar_index_path
+
+      calendar = page_html.at_css("[data-controller='admin-calendar']")
+      expect(calendar["data-admin-calendar-events-url-value"]).to eq(json_admin_events_path(id: space.id))
+      expect(calendar["data-admin-calendar-unavailabilities-url-value"]).to eq(unavailabilities_json_admin_calendar_index_path(id: space.id))
+      expect(calendar["data-admin-calendar-imported-url-value"]).to eq(imported_calendars_json_admin_calendar_index_path(id: space.id))
+    end
+  end
+
+  it "draws no calendar and lists no filters for an admin with no staffed spaces" do
+    create(:space)
+    log_in!(admin)
+    get admin_calendar_index_path
+
+    expect(response.body).not_to include("data-controller=\"admin-calendar\"", "staff_checkbox_container")
+  end
+
   describe "update_color failure variants (all answer 422 and change nothing)" do
     before do
       log_in!(admin)

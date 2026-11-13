@@ -72,6 +72,9 @@ class ImportedCalendar
     zone || ZONE
   end
 
+  # The id the rows of a calendar carry (their groupId), made from its link.
+  def self.id_for(url) = Digest::MD5.hexdigest(url.to_s)
+
   # The feed body, or nil when the server gave none (or an empty one).
   def self.body(url, fresh: false)
     cached(["ics-body", Digest::SHA256.hexdigest(url)], fresh: fresh) { IcsFetcher.get(url, timeout: 10).presence }
@@ -112,7 +115,7 @@ class ImportedCalendar
 
   def initialize(url, name, color)
     @url = url.to_s
-    @id = Digest::MD5.hexdigest(@url)
+    @id = self.class.id_for(@url)
     @name = name
     @color = color
     @entries = []

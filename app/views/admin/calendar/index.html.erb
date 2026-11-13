@@ -14,40 +14,39 @@
         </div>
     <% end %>
 </div>
-<section id="calendar_container">
+<div <%= tag.attributes(data: {
+    controller: "admin-calendar",
+    admin_calendar_events_url_value: json_admin_events_path(id: @calendar_space_id),
+    admin_calendar_unavailabilities_url_value: unavailabilities_json_admin_calendar_index_path(id: @calendar_space_id),
+    admin_calendar_imported_url_value: imported_calendars_json_admin_calendar_index_path(id: @calendar_space_id)
+  }) if @calendar_space_id %>>
+<section id="calendar_container" data-admin-calendar-target="container">
     <div class="row">
         <div id="checkbox_container" class="col-md-3">
             <button type="button" id="addEventButton" class="btn btn-outline-primary my-2 w-100" disabled data-bs-toggle="modal" data-bs-target="#eventModal">
                 + Add Event
             </button>
             <div id="staff_load_error" class="alert alert-danger d-none" role="alert"><%= t("admin.calendar_staff_load_error") %></div>
-            <p class="fw-bold mt-1">Events / Unavailabilities</p>
-            <div id="staff_checkbox_container"></div>
-            <p class="fw-bold" style="display: none;">Events</p>
-            <div id="events_checkbox_container"></div>
-            <p class="fw-bold mt-1">Imported Calendars</p>
-            <div id="calendars_checkbox_container">
-                <span id="imported_calendars_status">Loading...</span>
-            </div>
+            <%= render "sidebar" if @calendar_space_id %>
             <div class="my-4">
                 <%= form_with url: "/admin/events/publish", method: :patch, local: false, html: { class: "useTurbo dropdown show mb-2" } do %>
-                    <button id="publish_drafts_button" type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button id="publish_drafts_button" type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-admin-calendar-target="publishDrafts">
                         Publish This Week's Drafts
                     </button>
                     <%= hidden_field_tag :space_id, @space_id %>
-                    <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
-                    <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
+                    <%= hidden_field_tag :view_start_date, nil, class: "view_start_date", data: { admin_calendar_target: "viewStart" } %>
+                    <%= hidden_field_tag :view_end_date, nil, class: "view_end_date", data: { admin_calendar_target: "viewEnd" } %>
                     <div class="dropdown-menu">
                         <%= submit_tag "Confirm Publish", class: "dropdown-item py-2" %>
                     </div>
                 <% end %>
                 <%= form_with url: "/admin/events/delete_drafts", method: :delete, local: false, html: { class: "useTurbo dropdown show mb-2" } do %>
-                    <button id="delete_drafts_button" type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button id="delete_drafts_button" type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-admin-calendar-target="deleteDrafts">
                         Delete This Week's Drafts
                     </button>
                     <%= hidden_field_tag :space_id, @space_id %>
-                    <%= hidden_field_tag :view_start_date, nil, class: "view_start_date" %>
-                    <%= hidden_field_tag :view_end_date, nil, class: "view_end_date" %>
+                    <%= hidden_field_tag :view_start_date, nil, class: "view_start_date", data: { admin_calendar_target: "viewStart" } %>
+                    <%= hidden_field_tag :view_end_date, nil, class: "view_end_date", data: { admin_calendar_target: "viewEnd" } %>
                     <div class="dropdown-menu">
                         <%= submit_tag "Confirm Delete", class: "dropdown-item py-2" %>
                     </div>
@@ -57,14 +56,15 @@
                 </button>
             </div>
         </div>
-        <div id="calendar" class="col-md-9 w-md-100" style="zoom: 1;"></div>
+        <div id="calendar" class="col-md-9 w-md-100" style="zoom: 1;" data-admin-calendar-target="calendar"></div>
     </div>
 </section>
 <% if @spaces.any? %>
-<div id="spinner_container">
+<div id="spinner_container" data-admin-calendar-target="spinner">
     <div id='spinner' class="spinner-border" role="status"></div>
 </div>
 <% end %>
+</div>
 
 <%= render 'colors' %>
 
@@ -101,6 +101,11 @@
 
     .unavailability {
         outline: 2px solid red;
+    }
+
+    .calendar-filter {
+        width: 20px;
+        height: 20px;
     }
     /* Center text in all calendar events */
     .fc-event-title,
