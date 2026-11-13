@@ -131,7 +131,7 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
   it "refuses to run without a usable DEPLOYED_AT, and changes nothing" do
     booking = create(:sub_space_booking, :with_old_status_row)
     write_old_row(booking, approved)
-    [nil, "", "yesterday"].each do |value|
+    [nil, "", "yesterday", "2026-11-15T14:30:00"].each do |value|
       allow(ENV).to receive(:[]).with("DEPLOYED_AT").and_return(value)
       Rake::Task["bookings:reconcile_statuses"].reenable
 

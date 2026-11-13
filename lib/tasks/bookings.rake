@@ -11,9 +11,12 @@ namespace :bookings do
     # later than the deploy was changed by the new release and is never overwritten; a booking with no status
     # is always copied. The record rows are written by the same statement as the update.
     deployed_at = begin
-      Time.iso8601(ENV["DEPLOYED_AT"].to_s).utc
+      raw = ENV["DEPLOYED_AT"].to_s
+      raise ArgumentError, "no zone" unless raw.match?(/(Z|[+-]\d{2}:?\d{2})\z/i)
+
+      Time.iso8601(raw).utc
     rescue ArgumentError
-      abort "Set DEPLOYED_AT to the ISO 8601 time the new release started serving, e.g. DEPLOYED_AT=2026-11-15T14:30:00Z"
+      abort "Set DEPLOYED_AT to an ISO 8601 time with a zone (Z or an offset) for when the new release was created, e.g. DEPLOYED_AT=2026-11-15T14:30:00Z"
     end
     after_deploy = SubSpaceBooking.connection.quote(deployed_at)
     changed = SubSpaceBooking.connection.select_rows(<<~SQL.squish)
