@@ -661,6 +661,49 @@ RSpec.describe "Sub Space Bookings (HTTP contract)", :booking_clock, type: :requ
     it "answers an empty list without a room param" do
       expect(feed(room: nil)).to be_empty
     end
+
+    # A booking keeps blocking the room when it has no owner (a calendar import
+    # from someone without an account) or when its owner's account was deleted.
+    context "when the booking has no owner or a deleted owner" do
+      let!(:ownerless) do
+        feed_booking(name: "Imported", description: "D", public: false).tap do |booking|
+          booking.update_columns(user_id: nil)
+        end
+      end
+      let!(:orphaned) do
+        feed_booking(name: "Left", description: "D", public: false,
+                     start_time: DateTime.parse("2027-04-03 12:00"),
+                     end_time: DateTime.parse("2027-04-03 13:00"))
+      end
+
+      before { owner.update_columns(deleted: true) }
+
+      it "lists both to a regular viewer like any other booking" do
+        expect(feed).to eq([
+          { "id" => "booking_#{ownerless.id}_#{subspace.id}", "title" => "Space Booked",
+            "start" => "2027-04-03T06:00:00.000-04:00", "end" => "2027-04-03T07:00:00.000-04:00",
+            "color" => "#497979", "viewable" => false },
+          { "id" => "booking_#{orphaned.id}_#{subspace.id}", "title" => "Space Booked",
+            "start" => "2027-04-03T08:00:00.000-04:00", "end" => "2027-04-03T09:00:00.000-04:00",
+            "color" => "#497979", "viewable" => false }
+        ])
+      end
+
+      it "shows admins no owner for the ownerless one and the deleted account for the other" do
+        live_owner = create(:user, :regular_user, booking_approval: true)
+        feed_booking(name: "Live", description: "D", public: false, user: live_owner,
+                     start_time: DateTime.parse("2027-04-03 14:00"), end_time: DateTime.parse("2027-04-03 15:00"))
+        titles = feed(user: admin_viewer).map { |event| event["title"] }
+        expect(titles).to eq(["Imported - D", "Left - D - #{owner.name} (deleted account)",
+                              "Live - D - #{live_owner.name}"])
+      end
+
+      it "keeps the Space Blocked title and colour for a blocking one" do
+        ownerless.update_columns(blocking: true)
+        event = feed(user: admin_viewer).first
+        expect(event).to include("title" => "Space Blocked", "color" => "#ABABABFF")
+      end
+    end
   end
 
   # ---------------------------------------------------------- edit + update
