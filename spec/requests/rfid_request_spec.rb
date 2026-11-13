@@ -250,9 +250,27 @@ RSpec.describe "RFID endpoints", type: :request do
       expect(TapBoxLog.where(event_type: TapBoxLog::ERROR).last.details["reason"]).to eq("no_space")
     end
 
-    it "falls back to a registered reader's space when staff omit space_id" do
-      post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: pi_reader.pi_mac_address }, headers: bearer(assigned_staff), as: :json
-      expect(body[:success]).to eq("RFID sign in")
+    it "never takes a staff tap's space from a reader's mac_address, even a reader of an assigned space" do
+      expect do
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: pi_reader.pi_mac_address }, headers: bearer(assigned_staff), as: :json
+      end.not_to change(LabSession, :count)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(body).to eq(new_rfid: "Error, missing space_id or mac_address param")
+    end
+
+    it "does not let staff tap into an unassigned space through that space's reader mac_address" do
+      away = create(:pi_reader, space: create(:space))
+      expect do
+        post rfid_card_number_path, params: { rfid: rfid.card_number, mac_address: away.pi_mac_address }, headers: bearer(assigned_staff), as: :json
+      end.not_to change { [LabSession.count, Rfid.count] }
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "signs in at the named assigned space even when the request carries another space's reader mac_address" do
+      away = create(:pi_reader, space: create(:space))
+      post rfid_card_number_path, params: { rfid: rfid.card_number, space_id: space.id, mac_address: away.pi_mac_address }, headers: bearer(assigned_staff), as: :json
+      expect(body).to eq(success: "RFID sign in")
+      expect(LabSession.where(user: owner).active.pluck(:space_id)).to eq([space.id])
     end
   end
 

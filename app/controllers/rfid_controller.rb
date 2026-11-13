@@ -86,10 +86,11 @@ class RfidController < SessionsController
     )
 
     # --- Resolve space ---
-    space = staff_requested_space
+    # A staff tap names its space with space_id and never takes it from a reader's mac_address; a reader tap
+    # (no session) takes it from the registered reader.
+    space = staff ? staff_requested_space : pi_reader&.space
     return if staff_space_refused?(space)
 
-    space ||= pi_reader&.space
     space_id = space&.id
 
     unless space_id
@@ -142,7 +143,7 @@ class RfidController < SessionsController
   # A signed-in staff tap works only in a space the staff member may work in (User#can_work_in?). Reader taps have
   # no session, so they never reach this.
   def staff_space_refused?(space)
-    return false if space.nil? || current_user.can_work_in?(space)
+    return false if !tap_staff? || space.nil? || current_user.can_work_in?(space)
 
     render json: { error: I18n.t("errors.staff.space_not_assigned") }, status: :forbidden
     true
