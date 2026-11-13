@@ -28,7 +28,7 @@
           <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
           <% @user_volunteer_hours.each do |vh| %>
             <tr>
-              <td>
+              <td data-sort-as="<%= vh.created_at.iso8601 %>">
                 <%= l(vh.created_at, format: :volunteer_numeric) %>
                 <br>
                 <%= l(vh.created_at, format: :volunteer_clock).downcase %>
@@ -38,7 +38,7 @@
                 <%= vh.volunteer_task.title %>
               </td>
 
-              <td>
+              <td data-sort-as="<%= vh.date_of_task&.iso8601 %>">
                 <%= l(vh.date_of_task, format: :volunteer_numeric) if vh.date_of_task %>
               </td>
 

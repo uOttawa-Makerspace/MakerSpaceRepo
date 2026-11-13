@@ -83,6 +83,18 @@ RSpec.describe "Volunteer area in French", type: :request do
       expect(text).to include("Nouvelle période d'observation", "Heure de début")
     end
 
+    it "gives the hour date cells an ISO sort key so French dates sort by date" do
+      create(:volunteer_hour, user: volunteer, volunteer_task: task, total_time: 1.5, approval: nil, date_of_task: Date.new(2026, 10, 30))
+      create(:volunteer_hour, user: volunteer, volunteer_task: task, total_time: 2, approval: true, date_of_task: Date.new(2026, 10, 29))
+
+      get volunteer_hour_requests_volunteer_hours_path(locale: "fr")
+      keys = Nokogiri::HTML(response.body).css("td[data-sort-as]").map { |td| td["data-sort-as"] }
+
+      expect(keys).to include(Time.zone.local(2026, 11, 3, 14, 30).iso8601, Time.zone.local(2026, 10, 30).iso8601,
+                              Time.zone.local(2026, 10, 29).iso8601)
+      expect(text).to include("30/10/2026 (oct.)")
+    end
+
     it "gives the task request flash in French" do
       request = create(:volunteer_task_request, volunteer_task: task, user: volunteer, approval: nil)
 
@@ -104,6 +116,14 @@ RSpec.describe "Volunteer area in French", type: :request do
       create(:volunteer_hour, user: volunteer, volunteer_task: task, total_time: 2, approval: true)
       get volunteer_hours_path(locale: "fr")
       expect(text).to include("Heures de bénévolat de Val Volunteer", "Approuvée", "Traitée")
+    end
+
+    it "gives the dates of my hours an ISO sort key" do
+      create(:volunteer_hour, user: volunteer, volunteer_task: task, total_time: 2, approval: nil, date_of_task: Date.new(2026, 10, 30))
+
+      get volunteer_hours_path(locale: "fr")
+      keys = Nokogiri::HTML(response.body).css("td[data-sort-as]").map { |td| td["data-sort-as"] }
+      expect(keys).to eq([Time.zone.local(2026, 11, 3, 14, 30).iso8601, Time.zone.local(2026, 10, 30).iso8601])
     end
 
     it "sends a task for review with the confirmation in French" do

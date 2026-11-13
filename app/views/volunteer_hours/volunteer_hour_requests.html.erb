@@ -32,7 +32,7 @@
                 <%= link_to vh.user.name.titleize, user_path(vh.user.username) %>
               </td>
 
-              <td>
+              <td data-sort-as="<%= vh.created_at.iso8601 %>">
                 <%= l(vh.created_at, format: :volunteer_numeric) %>
                 <br>
                 <%= l(vh.created_at, format: :volunteer_clock).downcase %>
@@ -42,7 +42,7 @@
                 <%= link_to vh.volunteer_task.title, volunteer_task_path(vh.volunteer_task.id) %>
               </td>
 
-              <td>
+              <td data-sort-as="<%= vh.date_of_task&.iso8601 %>">
                 <%= l(vh.date_of_task, format: :volunteer_numeric) if vh.date_of_task %>
               </td>
 
@@ -101,7 +101,7 @@
                 <%= link_to vh.user.name.titleize, user_path(vh.user.username) %>
               </td>
 
-              <td>
+              <td data-sort-as="<%= vh.created_at.iso8601 %>">
                 <%= l(vh.created_at, format: :volunteer_numeric) %>
                 <br>
                 <%= l(vh.created_at, format: :volunteer_clock).downcase %>
@@ -111,7 +111,7 @@
                   <%= link_to vh.volunteer_task.title, volunteer_task_path(vh.volunteer_task.id) %>
               </td>
 
-              <td>
+              <td data-sort-as="<%= vh.date_of_task&.iso8601 %>">
                 <%= l(vh.date_of_task, format: :volunteer_numeric) if vh.date_of_task %>
               </td>
 
