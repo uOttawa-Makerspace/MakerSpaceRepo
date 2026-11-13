@@ -2,7 +2,7 @@
   <%= form_for([:admin, @job_option]) do |f| %>
     <% if @job_option.errors.any? %>
       <div id="error_explanation">
-        <h2><%= t('admin_pages.job_settings.option_errors_heading', count: @job_option.count) %></h2>
+        <h2><%= t('admin_pages.job_settings.option_errors_heading', count: @job_option.errors.count) %></h2>
 
         <ul>
           <% @job_option.errors.full_messages.each do |message| %>
