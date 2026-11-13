@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_230000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_13_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -919,7 +919,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_230000) do
     t.bigint "membership_tier_id"
     t.string "shopify_draft_order_id"
     t.datetime "start_date"
-    t.string "status", default: "paid"
+    t.string "status", default: "pending"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["membership_tier_id"], name: "index_memberships_on_membership_tier_id"
