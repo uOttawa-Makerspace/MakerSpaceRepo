@@ -473,6 +473,8 @@ en:
         by_unchecking: "Uploading another file will overwrite this one."
         no_options: "There are no options available to you right now. Please continue to the next step."
         job_wide_option: "Applies to All Tasks"
+        option_already_selected: "This option is already selected on another task in this job order."
+        remove_from_other_task: "Remove it from that task first"
       step_4:
         additional_comments: "Additional Comments"
     order:
