@@ -103,14 +103,6 @@
       "count": 1
     }
   },
-  "app/javascript/src/fullcalendar_setup_admin.js": {
-    "complexity": {
-      "count": 2
-    },
-    "no-unused-vars": {
-      "count": 2
-    }
-  },
   "app/javascript/src/header.js": {
     "no-unused-vars": {
       "count": 1
