@@ -217,14 +217,14 @@ The change applies to the next message. A user id that no longer exists is skipp
 
 ## Google Calendar: owner of imported events
 
-The Google Calendar sync turns room events into bookings owned by the user whose email is the event creator's. When the creator has no account (or the event has no creator), the owner is the user whose email is in the setting `google_calendar_fallback_email`, else in the `GOOGLE_CALENDAR_FALLBACK_EMAIL` environment variable of the `web` and `worker` containers. There is no built-in address: when neither is set, or the address names no user, the booking is imported with no owner. It still blocks the room and appears in the booking admin panel with an empty owner cell, but the room calendar does not show it. In a Rails console:
+The Google Calendar sync turns room events into bookings owned by the user whose email is the event creator's. When the creator has no account (or the event has no creator), the owner is the user whose email is in the setting `google_calendar_fallback_email`, else in the `GOOGLE_CALENDAR_FALLBACK_EMAIL` environment variable of the `web` and `worker` containers. The setting is optional, and there is no built-in address. Without it (or when the address names no user), a new event from an unknown creator is imported with no owner: the booking still blocks the room and appears in the booking admin panel with an empty owner cell, but the room calendar does not show it. A booking that already has an owner keeps it when its event syncs again and resolves to nobody; the owner changes only when the sync resolves an account (the creator's, or the fallback). In a Rails console:
 
 ```ruby
 Setting.get("google_calendar_fallback_email")                      # nil or "" means the environment variable, then nobody
 Setting.set("google_calendar_fallback_email", "bookings@example.com")
 ```
 
-The owner is worked out again each time an event is synced, so a change applies to events created or changed after it; bookings already imported keep their owner until their event changes. Earlier releases used a built-in address when nothing was set: to keep the same owner for these events after upgrading, set the setting to that account's email before the deploy.
+A change applies to events created or changed after it: each sync of an event from an unknown creator then gives its booking the configured account. Nothing needs to be run on deploy.
 
 ## Deleted repositories and their files
 

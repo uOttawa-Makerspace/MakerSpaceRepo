@@ -100,6 +100,35 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
         expect(import_from_stranger.user).to eq(fallback)
       end
 
+      it "keeps the stored owner when a re-synced event resolves to nobody" do
+        stub_const("ENV", ENV.to_hash.except("GOOGLE_CALENDAR_FALLBACK_EMAIL"))
+        described_class.process(c18_gcal_event)
+        expect(booking_for("evt-1").user).to eq(creator)
+        creator.update_columns(email: "renamed@example.test")
+
+        expect(import_from_stranger.user).to eq(creator)
+        expect(booking_for("evt-1").user_id).to eq(creator.id)
+      end
+
+      it "replaces the stored owner with the fallback user once one is configured" do
+        stub_const("ENV", ENV.to_hash.except("GOOGLE_CALENDAR_FALLBACK_EMAIL"))
+        described_class.process(c18_gcal_event)
+        Setting.set("google_calendar_fallback_email", fallback.email)
+
+        expect(import_from_stranger.user).to eq(fallback)
+      end
+
+      it "replaces the stored owner with the creator's account when the creator has one" do
+        described_class.process(c18_gcal_event(creator_email: "stranger@example.test"))
+        expect(booking_for("evt-1").user).to be_nil
+        described_class.process(c18_gcal_event)
+        expect(booking_for("evt-1").user).to eq(creator)
+
+        other = create(:user, :regular_user, email: "other-creator@example.test")
+        described_class.process(c18_gcal_event(creator_email: other.email))
+        expect(booking_for("evt-1").user).to eq(other)
+      end
+
       it "is nobody when the configured email names no user" do
         Setting.set("google_calendar_fallback_email", "nobody-here@example.com")
         expect(import_from_stranger.user).to be_nil
