@@ -27,10 +27,10 @@ class Admin::TrainingsController < AdminAreaController
   def create
     @training = Training.new(training_params)
     if @training.save
-      flash[:notice] = "Training added successfully!"
+      flash[:notice] = t("admin_area.trainings.flash.created")
       redirect_to admin_trainings_path
     else
-      flash[:alert] = "Input is invalid"
+      flash[:alert] = t("admin_area.input_invalid")
       render :new, status: :unprocessable_content
     end
   end
@@ -38,10 +38,10 @@ class Admin::TrainingsController < AdminAreaController
   def update
     @training = Training.find(params[:id])
     if @training.update(training_params)
-      flash[:notice] = "Training updated successfully"
+      flash[:notice] = t("admin_area.trainings.flash.updated")
       redirect_to admin_trainings_path
     else      
-      flash[:alert] = "Input is invalid"
+      flash[:alert] = t("admin_area.input_invalid")
       render :edit, status: :unprocessable_content
     end
     
@@ -49,7 +49,7 @@ class Admin::TrainingsController < AdminAreaController
 
   def destroy
     @changed_training = Training.find(params["id"])
-    flash_write(@changed_training, "trainings.not_deleted", "Training removed successfully", destroy: true) { @changed_training.destroy }
+    flash_write(@changed_training, "trainings.not_deleted", t("admin_area.trainings.flash.deleted"), destroy: true) { @changed_training.destroy }
     redirect_to admin_trainings_path
   end
 

@@ -1,23 +1,23 @@
 <section>
-  <h2 class="text-center fw-bold py-3">Admin's Trainings Manager</h2>
-  <p class="text-center"><%= link_to 'New Training', new_admin_training_path, class: 'btn btn-secondary' %></p>
+  <h2 class="text-center fw-bold py-3"><%= t('admin_area.trainings.manager') %></h2>
+  <p class="text-center"><%= link_to t('admin.training.title'), new_admin_training_path, class: 'btn btn-secondary' %></p>
   <br />
   <table id="trainings-table" class="table table-striped mb-5">
   <thead class="table-primary">
     <tr class="text-center">
-      <th>Skill Type</th>
-      <th>Training</th>
-      <th>Spaces</th>
-      <th>Training Sessions</th>
-      <th>Certifications</th>
-      <th>Action</th>
+      <th><%= t('admin_area.trainings.skill_type') %></th>
+      <th><%= t('admin_area.trainings.training') %></th>
+      <th><%= t('admin.training.spaces') %></th>
+      <th><%= t('admin.training_sessions') %></th>
+      <th><%= t('admin_area.trainings.certifications') %></th>
+      <th><%= t('admin_area.trainings.action') %></th>
     </tr>
   </thead>
-    <% @trainings.each do |t| %>
+    <% @trainings.each do |training| %>
       <tr>
-        <td><%= t.skill&.name %></td>
-        <td><%= t.name_en %></td>
-        <% spaces = @spaces_by_training.fetch(t.id, []) %>
+        <td><%= training.skill&.name %></td>
+        <td><%= training.name_en %></td>
+        <% spaces = @spaces_by_training.fetch(training.id, []) %>
           <td>
             <% spaces.each do |s| %>
               <%= s.name %> <br />
@@ -25,17 +25,17 @@
           </td>
           <td>
             <% spaces.each do |s| %>
-              <%= @session_counts.fetch([t.id, s.id], 0) %><br />
+              <%= @session_counts.fetch([training.id, s.id], 0) %><br />
             <% end %>
           </td>
           <td>
             <% spaces.each do |s| %>
-              <%= @certification_counts.fetch([t.id, s.id], 0) %> <br />
+              <%= @certification_counts.fetch([training.id, s.id], 0) %> <br />
             <% end %>
           </td>
         <td>
-        <%= link_to 'Edit', edit_admin_training_path(t.id), class: 'btn btn-primary' %>
-        <%= button_to 'Delete', { controller: 'admin/trainings', action: :destroy, id: t.id }, method: :delete,
+        <%= link_to t('admin_area.trainings.edit'), edit_admin_training_path(training.id), class: 'btn btn-primary' %>
+        <%= button_to t('admin.training.delete'), { controller: 'admin/trainings', action: :destroy, id: training.id }, method: :delete,
                                                                                                **confirmation_options(t('confirm_delete.training')),
                                                                                                class: 'btn btn-danger', form_class: 'text-center my-2' %>
         </td>

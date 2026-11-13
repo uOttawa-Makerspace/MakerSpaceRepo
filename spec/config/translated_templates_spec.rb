@@ -31,6 +31,28 @@ RSpec.describe "Translated templates" do
     app/views/repositories/_repository_card.html.erb
     app/views/repositories/show.html.erb
     app/views/users/_repositories.html.erb
+    app/views/admin/index.html.erb
+    app/views/admin/users/index.html.erb
+    app/views/admin/users/search.html.erb
+    app/views/admin/users/show.html.erb
+    app/views/admin/users/edit.html.erb
+    app/views/admin/users/manage_roles.erb
+    app/views/admin/users/_user_table.html.erb
+    app/views/admin/spaces/index.html.erb
+    app/views/admin/trainings/index.html.erb
+    app/views/admin/trainings/new.html.erb
+    app/views/admin/trainings/edit.html.erb
+    app/views/admin/trainings/_form.html.erb
+    app/views/admin/training_sessions/index.html.erb
+    app/views/admin/training_sessions/_training_session_table.html.erb
+    app/views/admin/certifications/show.html.erb
+    app/views/admin/certifications/demotions.html.erb
+    app/views/admin/certifications/_table_demotions.html.erb
+    app/views/admin/certifications/_certification_modal.html.erb
+    app/views/admin/skills/index.html.erb
+    app/views/admin/skills/new.html.erb
+    app/views/admin/skills/edit.html.erb
+    app/views/admin/uni_programs/index.html.erb
   ].freeze
 
   TRANSLATED_TEMPLATES.each do |path|

@@ -1,5 +1,5 @@
 <section>
-  <h2 class="text-center fw-bold py-3">Editing <b><%= @training.localized_name.capitalize %></b> Training</h2>
+  <h2 class="text-center fw-bold py-3"><%= t('admin_area.trainings.editing_html', name: @training.localized_name.capitalize) %></h2>
     <%= render 'form' %>
   <div class="mx-auto">
     <%= button_to t('admin.training.delete'), { controller: 'admin/trainings', action: :destroy, id: @training.id }, method: :delete,

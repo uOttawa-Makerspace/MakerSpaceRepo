@@ -1,30 +1,30 @@
-<% provide(:title, 'Manage Roles') %>
+<% provide(:title, t('admin_area.users.roles.title')) %>
 
 <section>
   <div class="text-center">
-    <h2 class="fw-bold py-3">Manage Roles</h2>
-    <h3>Visit each user to update their roles.</h3>
+    <h2 class="fw-bold py-3"><%= t('admin_area.users.roles.title') %></h2>
+    <h3><%= t('admin_area.users.roles.intro') %></h3>
   </div>
   <br>
   <div>
-    <h3>Admins on Makerepo</h3>
+    <h3><%= t('admin_area.users.roles.admins') %></h3>
     <table class="table table-striped" id="admin_table">
       <%= render partial: 'user_table', locals: { users: @admins, user_spaces: @admin_spaces, role_form_id: 'updateRoleAdmin', space_form_id: 'updateSpaceAdmin' } %>
     </table>
     <br /><br />
 
-    <h3>Staff on Makerepo</h3>
+    <h3><%= t('admin_area.users.roles.staff') %></h3>
     <table class="table table-striped" id="staff_table">
       <%= render partial: 'user_table', locals: { users: @staff, user_spaces: @staff_spaces, role_form_id: 'updateRoleStaff', space_form_id: 'updateSpaceStaff' } %>
     </table>
 
     <table class="table table-striped">
-      <h3>Volunteers on Makerepo</h3>
+      <h3><%= t('admin_area.users.roles.volunteers') %></h3>
       <thead class="table-primary">
         <tr class="text-center">
-          <th class="name-header">Username</th>
-          <th class="name-header">Name</th>
-          <th class="email-header">Email</th>
+          <th class="name-header"><%= t('admin_area.users.columns.username') %></th>
+          <th class="name-header"><%= t('admin_area.users.columns.name') %></th>
+          <th class="email-header"><%= t('admin_area.users.columns.email') %></th>
         </tr>
       </thead>
       <% @volunteers.each do |volunteer| %>

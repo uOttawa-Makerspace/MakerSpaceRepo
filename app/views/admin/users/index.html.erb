@@ -1,16 +1,16 @@
-<% provide(:title, 'Manage Users') %>
+<% provide(:title, t('admin_area.users.index.title')) %>
 
 <section>
-  <div class="setting-title">Manage Users</div>
+  <div class="setting-title"><%= t('admin_area.users.index.title') %></div>
   <br>
   <div>
     <%= form_with url: search_admin_users_path, method: :get, class: 'input-group' do |f| %>
-      <%= label_tag 'filter', 'Search by', class: 'visually-hidden' %>
-      <%= select_tag 'filter', options_for_select(%w[Name Email Username]), prompt: 'Search by...', class: 'form-select form-control' %>
-      <%= label_tag 'q', 'Search users', class: 'visually-hidden' %>
-      <%= text_field_tag 'q', params[:q], placeholder: 'Search users...', class: 'form-control' %>
+      <%= label_tag :filter, t('common.names.search_by'), class: 'visually-hidden' %>
+      <%= select_tag 'filter', options_for_select(admin_user_search_filters), prompt: t('admin_area.users.index.search_by_prompt'), class: 'form-select form-control' %>
+      <%= label_tag 'q', t('admin_area.users.index.search_users'), class: 'visually-hidden' %>
+      <%= text_field_tag 'q', params[:q], placeholder: t('admin_area.users.index.search_placeholder'), class: 'form-control' %>
       <div class="input-group-append">
-        <%= submit_tag 'Search', class: 'btn btn-primary form-control' %>
+        <%= submit_tag t('common.names.search'), class: 'btn btn-primary form-control' %>
       </div>
     <% end %>
   </div>
@@ -18,8 +18,8 @@
   <div>
     <% if params[:p] == "signed_in_users" %>
       <table>
-        <td><h2>Users currently signed in</h2></td>
-        <td class="end"><%= link_to 'Show new users', p: 'new_users' %></td>
+        <td><h2><%= t('admin_area.users.index.signed_in_heading') %></h2></td>
+        <td class="end"><%= link_to t('admin_area.users.index.show_new_users'), p: 'new_users' %></td>
       </table>
 
       <div class="locations">
@@ -29,7 +29,7 @@
           <% else %>
             <td>
           <% end %>
-          <%= link_to 'All locations', sort: params[:sort], direction: params[:direction], p: params[:p] %></td>
+          <%= link_to t('admin_area.users.index.all_locations'), sort: params[:sort], direction: params[:direction], p: params[:p] %></td>
           <% PiReader.distinct.pluck(:pi_location).compact.sort.each do |pi_location| %>
             <% if params[:location] == pi_location %>
               <td class="current">
@@ -42,41 +42,41 @@
       </div>
     <% elsif params[:p] == "new_users" || params[:p].nil? %>
       <table>
-        <td><h2>Newest users</h2></td>
-        <td class="end"><%= link_to 'Show users currently signed in', p: 'signed_in_users' %></td>
+        <td><h2><%= t('admin_area.users.index.newest_heading') %></h2></td>
+        <td class="end"><%= link_to t('admin_area.users.index.show_signed_in'), p: 'signed_in_users' %></td>
       </table>
     <% end %>
     <% if !@users.any? %>
-      <p style="color:gray;text-align:center;padding-top:15px;">There are no users to show.</p>
+      <p style="color:gray;text-align:center;padding-top:15px;"><%= t('admin_area.users.index.no_users') %></p>
     <% else %>
       <% direction = params[:direction] == 'asc' ? 'desc' : 'asc' %>
       <table class="admin-table table table-striped" id="admin-index">
         <thead>
         <th>
-          <%= link_to 'Username', sort: 'username', direction: direction, p: params[:p], location: params[:location] %>
+          <%= link_to t('admin_area.users.columns.username'), sort: 'username', direction: direction, p: params[:p], location: params[:location] %>
           <% if params[:sort] == "username" %>
             <i class="fa-solid fa-sort-<%= direction %>"></i>
           <% end %>
         </th>
         <th>
-          <%= link_to 'Name', sort: 'name', direction: direction, p: params[:p], location: params[:location] %>
+          <%= link_to t('admin_area.users.columns.name'), sort: 'name', direction: direction, p: params[:p], location: params[:location] %>
           <% if params[:sort] == "name" %>
             <i class="fa-solid fa-sort-<%= direction %>"></i>
           <% end %>
         </th>
         <th>
-          <%= link_to 'Signed in', sort: 'lab_sessions.sign_in_time', direction: direction, p: params[:p], location: params[:location] %>
+          <%= link_to t('admin_area.users.columns.signed_in'), sort: 'lab_sessions.sign_in_time', direction: direction, p: params[:p], location: params[:location] %>
           <% if params[:sort] == "lab_sessions.sign_in_time" %>
             <i class="fa-solid fa-sort-<%= direction %>"></i>
           <% end %>
         </th>
         <th>
-          <%= link_to 'Joined', sort: 'users.created_at', direction: direction, p: params[:p], location: params[:location] %>
+          <%= link_to t('admin_area.users.columns.joined'), sort: 'users.created_at', direction: direction, p: params[:p], location: params[:location] %>
           <% if params[:sort] == "users.created_at" %>
             <i class="fa-solid fa-sort-<%= direction %>"></i>
           <% end %>
         </th>
-        <th>View</th>
+        <th><%= t('admin_area.users.columns.view') %></th>
         </thead>
         <% @users.each do |user| %>
           <tr>
@@ -85,12 +85,12 @@
             <td>
               <% user_sessions = LabSession.where(user_id: user.id) %>
               <% if user_sessions.present? %>
-                <%= time_ago_in_words(user_sessions.last.sign_in_time) %> ago
+                <%= t('admin_area.time_ago', time: time_ago_in_words(user_sessions.last.sign_in_time)) %>
               <% else %>
                 -
               <% end %>
             </td>
-            <td><%= time_ago_in_words(user.created_at) %> ago</td>
+            <td><%= t('admin_area.time_ago', time: time_ago_in_words(user.created_at)) %></td>
             <td class="link-table"><%= link_to '<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>'.html_safe, admin_user_path(user), aria: { label: t('common.names.view_user') } %></td>
           </tr>
         <% end %>
@@ -103,12 +103,12 @@
       <tr>
         <td>
           <% if page_number > 1 %>
-            <%= link_to '< Previous page', page: page_number - 1, p: params[:p], sort: params[:sort], direction: params[:direction] %>
+            <%= link_to t('admin_area.previous_page'), page: page_number - 1, p: params[:p], sort: params[:sort], direction: params[:direction] %>
           <% end %>
         </td>
         <td>
           <% if page_number < @total_pages.to_i %>
-            <%= link_to 'Next page >', page: page_number + 1, p: params[:p], sort: params[:sort], direction: params[:direction] %>
+            <%= link_to t('admin_area.next_page'), page: page_number + 1, p: params[:p], sort: params[:sort], direction: params[:direction] %>
           <% end %>
         </td>
       </tr>

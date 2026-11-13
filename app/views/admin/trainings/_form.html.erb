@@ -3,12 +3,12 @@
     <div class="container">
       <div class="row">
         <div class="col-md-12 form-floating mb-2">
-          <%= f.text_field :name_en, placeholder: 'Write an unique name...', class: 'form-control', required: true %>
+          <%= f.text_field :name_en, placeholder: t('admin_area.trainings.name_en_placeholder'), class: 'form-control', required: true %>
           <%= f.label :name_en, t('admin.training.name_en'), class: 'form-label' %>
         </div>
 
         <div class="col-md-12 form-floating mb-3">
-          <%= f.text_field :name_fr, placeholder: 'Écrire un nom unique...', class: 'form-control', required: true %>
+          <%= f.text_field :name_fr, placeholder: t('admin_area.trainings.name_fr_placeholder'), class: 'form-control', required: true %>
           <%= f.label :name_fr, t('admin.training.name_fr'), class: 'form-label' %>
         </div>
 
@@ -28,18 +28,18 @@
         </div>
 
         <div class="col-md-12 form-floating my-2">
-          <%= f.text_area :description_en, placeholder: 'Write a description...', class: 'form-control', required: true, style: 'min-height: 6em;' %>
+          <%= f.text_area :description_en, placeholder: t('admin_area.trainings.description_placeholder'), class: 'form-control', required: true, style: 'min-height: 6em;' %>
           <%= f.label :description_en, t('admin.training.desc_en'), class: 'form-label' %>
         </div>
 
         <div class="col-md-12 form-floating my-2">
-          <%= f.text_area :description_fr, placeholder: 'Write a description...', class: 'form-control', required: true, style: 'min-height: 6em;' %>
+          <%= f.text_area :description_fr, placeholder: t('admin_area.trainings.description_placeholder'), class: 'form-control', required: true, style: 'min-height: 6em;' %>
           <%= f.label :description_fr, t('admin.training.desc_fr'), class: 'form-label' %>
 
         </div>
 
         <div class="mb-3">
-            <h4>List of Skills</h4>
+            <h4><%= t('admin_area.trainings.list_of_skills') %></h4>
                 <%= f.label :list_of_skills_en, t('admin.training.los_en'), id: 'training_list_of_skills_en_label', class: 'form-label' %>
                 <%= f.select :list_of_skills_en, Training.all_skills_en, { multiple: true, selected: @skills_en }, { aria: { labelledby: 'training_list_of_skills_en_label' } } %>
                 <%= f.label :list_of_skills_fr, t('admin.training.los_fr'), id: 'training_list_of_skills_fr_label', class: 'form-label' %>
