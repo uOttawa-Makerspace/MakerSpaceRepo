@@ -28,4 +28,22 @@ RSpec.describe "Volunteer transcript page", type: :system, skip_bullet: true do
     expect(resources).to include(a_string_matching(/\.css\z/))
     expect(resources).to all(start_with("#{origin}/"))
   end
+
+  it "opens the print dialog and closes the window from its buttons" do
+    user = create(:user, :volunteer_with_volunteer_program)
+    log_in_as(user)
+    visit transcript_volunteers_path
+    expect(page).to have_css("html[data-app-js-ready='true']", visible: :all)
+    page.execute_script(<<~JS)
+      window.print = () => { document.body.dataset.printed = "true"; };
+      window.close = () => { document.body.dataset.closed = "true"; };
+    JS
+
+    click_button "Print or Save as PDF"
+    expect(page).to have_css("body[data-printed='true']")
+    expect(page).to have_no_css("body[data-closed]")
+
+    click_button "Close Window"
+    expect(page).to have_css("body[data-closed='true']")
+  end
 end
