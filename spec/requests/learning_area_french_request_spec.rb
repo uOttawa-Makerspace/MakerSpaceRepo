@@ -134,7 +134,7 @@ RSpec.describe "Learning area in French", type: :request do
   describe "the module form" do
     before { sign_in_as(:admin) }
 
-    it "labels the new module form in French and keeps the level values" do
+    it "labels the new module form in French with the level keys as option values" do
       get new_learning_area_path(fr)
 
       doc = Nokogiri::HTML(response.body)
@@ -143,18 +143,18 @@ RSpec.describe "Learning area in French", type: :request do
       expect(doc.at_css("#repository_title")["placeholder"]).to eq("Titre du module d'apprentissage…")
       expect(doc.at_css("#learning_module_shortcut_name")["title"]).to eq("Lettres, chiffres et traits de soulignement seulement")
       expect(doc.css("#learning_module_level option").map { |o| [o.text, o["value"]] })
-        .to eq([%w[Général General], %w[Débutant Beginner], %w[Intermédiaire Intermediate], %w[Avancé Advanced]])
+        .to eq([%w[Général general], %w[Débutant beginner], %w[Intermédiaire intermediate], %w[Avancé advanced]])
       expect(doc.at_css("#learning_module_subskill option[value='']").text).to eq("Choisissez ou entrez une nouvelle sous-compétence...")
       submit = doc.at_css("#waiting-save-button")
       expect([submit["value"], submit["data-turbo-submits-with"]]).to eq(["Créer le module d'apprentissage", "Enregistrement (veuillez patienter)..."])
       expect(page_text).to include("Glissez-déposez les fichiers ici", "Paquet SCORM (.zip)", "Galerie", "Vidéos")
     end
 
-    it "keeps the English level options" do
+    it "shows the English level names with the level keys as option values" do
       get new_learning_area_path
 
       expect(Nokogiri::HTML(response.body).css("#learning_module_level option").map { |o| [o.text, o["value"]] })
-        .to eq([%w[General General], %w[Beginner Beginner], %w[Intermediate Intermediate], %w[Advanced Advanced]])
+        .to eq([%w[General general], %w[Beginner beginner], %w[Intermediate intermediate], %w[Advanced advanced]])
     end
 
     it "shows the package status and the current package link on the edit page" do

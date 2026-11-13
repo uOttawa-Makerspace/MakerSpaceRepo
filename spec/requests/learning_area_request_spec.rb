@@ -239,6 +239,16 @@ RSpec.describe "Learning area", type: :request do
       expect(prefix).to eq("/learning_area/s/")
       expect(shortcut_learning_area_path("x")).to eq("#{prefix}x")
     end
+
+    it "keeps the level when the edit form is submitted unchanged" do
+      learning_module.update!(level: "advanced")
+      get edit_learning_area_path(learning_module)
+      select = Capybara.string(response.body).find("select[name='learning_module[level]']")
+      # A browser submits the selected option, or the first one when none is selected.
+      submitted = (select.first("option[selected]", minimum: 0) || select.first("option")).value
+      patch learning_area_path(learning_module), params: { learning_module: { level: submitted } }
+      expect(learning_module.reload.level).to eq("advanced")
+    end
   end
 
   describe "POST /learning_area (create, admin)" do

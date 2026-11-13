@@ -82,7 +82,6 @@ class LearningAreaController < DevelopmentProgramsController
     else
       flash[:alert] = validation_message(@learning_module, "errors.learning_area.not_updated")
       @training_categories = Training.all.order(:name).pluck(:name, :id)
-      @training_levels ||= TrainingSession.return_levels
       @files = @learning_module.project_files_attachments.order(created_at: :asc)
       @photos = @learning_module.photos || []
       @videos = @learning_module.videos_attachments.order(created_at: :asc)
@@ -291,7 +290,7 @@ class LearningAreaController < DevelopmentProgramsController
 
   def form_training_data
     @training_categories ||= Training.all.order(:name).pluck(:name, :id)
-    @training_levels ||= LearningModule.levels.map { |key, value| [t("learning_area.levels.#{key}"), value] }
+    @training_levels ||= LearningModule.levels.keys.map { |key| [t("learning_area.levels.#{key}"), key] }
     @subskills ||= LearningModule.unscope(:order).distinct.pluck(:subskill)
   end
 
