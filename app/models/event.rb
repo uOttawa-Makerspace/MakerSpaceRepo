@@ -1,4 +1,5 @@
 class Event < ApplicationRecord
+  include Reschedulable
   # The longest span a calendar feed answers in one request (the staff calendar and the shifts API).
   MAX_FEED_RANGE = 100.days
 

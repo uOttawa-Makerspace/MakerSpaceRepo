@@ -167,6 +167,25 @@ RSpec.describe "Staff unavailabilities", type: :request do
         expect(record.reload.title).to eq("Same")
       end
 
+      # A one-hour entry from the first 01:30 of the night the clocks go back: its dialog fields read 01:30 to 02:30,
+      # which post as two real hours.
+      it "keeps the stored times of a one-off when the dialog sends them as it filled them" do
+        first = Time.zone.local(2027, 11, 7, 1, 30)
+        night = create(:staff_unavailability, user: staff, title: "Night", start_time: first, end_time: first + 1.hour)
+        patch staff_unavailability_path(night), params: payload(title: "Renamed", utc_start_time: "2027-11-07T05:30:00Z",
+                                                                utc_end_time: "2027-11-07T07:30:00Z").merge(keep_series_times: "1")
+
+        expect(night.reload).to have_attributes(title: "Renamed", start_time: first, end_time: first + 1.hour)
+      end
+
+      it "takes the posted times of a one-off when they were changed" do
+        first = Time.zone.local(2027, 11, 7, 1, 30)
+        night = create(:staff_unavailability, user: staff, title: "Night", start_time: first, end_time: first + 1.hour)
+        patch staff_unavailability_path(night), params: payload(utc_start_time: "2027-11-07T05:30:00Z", utc_end_time: "2027-11-07T07:30:00Z")
+
+        expect(night.reload).to have_attributes(start_time: first, end_time: first + 2.hours)
+      end
+
       it "404s for someone else's record and leaves it untouched" do
         theirs = create(:staff_unavailability, user: other, title: "Theirs")
         patch staff_unavailability_path(theirs), params: payload(title: "Hacked")

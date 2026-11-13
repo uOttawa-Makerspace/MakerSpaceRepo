@@ -80,6 +80,29 @@ RSpec.describe Admin::EventsController, type: :controller do
       end
     end
 
+    context "with a one-off from the first 01:30 of the night the clocks go back" do
+      let(:first) { Time.zone.local(2027, 11, 7, 1, 30) }
+      let!(:night) do
+        create(:event, space: space, created_by: admin_user, event_type: "other", title: "Night lab",
+                       start_time: first, end_time: first + 1.hour)
+      end
+      let(:posted) do
+        { title: "Renamed", event_type: "other", space_id: space.id, utc_start_time: "2027-11-07T05:30:00Z", utc_end_time: "2027-11-07T07:30:00Z" }
+      end
+
+      it "keeps its stored times when the dialog sends them as it filled them" do
+        patch :update, params: { id: night.id, keep_series_times: "1", event: posted }
+
+        expect(night.reload).to have_attributes(title: "Renamed", start_time: first, end_time: first + 1.hour)
+      end
+
+      it "takes the posted times when they were changed" do
+        patch :update, params: { id: night.id, event: posted }
+
+        expect(night.reload).to have_attributes(end_time: first + 2.hours)
+      end
+    end
+
     context "with recurring event updating all from the night the clocks go back" do
       let(:first) { Time.zone.local(2027, 10, 31, 1, 30) }
       let!(:weekly) do

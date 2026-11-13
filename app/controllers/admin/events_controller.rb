@@ -60,12 +60,13 @@ class Admin::EventsController < AdminAreaController
 
     case update_scope
     when "non-recurring"
+      start_time, end_time = @event.times_after_update(@start_time, @end_time, keep: params[:keep_series_times] == "1")
       if @event.update(
         title: title,
         description: event_params[:description],
         # the dates are already in utc but for consistent formatting with @event, we will do it explicitly
-        start_time: @start_time,
-        end_time: @end_time,
+        start_time: start_time,
+        end_time: end_time,
         recurrence_rule: event_params[:recurrence_rule].presence,
         updated_by: current_user,
         space_id: event_params[:space_id],
@@ -94,7 +95,7 @@ class Admin::EventsController < AdminAreaController
         flash[:alert] = validation_message(@event, "failed_saves.event_update")
       end
     when "all"
-      old_date_new_time_start, old_date_new_time_end = series_times
+      old_date_new_time_start, old_date_new_time_end = @event.times_after_update(@start_time, @end_time, keep: params[:keep_series_times] == "1", series: true)
 
       rule_to_use = series_rule.with_time_from(event_params[:recurrence_rule], at: old_date_new_time_start)
 
@@ -376,21 +377,8 @@ class Admin::EventsController < AdminAreaController
 
   # Excludes the occurrence from the series and creates it as its own event. Both happen in one
   # transaction, so a failure leaves the series as it was.
-  # The series' start and end after "update all": its own when the dialog sends its times as it filled them
-  # (keep_series_times), else the series' start date at the posted clock time, for the posted length.
-  def series_times
-    return [@event.start_time, @event.end_time] if params[:keep_series_times] == "1"
-
-    start = helpers.combine_date_and_time(@event.start_time, @start_time)
-    [start, start + (@end_time - @start_time).to_i]
-  end
-
   def update_this_occurrence(title, participants)
-    exclusion_start_time = helpers.combine_date_and_time(
-      @start_time,
-      @event.start_time
-    )
-    updated_rule = series_rule.appending_exdate(exclusion_start_time)
+    updated_rule = series_rule.appending_exdate(@event.occurrence_start_on(@start_time))
 
     # The replacement is checked before anything is saved: saving the series pushes to Google, which a
     # rollback cannot undo. A failure after this point (a database error) can still leave Google ahead.
