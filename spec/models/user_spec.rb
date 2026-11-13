@@ -646,6 +646,86 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe "#can_work_in?" do
+    let(:assigned) { create(:space) }
+    let(:elsewhere) { create(:space) }
+    let(:staff) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: assigned) } }
+
+    it "lets staff work in the spaces they are assigned to and no other" do
+      expect(staff.can_work_in?(assigned)).to be(true)
+      expect(staff.can_work_in?(elsewhere)).to be(false)
+    end
+
+    it "does not let a saved space alone count: staff must still be assigned to it" do
+      staff.update_columns(space_id: elsewhere.id)
+      expect(staff.can_work_in?(elsewhere)).to be(false)
+    end
+
+    it "lets an admin with no assignments work in any space" do
+      expect(create(:user, :admin).can_work_in?(elsewhere)).to be(true)
+    end
+  end
+
+  describe "#current_space" do
+    let!(:first_space) { create(:space) }
+    let!(:second_space) { create(:space) }
+    let(:staff) { create(:user, :staff) }
+
+    it "is the saved space when the user may work in it" do
+      [second_space, first_space].each { |s| StaffSpace.create!(user: staff, space: s) }
+      staff.update_columns(space_id: second_space.id)
+      expect(staff.current_space).to eq(second_space)
+    end
+
+    it "is the lowest-id assigned space when none is saved, or the saved one is not assigned" do
+      [second_space, first_space].each { |s| StaffSpace.create!(user: staff, space: s) }
+      expect(staff.current_space).to eq(first_space)
+      staff.update_columns(space_id: create(:space).id)
+      expect(staff.current_space).to eq(first_space)
+    end
+
+    it "is nil for staff with no assignments, even with a saved space" do
+      staff.update_columns(space_id: first_space.id)
+      expect(staff.current_space).to be_nil
+    end
+
+    it "is the lowest-id space for an admin with no saved space" do
+      expect(create(:user, :admin).current_space).to eq(Space.order(:id).first)
+    end
+  end
+
+  describe "#assign_spaces!" do
+    let(:kept) { create(:space) }
+    let(:dropped) { create(:space) }
+    let(:staff) { create(:user, :staff).tap { |u| [kept, dropped].each { |s| StaffSpace.create!(user: u, space: s) } } }
+
+    it "adds the missing spaces and removes the others" do
+      added = create(:space)
+      staff.assign_spaces!([kept.id, added.id])
+      expect(staff.staff_spaces.pluck(:space_id)).to contain_exactly(kept.id, added.id)
+    end
+
+    it "clears the saved space when it is a removed one" do
+      staff.update_columns(space_id: dropped.id)
+      staff.assign_spaces!([kept.id])
+      expect(staff.reload.space_id).to be_nil
+    end
+
+    it "keeps a saved space that stays assigned" do
+      staff.update_columns(space_id: kept.id)
+      staff.assign_spaces!([kept.id])
+      expect(staff.reload.space_id).to eq(kept.id)
+    end
+
+    it "keeps an admin's saved space, since admins work in any space" do
+      admin = create(:user, :admin)
+      StaffSpace.create!(user: admin, space: dropped)
+      admin.update_columns(space_id: dropped.id)
+      admin.assign_spaces!([])
+      expect(admin.reload.space_id).to eq(dropped.id)
+    end
+  end
+
   describe "role predicates" do
     it "pins admin?/staff? by the role column" do
       expect(build(:user, role: "admin")).to have_attributes(admin?: true, staff?: true)

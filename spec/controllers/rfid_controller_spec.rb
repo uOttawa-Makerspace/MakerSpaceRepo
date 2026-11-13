@@ -57,7 +57,9 @@ RSpec.describe RfidController, type: :controller do
       end
 
       it 'should not create rfid and should sign in RFID with Space ID (staff only)' do
-        session[:user_id] = create(:user, :staff).id
+        staff = create(:user, :staff)
+        StaffSpace.create!(user: staff, space: pi_reader.space)
+        session[:user_id] = staff.id
         existing_rfid = create(:rfid, mac_address: pi_reader.pi_mac_address)
         rfid_params = {
           rfid: existing_rfid.card_number,

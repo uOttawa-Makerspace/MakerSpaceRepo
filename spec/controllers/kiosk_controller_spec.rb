@@ -6,6 +6,7 @@ RSpec.describe KioskController, type: :controller do
     @staff = create(:user, :staff)
     @user = create(:user, :regular_user)
     @space = create(:space)
+    StaffSpace.create!(user: @staff, space: @space)
   end
 
   describe "GET /index" do

@@ -43,6 +43,7 @@ RSpec.describe "Translated templates" do
     app/views/staff_dashboard/_flag.html.erb
     app/views/staff_dashboard/_flag_list.html.erb
     app/views/staff_dashboard/_no_assigned_spaces.html.erb
+    app/views/staff_dashboard/no_space.html.erb
     app/views/staff_dashboard/_table_broadcast.turbo_stream.erb
     app/views/learning_area/index.html.erb
     app/views/learning_area/show.html.erb

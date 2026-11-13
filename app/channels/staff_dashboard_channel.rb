@@ -4,12 +4,13 @@ class StaffDashboardChannel < ApplicationCable::Channel
   # include Turbo::StreamsHelper
 
   def subscribed
-    # tap-in modals carry names, emails and certifications: staff/admin only
-    return reject unless current_user&.staff?
+    # tap-in modals carry names, emails and certifications: only staff who may work in the space
+    space = Space.find_by(id: params[:space_id].to_s)
+    return reject unless current_user&.staff? && space && current_user.can_work_in?(space)
 
     # stream_from takes a string as an argument
     # stream_for takes an object or a record
-    stream_from "space_event_#{params[:space_id]}"
+    stream_from "space_event_#{space.id}"
   end
 
   # The membership check for a tap has finished: notify the staff dashboard

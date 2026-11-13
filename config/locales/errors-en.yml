@@ -19,6 +19,7 @@ en:
       copy_failed: "The text could not be copied. Select it and copy it by hand."
       network: "The server could not be reached. Check your connection and try again."
     staff:
+      space_not_assigned: "You are not assigned to that space."
       dashboard:
         import_no_file: "Choose a spreadsheet (.xls or .xlsx) of users to sign in."
         import_file_type: "%{name} is not a spreadsheet. Upload an .xls or .xlsx file."
@@ -31,6 +32,7 @@ en:
         certification_not_revoked: "The certification was not removed."
         locked_once_awarded: "The training, level and trainer of a completed training session cannot be changed."
         instructor_not_assignable: "Only an admin can choose another instructor."
+        space_not_assigned: "You are not assigned to this space."
       my_calendar:
         space_required: "Choose a space to show its calendar."
         space_not_assigned: "You are not assigned to this space."

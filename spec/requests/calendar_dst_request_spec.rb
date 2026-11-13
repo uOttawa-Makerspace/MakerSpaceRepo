@@ -153,7 +153,7 @@ RSpec.describe "Calendar JSON across DST changes", type: :request do
   end
 
   describe "GET /api/v1/spaces/:id/shifts" do
-    let(:staff) { create(:user, :staff) }
+    let(:staff) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: space) } }
 
     def shifts(from, to)
       get "/api/v1/spaces/#{space.id}/shifts",

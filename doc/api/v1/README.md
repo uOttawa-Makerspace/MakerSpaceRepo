@@ -38,13 +38,15 @@ Always JSON, always a real status:
 | ------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
 | 400    | Malformed request, or a required `Idempotency-Key` header missing  | `bad_request`, `idempotency_key_required`                                        |
 | 401    | Missing/invalid/expired credentials                                | `unauthenticated`, `invalid_credentials`, `invalid_refresh_token`                |
-| 403    | Authenticated but not allowed                                      | `forbidden`, `account_inactive`, `account_unconfirmed`                           |
+| 403    | Authenticated but not allowed                                      | `forbidden`, `account_inactive`, `account_unconfirmed`, `space_not_assigned`     |
 | 404    | No such record or route (any unknown `/api/v1/...` path, any verb) | `not_found`                                                                      |
 | 409    | Retry with the newest stored refresh token                         | `refresh_in_progress`                                                            |
 | 422    | Validation, missing parameter, or an idempotency key reused        | `validation_failed`, `parameter_missing`, `last_admin`, `idempotency_key_reused` |
 | 423    | Account locked                                                     | `account_locked`                                                                 |
 | 429    | Rate limited                                                       | `rate_limited`                                                                   |
 | 503    | Upstream unavailable, nothing saved                                | `service_unavailable`                                                            |
+
+`space_not_assigned` (403, message "You are not assigned to that space"): a staff member named a space they may not work in. Staff work only in the spaces they are assigned to (a saved space they are no longer assigned to does not count); admins work in any space. The staff dashboard, the kiosk, the shifts feed and the staff tap endpoint apply the same rule. Nothing is changed.
 
 401 responses carry `WWW-Authenticate: Bearer realm="makerepo"`.
 

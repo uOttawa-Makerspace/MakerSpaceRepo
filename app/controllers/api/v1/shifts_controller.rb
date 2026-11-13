@@ -10,17 +10,14 @@ module Api
 
       def index
         space = Space.find(params[:id])
+        return if refuse_unworkable_space(space)
+
         errors = {}
         from = parse_time(:start, errors)
         to = parse_time(:end, errors)
         user_id = parse_user_id(errors)
-        if from && to
-          if to < from
-            errors[:end] = ["must not be before start"]
-          elsif Event.feed_range_too_long?(from, to)
-            errors[:end] = ["range must be at most #{Event::MAX_FEED_RANGE.in_days.to_i} days"]
-          end
-        end
+        range_problem = range_error(from, to)
+        errors[:end] = range_problem if range_problem
         return render_error(:validation_failed, "Validation failed", status: :unprocessable_content, fields: errors) if errors.any?
 
         result = ShiftEventSerializer.result(space: space, from: from, to: to, user_id: user_id)
@@ -29,6 +26,13 @@ module Api
       end
 
       private
+
+      def range_error(from, to)
+        return unless from && to
+        return ["must not be before start"] if to < from
+
+        ["range must be at most #{Event::MAX_FEED_RANGE.in_days.to_i} days"] if Event.feed_range_too_long?(from, to)
+      end
 
       def parse_time(key, errors)
         raw = params[key]

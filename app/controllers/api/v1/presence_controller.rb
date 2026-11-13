@@ -42,6 +42,7 @@ module Api
         raise ActiveRecord::RecordNotFound unless params[:id].to_s.match?(/\A\d+\z/)
 
         @space = Space.find(params[:id])
+        refuse_unworkable_space(@space)
       end
 
       # Case-insensitive, like every other username lookup; a NUL byte is no user.

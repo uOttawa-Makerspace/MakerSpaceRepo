@@ -19,16 +19,24 @@ class StaffAreaController < SessionsController
     end
   end
 
+  # The space the page works in: the saved space when the user may work in it, else the first space they may work
+  # in (User#current_space). Nil when they may work in none.
   def default_space
-    if current_user.space.present?
-      @space = current_user.space
-    else
-      @space = Space.first
-    end
+    @space = current_user.current_space
   end
 
   def define_spaces
-    # The user's saved space is always listed so the picker shows the space they are in.
-    @all_spaces ||= current_user.workable_spaces.or(Space.where(id: current_user.space_id)).order(:name)
+    @all_spaces ||= current_user.workable_spaces.order(:name)
+  end
+
+  # For the actions that need @space: with no space to work in, the page says so (JSON and scripts get a 403).
+  def require_space
+    return if @space
+
+    respond_to do |format|
+      format.html { render "staff_dashboard/no_space", layout: true }
+      format.json { render json: { error: I18n.t("common.no_assigned_spaces") }, status: :forbidden }
+      format.any { head :forbidden }
+    end
   end
 end

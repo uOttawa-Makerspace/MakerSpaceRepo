@@ -4,7 +4,11 @@ class StaffDashboardController < StaffAreaController
   # The only user fields the search JSON sends (what the staff app reads, plus id).
   SEARCH_JSON_FIELDS = %i[id name username email].freeze
 
-  # NOTE: @space is set by StaffAreaController
+  # NOTE: @space is set by StaffAreaController, and is always a space the user may work in.
+  before_action :require_space, only: %i[
+    index refresh_capacity refresh_tables import_excel sign_out_users add_signed_in_users_to_teams
+    sign_out_all_users sign_in_users search present_users_report
+  ]
   
   def index
     # Strict loading because this is used in table views
@@ -190,7 +194,7 @@ class StaffDashboardController < StaffAreaController
     if new_space.nil?
       http_status = :not_found
       message = "Space not found"
-    elsif switch_refused?(new_space)
+    elsif !current_user.can_work_in?(new_space)
       http_status = :not_found
       message = "You are not assigned to that space"
     elsif current_user.update(space_id: new_space.id)
@@ -214,11 +218,6 @@ class StaffDashboardController < StaffAreaController
         end
       end
     end
-  end
-
-  # Staying in the space the user already holds is always allowed; any other space needs an assignment (or admin).
-  def switch_refused?(new_space)
-    new_space.id != current_user.space_id && !current_user.can_work_in?(new_space)
   end
 
   # Links a card to a user through Rfid.link_to_user!, so a card no reader ever

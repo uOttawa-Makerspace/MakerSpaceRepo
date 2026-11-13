@@ -152,8 +152,8 @@ RSpec.describe Rfid, type: :model do
       expect(Rfid.recent_unset.where(mac_address: macs)).to include(card)
     end
 
-    it "keeps the card's mac_address when the actor has no assigned space" do
-      actor.update_columns(space_id: nil)
+    it "keeps the card's mac_address when the actor has no assigned space, even with a saved space" do
+      actor.staff_spaces.destroy_all
       Rfid.unlink_from_user!(owner, actor: actor.reload)
       card.reload
       expect(card.user_id).to be_nil
@@ -161,7 +161,10 @@ RSpec.describe Rfid, type: :model do
     end
 
     it "keeps the card's mac_address when the assigned space has no reader" do
-      actor.update!(space: create(:space))
+      empty = create(:space)
+      actor.staff_spaces.destroy_all
+      StaffSpace.create!(user: actor, space: empty)
+      actor.update!(space: empty)
       Rfid.unlink_from_user!(owner, actor: actor)
       expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
     end
@@ -209,7 +212,7 @@ RSpec.describe Rfid, type: :model do
     end
 
     it "keeps mac_address for an actor without an assigned space" do
-      actor.update_columns(space_id: nil)
+      actor.staff_spaces.destroy_all
       expect(Rfid.unlink_card!(card.card_number, actor: actor.reload)).to eq(:unlinked)
       expect(card.reload.mac_address).to eq("aa:aa:aa:aa:aa:aa")
     end
@@ -261,12 +264,27 @@ RSpec.describe Rfid, type: :model do
 
     before { create(:rfid, user: create(:user), mac_address: reader.pi_mac_address) }
 
-    it "lists unlinked cards tapped at the user's space readers, newest first" do
-      expect(Rfid.unlinked_for(build(:user, space: space))).to eq([older])
+    def staff_in(*spaces) = create(:user, :staff).tap { |u| spaces.each { |s| StaffSpace.create!(user: u, space: s) } }
+
+    it "lists unlinked cards tapped at the readers of the spaces the staff member is assigned to, newest first" do
+      expect(Rfid.unlinked_for(staff_in(space))).to eq([older])
+      expect(Rfid.unlinked_for(staff_in(space, other_space))).to eq([newer, older])
     end
 
-    it "lists unlinked cards of every space's readers when the user has no space" do
-      expect(Rfid.unlinked_for(build(:user, space: nil))).to eq([newer, older])
+    it "does not list a saved space the staff member is no longer assigned to" do
+      stale = staff_in(other_space)
+      stale.update_columns(space_id: space.id)
+      expect(Rfid.unlinked_for(stale)).to eq([newer])
+    end
+
+    it "lists nothing for staff with no assignment, even with a saved space" do
+      loner = create(:user, :staff)
+      loner.update_columns(space_id: space.id)
+      expect(Rfid.unlinked_for(loner)).to be_empty
+    end
+
+    it "lists the cards of every space's readers for an admin" do
+      expect(Rfid.unlinked_for(create(:user, :admin))).to eq([newer, older])
     end
   end
 end

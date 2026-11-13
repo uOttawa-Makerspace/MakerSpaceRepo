@@ -11,11 +11,13 @@ RSpec.describe "POST /api/v1/training_sessions with one Idempotency-Key, twice a
   let!(:staff) { create(:user, :staff) }
   let!(:space) { create(:space) }
   let!(:training) { create(:training, spaces: [space]) }
+  let!(:assignment) { StaffSpace.create!(user: staff, space: space) }
   let(:key) { "concurrent-#{SecureRandom.uuid}" }
   let(:payload) { { space_id: space.id, training_id: training.id, level: "Beginner" }.to_json }
 
   after do
     ApiIdempotencyKey.where(user_id: staff.id).delete_all
+    StaffSpace.where(user_id: staff.id).delete_all
     TrainingSession.unscoped.where(user_id: staff.id).delete_all
     training.spaces.clear
     [training, space].each { |r| r.class.unscoped.where(id: r.id).delete_all }

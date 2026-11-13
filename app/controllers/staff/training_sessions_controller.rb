@@ -2,6 +2,8 @@
 
 class Staff::TrainingSessionsController < StaffDashboardController
   layout "staff_area"
+  skip_before_action :require_space
+  before_action :require_space, only: :new
   before_action :current_training_session, except: %i[new create index]
   before_action :changed_params, only: [:update]
   before_action :verify_ownership, except: %i[new create index]
@@ -49,6 +51,7 @@ class Staff::TrainingSessionsController < StaffDashboardController
     course_name = CourseName.find_by(name: @new_training_session.course)
     @new_training_session.course_name = course_name if course_name.present?
     return refuse_creation(I18n.t("errors.staff.training_sessions.instructor_not_assignable")) unless @new_training_session.instructor_assignable_by?(@user)
+    return refuse_creation(I18n.t("errors.staff.training_sessions.space_not_assigned")) unless @new_training_session.space_workable_by?(@user)
 
     if @new_training_session.open_by(@user)
       respond_to do |format|

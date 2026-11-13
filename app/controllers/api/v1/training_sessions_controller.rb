@@ -24,7 +24,7 @@ module Api
         return replay(previous, digest) if previous
 
         input = CreateInput.new(params, current_user)
-        return render_error(:forbidden, "Only an admin may choose another instructor", status: :forbidden) if input.foreign_instructor_denied?
+        return if refused_create?(input)
         return render_input_errors(input.errors) unless input.valid?
 
         session = build_session(input)
@@ -38,6 +38,15 @@ module Api
       end
 
       private
+
+      # Renders the refusal and answers true when the caller may not open this session.
+      def refused_create?(input)
+        if input.foreign_instructor_denied?
+          render_error(:forbidden, "Only an admin may choose another instructor", status: :forbidden)
+          return true
+        end
+        refuse_unworkable_space(input.space)
+      end
 
       def build_session(input)
         session = TrainingSession.new(input.attributes)
@@ -88,6 +97,14 @@ module Api
           !TrainingSession.new(user_id: integer(raw)).instructor_assignable_by?(@caller)
         end
 
+        # The named space, or nil when space_id is missing, not an id or unknown.
+        def space
+          return @space if defined?(@space)
+
+          id = integer(@params[:space_id])
+          @space = id && Space.find_by(id: id)
+        end
+
         def valid?
           space = find_space
           training = find_training
@@ -123,8 +140,6 @@ module Api
         end
 
         def find_space
-          id = integer(@params[:space_id])
-          space = id && Space.find_by(id: id)
           error(:space_id, @params[:space_id].nil? ? "is required" : "must be an existing space") unless space
           space
         end

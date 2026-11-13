@@ -41,7 +41,8 @@ RSpec.describe "Journey: admin changes a role", type: :system do
 
     as_actor(:member) do
       visit staff_dashboard_index_path
-      expect(page).to have_text(/search for users to sign them in or out/i)
+      # Newly promoted staff are assigned to no space yet, so the dashboard says so.
+      expect(page).to have_text(I18n.t("common.no_assigned_spaces"))
     end
 
     as_actor(:admin) do
