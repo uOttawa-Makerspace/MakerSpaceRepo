@@ -2,11 +2,11 @@
 
 module Admin::UsersHelper
   def rfid_options_list(rfids, user)
+    readers = PiReader.readers_by_mac(rfids.map(&:mac_address))
     list =
       rfids.map do |r|
         if r.mac_address.present?
-          location =
-            PiReader.find_by_mac(r.mac_address).try(:pi_location)
+          location = readers[r.mac_address]&.pi_location
           location =
             if location.nil?
               " - #{r.mac_address}"
