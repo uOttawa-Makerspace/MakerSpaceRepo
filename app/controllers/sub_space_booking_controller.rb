@@ -740,7 +740,7 @@ class SubSpaceBookingController < SessionsController
   def apply_bulk_booking_status(bulk_status)
     booking_ids = []
     SubSpaceBooking.transaction do
-      pending = SubSpaceBooking.pending.includes(sub_space_booking_status: :booking_status).where(id: params[:sub_space_booking_ids]).to_a
+      pending = SubSpaceBooking.pending.where(id: params[:sub_space_booking_ids]).to_a
 
       if bulk_status == "approve"
         booking_ids = pending.map(&:id)

@@ -35,12 +35,14 @@ RSpec.describe GoogleCalendar::EventProcessor, "under concurrency", :booking_clo
     paused = Queue.new
     resume = Queue.new
     first_done = Concurrent::AtomicBoolean.new(false)
-    allow(SubSpaceBookingStatus).to receive(:new).and_wrap_original do |original, *args, **kwargs|
+    # The first sync stops after its insert, before its transaction commits.
+    allow_any_instance_of(SubSpaceBooking).to receive(:save_with_status!).and_wrap_original do |original, *args|
+      result = original.call(*args)
       if first_done.make_true
         paused << true
         resume.pop(timeout: ThreadPause::PARKED_TIMEOUT)
       end
-      original.call(*args, **kwargs)
+      result
     end
 
     first = in_thread { described_class.process(c18_gcal_event(id: "race-evt", summary: "First")) }
@@ -55,8 +57,6 @@ RSpec.describe GoogleCalendar::EventProcessor, "under concurrency", :booking_clo
     bookings = SubSpaceBooking.where(google_booking_id: "race-evt")
     expect(bookings.count).to eq(1)
     expect(bookings.first.name).to eq("Second")
-    expect(SubSpaceBookingStatus.where(sub_space_booking_id: bookings.first.id).count).to eq(1)
-    expect(bookings.first.sub_space_booking_status_id).to be_present
     expect(bookings.first.booking_status).to eq(approved)
   end
 end

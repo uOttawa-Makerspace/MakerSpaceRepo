@@ -41,7 +41,8 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
         start_time: Time.utc(2027, 4, 5, 14), end_time: Time.utc(2027, 4, 5, 15)
       )
       expect(booking.booking_status).to eq(approved)
-      expect(booking.sub_space_booking_status).to have_attributes(booking_status: approved, id: booking.sub_space_booking_status_id)
+      expect(booking.sub_space_booking_status_id).to be_nil
+      expect(SubSpaceBookingStatus.where(sub_space_booking_id: booking.id)).to be_empty
     end
 
     it "saves nothing and reports when the status of the new booking cannot be saved" do
@@ -231,7 +232,10 @@ RSpec.describe GoogleCalendar::EventProcessor, :booking_clock do
     before { described_class.process(c18_gcal_event) }
 
     it "deletes the booking row (and its status row, via the database cascade) without callbacks" do
-      status_id = booking_for("evt-1").sub_space_booking_status.id
+      booking = booking_for("evt-1")
+      old_row = SubSpaceBookingStatus.create!(sub_space_booking: booking, booking_status: approved)
+      booking.update_column(:sub_space_booking_status_id, old_row.id)
+      status_id = old_row.id
       expect { described_class.process(c18_gcal_event(status: "cancelled")) }.to change(SubSpaceBooking, :count).by(-1)
       expect(booking_for("evt-1")).to be_nil
       expect(SubSpaceBookingStatus.find_by(id: status_id)).to be_nil

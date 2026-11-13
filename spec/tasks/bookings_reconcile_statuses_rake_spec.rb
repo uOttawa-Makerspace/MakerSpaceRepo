@@ -28,8 +28,8 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
   end
 
   it "copies the status row into an empty column and into a stale one, and prints what it changed" do
-    empty = create(:sub_space_booking)
-    stale = create(:sub_space_booking)
+    empty = create(:sub_space_booking, :with_old_status_row)
+    stale = create(:sub_space_booking, :with_old_status_row)
     old_row(empty).update_columns(booking_status_id: approved.id)
     empty.update_column(:booking_status_id, nil)
     old_row(stale).update_columns(booking_status_id: declined.id)
@@ -44,8 +44,9 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
   end
 
   it "never changes the old status rows or a booking that already agrees" do
-    agreeing = create(:sub_space_booking)
+    agreeing = create(:sub_space_booking, :with_old_status_row)
     agreeing.change_status!(approved)
+    old_row(agreeing).update_columns(booking_status_id: approved.id)
     rows_before = SubSpaceBookingStatus.order(:id).pluck(:id, :booking_status_id, :sub_space_booking_id, :updated_at)
 
     expect(run_task).to include("0 booking(s) changed")
@@ -55,7 +56,7 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
   end
 
   it "is safe to run twice" do
-    stale = create(:sub_space_booking)
+    stale = create(:sub_space_booking, :with_old_status_row)
     old_row(stale).update_columns(booking_status_id: approved.id)
     run_task
     Rake::Task["bookings:reconcile_statuses"].reenable
@@ -65,7 +66,7 @@ RSpec.describe "bookings:reconcile_statuses", :booking_clock do
   end
 
   it "leaves a booking with no matching status row alone and lists it" do
-    orphan = create(:sub_space_booking)
+    orphan = create(:sub_space_booking, :with_old_status_row)
     orphan.update_column(:booking_status_id, nil)
     SubSpaceBooking.where(id: orphan.id).update_all(sub_space_booking_status_id: nil)
 
@@ -102,8 +103,8 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
     )
   end
 
-  let!(:empty) { create(:sub_space_booking) }
-  let!(:stale) { create(:sub_space_booking) }
+  let!(:empty) { create(:sub_space_booking, :with_old_status_row) }
+  let!(:stale) { create(:sub_space_booking, :with_old_status_row) }
 
   before do
     SubSpaceBookingStatus.find_by(sub_space_booking_id: empty.id).update_columns(booking_status_id: approved.id)
@@ -120,8 +121,9 @@ RSpec.describe "bookings:restore_reconciled_statuses", :booking_clock do
   end
 
   it "records nothing for a booking that already agrees" do
-    agreeing = create(:sub_space_booking)
+    agreeing = create(:sub_space_booking, :with_old_status_row)
     agreeing.change_status!(approved)
+    SubSpaceBookingStatus.find_by(sub_space_booking_id: agreeing.id).update_columns(booking_status_id: approved.id)
 
     run("bookings:reconcile_statuses")
 

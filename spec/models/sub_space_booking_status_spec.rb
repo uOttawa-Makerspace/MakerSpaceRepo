@@ -41,7 +41,7 @@ RSpec.describe SubSpaceBookingStatus, type: :model do
 
   describe "destroy" do
     it "refuses while the booking points at it, and keeps the booking" do
-      booking = create(:sub_space_booking)
+      booking = create(:sub_space_booking, :with_old_status_row)
       status = booking.sub_space_booking_status
 
       expect(status.destroy).to be(false)
@@ -52,7 +52,7 @@ RSpec.describe SubSpaceBookingStatus, type: :model do
     end
 
     it "keeps the booking when a status row nothing points at is destroyed" do
-      booking = create(:sub_space_booking)
+      booking = create(:sub_space_booking, :with_old_status_row)
       extra = described_class.create!(sub_space_booking: booking, booking_status: @approved_status)
 
       expect(extra.destroy).to be_truthy
@@ -61,7 +61,7 @@ RSpec.describe SubSpaceBookingStatus, type: :model do
     end
 
     it "still goes with its booking through destroy_with_status!" do
-      booking = create(:sub_space_booking)
+      booking = create(:sub_space_booking, :with_old_status_row)
       status_id = booking.sub_space_booking_status_id
 
       booking.destroy_with_status!

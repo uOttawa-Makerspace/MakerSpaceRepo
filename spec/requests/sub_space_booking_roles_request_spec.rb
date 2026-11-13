@@ -370,7 +370,10 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
     end
 
     it "lets an admin delete another user's booking and removes both rows" do
+      booking = create(:sub_space_booking, :with_old_status_row, sub_space: subspace, user: owner,
+                       start_time: DateTime.parse("2027-04-03 10:00"), end_time: DateTime.parse("2027-04-03 11:00"))
       status_id = booking.sub_space_booking_status_id
+      expect(status_id).to be_present
       sign_in_as(:admin)
       delete sub_space_booking_delete_path(booking.id)
       expect(response).to redirect_to(sub_space_booking_index_path(anchor: "booking-tab"))
@@ -514,7 +517,7 @@ RSpec.describe "Sub space booking role matrix", :booking_clock, type: :request d
       end
 
       expect([b1, b2].map { |b| status_name(b) }).to eq(%w[Declined Declined])
-      expect(SubSpaceBookingStatus.where(sub_space_booking_id: [b1.id, b2.id]).map { |r| r.booking_status.name }).to eq(%w[Declined Declined])
+      expect(SubSpaceBookingStatus.where(sub_space_booking_id: [b1.id, b2.id])).to be_empty
       expect(ActionMailer::Base.deliveries.size).to eq(2)
     end
 

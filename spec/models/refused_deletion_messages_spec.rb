@@ -61,7 +61,7 @@ RSpec.describe "Refused deletion messages" do
       "Ce statut de réservation est utilisé par des réservations et ne peut pas être supprimé."
     ],
     "booking status entry" => [
-      -> { create(:sub_space_booking).sub_space_booking_status },
+      -> { create(:sub_space_booking, :with_old_status_row).sub_space_booking_status },
       "This booking status entry is still used by a booking and cannot be deleted.",
       "Cette entrée de statut est encore utilisée par une réservation et ne peut pas être supprimée."
     ],

@@ -16,8 +16,8 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
   end
 
   describe "#destroy_with_status!" do
-    it "destroys the booking and its status row" do
-      booking = create(:sub_space_booking)
+    it "destroys the booking and its old status row" do
+      booking = create(:sub_space_booking, :with_old_status_row)
       status_id = booking.sub_space_booking_status_id
 
       booking.destroy_with_status!
@@ -26,17 +26,16 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
       expect(SubSpaceBookingStatus.exists?(status_id)).to be(false)
     end
 
-    it "destroys a booking that has no status" do
+    it "destroys a booking that has no old status row" do
       booking = create(:sub_space_booking)
-      booking.update_column(:sub_space_booking_status_id, nil)
-      SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).delete_all
+      expect(booking.reload.sub_space_booking_status_id).to be_nil
 
       expect { described_class.find(booking.id).destroy_with_status! }
         .to change(described_class, :count).by(-1)
     end
 
     it "leaves the booking and its status linked when the destroy fails" do
-      booking = create(:sub_space_booking)
+      booking = create(:sub_space_booking, :with_old_status_row)
       status_id = booking.sub_space_booking_status_id
       allow_any_instance_of(described_class).to receive(:destroy!).and_raise(ActiveRecord::RecordNotDestroyed)
 
@@ -90,14 +89,14 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     end
 
     describe "#save_with_status!" do
-      it "saves the booking with the status and a matching old status row, linked" do
+      it "saves the booking with the status and writes no old status row" do
         new_booking = build(:sub_space_booking, booking_status: nil)
 
         new_booking.save_with_status!(@approved_status)
 
         expect(new_booking.reload.booking_status).to eq(@approved_status)
-        expect(legacy_status(new_booking)).to eq(@approved_status)
-        expect(new_booking.sub_space_booking_status_id).to eq(SubSpaceBookingStatus.find_by(sub_space_booking_id: new_booking.id).id)
+        expect(new_booking.sub_space_booking_status_id).to be_nil
+        expect(SubSpaceBookingStatus.where(sub_space_booking_id: new_booking.id)).to be_empty
       end
 
       it "saves nothing when the booking is invalid" do
@@ -111,22 +110,20 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     end
 
     describe "#change_status!" do
-      it "sets the status and keeps the old status row in step" do
+      it "sets the status and writes no old status row" do
         booking.change_status!(@approved_status)
 
         expect(booking.reload.booking_status).to eq(@approved_status)
-        expect(legacy_status(booking)).to eq(@approved_status)
-        expect(SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).count).to eq(1)
+        expect(SubSpaceBookingStatus.where(sub_space_booking_id: booking.id)).to be_empty
       end
 
-      it "creates the old status row when the booking has none" do
-        booking.update_column(:sub_space_booking_status_id, nil)
-        SubSpaceBookingStatus.where(sub_space_booking_id: booking.id).delete_all
+      it "leaves an existing old status row as it was" do
+        old = create(:sub_space_booking, :with_old_status_row)
 
-        described_class.find(booking.id).change_status!(@declined_status)
+        described_class.find(old.id).change_status!(@declined_status)
 
-        expect(legacy_status(booking)).to eq(@declined_status)
-        expect(booking.reload.sub_space_booking_status_id).to be_present
+        expect(old.reload.booking_status).to eq(@declined_status)
+        expect(legacy_status(old)).to eq(@pending_status)
       end
 
       it "works on a booking that no longer passes validation" do
@@ -139,33 +136,28 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     end
 
     describe ".change_status_of!" do
-      it "changes the listed bookings and their old status rows, and no others" do
+      it "changes the listed bookings and no others, and writes no old status rows" do
         listed = create_list(:sub_space_booking, 2)
         other = create(:sub_space_booking)
 
         described_class.change_status_of!(listed, @declined_status)
 
         expect(listed.map { |b| b.reload.booking_status }).to all(eq(@declined_status))
-        expect(listed.map { |b| legacy_status(b) }).to all(eq(@declined_status))
         expect(other.reload.booking_status).to eq(@pending_status)
-        expect(legacy_status(other)).to eq(@pending_status)
+        expect(SubSpaceBookingStatus.count).to eq(0)
       end
+    end
 
-      it "creates a missing old status row and repairs a mislinked one" do
-        missing, mislinked = create_list(:sub_space_booking, 2)
-        other = create(:sub_space_booking)
-        [missing, mislinked].each { |b| b.update_column(:sub_space_booking_status_id, nil) }
-        SubSpaceBookingStatus.where(sub_space_booking_id: missing.id).delete_all
-        mislinked.update_column(:sub_space_booking_status_id, other.sub_space_booking_status_id)
-        SubSpaceBookingStatus.where(sub_space_booking_id: mislinked.id).delete_all
+    describe "#approve_if_pending! and #decline_if_pending!" do
+      it "change the status and write no old status row" do
+        approved, declined = create_list(:sub_space_booking, 2)
 
-        described_class.change_status_of!([missing, mislinked].map { |b| described_class.find(b.id) }, @approved_status)
+        expect(approved.approve_if_pending!(by: approved.user)).to be(true)
+        expect(declined.decline_if_pending!).to be(true)
 
-        [missing, mislinked].each do |b|
-          expect(legacy_status(b)).to eq(@approved_status)
-          expect(b.reload.sub_space_booking_status_id).to eq(SubSpaceBookingStatus.find_by(sub_space_booking_id: b.id).id)
-        end
-        expect(legacy_status(other)).to eq(@pending_status)
+        expect(approved.reload).to be_approved
+        expect(declined.reload).to be_declined
+        expect(SubSpaceBookingStatus.count).to eq(0)
       end
     end
   end
@@ -391,7 +383,7 @@ RSpec.describe SubSpaceBooking, :booking_clock, type: :model do
     # The status row refuses its own destroy while the booking points at it, so a plain destroy is
     # refused and nothing is deleted; destroy_with_status! is the way to remove a booking.
     it "destroy is refused and both rows survive" do
-      booking = create(:sub_space_booking, name: "N", description: "D",
+      booking = create(:sub_space_booking, :with_old_status_row, name: "N", description: "D",
                        start_time: DateTime.parse("2027-03-03 10:00"),
                        end_time: DateTime.parse("2027-03-03 11:00"))
       status_row = described_class

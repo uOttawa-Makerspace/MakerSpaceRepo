@@ -10,9 +10,9 @@ class SubSpaceBooking < ApplicationRecord
   # because the column may still be empty on rows older than the status column.
   belongs_to :booking_status, optional: true
   validates :booking_status, presence: true, on: :create
-  # The old status row. The state of a booking is booking_status_id; no reader uses this row for it.
-  # Only the writers of the old table (write_status_row, destroy_with_status!) and the refusal of a
-  # plain destroy still go through this association, until the owner retires the old table.
+  # The old status row, kept only for deleting a booking: the row's foreign key must be cleared before
+  # the booking goes, and its `dependent: :destroy` is what refuses a plain destroy. Nothing writes the
+  # row any more, so a booking made since has none; the state of a booking is booking_status_id.
   has_one :sub_space_booking_status,
           dependent: :destroy
   validates :name, presence: true
@@ -68,58 +68,45 @@ class SubSpaceBooking < ApplicationRecord
   def approved? = booking_status_id == BookingStatus.approved.id
   def declined? = booking_status_id == BookingStatus.declined.id
 
-  # Saves a new booking with its first status, and records the status on the old status row too.
-  # All or nothing.
+  # Saves a new booking with its first status.
   def save_with_status!(status)
-    transaction do
-      self.booking_status_id = status.id
-      save!
-      write_status_row
-    end
+    self.booking_status_id = status.id
+    save!
   end
 
   # Changes the status of a saved booking without running validations (a booking that no longer passes
-  # some rule can still be approved or declined), and records it on the old status row too.
+  # some rule can still be approved or declined).
   def change_status!(status)
-    transaction do
-      update_column(:booking_status_id, status.id)
-      write_status_row
-    end
+    update_column(:booking_status_id, status.id)
   end
 
   # Approves the booking if it is still pending and says whether this call did it, so only one of two
   # simultaneous approvals goes on to mail the owner. It writes only the status and approval columns
   # (no validations), so a past pending booking can still be approved.
   def approve_if_pending!(by:)
-    transaction do
-      claimed = self.class.pending.where(id: id).update_all(
-        booking_status_id: BookingStatus.approved.id, approved_at: Time.current, approved_by_id: by.id
-      )
-      next false if claimed.zero?
+    claimed = self.class.pending.where(id: id).update_all(
+      booking_status_id: BookingStatus.approved.id, approved_at: Time.current, approved_by_id: by.id
+    )
+    return false if claimed.zero?
 
-      reload
-      write_status_row
-      true
-    end
+    reload
+    true
   end
 
   # Declines the booking if it is still pending and says whether this call did it, so only one of two
   # simultaneous declines goes on to mail the owner. It also clears any earlier approval stamp, and
   # writes without validations like approve_if_pending!.
   def decline_if_pending!
-    transaction do
-      claimed = self.class.pending.where(id: id).update_all(
-        booking_status_id: BookingStatus.declined.id, approved_at: nil, approved_by_id: nil
-      )
-      next false if claimed.zero?
+    claimed = self.class.pending.where(id: id).update_all(
+      booking_status_id: BookingStatus.declined.id, approved_at: nil, approved_by_id: nil
+    )
+    return false if claimed.zero?
 
-      reload
-      write_status_row
-      true
-    end
+    reload
+    true
   end
 
-  # Gives every booking of the list the status, each through change_status!, so the old status rows follow.
+  # Gives every booking of the list the status, each through change_status!.
   def self.change_status_of!(bookings, status)
     transaction { bookings.each { |booking| booking.change_status!(status) } }
   end
@@ -345,14 +332,5 @@ class SubSpaceBooking < ApplicationRecord
 
       HandledError.report(e, source: "sub_space_booking.delete_booking", sub_space_booking_id: sub_space_booking.id)
     end
-  end
-
-  private
-
-  # The old status row follows the booking's status: created when the booking has none, linked back.
-  def write_status_row
-    row = sub_space_booking_status || build_sub_space_booking_status
-    row.update!(booking_status_id: booking_status_id)
-    update_column(:sub_space_booking_status_id, row.id)
   end
 end
