@@ -26,6 +26,24 @@ class StaffUnavailability < ApplicationRecord
   # Its occurrences that overlap the window (a CalendarWindow), expanded by RecurringSeries.
   def occurrences_in(window) = RecurringSeries.for_record(self).occurrences_in(window)
 
+  # The starts (UTC) of the `occurrences` of an event being planned that overlap an unavailability of each of
+  # `user_ids` (ids or users), by user id (a user with none may be missing).
+  def self.clashes(user_ids, occurrences)
+    return {} if occurrences.empty?
+
+    busy = occurrences_for(user_ids, CalendarWindow.new(occurrences.first.starts_at, occurrences.last.ends_at))
+    busy.transform_values do |slots|
+      occurrences.select { |occurrence| slots.any? { |slot| slot.overlaps?(occurrence) } }.map { |occurrence| occurrence.starts_at.utc.iso8601 }
+    end
+  end
+
+  # The unavailability occurrences in the window of each of `user_ids`, by user id: their stored unavailabilities
+  # and their external calendars.
+  def self.occurrences_for(user_ids, window)
+    sources = window.records(where(user_id: user_ids)).to_a + StaffExternalUnavailability.where(user_id: user_ids).to_a
+    sources.group_by(&:user_id).transform_values { |of_user| of_user.flat_map { |source| source.occurrences_in(window) } }
+  end
+
   def weekly_frequency_must_contain_days
     if recurrence_rule.present? && recurrence_rule.include?("FREQ=WEEKLY") && !recurrence_rule.include?("BYDAY")
       errors.add(:recurrence_rule, :weekly_needs_days)

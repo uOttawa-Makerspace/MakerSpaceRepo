@@ -38,6 +38,10 @@ class RecurringSeries
                 allDay: all_day, extendedProps: row[:extendedProps].merge(occurrenceStart: starts_at.utc.iso8601))
     end
 
+    # Whether the two take some of the same time. An occurrence of no length (an imported event with no end, a
+    # moment) overlaps nothing.
+    def overlaps?(other) = (starts_at...ends_at).overlap?(other.starts_at...other.ends_at)
+
     private
 
     def feed_time(time)

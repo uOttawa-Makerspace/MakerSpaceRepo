@@ -133,12 +133,15 @@ class ImportedCalendar
   # The occurrences of the calendar's entries in the window (a CalendarWindow), as the calendar pages draw them: each
   # title after `prefix`, with the page's own `extra` properties and `props` in extendedProps.
   def feed_rows(window, prefix: "", props: {}, **extra)
-    entries.flat_map do |entry|
+    occurrences_in(window).map do |entry, occurrence|
       row = { groupId: id, title: "#{prefix}#{entry.summary}", display: "auto", **extra,
               extendedProps: { name: name, description: entry.description, **props } }
-      entry.occurrences_in(window).map { |occurrence| occurrence.feed_row(entry.key, row, repeating: entry.series) }
+      occurrence.feed_row(entry.key, row, repeating: entry.series)
     end
   end
+
+  # Each entry with each of its occurrences in the window (a CalendarWindow), as [entry, occurrence] pairs.
+  def occurrences_in(window) = entries.flat_map { |entry| entry.occurrences_in(window).map { |occurrence| [entry, occurrence] } }
 
   # Whether the feed could not be read: no body, a fetch or parse error, or a body with no calendar in it.
   def failed? = @failed

@@ -82,3 +82,23 @@ RSpec.describe StaffUnavailability, "#feed_rows", type: :model do
     expect(rows.first[:extendedProps]).to include(recordId: unavailability.id, series: { frequency: "WEEKLY", weekdays: %w[MO WE], until: nil })
   end
 end
+
+RSpec.describe StaffUnavailability, ".occurrences_for", type: :model do
+  include SpacesSpecHelpers
+
+  let(:zone) { RecurrenceRule::ZONE }
+  let(:week) { CalendarWindow.new(zone.local(2027, 3, 14), zone.local(2027, 3, 21)) }
+
+  it "is each staff member's stored and external-calendar occurrences in the window, by user id" do
+    ann = create(:user, :staff)
+    bob = create(:user, :staff)
+    create(:staff_unavailability, user: ann, start_time: zone.local(2027, 3, 15, 9), end_time: zone.local(2027, 3, 15, 10))
+    create(:staff_unavailability, user: ann, start_time: zone.local(2027, 4, 15, 9), end_time: zone.local(2027, 4, 15, 10))
+    url = "https://calendar.example/bob.ics"
+    StaffExternalUnavailability.create!(user: bob, ics_url: url)
+    stub_ics(url, body: ics_document(uid: "b1", summary: "Dentist", start: zone.local(2027, 3, 16, 9), end: zone.local(2027, 3, 16, 10)))
+
+    found = described_class.occurrences_for([ann.id, bob.id], week).transform_values { |list| list.map { |o| o.starts_at.in_time_zone(zone).iso8601 } }
+    expect(found).to eq(ann.id => ["2027-03-15T09:00:00-04:00"], bob.id => ["2027-03-16T09:00:00-04:00"])
+  end
+end

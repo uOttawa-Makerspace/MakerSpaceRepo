@@ -65,6 +65,21 @@ RSpec.describe RecurringSeries do
     end
   end
 
+  describe "Occurrence#overlaps?" do
+    def occurrence(from, to) = described_class::Occurrence.new(starts_at: from, ends_at: to, all_day: false)
+
+    it "is true for occurrences that share some time, and not for ones that only touch" do
+      event = occurrence(at(2027, 3, 17, 10), at(2027, 3, 17, 11))
+      expect(occurrence(at(2027, 3, 17, 10, 30), at(2027, 3, 17, 12)).overlaps?(event)).to be(true)
+      expect(occurrence(at(2027, 3, 17, 11), at(2027, 3, 17, 12)).overlaps?(event)).to be(false)
+    end
+
+    it "is false for an occurrence of no length (a moment), even inside the other" do
+      moment = occurrence(at(2027, 3, 17, 10, 30), at(2027, 3, 17, 10, 30))
+      expect(moment.overlaps?(occurrence(at(2027, 3, 17, 10), at(2027, 3, 17, 11)))).to be(false)
+    end
+  end
+
   describe "Occurrence#feed_row" do
     it "sends the times with their Toronto offset, an id with the start for a series, and the start as an instant" do
       occurrence = described_class::Occurrence.new(starts_at: at(2027, 11, 7, 1, 30) + 1.hour, ends_at: at(2027, 11, 7, 3), all_day: false)

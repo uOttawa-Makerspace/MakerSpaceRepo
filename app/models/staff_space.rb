@@ -54,35 +54,17 @@ class StaffSpace < ApplicationRecord
          .sort_by { |member| [member[:busy] ? 0 : 1, member[:name].to_s.downcase] }
   end
 
-  # The calendar staff of a space for an event proposed at `occurrences` (RecurringSeries::Occurrence): each with the
-  # starts of the occurrences that overlap one of their unavailabilities, stored or on their external calendars.
-  # Available staff first, each part by name. With no occurrences, every member is available.
+  # The calendar staff of a space for an event proposed at `occurrences` (RecurringSeries::Occurrence), each with the
+  # starts of the occurrences they are unavailable for (StaffUnavailability.clashes): available staff first, each part
+  # by name. With no occurrences, all are available.
   def self.conflicts(space_id, occurrences)
     colors = colors_in(space_id)
     staff = calendar_staff(space_id).to_a
-    busy = busy_times(staff, occurrences)
-    staff.map { |member|
-      starts = occurrences.filter_map do |occurrence|
-        during = occurrence.starts_at...occurrence.ends_at # an unavailability of no length (a moment) overlaps nothing
-        occurrence.starts_at.utc.iso8601 if busy[member.id].any? { |slot| (slot.starts_at...slot.ends_at).overlap?(during) }
-      end
-      { id: member.id, name: member.name, color: colors[member.id], unavailableStarts: starts }
-    }.sort_by { |member| [member[:unavailableStarts].size.clamp(0, 1), member[:name].to_s.downcase] } # available (0) first
+    clashes = StaffUnavailability.clashes(staff, occurrences)
+    rows = staff.map { |member| { id: member.id, name: member.name, color: colors[member.id], unavailableStarts: clashes.fetch(member.id, []) } }
+    available, unavailable = rows.sort_by { |row| row[:name].to_s.downcase }.partition { |row| row[:unavailableStarts].empty? }
+    available + unavailable
   end
-
-  # Each member's unavailability occurrences (by user id) over the span of `occurrences`.
-  def self.busy_times(staff, occurrences)
-    busy = Hash.new { |hash, id| hash[id] = [] }
-    return busy if occurrences.empty?
-
-    window = CalendarWindow.new(occurrences.first.starts_at, occurrences.last.ends_at)
-    window.records(StaffUnavailability.where(user_id: staff)).each { |stored| busy[stored.user_id].concat(stored.occurrences_in(window)) }
-    StaffExternalUnavailability.where(user_id: staff).includes(:user).each do |external|
-      busy[external.user_id].concat(external.calendar(external.user.name).entries.flat_map { |entry| entry.occurrences_in(window) })
-    end
-    busy
-  end
-  private_class_method :busy_times
 
   # A colour passed in is kept; a blank one gets the first palette entry still free in the space.
   def ensure_color
