@@ -309,5 +309,39 @@ RSpec.describe LockerRental, "payments under concurrency", type: :model do
       expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq("gid://shopify/DraftOrder/first")
       expect(fake.deleted_ids).to eq([fake.draft_id])
     end
+
+    it "an unused draft Shopify refuses to delete is reported, not raised, and the stored draft is still served" do
+      during_shopify_create do
+        LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/first")
+      end
+      fake.delete_user_errors = [{ "field" => "id", "message" => "not deletable" }]
+      reports = []
+      allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+
+      candidate = LockerRental.find(rental.id)
+      expect(candidate.checkout_link).to eq(fake.invoice_url)
+
+      expect(candidate.shopify_draft_order_id).to eq("gid://shopify/DraftOrder/first")
+      expect(reports.size).to eq(1)
+      error, opts = reports.first
+      expect(error).to be_a(LockerRental::DraftOrderNotDeleted)
+      expect(error.message).to eq("Shopify did not delete the unused draft order #{fake.draft_id}: not deletable")
+      expect(opts).to include(handled: true, severity: :error)
+      expect(opts[:context]).to eq(locker_rental_id: rental.id, step: "delete_unused_shopify_draft_order")
+    end
+
+    it "an unused draft that was paid meanwhile is left alone and not reported" do
+      during_shopify_create do
+        LockerRental.where(id: rental.id).update_all(shopify_draft_order_id: "gid://shopify/DraftOrder/first")
+      end
+      fake.delete_user_errors = [{ "field" => "id", "message" => "completed" }]
+      fake.draft_statuses[fake.draft_id] = "COMPLETED"
+      reports = []
+      allow(Rails.error).to receive(:report) { |error, **opts| reports << [error, opts] }
+
+      expect(LockerRental.find(rental.id).checkout_link).to eq(fake.invoice_url)
+      expect(reports).to be_empty
+      expect(LockerRental.find(rental.id).shopify_draft_order_id).to eq("gid://shopify/DraftOrder/first")
+    end
   end
 end

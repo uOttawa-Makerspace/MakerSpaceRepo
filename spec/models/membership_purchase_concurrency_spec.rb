@@ -135,7 +135,7 @@ RSpec.describe Membership, "purchase under concurrency", type: :model do
     first = nil
     paused = Queue.new
     resume = Queue.new
-    allow_any_instance_of(Membership).to receive(:delete_draft).and_wrap_original do |original, *args|
+    allow_any_instance_of(Membership).to receive(:delete_stale_draft).and_wrap_original do |original, *args|
       result = original.call(*args)
       if Thread.current == first
         first = nil

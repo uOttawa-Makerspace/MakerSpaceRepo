@@ -9,9 +9,9 @@
 #     good, which would make the example's own cleanup wait on that lock forever.
 module ThreadPause
   # Order matters: the main thread gives up first (AWAIT), then a parked thread releases its lock
-  # by itself (PARKED), and only then does the cleanup's lock wait (LOCK_TIMEOUT, read by
-  # spec/support/committed_rows_guard.rb) run out. A cleanup that gave up before the parked thread
-  # let go would skip its deletes and leak rows into later examples.
+  # by itself (PARKED), and only then does the cleanup's lock wait (LOCK_TIMEOUT, the lock_timeout
+  # every test connection starts with in config/database.yml) run out. A cleanup that gave up
+  # before the parked thread let go would skip its deletes and leak rows into later examples.
   AWAIT_TIMEOUT = 10
   PARKED_TIMEOUT = 15
   LOCK_TIMEOUT = 20

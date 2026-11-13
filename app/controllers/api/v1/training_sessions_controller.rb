@@ -33,7 +33,11 @@ module Api
 
       # Parses and validates the create body; no database writes.
       class CreateInput
-        attr_reader :errors
+        FIELD_ORDER = %i[space_id training_id level course instructor_id user_ids].freeze
+        # Model validation errors reported as input errors, with the input field each belongs to.
+        RULE_FIELDS = { not_offered_in_space: :training_id, not_allowed: :level, too_long: :course }.freeze
+
+        def errors = @errors.sort_by { |field, _| FIELD_ORDER.index(field) }.to_h
 
         def initialize(params, caller_user)
           @params = params
@@ -45,18 +49,19 @@ module Api
         # Staff can only name themselves; a different instructor is a 403, not a 422.
         def foreign_instructor_denied?
           raw = @params[:instructor_id]
-          return false if raw.nil? || @caller.admin?
+          return false if raw.nil?
 
-          integer(raw) != @caller.id
+          !TrainingSession.new(user_id: integer(raw)).instructor_assignable_by?(@caller)
         end
 
         def valid?
           space = find_space
-          training = find_training(space)
+          training = find_training
           level = check_level
           course = check_course
           instructor = find_instructor
           users = find_trainees
+          check_rules(space, training, level, course)
           return false if @errors.any?
 
           @attributes = { user: instructor, space: space, training: training, level: level,
@@ -71,6 +76,9 @@ module Api
         end
 
         private
+
+        # The finders return the error list instead of a record when the lookup failed.
+        def record_or_nil(value) = value.is_a?(ApplicationRecord) ? value : nil
 
         def error(field, message) = (@errors[field] ||= []) << message
 
@@ -87,32 +95,45 @@ module Api
           space
         end
 
-        def find_training(space)
+        def find_training
           raw = @params[:training_id]
           return error(:training_id, "is required") if raw.nil?
 
           id = integer(raw)
-          training = id && Training.find_by(id: id)
-          return error(:training_id, "must be an existing training") unless training
-          return training if space.nil? || space.trainings.exists?(training.id)
-
-          error(:training_id, "is not offered in this space")
+          (id && Training.find_by(id: id)) || error(:training_id, "must be an existing training")
         end
 
         def check_level
           level = @params[:level]
-          return error(:level, "is required") if level.nil?
-          return level if level.is_a?(String) && TrainingSession.new.levels.include?(level)
-
-          error(:level, "must be one of #{TrainingSession.new.levels.join(', ')}")
+          error(:level, "is required") if level.nil?
+          level
         end
 
         def check_course
           course = @params[:course]
-          return nil if course.nil?
-          return course if course.is_a?(String) && course.length <= 255
+          return course if course.nil? || course.is_a?(String)
 
           error(:course, "must be a string of at most 255 characters")
+        end
+
+        # The session's own rules (level allowed, training offered in the space, course length), reported
+        # on the field the caller sent.
+        def check_rules(space, training, level, course)
+          candidate = TrainingSession.new(space: record_or_nil(space), training: record_or_nil(training),
+                                          level: level&.to_s, course: course.is_a?(String) ? course : nil)
+          candidate.valid?(:session_opening)
+          candidate.errors.each do |e|
+            field = RULE_FIELDS[e.type]
+            error(field, e.message) if field && !@errors.key?(field)
+          end
+          report_blank_level(candidate) unless level.nil?
+        end
+
+        # A level that is sent but blank is not one of the levels (the model reports it as missing).
+        def report_blank_level(candidate)
+          return if @errors.key?(:level) || !candidate.errors.added?(:level, :blank)
+
+          error(:level, candidate.errors.generate_message(:level, :not_allowed, levels: candidate.levels.join(", ")))
         end
 
         def find_instructor

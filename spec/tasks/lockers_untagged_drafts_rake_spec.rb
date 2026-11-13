@@ -106,6 +106,16 @@ RSpec.describe "lockers:untagged_drafts" do
     expect(status).to eq(1)
   end
 
+  # CI runs with RUBYOPT=-W0, which turns Kernel#warn into a no-op.
+  it "prints the unresolved lines when Ruby warnings are turned off" do
+    stub_const("LockerRental::UntaggedDraftSweep::MAX_DELETES", 0)
+    allow(Rails.error).to receive(:report)
+    _out, err, status = silence_warnings { run_task("apply") }
+
+    expect(err).to include("not resolved:", "NOTHING was deleted")
+    expect(status).to eq(1)
+  end
+
   it "refuses an unknown argument" do
     _out, err, status = run_task("now")
     expect(status).to eq(1)

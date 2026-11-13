@@ -24,8 +24,9 @@ class RfidController < SessionsController
   # The per-reader limit runs FIRST: its 429 halts the chain, so a reader looping past 60/min does not
   # also count against the shared per-IP ceiling (readers behind one NAT egress IP would otherwise lose
   # the ceiling to one misbehaving reader). The per-reader counter rows this creates are bounded: each key
-  # digests the identifier (fixed length) and lives a minute, and prune! runs every 5 minutes, so one IP
-  # leaves at most (its request rate x the prune interval) rows of fixed length.
+  # digests the identifier (fixed length) and expires when its 1-minute window ends, and prune! deletes
+  # expired rows every 5 minutes, so one IP leaves at most (its request rate x (the window + the prune
+  # interval)) rows of fixed length.
   rate_limit to: 60, within: 1.minute, only: :card_number, name: "tap",
              by: -> { tap_rate_limit_key }, with: RATE_LIMITED
   rate_limit to: 600, within: 1.minute, only: :card_number, name: "tap-ip",
@@ -122,7 +123,8 @@ class RfidController < SessionsController
   private
 
   # What the tap box sends as its identifier, bounded by PiReader.tap_identifier (the rule registration
-  # uses too): anything longer than 64 characters or with a control character is treated as missing, as a
+  # uses too): after leading and trailing whitespace is stripped, anything longer than 64 characters or
+  # with a space, control or other invisible character is treated as missing, as a
   # hash/array param already is: no reader matches it, it is counted against the caller's IP only, and
   # nothing stores it. (The rate-limit key digests it, so its length is fixed whatever the input.)
   def tap_mac_address
