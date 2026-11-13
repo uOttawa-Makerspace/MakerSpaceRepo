@@ -41,8 +41,8 @@ RSpec.describe "users.deleted" do
       training_id = cert.training_session.training_id
       user.soft_delete!
       expect(Certification.highest_certifications(user.id)).to eq([cert])
-      expect(ProficientProject.training_status(training_id, user.id)).to eq(cert.level)
-      expect(ApplicationController.helpers.training_status(training_id, user.id)).to be_present
+      expect(user.certified_level(training_id)).to eq(cert.level)
+      expect(ApplicationController.helpers.training_status(training_id, user)).to include(cert.level)
     end
 
     it "their lab sessions and certifications still reach the user, and join to it" do

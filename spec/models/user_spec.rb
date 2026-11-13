@@ -1290,4 +1290,67 @@ RSpec.describe User, type: :model do
       expect(owner.key_certification_visible_to?(other)).to be(false)
     end
   end
+
+  describe "progress in a training" do
+    let(:user) { create(:user, :regular_user) }
+    let(:training) { create(:training) }
+
+    def certify(level, session_level: level, training: self.training)
+      session = create(:training_session, training: training, level: session_level)
+      create(:certification, user: user, training: training, training_session: session, level: level)
+    end
+
+    it "is nothing for a training the user has not started" do
+      expect(user.certified_level(training.id)).to be_nil
+      expect(user.training_standing(training.id)).to be_nil
+      expect(user.recommended_levels(training.id)).to eq(%w[Beginner])
+      expect(user.highest_badge(training)).to be_nil
+    end
+
+    it "is Newbie once a learning module of the training is completed or one of its projects awarded" do
+      create(:learning_module_track, :completed, user: user, learning_module: create(:learning_module, training: training))
+      other = create(:training)
+      create(:order_item, :awarded, proficient_project: create(:proficient_project, training: other), order: create(:order, user: user))
+      unfinished = create(:training)
+      create(:learning_module_track, user: user, learning_module: create(:learning_module, training: unfinished))
+
+      expect([training, other, unfinished].map { |t| user.training_standing(t.id) }).to eq(["Newbie", "Newbie", nil])
+    end
+
+    it "is the highest certified level, with the levels counted up to it and the badge from the highest session" do
+      certify("Beginner")
+      intermediate = certify("Intermediate")
+      other = create(:training)
+      certify("Beginner", training: other)
+
+      expect(user.certified_level(training.id)).to eq("Intermediate")
+      expect(user.training_standing(training.id)).to eq("Intermediate")
+      expect(user.recommended_levels(training.id)).to eq(%w[Beginner Intermediate])
+      expect(user.highest_badge(training)).to eq(intermediate)
+      expect(user.recommended_levels(other.id)).to eq(%w[Beginner])
+      expect(user.recommended_levels(create(:training).id)).to eq(%w[Beginner])
+    end
+
+    it "counts Advanced as all three levels" do
+      certify("Advanced")
+
+      expect(user.recommended_levels(training.id)).to eq(%w[Beginner Intermediate Advanced])
+    end
+
+    it "takes the badge from the session level while the standing comes from the certification level" do
+      from_beginner_session = certify("Advanced", session_level: "Beginner")
+      from_advanced_session = certify("Beginner", session_level: "Advanced")
+
+      expect(user.certified_level(training.id)).to eq("Advanced")
+      expect(user.highest_badge(training)).to eq(from_advanced_session)
+      expect(user.highest_badge(training)).not_to eq(from_beginner_session)
+    end
+
+    it "leaves out a deactivated certification" do
+      certify("Advanced").update!(active: false)
+
+      expect(user.training_standing(training.id)).to be_nil
+      expect(user.highest_badge(training)).to be_nil
+    end
+  end
 end

@@ -15,14 +15,14 @@
                       <button class="btn btn-link stretched-link" type="button" data-bs-toggle="collapse" data-bs-target="#training-<%= training.id %>" aria-expanded="false" aria-controls="training-<%= training.id %>"><%= training.localized_name %></button>
                     </div>
                     <div class="col-4">
-                      <%= sanitize(training_status(training.id, current_user.id)) %>
+                      <%= sanitize(training_status(training.id, current_user)) %>
                     </div>
                 </div>
 
                 <div id="training-<%= training.id %>" class="accordion-collapse collapse">
                   <div class="accordion-body">
 
-                    <p>Proficient Projects finished : <%= @proficient_projects_awarded.call(training).size %> / <%= training.proficient_projects.size %></p>
+                    <p>Proficient Projects finished : <%= training.awarded_proficient_projects(current_user).size %> / <%= training.proficient_projects.size %></p>
 
                     <div class="row">
 

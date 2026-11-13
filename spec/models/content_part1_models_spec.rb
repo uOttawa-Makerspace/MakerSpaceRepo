@@ -360,12 +360,6 @@ RSpec.describe "Content models (part 1 characterization)" do
       expect(ProficientProject.filter_by_attribute("zzz", "x")).to eq(ProficientProject)
     end
 
-    it "training_status is the highest certification level the user holds for the training, defaulting to Beginner" do
-      training = create(:training)
-      user = create(:user)
-      expect(ProficientProject.training_status(training.id, user.id)).to eq("Beginner")
-    end
-
     it "deleting a project cascades to its requirements and to the requirements that name it as required" do
       a = create(:proficient_project)
       b = create(:proficient_project)

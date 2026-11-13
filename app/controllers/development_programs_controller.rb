@@ -57,29 +57,9 @@ class DevelopmentProgramsController < SessionsController
   end
 
   def skills
-    @skills = Skill.includes(:trainings)
-    @certifications = current_user.certifications
+    @skills = Skill.includes(trainings: %i[proficient_projects learning_modules])
+    @certifications = current_user.certifications.includes(training_session: :training)
     @remaining_trainings = current_user.remaining_trainings
-    @proficient_projects_awarded =
-      proc do |training|
-        training.proficient_projects.where(
-          id: current_user.order_items.awarded.pluck(:proficient_project_id)
-        )
-      end
-    @learning_modules_completed =
-      proc do |training|
-        training.learning_modules.where(
-          id:
-            current_user.learning_module_tracks.completed.pluck(
-              :learning_module_id
-            )
-        )
-      end
-    @recomended_hours =
-      proc do |training, levels|
-        training.learning_modules.where(level: levels).count +
-          training.proficient_projects.where(level: levels).count
-      end
   end
 
   def join_development_program

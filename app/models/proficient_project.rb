@@ -89,21 +89,4 @@ class ProficientProject < ApplicationRecord
       false
     end
   end
-
-  def self.training_status(training_id, user_id)
-    user = User.including_deleted.find(user_id)
-    level =
-      Certification
-        .joins(:user, :training_session)
-        .where(training_sessions: { training_id: training_id }, user: user)
-        .pluck(:level)
-    if level.include?("Advanced")
-        "Advanced"
-      elsif level.include?("Intermediate")
-        "Intermediate"
-      else
-        "Beginner"
-      end
-    
-  end
 end

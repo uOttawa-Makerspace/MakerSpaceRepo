@@ -45,7 +45,7 @@
                                 <%= t("learning_area.levels.#{level}").downcase %>
                             </span>
                         <% end %>
-                        <%= training_status(training.id, current_user.id) if training %>
+                        <%= training_status(training.id, current_user) if training %>
                     </div>
                 </div>
 

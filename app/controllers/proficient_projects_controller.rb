@@ -26,7 +26,6 @@ class ProficientProjectsController < DevelopmentProgramsController
 
   def index
     @skills = Skill.includes(trainings: { proficient_projects: { photos: { image_attachment: :blob } } })
-    @proficient_projects_awarded = proc { |training| training.awarded_proficient_projects(current_user) }
     @requirements_by_project = TrainingRequirement.all.group_by(&:proficient_project_id)
     @order_item = current_order.order_items.new
     @order_items_by_project = current_user.order_items.completed_order.group_by(&:proficient_project_id)
