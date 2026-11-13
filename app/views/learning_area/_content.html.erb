@@ -11,30 +11,30 @@
 
     <% if learning_module.tracks_for_user(current_user).blank? %>
         <div class="flex-grow-1">
-            <p class="mb-0">Ready to start?</p>
-            <p class="small mb-0">You haven't begun this module yet.</p>
+            <p class="mb-0"><%= t('learning_area.content.ready_to_start') %></p>
+            <p class="small mb-0"><%= t('learning_area.content.not_begun') %></p>
         </div>
-        <%= button_to 'Start Module',
+        <%= button_to t('learning_area.content.start'),
                     start_learning_module_track_index_path(learning_module_id: learning_module.id),
                     class: 'btn btn-primary btn-sm' %>
     <% elsif learning_module.tracks_for_user(current_user).in_progress? %>
         <div class="flex-grow-1">
-            <p class="mb-0">In Progress</p>
-            <p class="small mb-0">Mark this module as complete when you're done.</p>
+            <p class="mb-0"><%= t('learning_area.content.in_progress') %></p>
+            <p class="small mb-0"><%= t('learning_area.content.mark_when_done') %></p>
         </div>
-        <%= button_to 'Mark Completed',
+        <%= button_to t('learning_area.content.mark_completed'),
                     completed_learning_module_track_index_path(learning_module_id: learning_module.id),
                     class: 'btn btn-primary btn-sm' %>
     <% elsif learning_module.tracks_for_user(current_user).completed? %>
         <div class="flex-grow-1">
             <p class="mb-0">
                 <i class="fa fa-check-circle text-success fs-5"></i>
-                You've completed this module — great work!
+                <%= t('learning_area.content.completed') %>
             </p>
         </div>
     <% end %>
     <% if current_user.admin? %>
-        <%= link_to 'Edit', edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-primary' %>
+        <%= link_to t('learning_area.edit'), edit_learning_area_path(learning_module.id), class: 'btn btn-sm btn-primary' %>
     <% end %>
 </div>
 
@@ -68,13 +68,13 @@
 
 <% if learning_module.project_files.any? %>
     <div class="mb-3">
-        <h6 class="mb-2">Project Files</h6>
+        <h6 class="mb-2"><%= t('learning_area.content.project_files') %></h6>
         <ul class="list-group list-group-flush">
             <% learning_module.project_files.each do |file| %>
                 <li class="list-group-item d-flex align-items-center gap-2 px-0">
                     <i class="fa fa-file-o"></i>
                     <%= link_to file.filename.to_s, url_for(file) %>
-                    <span class="small ms-auto"><%= (file.byte_size / 1000.0).round(1) %> KB</span>
+                    <span class="small ms-auto"><%= t('learning_area.content.file_size_kb', size: (file.byte_size / 1000.0).round(1)) %></span>
                 </li>
             <% end %>
         </ul>

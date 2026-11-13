@@ -108,9 +108,9 @@ class LearningModule < ApplicationRecord
     return unless scorm_package.attached?
 
     if scorm_failed?
-      scorm_error.presence || 'The package could not be processed.'
+      scorm_error.presence || I18n.t('learning_area.scorm_problem.not_processed')
     elsif scorm_stalled?
-      'Extraction did not finish. The background worker may not be running.'
+      I18n.t('learning_area.scorm_problem.not_finished')
     end
   end
 
