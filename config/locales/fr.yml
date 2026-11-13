@@ -323,6 +323,17 @@ fr:
       body_html: "%{name} a demandé l'accès aux réservations de salles dans makeroom. Veuillez aller au panneau d'administration %{panel} pour approuver ou refuser cette demande."
       panel: "Réservation MakerRepo"
       why_received: "Vous avez reçu ce courriel parce qu'un utilisateur a demandé l'accès aux réservations."
+    send_booking_approved:
+      subject: "Réservation approuvée"
+      hello: "Bonjour %{name},"
+      body: "Votre réservation dans %{room} pour %{description} du %{start} au %{end} a été approuvée."
+      why_received: "Vous avez reçu ce courriel parce que votre réservation a été approuvée."
+    send_booking_approval_request_approved:
+      subject: "Demande d'accès aux réservations acceptée"
+      hello: "Bonjour %{name},"
+      body_html: "Votre demande d'accès aux réservations a été examinée et acceptée par un administrateur. Veuillez aller à la page %{page} si vous souhaitez réserver des salles."
+      page: "Réservation MakerRepo"
+      why_received: "Vous avez reçu ce courriel parce que votre demande d'accès aux réservations a été approuvée."
   sub_space_booking:
     access_status:
       none: "Vous n'avez pas encore demandé l'accès aux réservations."
