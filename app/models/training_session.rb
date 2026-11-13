@@ -21,6 +21,10 @@ class TrainingSession < ApplicationRecord
   validates :space, presence: true
   validate :is_staff
   validate :locked_fields_unchanged, on: :session_edit
+  # Rules for a session a trainer opens (web form and /api/v1); see `open_by`.
+  validate :level_allowed, on: :session_opening
+  validate :training_offered_in_space, on: :session_opening
+  validates :course, length: { maximum: 255 }, on: :session_opening
   before_save :check_course
 
   default_scope -> { order(updated_at: :desc) }
@@ -79,6 +83,20 @@ class TrainingSession < ApplicationRecord
         }
   def is_staff
     errors.add(:user, :must_be_staff) unless user&.staff?
+  end
+
+  # Saves a new session with the rules for opening one: the level is one of `levels` and the training is
+  # offered in the space (they are not checked on other writes, which also handle older sessions).
+  # Returns false, saving nothing, when `actor` may not name the session's instructor.
+  def open_by(actor)
+    return false unless instructor_assignable_by?(actor)
+
+    save(context: %i[create session_opening])
+  end
+
+  # An admin may name any instructor; anyone else only themselves.
+  def instructor_assignable_by?(actor)
+    actor.admin? || user_id == actor.id
   end
 
   def completed?
@@ -188,6 +206,18 @@ class TrainingSession < ApplicationRecord
       cert = certifications.find_by(user_id: user.id)
       user if cert && !cert.deactivate(by)
     end
+  end
+
+  def level_allowed
+    return if level.blank? || levels.include?(level)
+
+    errors.add(:level, :not_allowed, levels: levels.join(", "))
+  end
+
+  def training_offered_in_space
+    return if training.nil? || space.nil? || space.trainings.exists?(training.id)
+
+    errors.add(:training, :not_offered_in_space)
   end
 
   def locked_fields_unchanged

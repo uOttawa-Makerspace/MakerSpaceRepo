@@ -136,19 +136,46 @@ RSpec.describe "Staff training sessions", type: :request do
         )
       end
 
-      # a non-admin who sends user_id (the React app always does) creates the session as themselves
-      it "ignores user_id for staff: the session is created with the current staff member as instructor" do
-        other = create(:user, :staff)
-        expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: other.id) }
+      it "lets staff send their own id as the instructor" do
+        expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: trainer.id) }
           .to change(TrainingSession, :count).by(1)
-        expect(JSON.parse(response.body)).to eq("id" => TrainingSession.unscoped.order(:id).last.id, "created" => true)
         expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(trainer.id)
       end
 
-      it "ignores a user_id that is not a user at all" do
+      it "refuses staff naming another instructor, with a message, creating nothing" do
+        other = create(:user, :staff)
+        message = "Only an admin can choose another instructor."
+        expect { post staff_training_sessions_path, params: create_params(user_id: other.id) }
+          .not_to change(TrainingSession, :count)
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq(message)
+        post staff_training_sessions_path(format: :json), params: create_params(user_id: other.id)
+        expect(JSON.parse(response.body)).to match("created" => false, "error" => message, "reference" => be_a(String))
+      end
+
+      it "refuses staff naming an instructor that is not a user at all" do
         expect { post staff_training_sessions_path(format: :json), params: create_params(user_id: 0) }
-          .to change(TrainingSession, :count).by(1)
-        expect(TrainingSession.unscoped.order(:id).last.user_id).to eq(trainer.id)
+          .not_to change(TrainingSession, :count)
+        expect(JSON.parse(response.body)).to include("created" => false)
+      end
+
+      it "refuses a level that is not one of the levels" do
+        expect { post staff_training_sessions_path, params: create_params(level: "Wizard") }
+          .not_to change(TrainingSession, :count)
+        expect(flash[:alert]).to eq("The training session was not created. Level must be one of Beginner, Intermediate, Advanced")
+      end
+
+      it "refuses a training that is not offered in the space" do
+        elsewhere = create(:training)
+        expect { post staff_training_sessions_path, params: create_params(training_id: elsewhere.id) }
+          .not_to change(TrainingSession, :count)
+        expect(flash[:alert]).to eq("The training session was not created. Training is not offered in this space")
+      end
+
+      it "refuses a course longer than 255 characters" do
+        expect { post staff_training_sessions_path, params: create_params(course: "x" * 256) }
+          .not_to change(TrainingSession, :count)
+        expect(flash[:alert]).to include("Course must be a string of at most 255 characters")
       end
     end
 
