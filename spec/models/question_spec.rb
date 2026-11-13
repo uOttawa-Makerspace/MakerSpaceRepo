@@ -95,6 +95,18 @@ RSpec.describe Question, type: :model do
       expect(queries.grep(/SELECT "active_storage_attachments"\.\*/)).to be_empty
     end
 
+    it "refuses an edit that leaves out a stored answer without text, like a submitted blank text" do
+      blank = Answer.create!(question: question, correct: false, description: "")
+      fresh = Question.find(question.id)
+      partial = { "0" => { id: question.answers.order(:id).first.id, description: "Edited 0", correct: true } }
+      expect(fresh.update_from_form(description: "Changed?", answers_attributes: partial)).to be(false)
+      submitted = Question.find(question.id)
+      submitted.update_from_form(answers_attributes: { "0" => { id: blank.id, description: "", correct: false } })
+      expect(fresh.errors.full_messages).to eq(submitted.errors.full_messages)
+      expect(fresh.errors.full_messages).not_to be_empty
+      expect(Question.find(question.id).description).not_to eq("Changed?")
+    end
+
     it "refuses an answer without text and keeps the stored text" do
       fresh = Question.find(question.id)
       attributes = answers_attributes_for(question).tap { |a| a["1"][:description] = "" }
