@@ -41,14 +41,21 @@ RSpec.describe RaceThread do
     expect { settle_race_threads }.not_to raise_error
   end
 
-  it "fails loudly, naming the example, when a thread outlives the wait" do
-    release = Queue.new
-    holder = in_thread { release.pop(timeout: ThreadPause::PARKED_TIMEOUT) }
+  it "kills a thread that outlives the wait, so its uncommitted row never appears, and fails loudly" do
+    name = "racethread#{SecureRandom.hex(4)}"
+    parked = Queue.new
+    holder = in_thread do
+      Space.transaction do
+        Space.create!(name: name, keycode: "key#{name}")
+        parked << true
+        Queue.new.pop(timeout: ThreadPause::PARKED_TIMEOUT)
+      end
+    end
+    ThreadPause.await(parked)
 
     expect { settle_race_threads(0.05) }.to raise_error(/race thread still running after 0\.05 s \(.*race_thread_spec\.rb:\d+\)/)
-  ensure
-    release << true
-    holder&.join
-    settle_race_threads
+
+    expect(holder).not_to be_alive
+    expect(Space.where(name: name)).not_to exist
   end
 end
