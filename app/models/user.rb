@@ -109,8 +109,8 @@ class User < ApplicationRecord
   has_many :comments, dependent: :destroy
   has_many :owned_repositories, class_name: 'Repository', dependent: :destroy
   has_many :likes
-  # Visit, certification and training history is never deleted with the account: deleting an account only
-  # hides the user (see #soft_delete!), and reports read this history for deleted users too.
+  # Visit, certification, training and printer session history is never deleted with the account: deleting an
+  # account only hides the user (see #soft_delete!), and reports read this history for deleted users too.
   has_many :certifications, class_name: 'Certification'
   # No dependent: :destroy here or on the history above: a hard delete of a user who has history
   # is refused by the foreign keys, on purpose.
@@ -120,7 +120,7 @@ class User < ApplicationRecord
   has_many :lab_sessions
   has_many :project_proposals
   has_many :project_joins, dependent: :destroy
-  has_many :printer_sessions, dependent: :destroy
+  has_many :printer_sessions # history: see the note above :certifications
   has_many :volunteer_hours
   has_many :volunteer_tasks
   has_many :volunteer_task_joins

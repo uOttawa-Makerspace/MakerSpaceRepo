@@ -146,6 +146,15 @@ RSpec.describe "users:merge_duplicates" do
     expect(primary.decided_booking_requests).to contain_exactly(declined)
   end
 
+  it "moves the duplicate's printer sessions to the kept user, keeping every row" do
+    sessions = %i[um3_session um2p_session].map { |trait| create(:printer_session, trait, user: duplicate) }
+
+    expect { merge }.not_to change(PrinterSession, :count)
+
+    expect(User.unscoped.exists?(duplicate.id)).to be(false)
+    expect(PrinterSession.where(id: sessions.map(&:id)).pluck(:user_id)).to eq([primary.id, primary.id])
+  end
+
   it "moves the trainer of a session that awarded certifications to the kept user" do
     kept = create(:user, :staff)
     trainer = create(:user, :staff)
