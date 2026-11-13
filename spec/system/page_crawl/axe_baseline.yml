@@ -7,4 +7,4 @@
   document-title: 1
   html-has-lang: 1
 users/show.html.erb:
-  aria-required-children: 2
+  aria-required-children: 1
