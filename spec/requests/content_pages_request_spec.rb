@@ -63,8 +63,14 @@ RSpec.describe "Content pages (part 2)", type: :request do
         post announcements_path, params: { announcement: { description: "Hello", public_goal: "volunteer", active: true } }
       }.to change(Announcement, :count).by(1)
       expect(response).to redirect_to(announcements_path)
-      expect(flash[:notice]).to eq("You've successfully created an announcement for Volunteer")
+      expect(flash[:notice]).to eq("You've successfully created an announcement for Volunteers")
       expect(Announcement.last).to have_attributes(user_id: staff.id, public_goal: "volunteer", description: "Hello")
+    end
+
+    it "names the audience in French when the locale is French" do
+      sign_in_as(:staff)
+      post announcements_path, params: { announcement: { description: "Bonjour", public_goal: "volunteer", active: true }, locale: "fr" }
+      expect(flash[:notice]).to eq(I18n.t("admin_pages.announcements.flash.created", audience: "Bénévoles", locale: :fr))
     end
 
     it "stops staff creating a non-volunteer announcement" do
