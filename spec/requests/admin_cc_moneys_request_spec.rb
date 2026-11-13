@@ -53,6 +53,8 @@ RSpec.describe "Admin CC money claim email", type: :request do
     it "lists only unlinked rows, each with a resend form" do
       get admin_cc_moneys_path
       expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Unclaimed CCs")
+      expect(response.body).not_to include("CC Money")
       expect(response.body).to include(admin_cc_money_claim_email_path(unlinked))
       expect(response.body).not_to include(admin_cc_money_claim_email_path(linked))
     end
@@ -83,6 +85,7 @@ RSpec.describe "Admin CC money claim email", type: :request do
       unlinked.update!(purchaser_email: "first@example.com")
       resend(unlinked, email: "someone.else@example.com")
       expect(flash[:alert]).to eq(I18n.t("errors.admin.cc_money_claim_email.email_mismatch"))
+      expect(flash[:alert]).to start_with("Those CCs were bought with a different email address.")
       expect(unlinked.reload.claim_token_generation).to eq(0)
       expect(mails).to be_empty
     end
@@ -138,7 +141,7 @@ RSpec.describe "Admin CC money claim email", type: :request do
     it "refuses a row already linked to an account" do
       resend(linked)
       expect(response).to redirect_to(admin_cc_moneys_path)
-      expect(flash[:alert]).to eq(I18n.t("errors.admin.cc_money_claim_email.already_linked"))
+      expect(flash[:alert]).to eq("Those CCs have already been added to an account, so no email was sent.")
       expect(mails).to be_empty
     end
 
@@ -197,7 +200,7 @@ RSpec.describe "Admin CC money claim email", type: :request do
 
       it "refuses a claimed row, an invalid address and an unchanged address with a message and no mail or change" do
         correct(linked)
-        expect(flash[:alert]).to eq(I18n.t("errors.admin.cc_money_purchase_email.already_linked"))
+        expect(flash[:alert]).to eq("Those CCs have already been added to an account, so their email was not changed and nothing was sent.")
         correct(typo_row, email: "nope")
         expect(flash[:alert]).to eq(I18n.t("errors.admin.cc_money_purchase_email.email_invalid"))
         correct(typo_row, email: "Typo@example.com")

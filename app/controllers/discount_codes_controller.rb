@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Despite the name this is the CouponCode claim UI: users trade CC points for an
+# Despite the name this is the CouponCode claim UI: users trade CCs for an
 # unclaimed CouponCode. (The Shopify PriceRule/DiscountCode flow was removed in chunk 20a.)
 class DiscountCodesController < DevelopmentProgramsController
   before_action :with_development_header

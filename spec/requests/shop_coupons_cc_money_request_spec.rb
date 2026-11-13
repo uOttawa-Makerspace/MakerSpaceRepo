@@ -561,7 +561,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         shop_log_in!(user)
         get link_cc_to_user_cc_moneys_path, params: { token: token }
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to eq("The CC Money has already been added to an account")
+        expect(flash[:alert]).to eq("These CCs have already been added to an account")
       end
 
       it "redirects with the generic alert for a tampered or missing token" do
@@ -580,7 +580,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         get link_cc_to_user_cc_moneys_path, params: { token: stale }
         # a missing row gets the same alert as an invalid token instead of a NoMethodError 500
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to eq("That CC Money record no longer exists. If you think this is a mistake, contact uottawa.makerepo@gmail.com.")
+        expect(flash[:alert]).to eq("That CC purchase no longer exists. If you think this is a mistake, contact uottawa.makerepo@gmail.com.")
       end
     end
 
@@ -602,10 +602,16 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: token }
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:notice]).to eq("The CC Money has been added to #{user.name}")
+        expect(flash[:notice]).to eq("The CCs have been added to #{user.name}")
         expect(unlinked.reload.user_id).to eq(user.id)
         expect(unlinked.linked).to be(true)
         expect(user.cc_moneys.sum(:cc)).to eq(20)
+      end
+
+      it "says so in French when the locale is fr" do
+        shop_log_in!(user)
+        post redeem_cc_moneys_path, params: { token: token, locale: "fr" }
+        expect(flash[:notice]).to eq("Les CC ont été ajoutés au compte de #{user.name}")
       end
 
       it "credits only the signed-in account, whatever email is submitted" do
@@ -679,7 +685,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         shop_log_in!(user)
         post redeem_cc_moneys_path, params: { token: token }
         post redeem_cc_moneys_path, params: { token: token }
-        expect(flash[:alert]).to eq("The CC Money has already been added to an account")
+        expect(flash[:alert]).to eq("These CCs have already been added to an account")
         expect(unlinked.reload.user_id).to eq(user.id)
       end
 
@@ -690,7 +696,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         allow(CcMoney).to receive(:find_by_id).and_return(stale)
         expect { post redeem_cc_moneys_path, params: { token: token } }
           .not_to change { CcMoney.where(user_id: user.id).count }
-        expect(flash[:alert]).to eq("The CC Money has already been added to an account")
+        expect(flash[:alert]).to eq("These CCs have already been added to an account")
         expect(unlinked.reload.user_id).to eq(other.id)
       end
 
@@ -730,7 +736,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
           false
         end
         post redeem_cc_moneys_path, params: { token: token }
-        expect(flash[:alert]).to eq("The CC Money could not be added to that account: Ledger is closed")
+        expect(flash[:alert]).to eq("The CCs could not be added to that account: Ledger is closed")
         expect(flash[:notice]).to be_nil
       end
 
@@ -740,7 +746,7 @@ RSpec.describe "Shop coupons and cc money (HTTP contract)", type: :request do
         post redeem_cc_moneys_path, params: { token: stale }
         # same alert as an invalid token instead of a NoMethodError 500
         expect(response).to redirect_to(cc_moneys_path)
-        expect(flash[:alert]).to eq("That CC Money record no longer exists. If you think this is a mistake, contact uottawa.makerepo@gmail.com.")
+        expect(flash[:alert]).to eq("That CC purchase no longer exists. If you think this is a mistake, contact uottawa.makerepo@gmail.com.")
         expect(user.cc_moneys.sum(:cc)).to eq(0)
       end
 

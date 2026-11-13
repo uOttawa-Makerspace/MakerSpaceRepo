@@ -28,7 +28,8 @@ RSpec.describe "Volunteer area in French", type: :request do
     it "shows the task list, categories and task page in French" do
       get volunteer_tasks_path(locale: "fr")
       expect(text).to include("Tâches disponibles", "Événements", "Préalables :", "Voir les détails", "7 CC", "2.0 h")
-      expect(text).not_to include("Available Tasks", "View Details")
+      expect(text).to include("gagnez des Crédits du CGEC (CC)")
+      expect(text).not_to include("Available Tasks", "View Details", "communautaires")
 
       get volunteer_task_path(task, locale: "fr")
       expect(text).to include("Aperçu de la tâche", "2.0 heures", "Capacité : 3", "Découpeuse laser", "En cours (1 assigné(s))")
@@ -41,6 +42,8 @@ RSpec.describe "Volunteer area in French", type: :request do
 
       get volunteer_tasks_path(locale: "en")
       expect(Nokogiri::HTML(response.body).at_css(".task-item-card-col")["data-searchable-text"]).to start_with("setup crew events makerspace")
+      expect(text).to include("earn CEED Credits (CCs)")
+      expect(text).not_to include("Community Credits")
     end
 
     it "labels the category and certification choices of the task form in French and submits the stored names" do

@@ -25,7 +25,7 @@ class CcMoneysController < SessionsController
   def link_to(cc_money, user)
     case cc_money.link_to(user)
     when :linked
-      flash[:notice] = "The CC Money has been added to #{user.name}"
+      flash[:notice] = t("rewards.redeem.added", name: user.name)
       redirect_to cc_moneys_path
     when :already_linked then refuse_cc(:already_linked)
     when :superseded then refuse_cc(:token_invalid)

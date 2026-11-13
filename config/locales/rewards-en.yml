@@ -1,5 +1,8 @@
 en:
   rewards:
+    redeem:
+      # %{name} = name of the account the CCs were added to
+      added: "The CCs have been added to %{name}"
     link_cc_to_user:
       title: "Add CCs to your account"
       # %{email} = the signed-in user's email address

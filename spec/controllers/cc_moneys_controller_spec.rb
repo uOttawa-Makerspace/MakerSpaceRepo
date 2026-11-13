@@ -47,7 +47,7 @@ RSpec.describe CcMoneysController, type: :controller do
         post :redeem, params: { token: @hash }
         expect(response).to redirect_to cc_moneys_path
         expect(flash[:notice]).to eq(
-          "The CC Money has been added to #{@user.name}"
+          "The CCs have been added to #{@user.name}"
         )
         expect(User.find(@user.id).cc_moneys.sum(:cc)).to eq(10)
       end
@@ -57,7 +57,7 @@ RSpec.describe CcMoneysController, type: :controller do
         post :redeem, params: { token: @hash }
         expect(response).to redirect_to cc_moneys_path
         expect(flash[:alert]).to eq(
-          "The CC Money has already been added to an account"
+          "These CCs have already been added to an account"
         )
       end
     end
