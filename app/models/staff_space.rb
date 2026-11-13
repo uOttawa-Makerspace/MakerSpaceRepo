@@ -67,7 +67,7 @@ class StaffSpace < ApplicationRecord
     colors = colors_in(space_id)
     staff = calendar_staff(space_id).to_a
     clashes = StaffUnavailability.clashes(staff, occurrences)
-    rows = staff.map { |member| { id: member.id, name: member.name, color: colors[member.id], unavailableStarts: clashes.fetch(member.id, []) } }
+    rows = staff.map { |member| { id: member.id, name: member.name, color: colors[member.id], unavailableStarts: clashes.fetch(member.id, []).map { |clash| clash.starts_at.utc.iso8601 } } }
     available, unavailable = rows.sort_by { |row| I18n.transliterate(row[:name].to_s).downcase }.partition { |row| row[:unavailableStarts].empty? }
     available + unavailable
   end

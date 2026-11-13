@@ -26,14 +26,14 @@ class StaffUnavailability < ApplicationRecord
   # Its occurrences that overlap the window (a CalendarWindow), expanded by RecurringSeries.
   def occurrences_in(window) = RecurringSeries.for_record(self).occurrences_in(window)
 
-  # The starts (UTC) of the `occurrences` of an event being planned that overlap an unavailability of each of
+  # The `occurrences` of an event being planned that overlap an unavailability of each of
   # `user_ids` (ids or users), by user id (a user with none may be missing).
   def self.clashes(user_ids, occurrences)
     return {} if occurrences.empty?
 
     busy = occurrences_for(user_ids, CalendarWindow.new(occurrences.first.starts_at, occurrences.last.ends_at))
     busy.transform_values do |slots|
-      occurrences.select { |occurrence| slots.any? { |slot| slot.overlaps?(occurrence) } }.map { |occurrence| occurrence.starts_at.utc.iso8601 }
+      occurrences.select { |occurrence| slots.any? { |slot| slot.overlaps?(occurrence) } }
     end
   end
 
