@@ -1,10 +1,10 @@
 import { Controller } from "@hotwired/stimulus";
-import { Calendar } from "@fullcalendar/core";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { Tooltip } from "bootstrap";
 
 import { applyEventBackground } from "../src/calendar_background.js";
+import { pageCalendar } from "../src/page_calendar.js";
 
 // The title and description are free text, so they go in as text nodes and
 // never as markup.
@@ -38,11 +38,7 @@ export default class extends TypedController {
   connect() {
     this.onlyShowMyShifts = false;
 
-    // A page restored from Turbo's cache still holds the markup of the
-    // calendar that was drawn before, so start from an empty element.
-    this.calendarTarget.replaceChildren();
-    this.calendar = new Calendar(this.calendarTarget, this.calendarOptions());
-
+    this.calendar = pageCalendar(this.calendarTarget, this.calendarOptions());
     this.containerTarget.style.display = "block";
     this.spinnerTarget.style.display = "none";
     this.calendar.render();

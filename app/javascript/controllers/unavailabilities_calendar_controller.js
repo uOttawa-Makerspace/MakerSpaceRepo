@@ -1,11 +1,10 @@
 import { Controller } from "@hotwired/stimulus";
-import { Calendar } from "@fullcalendar/core";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
-import { makeCalendarAccessible } from "../src/calendar_accessibility.js";
 import { closeSaved } from "../src/calendar_dialog.js";
+import { pageCalendar } from "../src/page_calendar.js";
 import { editableUnavailability } from "../src/unavailability_event.js";
 
 // The hosts listed in the failed-calendars header: a JSON list of strings and
@@ -51,11 +50,7 @@ export default class extends TypedController {
   static outlets = ["unavailability-form", "imported-event-details"];
 
   connect() {
-    // A page restored from Turbo's cache still holds the markup of the
-    // calendar that was drawn before, so start from an empty element.
-    this.calendarTarget.replaceChildren();
-    this.calendar = new Calendar(this.calendarTarget, this.calendarOptions());
-
+    this.calendar = pageCalendar(this.calendarTarget, this.calendarOptions());
     this.containerTarget.style.display = "block";
     this.spinnerTarget.style.display = "none";
     this.calendar.render();
@@ -146,7 +141,6 @@ export default class extends TypedController {
           start: info.startStr,
           end: info.endStr,
         }),
-      viewDidMount: () => makeCalendarAccessible(this.calendarTarget),
       eventDidMount: (info) => this.fadeIn(info),
       initialDate: localStorage.fullCalendarDefaultDateStaffUnavailabilities,
       datesSet: (info) => this.rememberDate(info),

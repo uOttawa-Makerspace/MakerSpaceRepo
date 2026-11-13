@@ -1,4 +1,3 @@
-import { Calendar } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
@@ -6,6 +5,7 @@ import TomSelect from "tom-select";
 import "flatpickr";
 import { Toast } from "bootstrap";
 import { csrfHeaders } from "../src/csrf";
+import { pageCalendar } from "../src/page_calendar.js";
 import {
   failureText,
   parseBody,
@@ -560,7 +560,7 @@ document.addEventListener("turbo:load", function () {
     );
   }
 
-  const bookedCalendar = new Calendar(bookedCalendarEl, {
+  const bookedCalendar = pageCalendar(bookedCalendarEl, {
     initialDate: window.location.href.includes("start")
       ? new Date(new URLSearchParams(window.location.search).get("start"))
       : new Date(),

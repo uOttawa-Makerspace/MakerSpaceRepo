@@ -62,6 +62,14 @@ RSpec.describe "Opening hours calendar", type: :system do
     expect(page).to have_css("#calendar th[data-date='#{first_day}']")
   end
 
+  it "names its previous and next buttons in French on a French page", js: true, skip_bullet: true do
+    stub_hours
+    visit root_path(locale: :fr)
+
+    expect(find("#calendar .fc-prev-button").native.accessible_name).to eq("Précédent")
+    expect(find("#calendar .fc-next-button").native.accessible_name).to eq("Suivant")
+  end
+
   it "shows a full week with an all-day row on the hours page", js: true, skip_bullet: true do
     stub_hours
     visit hours_path

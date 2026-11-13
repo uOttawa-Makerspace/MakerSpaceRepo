@@ -1,8 +1,8 @@
 import { Controller } from "@hotwired/stimulus";
-import { Calendar } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 
+import { pageCalendar } from "../src/page_calendar.js";
 import { rangeSource, unticked } from "../src/range_source.js";
 
 // Below this width the calendar shows fewer days.
@@ -33,9 +33,7 @@ export default class extends TypedController {
       box.style.backgroundColor = box.dataset.color;
       box.style.borderColor = box.dataset.color;
     });
-    // A page restored from Turbo's cache still holds the calendar drawn before.
-    this.calendarTarget.replaceChildren();
-    this.calendar = new Calendar(this.calendarTarget, this.calendarOptions());
+    this.calendar = pageCalendar(this.calendarTarget, this.calendarOptions());
     this.calendar.render();
   }
 
@@ -80,22 +78,10 @@ export default class extends TypedController {
       plugins: [timeGridPlugin, dayGridPlugin],
       initialView: this.viewForWidth(),
       views: {
-        timeGridTwoDay: {
-          type: "timeGrid",
-          duration: { days: 2 },
-          buttonText: "2 day",
-        },
-        timeGridThreeDay: {
-          type: "timeGrid",
-          duration: { days: 3 },
-          buttonText: "3 day",
-        },
-        timeGridFiveDay: {
-          type: "timeGrid",
-          duration: { days: 5 },
-          buttonText: "5 day",
-        },
-        timeGridSevenDay: { type: "timeGridWeek", buttonText: "7 day" },
+        timeGridTwoDay: { type: "timeGrid", duration: { days: 2 } },
+        timeGridThreeDay: { type: "timeGrid", duration: { days: 3 } },
+        timeGridFiveDay: { type: "timeGrid", duration: { days: 5 } },
+        timeGridSevenDay: { type: "timeGridWeek" },
       },
       firstDay: 0,
       headerToolbar: { left: "prev", center: "title", right: "next" },

@@ -1,5 +1,4 @@
 import { Controller } from "@hotwired/stimulus";
-import { Calendar } from "@fullcalendar/core";
 import rrulePlugin from "@fullcalendar/rrule";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -10,6 +9,7 @@ import { Tooltip } from "bootstrap";
 import { eventClick, eventCreate } from "../src/calendar_helper.js";
 import { closeSaved } from "../src/calendar_dialog.js";
 import { applyEventBackground } from "../src/calendar_background.js";
+import { pageCalendar } from "../src/page_calendar.js";
 import { rangeSource, unticked } from "../src/range_source.js";
 
 // Titles and descriptions come from imported calendars, so they are text, never markup.
@@ -86,12 +86,9 @@ export default class extends TypedController {
 
   connect() {
     this.paintFilters();
-    // A page restored from Turbo's cache still holds the calendar drawn before.
-    this.calendarTarget.replaceChildren();
     // the feeds a saved dialog changes
     this.edited = [this.eventsSource(), this.unavailabilitySource()];
-    this.calendar = new Calendar(this.calendarTarget, this.calendarOptions());
-
+    this.calendar = pageCalendar(this.calendarTarget, this.calendarOptions());
     this.containerTarget.style.display = "block";
     this.spinnerTarget.style.display = "none";
     this.calendar.render();
