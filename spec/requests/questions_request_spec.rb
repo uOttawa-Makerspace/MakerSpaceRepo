@@ -65,6 +65,14 @@ RSpec.describe "Questions (admin question bank)", type: :request do
       expect(response.body).not_to include("Other space question")
     end
 
+    it "lists several questions with their trainings and authors in a fixed number of queries" do
+      second = create(:training, spaces: [space])
+      3.times { |i| create(:question, description: "Listed #{i}", level: "Beginner", trainings: [training, second]) }
+      get questions_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Listed 0", "Listed 2", second.name)
+    end
+
     it "falls back to the first space when the admin has none" do
       admin.update!(space: nil)
       get questions_path

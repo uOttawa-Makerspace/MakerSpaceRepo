@@ -22,7 +22,7 @@ class QuestionsController < AdminAreaController
         .distinct
         .pluck(:id)
 
-    scope = Question.where(id: question_ids).order(created_at: :desc)
+    scope = Question.where(id: question_ids).includes(:trainings, :user).order(created_at: :desc)
     @pagy, @questions = pagy(scope, limit: 50)
   end
 

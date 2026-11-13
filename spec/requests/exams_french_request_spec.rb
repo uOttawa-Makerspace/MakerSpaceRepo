@@ -140,11 +140,9 @@ RSpec.describe "Exam pages in French", type: :request do
     let(:admin) { create(:user, :admin, space: space) }
     let(:question) { fixture[:questions].first[:question] }
 
-    # The list holds one question: the index loads trainings and authors per row.
     let!(:listed) do
-      create(:question, level: "Beginner", trainings: [create(:training, spaces: [space])]).tap do |q|
-        Answer.create!(question: q, correct: true, description: "right")
-      end
+      bank = create(:training, spaces: [space])
+      Array.new(3) { create(:question, level: "Beginner", trainings: [bank, fixture[:training]]) }
     end
 
     before { log_in!(admin) }
