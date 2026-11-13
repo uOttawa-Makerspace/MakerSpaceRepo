@@ -40,4 +40,15 @@ RSpec.describe RaceThread do
   it "has nothing to wait for in an example that started no thread" do
     expect { settle_race_threads }.not_to raise_error
   end
+
+  it "fails loudly, naming the example, when a thread outlives the wait" do
+    release = Queue.new
+    holder = in_thread { release.pop(timeout: ThreadPause::PARKED_TIMEOUT) }
+
+    expect { settle_race_threads(0.05) }.to raise_error(/race thread still running after 0\.05 s \(.*race_thread_spec\.rb:\d+\)/)
+  ensure
+    release << true
+    holder&.join
+    settle_race_threads
+  end
 end

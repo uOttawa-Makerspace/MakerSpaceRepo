@@ -32,8 +32,13 @@ module RaceThread
   # Waits for every thread started with `race_thread` or `in_thread` in this example to finish. It runs
   # before the example's own `after` hooks, so when the example body fails with a thread still
   # parked or working, the thread's late writes land before the cleanup and not after it.
-  def settle_race_threads
-    (@race_thread_finished || []).each { |finished| finished.pop(timeout: ThreadPause::LOCK_TIMEOUT) }
+  # A thread still running when the wait ends fails the example, naming its location.
+  def settle_race_threads(timeout = ThreadPause::LOCK_TIMEOUT)
+    queues = @race_thread_finished || []
+    queues.each { |finished| finished.pop(timeout: timeout) }
+    return if queues.all?(&:closed?)
+
+    raise "race thread still running after #{timeout} s (#{RSpec.current_example&.location})"
   end
 
   private
