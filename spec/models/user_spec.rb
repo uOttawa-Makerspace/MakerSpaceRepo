@@ -1346,6 +1346,21 @@ RSpec.describe User, type: :model do
       expect(user.highest_badge(training)).not_to eq(from_beginner_session)
     end
 
+    it "reflects a certification added after the progress was read once reload is called" do
+      expect(user.training_standing(training.id)).to be_nil
+      expect(user.highest_badge(training)).to be_nil
+      expect(user.recommended_levels(training.id)).to eq(%w[Beginner])
+      cert = certify("Advanced")
+
+      expect(user.training_standing(training.id)).to be_nil
+      user.reload
+
+      expect(user.training_standing(training.id)).to eq("Advanced")
+      expect(user.highest_badge(training)).to eq(cert)
+      expect(user.recommended_levels(training.id)).to eq(%w[Beginner Intermediate Advanced])
+      expect(user.held_training_levels).to eq(Set[[training.id, "Advanced"]])
+    end
+
     it "leaves out a deactivated certification" do
       certify("Advanced").update!(active: false)
 
