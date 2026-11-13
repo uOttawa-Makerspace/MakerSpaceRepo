@@ -1,4 +1,11 @@
 class JobOrderMailer < ApplicationMailer
+  # What the quote mail reads for each task, loaded with the order.
+  QUOTE_MAIL_TASK_ASSOCIATIONS = [
+    { job_service: :job_service_group },
+    { job_task_quote: :job_task_quote_options },
+    { job_task_options: :job_option }
+  ].freeze
+
   def send_job_submitted(job_order_id)
     return unless JobOrder.where(id: job_order_id).present?
     @job_order = JobOrder.find(job_order_id)
@@ -36,7 +43,7 @@ class JobOrderMailer < ApplicationMailer
   # user_comments: the note staff wrote for the customer with the quote, shown in the mail when present.
   def send_job_quote(job_order_id, reminder = false, user_comments = nil)
     return unless JobOrder.exists?(id: job_order_id)
-    @job_order = JobOrder.find(job_order_id)
+    @job_order = JobOrder.includes(job_tasks: QUOTE_MAIL_TASK_ASSOCIATIONS).find(job_order_id)
     @user_comments = user_comments.presence
 
     @reminder = reminder
