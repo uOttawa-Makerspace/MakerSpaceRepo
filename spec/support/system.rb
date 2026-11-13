@@ -5,7 +5,11 @@
 # which ships its own matching chromedriver on Alpine 3.24).
 
 Capybara.javascript_driver = :headless_chrome
-Capybara.server = :puma, { Silent: true }
+# Puma, sending the server clock in the Date header (spec/support/server_date_header.rb).
+Capybara.register_server(:puma_with_server_date) do |app, port, host, **options|
+  Capybara.servers[:puma].call(ServerDateHeader.new(app), port, host, **options)
+end
+Capybara.server = :puma_with_server_date, { Silent: true }
 Capybara.default_max_wait_time = 5
 Capybara.save_path = Rails.root.join("tmp", "capybara")
 
