@@ -5,7 +5,7 @@
 </div>
 
 <h1 class="text-center pt-2 mb-3">
-    <span>Welcome to</span>
+    <span><%= t('staff_dashboard.welcome_to') %></span>
     <%= select_tag :space_id, options_from_collection_for_select(@all_spaces, :id, :name, @space.id),
                    id: 'set_space_id', aria: { label: t('common.names.space') }, class: 'form-select fs-2 w-auto d-inline-block', onchange: 'setSpace()' %>
 </h1>
@@ -15,43 +15,43 @@
 
 <% if @space.makerspace? %>
   <div class="container" id="printer-div">
-    <div id="printer-div-2"><%= link_to 'Manage 3D-printers', staff_printers_printers_path, class: 'btn btn-secondary' %></div>
+    <div id="printer-div-2"><%= link_to t('staff_dashboard.manage_printers'), staff_printers_printers_path, class: 'btn btn-secondary' %></div>
   </div>
 <% end %>
 
 <div class="table-responsive">
   <table class="table table-striped" data-datatable data-page-length="50" data-responsive="true" data-order="[]" id="signed-in-table">
     <caption id="user-count" class="text-center fs-3" align="top">
-        <span id="SpaceUserCount"><%= pluralize @space.signed_in_users.count, 'user' %> inside <%= @space.name %></span>
+        <span id="SpaceUserCount"><%= t('staff_dashboard.users_inside', count: @space.signed_in_users.count, space: @space.name) %></span>
         <div class="d-flex justify-content-around">
             <%= button_to staff_dashboard_sign_out_all_users_path, method: :post, class: 'btn btn-danger', **confirmation_options(t('confirmations.staff_dashboard.sign_out_all')) do %>
-                <i class="fa-solid fa-right-from-bracket"></i> Sign Out All Users
+                <i class="fa-solid fa-right-from-bracket"></i> <%= t('staff_dashboard.sign_out_all') %>
             <% end %>
             <% if @space.jmts? %>
                 <%= button_to staff_dashboard_add_signed_in_users_to_teams_path, method: :patch, form_class: 'btn btn-primary', class: 'btn p-0',
                               **confirmation_options(t('confirmations.staff_dashboard.add_to_teams')) do %>
-                    <i class="fa-solid fa-users"></i> Add Signed In Users to Teams Program
+                    <i class="fa-solid fa-users"></i> <%= t('staff_dashboard.add_to_teams') %>
                 <% end %>
             <% end %>
         </div>
     </caption>
     <thead class="table-primary">
       <tr>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-        <th class="name-header">Flagged?</th>
-        <th class="certifications-header">Certifications in <%= @space.name %></th>
+        <th class="name-header"><%= t('staff_dashboard.columns.name') %></th>
+        <th class="email-header"><%= t('staff_dashboard.columns.email') %></th>
+        <th class="name-header"><%= t('staff_dashboard.columns.flagged') %></th>
+        <th class="certifications-header"><%= t('staff_dashboard.columns.certifications_in', space: @space.name) %></th>
         <% if @space.makerspace? %>
-          <th class="printers-header">Assigned Printers</th>
+          <th class="printers-header"><%= t('staff_dashboard.columns.assigned_printers') %></th>
         <% end %>
-        <th class="email-header"># of visits <br> (Past 2 months)</th>
-        <th class="last-seen-header">Last Seen</th>
-        <th class="action-header disable-sort">Sign Out of <%= @space.name %></th>
+        <th class="email-header"><%= t('staff_dashboard.columns.visits_html') %></th>
+        <th class="last-seen-header"><%= t('staff_dashboard.columns.last_seen') %></th>
+        <th class="action-header disable-sort"><%= t('staff_dashboard.columns.sign_out_of', space: @space.name) %></th>
       </tr>
     </thead>
 
     <%# Setup websocket connection, listen to broadcasts under signed_in_table %>
-    <%= turbo_stream_from "signed_in_table_space_#{@space.id}" %>
+    <%= turbo_stream_from StaffDashboardChannel.table_stream(@space.id) %>
     <tbody id="table-js-signed-in">
         <%= render partial: 'space_activity_row', collection: @signed_in_users, locals: {space: @space} %>
     </tbody>
@@ -60,13 +60,13 @@
 <hr />
 <div class="table-responsive">
   <table class="table table-striped table-sort" data-datatable data-order="[]">
-    <caption class="text-center fs-3" align="top">Users recently signed out of <%= @space.name %></caption>
+    <caption class="text-center fs-3" align="top"><%= t('staff_dashboard.recently_signed_out', space: @space.name) %></caption>
     <thead class="table-primary">
       <tr>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-        <th class="last-seen-header">Last Seen</th>
-        <th class="action-header disable-sort"><i class="fa-solid fa-check"></i>&nbsp; TO SIGN IN <br> <i class="fa-solid fa-xmark"></i>&nbsp; TO SIGN OUT</th>
+        <th class="name-header"><%= t('staff_dashboard.columns.name') %></th>
+        <th class="email-header"><%= t('staff_dashboard.columns.email') %></th>
+        <th class="last-seen-header"><%= t('staff_dashboard.columns.last_seen') %></th>
+        <th class="action-header disable-sort"><i class="fa-solid fa-check"></i>&nbsp; <%= t('staff_dashboard.columns.to_sign_in') %> <br> <i class="fa-solid fa-xmark"></i>&nbsp; <%= t('staff_dashboard.columns.to_sign_out') %></th>
       </tr>
     </thead>
     <tbody id="staffDashboardSignedOutTable">
@@ -77,12 +77,12 @@
 <hr />
 <div class="table-responsive">
   <table class="table table-striped staff-newly-signed-up-users-table table-sort table-arrows" data-datatable data-order="[]">
-    <caption class="text-center fs-3" align="top">Newly signed up users on Maker<strong>Repo</strong></caption>
+    <caption class="text-center fs-3" align="top"><%= t('staff_dashboard.newly_signed_up_html') %></caption>
     <thead class="table-primary">
       <tr>
-        <th class="name-header">Name</th>
-        <th class="email-header">Email</th>
-        <th class="action-header disable-sort">Sign In To <%= @space.name %></span></th>
+        <th class="name-header"><%= t('staff_dashboard.columns.name') %></th>
+        <th class="email-header"><%= t('staff_dashboard.columns.email') %></th>
+        <th class="action-header disable-sort"><%= t('staff_dashboard.columns.sign_in_to', space: @space.name) %></span></th>
       </tr>
     </thead>
     <%= render partial: 'newly_signed_up', locals: { space: @space } %>

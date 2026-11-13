@@ -2,30 +2,27 @@
 
   <% if @space.signed_in_users.count == @space.max_capacity %>
     <div class="alert alert-danger text-center" role="alert">
-      <b>The maximum capacity of the space has been reached!</b>
+      <b><%= t('staff_dashboard.capacity.reached') %></b>
       <br>
-      Please do NOT allow anyone else in the space.
+      <%= t('staff_dashboard.capacity.do_not_allow') %>
       <br>
-      There are currently <b><%= @space.signed_in_users.count %> people</b> and max capacity is
-      <b><%= @space.max_capacity %> people.</b>.
+      <%= t('staff_dashboard.capacity.current_html', count: @space.signed_in_users.count, max: @space.max_capacity) %>
     </div>
   <% elsif @space.signed_in_users.count > @space.max_capacity %>
     <script type="text/javascript" charset="utf-8">
-      alert("The space is OVER maximum capacity, please ensure that the maximum capacity is not exceeded!")
+      alert("<%= raw j(t('staff_dashboard.capacity.over_alert')) %>")
     </script>
     <div class="alert alert-danger text-center" role="alert">
-      <h5 style="color: #721c24">The space is <b>OVER</b> the maximum capacity.</h5>
-      Please do NOT allow anyone else in the space.
+      <h5 style="color: #721c24"><%= t('staff_dashboard.capacity.over_html') %></h5>
+      <%= t('staff_dashboard.capacity.do_not_allow') %>
       <br>
-      There are currently <b><%= @space.signed_in_users.count %> people</b> and max capacity is
-      <b><%= @space.max_capacity %> people.</b>.
+      <%= t('staff_dashboard.capacity.current_html', count: @space.signed_in_users.count, max: @space.max_capacity) %>
     </div>
   <% elsif (@space.signed_in_users.count + 3) >= @space.max_capacity %>
     <div class="alert alert-warning text-center" role="alert">
-      The maximum capacity is almost reached. Please monitor the amount of people coming.
+      <%= t('staff_dashboard.capacity.almost_reached') %>
       <br>
-      There are currently <b><%= @space.signed_in_users.count %> people</b> and max capacity is
-      <b><%= @space.max_capacity %> people.</b>.
+      <%= t('staff_dashboard.capacity.current_html', count: @space.signed_in_users.count, max: @space.max_capacity) %>
     </div>
   <% end %>
 
