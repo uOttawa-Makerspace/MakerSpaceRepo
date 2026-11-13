@@ -27,11 +27,12 @@ require "zlib"
 # documents inside frames (outside sites, stored PDFs, SCORM packages): the
 # frame elements themselves are checked. Fragments (markup a page fetches and
 # inserts) skip the rules about the document's title and language, which the
-# host page provides. Faker is seeded, and the world is built and probed on a
-# fixed server clock, so the records and the crawled views are the same on
-# every run. The browser then signs in and browses on the real clock: the
-# session cookie the server sends expires a week after the server's now, and a
-# browser on a later real date would drop a cookie dated from a frozen clock.
+# host page provides. Faker is seeded and the server clock is fixed for the
+# whole example (building and probing the world, and every page the browser
+# opens), so the records, the crawled views and the markup the server renders
+# are the same on every run, whatever the real date. The browser, and the page
+# scripts in it, keep the real clock; spec/support/server_date_header.rb
+# keeps the session cookie valid on it.
 # The browser resolves no outside host
 # (see --host-resolver-rules in spec/support/system.rb), so embedded videos,
 # their thumbnails and wiki frames stay offline.
@@ -145,15 +146,6 @@ module PageCrawl
       end
     end
 
-    # Builds the world (with the admin) and probes it; returns the admin pages
-    # and the pages only a guest reaches.
-    def probe_world
-      admin # signs the probe in; created first, as part of the world
-      world = PageCrawl::World.new(self)
-      admin_pages = crawl_pages(world, sign_in: true)
-      [admin_pages, crawl_pages(world, sign_in: false).except(*admin_pages.keys)]
-    end
-
     def owned(list, shard) = list.select { |key| Browser.shard_of(key) == shard }
 
     def new_violation_details(actual, baseline)
@@ -174,11 +166,11 @@ RSpec.shared_examples "a browser page crawl shard" do |shard|
   include PageCrawl::BrowserCrawl
   include ActiveSupport::Testing::TimeHelpers
 
-  let(:admin) { create(:user, :admin) }
+  let!(:admin) { create(:user, :admin) }
 
   around do |example|
     Faker::Config.random = Random.new(PageCrawl::Browser::FAKER_SEED)
-    example.run
+    travel_to(PageCrawl::Browser::CLOCK) { example.run }
   ensure
     Faker::Config.random = nil
   end
@@ -192,7 +184,9 @@ RSpec.shared_examples "a browser page crawl shard" do |shard|
     shard_files = Rails.root.glob("#{PageCrawl::Browser::DIR}/shard_*_spec.rb")
     expect(shard_files.size).to eq(PageCrawl::Browser::SHARDS)
 
-    admin_pages, guest_pages = travel_to(PageCrawl::Browser::CLOCK) { probe_world }
+    world = PageCrawl::World.new(self)
+    admin_pages = crawl_pages(world, sign_in: true)
+    guest_pages = crawl_pages(world, sign_in: false).except(*admin_pages.keys)
     admin_pages.select! { |key, _| PageCrawl::Browser.shard_of(key) == shard }
     guest_pages.select! { |key, _| PageCrawl::Browser.shard_of(key) == shard }
 
