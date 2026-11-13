@@ -35,7 +35,7 @@ RSpec.describe "Error messages", type: :request do
     it "names the failed question update and delete" do
       content_sign_in_as(:admin)
       question = create(:question)
-      refuse_writes(Question, :update, :destroy)
+      refuse_writes(Question, :update_from_form, :destroy)
       patch question_path(question), params: { question: { description: "x" } }
       expect(flash[:alert]).to eq("The question was not updated. Refused for the spec")
       delete question_path(question), params: fr

@@ -1,16 +1,16 @@
 <section class="page-contents">
   <div class="py-3 padding-10 text-center">
 
-    <h2 class="fw-bold">Questions for
+    <h2 class="fw-bold"><%= t('questions.index.title') %>
       <strong><strong><%= select_tag :space_id, options_from_collection_for_select(Space.order(:name), :id, :name, @space.id), id: 'set_space_id', aria: { label: t('common.names.space') }, class: 'form-select', onchange: 'setSpace()', style: 'padding: 2px;' %></strong></strong>
     </h2>
 
-    <%= link_to 'New Question', new_question_path, class: 'btn btn-primary m-5' %>
+    <%= link_to t('questions.index.new'), new_question_path, class: 'btn btn-primary m-5' %>
 
     <% if !@questions.blank? %>
 
       <div class="input-group w-50 mx-auto">
-      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="Find by: category, description, ..." class="form-control mx-auto">
+      <input type="text" id="query" onkeyup="findSession('sessions-table')" placeholder="<%= t('questions.index.search_placeholder') %>" class="form-control mx-auto">
       <i class="fa-solid fa-magnifying-glass input-group-text fa-2x pe-2"></i>
       </div>
       <br />
@@ -18,7 +18,7 @@
       <div class="text-center my-3">
         <% if @pagy && @pagy.count > 0 %>
           <small class="text-muted d-block mb-2">
-            Displaying <b><%= @pagy.from %></b> - <b><%= @pagy.to %></b> of <b><%= @pagy.count %></b> questions
+            <%= t('questions.index.displaying_html', from: @pagy.from, to: @pagy.to, count: @pagy.count) %>
           </small>
         <% end %>
         <%== @pagy.series_nav(:bootstrap) if @pagy && @pagy.pages > 1 %>
@@ -28,21 +28,21 @@
         <table class="table sessions-table table-striped">
         <thead class="table-primary">
            <tr>
-             <th>Date Submitted <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
-             <th>Category <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
-             <th>Level <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
-             <th>Description <span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
-             <th>Created by<span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
-             <th class="action-header">Action</th>
+             <th><%= t('questions.index.date_submitted') %> <span onclick="sortTable('sessions-table', 0, true)"><i class="fa-solid fa-arrow-down"></i></span></th>
+             <th><%= t('questions.index.category') %> <span onclick="sortTable('sessions-table', 1)"><i class="fa-solid fa-arrow-down"></i></span></th>
+             <th><%= t('questions.index.level') %> <span onclick="sortTable('sessions-table', 2)"><i class="fa-solid fa-arrow-down"></i></span></th>
+             <th><%= t('questions.index.description') %> <span onclick="sortTable('sessions-table', 3)"><i class="fa-solid fa-arrow-down"></i></span></th>
+             <th><%= t('questions.index.created_by') %><span onclick="sortTable('sessions-table', 4)"><i class="fa-solid fa-arrow-down"></i></span></th>
+             <th class="action-header"><%= t('questions.index.action') %></th>
            </tr>
         </thead>
          <tbody>
           <% @questions.each do |q| %>
             <tr>
               <td>
-                <%= q.created_at.strftime('%m/%e/%Y (%b)') %>
+                <%= l(q.created_at, format: :question_created_on) %>
                 <br>
-                <%= q.created_at.strftime('%I:%M %p').downcase %>
+                <%= l(q.created_at, format: :exam_time).downcase %>
               </td>
 
               <td>
@@ -52,16 +52,22 @@
                 <% end %>
               </td>
 
-              <td><%= q.level %></td>
+              <td><%= t(q.level, scope: 'questions.levels', default: q.level) %></td>
 
               <td class="word-break"><%= "#{q.description.split[0...5].join(' ')}..." %></td>
 
-              <td class="username"><%= link_to q.user.name.titleize, user_path(q.user.username) %></td>
+              <td class="username">
+                <% if q.user %>
+                  <%= link_to q.user.name.titleize, user_path(q.user.username) %>
+                <% else %>
+                  <%= t('users.deleted_user') %>
+                <% end %>
+              </td>
 
               <td class="action-cell">
-                <%= link_to 'Edit', edit_question_path(q.id), class: 'd-block w-100 btn btn-primary btn-sm' %>
-                <%= link_to 'Show', question_path(q.id), class: 'd-block w-100 btn btn-info btn-sm' %>
-                <%= button_to 'Delete', { controller: :questions, action: :destroy, id: q.id }, method: :delete,
+                <%= link_to t('questions.index.edit'), edit_question_path(q.id), class: 'd-block w-100 btn btn-primary btn-sm' %>
+                <%= link_to t('questions.index.show'), question_path(q.id), class: 'd-block w-100 btn btn-info btn-sm' %>
+                <%= button_to t('questions.index.delete'), { controller: :questions, action: :destroy, id: q.id }, method: :delete,
                                                                                                 **confirmation_options(t('confirmations.questions.delete')),
                                                                                                 class: 'd-block w-100 btn-sm btn btn-danger my-2' %>
               </td>
@@ -76,7 +82,7 @@
       </div>
     <% else %>
       <div class="m-5">
-        No Questions were created yet.
+        <%= t('questions.index.none') %>
       </div>
     <% end %>
   </div>

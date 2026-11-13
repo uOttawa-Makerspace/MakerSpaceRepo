@@ -170,6 +170,17 @@ RSpec.describe "Translated templates" do
     app/views/admin/skills/new.html.erb
     app/views/admin/skills/edit.html.erb
     app/views/admin/uni_programs/index.html.erb
+    app/views/exams/index.html.erb
+    app/views/exams/show.html.erb
+    app/views/exams/_question_with_response.html.erb
+    app/views/exams/_question_without_response.html.erb
+    app/views/questions/index.html.erb
+    app/views/questions/show.html.erb
+    app/views/questions/new.html.erb
+    app/views/questions/edit.html.erb
+    app/views/questions/_question_form.html.erb
+    app/views/questions/_answers.html.erb
+    app/views/questions/_question_images.html.erb
   ].freeze
 
   TRANSLATED_TEMPLATES.each do |path|

@@ -150,7 +150,9 @@ fr:
         code: Code
         dollar_cost: Valeur en dollars
       question:
+        description: Description
         images: Images
+        level: Niveau
       order_item:
         files: Fichiers
         proficient_project: Projet

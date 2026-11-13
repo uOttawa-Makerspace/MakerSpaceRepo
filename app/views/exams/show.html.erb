@@ -1,7 +1,7 @@
 <section class="container">
   <div class="text-center">
     <% @questions.find_each.each_with_index do |question, i| %>
-      Question <%= i + 1 %>
+      <%= t('exams.show.question', number: i + 1) %>
       <% response = @responses[question.id] %>
         <% if response %>
           <%= render partial: 'question_with_response', locals: { question:, response: } %>
@@ -14,7 +14,7 @@
     <% end %>
 
     <% if @exam.user.eql?(current_user) %>
-      <%= button_to 'Finish Exam', finish_exam_exams_path(exam_id: @exam.id), method: :post, class: 'btn btn-primary my-5', form_class: 'button_to useTurbo',
+      <%= button_to t('exams.show.finish'), finish_exam_exams_path(exam_id: @exam.id), method: :post, class: 'btn btn-primary my-5', form_class: 'button_to useTurbo',
                                                                           **confirmation_options(t('confirmations.exams.submit')) %>
     <% end %>
   </div>
