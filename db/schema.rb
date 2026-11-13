@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_12_230000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_13_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -1110,7 +1110,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_12_230000) do
   create_table "printer_sessions", id: :serial, force: :cascade do |t|
     t.datetime "created_at", precision: nil, null: false
     t.boolean "in_use", default: false
-    t.integer "printer_id"
+    t.integer "printer_id", null: false
     t.datetime "updated_at", precision: nil, null: false
     t.integer "user_id"
     t.index ["printer_id"], name: "index_printer_sessions_on_printer_id"
