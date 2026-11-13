@@ -66,4 +66,40 @@ RSpec.describe StaffDashboardChannel do
   it "broadcasts the same tables when a user is tapped out" do
     expect { described_class.send_tap_out(create(:user, :regular_user), space.id) }.to expect_rows_for_three_signed_in_users
   end
+
+  describe "subscribing to a space's tap-in events" do
+    let(:assigned) { create(:user, :staff).tap { |u| StaffSpace.create!(user: u, space: space) } }
+
+    def subscribe_as(user, space_id)
+      stub_connection current_user: user
+      subscribe(space_id: space_id)
+    end
+
+    it "streams the space's events to staff assigned to it" do
+      subscribe_as(assigned, space.id)
+      expect(subscription).to be_confirmed
+      expect(subscription).to have_stream_from("space_event_#{space.id}")
+    end
+
+    it "rejects staff who are not assigned to the space, even when it is their saved space" do
+      loner = create(:user, :staff)
+      loner.update_columns(space_id: space.id)
+      subscribe_as(loner, space.id)
+      expect(subscription).to be_rejected
+    end
+
+    it "rejects an unknown or missing space, and a regular user" do
+      subscribe_as(assigned, 0)
+      expect(subscription).to be_rejected
+      subscribe_as(assigned, nil)
+      expect(subscription).to be_rejected
+      subscribe_as(create(:user, :regular_user), space.id)
+      expect(subscription).to be_rejected
+    end
+
+    it "lets an admin follow any space" do
+      subscribe_as(create(:user, :admin), space.id)
+      expect(subscription).to be_confirmed
+    end
+  end
 end
