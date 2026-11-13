@@ -76,7 +76,7 @@ RSpec.describe CommentsController, type: :controller do
         user = create(:user, :regular_user)
         session[:user_id] = user.id
         session[:expires_at] = Time.zone.now + 10_000
-        repository = create(:repository)
+        create(:repository)
       end
 
       it "should upvote the comment" do
@@ -105,7 +105,7 @@ RSpec.describe CommentsController, type: :controller do
     end
 
     context "voted" do
-      before(:each) { repository = create(:repository) }
+      before(:each) { create(:repository) }
 
       it "should downvote an upvoted comment" do
         user = create(:user, :regular_user)
