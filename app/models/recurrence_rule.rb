@@ -113,14 +113,13 @@ class RecurrenceRule
     "#{@text}\nEXDATE:#{start.utc.strftime(STAMP)}"
   end
 
-  # The series with the Toronto clock time of the DTSTART in `new_text`
-  # ("update all events"). When the repeat itself is unchanged the series keeps its start
-  # date and its exclusions; otherwise `new_text` is the new rule.
-  def with_time_from(new_text)
+  # The series at the Toronto clock time of `at`, the series' new start ("update all events"). When the repeat in
+  # `new_text` is unchanged the series keeps its start date and its exclusions; otherwise `new_text` is the new rule.
+  def with_time_from(new_text, at:)
     new_rrule, new_dtstart, = parts(new_text)
     return new_text unless new_rrule == @rrule && @dtstart && new_dtstart
 
-    new_time = new_dtstart.in_time_zone(ZONE)
+    new_time = at.in_time_zone(ZONE)
     start = @dtstart.in_time_zone(ZONE).change(hour: new_time.hour, min: new_time.min, sec: new_time.sec)
     ([start_line(start), "RRULE:#{@rrule}"] + @other_lines).join("\n")
   end

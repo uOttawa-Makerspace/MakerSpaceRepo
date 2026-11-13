@@ -51,6 +51,7 @@ export const EVENT_MODAL_HTML = `
     <input type="hidden" name="event[utc_start_time]" id="utc_start_time">
     <input type="hidden" name="event[utc_end_time]" id="utc_end_time">
     <input type="hidden" name="event[recurrence_rule]" id="recurrence_rule_field">
+    <input type="hidden" name="keep_series_times" id="keep_series_times" value="1" disabled>
     <input type="hidden" name="event[space_id]" value="7">
     <div id="accordion"><div class="collapse"></div></div>
     <input type="text" name="event[title]" id="title">
@@ -112,6 +113,7 @@ export const UNAVAILABILITY_MODAL_HTML = `
     <input type="hidden" id="utc_start_time" ${T("utcStart")}>
     <input type="hidden" id="utc_end_time" ${T("utcEnd")}>
     <input type="hidden" id="recurrence_rule_field" ${T("ruleField")}>
+    <input type="hidden" name="keep_series_times" id="keep_series_times" value="1" disabled ${T("keepTimes")}>
     <div id="accordion"><div class="collapse" ${T("collapse")}></div></div>
     <input type="text" id="title" ${T("titleField")}>
     <textarea id="description" ${T("descriptionField")}></textarea>

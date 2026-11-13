@@ -200,6 +200,27 @@ RSpec.describe "Staff unavailabilities", type: :request do
           expect(series.recurrence_rule).to eq("DTSTART;TZID=America/Toronto:20270301T143000\nRRULE:FREQ=WEEKLY;BYDAY=MO")
         end
 
+        # The dialog sends keep_series_times when its time fields are as it filled them from the clicked occurrence:
+        # the series then keeps its own start and length, even where that occurrence's times differ from the series'.
+        {
+          "the 03:30 occurrence of the day the clocks go forward (a 02:30 series)" =>
+            { first: [2027, 3, 7, 2, 30], posted: %w[2027-03-14T07:30:00Z 2027-03-14T08:30:00Z], start_line: "20270307T023000" },
+          "the 01:30 occurrence of the night the clocks go back (posted 01:30 to 02:30, two real hours)" =>
+            { first: [2027, 10, 31, 1, 30], posted: %w[2027-11-07T05:30:00Z 2027-11-07T07:30:00Z], start_line: "20271031T013000" }
+        }.each do |label, c|
+          it "scope 'all' with the times left as filled from #{label} keeps the series' start and length" do
+            first = Time.zone.local(*c[:first])
+            weekly = create(:staff_unavailability, user: staff, title: "Series", start_time: first, end_time: first + 1.hour,
+                                                   recurrence_rule: "DTSTART:#{first.utc.strftime('%Y%m%dT%H%M%SZ')}\nRRULE:FREQ=WEEKLY;BYDAY=SU")
+            posted_rule = "DTSTART;TZID=America/Toronto:#{Time.iso8601(c[:posted].first).in_time_zone(RecurrenceRule::ZONE).strftime('%Y%m%dT%H%M%S')}\nRRULE:FREQ=WEEKLY;BYDAY=SU"
+            patch staff_unavailability_path(weekly), params: payload(title: "Renamed", utc_start_time: c[:posted].first, utc_end_time: c[:posted].last,
+                                                                     recurrence_rule: posted_rule).merge(update_scope: "all", keep_series_times: "1")
+
+            expect(weekly.reload).to have_attributes(title: "Renamed", start_time: first, end_time: first + 1.hour,
+                                                     recurrence_rule: "DTSTART;TZID=America/Toronto:#{c[:start_line]}\nRRULE:FREQ=WEEKLY;BYDAY=SU")
+          end
+        end
+
         it "scope 'all' with a rule that does not validate flashes an alert and changes nothing" do
           patch staff_unavailability_path(series), params: payload(title: "Shifted", recurrence_rule: "DTSTART:20270322T183000Z\nRRULE:FREQ=MINUTELY").merge(update_scope: "all")
           expect(flash[:alert]).to start_with("Failed to update unavailability:")

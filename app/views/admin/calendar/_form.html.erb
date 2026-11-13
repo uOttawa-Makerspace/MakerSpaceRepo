@@ -110,6 +110,7 @@
                     <%= f.hidden_field :utc_start_time, id: "utc_start_time" %>
                     <%= f.hidden_field :utc_end_time, id: "utc_end_time" %>
                     <%= f.hidden_field :recurrence_rule, id: "recurrence_rule_field" %>
+                    <%= hidden_field_tag :keep_series_times, "1", id: "keep_series_times", disabled: true %>
                     <%= f.hidden_field :space_id, value: @space_id %>
 
                     <div id="accordion" class="accordion mt-3">

@@ -45,6 +45,7 @@ const TypedController = /** @type {new () => Controller<HTMLElement> & {
   deleteChoicesTarget: HTMLElement,
   deleteFormTargets: HTMLFormElement[],
   deleteStartDateTargets: HTMLInputElement[],
+  keepTimesTarget: HTMLInputElement,
 }} */ (/** @type {unknown} */ (Controller));
 
 // The unavailability dialog (add and edit): opens in add, edit or range mode,
@@ -82,6 +83,7 @@ export default class extends TypedController {
     "deleteChoices",
     "deleteForm",
     "deleteStartDate",
+    "keepTimes",
   ];
 
   // ---------------------------------------
@@ -91,6 +93,7 @@ export default class extends TypedController {
   // closes (the button that opened it).
   openForAdd({ returnFocusTo = null } = {}) {
     this.returnFocusTo = returnFocusTo;
+    this.filledTimes = null;
     this.formTarget.action = COLLECTION_PATH;
     this.methodFieldTarget.disabled = true;
 
@@ -120,6 +123,7 @@ export default class extends TypedController {
     this.modal.show();
     this.pointFormAt(entry.id);
     this.fillTimes(entry);
+    this.filledTimes = this.timesShown();
     this.titleFieldTarget.value = entry.title || "";
     this.descriptionFieldTarget.value = entry.description || "";
     if (repeats) this.restoreSeries(entry.series);
@@ -319,6 +323,9 @@ export default class extends TypedController {
   // Before form submission, send the instants of the Toronto times
   sendInstants() {
     this.buildRule();
+    // "update all" keeps the series' own times unless they were changed here:
+    // the field ("1") is sent only while the times are as they were filled
+    this.keepTimesTarget.disabled = this.timesShown() !== this.filledTimes;
 
     this.utcStartTarget.value = new Date(
       wallToInstant(wallOfField(this.startTimeTarget.value)),
@@ -326,6 +333,15 @@ export default class extends TypedController {
     this.utcEndTarget.value = new Date(
       wallToInstant(wallOfField(this.endTimeTarget.value)),
     ).toISOString();
+  }
+
+  // The time fields as they stand.
+  timesShown() {
+    return [
+      this.startTimeTarget.value,
+      this.endTimeTarget.value,
+      this.allDayTarget.checked,
+    ].join("|");
   }
 
   // The rule as it is stored: the start in Toronto time, the end a UTC stamp.

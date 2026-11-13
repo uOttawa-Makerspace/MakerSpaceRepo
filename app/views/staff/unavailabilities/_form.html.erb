@@ -64,6 +64,7 @@
                     <%= f.hidden_field :utc_start_time, id: "utc_start_time", data: { unavailability_form_target: "utcStart" } %>
                     <%= f.hidden_field :utc_end_time, id: "utc_end_time", data: { unavailability_form_target: "utcEnd" } %>
                     <%= f.hidden_field :recurrence_rule, id: "recurrence_rule_field", data: { unavailability_form_target: "ruleField" } %>
+                    <%= hidden_field_tag :keep_series_times, "1", id: "keep_series_times", disabled: true, data: { unavailability_form_target: "keepTimes" } %>
 
                     <div id="accordion" class="accordion mt-3">
                         <div class="accordion-item">

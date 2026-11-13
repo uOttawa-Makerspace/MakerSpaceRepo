@@ -3,6 +3,7 @@ import { RRule } from "rrule";
 import TomSelect from "tom-select";
 
 import { isHexColour } from "./calendar_background";
+import { timesShown } from "./calendar_helper";
 import { onPageLoad } from "./on_page";
 import {
   fieldValue,
@@ -398,6 +399,9 @@ onPageLoad("#eventModal", () => {
   // Before form submission, send the instants of the Toronto times
   document.getElementById("eventForm").addEventListener("submit", (e) => {
     buildRule();
+    const keepTimes = document.getElementById("keep_series_times");
+    // sent ("1") only while the times are as the dialog filled them
+    keepTimes.disabled = keepTimes.dataset.filled !== timesShown();
 
     document.getElementById("utc_start_time").value = new Date(
       wallToInstant(wallOfField(startTimeField.value)),

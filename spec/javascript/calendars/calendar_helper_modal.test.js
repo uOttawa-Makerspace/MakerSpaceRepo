@@ -376,6 +376,15 @@ describe("eventClick", () => {
     expect($("title").value).toBe("Team sync");
   });
 
+  it("notes the times it filled, and forgets them when the dialog opens for a new event", () => {
+    eventClick(fcEvent());
+    expect($("keep_series_times").dataset.filled).toBe(
+      "2027-03-17T10:00|2027-03-17T11:30|false",
+    );
+    addEventClick();
+    expect($("keep_series_times").dataset.filled).toBeUndefined();
+  });
+
   it("sets the date every delete form sends", () => {
     eventClick(fcEvent());
     const values = [...document.querySelectorAll(".delete_start_date")].map(

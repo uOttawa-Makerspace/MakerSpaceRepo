@@ -294,6 +294,34 @@ const weekly = ({ days = ["MO", "WE"], until = "2027-03-31" } = {}) => ({
 });
 const withFreq = (frequency) => ({ frequency, weekdays: [], until: null });
 
+describe("keeping the series' own times", () => {
+  const submit = () => fire($("unavailForm"), "submit", { cancelable: true });
+
+  it("asks the server to keep them when the times are saved as they were filled", () => {
+    controller().openForEdit(entry({ series: weekly() }));
+    $("title").value = "Renamed";
+    submit();
+    expect($("keep_series_times").disabled).toBe(false);
+    expect($("keep_series_times").value).toBe("1");
+  });
+
+  it("does not once a time was changed, nor for a new entry", () => {
+    controller().openForEdit(entry({ series: weekly() }));
+    $("start_time_field").value = "2027-03-17T14:00";
+    submit();
+    expect($("keep_series_times").disabled).toBe(true);
+
+    controller().openForEdit(entry({ series: weekly() }));
+    $("all_day_checkbox").checked = true;
+    submit();
+    expect($("keep_series_times").disabled).toBe(true);
+
+    controller().openForAdd();
+    submit();
+    expect($("keep_series_times").disabled).toBe(true);
+  });
+});
+
 describe("openForEdit", () => {
   it("opens the modal in edit mode against the unavailability URL", () => {
     controller().openForEdit(entry());

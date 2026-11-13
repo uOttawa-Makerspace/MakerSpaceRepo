@@ -14,11 +14,21 @@ import {
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
+// The dialog's time fields as they stand; saving compares them with how they
+// were filled, so "update all" keeps the series' own times unless they changed.
+export function timesShown() {
+  const start = document.getElementById("start_time_field").value;
+  const end = document.getElementById("end_time_field").value;
+  const allDay = document.getElementById("all_day_checkbox").checked;
+  return [start, end, allDay].join("|");
+}
+
 // -------------------
 // Reset modal to clean state
 // -------------------
 function resetModalState() {
   const form = document.querySelector("#eventModal form");
+  delete document.getElementById("keep_series_times").dataset.filled;
   const saveButton = document.getElementById("save_button");
   const saveButtonContainer = document.getElementById("save_button_container");
   const dropdownSaveContainer = document.getElementById(
@@ -456,6 +466,7 @@ function openEventForEditing(eventImpl) {
       ? wallFromCalendar(eventImpl.endStr)
       : defaultEnd(start, eventImpl.allDay),
   );
+  document.getElementById("keep_series_times").dataset.filled = timesShown();
 
   // TITLE & DESCRIPTION
   document.getElementById("title").value = storedTitle(event);

@@ -416,6 +416,18 @@ describe("submit", () => {
     expect(tomInstances[0].synced).toBeGreaterThan(0);
   });
 
+  it("asks to keep the series' own times only when the times are as the dialog filled them", async () => {
+    await ready();
+    $("keep_series_times").dataset.filled =
+      "2027-03-17T10:00|2027-03-17T11:00|false";
+    submit();
+    expect($("keep_series_times").disabled).toBe(false);
+
+    $("end_time_field").value = "2027-03-17T12:00";
+    submit();
+    expect($("keep_series_times").disabled).toBe(true);
+  });
+
   it("clears a title made of 'for' and staff names", async () => {
     await ready();
     $("title").value = "Soldering for Ada, Bob";
