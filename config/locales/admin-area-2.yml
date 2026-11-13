@@ -451,7 +451,7 @@ en:
       service_fee: "Service Fee"
       flash:
         option_created: "The option has been created!"
-        option_updated: "The Service Group has been updated"
+        option_updated: "The option has been updated"
         option_deleted: "The option has been deleted successfully"
         group_created: "The Service Group has been created!"
         group_updated: "The Service Group has been updated"

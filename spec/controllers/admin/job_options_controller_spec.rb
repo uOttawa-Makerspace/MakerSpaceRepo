@@ -53,6 +53,7 @@ RSpec.describe Admin::JobOptionsController, type: :controller do
       end.to change(JobOption, :count).by(1)
 
       expect(JobOption.last.name).to include("Updated Name")
+      expect(flash[:notice]).to eq("The option has been updated")
     end
   end
 
