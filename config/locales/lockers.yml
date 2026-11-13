@@ -438,7 +438,7 @@ fr:
     state:
       state: État
       reviewing: En attente de révision
-      await_payment: Attendre le paiement
+      await_payment: En attente de paiement
       active: Actif
       cancelled: Terminée
       expired: Expirée
