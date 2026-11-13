@@ -6,7 +6,5 @@
 "/learning_area/:id/scorm_assets/*path":
   document-title: 1
   html-has-lang: 1
-repositories/edit.html.erb:
-  image-alt: 1
 users/show.html.erb:
   aria-required-children: 2
