@@ -20,24 +20,23 @@ RSpec.describe SubSpaceBookingStatus, type: :model do
     expect(status).not_to be_valid
   end
 
-  it "links a booking to a booking_status one-to-one" do
+  it "takes the booking state from booking_status_id, whatever the old status rows say" do
     booking = create(:sub_space_booking)
-    # the factory already linked a Pending status; reload shows that lookup
-    # still resolves by the STATUS row's sub_space_booking_id, not the
-    # booking's cached sub_space_booking_status_id column.
-    first_status = booking.reload.sub_space_booking_status
-    expect(first_status.booking_status.name).to eq("Pending")
+    expect(booking.reload.booking_status.name).to eq("Pending")
 
     added = described_class.create!(
       sub_space_booking: booking,
       booking_status: @approved_status
     )
     booking.update_column(:sub_space_booking_status_id, added.id)
-    expect(booking.reload.sub_space_booking_status_id).to eq(added.id)
-    # has_one points at the FIRST matching status row — the extra
-    # approved row would only surface through the id column.
-    expect(booking.reload.sub_space_booking_status.booking_status.name)
-      .to eq("Pending")
+
+    booking.reload
+    expect(booking.sub_space_booking_status_id).to eq(added.id)
+    expect(booking).to be_pending
+    expect(booking).not_to be_approved
+    expect(booking.booking_status.name).to eq("Pending")
+    expect(SubSpaceBooking.pending).to include(booking)
+    expect(SubSpaceBooking.approved).not_to include(booking)
   end
 
   describe "destroy" do

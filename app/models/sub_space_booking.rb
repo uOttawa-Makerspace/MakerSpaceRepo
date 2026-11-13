@@ -10,8 +10,9 @@ class SubSpaceBooking < ApplicationRecord
   # because the column may still be empty on rows older than the status column.
   belongs_to :booking_status, optional: true
   validates :booking_status, presence: true, on: :create
-  # The status row the booking used to be linked to. It is still written with every status change
-  # so the old table stays consistent until it is retired; nothing reads it.
+  # The old status row. The state of a booking is booking_status_id; no reader uses this row for it.
+  # Only the writers of the old table (write_status_row, destroy_with_status!) and the refusal of a
+  # plain destroy still go through this association, until the owner retires the old table.
   has_one :sub_space_booking_status,
           dependent: :destroy
   validates :name, presence: true
