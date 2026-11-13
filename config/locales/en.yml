@@ -293,6 +293,17 @@ en:
       body_html: "A user by the name of %{name} has requested to be a room booker in makeroom. Please go to the %{panel} admin panel to approve or deny this request."
       panel: "MakerRepo Booking"
       why_received: "You have received this email because a user has requested booking access."
+    send_booking_approved:
+      subject: "Booking approved"
+      hello: "Hello %{name},"
+      body: "Your booking in %{room} for %{description} on %{start} to %{end} has been approved."
+      why_received: "You have received this email because your booking has been approved."
+    send_booking_approval_request_approved:
+      subject: "Booking approval request accepted"
+      hello: "Hello %{name},"
+      body_html: "Your booking approval request has been reviewed and accepted by an admin. Please go to the %{page} page if you would like to book rooms."
+      page: "MakerRepo Booking"
+      why_received: "You have received this email because your booking access request was approved."
   sub_space_booking:
     access_status:
       none: "You have not requested booking access yet."
